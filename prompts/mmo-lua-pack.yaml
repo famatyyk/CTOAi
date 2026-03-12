@@ -1,0 +1,122 @@
+version: 1
+pack: mmo-lua
+prompts:
+  - id: mmo-lua-001
+    name: design-event-logger
+    braver:
+      expectation: "Design Lua event logger for MMO loop"
+      role: "Senior Lua engineer"
+      audience: "Automation runtime"
+      boundaries: "No secrets, deterministic output"
+      variables: "event fields, serialization mode"
+      refine: "Improve with edge case feedback"
+
+  - id: mmo-lua-002
+    name: create-pathing-module
+    braver:
+      expectation: "Create waypoint module with blocked retry"
+      role: "Bot architect"
+      audience: "Cavebot subsystem"
+      boundaries: "Bounded retries"
+      variables: "route length, fallback"
+      refine: "Tune retry strategy"
+
+  - id: mmo-lua-003
+    name: auto-heal-rules
+    braver:
+      expectation: "Generate heal decision rules"
+      role: "Combat systems engineer"
+      audience: "Survival module"
+      boundaries: "Cooldown enforcement"
+      variables: "hp/mana thresholds"
+      refine: "Adjust thresholds from telemetry"
+
+  - id: mmo-lua-004
+    name: supply-monitor
+    braver:
+      expectation: "Build supply monitor and refill trigger"
+      role: "Gameplay automation engineer"
+      audience: "Inventory subsystem"
+      boundaries: "No over-triggering"
+      variables: "min stock levels"
+      refine: "Reduce false positives"
+
+  - id: mmo-lua-005
+    name: target-priority
+    braver:
+      expectation: "Prioritize targets by weighted risk"
+      role: "Combat AI engineer"
+      audience: "Target selector"
+      boundaries: "Stable switching"
+      variables: "threat, distance, health"
+      refine: "Reweight with fight outcomes"
+
+  - id: mmo-lua-006
+    name: loot-filter
+    braver:
+      expectation: "Filter loot with allow/deny lists"
+      role: "Inventory optimization engineer"
+      audience: "Loot manager"
+      boundaries: "No inventory overflow"
+      variables: "rarity, stackability"
+      refine: "Tune pickup policy"
+
+  - id: mmo-lua-007
+    name: safety-interrupt
+    braver:
+      expectation: "Trigger retreat on critical state"
+      role: "Safety engineer"
+      audience: "Cavebot core"
+      boundaries: "Fast fail-safe path"
+      variables: "critical hp, panic route"
+      refine: "Reduce interrupt latency"
+
+  - id: mmo-lua-008
+    name: telemetry-export
+    braver:
+      expectation: "Export gameplay telemetry to JSONL"
+      role: "Observability engineer"
+      audience: "Analytics pipeline"
+      boundaries: "No sensitive fields"
+      variables: "sampling, schema"
+      refine: "Improve event quality"
+
+  - id: mmo-lua-009
+    name: qa-checklist-gen
+    braver:
+      expectation: "Generate QA checklist for Lua modules"
+      role: "QA lead"
+      audience: "Test reviewers"
+      boundaries: "Actionable and short"
+      variables: "module type, failure modes"
+      refine: "Add regression checks"
+
+  - id: mmo-lua-010
+    name: ci-gate-evidence
+    braver:
+      expectation: "Prepare CI evidence block for approval"
+      role: "Release engineer"
+      audience: "Gate approver"
+      boundaries: "Only verified facts"
+      variables: "tests, logs, artifact"
+      refine: "Clarify decision summary"
+
+  - id: mmo-lua-011
+    name: blocker-root-cause
+    braver:
+      expectation: "Analyze blocker and propose fix path"
+      role: "Incident analyst"
+      audience: "Queen-CTOA"
+      boundaries: "No guesswork"
+      variables: "error class, impact"
+      refine: "Tighten remediation"
+
+  - id: mmo-lua-012
+    name: sprint-retro
+    braver:
+      expectation: "Generate sprint retro from task history"
+      role: "Program manager"
+      audience: "Leadership"
+      boundaries: "Data-backed only"
+      variables: "cycle time, pass rate"
+      refine: "Pinpoint top improvements"

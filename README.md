@@ -5,13 +5,17 @@ Minimalny pakiet organizacji CTOA (10 agentow) pod prace 24/7 na VPS.
 ## Zawartosc
 - agents/ctoa-agents.yaml
 - prompts/braver-library.yaml
+- prompts/mmo-lua-pack.yaml
 - scoring/tool-advisor-rules.yaml
+- scoring/tibia-tool-matrix.yaml
 - policies/ci-gate-policy.yaml
 - workflows/backlog-sprint-001.yaml
 - workflows/runbook-24x7.yaml
 - runner/runner.py
+- runner/issue_sync.py
 - deploy/vps/SETUP.md
 - .github/workflows/ctoa-pipeline.yml
+- .github/workflows/ctoa-issue-sync.yml
 - training/curriculum.md
 
 ## Szybki start
@@ -28,6 +32,11 @@ Publikacja publiczna odbywa sie dopiero po:
 1. Runner tick co 15 min: `python3 runner/runner.py tick`
 2. Raport live co godzine do GitHub Issue: `python3 runner/runner.py report --publish`
 3. Konfiguracja Ubuntu/systemd: `deploy/vps/SETUP.md`
+
+## Week 1 Automation
+1. Backlog issue sync co godzine: `.github/workflows/ctoa-issue-sync.yml`
+2. Zadania sprintu sa mapowane do issue `[CTOA-XXX]` przez `runner/issue_sync.py`.
+3. Start realizacji sprintu obejmuje moduły Lua w `scripts/lua/` i testy opisowe w `tests/lua/`.
 
 ## Licencja
 MIT

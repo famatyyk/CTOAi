@@ -1,0 +1,50 @@
+version: 1
+matrix:
+  categories:
+    - name: lua-editing
+      top_tools:
+        - tool: local-lua-runtime
+          score: 8.6
+          rationale: "Fast local iteration, zero API cost"
+        - tool: vscode-lua-language-server
+          score: 8.2
+          rationale: "Good diagnostics and navigation"
+        - tool: generic-genai-assistant
+          score: 7.4
+          rationale: "Useful scaffolding, needs review"
+
+    - name: testing
+      top_tools:
+        - tool: markdown-test-checklists
+          score: 7.8
+          rationale: "Simple and explicit for gate evidence"
+        - tool: custom-smoke-runner
+          score: 7.5
+          rationale: "Low setup overhead"
+        - tool: containerized-test-harness
+          score: 7.0
+          rationale: "Higher setup, better reproducibility"
+
+    - name: telemetry
+      top_tools:
+        - tool: jsonl-exporter
+          score: 8.4
+          rationale: "Easy append-only event stream"
+        - tool: grafana-loki
+          score: 7.9
+          rationale: "Strong querying and dashboards"
+        - tool: csv-fallback
+          score: 6.8
+          rationale: "Simple, less flexible than JSONL"
+
+    - name: orchestration
+      top_tools:
+        - tool: systemd-timers
+          score: 8.7
+          rationale: "Stable 24/7 scheduling on VPS"
+        - tool: github-actions
+          score: 8.1
+          rationale: "Good governance and approvals"
+        - tool: cron
+          score: 7.2
+          rationale: "Simple fallback scheduler"
