@@ -69,6 +69,31 @@ If a PAT was exposed, remove the local variable before creating a replacement:
 Remove-Item Env:CTOA_GITHUB_PAT -ErrorAction SilentlyContinue
 ```
 
+## 7. PAT Usage Audit Trail
+
+To enable audit logging on the VPS when PAT is used:
+
+```bash
+# On VPS (46.225.110.52):
+mkdir -p /opt/ctoa/logs
+chmod 700 /opt/ctoa/logs
+touch /opt/ctoa/logs/pat-audit.log
+chmod 600 /opt/ctoa/logs/pat-audit.log
+
+# Add audit hook to /opt/ctoa/.env:
+cat >> /opt/ctoa/.env << 'EOF'
+
+# Audit logging
+export CTOA_AUDIT_LOG=/opt/ctoa/logs/pat-audit.log
+_log_pat_usage() {
+  echo "[$(date +'%Y-%m-%d %H:%M:%S')] PAT sourced by PID=$PPID User=$USER Host=$(hostname)" >> $CTOA_AUDIT_LOG
+}
+_log_pat_usage
+EOF
+```
+
+Each use of `GITHUB_PAT` via wrapper or runner will be audited in `/opt/ctoa/logs/pat-audit.log`.
+
 After generating a fresh PAT manually in GitHub, set it locally:
 
 ```powershell
