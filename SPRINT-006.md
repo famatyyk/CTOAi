@@ -80,6 +80,13 @@
    - CTOA-023 `IN_PROGRESS`
 - Status counts po ticku: NEW=7, IN_PROGRESS=3, WAITING_APPROVAL=0, RELEASED=0
 
+## Checkpoint (2026-03-12 19:19 UTC)
+
+- Wave #1 (P0) doprowadzona do WAITING_APPROVAL i zatwierdzona
+- Approved: CTOA-021, CTOA-022, CTOA-023 → RELEASED
+- Sprint progress: **30.0% (3/10)**
+- Status counts: NEW=7, IN_PROGRESS=0, WAITING_APPROVAL=0, RELEASED=3
+
 ---
 
 ## Execution
