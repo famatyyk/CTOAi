@@ -1,0 +1,10 @@
+/opt/ctoa/logs/*.log {
+    daily
+    rotate 14
+    missingok
+    notifempty
+    compress
+    delaycompress
+    copytruncate
+    create 0640 root root
+}

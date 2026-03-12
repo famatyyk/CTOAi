@@ -1,0 +1,10 @@
+[Unit]
+Description=CTOA retention cleanup task
+After=network.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/ctoa
+ExecStart=/bin/bash /opt/ctoa/deploy/vps/cleanup-retention.sh
+StandardOutput=append:/opt/ctoa/logs/retention.log
+StandardError=append:/opt/ctoa/logs/retention.log
