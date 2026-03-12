@@ -61,3 +61,17 @@ $env:CTOA_GITHUB_PAT="YOUR_GITHUB_PERSONAL_ACCESS_TOKEN"
 ```
 
 The repository should never contain embedded SSH keys or PAT values in `.vscode/tasks.json`.
+
+If a PAT was exposed, remove the local variable before creating a replacement:
+
+```powershell
+[Environment]::SetEnvironmentVariable("CTOA_GITHUB_PAT", $null, "User")
+Remove-Item Env:CTOA_GITHUB_PAT -ErrorAction SilentlyContinue
+```
+
+After generating a fresh PAT manually in GitHub, set it locally:
+
+```powershell
+[Environment]::SetEnvironmentVariable("CTOA_GITHUB_PAT", "YOUR_NEW_GITHUB_PAT", "User")
+$env:CTOA_GITHUB_PAT = "YOUR_NEW_GITHUB_PAT"
+```

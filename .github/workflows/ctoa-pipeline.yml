@@ -82,8 +82,9 @@ jobs:
       - name: Basic secret scan
         shell: bash
         run: |
-          if grep -RInE --exclude-dir=.git --exclude-dir=.github --exclude-dir=.vscode '(AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{36}|-----BEGIN (RSA|EC|OPENSSH|PRIVATE KEY)-----)' .; then
-            echo "Potential secrets detected"
+          pattern='(AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]+|-----BEGIN (RSA|DSA|EC|OPENSSH|PGP|PRIVATE KEY)-----)'
+          if git ls-files -z | xargs -0 grep -nIE "$pattern"; then
+            echo "Potential secrets detected in tracked files"
             exit 1
           fi
 
