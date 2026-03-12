@@ -386,12 +386,29 @@ def run_once(publish: bool) -> int:
     return 0
 
 
-def run_watch(interval: int, samples: int, publish: bool) -> int:
+def run_watch(interval: int, samples: int, publish: bool, cpu_sustain: int = 3) -> int:
+    """Watch mode with CPU alert debounce: alert only after cpu_sustain consecutive high samples."""
+    cpu_streak = 0
     iteration = 0
     while True:
         iteration += 1
         metrics = collect_metrics()
-        alerts = check_thresholds(metrics)
+        raw_alerts = check_thresholds(metrics)
+
+        # Debounce CPU: split out CPU alerts and only fire after sustained streak
+        cpu_alerts = [a for a in raw_alerts if a.startswith("CPU high")]
+        other_alerts = [a for a in raw_alerts if not a.startswith("CPU high")]
+
+        if cpu_alerts:
+            cpu_streak += 1
+        else:
+            cpu_streak = 0
+
+        # Attach CPU alert only once streak threshold is reached
+        alerts = other_alerts + (cpu_alerts if cpu_streak >= cpu_sustain else [])
+        if cpu_alerts and cpu_streak < cpu_sustain:
+            print(f"  [CPU spike {cpu_streak}/{cpu_sustain}, holding alert]")
+
         persist_snapshot(metrics, alerts)
         print_live_line(metrics, alerts)
 
@@ -409,6 +426,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--watch", action="store_true", help="Run in live watch mode")
     parser.add_argument("--interval", type=int, default=10, help="Watch interval in seconds")
     parser.add_argument("--samples", type=int, default=0, help="Stop after N samples (0 = infinite)")
+    parser.add_argument(
+        "--cpu-sustain-samples",
+        type=int,
+        default=3,
+        help="Consecutive high-CPU samples required before firing alert (default: 3, ~30s at 10s interval)",
+    )
     parser.add_argument("--publish", dest="publish", action="store_true", help="Publish to GitHub Issue")
     parser.add_argument("--no-publish", dest="publish", action="store_false", help="Do not publish to GitHub")
     parser.set_defaults(publish=True)
@@ -418,7 +441,12 @@ def build_parser() -> argparse.ArgumentParser:
 def main() -> int:
     args = build_parser().parse_args()
     if args.watch:
-        return run_watch(interval=args.interval, samples=args.samples, publish=args.publish)
+        return run_watch(
+            interval=args.interval,
+            samples=args.samples,
+            publish=args.publish,
+            cpu_sustain=args.cpu_sustain_samples,
+        )
     return run_once(publish=args.publish)
 
 
