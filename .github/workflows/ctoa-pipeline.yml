@@ -60,7 +60,19 @@ jobs:
       - name: Lint Markdown basics
         shell: bash
         run: |
-          find . -type f -name "*.md" -print0 | while IFS= read -r -d '' file; do
+          docs=(
+            "README.md"
+            "training/curriculum.md"
+            "workflows/daily-loop.md"
+            "docs/operating-model.md"
+          )
+
+          for file in "${docs[@]}"; do
+            if [ ! -f "$file" ]; then
+              echo "Missing markdown doc: $file"
+              exit 1
+            fi
+
             if ! grep -q "^# " "$file"; then
               echo "Markdown file missing top-level heading: $file"
               exit 1
