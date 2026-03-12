@@ -120,34 +120,13 @@ fi
     }
     'WriteGithubPat' {
         $pat = Get-RequiredEnv 'CTOA_GITHUB_PAT'
-        $script = @"
-set -e
-cat > /opt/ctoa/.env <<'EOF'
-GITHUB_PAT=$pat
-EOF
-grep '^GITHUB_PAT=' /opt/ctoa/.env | sed 's/=.*/=***set***/'
-"@
-        Invoke-SshScript $script
+        Invoke-SshCommand "printf 'GITHUB_PAT=%s\n' '$pat' > /opt/ctoa/.env; echo GITHUB_PAT=***set***"
     }
     'ReportViaServiceEnv' {
-        Invoke-SshCommand 'bash -lc "systemctl restart ctoa-report.service; systemctl status ctoa-report.service --no-pager -l | head -n 20; journalctl -u ctoa-report.service -n 25 --no-pager"'
+        Invoke-SshCommand "systemctl restart ctoa-report.service; systemctl status ctoa-report.service --no-pager -l | head -n 20; journalctl -u ctoa-report.service -n 25 --no-pager"
     }
     'PublishWithSourcedEnv' {
-        Invoke-SshScript @'
-set -e
-cd /opt/ctoa
-set -a
-. /opt/ctoa/.env
-set +a
-. .venv/bin/activate
-python3 runner/runner.py report --publish
-sed -n '1,2p' /opt/ctoa/.env | sed 's/=.*$/=***set***/'
-if [ -f /opt/ctoa/logs/runner.log ]; then
-    tail -n 20 /opt/ctoa/logs/runner.log
-else
-    echo runner.log not present
-fi
-'@
+        Invoke-SshCommand "cd /opt/ctoa; set -a; . /opt/ctoa/.env; set +a; . .venv/bin/activate; python3 runner/runner.py report --publish"
     }
     'InspectReportEnv' {
         Invoke-SshScript @'
