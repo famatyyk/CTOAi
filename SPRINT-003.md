@@ -34,7 +34,8 @@
 - Weryfikacja po cleanupie: disk < 80%
 
 ### Track B: Monitoring Hardening (P1)
-- Uporządkowanie progów alertów
+- ✅ CPU alert debounce: `run_watch()` fires CPU alert only after 3 consecutive high samples (~30s); single spikes suppressed
+- ✅ `--cpu-sustain-samples` CLI flag added (default: 3, tunable without code change)
 - Spięcie alertów z akcjami operacyjnymi
 - Snapshot trendów (24h/7d)
 
@@ -63,6 +64,8 @@
 - P0 mitigation executed: safe cleanup of pip caches and temporary pip artifacts on VPS.
 - Disk usage improved from 99% to 73% on `/dev/sda1`.
 - Live monitor confirms status moved from ALERT to OK for disk threshold.
+- Retention hardening deployed: logrotate (14 days) + `ctoa-retention-cleanup.timer` (daily 03:15 UTC) active.
+- CPU debounce deployed (commit `662e67a`): sustained 3-sample check prevents false-positive ALERT on brief spikes.
 
 ---
 
