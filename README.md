@@ -39,6 +39,8 @@ Publikacja publiczna odbywa sie dopiero po:
 3. Start realizacji sprintu obejmuje moduły Lua w `scripts/lua/` i testy opisowe w `tests/lua/`.
 4. Dzienny komentarz insight pod issue #1: `.github/workflows/ctoa-daily-insights.yml`.
 5. Insight zawiera trend 24h, alert taskow zastoju >24h i 3 propozycje do approval.
+6. Auto-close po sukcesie gate: `.github/workflows/ctoa-close-on-gate.yml`.
+7. Tygodniowy raport zarzadczy: `.github/workflows/ctoa-weekly-report.yml`.
 
 ## Licencja
 MIT
