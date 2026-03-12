@@ -46,22 +46,24 @@
 
 ### Track A: Approval Unblock (P0)
 - ✅ Zidentyfikować mechanizm: `runner.py approve --task <ID>`
-- Approve CTOA-001 → RELEASED
-- Approve CTOA-002 → RELEASED
-- Approve CTOA-003 → RELEASED
-- Zweryfikować: `task-state.yaml` status + runner.log + sprint progress > 0%
+- ✅ Approve CTOA-001 → RELEASED
+- ✅ Approve CTOA-002 → RELEASED
+- ✅ Approve CTOA-003 → RELEASED
+- ✅ Zweryfikować: `task-state.yaml` status + runner.log + sprint progress > 0%
 
 ### Track B: P0 Backlog Activation (P0)
 - ✅ CTOA-007 (Cavebot safety interrupt) → IN_QA (pipeline: NEW→IN_PROGRESS→IN_QA via auto-tick)
 - ✅ CTOA-009 (Prompt pack for MMO/Lua) → IN_QA
 - ✅ CTOA-004 (Potion and supply manager, P1) → IN_QA (3. wolny slot)
-- Następny: auto IN_QA→IN_CI_GATE→WAITING_APPROVAL → approve (Track B kontynuacja)
+- ✅ Manual tick: IN_QA→IN_CI_GATE→WAITING_APPROVAL
+- ✅ Approve wave #2: CTOA-007 + CTOA-009 + CTOA-004 → RELEASED
 
 ### Track C: Ops Hardening (P1, carry-over S-003 Track B remainder)
-- Alert→action: gdy `health_metrics` wykryje DISK > 90% → trigger `cleanup-retention.sh`
-  - Opcja: `ExecStartPost` w systemd lub pętla w `run_watch()` z `subprocess.run`
-- Health trend script: parsować `health-history.jsonl`, wypisywać 24h/7d avg CPU/MEM/DISK
-- Plik: `runner/health_trend.py` (nowe narzędzie CLI)
+- ✅ Alert→action wdrożone: `health_metrics.py` uruchamia cleanup komendą po przekroczeniu progu DISK
+- ✅ Cooldown bezpieczeństwa: domyślnie 3600s między cleanupami
+- ✅ Parametry CLI: `--disk-auto-cleanup --disk-cleanup-threshold --disk-cleanup-cooldown --disk-cleanup-cmd`
+- ✅ Health trend CLI: `runner/health_trend.py` (okna: custom h, 24h, 7d; avg/max + alert counts)
+- ✅ Systemd wiring: `ctoa-health-live.service` uruchamiany z auto-cleanup (92%, cooldown 1h)
 
 ### Track D: Documentation (P2, carry-over S-003 Track D)
 - Runbook `docs/runbook-disk-emergency.md` (kroki: sprawdź, wyczyść cache, reboot last resort)
@@ -76,6 +78,15 @@
 - Co najmniej 2 kolejne P0 zadania uruchomione (IN_PROGRESS+)
 - Disk stabilnie < 80% przez cały sprint (monitoring potwierdza)
 - `ctoa-health-live.service` nie restartuje się przez 7 dni
+
+---
+
+## Checkpoint (2026-03-12 18:26 UTC)
+
+- Wave #1 RELEASED: CTOA-001, CTOA-002, CTOA-003
+- Wave #2 RELEASED: CTOA-007, CTOA-009, CTOA-004
+- Sprint progress: **60.0% (6/10)**
+- Pozostałe NEW: CTOA-005, CTOA-006, CTOA-008, CTOA-010
 
 ---
 
