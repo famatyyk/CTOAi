@@ -58,8 +58,12 @@ def load_yaml(path: Path) -> Dict[str, Any]:
 
 def save_yaml(path: Path, payload: Dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8") as f:
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    with tmp.open("w", encoding="utf-8") as f:
         yaml.safe_dump(payload, f, sort_keys=False, allow_unicode=False)
+        f.flush()
+        os.fsync(f.fileno())
+    tmp.replace(path)
 
 
 def load_backlog() -> Dict[str, Any]:
