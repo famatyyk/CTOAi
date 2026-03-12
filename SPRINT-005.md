@@ -28,9 +28,11 @@
 ## Work Breakdown
 
 ### Track A: Backlog Refresh (P0)
-- Dodać nowy plik backlogu (`workflows/backlog-sprint-002.yaml`)
-- Ustalić `max_parallel_tasks` i reguły priorytetyzacji
-- Zapewnić kompatybilność `runner.py` z nowym backlogiem
+- ✅ Dodany nowy backlog (`workflows/backlog-sprint-002.yaml`) z zadaniami CTOA-011..020
+- ✅ `max_parallel_tasks=3` + reguły priorytetyzacji P0/P1/P2
+- ✅ `runner.py` wspiera przełączenie backlogu przez `CTOA_BACKLOG_FILE` i reset stanu przy zmianie `backlog_id`
+- ✅ VPS podpięty pod sprint-002 (`ctoa-runner.service`, `ctoa-report.service`)
+- ✅ Pierwszy tick kontrolny wykonany
 
 ### Track B: Reliability Validation (P1)
 - Przegląd statusów usług i timerów (daily checks)
@@ -66,6 +68,17 @@
   - IN_PROGRESS: 0
   - WAITING_APPROVAL: 0
   - RELEASED: 10
+
+---
+
+## Checkpoint (2026-03-12 18:53 UTC)
+
+- Sprint-005 backlog aktywny na VPS: `backlog_id: sprint-002`
+- Pierwszy tick uruchomił 3 zadania P0:
+   - CTOA-011 `IN_PROGRESS`
+   - CTOA-012 `IN_PROGRESS`
+   - CTOA-013 `IN_PROGRESS`
+- Status counts po ticku: NEW=7, IN_PROGRESS=3, WAITING_APPROVAL=0, RELEASED=0
 
 ---
 
