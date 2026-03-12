@@ -88,6 +88,13 @@
 - Sprint progress: **60.0% (6/10)**
 - Pozostałe NEW: CTOA-005, CTOA-006, CTOA-008, CTOA-010
 
+## Checkpoint (2026-03-12 18:46 UTC)
+
+- Wave #3 RELEASED: CTOA-005, CTOA-006, CTOA-008
+- Uruchomiono ostatni slot: CTOA-010 → IN_PROGRESS
+- Sprint progress: **90.0% (9/10)**
+- Status counts: NEW=0, IN_PROGRESS=1, WAITING_APPROVAL=0
+
 ---
 
 ## Execution
