@@ -37,6 +37,8 @@ Publikacja publiczna odbywa sie dopiero po:
 1. Backlog issue sync co godzine: `.github/workflows/ctoa-issue-sync.yml`
 2. Zadania sprintu sa mapowane do issue `[CTOA-XXX]` przez `runner/issue_sync.py`.
 3. Start realizacji sprintu obejmuje moduły Lua w `scripts/lua/` i testy opisowe w `tests/lua/`.
+4. Dzienny komentarz insight pod issue #1: `.github/workflows/ctoa-daily-insights.yml`.
+5. Insight zawiera trend 24h, alert taskow zastoju >24h i 3 propozycje do approval.
 
 ## Licencja
 MIT

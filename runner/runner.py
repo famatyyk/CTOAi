@@ -110,16 +110,26 @@ def priority_rank(priority: str) -> int:
     return order.get(priority, 9)
 
 
-def transition_task(task: Dict[str, Any], new_status: str, reason: str) -> None:
+def transition_task(task: Dict[str, Any], new_status: str, reason: str) -> Dict[str, Any]:
+    old_status = str(task.get("status", "UNKNOWN"))
     task["status"] = new_status
     task["ticks_in_status"] = 0
     task["updated_at"] = now_iso()
     task.setdefault("notes", []).append({"at": now_iso(), "reason": reason, "status": new_status})
+    return {
+        "at": now_iso(),
+        "event": "transition",
+        "task_id": task.get("id"),
+        "from_status": old_status,
+        "to_status": new_status,
+        "reason": reason,
+    }
 
 
 def tick(backlog: Dict[str, Any], state: Dict[str, Any]) -> Dict[str, Any]:
     max_parallel = int(backlog.get("rules", {}).get("max_parallel_tasks", 3))
     tasks = state.get("tasks", [])
+    transitions: List[Dict[str, Any]] = []
 
     for task in tasks:
         status = task.get("status", "NEW")
@@ -127,7 +137,7 @@ def tick(backlog: Dict[str, Any], state: Dict[str, Any]) -> Dict[str, Any]:
             task["ticks_in_status"] = int(task.get("ticks_in_status", 0)) + 1
             limit, target = AUTO_TRANSITIONS[status]
             if task["ticks_in_status"] >= limit:
-                transition_task(task, target, f"auto transition {status} -> {target}")
+                transitions.append(transition_task(task, target, f"auto transition {status} -> {target}"))
 
     active_states = {"IN_PROGRESS", "IN_QA", "IN_CI_GATE", "WAITING_APPROVAL"}
     active_count = sum(1 for t in tasks if t.get("status") in active_states)
@@ -138,10 +148,11 @@ def tick(backlog: Dict[str, Any], state: Dict[str, Any]) -> Dict[str, Any]:
     for task in candidates:
         if active_count >= max_parallel:
             break
-        transition_task(task, "IN_PROGRESS", "scheduled by hourly planner")
+        transitions.append(transition_task(task, "IN_PROGRESS", "scheduled by hourly planner"))
         active_count += 1
 
     state["last_tick_at"] = now_iso()
+    state.setdefault("history", []).extend(transitions)
     state.setdefault("history", []).append({"at": now_iso(), "event": "tick", "active": active_count})
     return state
 
@@ -151,7 +162,7 @@ def approve_task(state: Dict[str, Any], task_id: str) -> Dict[str, Any]:
         if str(task.get("id")) == task_id:
             if task.get("status") != "WAITING_APPROVAL":
                 raise ValueError(f"Task {task_id} is not in WAITING_APPROVAL")
-            transition_task(task, "RELEASED", "manual approval")
+            state.setdefault("history", []).append(transition_task(task, "RELEASED", "manual approval"))
             state.setdefault("history", []).append({"at": now_iso(), "event": "approval", "task_id": task_id})
             return state
     raise ValueError(f"Task not found: {task_id}")
