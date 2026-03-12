@@ -7,6 +7,8 @@ Minimalny pakiet organizacji CTOA (10 agentow) pod prace 24/7 na VPS.
 - prompts/braver-library.yaml
 - scoring/tool-advisor-rules.yaml
 - policies/ci-gate-policy.yaml
+- workflows/backlog-sprint-001.yaml
+- workflows/runbook-24x7.yaml
 - .github/workflows/ctoa-pipeline.yml
 - training/curriculum.md
 

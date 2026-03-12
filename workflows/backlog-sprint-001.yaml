@@ -1,0 +1,162 @@
+version: 1
+backlog_id: sprint-001
+window_days: 20
+focus: "TIBIA/OpenTibia/MMO/Lua"
+owner: queen-ctoa
+
+rules:
+  max_parallel_tasks: 3
+  definition_of_done:
+    - code_or_config_created
+    - tests_defined_and_passed
+    - qa_report_present
+    - ci_gate_passed
+  release_policy:
+    - approval_required: true
+    - environment: production
+
+tasks:
+  - id: CTOA-001
+    title: "Lua logger for Tibia events"
+    priority: P0
+    type: script
+    domain: [tibia, lua]
+    assignees: [lua-scripter, builder-engine, qa-safety]
+    estimate_hours: 8
+    deliverables:
+      - "scripts/lua/event_logger.lua"
+      - "tests/lua/test_event_logger.md"
+    acceptance:
+      - "Logs hp, mana, exp, position, timestamp"
+      - "No runtime error in dry-run"
+      - "QA report: PASS"
+
+  - id: CTOA-002
+    title: "Lua pathing helper for OpenTibia"
+    priority: P0
+    type: script
+    domain: [opentibia, lua]
+    assignees: [bot-architect, lua-scripter, qa-safety]
+    estimate_hours: 10
+    deliverables:
+      - "scripts/lua/pathing_helper.lua"
+      - "docs/pathing-spec.md"
+    acceptance:
+      - "Supports waypoint list and fallback"
+      - "Handles blocked tile retry"
+
+  - id: CTOA-003
+    title: "Auto-heal decision module"
+    priority: P0
+    type: script
+    domain: [mmo, lua]
+    assignees: [lua-scripter, builder-engine, qa-safety]
+    estimate_hours: 8
+    deliverables:
+      - "scripts/lua/auto_heal.lua"
+      - "tests/lua/test_auto_heal.md"
+    acceptance:
+      - "Threshold rules configurable"
+      - "Cooldown respected"
+
+  - id: CTOA-004
+    title: "Potion and supply manager"
+    priority: P1
+    type: script
+    domain: [tibia, lua]
+    assignees: [lua-scripter, builder-engine]
+    estimate_hours: 7
+    deliverables:
+      - "scripts/lua/supply_manager.lua"
+    acceptance:
+      - "Low-supply alert generated"
+      - "Refill trigger conditions implemented"
+
+  - id: CTOA-005
+    title: "Target prioritization engine"
+    priority: P1
+    type: script
+    domain: [mmo, lua]
+    assignees: [mmo-intel, bot-architect, lua-scripter]
+    estimate_hours: 9
+    deliverables:
+      - "scripts/lua/target_priority.lua"
+      - "docs/targeting-rules.md"
+    acceptance:
+      - "Rule scoring per enemy type"
+      - "Switch target under risk condition"
+
+  - id: CTOA-006
+    title: "Loot filter and auto-stack"
+    priority: P1
+    type: script
+    domain: [tibia, lua]
+    assignees: [lua-scripter, builder-engine, qa-safety]
+    estimate_hours: 8
+    deliverables:
+      - "scripts/lua/loot_filter.lua"
+    acceptance:
+      - "Whitelist/blacklist supported"
+      - "Inventory overflow prevention"
+
+  - id: CTOA-007
+    title: "Cavebot safety interrupt module"
+    priority: P0
+    type: script
+    domain: [opentibia, lua]
+    assignees: [bot-architect, lua-scripter, qa-safety]
+    estimate_hours: 10
+    deliverables:
+      - "scripts/lua/safety_interrupt.lua"
+      - "tests/lua/test_safety_interrupt.md"
+    acceptance:
+      - "Interrupt on critical hp"
+      - "Retreat waypoint activated"
+
+  - id: CTOA-008
+    title: "Telemetry exporter (JSONL)"
+    priority: P1
+    type: script
+    domain: [automation, lua]
+    assignees: [mmo-intel, builder-engine]
+    estimate_hours: 6
+    deliverables:
+      - "scripts/lua/telemetry_exporter.lua"
+      - "docs/telemetry-schema.md"
+    acceptance:
+      - "Writes event stream in JSONL"
+      - "No sensitive data in logs"
+
+  - id: CTOA-009
+    title: "Prompt pack for MMO/Lua tasks"
+    priority: P0
+    type: prompt
+    domain: [mmo, lua, automation]
+    assignees: [prompt-forge, tool-advisor]
+    estimate_hours: 5
+    deliverables:
+      - "prompts/mmo-lua-pack.yaml"
+    acceptance:
+      - "At least 12 reusable prompts"
+      - "Mapped to BRAVE(R) sections"
+
+  - id: CTOA-010
+    title: "Tool advisor matrix for Tibia stack"
+    priority: P1
+    type: policy
+    domain: [automation, mmo]
+    assignees: [tool-advisor, pm-roadmap]
+    estimate_hours: 6
+    deliverables:
+      - "scoring/tibia-tool-matrix.yaml"
+    acceptance:
+      - "Top 3 tools per task category"
+      - "Score rationale recorded"
+
+release_target:
+  app_cycle_day: 20
+  app_candidate: "CTOA Mission Control Lite"
+  app_scope:
+    - "Backlog view"
+    - "Agent status"
+    - "Last CI gate result"

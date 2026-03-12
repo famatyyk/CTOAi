@@ -1,0 +1,67 @@
+version: 1
+runbook: ctoa-24x7
+
+inputs:
+  backlog_file: workflows/backlog-sprint-001.yaml
+  agents_file: agents/ctoa-agents.yaml
+  policy_file: policies/ci-gate-policy.yaml
+
+scheduler:
+  every_15m:
+    - step: health-check
+      owner: queen-ctoa
+      action: "verify agent heartbeat and queue depth"
+    - step: queue-sync
+      owner: pm-roadmap
+      action: "refresh prioritized queue from backlog"
+
+  every_1h:
+    - step: plan
+      owner: pm-roadmap
+      action: "pick up to 3 parallel tasks with highest priority"
+    - step: build
+      owner: builder-engine
+      action: "execute implementation for active tasks"
+    - step: test
+      owner: qa-safety
+      action: "run test checklist and generate qa_report"
+    - step: gate
+      owner: ci-publisher
+      action: "evaluate pass/fail against ci-gate-policy"
+
+  every_24h:
+    - step: daily-intel
+      owner: mmo-intel
+      action: "publish risk and trend brief"
+    - step: reprioritize
+      owner: queen-ctoa
+      action: "adjust priorities based on QA and CI outcomes"
+
+  every_20d:
+    - step: app-release-candidate
+      owner: pm-roadmap
+      action: "prepare app release candidate package"
+    - step: release-gate
+      owner: ci-publisher
+      action: "request owner approval in production environment"
+
+state_machine:
+  - NEW
+  - IN_PROGRESS
+  - IN_QA
+  - IN_CI_GATE
+  - WAITING_APPROVAL
+  - RELEASED
+  - BLOCKED
+
+blocker_policy:
+  retry_limit: 3
+  escalation_owner: queen-ctoa
+  on_fail:
+    - "create incident note"
+    - "move task to BLOCKED after retry_limit"
+
+outputs:
+  - workflows/daily-loop.md
+  - docs/operating-model.md
+  - github_actions_summary
