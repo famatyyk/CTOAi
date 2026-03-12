@@ -10,6 +10,8 @@ node_modules/
 *.log
 .tmp/
 tmp/
+runtime/
+logs/
 
 # Secrets and env
 .env
