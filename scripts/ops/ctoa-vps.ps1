@@ -4,6 +4,8 @@ param(
         'Verify',
         'WhoAmI',
         'Setup24x7',
+        'EnableLiveHealth',
+        'TailLiveHealth',
         'ValidateServices',
         'StabilizeReportService',
         'WriteGithubPat',
@@ -82,11 +84,14 @@ cp deploy/vps/systemd/ctoa-runner.service /etc/systemd/system/
 cp deploy/vps/systemd/ctoa-runner.timer /etc/systemd/system/
 cp deploy/vps/systemd/ctoa-report.service /etc/systemd/system/
 cp deploy/vps/systemd/ctoa-report.timer /etc/systemd/system/
+cp deploy/vps/systemd/ctoa-health-live.service /etc/systemd/system/
 systemctl daemon-reload
 systemctl enable --now ctoa-runner.timer
 systemctl enable --now ctoa-report.timer
+systemctl enable --now ctoa-health-live.service
 systemctl status ctoa-runner.timer --no-pager -l | head -n 12
 systemctl status ctoa-report.timer --no-pager -l | head -n 12
+systemctl status ctoa-health-live.service --no-pager -l | head -n 20
 '@
 }
 
@@ -100,6 +105,38 @@ switch ($Action) {
     'Setup24x7' {
         $script = Get-SetupScript
         Invoke-SshScript $script
+    }
+    'EnableLiveHealth' {
+        Invoke-SshScript @'
+set -e
+mkdir -p /opt/ctoa/logs
+cat > /etc/systemd/system/ctoa-health-live.service << 'UNIT'
+[Unit]
+Description=CTOA live health monitor stream
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/ctoa
+Environment="PYTHONUNBUFFERED=1"
+EnvironmentFile=-/opt/ctoa/.env
+ExecStart=/opt/ctoa/.venv/bin/python3 /opt/ctoa/runner/health_metrics.py --watch --interval 10 --no-publish
+Restart=always
+RestartSec=2
+StandardOutput=append:/opt/ctoa/logs/health-live.log
+StandardError=append:/opt/ctoa/logs/health-live.log
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+systemctl daemon-reload
+systemctl enable --now ctoa-health-live.service
+systemctl status ctoa-health-live.service --no-pager -l
+'@
+    }
+    'TailLiveHealth' {
+        Invoke-SshCommand 'tail -n 80 -f /opt/ctoa/logs/health-live.log'
     }
     'ValidateServices' {
                 Invoke-SshScript @'
