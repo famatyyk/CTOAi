@@ -160,6 +160,9 @@ def approve_task(state: Dict[str, Any], task_id: str) -> Dict[str, Any]:
 def build_report(backlog: Dict[str, Any], state: Dict[str, Any]) -> str:
     tasks = state.get("tasks", [])
     counts = Counter([str(t.get("status", "UNKNOWN")) for t in tasks])
+    total_tasks = len(tasks)
+    released_count = counts.get("RELEASED", 0)
+    progress_pct = (released_count / total_tasks * 100.0) if total_tasks > 0 else 0.0
 
     lines = []
     lines.append("# CTOA Live Status")
@@ -167,7 +170,15 @@ def build_report(backlog: Dict[str, Any], state: Dict[str, Any]) -> str:
     lines.append(f"- Generated: {now_iso()}")
     lines.append(f"- Backlog: {backlog.get('backlog_id', 'unknown')}")
     lines.append(f"- Last tick: {state.get('last_tick_at')}")
+    lines.append(f"- Sprint progress: {progress_pct:.1f}% ({released_count}/{total_tasks})")
     lines.append("")
+
+    lines.append("## Sprint Progress")
+    lines.append(f"- Completed: {released_count}")
+    lines.append(f"- Total: {total_tasks}")
+    lines.append(f"- Progress: {progress_pct:.1f}%")
+    lines.append("")
+
     lines.append("## Status Counts")
     for status in STATUS_FLOW:
         lines.append(f"- {status}: {counts.get(status, 0)}")
@@ -197,6 +208,44 @@ def build_report(backlog: Dict[str, Any], state: Dict[str, Any]) -> str:
     else:
         for t in waiting:
             lines.append(f"- {t.get('id')}: {t.get('title')}")
+
+    lines.append("")
+    lines.append("## Top Blockers")
+    blocked = [t for t in tasks if t.get("status") == "BLOCKED"]
+    blocked.sort(key=lambda t: (priority_rank(str(t.get("priority", "P1"))), str(t.get("id", ""))))
+    if not blocked:
+        lines.append("- none")
+    else:
+        for t in blocked[:3]:
+            notes = t.get("notes", [])
+            reason = "no reason captured"
+            if isinstance(notes, list) and notes:
+                last_note = notes[-1]
+                reason = str(last_note.get("reason", reason))
+            lines.append(f"- {t.get('id')}: {t.get('title')} | {t.get('priority')} | reason={reason}")
+
+    lines.append("")
+    lines.append("## ETA to Next Approval")
+    if waiting:
+        lines.append("- now (task already waiting for approval)")
+    else:
+        in_ci_gate = [t for t in tasks if t.get("status") == "IN_CI_GATE"]
+        in_qa = [t for t in tasks if t.get("status") == "IN_QA"]
+        in_progress = [t for t in tasks if t.get("status") == "IN_PROGRESS"]
+
+        # Current automation moves one status step per hourly cycle.
+        eta_hours: Optional[int] = None
+        if in_ci_gate:
+            eta_hours = 1
+        elif in_qa:
+            eta_hours = 2
+        elif in_progress:
+            eta_hours = 3
+
+        if eta_hours is None:
+            lines.append("- unknown (no active tasks in pipeline)")
+        else:
+            lines.append(f"- approx {eta_hours}h (based on hourly auto-transitions)")
 
     return "\n".join(lines) + "\n"
 
