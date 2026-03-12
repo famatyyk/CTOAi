@@ -48,3 +48,16 @@ python3 runner/runner.py report
 python3 runner/runner.py report --publish
 python3 runner/runner.py approve --task CTOA-001
 ```
+
+## 6. VS Code task env vars
+Before using the local VS Code VPS tasks, set these environment variables on your workstation:
+
+```powershell
+$env:CTOA_VPS_HOST="46.225.110.52"
+$env:CTOA_VPS_USER="root"
+$env:CTOA_VPS_KEY_PATH="C:\Users\zycie\ctoa_vps_key"
+# Optional, only for the task that writes /opt/ctoa/.env on the VPS:
+$env:CTOA_GITHUB_PAT="YOUR_GITHUB_PERSONAL_ACCESS_TOKEN"
+```
+
+The repository should never contain embedded SSH keys or PAT values in `.vscode/tasks.json`.

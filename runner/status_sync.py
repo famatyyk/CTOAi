@@ -2,7 +2,7 @@
 import json
 import os
 import re
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from urllib.error import HTTPError
@@ -108,6 +108,13 @@ def desired_status_label(task: Dict[str, Any]) -> str:
     return f"status/{status}"
 
 
+def normalize_alert_mode(value: str) -> str:
+    mode = value.strip().lower()
+    if mode in {"test", "testing", "simulation", "sim"}:
+        return "test"
+    return "live"
+
+
 def sync_status_labels(base: str, token: str, tasks: Dict[str, Dict[str, Any]], issues: Dict[str, Dict[str, Any]]) -> int:
     updated = 0
     for task_id, issue in issues.items():
@@ -134,7 +141,12 @@ def sync_status_labels(base: str, token: str, tasks: Dict[str, Dict[str, Any]], 
     return updated
 
 
-def build_sla_alert(tasks: Dict[str, Dict[str, Any]], issues: Dict[str, Dict[str, Any]], threshold_hours: int) -> Optional[str]:
+def build_sla_alert(
+    tasks: Dict[str, Dict[str, Any]],
+    issues: Dict[str, Dict[str, Any]],
+    threshold_hours: int,
+    alert_mode: str,
+) -> Optional[str]:
     now = datetime.now(timezone.utc)
     overdue: List[Dict[str, Any]] = []
 
@@ -165,9 +177,14 @@ def build_sla_alert(tasks: Dict[str, Dict[str, Any]], issues: Dict[str, Dict[str
         return None
 
     overdue.sort(key=lambda x: (-x["age_hours"], x["task_id"]))
-    marker = "<!-- ctoa-sla-alert:" + "|".join([f"{o['task_id']}@{o['updated_at']}" for o in overdue]) + " -->"
+    marker_prefix = "ctoa-sla-alert-test" if alert_mode == "test" else "ctoa-sla-alert"
+    marker = "<!-- " + marker_prefix + ":" + "|".join([f"{o['task_id']}@{o['updated_at']}" for o in overdue]) + " -->"
+    title = "## SLA Alert [TEST]: Approval Pending >12h" if alert_mode == "test" else "## SLA Alert: Approval Pending >12h"
 
-    lines: List[str] = [marker, "## SLA Alert: Approval Pending >12h", ""]
+    lines: List[str] = [marker, title, ""]
+    if alert_mode == "test":
+        lines.append("- Mode: TEST")
+        lines.append("- Purpose: simulation only, not a production incident")
     lines.append(f"- Generated (UTC): {now.replace(microsecond=0).isoformat()}")
     lines.append(f"- Threshold: {threshold_hours}h")
     lines.append("")
@@ -203,6 +220,7 @@ def main() -> None:
     repo = os.getenv("GITHUB_REPOSITORY", "famatyyk/CTOAi")
     live_issue_number = int(os.getenv("CTOA_LIVE_ISSUE_NUMBER", "1"))
     threshold_hours = int(os.getenv("CTOA_APPROVAL_SLA_HOURS", "12"))
+    alert_mode = normalize_alert_mode(os.getenv("CTOA_SLA_ALERT_MODE", "live"))
 
     if not token:
         raise RuntimeError("Missing GITHUB_TOKEN or GITHUB_PAT")
@@ -221,7 +239,7 @@ def main() -> None:
 
     label_updates = sync_status_labels(base, token, tasks, issues)
 
-    sla_body = build_sla_alert(tasks, issues, threshold_hours)
+    sla_body = build_sla_alert(tasks, issues, threshold_hours, alert_mode)
     alert_posted = post_sla_alert_if_needed(base, token, live_issue_number, sla_body)
 
     print(f"[status-sync] labels_updated={label_updates} sla_alert_posted={alert_posted}")

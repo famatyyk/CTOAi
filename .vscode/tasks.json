@@ -12,6 +12,186 @@
 			"type": "shell",
 			"command": "echo Launching CTOA pack...; if (Test-Path .\\agents\\ctoa-agents.yaml) { echo Agents OK } else { echo Agents missing; exit 1 }; if (Test-Path .\\prompts\\braver-library.yaml) { echo Prompts OK } else { echo Prompts missing; exit 1 }; if (Test-Path .\\.github\\workflows\\ctoa-pipeline.yml) { echo CI Workflow OK } else { echo CI Workflow missing; exit 1 }; echo Launch dry-run PASS",
 			"isBackground": false
+		},
+		{
+			"label": "CTOA: VPS Deploy Setup",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"scripts/ops/ctoa-vps.ps1",
+				"-Action",
+				"Setup24x7"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "CTOA: VPS SSH Verify",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"scripts/ops/ctoa-vps.ps1",
+				"-Action",
+				"Verify"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "CTOA: VPS whoami",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"scripts/ops/ctoa-vps.ps1",
+				"-Action",
+				"WhoAmI"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "CTOA: VPS Setup 24x7",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"scripts/ops/ctoa-vps.ps1",
+				"-Action",
+				"Setup24x7"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "CTOA: VPS Write GitHub PAT",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"scripts/ops/ctoa-vps.ps1",
+				"-Action",
+				"WriteGithubPat"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "CTOA: VPS Validate Services",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"scripts/ops/ctoa-vps.ps1",
+				"-Action",
+				"ValidateServices"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "CTOA: VPS Stabilize Report Service",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"scripts/ops/ctoa-vps.ps1",
+				"-Action",
+				"StabilizeReportService"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "CTOA: VPS Report via service env",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"scripts/ops/ctoa-vps.ps1",
+				"-Action",
+				"ReportViaServiceEnv"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "CTOA: VPS Reconnect",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"scripts/ops/ctoa-vps.ps1",
+				"-Action",
+				"Verify"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "CTOA: VPS publish with sourced env",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"scripts/ops/ctoa-vps.ps1",
+				"-Action",
+				"PublishWithSourcedEnv"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "CTOA: VPS inspect report env",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"scripts/ops/ctoa-vps.ps1",
+				"-Action",
+				"InspectReportEnv"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "CTOA: VPS report error details",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"scripts/ops/ctoa-vps.ps1",
+				"-Action",
+				"ReportErrorDetails"
+			],
+			"isBackground": false
 		}
 	]
 }
