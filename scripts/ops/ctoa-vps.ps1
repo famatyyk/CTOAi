@@ -48,6 +48,13 @@ function Invoke-SshCommand([string]$RemoteCommand) {
     & ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -i $keyPath $target $RemoteCommand
 }
 
+function Invoke-SshScript([string]$ScriptText) {
+    $target = Get-RemoteTarget
+    $keyPath = Get-KeyPath
+    $normalized = $ScriptText -replace "`r`n", "`n"
+    $normalized | & ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -i $keyPath $target "bash -s"
+}
+
 function Get-SetupScript() {
     return @'
 set -e
@@ -92,29 +99,63 @@ switch ($Action) {
     }
     'Setup24x7' {
         $script = Get-SetupScript
-        $target = Get-RemoteTarget
-        $keyPath = Get-KeyPath
-        $script | & ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -i $keyPath $target "cat > /tmp/ctoa_setup.sh && bash /tmp/ctoa_setup.sh"
+        Invoke-SshScript $script
     }
     'ValidateServices' {
-        Invoke-SshCommand 'bash -lc "systemctl start ctoa-runner.service; systemctl start ctoa-report.service || true; systemctl status ctoa-runner.service --no-pager -l | head -n 12; systemctl status ctoa-report.service --no-pager -l | head -n 20; tail -n 40 /opt/ctoa/logs/runner.log"'
+                Invoke-SshScript @'
+set -e
+systemctl start ctoa-runner.service
+systemctl start ctoa-report.service || true
+systemctl status ctoa-runner.service --no-pager -l | head -n 12
+systemctl status ctoa-report.service --no-pager -l | head -n 20
+if [ -f /opt/ctoa/logs/runner.log ]; then
+    tail -n 40 /opt/ctoa/logs/runner.log
+else
+    echo runner.log not present
+fi
+'@
     }
     'StabilizeReportService' {
-        Invoke-SshCommand 'bash -lc "printf '\''GITHUB_PAT=\\n'\'' > /opt/ctoa/.env; systemctl restart ctoa-report.service; systemctl status ctoa-report.service --no-pager -l | head -n 20; tail -n 20 /opt/ctoa/logs/runner.log"'
+        Invoke-SshCommand "printf 'GITHUB_PAT=\\n' > /opt/ctoa/.env; systemctl restart ctoa-report.service; systemctl status ctoa-report.service --no-pager -l | head -n 20; if [ -f /opt/ctoa/logs/runner.log ]; then tail -n 20 /opt/ctoa/logs/runner.log; else echo runner.log not present; fi"
     }
     'WriteGithubPat' {
         $pat = Get-RequiredEnv 'CTOA_GITHUB_PAT'
-        $escapedPat = $pat.Replace("'", "'\"'\"'")
-        Invoke-SshCommand "bash -lc 'printf '\''GITHUB_PAT=%s\\n'\'' '\''$escapedPat'\'' > /opt/ctoa/.env; grep '^GITHUB_PAT=' /opt/ctoa/.env | sed '\''s/=.*/=***set***/'\'''"
+        $script = @"
+set -e
+cat > /opt/ctoa/.env <<'EOF'
+GITHUB_PAT=$pat
+EOF
+grep '^GITHUB_PAT=' /opt/ctoa/.env | sed 's/=.*/=***set***/'
+"@
+        Invoke-SshScript $script
     }
     'ReportViaServiceEnv' {
         Invoke-SshCommand 'bash -lc "systemctl restart ctoa-report.service; systemctl status ctoa-report.service --no-pager -l | head -n 20; journalctl -u ctoa-report.service -n 25 --no-pager"'
     }
     'PublishWithSourcedEnv' {
-        Invoke-SshCommand 'bash -lc "cd /opt/ctoa; set -a; . /opt/ctoa/.env; set +a; . .venv/bin/activate; python3 runner/runner.py report --publish; sed -n '\''1,2p'\'' /opt/ctoa/.env | sed '\''s/=.*$/=***set***/'\''; tail -n 20 /opt/ctoa/logs/runner.log"'
+        Invoke-SshScript @'
+set -e
+cd /opt/ctoa
+set -a
+. /opt/ctoa/.env
+set +a
+. .venv/bin/activate
+python3 runner/runner.py report --publish
+sed -n '1,2p' /opt/ctoa/.env | sed 's/=.*$/=***set***/'
+if [ -f /opt/ctoa/logs/runner.log ]; then
+    tail -n 20 /opt/ctoa/logs/runner.log
+else
+    echo runner.log not present
+fi
+'@
     }
     'InspectReportEnv' {
-        Invoke-SshCommand 'bash -lc "grep -n '^GITHUB_PAT=' /opt/ctoa/.env | sed 's/=.*/=***set***/'; systemctl restart ctoa-report.service; journalctl -u ctoa-report.service -n 12 --no-pager"'
+        Invoke-SshScript @'
+set -e
+grep -n '^GITHUB_PAT=' /opt/ctoa/.env | sed 's/=.*/=***set***/'
+systemctl restart ctoa-report.service
+journalctl -u ctoa-report.service -n 12 --no-pager
+'@
     }
     'ReportErrorDetails' {
         Invoke-SshCommand 'tail -n 60 /opt/ctoa/logs/runner.log'
