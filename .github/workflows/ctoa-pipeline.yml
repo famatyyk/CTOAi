@@ -1,0 +1,50 @@
+name: CTOA Pipeline
+
+on:
+  push:
+    branches: ["main", "dev"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build_test_gate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Placeholder Setup
+        run: echo "Setup dependencies here"
+
+      - name: Placeholder Tests
+        run: echo "Run unit/integration tests here"
+
+      - name: Placeholder Security
+        run: echo "Run security checks here"
+
+  approval_publish:
+    needs: build_test_gate
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Ensure minimal README
+        shell: bash
+        run: |
+          if [ ! -f README.md ]; then
+            cat > README.md << 'EOF'
+            # Project
+            Krotki opis projektu.
+            ## Run
+            Kroki uruchomienia.
+            ## License
+            MIT
+            EOF
+          fi
+
+      - name: Publish Marker
+        run: echo "Owner approved. Ready for public publish workflow."

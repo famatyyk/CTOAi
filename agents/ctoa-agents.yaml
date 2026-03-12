@@ -1,0 +1,81 @@
+version: 1
+organization: CTOA
+mode: autonomous-24x7
+priority_domains:
+  - tibia
+  - opentibia
+  - mmo
+  - lua
+  - automation
+commander: Queen-CTOA
+
+agents:
+  - id: queen-ctoa
+    role: Orchestrator
+    mission: Zarzadzanie priorytetami, GO/NO-GO, eskalacje
+    inputs: [backlog, ci_status, qa_reports]
+    outputs: [daily_plan, decision_log]
+    kpi: [delivery_velocity, pass_rate, uptime]
+
+  - id: pm-roadmap
+    role: ProgramManager
+    mission: Sprinty 20-dniowe, 1 aplikacja / 20 dni, min. 10 skryptow
+    inputs: [business_goals, constraints]
+    outputs: [roadmap, backlog, dod]
+    kpi: [on_time_ratio, completion_rate]
+
+  - id: prompt-forge
+    role: PromptEngineer
+    mission: Generowanie i poprawa promptow BRAVE(R)
+    inputs: [task_specs, previous_runs]
+    outputs: [prompt_versions, ab_results]
+    kpi: [output_quality_gain, token_efficiency]
+
+  - id: tool-advisor
+    role: ToolArchitect
+    mission: Dobor narzedzi AI na podstawie scoringu
+    inputs: [task_type, budget, privacy_requirements]
+    outputs: [recommended_tool, ranked_alternatives]
+    kpi: [cost_saving, tool_success_rate]
+
+  - id: mmo-intel
+    role: DomainAnalyst
+    mission: Analiza danych i trendow MMO/Tibia/OpenTibia
+    inputs: [sources, telemetry, ecosystem_changes]
+    outputs: [intel_brief, risk_map]
+    kpi: [insight_accuracy, risk_detection_leadtime]
+
+  - id: lua-scripter
+    role: LuaEngineer
+    mission: Tworzenie modulowych skryptow Lua
+    inputs: [specs, coding_standards]
+    outputs: [lua_modules, tests]
+    kpi: [test_pass_rate, defects_per_release]
+
+  - id: bot-architect
+    role: SystemArchitect
+    mission: Projektowanie architektury botow i automatyzacji
+    inputs: [requirements, constraints]
+    outputs: [architecture_spec, interfaces]
+    kpi: [maintainability, scalability]
+
+  - id: builder-engine
+    role: ImplementationEngineer
+    mission: Implementacja kodu i integracji
+    inputs: [architecture_spec, prompts]
+    outputs: [source_code, changelog]
+    kpi: [lead_time, code_quality]
+
+  - id: qa-safety
+    role: QualitySecurity
+    mission: Testy funkcjonalne, regresyjne i security checks
+    inputs: [build_artifacts, test_suites]
+    outputs: [qa_report, pass_fail]
+    kpi: [critical_bug_escape_rate, coverage]
+
+  - id: ci-publisher
+    role: ReleaseGate
+    mission: Publikacja tylko po PASS i recznej akceptacji ownera
+    inputs: [qa_report, ci_results, owner_approval]
+    outputs: [release_tag, published_artifact]
+    kpi: [unauthorized_release_count, release_stability]

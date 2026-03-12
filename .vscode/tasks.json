@@ -1,0 +1,17 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "CTOA: Validate Pack",
+			"type": "shell",
+			"command": "echo CTOA AI Toolkit pack is configured",
+			"isBackground": false
+		},
+		{
+			"label": "CTOA: Launch Pack",
+			"type": "shell",
+			"command": "echo Launching CTOA pack...; if (Test-Path .\\agents\\ctoa-agents.yaml) { echo Agents OK } else { echo Agents missing; exit 1 }; if (Test-Path .\\prompts\\braver-library.yaml) { echo Prompts OK } else { echo Prompts missing; exit 1 }; if (Test-Path .\\.github\\workflows\\ctoa-pipeline.yml) { echo CI Workflow OK } else { echo CI Workflow missing; exit 1 }; echo Launch dry-run PASS",
+			"isBackground": false
+		}
+	]
+}

@@ -1,0 +1,25 @@
+version: 1
+policy_name: ctoa-ci-gate
+
+required_for_pass:
+  - unit_tests_passed
+  - integration_tests_passed
+  - no_critical_security_findings
+  - objective_met
+  - minimal_docs_present
+
+release_blockers:
+  - critical_test_failure
+  - missing_evidence_of_execution
+  - policy_violation
+  - missing_owner_approval
+
+owner_approval:
+  required: true
+  source: github_environment
+  environment_name: production
+
+publication:
+  target: public_github_repo
+  mode: after_approval
+  readme_style: minimal

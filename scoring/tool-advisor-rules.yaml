@@ -1,0 +1,36 @@
+version: 1
+scoring:
+  formula: "0.35*quality + 0.20*cost + 0.20*speed + 0.15*privacy + 0.10*integration"
+  scale: 0-10
+  thresholds:
+    recommend: 8.0
+    conditional: 6.5
+    reject: 0.0
+
+criteria:
+  quality:
+    description: Jakosc wynikow i trafnosc dla zadania
+  cost:
+    description: Calkowity koszt (licencja, tokeny, utrzymanie)
+  speed:
+    description: Szybkosc realizacji i time-to-value
+  privacy:
+    description: Kontrola danych, zgodnosc, ryzyko wycieku
+  integration:
+    description: Latwosc wdrozenia z VPS/GitHub/CI
+
+decision_policy:
+  - if: "privacy < 6"
+    action: "reject"
+    reason: "Niski poziom ochrony danych"
+  - if: "quality < 7"
+    action: "conditional"
+    reason: "Wymagany pilot i dodatkowa walidacja"
+
+output:
+  required:
+    - chosen_tool
+    - score_breakdown
+    - alternatives
+    - risk_notes
+    - recommendation
