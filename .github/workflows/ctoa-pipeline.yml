@@ -6,45 +6,131 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ctoa-pipeline-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build_test_gate:
+    name: Build Test Gate
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Placeholder Setup
-        run: echo "Setup dependencies here"
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
 
-      - name: Placeholder Tests
-        run: echo "Run unit/integration tests here"
+      - name: Install validation tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install yamllint
 
-      - name: Placeholder Security
-        run: echo "Run security checks here"
+      - name: Validate required files
+        shell: bash
+        run: |
+          required=(
+            "README.md"
+            "agents/ctoa-agents.yaml"
+            "prompts/braver-library.yaml"
+            "scoring/tool-advisor-rules.yaml"
+            "policies/ci-gate-policy.yaml"
+            "training/curriculum.md"
+            "workflows/daily-loop.md"
+            "docs/operating-model.md"
+          )
+
+          for f in "${required[@]}"; do
+            if [ ! -f "$f" ]; then
+              echo "Missing required file: $f"
+              exit 1
+            fi
+          done
+
+      - name: Lint YAML
+        shell: bash
+        run: |
+          yamllint -d '{extends: default, rules: {line-length: {max: 180}}}' .
+
+      - name: Lint Markdown basics
+        shell: bash
+        run: |
+          find . -type f -name "*.md" -print0 | while IFS= read -r -d '' file; do
+            if ! grep -q "^# " "$file"; then
+              echo "Markdown file missing top-level heading: $file"
+              exit 1
+            fi
+          done
+
+      - name: Basic secret scan
+        shell: bash
+        run: |
+          if grep -RInE --exclude-dir=.git --exclude-dir=.github --exclude-dir=.vscode '(AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{36}|-----BEGIN (RSA|EC|OPENSSH|PRIVATE KEY)-----)' .; then
+            echo "Potential secrets detected"
+            exit 1
+          fi
+
+      - name: Build package artifact
+        shell: bash
+        run: |
+          tar -czf ctoa-pack.tar.gz \
+            README.md \
+            agents \
+            prompts \
+            scoring \
+            policies \
+            training \
+            workflows \
+            docs \
+            .github/workflows/ctoa-pipeline.yml
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ctoa-pack
+          path: ctoa-pack.tar.gz
+          if-no-files-found: error
 
   approval_publish:
+    name: Approval Publish
     needs: build_test_gate
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     environment:
       name: production
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Ensure minimal README
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ctoa-pack
+          path: dist
+
+      - name: Verify artifact and approval context
         shell: bash
         run: |
-          if [ ! -f README.md ]; then
-            cat > README.md << 'EOF'
-            # Project
-            Krotki opis projektu.
-            ## Run
-            Kroki uruchomienia.
-            ## License
-            MIT
-            EOF
-          fi
+          test -f dist/ctoa-pack.tar.gz
+          echo "Artifact present and environment approval granted."
+
+      - name: Publish summary
+        shell: bash
+        run: |
+          {
+            echo "## CTOA Publish Gate"
+            echo "- Branch: $GITHUB_REF"
+            echo "- Commit: $GITHUB_SHA"
+            echo "- Status: APPROVED"
+            echo "- Artifact: dist/ctoa-pack.tar.gz"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Publish Marker
-        run: echo "Owner approved. Ready for public publish workflow."
+        run: echo "Owner approved. Artifact is ready for public use from main."
