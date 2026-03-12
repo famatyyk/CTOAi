@@ -1,6 +1,6 @@
 # CTOA AI Toolkit
 
-**Status:** Sprint-005 CLOSED (2026-03-12 early close) | Sprint progress: 100% (10/10 RELEASED)  
+**Status:** Sprint-006 Active (2026-03-12 to 2026-03-26) | Sprint-005 closed at 100% (10/10 RELEASED)  
 **Security:** 🟢 SSH & PAT rotated | 🟢 Git hardened | 🟢 Tests automated  
 **Agents:** 10 active | BRAVE(R) templates | Tool advisor system  
 
@@ -147,13 +147,21 @@ View results in GitHub Actions for this repository.
 | **C: Ops Hardening** | ✅ DONE | Disk alert auto-action + health trend CLI |
 | **D: Documentation** | ↪ S-005 | Runbook/checklist completion moved to Sprint-005 |
 
-### Sprint-005 🟢 ACTIVE
+### Sprint-005 ✅ CLOSED (early, 2026-03-12)
 | Track | Status | Items |
 |-------|--------|-------|
-| **A: Backlog Refresh** | 🔄 next | Define sprint-002 backlog and scheduling rules |
-| **B: Reliability Validation** | 🔄 next | Validate 24/7 timers, retention, and health over 7d window |
-| **C: Documentation Closeout** | 🔄 next | Finalize disk runbook and validation checklist updates |
-| **D: KPI Reporting** | 🔄 next | Weekly KPI pack: disk, alert count, approval lead-time |
+| **A: Backlog Refresh** | ✅ DONE | sprint-002 backlog + runner/report wiring by env |
+| **B: Approval Waves** | ✅ DONE | CTOA-011..020 released (10/10) |
+| **C: Runtime Transition** | ✅ DONE | VPS switched to sprint-002, control ticks verified |
+| **D: Checkpointing** | ✅ DONE | Sprint checkpoints + final closure at 100% |
+
+### Sprint-006 🟢 ACTIVE
+| Track | Status | Items |
+|-------|--------|-------|
+| **A: Backlog v3 Prep** | 🔄 next | Prepare sprint-003 backlog and rollover validation |
+| **B: Reliability Window** | 🔄 next | 7-day timer/service stability verification and drift checks |
+| **C: Documentation Closeout** | 🔄 next | Publish disk emergency runbook and refresh validation checklist |
+| **D: KPI Automation** | 🔄 next | Weekly KPI generation pipeline with trend + lead-time metrics |
 
 ## Logs & Status
 
