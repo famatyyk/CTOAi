@@ -1,6 +1,6 @@
 # CTOA Sprint Governance Framework
 
-**Document Updated:** 2026-03-12T20:00:49+00:00
+**Document Updated:** 2026-03-12T20:05:12+00:00
 
 ## Overview
 
