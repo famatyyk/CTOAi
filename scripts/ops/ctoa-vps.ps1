@@ -133,7 +133,7 @@ Type=simple
 WorkingDirectory=/opt/ctoa
 Environment="PYTHONUNBUFFERED=1"
 EnvironmentFile=-/opt/ctoa/.env
-ExecStart=/opt/ctoa/.venv/bin/python3 /opt/ctoa/runner/health_metrics.py --watch --interval 10 --no-publish
+ExecStart=/opt/ctoa/.venv/bin/python3 /opt/ctoa/runner/health_metrics.py --watch --interval 10 --no-publish --disk-auto-cleanup --disk-cleanup-threshold 92 --disk-cleanup-cooldown 3600
 Restart=always
 RestartSec=2
 StandardOutput=append:/opt/ctoa/logs/health-live.log

@@ -373,6 +373,50 @@ def print_live_line(metrics: Dict[str, object], alerts: List[str]) -> None:
             print(f"  - {alert}")
 
 
+def maybe_run_disk_cleanup(
+    metrics: Dict[str, object],
+    now_ts: float,
+    enabled: bool,
+    threshold: float,
+    cooldown_seconds: int,
+    command: str,
+    last_run_ts: float,
+) -> Tuple[float, Optional[str]]:
+    """Run cleanup command when disk is above threshold and cooldown elapsed."""
+    if not enabled:
+        return last_run_ts, None
+
+    disk = metrics.get("disk_used_pct")
+    if not isinstance(disk, (float, int)):
+        return last_run_ts, None
+    if float(disk) < threshold:
+        return last_run_ts, None
+    if last_run_ts > 0 and (now_ts - last_run_ts) < cooldown_seconds:
+        left = int(cooldown_seconds - (now_ts - last_run_ts))
+        return last_run_ts, f"[disk-action] cooldown active ({left}s left), skip cleanup"
+
+    try:
+        result = subprocess.run(
+            ["bash", "-lc", command],
+            capture_output=True,
+            text=True,
+            timeout=120,
+            check=False,
+        )
+        output = (result.stdout or "").strip()
+        if result.returncode == 0:
+            msg = f"[disk-action] cleanup OK (threshold={threshold}%, disk={disk}%)"
+            if output:
+                msg += f" | {output.splitlines()[-1][:180]}"
+            return now_ts, msg
+
+        err = (result.stderr or "").strip()
+        tail = err.splitlines()[-1][:180] if err else "no stderr"
+        return last_run_ts, f"[disk-action] cleanup FAILED rc={result.returncode} | {tail}"
+    except Exception as ex:  # pragma: no cover - defensive fallback
+        return last_run_ts, f"[disk-action] cleanup EXCEPTION: {ex}"
+
+
 def run_once(publish: bool) -> int:
     metrics = collect_metrics()
     alerts = check_thresholds(metrics)
@@ -386,9 +430,19 @@ def run_once(publish: bool) -> int:
     return 0
 
 
-def run_watch(interval: int, samples: int, publish: bool, cpu_sustain: int = 3) -> int:
+def run_watch(
+    interval: int,
+    samples: int,
+    publish: bool,
+    cpu_sustain: int = 3,
+    disk_auto_cleanup: bool = False,
+    disk_cleanup_threshold: float = 92.0,
+    disk_cleanup_cooldown: int = 3600,
+    disk_cleanup_cmd: str = "/opt/ctoa/deploy/vps/cleanup-retention.sh",
+) -> int:
     """Watch mode with CPU alert debounce: alert only after cpu_sustain consecutive high samples."""
     cpu_streak = 0
+    last_disk_cleanup_ts = 0.0
     iteration = 0
     while True:
         iteration += 1
@@ -408,6 +462,18 @@ def run_watch(interval: int, samples: int, publish: bool, cpu_sustain: int = 3) 
         alerts = other_alerts + (cpu_alerts if cpu_streak >= cpu_sustain else [])
         if cpu_alerts and cpu_streak < cpu_sustain:
             print(f"  [CPU spike {cpu_streak}/{cpu_sustain}, holding alert]")
+
+        last_disk_cleanup_ts, disk_action_msg = maybe_run_disk_cleanup(
+            metrics=metrics,
+            now_ts=time.time(),
+            enabled=disk_auto_cleanup,
+            threshold=disk_cleanup_threshold,
+            cooldown_seconds=disk_cleanup_cooldown,
+            command=disk_cleanup_cmd,
+            last_run_ts=last_disk_cleanup_ts,
+        )
+        if disk_action_msg:
+            print(disk_action_msg)
 
         persist_snapshot(metrics, alerts)
         print_live_line(metrics, alerts)
@@ -432,6 +498,29 @@ def build_parser() -> argparse.ArgumentParser:
         default=3,
         help="Consecutive high-CPU samples required before firing alert (default: 3, ~30s at 10s interval)",
     )
+    parser.add_argument(
+        "--disk-auto-cleanup",
+        action="store_true",
+        help="Run disk cleanup command when disk usage crosses threshold (watch mode only)",
+    )
+    parser.add_argument(
+        "--disk-cleanup-threshold",
+        type=float,
+        default=92.0,
+        help="Disk usage percent threshold to trigger cleanup command (default: 92)",
+    )
+    parser.add_argument(
+        "--disk-cleanup-cooldown",
+        type=int,
+        default=3600,
+        help="Cooldown in seconds between cleanup runs (default: 3600)",
+    )
+    parser.add_argument(
+        "--disk-cleanup-cmd",
+        type=str,
+        default="/opt/ctoa/deploy/vps/cleanup-retention.sh",
+        help="Shell command executed when disk threshold is breached",
+    )
     parser.add_argument("--publish", dest="publish", action="store_true", help="Publish to GitHub Issue")
     parser.add_argument("--no-publish", dest="publish", action="store_false", help="Do not publish to GitHub")
     parser.set_defaults(publish=True)
@@ -446,6 +535,10 @@ def main() -> int:
             samples=args.samples,
             publish=args.publish,
             cpu_sustain=args.cpu_sustain_samples,
+            disk_auto_cleanup=args.disk_auto_cleanup,
+            disk_cleanup_threshold=args.disk_cleanup_threshold,
+            disk_cleanup_cooldown=args.disk_cleanup_cooldown,
+            disk_cleanup_cmd=args.disk_cleanup_cmd,
         )
     return run_once(publish=args.publish)
 
