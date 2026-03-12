@@ -7,6 +7,7 @@ Type=oneshot
 WorkingDirectory=/opt/ctoa
 Environment=GITHUB_REPOSITORY=famatyyk/CTOAi
 Environment=CTOA_LIVE_ISSUE_TITLE=CTOA Live Status
+Environment=CTOA_BACKLOG_FILE=/opt/ctoa/workflows/backlog-sprint-002.yaml
 EnvironmentFile=/opt/ctoa/.env
 ExecStart=/usr/bin/python3 /opt/ctoa/runner/runner.py report --publish
 StandardOutput=append:/opt/ctoa/logs/runner.log

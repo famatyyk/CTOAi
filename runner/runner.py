@@ -12,7 +12,11 @@ from urllib.request import Request, urlopen
 import yaml
 
 ROOT = Path(__file__).resolve().parent.parent
-BACKLOG_FILE = ROOT / "workflows" / "backlog-sprint-001.yaml"
+_DEFAULT_BACKLOG = ROOT / "workflows" / "backlog-sprint-001.yaml"
+_BACKLOG_RAW = os.environ.get("CTOA_BACKLOG_FILE", str(_DEFAULT_BACKLOG))
+BACKLOG_FILE = Path(_BACKLOG_RAW)
+if not BACKLOG_FILE.is_absolute():
+    BACKLOG_FILE = ROOT / BACKLOG_FILE
 STATE_FILE = ROOT / "runtime" / "task-state.yaml"
 
 STATUS_FLOW = [
@@ -93,6 +97,12 @@ def load_state(backlog: Dict[str, Any]) -> Dict[str, Any]:
 
     state = load_yaml(STATE_FILE)
     if "tasks" not in state or not isinstance(state["tasks"], list):
+        state = init_state(backlog)
+        save_yaml(STATE_FILE, state)
+        return state
+
+    # Switch to fresh state when a new backlog is selected.
+    if state.get("backlog_id") != backlog.get("backlog_id"):
         state = init_state(backlog)
         save_yaml(STATE_FILE, state)
     return state
