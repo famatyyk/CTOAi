@@ -100,3 +100,17 @@ After generating a fresh PAT manually in GitHub, set it locally:
 [Environment]::SetEnvironmentVariable("CTOA_GITHUB_PAT", "YOUR_NEW_GITHUB_PAT", "User")
 $env:CTOA_GITHUB_PAT = "YOUR_NEW_GITHUB_PAT"
 ```
+
+## 8. VPS Health Monitoring
+
+Setup hourly health metrics collection and publishing to GitHub Issue #2:
+
+\\\ash
+scp -i ~/.ssh/ctoa_vps_ed25519 deploy/systemd/ctoa-health.* root@46.225.110.52:/etc/systemd/system/
+systemctl daemon-reload
+systemctl enable ctoa-health.timer
+systemctl start ctoa-health.timer
+\\\`n
+Metrics: CPU, Memory, Disk, Processes (updated hourly)
+Dashboard: GitHub Issue #2
+Alerts: CPU > 80%, Memory > 85%, Disk > 90%

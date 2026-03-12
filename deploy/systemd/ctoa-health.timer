@@ -1,0 +1,23 @@
+[Unit]
+Description=CTOA VPS Health Metrics Timer
+Requires=ctoa-health.service
+
+[Timer]
+# Run every hour at minute 0
+OnCalendar=hourly
+OnCalendar=*:00
+
+# Run 30 seconds after boot
+OnBootSec=30s
+
+# Randomize start time by up to 5 minutes to avoid thundering herd
+RandomizedDelaySec=5min
+
+# Accuracy tolerence
+AccuracySec=1min
+
+# Keep systemd journal
+Persistent=true
+
+[Install]
+WantedBy=timers.target

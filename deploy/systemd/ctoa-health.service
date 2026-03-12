@@ -1,0 +1,25 @@
+[Unit]
+Description=CTOA VPS Health Metrics Service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/opt/ctoa
+Environment="PATH=/opt/ctoa/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin"
+EnvironmentFile=/opt/ctoa/.env
+
+# Run the health metrics collector
+ExecStart=/opt/ctoa/.venv/bin/python3 /opt/ctoa/runner/health_metrics.py
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ctoa-health
+
+# Timeout after 60 seconds
+TimeoutStartSec=60
+
+[Install]
+WantedBy=multi-user.target
