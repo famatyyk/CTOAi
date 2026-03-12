@@ -2,6 +2,8 @@
 import argparse
 import json
 import os
+import subprocess
+import sys
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
@@ -10,6 +12,12 @@ from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 import yaml
+
+# Import AI agent executor
+try:
+    from agents import execute_agent_for_task
+except ImportError:
+    from runner.agents import execute_agent_for_task
 
 ROOT = Path(__file__).resolve().parent.parent
 _DEFAULT_BACKLOG = ROOT / "workflows" / "backlog-sprint-001.yaml"
@@ -136,7 +144,7 @@ def transition_task(task: Dict[str, Any], new_status: str, reason: str) -> Dict[
     }
 
 
-def tick(backlog: Dict[str, Any], state: Dict[str, Any]) -> Dict[str, Any]:
+def tick(backlog: Dict[str, Any], state: Dict[str, Any], invoke_agents: bool = False) -> Dict[str, Any]:
     max_parallel = int(backlog.get("rules", {}).get("max_parallel_tasks", 3))
     tasks = state.get("tasks", [])
     transitions: List[Dict[str, Any]] = []
@@ -159,6 +167,12 @@ def tick(backlog: Dict[str, Any], state: Dict[str, Any]) -> Dict[str, Any]:
         if active_count >= max_parallel:
             break
         transitions.append(transition_task(task, "IN_PROGRESS", "scheduled by hourly planner"))
+        
+        # If agents are enabled, invoke agent immediately when task starts
+        if invoke_agents:
+            agent_event = execute_task_agent(task, backlog)
+            state.setdefault("history", []).append(agent_event)
+        
         active_count += 1
 
     state["last_tick_at"] = now_iso()
@@ -176,6 +190,34 @@ def approve_task(state: Dict[str, Any], task_id: str) -> Dict[str, Any]:
             state.setdefault("history", []).append({"at": now_iso(), "event": "approval", "task_id": task_id})
             return state
     raise ValueError(f"Task not found: {task_id}")
+
+
+def execute_task_agent(task: Dict[str, Any], backlog: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Invoke AI agent to execute task and generate deliverables.
+    Routes to specific agent based on task domain/type.
+    """
+    task_id = task.get("id", "unknown")
+    print(f"[runner] Invoking AI agent for {task_id}")
+    
+    try:
+        # Route to appropriate agent
+        result = execute_agent_for_task(task)
+        return {
+            "at": now_iso(),
+            "event": "agent_exec",
+            "task_id": task_id,
+            "status": result.get("status", "initiated"),
+            "agent_result": result
+        }
+    except Exception as e:
+        print(f"[runner] Agent execution failed for {task_id}: {e}")
+        return {
+            "at": now_iso(),
+            "event": "agent_exec_error",
+            "task_id": task_id,
+            "error": str(e)
+        }
 
 
 def build_report(backlog: Dict[str, Any], state: Dict[str, Any]) -> str:
@@ -331,7 +373,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="CTOA VPS runner")
     sub = parser.add_subparsers(dest="command", required=True)
 
-    sub.add_parser("tick", help="Advance scheduler state")
+    tick_p = sub.add_parser("tick", help="Advance scheduler state")
+    tick_p.add_argument("--agents", action="store_true", help="Invoke AI agents for new tasks")
 
     approve_p = sub.add_parser("approve", help="Manually approve task in WAITING_APPROVAL")
     approve_p.add_argument("--task", required=True, help="Task ID, e.g. CTOA-001")
@@ -345,9 +388,12 @@ def main() -> None:
     state = load_state(backlog)
 
     if args.command == "tick":
-        state = tick(backlog, state)
+        invoke_agents = getattr(args, "agents", False)
+        state = tick(backlog, state, invoke_agents=invoke_agents)
         save_yaml(STATE_FILE, state)
         print(f"[tick] completed at {state.get('last_tick_at')}")
+        if invoke_agents:
+            print(f"[tick] AI agents invoked for new tasks")
         return
 
     if args.command == "approve":

@@ -1,0 +1,166 @@
+version: 1
+backlog_id: sprint-004
+window_days: 14
+focus: "Documentation + KPI Automation + Reliability Guardrails + Governance"
+owner: queen-ctoa
+
+rules:
+  max_parallel_tasks: 3
+  definition_of_done:
+    - implementation_created
+    - tests_passing
+    - documentation_updated
+    - agent_execution_logged
+  release_policy:
+    - approval_required: true
+    - environment: production
+
+tasks:
+  # Track A: Documentation Completion (P0)
+  
+  - id: CTOA-031
+    title: "Create disk emergency runbook"
+    priority: P0
+    type: documentation
+    domain: [documentation, ops]
+    assignees: [agent-track-a]
+    estimate_hours: 3
+    deliverables:
+      - "docs/runbook-disk-emergency.md"
+    acceptance:
+      - "Runbook covers triage, cleanup, recovery steps"
+      - "Safe/unsafe deletion paths clearly marked"
+      - "Escalation procedures documented"
+
+  - id: CTOA-032
+    title: "Create validation checklist for 24x7 services"
+    priority: P0
+    type: documentation
+    domain: [documentation, reliability]
+    assignees: [agent-track-a]
+    estimate_hours: 4
+    deliverables:
+      - "docs/VALIDATION_CHECKLIST.md"
+    acceptance:
+      - "Pre-deployment checks complete"
+      - "Post-deployment service health checks"
+      - "Runtime daily validation script"
+      - "Failure response procedures"
+
+  - id: CTOA-033
+    title: "Verify documentation consistency"
+    priority: P0
+    type: code
+    domain: [documentation, qa]
+    assignees: [agent-track-a, qa-safety]
+    estimate_hours: 2
+    deliverables:
+      - "docs/CONSISTENCY_REPORT.md"
+    acceptance:
+      - "Cross-reference audit passed"
+      - "SETUP.md and ARCHITECTURE.md synchronized"
+      - "All references valid"
+
+  - id: CTOA-034
+    title: "Documentation close gate"
+    priority: P0
+    type: review
+    domain: [documentation, governance]
+    assignees: [agent-track-a, pm-roadmap]
+    estimate_hours: 2
+    deliverables:
+      - "DOCS_SIGN_OFF.txt"
+    acceptance:
+      - "Runbooks and checklists approved"
+      - "Ready for operational use"
+      - "All Track A deliverables present"
+
+  # Track B: KPI Automation (P1)
+
+  - id: CTOA-035
+    title: "Standardize weekly KPI report layout"
+    priority: P1
+    type: code
+    domain: [kpi, automation, metrics]
+    assignees: [agent-track-b]
+    estimate_hours: 4
+    deliverables:
+      - "runner/weekly_report.py"
+    acceptance:
+      - "KPI template with disk/cpu/memory/alerts"
+      - "Auto-generates on weekly schedule"
+      - "Outputs valid markdown"
+
+  - id: CTOA-036
+    title: "Integrate health trend with weekly pipeline"
+    priority: P1
+    type: code
+    domain: [kpi, automation, reliability]
+    assignees: [agent-track-b]
+    estimate_hours: 3
+    deliverables:
+      - "runner/health_trend.py"
+      - "runner/kpi_aggregator.py"
+    acceptance:
+      - "Trend data feeds into weekly report"
+      - "Graphics or trend tables in output"
+      - "No data loss between runs"
+
+  - id: CTOA-037
+    title: "Calculate approval lead-time metrics"
+    priority: P1
+    type: code
+    domain: [kpi, automation, metrics]
+    assignees: [agent-track-b]
+    estimate_hours: 3
+    deliverables:
+      - "runner/lead_time_calc.py"
+    acceptance:
+      - "Avg approval time calculated"
+      - "P95 percentile included"
+      - "Integrated into weekly report"
+
+  - id: CTOA-038
+    title: "KPI automation validation"
+    priority: P1
+    type: review
+    domain: [kpi, qa]
+    assignees: [agent-track-b, qa-safety]
+    estimate_hours: 2
+    deliverables:
+      - "KPI_VALIDATION_REPORT.txt"
+    acceptance:
+      - "Weekly report generates without errors"
+      - "Metrics calculated correctly"
+      - "Ready for live reporting"
+
+  # Track C: Reliability Guardrails (P1)
+
+  - id: CTOA-039
+    title: "Implement service/timer drift detection"
+    priority: P1
+    type: code
+    domain: [reliability, guardrails, automation]
+    assignees: [agent-track-c]
+    estimate_hours: 4
+    deliverables:
+      - "runner/drift_checker.py"
+      - "scripts/ops/ctoa-vps-drift-check.ps1"
+    acceptance:
+      - "Detects disabled or failed systemd units"
+      - "Checks service status vs expected state"
+      - "Reports with pass/fail flags"
+
+  - id: CTOA-040
+    title: "Reliability guardrails close gate"
+    priority: P1
+    type: review
+    domain: [reliability, governance]
+    assignees: [agent-track-c, bot-architect]
+    estimate_hours: 2
+    deliverables:
+      - "RELIABILITY_SIGN_OFF.txt"
+    acceptance:
+      - "Drift detection passes all tests"
+      - "Integrated into runner report"
+      - "Ready for production"
