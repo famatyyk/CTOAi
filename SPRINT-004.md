@@ -52,9 +52,10 @@
 - Zweryfikować: `task-state.yaml` status + runner.log + sprint progress > 0%
 
 ### Track B: P0 Backlog Activation (P0)
-- Uruchomić CTOA-007 (Cavebot safety interrupt) — IN_PROGRESS
-- Uruchomić CTOA-009 (Prompt pack for MMO/Lua) — IN_PROGRESS
-- Monitorować przejście przez pipeline: IN_PROGRESS → IN_QA → IN_CI_GATE → WAITING_APPROVAL
+- ✅ CTOA-007 (Cavebot safety interrupt) → IN_QA (pipeline: NEW→IN_PROGRESS→IN_QA via auto-tick)
+- ✅ CTOA-009 (Prompt pack for MMO/Lua) → IN_QA
+- ✅ CTOA-004 (Potion and supply manager, P1) → IN_QA (3. wolny slot)
+- Następny: auto IN_QA→IN_CI_GATE→WAITING_APPROVAL → approve (Track B kontynuacja)
 
 ### Track C: Ops Hardening (P1, carry-over S-003 Track B remainder)
 - Alert→action: gdy `health_metrics` wykryje DISK > 90% → trigger `cleanup-retention.sh`
