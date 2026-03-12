@@ -1,6 +1,6 @@
 # CTOA AI Toolkit
 
-**Status:** Sprint-003 Active (2026-03-12 to 2026-03-26)  
+**Status:** Sprint-004 Active (2026-03-12 to 2026-03-26) | Sprint progress: 30% (3/10 RELEASED)  
 **Security:** 🟢 SSH & PAT rotated | 🟢 Git hardened | 🟢 Tests automated  
 **Agents:** 10 active | BRAVE(R) templates | Tool advisor system  
 
@@ -120,8 +120,9 @@ Primary workflows:
 
 View results in GitHub Actions for this repository.
 
-## Sprint-002 Roadmap
+## Sprint Roadmap
 
+### Sprint-002 ✅ CLOSED
 | Track | Status | Items |
 |-------|--------|-------|
 | **A: CI/CD** | ✅ DONE | pytest framework, GitHub Actions, coverage |
@@ -129,6 +130,22 @@ View results in GitHub Actions for this repository.
 | **C: Backlog** | ✅ DONE | CTOA-001..010 migrated to GitHub Issues #13-#22 |
 | **D: Agents** | ✅ DONE | 10 agents, BRAVE(R), tool advisor |
 | **E: Documentation** | ✅ DONE | README, guides, architecture |
+
+### Sprint-003 ✅ CLOSED (early, 2026-03-12)
+| Track | Status | Items |
+|-------|--------|-------|
+| **A: Capacity** | ✅ DONE | Disk 99%→73%, logrotate, cleanup timer |
+| **B: Monitoring** | ✅ DONE | CPU debounce 3-sample sustain, TailLiveHealth fixed |
+| **C: Approval Flow** | ↪ S-004 | CTOA-001/002/003 approval mechanism identified |
+| **D: Documentation** | ↪ S-004 | Disk emergency runbook pending |
+
+### Sprint-004 🟢 ACTIVE
+| Track | Status | Items |
+|-------|--------|-------|
+| **A: Approval Unblock** | ✅ DONE | CTOA-001/002/003 → RELEASED (30% sprint progress) |
+| **B: P0 Activation** | 🔄 next | CTOA-007 + CTOA-009 → IN_PROGRESS |
+| **C: Ops Hardening** | ⏳ | Alert→action wiring, health trend script |
+| **D: Documentation** | ⏳ | Runbook disk emergency, checklist update |
 
 ## Logs & Status
 

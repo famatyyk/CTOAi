@@ -1,6 +1,6 @@
 # Sprint 003 Plan - CTOA AI Toolkit
-**Sprint Period:** 2026-03-12 to 2026-03-26 (2 weeks)  
-**Status:** 🟢 ACTIVE  
+**Sprint Period:** 2026-03-12 (early close: 2026-03-12)  
+**Status:** ✅ CLOSED  
 **Theme:** Stabilization + Capacity + Approval Flow
 
 ---
@@ -27,26 +27,26 @@
 
 ## Work Breakdown
 
-### Track A: Capacity Recovery (P0)
-- Audyt zajętości: `/opt/ctoa`, logi, cache, artefakty
-- Bezpieczne cleanupy (stare logi/backupy)
-- Logrotate + limity retencji
-- Weryfikacja po cleanupie: disk < 80%
+### Track A: Capacity Recovery (P0) ✅ DONE
+- ✅ Pip cache cleanup 8.3GB: disk 99% → 73%
+- ✅ Logrotate (daily, 14 copies)
+- ✅ `ctoa-retention-cleanup.timer` (daily 03:15 UTC) + `cleanup-retention.sh`
+- ✅ Retention service manual run: status=0/SUCCESS
 
-### Track B: Monitoring Hardening (P1)
+### Track B: Monitoring Hardening (P1) ✅ DONE
 - ✅ CPU alert debounce: `run_watch()` fires CPU alert only after 3 consecutive high samples (~30s); single spikes suppressed
 - ✅ `--cpu-sustain-samples` CLI flag added (default: 3, tunable without code change)
-- Spięcie alertów z akcjami operacyjnymi
-- Snapshot trendów (24h/7d)
+- ↪ Alert→action wiring: **carry-over → Sprint-004 Track C**
+- ↪ Snapshot trendów (24h/7d): **carry-over → Sprint-004 Track C**
 
-### Track C: Flow & Approval (P1)
-- Przegląd zadań `WAITING_APPROVAL`
-- Reguły priorytetyzacji P0/P1
-- Skrócenie lead-time approval
+### Track C: Flow & Approval (P1) ↪ CARRY-OVER
+- Przegląd zadań `WAITING_APPROVAL` — odkryte: CTOA-001/002/003 (3x P0, stuck od 09:30)
+- Mechanizm approval zidentyfikowany: `runner.py approve --task CTOA-XXX`
+- **Pełna realizacja → Sprint-004 Track A (P0)**
 
-### Track D: Documentation Delta (P2)
-- Krótkie runbooki „disk emergency”
-- Aktualizacja checklisty operacyjnej
+### Track D: Documentation Delta (P2) ↪ CARRY-OVER
+- Runbooki „disk emergency": **Sprint-004 Track D**
+- Aktualizacja checklisty operacyjnej: **Sprint-004 Track D**
 
 ---
 
@@ -67,6 +67,18 @@
 - Retention hardening deployed: logrotate (14 days) + `ctoa-retention-cleanup.timer` (daily 03:15 UTC) active.
 - CPU debounce deployed (commit `662e67a`): sustained 3-sample check prevents false-positive ALERT on brief spikes.
 
+## Closure Notes (2026-03-12)
+
+**Delivered:**
+- P0 disk crisis resolved (99% → 73%), retention hardening deployed and validated
+- CPU alert debounce (3-sample sustain, ~30s) eliminates false-positive STATUS=ALERT from short spikes
+- ctoa-health-live.service: stable 5h+, logrotate + cleanup timer: active
+- SSH/ops access fixed (fallback defaults in ctoa-vps.ps1)
+
+**Carry-over to Sprint-004:**
+- CTOA-001/002/003 still in WAITING_APPROVAL (approval mechanism discovered: `runner.py approve`)
+- Alert→action wiring, trend snapshots, runbooks
+
 ---
 
 ## Execution
@@ -75,4 +87,4 @@
 **Escalate only on:** DEFCON 1-2, budget >10%, blokada decyzji
 
 **Start:** 2026-03-12 18:00 UTC  
-**Planned End:** 2026-03-26 18:00 UTC
+**Closed:** 2026-03-12 18:30 UTC (early close — P0/P1 delivered, carry-over to S-004)
