@@ -28,9 +28,9 @@
 ## Work Breakdown
 
 ### Track A: Backlog v3 Prep (P0)
-- Utworzyć `workflows/backlog-sprint-003.yaml`
-- Zachować kompatybilność `runner.py` dla rollover (`CTOA_BACKLOG_FILE`)
-- Wykonać kontrolny tick i walidację `backlog_id`
+- ✅ Utworzony `workflows/backlog-sprint-003.yaml` (CTOA-021..030)
+- ✅ Usługi `ctoa-runner.service` i `ctoa-report.service` przełączone na backlog sprint-003
+- ✅ Kontrolny tick rollover + walidacja `backlog_id` na VPS
 
 ### Track B: Reliability Window (P1)
 - Daily snapshot: `ctoa-runner.timer`, `ctoa-report.timer`, `ctoa-health-live.service`, `ctoa-retention-cleanup.timer`
@@ -66,6 +66,14 @@
   - IN_PROGRESS: 0
   - WAITING_APPROVAL: 0
   - RELEASED: 10
+
+---
+
+## Checkpoint (2026-03-12 19:20 UTC)
+
+- Backlog rollover wykonany do `sprint-003`
+- Backup poprzedniego stanu zachowany na VPS przed przełączeniem
+- Pierwszy tick kontrolny uruchomiony po przełączeniu
 
 ---
 

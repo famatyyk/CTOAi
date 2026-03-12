@@ -1,0 +1,162 @@
+version: 1
+backlog_id: sprint-003
+window_days: 14
+focus: "Reliability window + operational hardening"
+owner: queen-ctoa
+
+rules:
+  max_parallel_tasks: 3
+  definition_of_done:
+    - code_or_config_created
+    - tests_defined_and_passed
+    - qa_report_present
+    - ci_gate_passed
+  release_policy:
+    - approval_required: true
+    - environment: production
+
+tasks:
+  - id: CTOA-021
+    title: "Sprint-003 backlog bootstrap"
+    priority: P0
+    type: code
+    domain: [automation, governance]
+    assignees: [pm-roadmap, builder-engine]
+    estimate_hours: 3
+    deliverables:
+      - "workflows/backlog-sprint-003.yaml"
+      - "SPRINT-006.md"
+    acceptance:
+      - "Backlog file valid and loaded by runner"
+      - "Rollover checkpoint recorded"
+
+  - id: CTOA-022
+    title: "Rollover state integrity check"
+    priority: P0
+    type: code
+    domain: [reliability, automation]
+    assignees: [builder-engine, qa-safety]
+    estimate_hours: 4
+    deliverables:
+      - "runner/runner.py"
+      - "tests/test_runner_state_rollover.py"
+    acceptance:
+      - "State re-init on backlog switch verified"
+      - "Historical state backup preserved"
+
+  - id: CTOA-023
+    title: "Timer and service drift daily audit"
+    priority: P0
+    type: script
+    domain: [ops, reliability]
+    assignees: [bot-architect, qa-safety]
+    estimate_hours: 5
+    deliverables:
+      - "scripts/ops/ctoa-vps.ps1"
+      - "docs/VALIDATION_CHECKLIST.md"
+    acceptance:
+      - "Audit checks runner/report/health/retention services"
+      - "Detects disabled or failed units"
+
+  - id: CTOA-024
+    title: "Disk emergency runbook publication"
+    priority: P1
+    type: docs
+    domain: [ops]
+    assignees: [pm-roadmap, qa-safety]
+    estimate_hours: 4
+    deliverables:
+      - "docs/runbook-disk-emergency.md"
+    acceptance:
+      - "Contains triage, cleanup, escalation paths"
+      - "Reviewed against current VPS logs and paths"
+
+  - id: CTOA-025
+    title: "Validation checklist runtime refresh"
+    priority: P1
+    type: docs
+    domain: [governance, ops]
+    assignees: [qa-safety, pm-roadmap]
+    estimate_hours: 4
+    deliverables:
+      - "docs/VALIDATION_CHECKLIST.md"
+    acceptance:
+      - "Includes Sprint-006 reliability checks"
+      - "Pass/fail criteria updated"
+
+  - id: CTOA-026
+    title: "Weekly KPI generator hardening"
+    priority: P1
+    type: code
+    domain: [observability]
+    assignees: [mmo-intel, builder-engine]
+    estimate_hours: 6
+    deliverables:
+      - "runner/weekly_report.py"
+      - "runner/health_trend.py"
+    acceptance:
+      - "Weekly report includes disk/cpu/memory/alerts"
+      - "Errors gracefully handled on partial data"
+
+  - id: CTOA-027
+    title: "Approval lead-time KPI publish"
+    priority: P1
+    type: code
+    domain: [analytics, governance]
+    assignees: [mmo-intel, tool-advisor]
+    estimate_hours: 6
+    deliverables:
+      - "runner/runner.py"
+      - "runner/weekly_report.py"
+    acceptance:
+      - "Average and p95 lead-time in report"
+      - "No divide-by-zero on empty samples"
+
+  - id: CTOA-028
+    title: "Health live noise reduction"
+    priority: P2
+    type: code
+    domain: [observability, ops]
+    assignees: [builder-engine, qa-safety]
+    estimate_hours: 5
+    deliverables:
+      - "runner/health_metrics.py"
+    acceptance:
+      - "Low-value repetitive logs throttled"
+      - "Critical alerts remain immediate"
+
+  - id: CTOA-029
+    title: "Retention cleanup telemetry summary"
+    priority: P2
+    type: code
+    domain: [ops, observability]
+    assignees: [mmo-intel, bot-architect]
+    estimate_hours: 5
+    deliverables:
+      - "deploy/vps/cleanup-retention.sh"
+      - "runner/daily_insights.py"
+    acceptance:
+      - "Daily cleanup execution summary available"
+      - "Cooldown and trigger counts exported"
+
+  - id: CTOA-030
+    title: "Sprint closure readiness gate"
+    priority: P2
+    type: code
+    domain: [governance]
+    assignees: [pm-roadmap, tool-advisor]
+    estimate_hours: 4
+    deliverables:
+      - "runner/close_on_gate.py"
+      - "SPRINT-006.md"
+    acceptance:
+      - "Gate checks release count and pending approvals"
+      - "Produces ready or blocked closure verdict"
+
+release_target:
+  app_cycle_day: 14
+  app_candidate: "CTOA Mission Control Sprint-006"
+  app_scope:
+    - "Reliability window"
+    - "Documentation closeout"
+    - "KPI automation"
