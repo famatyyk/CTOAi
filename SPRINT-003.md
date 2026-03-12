@@ -58,6 +58,14 @@
 
 ---
 
+## Checkpoint (2026-03-12)
+
+- P0 mitigation executed: safe cleanup of pip caches and temporary pip artifacts on VPS.
+- Disk usage improved from 99% to 73% on `/dev/sda1`.
+- Live monitor confirms status moved from ALERT to OK for disk threshold.
+
+---
+
 ## Execution
 
 **Mode:** STRATEGOS (autonomicznie)  
