@@ -10,33 +10,10 @@ mkdir -p "$LOG_DIR" "$RUNTIME_DIR"
 find "$LOG_DIR" -type f -name "*.log.*" -mtime +14 -delete || true
 find "$LOG_DIR" -type f -name "*.log" -mtime +21 -delete || true
 
-# Keep runtime health history for 30 days.
+# Keep only newest health history entries (append-only stream cap).
 if [[ -f "$RUNTIME_DIR/health-history.jsonl" ]]; then
     tmp_file="$(mktemp)"
-    cutoff_epoch="$(date -u -d '30 days ago' +%s)"
-    awk -v cutoff="$cutoff_epoch" '
-    function to_epoch(ts,  cmd, out) {
-        gsub(/\"/, "", ts)
-        gsub(/T/, " ", ts)
-        gsub(/Z/, " UTC", ts)
-        cmd = "date -u -d \"" ts "\" +%s 2>/dev/null"
-        cmd | getline out
-        close(cmd)
-        return out + 0
-    }
-    {
-        if (match($0, /"timestamp"[[:space:]]*:[[:space:]]*"[^"]+"/)) {
-            ts = substr($0, RSTART, RLENGTH)
-            sub(/^.*:[[:space:]]*"/, "", ts)
-            sub(/"$/, "", ts)
-            if (to_epoch(ts) >= cutoff) {
-                print $0
-            }
-        } else {
-            print $0
-        }
-    }
-    ' "$RUNTIME_DIR/health-history.jsonl" > "$tmp_file" || true
+    tail -n 20000 "$RUNTIME_DIR/health-history.jsonl" > "$tmp_file" || true
     mv "$tmp_file" "$RUNTIME_DIR/health-history.jsonl"
 fi
 
