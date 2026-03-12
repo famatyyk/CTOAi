@@ -1,6 +1,6 @@
 # CTOA AI Toolkit
 
-**Status:** Sprint-006 CLOSED (2026-03-12 early close) | Sprint progress: 100% (10/10 RELEASED)  
+**Status:** Sprint-007 Active (2026-03-12 to 2026-03-26) | Sprint-006 closed at 100% (10/10 RELEASED)  
 **Security:** 🟢 SSH & PAT rotated | 🟢 Git hardened | 🟢 Tests automated  
 **Agents:** 10 active | BRAVE(R) templates | Tool advisor system  
 
@@ -162,6 +162,14 @@ View results in GitHub Actions for this repository.
 | **B: Approval Waves** | ✅ DONE | CTOA-021..030 released (10/10) |
 | **C: Runtime Stability** | ✅ DONE | timer/service flow verified during wave execution |
 | **D: Checkpointing** | ✅ DONE | checkpoints + final closure at 100% |
+
+### Sprint-007 🟢 ACTIVE
+| Track | Status | Items |
+|-------|--------|-------|
+| **A: Documentation Completion** | 🔄 next | Runbook disk emergency + validation checklist refresh |
+| **B: KPI Automation** | 🔄 next | Weekly KPI pipeline with trend + lead-time metrics |
+| **C: Reliability Guardrails** | 🔄 next | Service/timer drift checks and pass/fail reporting |
+| **D: Governance** | 🔄 next | Standard sprint closure gate and rollover playbook |
 
 ## Logs & Status
 
