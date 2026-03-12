@@ -29,7 +29,31 @@ jobs:
       - name: Install validation tools
         run: |
           python -m pip install --upgrade pip
-          pip install yamllint
+          pip install yamllint pytest pytest-cov pylint flake8
+
+      - name: Run Python tests
+        shell: bash
+        run: |
+          if [ -d "tests" ]; then
+            python -m pytest tests/ -v --cov=runner --cov=agents --cov-report=xml --cov-report=term-missing 2>&1 | tee test-results.txt
+            echo "Tests completed with exit code: $?"
+          else
+            echo "No tests directory found, skipping test execution"
+          fi
+
+      - name: Python linting (flake8)
+        shell: bash
+        continue-on-error: true
+        run: |
+          flake8 runner/ agents/ --max-line-length=120 --count --statistics || true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: test-results.txt
+          if-no-files-found: ignore
 
       - name: Validate required files
         shell: bash
