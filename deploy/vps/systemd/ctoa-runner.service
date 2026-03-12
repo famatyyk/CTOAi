@@ -5,7 +5,7 @@ After=network-online.target
 [Service]
 Type=oneshot
 WorkingDirectory=/opt/ctoa
-Environment=CTOA_BACKLOG_FILE=/opt/ctoa/workflows/backlog-sprint-003.yaml
-ExecStart=/usr/bin/python3 /opt/ctoa/runner/runner.py tick
+Environment=CTOA_BACKLOG_FILE=/opt/ctoa/workflows/backlog-sprint-004.yaml
+ExecStart=/usr/bin/python3 /opt/ctoa/runner/runner.py tick --agents
 StandardOutput=append:/opt/ctoa/logs/runner.log
 StandardError=append:/opt/ctoa/logs/runner.log
