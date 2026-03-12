@@ -1,0 +1,78 @@
+# Sprint 005 Plan - CTOA AI Toolkit
+**Sprint Period:** 2026-03-12 to 2026-03-26  
+**Status:** 🟢 ACTIVE  
+**Theme:** Stabilization Window + Backlog Refresh
+
+---
+
+## Priorytety
+
+1. 🔥 **P0: Backlog Refresh (sprint-002)**
+   - Po zamknięciu 10/10 zadań potrzebny nowy wsad i reguły harmonogramu
+   - Cel: gotowy backlog `sprint-002` + spójne priorytety P0/P1
+
+2. ⚙️ **P1: Reliability Validation (7d)**
+   - Potwierdzić stabilność: `ctoa-runner.timer`, `ctoa-report.timer`, `ctoa-health-live.service`, `ctoa-retention-cleanup.timer`
+   - Cel: brak regresji po zmianach Track C (disk auto-action + CPU debounce)
+
+3. 📝 **P1: Documentation Closeout (carry-over)**
+   - Domknąć brakujące artefakty dokumentacyjne ze Sprint-004 Track D
+   - Cel: operacyjne runbooki i checklista aktualna po zmianach runtime
+
+4. 📈 **P2: KPI Reporting Pack**
+   - Ustandaryzować metryki tygodniowe: disk, alert count, approval lead-time
+   - Cel: gotowy raport do status issue i przeglądu operacyjnego
+
+---
+
+## Work Breakdown
+
+### Track A: Backlog Refresh (P0)
+- Dodać nowy plik backlogu (`workflows/backlog-sprint-002.yaml`)
+- Ustalić `max_parallel_tasks` i reguły priorytetyzacji
+- Zapewnić kompatybilność `runner.py` z nowym backlogiem
+
+### Track B: Reliability Validation (P1)
+- Przegląd statusów usług i timerów (daily checks)
+- Weryfikacja logów: brak restart-loop, brak disk regressions > 80%
+- Przegląd auto-cleanup cooldown i trigger frequency
+
+### Track C: Documentation Closeout (P1)
+- Dodać `docs/runbook-disk-emergency.md`
+- Uzupełnić `docs/VALIDATION_CHECKLIST.md` o sprint runtime checks
+- Aktualizacja mapy operacyjnej po wdrożonych timerach i monitoringu
+
+### Track D: KPI Reporting (P2)
+- Dodać stały format tygodniowego raportu KPI
+- Oprzeć metryki o `runner/health_trend.py` + `runner/runner.py report`
+- Zdefiniować progi eskalacji DEFCON 1-2
+
+---
+
+## Definition of Done
+
+- Nowy backlog sprint-002 gotowy i załadowany bez błędów
+- 7 dni stabilnej pracy usług bez krytycznych alertów disk/memory
+- Runbook i checklista operacyjna zaktualizowane
+- Raport KPI gotowy do publikacji cyklicznej
+
+---
+
+## Sprint-004 Closure Reference
+
+- Sprint-004 closed at 100%: **10/10 RELEASED**
+- Final state at close:
+  - NEW: 0
+  - IN_PROGRESS: 0
+  - WAITING_APPROVAL: 0
+  - RELEASED: 10
+
+---
+
+## Execution
+
+**Mode:** STRATEGOS (autonomicznie)  
+**Escalate only on:** DEFCON 1-2, budget >10%, blokada decyzji
+
+**Start:** 2026-03-12 18:50 UTC  
+**Planned End:** 2026-03-26 18:00 UTC
