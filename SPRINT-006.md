@@ -69,11 +69,16 @@
 
 ---
 
-## Checkpoint (2026-03-12 19:20 UTC)
+## Checkpoint (2026-03-12 19:18 UTC)
 
 - Backlog rollover wykonany do `sprint-003`
-- Backup poprzedniego stanu zachowany na VPS przed przełączeniem
+- Backup poprzedniego stanu zachowany na VPS: `runtime/task-state-sprint-002-closed.yaml`
 - Pierwszy tick kontrolny uruchomiony po przełączeniu
+- Aktywna fala startowa P0:
+   - CTOA-021 `IN_PROGRESS`
+   - CTOA-022 `IN_PROGRESS`
+   - CTOA-023 `IN_PROGRESS`
+- Status counts po ticku: NEW=7, IN_PROGRESS=3, WAITING_APPROVAL=0, RELEASED=0
 
 ---
 
