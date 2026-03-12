@@ -41,6 +41,8 @@ Publikacja publiczna odbywa sie dopiero po:
 5. Insight zawiera trend 24h, alert taskow zastoju >24h i 3 propozycje do approval.
 6. Auto-close po sukcesie gate: `.github/workflows/ctoa-close-on-gate.yml`.
 7. Tygodniowy raport zarzadczy: `.github/workflows/ctoa-weekly-report.yml`.
+8. Godzinowy status sync etykiet `status/*`: `.github/workflows/ctoa-status-sync.yml`.
+9. Osobny komentarz SLA dla `WAITING_APPROVAL >12h` przez `runner/status_sync.py`.
 
 ## Licencja
 MIT
