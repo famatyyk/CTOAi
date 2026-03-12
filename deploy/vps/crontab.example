@@ -1,0 +1,8 @@
+# CTOA 24/7 scheduler examples (Ubuntu VPS)
+# Edit with: crontab -e
+
+# Every 15 min: run backlog tick
+*/15 * * * * cd /opt/ctoa && /usr/bin/python3 runner/runner.py tick >> logs/runner.log 2>&1
+
+# Every hour: publish live report to GitHub
+0 * * * * cd /opt/ctoa && /usr/bin/python3 runner/runner.py report --publish >> logs/runner.log 2>&1

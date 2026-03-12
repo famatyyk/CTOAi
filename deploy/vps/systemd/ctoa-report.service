@@ -1,0 +1,13 @@
+[Unit]
+Description=CTOA hourly live report publish
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/ctoa
+Environment=GITHUB_REPOSITORY=famatyyk/CTOAi
+Environment=CTOA_LIVE_ISSUE_TITLE=CTOA Live Status
+EnvironmentFile=/opt/ctoa/.env
+ExecStart=/usr/bin/python3 /opt/ctoa/runner/runner.py report --publish
+StandardOutput=append:/opt/ctoa/logs/runner.log
+StandardError=append:/opt/ctoa/logs/runner.log

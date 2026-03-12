@@ -5,6 +5,8 @@ inputs:
   backlog_file: workflows/backlog-sprint-001.yaml
   agents_file: agents/ctoa-agents.yaml
   policy_file: policies/ci-gate-policy.yaml
+  runner_script: runner/runner.py
+  vps_setup_doc: deploy/vps/SETUP.md
 
 scheduler:
   every_15m:

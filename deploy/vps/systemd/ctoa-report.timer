@@ -1,0 +1,10 @@
+[Unit]
+Description=Run CTOA report publish every hour
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+Unit=ctoa-report.service
+
+[Install]
+WantedBy=timers.target

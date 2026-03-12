@@ -1,0 +1,50 @@
+# VPS Setup (Ubuntu)
+
+## 1. Prepare host
+1. Clone repo to `/opt/ctoa`
+2. Install Python 3.10+
+3. Create virtual environment
+
+```bash
+cd /opt/ctoa
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r runner/requirements.txt
+mkdir -p logs runtime
+```
+
+## 2. Configure GitHub token
+Create `/opt/ctoa/.env`:
+
+```bash
+GITHUB_PAT=YOUR_GITHUB_PERSONAL_ACCESS_TOKEN
+```
+
+Token scope minimum: `repo` (private/public repo update issues).
+
+## 3. Install systemd units
+```bash
+sudo cp deploy/vps/systemd/ctoa-runner.service /etc/systemd/system/
+sudo cp deploy/vps/systemd/ctoa-runner.timer /etc/systemd/system/
+sudo cp deploy/vps/systemd/ctoa-report.service /etc/systemd/system/
+sudo cp deploy/vps/systemd/ctoa-report.timer /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now ctoa-runner.timer
+sudo systemctl enable --now ctoa-report.timer
+```
+
+## 4. Verify
+```bash
+systemctl status ctoa-runner.timer
+systemctl status ctoa-report.timer
+journalctl -u ctoa-runner.service -n 50 --no-pager
+journalctl -u ctoa-report.service -n 50 --no-pager
+```
+
+## 5. Manual commands
+```bash
+python3 runner/runner.py tick
+python3 runner/runner.py report
+python3 runner/runner.py report --publish
+python3 runner/runner.py approve --task CTOA-001
+```

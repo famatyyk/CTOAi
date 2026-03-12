@@ -1,0 +1,115 @@
+backlog_id: sprint-001
+last_tick_at: '2026-03-12T08:10:06+00:00'
+tasks:
+- id: CTOA-001
+  title: Lua logger for Tibia events
+  priority: P0
+  assignees:
+  - lua-scripter
+  - builder-engine
+  - qa-safety
+  status: IN_PROGRESS
+  ticks_in_status: 0
+  updated_at: '2026-03-12T08:10:06+00:00'
+  notes:
+  - at: '2026-03-12T08:10:06+00:00'
+    reason: scheduled by hourly planner
+    status: IN_PROGRESS
+- id: CTOA-002
+  title: Lua pathing helper for OpenTibia
+  priority: P0
+  assignees:
+  - bot-architect
+  - lua-scripter
+  - qa-safety
+  status: IN_PROGRESS
+  ticks_in_status: 0
+  updated_at: '2026-03-12T08:10:06+00:00'
+  notes:
+  - at: '2026-03-12T08:10:06+00:00'
+    reason: scheduled by hourly planner
+    status: IN_PROGRESS
+- id: CTOA-003
+  title: Auto-heal decision module
+  priority: P0
+  assignees:
+  - lua-scripter
+  - builder-engine
+  - qa-safety
+  status: IN_PROGRESS
+  ticks_in_status: 0
+  updated_at: '2026-03-12T08:10:06+00:00'
+  notes:
+  - at: '2026-03-12T08:10:06+00:00'
+    reason: scheduled by hourly planner
+    status: IN_PROGRESS
+- id: CTOA-004
+  title: Potion and supply manager
+  priority: P1
+  assignees:
+  - lua-scripter
+  - builder-engine
+  status: NEW
+  ticks_in_status: 0
+  updated_at: '2026-03-12T08:10:06+00:00'
+- id: CTOA-005
+  title: Target prioritization engine
+  priority: P1
+  assignees:
+  - mmo-intel
+  - bot-architect
+  - lua-scripter
+  status: NEW
+  ticks_in_status: 0
+  updated_at: '2026-03-12T08:10:06+00:00'
+- id: CTOA-006
+  title: Loot filter and auto-stack
+  priority: P1
+  assignees:
+  - lua-scripter
+  - builder-engine
+  - qa-safety
+  status: NEW
+  ticks_in_status: 0
+  updated_at: '2026-03-12T08:10:06+00:00'
+- id: CTOA-007
+  title: Cavebot safety interrupt module
+  priority: P0
+  assignees:
+  - bot-architect
+  - lua-scripter
+  - qa-safety
+  status: NEW
+  ticks_in_status: 0
+  updated_at: '2026-03-12T08:10:06+00:00'
+- id: CTOA-008
+  title: Telemetry exporter (JSONL)
+  priority: P1
+  assignees:
+  - mmo-intel
+  - builder-engine
+  status: NEW
+  ticks_in_status: 0
+  updated_at: '2026-03-12T08:10:06+00:00'
+- id: CTOA-009
+  title: Prompt pack for MMO/Lua tasks
+  priority: P0
+  assignees:
+  - prompt-forge
+  - tool-advisor
+  status: NEW
+  ticks_in_status: 0
+  updated_at: '2026-03-12T08:10:06+00:00'
+- id: CTOA-010
+  title: Tool advisor matrix for Tibia stack
+  priority: P1
+  assignees:
+  - tool-advisor
+  - pm-roadmap
+  status: NEW
+  ticks_in_status: 0
+  updated_at: '2026-03-12T08:10:06+00:00'
+history:
+- at: '2026-03-12T08:10:06+00:00'
+  event: tick
+  active: 3

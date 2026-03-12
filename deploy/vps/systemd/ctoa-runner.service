@@ -1,0 +1,10 @@
+[Unit]
+Description=CTOA backlog runner tick
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/ctoa
+ExecStart=/usr/bin/python3 /opt/ctoa/runner/runner.py tick
+StandardOutput=append:/opt/ctoa/logs/runner.log
+StandardError=append:/opt/ctoa/logs/runner.log

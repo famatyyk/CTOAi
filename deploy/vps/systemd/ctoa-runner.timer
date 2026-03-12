@@ -1,0 +1,10 @@
+[Unit]
+Description=Run CTOA runner tick every 15 minutes
+
+[Timer]
+OnCalendar=*:0/15
+Persistent=true
+Unit=ctoa-runner.service
+
+[Install]
+WantedBy=timers.target
