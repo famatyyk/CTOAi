@@ -116,6 +116,27 @@ def load_state(backlog: Dict[str, Any]) -> Dict[str, Any]:
     if state.get("backlog_id") != backlog.get("backlog_id"):
         state = init_state(backlog)
         save_yaml(STATE_FILE, state)
+        return state
+
+    # Backfill task metadata for existing state created before agent fields existed.
+    backlog_tasks = backlog.get("tasks", [])
+    by_id = {str(t.get("id")): t for t in backlog_tasks if isinstance(t, dict)}
+    changed = False
+    for task in state.get("tasks", []):
+        source = by_id.get(str(task.get("id")))
+        if not source:
+            continue
+        if "type" not in task:
+            task["type"] = source.get("type", "code")
+            changed = True
+        if "domain" not in task:
+            task["domain"] = source.get("domain", [])
+            changed = True
+        if "deliverables" not in task:
+            task["deliverables"] = source.get("deliverables", [])
+            changed = True
+    if changed:
+        save_yaml(STATE_FILE, state)
     return state
 
 
