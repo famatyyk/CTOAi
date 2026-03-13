@@ -2,13 +2,15 @@
 
 Goal: archive `runner/agents.py` safely without breaking runtime execution (`runner/runner.py`) or CI.
 
+Status: COMPLETED (legacy file moved to `archived/runtime/agents_legacy.py`).
+
 ## Current Situation
 
 - Runtime source of truth is frozen to:
   - `runner/runner.py`
   - `runner/agents/`
-- The last legacy exception is `runner/agents.py`.
-- `runner/agents/__init__.py` currently imports `runner/agents.py` dynamically and re-exports `execute_agent_for_task`.
+- Legacy exception list is now empty.
+- `runner/agents/__init__.py` exports `execute_agent_for_task` from `runner/agents/executor.py`.
 
 ## Risks
 

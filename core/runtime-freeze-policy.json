@@ -1,9 +1,7 @@
 {
   "allowed_runtime_entrypoint": "runner/runner.py",
   "allowed_agent_package_prefix": "runner/agents/",
-  "legacy_exceptions": [
-    "runner/agents.py"
-  ],
+  "legacy_exceptions": [],
   "risky_globs": [
     "runner/*runner*.py",
     "runner/agents*.py",

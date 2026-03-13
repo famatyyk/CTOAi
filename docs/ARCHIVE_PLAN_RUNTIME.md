@@ -20,6 +20,7 @@ Already archived in this phase:
 - `monitor_agents.py` -> `archived/runtime/monitor_agents.py`
 - `runner/lab_runner.py` -> `archived/runtime/lab_runner.py`
 - `sprint_007_execute.py` -> `archived/runtime/sprint_007_execute.py`
+- `runner/agents.py` -> `archived/runtime/agents_legacy.py`
 
 ## Archival Target
 
@@ -46,7 +47,7 @@ This prevents silent repo sprawl from returning.
 
 ## Final Legacy Exception
 
-The remaining legacy exception is `runner/agents.py`.
-Use the dedicated migration playbook:
+Bridge replacement migration was completed and `runner/agents.py` was archived.
+For reference, see the migration playbook:
 
 - `docs/BRIDGE_REPLACEMENT_PLAN_AGENTS.md`

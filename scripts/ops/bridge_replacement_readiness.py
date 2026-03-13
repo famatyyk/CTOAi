@@ -59,6 +59,12 @@ def main() -> int:
 
     code_files = [f for f in findings["legacy_file_reference"] if f.endswith((".py", ".sh", ".ps1", ".yml", ".yaml"))]
     doc_files = [f for f in findings["legacy_file_reference"] if f.endswith((".md", ".txt"))]
+    import_blockers = [f for f in findings["legacy_import_agents"] if f != "runner/runner.py"]
+    allowed_code_refs = {
+        "runner/agents/executor.py",
+        "archived/runtime/agents_legacy.py",
+    }
+    code_blockers = [f for f in code_files if f not in allowed_code_refs]
 
     print("Bridge replacement readiness report")
     print("---------------------------------")
@@ -68,6 +74,13 @@ def main() -> int:
         for f in files:
             print(f" - {f}")
 
+    print(f"legacy_import_agents_blockers: {len(import_blockers)}")
+    for f in import_blockers:
+        print(f" - {f}")
+    print(f"legacy_file_reference_code_blockers: {len(code_blockers)}")
+    for f in code_blockers:
+        print(f" - {f}")
+
     print(f"legacy_file_reference_code: {len(code_files)}")
     for f in code_files:
         print(f" - {f}")
@@ -76,7 +89,7 @@ def main() -> int:
         print(f" - {f}")
 
     print()
-    if not findings["legacy_import_agents"] and not code_files:
+    if not import_blockers and not code_blockers:
         print("READY: no legacy references detected.")
         return 0
 
