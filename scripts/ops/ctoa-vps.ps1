@@ -17,7 +17,8 @@ param(
         'SetupAgents',
         'TailAgents',
         'FixDbPerms',
-        'RegisterServer'
+        'RegisterServer',
+        'ShowServerStatus'
     )]
     [string]$Action
 )
@@ -114,6 +115,16 @@ switch ($Action) {
     'TailLiveHealth'      { Invoke-SshCommand 'tail -n 80 -f /opt/ctoa/logs/health-live.log' }
     'ReportErrorDetails'  { Invoke-SshCommand 'tail -n 60 /opt/ctoa/logs/runner.log' }
     'TailAgents'          { Invoke-SshCommand 'tail -n 100 -f /opt/ctoa/logs/agents-orchestrator.log' }
+    'ShowServerStatus' {
+        Invoke-SshScript @'
+set -e
+echo "=== Server status counts ==="
+sudo -u postgres psql -d ctoa -c "SELECT status, COUNT(*) AS n FROM servers GROUP BY status ORDER BY status;"
+echo
+echo "=== Recent servers ==="
+sudo -u postgres psql -d ctoa -c "SELECT id, url, status, COALESCE(game_type,'') AS game_type, LEFT(COALESCE(scout_error,''), 120) AS scout_error, to_char(updated_at, 'YYYY-MM-DD HH24:MI:SS') AS updated_at FROM servers ORDER BY updated_at DESC LIMIT 20;"
+'@
+    }
         'RegisterServer' {
                 $serverUrl = Get-RequiredEnv 'CTOA_SERVER_URL'
                 $serverName = Get-OptionalEnv 'CTOA_SERVER_NAME' 'External-Server'
