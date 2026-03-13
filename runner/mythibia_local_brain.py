@@ -68,6 +68,30 @@ DEFAULT_TASKS: List[Dict[str, str]] = [
         "template": "alarmy_lua",
         "output": "alarmy.lua",
     },
+        {
+            "id": "MB-008",
+            "status": "NEW",
+            "template": "healer_profiles_lua",
+            "output": "healer_profiles.lua",
+        },
+        {
+            "id": "MB-009",
+            "status": "NEW",
+            "template": "flee_logic_lua",
+            "output": "flee_logic.lua",
+        },
+        {
+            "id": "MB-010",
+            "status": "NEW",
+            "template": "target_blacklist_lua",
+            "output": "target_blacklist.lua",
+        },
+        {
+            "id": "MB-011",
+            "status": "NEW",
+            "template": "auto_resupply_lua",
+            "output": "auto_resupply.lua",
+        },
 ]
 
 
@@ -111,6 +135,10 @@ def render(template_name: str) -> str:
         "target_selector_lua": """-- AI generated: target_selector.lua\n-- Priorytet targetu: najblizszy i najnizsze HP.\n\nlocal maxRange = 7\n\nlocal function score(creature)\n  local hp = creature:getHealthPercent() or 100\n  local dist = getDistanceBetween(player:getPosition(), creature:getPosition())\n  return hp + (dist * 4)\nend\n\nmacro(250, 'AI Target Selector', function()\n  if not g_game.isOnline() then return end\n  local monsters = getSpectators(player:getPosition(), false, maxRange)\n  local best = nil\n  local bestScore = 9999\n\n  for _, c in pairs(monsters) do\n    if c:isMonster() and c:canShoot() then\n      local s = score(c)\n      if s < bestScore then\n        best = c\n        bestScore = s\n      end\n    end\n  end\n\n  if best then\n    g_game.attack(best)\n  end\nend)\n""",
         "anti_stuck_lua": """-- AI generated: anti_stuck.lua\n-- Wykrywa brak ruchu i probuje odblokowac postac.\n\nlocal lastPos = nil\nlocal sameTicks = 0\n\nmacro(1000, 'AI Anti Stuck', function()\n  local pos = player:getPosition()\n  if not pos then return end\n\n  if lastPos and pos.x == lastPos.x and pos.y == lastPos.y and pos.z == lastPos.z then\n    sameTicks = sameTicks + 1\n  else\n    sameTicks = 0\n  end\n\n  if sameTicks >= 4 then\n    local tries = {\n      {x=pos.x+1, y=pos.y, z=pos.z},\n      {x=pos.x-1, y=pos.y, z=pos.z},\n      {x=pos.x, y=pos.y+1, z=pos.z},\n      {x=pos.x, y=pos.y-1, z=pos.z},\n    }\n    autoWalk(tries[math.random(1, #tries)])\n    sameTicks = 0\n  end\n\n  lastPos = pos\nend)\n""",
         "alarmy_lua": """-- AI generated: alarmy.lua\n-- Alarm dzwiekowy i tekstowy przy krytycznych sytuacjach.\n\nlocal hpCritical = 35\nlocal playerName = g_game.getCharacterName() or 'unknown'\n\nmacro(500, 'AI Alarmy', function()\n  if not g_game.isOnline() then return end\n\n  if hppercent() <= hpCritical then\n    playSound('/sounds/alarm.ogg')\n    warn('ALARM HP: '..hppercent()..'% ['..playerName..']')\n  end\n\n  for _, c in pairs(getSpectators(player:getPosition(), false, 7)) do\n    if c:isPlayer() and c:getName() ~= playerName then\n      playSound('/sounds/alarm.ogg')\n      warn('ALARM PLAYER: '..c:getName())\n      break\n    end\n  end\nend)\n""",
+            "healer_profiles_lua": """-- AI generated: healer_profiles.lua\n-- Profile healera pod exp/hunt: soft i hard mode.\n\nlocal profile = storage.aiHealProfile or 'soft'\n\nlocal profiles = {\n  soft = {hp=62, mana=25, spell='exura'},\n  hard = {hp=78, mana=40, spell='exura gran'},\n}\n\nmacro(200, 'AI Healer Profiles', function()\n  if not g_game.isOnline() then return end\n  local p = profiles[profile] or profiles.soft\n  if hppercent() <= p.hp and manapercent() >= p.mana then\n    say(p.spell)\n  end\nend)\n\nonTextMessage(function(mode, text)\n  if text == '!heal soft' then\n    storage.aiHealProfile = 'soft'\n    warn('AI Healer: soft')\n  elseif text == '!heal hard' then\n    storage.aiHealProfile = 'hard'\n    warn('AI Healer: hard')\n  end\nend)\n""",
+            "flee_logic_lua": """-- AI generated: flee_logic.lua\n-- Flee gdy HP spada lub jest za duzo mobow obok.\n\nlocal hpFlee = 30\nlocal mobLimit = 5\nlocal safePos = {x=1000, y=1000, z=7}\n\nlocal function nearbyMonsters()\n  local cnt = 0\n  for _, c in pairs(getSpectators(player:getPosition(), false, 5)) do\n    if c:isMonster() then cnt = cnt + 1 end\n  end\n  return cnt\nend\n\nmacro(300, 'AI Flee Logic', function()\n  if not g_game.isOnline() then return end\n  if hppercent() <= hpFlee or nearbyMonsters() >= mobLimit then\n    autoWalk(safePos)\n    warn('AI FLEE TRIGGERED')\n  end\nend)\n""",
+            "target_blacklist_lua": """-- AI generated: target_blacklist.lua\n-- Pomija blacklistowane potwory przy ataku.\n\nlocal blacklist = {\n  ['Rat'] = true,\n  ['Cave Rat'] = true,\n}\n\nmacro(300, 'AI Target Blacklist', function()\n  if not g_game.isOnline() then return end\n\n  local best = nil\n  for _, c in pairs(getSpectators(player:getPosition(), false, 7)) do\n    if c:isMonster() then\n      local name = c:getName() or ''\n      if not blacklist[name] then\n        best = c\n        break\n      end\n    end\n  end\n\n  if best then\n    g_game.attack(best)\n  end\nend)\n""",
+            "auto_resupply_lua": """-- AI generated: auto_resupply.lua\n-- Prosty trigger resupply na low cap / low pot count.\n\nlocal minCap = 80\nlocal minManaPot = 20\nlocal depotPos = {x=1002, y=998, z=7}\n\nlocal function itemCount(id)\n  local c = 0\n  for _, item in pairs(getContainers()) do\n    c = c + item:getItemsCount(id)\n  end\n  return c\nend\n\nmacro(2000, 'AI Auto Resupply', function()\n  if not g_game.isOnline() then return end\n  local manaPots = itemCount(268)\n  if freecap() <= minCap or manaPots <= minManaPot then\n    warn('AI RESUPPLY TRIGGERED')\n    autoWalk(depotPos)\n  end\nend)\n""",
     }
     if template_name not in templates:
         raise ValueError(f"Unknown template: {template_name}")
