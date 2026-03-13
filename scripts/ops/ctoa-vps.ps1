@@ -210,6 +210,6 @@ pg_isready -h 127.0.0.1 -U ctoa -d ctoa && echo '[SetupDB] DB ready'
     systemctl status ctoa-mobile-console.service        --no-pager -l | head -n 6
     pg_isready -h 127.0.0.1 -U ctoa -d ctoa && echo '[SetupAgents] DB OK'
     echo '[SetupAgents] Done - orchestrator fires every 10 minutes'
-    '@
+'@
     }
 }
