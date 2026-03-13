@@ -1,0 +1,7 @@
+scripts/ops/ctoa-vps.ps1
+mobile_console/app.py
+runner/agents/orchestrator.py
+runner/agents/db.py
+deploy/vps/db/init.sql
+deploy/vps/systemd/ctoa-agents-orchestrator.service
+deploy/vps/systemd/ctoa-agents-orchestrator.timer

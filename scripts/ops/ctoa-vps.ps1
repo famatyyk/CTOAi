@@ -16,7 +16,8 @@ param(
         'SetupDB',
         'SetupAgents',
         'TailAgents',
-        'FixDbPerms'
+        'FixDbPerms',
+        'RegisterServer'
     )]
     [string]$Action
 )
@@ -26,6 +27,12 @@ $ErrorActionPreference = 'Stop'
 function Get-RequiredEnv([string]$Name) {
     $value = [Environment]::GetEnvironmentVariable($Name)
     if ([string]::IsNullOrWhiteSpace($value)) { throw "Missing env var: $Name" }
+    return $value
+}
+
+function Get-OptionalEnv([string]$Name, [string]$DefaultValue) {
+    $value = [Environment]::GetEnvironmentVariable($Name)
+    if ([string]::IsNullOrWhiteSpace($value)) { return $DefaultValue }
     return $value
 }
 
@@ -107,6 +114,19 @@ switch ($Action) {
     'TailLiveHealth'      { Invoke-SshCommand 'tail -n 80 -f /opt/ctoa/logs/health-live.log' }
     'ReportErrorDetails'  { Invoke-SshCommand 'tail -n 60 /opt/ctoa/logs/runner.log' }
     'TailAgents'          { Invoke-SshCommand 'tail -n 100 -f /opt/ctoa/logs/agents-orchestrator.log' }
+        'RegisterServer' {
+                $serverUrl = Get-RequiredEnv 'CTOA_SERVER_URL'
+                $serverName = Get-OptionalEnv 'CTOA_SERVER_NAME' 'External-Server'
+                $safeUrl = $serverUrl -replace "'", "''"
+                $safeName = $serverName -replace "'", "''"
+
+                Invoke-SshScript @"
+set -e
+sudo -u postgres psql -d ctoa -c "INSERT INTO servers(url,name,status) VALUES ('$safeUrl','$safeName','NEW') ON CONFLICT (url) DO UPDATE SET name=EXCLUDED.name, status='NEW', updated_at=now();"
+systemctl start ctoa-agents-orchestrator.service
+echo "[RegisterServer] submitted: $serverUrl"
+"@
+        }
     'FixDbPerms' {
         Invoke-SshScript @'
 set -e

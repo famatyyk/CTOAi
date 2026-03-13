@@ -27,6 +27,7 @@ CTOA AI Toolkit orchestrates 10+ AI agents (CTOA-001 through CTOA-010) to autono
 - **🚀 Getting Started:** [Local Development Guide](docs/LOCAL_SETUP.md) (5 minutes)
 - **📚 Deep Dive:** [Architecture Guide](docs/ARCHITECTURE.md) (10 minutes)
 - **☁️ Deploy to VPS:** [VPS Setup Guide](deploy/vps/SETUP.md) (15 minutes)
+- **🛡️ Core Safety:** [Core Guardrails](docs/CORE_GUARDRAILS.md)
 - **✅ Pre-Launch:** [Validation Checklist](docs/VALIDATION_CHECKLIST.md) (review before production)
 
 ---
@@ -100,6 +101,11 @@ scripts/ops/ctoa-vps.ps1 -Action EnableLiveHealth
 
 # Follow live health stream logs
 scripts/ops/ctoa-vps.ps1 -Action TailLiveHealth
+
+# Register first game server safely (no SSH/curl quoting issues)
+$env:CTOA_SERVER_URL="https://example.org"
+$env:CTOA_SERVER_NAME="Example"
+scripts/ops/ctoa-vps.ps1 -Action RegisterServer
 ```
 
 ### Option 3: Understand the Architecture (10 minutes)
