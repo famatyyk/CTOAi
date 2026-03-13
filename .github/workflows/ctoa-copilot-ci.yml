@@ -33,30 +33,39 @@ jobs:
         shell: bash
         continue-on-error: true
         run: |
+          set +e
           set -o pipefail
           if [ -d "tests" ]; then
             python -m pytest tests/ -q --maxfail=20 2>&1 | tee pr-tests.txt
-            echo "PYTEST_EXIT=$?" >> "$GITHUB_ENV"
+            PYTEST_EXIT=${PIPESTATUS[0]}
           else
             echo "No tests directory found" | tee pr-tests.txt
-            echo "PYTEST_EXIT=0" >> "$GITHUB_ENV"
+            PYTEST_EXIT=0
           fi
+          set -e
+          echo "PYTEST_EXIT=${PYTEST_EXIT}" >> "$GITHUB_ENV"
 
       - name: Run flake8
         shell: bash
         continue-on-error: true
         run: |
+          set +e
           set -o pipefail
           flake8 runner/ agents/ --max-line-length=120 --count --statistics 2>&1 | tee pr-flake8.txt
-          echo "FLAKE8_EXIT=$?" >> "$GITHUB_ENV"
+          FLAKE8_EXIT=${PIPESTATUS[0]}
+          set -e
+          echo "FLAKE8_EXIT=${FLAKE8_EXIT}" >> "$GITHUB_ENV"
 
       - name: Run pylint
         shell: bash
         continue-on-error: true
         run: |
+          set +e
           set -o pipefail
           pylint runner agents -j 0 --score=y 2>&1 | tee pr-pylint.txt
-          echo "PYLINT_EXIT=$?" >> "$GITHUB_ENV"
+          PYLINT_EXIT=${PIPESTATUS[0]}
+          set -e
+          echo "PYLINT_EXIT=${PYLINT_EXIT}" >> "$GITHUB_ENV"
 
       - name: Build PR summary markdown
         shell: bash
