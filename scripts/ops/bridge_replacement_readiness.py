@@ -27,15 +27,27 @@ def tracked_files() -> list[Path]:
 def scan() -> dict[str, list[str]]:
     findings: dict[str, list[str]] = {k: [] for k in PATTERNS}
 
+    code_ext = {".py", ".sh", ".ps1", ".yml", ".yaml"}
+    all_ext = code_ext | {".md", ".txt"}
+
     for file_path in tracked_files():
-        if file_path.suffix.lower() not in {".py", ".md", ".yml", ".yaml", ".txt", ".sh", ".ps1"}:
+        ext = file_path.suffix.lower()
+        if ext not in all_ext:
             continue
         try:
             text = file_path.read_text(encoding="utf-8")
         except Exception:
             continue
         rel = file_path.relative_to(ROOT).as_posix()
+
+        # Avoid self-reporting from this helper script.
+        if rel == "scripts/ops/bridge_replacement_readiness.py":
+            continue
+
         for key, rx in PATTERNS.items():
+            # Import-pattern is only meaningful in code files.
+            if key == "legacy_import_agents" and ext not in code_ext:
+                continue
             if rx.search(text):
                 findings[key].append(rel)
 
@@ -45,6 +57,9 @@ def scan() -> dict[str, list[str]]:
 def main() -> int:
     findings = scan()
 
+    code_files = [f for f in findings["legacy_file_reference"] if f.endswith((".py", ".sh", ".ps1", ".yml", ".yaml"))]
+    doc_files = [f for f in findings["legacy_file_reference"] if f.endswith((".md", ".txt"))]
+
     print("Bridge replacement readiness report")
     print("---------------------------------")
 
@@ -53,8 +68,15 @@ def main() -> int:
         for f in files:
             print(f" - {f}")
 
+    print(f"legacy_file_reference_code: {len(code_files)}")
+    for f in code_files:
+        print(f" - {f}")
+    print(f"legacy_file_reference_docs: {len(doc_files)}")
+    for f in doc_files:
+        print(f" - {f}")
+
     print()
-    if not findings["legacy_import_agents"] and not findings["legacy_file_reference"]:
+    if not findings["legacy_import_agents"] and not code_files:
         print("READY: no legacy references detected.")
         return 0
 

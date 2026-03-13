@@ -13,11 +13,11 @@ from urllib.request import Request, urlopen
 
 import yaml
 
-# Import AI agent executor
+# Import AI agent executor via package-native path with script-context fallback.
 try:
-    from agents import execute_agent_for_task
-except ImportError:
     from runner.agents import execute_agent_for_task
+except ModuleNotFoundError:
+    from agents import execute_agent_for_task
 
 ROOT = Path(__file__).resolve().parent.parent
 _DEFAULT_BACKLOG = ROOT / "workflows" / "backlog-sprint-001.yaml"
