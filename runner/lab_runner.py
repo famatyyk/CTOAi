@@ -62,6 +62,12 @@ from bs4 import BeautifulSoup
 
 TARGET_URL = "{target_url}"
 OUT_FILE = Path("data/latest_news.json")
+HEADERS = {{
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9,pl;q=0.8",
+    "Cache-Control": "no-cache",
+}}
 
 
 def now_iso() -> str:
@@ -99,7 +105,9 @@ def parse_news(html: str):
 
 def main() -> None:
     OUT_FILE.parent.mkdir(parents=True, exist_ok=True)
-    r = requests.get(TARGET_URL, timeout=20)
+    r = requests.get(TARGET_URL, headers=HEADERS, timeout=20)
+    if r.status_code == 403 and not TARGET_URL.endswith("/"):
+        r = requests.get(TARGET_URL + "/", headers=HEADERS, timeout=20)
     r.raise_for_status()
     items = parse_news(r.text)
     payload = {{
