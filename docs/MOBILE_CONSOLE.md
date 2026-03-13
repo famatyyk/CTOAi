@@ -29,10 +29,15 @@ Co robi rotacja:
 - generuje nowy `CTOA_MOBILE_TOKEN`
 - aktualizuje `/opt/ctoa/.env`
 - zapisuje nowy token do prywatnego pliku: `/opt/ctoa/secrets/mobile-token.txt`
+- dopisuje wpis historii (maska + sha256) do: `/opt/ctoa/secrets/mobile-token-history.log`
 - restartuje `ctoa-mobile-console.service`
 - dopisuje wpis do: `/opt/ctoa/logs/mobile-token-rotation.log`
 
 Uprawnienia prywatnego pliku tokenu:
+- owner: `root:root`
+- mode: `600`
+
+Uprawnienia pliku historii tokenu:
 - owner: `root:root`
 - mode: `600`
 
