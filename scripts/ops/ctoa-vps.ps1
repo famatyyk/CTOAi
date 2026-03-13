@@ -128,10 +128,22 @@ sudo -u postgres psql -d ctoa -c "SELECT id, url, status, COALESCE(game_type,'')
     }
     'ShowScoutDetails' {
         $filterUrl = Get-OptionalEnv 'CTOA_FILTER_URL' ''
+        $filterStatus = Get-OptionalEnv 'CTOA_FILTER_STATUS' ''
         $filterClause = ''
+        $whereParts = @()
+
         if (-not [string]::IsNullOrWhiteSpace($filterUrl)) {
             $safeFilterUrl = $filterUrl -replace "'", "''"
-            $filterClause = "WHERE s.url = '$safeFilterUrl'"
+            $whereParts += "s.url = '$safeFilterUrl'"
+        }
+
+        if (-not [string]::IsNullOrWhiteSpace($filterStatus)) {
+            $safeFilterStatus = $filterStatus.ToUpperInvariant() -replace "'", "''"
+            $whereParts += "s.status = '$safeFilterStatus'"
+        }
+
+        if ($whereParts.Count -gt 0) {
+            $filterClause = "WHERE " + ($whereParts -join " AND ")
         }
 
         Invoke-SshScript @"
