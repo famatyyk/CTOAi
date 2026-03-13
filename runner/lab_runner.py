@@ -155,6 +155,7 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 SCRAPER_PATH = PROJECT_ROOT.parent / "mythibia_news_scraper" / "main.py"
+SCRAPER_PYTHON = PROJECT_ROOT.parent / "mythibia_news_scraper" / ".venv" / "bin" / "python3"
 STATE_FILE = PROJECT_ROOT / "data" / "watcher_state.json"
 LOG_FILE = PROJECT_ROOT / "logs" / "watcher.log"
 
@@ -181,7 +182,8 @@ def save_state(data: dict) -> None:
 
 
 def run_once() -> None:
-    res = subprocess.run(["python3", str(SCRAPER_PATH)], capture_output=True, text=True)
+    py = str(SCRAPER_PYTHON) if SCRAPER_PYTHON.exists() else "python3"
+    res = subprocess.run([py, str(SCRAPER_PATH)], capture_output=True, text=True)
     if res.returncode != 0:
         log(f"scraper failed: {{res.stderr[-500:]}}")
         return
