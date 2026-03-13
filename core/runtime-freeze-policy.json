@@ -4,8 +4,7 @@
   "legacy_exceptions": [
     "runner/agents.py",
     "runner/lab_runner.py",
-    "sprint_007_execute.py",
-    "monitor_agents.py"
+    "sprint_007_execute.py"
   ],
   "risky_globs": [
     "runner/*runner*.py",
