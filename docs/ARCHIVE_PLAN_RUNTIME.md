@@ -18,6 +18,7 @@ These are still tracked but are marked as legacy in `core/runtime-freeze-policy.
 Already archived in this phase:
 
 - `monitor_agents.py` -> `archived/runtime/monitor_agents.py`
+- `runner/lab_runner.py` -> `archived/runtime/lab_runner.py`
 
 ## Archival Target
 
