@@ -43,3 +43,10 @@ Pipeline now runs `scripts/ops/runtime_path_guard.py`.
 It fails on any *new* runtime/agent path outside frozen source-of-truth, unless explicitly added as legacy exception.
 
 This prevents silent repo sprawl from returning.
+
+## Final Legacy Exception
+
+The remaining legacy exception is `runner/agents.py`.
+Use the dedicated migration playbook:
+
+- `docs/BRIDGE_REPLACEMENT_PLAN_AGENTS.md`
