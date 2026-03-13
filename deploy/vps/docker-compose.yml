@@ -1,0 +1,29 @@
+version: "3.9"
+
+# CTOA DB Stack – PostgreSQL 16 in Docker
+# Start: cd /opt/ctoa && docker compose -f deploy/vps/docker-compose.yml up -d
+# Stop:  docker compose -f deploy/vps/docker-compose.yml down
+
+services:
+  ctoa-db:
+    image: postgres:16-alpine
+    container_name: ctoa-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-ctoa}
+      POSTGRES_USER: ${DB_USER:-ctoa}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - ctoa_pgdata:/var/lib/postgresql/data
+      - /opt/ctoa/deploy/vps/db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-ctoa} -d ${DB_NAME:-ctoa}"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  ctoa_pgdata:
+    name: ctoa_pgdata

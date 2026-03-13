@@ -1,0 +1,16 @@
+[Unit]
+Description=CTOA Agents Orchestrator (one-shot pipeline run)
+After=network.target docker.service
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/opt/ctoa
+EnvironmentFile=/opt/ctoa/.env
+ExecStart=/opt/ctoa/.venv/bin/python3 -m runner.agents.orchestrator
+StandardOutput=append:/opt/ctoa/logs/agents-orchestrator.log
+StandardError=append:/opt/ctoa/logs/agents-orchestrator.log
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target

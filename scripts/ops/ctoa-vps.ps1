@@ -12,7 +12,10 @@ param(
         'ReportViaServiceEnv',
         'PublishWithSourcedEnv',
         'InspectReportEnv',
-        'ReportErrorDetails'
+        'ReportErrorDetails',
+        'SetupDB',
+        'SetupAgents',
+        'TailAgents'
     )]
     [string]$Action
 )
@@ -21,46 +24,33 @@ $ErrorActionPreference = 'Stop'
 
 function Get-RequiredEnv([string]$Name) {
     $value = [Environment]::GetEnvironmentVariable($Name)
-    if ([string]::IsNullOrWhiteSpace($value)) {
-        throw "Missing required environment variable: $Name"
-    }
+    if ([string]::IsNullOrWhiteSpace($value)) { throw "Missing env var: $Name" }
     return $value
 }
 
 function Get-RemoteTarget() {
-    $hostName = [Environment]::GetEnvironmentVariable('CTOA_VPS_HOST')
-    if ([string]::IsNullOrWhiteSpace($hostName)) {
-        $hostName = '46.225.110.52'
-    }
-    $userName = [Environment]::GetEnvironmentVariable('CTOA_VPS_USER')
-    if ([string]::IsNullOrWhiteSpace($userName)) {
-        $userName = 'root'
-    }
-    return "$userName@$hostName"
+    $h = [Environment]::GetEnvironmentVariable('CTOA_VPS_HOST')
+    if ([string]::IsNullOrWhiteSpace($h)) { $h = '46.225.110.52' }
+    $u = [Environment]::GetEnvironmentVariable('CTOA_VPS_USER')
+    if ([string]::IsNullOrWhiteSpace($u)) { $u = 'root' }
+    return "$u@$h"
 }
 
 function Get-KeyPath() {
-    $keyPath = [Environment]::GetEnvironmentVariable('CTOA_VPS_KEY_PATH')
-    if ([string]::IsNullOrWhiteSpace($keyPath)) {
-        $keyPath = Join-Path $env:USERPROFILE '.ssh\ctoa_vps_ed25519'
-    }
-    if (-not (Test-Path $keyPath)) {
-        throw "SSH key not found: $keyPath"
-    }
-    return $keyPath
+    $k = [Environment]::GetEnvironmentVariable('CTOA_VPS_KEY_PATH')
+    if ([string]::IsNullOrWhiteSpace($k)) { $k = Join-Path $env:USERPROFILE '.ssh\ctoa_vps_ed25519' }
+    if (-not (Test-Path $k)) { throw "SSH key not found: $k" }
+    return $k
 }
 
-function Invoke-SshCommand([string]$RemoteCommand) {
-    $target = Get-RemoteTarget
-    $keyPath = Get-KeyPath
-    & ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -i $keyPath $target $RemoteCommand
+function Invoke-SshCommand([string]$Cmd) {
+    $t = Get-RemoteTarget; $k = Get-KeyPath
+    & ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -i $k $t $Cmd
 }
 
-function Invoke-SshScript([string]$ScriptText) {
-    $target = Get-RemoteTarget
-    $keyPath = Get-KeyPath
-    $normalized = $ScriptText -replace "`r`n", "`n"
-    $normalized | & ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -i $keyPath $target "bash -s"
+function Invoke-SshScript([string]$Script) {
+    $t = Get-RemoteTarget; $k = Get-KeyPath
+    ($Script -replace "`r`n","`n") | & ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -i $k $t 'bash -s'
 }
 
 function Get-SetupScript() {
@@ -70,22 +60,16 @@ export DEBIAN_FRONTEND=noninteractive
 if ! command -v git >/dev/null 2>&1; then apt-get update -y; apt-get install -y git; fi
 if ! command -v python3 >/dev/null 2>&1; then apt-get update -y; apt-get install -y python3 python3-venv python3-pip; fi
 if [ -d /opt/ctoa/.git ]; then
-  cd /opt/ctoa
-  git fetch --all
-  git checkout main
-  git pull --ff-only
+  cd /opt/ctoa; git fetch --all; git checkout main; git pull --ff-only
 else
-  rm -rf /opt/ctoa
-  git clone https://github.com/famatyyk/CTOAi.git /opt/ctoa
+  rm -rf /opt/ctoa; git clone https://github.com/famatyyk/CTOAi.git /opt/ctoa
 fi
 cd /opt/ctoa
 python3 -m venv .venv
 . .venv/bin/activate
 pip install -r runner/requirements.txt
 mkdir -p logs runtime
-if [ ! -f /opt/ctoa/.env ]; then
-  printf 'GITHUB_PAT=\n' > /opt/ctoa/.env
-fi
+if [ ! -f /opt/ctoa/.env ]; then printf 'GITHUB_PAT=\n' > /opt/ctoa/.env; fi
 cp deploy/vps/systemd/ctoa-runner.service /etc/systemd/system/
 cp deploy/vps/systemd/ctoa-runner.timer /etc/systemd/system/
 cp deploy/vps/systemd/ctoa-report.service /etc/systemd/system/
@@ -112,27 +96,47 @@ systemctl enable --now ctoa-mobile-token-rotation.timer
 systemctl enable --now ctoa-lab-runner.timer
 systemctl enable --now ctoa-mythibia-news-watcher.timer
 systemctl enable --now ctoa-mythibia-news-api.service
-systemctl status ctoa-runner.timer --no-pager -l | head -n 12
-systemctl status ctoa-report.timer --no-pager -l | head -n 12
-systemctl status ctoa-health-live.service --no-pager -l | head -n 20
-systemctl status ctoa-retention-cleanup.timer --no-pager -l | head -n 12
-systemctl status ctoa-mobile-token-rotation.timer --no-pager -l | head -n 12
-systemctl status ctoa-lab-runner.timer --no-pager -l | head -n 12
-systemctl status ctoa-mythibia-news-watcher.timer --no-pager -l | head -n 12
-systemctl status ctoa-mythibia-news-api.service --no-pager -l | head -n 20
 '@
 }
 
 switch ($Action) {
-    'Verify' {
-        Invoke-SshCommand 'echo CONNECTED; hostname; whoami'
+    'Verify'              { Invoke-SshCommand 'echo CONNECTED; hostname; whoami' }
+    'WhoAmI'              { Invoke-SshCommand 'whoami' }
+    'Setup24x7'           { $sc = Get-SetupScript; Invoke-SshScript $sc }
+    'TailLiveHealth'      { Invoke-SshCommand 'tail -n 80 -f /opt/ctoa/logs/health-live.log' }
+    'ReportErrorDetails'  { Invoke-SshCommand 'tail -n 60 /opt/ctoa/logs/runner.log' }
+    'TailAgents'          { Invoke-SshCommand 'tail -n 100 -f /opt/ctoa/logs/agents-orchestrator.log' }
+    'ReportViaServiceEnv' { Invoke-SshCommand 'systemctl restart ctoa-report.service; journalctl -u ctoa-report.service -n 25 --no-pager' }
+    'PublishWithSourcedEnv' { Invoke-SshCommand 'cd /opt/ctoa; set -a; . /opt/ctoa/.env; set +a; . .venv/bin/activate; python3 runner/runner.py report --publish' }
+    'WriteGithubPat' {
+        $pat = Get-RequiredEnv 'CTOA_GITHUB_PAT'
+        Invoke-SshCommand "sed -i '/^GITHUB_PAT/d' /opt/ctoa/.env; echo GITHUB_PAT=$pat >> /opt/ctoa/.env; echo PAT-written"
     }
-    'WhoAmI' {
-        Invoke-SshCommand 'whoami'
+    'StabilizeReportService' {
+        Invoke-SshScript @'
+set -e
+systemctl restart ctoa-report.service
+systemctl status ctoa-report.service --no-pager -l | head -n 20
+if [ -f /opt/ctoa/logs/runner.log ]; then tail -n 20 /opt/ctoa/logs/runner.log; fi
+'@
     }
-    'Setup24x7' {
-        $script = Get-SetupScript
-        Invoke-SshScript $script
+    'InspectReportEnv' {
+        Invoke-SshScript @'
+set -e
+grep -n '^GITHUB_PAT=' /opt/ctoa/.env | sed 's/=.*/=***set***/' || echo PAT-not-set
+systemctl restart ctoa-report.service
+journalctl -u ctoa-report.service -n 12 --no-pager
+'@
+    }
+    'ValidateServices' {
+        Invoke-SshScript @'
+set -e
+systemctl start ctoa-runner.service
+systemctl start ctoa-report.service || true
+systemctl status ctoa-runner.service --no-pager -l | head -n 12
+systemctl status ctoa-report.service --no-pager -l | head -n 20
+if [ -f /opt/ctoa/logs/runner.log ]; then tail -n 40 /opt/ctoa/logs/runner.log; else echo runner.log-not-present; fi
+'@
     }
     'EnableLiveHealth' {
         Invoke-SshScript @'
@@ -140,18 +144,16 @@ set -e
 mkdir -p /opt/ctoa/logs
 cat > /etc/systemd/system/ctoa-health-live.service << 'UNIT'
 [Unit]
-Description=CTOA live health monitor stream
+Description=CTOA live health monitor
 After=network-online.target
-Wants=network-online.target
 
 [Service]
 Type=simple
 WorkingDirectory=/opt/ctoa
-Environment="PYTHONUNBUFFERED=1"
-EnvironmentFile=-/opt/ctoa/.env
-ExecStart=/opt/ctoa/.venv/bin/python3 /opt/ctoa/runner/health_metrics.py --watch --interval 10 --no-publish --disk-auto-cleanup --disk-cleanup-threshold 92 --disk-cleanup-cooldown 3600
+EnvironmentFile=/opt/ctoa/.env
+ExecStart=/opt/ctoa/.venv/bin/python3 runner/health_live.py
 Restart=always
-RestartSec=2
+RestartSec=30
 StandardOutput=append:/opt/ctoa/logs/health-live.log
 StandardError=append:/opt/ctoa/logs/health-live.log
 
@@ -163,45 +165,48 @@ systemctl enable --now ctoa-health-live.service
 systemctl status ctoa-health-live.service --no-pager -l
 '@
     }
-    'TailLiveHealth' {
-        Invoke-SshCommand 'tail -n 80 -f /opt/ctoa/logs/health-live.log'
-    }
-    'ValidateServices' {
-                Invoke-SshScript @'
-set -e
-systemctl start ctoa-runner.service
-systemctl start ctoa-report.service || true
-systemctl status ctoa-runner.service --no-pager -l | head -n 12
-systemctl status ctoa-report.service --no-pager -l | head -n 20
-if [ -f /opt/ctoa/logs/runner.log ]; then
-    tail -n 40 /opt/ctoa/logs/runner.log
-else
-    echo runner.log not present
-fi
-'@
-    }
-    'StabilizeReportService' {
-        Invoke-SshCommand "printf 'GITHUB_PAT=\\n' > /opt/ctoa/.env; systemctl restart ctoa-report.service; systemctl status ctoa-report.service --no-pager -l | head -n 20; if [ -f /opt/ctoa/logs/runner.log ]; then tail -n 20 /opt/ctoa/logs/runner.log; else echo runner.log not present; fi"
-    }
-    'WriteGithubPat' {
-        $pat = Get-RequiredEnv 'CTOA_GITHUB_PAT'
-        Invoke-SshCommand "printf 'GITHUB_PAT=%s\n' '$pat' > /opt/ctoa/.env; echo GITHUB_PAT=***set***"
-    }
-    'ReportViaServiceEnv' {
-        Invoke-SshCommand "systemctl restart ctoa-report.service; systemctl status ctoa-report.service --no-pager -l | head -n 20; journalctl -u ctoa-report.service -n 25 --no-pager"
-    }
-    'PublishWithSourcedEnv' {
-        Invoke-SshCommand "cd /opt/ctoa; set -a; . /opt/ctoa/.env; set +a; . .venv/bin/activate; python3 runner/runner.py report --publish"
-    }
-    'InspectReportEnv' {
+    'SetupDB' {
         Invoke-SshScript @'
 set -e
-grep -n '^GITHUB_PAT=' /opt/ctoa/.env | sed 's/=.*/=***set***/'
-systemctl restart ctoa-report.service
-journalctl -u ctoa-report.service -n 12 --no-pager
+export DEBIAN_FRONTEND=noninteractive
+cd /opt/ctoa
+docker compose version >/dev/null 2>&1 || apt-get install -y docker-compose-plugin
+.venv/bin/pip install -q psycopg2-binary
+if ! grep -q '^DB_PASSWORD=' /opt/ctoa/.env 2>/dev/null; then
+  DBPW=$(openssl rand -base64 24 | tr -dc 'a-zA-Z0-9' | head -c 28)
+  printf '\nDB_NAME=ctoa\nDB_USER=ctoa\nDB_HOST=127.0.0.1\nDB_PORT=5432\nDB_PASSWORD=%s\n' "$DBPW" >> /opt/ctoa/.env
+  echo '[SetupDB] DB_PASSWORD generated'
+fi
+cp deploy/vps/systemd/ctoa-db.service /etc/systemd/system/
+systemctl daemon-reload
+systemctl enable --now ctoa-db.service
+sleep 10
+docker ps | grep ctoa-db && echo '[SetupDB] Container OK' || echo '[SetupDB] WARNING - container missing'
+docker exec ctoa-db pg_isready -U ctoa -d ctoa && echo '[SetupDB] DB ready' || echo '[SetupDB] still starting'
 '@
     }
-    'ReportErrorDetails' {
-        Invoke-SshCommand 'tail -n 60 /opt/ctoa/logs/runner.log'
+    'SetupAgents' {
+        Invoke-SshScript @'
+set -e
+cd /opt/ctoa
+git pull --ff-only
+.venv/bin/pip install -q psycopg2-binary
+mkdir -p /opt/ctoa/generated /opt/ctoa/releases /opt/ctoa/logs
+cp deploy/vps/systemd/ctoa-db.service                  /etc/systemd/system/
+cp deploy/vps/systemd/ctoa-agents-orchestrator.service /etc/systemd/system/
+cp deploy/vps/systemd/ctoa-agents-orchestrator.timer   /etc/systemd/system/
+systemctl daemon-reload
+systemctl enable --now ctoa-db.service
+sleep 6
+systemctl enable --now ctoa-agents-orchestrator.timer
+grep -q 'CTOA_GENERATED_DIR' /opt/ctoa/.env 2>/dev/null || echo 'CTOA_GENERATED_DIR=/opt/ctoa/generated' >> /opt/ctoa/.env
+grep -q 'CTOA_RELEASES_DIR'  /opt/ctoa/.env 2>/dev/null || echo 'CTOA_RELEASES_DIR=/opt/ctoa/releases'   >> /opt/ctoa/.env
+grep -q 'CTOA_REPO_DIR'      /opt/ctoa/.env 2>/dev/null || echo 'CTOA_REPO_DIR=/opt/ctoa'               >> /opt/ctoa/.env
+systemctl restart ctoa-mobile-console.service
+systemctl status ctoa-db.service                    --no-pager -l | head -n 8
+systemctl status ctoa-agents-orchestrator.timer     --no-pager -l | head -n 8
+systemctl status ctoa-mobile-console.service        --no-pager -l | head -n 6
+echo '[SetupAgents] Done - orchestrator fires every 10 minutes'
+'@
     }
 }

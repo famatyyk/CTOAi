@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import os
+import re
 import subprocess
 import json
 from datetime import datetime, timezone
@@ -23,6 +24,10 @@ class CommandRequest(BaseModel):
     command: str = Field(min_length=1, max_length=2000)
     timeout: int = Field(default=20, ge=1, le=120)
     cwd: Optional[str] = None
+
+
+class ServerRegisterRequest(BaseModel):
+    url: str = Field(min_length=8, max_length=512)
 
 
 def _mobile_token() -> str:
@@ -144,19 +149,30 @@ def status(_: None = Depends(_require_token)) -> dict:
 
 @app.get("/api/logs")
 def logs(
-    target: str = Query(default="runner", pattern="^(runner|health|report|mythibia_api|mythibia_watcher)$"),
+    target: str = Query(
+        default="runner",
+        pattern="^(runner|health|report|mythibia_api|mythibia_watcher"
+                "|agent_orchestrator|agent_scout|agent_brain|agent_generator"
+                "|agent_validator|agent_publisher)$",
+    ),
     lines: int = Query(default=120, ge=10, le=500),
     _: None = Depends(_require_token),
 ) -> dict:
     mapping = {
-        "runner": "/opt/ctoa/logs/runner.log",
-        "health": "/opt/ctoa/logs/health-live.log",
-        "report": "/opt/ctoa/logs/runner.log",
-        "mythibia_api": "/opt/ctoa/logs/mythibia-news-api.log",
-        "mythibia_watcher": "/opt/ctoa/logs/mythibia-news-watcher.log",
+        "runner":            "/opt/ctoa/logs/runner.log",
+        "health":            "/opt/ctoa/logs/health-live.log",
+        "report":            "/opt/ctoa/logs/runner.log",
+        "mythibia_api":      "/opt/ctoa/logs/mythibia-news-api.log",
+        "mythibia_watcher":  "/opt/ctoa/logs/mythibia-news-watcher.log",
+        "agent_orchestrator": "/opt/ctoa/logs/agents-orchestrator.log",
+        "agent_scout":       "/opt/ctoa/logs/agents-orchestrator.log",
+        "agent_brain":       "/opt/ctoa/logs/agents-orchestrator.log",
+        "agent_generator":   "/opt/ctoa/logs/agents-orchestrator.log",
+        "agent_validator":   "/opt/ctoa/logs/agents-orchestrator.log",
+        "agent_publisher":   "/opt/ctoa/logs/agents-orchestrator.log",
     }
     path = mapping[target]
-    cmd = f"tail -n {lines} {path}"
+    cmd = f"tail -n {lines} {path} 2>/dev/null || echo '(log not found)'"
     return _run(cmd, timeout=10)
 
 
@@ -175,3 +191,123 @@ def command(req: CommandRequest, request: Request, _: None = Depends(_require_to
     result = _run(cmd, timeout=req.timeout, cwd=req.cwd)
     _audit(request, cmd, int(result.get("code", -1)))
     return result
+
+
+# ── Server registration ──────────────────────────────────────────────────────
+
+def _validate_url(url: str) -> str:
+    """Normalise and basic-validate a game server URL."""
+    url = url.strip().rstrip("/")
+    if not re.match(r"^https?://[^\s/$.?#].[^\s]*$", url, re.IGNORECASE):
+        raise HTTPException(status_code=422, detail="Invalid URL format. Must start with http:// or https://")
+    return url
+
+
+def _db_exec(sql: str, params: tuple = ()) -> dict:
+    """Run a SQL statement via psql CLI (no psycopg2 needed on the mobile console host)."""
+    dsn = (
+        f"postgresql://{os.getenv('DB_USER','ctoa')}:{os.getenv('DB_PASSWORD','')}"
+        f"@{os.getenv('DB_HOST','127.0.0.1')}:{os.getenv('DB_PORT','5432')}"
+        f"/{os.getenv('DB_NAME','ctoa')}"
+    )
+    # Build parameterised SQL by simple positional substitution (values are quoted)
+    def quote(v: object) -> str:
+        if v is None:
+            return "NULL"
+        return "'" + str(v).replace("'", "''") + "'"
+
+    # Replace %s placeholders sequentially
+    filled = sql
+    for p in params:
+        filled = filled.replace("%s", quote(p), 1)
+
+    cmd = f"psql {dsn} -t -A -c {json.dumps(filled)}"
+    return _run(cmd, timeout=15)
+
+
+@app.post("/api/server/register")
+def server_register(
+    req: ServerRegisterRequest,
+    request: Request,
+    _: None = Depends(_require_token),
+) -> dict:
+    url = _validate_url(req.url)
+
+    # Insert into DB (idempotent)
+    res = _db_exec(
+        "INSERT INTO servers (url, status) VALUES (%s, 'NEW') "
+        "ON CONFLICT (url) DO UPDATE SET status='NEW', updated_at=now() "
+        "RETURNING id, status",
+        (url,),
+    )
+    if res["code"] != 0:
+        raise HTTPException(status_code=503, detail=f"DB error: {res['stderr'][:200]}")
+
+    # Trigger one-shot orchestrator run (background)
+    _run(
+        "systemctl start ctoa-agents-orchestrator.service",
+        timeout=5,
+    )
+
+    _audit(request, f"server_register:{url}", 0)
+    return {"ok": True, "url": url, "db": res["stdout"].strip()}
+
+
+# ── Dashboard ────────────────────────────────────────────────────────────────
+
+@app.get("/api/dashboard")
+def dashboard(_: None = Depends(_require_token)) -> dict:
+    servers_res = _db_exec(
+        "SELECT id, url, status, created_at FROM servers ORDER BY id DESC LIMIT 20",
+    )
+    modules_res = _db_exec(
+        "SELECT status, COUNT(*) AS n FROM modules GROUP BY status ORDER BY status",
+    )
+    stats_res = _db_exec(
+        "SELECT dt, modules_generated, programs_generated, avg_quality, launcher_day "
+        "FROM daily_stats ORDER BY dt DESC LIMIT 7",
+    )
+    top_res = _db_exec(
+        "SELECT task_id, output_file, quality_score, status "
+        "FROM modules WHERE quality_score IS NOT NULL ORDER BY quality_score DESC LIMIT 10",
+    )
+
+    def parse_rows(raw: str) -> list[list[str]]:
+        rows = []
+        for line in raw.strip().splitlines():
+            if line.strip():
+                rows.append(line.split("|"))
+        return rows
+
+    return {
+        "servers":  parse_rows(servers_res.get("stdout", "")),
+        "modules":  parse_rows(modules_res.get("stdout", "")),
+        "stats":    parse_rows(stats_res.get("stdout", "")),
+        "top":      parse_rows(top_res.get("stdout", "")),
+        "ok":       servers_res["code"] == 0,
+    }
+
+
+@app.get("/api/agents/status")
+def agents_status(_: None = Depends(_require_token)) -> dict:
+    units = {
+        "orchestrator": "ctoa-agents-orchestrator.service",
+        "orchestrator_timer": "ctoa-agents-orchestrator.timer",
+        "db": "ctoa-db",  # docker container
+    }
+    out: dict[str, str] = {}
+    for key, unit in units.items():
+        if key == "db":
+            res = _run("docker inspect --format '{{.State.Status}}' ctoa-db 2>/dev/null || echo missing", timeout=5)
+            out[key] = res["stdout"].strip() or "unknown"
+        else:
+            res = _run(f"systemctl is-active {unit}", timeout=5)
+            out[key] = res["stdout"].strip() or "unknown"
+
+    # Last agent run times from DB
+    last_runs = _db_exec(
+        "SELECT agent, status, finished_at FROM agent_runs ORDER BY id DESC LIMIT 12",
+    )
+    out["last_runs_raw"] = last_runs.get("stdout", "")
+    return out
+

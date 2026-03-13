@@ -1,0 +1,16 @@
+[Unit]
+Description=CTOA Database (PostgreSQL via Docker Compose)
+After=docker.service network.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/ctoa
+EnvironmentFile=/opt/ctoa/.env
+ExecStart=/usr/bin/docker compose -f deploy/vps/docker-compose.yml up -d --wait
+ExecStop=/usr/bin/docker compose -f deploy/vps/docker-compose.yml stop
+TimeoutStartSec=120
+
+[Install]
+WantedBy=multi-user.target

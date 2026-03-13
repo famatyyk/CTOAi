@@ -1,0 +1,12 @@
+[Unit]
+Description=CTOA Agents Orchestrator Timer – runs pipeline every 10 minutes
+Requires=ctoa-agents-orchestrator.service
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=10min
+Persistent=true
+Unit=ctoa-agents-orchestrator.service
+
+[Install]
+WantedBy=timers.target
