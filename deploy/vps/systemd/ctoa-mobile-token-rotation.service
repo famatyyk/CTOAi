@@ -1,0 +1,10 @@
+[Unit]
+Description=Rotate CTOA mobile console token
+After=network.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/ctoa
+ExecStart=/bin/bash /opt/ctoa/deploy/vps/rotate-mobile-token.sh
+StandardOutput=append:/opt/ctoa/logs/mobile-token-rotation.log
+StandardError=append:/opt/ctoa/logs/mobile-token-rotation.log

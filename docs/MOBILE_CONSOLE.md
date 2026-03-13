@@ -19,6 +19,23 @@ Uwaga:
 - `CTOA_MOBILE_FULL_ACCESS=true` daje praktycznie shell-level kontrolę.
 - Uzywaj tylko przez VPN / trusted network / reverse proxy z TLS.
 
+## Automatyczna rotacja tokenu (co 7 dni)
+
+VPS posiada timer systemd do rotacji tokenu:
+- `ctoa-mobile-token-rotation.timer`
+- skrypt: `deploy/vps/rotate-mobile-token.sh`
+
+Co robi rotacja:
+- generuje nowy `CTOA_MOBILE_TOKEN`
+- aktualizuje `/opt/ctoa/.env`
+- zapisuje nowy token do prywatnego pliku: `/opt/ctoa/secrets/mobile-token.txt`
+- restartuje `ctoa-mobile-console.service`
+- dopisuje wpis do: `/opt/ctoa/logs/mobile-token-rotation.log`
+
+Uprawnienia prywatnego pliku tokenu:
+- owner: `root:root`
+- mode: `600`
+
 ## Start lokalny
 ```bash
 python3 -m venv .venv

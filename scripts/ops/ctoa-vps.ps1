@@ -93,17 +93,22 @@ cp deploy/vps/systemd/ctoa-report.timer /etc/systemd/system/
 cp deploy/vps/systemd/ctoa-health-live.service /etc/systemd/system/
 cp deploy/vps/systemd/ctoa-retention-cleanup.service /etc/systemd/system/
 cp deploy/vps/systemd/ctoa-retention-cleanup.timer /etc/systemd/system/
+cp deploy/vps/systemd/ctoa-mobile-token-rotation.service /etc/systemd/system/
+cp deploy/vps/systemd/ctoa-mobile-token-rotation.timer /etc/systemd/system/
 cp deploy/vps/logrotate/ctoa /etc/logrotate.d/ctoa
 chmod +x /opt/ctoa/deploy/vps/cleanup-retention.sh
+chmod +x /opt/ctoa/deploy/vps/rotate-mobile-token.sh
 systemctl daemon-reload
 systemctl enable --now ctoa-runner.timer
 systemctl enable --now ctoa-report.timer
 systemctl enable --now ctoa-health-live.service
 systemctl enable --now ctoa-retention-cleanup.timer
+systemctl enable --now ctoa-mobile-token-rotation.timer
 systemctl status ctoa-runner.timer --no-pager -l | head -n 12
 systemctl status ctoa-report.timer --no-pager -l | head -n 12
 systemctl status ctoa-health-live.service --no-pager -l | head -n 20
 systemctl status ctoa-retention-cleanup.timer --no-pager -l | head -n 12
+systemctl status ctoa-mobile-token-rotation.timer --no-pager -l | head -n 12
 '@
 }
 
