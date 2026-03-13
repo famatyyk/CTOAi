@@ -31,6 +31,11 @@ jobs:
         run: |
           python scripts/ops/core_guard.py --check
 
+      - name: Runtime path freeze guard
+        shell: bash
+        run: |
+          python scripts/ops/runtime_path_guard.py
+
       - name: Install validation tools
         run: |
           python -m pip install --upgrade pip
