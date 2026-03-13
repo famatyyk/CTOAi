@@ -296,14 +296,20 @@ def scout_server(server_id: int, base_url: str) -> None:
                 log.info("Fallback matched engine profile: %s", engine)
                 break
 
-    new_status = "INGESTED" if found > 0 else "ERROR"
+    force_generic_ingest = found == 0 and profile == "tibiantis"
+    new_status = "INGESTED" if (found > 0 or force_generic_ingest) else "ERROR"
     if detected_engine:
         game_type = f"tibia-ot:{detected_engine}"
     elif profile != "generic":
         game_type = f"tibia-ot:{profile}"
 
     scout_error = None
-    if found == 0:
+    if force_generic_ingest:
+        scout_error = (
+            "No machine API found; forced generic ingest mode "
+            f"for profile={profile} (total_probed={len(probed)})"
+        )
+    elif found == 0:
         scout_error = (
             "No accessible endpoints found "
             f"(profile={profile}, primary={len(primary_paths)}, "
