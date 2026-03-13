@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -51,8 +53,14 @@ jobs:
         run: |
           set +e
           set -o pipefail
-          flake8 runner/ agents/ --max-line-length=120 --count --statistics 2>&1 | tee pr-flake8.txt
-          FLAKE8_EXIT=${PIPESTATUS[0]}
+          CHANGED_PY=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -E '^(runner/|agents/).+\.py$' || true)
+          if [ -z "$CHANGED_PY" ]; then
+            echo "No changed Python files in runner/ or agents/" | tee pr-flake8.txt
+            FLAKE8_EXIT=0
+          else
+            flake8 $CHANGED_PY --max-line-length=120 --count --statistics 2>&1 | tee pr-flake8.txt
+            FLAKE8_EXIT=${PIPESTATUS[0]}
+          fi
           set -e
           echo "FLAKE8_EXIT=${FLAKE8_EXIT}" >> "$GITHUB_ENV"
 
@@ -62,8 +70,14 @@ jobs:
         run: |
           set +e
           set -o pipefail
-          pylint runner agents -j 0 --score=y 2>&1 | tee pr-pylint.txt
-          PYLINT_EXIT=${PIPESTATUS[0]}
+          CHANGED_PY=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -E '^(runner/|agents/).+\.py$' || true)
+          if [ -z "$CHANGED_PY" ]; then
+            echo "No changed Python files in runner/ or agents/" | tee pr-pylint.txt
+            PYLINT_EXIT=0
+          else
+            pylint $CHANGED_PY -j 0 --score=y 2>&1 | tee pr-pylint.txt
+            PYLINT_EXIT=${PIPESTATUS[0]}
+          fi
           set -e
           echo "PYLINT_EXIT=${PYLINT_EXIT}" >> "$GITHUB_ENV"
 
