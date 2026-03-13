@@ -127,14 +127,21 @@ sudo -u postgres psql -d ctoa -c "SELECT id, url, status, COALESCE(game_type,'')
 '@
     }
     'ShowScoutDetails' {
-        Invoke-SshScript @'
+        $filterUrl = Get-OptionalEnv 'CTOA_FILTER_URL' ''
+        $filterClause = ''
+        if (-not [string]::IsNullOrWhiteSpace($filterUrl)) {
+            $safeFilterUrl = $filterUrl -replace "'", "''"
+            $filterClause = "WHERE s.url = '$safeFilterUrl'"
+        }
+
+        Invoke-SshScript @"
 set -e
 echo "=== Recent scout endpoint detections ==="
-sudo -u postgres psql -d ctoa -c "SELECT s.id AS server_id, s.url, e.path, e.last_status, COALESCE(e.response_schema->>'_probe_source','unknown') AS probe_source, to_char(e.last_checked, 'YYYY-MM-DD HH24:MI:SS') AS last_checked FROM api_endpoints e JOIN servers s ON s.id=e.server_id ORDER BY e.last_checked DESC NULLS LAST LIMIT 80;"
+sudo -u postgres psql -d ctoa -c "SELECT s.id AS server_id, s.url, e.path, e.last_status, COALESCE(e.response_schema->>'_probe_source','unknown') AS probe_source, to_char(e.last_checked, 'YYYY-MM-DD HH24:MI:SS') AS last_checked FROM api_endpoints e JOIN servers s ON s.id=e.server_id $filterClause ORDER BY e.last_checked DESC NULLS LAST LIMIT 80;"
 echo
 echo "=== Scout source summary per server ==="
-sudo -u postgres psql -d ctoa -c "SELECT s.id AS server_id, s.url, COALESCE(e.response_schema->>'_probe_source','unknown') AS probe_source, COUNT(*) AS endpoints FROM api_endpoints e JOIN servers s ON s.id=e.server_id GROUP BY s.id, s.url, probe_source ORDER BY s.id DESC, endpoints DESC;"
-'@
+sudo -u postgres psql -d ctoa -c "SELECT s.id AS server_id, s.url, COALESCE(e.response_schema->>'_probe_source','unknown') AS probe_source, COUNT(*) AS endpoints FROM api_endpoints e JOIN servers s ON s.id=e.server_id $filterClause GROUP BY s.id, s.url, probe_source ORDER BY s.id DESC, endpoints DESC;"
+"@
     }
         'RegisterServer' {
                 $serverUrl = Get-RequiredEnv 'CTOA_SERVER_URL'
