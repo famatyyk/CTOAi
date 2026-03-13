@@ -2,8 +2,7 @@
   "allowed_runtime_entrypoint": "runner/runner.py",
   "allowed_agent_package_prefix": "runner/agents/",
   "legacy_exceptions": [
-    "runner/agents.py",
-    "sprint_007_execute.py"
+    "runner/agents.py"
   ],
   "risky_globs": [
     "runner/*runner*.py",
