@@ -1,0 +1,12 @@
+[Unit]
+Description=CTOA Mythibia news watcher single run
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/ctoa/labs/projects/mythibia_news_watcher
+Environment="PYTHONUNBUFFERED=1"
+ExecStart=/usr/bin/python3 -c "import watcher; watcher.run_once()"
+StandardOutput=append:/opt/ctoa/logs/mythibia-news-watcher.log
+StandardError=append:/opt/ctoa/logs/mythibia-news-watcher.log

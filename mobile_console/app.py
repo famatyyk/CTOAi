@@ -105,6 +105,8 @@ def status(_: None = Depends(_require_token)) -> dict:
         "runner_timer": "systemctl is-active ctoa-runner.timer",
         "report_timer": "systemctl is-active ctoa-report.timer",
         "health_service": "systemctl is-active ctoa-health-live.service",
+        "mythibia_watcher_timer": "systemctl is-active ctoa-mythibia-news-watcher.timer",
+        "mythibia_api_service": "systemctl is-active ctoa-mythibia-news-api.service",
     }
     out = {}
     for key, cmd in checks.items():
@@ -122,11 +124,17 @@ def status(_: None = Depends(_require_token)) -> dict:
         timeout=20,
     )
 
+    mythibia_health = _run(
+        "python3 - << 'PY'\nimport json\nfrom urllib.request import urlopen\nfrom urllib.error import URLError, HTTPError\nurl='http://127.0.0.1:8890/health'\nout={'ok': False, 'url': url}\ntry:\n with urlopen(url, timeout=5) as r:\n  body=r.read().decode('utf-8')\n  out['status']=r.status\n  out['body']=json.loads(body)\n  out['ok']=True\nexcept HTTPError as e:\n out['error']=f'http_{e.code}'\nexcept URLError as e:\n out['error']=str(e.reason)\nexcept Exception as e:\n out['error']=str(e)\nprint(out)\nPY",
+        timeout=10,
+    )
+
     return {
         "services": out,
         "disk": disk,
         "report": report,
         "lab": lab_status,
+        "mythibia_api_health": mythibia_health,
     }
 
 
