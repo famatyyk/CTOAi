@@ -123,6 +123,7 @@ Primary workflows:
 - `.github/workflows/ctoa-status-sync.yml` (hourly status/labels sync)
 - `.github/workflows/ctoa-daily-insights.yml` (daily operational insights)
 - `.github/workflows/ctoa-weekly-report.yml` (weekly summary)
+- `.github/workflows/ctoa-copilot-ci.yml` (PR quality gate + automated report comment, Copilot CI-like)
 
 View results in GitHub Actions for this repository.
 

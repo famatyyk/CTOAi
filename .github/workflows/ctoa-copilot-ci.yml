@@ -1,0 +1,167 @@
+name: CTOA Copilot CI-like
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  pr_quality_report:
+    name: PR Quality Report
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install tools
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov flake8 pylint
+
+      - name: Run tests
+        shell: bash
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          if [ -d "tests" ]; then
+            python -m pytest tests/ -q --maxfail=20 2>&1 | tee pr-tests.txt
+            echo "PYTEST_EXIT=$?" >> "$GITHUB_ENV"
+          else
+            echo "No tests directory found" | tee pr-tests.txt
+            echo "PYTEST_EXIT=0" >> "$GITHUB_ENV"
+          fi
+
+      - name: Run flake8
+        shell: bash
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          flake8 runner/ agents/ --max-line-length=120 --count --statistics 2>&1 | tee pr-flake8.txt
+          echo "FLAKE8_EXIT=$?" >> "$GITHUB_ENV"
+
+      - name: Run pylint
+        shell: bash
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          pylint runner agents -j 0 --score=y 2>&1 | tee pr-pylint.txt
+          echo "PYLINT_EXIT=$?" >> "$GITHUB_ENV"
+
+      - name: Build PR summary markdown
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import os
+          
+          def tail_text(path: str, limit: int = 80) -> str:
+              p = Path(path)
+              if not p.exists():
+                  return "(missing)"
+              lines = p.read_text(encoding="utf-8", errors="ignore").splitlines()
+              lines = lines[-limit:]
+              return "\n".join(lines)
+          
+          pytest_exit = os.environ.get("PYTEST_EXIT", "1")
+          flake8_exit = os.environ.get("FLAKE8_EXIT", "1")
+          pylint_exit = os.environ.get("PYLINT_EXIT", "1")
+          
+          def status(code: str) -> str:
+              return "PASS" if code == "0" else "FAIL"
+          
+          report = []
+          report.append("## CTOA Copilot CI-like Report")
+          report.append("")
+          report.append("| Check | Status | Exit code |")
+          report.append("|---|---|---:|")
+          report.append(f"| Pytest | {status(pytest_exit)} | {pytest_exit} |")
+          report.append(f"| Flake8 | {status(flake8_exit)} | {flake8_exit} |")
+          report.append(f"| Pylint | {status(pylint_exit)} | {pylint_exit} |")
+          report.append("")
+          report.append("### Pytest tail")
+          report.append("```")
+          report.append(tail_text("pr-tests.txt"))
+          report.append("```")
+          report.append("")
+          report.append("### Flake8 tail")
+          report.append("```")
+          report.append(tail_text("pr-flake8.txt"))
+          report.append("```")
+          report.append("")
+          report.append("### Pylint tail")
+          report.append("```")
+          report.append(tail_text("pr-pylint.txt"))
+          report.append("```")
+          
+          Path("pr-quality-report.md").write_text("\n".join(report) + "\n", encoding="utf-8")
+          PY
+
+      - name: Publish step summary
+        shell: bash
+        run: |
+          cat pr-quality-report.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload PR quality artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-quality-report
+          path: |
+            pr-quality-report.md
+            pr-tests.txt
+            pr-flake8.txt
+            pr-pylint.txt
+          if-no-files-found: warn
+
+      - name: Comment on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('pr-quality-report.md', 'utf8');
+            const marker = '<!-- ctoa-copilot-ci-report -->';
+            const finalBody = `${marker}\n${body}`;
+            const {owner, repo} = context.repo;
+            const issue_number = context.payload.pull_request.number;
+
+            const comments = await github.rest.issues.listComments({
+              owner,
+              repo,
+              issue_number,
+              per_page: 100,
+            });
+
+            const existing = comments.data.find(c => c.body && c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body: finalBody,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body: finalBody,
+              });
+            }
+
+      - name: Enforce PR quality gate
+        shell: bash
+        run: |
+          if [ "$PYTEST_EXIT" != "0" ] || [ "$FLAKE8_EXIT" != "0" ] || [ "$PYLINT_EXIT" != "0" ]; then
+            echo "Quality gate failed"
+            exit 1
+          fi
