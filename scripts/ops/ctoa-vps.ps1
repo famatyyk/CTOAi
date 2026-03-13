@@ -15,7 +15,8 @@ param(
         'ReportErrorDetails',
         'SetupDB',
         'SetupAgents',
-        'TailAgents'
+        'TailAgents',
+        'FixDbPerms'
     )]
     [string]$Action
 )
@@ -106,6 +107,20 @@ switch ($Action) {
     'TailLiveHealth'      { Invoke-SshCommand 'tail -n 80 -f /opt/ctoa/logs/health-live.log' }
     'ReportErrorDetails'  { Invoke-SshCommand 'tail -n 60 /opt/ctoa/logs/runner.log' }
     'TailAgents'          { Invoke-SshCommand 'tail -n 100 -f /opt/ctoa/logs/agents-orchestrator.log' }
+    'FixDbPerms' {
+        Invoke-SshScript @'
+set -e
+sudo -u postgres psql -d ctoa <<"SQL"
+GRANT CONNECT ON DATABASE ctoa TO ctoa;
+GRANT USAGE ON SCHEMA public TO ctoa;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO ctoa;
+GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA public TO ctoa;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO ctoa;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO ctoa;
+SQL
+echo '[FixDbPerms] grants applied'
+'@
+    }
     'ReportViaServiceEnv' { Invoke-SshCommand 'systemctl restart ctoa-report.service; journalctl -u ctoa-report.service -n 25 --no-pager' }
     'PublishWithSourcedEnv' { Invoke-SshCommand 'cd /opt/ctoa; set -a; . /opt/ctoa/.env; set +a; . .venv/bin/activate; python3 runner/runner.py report --publish' }
     'WriteGithubPat' {
