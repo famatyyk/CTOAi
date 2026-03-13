@@ -166,23 +166,31 @@ systemctl status ctoa-health-live.service --no-pager -l
 '@
     }
     'SetupDB' {
-        Invoke-SshScript @'
+                Invoke-SshScript @'
 set -e
 export DEBIAN_FRONTEND=noninteractive
 cd /opt/ctoa
-docker compose version >/dev/null 2>&1 || apt-get install -y docker-compose-plugin
 .venv/bin/pip install -q psycopg2-binary
 if ! grep -q '^DB_PASSWORD=' /opt/ctoa/.env 2>/dev/null; then
-  DBPW=$(openssl rand -base64 24 | tr -dc 'a-zA-Z0-9' | head -c 28)
-  printf '\nDB_NAME=ctoa\nDB_USER=ctoa\nDB_HOST=127.0.0.1\nDB_PORT=5432\nDB_PASSWORD=%s\n' "$DBPW" >> /opt/ctoa/.env
-  echo '[SetupDB] DB_PASSWORD generated'
+    DBPW=$(openssl rand -base64 24 | tr -dc 'a-zA-Z0-9' | head -c 28)
+    printf '\nDB_NAME=ctoa\nDB_USER=ctoa\nDB_HOST=127.0.0.1\nDB_PORT=5432\nDB_PASSWORD=%s\n' "$DBPW" >> /opt/ctoa/.env
+    echo '[SetupDB] DB_PASSWORD generated'
 fi
-cp deploy/vps/systemd/ctoa-db.service /etc/systemd/system/
-systemctl daemon-reload
-systemctl enable --now ctoa-db.service
-sleep 10
-docker ps | grep ctoa-db && echo '[SetupDB] Container OK' || echo '[SetupDB] WARNING - container missing'
-docker exec ctoa-db pg_isready -U ctoa -d ctoa && echo '[SetupDB] DB ready' || echo '[SetupDB] still starting'
+set -a; . /opt/ctoa/.env; set +a
+docker stop ctoa-db 2>/dev/null || true
+docker rm   ctoa-db 2>/dev/null || true
+docker run -d \
+    --name ctoa-db \
+    --restart always \
+    -e POSTGRES_DB="${DB_NAME:-ctoa}" \
+    -e POSTGRES_USER="${DB_USER:-ctoa}" \
+    -e POSTGRES_PASSWORD="${DB_PASSWORD}" \
+    -p 127.0.0.1:5432:5432 \
+    -v ctoa_pgdata:/var/lib/postgresql/data \
+    postgres:16-alpine
+sleep 12
+docker exec ctoa-db pg_isready -U "${DB_USER:-ctoa}" -d "${DB_NAME:-ctoa}" && echo '[SetupDB] DB ready' || echo '[SetupDB] still starting'
+docker exec -i ctoa-db psql -U "${DB_USER:-ctoa}" -d "${DB_NAME:-ctoa}" < deploy/vps/db/init.sql && echo '[SetupDB] Schema applied' || echo '[SetupDB] Schema note'
 '@
     }
     'SetupAgents' {
