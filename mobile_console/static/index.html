@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CTOA Mobile Console</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header class="top">
+    <h1>CTOA Mobile Console</h1>
+    <div class="token-row">
+      <input id="token" type="password" placeholder="CTOA_MOBILE_TOKEN" />
+      <button id="saveToken">Zapisz token</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>Live Status</h2>
+      <div class="actions">
+        <button id="refreshStatus">Odśwież status</button>
+        <button id="runnerLog">Runner log</button>
+        <button id="healthLog">Health log</button>
+      </div>
+      <pre id="statusOut"></pre>
+    </section>
+
+    <section class="card">
+      <h2>Preset Commands</h2>
+      <div class="actions">
+        <button id="loadPresets">Pobierz presety</button>
+      </div>
+      <select id="presetSelect" size="6"></select>
+      <button id="runPreset">Uruchom preset</button>
+    </section>
+
+    <section class="card">
+      <h2>Full Command</h2>
+      <textarea id="cmd" rows="5" placeholder="np. systemctl status ctoa-runner.service --no-pager -l"></textarea>
+      <div class="actions">
+        <button id="runCmd">Uruchom komendę</button>
+      </div>
+      <pre id="cmdOut"></pre>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
