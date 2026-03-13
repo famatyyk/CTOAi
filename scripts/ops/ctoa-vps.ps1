@@ -190,26 +190,26 @@ pg_isready -h 127.0.0.1 -U ctoa -d ctoa && echo '[SetupDB] DB ready'
     }
     'SetupAgents' {
         Invoke-SshScript @'
-set -e
-cd /opt/ctoa
-git pull --ff-only
-.venv/bin/pip install -q psycopg2-binary
-mkdir -p /opt/ctoa/generated /opt/ctoa/releases /opt/ctoa/logs
-cp deploy/vps/systemd/ctoa-db.service                  /etc/systemd/system/
-cp deploy/vps/systemd/ctoa-agents-orchestrator.service /etc/systemd/system/
-cp deploy/vps/systemd/ctoa-agents-orchestrator.timer   /etc/systemd/system/
-systemctl daemon-reload
-systemctl enable --now ctoa-db.service
-sleep 6
-systemctl enable --now ctoa-agents-orchestrator.timer
-grep -q 'CTOA_GENERATED_DIR' /opt/ctoa/.env 2>/dev/null || echo 'CTOA_GENERATED_DIR=/opt/ctoa/generated' >> /opt/ctoa/.env
-grep -q 'CTOA_RELEASES_DIR'  /opt/ctoa/.env 2>/dev/null || echo 'CTOA_RELEASES_DIR=/opt/ctoa/releases'   >> /opt/ctoa/.env
-grep -q 'CTOA_REPO_DIR'      /opt/ctoa/.env 2>/dev/null || echo 'CTOA_REPO_DIR=/opt/ctoa'               >> /opt/ctoa/.env
-systemctl restart ctoa-mobile-console.service
-systemctl status ctoa-db.service                    --no-pager -l | head -n 8
-systemctl status ctoa-agents-orchestrator.timer     --no-pager -l | head -n 8
-systemctl status ctoa-mobile-console.service        --no-pager -l | head -n 6
-echo '[SetupAgents] Done - orchestrator fires every 10 minutes'
-'@
+    set -e
+    cd /opt/ctoa
+    git pull --ff-only
+    .venv/bin/pip install -q psycopg2-binary
+    mkdir -p /opt/ctoa/generated /opt/ctoa/releases /opt/ctoa/logs
+    cp deploy/vps/systemd/ctoa-agents-orchestrator.service /etc/systemd/system/
+    cp deploy/vps/systemd/ctoa-agents-orchestrator.timer   /etc/systemd/system/
+    systemctl daemon-reload
+    systemctl enable --now ctoa-agents-orchestrator.timer
+    grep -q 'CTOA_GENERATED_DIR' /opt/ctoa/.env 2>/dev/null || echo 'CTOA_GENERATED_DIR=/opt/ctoa/generated' >> /opt/ctoa/.env
+    grep -q 'CTOA_RELEASES_DIR'  /opt/ctoa/.env 2>/dev/null || echo 'CTOA_RELEASES_DIR=/opt/ctoa/releases'   >> /opt/ctoa/.env
+    grep -q 'CTOA_REPO_DIR'      /opt/ctoa/.env 2>/dev/null || echo 'CTOA_REPO_DIR=/opt/ctoa'               >> /opt/ctoa/.env
+    grep -q 'CTOA_DAILY_MODULE_LIMIT' /opt/ctoa/.env 2>/dev/null || echo 'CTOA_DAILY_MODULE_LIMIT=50' >> /opt/ctoa/.env
+    grep -q 'CTOA_DAILY_PROGRAM_LIMIT' /opt/ctoa/.env 2>/dev/null || echo 'CTOA_DAILY_PROGRAM_LIMIT=5' >> /opt/ctoa/.env
+    grep -q 'CTOA_MIN_QUALITY' /opt/ctoa/.env 2>/dev/null || echo 'CTOA_MIN_QUALITY=90' >> /opt/ctoa/.env
+    systemctl restart ctoa-mobile-console.service
+    systemctl status ctoa-agents-orchestrator.timer     --no-pager -l | head -n 8
+    systemctl status ctoa-mobile-console.service        --no-pager -l | head -n 6
+    pg_isready -h 127.0.0.1 -U ctoa -d ctoa && echo '[SetupAgents] DB OK'
+    echo '[SetupAgents] Done - orchestrator fires every 10 minutes'
+    '@
     }
 }

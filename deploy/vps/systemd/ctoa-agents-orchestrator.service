@@ -1,6 +1,6 @@
 [Unit]
 Description=CTOA Agents Orchestrator (one-shot pipeline run)
-After=network.target docker.service
+After=network.target postgresql.service
 
 [Service]
 Type=oneshot
