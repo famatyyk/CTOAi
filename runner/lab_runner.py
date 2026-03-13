@@ -108,6 +108,19 @@ def main() -> None:
     r = requests.get(TARGET_URL, headers=HEADERS, timeout=20)
     if r.status_code == 403 and not TARGET_URL.endswith("/"):
         r = requests.get(TARGET_URL + "/", headers=HEADERS, timeout=20)
+    if r.status_code >= 400:
+        payload = {{
+            "generated_at": now_iso(),
+            "target": TARGET_URL,
+            "count": 0,
+            "items": [],
+            "fetch_status": r.status_code,
+            "fetch_error": f"HTTP {{r.status_code}} from source",
+        }}
+        OUT_FILE.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        print(f"Source blocked with status {{r.status_code}}; wrote empty payload to {{OUT_FILE}}")
+        return
+
     r.raise_for_status()
     items = parse_news(r.text)
     payload = {{
