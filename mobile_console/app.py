@@ -1,16 +1,19 @@
 #!/usr/bin/env python3
 import os
 import subprocess
+import json
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Optional
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Query
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 ROOT = Path(__file__).resolve().parent.parent
 STATIC_DIR = ROOT / "mobile_console" / "static"
+AUDIT_LOG = ROOT / "logs" / "mobile-console-audit.log"
 
 app = FastAPI(title="CTOA Mobile Console", version="1.0.0")
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
@@ -66,6 +69,19 @@ def _run(cmd: str, timeout: int = 20, cwd: Optional[str] = None) -> dict:
         "stdout": proc.stdout[-20000:],
         "stderr": proc.stderr[-20000:],
     }
+
+
+def _audit(request: Request, command: str, code: int) -> None:
+    AUDIT_LOG.parent.mkdir(parents=True, exist_ok=True)
+    entry = {
+        "at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+        "ip": request.client.host if request.client else "unknown",
+        "path": request.url.path,
+        "command": command,
+        "code": code,
+    }
+    with AUDIT_LOG.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(entry, ensure_ascii=True) + "\n")
 
 
 @app.get("/")
@@ -125,7 +141,7 @@ def logs(
 
 
 @app.post("/api/command")
-def command(req: CommandRequest, _: None = Depends(_require_token)) -> dict:
+def command(req: CommandRequest, request: Request, _: None = Depends(_require_token)) -> dict:
     cmd = req.command.strip()
 
     if not _full_access():
@@ -136,4 +152,6 @@ def command(req: CommandRequest, _: None = Depends(_require_token)) -> dict:
                 detail="Command not allowed in safe mode. Use one of /api/presets or enable full access.",
             )
 
-    return _run(cmd, timeout=req.timeout, cwd=req.cwd)
+    result = _run(cmd, timeout=req.timeout, cwd=req.cwd)
+    _audit(request, cmd, int(result.get("code", -1)))
+    return result
