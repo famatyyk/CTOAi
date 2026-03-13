@@ -41,8 +41,12 @@ def _allowed_commands() -> List[str]:
         "systemctl status ctoa-runner.timer --no-pager -l",
         "systemctl status ctoa-report.timer --no-pager -l",
         "systemctl status ctoa-health-live.service --no-pager -l",
+        "systemctl status ctoa-mythibia-news-api.service --no-pager -l",
+        "systemctl status ctoa-mythibia-news-watcher.timer --no-pager -l",
         "tail -n 80 /opt/ctoa/logs/runner.log",
         "tail -n 80 /opt/ctoa/logs/health-live.log",
+        "tail -n 80 /opt/ctoa/logs/mythibia-news-api.log",
+        "tail -n 80 /opt/ctoa/logs/mythibia-news-watcher.log",
         "cd /opt/ctoa; CTOA_BACKLOG_FILE=/opt/ctoa/workflows/backlog-sprint-004.yaml python3 runner/runner.py report",
         "cd /opt/ctoa; python3 runner/drift_checker.py",
         "df -h",
@@ -140,7 +144,7 @@ def status(_: None = Depends(_require_token)) -> dict:
 
 @app.get("/api/logs")
 def logs(
-    target: str = Query(default="runner", pattern="^(runner|health|report)$"),
+    target: str = Query(default="runner", pattern="^(runner|health|report|mythibia_api|mythibia_watcher)$"),
     lines: int = Query(default=120, ge=10, le=500),
     _: None = Depends(_require_token),
 ) -> dict:
@@ -148,6 +152,8 @@ def logs(
         "runner": "/opt/ctoa/logs/runner.log",
         "health": "/opt/ctoa/logs/health-live.log",
         "report": "/opt/ctoa/logs/runner.log",
+        "mythibia_api": "/opt/ctoa/logs/mythibia-news-api.log",
+        "mythibia_watcher": "/opt/ctoa/logs/mythibia-news-watcher.log",
     }
     path = mapping[target]
     cmd = f"tail -n {lines} {path}"

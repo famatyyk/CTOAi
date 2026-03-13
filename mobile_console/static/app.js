@@ -56,6 +56,24 @@ document.getElementById('healthLog').onclick = async () => {
   }
 };
 
+document.getElementById('mythibiaApiLog').onclick = async () => {
+  try {
+    const data = await api('/api/logs?target=mythibia_api&lines=120');
+    statusOut.textContent = (data.stdout || '') + (data.stderr || '');
+  } catch (e) {
+    statusOut.textContent = String(e);
+  }
+};
+
+document.getElementById('mythibiaWatcherLog').onclick = async () => {
+  try {
+    const data = await api('/api/logs?target=mythibia_watcher&lines=120');
+    statusOut.textContent = (data.stdout || '') + (data.stderr || '');
+  } catch (e) {
+    statusOut.textContent = String(e);
+  }
+};
+
 document.getElementById('loadPresets').onclick = async () => {
   try {
     const data = await api('/api/presets');
