@@ -168,29 +168,24 @@ systemctl status ctoa-health-live.service --no-pager -l
     'SetupDB' {
                 Invoke-SshScript @'
 set -e
-export DEBIAN_FRONTEND=noninteractive
 cd /opt/ctoa
 .venv/bin/pip install -q psycopg2-binary
+# generate DB password if missing
 if ! grep -q '^DB_PASSWORD=' /opt/ctoa/.env 2>/dev/null; then
     DBPW=$(openssl rand -base64 24 | tr -dc 'a-zA-Z0-9' | head -c 28)
     printf '\nDB_NAME=ctoa\nDB_USER=ctoa\nDB_HOST=127.0.0.1\nDB_PORT=5432\nDB_PASSWORD=%s\n' "$DBPW" >> /opt/ctoa/.env
     echo '[SetupDB] DB_PASSWORD generated'
 fi
 set -a; . /opt/ctoa/.env; set +a
-docker stop ctoa-db 2>/dev/null || true
-docker rm   ctoa-db 2>/dev/null || true
-docker run -d \
-    --name ctoa-db \
-    --restart always \
-    -e POSTGRES_DB="${DB_NAME:-ctoa}" \
-    -e POSTGRES_USER="${DB_USER:-ctoa}" \
-    -e POSTGRES_PASSWORD="${DB_PASSWORD}" \
-    -p 127.0.0.1:5432:5432 \
-    -v ctoa_pgdata:/var/lib/postgresql/data \
-    postgres:16-alpine
-sleep 12
-docker exec ctoa-db pg_isready -U "${DB_USER:-ctoa}" -d "${DB_NAME:-ctoa}" && echo '[SetupDB] DB ready' || echo '[SetupDB] still starting'
-docker exec -i ctoa-db psql -U "${DB_USER:-ctoa}" -d "${DB_NAME:-ctoa}" < deploy/vps/db/init.sql && echo '[SetupDB] Schema applied' || echo '[SetupDB] Schema note'
+# create role if not exists
+sudo -u postgres psql -tc "SELECT 1 FROM pg_roles WHERE rolname='ctoa'" | grep -q 1 || \
+    sudo -u postgres psql -c "CREATE ROLE ctoa WITH LOGIN PASSWORD '${DB_PASSWORD}';"
+# create database if not exists
+sudo -u postgres psql -tc "SELECT 1 FROM pg_database WHERE datname='ctoa'" | grep -q 1 || \
+    sudo -u postgres createdb -O ctoa ctoa
+# apply schema (idempotent - IF NOT EXISTS)
+sudo -u postgres psql -d ctoa -f /opt/ctoa/deploy/vps/db/init.sql && echo '[SetupDB] Schema applied'
+pg_isready -h 127.0.0.1 -U ctoa -d ctoa && echo '[SetupDB] DB ready'
 '@
     }
     'SetupAgents' {
