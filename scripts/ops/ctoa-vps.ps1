@@ -18,7 +18,8 @@ param(
         'TailAgents',
         'FixDbPerms',
         'RegisterServer',
-        'ShowServerStatus'
+        'ShowServerStatus',
+        'ShowScoutDetails'
     )]
     [string]$Action
 )
@@ -123,6 +124,16 @@ sudo -u postgres psql -d ctoa -c "SELECT status, COUNT(*) AS n FROM servers GROU
 echo
 echo "=== Recent servers ==="
 sudo -u postgres psql -d ctoa -c "SELECT id, url, status, COALESCE(game_type,'') AS game_type, LEFT(COALESCE(scout_error,''), 120) AS scout_error, to_char(updated_at, 'YYYY-MM-DD HH24:MI:SS') AS updated_at FROM servers ORDER BY updated_at DESC LIMIT 20;"
+'@
+    }
+    'ShowScoutDetails' {
+        Invoke-SshScript @'
+set -e
+echo "=== Recent scout endpoint detections ==="
+sudo -u postgres psql -d ctoa -c "SELECT s.id AS server_id, s.url, e.path, e.last_status, COALESCE(e.response_schema->>'_probe_source','unknown') AS probe_source, to_char(e.last_checked, 'YYYY-MM-DD HH24:MI:SS') AS last_checked FROM api_endpoints e JOIN servers s ON s.id=e.server_id ORDER BY e.last_checked DESC NULLS LAST LIMIT 80;"
+echo
+echo "=== Scout source summary per server ==="
+sudo -u postgres psql -d ctoa -c "SELECT s.id AS server_id, s.url, COALESCE(e.response_schema->>'_probe_source','unknown') AS probe_source, COUNT(*) AS endpoints FROM api_endpoints e JOIN servers s ON s.id=e.server_id GROUP BY s.id, s.url, probe_source ORDER BY s.id DESC, endpoints DESC;"
 '@
     }
         'RegisterServer' {
