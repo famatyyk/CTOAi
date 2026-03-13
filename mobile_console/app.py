@@ -117,10 +117,16 @@ def status(_: None = Depends(_require_token)) -> dict:
         timeout=20,
     )
 
+    lab_status = _run(
+        "python3 - << 'PY'\nimport yaml\nfrom pathlib import Path\np=Path('/opt/ctoa/labs/tasks/mythibia-projects.yaml')\nif not p.exists():\n print('LAB_TASKS_MISSING')\n raise SystemExit(0)\nd=yaml.safe_load(p.read_text(encoding='utf-8')) or {}\nt=d.get('tasks',[]) or []\ncounts={}\nfor x in t:\n s=x.get('status','UNKNOWN')\n counts[s]=counts.get(s,0)+1\nprint({'counts':counts,'tasks':[(x.get('id'),x.get('status')) for x in t]})\nPY",
+        timeout=20,
+    )
+
     return {
         "services": out,
         "disk": disk,
         "report": report,
+        "lab": lab_status,
     }
 
 

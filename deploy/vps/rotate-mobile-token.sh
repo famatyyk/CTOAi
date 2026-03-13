@@ -66,6 +66,11 @@ PY
 )"
 
 printf "[%s] masked=%s sha256=%s\n" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "${MASKED_TOKEN}" "${TOKEN_SHA256}" >> "${TOKEN_HISTORY_FILE}"
+
+# Keep only the newest 180 history entries.
+TMP_HISTORY_FILE="${TOKEN_HISTORY_FILE}.tmp"
+tail -n 180 "${TOKEN_HISTORY_FILE}" > "${TMP_HISTORY_FILE}" || true
+mv "${TMP_HISTORY_FILE}" "${TOKEN_HISTORY_FILE}"
 chmod 600 "${TOKEN_HISTORY_FILE}"
 chown root:root "${TOKEN_HISTORY_FILE}"
 

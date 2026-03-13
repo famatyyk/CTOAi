@@ -1,0 +1,26 @@
+version: 1
+backlog_id: mythibia-lab-001
+owner: ctoa-brain
+scope: "Autonomous E2E projects for https://mythibia.online/news"
+
+tasks:
+  - id: LAB-001
+    title: "Mythibia news scraper E2E"
+    status: NEW
+    project_folder: "labs/projects/mythibia_news_scraper"
+    template: "news_scraper"
+    target_url: "https://mythibia.online/news"
+
+  - id: LAB-002
+    title: "Mythibia news watcher daemon"
+    status: NEW
+    project_folder: "labs/projects/mythibia_news_watcher"
+    template: "news_watcher"
+    target_url: "https://mythibia.online/news"
+
+  - id: LAB-003
+    title: "Mythibia mobile status API"
+    status: NEW
+    project_folder: "labs/projects/mythibia_news_api"
+    template: "news_api"
+    target_url: "https://mythibia.online/news"
