@@ -1,0 +1,160 @@
+name: "CTOA VPS Global Save Cycle"
+
+# ============================================================
+# Runs once per day at 05:50 UTC (before 06:00 GS on server).
+# GitHub Actions monitors the VPS GS reset process and can
+# optionally trigger emergency rollback or alert.
+#
+# The actual shutdown/startup/inject/validate is done
+# by the VPS systemd timer (ctoa-gs-reset.timer @ 06:00).
+# This workflow:
+#   1. Confirms VPS connectivity
+#   2. Triggers the gs-reset.sh via SSH  (or waits for systemd timer)
+#   3. Polls for completion
+#   4. Posts a GS cycle report as a GitHub summary
+# ============================================================
+
+on:
+  schedule:
+    - cron: "50 5 * * *"    # 05:50 UTC daily — fires 10 min before GS
+  workflow_dispatch:
+    inputs:
+      force_reset:
+        description: "Force gs-reset.sh immediately (bypass waiting for timer)"
+        required: false
+        default: "false"
+      skip_validation:
+        description: "Skip API validation step (for dry-run diagnostics)"
+        required: false
+        default: "false"
+
+jobs:
+  gs-cycle:
+    name: "VPS Global Save Cycle"
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    env:
+      VPS_HOST: ${{ secrets.CTOA_VPS_HOST }}
+      VPS_USER: ${{ secrets.CTOA_VPS_USER }}
+      SSH_KEY:  ${{ secrets.CTOA_VPS_SSH_KEY }}
+      CTOA_DIR: /opt/ctoa
+
+    steps:
+      # --------------------------------------------------------
+      # 0. Set up SSH key
+      # --------------------------------------------------------
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/ctoa_vps
+          chmod 600 ~/.ssh/ctoa_vps
+          ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+
+      # --------------------------------------------------------
+      # 1. Verify VPS connectivity
+      # --------------------------------------------------------
+      - name: Verify VPS connectivity
+        run: |
+          ssh -i ~/.ssh/ctoa_vps -o BatchMode=yes \
+              -o ConnectTimeout=10 \
+              "$VPS_USER@$VPS_HOST" "echo VPS_OK"
+
+      # --------------------------------------------------------
+      # 2. Pull latest code on VPS  (agents receive new modules)
+      # --------------------------------------------------------
+      - name: Pull latest code on VPS
+        run: |
+          ssh -i ~/.ssh/ctoa_vps "$VPS_USER@$VPS_HOST" \
+            "cd $CTOA_DIR && git fetch --quiet && git reset --hard origin/main 2>&1 | tail -3"
+
+      # --------------------------------------------------------
+      # 3. Trigger GS Reset (or wait for systemd timer to fire)
+      # --------------------------------------------------------
+      - name: Trigger GS Reset
+        run: |
+          FORCE="${{ github.event.inputs.force_reset || 'false' }}"
+          if [ "$FORCE" = "true" ]; then
+            echo "Force flag set — executing gs-reset.sh directly …"
+            ssh -i ~/.ssh/ctoa_vps "$VPS_USER@$VPS_HOST" \
+              "bash $CTOA_DIR/scripts/ops/gs-reset.sh 2>&1 | tail -80"
+          else
+            echo "Waiting for systemd ctoa-gs-reset.timer to fire at 06:00 UTC …"
+            # Poll until the gs-reset log shows CYCLE COMPLETE or timeout
+            ELAPSED=0
+            until ssh -i ~/.ssh/ctoa_vps "$VPS_USER@$VPS_HOST" \
+                "grep -q 'GS RESET CYCLE COMPLETE' $CTOA_DIR/logs/gs-reset.log 2>/dev/null" \
+              || [ "$ELAPSED" -ge 900 ]; do
+              sleep 30
+              ELAPSED=$(( ELAPSED + 30 ))
+              echo "Waiting … ${ELAPSED}s elapsed"
+            done
+            if [ "$ELAPSED" -ge 900 ]; then
+              echo "::error::GS reset did not complete within 15 min — check VPS logs"
+              exit 1
+            fi
+          fi
+
+      # --------------------------------------------------------
+      # 4. Collect GS reset log tail for summary
+      # --------------------------------------------------------
+      - name: Collect GS reset log
+        if: always()
+        run: |
+          ssh -i ~/.ssh/ctoa_vps "$VPS_USER@$VPS_HOST" \
+            "tail -120 $CTOA_DIR/logs/gs-reset.log 2>/dev/null || echo '(no log found)'" \
+            > /tmp/gs-reset-tail.log
+          cat /tmp/gs-reset-tail.log
+
+      # --------------------------------------------------------
+      # 5. Verify all CTOA systemd services are up
+      # --------------------------------------------------------
+      - name: Verify services are active
+        run: |
+          ssh -i ~/.ssh/ctoa_vps "$VPS_USER@$VPS_HOST" \
+            "systemctl is-active ctoa-health-live.service ctoa-db.service \
+             ctoa-runner.timer ctoa-agents-orchestrator.timer" \
+          && echo "Core services ACTIVE" \
+          || { echo "::error::One or more core services not active after GS reset"; exit 1; }
+
+      # --------------------------------------------------------
+      # 6. API validation via commanding agent
+      # --------------------------------------------------------
+      - name: Run API compliance check
+        if: ${{ github.event.inputs.skip_validation != 'true' }}
+        run: |
+          ssh -i ~/.ssh/ctoa_vps "$VPS_USER@$VPS_HOST" \
+            "cd $CTOA_DIR && source .venv/bin/activate && \
+             python3 scripts/ops/gs-api-validator.py 2>&1 | tail -40"
+
+      # --------------------------------------------------------
+      # 7. Post GS cycle report to GitHub Actions summary
+      # --------------------------------------------------------
+      - name: Post GS Cycle Report
+        if: always()
+        run: |
+          STATUS="${{ job.status }}"
+          DATE=$(date -u '+%Y-%m-%d %H:%M UTC')
+          {
+            echo "## CTOA Global Save Cycle — $DATE"
+            echo ""
+            echo "| Phase | Result |"
+            echo "|-------|--------|"
+            echo "| VPS connectivity | ✅ |"
+            echo "| Code pull (git reset --hard) | ✅ |"
+            echo "| GS Reset (shutdown → rest → startup) | $( [ '$STATUS' = 'success' ] && echo '✅' || echo '❌' ) |"
+            echo "| Service health check | $( [ '$STATUS' = 'success' ] && echo '✅' || echo '❌' ) |"
+            echo "| API compliance validation | $( [ '$STATUS' = 'success' ] && echo '✅' || echo '⚠️ skipped/failed' ) |"
+            echo ""
+            echo "### GS Reset Log Tail"
+            echo '```'
+            cat /tmp/gs-reset-tail.log 2>/dev/null || echo "(no log)"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # --------------------------------------------------------
+      # 8. Cleanup SSH key
+      # --------------------------------------------------------
+      - name: Cleanup SSH key
+        if: always()
+        run: rm -f ~/.ssh/ctoa_vps

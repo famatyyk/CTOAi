@@ -1,0 +1,15 @@
+[Unit]
+Description=CTOA Global Save Reset Timer — fires daily at 06:00 UTC
+Documentation=file:///opt/ctoa/docs/gs-ops-README.md
+
+[Timer]
+# Fire every day at exactly 06:00 UTC
+OnCalendar=*-*-* 06:00:00 UTC
+# If the system was down at 06:00, run once on next boot (catch-up)
+Persistent=true
+Unit=ctoa-gs-reset.service
+# Randomize within a 30-second window to avoid exact-second thundering herd
+RandomizedDelaySec=30
+
+[Install]
+WantedBy=timers.target

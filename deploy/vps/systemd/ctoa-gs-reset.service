@@ -1,0 +1,22 @@
+[Unit]
+Description=CTOA Global Save Reset — daily 06:00 UTC shutdown/startup/inject cycle
+Documentation=file:///opt/ctoa/docs/gs-ops-README.md
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/opt/ctoa
+EnvironmentFile=-/opt/ctoa/.env
+Environment=MYTHIBIA_MOD_DIR=/opt/mythibia/modules
+Environment=GS_TIMEOUT_WAIT=60
+Environment=API_CHECK_URL=http://127.0.0.1:7777/api/health
+Environment=API_CHECK_RETRIES=5
+ExecStart=/bin/bash /opt/ctoa/scripts/ops/gs-reset.sh
+StandardOutput=append:/opt/ctoa/logs/gs-reset.log
+StandardError=append:/opt/ctoa/logs/gs-reset.log
+TimeoutStartSec=900
+# Do NOT restart automatically — a failed GS reset must wake a human
+Restart=no
+
+[Install]
+WantedBy=multi-user.target

@@ -19,7 +19,15 @@ param(
         'FixDbPerms',
         'RegisterServer',
         'ShowServerStatus',
-        'ShowScoutDetails'
+        'ShowScoutDetails',
+        # GS Reset cycle
+        'InstallGsReset',
+        'TriggerGsResetNow',
+        'TailGsReset',
+        'GsStatus',
+        'GsCoherence',
+        'GsModuleInject',
+        'GsApiValidate'
     )]
     [string]$Action
 )
@@ -287,5 +295,76 @@ pg_isready -h 127.0.0.1 -U ctoa -d ctoa && echo '[SetupDB] DB ready'
     pg_isready -h 127.0.0.1 -U ctoa -d ctoa && echo '[SetupAgents] DB OK'
     echo '[SetupAgents] Done - orchestrator fires every 10 minutes'
 '@
+    }
+
+    # =========================================================================
+    # GS RESET ACTIONS
+    # =========================================================================
+
+    'InstallGsReset' {
+        # Install ctoa-gs-reset.service + .timer and all GS scripts on VPS
+        Invoke-SshScript @'
+set -e
+cd /opt/ctoa
+git fetch --quiet && git reset --hard origin/main
+chmod +x /opt/ctoa/scripts/ops/gs-reset.sh
+chmod +x /opt/ctoa/scripts/ops/gs-startup-sequence.sh
+chmod +x /opt/ctoa/scripts/ops/gs-coherence-check.sh
+chmod +x /opt/ctoa/scripts/ops/gs-module-inject.sh
+chmod +x /opt/ctoa/scripts/ops/gs-api-validator.py
+cp deploy/vps/systemd/ctoa-gs-reset.service /etc/systemd/system/
+cp deploy/vps/systemd/ctoa-gs-reset.timer   /etc/systemd/system/
+systemctl daemon-reload
+systemctl enable ctoa-gs-reset.timer
+systemctl start  ctoa-gs-reset.timer
+systemctl list-timers ctoa-gs-reset.timer --no-pager
+echo "[InstallGsReset] GS reset timer armed — fires daily at 06:00 UTC"
+'@
+    }
+
+    'TriggerGsResetNow' {
+        # Manually run a full GS reset cycle immediately (for testing or emergency)
+        Write-Host "[GS-RESET] Triggering gs-reset.sh NOW on VPS — this will stop and restart all services!" -ForegroundColor Yellow
+        $confirm = Read-Host "Type YES to confirm"
+        if ($confirm -ne 'YES') { Write-Host "Aborted."; return }
+        Invoke-SshCommand 'bash /opt/ctoa/scripts/ops/gs-reset.sh 2>&1 | tail -120'
+    }
+
+    'TailGsReset' {
+        # Stream the GS reset log in real-time
+        Invoke-SshCommand 'tail -n 100 -f /opt/ctoa/logs/gs-reset.log'
+    }
+
+    'GsStatus' {
+        # Show current GS timer status and last cycle result
+        Invoke-SshScript @'
+set -e
+echo "=== GS Timer Status ==="
+systemctl list-timers ctoa-gs-reset.timer --no-pager
+echo ""
+echo "=== Last GS Reset Log (tail 40) ==="
+tail -n 40 /opt/ctoa/logs/gs-reset.log 2>/dev/null || echo "(no log yet)"
+echo ""
+echo "=== Last Inject Log (tail 20) ==="
+tail -n 20 /opt/ctoa/logs/gs-inject.log 2>/dev/null || echo "(no inject log yet)"
+echo ""
+echo "=== Active CTOA services ==="
+systemctl list-units 'ctoa-*' --no-pager --no-legend --state=active
+'@
+    }
+
+    'GsCoherence' {
+        # Run coherence check without full reset
+        Invoke-SshCommand 'bash /opt/ctoa/scripts/ops/gs-coherence-check.sh 2>&1'
+    }
+
+    'GsModuleInject' {
+        # Run module inject only (useful after pushing new Lua modules)
+        Invoke-SshCommand 'bash /opt/ctoa/scripts/ops/gs-module-inject.sh 2>&1'
+    }
+
+    'GsApiValidate' {
+        # Run API validator only
+        Invoke-SshCommand 'cd /opt/ctoa && source .venv/bin/activate && python3 scripts/ops/gs-api-validator.py 2>&1'
     }
 }
