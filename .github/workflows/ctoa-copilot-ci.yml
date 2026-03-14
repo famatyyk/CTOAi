@@ -24,6 +24,14 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Prepare base ref for diff
+        shell: bash
+        run: |
+          if ! git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"; then
+            echo "Failed to fetch base ref: ${{ github.base_ref }}"
+            exit 1
+          fi
+
       - name: Install tools
         shell: bash
         run: |
@@ -53,12 +61,26 @@ jobs:
         run: |
           set +e
           set -o pipefail
-          CHANGED_PY=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -E '^(runner/|agents/).+\.py$' || true)
-          if [ -z "$CHANGED_PY" ]; then
+
+          if ! CHANGED_FILES=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD"); then
+            echo "Failed to compute PR diff for flake8"
+            exit 1
+          fi
+
+          CHANGED_PY=()
+          while IFS= read -r file; do
+            case "$file" in
+              runner/*.py|agents/*.py)
+                CHANGED_PY+=("$file")
+                ;;
+            esac
+          done <<< "$CHANGED_FILES"
+
+          if [ "${#CHANGED_PY[@]}" -eq 0 ]; then
             echo "No changed Python files in runner/ or agents/" | tee pr-flake8.txt
             FLAKE8_EXIT=0
           else
-            flake8 $CHANGED_PY --max-line-length=120 --count --statistics 2>&1 | tee pr-flake8.txt
+            flake8 "${CHANGED_PY[@]}" --max-line-length=120 --count --statistics 2>&1 | tee pr-flake8.txt
             FLAKE8_EXIT=${PIPESTATUS[0]}
           fi
           set -e
@@ -70,12 +92,26 @@ jobs:
         run: |
           set +e
           set -o pipefail
-          CHANGED_PY=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -E '^(runner/|agents/).+\.py$' || true)
-          if [ -z "$CHANGED_PY" ]; then
+
+          if ! CHANGED_FILES=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD"); then
+            echo "Failed to compute PR diff for pylint"
+            exit 1
+          fi
+
+          CHANGED_PY=()
+          while IFS= read -r file; do
+            case "$file" in
+              runner/*.py|agents/*.py)
+                CHANGED_PY+=("$file")
+                ;;
+            esac
+          done <<< "$CHANGED_FILES"
+
+          if [ "${#CHANGED_PY[@]}" -eq 0 ]; then
             echo "No changed Python files in runner/ or agents/" | tee pr-pylint.txt
             PYLINT_EXIT=0
           else
-            pylint $CHANGED_PY -j 0 --score=y 2>&1 | tee pr-pylint.txt
+            pylint "${CHANGED_PY[@]}" -j 0 --score=y 2>&1 | tee pr-pylint.txt
             PYLINT_EXIT=${PIPESTATUS[0]}
           fi
           set -e

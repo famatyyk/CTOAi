@@ -31,11 +31,21 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
-            CHANGED=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD" || true)
+
+            if ! git show "origin/${{ github.base_ref }}:core/protected-files.txt" > /tmp/protected-files-base.txt; then
+              echo "Unable to read core/protected-files.txt from base branch"
+              exit 1
+            fi
+
+            if ! CHANGED=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD"); then
+              echo "Failed to compute PR diff for core integrity guard"
+              exit 1
+            fi
+
             NEED_CHECK=0
             while IFS= read -r line; do
               line="${line%%#*}"
-              line="$(echo "$line" | xargs)"
+              line="$(printf '%s' "$line" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
               if [ -z "$line" ]; then
                 continue
               fi
@@ -43,7 +53,7 @@ jobs:
                 NEED_CHECK=1
                 break
               fi
-            done < core/protected-files.txt
+            done < /tmp/protected-files-base.txt
 
             if [ "$NEED_CHECK" -eq 0 ]; then
               echo "No protected files changed in this PR; skipping core integrity guard."
@@ -128,14 +138,21 @@ jobs:
           YAMLLINT_CFG='{extends: default, rules: {line-length: {max: 180}}}'
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
-            CHANGED_YAML=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD" | grep -E '\\.(yml|yaml)$' || true)
-            if [ -z "$CHANGED_YAML" ]; then
+
+            if ! git diff --name-only -z "origin/${{ github.base_ref }}...HEAD" > /tmp/changed-files.zlist; then
+              echo "Failed to compute PR diff for YAML lint"
+              exit 1
+            fi
+
+            mapfile -d '' CHANGED_YAML < <(grep -zE '\\.(yml|yaml)$' /tmp/changed-files.zlist || true)
+            if [ "${#CHANGED_YAML[@]}" -eq 0 ]; then
               echo "No changed YAML files in this PR; skipping YAML lint."
               exit 0
             fi
+
             echo "Linting changed YAML files:"
-            echo "$CHANGED_YAML"
-            yamllint -d "$YAMLLINT_CFG" $CHANGED_YAML
+            printf '%s\n' "${CHANGED_YAML[@]}"
+            yamllint -d "$YAMLLINT_CFG" "${CHANGED_YAML[@]}"
           else
             yamllint -d "$YAMLLINT_CFG" .
           fi
@@ -168,12 +185,23 @@ jobs:
           pattern='(AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]+|-----BEGIN (RSA|DSA|EC|OPENSSH|PGP|PRIVATE KEY)-----)'
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
-            CHANGED_FILES=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD" || true)
-            if [ -z "$CHANGED_FILES" ]; then
+
+            if ! git diff --name-only -z "origin/${{ github.base_ref }}...HEAD" > /tmp/changed-files.zlist; then
+              echo "Failed to compute PR diff for secret scan"
+              exit 1
+            fi
+
+            CHANGED_FILES=()
+            while IFS= read -r -d '' file; do
+              CHANGED_FILES+=("$file")
+            done < /tmp/changed-files.zlist
+
+            if [ "${#CHANGED_FILES[@]}" -eq 0 ]; then
               echo "No changed files in this PR; skipping secret scan."
               exit 0
             fi
-            if echo "$CHANGED_FILES" | xargs -r grep -nIE "$pattern"; then
+
+            if grep -nIE "$pattern" -- "${CHANGED_FILES[@]}"; then
               echo "Potential secrets detected in changed PR files"
               exit 1
             fi
