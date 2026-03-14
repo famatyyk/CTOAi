@@ -30,7 +30,8 @@ param(
         'GsProvisionDbContainer',
         'GsCoherence',
         'GsModuleInject',
-        'GsApiValidate'
+        'GsApiValidate',
+        'ValidateSyntax'
     )]
     [string]$Action
 )
@@ -75,7 +76,70 @@ function Invoke-SshCommand([string]$Cmd) {
 
 function Invoke-SshScript([string]$Script) {
     $t = Get-RemoteTarget; $k = Get-KeyPath
-    ($Script -replace "`r`n","`n") | & ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -i $k $t 'bash -s'
+    (($Script -replace "`r`n","`n") + "`n") | & ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -i $k $t 'bash -s'
+}
+
+function Invoke-RemoteSyntaxValidation() {
+        Invoke-SshScript @'
+set -euo pipefail
+found=0
+failed=0
+for file in /opt/ctoa/scripts/ops/*.sh; do
+    [ -e "$file" ] || continue
+    found=1
+    rel="${file#/opt/ctoa/}"
+    if bash -n "$file"; then
+        echo "OK: $rel"
+    else
+        echo "FAIL: $rel"
+        failed=1
+    fi
+done
+
+if [ "$found" -eq 0 ]; then
+    echo 'FAIL: no shell scripts found in scripts/ops'
+    exit 1
+fi
+
+if [ "$failed" -ne 0 ]; then
+    exit 1
+fi
+
+exit 0
+'@
+}
+
+function Invoke-RemoteVerify() {
+        Invoke-SshScript @'
+set -euo pipefail
+echo CONNECTED
+hostname
+whoami
+found=0
+failed=0
+for file in /opt/ctoa/scripts/ops/*.sh; do
+    [ -e "$file" ] || continue
+    found=1
+    rel="${file#/opt/ctoa/}"
+    if bash -n "$file"; then
+        echo "OK: $rel"
+    else
+        echo "FAIL: $rel"
+        failed=1
+    fi
+done
+
+if [ "$found" -eq 0 ]; then
+    echo 'FAIL: no shell scripts found in scripts/ops'
+    exit 1
+fi
+
+if [ "$failed" -ne 0 ]; then
+    exit 1
+fi
+
+exit 0
+'@
 }
 
 function Get-SetupScript() {
@@ -125,7 +189,9 @@ systemctl enable --now ctoa-mythibia-news-api.service
 }
 
 switch ($Action) {
-    'Verify'              { Invoke-SshCommand 'echo CONNECTED; hostname; whoami' }
+    'Verify'              {
+        Invoke-RemoteVerify
+    }
     'WhoAmI'              { Invoke-SshCommand 'whoami' }
     'Setup24x7'           { $sc = Get-SetupScript; Invoke-SshScript $sc }
     'TailLiveHealth'      { Invoke-SshCommand 'tail -n 80 -f /opt/ctoa/logs/health-live.log' }
@@ -596,5 +662,9 @@ systemctl status ctoa-db.service --no-pager -l | sed -n '1,80p'
 
     'GsApiValidate' {
         Invoke-SshCommand 'cd /opt/ctoa && . .venv/bin/activate && python3 scripts/ops/gs-api-validator.py 2>&1'
+    }
+
+    'ValidateSyntax' {
+        Invoke-RemoteSyntaxValidation
     }
 }
