@@ -46,16 +46,18 @@ MODULE_NAMES = [
 ]
 
 
-def fetch_json(url: str) -> dict | None:
+def fetch_json(url: str, noisy: bool = True) -> dict | None:
     try:
         with urllib.request.urlopen(url, timeout=TIMEOUT_SEC) as resp:
             if resp.status != 200:
-                log.warning("HTTP %s for %s", resp.status, url)
+                if noisy:
+                    log.warning("HTTP %s for %s", resp.status, url)
                 return None
             raw = resp.read()
             return json.loads(raw)
     except (urllib.error.URLError, json.JSONDecodeError, OSError) as exc:
-        log.warning("Request failed for %s: %s", url, exc)
+        if noisy:
+            log.warning("Request failed for %s: %s", url, exc)
         return None
 
 
@@ -98,7 +100,7 @@ def detect_module_root() -> str | None:
     ])
 
     for root in roots:
-        data = fetch_json(root)
+        data = fetch_json(root, noisy=False)
         if isinstance(data, dict):
             log.info("Detected modules endpoint: %s", root)
             return root
@@ -127,25 +129,25 @@ def run_checks() -> int:
         if STRICT_MODULE_VALIDATION:
             log.error("Module endpoint not detected and strict module validation is enabled.")
             return 1
-        log.warning("Module endpoint not detected; skipping module checks.")
+        log.info("Module endpoint not detected; skipping module checks.")
         return 0
 
     for name in MODULE_NAMES:
         url = f"{modules_root}/{name}"
         log.info("Checking module endpoint %s …", url)
-        data = fetch_json(url)
+        data = fetch_json(url, noisy=STRICT_MODULE_VALIDATION)
         if data is None:
             if STRICT_MODULE_VALIDATION:
                 failures += 1
                 log.error("No valid response from %s", url)
             else:
-                log.warning("Module endpoint unavailable (non-strict): %s", url)
+                log.info("Module endpoint unavailable (non-strict): %s", url)
             continue
         if not check_schema(data, ["name"], url):
             if STRICT_MODULE_VALIDATION:
                 failures += 1
             else:
-                log.warning("Schema mismatch (non-strict): %s", url)
+                log.info("Schema mismatch (non-strict): %s", url)
         else:
             log.info("OK: %s", url)
 

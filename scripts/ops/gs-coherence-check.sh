@@ -59,7 +59,7 @@ done
 # ---------------------------------------------------------------------------
 log "Checking protected file hashes …"
 if [ ! -f "$PROTECTED_LIST" ]; then
-  log "WARNING: $PROTECTED_LIST not found; skipping protected-file hash check."
+  log "INFO: $PROTECTED_LIST not found; skipping protected-file hash check."
 else
   while IFS= read -r rel_path || [[ -n "$rel_path" ]]; do
     [[ "$rel_path" =~ ^#.*$ || -z "$rel_path" ]] && continue
@@ -77,7 +77,7 @@ fi
 # ---------------------------------------------------------------------------
 log "Checking Lua module hashes …"
 if [ ! -f "$HASH_REGISTRY" ]; then
-  log "WARNING: $HASH_REGISTRY not found; regenerating …"
+  log "INFO: $HASH_REGISTRY not found; regenerating …"
   sha256sum "$CTOA_DIR/scripts/lua/"*.lua > "$HASH_REGISTRY" 2>/dev/null || true
   pass "Hash registry created."
 else
@@ -107,7 +107,7 @@ fi
 # ---------------------------------------------------------------------------
 # 5. .env keys presence (configurable strictness; values never logged)
 #
-# By default, keys are warning-only so GS can run without API secrets.
+# By default, keys are informational-only so GS can run without API secrets.
 # To enforce strict keys, set on VPS .env:
 #   GS_REQUIRED_ENV_KEYS=KEY1,KEY2
 # Example:
@@ -128,13 +128,13 @@ if [ -n "$GS_REQUIRED_ENV_KEYS" ]; then
 fi
 
 if [ ! -f "$ENV_FILE" ]; then
-  log "WARNING: .env file missing at $ENV_FILE"
+  log "INFO: .env file missing at $ENV_FILE"
 else
   for key in "${OPTIONAL_KEYS[@]}"; do
     if grep -q "^${key}=" "$ENV_FILE" 2>/dev/null; then
       pass ".env key present: $key"
     else
-      log "WARNING: .env key missing (optional): $key"
+      log "INFO: .env key missing (optional): $key"
     fi
   done
 

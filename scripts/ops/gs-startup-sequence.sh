@@ -37,6 +37,19 @@ start_svc() {
   esac
 }
 
+start_optional_timer() {
+  local timer="$1" label="$2"
+  if ! systemctl list-unit-files --type=timer --no-legend | awk '{print $1}' | grep -Fxq "$timer"; then
+    log "INFO: optional timer not installed: $label ($timer)"
+    return 0
+  fi
+  if systemctl start "$timer"; then
+    log "$timer armed."
+  else
+    log "WARNING: optional timer failed to start: $label ($timer)"
+  fi
+}
+
 db_endpoint_ready() {
   # Prefer pg_isready when available; fallback to TCP probe.
   if command -v pg_isready >/dev/null 2>&1; then
@@ -58,7 +71,7 @@ if db_endpoint_ready; then
   systemctl reset-failed ctoa-db.service >/dev/null 2>&1 || true
 else
   if ! systemctl start ctoa-db.service; then
-    log "WARNING: ctoa-db.service failed to start. Checking existing DB endpoint on 127.0.0.1:5432 …"
+    log "INFO: ctoa-db.service did not start cleanly; checking endpoint 127.0.0.1:5432 …"
     if db_endpoint_ready; then
       log "Existing DB endpoint is reachable. Continuing startup with external/already-running DB."
       systemctl reset-failed ctoa-db.service >/dev/null 2>&1 || true
@@ -81,15 +94,15 @@ start_svc ctoa-health-live.service 20
 # =============================================================================
 log "--- Layer 2: Mobile console"
 start_svc ctoa-mobile-console.service 20
-# token rotation timer: just enable the schedule, not blocking
-systemctl start ctoa-mobile-token-rotation.timer || log "WARNING: could not start mobile-token-rotation.timer"
+# token rotation timer: optional, non-blocking
+start_optional_timer ctoa-mobile-token-rotation.timer mobile-token-rotation
 
 # =============================================================================
 # LAYER 3 — MythibIA news pipeline
 # =============================================================================
 log "--- Layer 3: MythibIA news"
 start_svc ctoa-mythibia-news-api.service 30
-systemctl start ctoa-mythibia-news-watcher.timer || log "WARNING: could not start mythibia-news-watcher.timer"
+start_optional_timer ctoa-mythibia-news-watcher.timer mythibia-news-watcher
 
 # =============================================================================
 # LAYER 4 — Core runner
@@ -102,20 +115,20 @@ log "ctoa-runner.timer armed."
 # LAYER 5 — Reports & retention
 # =============================================================================
 log "--- Layer 5: Reports and retention"
-systemctl start ctoa-report.timer       || log "WARNING: could not start ctoa-report.timer"
-systemctl start ctoa-retention-cleanup.timer || log "WARNING: could not start ctoa-retention-cleanup.timer"
+start_optional_timer ctoa-report.timer ctoa-report
+start_optional_timer ctoa-retention-cleanup.timer ctoa-retention-cleanup
 
 # =============================================================================
 # LAYER 6 — Lab runner
 # =============================================================================
 log "--- Layer 6: Lab runner"
-systemctl start ctoa-lab-runner.timer || log "WARNING: could not start ctoa-lab-runner.timer"
+start_optional_timer ctoa-lab-runner.timer ctoa-lab-runner
 
 # =============================================================================
 # LAYER 7 — Auto-trainer
 # =============================================================================
 log "--- Layer 7: Auto-trainer"
-systemctl start ctoa-auto-trainer.timer || log "WARNING: could not start ctoa-auto-trainer.timer"
+start_optional_timer ctoa-auto-trainer.timer ctoa-auto-trainer
 
 # =============================================================================
 # LAYER 8 — Agents orchestrator  (last, depends on all layers above)
@@ -130,5 +143,5 @@ log "ctoa-agents-orchestrator.timer armed."
 log ""
 log "Startup sequence complete."
 log "Active CTOA units:"
-systemctl list-units 'ctoa-*' --no-pager --no-legend 2>&1 | tee -a "$LOG"
+systemctl list-units 'ctoa-*' --state=active --no-pager --no-legend 2>&1 | tee -a "$LOG"
 exit 0
