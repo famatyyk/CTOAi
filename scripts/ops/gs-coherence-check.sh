@@ -105,22 +105,46 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# 5. .env secrets key presence (never log values)
+# 5. .env keys presence (configurable strictness; values never logged)
+#
+# By default, keys are warning-only so GS can run without API secrets.
+# To enforce strict keys, set on VPS .env:
+#   GS_REQUIRED_ENV_KEYS=KEY1,KEY2
+# Example:
+#   GS_REQUIRED_ENV_KEYS=GITHUB_PAT,OPENAI_API_KEY
 # ---------------------------------------------------------------------------
-log "Checking .env required keys …"
+log "Checking .env keys …"
 ENV_FILE="$CTOA_DIR/.env"
-REQUIRED_KEYS=(
+
+OPTIONAL_KEYS=(
   GITHUB_PAT
   OPENAI_API_KEY
 )
+
+GS_REQUIRED_ENV_KEYS="${GS_REQUIRED_ENV_KEYS:-}"
+REQUIRED_KEYS=()
+if [ -n "$GS_REQUIRED_ENV_KEYS" ]; then
+  IFS=',' read -r -a REQUIRED_KEYS <<< "$GS_REQUIRED_ENV_KEYS"
+fi
+
 if [ ! -f "$ENV_FILE" ]; then
-  fail ".env file missing at $ENV_FILE"
+  log "WARNING: .env file missing at $ENV_FILE"
 else
-  for key in "${REQUIRED_KEYS[@]}"; do
+  for key in "${OPTIONAL_KEYS[@]}"; do
     if grep -q "^${key}=" "$ENV_FILE" 2>/dev/null; then
       pass ".env key present: $key"
     else
-      fail ".env key missing: $key"
+      log "WARNING: .env key missing (optional): $key"
+    fi
+  done
+
+  for key in "${REQUIRED_KEYS[@]}"; do
+    key_trimmed="$(echo "$key" | xargs)"
+    [ -z "$key_trimmed" ] && continue
+    if grep -q "^${key_trimmed}=" "$ENV_FILE" 2>/dev/null; then
+      pass ".env required key present: $key_trimmed"
+    else
+      fail ".env required key missing: $key_trimmed"
     fi
   done
 fi
