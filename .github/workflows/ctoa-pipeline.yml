@@ -125,7 +125,20 @@ jobs:
       - name: Lint YAML
         shell: bash
         run: |
-          yamllint -d '{extends: default, rules: {line-length: {max: 180}}}' .
+          YAMLLINT_CFG='{extends: default, rules: {line-length: {max: 180}}}'
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
+            CHANGED_YAML=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD" | grep -E '\\.(yml|yaml)$' || true)
+            if [ -z "$CHANGED_YAML" ]; then
+              echo "No changed YAML files in this PR; skipping YAML lint."
+              exit 0
+            fi
+            echo "Linting changed YAML files:"
+            echo "$CHANGED_YAML"
+            yamllint -d "$YAMLLINT_CFG" $CHANGED_YAML
+          else
+            yamllint -d "$YAMLLINT_CFG" .
+          fi
 
       - name: Lint Markdown basics
         shell: bash
