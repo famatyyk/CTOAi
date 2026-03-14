@@ -37,11 +37,32 @@ start_svc() {
   esac
 }
 
+db_endpoint_ready() {
+  # Prefer pg_isready when available; fallback to TCP probe.
+  if command -v pg_isready >/dev/null 2>&1; then
+    pg_isready -h 127.0.0.1 -p 5432 >/dev/null 2>&1
+    return $?
+  fi
+
+  # /dev/tcp works in bash; timeout avoids hanging.
+  timeout 2 bash -c 'cat < /dev/null > /dev/tcp/127.0.0.1/5432' >/dev/null 2>&1
+  return $?
+}
+
 # =============================================================================
 # LAYER 0 — Database (everything depends on it)
 # =============================================================================
 log "--- Layer 0: Database"
-start_svc ctoa-db.service 60
+if ! systemctl start ctoa-db.service; then
+  log "WARNING: ctoa-db.service failed to start. Checking existing DB endpoint on 127.0.0.1:5432 …"
+  if db_endpoint_ready; then
+    log "WARNING: Existing DB endpoint is reachable. Continuing startup with external/already-running DB."
+  else
+    die "Failed to start ctoa-db.service and no DB endpoint reachable on 127.0.0.1:5432"
+  fi
+else
+  wait_active ctoa-db.service 60
+fi
 
 # =============================================================================
 # LAYER 1 — Core monitoring & health
