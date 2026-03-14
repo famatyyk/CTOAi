@@ -69,7 +69,26 @@ jobs:
             "cd $CTOA_DIR && git fetch --quiet && git reset --hard origin/main 2>&1 | tail -3"
 
       # --------------------------------------------------------
-      # 3. Trigger GS Reset (or wait for systemd timer to fire)
+      # 3. Validate shell script syntax on VPS (pre-reset gate)
+      # --------------------------------------------------------
+      - name: Validate shell script syntax
+        run: |
+          ssh -i ~/.ssh/ctoa_vps -o BatchMode=yes "$VPS_USER@$VPS_HOST" bash <<'ENDSSH'
+          failed=0
+          for f in /opt/ctoa/scripts/ops/*.sh; do
+            [ -e "$f" ] || continue
+            if bash -n "$f"; then
+              echo "OK: ${f#/opt/ctoa/}"
+            else
+              echo "FAIL: ${f#/opt/ctoa/}"
+              failed=1
+            fi
+          done
+          exit $failed
+          ENDSSH
+
+      # --------------------------------------------------------
+      # 4. Trigger GS Reset (or wait for systemd timer to fire)
       # --------------------------------------------------------
       - name: Trigger GS Reset
         run: |
@@ -142,6 +161,7 @@ jobs:
             echo "|-------|--------|"
             echo "| VPS connectivity | ✅ |"
             echo "| Code pull (git reset --hard) | ✅ |"
+            echo "| Shell syntax validation | $( [ '$STATUS' = 'success' ] && echo '✅' || echo '❌' ) |"
             echo "| GS Reset (shutdown → rest → startup) | $( [ '$STATUS' = 'success' ] && echo '✅' || echo '❌' ) |"
             echo "| Service health check | $( [ '$STATUS' = 'success' ] && echo '✅' || echo '❌' ) |"
             echo "| API compliance validation | $( [ '$STATUS' = 'success' ] && echo '✅' || echo '⚠️ skipped/failed' ) |"
