@@ -22,7 +22,8 @@ LOG="$LOG_DIR/gs-reset.log"
 MYTHIBIA_MOD_DIR="${MYTHIBIA_MOD_DIR:-/opt/mythibia/modules}"
 GS_TIMEOUT_WAIT="${GS_TIMEOUT_WAIT:-60}"     # seconds to rest between stop and start
 API_CHECK_RETRIES="${API_CHECK_RETRIES:-5}"
-API_CHECK_URL="${API_CHECK_URL:-http://127.0.0.1:7777/api/health}"
+API_HEALTH_URL="${API_HEALTH_URL:-${API_CHECK_URL:-http://127.0.0.1:8890/health}}"
+API_BASE_URL="${API_BASE_URL:-http://127.0.0.1:8890}"
 GS_REQUIRE_API_VALIDATION="${GS_REQUIRE_API_VALIDATION:-false}"
 
 mkdir -p "$LOG_DIR"
@@ -115,19 +116,39 @@ log "Module inject PASSED."
 # PHASE 6 — API VALIDATION  (commanding agent checks server 100% OK)
 # ---------------------------------------------------------------------------
 log_section "PHASE 6 — API VALIDATION"
+
+CANDIDATE_HEALTH_URLS=(
+  "$API_HEALTH_URL"
+  "http://127.0.0.1:8890/health"
+  "http://127.0.0.1:8890/api/health"
+  "http://127.0.0.1:7777/health"
+  "http://127.0.0.1:7777/api/health"
+)
+
 ATTEMPTS=0
 SUCCESS=false
+SELECTED_HEALTH_URL=""
 while [ "$ATTEMPTS" -lt "$API_CHECK_RETRIES" ]; do
   ATTEMPTS=$(( ATTEMPTS + 1 ))
-  log "API health check attempt $ATTEMPTS/$API_CHECK_RETRIES → $API_CHECK_URL"
-  HTTP_CODE=$(curl --silent --max-time 10 --output /dev/null \
-    --write-out "%{http_code}" "$API_CHECK_URL" 2>/dev/null || echo "000")
-  if [ "$HTTP_CODE" = "200" ]; then
-    SUCCESS=true
-    log "Server responded 200 OK."
-    break
-  fi
-  log "Got HTTP $HTTP_CODE. Waiting 10 s before retry …"
+  for url in "${CANDIDATE_HEALTH_URLS[@]}"; do
+    log "API health check attempt $ATTEMPTS/$API_CHECK_RETRIES → $url"
+    HTTP_CODE=$(curl --silent --max-time 10 --output /dev/null \
+      --write-out "%{http_code}" "$url" 2>/dev/null || echo "000")
+    if [ "$HTTP_CODE" = "200" ]; then
+      SUCCESS=true
+      SELECTED_HEALTH_URL="$url"
+
+      case "$url" in
+        */api/health) API_BASE_URL="${url%/health}" ;;
+        */health) API_BASE_URL="${url%/health}" ;;
+      esac
+
+      log "Server responded 200 OK at $SELECTED_HEALTH_URL."
+      break 2
+    fi
+    log "Got HTTP $HTTP_CODE from $url."
+  done
+  log "No healthy API endpoint detected yet; waiting 10 s before retry …"
   sleep 10
 done
 
@@ -141,9 +162,10 @@ if [ "$SUCCESS" != "true" ]; then
 fi
 
 # Post GS validation via python commanding agent
-log "Running commanding agent API compliance check …"
+log "Running commanding agent API compliance check (API_BASE_URL=$API_BASE_URL) …"
 cd "$CTOA_DIR"
 source .venv/bin/activate || true
+API_BASE_URL="$API_BASE_URL" API_HEALTH_URL="${SELECTED_HEALTH_URL:-$API_HEALTH_URL}" \
 python3 scripts/ops/gs-api-validator.py 2>&1 | tee -a "$LOG"
 VALIDATOR_EXIT="${PIPESTATUS[0]}"
 if [ "$VALIDATOR_EXIT" -ne 0 ]; then

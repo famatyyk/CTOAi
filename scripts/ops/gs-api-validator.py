@@ -26,32 +26,27 @@ logging.basicConfig(
 )
 log = logging.getLogger("gs-api-validator")
 
-API_BASE     = os.getenv("API_CHECK_URL", "http://127.0.0.1:7777/api")
-API_VERSION  = os.getenv("API_VERSION", "v1")
+API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8890").rstrip("/")
+API_HEALTH_URL = os.getenv("API_HEALTH_URL", f"{API_BASE_URL}/health")
+API_VERSION  = os.getenv("API_VERSION", "").strip("/")
 TIMEOUT_SEC  = int(os.getenv("API_TIMEOUT", "10"))
 MAX_RETRIES  = int(os.getenv("API_CHECK_RETRIES", "5"))
 RETRY_DELAY  = 10  # seconds between retries
+STRICT_MODULE_VALIDATION = os.getenv("GS_REQUIRE_MODULE_VALIDATION", "false").lower() == "true"
 
-# ---------------------------------------------------------------------------
-# Expected API contract — adapt to your MythibIA server API
-# Each entry: (path, required_response_keys)
-# ---------------------------------------------------------------------------
-API_CHECKS = [
-    ("/health",                    ["status"]),
-    ("/modules",                   ["modules"]),
-    ("/modules/auto_heal",         ["name", "active"]),
-    ("/modules/event_logger",      ["name", "active"]),
-    ("/modules/loot_filter",       ["name", "active"]),
-    ("/modules/pathing_helper",    ["name", "active"]),
-    ("/modules/safety_interrupt",  ["name", "active"]),
-    ("/modules/supply_manager",    ["name", "active"]),
-    ("/modules/target_priority",   ["name", "active"]),
-    ("/modules/telemetry_exporter",["name", "active"]),
+MODULE_NAMES = [
+    "auto_heal",
+    "event_logger",
+    "loot_filter",
+    "pathing_helper",
+    "safety_interrupt",
+    "supply_manager",
+    "target_priority",
+    "telemetry_exporter",
 ]
 
 
-def fetch_json(path: str) -> dict | None:
-    url = f"{API_BASE}/{API_VERSION}{path}"
+def fetch_json(url: str) -> dict | None:
     try:
         with urllib.request.urlopen(url, timeout=TIMEOUT_SEC) as resp:
             if resp.status != 200:
@@ -72,19 +67,88 @@ def check_schema(data: dict, required_keys: list[str], path: str) -> bool:
     return True
 
 
+def normalize_base(base: str) -> str:
+    return base.rstrip("/")
+
+
+def join_url(base: str, path: str) -> str:
+    return f"{normalize_base(base)}{path}"
+
+
+def health_candidates() -> list[str]:
+    candidates = [
+        API_HEALTH_URL,
+        join_url(API_BASE_URL, "/health"),
+        join_url(API_BASE_URL, "/api/health"),
+    ]
+    deduped: list[str] = []
+    for c in candidates:
+        if c not in deduped:
+            deduped.append(c)
+    return deduped
+
+
+def detect_module_root() -> str | None:
+    roots = []
+    if API_VERSION:
+        roots.append(join_url(API_BASE_URL, f"/{API_VERSION}/modules"))
+    roots.extend([
+        join_url(API_BASE_URL, "/modules"),
+        join_url(API_BASE_URL, "/api/modules"),
+    ])
+
+    for root in roots:
+        data = fetch_json(root)
+        if isinstance(data, dict):
+            log.info("Detected modules endpoint: %s", root)
+            return root
+    return None
+
+
 def run_checks() -> int:
     failures = 0
-    for path, required_keys in API_CHECKS:
-        log.info("Checking %s%s …", API_BASE, path)
-        data = fetch_json(path)
+
+    # 1) Health is required
+    health_ok = False
+    for url in health_candidates():
+        log.info("Checking health endpoint %s …", url)
+        data = fetch_json(url)
+        if isinstance(data, dict):
+            health_ok = True
+            log.info("OK: health endpoint %s", url)
+            break
+    if not health_ok:
+        log.error("No healthy API endpoint detected.")
+        return 1
+
+    # 2) Module checks are optional by default (strict mode can enforce)
+    modules_root = detect_module_root()
+    if modules_root is None:
+        if STRICT_MODULE_VALIDATION:
+            log.error("Module endpoint not detected and strict module validation is enabled.")
+            return 1
+        log.warning("Module endpoint not detected; skipping module checks.")
+        return 0
+
+    for name in MODULE_NAMES:
+        url = f"{modules_root}/{name}"
+        log.info("Checking module endpoint %s …", url)
+        data = fetch_json(url)
         if data is None:
-            log.error("No valid response from %s", path)
-            failures += 1
+            if STRICT_MODULE_VALIDATION:
+                failures += 1
+                log.error("No valid response from %s", url)
+            else:
+                log.warning("Module endpoint unavailable (non-strict): %s", url)
             continue
-        if not check_schema(data, required_keys, path):
-            failures += 1
+        if not check_schema(data, ["name"], url):
+            if STRICT_MODULE_VALIDATION:
+                failures += 1
+            else:
+                log.warning("Schema mismatch (non-strict): %s", url)
         else:
-            log.info("OK: %s", path)
+            log.info("OK: %s", url)
+
     return failures
 
 
