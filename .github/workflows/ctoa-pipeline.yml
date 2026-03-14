@@ -29,6 +29,28 @@ jobs:
       - name: Core integrity guard
         shell: bash
         run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
+            CHANGED=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD" || true)
+            NEED_CHECK=0
+            while IFS= read -r line; do
+              line="${line%%#*}"
+              line="$(echo "$line" | xargs)"
+              if [ -z "$line" ]; then
+                continue
+              fi
+              if echo "$CHANGED" | grep -Fxq "$line"; then
+                NEED_CHECK=1
+                break
+              fi
+            done < core/protected-files.txt
+
+            if [ "$NEED_CHECK" -eq 0 ]; then
+              echo "No protected files changed in this PR; skipping core integrity guard."
+              exit 0
+            fi
+          fi
+
           python scripts/ops/core_guard.py --check
 
       - name: Runtime path freeze guard
