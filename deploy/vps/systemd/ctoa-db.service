@@ -8,8 +8,8 @@ Type=oneshot
 RemainAfterExit=yes
 WorkingDirectory=/opt/ctoa
 EnvironmentFile=/opt/ctoa/.env
-ExecStart=/usr/bin/docker start ctoa-db
-ExecStop=/usr/bin/docker stop ctoa-db
+ExecStart=/bin/bash -lc 'if command -v pg_isready >/dev/null 2>&1 && pg_isready -h 127.0.0.1 -p 5432 >/dev/null 2>&1; then echo "ctoa-db.service: existing DB endpoint reachable on 127.0.0.1:5432"; exit 0; fi; if docker ps -a --format "{{.Names}}" | grep -qx ctoa-db; then docker start ctoa-db >/dev/null; exit 0; fi; echo "ctoa-db.service: no ctoa-db container and no reachable DB endpoint"; exit 1'
+ExecStop=/bin/bash -lc 'if docker ps -a --format "{{.Names}}" | grep -qx ctoa-db; then docker stop ctoa-db >/dev/null || true; fi; exit 0'
 TimeoutStartSec=120
 
 [Install]

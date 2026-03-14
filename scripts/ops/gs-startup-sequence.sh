@@ -53,15 +53,21 @@ db_endpoint_ready() {
 # LAYER 0 — Database (everything depends on it)
 # =============================================================================
 log "--- Layer 0: Database"
-if ! systemctl start ctoa-db.service; then
-  log "WARNING: ctoa-db.service failed to start. Checking existing DB endpoint on 127.0.0.1:5432 …"
-  if db_endpoint_ready; then
-    log "WARNING: Existing DB endpoint is reachable. Continuing startup with external/already-running DB."
-  else
-    die "Failed to start ctoa-db.service and no DB endpoint reachable on 127.0.0.1:5432"
-  fi
+if db_endpoint_ready; then
+  log "DB endpoint already reachable on 127.0.0.1:5432."
+  systemctl reset-failed ctoa-db.service >/dev/null 2>&1 || true
 else
-  wait_active ctoa-db.service 60
+  if ! systemctl start ctoa-db.service; then
+    log "WARNING: ctoa-db.service failed to start. Checking existing DB endpoint on 127.0.0.1:5432 …"
+    if db_endpoint_ready; then
+      log "Existing DB endpoint is reachable. Continuing startup with external/already-running DB."
+      systemctl reset-failed ctoa-db.service >/dev/null 2>&1 || true
+    else
+      die "Failed to start ctoa-db.service and no DB endpoint reachable on 127.0.0.1:5432"
+    fi
+  else
+    wait_active ctoa-db.service 60
+  fi
 fi
 
 # =============================================================================
