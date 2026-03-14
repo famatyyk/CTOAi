@@ -23,9 +23,11 @@ param(
         # GS Reset cycle
         'InstallGsReset',
         'InstallGsResetFromBranch',
+        'EnsureGsEnvKeys',
         'TriggerGsResetNow',
         'TailGsReset',
         'GsStatus',
+        'GsProvisionDbContainer',
         'GsCoherence',
         'GsModuleInject',
         'GsApiValidate'
@@ -36,13 +38,17 @@ param(
 $ErrorActionPreference = 'Stop'
 
 function Get-RequiredEnv([string]$Name) {
-    $value = [Environment]::GetEnvironmentVariable($Name)
+    $value = [Environment]::GetEnvironmentVariable($Name, 'Process')
+    if ([string]::IsNullOrWhiteSpace($value)) { $value = [Environment]::GetEnvironmentVariable($Name, 'User') }
+    if ([string]::IsNullOrWhiteSpace($value)) { $value = [Environment]::GetEnvironmentVariable($Name, 'Machine') }
     if ([string]::IsNullOrWhiteSpace($value)) { throw "Missing env var: $Name" }
     return $value
 }
 
 function Get-OptionalEnv([string]$Name, [string]$DefaultValue) {
-    $value = [Environment]::GetEnvironmentVariable($Name)
+    $value = [Environment]::GetEnvironmentVariable($Name, 'Process')
+    if ([string]::IsNullOrWhiteSpace($value)) { $value = [Environment]::GetEnvironmentVariable($Name, 'User') }
+    if ([string]::IsNullOrWhiteSpace($value)) { $value = [Environment]::GetEnvironmentVariable($Name, 'Machine') }
     if ([string]::IsNullOrWhiteSpace($value)) { return $DefaultValue }
     return $value
 }
@@ -431,6 +437,64 @@ echo "[InstallGsResetFromBranch] GS reset timer armed from ref __SOURCE_REF__"
     Invoke-SshScript $remoteScript
     }
 
+    'EnsureGsEnvKeys' {
+        # Secure one-command setup of missing .env keys required by GS coherence.
+        # Recommended input path:
+        #   $env:CTOA_OPENAI_API_KEY = '...'
+        # Optional:
+        #   $env:CTOA_GITHUB_PAT = '...'
+
+        $openAiKey = Get-OptionalEnv 'CTOA_OPENAI_API_KEY' ''
+        if ([string]::IsNullOrWhiteSpace($openAiKey)) {
+            throw 'Missing local env var CTOA_OPENAI_API_KEY. Set it and rerun -Action EnsureGsEnvKeys.'
+        }
+
+        $githubPat = Get-OptionalEnv 'CTOA_GITHUB_PAT' ''
+
+        $safeOpenAi = $openAiKey -replace "'", "'\''"
+        $safeGithubPat = $githubPat -replace "'", "'\''"
+
+        $remoteScript = @'
+set -e
+ENV_FILE="/opt/ctoa/.env"
+
+mkdir -p /opt/ctoa
+touch "$ENV_FILE"
+chmod 600 "$ENV_FILE" 2>/dev/null || true
+
+upsert_if_missing_or_empty() {
+    local key="$1"
+    local value="$2"
+
+    if grep -q "^${key}=" "$ENV_FILE"; then
+        current="$(grep "^${key}=" "$ENV_FILE" | head -n 1 | cut -d'=' -f2-)"
+        if [ -n "$current" ]; then
+            echo "[EnsureGsEnvKeys] ${key} already set."
+            return 0
+        fi
+        sed -i "s|^${key}=.*|${key}=${value}|" "$ENV_FILE"
+        echo "[EnsureGsEnvKeys] ${key} updated from empty value."
+        return 0
+    fi
+
+    echo "${key}=${value}" >> "$ENV_FILE"
+    echo "[EnsureGsEnvKeys] ${key} added."
+}
+
+upsert_if_missing_or_empty OPENAI_API_KEY '__OPENAI_KEY__'
+
+if [ -n '__GITHUB_PAT__' ]; then
+    upsert_if_missing_or_empty GITHUB_PAT '__GITHUB_PAT__'
+fi
+
+echo "[EnsureGsEnvKeys] Completed key setup."
+'@
+
+        $remoteScript = $remoteScript.Replace('__OPENAI_KEY__', $safeOpenAi)
+        $remoteScript = $remoteScript.Replace('__GITHUB_PAT__', $safeGithubPat)
+        Invoke-SshScript $remoteScript
+    }
+
     'TriggerGsResetNow' {
         # Manual full GS cycle now (emergency/test)
         Write-Host '[GS-RESET] This will stop and restart all CTOA services on VPS.' -ForegroundColor Yellow
@@ -440,7 +504,7 @@ echo "[InstallGsResetFromBranch] GS reset timer armed from ref __SOURCE_REF__"
     }
 
     'TailGsReset' {
-        Invoke-SshCommand 'tail -n 100 -f /opt/ctoa/logs/gs-reset.log'
+        Invoke-SshCommand 'mkdir -p /opt/ctoa/logs; touch /opt/ctoa/logs/gs-reset.log; tail -n 100 -f /opt/ctoa/logs/gs-reset.log'
     }
 
     'GsStatus' {
@@ -459,6 +523,68 @@ echo === Active CTOA services ===
 systemctl list-units ctoa-* --no-pager --no-legend --state=active
 '@
     }
+
+        'GsProvisionDbContainer' {
+                # Provision ctoa-db container required by ctoa-db.service.
+                Invoke-SshScript @'
+set -e
+cd /opt/ctoa
+
+if command -v docker-compose >/dev/null 2>&1; then
+    DC="docker-compose"
+elif docker compose version >/dev/null 2>&1; then
+    DC="docker compose"
+else
+    DC=""
+fi
+
+if [ -n "$DC" ]; then
+    echo "[GsProvisionDbContainer] Using compose: $DC"
+    $DC -f deploy/vps/docker-compose.yml up -d ctoa-db
+else
+    echo "[GsProvisionDbContainer] Compose not available, using docker run fallback"
+
+    ENV_FILE="/opt/ctoa/.env"
+    touch "$ENV_FILE"
+
+    # shellcheck disable=SC1090
+    set -a; . "$ENV_FILE"; set +a
+
+    DB_NAME="${DB_NAME:-ctoa}"
+    DB_USER="${DB_USER:-ctoa}"
+    DB_PASSWORD="${DB_PASSWORD:-}"
+
+    if [ -z "$DB_PASSWORD" ]; then
+        DB_PASSWORD="$(openssl rand -base64 24 | tr -dc 'a-zA-Z0-9' | head -c 28)"
+        if grep -q '^DB_PASSWORD=' "$ENV_FILE"; then
+            sed -i "s|^DB_PASSWORD=.*|DB_PASSWORD=$DB_PASSWORD|" "$ENV_FILE"
+        else
+            echo "DB_PASSWORD=$DB_PASSWORD" >> "$ENV_FILE"
+        fi
+        echo "[GsProvisionDbContainer] DB_PASSWORD generated and saved to /opt/ctoa/.env"
+    fi
+
+    docker rm -f ctoa-db >/dev/null 2>&1 || true
+    docker run -d \
+        --name ctoa-db \
+        --restart unless-stopped \
+        -e POSTGRES_DB="$DB_NAME" \
+        -e POSTGRES_USER="$DB_USER" \
+        -e POSTGRES_PASSWORD="$DB_PASSWORD" \
+        -p 127.0.0.1:5432:5432 \
+        -v ctoa_pgdata:/var/lib/postgresql/data \
+        -v /opt/ctoa/deploy/vps/db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro \
+        postgres:16-alpine >/dev/null
+fi
+
+echo "[GsProvisionDbContainer] Container list:"
+docker ps -a --format 'table {{.Names}}\t{{.Status}}' | sed -n '1,30p'
+
+echo "[GsProvisionDbContainer] ctoa-db.service status:"
+systemctl restart ctoa-db.service || true
+systemctl status ctoa-db.service --no-pager -l | sed -n '1,80p'
+'@
+        }
 
     'GsCoherence' {
         Invoke-SshCommand 'bash /opt/ctoa/scripts/ops/gs-coherence-check.sh 2>&1'

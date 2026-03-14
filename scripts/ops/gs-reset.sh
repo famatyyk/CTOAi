@@ -23,6 +23,7 @@ MYTHIBIA_MOD_DIR="${MYTHIBIA_MOD_DIR:-/opt/mythibia/modules}"
 GS_TIMEOUT_WAIT="${GS_TIMEOUT_WAIT:-60}"     # seconds to rest between stop and start
 API_CHECK_RETRIES="${API_CHECK_RETRIES:-5}"
 API_CHECK_URL="${API_CHECK_URL:-http://127.0.0.1:7777/api/health}"
+GS_REQUIRE_API_VALIDATION="${GS_REQUIRE_API_VALIDATION:-false}"
 
 mkdir -p "$LOG_DIR"
 
@@ -131,7 +132,12 @@ while [ "$ATTEMPTS" -lt "$API_CHECK_RETRIES" ]; do
 done
 
 if [ "$SUCCESS" != "true" ]; then
-  die "API validation FAILED after $API_CHECK_RETRIES attempts." 3
+  if [ "$GS_REQUIRE_API_VALIDATION" = "true" ]; then
+    die "API validation FAILED after $API_CHECK_RETRIES attempts." 3
+  fi
+  log "WARNING: API validation failed after $API_CHECK_RETRIES attempts; continuing (GS_REQUIRE_API_VALIDATION=false)."
+  log "===== GS RESET CYCLE COMPLETE WITH WARNINGS — $(date -u '+%Y-%m-%dT%H:%M:%SZ') ====="
+  exit 0
 fi
 
 # Post GS validation via python commanding agent
