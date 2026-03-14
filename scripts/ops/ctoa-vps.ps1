@@ -22,6 +22,7 @@ param(
         'ShowScoutDetails',
         # GS Reset cycle
         'InstallGsReset',
+        'InstallGsResetFromBranch',
         'TriggerGsResetNow',
         'TailGsReset',
         'GsStatus',
@@ -302,69 +303,172 @@ pg_isready -h 127.0.0.1 -U ctoa -d ctoa && echo '[SetupDB] DB ready'
     # =========================================================================
 
     'InstallGsReset' {
-        # Install ctoa-gs-reset.service + .timer and all GS scripts on VPS
-        Invoke-SshScript @'
+        # Install ctoa-gs-reset.service + timer and all GS scripts on VPS.
+        # Auto-fallback: if main does not have GS files, try CTOA_GS_SOURCE_REF.
+        $sourceRef = Get-OptionalEnv 'CTOA_GS_SOURCE_REF' ''
+        $safeRef = $sourceRef -replace "'", "''"
+
+        $remoteScript = @'
 set -e
 cd /opt/ctoa
-git fetch --quiet && git reset --hard origin/main
+git fetch --quiet
+git reset --hard origin/main
+
+required_files="
+/opt/ctoa/scripts/ops/gs-reset.sh
+/opt/ctoa/scripts/ops/gs-startup-sequence.sh
+/opt/ctoa/scripts/ops/gs-coherence-check.sh
+/opt/ctoa/scripts/ops/gs-module-inject.sh
+/opt/ctoa/scripts/ops/gs-api-validator.py
+/opt/ctoa/deploy/vps/systemd/ctoa-gs-reset.service
+/opt/ctoa/deploy/vps/systemd/ctoa-gs-reset.timer
+"
+
+check_required_files() {
+    local prefix="$1"
+    local missing=0
+    for f in $required_files; do
+        if [ ! -f "$f" ]; then
+            echo "[$prefix] MISSING: $f"
+            missing=1
+        fi
+    done
+    return "$missing"
+}
+
+if ! check_required_files 'InstallGsReset'; then
+    if [ -n "__FALLBACK_REF__" ]; then
+        echo "[InstallGsReset] main missing GS files, trying fallback ref: __FALLBACK_REF__"
+        git fetch --quiet origin "__FALLBACK_REF__"
+        git checkout -f FETCH_HEAD
+        if ! check_required_files 'InstallGsReset'; then
+            echo "[InstallGsReset] ERROR: GS files missing in fallback ref: __FALLBACK_REF__"
+            exit 1
+        fi
+    else
+        echo "[InstallGsReset] ERROR: GS files are not present on origin/main on VPS."
+        echo "[InstallGsReset] Set CTOA_GS_SOURCE_REF to fallback branch and rerun."
+        exit 1
+    fi
+fi
+
 chmod +x /opt/ctoa/scripts/ops/gs-reset.sh
 chmod +x /opt/ctoa/scripts/ops/gs-startup-sequence.sh
 chmod +x /opt/ctoa/scripts/ops/gs-coherence-check.sh
 chmod +x /opt/ctoa/scripts/ops/gs-module-inject.sh
 chmod +x /opt/ctoa/scripts/ops/gs-api-validator.py
-cp deploy/vps/systemd/ctoa-gs-reset.service /etc/systemd/system/
-cp deploy/vps/systemd/ctoa-gs-reset.timer   /etc/systemd/system/
+cp /opt/ctoa/deploy/vps/systemd/ctoa-gs-reset.service /etc/systemd/system/
+cp /opt/ctoa/deploy/vps/systemd/ctoa-gs-reset.timer /etc/systemd/system/
 systemctl daemon-reload
 systemctl enable ctoa-gs-reset.timer
-systemctl start  ctoa-gs-reset.timer
+systemctl start ctoa-gs-reset.timer
 systemctl list-timers ctoa-gs-reset.timer --no-pager
-echo "[InstallGsReset] GS reset timer armed — fires daily at 06:00 UTC"
+echo [InstallGsReset] GS reset timer armed and active
 '@
+
+    $remoteScript = $remoteScript.Replace('__FALLBACK_REF__', $safeRef)
+    Invoke-SshScript $remoteScript
+    }
+
+    'InstallGsResetFromBranch' {
+        # Emergency install from a specific remote ref/branch.
+        # Use env var CTOA_GS_SOURCE_REF or provide value when prompted.
+        $sourceRef = Get-OptionalEnv 'CTOA_GS_SOURCE_REF' ''
+        if ([string]::IsNullOrWhiteSpace($sourceRef)) {
+            $sourceRef = Read-Host 'Enter source ref (example: ci/hardening-failclosed-diff)'
+        }
+        if ([string]::IsNullOrWhiteSpace($sourceRef)) {
+            throw 'InstallGsResetFromBranch requires source ref.'
+        }
+
+        $safeRef = $sourceRef -replace "'", "''"
+
+        $remoteScript = @'
+set -e
+cd /opt/ctoa
+    echo "[InstallGsResetFromBranch] source ref: __SOURCE_REF__"
+    git fetch --quiet origin "__SOURCE_REF__"
+git checkout -f FETCH_HEAD
+
+required_files="
+/opt/ctoa/scripts/ops/gs-reset.sh
+/opt/ctoa/scripts/ops/gs-startup-sequence.sh
+/opt/ctoa/scripts/ops/gs-coherence-check.sh
+/opt/ctoa/scripts/ops/gs-module-inject.sh
+/opt/ctoa/scripts/ops/gs-api-validator.py
+/opt/ctoa/deploy/vps/systemd/ctoa-gs-reset.service
+/opt/ctoa/deploy/vps/systemd/ctoa-gs-reset.timer
+"
+
+missing=0
+for f in $required_files; do
+    if [ ! -f "$f" ]; then
+        echo "[InstallGsResetFromBranch] MISSING: $f"
+        missing=1
+    fi
+done
+
+if [ "$missing" -ne 0 ]; then
+    echo "[InstallGsResetFromBranch] ERROR: required GS files missing in ref __SOURCE_REF__"
+    exit 1
+fi
+
+chmod +x /opt/ctoa/scripts/ops/gs-reset.sh
+chmod +x /opt/ctoa/scripts/ops/gs-startup-sequence.sh
+chmod +x /opt/ctoa/scripts/ops/gs-coherence-check.sh
+chmod +x /opt/ctoa/scripts/ops/gs-module-inject.sh
+chmod +x /opt/ctoa/scripts/ops/gs-api-validator.py
+cp /opt/ctoa/deploy/vps/systemd/ctoa-gs-reset.service /etc/systemd/system/
+cp /opt/ctoa/deploy/vps/systemd/ctoa-gs-reset.timer /etc/systemd/system/
+systemctl daemon-reload
+systemctl enable ctoa-gs-reset.timer
+systemctl restart ctoa-gs-reset.timer
+systemctl list-timers ctoa-gs-reset.timer --no-pager
+echo "[InstallGsResetFromBranch] GS reset timer armed from ref __SOURCE_REF__"
+'@
+
+    $remoteScript = $remoteScript.Replace('__SOURCE_REF__', $safeRef)
+    Invoke-SshScript $remoteScript
     }
 
     'TriggerGsResetNow' {
-        # Manually run a full GS reset cycle immediately (for testing or emergency)
-        Write-Host "[GS-RESET] Triggering gs-reset.sh NOW on VPS — this will stop and restart all services!" -ForegroundColor Yellow
-        $confirm = Read-Host "Type YES to confirm"
-        if ($confirm -ne 'YES') { Write-Host "Aborted."; return }
+        # Manual full GS cycle now (emergency/test)
+        Write-Host '[GS-RESET] This will stop and restart all CTOA services on VPS.' -ForegroundColor Yellow
+        $confirm = Read-Host 'Type YES to confirm'
+        if ($confirm -ne 'YES') { Write-Host 'Aborted.'; return }
         Invoke-SshCommand 'bash /opt/ctoa/scripts/ops/gs-reset.sh 2>&1 | tail -120'
     }
 
     'TailGsReset' {
-        # Stream the GS reset log in real-time
         Invoke-SshCommand 'tail -n 100 -f /opt/ctoa/logs/gs-reset.log'
     }
 
     'GsStatus' {
-        # Show current GS timer status and last cycle result
         Invoke-SshScript @'
 set -e
-echo "=== GS Timer Status ==="
+echo === GS Timer Status ===
 systemctl list-timers ctoa-gs-reset.timer --no-pager
-echo ""
-echo "=== Last GS Reset Log (tail 40) ==="
-tail -n 40 /opt/ctoa/logs/gs-reset.log 2>/dev/null || echo "(no log yet)"
-echo ""
-echo "=== Last Inject Log (tail 20) ==="
-tail -n 20 /opt/ctoa/logs/gs-inject.log 2>/dev/null || echo "(no inject log yet)"
-echo ""
-echo "=== Active CTOA services ==="
-systemctl list-units 'ctoa-*' --no-pager --no-legend --state=active
+echo
+echo === Last GS Reset Log tail 40 ===
+tail -n 40 /opt/ctoa/logs/gs-reset.log 2>/dev/null || true
+echo
+echo === Last Inject Log tail 20 ===
+tail -n 20 /opt/ctoa/logs/gs-inject.log 2>/dev/null || true
+echo
+echo === Active CTOA services ===
+systemctl list-units ctoa-* --no-pager --no-legend --state=active
 '@
     }
 
     'GsCoherence' {
-        # Run coherence check without full reset
         Invoke-SshCommand 'bash /opt/ctoa/scripts/ops/gs-coherence-check.sh 2>&1'
     }
 
     'GsModuleInject' {
-        # Run module inject only (useful after pushing new Lua modules)
         Invoke-SshCommand 'bash /opt/ctoa/scripts/ops/gs-module-inject.sh 2>&1'
     }
 
     'GsApiValidate' {
-        # Run API validator only
-        Invoke-SshCommand 'cd /opt/ctoa && source .venv/bin/activate && python3 scripts/ops/gs-api-validator.py 2>&1'
+        Invoke-SshCommand 'cd /opt/ctoa && . .venv/bin/activate && python3 scripts/ops/gs-api-validator.py 2>&1'
     }
 }
