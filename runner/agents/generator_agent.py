@@ -61,8 +61,9 @@ def _server_ctx(server_id: int) -> dict[str, Any]:
     return ctx
 
 
-def _safe_lua_string(s: str) -> str:
-    return s.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n")
+def _safe_lua_string(s: object) -> str:
+    txt = "" if s is None else str(s)
+    return txt.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n")
 
 
 def _render(template_id: str, ctx: dict) -> str:

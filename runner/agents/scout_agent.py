@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import re
 import ssl
 import urllib.error
@@ -209,6 +210,11 @@ def _infer_profile(base_url: str) -> str:
     return "generic"
 
 
+def _force_generic_hosts() -> set[str]:
+    raw = os.environ.get("CTOA_FORCE_GENERIC_HOSTS", "mythibia.online")
+    return {h.strip().lower() for h in raw.split(",") if h.strip()}
+
+
 def _probe_paths(
     server_id: int,
     base_url: str,
@@ -296,7 +302,9 @@ def scout_server(server_id: int, base_url: str) -> None:
                 log.info("Fallback matched engine profile: %s", engine)
                 break
 
-    force_generic_ingest = found == 0 and profile == "tibiantis"
+    host = urllib.parse.urlparse(base_url).netloc.lower()
+    force_by_host = any(h in host for h in _force_generic_hosts())
+    force_generic_ingest = found == 0 and (profile == "tibiantis" or force_by_host)
     new_status = "INGESTED" if (found > 0 or force_generic_ingest) else "ERROR"
     if detected_engine:
         game_type = f"tibia-ot:{detected_engine}"
@@ -307,7 +315,7 @@ def scout_server(server_id: int, base_url: str) -> None:
     if force_generic_ingest:
         scout_error = (
             "No machine API found; forced generic ingest mode "
-            f"for profile={profile} (total_probed={len(probed)})"
+            f"for profile={profile}, host={host} (total_probed={len(probed)})"
         )
     elif found == 0:
         scout_error = (
