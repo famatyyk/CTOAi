@@ -16,7 +16,7 @@ logs/
 # Reverse-engineering and large local artifacts
 artifacts/enc3/
 scripts/ops/enc3-analysis-report.txt
-scripts/ops/ghidra/
+scripts/ops/ghidra/*.class
 
 # Local client/generated diagnostics
 **/user_dir/ai_generated/
