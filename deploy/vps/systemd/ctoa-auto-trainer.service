@@ -1,0 +1,17 @@
+[Unit]
+Description=CTOA Auto Trainer (quality analysis and training report)
+After=network.target postgresql.service
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/opt/ctoa
+EnvironmentFile=/opt/ctoa/.env
+Environment=CTOA_TRAINING_REPORT_DIR=/opt/ctoa/runtime/training-reports
+ExecStart=/opt/ctoa/.venv/bin/python3 /opt/ctoa/scripts/ops/auto_trainer.py
+StandardOutput=append:/opt/ctoa/logs/auto-trainer.log
+StandardError=append:/opt/ctoa/logs/auto-trainer.log
+TimeoutStartSec=180
+
+[Install]
+WantedBy=multi-user.target
