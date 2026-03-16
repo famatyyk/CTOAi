@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import os
 import re
+import shutil
 import subprocess
 import json
 from datetime import datetime, timezone
@@ -15,6 +16,8 @@ from pydantic import BaseModel, Field
 ROOT = Path(__file__).resolve().parent.parent
 STATIC_DIR = ROOT / "mobile_console" / "static"
 AUDIT_LOG = ROOT / "logs" / "mobile-console-audit.log"
+AUTO_TRAINER_DIR = Path(os.environ.get("CTOA_TRAINING_REPORT_DIR", str(ROOT / "runtime" / "training-reports")))
+GENERATED_DIR = Path(os.environ.get("CTOA_GENERATED_DIR", "/opt/ctoa/generated"))
 
 app = FastAPI(title="CTOA Mobile Console", version="1.0.0")
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
@@ -28,6 +31,12 @@ class CommandRequest(BaseModel):
 
 class ServerRegisterRequest(BaseModel):
     url: str = Field(min_length=8, max_length=512)
+
+
+class IntelMissionRequest(BaseModel):
+    urls: list[str] = Field(default_factory=list, max_length=25)
+    force_rescout: bool = False
+    trigger_now: bool = True
 
 
 def _mobile_token() -> str:
@@ -62,6 +71,10 @@ def _require_token(x_ctoa_token: Optional[str] = Header(default=None)) -> None:
     expected = _mobile_token()
     if x_ctoa_token != expected:
         raise HTTPException(status_code=401, detail="Unauthorized")
+
+
+def _token_valid(x_ctoa_token: Optional[str]) -> bool:
+    return bool(x_ctoa_token) and x_ctoa_token == _mobile_token()
 
 
 def _run(cmd: str, timeout: int = 20, cwd: Optional[str] = None) -> dict:
@@ -101,6 +114,24 @@ def index() -> FileResponse:
 @app.get("/api/health")
 def health(_: None = Depends(_require_token)) -> dict:
     return {"ok": True, "full_access": _full_access()}
+
+
+@app.get("/api/auth/auto-check")
+def auth_auto_check(x_ctoa_token: Optional[str] = Header(default=None)) -> dict:
+    valid = _token_valid(x_ctoa_token)
+    payload = {
+        "ok": valid,
+        "token_present": bool(x_ctoa_token),
+        "token_valid": valid,
+        "full_access": _full_access() if valid else False,
+        "checked_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+    }
+    if valid:
+        timer = _run("systemctl is-active ctoa-agents-orchestrator.timer", timeout=5)
+        payload["orchestrator_timer"] = timer["stdout"].strip() or "unknown"
+    else:
+        payload["hint"] = "Zapisz aktualny CTOA_MOBILE_TOKEN i sprobuj ponownie"
+    return payload
 
 
 @app.get("/api/presets")
@@ -251,6 +282,288 @@ def server_register(
 
     _audit(request, f"server_register:{url}", 0)
     return {"ok": True, "url": url, "db": res["stdout"].strip()}
+
+
+def _default_intel_urls() -> list[str]:
+    env_urls = os.getenv("CTOA_INTEL_DEFAULT_URLS", "").strip()
+    if env_urls:
+        return [u.strip() for u in env_urls.split(",") if u.strip()]
+    return [
+        "https://tibiantis.online",
+        "https://otland.net",
+    ]
+
+
+def _slug(url: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "_", url.lower().split("//")[-1])[:40]
+
+
+def _sync_mythibia_to_client(source_dir: Path) -> dict:
+    enabled = os.getenv("CTOA_CLIENT_SYNC_ENABLED", "false").lower() == "true"
+    if not enabled:
+        return {
+            "enabled": False,
+            "ok": False,
+            "detail": "CTOA_CLIENT_SYNC_ENABLED=false",
+        }
+
+    client_scripts = os.getenv("CTOA_CLIENT_SCRIPTS_DIR", "").strip()
+    if not client_scripts:
+        return {
+            "enabled": True,
+            "ok": False,
+            "detail": "Missing CTOA_CLIENT_SCRIPTS_DIR",
+        }
+
+    if not source_dir.exists():
+        return {
+            "enabled": True,
+            "ok": False,
+            "detail": f"Source dir not found: {source_dir}",
+        }
+
+    try:
+        client_root = Path(client_scripts)
+        target_dir = client_root / "mythibia_online"
+        target_dir.mkdir(parents=True, exist_ok=True)
+
+        copied: list[str] = []
+        for src in sorted(source_dir.glob("*.lua")):
+            dst = target_dir / src.name
+            shutil.copy2(src, dst)
+            copied.append(src.name)
+
+        autoload_name = os.getenv("CTOA_CLIENT_AUTOLOADER_NAME", "ctoa_mythibia_autoload.lua").strip()
+        autoload_path = client_root / autoload_name
+
+        target_posix = target_dir.as_posix()
+        lines = [
+            "-- CTOA auto-generated mythibia autoloader",
+            f"local BASE = \"{target_posix}\"",
+            "",
+        ]
+        for name in copied:
+            lines.append(f"dofile(BASE .. \"/{name}\")")
+        autoload_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+        init_file = os.getenv("CTOA_CLIENT_INIT_FILE", "").strip()
+        init_updated = False
+        if init_file:
+            init_path = Path(init_file)
+            if init_path.exists():
+                include_line = f'dofile("{autoload_path.as_posix()}")'
+                body = init_path.read_text(encoding="utf-8", errors="replace")
+                if include_line not in body:
+                    if not body.endswith("\n"):
+                        body += "\n"
+                    body += include_line + "\n"
+                    init_path.write_text(body, encoding="utf-8")
+                    init_updated = True
+
+        return {
+            "enabled": True,
+            "ok": True,
+            "target_dir": str(target_dir),
+            "autoload": str(autoload_path),
+            "copied_files": copied,
+            "copied_count": len(copied),
+            "init_updated": init_updated,
+        }
+    except Exception as exc:
+        return {
+            "enabled": True,
+            "ok": False,
+            "detail": str(exc),
+        }
+
+
+@app.post("/api/agents/intel/launch")
+def launch_intel_mission(
+    req: IntelMissionRequest,
+    request: Request,
+    _: None = Depends(_require_token),
+) -> dict:
+    urls = req.urls or _default_intel_urls()
+    sanitized: list[str] = []
+    for raw in urls[:25]:
+        sanitized.append(_validate_url(raw))
+
+    seeded = 0
+    for url in sanitized:
+        if req.force_rescout:
+            sql = (
+                "INSERT INTO servers (url, status) VALUES (%s, 'NEW') "
+                "ON CONFLICT (url) DO UPDATE SET status='NEW', updated_at=now()"
+            )
+        else:
+            sql = (
+                "INSERT INTO servers (url, status) VALUES (%s, 'NEW') "
+                "ON CONFLICT (url) DO NOTHING"
+            )
+        res = _db_exec(sql, (url,))
+        if res["code"] != 0:
+            raise HTTPException(status_code=503, detail=f"DB error while seeding {url}: {res['stderr'][:200]}")
+        seeded += 1
+
+    trigger = {"code": 0, "stdout": "skipped", "stderr": ""}
+    if req.trigger_now:
+        trigger = _run("systemctl start ctoa-agents-orchestrator.service", timeout=8)
+
+    _audit(request, f"intel_launch:{len(sanitized)}", int(trigger.get("code", 0)))
+    return {
+        "ok": True,
+        "seeded_urls": sanitized,
+        "seeded_count": seeded,
+        "triggered": req.trigger_now,
+        "trigger_result": {
+            "code": trigger.get("code", -1),
+            "stdout": (trigger.get("stdout", "") or "").strip(),
+            "stderr": (trigger.get("stderr", "") or "").strip(),
+        },
+    }
+
+
+@app.get("/api/agents/intel/report")
+def intel_report(_: None = Depends(_require_token)) -> dict:
+    servers_res = _db_exec(
+        "SELECT status, COUNT(*) FROM servers GROUP BY status ORDER BY status"
+    )
+    runs_res = _db_exec(
+        "SELECT agent, status, finished_at FROM agent_runs ORDER BY id DESC LIMIT 20"
+    )
+    quality_res = _db_exec(
+        "SELECT dt, modules_generated, programs_generated, avg_quality, launcher_day "
+        "FROM daily_stats ORDER BY dt DESC LIMIT 3"
+    )
+    failures_res = _db_exec(
+        "SELECT task_id, template, quality_score, test_log "
+        "FROM modules WHERE status='FAILED' ORDER BY validated_at DESC NULLS LAST LIMIT 8"
+    )
+
+    def parse_rows(raw: str) -> list[list[str]]:
+        rows: list[list[str]] = []
+        for line in raw.strip().splitlines():
+            if line.strip():
+                rows.append(line.split("|"))
+        return rows
+
+    quality_rows = parse_rows(quality_res.get("stdout", ""))
+    trainer_actions: list[str] = []
+    if quality_rows:
+        latest = quality_rows[0]
+        try:
+            avg_q = float(latest[3])
+        except Exception:
+            avg_q = 0.0
+        if avg_q < 85:
+            trainer_actions.append("Podnies rygor promptu: edge-cases + negative tests + output contract")
+            trainer_actions.append("Zwieksz nacisk na walidowalnosc i deterministyczne API modulow")
+        elif avg_q < 92:
+            trainer_actions.append("Dostrajać prompty pod stabilnosc i redukcje TODO/FIXME")
+        else:
+            trainer_actions.append("Tryb elite: utrzymanie jakosci i optymalizacja kosztu tokenow")
+    else:
+        trainer_actions.append("Brak danych quality: uruchom misje intel i pipeline walidacji")
+
+    return {
+        "ok": True,
+        "servers": parse_rows(servers_res.get("stdout", "")),
+        "recent_runs": parse_rows(runs_res.get("stdout", "")),
+        "quality": quality_rows,
+        "failed_modules": parse_rows(failures_res.get("stdout", "")),
+        "trainer_actions": trainer_actions,
+    }
+
+
+@app.get("/api/agents/auto-trainer/latest")
+def auto_trainer_latest(_: None = Depends(_require_token)) -> dict:
+    latest_md = AUTO_TRAINER_DIR / "latest.md"
+    latest_json = AUTO_TRAINER_DIR / "latest.json"
+
+    if not latest_md.exists() and not latest_json.exists():
+        return {
+            "ok": False,
+            "exists": False,
+            "detail": "Auto-trainer report not found",
+            "path": str(AUTO_TRAINER_DIR),
+        }
+
+    md_text = ""
+    if latest_md.exists():
+        md_text = latest_md.read_text(encoding="utf-8", errors="replace")
+        if len(md_text) > 50000:
+            md_text = md_text[:50000] + "\n\n... [truncated]"
+
+    js_payload: dict = {}
+    if latest_json.exists():
+        try:
+            js_payload = json.loads(latest_json.read_text(encoding="utf-8", errors="replace"))
+        except Exception as exc:
+            js_payload = {"parse_error": str(exc)}
+
+    latest_mtime = None
+    if latest_md.exists():
+        latest_mtime = datetime.fromtimestamp(latest_md.stat().st_mtime, tz=timezone.utc).isoformat()
+
+    return {
+        "ok": True,
+        "exists": True,
+        "updated_at": latest_mtime,
+        "markdown": md_text,
+        "json": js_payload,
+    }
+
+
+@app.post("/api/agents/mythibia/run")
+def mythibia_one_click(request: Request, _: None = Depends(_require_token)) -> dict:
+    mythibia_url = "https://mythibia.online"
+    res = _db_exec(
+        "INSERT INTO servers (url, status) VALUES (%s, 'NEW') "
+        "ON CONFLICT (url) DO UPDATE SET status='NEW', updated_at=now() "
+        "RETURNING id, status",
+        (mythibia_url,),
+    )
+    if res["code"] != 0:
+        raise HTTPException(status_code=503, detail=f"DB error: {res['stderr'][:200]}")
+
+    trig = _run("systemctl start --no-block ctoa-agents-orchestrator.service", timeout=8)
+    if trig["code"] != 0:
+        raise HTTPException(status_code=503, detail=f"Orchestrator error: {trig['stderr'][:200]}")
+
+    # Give systemd one-shot a moment to produce outputs.
+    _run("sleep 3", timeout=5)
+
+    slug = _slug(mythibia_url)
+    out_dir = GENERATED_DIR / slug
+    files: list[dict] = []
+    if out_dir.exists():
+        for p in sorted(out_dir.glob("*.lua"), key=lambda x: x.stat().st_mtime, reverse=True)[:40]:
+            files.append(
+                {
+                    "name": p.name,
+                    "updated_at": datetime.fromtimestamp(p.stat().st_mtime, tz=timezone.utc).isoformat(),
+                    "size": p.stat().st_size,
+                }
+            )
+
+    srv_state = _db_exec(
+        "SELECT id, url, status, game_type, coalesce(scout_error,'') "
+        "FROM servers WHERE url=%s ORDER BY id DESC LIMIT 1",
+        (mythibia_url,),
+    )
+
+    sync = _sync_mythibia_to_client(out_dir)
+
+    _audit(request, "mythibia_one_click", 0)
+    return {
+        "ok": True,
+        "url": mythibia_url,
+        "generated_dir": str(out_dir),
+        "files": files,
+        "files_count": len(files),
+        "server_state": srv_state.get("stdout", "").strip(),
+        "client_sync": sync,
+    }
 
 
 # ── Dashboard ────────────────────────────────────────────────────────────────

@@ -2,6 +2,7 @@ const tokenInput = document.getElementById('token');
 const statusOut = document.getElementById('statusOut');
 const cmdOut = document.getElementById('cmdOut');
 const presetSelect = document.getElementById('presetSelect');
+const authState = document.getElementById('authState');
 
 function getToken() {
   return localStorage.getItem('ctoa_mobile_token') || '';
@@ -27,6 +28,27 @@ async function api(path, options = {}) {
 document.getElementById('saveToken').onclick = () => {
   setToken(tokenInput.value.trim());
   alert('Token zapisany');
+  void checkAuthAuto();
+};
+
+async function checkAuthAuto() {
+  try {
+    const data = await api('/api/auth/auto-check');
+    if (data.token_valid) {
+      authState.textContent = `Token OK | full_access=${data.full_access} | orchestrator_timer=${data.orchestrator_timer || 'unknown'}`;
+      authState.style.color = '#7fff7f';
+    } else {
+      authState.textContent = 'Token NIEPOPRAWNY: zapisz aktualny CTOA_MOBILE_TOKEN';
+      authState.style.color = '#ff9999';
+    }
+  } catch (e) {
+    authState.textContent = 'Auto-check blad: ' + String(e);
+    authState.style.color = '#ff9999';
+  }
+}
+
+document.getElementById('autoCheckToken').onclick = async () => {
+  await checkAuthAuto();
 };
 
 document.getElementById('refreshStatus').onclick = async () => {
@@ -145,6 +167,76 @@ document.getElementById('registerServer').onclick = async () => {
   }
 };
 
+document.getElementById('launchIntel').onclick = async () => {
+  const raw = document.getElementById('intelUrls').value || '';
+  const urls = raw
+    .split('\n')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const out = document.getElementById('agentStatusOut');
+  try {
+    const data = await api('/api/agents/intel/launch', {
+      method: 'POST',
+      body: JSON.stringify({ urls, force_rescout: true, trigger_now: true }),
+    });
+    out.textContent = JSON.stringify(data, null, 2);
+  } catch (e) {
+    out.textContent = 'Intel launch error: ' + String(e);
+  }
+};
+
+document.getElementById('mythibiaOneClick').onclick = async () => {
+  const out = document.getElementById('agentStatusOut');
+  try {
+    const data = await api('/api/agents/mythibia/run', {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+    const names = (data.files || []).map((f) => f.name);
+    out.textContent = JSON.stringify({
+      ok: data.ok,
+      url: data.url,
+      generated_dir: data.generated_dir,
+      files_count: data.files_count,
+      server_state: data.server_state,
+      client_sync: data.client_sync || {},
+      files: names,
+    }, null, 2);
+  } catch (e) {
+    out.textContent = 'Mythibia one-click error: ' + String(e);
+  }
+};
+
+document.getElementById('intelReport').onclick = async () => {
+  const out = document.getElementById('agentStatusOut');
+  try {
+    const data = await api('/api/agents/intel/report');
+    out.textContent = JSON.stringify(data, null, 2);
+  } catch (e) {
+    out.textContent = 'Intel report error: ' + String(e);
+  }
+};
+
+document.getElementById('autoTrainerLatest').onclick = async () => {
+  const out = document.getElementById('agentStatusOut');
+  try {
+    const data = await api('/api/agents/auto-trainer/latest');
+    if (!data.exists) {
+      out.textContent = 'Brak raportu auto-trainera: ' + (data.detail || 'unknown');
+      return;
+    }
+    const meta = {
+      ok: data.ok,
+      exists: data.exists,
+      updated_at: data.updated_at,
+      json_summary: data.json || {},
+    };
+    out.textContent = JSON.stringify(meta, null, 2) + '\n\n' + (data.markdown || '');
+  } catch (e) {
+    out.textContent = 'Auto-trainer latest error: ' + String(e);
+  }
+};
+
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 function badgeStatus(s) {
   const map = { VALIDATED:'ok', GENERATED:'ok', READY:'ok', INGESTED:'waiting', SCOUTING:'waiting',
@@ -220,3 +312,4 @@ async function fetchAgentLog(target) {
 });
 
 tokenInput.value = getToken();
+void checkAuthAuto();

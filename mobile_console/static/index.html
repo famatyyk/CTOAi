@@ -39,7 +39,9 @@
     <div class="token-row">
       <input id="token" type="password" placeholder="CTOA_MOBILE_TOKEN" />
       <button id="saveToken">Zapisz token</button>
+      <button id="autoCheckToken">Auto-check</button>
     </div>
+    <div id="authState" style="font-size:12px;color:#888;margin-top:6px">Token: niezweryfikowany</div>
   </header>
 
   <main>
@@ -62,6 +64,18 @@
           <button id="registerServer">▶ Start</button>
         </div>
         <div id="serverFeedback"></div>
+      </section>
+
+      <section class="card">
+        <h2>🛰️ Misja zwiadowcza (internet → DB → trener)</h2>
+        <p style="color:#888;font-size:13px;">Wklej URL-e (jeden na linię). Puste pole = domyślna lista intel.</p>
+        <textarea id="intelUrls" rows="4" placeholder="https://example-server.com"></textarea>
+        <div class="actions">
+          <button id="launchIntel">Start zwiadu</button>
+          <button id="mythibiaOneClick">One-click Mythibia Run</button>
+          <button id="intelReport">Raport trenera</button>
+          <button id="autoTrainerLatest">Auto-trainer latest</button>
+        </div>
       </section>
 
       <section class="card">
