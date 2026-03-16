@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "./schemas/ci-gate-policy.schema.json",
+  "title": "CTOA CI Gate Policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "policy_name",
+    "required_for_pass",
+    "release_blockers",
+    "owner_approval",
+    "publication"
+  ],
+  "properties": {
+    "version": { "type": "integer", "minimum": 1 },
+    "policy_name": { "type": "string", "minLength": 1 },
+    "required_for_pass": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "minItems": 1
+    },
+    "release_blockers": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "minItems": 1
+    },
+    "owner_approval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required", "source", "environment_name"],
+      "properties": {
+        "required": { "type": "boolean" },
+        "source": { "type": "string", "minLength": 1 },
+        "environment_name": { "type": "string", "minLength": 1 }
+      }
+    },
+    "publication": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["target", "mode", "readme_style"],
+      "properties": {
+        "target": { "type": "string", "minLength": 1 },
+        "mode": { "type": "string", "minLength": 1 },
+        "readme_style": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}
