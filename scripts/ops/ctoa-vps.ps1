@@ -25,6 +25,7 @@ param(
         'ApplyScoutingTimeoutPolicy',
         'InstallTieredReseedTimers',
         'HotfixOrchestratorService',
+        'ShowReseedPolicy',
         # GS Reset cycle
         'InstallGsReset',
         'InstallGsResetFromBranch',
@@ -255,6 +256,40 @@ systemctl status ctoa-reseed-tier-c.timer --no-pager -l | sed -n '1,40p' || true
 echo
 echo "=== reseed logs (tail 60) ==="
 tail -n 60 /opt/ctoa/logs/reseed-tier.log 2>/dev/null || echo 'reseed-tier.log-not-found'
+'@
+    }
+    'ShowReseedPolicy' {
+        Invoke-SshScript @'
+set -e
+. /opt/ctoa/.env 2>/dev/null || true
+DEFAULT_MIN_AGE="${CTOA_RESEED_ERROR_MIN_AGE_HOURS:-6}"
+AB_MIN_AGE="${CTOA_RESEED_ERROR_MIN_AGE_HOURS_AB:-$DEFAULT_MIN_AGE}"
+C_MIN_AGE="${CTOA_RESEED_ERROR_MIN_AGE_HOURS_C:-24}"
+AB_URLS="${CTOA_RESEED_TIER_AB_URLS:-}"
+C_URLS="${CTOA_RESEED_TIER_C_URLS:-}"
+echo "=== reseed policy ==="
+echo "  Tier A/B  stale-ERROR threshold : ${AB_MIN_AGE}h"
+echo "  Tier C    stale-ERROR threshold : ${C_MIN_AGE}h"
+echo "  Tier A/B  URLs                 : ${AB_URLS:-<none>}"
+echo "  Tier C    URLs                 : ${C_URLS:-<none>}"
+echo
+echo "=== server status per tier ==="
+sudo -u postgres psql -d ctoa -At -c "
+SELECT
+  url,
+  status,
+  ROUND(EXTRACT(EPOCH FROM (NOW()-updated_at))/3600,1) AS age_h,
+  CASE
+    WHEN url = ANY(string_to_array('${AB_URLS}',',')) THEN 'AB'
+    WHEN url = ANY(string_to_array('${C_URLS}',',')) THEN 'C'
+    ELSE '?'
+  END AS tier
+FROM servers
+ORDER BY tier, url;
+" 2>/dev/null | column -t -s '|' || true
+echo
+echo "=== next scheduled runs ==="
+systemctl list-timers ctoa-reseed-tier-ab.timer ctoa-reseed-tier-c.timer --no-pager 2>/dev/null || true
 '@
     }
         'WatchScoutingUntilSettled' {
