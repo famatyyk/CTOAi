@@ -8,6 +8,10 @@ $ErrorActionPreference = 'Stop'
 $reportPath = Join-Path $ClientRoot $ReportName
 $statePath = Join-Path $ClientRoot 'watchdog_alert.state'
 
+if (-not (Test-Path $ClientRoot)) {
+    New-Item -ItemType Directory -Path $ClientRoot -Force | Out-Null
+}
+
 if (-not (Test-Path $reportPath)) {
     exit 0
 }

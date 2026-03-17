@@ -32,22 +32,22 @@ if ($taskCreateExit -ne 0) {
     $autostartMode = 'hkcu-run'
 }
 
-Start-Process -WindowStyle Hidden -FilePath 'powershell.exe' -ArgumentList @(
-    '-NoProfile',
-    '-ExecutionPolicy',
-    'Bypass',
-    '-File',
-    $watcherScript,
-    '-IntervalSeconds',
-    $IntervalSeconds,
-    '-LogPath',
-    $LogPath
-) | Out-Null
-
 $taskInfo = ''
 if ($autostartMode -eq 'scheduled-task') {
     & schtasks /Run /TN $TaskName | Out-Null
     $taskInfo = & schtasks /Query /TN $TaskName /V /FO LIST
+} else {
+    Start-Process -WindowStyle Hidden -FilePath 'powershell.exe' -ArgumentList @(
+        '-NoProfile',
+        '-ExecutionPolicy',
+        'Bypass',
+        '-File',
+        $watcherScript,
+        '-IntervalSeconds',
+        $IntervalSeconds,
+        '-LogPath',
+        $LogPath
+    ) | Out-Null
 }
 
 Write-Output "[watcher-task] installed"
