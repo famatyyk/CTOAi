@@ -302,8 +302,9 @@ def scout_server(server_id: int, base_url: str) -> None:
                 log.info("Fallback matched engine profile: %s", engine)
                 break
 
-    host = urllib.parse.urlparse(base_url).netloc.lower()
-    force_by_host = any(h in host for h in _force_generic_hosts())
+    parsed = urllib.parse.urlparse(base_url)
+    host = (parsed.hostname or parsed.netloc).lower()
+    force_by_host = any(host == h or host.endswith(f".{h}") for h in _force_generic_hosts())
     force_generic_ingest = found == 0 and (profile == "tibiantis" or force_by_host)
     new_status = "INGESTED" if (found > 0 or force_generic_ingest) else "ERROR"
     if detected_engine:

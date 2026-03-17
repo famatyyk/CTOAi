@@ -4,6 +4,7 @@ import re
 import shutil
 import subprocess
 import json
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Optional
@@ -407,7 +408,7 @@ def launch_intel_mission(
 
     trigger = {"code": 0, "stdout": "skipped", "stderr": ""}
     if req.trigger_now:
-        trigger = _run("systemctl start ctoa-agents-orchestrator.service", timeout=8)
+        trigger = _run("systemctl start --no-block ctoa-agents-orchestrator.service", timeout=8)
 
     _audit(request, f"intel_launch:{len(sanitized)}", int(trigger.get("code", 0)))
     return {
@@ -531,7 +532,7 @@ def mythibia_one_click(request: Request, _: None = Depends(_require_token)) -> d
         raise HTTPException(status_code=503, detail=f"Orchestrator error: {trig['stderr'][:200]}")
 
     # Give systemd one-shot a moment to produce outputs.
-    _run("sleep 3", timeout=5)
+    time.sleep(3)
 
     slug = _slug(mythibia_url)
     out_dir = GENERATED_DIR / slug

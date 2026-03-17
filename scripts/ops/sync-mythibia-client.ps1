@@ -570,7 +570,8 @@ function Write-ManifestVsDiskReports {
     param(
         [string]$ClientAiDir,
         [string]$ManifestPath,
-        [string]$SourceLabel
+        [string]$SourceLabel,
+        [string[]]$RemoteFiles = @()
     )
 
     $clientRoot = Split-Path -Parent (Split-Path -Parent $ClientAiDir)
@@ -579,11 +580,16 @@ function Write-ManifestVsDiskReports {
 
     $manifest = Get-Content $ManifestPath -Raw | ConvertFrom-Json
     $manifestFiles = @($manifest.files | ForEach-Object { [string]$_ })
+    $sourceFiles = if ($RemoteFiles.Count -gt 0) {
+        @($RemoteFiles | ForEach-Object { [string]$_ } | Sort-Object -Unique)
+    } else {
+        @($manifestFiles | Sort-Object -Unique)
+    }
     $diskFiles = @(Get-ChildItem -Path $ClientAiDir -Filter '*.lua' -File | Select-Object -ExpandProperty Name)
 
-    $missing = @($manifestFiles | Where-Object { $_ -notin $diskFiles } | Sort-Object)
-    $extra = @($diskFiles | Where-Object { $_ -notin $manifestFiles } | Sort-Object)
-    $common = @($manifestFiles | Where-Object { $_ -in $diskFiles } | Sort-Object)
+    $missing = @($sourceFiles | Where-Object { $_ -notin $diskFiles } | Sort-Object)
+    $extra = @($diskFiles | Where-Object { $_ -notin $sourceFiles } | Sort-Object)
+    $common = @($sourceFiles | Where-Object { $_ -in $diskFiles } | Sort-Object)
 
     $lines = New-Object System.Collections.Generic.List[string]
     $lines.Add('Manifest vs Disk Report')
@@ -592,6 +598,7 @@ function Write-ManifestVsDiskReports {
     $lines.Add('ManifestPath: ' + $ManifestPath)
     $lines.Add('Source: ' + $SourceLabel)
     $lines.Add('ManifestCount: ' + $manifestFiles.Count)
+    $lines.Add('SourceFilesCount: ' + $sourceFiles.Count)
     $lines.Add('DiskLuaCount: ' + $diskFiles.Count)
     $lines.Add('CommonCount: ' + $common.Count)
     $lines.Add('MissingOnDiskCount: ' + $missing.Count)
@@ -688,7 +695,7 @@ $manifest = [ordered]@{
 $manifestPath = Join-Path $ClientAiDir 'manifest.json'
 $manifest | ConvertTo-Json -Depth 4 | Set-Content -Path $manifestPath -Encoding UTF8
 
-$reports = Write-ManifestVsDiskReports -ClientAiDir $ClientAiDir -ManifestPath $manifestPath -SourceLabel "${VpsUser}@${VpsHost}:${RemoteDir}"
+$reports = Write-ManifestVsDiskReports -ClientAiDir $ClientAiDir -ManifestPath $manifestPath -SourceLabel "${VpsUser}@${VpsHost}:${RemoteDir}" -RemoteFiles $remoteFiles
 
 Write-Output "[sync] done"
 Write-Output "[sync] target=$ClientAiDir"
