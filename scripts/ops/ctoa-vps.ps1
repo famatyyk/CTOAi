@@ -27,6 +27,8 @@ param(
         'HotfixOrchestratorService',
         'ShowReseedPolicy',
         'ShowSystemHealth',
+        'ShowServiceRestarts',
+        'HealService',
         # GS Reset cycle
         'InstallGsReset',
         'InstallGsResetFromBranch',
@@ -40,7 +42,10 @@ param(
         'GsApiValidate',
         'ValidateSyntax'
     )]
-    [string]$Action
+    [string]$Action,
+
+    [Parameter(Mandatory = $false)]
+    [string]$ServiceName
 )
 
 $ErrorActionPreference = 'Stop'
@@ -83,7 +88,8 @@ function Invoke-SshCommand([string]$Cmd) {
 
 function Invoke-SshScript([string]$Script) {
     $t = Get-RemoteTarget; $k = Get-KeyPath
-    (($Script -replace "`r`n","`n") + "`n") | & ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -i $k $t 'bash -s'
+    $normalized = (($Script -replace "`r`n","`n") -replace "`r","`n")
+    ($normalized + "`n") | & ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -i $k $t "tr -d '\r' | bash -s"
 }
 
 function Invoke-RemoteSyntaxValidation() {
@@ -167,6 +173,8 @@ python3 -m venv .venv
 python3 -m ensurepip --upgrade
 python3 -m pip install --upgrade pip setuptools wheel
 python3 -m pip install -r runner/requirements.txt
+# Mobile console runtime deps live in top-level requirements.
+python3 -m pip install 'fastapi>=0.115.0' 'uvicorn>=0.30.0'
 mkdir -p logs runtime
 if [ ! -f /opt/ctoa/.env ]; then printf 'GITHUB_PAT=\n' > /opt/ctoa/.env; fi
 cp deploy/vps/systemd/ctoa-runner.service /etc/systemd/system/
@@ -196,6 +204,17 @@ systemctl enable --now ctoa-mobile-token-rotation.timer
 systemctl disable --now ctoa-lab-runner.timer || true
 systemctl enable --now ctoa-mythibia-news-watcher.timer
 systemctl enable --now ctoa-mythibia-news-api.service
+
+if [ "${CTOA_SETUP_SMOKE:-0}" = "1" ]; then
+    echo "[Setup24x7] running optional smoke checks"
+    systemctl start ctoa-runner.service || true
+    systemctl start ctoa-agents-orchestrator.service || true
+    systemctl start ctoa-auto-trainer.service || true
+    sudo -u postgres psql -d ctoa -At -c "SELECT 'db-ok'" || true
+    systemctl show ctoa-runner.service -p Result -p ExecMainStatus || true
+    systemctl show ctoa-agents-orchestrator.service -p Result -p ExecMainStatus || true
+    systemctl show ctoa-auto-trainer.service -p Result -p ExecMainStatus || true
+fi
 '@
 }
 
@@ -390,6 +409,44 @@ echo "=== recent reseed log ==="
 tail -n 20 /opt/ctoa/logs/reseed-tier.log 2>/dev/null || echo 'reseed-tier.log-not-found'
 '@
         }
+    'ShowServiceRestarts' {
+        Invoke-SshScript @'
+set -e
+services="ctoa-mobile-console.service ctoa-health-live.service ctoa-mythibia-news-api.service ctoa-agents-orchestrator.service ctoa-auto-trainer.service"
+echo "=== service restart counters ==="
+for s in $services; do
+  printf "\n--- %s ---\n" "$s"
+  systemctl show "$s" -p ActiveState -p SubState -p Result -p NRestarts -p ExecMainStatus || true
+  journalctl -u "$s" -n 12 --no-pager || true
+done
+'@
+    }
+    'HealService' {
+        if ([string]::IsNullOrWhiteSpace($ServiceName)) {
+            $ServiceName = Get-OptionalEnv 'CTOA_HEAL_SERVICE_NAME' ''
+        }
+        if ([string]::IsNullOrWhiteSpace($ServiceName)) {
+            throw 'HealService requires -ServiceName (or env CTOA_HEAL_SERVICE_NAME)'
+        }
+
+        $svc = $ServiceName.Trim()
+        if (-not $svc.EndsWith('.service')) {
+            $svc = "$svc.service"
+        }
+        $svc = $svc -replace "'", "''"
+
+        Invoke-SshScript @"
+set -e
+SVC='$svc'
+    echo "=== heal service: `$SVC ==="
+    systemctl reset-failed "`$SVC" || true
+    systemctl restart "`$SVC"
+sleep 2
+    systemctl show "`$SVC" -p ActiveState -p SubState -p Result -p NRestarts -p ExecMainStatus
+    systemctl status "`$SVC" --no-pager -l | sed -n '1,40p' || true
+    journalctl -u "`$SVC" -n 30 --no-pager || true
+"@
+    }
         'WatchScoutingUntilSettled' {
                 $watchUrl = Get-RequiredEnv 'CTOA_WATCH_URL'
                 $intervalSeconds = [int](Get-OptionalEnv 'CTOA_WATCH_INTERVAL_SECONDS' '180')
