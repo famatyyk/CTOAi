@@ -13,6 +13,21 @@ tmp/
 runtime/
 logs/
 
+# Reverse-engineering and large local artifacts
+artifacts/enc3/
+scripts/ops/enc3-analysis-report.txt
+scripts/ops/ghidra/*.class
+
+# Local client/generated diagnostics
+**/user_dir/ai_generated/
+**/manifest_vs_disk_report.txt
+**/missing_for_vps.txt
+**/runtime_loader_diagnosis.txt
+**/runtime_script_mirror_report.txt
+**/unsafe_runtime_bootstrap_report.txt
+**/watchdog_alert.state
+**/watchdog_alert.log
+
 # Secrets and env
 .env
 .env.*

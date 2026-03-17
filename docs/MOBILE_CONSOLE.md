@@ -62,7 +62,42 @@ Otworz:
 
 ## Endpointy API
 - `GET /api/health`
+- `GET /api/auth/auto-check`
 - `GET /api/status`
 - `GET /api/logs?target=runner|health|report&lines=120`
 - `GET /api/presets`
 - `POST /api/command`
+- `POST /api/agents/intel/launch`
+- `GET /api/agents/intel/report`
+- `GET /api/agents/auto-trainer/latest`
+- `POST /api/agents/mythibia/run`
+
+## Auto trainer (co 6h)
+
+Wersjonowany raport treningowy jest generowany przez systemd:
+- `ctoa-auto-trainer.service`
+- `ctoa-auto-trainer.timer`
+
+Artefakty raportu na VPS:
+- `/opt/ctoa/runtime/training-reports/latest.md`
+- `/opt/ctoa/runtime/training-reports/latest.json`
+- `/opt/ctoa/runtime/training-reports/auto-trainer-YYYYMMDD-HHMMSS.md`
+
+Log:
+- `/opt/ctoa/logs/auto-trainer.log`
+
+## Auto-sync do klienta (po One-click Mythibia Run)
+
+One-click endpoint moze automatycznie kopiowac wygenerowane skrypty do katalogu klienta
+i tworzyc plik autoloadera.
+
+Wymagane zmienne w `/opt/ctoa/.env`:
+- `CTOA_CLIENT_SYNC_ENABLED=true`
+- `CTOA_CLIENT_SCRIPTS_DIR=/sciezka/do/katalogu/skryptow/klienta`
+
+Opcjonalne:
+- `CTOA_CLIENT_AUTOLOADER_NAME=ctoa_mythibia_autoload.lua`
+- `CTOA_CLIENT_INIT_FILE=/sciezka/do/pliku/init.lua`
+
+Po ustawieniu zmiennych endpoint `POST /api/agents/mythibia/run` zwraca sekcje `client_sync`
+z informacja o skopiowanych plikach i statusie autoloadera.

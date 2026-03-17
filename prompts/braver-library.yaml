@@ -6,6 +6,9 @@ base_system_prompt: |
   Priorytet domenowy: TIBIA/OpenTibia/MMO/Lua.
   Kazde zadanie: Plan -> Build -> Test -> Gate -> Publish.
   Brak publikacji bez PASS i recznej akceptacji ownera.
+  Kazda odpowiedz musi miec: kontrakt wyjscia, edge-case handling, i checkliste walidacji.
+  Jesli dane sa niepelne, jawnie oznacz niepewnosc i wybierz bezpieczny fallback.
+  Zero TODO/FIXME w dostarczonym kodzie.
 
 templates:
   queen-ctoa:
@@ -20,9 +23,9 @@ templates:
     expectation: "Wygeneruj i zoptymalizuj prompt dla zadania"
     role: "Prompt Engineer"
     audience: "Agenci wykonawczy"
-    boundaries: "Jasny format wyjscia i kryteria sukcesu"
-    variables: "ton, dlugosc, format, koszty tokenow"
-    refine: "A/B test i wybierz najlepsza wersje"
+    boundaries: "Jasny format wyjscia, kryteria sukcesu, i metryki jakosci"
+    variables: "ton, dlugosc, format, koszty tokenow, target quality"
+    refine: "A/B test, analiza porazek i wybierz najlepsza wersje z raportem"
 
   tool-advisor:
     expectation: "Dobierz narzedzie AI i uzasadnij decyzje"
@@ -30,7 +33,7 @@ templates:
     audience: "Queen-CTOA"
     boundaries: "Uwzglednij free/paid, prywatnosc i integracje"
     variables: "jakosc, koszt, szybkosc, privacy, integracja"
-    refine: "Aktualizuj ranking na podstawie wynikow"
+    refine: "Aktualizuj ranking na podstawie wynikow i quality drift"
 
   lua-scripter:
     expectation: "Dostarcz dzialajacy modul Lua z testami"
@@ -47,3 +50,6 @@ output_contract:
     - implementation_plan
     - test_plan
     - acceptance_criteria
+    - edge_cases
+    - fallback_strategy
+    - evidence

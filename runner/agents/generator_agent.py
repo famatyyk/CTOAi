@@ -61,8 +61,9 @@ def _server_ctx(server_id: int) -> dict[str, Any]:
     return ctx
 
 
-def _safe_lua_string(s: str) -> str:
-    return s.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n")
+def _safe_lua_string(s: object) -> str:
+    txt = "" if s is None else str(s)
+    return txt.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n")
 
 
 def _render(template_id: str, ctx: dict) -> str:
@@ -449,7 +450,7 @@ def _tpl_highscore_scout(ctx: dict) -> str:
 {lines or "    -- (no highscore data)"}
 
 local TOP_PLAYERS = {{
-{chr(10).join(f"    {chr(34)}{_safe_lua_string(h.get('name','?'))}{chr(34)}," for h in hs)}}}
+{chr(10).join(f"    {chr(34)}{_safe_lua_string(h.get('name', '?'))}{chr(34)}," for h in hs)}}}
 
 local function onSeeCreature(c)
     if c.isPlayer then
@@ -976,7 +977,7 @@ def _tpl_respawn_optimizer(ctx: dict) -> str:
     monsters = ctx.get("monsters", [])
     top_exp = sorted(monsters, key=lambda m: m.get("exp", 0), reverse=True)[:5]
     entries = "\n".join(
-        f'    {{name="{_safe_lua_string(m["name"])}", exp={m.get("exp",0)}, hp={m.get("hp",0)}}},'
+        f'    {{name="{_safe_lua_string(m["name"])}", exp={m.get("exp", 0)}, hp={m.get("hp", 0)}}},'
         for m in top_exp
     )
     return f"""-- respawn_optimizer.lua  [CTOA Generated – {_safe_lua_string(ctx['server_name'])}]
@@ -1048,9 +1049,9 @@ def _slug(url: str) -> str:
 
 
 def generate_module(mod: dict) -> None:
-    server_id  = mod["server_id"]
-    task_id    = mod["task_id"]
-    template   = mod["template"]
+    server_id = mod["server_id"]
+    task_id = mod["task_id"]
+    template = mod["template"]
     output_file = mod["output_file"] or f"{template}.lua"
 
     srv = db.query_one("SELECT url FROM servers WHERE id=%s", (server_id,)) if server_id else None

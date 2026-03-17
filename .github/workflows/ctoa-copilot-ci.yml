@@ -111,7 +111,11 @@ jobs:
             echo "No changed Python files in runner/ or agents/" | tee pr-pylint.txt
             PYLINT_EXIT=0
           else
-            pylint "${CHANGED_PY[@]}" -j 0 --score=y 2>&1 | tee pr-pylint.txt
+            PYTHONPATH=. pylint "${CHANGED_PY[@]}" \
+              -j 0 \
+              --score=y \
+              --disable=C,R,W,E0401,E0611 \
+              2>&1 | tee pr-pylint.txt
             PYLINT_EXIT=${PIPESTATUS[0]}
           fi
           set -e

@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=../schemas/ci-gate-policy.schema.json
 version: 1
 policy_name: ctoa-ci-gate
 

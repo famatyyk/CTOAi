@@ -1,0 +1,12 @@
+[Unit]
+Description=CTOA Auto Trainer Timer - runs every 6 hours
+Requires=ctoa-auto-trainer.service
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=6h
+Persistent=true
+Unit=ctoa-auto-trainer.service
+
+[Install]
+WantedBy=timers.target

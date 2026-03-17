@@ -1,5 +1,12 @@
 version: 1
 pack: mmo-lua
+global_quality_targets:
+  min_quality_score: 92
+  require_deterministic_output: true
+  require_edge_case_section: true
+  require_negative_tests: true
+  max_todo_fixme_markers: 0
+  evidence_required: true
 prompts:
   - id: mmo-lua-001
     name: design-event-logger
@@ -7,9 +14,9 @@ prompts:
       expectation: "Design Lua event logger for MMO loop"
       role: "Senior Lua engineer"
       audience: "Automation runtime"
-      boundaries: "No secrets, deterministic output"
+      boundaries: "No secrets, deterministic output, explicit schema"
       variables: "event fields, serialization mode"
-      refine: "Improve with edge case feedback"
+      refine: "Improve with edge case feedback and failure-mode tests"
 
   - id: mmo-lua-002
     name: create-pathing-module
@@ -17,9 +24,9 @@ prompts:
       expectation: "Create waypoint module with blocked retry"
       role: "Bot architect"
       audience: "Cavebot subsystem"
-      boundaries: "Bounded retries"
+      boundaries: "Bounded retries, anti-stall, no infinite loop"
       variables: "route length, fallback"
-      refine: "Tune retry strategy"
+      refine: "Tune retry strategy with timeout telemetry"
 
   - id: mmo-lua-003
     name: auto-heal-rules
@@ -27,9 +34,9 @@ prompts:
       expectation: "Generate heal decision rules"
       role: "Combat systems engineer"
       audience: "Survival module"
-      boundaries: "Cooldown enforcement"
+      boundaries: "Cooldown enforcement, deterministic priority order"
       variables: "hp/mana thresholds"
-      refine: "Adjust thresholds from telemetry"
+      refine: "Adjust thresholds from telemetry and near-death events"
 
   - id: mmo-lua-004
     name: supply-monitor
