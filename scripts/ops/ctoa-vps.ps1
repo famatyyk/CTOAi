@@ -26,6 +26,7 @@ param(
         'InstallTieredReseedTimers',
         'HotfixOrchestratorService',
         'ShowReseedPolicy',
+        'ShowSystemHealth',
         # GS Reset cycle
         'InstallGsReset',
         'InstallGsResetFromBranch',
@@ -293,6 +294,99 @@ echo "=== next scheduled runs ==="
 systemctl list-timers ctoa-reseed-tier-ab.timer ctoa-reseed-tier-c.timer --no-pager 2>/dev/null || true
 '@
     }
+        'ShowSystemHealth' {
+                Invoke-SshScript @'
+set -e
+. /opt/ctoa/.env 2>/dev/null || true
+
+echo "=== failed units ==="
+systemctl --failed --no-pager || true
+echo
+
+echo "=== key CTOA timers ==="
+systemctl list-timers \
+    ctoa-agents-orchestrator.timer \
+    ctoa-auto-trainer.timer \
+    ctoa-runner.timer \
+    ctoa-report.timer \
+    ctoa-reseed-tier-ab.timer \
+    ctoa-reseed-tier-c.timer \
+    --no-pager 2>/dev/null || true
+echo
+
+echo "=== key CTOA unit-file states ==="
+systemctl list-unit-files \
+    ctoa-auto-trainer.service \
+    ctoa-auto-trainer.timer \
+    ctoa-agents-orchestrator.service \
+    ctoa-agents-orchestrator.timer \
+    ctoa-lab-runner.service \
+    ctoa-lab-runner.timer \
+    ctoa-runner.service \
+    ctoa-runner.timer \
+    ctoa-report.service \
+    ctoa-report.timer \
+    ctoa-reseed-tier-ab.timer \
+    ctoa-reseed-tier-c.timer \
+    --no-pager 2>/dev/null || true
+echo
+
+echo "=== key CTOA runtime states ==="
+systemctl list-units \
+    ctoa-auto-trainer.service \
+    ctoa-health-live.service \
+    ctoa-mobile-console.service \
+    ctoa-mythibia-news-api.service \
+    ctoa-agents-orchestrator.service \
+    ctoa-runner.service \
+    ctoa-report.service \
+    ctoa-reseed-tier-ab.service \
+    ctoa-reseed-tier-c.service \
+    ctoa-lab-runner.timer \
+    --all --no-pager 2>/dev/null || true
+echo
+
+echo "=== orchestrator status ==="
+systemctl show ctoa-agents-orchestrator.service -p TimeoutStartUSec -p TimeoutStopUSec -p ActiveState -p SubState -p Result -p ExecMainStatus || true
+echo
+
+echo "=== server status counts ==="
+sudo -u postgres psql -d ctoa -c "SELECT status, COUNT(*) AS n FROM servers GROUP BY status ORDER BY status;" 2>/dev/null || true
+echo
+
+DEFAULT_MIN_AGE="${CTOA_RESEED_ERROR_MIN_AGE_HOURS:-6}"
+AB_MIN_AGE="${CTOA_RESEED_ERROR_MIN_AGE_HOURS_AB:-$DEFAULT_MIN_AGE}"
+C_MIN_AGE="${CTOA_RESEED_ERROR_MIN_AGE_HOURS_C:-24}"
+AB_URLS="${CTOA_RESEED_TIER_AB_URLS:-}"
+C_URLS="${CTOA_RESEED_TIER_C_URLS:-}"
+
+echo "=== reseed summary ==="
+echo "  Tier A/B threshold : ${AB_MIN_AGE}h"
+echo "  Tier C   threshold : ${C_MIN_AGE}h"
+echo "  Tier A/B URLs      : ${AB_URLS:-<none>}"
+echo "  Tier C   URLs      : ${C_URLS:-<none>}"
+echo
+
+echo "=== server status per tier ==="
+sudo -u postgres psql -d ctoa -At -c "
+SELECT
+    url,
+    status,
+    ROUND(EXTRACT(EPOCH FROM (NOW()-updated_at))/3600,1) AS age_h,
+    CASE
+        WHEN url = ANY(string_to_array('${AB_URLS}',',')) THEN 'AB'
+        WHEN url = ANY(string_to_array('${C_URLS}',',')) THEN 'C'
+        ELSE '?'
+    END AS tier
+FROM servers
+ORDER BY tier, url;
+" 2>/dev/null | column -t -s '|' || true
+echo
+
+echo "=== recent reseed log ==="
+tail -n 20 /opt/ctoa/logs/reseed-tier.log 2>/dev/null || echo 'reseed-tier.log-not-found'
+'@
+        }
         'WatchScoutingUntilSettled' {
                 $watchUrl = Get-RequiredEnv 'CTOA_WATCH_URL'
                 $intervalSeconds = [int](Get-OptionalEnv 'CTOA_WATCH_INTERVAL_SECONDS' '180')
