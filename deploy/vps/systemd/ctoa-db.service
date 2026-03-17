@@ -1,5 +1,5 @@
 [Unit]
-Description=CTOA PostgreSQL database (Docker)
+Description=CTOA PostgreSQL database helper (Docker fallback/legacy)
 After=docker.service network.target
 Requires=docker.service
 

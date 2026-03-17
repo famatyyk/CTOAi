@@ -188,7 +188,8 @@ systemctl enable --now ctoa-report.timer
 systemctl enable --now ctoa-health-live.service
 systemctl enable --now ctoa-retention-cleanup.timer
 systemctl enable --now ctoa-mobile-token-rotation.timer
-systemctl enable --now ctoa-lab-runner.timer
+# lab-runner module is currently not shipped; keep timer disabled to avoid noisy failures.
+systemctl disable --now ctoa-lab-runner.timer || true
 systemctl enable --now ctoa-mythibia-news-watcher.timer
 systemctl enable --now ctoa-mythibia-news-api.service
 '@
