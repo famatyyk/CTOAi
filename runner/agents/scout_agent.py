@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import logging
+import time
 import os
 import re
 import ssl
@@ -148,6 +149,7 @@ ENGINE_FALLBACK_PATHS: dict[str, list[str]] = {
 MAX_BODY_BYTES = 8192
 REQUEST_TIMEOUT = 8
 MAX_RETRIES = 3
+SCOUT_SERVER_TIMEOUT_SECONDS = int(os.environ.get("CTOA_SCOUT_SERVER_TIMEOUT_SECONDS", "120"))
 
 # Insecure SSL context only used to discover that an endpoint exists
 _SSL_CTX = ssl.create_default_context()
@@ -221,11 +223,17 @@ def _probe_paths(
     paths: list[str],
     source: str,
     probed: set[str],
-) -> tuple[int, int]:
+    deadline: float | None = None,
+) -> tuple[int, int, bool]:
     found = 0
     errors = 0
+    hit_deadline = False
 
     for path in paths:
+        if deadline is not None and time.monotonic() >= deadline:
+            hit_deadline = True
+            break
+
         if path in probed:
             continue
         probed.add(path)
@@ -253,7 +261,7 @@ def _probe_paths(
         elif status >= 400:
             errors += 1
 
-    return found, errors
+    return found, errors, hit_deadline
 
 
 def scout_server(server_id: int, base_url: str) -> None:
@@ -268,6 +276,9 @@ def scout_server(server_id: int, base_url: str) -> None:
     found = 0
     errors = 0
     probed: set[str] = set()
+    server_timeout = max(20, SCOUT_SERVER_TIMEOUT_SECONDS)
+    deadline = time.monotonic() + server_timeout
+    timed_out = False
 
     profile = _infer_profile(base_url)
     primary_paths = _dedupe_paths(PROFILE_PATHS.get(profile, []) + COMMON_PROBE_PATHS)
@@ -279,27 +290,39 @@ def scout_server(server_id: int, base_url: str) -> None:
     if root_status in (200, 403):
         game_type = "tibia-ot"  # assume Tibia OT for now; ingest will refine
 
-    p_found, p_errors = _probe_paths(server_id, base_url, primary_paths, f"profile:{profile}", probed)
+    p_found, p_errors, p_timed_out = _probe_paths(
+        server_id,
+        base_url,
+        primary_paths,
+        f"profile:{profile}",
+        probed,
+        deadline,
+    )
     found += p_found
     errors += p_errors
+    timed_out = timed_out or p_timed_out
 
     detected_engine: str | None = profile if p_found > 0 and profile != "generic" else None
 
     # If nothing responded, try common OT engine-specific fallback sets.
-    if found == 0:
+    if found == 0 and not timed_out:
         for engine in fallback_engines:
-            f_found, f_errors = _probe_paths(
+            f_found, f_errors, f_timed_out = _probe_paths(
                 server_id,
                 base_url,
                 _dedupe_paths(ENGINE_FALLBACK_PATHS[engine]),
                 f"fallback:{engine}",
                 probed,
+                deadline,
             )
             found += f_found
             errors += f_errors
+            timed_out = timed_out or f_timed_out
             if f_found > 0:
                 detected_engine = engine
                 log.info("Fallback matched engine profile: %s", engine)
+                break
+            if timed_out:
                 break
 
     parsed = urllib.parse.urlparse(base_url)
@@ -313,7 +336,13 @@ def scout_server(server_id: int, base_url: str) -> None:
         game_type = f"tibia-ot:{profile}"
 
     scout_error = None
-    if force_generic_ingest:
+    if timed_out:
+        scout_error = (
+            "Scouting timed out "
+            f"(limit={server_timeout}s, profile={profile}, total_probed={len(probed)})"
+        )
+        new_status = "ERROR"
+    elif force_generic_ingest:
         scout_error = (
             "No machine API found; forced generic ingest mode "
             f"for profile={profile}, host={host} (total_probed={len(probed)})"
@@ -330,11 +359,12 @@ def scout_server(server_id: int, base_url: str) -> None:
         (new_status, game_type, scout_error, server_id),
     )
     log.info(
-        "Scout done: %d paths OK, %d errors, profile=%s, probed=%d → status=%s",
+        "Scout done: %d paths OK, %d errors, profile=%s, probed=%d, timeout=%s → status=%s",
         found,
         errors,
         profile,
         len(probed),
+        timed_out,
         new_status,
     )
     db.log_run("scout_agent", "ok", f"server #{server_id} {base_url}: {found} endpoints")

@@ -7,10 +7,12 @@ Type=oneshot
 User=root
 WorkingDirectory=/opt/ctoa
 EnvironmentFile=/opt/ctoa/.env
+Environment=PYTHONUNBUFFERED=1
 ExecStart=/opt/ctoa/.venv/bin/python3 -m runner.agents.orchestrator
 StandardOutput=append:/opt/ctoa/logs/agents-orchestrator.log
 StandardError=append:/opt/ctoa/logs/agents-orchestrator.log
-TimeoutStartSec=300
+TimeoutStartSec=900
+TimeoutStopSec=30
 
 [Install]
 WantedBy=multi-user.target

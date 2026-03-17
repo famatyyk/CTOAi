@@ -20,6 +20,11 @@ param(
         'RegisterServer',
         'ShowServerStatus',
         'ShowScoutDetails',
+        'ShowReseedTimers',
+        'WatchScoutingUntilSettled',
+        'ApplyScoutingTimeoutPolicy',
+        'InstallTieredReseedTimers',
+        'HotfixOrchestratorService',
         # GS Reset cycle
         'InstallGsReset',
         'InstallGsResetFromBranch',
@@ -236,6 +241,291 @@ echo "=== Scout source summary per server ==="
 sudo -u postgres psql -d ctoa -c "SELECT s.id AS server_id, s.url, COALESCE(e.response_schema->>'_probe_source','unknown') AS probe_source, COUNT(*) AS endpoints FROM api_endpoints e JOIN servers s ON s.id=e.server_id $filterClause GROUP BY s.id, s.url, probe_source ORDER BY s.id DESC, endpoints DESC;"
 "@
     }
+    'ShowReseedTimers' {
+        Invoke-SshScript @'
+set -e
+echo "=== reseed timers ==="
+systemctl list-timers 'ctoa-reseed-tier-*' --no-pager || true
+echo
+echo "=== ctoa-reseed-tier-ab.timer ==="
+systemctl status ctoa-reseed-tier-ab.timer --no-pager -l | sed -n '1,40p' || true
+echo
+echo "=== ctoa-reseed-tier-c.timer ==="
+systemctl status ctoa-reseed-tier-c.timer --no-pager -l | sed -n '1,40p' || true
+echo
+echo "=== reseed logs (tail 60) ==="
+tail -n 60 /opt/ctoa/logs/reseed-tier.log 2>/dev/null || echo 'reseed-tier.log-not-found'
+'@
+    }
+        'WatchScoutingUntilSettled' {
+                $watchUrl = Get-RequiredEnv 'CTOA_WATCH_URL'
+                $intervalSeconds = [int](Get-OptionalEnv 'CTOA_WATCH_INTERVAL_SECONDS' '180')
+                $maxChecks = [int](Get-OptionalEnv 'CTOA_WATCH_MAX_CHECKS' '12')
+
+                if ($intervalSeconds -lt 15) {
+                        throw 'CTOA_WATCH_INTERVAL_SECONDS must be >= 15'
+                }
+                if ($maxChecks -lt 1) {
+                        throw 'CTOA_WATCH_MAX_CHECKS must be >= 1'
+                }
+
+                $safeUrl = $watchUrl -replace "'", "''"
+                Write-Host "[WatchScoutingUntilSettled] url=$watchUrl interval=${intervalSeconds}s max_checks=$maxChecks"
+
+                for ($i = 1; $i -le $maxChecks; $i++) {
+                        Write-Host "[WatchScoutingUntilSettled] pass $i/$maxChecks -> ValidateServices"
+                        Invoke-SshScript @'
+set -e
+systemctl start ctoa-runner.service
+systemctl start ctoa-report.service || true
+'@
+
+                        Write-Host "[WatchScoutingUntilSettled] checking status for $watchUrl"
+                        $status = Invoke-SshScript @"
+set -e
+sudo -u postgres psql -d ctoa -At -c "SELECT status FROM servers WHERE url='$safeUrl' ORDER BY updated_at DESC LIMIT 1;"
+"@
+
+                        $status = ($status | Out-String).Trim().ToUpperInvariant()
+                        if ([string]::IsNullOrWhiteSpace($status)) {
+                                throw "Watch URL not found in servers: $watchUrl"
+                        }
+
+                        Write-Host "[WatchScoutingUntilSettled] status=$status"
+                        if ($status -ne 'SCOUTING') {
+                                Write-Host "[WatchScoutingUntilSettled] settled with status=$status"
+                                Invoke-SshScript @"
+set -e
+sudo -u postgres psql -d ctoa -c "SELECT id, url, status, COALESCE(game_type,'') AS game_type, LEFT(COALESCE(scout_error,''), 160) AS scout_error, to_char(updated_at, 'YYYY-MM-DD HH24:MI:SS') AS updated_at FROM servers WHERE url='$safeUrl' ORDER BY updated_at DESC LIMIT 1;"
+"@
+                                return
+                        }
+
+                        if ($i -lt $maxChecks) {
+                                Start-Sleep -Seconds $intervalSeconds
+                        }
+                }
+
+                Write-Host "[WatchScoutingUntilSettled] timeout reached, still SCOUTING after $maxChecks checks"
+                Invoke-SshScript @"
+set -e
+sudo -u postgres psql -d ctoa -c "SELECT id, url, status, COALESCE(game_type,'') AS game_type, LEFT(COALESCE(scout_error,''), 160) AS scout_error, to_char(updated_at, 'YYYY-MM-DD HH24:MI:SS') AS updated_at FROM servers WHERE url='$safeUrl' ORDER BY updated_at DESC LIMIT 1;"
+"@
+        }
+        'ApplyScoutingTimeoutPolicy' {
+                $timeoutMinutes = [int](Get-OptionalEnv 'CTOA_SCOUT_TIMEOUT_MINUTES' '30')
+                $maxRetries = [int](Get-OptionalEnv 'CTOA_SCOUT_MAX_RETRIES' '2')
+
+                if ($timeoutMinutes -lt 5) {
+                        throw 'CTOA_SCOUT_TIMEOUT_MINUTES must be >= 5'
+                }
+                if ($maxRetries -lt 0) {
+                        throw 'CTOA_SCOUT_MAX_RETRIES must be >= 0'
+                }
+
+                Write-Host "[ApplyScoutingTimeoutPolicy] timeout=${timeoutMinutes}m max_retries=$maxRetries"
+
+                Invoke-SshScript @"
+set -e
+echo "=== stale SCOUTING candidates ==="
+sudo -u postgres psql -d ctoa -c "SELECT id, url, status, to_char(updated_at, 'YYYY-MM-DD HH24:MI:SS') AS updated_at FROM servers WHERE status='SCOUTING' AND updated_at < now() - interval '$timeoutMinutes minutes' ORDER BY updated_at ASC;"
+
+echo
+echo "=== policy updates (retry->NEW or finalize->ERROR) ==="
+sudo -u postgres psql -d ctoa -c "WITH stale AS ( SELECT id, url, COALESCE(scout_error,'') AS scout_error, COALESCE((regexp_match(COALESCE(scout_error,''), '\\[auto-retry ([0-9]+)\\/([0-9]+)\\]'))[1]::int, 0) AS retries FROM servers WHERE status='SCOUTING' AND updated_at < now() - interval '$timeoutMinutes minutes' ), upd AS ( UPDATE servers s SET status = CASE WHEN stale.retries < $maxRetries THEN 'NEW' ELSE 'ERROR' END, scout_error = CASE WHEN stale.retries < $maxRetries THEN trim(both ' ' from concat_ws(' | ', nullif(stale.scout_error,''), format('[auto-retry %s/%s] stale SCOUTING > %s min at %s', stale.retries + 1, $maxRetries, $timeoutMinutes, to_char(now(), 'YYYY-MM-DD HH24:MI:SS')))) ELSE trim(both ' ' from concat_ws(' | ', nullif(stale.scout_error,''), format('[timeout-final %s/%s] stale SCOUTING > %s min at %s', stale.retries, $maxRetries, $timeoutMinutes, to_char(now(), 'YYYY-MM-DD HH24:MI:SS')))) END, updated_at = now() FROM stale WHERE s.id = stale.id RETURNING s.id, s.url, s.status, LEFT(COALESCE(s.scout_error,''), 180) AS scout_error ) SELECT * FROM upd ORDER BY id;"
+
+echo
+echo "=== status counts after policy ==="
+sudo -u postgres psql -d ctoa -c "SELECT status, COUNT(*) AS n FROM servers GROUP BY status ORDER BY status;"
+
+# Trigger orchestrator only if retries moved anything back to NEW.
+if sudo -u postgres psql -d ctoa -At -c "SELECT COUNT(*) FROM servers WHERE status='NEW';" | grep -Eq '^[1-9][0-9]*$'; then
+        systemctl start ctoa-agents-orchestrator.service || true
+fi
+"@
+        }
+        'InstallTieredReseedTimers' {
+                $tierAbUrls = Get-OptionalEnv 'CTOA_RESEED_TIER_AB_URLS' 'https://tibiantis.online,https://tibia.com'
+                $tierCUrls = Get-OptionalEnv 'CTOA_RESEED_TIER_C_URLS' 'https://mythibia.online,https://otland.net'
+                $abIntervalMinutes = [int](Get-OptionalEnv 'CTOA_RESEED_AB_INTERVAL_MINUTES' '120')
+                $cDailyTimeUtc = Get-OptionalEnv 'CTOA_RESEED_C_DAILY_UTC' '03:15'
+
+                if ($abIntervalMinutes -lt 10) {
+                        throw 'CTOA_RESEED_AB_INTERVAL_MINUTES must be >= 10'
+                }
+
+                Write-Host "[InstallTieredReseedTimers] TierAB=$tierAbUrls"
+                Write-Host "[InstallTieredReseedTimers] TierC=$tierCUrls"
+                Write-Host "[InstallTieredReseedTimers] AB interval=${abIntervalMinutes}m, C daily UTC=$cDailyTimeUtc"
+
+                $remoteScript = @'
+set -e
+mkdir -p /opt/ctoa/scripts/ops /opt/ctoa/logs
+touch /opt/ctoa/.env
+
+cat > /opt/ctoa/scripts/ops/reseed-tier.sh <<'SH'
+#!/usr/bin/env bash
+set -euo pipefail
+
+TIER="${1:-${CTOA_RESEED_TIER:-}}"
+if [ -z "$TIER" ]; then
+  echo "Usage: reseed-tier.sh <AB|C>"
+  exit 1
+fi
+
+if [ -f /opt/ctoa/.env ]; then
+  # shellcheck disable=SC1091
+  set -a; . /opt/ctoa/.env; set +a
+fi
+
+case "${TIER^^}" in
+  AB)
+    URLS="${CTOA_RESEED_TIER_AB_URLS:-https://tibiantis.online,https://tibia.com}"
+    ;;
+  C)
+    URLS="${CTOA_RESEED_TIER_C_URLS:-https://mythibia.online,https://otland.net}"
+    ;;
+  *)
+    echo "Unknown tier: $TIER"
+    exit 1
+    ;;
+esac
+
+IFS=',' read -r -a arr <<< "$URLS"
+for raw in "${arr[@]}"; do
+  url="$(echo "$raw" | xargs)"
+  [ -n "$url" ] || continue
+  sudo -u postgres psql -d ctoa -c "INSERT INTO servers(url,name,status) VALUES ('$url','Tier-${TIER} Seed','NEW') ON CONFLICT (url) DO UPDATE SET status='NEW', updated_at=now();" >/dev/null
+  echo "[reseed-tier][$TIER] queued: $url"
+done
+
+systemctl start ctoa-agents-orchestrator.service || true
+SH
+
+chmod +x /opt/ctoa/scripts/ops/reseed-tier.sh
+
+grep -v '^CTOA_RESEED_TIER_AB_URLS=' /opt/ctoa/.env > /opt/ctoa/.env.tmp || true
+mv /opt/ctoa/.env.tmp /opt/ctoa/.env
+echo "CTOA_RESEED_TIER_AB_URLS=__TIER_AB_URLS__" >> /opt/ctoa/.env
+
+grep -v '^CTOA_RESEED_TIER_C_URLS=' /opt/ctoa/.env > /opt/ctoa/.env.tmp || true
+mv /opt/ctoa/.env.tmp /opt/ctoa/.env
+echo "CTOA_RESEED_TIER_C_URLS=__TIER_C_URLS__" >> /opt/ctoa/.env
+
+cat > /etc/systemd/system/ctoa-reseed-tier-ab.service <<'UNIT'
+[Unit]
+Description=CTOA reseed Tier A/B URLs
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/ctoa
+ExecStart=/opt/ctoa/scripts/ops/reseed-tier.sh AB
+StandardOutput=append:/opt/ctoa/logs/reseed-tier.log
+StandardError=append:/opt/ctoa/logs/reseed-tier.log
+UNIT
+
+cat > /etc/systemd/system/ctoa-reseed-tier-ab.timer <<UNIT
+[Unit]
+Description=CTOA reseed Tier A/B timer
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=__AB_INTERVAL_MINUTES__min
+Persistent=true
+Unit=ctoa-reseed-tier-ab.service
+
+[Install]
+WantedBy=timers.target
+UNIT
+
+cat > /etc/systemd/system/ctoa-reseed-tier-c.service <<'UNIT'
+[Unit]
+Description=CTOA reseed Tier C URLs
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/ctoa
+ExecStart=/opt/ctoa/scripts/ops/reseed-tier.sh C
+StandardOutput=append:/opt/ctoa/logs/reseed-tier.log
+StandardError=append:/opt/ctoa/logs/reseed-tier.log
+UNIT
+
+cat > /etc/systemd/system/ctoa-reseed-tier-c.timer <<UNIT
+[Unit]
+Description=CTOA reseed Tier C timer (daily)
+
+[Timer]
+OnCalendar=*-*-* __C_DAILY_UTC__
+Persistent=true
+Unit=ctoa-reseed-tier-c.service
+
+[Install]
+WantedBy=timers.target
+UNIT
+
+systemctl daemon-reload
+systemctl enable --now ctoa-reseed-tier-ab.timer
+systemctl enable --now ctoa-reseed-tier-c.timer
+
+echo "=== reseed timer status ==="
+systemctl list-timers 'ctoa-reseed-tier-*' --no-pager
+echo
+echo "=== reseed env summary ==="
+grep -E '^CTOA_RESEED_TIER_(AB|C)_URLS=' /opt/ctoa/.env
+'@
+
+                $remoteScript = $remoteScript.Replace('__TIER_AB_URLS__', $tierAbUrls)
+                $remoteScript = $remoteScript.Replace('__TIER_C_URLS__', $tierCUrls)
+                $remoteScript = $remoteScript.Replace('__AB_INTERVAL_MINUTES__', [string]$abIntervalMinutes)
+                $remoteScript = $remoteScript.Replace('__C_DAILY_UTC__', $cDailyTimeUtc)
+                Invoke-SshScript $remoteScript
+        }
+        'HotfixOrchestratorService' {
+                Invoke-SshScript @'
+set -e
+cat > /etc/systemd/system/ctoa-agents-orchestrator.service <<'UNIT'
+[Unit]
+Description=CTOA Agents Orchestrator (one-shot pipeline run)
+After=network.target postgresql.service
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/opt/ctoa
+EnvironmentFile=/opt/ctoa/.env
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/ctoa/.venv/bin/python3 -m runner.agents.orchestrator
+StandardOutput=append:/opt/ctoa/logs/agents-orchestrator.log
+StandardError=append:/opt/ctoa/logs/agents-orchestrator.log
+TimeoutStartSec=900
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+
+systemctl daemon-reload
+systemctl reset-failed ctoa-agents-orchestrator.service || true
+
+# Avoid overlapping stuck process before applying hotfix.
+if systemctl is-active --quiet ctoa-agents-orchestrator.service; then
+    systemctl stop ctoa-agents-orchestrator.service || true
+fi
+
+systemctl start ctoa-agents-orchestrator.service || true
+
+echo "=== orchestrator unit timeout settings ==="
+systemctl show ctoa-agents-orchestrator.service -p TimeoutStartUSec -p TimeoutStopUSec -p ExecMainStartTimestamp -p ActiveState -p SubState
+echo
+echo "=== orchestrator service status ==="
+systemctl status ctoa-agents-orchestrator.service --no-pager -l | sed -n '1,60p'
+echo
+echo "=== orchestrator journal tail ==="
+journalctl -u ctoa-agents-orchestrator.service -n 80 --no-pager
+'@
+        }
         'RegisterServer' {
                 $serverUrl = Get-RequiredEnv 'CTOA_SERVER_URL'
                 $serverName = Get-OptionalEnv 'CTOA_SERVER_NAME' 'External-Server'
@@ -362,6 +652,7 @@ pg_isready -h 127.0.0.1 -U ctoa -d ctoa && echo '[SetupDB] DB ready'
     grep -q 'CTOA_DAILY_MODULE_LIMIT' /opt/ctoa/.env 2>/dev/null || echo 'CTOA_DAILY_MODULE_LIMIT=50' >> /opt/ctoa/.env
     grep -q 'CTOA_DAILY_PROGRAM_LIMIT' /opt/ctoa/.env 2>/dev/null || echo 'CTOA_DAILY_PROGRAM_LIMIT=5' >> /opt/ctoa/.env
     grep -q 'CTOA_MIN_QUALITY' /opt/ctoa/.env 2>/dev/null || echo 'CTOA_MIN_QUALITY=90' >> /opt/ctoa/.env
+    grep -q 'CTOA_SCOUT_SERVER_TIMEOUT_SECONDS' /opt/ctoa/.env 2>/dev/null || echo 'CTOA_SCOUT_SERVER_TIMEOUT_SECONDS=120' >> /opt/ctoa/.env
     systemctl restart ctoa-mobile-console.service
     systemctl status ctoa-agents-orchestrator.timer     --no-pager -l | head -n 8
     systemctl status ctoa-mobile-console.service        --no-pager -l | head -n 6
