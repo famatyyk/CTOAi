@@ -20,6 +20,9 @@ param(
         'RegisterServer',
         'RegisterServerList',
         'KickoffNow',
+        'InstallKickoffTimer',
+        'ShowKickoffTimer',
+        'DisableKickoffTimer',
         'ShowServerStatus',
         'ShowScoutDetails',
         'ShowReseedTimers',
@@ -824,6 +827,93 @@ sudo -u postgres psql -d ctoa -c "SELECT status, COUNT(*) AS n FROM servers GROU
 echo
 echo "=== KickoffNow: latest runs ==="
 sudo -u postgres psql -d ctoa -c "SELECT id, agent, status, to_char(started_at,'YYYY-MM-DD HH24:MI:SS') AS started_at FROM agent_runs ORDER BY id DESC LIMIT 12;"
+'@
+    }
+    'InstallKickoffTimer' {
+        $kickoffEveryMinutes = [int](Get-OptionalEnv 'CTOA_KICKOFF_EVERY_MINUTES' '15')
+        if ($kickoffEveryMinutes -lt 1) {
+            throw 'CTOA_KICKOFF_EVERY_MINUTES must be >= 1'
+        }
+
+        Invoke-SshScript @"
+set -e
+mkdir -p /opt/ctoa/scripts/ops /opt/ctoa/logs
+
+cat > /opt/ctoa/scripts/ops/kickoff-now.sh <<'SCRIPT'
+#!/usr/bin/env bash
+set -euo pipefail
+cd /opt/ctoa
+source /opt/ctoa/.env 2>/dev/null || true
+
+echo "[kickoff-now] \\$(date -u +'%Y-%m-%dT%H:%M:%SZ') ERROR->NEW + start services" >> /opt/ctoa/logs/kickoff.log
+sudo -u postgres psql -d ctoa -c "UPDATE servers SET status='NEW', scout_error=NULL, updated_at=NOW() WHERE status='ERROR';" >> /opt/ctoa/logs/kickoff.log 2>&1 || true
+systemctl start ctoa-runner.service >> /opt/ctoa/logs/kickoff.log 2>&1 || true
+systemctl start ctoa-agents-orchestrator.service >> /opt/ctoa/logs/kickoff.log 2>&1 || true
+systemctl start ctoa-report.service >> /opt/ctoa/logs/kickoff.log 2>&1 || true
+SCRIPT
+
+chmod +x /opt/ctoa/scripts/ops/kickoff-now.sh
+
+cat > /etc/systemd/system/ctoa-kickoff.service <<'UNIT'
+[Unit]
+Description=CTOA kickoff now (ERROR->NEW and start pipeline)
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/opt/ctoa
+ExecStart=/bin/bash /opt/ctoa/scripts/ops/kickoff-now.sh
+StandardOutput=append:/opt/ctoa/logs/kickoff.log
+StandardError=append:/opt/ctoa/logs/kickoff.log
+UNIT
+
+cat > /etc/systemd/system/ctoa-kickoff.timer <<'UNIT'
+[Unit]
+Description=CTOA kickoff timer (every ${kickoffEveryMinutes} min)
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=${kickoffEveryMinutes}min
+Persistent=true
+Unit=ctoa-kickoff.service
+
+[Install]
+WantedBy=timers.target
+UNIT
+
+systemctl daemon-reload
+systemctl enable --now ctoa-kickoff.timer
+systemctl start ctoa-kickoff.service || true
+
+echo "=== kickoff timer installed ==="
+systemctl status ctoa-kickoff.timer --no-pager -l | sed -n '1,40p'
+echo
+echo "=== kickoff service last 30 lines ==="
+tail -n 30 /opt/ctoa/logs/kickoff.log 2>/dev/null || true
+"@
+    }
+    'ShowKickoffTimer' {
+        Invoke-SshScript @'
+set -e
+echo "=== ctoa-kickoff.timer ==="
+systemctl status ctoa-kickoff.timer --no-pager -l | sed -n '1,60p' || true
+echo
+echo "=== ctoa-kickoff.service (last run) ==="
+systemctl status ctoa-kickoff.service --no-pager -l | sed -n '1,60p' || true
+echo
+echo "=== kickoff log tail ==="
+tail -n 60 /opt/ctoa/logs/kickoff.log 2>/dev/null || echo 'kickoff.log-not-found'
+'@
+    }
+    'DisableKickoffTimer' {
+        Invoke-SshScript @'
+set -e
+systemctl disable --now ctoa-kickoff.timer || true
+systemctl stop ctoa-kickoff.service || true
+echo "=== kickoff timer disabled ==="
+systemctl list-unit-files ctoa-kickoff.timer ctoa-kickoff.service --no-pager || true
 '@
     }
     'FixDbPerms' {
