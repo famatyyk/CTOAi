@@ -163,7 +163,10 @@ fi
 cd /opt/ctoa
 python3 -m venv .venv
 . .venv/bin/activate
-pip install -r runner/requirements.txt
+# Self-heal venv tooling in case pip entrypoint is broken after system updates.
+python3 -m ensurepip --upgrade
+python3 -m pip install --upgrade pip setuptools wheel
+python3 -m pip install -r runner/requirements.txt
 mkdir -p logs runtime
 if [ ! -f /opt/ctoa/.env ]; then printf 'GITHUB_PAT=\n' > /opt/ctoa/.env; fi
 cp deploy/vps/systemd/ctoa-runner.service /etc/systemd/system/
