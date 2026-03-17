@@ -373,7 +373,7 @@ if [ -z "$TIER" ]; then
   exit 1
 fi
 
-ERROR_MIN_AGE_HOURS="${CTOA_RESEED_ERROR_MIN_AGE_HOURS:-6}"
+DEFAULT_ERROR_MIN_AGE_HOURS="${CTOA_RESEED_ERROR_MIN_AGE_HOURS:-6}"
 
 if [ -f /opt/ctoa/.env ]; then
   # shellcheck disable=SC1091
@@ -383,9 +383,11 @@ fi
 case "${TIER^^}" in
   AB)
     URLS="${CTOA_RESEED_TIER_AB_URLS:-https://tibiantis.online,https://tibia.com}"
+        ERROR_MIN_AGE_HOURS="${CTOA_RESEED_ERROR_MIN_AGE_HOURS_AB:-$DEFAULT_ERROR_MIN_AGE_HOURS}"
     ;;
   C)
     URLS="${CTOA_RESEED_TIER_C_URLS:-https://mythibia.online,https://otland.net}"
+        ERROR_MIN_AGE_HOURS="${CTOA_RESEED_ERROR_MIN_AGE_HOURS_C:-24}"
     ;;
   *)
     echo "Unknown tier: $TIER"
@@ -435,6 +437,14 @@ echo "CTOA_RESEED_TIER_AB_URLS=__TIER_AB_URLS__" >> /opt/ctoa/.env
 grep -v '^CTOA_RESEED_TIER_C_URLS=' /opt/ctoa/.env > /opt/ctoa/.env.tmp || true
 mv /opt/ctoa/.env.tmp /opt/ctoa/.env
 echo "CTOA_RESEED_TIER_C_URLS=__TIER_C_URLS__" >> /opt/ctoa/.env
+
+grep -v '^CTOA_RESEED_ERROR_MIN_AGE_HOURS_AB=' /opt/ctoa/.env > /opt/ctoa/.env.tmp || true
+mv /opt/ctoa/.env.tmp /opt/ctoa/.env
+echo "CTOA_RESEED_ERROR_MIN_AGE_HOURS_AB=__ERROR_MIN_AGE_HOURS_AB__" >> /opt/ctoa/.env
+
+grep -v '^CTOA_RESEED_ERROR_MIN_AGE_HOURS_C=' /opt/ctoa/.env > /opt/ctoa/.env.tmp || true
+mv /opt/ctoa/.env.tmp /opt/ctoa/.env
+echo "CTOA_RESEED_ERROR_MIN_AGE_HOURS_C=__ERROR_MIN_AGE_HOURS_C__" >> /opt/ctoa/.env
 
 grep -v '^CTOA_RESEED_ERROR_MIN_AGE_HOURS=' /opt/ctoa/.env > /opt/ctoa/.env.tmp || true
 mv /opt/ctoa/.env.tmp /opt/ctoa/.env
@@ -501,11 +511,13 @@ echo "=== reseed timer status ==="
 systemctl list-timers 'ctoa-reseed-tier-*' --no-pager
 echo
 echo "=== reseed env summary ==="
-grep -E '^CTOA_RESEED_(TIER_(AB|C)_URLS|ERROR_MIN_AGE_HOURS)=' /opt/ctoa/.env
+grep -E '^CTOA_RESEED_(TIER_(AB|C)_URLS|ERROR_MIN_AGE_HOURS(_(AB|C))?)=' /opt/ctoa/.env
 '@
 
                 $remoteScript = $remoteScript.Replace('__TIER_AB_URLS__', $tierAbUrls)
                 $remoteScript = $remoteScript.Replace('__TIER_C_URLS__', $tierCUrls)
+                $remoteScript = $remoteScript.Replace('__ERROR_MIN_AGE_HOURS_AB__', (Get-OptionalEnv 'CTOA_RESEED_ERROR_MIN_AGE_HOURS_AB' '6'))
+                $remoteScript = $remoteScript.Replace('__ERROR_MIN_AGE_HOURS_C__', (Get-OptionalEnv 'CTOA_RESEED_ERROR_MIN_AGE_HOURS_C' '24'))
                 $remoteScript = $remoteScript.Replace('__ERROR_MIN_AGE_HOURS__', (Get-OptionalEnv 'CTOA_RESEED_ERROR_MIN_AGE_HOURS' '6'))
                 $remoteScript = $remoteScript.Replace('__AB_INTERVAL_MINUTES__', [string]$abIntervalMinutes)
                 $remoteScript = $remoteScript.Replace('__C_DAILY_UTC__', $cDailyTimeUtc)
