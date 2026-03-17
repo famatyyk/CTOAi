@@ -373,6 +373,8 @@ if [ -z "$TIER" ]; then
   exit 1
 fi
 
+ERROR_MIN_AGE_HOURS="${CTOA_RESEED_ERROR_MIN_AGE_HOURS:-6}"
+
 if [ -f /opt/ctoa/.env ]; then
   # shellcheck disable=SC1091
   set -a; . /opt/ctoa/.env; set +a
@@ -395,8 +397,30 @@ IFS=',' read -r -a arr <<< "$URLS"
 for raw in "${arr[@]}"; do
   url="$(echo "$raw" | xargs)"
   [ -n "$url" ] || continue
-  sudo -u postgres psql -d ctoa -c "INSERT INTO servers(url,name,status) VALUES ('$url','Tier-${TIER} Seed','NEW') ON CONFLICT (url) DO UPDATE SET status='NEW', updated_at=now();" >/dev/null
-  echo "[reseed-tier][$TIER] queued: $url"
+
+    row="$(sudo -u postgres psql -d ctoa -At -F '|' -c "SELECT status, EXTRACT(EPOCH FROM (now() - updated_at))/3600.0 AS age_hours FROM servers WHERE url='$url' ORDER BY updated_at DESC LIMIT 1;")"
+
+    if [ -z "$row" ]; then
+        echo "[reseed-tier][$TIER] skip (not-found): $url"
+        continue
+    fi
+
+    status="${row%%|*}"
+    age_hours="${row#*|}"
+
+    if [ "$status" != "ERROR" ]; then
+        echo "[reseed-tier][$TIER] skip (status=$status): $url"
+        continue
+    fi
+
+    should_queue="$(sudo -u postgres psql -d ctoa -At -c "SELECT CASE WHEN $age_hours >= $ERROR_MIN_AGE_HOURS THEN '1' ELSE '0' END;")"
+    if [ "$should_queue" != "1" ]; then
+        echo "[reseed-tier][$TIER] skip (ERROR too fresh: ${age_hours}h < ${ERROR_MIN_AGE_HOURS}h): $url"
+        continue
+    fi
+
+    sudo -u postgres psql -d ctoa -c "UPDATE servers SET status='NEW', updated_at=now(), scout_error=trim(both ' ' from concat_ws(' | ', nullif(COALESCE(scout_error,''),''), '[tier-reseed ${TIER}] auto retry after stale ERROR (${ERROR_MIN_AGE_HOURS}h+)')) WHERE url='$url';" >/dev/null
+    echo "[reseed-tier][$TIER] queued stale ERROR: $url (age=${age_hours}h)"
 done
 
 systemctl start ctoa-agents-orchestrator.service || true
@@ -411,6 +435,10 @@ echo "CTOA_RESEED_TIER_AB_URLS=__TIER_AB_URLS__" >> /opt/ctoa/.env
 grep -v '^CTOA_RESEED_TIER_C_URLS=' /opt/ctoa/.env > /opt/ctoa/.env.tmp || true
 mv /opt/ctoa/.env.tmp /opt/ctoa/.env
 echo "CTOA_RESEED_TIER_C_URLS=__TIER_C_URLS__" >> /opt/ctoa/.env
+
+grep -v '^CTOA_RESEED_ERROR_MIN_AGE_HOURS=' /opt/ctoa/.env > /opt/ctoa/.env.tmp || true
+mv /opt/ctoa/.env.tmp /opt/ctoa/.env
+echo "CTOA_RESEED_ERROR_MIN_AGE_HOURS=__ERROR_MIN_AGE_HOURS__" >> /opt/ctoa/.env
 
 cat > /etc/systemd/system/ctoa-reseed-tier-ab.service <<'UNIT'
 [Unit]
@@ -473,11 +501,12 @@ echo "=== reseed timer status ==="
 systemctl list-timers 'ctoa-reseed-tier-*' --no-pager
 echo
 echo "=== reseed env summary ==="
-grep -E '^CTOA_RESEED_TIER_(AB|C)_URLS=' /opt/ctoa/.env
+grep -E '^CTOA_RESEED_(TIER_(AB|C)_URLS|ERROR_MIN_AGE_HOURS)=' /opt/ctoa/.env
 '@
 
                 $remoteScript = $remoteScript.Replace('__TIER_AB_URLS__', $tierAbUrls)
                 $remoteScript = $remoteScript.Replace('__TIER_C_URLS__', $tierCUrls)
+                $remoteScript = $remoteScript.Replace('__ERROR_MIN_AGE_HOURS__', (Get-OptionalEnv 'CTOA_RESEED_ERROR_MIN_AGE_HOURS' '6'))
                 $remoteScript = $remoteScript.Replace('__AB_INTERVAL_MINUTES__', [string]$abIntervalMinutes)
                 $remoteScript = $remoteScript.Replace('__C_DAILY_UTC__', $cDailyTimeUtc)
                 Invoke-SshScript $remoteScript
