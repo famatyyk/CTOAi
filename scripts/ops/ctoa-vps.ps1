@@ -18,6 +18,8 @@ param(
         'TailAgents',
         'FixDbPerms',
         'RegisterServer',
+        'RegisterServerList',
+        'KickoffNow',
         'ShowServerStatus',
         'ShowScoutDetails',
         'ShowReseedTimers',
@@ -45,7 +47,10 @@ param(
     [string]$Action,
 
     [Parameter(Mandatory = $false)]
-    [string]$ServiceName
+    [string]$ServiceName,
+
+    [Parameter(Mandatory = $false)]
+    [string]$ServerUrls
 )
 
 $ErrorActionPreference = 'Stop'
@@ -770,6 +775,57 @@ systemctl start ctoa-agents-orchestrator.service
 echo "[RegisterServer] submitted: $serverUrl"
 "@
         }
+    'RegisterServerList' {
+        $serverUrlsRaw = $ServerUrls
+        if ([string]::IsNullOrWhiteSpace($serverUrlsRaw)) {
+            $serverUrlsRaw = Get-OptionalEnv 'CTOA_SERVER_URLS' ''
+        }
+        if ([string]::IsNullOrWhiteSpace($serverUrlsRaw)) {
+            throw 'RegisterServerList requires -ServerUrls "url1,url2" (or env CTOA_SERVER_URLS)'
+        }
+
+        $urls = @($serverUrlsRaw -split ',' | ForEach-Object { $_.Trim() } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+        if ($urls.Count -eq 0) {
+            throw 'RegisterServerList did not receive any valid URLs'
+        }
+
+        foreach ($url in $urls) {
+            $safeUrl = $url -replace "'", "''"
+            Invoke-SshScript @"
+set -e
+cd /opt/ctoa
+sudo -u postgres psql -d ctoa -c "INSERT INTO servers(url,name,status) VALUES ('$safeUrl','External-Server','NEW') ON CONFLICT (url) DO UPDATE SET name=EXCLUDED.name, status='NEW', updated_at=now();"
+echo "[RegisterServerList] submitted: $url"
+"@
+        }
+
+        Invoke-SshScript @'
+set -e
+cd /opt/ctoa
+systemctl start ctoa-runner.service || true
+systemctl start ctoa-agents-orchestrator.service || true
+sudo -u postgres psql -d ctoa -c "SELECT status, COUNT(*) AS n FROM servers GROUP BY status ORDER BY status;"
+'@
+    }
+    'KickoffNow' {
+        Invoke-SshScript @'
+set -e
+cd /opt/ctoa
+echo "=== KickoffNow: ERROR -> NEW ==="
+sudo -u postgres psql -d ctoa -c "UPDATE servers SET status='NEW', scout_error=NULL, updated_at=NOW() WHERE status='ERROR';"
+echo
+echo "=== KickoffNow: start processing ==="
+systemctl start ctoa-runner.service || true
+systemctl start ctoa-agents-orchestrator.service || true
+systemctl start ctoa-report.service || true
+echo
+echo "=== KickoffNow: server counts ==="
+sudo -u postgres psql -d ctoa -c "SELECT status, COUNT(*) AS n FROM servers GROUP BY status ORDER BY status;"
+echo
+echo "=== KickoffNow: latest runs ==="
+sudo -u postgres psql -d ctoa -c "SELECT id, agent, status, to_char(started_at,'YYYY-MM-DD HH24:MI:SS') AS started_at FROM agent_runs ORDER BY id DESC LIMIT 12;"
+'@
+    }
     'FixDbPerms' {
         Invoke-SshScript @'
 set -e
