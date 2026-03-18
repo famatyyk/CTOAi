@@ -32,6 +32,8 @@ param(
         'HotfixOrchestratorService',
         'ShowReseedPolicy',
         'ShowSystemHealth',
+        'ShowPipelineProgress',
+        'ListActions',
         'ShowServiceRestarts',
         'HealService',
         # GS Reset cycle
@@ -416,6 +418,82 @@ echo
 echo "=== recent reseed log ==="
 tail -n 20 /opt/ctoa/logs/reseed-tier.log 2>/dev/null || echo 'reseed-tier.log-not-found'
 '@
+        }
+        'ShowPipelineProgress' {
+                Invoke-SshScript @'
+set -e
+
+echo "=== pipeline progress ==="
+
+server_line=$(sudo -u postgres psql -d ctoa -At -c "SELECT COUNT(*)::int AS total, SUM((status='READY')::int)::int AS ready, SUM((status='SCOUTING')::int)::int AS scouting, SUM((status='NEW')::int)::int AS newc, SUM((status='ERROR')::int)::int AS err FROM servers;" 2>/dev/null || echo "0|0|0|0|0")
+IFS='|' read -r s_total s_ready s_scout s_new s_err <<< "$server_line"
+s_total=${s_total:-0}; s_ready=${s_ready:-0}; s_scout=${s_scout:-0}; s_new=${s_new:-0}; s_err=${s_err:-0}
+
+module_line=$(sudo -u postgres psql -d ctoa -At -c "SELECT COUNT(*)::int AS total, SUM((status='QUEUED')::int)::int AS queued, SUM((status='GENERATED')::int)::int AS generated, SUM((status='VALIDATED')::int)::int AS validated, SUM((status='FAILED')::int)::int AS failed FROM modules;" 2>/dev/null || echo "0|0|0|0|0")
+IFS='|' read -r m_total m_queued m_generated m_validated m_failed <<< "$module_line"
+m_total=${m_total:-0}; m_queued=${m_queued:-0}; m_generated=${m_generated:-0}; m_validated=${m_validated:-0}; m_failed=${m_failed:-0}
+
+if [ "$s_total" -gt 0 ]; then
+    p_ready=$(awk -v r="$s_ready" -v t="$s_total" 'BEGIN { printf "%.0f", (100*r)/t }')
+else
+    p_ready=0
+fi
+
+if [ "$m_total" -gt 0 ]; then
+    p_validated=$(awk -v v="$m_validated" -v t="$m_total" 'BEGIN { printf "%.0f", (100*v)/t }')
+else
+    p_validated=0
+fi
+
+bar() {
+    p=$1
+    if [ "$p" -lt 0 ]; then p=0; fi
+    if [ "$p" -gt 100 ]; then p=100; fi
+    filled=$((p / 5))
+    empty=$((20 - filled))
+    printf '['
+    i=0; while [ $i -lt $filled ]; do printf '#'; i=$((i+1)); done
+    i=0; while [ $i -lt $empty ]; do printf '.'; i=$((i+1)); done
+    printf '] %3s%%' "$p"
+}
+
+printf "servers READY share     : "; bar "$p_ready"; printf "  (total=%s ready=%s scouting=%s new=%s error=%s)\n" "$s_total" "$s_ready" "$s_scout" "$s_new" "$s_err"
+printf "modules VALIDATED share : "; bar "$p_validated"; printf "  (total=%s queued=%s generated=%s validated=%s failed=%s)\n" "$m_total" "$m_queued" "$m_generated" "$m_validated" "$m_failed"
+
+echo
+echo "=== per-agent last status ==="
+sudo -u postgres psql -d ctoa -c "SELECT DISTINCT ON (agent) agent, status, to_char(finished_at,'YYYY-MM-DD HH24:MI:SS') AS finished_at FROM agent_runs ORDER BY agent, id DESC;" 2>/dev/null || true
+
+echo
+echo "=== why little output now ==="
+sudo -u postgres psql -d ctoa -c "SELECT s.id, s.url, s.status, COUNT(m.id) AS modules_total, SUM((m.status='VALIDATED')::int) AS modules_validated FROM servers s LEFT JOIN modules m ON m.server_id=s.id GROUP BY s.id, s.url, s.status ORDER BY s.id;" 2>/dev/null || true
+'@
+        }
+        'ListActions' {
+                $actions = @(
+                        'Verify','WhoAmI','Setup24x7','EnableLiveHealth','TailLiveHealth','ValidateServices',
+                        'StabilizeReportService','WriteGithubPat','ReportViaServiceEnv','PublishWithSourcedEnv',
+                        'InspectReportEnv','ReportErrorDetails','SetupDB','SetupAgents','TailAgents','FixDbPerms',
+                        'RegisterServer','RegisterServerList','KickoffNow','InstallKickoffTimer','ShowKickoffTimer',
+                        'DisableKickoffTimer','ShowServerStatus','ShowScoutDetails','ShowReseedTimers',
+                        'WatchScoutingUntilSettled','ApplyScoutingTimeoutPolicy','InstallTieredReseedTimers',
+                        'HotfixOrchestratorService','ShowReseedPolicy','ShowSystemHealth','ShowPipelineProgress',
+                        'ListActions','ShowServiceRestarts','HealService','InstallGsReset','InstallGsResetFromBranch',
+                        'EnsureGsEnvKeys','TriggerGsResetNow','TailGsReset','GsStatus','GsProvisionDbContainer',
+                        'GsCoherence','GsModuleInject','GsApiValidate','ValidateSyntax'
+                )
+
+                Write-Host '=== Available Actions ==='
+                foreach ($a in $actions) {
+                        Write-Host ("- {0}" -f $a)
+                }
+                Write-Host ''
+                Write-Host '=== Common commands ==='
+                Write-Host 'powershell -ExecutionPolicy Bypass -File ctoa-vps.ps1 -Action ShowSystemHealth'
+                Write-Host 'powershell -ExecutionPolicy Bypass -File ctoa-vps.ps1 -Action ShowPipelineProgress'
+                Write-Host 'powershell -ExecutionPolicy Bypass -File ctoa-vps.ps1 -Action KickoffNow'
+                Write-Host 'powershell -ExecutionPolicy Bypass -File ctoa-vps.ps1 -Action RegisterServerList -ServerUrls "https://url1,https://url2"'
+                Write-Host 'powershell -ExecutionPolicy Bypass -File ctoa-vps.ps1 -Action HealService -ServiceName ctoa-mobile-console'
         }
     'ShowServiceRestarts' {
         Invoke-SshScript @'
