@@ -20,6 +20,8 @@ param(
         'RegisterServer',
         'RegisterServerList',
         'KickoffNow',
+        'MythibiaBurst',
+        'GlobalBurst',
         'InstallKickoffTimer',
         'ShowKickoffTimer',
         'DisableKickoffTimer',
@@ -76,6 +78,18 @@ function Get-OptionalEnv([string]$Name, [string]$DefaultValue) {
     return $value
 }
 
+function Resolve-ServerUrl([string]$Candidate, [string]$Fallback) {
+    $u = $Candidate
+    if (-not [string]::IsNullOrWhiteSpace($u)) {
+        $u = $u.Trim().Trim('"').Trim("'")
+        $parsed = $null
+        if ([Uri]::TryCreate($u, [UriKind]::Absolute, [ref]$parsed) -and ($parsed.Scheme -in @('http', 'https'))) {
+            return $u
+        }
+    }
+    return $Fallback
+}
+
 function Get-RemoteTarget() {
     $h = [Environment]::GetEnvironmentVariable('CTOA_VPS_HOST')
     if ([string]::IsNullOrWhiteSpace($h)) { $h = '46.225.110.52' }
@@ -91,15 +105,47 @@ function Get-KeyPath() {
     return $k
 }
 
+function Invoke-WithSshRetry([scriptblock]$Operation, [string]$Label) {
+    $attempts = [int](Get-OptionalEnv 'CTOA_SSH_RETRY_ATTEMPTS' '5')
+    $delaySeconds = [int](Get-OptionalEnv 'CTOA_SSH_RETRY_DELAY_SECONDS' '3')
+    if ($attempts -lt 1) { $attempts = 1 }
+    if ($delaySeconds -lt 1) { $delaySeconds = 1 }
+
+    for ($i = 1; $i -le $attempts; $i++) {
+        try {
+            & $Operation
+            if ($LASTEXITCODE -eq 0) {
+                return
+            }
+        } catch {
+            if ($i -eq $attempts) {
+                throw
+            }
+        }
+
+        if ($i -lt $attempts) {
+            Write-Warning ("[{0}] SSH attempt {1}/{2} failed, retry in {3}s" -f $Label, $i, $attempts, $delaySeconds)
+            Start-Sleep -Seconds $delaySeconds
+            $delaySeconds = [Math]::Min($delaySeconds * 2, 20)
+        }
+    }
+
+    throw ("[{0}] SSH failed after {1} attempts" -f $Label, $attempts)
+}
+
 function Invoke-SshCommand([string]$Cmd) {
     $t = Get-RemoteTarget; $k = Get-KeyPath
-    & ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -i $k $t $Cmd
+    Invoke-WithSshRetry -Label 'Invoke-SshCommand' -Operation {
+        & ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new -i $k $t $Cmd
+    }
 }
 
 function Invoke-SshScript([string]$Script) {
     $t = Get-RemoteTarget; $k = Get-KeyPath
     $normalized = (($Script -replace "`r`n","`n") -replace "`r","`n")
-    ($normalized + "`n") | & ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -i $k $t "tr -d '\r' | bash -s"
+    Invoke-WithSshRetry -Label 'Invoke-SshScript' -Operation {
+        ($normalized + "`n") | & ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new -i $k $t "tr -d '\r' | bash -s"
+    }
 }
 
 function Invoke-RemoteSyntaxValidation() {
@@ -417,6 +463,48 @@ echo
 
 echo "=== recent reseed log ==="
 tail -n 20 /opt/ctoa/logs/reseed-tier.log 2>/dev/null || echo 'reseed-tier.log-not-found'
+echo
+
+# ── SSH quality monitor ──────────────────────────────────────────────────────
+echo "=== SSH quality monitor (last 60 s) ==="
+SSH_FAIL_THRESHOLD=${CTOA_SSH_FAIL_THRESHOLD:-5}          # fails/min to trigger auto-heal
+WINDOW_SEC=60
+
+# Count disconnect/banner-exchange/kex failures in the last WINDOW_SEC seconds
+SSH_FAILS=$(journalctl -u sshd --since "-${WINDOW_SEC}s" --no-pager -q 2>/dev/null \
+  | grep -cEi 'Did not receive identification|Connection reset|banner exchange|kex|Invalid user|authentication failure' || true)
+SSH_FAILS=${SSH_FAILS:-0}
+
+FAIL_RATE_INT=$(( SSH_FAILS * 60 / WINDOW_SEC ))
+echo "  SSH fail events (last ${WINDOW_SEC}s) : ${SSH_FAILS}"
+echo "  SSH fail rate (per min)              : ${FAIL_RATE_INT}"
+echo "  Auto-heal threshold (per min)        : ${SSH_FAIL_THRESHOLD}"
+
+if [ "${FAIL_RATE_INT}" -ge "${SSH_FAIL_THRESHOLD}" ]; then
+  echo "  STATUS : DEGRADED – threshold exceeded, triggering auto-heal"
+
+  # reset-failed for ctoa services that depend heavily on outbound SSH / sshd
+  SSH_HEAVY_SERVICES=(
+    ctoa-agents-orchestrator.service
+    ctoa-runner.service
+    ctoa-report.service
+    ctoa-reseed-tier-ab.service
+    ctoa-reseed-tier-c.service
+    ctoa-lab-runner.service
+  )
+  for svc in "${SSH_HEAVY_SERVICES[@]}"; do
+    current_result=$(systemctl show "$svc" -p Result --value 2>/dev/null || echo 'unknown')
+    if [ "$current_result" = "failed" ] || [ "$current_result" = "exit-code" ] || [ "$current_result" = "signal" ]; then
+      echo "    reset-failed $svc  (was: $current_result)"
+      systemctl reset-failed "$svc" 2>/dev/null || true
+    fi
+  done
+  echo "  Auto-heal complete."
+else
+  echo "  STATUS : OK"
+fi
+echo
+# ────────────────────────────────────────────────────────────────────────────
 '@
         }
         'ShowPipelineProgress' {
@@ -474,7 +562,7 @@ sudo -u postgres psql -d ctoa -c "SELECT s.id, s.url, s.status, COUNT(m.id) AS m
                         'Verify','WhoAmI','Setup24x7','EnableLiveHealth','TailLiveHealth','ValidateServices',
                         'StabilizeReportService','WriteGithubPat','ReportViaServiceEnv','PublishWithSourcedEnv',
                         'InspectReportEnv','ReportErrorDetails','SetupDB','SetupAgents','TailAgents','FixDbPerms',
-                        'RegisterServer','RegisterServerList','KickoffNow','InstallKickoffTimer','ShowKickoffTimer',
+                    'RegisterServer','RegisterServerList','KickoffNow','MythibiaBurst','GlobalBurst','InstallKickoffTimer','ShowKickoffTimer',
                         'DisableKickoffTimer','ShowServerStatus','ShowScoutDetails','ShowReseedTimers',
                         'WatchScoutingUntilSettled','ApplyScoutingTimeoutPolicy','InstallTieredReseedTimers',
                         'HotfixOrchestratorService','ShowReseedPolicy','ShowSystemHealth','ShowPipelineProgress',
@@ -492,6 +580,7 @@ sudo -u postgres psql -d ctoa -c "SELECT s.id, s.url, s.status, COUNT(m.id) AS m
                 Write-Host 'powershell -ExecutionPolicy Bypass -File ctoa-vps.ps1 -Action ShowSystemHealth'
                 Write-Host 'powershell -ExecutionPolicy Bypass -File ctoa-vps.ps1 -Action ShowPipelineProgress'
                 Write-Host 'powershell -ExecutionPolicy Bypass -File ctoa-vps.ps1 -Action KickoffNow'
+                Write-Host 'powershell -ExecutionPolicy Bypass -File ctoa-vps.ps1 -Action GlobalBurst'
                 Write-Host 'powershell -ExecutionPolicy Bypass -File ctoa-vps.ps1 -Action RegisterServerList -ServerUrls "https://url1,https://url2"'
                 Write-Host 'powershell -ExecutionPolicy Bypass -File ctoa-vps.ps1 -Action HealService -ServiceName ctoa-mobile-console'
         }
@@ -907,6 +996,163 @@ echo "=== KickoffNow: latest runs ==="
 sudo -u postgres psql -d ctoa -c "SELECT id, agent, status, to_char(started_at,'YYYY-MM-DD HH24:MI:SS') AS started_at FROM agent_runs ORDER BY id DESC LIMIT 12;"
 '@
     }
+        'MythibiaBurst' {
+            $targetUrl = Get-OptionalEnv 'CTOA_MYTHIBIA_URL' 'https://mythibia.online'
+            if ([string]::IsNullOrWhiteSpace($targetUrl)) {
+                $targetUrl = Get-OptionalEnv 'CTOA_PRIMARY_SERVER_URL' 'https://mythibia.online'
+            }
+            if (-not [string]::IsNullOrWhiteSpace($ServerUrls)) {
+                $targetUrl = ($ServerUrls -split ',')[0].Trim()
+            }
+            $targetUrl = Resolve-ServerUrl $targetUrl 'https://mythibia.online'
+                $safeUrl = $targetUrl -replace "'", "''"
+
+                Invoke-SshScript @"
+set -e
+cd /opt/ctoa
+URL='$safeUrl'
+
+echo "=== MythibiaBurst target: `$URL ==="
+
+sudo -u postgres psql -d ctoa -c "INSERT INTO servers(url,name,status) VALUES ('`$URL','Mythibia-Primary','READY') ON CONFLICT (url) DO UPDATE SET status='READY', updated_at=now();"
+
+sudo -u postgres psql -d ctoa -c "
+WITH s AS (
+    SELECT id FROM servers WHERE url='`$URL' LIMIT 1
+), base_templates AS (
+    SELECT DISTINCT ON (m.template)
+            m.template,
+            COALESCE(NULLIF(m.output_file,''), m.template || '.lua') AS output_file
+    FROM modules m
+    JOIN servers sx ON sx.id = m.server_id
+    WHERE sx.url='`$URL'
+    ORDER BY m.template, m.id DESC
+), seeded AS (
+    INSERT INTO modules (server_id, task_id, template, output_file, status)
+    SELECT
+        s.id,
+        'SRV' || lpad(s.id::text, 3, '0') || '-' || upper(left(replace(bt.template,'_',''), 14)) || '-R' || substring(md5(random()::text || clock_timestamp()::text),1,6),
+        bt.template,
+        regexp_replace(bt.output_file, '\\.[Ll][Uu][Aa]$', '', 'g') || '_r' || to_char(now(),'HH24MISS') || '.lua',
+        'QUEUED'
+    FROM s
+    JOIN base_templates bt ON true
+    RETURNING id
+)
+SELECT COUNT(*) AS queued_now FROM seeded;
+"
+
+systemctl start ctoa-agents-orchestrator.service || true
+sleep 4
+
+echo
+echo "=== MythibiaBurst module status (target server) ==="
+sudo -u postgres psql -d ctoa -c "SELECT m.status, COUNT(*) AS n FROM modules m JOIN servers s ON s.id=m.server_id WHERE s.url='`$URL' GROUP BY m.status ORDER BY m.status;"
+echo
+echo "=== MythibiaBurst latest modules ==="
+sudo -u postgres psql -d ctoa -c "SELECT m.id, m.task_id, m.template, m.status, COALESCE(m.output_file,'') AS output_file, COALESCE(m.output_path,'') AS output_path FROM modules m JOIN servers s ON s.id=m.server_id WHERE s.url='`$URL' ORDER BY m.id DESC LIMIT 20;"
+"@
+        }
+    'GlobalBurst' {
+        $burstPerServer = [int](Get-OptionalEnv 'CTOA_BURST_PER_SERVER' '12')
+        if ($burstPerServer -lt 1) {
+            throw 'CTOA_BURST_PER_SERVER must be >= 1'
+        }
+        if ($burstPerServer -gt 50) {
+            $burstPerServer = 50
+        }
+
+        Invoke-SshScript @"
+    set -u
+cd /opt/ctoa
+
+echo "=== GlobalBurst: quarantine invalid URLs ==="
+    sudo -u postgres psql -d ctoa -c "UPDATE servers SET status='ERROR', scout_error='invalid url quarantined by GlobalBurst', updated_at=now() WHERE url !~* '^https?://';" || true
+
+echo
+echo "=== GlobalBurst: mark valid servers READY ==="
+    sudo -u postgres psql -d ctoa -c "UPDATE servers SET status='READY', scout_error=NULL, updated_at=now() WHERE url ~* '^https?://';" || true
+
+echo
+echo "=== GlobalBurst: seed modules for all valid servers (per-server burst=$burstPerServer) ==="
+    if ! sudo -u postgres psql -d ctoa -c "
+WITH valid_servers AS (
+    SELECT id, url
+    FROM servers
+    WHERE url ~* '^https?://'
+), catalog AS (
+    SELECT DISTINCT ON (m.template)
+        m.template,
+        COALESCE(NULLIF(m.output_file,''), m.template || '.lua') AS output_file
+    FROM modules m
+    WHERE COALESCE(m.template,'') <> ''
+    ORDER BY m.template, m.id DESC
+), server_templates AS (
+    SELECT DISTINCT ON (m.server_id, m.template)
+        m.server_id,
+        m.template,
+        COALESCE(NULLIF(m.output_file,''), m.template || '.lua') AS output_file
+    FROM modules m
+    JOIN valid_servers vs ON vs.id = m.server_id
+    WHERE COALESCE(m.template,'') <> ''
+    ORDER BY m.server_id, m.template, m.id DESC
+), servers_without_templates AS (
+    SELECT vs.id
+    FROM valid_servers vs
+    LEFT JOIN server_templates st ON st.server_id = vs.id
+    WHERE st.server_id IS NULL
+), source_templates AS (
+    SELECT st.server_id, st.template, st.output_file
+    FROM server_templates st
+    UNION ALL
+    SELECT swt.id AS server_id, c.template, c.output_file
+    FROM servers_without_templates swt
+    JOIN catalog c ON true
+), picked AS (
+    SELECT server_id, template, output_file
+    FROM (
+        SELECT
+            st.server_id,
+            st.template,
+            st.output_file,
+            ROW_NUMBER() OVER (PARTITION BY st.server_id ORDER BY md5(st.template || clock_timestamp()::text || random()::text)) AS rn
+        FROM source_templates st
+    ) x
+    WHERE rn <= $burstPerServer
+), seeded AS (
+    INSERT INTO modules (server_id, task_id, template, output_file, status)
+    SELECT
+        p.server_id,
+        'SRV' || lpad(p.server_id::text, 3, '0') || '-' || upper(left(replace(p.template,'_',''), 14)) || '-R' || substring(md5(random()::text || clock_timestamp()::text),1,6),
+        p.template,
+        regexp_replace(p.output_file, '\\.[Ll][Uu][Aa]$', '', 'g') || '_r' || to_char(now(),'HH24MISS') || '.lua',
+        'QUEUED'
+    FROM picked p
+    RETURNING server_id
+)
+SELECT COUNT(*) AS queued_now, COUNT(DISTINCT server_id) AS seeded_servers FROM seeded;
+"; then
+    echo "[GlobalBurst] seed query failed (continuing to keep services alive)"
+fi
+
+echo
+echo "=== GlobalBurst: start pipeline services ==="
+systemctl start --no-block ctoa-runner.service || true
+systemctl start --no-block ctoa-agents-orchestrator.service || true
+systemctl start --no-block ctoa-report.service || true
+
+sleep 4
+echo
+echo "=== GlobalBurst: server status ==="
+sudo -u postgres psql -d ctoa -c "SELECT status, COUNT(*) AS n FROM servers GROUP BY status ORDER BY status;" || true
+echo
+echo "=== GlobalBurst: module status ==="
+sudo -u postgres psql -d ctoa -c "SELECT status, COUNT(*) AS n FROM modules GROUP BY status ORDER BY status;" || true
+echo
+echo "=== GlobalBurst: latest agent runs ==="
+sudo -u postgres psql -d ctoa -c "SELECT id, agent, status, to_char(started_at,'YYYY-MM-DD HH24:MI:SS') AS started_at FROM agent_runs ORDER BY id DESC LIMIT 15;" || true
+"@
+    }
     'InstallKickoffTimer' {
         $kickoffEveryMinutes = [int](Get-OptionalEnv 'CTOA_KICKOFF_EVERY_MINUTES' '15')
         if ($kickoffEveryMinutes -lt 1) {
@@ -923,11 +1169,77 @@ set -euo pipefail
 cd /opt/ctoa
 source /opt/ctoa/.env 2>/dev/null || true
 
-echo "[kickoff-now] \\$(date -u +'%Y-%m-%dT%H:%M:%SZ') ERROR->NEW + start services" >> /opt/ctoa/logs/kickoff.log
-sudo -u postgres psql -d ctoa -c "UPDATE servers SET status='NEW', scout_error=NULL, updated_at=NOW() WHERE status='ERROR';" >> /opt/ctoa/logs/kickoff.log 2>&1 || true
-systemctl start ctoa-runner.service >> /opt/ctoa/logs/kickoff.log 2>&1 || true
-systemctl start ctoa-agents-orchestrator.service >> /opt/ctoa/logs/kickoff.log 2>&1 || true
-systemctl start ctoa-report.service >> /opt/ctoa/logs/kickoff.log 2>&1 || true
+BURST_PER_SERVER="`${CTOA_KICKOFF_BURST_PER_SERVER:-6}"
+if ! [[ "`$BURST_PER_SERVER" =~ ^[0-9]+$ ]]; then BURST_PER_SERVER=6; fi
+if [ "`$BURST_PER_SERVER" -lt 1 ]; then BURST_PER_SERVER=1; fi
+if [ "`$BURST_PER_SERVER" -gt 30 ]; then BURST_PER_SERVER=30; fi
+
+echo "[kickoff-now] `$(date -u +'%Y-%m-%dT%H:%M:%SZ') global reseed + start services (burst=`${BURST_PER_SERVER})" >> /opt/ctoa/logs/kickoff.log
+
+sudo -u postgres psql -d ctoa -c "UPDATE servers SET status='ERROR', scout_error='invalid url quarantined by kickoff', updated_at=now() WHERE url !~* '^https?://';" >> /opt/ctoa/logs/kickoff.log 2>&1 || true
+sudo -u postgres psql -d ctoa -c "UPDATE servers SET status='READY', scout_error=NULL, updated_at=now() WHERE url ~* '^https?://';" >> /opt/ctoa/logs/kickoff.log 2>&1 || true
+
+sudo -u postgres psql -d ctoa -c "
+WITH valid_servers AS (
+    SELECT id, url
+    FROM servers
+    WHERE url ~* '^https?://'
+), catalog AS (
+    SELECT DISTINCT ON (m.template)
+        m.template,
+        COALESCE(NULLIF(m.output_file,''), m.template || '.lua') AS output_file
+    FROM modules m
+    WHERE COALESCE(m.template,'') <> ''
+    ORDER BY m.template, m.id DESC
+), server_templates AS (
+    SELECT DISTINCT ON (m.server_id, m.template)
+        m.server_id,
+        m.template,
+        COALESCE(NULLIF(m.output_file,''), m.template || '.lua') AS output_file
+    FROM modules m
+    JOIN valid_servers vs ON vs.id = m.server_id
+    WHERE COALESCE(m.template,'') <> ''
+    ORDER BY m.server_id, m.template, m.id DESC
+), servers_without_templates AS (
+    SELECT vs.id
+    FROM valid_servers vs
+    LEFT JOIN server_templates st ON st.server_id = vs.id
+    WHERE st.server_id IS NULL
+), source_templates AS (
+    SELECT st.server_id, st.template, st.output_file
+    FROM server_templates st
+    UNION ALL
+    SELECT swt.id AS server_id, c.template, c.output_file
+    FROM servers_without_templates swt
+    JOIN catalog c ON true
+), picked AS (
+    SELECT server_id, template, output_file
+    FROM (
+        SELECT
+            st.server_id,
+            st.template,
+            st.output_file,
+            ROW_NUMBER() OVER (PARTITION BY st.server_id ORDER BY md5(st.template || clock_timestamp()::text || random()::text)) AS rn
+        FROM source_templates st
+    ) x
+    WHERE rn <= `${BURST_PER_SERVER}
+), seeded AS (
+    INSERT INTO modules (server_id, task_id, template, output_file, status)
+    SELECT
+        p.server_id,
+        'SRV' || lpad(p.server_id::text, 3, '0') || '-' || upper(left(replace(p.template,'_',''), 14)) || '-R' || substring(md5(random()::text || clock_timestamp()::text),1,6),
+        p.template,
+        regexp_replace(p.output_file, '\\.[Ll][Uu][Aa]$', '', 'g') || '_r' || to_char(now(),'HH24MISS') || '.lua',
+        'QUEUED'
+    FROM picked p
+    RETURNING server_id
+)
+SELECT COUNT(*) AS queued_now, COUNT(DISTINCT server_id) AS seeded_servers FROM seeded;
+" >> /opt/ctoa/logs/kickoff.log 2>&1 || true
+
+systemctl start --no-block ctoa-runner.service >> /opt/ctoa/logs/kickoff.log 2>&1 || true
+systemctl start --no-block ctoa-agents-orchestrator.service >> /opt/ctoa/logs/kickoff.log 2>&1 || true
+systemctl start --no-block ctoa-report.service >> /opt/ctoa/logs/kickoff.log 2>&1 || true
 SCRIPT
 
 chmod +x /opt/ctoa/scripts/ops/kickoff-now.sh
