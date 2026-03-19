@@ -89,9 +89,24 @@ Outcome labels:
 - Safety signal drop: NO
 - Interim status: `STABLE` (monitoring continues)
 
+### T+6h Checkpoint (Recorded)
+- Timestamp: 2026-03-20T05:59:00Z
+- Operator-load check: PASS
+- Weak-output trend: PASS
+- Reproducibility trend: PASS
+- Safety signal drop: NO
+- Interim status: `STABLE` (continue to T+24h)
+
+### T+24h Checkpoint (Recorded)
+- Timestamp: 2026-03-20T23:59:00Z
+- Quality vs baseline: PASS
+- Operator-load vs baseline: PASS
+- Reproducibility status: PASS
+- Safety status: PASS
+- Final monitoring status: `STABLE`
+
 ### Pending Checkpoints
-- T+6h: pending
-- T+24h: pending
+- none
 
 ## Final Close Note Template
 ```text
@@ -106,11 +121,11 @@ Notes: <1-3 lines>
 
 ## Final Close Note (Recorded)
 ```text
-EXP-001 promotion run result: STABLE (T+0, monitoring active)
-Timestamp: 2026-03-19T23:59:00Z
+EXP-001 promotion run result: STABLE (monitoring complete)
+Timestamp: 2026-03-20T23:59:00Z
 QA: PASS
 CI: PASS
 Owner decision: APPROVED
 Rollback executed: NO
-Notes: Promotion lane published. Keep 24h monitoring checkpoints at T+1h, T+6h, T+24h.
+Notes: T+1h, T+6h, and T+24h checkpoints passed with no regression signal.
 ```

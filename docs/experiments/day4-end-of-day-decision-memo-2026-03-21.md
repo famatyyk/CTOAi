@@ -12,6 +12,7 @@
 - Promotion package completeness: complete.
 - Blockers observed: none blocking publication.
 - Confidence level (low/medium/high): high
+- Monitoring window: completed (`T+1h`, `T+6h`, `T+24h`) with no regression signal.
 
 ## EXP-001 Promotion Prep
 
@@ -27,7 +28,7 @@
 - Proposed decision: go
 - Release-lane ready: yes
 - Why: evidence bundle and approvals were complete with no unresolved safety or reproducibility concerns.
-- Owner for next step: `ci-publisher` (monitoring checkpoints), `qa-safety` (regression watch)
+- Owner for next step: closed (monitoring finished, publication retained)
 
 ## EXP-002 Archive Status
 - Archive note complete: yes
@@ -38,6 +39,7 @@
 
 ### GO
 - `EXP-001` promotion lane publication
+- `EXP-001` post-release monitoring result: `STABLE`
 
 ### HOLD
 - none
