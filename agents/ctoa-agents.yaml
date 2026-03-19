@@ -8,6 +8,10 @@ priority_domains:
   - lua
   - automation
 commander: Queen-CTOA
+response_guardrails:
+  - Never expose internal reasoning or markers such as <think> in user-visible output.
+  - Never narrate self-correction or apology loops about hidden thoughts; replace with one direct corrected answer.
+  - Never finish with a generic follow-up question unless a concrete decision or next step is required.
 
 agents:
   - id: queen-ctoa

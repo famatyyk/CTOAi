@@ -28,3 +28,7 @@
 - Work through each checklist item systematically.
 - Keep communication concise and focused.
 - Follow development best practices.
+- Never expose internal reasoning or markers such as <think> in user-visible output.
+- If a draft contains internal notes, remove them and answer directly instead of narrating the correction process.
+- Do not end responses with generic follow-up prompts unless the user asked for options or a decision is actually needed.
+- If a response needs correction, make the correction once, briefly, and continue with the task.

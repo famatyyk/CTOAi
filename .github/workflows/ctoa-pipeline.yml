@@ -101,7 +101,43 @@ jobs:
       - name: Install validation tools
         run: |
           python -m pip install --upgrade pip
-          pip install yamllint pytest pytest-cov pylint flake8
+          pip install yamllint pytest pytest-cov pylint flake8 pyyaml
+
+      - name: Response guardrail regression check
+        shell: bash
+        continue-on-error: true
+        run: |
+          set +e
+          set -o pipefail
+          python -m pytest tests/test_response_guardrails.py -q 2>&1 | tee response-guardrails.txt
+          RESPONSE_GUARDRAILS_EXIT=${PIPESTATUS[0]}
+          set -e
+          echo "RESPONSE_GUARDRAILS_EXIT=${RESPONSE_GUARDRAILS_EXIT}" >> "$GITHUB_ENV"
+
+      - name: Publish response guardrail summary
+        if: always()
+        shell: bash
+        run: |
+          status="PASS"
+          if [ "${RESPONSE_GUARDRAILS_EXIT:-1}" != "0" ]; then
+            status="FAIL"
+          fi
+
+          {
+            echo "## Response Guardrails"
+            echo "- Status: ${status}"
+            echo "- Exit code: ${RESPONSE_GUARDRAILS_EXIT:-1}"
+            echo "- Artifact log: response-guardrails.txt"
+            echo ""
+            echo "### Tail"
+            echo '```'
+            if [ -f response-guardrails.txt ]; then
+              tail -n 40 response-guardrails.txt
+            else
+              echo "response-guardrails.txt missing"
+            fi
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Run Python tests
         shell: bash
@@ -124,8 +160,18 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: test-results
-          path: test-results.txt
+          path: |
+            test-results.txt
+            response-guardrails.txt
           if-no-files-found: ignore
+
+      - name: Enforce response guardrail gate
+        shell: bash
+        run: |
+          if [ "${RESPONSE_GUARDRAILS_EXIT:-1}" != "0" ]; then
+            echo "Response guardrail regression check failed"
+            exit 1
+          fi
 
       - name: Validate required files
         shell: bash

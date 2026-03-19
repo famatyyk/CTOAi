@@ -55,6 +55,17 @@ jobs:
           set -e
           echo "PYTEST_EXIT=${PYTEST_EXIT}" >> "$GITHUB_ENV"
 
+      - name: Run response guardrail regression check
+        shell: bash
+        continue-on-error: true
+        run: |
+          set +e
+          set -o pipefail
+          python -m pytest tests/test_response_guardrails.py -q 2>&1 | tee pr-response-guardrails.txt
+          RESPONSE_GUARDRAILS_EXIT=${PIPESTATUS[0]}
+          set -e
+          echo "RESPONSE_GUARDRAILS_EXIT=${RESPONSE_GUARDRAILS_EXIT}" >> "$GITHUB_ENV"
+
       - name: Run flake8
         shell: bash
         continue-on-error: true
@@ -137,6 +148,7 @@ jobs:
               return "\n".join(lines)
           
           pytest_exit = os.environ.get("PYTEST_EXIT", "1")
+          response_guardrails_exit = os.environ.get("RESPONSE_GUARDRAILS_EXIT", "1")
           flake8_exit = os.environ.get("FLAKE8_EXIT", "1")
           pylint_exit = os.environ.get("PYLINT_EXIT", "1")
           
@@ -149,12 +161,18 @@ jobs:
           report.append("| Check | Status | Exit code |")
           report.append("|---|---|---:|")
           report.append(f"| Pytest | {status(pytest_exit)} | {pytest_exit} |")
+          report.append(f"| Response Guardrails | {status(response_guardrails_exit)} | {response_guardrails_exit} |")
           report.append(f"| Flake8 | {status(flake8_exit)} | {flake8_exit} |")
           report.append(f"| Pylint | {status(pylint_exit)} | {pylint_exit} |")
           report.append("")
           report.append("### Pytest tail")
           report.append("```")
           report.append(tail_text("pr-tests.txt"))
+          report.append("```")
+          report.append("")
+          report.append("### Response guardrails tail")
+          report.append("```")
+          report.append(tail_text("pr-response-guardrails.txt"))
           report.append("```")
           report.append("")
           report.append("### Flake8 tail")
@@ -182,6 +200,7 @@ jobs:
           path: |
             pr-quality-report.md
             pr-tests.txt
+            pr-response-guardrails.txt
             pr-flake8.txt
             pr-pylint.txt
           if-no-files-found: warn
@@ -224,7 +243,7 @@ jobs:
       - name: Enforce PR quality gate
         shell: bash
         run: |
-          if [ "$PYTEST_EXIT" != "0" ] || [ "$FLAKE8_EXIT" != "0" ] || [ "$PYLINT_EXIT" != "0" ]; then
+          if [ "$PYTEST_EXIT" != "0" ] || [ "$RESPONSE_GUARDRAILS_EXIT" != "0" ] || [ "$FLAKE8_EXIT" != "0" ] || [ "$PYLINT_EXIT" != "0" ]; then
             echo "Quality gate failed"
             exit 1
           fi
