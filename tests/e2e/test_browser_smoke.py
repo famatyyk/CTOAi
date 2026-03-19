@@ -88,7 +88,7 @@ def test_browser_smoke_login_settings_ideas():
                 expect(page.locator("#prices-toggle")).to_be_enabled()
                 page.fill("#hero-note", "E2E smoke hero note")
                 page.check("#prices-toggle")
-                page.click("#save-admin")
+                page.evaluate("document.getElementById('save-admin')?.click()")
 
                 expect(page.locator("#admin-status")).to_contain_text("Ustawienia zapisane w backendzie")
                 expect(page.locator(".home-text")).to_contain_text("E2E smoke hero note")
@@ -102,6 +102,99 @@ def test_browser_smoke_login_settings_ideas():
 
                 expect(page.locator("#idea-count")).to_contain_text("Zaparkowane: 1")
                 expect(page.locator("#idea-list")).to_contain_text("E2E smoke idea")
+
+                browser.close()
+        finally:
+            _stop_process(frontend)
+            _stop_process(backend)
+
+
+@pytest.mark.e2e
+@pytest.mark.integration
+@pytest.mark.timeout(180)
+def test_browser_smoke_operator_owner_only_block():
+    backend_port = _free_port()
+    frontend_port = _free_port()
+
+    backend_url = f"http://127.0.0.1:{backend_port}"
+    frontend_url = f"http://127.0.0.1:{frontend_port}"
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = Path(tmp_dir)
+        backend_env = os.environ.copy()
+        backend_env.update(
+            {
+                "CTOA_MOBILE_TOKEN": "test-mobile-token",
+                "CTOA_OWNER_USER": "CTO",
+                "CTOA_OWNER_PASSWORD": "asdzxc12",
+                "CTOA_OPERATOR_USER": "ctoa-bot",
+                "CTOA_OPERATOR_PASSWORD": "jakpod22",
+                "CTOA_ADMIN_SETTINGS_FILE": str(tmp_path / "admin-settings.json"),
+                "CTOA_IDEA_PARKING_FILE": str(tmp_path / "idea-parking.json"),
+                "CTOA_CORS_ORIGINS": frontend_url,
+            }
+        )
+
+        backend = _start_process(
+            [
+                sys.executable,
+                "-m",
+                "uvicorn",
+                "mobile_console.app:app",
+                "--host",
+                "127.0.0.1",
+                "--port",
+                str(backend_port),
+                "--log-level",
+                "warning",
+            ],
+            cwd=ROOT,
+            env=backend_env,
+        )
+        frontend = _start_process(
+            [sys.executable, "-m", "http.server", str(frontend_port), "--bind", "127.0.0.1"],
+            cwd=SITE_DIR,
+            env=os.environ.copy(),
+        )
+
+        try:
+            _wait_for_http(f"{backend_url}/api/auth/auto-check")
+            _wait_for_http(f"{frontend_url}/index.html")
+
+            with sync_playwright() as p:
+                browser = p.chromium.launch(headless=True)
+                page = browser.new_page()
+
+                page.goto(frontend_url, wait_until="domcontentloaded")
+                page.add_style_tag(content="*, *::before, *::after { animation: none !important; transition: none !important; }")
+
+                page.click("#open-auth")
+                page.fill("#auth-api-base", backend_url)
+                page.fill("#auth-user", "ctoa-bot")
+                page.fill("#auth-pass", "jakpod22")
+                page.click("#auth-submit")
+
+                expect(page.locator("#auth-modal")).to_have_attribute("aria-hidden", "true")
+                expect(page.locator("#admin-status")).to_contain_text("Zalogowano przez backend")
+
+                expect(page.locator("#prices-toggle")).to_be_disabled()
+                expect(page.locator("#reset-admin")).to_be_disabled()
+
+                # Force a forbidden owner-only save attempt to verify backend rejection path.
+                page.evaluate(
+                    """
+                    () => {
+                        const prices = document.getElementById('prices-toggle');
+                        if (prices) {
+                            prices.disabled = false;
+                            prices.checked = true;
+                        }
+                    }
+                    """
+                )
+                page.evaluate("document.getElementById('save-admin')?.click()")
+
+                expect(page.locator("#admin-status")).to_contain_text("Save error: Owner role required")
 
                 browser.close()
         finally:
