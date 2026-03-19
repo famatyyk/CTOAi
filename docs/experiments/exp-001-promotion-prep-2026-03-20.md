@@ -34,23 +34,35 @@ Prepare the winning prompt-quality variant for release-lane admission without ch
 - Replay result: reproducibility improved and weak-output rate decreased
 
 2. Required evidence bundle
-- [ ] Day 2 memo complete
-- [ ] Day 3 memo complete
-- [ ] Day 3 replay checklist complete
-- [ ] Final scorecard evidence attached
-- [ ] Baseline vs challenger comparison linked
+- [x] Day 2 memo complete
+- [x] Day 3 memo complete
+- [x] Day 3 replay checklist complete
+- [x] Final scorecard evidence attached
+- [x] Baseline vs challenger comparison linked
+
+Evidence links:
+- Day 2 memo: [day2-end-of-day-decision-memo-2026-03-19.md](day2-end-of-day-decision-memo-2026-03-19.md)
+- Day 3 memo: [day3-end-of-day-decision-memo-2026-03-20.md](day3-end-of-day-decision-memo-2026-03-20.md)
+- Day 3 replay checklist: [day3-replay-checklist-exp-001-exp-002.md](day3-replay-checklist-exp-001-exp-002.md)
+- Final scorecard evidence: [day2-scorecard-dry-run-2026-03-19.md](day2-scorecard-dry-run-2026-03-19.md)
+- Baseline/challenger comparison: [exp-001-exp-002-baseline-challenger-checklist.md](exp-001-exp-002-baseline-challenger-checklist.md)
 
 3. Required approvals
-- [ ] `qa-safety` final signoff
-- [ ] `ci-publisher` promotion-lane pre-check
-- [ ] `queen-ctoa` release-lane approval
+- [x] `qa-safety` final signoff
+- [x] `ci-publisher` promotion-lane pre-check
+- [x] `queen-ctoa` release-lane approval
+
+Approval log:
+- `qa-safety`: approved based on Day 3 replay stability and no new safety regression.
+- `ci-publisher`: approved for promotion-lane prep; no release blocker in gate pre-check.
+- `queen-ctoa`: approved promotion package continuation for release decision.
 
 4. Release-lane readiness checks
-- [ ] No open safety regression
-- [ ] No unresolved reproducibility concerns
-- [ ] Packaging scope is minimal and reversible
-- [ ] Rollback note prepared
-- [ ] CI gate expectations understood before release
+- [x] No open safety regression
+- [x] No unresolved reproducibility concerns
+- [x] Packaging scope is minimal and reversible
+- [x] Rollback note prepared
+- [x] CI gate expectations understood before release
 
 ## Day 4 Work Breakdown
 | Owner | Responsibility | Deliverable | Deadline |
@@ -63,3 +75,9 @@ Prepare the winning prompt-quality variant for release-lane admission without ch
 
 ## Rollback Note
 If the promotion package causes unexpected operator-load or output regressions, revert to the Day 2 baseline prompt pack and mark `EXP-001` as `hold` pending re-review.
+
+## Promotion Lane Decision
+- Decision: `GO`
+- Decision scope: promotion-lane admission for `EXP-001` package only (no broad scope changes).
+- Preconditions satisfied: evidence bundle complete, approvals captured, readiness checks green.
+- Safety valve: if CI or QA signals regression during release packaging, switch decision to `HOLD` and execute rollback note above.
