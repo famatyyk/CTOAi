@@ -8,46 +8,46 @@
 - Closed lane: `EXP-002`
 
 ## Day 4 Summary
-- Scope executed:
-- Promotion package completeness:
-- Blockers observed:
-- Confidence level (low/medium/high):
+- Scope executed: promotion package for `EXP-001` finalized and published under controlled release run.
+- Promotion package completeness: complete.
+- Blockers observed: none blocking publication.
+- Confidence level (low/medium/high): high
 
 ## EXP-001 Promotion Prep
 
 ### Evidence Checklist
-- Day 2 memo: complete / incomplete
-- Day 3 memo: complete / incomplete
-- Replay checklist: complete / incomplete
-- Scorecard evidence: complete / incomplete
-- QA signoff: pass / fail
-- Promotion gate pre-check: pass / fail
+- Day 2 memo: complete
+- Day 3 memo: complete
+- Replay checklist: complete
+- Scorecard evidence: complete
+- QA signoff: pass
+- Promotion gate pre-check: pass
 
 ### Decision
-- Proposed decision: go / hold / kill
-- Release-lane ready: yes / no
-- Why:
-- Owner for next step:
+- Proposed decision: go
+- Release-lane ready: yes
+- Why: evidence bundle and approvals were complete with no unresolved safety or reproducibility concerns.
+- Owner for next step: `ci-publisher` (monitoring checkpoints), `qa-safety` (regression watch)
 
 ## EXP-002 Archive Status
-- Archive note complete: yes / no
-- Findings preserved: yes / no
-- Active lane fully closed: yes / no
+- Archive note complete: yes
+- Findings preserved: yes
+- Active lane fully closed: yes
 
 ## Final Day 4 Outcome
 
 ### GO
-- 
+- `EXP-001` promotion lane publication
 
 ### HOLD
-- 
+- none
 
 ### KILL
-- 
+- none
 
 ## Approval Block
-- `queen-ctoa` decision:
-- `pm-roadmap` confirmation:
-- `qa-safety` signoff:
-- `ci-publisher` gate status:
-- Final outcome recorded at:
+- `queen-ctoa` decision: approved (GO)
+- `pm-roadmap` confirmation: promotion lane completed and recorded
+- `qa-safety` signoff: pass
+- `ci-publisher` gate status: pass
+- Final outcome recorded at: 2026-03-19T23:59:00Z

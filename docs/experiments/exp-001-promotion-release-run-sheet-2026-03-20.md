@@ -47,10 +47,10 @@ git pull --ff-only origin main
 - authorize publication window
 
 ## Publish Gate (must pass all)
-- [ ] package scope is minimal and reversible
-- [ ] QA final check = PASS
-- [ ] CI gate check = PASS
-- [ ] owner confirmation = PASS
+- [x] package scope is minimal and reversible
+- [x] QA final check = PASS
+- [x] CI gate check = PASS
+- [x] owner confirmation = PASS
 
 If any gate fails, stop publication and switch to `HOLD`.
 
@@ -87,4 +87,15 @@ CI: PASS/FAIL
 Owner decision: APPROVED/REJECTED
 Rollback executed: YES/NO
 Notes: <1-3 lines>
+```
+
+## Final Close Note (Recorded)
+```text
+EXP-001 promotion run result: STABLE (T+0, monitoring active)
+Timestamp: 2026-03-19T23:59:00Z
+QA: PASS
+CI: PASS
+Owner decision: APPROVED
+Rollback executed: NO
+Notes: Promotion lane published. Keep 24h monitoring checkpoints at T+1h, T+6h, T+24h.
 ```
