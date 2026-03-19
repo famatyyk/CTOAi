@@ -8,16 +8,22 @@ Mobilna aplikacja webowa do podgladu VPS i wykonywania komend.
 - Preset commands
 - Full command execution (po wlaczeniu full access)
 
+Szybki podglad tego, co agenci wygenerowali na VPS:
+- [VPS Agent Outputs Runbook](runbook-vps-agent-outputs.md)
+
 ## Bezpieczenstwo
 Wymagany naglowek tokenu: `X-CTOA-Token`.
 
 Zmienne w `/opt/ctoa/.env`:
 - `CTOA_MOBILE_TOKEN=<silny_token>`
 - `CTOA_MOBILE_FULL_ACCESS=false` (zalecane)
+- `CTOA_ENV=prod` (wlacza twarde zasady produkcyjne)
+- `CTOA_CORS_ORIGINS=https://twoja-domena.pl,https://admin.twoja-domena.pl`
 
 Uwaga:
 - `CTOA_MOBILE_FULL_ACCESS=true` daje praktycznie shell-level kontrolę.
 - Uzywaj tylko przez VPN / trusted network / reverse proxy z TLS.
+- W trybie `CTOA_ENV=prod` backend nie wystartuje, jezeli `CTOA_CORS_ORIGINS` jest puste lub zawiera `*`.
 
 ## Automatyczna rotacja tokenu (co 7 dni)
 

@@ -1,8 +1,20 @@
 const IDEA_STORAGE_KEY = "ctoa_idea_parking_v1";
 const ADMIN_STATE_KEY = "ctoa_admin_state_v1";
-const ADMIN_PASS_KEY = "ctoa_admin_password_v1";
+const ADMIN_USERS_KEY = "ctoa_admin_users_v1";
 const ADMIN_SESSION_KEY = "ctoa_admin_session_v1";
-const ADMIN_USERNAME = "molek";
+const ADMIN_LOCK_KEY = "ctoa_admin_lock_v1";
+const ADMIN_ATTEMPTS_KEY = "ctoa_admin_attempts_v1";
+const ADMIN_API_BASE_KEY = "ctoa_admin_api_base_v1";
+const ADMIN_API_TOKEN_KEY = "ctoa_admin_api_token_v1";
+const ADMIN_API_ROLE_KEY = "ctoa_admin_api_role_v1";
+const ADMIN_API_USER_KEY = "ctoa_admin_api_user_v1";
+const SESSION_MAX_AGE_MS = 20 * 60 * 1000;
+const MAX_FAILED_ATTEMPTS = 5;
+const LOCKOUT_MS = 60 * 1000;
+const ADMIN_ACCOUNTS = {
+  cto: { role: "owner" },
+  "ctoa-bot": { role: "operator" },
+};
 const RUNE_GLYPH_POOL = ["✶", "✦", "✹", "✷", "✧", "✵", "⚡", "✺", "❋", "✴"];
 
 function createIdeaId() {
@@ -14,6 +26,81 @@ function createIdeaId() {
 
 function encodeSecret(input) {
   return btoa(unescape(encodeURIComponent(input)));
+}
+
+function nowTs() {
+  return Date.now();
+}
+
+function normalizeApiBase(value) {
+  return (value || "").trim().replace(/\/$/, "");
+}
+
+function getApiBase() {
+  return normalizeApiBase(localStorage.getItem(ADMIN_API_BASE_KEY) || "");
+}
+
+function setApiBase(value) {
+  const normalized = normalizeApiBase(value);
+  if (normalized) {
+    localStorage.setItem(ADMIN_API_BASE_KEY, normalized);
+  } else {
+    localStorage.removeItem(ADMIN_API_BASE_KEY);
+  }
+}
+
+function getApiToken() {
+  return sessionStorage.getItem(ADMIN_API_TOKEN_KEY) || "";
+}
+
+function setApiSession(token, user, role) {
+  if (token) {
+    sessionStorage.setItem(ADMIN_API_TOKEN_KEY, token);
+  } else {
+    sessionStorage.removeItem(ADMIN_API_TOKEN_KEY);
+  }
+  if (user) {
+    sessionStorage.setItem(ADMIN_API_USER_KEY, user);
+  } else {
+    sessionStorage.removeItem(ADMIN_API_USER_KEY);
+  }
+  if (role) {
+    sessionStorage.setItem(ADMIN_API_ROLE_KEY, role);
+  } else {
+    sessionStorage.removeItem(ADMIN_API_ROLE_KEY);
+  }
+}
+
+async function apiRequest(path, init = {}) {
+  const base = getApiBase();
+  if (!base) {
+    throw new Error("Brak API base URL");
+  }
+  const headers = {
+    ...(init.headers || {}),
+  };
+  const token = getApiToken();
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  const response = await fetch(`${base}${path}`, {
+    ...init,
+    headers,
+  });
+  const text = await response.text();
+  let payload = {};
+  if (text) {
+    try {
+      payload = JSON.parse(text);
+    } catch (_error) {
+      payload = { detail: text };
+    }
+  }
+  if (!response.ok) {
+    const reason = payload?.detail || `HTTP ${response.status}`;
+    throw new Error(reason);
+  }
+  return payload;
 }
 
 function loadJson(key, fallback) {
@@ -31,6 +118,23 @@ function loadJson(key, fallback) {
 
 function saveJson(key, value) {
   localStorage.setItem(key, JSON.stringify(value));
+}
+
+function loadSessionJson(key, fallback) {
+  try {
+    const raw = sessionStorage.getItem(key);
+    if (!raw) {
+      return fallback;
+    }
+    const data = JSON.parse(raw);
+    return data ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function saveSessionJson(key, value) {
+  sessionStorage.setItem(key, JSON.stringify(value));
 }
 
 function loadIdeas() {
@@ -61,7 +165,12 @@ function updateIdeaCount() {
   }
   const parkingMenu = document.querySelector('.menu-item[data-section="parking"]');
   if (parkingMenu) {
-    parkingMenu.textContent = `📜 Parking Pomyslow [${n}]`;
+    const label = parkingMenu.querySelector(".menu-label");
+    if (label) {
+      label.textContent = `Parking Pomyslow [${n}]`;
+    } else {
+      parkingMenu.textContent = `Parking Pomyslow [${n}]`;
+    }
   }
 }
 
@@ -182,17 +291,100 @@ function saveAdminState(state) {
   saveJson(ADMIN_STATE_KEY, state);
 }
 
-function getAdminPassword() {
-  return localStorage.getItem(ADMIN_PASS_KEY) || "";
+async function loadAdminStateFromBackend() {
+  if (!getApiBase()) {
+    return null;
+  }
+  const payload = await apiRequest("/api/admin/settings");
+  const settings = payload?.settings;
+  if (!settings || typeof settings !== "object") {
+    return null;
+  }
+  const normalized = {
+    stealthMode: Boolean(settings.stealthMode),
+    showPrices: Boolean(settings.showPrices),
+    heroNote: String(settings.heroNote || "").trim(),
+  };
+  saveAdminState(normalized);
+  return normalized;
+}
+
+function getAdminUsers() {
+  const fallback = Object.keys(ADMIN_ACCOUNTS).reduce((acc, username) => {
+    const defaultPass = username === "cto" ? encodeSecret("asdzxc12") : "";
+    acc[username] = { role: ADMIN_ACCOUNTS[username].role, pass: defaultPass };
+    return acc;
+  }, {});
+  const users = loadJson(ADMIN_USERS_KEY, fallback);
+  return { ...fallback, ...users };
+}
+
+function saveAdminUsers(users) {
+  saveJson(ADMIN_USERS_KEY, users);
+}
+
+function getUserRecord(username) {
+  const users = getAdminUsers();
+  const normalized = (username || "").trim().toLowerCase();
+  return users[normalized] || null;
+}
+
+function isAdminLocked() {
+  const until = Number(localStorage.getItem(ADMIN_LOCK_KEY) || "0");
+  return until > nowTs();
+}
+
+function getLockSecondsLeft() {
+  const until = Number(localStorage.getItem(ADMIN_LOCK_KEY) || "0");
+  return Math.max(0, Math.ceil((until - nowTs()) / 1000));
+}
+
+function resetAuthFailures() {
+  localStorage.removeItem(ADMIN_ATTEMPTS_KEY);
+  localStorage.removeItem(ADMIN_LOCK_KEY);
+}
+
+function markAuthFailure() {
+  const attempts = Number(localStorage.getItem(ADMIN_ATTEMPTS_KEY) || "0") + 1;
+  if (attempts >= MAX_FAILED_ATTEMPTS) {
+    localStorage.setItem(ADMIN_LOCK_KEY, String(nowTs() + LOCKOUT_MS));
+    localStorage.setItem(ADMIN_ATTEMPTS_KEY, "0");
+    return;
+  }
+  localStorage.setItem(ADMIN_ATTEMPTS_KEY, String(attempts));
 }
 
 function isAdminLoggedIn() {
-  return sessionStorage.getItem(ADMIN_SESSION_KEY) === "1";
+  const session = loadSessionJson(ADMIN_SESSION_KEY, null);
+  if (!session || !session.username || !session.role || !session.loggedAt) {
+    return false;
+  }
+  if (nowTs() - Number(session.loggedAt) > SESSION_MAX_AGE_MS) {
+    sessionStorage.removeItem(ADMIN_SESSION_KEY);
+    return false;
+  }
+  return true;
 }
 
-function setAdminLoggedIn(value) {
-  if (value) {
-    sessionStorage.setItem(ADMIN_SESSION_KEY, "1");
+function getAdminSession() {
+  if (!isAdminLoggedIn()) {
+    return null;
+  }
+  return loadSessionJson(ADMIN_SESSION_KEY, null);
+}
+
+function isOwnerSession() {
+  const session = getAdminSession();
+  return Boolean(session && session.role === "owner");
+}
+
+function setAdminLoggedIn(session) {
+  if (session) {
+    saveSessionJson(ADMIN_SESSION_KEY, {
+      username: session.username,
+      role: session.role,
+      loggedAt: nowTs(),
+    });
   } else {
     sessionStorage.removeItem(ADMIN_SESSION_KEY);
   }
@@ -205,10 +397,16 @@ function applyAdminState(state) {
   const pricesToggle = document.getElementById("prices-toggle");
   const heroNote = document.getElementById("hero-note");
   const homeText = document.querySelector(".home-text");
+  const adminUser = document.getElementById("admin-user-label");
+  const adminRole = document.getElementById("admin-role-label");
+  const resetButton = document.getElementById("reset-admin");
 
-  if (!drawer || !banner || !stealthToggle || !pricesToggle || !heroNote || !homeText) {
+  if (!drawer || !banner || !stealthToggle || !pricesToggle || !heroNote || !homeText || !adminUser || !adminRole || !resetButton) {
     return;
   }
+
+  const session = getAdminSession();
+  const ownerMode = Boolean(session && session.role === "owner");
 
   stealthToggle.checked = state.stealthMode;
   pricesToggle.checked = state.showPrices;
@@ -219,6 +417,11 @@ function applyAdminState(state) {
     drawer.classList.remove("open");
   }
   banner.hidden = !isAdminLoggedIn();
+  adminUser.textContent = session?.username || "-";
+  adminRole.textContent = session?.role || "-";
+
+  pricesToggle.disabled = !ownerMode;
+  resetButton.disabled = !ownerMode;
 
   document.querySelectorAll(".price-tag").forEach((el) => {
     const price = el.getAttribute("data-price") || "";
@@ -305,16 +508,24 @@ function setupAdminAuth() {
   const submit = document.getElementById("auth-submit");
   const status = document.getElementById("auth-status");
   const hint = document.getElementById("auth-hint");
+  const authUserInput = document.getElementById("auth-user");
+  const authPassInput = document.getElementById("auth-pass");
 
   const saveButton = document.getElementById("save-admin");
   const exportButton = document.getElementById("export-admin");
+  const syncButton = document.getElementById("sync-admin");
   const resetButton = document.getElementById("reset-admin");
   const logoutButton = document.getElementById("logout-admin");
   const adminStatus = document.getElementById("admin-status");
+  const apiBaseInput = document.getElementById("api-base");
 
   const stealthToggle = document.getElementById("stealth-toggle");
   const pricesToggle = document.getElementById("prices-toggle");
   const heroNote = document.getElementById("hero-note");
+
+  if (apiBaseInput) {
+    apiBaseInput.value = getApiBase();
+  }
 
   open.addEventListener("click", () => {
     if (isAdminLoggedIn()) {
@@ -324,10 +535,15 @@ function setupAdminAuth() {
       }
       return;
     }
-    const hasPassword = Boolean(getAdminPassword());
+    const users = getAdminUsers();
+    const hasPassword = Object.values(users).some((entry) => Boolean(entry.pass));
+    const hasApiBase = Boolean(getApiBase());
     hint.textContent = hasPassword
       ? "Zaloguj sie jako administrator."
-      : "Pierwsze logowanie. Ustaw haslo dla konta molek.";
+      : "Pierwsze logowanie. Ustaw haslo dla wybranego konta.";
+    if (hasApiBase) {
+      hint.textContent = "Logowanie przez backend API jest aktywne.";
+    }
     status.textContent = "";
     showAuthModal(true);
   });
@@ -346,44 +562,104 @@ function setupAdminAuth() {
     }
   });
 
-  submit.addEventListener("click", () => {
-    const user = (document.getElementById("auth-user").value || "").trim().toLowerCase();
-    const pass = document.getElementById("auth-pass").value || "";
+  const submitAuth = async () => {
+    const user = (authUserInput?.value || "").trim().toLowerCase();
+    const pass = authPassInput?.value || "";
 
-    if (user !== ADMIN_USERNAME) {
+    if (apiBaseInput) {
+      setApiBase(apiBaseInput.value);
+    }
+
+    const apiBase = getApiBase();
+    if (apiBase) {
+      try {
+        const login = await apiRequest("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: user, password: pass }),
+        });
+        setApiSession(login.token, login.username, login.role);
+        setAdminLoggedIn({ username: login.username, role: login.role });
+        resetAuthFailures();
+        try {
+          const remoteState = await loadAdminStateFromBackend();
+          if (remoteState) {
+            applyAdminState(remoteState);
+          }
+        } catch (_error) {
+          // Keep local state when remote panel settings are unavailable.
+        }
+        showAuthModal(false);
+        applyAdminState(loadAdminState());
+        adminStatus.textContent = `Zalogowano przez backend jako ${login.username} (${login.role}).`;
+        return;
+      } catch (error) {
+        status.textContent = `Backend auth error: ${error.message || error}`;
+        return;
+      }
+    }
+
+    if (isAdminLocked()) {
+      status.textContent = `Zbyt wiele prob. Sprobuj za ${getLockSecondsLeft()}s.`;
+      return;
+    }
+
+    const account = getUserRecord(user);
+    if (!account) {
+      markAuthFailure();
       status.textContent = "Nieprawidlowy login.";
       return;
     }
 
-    const storedPassword = getAdminPassword();
-    if (!storedPassword) {
+    if (!account.pass) {
       if (pass.length < 8) {
         status.textContent = "Ustaw haslo min. 8 znakow.";
         return;
       }
-      localStorage.setItem(ADMIN_PASS_KEY, encodeSecret(pass));
-      setAdminLoggedIn(true);
+      const users = getAdminUsers();
+      users[user] = { ...users[user], pass: encodeSecret(pass) };
+      saveAdminUsers(users);
+      setAdminLoggedIn({ username: user, role: account.role });
+      resetAuthFailures();
       showAuthModal(false);
       applyAdminState(loadAdminState());
-      adminStatus.textContent = "Pierwsze logowanie zakonczone.";
+      adminStatus.textContent = `Pierwsze logowanie zakonczone (${account.role}).`;
       return;
     }
 
-    if (encodeSecret(pass) !== storedPassword) {
+    if (encodeSecret(pass) !== account.pass) {
+      markAuthFailure();
       status.textContent = "Nieprawidlowe haslo.";
       return;
     }
 
-    setAdminLoggedIn(true);
+    setAdminLoggedIn({ username: user, role: account.role });
+    resetAuthFailures();
     showAuthModal(false);
     applyAdminState(loadAdminState());
-    adminStatus.textContent = "Zalogowano.";
+    adminStatus.textContent = `Zalogowano jako ${user} (${account.role}).`;
+  };
+
+  submit.addEventListener("click", submitAuth);
+
+  [authUserInput, authPassInput].forEach((input) => {
+    input?.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter") {
+        return;
+      }
+      event.preventDefault();
+      submitAuth();
+    });
   });
 
-  saveButton.addEventListener("click", () => {
+  saveButton.addEventListener("click", async () => {
     if (!isAdminLoggedIn()) {
       adminStatus.textContent = "Brak sesji admina.";
       return;
+    }
+
+    if (apiBaseInput) {
+      setApiBase(apiBaseInput.value);
     }
 
     const next = {
@@ -392,10 +668,56 @@ function setupAdminAuth() {
       heroNote: heroNote.value.trim(),
     };
 
+    const apiBase = getApiBase();
+    if (apiBase) {
+      try {
+        const payload = await apiRequest("/api/admin/settings", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(next),
+        });
+        const saved = payload?.settings || next;
+        saveAdminState(saved);
+        applyAdminState(saved);
+        adminStatus.textContent = `Ustawienia zapisane w backendzie (${payload?.saved_role || "unknown"}).`;
+        return;
+      } catch (error) {
+        adminStatus.textContent = `Save error: ${error.message || error}`;
+        return;
+      }
+    }
+
     saveAdminState(next);
     applyAdminState(next);
     adminStatus.textContent = "Ustawienia zapisane.";
   });
+
+  if (syncButton) {
+    syncButton.addEventListener("click", async () => {
+      if (!isAdminLoggedIn()) {
+        adminStatus.textContent = "Brak sesji admina.";
+        return;
+      }
+      if (apiBaseInput) {
+        setApiBase(apiBaseInput.value);
+      }
+      if (!getApiBase()) {
+        adminStatus.textContent = "Brak API base URL.";
+        return;
+      }
+      try {
+        const settings = await loadAdminStateFromBackend();
+        const snapshot = await apiRequest("/api/status");
+        const services = snapshot?.services ? Object.keys(snapshot.services).length : 0;
+        if (settings) {
+          applyAdminState(settings);
+        }
+        adminStatus.textContent = `Backend OK. Services: ${services}. Ustawienia zsynchronizowane.`;
+      } catch (error) {
+        adminStatus.textContent = `Sync error: ${error.message || error}`;
+      }
+    });
+  }
 
   exportButton.addEventListener("click", () => {
     if (!isAdminLoggedIn()) {
@@ -417,12 +739,16 @@ function setupAdminAuth() {
       adminStatus.textContent = "Brak sesji admina.";
       return;
     }
+    if (!isOwnerSession()) {
+      adminStatus.textContent = "Ta operacja wymaga roli owner.";
+      return;
+    }
     if (!confirm("To wyczysci caly localStorage dla tej domeny. Kontynuowac?")) {
       return;
     }
 
     localStorage.clear();
-    setAdminLoggedIn(false);
+    setAdminLoggedIn(null);
     saveAdminState(getDefaultAdminState());
     saveIdeas([]);
     renderIdeas();
@@ -430,8 +756,16 @@ function setupAdminAuth() {
     adminStatus.textContent = "Wyczyszczono localStorage i wylogowano.";
   });
 
-  logoutButton.addEventListener("click", () => {
-    setAdminLoggedIn(false);
+  logoutButton.addEventListener("click", async () => {
+    if (getApiBase() && getApiToken()) {
+      try {
+        await apiRequest("/api/auth/logout", { method: "POST" });
+      } catch (_error) {
+        // Ignore backend logout failures during local cleanup.
+      }
+    }
+    setApiSession("", "", "");
+    setAdminLoggedIn(null);
     applyAdminState(loadAdminState());
     adminStatus.textContent = "Wylogowano.";
   });
@@ -718,3 +1052,15 @@ setupAdminDrawerHover();
 setupMenuPanels();
 setupDecks();
 applyAdminState(loadAdminState());
+
+if (isAdminLoggedIn() && getApiBase() && getApiToken()) {
+  loadAdminStateFromBackend()
+    .then((remoteState) => {
+      if (remoteState) {
+        applyAdminState(remoteState);
+      }
+    })
+    .catch(() => {
+      // Ignore startup sync failures; local state remains active.
+    });
+}

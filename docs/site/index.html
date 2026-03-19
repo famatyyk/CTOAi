@@ -14,7 +14,7 @@
       href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;800&family=Rajdhani:wght@500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="style.css?v=20260319j" />
+    <link rel="stylesheet" href="style.css?v=20260319l" />
   </head>
   <body>
     <div class="fx-layer" aria-hidden="true">
@@ -32,7 +32,7 @@
         CTOA Realm
       </a>
       <div class="top-actions">
-        <div class="build-strip">Build: v2026.03.19-j</div>
+        <div class="build-strip">Build: v2026.03.19-l</div>
         <div class="admin-hint">hover: panel</div>
         <button id="open-auth" class="btn btn-small btn-ghost" type="button">Admin</button>
       </div>
@@ -41,10 +41,10 @@
     <main id="realm-root" class="realm-root container">
       <aside class="realm-menu" aria-label="Sekcje">
         <p class="menu-title">Sekcje</p>
-        <button class="menu-item" data-section="oferty" type="button">⚔ Oferty MMO</button>
-        <button class="menu-item" data-section="projekty" type="button">🔮 Projekty Live</button>
-        <button class="menu-item" data-section="parking" type="button">📜 Parking Pomyslow</button>
-        <button class="menu-item" data-section="kontakt" type="button">🛡 Kontakt</button>
+        <button class="menu-item" data-section="oferty" type="button"><span class="menu-icon icon-sword" aria-hidden="true"></span><span class="menu-label">Oferty MMO</span></button>
+        <button class="menu-item" data-section="projekty" type="button"><span class="menu-icon icon-orb" aria-hidden="true"></span><span class="menu-label">Projekty Live</span></button>
+        <button class="menu-item" data-section="parking" type="button"><span class="menu-icon icon-scroll" aria-hidden="true"></span><span class="menu-label">Parking Pomyslow</span></button>
+        <button class="menu-item" data-section="kontakt" type="button"><span class="menu-icon icon-shield" aria-hidden="true"></span><span class="menu-label">Kontakt</span></button>
       </aside>
 
       <section class="realm-stage" aria-live="polite">
@@ -170,7 +170,7 @@
 
     <aside id="admin-drawer" class="admin-drawer" hidden>
       <h2>Panel Admina</h2>
-      <p>Zalogowano jako <strong>molek</strong></p>
+      <p>Zalogowano jako <strong id="admin-user-label">-</strong> <span class="role-pill" id="admin-role-label">-</span></p>
       <div class="admin-grid">
         <label class="toggle">
           <input id="stealth-toggle" type="checkbox" checked />
@@ -182,12 +182,16 @@
         </label>
         <label for="hero-note">Notatka na ekran glowny</label>
         <textarea id="hero-note" rows="3" placeholder="Np. Zamkniete testy beta"></textarea>
+        <label for="api-base">API base (opcjonalnie)</label>
+        <input id="api-base" type="text" placeholder="https://twoj-vps:8787" />
         <div class="admin-actions">
           <button id="save-admin" class="btn" type="button">Zapisz ustawienia</button>
+          <button id="sync-admin" class="btn btn-ghost" type="button">Sync z backendu</button>
           <button id="export-admin" class="btn btn-ghost" type="button">Pobierz JSON</button>
           <button id="reset-admin" class="btn btn-ghost" type="button">Reset localStorage</button>
           <button id="logout-admin" class="btn btn-ghost" type="button">Wyloguj</button>
         </div>
+        <p class="small-note">Rola <strong>owner</strong> ma pelny dostep. Rola <strong>operator</strong> nie moze resetowac storage i publikowac cen.</p>
         <p id="admin-status" class="admin-status" aria-live="polite"></p>
       </div>
     </aside>
@@ -195,9 +199,9 @@
     <div id="auth-modal" class="auth-modal" aria-hidden="true">
       <div class="auth-card" role="dialog" aria-modal="true" aria-labelledby="auth-title">
         <h2 id="auth-title">Logowanie Admin</h2>
-        <p id="auth-hint" class="auth-hint">Konto administratora: molek. Przy pierwszym logowaniu ustawiasz haslo.</p>
+        <p id="auth-hint" class="auth-hint">Dostepne konta: cto (owner), ctoa-bot (operator). Przy pierwszym logowaniu ustawiasz haslo dla wybranego konta.</p>
         <label for="auth-user">Login</label>
-        <input id="auth-user" type="text" placeholder="molek" autocomplete="username" />
+        <input id="auth-user" type="text" placeholder="cto lub ctoa-bot" autocomplete="username" />
         <label for="auth-pass">Haslo</label>
         <input id="auth-pass" type="password" placeholder="min. 8 znakow" autocomplete="current-password" />
         <div class="auth-actions">
@@ -208,6 +212,16 @@
       </div>
     </div>
 
-    <script src="script.js?v=20260319j"></script>
+    <footer class="site-footer container">
+      <p>
+        Visual style targets old-school MMO. Sprite pack support prepared for OpenTibia assets.
+        If used in production, keep attribution for authors under CC-BY 4.0:
+        <a href="https://github.com/peonso/opentibia_sprite_pack" target="_blank" rel="noreferrer">OpenTibia Sprite Pack</a>
+        and
+        <a href="https://github.com/peonso/opentibia_sprite_pack/blob/master/AUTHORS.md" target="_blank" rel="noreferrer">AUTHORS.md</a>.
+      </p>
+    </footer>
+
+    <script src="script.js?v=20260319l"></script>
   </body>
 </html>

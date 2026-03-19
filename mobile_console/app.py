@@ -5,11 +5,15 @@ import shutil
 import subprocess
 import json
 import time
+import hmac
+import secrets
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import List, Optional
+from threading import Lock
+from typing import Any, Dict, List, Optional
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -19,8 +23,29 @@ STATIC_DIR = ROOT / "mobile_console" / "static"
 AUDIT_LOG = ROOT / "logs" / "mobile-console-audit.log"
 AUTO_TRAINER_DIR = Path(os.environ.get("CTOA_TRAINING_REPORT_DIR", str(ROOT / "runtime" / "training-reports")))
 GENERATED_DIR = Path(os.environ.get("CTOA_GENERATED_DIR", "/opt/ctoa/generated"))
+ADMIN_SETTINGS_FILE = Path(os.environ.get("CTOA_ADMIN_SETTINGS_FILE", str(ROOT / "runtime" / "admin-panel-settings.json")))
+
+
+def _is_production_env() -> bool:
+    return os.getenv("CTOA_ENV", "").strip().lower() in {"prod", "production"}
 
 app = FastAPI(title="CTOA Mobile Console", version="1.0.0")
+
+cors_origins = [o.strip() for o in os.getenv("CTOA_CORS_ORIGINS", "*").split(",") if o.strip()]
+if _is_production_env() and (not cors_origins or "*" in cors_origins):
+    raise RuntimeError(
+        "Refusing to start in production with wildcard CORS. "
+        "Set CTOA_CORS_ORIGINS to explicit origins, e.g. https://twoja-domena.pl"
+    )
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=cors_origins or ["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 
@@ -38,6 +63,61 @@ class IntelMissionRequest(BaseModel):
     urls: list[str] = Field(default_factory=list, max_length=25)
     force_rescout: bool = False
     trigger_now: bool = True
+
+
+class AuthLoginRequest(BaseModel):
+    username: str = Field(min_length=3, max_length=64)
+    password: str = Field(min_length=8, max_length=256)
+
+
+class AdminSettingsPayload(BaseModel):
+    stealthMode: bool = True
+    showPrices: bool = False
+    heroNote: str = Field(default="", max_length=500)
+
+
+ROLE_WEIGHT = {"operator": 1, "owner": 2}
+SESSION_TTL_SECONDS = int(os.getenv("CTOA_SESSION_TTL_SECONDS", "1800"))
+_SESSIONS: Dict[str, Dict[str, Any]] = {}
+_SESSIONS_LOCK = Lock()
+_ADMIN_SETTINGS_LOCK = Lock()
+
+
+def _default_admin_settings() -> dict[str, Any]:
+    return {
+        "stealthMode": True,
+        "showPrices": False,
+        "heroNote": "",
+    }
+
+
+def _normalize_admin_settings(payload: dict[str, Any]) -> dict[str, Any]:
+    default = _default_admin_settings()
+    data = {**default, **(payload or {})}
+    data["stealthMode"] = bool(data.get("stealthMode", default["stealthMode"]))
+    data["showPrices"] = bool(data.get("showPrices", default["showPrices"]))
+    hero = str(data.get("heroNote", default["heroNote"]))
+    data["heroNote"] = hero[:500]
+    return data
+
+
+def _read_admin_settings() -> dict[str, Any]:
+    with _ADMIN_SETTINGS_LOCK:
+        if not ADMIN_SETTINGS_FILE.exists():
+            return _default_admin_settings()
+        try:
+            payload = json.loads(ADMIN_SETTINGS_FILE.read_text(encoding="utf-8"))
+        except Exception:
+            return _default_admin_settings()
+        return _normalize_admin_settings(payload)
+
+
+def _write_admin_settings(payload: dict[str, Any]) -> dict[str, Any]:
+    data = _normalize_admin_settings(payload)
+    with _ADMIN_SETTINGS_LOCK:
+        ADMIN_SETTINGS_FILE.parent.mkdir(parents=True, exist_ok=True)
+        ADMIN_SETTINGS_FILE.write_text(json.dumps(data, ensure_ascii=True, indent=2), encoding="utf-8")
+    return data
 
 
 def _mobile_token() -> str:
@@ -68,14 +148,117 @@ def _allowed_commands() -> List[str]:
     ]
 
 
-def _require_token(x_ctoa_token: Optional[str] = Header(default=None)) -> None:
+def _normalize_user(username: str) -> str:
+    return username.strip().lower()
+
+
+def _admin_credentials() -> dict[str, dict[str, str]]:
+    owner_user = _normalize_user(os.getenv("CTOA_OWNER_USER", "CTO"))
+    operator_user = _normalize_user(os.getenv("CTOA_OPERATOR_USER", "ctoa-bot"))
+    owner_pass = os.getenv("CTOA_OWNER_PASSWORD", "asdzxc12")
+    operator_pass = os.getenv("CTOA_OPERATOR_PASSWORD", "")
+
+    creds = {
+        owner_user: {"role": "owner", "password": owner_pass},
+    }
+    if operator_pass:
+        creds[operator_user] = {"role": "operator", "password": operator_pass}
+    return creds
+
+
+def _extract_bearer(authorization: Optional[str]) -> str:
+    if not authorization:
+        return ""
+    auth = authorization.strip()
+    if not auth.lower().startswith("bearer "):
+        return ""
+    return auth[7:].strip()
+
+
+def _create_session(username: str, role: str) -> tuple[str, int]:
+    token = secrets.token_urlsafe(32)
+    expires_at = int(time.time()) + SESSION_TTL_SECONDS
+    with _SESSIONS_LOCK:
+        _SESSIONS[token] = {
+            "username": username,
+            "role": role,
+            "expires_at": expires_at,
+        }
+    return token, expires_at
+
+
+def _get_session(token: str) -> dict[str, Any] | None:
+    if not token:
+        return None
+    with _SESSIONS_LOCK:
+        session = _SESSIONS.get(token)
+        if not session:
+            return None
+        if int(session.get("expires_at", 0)) <= int(time.time()):
+            _SESSIONS.pop(token, None)
+            return None
+        return dict(session)
+
+
+def _delete_session(token: str) -> None:
+    if not token:
+        return
+    with _SESSIONS_LOCK:
+        _SESSIONS.pop(token, None)
+
+
+def _try_auth_context(
+    x_ctoa_token: Optional[str] = None,
+    authorization: Optional[str] = None,
+    x_ctoa_session: Optional[str] = None,
+) -> dict[str, Any] | None:
+    # Backward-compatible owner auth using static token.
     expected = _mobile_token()
-    if x_ctoa_token != expected:
+    if x_ctoa_token and hmac.compare_digest(x_ctoa_token, expected):
+        return {
+            "username": os.getenv("CTOA_OWNER_USER", "CTO"),
+            "role": "owner",
+            "auth_mode": "legacy_token",
+            "session_token": None,
+        }
+
+    session_token = x_ctoa_session or _extract_bearer(authorization)
+    session = _get_session(session_token)
+    if session:
+        return {
+            "username": session["username"],
+            "role": session["role"],
+            "auth_mode": "session",
+            "session_token": session_token,
+        }
+
+    return None
+
+
+def _token_valid(
+    x_ctoa_token: Optional[str],
+    authorization: Optional[str],
+    x_ctoa_session: Optional[str],
+) -> bool:
+    return _try_auth_context(x_ctoa_token=x_ctoa_token, authorization=authorization, x_ctoa_session=x_ctoa_session) is not None
+
+
+def require_operator(
+    x_ctoa_token: Optional[str] = Header(default=None),
+    authorization: Optional[str] = Header(default=None),
+    x_ctoa_session: Optional[str] = Header(default=None),
+) -> dict[str, Any]:
+    ctx = _try_auth_context(x_ctoa_token=x_ctoa_token, authorization=authorization, x_ctoa_session=x_ctoa_session)
+    if not ctx:
         raise HTTPException(status_code=401, detail="Unauthorized")
+    return ctx
 
 
-def _token_valid(x_ctoa_token: Optional[str]) -> bool:
-    return bool(x_ctoa_token) and x_ctoa_token == _mobile_token()
+def require_owner(ctx: dict[str, Any] = Depends(require_operator)) -> dict[str, Any]:
+    role = str(ctx.get("role", "operator"))
+    if ROLE_WEIGHT.get(role, 0) < ROLE_WEIGHT["owner"]:
+        raise HTTPException(status_code=403, detail="Owner role required")
+    return ctx
 
 
 def _run(cmd: str, timeout: int = 20, cwd: Optional[str] = None) -> dict:
@@ -113,35 +296,88 @@ def index() -> FileResponse:
 
 
 @app.get("/api/health")
-def health(_: None = Depends(_require_token)) -> dict:
-    return {"ok": True, "full_access": _full_access()}
+def health(ctx: dict[str, Any] = Depends(require_operator)) -> dict:
+    return {"ok": True, "full_access": _full_access(), "role": ctx["role"], "username": ctx["username"]}
+
+
+@app.post("/api/auth/login")
+def auth_login(req: AuthLoginRequest, request: Request) -> dict:
+    username = _normalize_user(req.username)
+    creds = _admin_credentials()
+    account = creds.get(username)
+    if not account:
+        _audit(request, f"auth_login:{username}", 401)
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    if not hmac.compare_digest(req.password, account["password"]):
+        _audit(request, f"auth_login:{username}", 401)
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    token, expires_at = _create_session(username=username, role=account["role"])
+    _audit(request, f"auth_login:{username}", 0)
+    return {
+        "ok": True,
+        "token": token,
+        "token_type": "bearer",
+        "expires_in": SESSION_TTL_SECONDS,
+        "expires_at": datetime.fromtimestamp(expires_at, tz=timezone.utc).isoformat(),
+        "role": account["role"],
+        "username": username,
+    }
+
+
+@app.get("/api/auth/me")
+def auth_me(ctx: dict[str, Any] = Depends(require_operator)) -> dict:
+    return {
+        "ok": True,
+        "username": ctx["username"],
+        "role": ctx["role"],
+        "auth_mode": ctx["auth_mode"],
+    }
+
+
+@app.post("/api/auth/logout")
+def auth_logout(ctx: dict[str, Any] = Depends(require_operator)) -> dict:
+    token = str(ctx.get("session_token") or "")
+    if token:
+        _delete_session(token)
+    return {"ok": True}
 
 
 @app.get("/api/auth/auto-check")
-def auth_auto_check(x_ctoa_token: Optional[str] = Header(default=None)) -> dict:
-    valid = _token_valid(x_ctoa_token)
+def auth_auto_check(
+    x_ctoa_token: Optional[str] = Header(default=None),
+    authorization: Optional[str] = Header(default=None),
+    x_ctoa_session: Optional[str] = Header(default=None),
+) -> dict:
+    ctx = _try_auth_context(x_ctoa_token=x_ctoa_token, authorization=authorization, x_ctoa_session=x_ctoa_session)
+    valid = ctx is not None
     payload = {
         "ok": valid,
-        "token_present": bool(x_ctoa_token),
+        "token_present": bool(x_ctoa_token or authorization or x_ctoa_session),
         "token_valid": valid,
         "full_access": _full_access() if valid else False,
         "checked_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
     }
+    if ctx:
+        payload["username"] = ctx["username"]
+        payload["role"] = ctx["role"]
+        payload["auth_mode"] = ctx["auth_mode"]
     if valid:
         timer = _run("systemctl is-active ctoa-agents-orchestrator.timer", timeout=5)
         payload["orchestrator_timer"] = timer["stdout"].strip() or "unknown"
     else:
-        payload["hint"] = "Zapisz aktualny CTOA_MOBILE_TOKEN i sprobuj ponownie"
+        payload["hint"] = "Uzyj loginu /api/auth/login i przeslij Authorization: Bearer <token>"
     return payload
 
 
 @app.get("/api/presets")
-def presets(_: None = Depends(_require_token)) -> dict:
-    return {"commands": _allowed_commands()}
+def presets(ctx: dict[str, Any] = Depends(require_operator)) -> dict:
+    return {"commands": _allowed_commands(), "role": ctx["role"]}
 
 
 @app.get("/api/status")
-def status(_: None = Depends(_require_token)) -> dict:
+def status(_: dict[str, Any] = Depends(require_operator)) -> dict:
     checks = {
         "runner_timer": "systemctl is-active ctoa-runner.timer",
         "report_timer": "systemctl is-active ctoa-report.timer",
@@ -179,6 +415,31 @@ def status(_: None = Depends(_require_token)) -> dict:
     }
 
 
+@app.get("/api/admin/settings")
+def get_admin_settings(_: dict[str, Any] = Depends(require_operator)) -> dict:
+    return {
+        "ok": True,
+        "settings": _read_admin_settings(),
+        "path": str(ADMIN_SETTINGS_FILE),
+    }
+
+
+@app.put("/api/admin/settings")
+def put_admin_settings(
+    req: AdminSettingsPayload,
+    request: Request,
+    ctx: dict[str, Any] = Depends(require_owner),
+) -> dict:
+    saved = _write_admin_settings(req.model_dump())
+    _audit(request, f"admin_settings_save:{ctx.get('username','unknown')}", 0)
+    return {
+        "ok": True,
+        "settings": saved,
+        "saved_by": ctx.get("username"),
+        "saved_role": ctx.get("role"),
+    }
+
+
 @app.get("/api/logs")
 def logs(
     target: str = Query(
@@ -188,7 +449,7 @@ def logs(
                 "|agent_validator|agent_publisher)$",
     ),
     lines: int = Query(default=120, ge=10, le=500),
-    _: None = Depends(_require_token),
+    _: dict[str, Any] = Depends(require_operator),
 ) -> dict:
     mapping = {
         "runner":            "/opt/ctoa/logs/runner.log",
@@ -209,7 +470,7 @@ def logs(
 
 
 @app.post("/api/command")
-def command(req: CommandRequest, request: Request, _: None = Depends(_require_token)) -> dict:
+def command(req: CommandRequest, request: Request, _: dict[str, Any] = Depends(require_owner)) -> dict:
     cmd = req.command.strip()
 
     if not _full_access():
@@ -261,7 +522,7 @@ def _db_exec(sql: str, params: tuple = ()) -> dict:
 def server_register(
     req: ServerRegisterRequest,
     request: Request,
-    _: None = Depends(_require_token),
+    _: dict[str, Any] = Depends(require_owner),
 ) -> dict:
     url = _validate_url(req.url)
 
@@ -382,7 +643,7 @@ def _sync_mythibia_to_client(source_dir: Path) -> dict:
 def launch_intel_mission(
     req: IntelMissionRequest,
     request: Request,
-    _: None = Depends(_require_token),
+    _: dict[str, Any] = Depends(require_owner),
 ) -> dict:
     urls = req.urls or _default_intel_urls()
     sanitized: list[str] = []
@@ -425,7 +686,7 @@ def launch_intel_mission(
 
 
 @app.get("/api/agents/intel/report")
-def intel_report(_: None = Depends(_require_token)) -> dict:
+def intel_report(_: dict[str, Any] = Depends(require_operator)) -> dict:
     servers_res = _db_exec(
         "SELECT status, COUNT(*) FROM servers GROUP BY status ORDER BY status"
     )
@@ -477,7 +738,7 @@ def intel_report(_: None = Depends(_require_token)) -> dict:
 
 
 @app.get("/api/agents/auto-trainer/latest")
-def auto_trainer_latest(_: None = Depends(_require_token)) -> dict:
+def auto_trainer_latest(_: dict[str, Any] = Depends(require_operator)) -> dict:
     latest_md = AUTO_TRAINER_DIR / "latest.md"
     latest_json = AUTO_TRAINER_DIR / "latest.json"
 
@@ -516,7 +777,7 @@ def auto_trainer_latest(_: None = Depends(_require_token)) -> dict:
 
 
 @app.post("/api/agents/mythibia/run")
-def mythibia_one_click(request: Request, _: None = Depends(_require_token)) -> dict:
+def mythibia_one_click(request: Request, _: dict[str, Any] = Depends(require_owner)) -> dict:
     mythibia_url = "https://mythibia.online"
     res = _db_exec(
         "INSERT INTO servers (url, status) VALUES (%s, 'NEW') "
@@ -570,7 +831,7 @@ def mythibia_one_click(request: Request, _: None = Depends(_require_token)) -> d
 # ── Dashboard ────────────────────────────────────────────────────────────────
 
 @app.get("/api/dashboard")
-def dashboard(_: None = Depends(_require_token)) -> dict:
+def dashboard(_: dict[str, Any] = Depends(require_operator)) -> dict:
     servers_res = _db_exec(
         "SELECT id, url, status, created_at FROM servers ORDER BY id DESC LIMIT 20",
     )
@@ -603,7 +864,7 @@ def dashboard(_: None = Depends(_require_token)) -> dict:
 
 
 @app.get("/api/agents/status")
-def agents_status(_: None = Depends(_require_token)) -> dict:
+def agents_status(_: dict[str, Any] = Depends(require_operator)) -> dict:
     units = {
         "orchestrator": "ctoa-agents-orchestrator.service",
         "orchestrator_timer": "ctoa-agents-orchestrator.timer",

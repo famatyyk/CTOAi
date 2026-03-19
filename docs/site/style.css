@@ -175,6 +175,16 @@ body {
   letter-spacing: 0.06em;
 }
 
+.site-footer {
+  padding: 0.5rem 0 0.9rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.site-footer a {
+  color: var(--teal);
+}
+
 .btn {
   appearance: none;
   border: 1px solid transparent;
@@ -198,6 +208,13 @@ body {
   background: rgba(10, 18, 35, 0.72);
   color: var(--ink);
   border-color: rgba(215, 177, 94, 0.35);
+}
+
+.btn:disabled,
+.btn-ghost:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .btn-small {
@@ -234,6 +251,9 @@ body {
 }
 
 .menu-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.58rem;
   text-align: left;
   width: 100%;
   border: 1px solid rgba(49, 69, 109, 0.7);
@@ -254,6 +274,44 @@ body {
   border-color: rgba(215, 177, 94, 0.8);
   background: rgba(24, 37, 67, 0.95);
   transform: translateX(4px);
+}
+
+.menu-icon {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-image: url("assets/opentibia/ui-sprites.png");
+  background-repeat: no-repeat;
+  background-size: 512px 1504px;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 0 6px rgba(24, 223, 198, 0.18));
+}
+
+.menu-icon::before {
+  content: "";
+}
+
+.menu-label {
+  flex: 1;
+}
+
+.icon-sword {
+  background-position: -192px 0;
+}
+
+.icon-orb {
+  background-position: -160px -160px;
+}
+
+.icon-scroll {
+  background-position: -32px -32px;
+}
+
+.icon-shield {
+  background-position: -224px -32px;
 }
 
 .realm-stage {
@@ -735,6 +793,19 @@ textarea {
   color: var(--teal);
   margin: 0;
   min-height: 1.2rem;
+}
+
+.role-pill {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(47, 212, 191, 0.5);
+  border-radius: 999px;
+  padding: 0.1rem 0.45rem;
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--teal);
+  margin-left: 0.32rem;
 }
 
 .auth-modal {
