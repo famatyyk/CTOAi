@@ -71,7 +71,7 @@ Create `.env` file on VPS:
 ssh -i ~/.ssh/ctoa_vps_ed25519 root@46.225.110.52 << 'EOF'
 cat > /opt/ctoa/.env << 'ENVFILE'
 # GitHub
-GITHUB_PAT=ghp_xxxxxxxxxxxxxxxxxxxx
+GITHUB_PAT=your_token_here
 
 # AI Services
 OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxxxxxx

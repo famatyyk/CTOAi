@@ -59,7 +59,7 @@ $env:CTOA_VPS_USER = "root"
 $env:CTOA_VPS_KEY_PATH = "$env:USERPROFILE\.ssh\ctoa_vps_ed25519"
 
 # Optional (only if testing agent execution):
-$env:CTOA_GITHUB_PAT = "ghp_xxxxxxxxxxxxxxxxxxxx"
+$env:CTOA_GITHUB_PAT = "your_token_here"
 
 # Persist to user profile:
 [Environment]::SetEnvironmentVariable("CTOA_VPS_HOST", "46.225.110.52", "User")
