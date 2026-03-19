@@ -3,6 +3,7 @@ import json
 import os
 from collections import Counter
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 from urllib.request import Request, urlopen
 
@@ -32,6 +33,72 @@ def iso_week_key(now: datetime) -> str:
 
 def parse_date(ts: str) -> datetime:
     return datetime.fromisoformat(ts.replace("Z", "+00:00"))
+
+
+def _read_latency_kpi() -> Dict[str, Any]:
+    manifests_dir = Path(os.getenv("CTOA_GENERATOR_MANIFEST_DIR", "/opt/ctoa/generated/manifests"))
+    latest_file = manifests_dir / "latest.json"
+    if not latest_file.exists():
+        return {"available": False, "reason": "latest manifest not found"}
+
+    try:
+        latest = json.loads(latest_file.read_text(encoding="utf-8"))
+    except Exception as exc:
+        return {"available": False, "reason": f"latest manifest parse error: {exc}"}
+
+    run_id = str(latest.get("run_id", "")).strip()
+    manifest_path = Path(str(latest.get("manifest_path", "")).strip())
+    if not manifest_path.exists() and run_id:
+        candidate = manifests_dir / run_id / "manifest.json"
+        if candidate.exists():
+            manifest_path = candidate
+    if not manifest_path.exists():
+        return {"available": False, "reason": "manifest.json not found"}
+
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        return {"available": False, "reason": f"manifest parse error: {exc}"}
+
+    rows = manifest.get("generated") if isinstance(manifest, dict) else []
+    if not isinstance(rows, list):
+        return {"available": False, "reason": "invalid generated rows"}
+
+    latencies: List[float] = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        queued = str(row.get("queued_at") or "").strip()
+        generated = str(row.get("generated_at") or "").strip()
+        if not queued or not generated:
+            continue
+        try:
+            q_ts = parse_date(queued)
+            g_ts = parse_date(generated)
+        except Exception:
+            continue
+        delta = (g_ts - q_ts).total_seconds()
+        if delta >= 0:
+            latencies.append(delta)
+
+    if not latencies:
+        return {"available": False, "reason": "no queue/generated timestamp pairs"}
+
+    latencies.sort()
+    n = len(latencies)
+    p50 = latencies[int((n - 1) * 0.50)]
+    p95 = latencies[int((n - 1) * 0.95)]
+    avg = sum(latencies) / n
+
+    return {
+        "available": True,
+        "sample_count": n,
+        "avg_seconds": avg,
+        "p50_seconds": p50,
+        "p95_seconds": p95,
+        "run_id": run_id,
+        "manifest_path": str(manifest_path),
+    }
 
 
 def build_weekly_comment(repo: str, token: str) -> str:
@@ -77,6 +144,7 @@ def build_weekly_comment(repo: str, token: str) -> str:
     total_runs = sum(status_counter.values())
     success_runs = status_counter.get("success", 0)
     success_rate = (success_runs / total_runs * 100.0) if total_runs > 0 else 0.0
+    latency_kpi = _read_latency_kpi()
 
     marker = f"<!-- ctoa-weekly-report:{week_key} -->"
     lines: List[str] = []
@@ -97,6 +165,16 @@ def build_weekly_comment(repo: str, token: str) -> str:
     lines.append(f"- Success rate: {success_rate:.1f}%")
     lines.append(f"- Waiting runs: {status_counter.get('in_progress', 0)}")
     lines.append(f"- Failed runs: {status_counter.get('failure', 0)}")
+    lines.append("")
+    lines.append("### Generator Latency KPI (queue -> generated)")
+    if latency_kpi.get("available"):
+        lines.append(f"- Sample size: {latency_kpi['sample_count']}")
+        lines.append(f"- Average latency: {latency_kpi['avg_seconds']:.1f}s")
+        lines.append(f"- P50 latency: {latency_kpi['p50_seconds']:.1f}s")
+        lines.append(f"- P95 latency: {latency_kpi['p95_seconds']:.1f}s")
+        lines.append(f"- Source run: {latency_kpi.get('run_id', '-')}")
+    else:
+        lines.append(f"- Not available: {latency_kpi.get('reason', 'unknown reason')}")
     lines.append("")
     lines.append("### Executive Note")
     lines.append("- Focus next week: move top-priority WAITING_APPROVAL tasks through release gate with minimal cycle time.")

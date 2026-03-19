@@ -53,6 +53,7 @@ CREATE TABLE IF NOT EXISTS modules (
     quality_score INT,                            -- 0-100
     test_log      TEXT,
     retry_count   INT NOT NULL DEFAULT 0,
+    queued_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
     generated_at  TIMESTAMPTZ,
     validated_at  TIMESTAMPTZ
 );

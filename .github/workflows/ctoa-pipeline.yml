@@ -165,6 +165,20 @@ jobs:
             response-guardrails.txt
           if-no-files-found: ignore
 
+      - name: Export generator/validator sample artifacts
+        if: always()
+        shell: bash
+        run: |
+          python runner/generator_validator_samples.py
+
+      - name: Upload generator/validator samples
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: generator-validator-samples
+          path: runtime/ci-artifacts/generator-validator/**
+          if-no-files-found: ignore
+
       - name: Enforce response guardrail gate
         shell: bash
         run: |

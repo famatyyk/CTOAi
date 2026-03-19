@@ -145,8 +145,8 @@ def plan_for_server(server_id: int) -> int:
 
         db.execute(
             """
-            INSERT INTO modules (server_id, task_id, template, output_file, status)
-            VALUES (%s, %s, %s, %s, 'QUEUED')
+            INSERT INTO modules (server_id, task_id, template, output_file, status, queued_at)
+            VALUES (%s, %s, %s, %s, 'QUEUED', now())
             ON CONFLICT (task_id) DO NOTHING
             """,
             (server_id, task_id, tmpl["id"], tmpl["output"]),
@@ -165,6 +165,10 @@ def plan_for_server(server_id: int) -> int:
 
 
 def run_once() -> None:
+    # Ensure modules table has queued_at for queue->generated latency KPI.
+    db.execute("ALTER TABLE modules ADD COLUMN IF NOT EXISTS queued_at TIMESTAMPTZ")
+    db.execute("UPDATE modules SET queued_at=now() WHERE queued_at IS NULL")
+
     servers = db.query_all("SELECT id, url FROM servers WHERE status='READY' ORDER BY id")
     if not servers:
         log.info("No READY servers to plan")

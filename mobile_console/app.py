@@ -23,6 +23,7 @@ STATIC_DIR = ROOT / "mobile_console" / "static"
 AUDIT_LOG = ROOT / "logs" / "mobile-console-audit.log"
 AUTO_TRAINER_DIR = Path(os.environ.get("CTOA_TRAINING_REPORT_DIR", str(ROOT / "runtime" / "training-reports")))
 GENERATED_DIR = Path(os.environ.get("CTOA_GENERATED_DIR", "/opt/ctoa/generated"))
+GENERATED_MANIFESTS_DIR = GENERATED_DIR / "manifests"
 ADMIN_SETTINGS_FILE = Path(os.environ.get("CTOA_ADMIN_SETTINGS_FILE", str(ROOT / "runtime" / "admin-panel-settings.json")))
 IDEA_PARKING_FILE = Path(os.environ.get("CTOA_IDEA_PARKING_FILE", str(ROOT / "runtime" / "idea-parking.json")))
 
@@ -786,6 +787,58 @@ def _sync_mythibia_to_client(source_dir: Path) -> dict:
         }
 
 
+def _latest_manifest_payload() -> dict[str, Any] | None:
+    latest_file = GENERATED_MANIFESTS_DIR / "latest.json"
+    if not latest_file.exists():
+        return None
+    try:
+        latest = json.loads(latest_file.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+
+    manifest_path = Path(str(latest.get("manifest_path", "")).strip())
+    if not manifest_path.exists():
+        candidate = GENERATED_MANIFESTS_DIR / str(latest.get("run_id", "")) / "manifest.json"
+        if candidate.exists():
+            manifest_path = candidate
+        else:
+            return None
+
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+
+    return {
+        "run_id": latest.get("run_id") or manifest.get("run_id"),
+        "manifest_path": str(manifest_path),
+        "manifest": manifest,
+    }
+
+
+def _scan_generated_files(limit: int) -> list[dict[str, Any]]:
+    files: list[dict[str, Any]] = []
+    if not GENERATED_DIR.exists():
+        return files
+
+    for p in GENERATED_DIR.rglob("*.lua"):
+        try:
+            st = p.stat()
+        except Exception:
+            continue
+        files.append(
+            {
+                "output_path": str(p),
+                "output_file": p.name,
+                "server_slug": p.parent.name,
+                "generated_at": datetime.fromtimestamp(st.st_mtime, tz=timezone.utc).isoformat(),
+                "size": int(st.st_size),
+            }
+        )
+    files.sort(key=lambda item: str(item.get("generated_at", "")), reverse=True)
+    return files[:limit]
+
+
 @app.post("/api/agents/intel/launch")
 def launch_intel_mission(
     req: IntelMissionRequest,
@@ -972,6 +1025,51 @@ def mythibia_one_click(request: Request, _: dict[str, Any] = Depends(require_own
         "files_count": len(files),
         "server_state": srv_state.get("stdout", "").strip(),
         "client_sync": sync,
+    }
+
+
+@app.get("/api/agents/generated/latest")
+def latest_generated_modules(
+    limit: int = Query(default=20, ge=1, le=200),
+    _: dict[str, Any] = Depends(require_operator),
+) -> dict:
+    manifest_payload = _latest_manifest_payload()
+    if manifest_payload:
+        manifest = manifest_payload["manifest"]
+        generated = manifest.get("generated") if isinstance(manifest, dict) else []
+        items: list[dict[str, Any]] = []
+        if isinstance(generated, list):
+            for entry in generated[:limit]:
+                if not isinstance(entry, dict):
+                    continue
+                item = {
+                    "task_id": entry.get("task_id"),
+                    "server_id": entry.get("server_id"),
+                    "template": entry.get("template"),
+                    "output_file": entry.get("output_file"),
+                    "output_path": entry.get("output_path"),
+                    "queued_at": entry.get("queued_at"),
+                    "generated_at": entry.get("generated_at"),
+                }
+                items.append(item)
+
+        return {
+            "ok": True,
+            "source": "manifest",
+            "run_id": manifest_payload.get("run_id"),
+            "manifest_path": manifest_payload.get("manifest_path"),
+            "count": len(items),
+            "items": items,
+        }
+
+    scanned = _scan_generated_files(limit=limit)
+    return {
+        "ok": True,
+        "source": "scan",
+        "run_id": None,
+        "manifest_path": None,
+        "count": len(scanned),
+        "items": scanned,
     }
 
 

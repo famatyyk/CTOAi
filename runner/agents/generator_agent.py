@@ -31,6 +31,46 @@ OUTPUT_BASE = Path(os.environ.get("CTOA_GENERATED_DIR", "/opt/ctoa/generated"))
 MAX_RETRIES = 3
 
 
+def _now_iso() -> str:
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+
+
+def _write_run_manifest(
+    run_started_at: str,
+    generated: list[dict[str, Any]],
+    failed: list[dict[str, Any]],
+) -> None:
+    run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    manifests_dir = OUTPUT_BASE / "manifests"
+    run_dir = manifests_dir / run_id
+    run_dir.mkdir(parents=True, exist_ok=True)
+
+    payload = {
+        "schema_version": 1,
+        "agent": "generator_agent",
+        "run_id": run_id,
+        "run_started_at": run_started_at,
+        "run_finished_at": _now_iso(),
+        "generated_count": len(generated),
+        "failed_count": len(failed),
+        "generated": generated,
+        "failed": failed,
+    }
+
+    manifest_path = run_dir / "manifest.json"
+    manifest_path.write_text(json.dumps(payload, ensure_ascii=True, indent=2), encoding="utf-8")
+
+    latest = {
+        "run_id": run_id,
+        "manifest_path": str(manifest_path),
+        "generated_count": len(generated),
+        "failed_count": len(failed),
+        "run_finished_at": payload["run_finished_at"],
+    }
+    (manifests_dir / "latest.json").write_text(json.dumps(latest, ensure_ascii=True, indent=2), encoding="utf-8")
+    log.info("Generator manifest written: %s", manifest_path)
+
+
 def _server_ctx(server_id: int) -> dict[str, Any]:
     """Build template context from game_data and server row."""
     srv = db.query_one("SELECT url, name, game_type FROM servers WHERE id=%s", (server_id,)) or {}
@@ -1048,11 +1088,12 @@ def _slug(url: str) -> str:
     return re.sub(r"[^a-z0-9]+", "_", url.lower().split("//")[-1])[:40]
 
 
-def generate_module(mod: dict) -> None:
+def generate_module(mod: dict) -> dict[str, Any]:
     server_id = mod["server_id"]
     task_id = mod["task_id"]
     template = mod["template"]
     output_file = mod["output_file"] or f"{template}.lua"
+    queued_at = str(mod.get("queued_at") or "")
 
     srv = db.query_one("SELECT url FROM servers WHERE id=%s", (server_id,)) if server_id else None
     slug = _slug(srv["url"]) if srv else "generic"
@@ -1068,13 +1109,15 @@ def generate_module(mod: dict) -> None:
     code = _render(template, ctx)
     out_path.write_text(code, encoding="utf-8")
 
+    generated_at = _now_iso()
+
     db.execute(
         """
         UPDATE modules
-        SET status='GENERATED', output_path=%s, generated_at=now()
+        SET status='GENERATED', output_path=%s, generated_at=%s
         WHERE task_id=%s
         """,
-        (str(out_path), task_id),
+        (str(out_path), generated_at, task_id),
     )
     # Update daily_stats
     today = datetime.now(timezone.utc).date().isoformat()
@@ -1088,11 +1131,24 @@ def generate_module(mod: dict) -> None:
         (today,),
     )
     log.info("Generated %s → %s", task_id, out_path)
+    return {
+        "task_id": task_id,
+        "server_id": server_id,
+        "template": template,
+        "output_file": output_file,
+        "output_path": str(out_path),
+        "queued_at": queued_at,
+        "generated_at": generated_at,
+    }
 
 
 def run_once() -> None:
+    run_started_at = _now_iso()
+    db.execute("ALTER TABLE modules ADD COLUMN IF NOT EXISTS queued_at TIMESTAMPTZ")
+    db.execute("UPDATE modules SET queued_at=now() WHERE queued_at IS NULL")
+
     mods = db.query_all(
-        "SELECT id, server_id, task_id, template, output_file FROM modules "
+        "SELECT id, server_id, task_id, template, output_file, queued_at FROM modules "
         "WHERE status='QUEUED' AND retry_count < %s ORDER BY id LIMIT 20",
         (MAX_RETRIES,),
     )
@@ -1101,18 +1157,30 @@ def run_once() -> None:
         return
 
     ok = err = 0
+    generated_records: list[dict[str, Any]] = []
+    failed_records: list[dict[str, Any]] = []
     for mod in mods:
         try:
-            generate_module(mod)
+            generated_records.append(generate_module(mod))
             ok += 1
         except Exception as exc:
             err += 1
             log.error("Generator error for %s: %s", mod["task_id"], exc)
+            failed_records.append(
+                {
+                    "task_id": mod.get("task_id"),
+                    "server_id": mod.get("server_id"),
+                    "template": mod.get("template"),
+                    "error": str(exc),
+                    "queued_at": str(mod.get("queued_at") or ""),
+                }
+            )
             db.execute(
                 "UPDATE modules SET status='FAILED', retry_count=retry_count+1, test_log=%s WHERE task_id=%s",
                 (str(exc)[:2000], mod["task_id"]),
             )
 
+    _write_run_manifest(run_started_at=run_started_at, generated=generated_records, failed=failed_records)
     db.log_run("generator_agent", "ok", f"generated {ok}, failed {err}")
 
 
