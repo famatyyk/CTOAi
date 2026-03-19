@@ -6,8 +6,8 @@ It defines what is active, what is frozen, what matters most, and what can run i
 
 ## Executive Summary
 - Primary lane: secure and stabilize the website + mobile console control surface.
-- Secondary lane: package `EXP-001` promotion evidence and release-lane readiness artifacts.
-- Controlled lane: experiments remain documented, but only `EXP-001` is promotion-prep relevant.
+- Secondary lane: monitor published `EXP-001` outcome and keep release artifacts auditable.
+- Controlled lane: experiment week is closed; next candidate is deferred to the next cycle.
 - Frozen lane: `EXP-002` stays archived unless explicitly reopened.
 - Support lane: CI guardrails are implemented and verified; no urgent new work unless regressions appear.
 
@@ -30,8 +30,8 @@ It defines what is active, what is frozen, what matters most, and what can run i
   - no release-blocking mobile regressions found
 
 ### P2 - Release And Promotion Preparation
-- Keep `EXP-001` as the only experiment lane eligible for promotion prep.
-- Package promotion evidence, QA criteria, and release-lane gate state.
+- `EXP-001` promotion path is complete and retained after monitoring (`T+1h`, `T+6h`, `T+24h`).
+- Preserve evidence links, approvals, and rollback notes as audit-ready artifacts.
 - Keep CI summaries and response guardrail regressions green.
 
 ### P3 - Deferred / Do Not Chase Now
@@ -74,9 +74,9 @@ Action: no new feature work unless a regression appears
 Status: constrained
 Goal: maintain decision clarity, not open-ended exploration.
 Current state:
-- `EXP-001` = promotion candidate / prep lane
+- `EXP-001` = published and stable
 - `EXP-002` = archived
-Action: do not split focus here until P0 and P1 are stable
+Action: do not open a new candidate in this cycle; open next only in the next cycle with a fresh hypothesis and baseline
 
 ### 5. VPS Observability / Runbooks
 Status: healthy support lane
@@ -87,7 +87,7 @@ Current state:
 Action: use as operational reference, no urgent new build work
 
 ## Freeze List
-- Freeze new experiments.
+- Freeze new experiment starts in this cycle.
 - Freeze broad site redesign ideas.
 - Freeze low-value cosmetic iteration unless tied to clarity or trust.
 - Freeze non-essential backend expansion unless it directly supports release-readiness.
@@ -95,23 +95,23 @@ Action: use as operational reference, no urgent new build work
 ## What To Do Next
 
 ### Next 1
-Prepare `EXP-001` promotion package for release-lane admission.
+Maintain release evidence and monitoring closure artifacts for `EXP-001`.
 
 Success means:
-- evidence bundle is complete and linked
-- approvals are captured (`qa-safety`, `ci-publisher`, `queen-ctoa`)
-- rollback note is attached and explicit
-- release-lane readiness checks are all green
+- evidence bundle remains complete and linked
+- approvals remain traceable (`qa-safety`, `ci-publisher`, `queen-ctoa`)
+- rollback note remains attached and explicit
+- no post-release regression signal
 
 ### Next 2
-Freeze scope after packaging and run promotion pre-check.
+Carry forward 1-2 lessons from `EXP-002` as a deferred micro-experiment brief.
 
 Reason:
-- avoid reopening UI scope now that mobile QA passed
-- preserve deterministic path to promotion decision
+- preserve archive value without reactivating the old lane
+- keep experiment capacity focused on next-cycle decisions only
 
 ### Next 3
-Record promotion go/hold decision for `EXP-001` in experiment lane docs.
+Open a new candidate only in the next cycle, with a clean hypothesis and explicit baseline.
 
 ## Parallelizable Work
 
@@ -126,9 +126,9 @@ Record promotion go/hold decision for `EXP-001` in experiment lane docs.
 - release-lane decisions for `EXP-001`
 
 ## Recommended Delegation Model
-- Agent A: VPS QA and role validation
-- Agent B: asset cleanup and dedicated icon extraction
-- Agent C: docs consolidation and operational checklist maintenance
+- Agent A: release evidence audit and link integrity check
+- Agent B: CI guardrail monitoring and regression triage only
+- Agent C: docs consolidation, backlog carry-over, and next-cycle experiment brief prep
 
 ## Stop Conditions
 - If owner/operator behavior is inconsistent, stop visual work and fix auth first.
@@ -184,6 +184,12 @@ Deliverable:
 - non-essential animation or styling tweaks
 - new backend capability outside auth, settings, and validation
 - anything that does not improve control, trust, or deployment readiness
+
+## Week Closure Snapshot
+- Experiment week status: closed.
+- `EXP-001`: published and stable after checkpointed monitoring.
+- `EXP-002`: archived with lessons moved to deferred backlog candidate.
+- New experiment candidate: explicitly postponed to the next cycle.
 
 ## Decision Gate After Tomorrow Morning
 - VPS QA passed and mobile QA passed: proceed with `EXP-001` promotion prep and gate review.
