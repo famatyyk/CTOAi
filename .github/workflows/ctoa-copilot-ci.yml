@@ -66,6 +66,31 @@ jobs:
           set -e
           echo "RESPONSE_GUARDRAILS_EXIT=${RESPONSE_GUARDRAILS_EXIT}" >> "$GITHUB_ENV"
 
+      - name: Publish response guardrail summary
+        if: always()
+        shell: bash
+        run: |
+          status="PASS"
+          if [ "${RESPONSE_GUARDRAILS_EXIT:-1}" != "0" ]; then
+            status="FAIL"
+          fi
+
+          {
+            echo "## Response Guardrails"
+            echo "- Status: ${status}"
+            echo "- Exit code: ${RESPONSE_GUARDRAILS_EXIT:-1}"
+            echo "- Artifact log: pr-response-guardrails.txt"
+            echo ""
+            echo "### Tail"
+            echo '```'
+            if [ -f pr-response-guardrails.txt ]; then
+              tail -n 40 pr-response-guardrails.txt
+            else
+              echo "pr-response-guardrails.txt missing"
+            fi
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Run flake8
         shell: bash
         continue-on-error: true
