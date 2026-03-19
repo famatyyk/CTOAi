@@ -1,0 +1,52 @@
+date: "2026-03-19"
+phase: "day1"
+context:
+  repo: "famatyyk/CTOAi"
+  branch: "main"
+  sprint: "Sprint-007"
+  ci_pipeline: "green"
+  pages: "active"
+
+decisions:
+  go:
+    - id: "EXP-001"
+      name: "Prompt Quality Lift"
+      reason:
+        - "High signal, low blast radius"
+        - "Uses existing BRAVE(R) and scorecard artifacts"
+      owners:
+        - "prompt-forge"
+        - "qa-safety"
+        - "evaluator"
+      next_action: "Prepare baseline vs challenger prompt packs on Day 2"
+
+    - id: "EXP-002"
+      name: "Tool Routing Efficiency"
+      reason:
+        - "Directly aligned with CTOA-034"
+        - "Can be sandboxed with simple rollback"
+      owners:
+        - "tool-advisor"
+        - "bot-architect"
+        - "optimizer"
+        - "qa-safety"
+      next_action: "Run ranking variant comparison on Day 2"
+
+  hold:
+    - id: "EXP-003"
+      name: "Landing Telemetry and UX Signal"
+      reason:
+        - "KPI definitions not yet locked"
+        - "Should start after first hard-cut review"
+      owners:
+        - "builder-engine"
+        - "mmo-intel"
+        - "ci-publisher"
+      unhold_trigger: "Day 5 review confirms KPI alignment and owner readiness"
+
+  kill: []
+
+rules:
+  max_active_experiments: 2
+  no_signal_timeout_hours: 48
+  mandatory_outcome: ["promote", "hold", "kill"]
