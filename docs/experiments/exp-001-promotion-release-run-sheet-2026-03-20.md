@@ -78,6 +78,21 @@ Outcome labels:
 - `HOLD`: keep package paused pending fixes
 - `ROLLBACK`: baseline restored
 
+## Monitoring Checkpoint Log
+
+### T+1h Checkpoint (Recorded)
+- Timestamp: 2026-03-20T00:59:00Z
+- Health sanity: PASS
+- Quality sanity: PASS
+- Operator-load spike: NO
+- Weak-output spike: NO
+- Safety signal drop: NO
+- Interim status: `STABLE` (monitoring continues)
+
+### Pending Checkpoints
+- T+6h: pending
+- T+24h: pending
+
 ## Final Close Note Template
 ```text
 EXP-001 promotion run result: STABLE | HOLD | ROLLBACK
