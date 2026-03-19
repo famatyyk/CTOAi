@@ -1,0 +1,50 @@
+name: Browser E2E Smoke
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main", "dev"]
+    paths:
+      - "mobile_console/**"
+      - "docs/site/**"
+      - "tests/e2e/**"
+      - "tests/conftest.py"
+      - "requirements.txt"
+      - ".github/workflows/browser-e2e-smoke.yml"
+  pull_request:
+    paths:
+      - "mobile_console/**"
+      - "docs/site/**"
+      - "tests/e2e/**"
+      - "tests/conftest.py"
+      - "requirements.txt"
+      - ".github/workflows/browser-e2e-smoke.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  browser_e2e_smoke:
+    name: Browser E2E Smoke
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install Playwright Chromium
+        run: |
+          python -m playwright install --with-deps chromium
+
+      - name: Run browser smoke test
+        run: |
+          python -m pytest tests/e2e/test_browser_smoke.py -m e2e -v

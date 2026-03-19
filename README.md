@@ -87,6 +87,10 @@ python3.11 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 pytest tests/ -v
+
+# Browser E2E smoke lane (login + settings + ideas)
+python -m playwright install chromium
+pytest tests/e2e/test_browser_smoke.py -m e2e -v
 ```
 
 ### Option 2: Deploy to VPS (15 minutes)

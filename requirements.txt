@@ -19,6 +19,7 @@ urllib3>=2.0.0
 httpx>=0.28.0
 fastapi>=0.115.0
 uvicorn>=0.30.0
+playwright>=1.54.0
 
 # Utilities
 python-dateutil>=2.8.2
