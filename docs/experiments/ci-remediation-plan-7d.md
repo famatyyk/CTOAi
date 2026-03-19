@@ -13,7 +13,7 @@ This plan targets the three current CI risks:
 | Day 2 | `builder-engine`, `qa-safety` | Remove avoidable false-fail patterns in checks | Pipeline pass/fail >= 20% | 1st hardening patch merged |
 | Day 3 | `ci-publisher`, `queen-ctoa` | Approval SLA and waiting-run escalation | Waiting approvals > 60 min = 0 unresolved | SLA doc + reminder loop active |
 | Day 4 | `builder-engine`, `tool-advisor` | Stabilize `site-pages` preflight and publish path | Next 2 pages runs = 100% | Preflight validation stable |
-| Day 5 | `qa-safety`, `pm-roadmap` | Regression audit on recent fixes | No critical regression introduced | QA regression report approved |
+| Day 5 | `qa-safety`, `pm-roadmap` | Regression audit on recent fixes, including response guardrail summaries in CI and PR runs | No critical regression introduced | QA regression report approved |
 | Day 6 | `ci-publisher`, `evaluator` | Executive score recalibration and trend check | 7d CI Health Score +10 points vs Day 1 baseline | Trend report generated |
 | Day 7 | `queen-ctoa`, `pm-roadmap` | Final go/hold/kill for remediation items | Pipeline pass/fail >= 40% or explicit hold decision | Weekly decision memo closed |
 
