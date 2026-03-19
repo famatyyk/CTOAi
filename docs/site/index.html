@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CTOA Realm - Fantasy MMO Control Board</title>
+    <meta
+      name="description"
+      content="CTOA Realm: panel ofert i projektow w klimacie fantasy MMO z lewym menu i kartami sekcji wysuwanymi w prawo."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;800&family=Rajdhani:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css?v=20260319j" />
+  </head>
+  <body>
+    <div class="fx-layer" aria-hidden="true">
+      <div class="stars"></div>
+      <div class="mist mist-a"></div>
+      <div class="mist mist-b"></div>
+      <div class="spell-orb orb-a"></div>
+      <div class="spell-orb orb-b"></div>
+      <div class="rune-wheel"></div>
+    </div>
+
+    <header class="site-header container">
+      <a class="brand" href="#">
+        <span class="brand-gem">◇</span>
+        CTOA Realm
+      </a>
+      <div class="top-actions">
+        <div class="build-strip">Build: v2026.03.19-j</div>
+        <div class="admin-hint">hover: panel</div>
+        <button id="open-auth" class="btn btn-small btn-ghost" type="button">Admin</button>
+      </div>
+    </header>
+
+    <main id="realm-root" class="realm-root container">
+      <aside class="realm-menu" aria-label="Sekcje">
+        <p class="menu-title">Sekcje</p>
+        <button class="menu-item" data-section="oferty" type="button">⚔ Oferty MMO</button>
+        <button class="menu-item" data-section="projekty" type="button">🔮 Projekty Live</button>
+        <button class="menu-item" data-section="parking" type="button">📜 Parking Pomyslow</button>
+        <button class="menu-item" data-section="kontakt" type="button">🛡 Kontakt</button>
+      </aside>
+
+      <section class="realm-stage" aria-live="polite">
+        <article id="home-view" class="home-view active">
+          <p class="kicker">Fantasy MMO Automation Studio</p>
+          <h1>Control board bez scrolla w dol. Wszystko idzie w prawo.</h1>
+          <p class="home-text">
+            Najedz na nazwe sekcji po lewej. Po prawej wysunie sie aktualny zestaw kart.
+            Zabierasz kursor i scena wraca do widoku glownego.
+          </p>
+          <p id="admin-banner" class="admin-banner" hidden>Panel admina aktywny.</p>
+        </article>
+
+        <article class="section-panel" data-panel="oferty">
+          <div class="deck" data-deck>
+            <section class="stack-card deck-card active">
+              <h2>OT Farm Starter</h2>
+              <p class="price-tag" data-price="59 PLN">Cena: ukryta do premiery</p>
+              <ul>
+                <li>10 modulow Lua pod 1 serwer</li>
+                <li>Szybki setup i onboarding</li>
+                <li>7 dni wsparcia</li>
+              </ul>
+            </section>
+            <section class="stack-card deck-card featured">
+              <h2>OT Farm Pro</h2>
+              <p class="price-tag" data-price="149 PLN">Cena: ukryta do premiery</p>
+              <ul>
+                <li>30 modulow Lua pod 1-2 serwery</li>
+                <li>Profile exp/farm/loot</li>
+                <li>30 dni wsparcia i update</li>
+              </ul>
+            </section>
+            <section class="stack-card deck-card">
+              <h2>OT Clan VIP</h2>
+              <p class="price-tag" data-price="349 PLN">Cena: ukryta do premiery</p>
+              <ul>
+                <li>60+ modulow i wersja custom</li>
+                <li>Priorytetowe hotfixy</li>
+                <li>Premium support dla teamu</li>
+              </ul>
+            </section>
+            <p class="deck-meta" data-meta>1 / 3</p>
+            <button class="deck-next" type="button" data-next-card>Nastepna kartka ▶</button>
+          </div>
+        </article>
+
+        <article class="section-panel" data-panel="projekty">
+          <div class="deck" data-deck>
+            <section class="stack-card deck-card active">
+              <h2>CTOA Pipeline 24/7</h2>
+              <p>Reseed, auto-heal i walidacja modulow dla wielu swiatow OT.</p>
+            </section>
+            <section class="stack-card deck-card">
+              <h2>Lua Module Forge</h2>
+              <p>Masowa produkcja i testy skryptow pod patchowanie serwerow.</p>
+            </section>
+            <section class="stack-card deck-card">
+              <h2>Admin Command Center</h2>
+              <p>Stealth launch, panel logowania i kontrola publikacji ofert.</p>
+            </section>
+            <section class="stack-card deck-card">
+              <h2>Quest Board</h2>
+              <p>Sekcja pod roadmape sprintow, wydarzenia i specjalne kampanie.</p>
+            </section>
+            <p class="deck-meta" data-meta>1 / 4</p>
+            <button class="deck-next" type="button" data-next-card>Nastepna kartka ▶</button>
+          </div>
+        </article>
+
+        <article class="section-panel" data-panel="parking">
+          <div class="deck" data-deck>
+            <section class="stack-card deck-card active">
+              <h2>Parking Pomyslow</h2>
+              <p>Zapisujesz szkic i wracasz do niego kiedy chcesz. Nic nie ginie.</p>
+              <form id="idea-form" class="idea-form">
+                <label for="idea-input">Nowy pomysl</label>
+                <textarea
+                  id="idea-input"
+                  name="idea"
+                  rows="4"
+                  placeholder="Np. Eventowy profil pod weekendowy farm boost"
+                  required
+                ></textarea>
+                <div class="idea-actions">
+                  <button class="btn" type="submit">Zaparkuj pomysl</button>
+                  <button id="clear-all" class="btn btn-ghost" type="button">Wyczysc wszystko</button>
+                </div>
+              </form>
+            </section>
+            <section class="stack-card deck-card">
+              <h2>Lista zaparkowanych</h2>
+              <p id="idea-count" class="small-note">Ladowanie...</p>
+              <ul id="idea-list" class="idea-list" aria-live="polite"></ul>
+            </section>
+            <p class="deck-meta" data-meta>1 / 2</p>
+            <button class="deck-next" type="button" data-next-card>Nastepna kartka ▶</button>
+          </div>
+        </article>
+
+        <article class="section-panel" data-panel="kontakt">
+          <div class="deck" data-deck>
+            <section class="stack-card deck-card active">
+              <h2>Kontakt i onboarding</h2>
+              <p>Wersja stealth. Szczegoly po pierwszym kontakcie.</p>
+              <a class="card-link" href="https://discord.gg/8n4Thtf2" target="_blank" rel="noreferrer">Discord CTOA Realm ↗</a>
+            </section>
+            <section class="stack-card deck-card">
+              <h2>Repozytorium</h2>
+              <p>Aktualny kod i roadmapa rozwoju.</p>
+              <a class="card-link" href="https://github.com/famatyyk/CTOAi" target="_blank" rel="noreferrer">GitHub CTOAi ↗</a>
+            </section>
+            <section class="stack-card deck-card">
+              <h2>Tryb stealth</h2>
+              <p>Cennik i detale handlowe publikowane tylko po zatwierdzeniu admina.</p>
+            </section>
+            <p class="deck-meta" data-meta>1 / 3</p>
+            <button class="deck-next" type="button" data-next-card>Nastepna kartka ▶</button>
+          </div>
+        </article>
+      </section>
+    </main>
+
+    <aside id="admin-drawer" class="admin-drawer" hidden>
+      <h2>Panel Admina</h2>
+      <p>Zalogowano jako <strong>molek</strong></p>
+      <div class="admin-grid">
+        <label class="toggle">
+          <input id="stealth-toggle" type="checkbox" checked />
+          <span>Tryb stealth</span>
+        </label>
+        <label class="toggle">
+          <input id="prices-toggle" type="checkbox" />
+          <span>Pokaz ceny na stronie</span>
+        </label>
+        <label for="hero-note">Notatka na ekran glowny</label>
+        <textarea id="hero-note" rows="3" placeholder="Np. Zamkniete testy beta"></textarea>
+        <div class="admin-actions">
+          <button id="save-admin" class="btn" type="button">Zapisz ustawienia</button>
+          <button id="export-admin" class="btn btn-ghost" type="button">Pobierz JSON</button>
+          <button id="reset-admin" class="btn btn-ghost" type="button">Reset localStorage</button>
+          <button id="logout-admin" class="btn btn-ghost" type="button">Wyloguj</button>
+        </div>
+        <p id="admin-status" class="admin-status" aria-live="polite"></p>
+      </div>
+    </aside>
+
+    <div id="auth-modal" class="auth-modal" aria-hidden="true">
+      <div class="auth-card" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+        <h2 id="auth-title">Logowanie Admin</h2>
+        <p id="auth-hint" class="auth-hint">Konto administratora: molek. Przy pierwszym logowaniu ustawiasz haslo.</p>
+        <label for="auth-user">Login</label>
+        <input id="auth-user" type="text" placeholder="molek" autocomplete="username" />
+        <label for="auth-pass">Haslo</label>
+        <input id="auth-pass" type="password" placeholder="min. 8 znakow" autocomplete="current-password" />
+        <div class="auth-actions">
+          <button id="auth-submit" class="btn" type="button">Zaloguj</button>
+          <button id="auth-close" class="btn btn-ghost" type="button">Zamknij</button>
+        </div>
+        <p id="auth-status" class="admin-status" aria-live="polite"></p>
+      </div>
+    </div>
+
+    <script src="script.js?v=20260319j"></script>
+  </body>
+</html>
