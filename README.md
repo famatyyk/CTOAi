@@ -30,6 +30,7 @@ CTOA AI Toolkit orchestrates 10+ AI agents (CTOA-001 through CTOA-010) to autono
 - **🛍️ Offers Website:** [CTOA Studio Landing](docs/site/index.html)
 - **🛡️ Core Safety:** [Core Guardrails](docs/CORE_GUARDRAILS.md)
 - **✅ Pre-Launch:** [Validation Checklist](docs/VALIDATION_CHECKLIST.md) (review before production)
+- **⚡ Real-Time Modules:** [Real-Time Script/Module Creation](docs/REALTIME_MODULE_CREATION.md)
 
 ---
 
@@ -131,6 +132,24 @@ Primary workflows:
 - `.github/workflows/ctoa-copilot-ci.yml` (PR quality gate + automated report comment, Copilot CI-like)
 
 View results in GitHub Actions for this repository.
+
+## Real-Time Script/Module Creation
+
+If you want a quick operational view of how scripts/modules are produced in real time, use:
+
+- [Real-Time Script/Module Creation](docs/REALTIME_MODULE_CREATION.md)
+
+Fast path:
+1. Run one pipeline pass: `python -m runner.agents.orchestrator`
+2. Verify generated files in `generated/` (local) or `/opt/ctoa/generated` (VPS)
+3. Validate with browser E2E smoke and full pytest
+
+## Next Execution Plan
+
+1. Add generated artifact manifest (`manifest.json`) per orchestrator run.
+2. Expose latest generated modules in mobile console API with role-aware filtering.
+3. Upload sample generated module + validator summary as CI artifact.
+4. Track queue-to-generated latency KPI in weekly report.
 
 ## Sprint Roadmap
 
