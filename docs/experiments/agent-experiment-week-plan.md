@@ -123,3 +123,16 @@ This plan uses the active 10-agent roster from [agents/ctoa-agents.yaml](agents/
 2. One completed scorecard per day per active experiment.
 3. A kill list with reasons.
 4. A shortlist of 1 or 2 promotable winners.
+
+## Final Week Wrap-Up (2026-03-20)
+- Status: experiment week closed.
+- `EXP-001`: promoted and retained after monitoring window closure (`T+1h`, `T+6h`, `T+24h`) with stable outcome.
+- `EXP-002`: archived; lane stays closed.
+
+### Backlog Carry-Over From EXP-002
+1. Add strict complexity-budget gate before Day 2 in any routing experiment.
+2. Require measurable and repeatable retry reduction as a continuation gate.
+
+### Next-Cycle Opening Rule
+- Do not open a new experiment candidate in this cycle.
+- Open the next candidate only in the next cycle, with a fresh hypothesis and explicit baseline.

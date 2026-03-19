@@ -164,3 +164,21 @@ tasks:
       - "Drift detection passes all tests"
       - "Integrated into runner report"
       - "Ready for production"
+
+  # Track D: Next-Cycle Experiment Candidates (Deferred)
+
+  - id: CTOA-041
+    title: "Design micro routing experiment with fresh hypothesis + baseline"
+    priority: P3
+    type: experiment
+    domain: [experiments, routing, governance]
+    assignees: [pm-roadmap, tool-advisor, qa-safety]
+    estimate_hours: 2
+    deliverables:
+      - "docs/experiments/exp-next-cycle-routing-micro-hypothesis.md"
+    acceptance:
+      - "Defines a fresh hypothesis (not a reactivation of EXP-002 lane)"
+      - "Includes explicit baseline and continuation threshold"
+      - "Includes Day-2 complexity budget gate"
+      - "Includes measurable retry-reduction criterion"
+      - "Scheduled only for the next cycle"
