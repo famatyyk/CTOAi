@@ -24,6 +24,7 @@ AUDIT_LOG = ROOT / "logs" / "mobile-console-audit.log"
 AUTO_TRAINER_DIR = Path(os.environ.get("CTOA_TRAINING_REPORT_DIR", str(ROOT / "runtime" / "training-reports")))
 GENERATED_DIR = Path(os.environ.get("CTOA_GENERATED_DIR", "/opt/ctoa/generated"))
 ADMIN_SETTINGS_FILE = Path(os.environ.get("CTOA_ADMIN_SETTINGS_FILE", str(ROOT / "runtime" / "admin-panel-settings.json")))
+IDEA_PARKING_FILE = Path(os.environ.get("CTOA_IDEA_PARKING_FILE", str(ROOT / "runtime" / "idea-parking.json")))
 
 
 def _is_production_env() -> bool:
@@ -76,11 +77,16 @@ class AdminSettingsPayload(BaseModel):
     heroNote: str = Field(default="", max_length=500)
 
 
+class IdeaCreatePayload(BaseModel):
+    text: str = Field(min_length=1, max_length=500)
+
+
 ROLE_WEIGHT = {"operator": 1, "owner": 2}
 SESSION_TTL_SECONDS = int(os.getenv("CTOA_SESSION_TTL_SECONDS", "1800"))
 _SESSIONS: Dict[str, Dict[str, Any]] = {}
 _SESSIONS_LOCK = Lock()
 _ADMIN_SETTINGS_LOCK = Lock()
+_IDEA_PARKING_LOCK = Lock()
 
 
 def _default_admin_settings() -> dict[str, Any]:
@@ -118,6 +124,66 @@ def _write_admin_settings(payload: dict[str, Any]) -> dict[str, Any]:
         ADMIN_SETTINGS_FILE.parent.mkdir(parents=True, exist_ok=True)
         ADMIN_SETTINGS_FILE.write_text(json.dumps(data, ensure_ascii=True, indent=2), encoding="utf-8")
     return data
+
+
+def _normalize_idea_item(payload: dict[str, Any], fallback_author: str = "") -> dict[str, Any] | None:
+    text = str((payload or {}).get("text", "")).strip()
+    if not text:
+        return None
+
+    raw_id = str((payload or {}).get("id", "")).strip()
+    idea_id = raw_id[:80] if raw_id else secrets.token_hex(8)
+
+    created_at = str((payload or {}).get("createdAt", "")).strip()
+    if not created_at:
+        created_at = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+
+    author = str((payload or {}).get("author", fallback_author)).strip().lower()[:64]
+
+    return {
+        "id": idea_id,
+        "text": text[:500],
+        "createdAt": created_at,
+        "author": author,
+    }
+
+
+def _read_idea_parking() -> list[dict[str, Any]]:
+    with _IDEA_PARKING_LOCK:
+        if not IDEA_PARKING_FILE.exists():
+            return []
+        try:
+            payload = json.loads(IDEA_PARKING_FILE.read_text(encoding="utf-8"))
+        except Exception:
+            return []
+
+        if not isinstance(payload, list):
+            return []
+
+        normalized: list[dict[str, Any]] = []
+        for item in payload:
+            if not isinstance(item, dict):
+                continue
+            parsed = _normalize_idea_item(item)
+            if parsed:
+                normalized.append(parsed)
+        return normalized
+
+
+def _write_idea_parking(ideas: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    normalized: list[dict[str, Any]] = []
+    for item in ideas:
+        if not isinstance(item, dict):
+            continue
+        parsed = _normalize_idea_item(item)
+        if parsed:
+            normalized.append(parsed)
+
+    normalized = normalized[:1000]
+    with _IDEA_PARKING_LOCK:
+        IDEA_PARKING_FILE.parent.mkdir(parents=True, exist_ok=True)
+        IDEA_PARKING_FILE.write_text(json.dumps(normalized, ensure_ascii=True, indent=2), encoding="utf-8")
+    return normalized
 
 
 def _mobile_token() -> str:
@@ -437,6 +503,87 @@ def put_admin_settings(
         "settings": saved,
         "saved_by": ctx.get("username"),
         "saved_role": ctx.get("role"),
+    }
+
+
+@app.get("/api/ideas")
+def get_ideas(_: dict[str, Any] = Depends(require_operator)) -> dict:
+    ideas = _read_idea_parking()
+    return {
+        "ok": True,
+        "ideas": ideas,
+        "count": len(ideas),
+        "path": str(IDEA_PARKING_FILE),
+    }
+
+
+@app.post("/api/ideas")
+def post_idea(
+    req: IdeaCreatePayload,
+    request: Request,
+    ctx: dict[str, Any] = Depends(require_operator),
+) -> dict:
+    text = req.text.strip()
+    if not text:
+        raise HTTPException(status_code=422, detail="Idea text cannot be empty")
+
+    ideas = _read_idea_parking()
+    idea = _normalize_idea_item(
+        {
+            "id": secrets.token_hex(8),
+            "text": text,
+            "createdAt": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+            "author": ctx.get("username", ""),
+        }
+    )
+    if not idea:
+        raise HTTPException(status_code=422, detail="Invalid idea payload")
+
+    ideas.insert(0, idea)
+    saved = _write_idea_parking(ideas)
+    _audit(request, f"idea_add:{ctx.get('username', 'unknown')}", 0)
+    return {
+        "ok": True,
+        "idea": idea,
+        "count": len(saved),
+    }
+
+
+@app.delete("/api/ideas/{idea_id}")
+def delete_idea(
+    idea_id: str,
+    request: Request,
+    ctx: dict[str, Any] = Depends(require_operator),
+) -> dict:
+    idea_id = idea_id.strip()
+    if not idea_id:
+        raise HTTPException(status_code=422, detail="idea_id is required")
+
+    ideas = _read_idea_parking()
+    remaining = [item for item in ideas if str(item.get("id", "")) != idea_id]
+    deleted = len(ideas) - len(remaining)
+    if deleted <= 0:
+        raise HTTPException(status_code=404, detail="Idea not found")
+
+    saved = _write_idea_parking(remaining)
+    _audit(request, f"idea_delete:{ctx.get('username', 'unknown')}:{idea_id}", 0)
+    return {
+        "ok": True,
+        "deleted": deleted,
+        "count": len(saved),
+    }
+
+
+@app.delete("/api/ideas")
+def clear_ideas(
+    request: Request,
+    ctx: dict[str, Any] = Depends(require_operator),
+) -> dict:
+    _write_idea_parking([])
+    _audit(request, f"idea_clear_all:{ctx.get('username', 'unknown')}", 0)
+    return {
+        "ok": True,
+        "count": 0,
     }
 
 

@@ -16,6 +16,7 @@ const ADMIN_ACCOUNTS = {
   "ctoa-bot": { role: "operator" },
 };
 const RUNE_GLYPH_POOL = ["✶", "✦", "✹", "✷", "✧", "✵", "⚡", "✺", "❋", "✴"];
+let ideaCache = [];
 
 function createIdeaId() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -137,13 +138,79 @@ function saveSessionJson(key, value) {
   sessionStorage.setItem(key, JSON.stringify(value));
 }
 
+function canUseIdeasBackend() {
+  return Boolean(getApiBase() && getApiToken() && isAdminLoggedIn());
+}
+
 function loadIdeas() {
-  const parsed = loadJson(IDEA_STORAGE_KEY, []);
-  return Array.isArray(parsed) ? parsed : [];
+  return Array.isArray(ideaCache) ? ideaCache : [];
 }
 
 function saveIdeas(ideas) {
-  saveJson(IDEA_STORAGE_KEY, ideas);
+  const normalized = Array.isArray(ideas) ? ideas : [];
+  ideaCache = normalized;
+  saveJson(IDEA_STORAGE_KEY, normalized);
+}
+
+async function refreshIdeasFromBackend() {
+  if (!canUseIdeasBackend()) {
+    return loadIdeas();
+  }
+  const payload = await apiRequest("/api/ideas");
+  const ideas = Array.isArray(payload?.ideas) ? payload.ideas : [];
+  saveIdeas(ideas);
+  return ideas;
+}
+
+async function addIdea(text) {
+  const trimmed = (text || "").trim();
+  if (!trimmed) {
+    return;
+  }
+
+  if (canUseIdeasBackend()) {
+    const payload = await apiRequest("/api/ideas", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: trimmed }),
+    });
+    const nextIdea = payload?.idea;
+    if (nextIdea && nextIdea.id) {
+      const next = [nextIdea, ...loadIdeas().filter((entry) => entry.id !== nextIdea.id)];
+      saveIdeas(next);
+      return;
+    }
+    await refreshIdeasFromBackend();
+    return;
+  }
+
+  const ideas = loadIdeas();
+  ideas.unshift({
+    id: createIdeaId(),
+    text: trimmed,
+    createdAt: new Date().toISOString(),
+  });
+  saveIdeas(ideas);
+}
+
+async function removeIdea(ideaId) {
+  if (canUseIdeasBackend()) {
+    await apiRequest(`/api/ideas/${encodeURIComponent(ideaId)}`, {
+      method: "DELETE",
+    });
+    saveIdeas(loadIdeas().filter((entry) => entry.id !== ideaId));
+    return;
+  }
+  saveIdeas(loadIdeas().filter((entry) => entry.id !== ideaId));
+}
+
+async function clearIdeas() {
+  if (canUseIdeasBackend()) {
+    await apiRequest("/api/ideas", {
+      method: "DELETE",
+    });
+  }
+  saveIdeas([]);
 }
 
 function formatDate(isoString) {
@@ -223,10 +290,16 @@ function renderIdeas() {
     removeButton.type = "button";
     removeButton.className = "idea-remove";
     removeButton.textContent = "Usun";
-    removeButton.addEventListener("click", () => {
-      const next = loadIdeas().filter((entry) => entry.id !== idea.id);
-      saveIdeas(next);
-      renderIdeas();
+    removeButton.addEventListener("click", async () => {
+      removeButton.disabled = true;
+      try {
+        await removeIdea(idea.id);
+        renderIdeas();
+      } catch (error) {
+        alert(`Blad usuwania pomyslu: ${error.message || error}`);
+      } finally {
+        removeButton.disabled = false;
+      }
     });
 
     li.appendChild(body);
@@ -246,31 +319,43 @@ function setupIdeaForm() {
     return;
   }
 
-  form.addEventListener("submit", (event) => {
+  form.addEventListener("submit", async (event) => {
     event.preventDefault();
     const value = input.value.trim();
     if (!value) {
       return;
     }
 
-    const ideas = loadIdeas();
-    ideas.unshift({
-      id: createIdeaId(),
-      text: value,
-      createdAt: new Date().toISOString(),
-    });
-
-    saveIdeas(ideas);
-    input.value = "";
-    renderIdeas();
+    const submitButton = form.querySelector('button[type="submit"]');
+    if (submitButton) {
+      submitButton.disabled = true;
+    }
+    try {
+      await addIdea(value);
+      input.value = "";
+      renderIdeas();
+    } catch (error) {
+      alert(`Blad zapisu pomyslu: ${error.message || error}`);
+    } finally {
+      if (submitButton) {
+        submitButton.disabled = false;
+      }
+    }
   });
 
-  clearAll.addEventListener("click", () => {
+  clearAll.addEventListener("click", async () => {
     if (!confirm("Na pewno usunac wszystkie zaparkowane pomysly?")) {
       return;
     }
-    saveIdeas([]);
-    renderIdeas();
+    clearAll.disabled = true;
+    try {
+      await clearIdeas();
+      renderIdeas();
+    } catch (error) {
+      alert(`Blad czyszczenia parkingu: ${error.message || error}`);
+    } finally {
+      clearAll.disabled = false;
+    }
   });
 }
 
@@ -589,8 +674,14 @@ function setupAdminAuth() {
         } catch (_error) {
           // Keep local state when remote panel settings are unavailable.
         }
+        try {
+          await refreshIdeasFromBackend();
+        } catch (_error) {
+          // Keep local ideas list when backend parking is unavailable.
+        }
         showAuthModal(false);
         applyAdminState(loadAdminState());
+        renderIdeas();
         adminStatus.textContent = `Zalogowano przez backend jako ${login.username} (${login.role}).`;
         return;
       } catch (error) {
@@ -766,6 +857,11 @@ function setupAdminAuth() {
     }
     setApiSession("", "", "");
     setAdminLoggedIn(null);
+    ideaCache = loadJson(IDEA_STORAGE_KEY, []);
+    if (!Array.isArray(ideaCache)) {
+      ideaCache = [];
+    }
+    renderIdeas();
     applyAdminState(loadAdminState());
     adminStatus.textContent = "Wylogowano.";
   });
@@ -1045,6 +1141,10 @@ function setupDecks() {
 }
 
 showAuthModal(false);
+ideaCache = loadJson(IDEA_STORAGE_KEY, []);
+if (!Array.isArray(ideaCache)) {
+  ideaCache = [];
+}
 setupIdeaForm();
 renderIdeas();
 setupAdminAuth();
@@ -1054,11 +1154,12 @@ setupDecks();
 applyAdminState(loadAdminState());
 
 if (isAdminLoggedIn() && getApiBase() && getApiToken()) {
-  loadAdminStateFromBackend()
-    .then((remoteState) => {
+  Promise.all([loadAdminStateFromBackend(), refreshIdeasFromBackend()])
+    .then(([remoteState]) => {
       if (remoteState) {
         applyAdminState(remoteState);
       }
+      renderIdeas();
     })
     .catch(() => {
       // Ignore startup sync failures; local state remains active.
