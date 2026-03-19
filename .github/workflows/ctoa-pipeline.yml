@@ -159,19 +159,26 @@ jobs:
               echo "Failed to compute PR diff for YAML lint"
               exit 1
             fi
-
-            mapfile -d '' CHANGED_YAML < <(grep -zE '\\.(yml|yaml)$' /tmp/changed-files.zlist || true)
-            if [ "${#CHANGED_YAML[@]}" -eq 0 ]; then
-              echo "No changed YAML files in this PR; skipping YAML lint."
-              exit 0
-            fi
-
-            echo "Linting changed YAML files:"
-            printf '%s\n' "${CHANGED_YAML[@]}"
-            yamllint -d "$YAMLLINT_CFG" "${CHANGED_YAML[@]}"
           else
-            yamllint -d "$YAMLLINT_CFG" .
+            if [ -n "${{ github.event.before }}" ] && [ "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ]; then
+              if ! git diff --diff-filter=ACMRT --name-only -z "${{ github.event.before }}...${{ github.sha }}" > /tmp/changed-files.zlist; then
+                echo "Failed to compute push diff for YAML lint"
+                exit 1
+              fi
+            else
+              git ls-files -z '*.yml' '*.yaml' > /tmp/changed-files.zlist
+            fi
           fi
+
+          mapfile -d '' CHANGED_YAML < <(grep -zE '\\.(yml|yaml)$' /tmp/changed-files.zlist || true)
+          if [ "${#CHANGED_YAML[@]}" -eq 0 ]; then
+            echo "No changed YAML files; skipping YAML lint."
+            exit 0
+          fi
+
+          echo "Linting changed YAML files:"
+          printf '%s\n' "${CHANGED_YAML[@]}"
+          yamllint -d "$YAMLLINT_CFG" "${CHANGED_YAML[@]}"
 
       - name: Lint Markdown basics
         shell: bash
