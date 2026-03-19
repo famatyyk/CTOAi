@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: CTOA Experiments Operating Plan
+    url: https://github.com/famatyyk/CTOAi/blob/main/docs/experiments/agent-experiment-week-plan.md
+    about: Read the 7-day experimentation flow before opening new experiment issues.
+  - name: CTOA Decision Memo Template
+    url: https://github.com/famatyyk/CTOAi/blob/main/docs/experiments/decision-memo-template.md
+    about: Use this memo format for promote, hold, and kill decisions.
