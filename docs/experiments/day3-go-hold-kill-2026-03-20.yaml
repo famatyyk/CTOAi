@@ -1,0 +1,48 @@
+date: "2026-03-20"
+phase: "day3"
+checkpoint: "16:30 CET"
+context:
+  sprint: "Sprint-007"
+  active_experiments:
+    - "EXP-001"
+    - "EXP-002"
+
+decisions:
+  go:
+    - id: "EXP-001"
+      name: "Prompt Quality Lift"
+      outcome: "promotion-candidate"
+      reason:
+        - "Quality gains from Day 2 held under replay"
+        - "Operator-load improvement remained stable"
+        - "Reproducibility improved and no new safety regression appeared"
+      next_action: "Package result and move into release-lane promotion prep"
+      owners:
+        - "prompt-forge"
+        - "qa-safety"
+        - "ci-publisher"
+
+  hold: []
+
+  kill:
+    - id: "EXP-002"
+      name: "Tool Routing Efficiency"
+      outcome: "closed"
+      reason:
+        - "Rescope removed complexity concerns but did not produce strong enough efficiency gain"
+        - "No durable retry reduction versus baseline"
+        - "Experiment cost no longer justified"
+      next_action: "Archive findings and close current routing lane"
+      owners:
+        - "tool-advisor"
+        - "pm-roadmap"
+
+promotion_readiness:
+  exp_001: "ready-for-promotion-prep"
+  exp_002: "not-promotable"
+
+approval_block:
+  queen_ctoa: "approved"
+  pm_roadmap: "confirmed"
+  qa_safety: "signed-off-with-constraints"
+  ci_publisher: "no-release-executed-day3"
