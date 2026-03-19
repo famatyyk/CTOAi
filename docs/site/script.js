@@ -50,6 +50,18 @@ function setApiBase(value) {
   }
 }
 
+function syncApiBaseInputs(value = getApiBase()) {
+  const normalized = normalizeApiBase(value);
+  const drawerInput = document.getElementById("api-base");
+  const authInput = document.getElementById("auth-api-base");
+  if (drawerInput) {
+    drawerInput.value = normalized;
+  }
+  if (authInput) {
+    authInput.value = normalized;
+  }
+}
+
 function getApiToken() {
   return sessionStorage.getItem(ADMIN_API_TOKEN_KEY) || "";
 }
@@ -593,6 +605,7 @@ function setupAdminAuth() {
   const submit = document.getElementById("auth-submit");
   const status = document.getElementById("auth-status");
   const hint = document.getElementById("auth-hint");
+  const authApiBaseInput = document.getElementById("auth-api-base");
   const authUserInput = document.getElementById("auth-user");
   const authPassInput = document.getElementById("auth-pass");
 
@@ -611,6 +624,7 @@ function setupAdminAuth() {
   if (apiBaseInput) {
     apiBaseInput.value = getApiBase();
   }
+  syncApiBaseInputs();
 
   open.addEventListener("click", () => {
     if (isAdminLoggedIn()) {
@@ -629,6 +643,7 @@ function setupAdminAuth() {
     if (hasApiBase) {
       hint.textContent = "Logowanie przez backend API jest aktywne.";
     }
+    syncApiBaseInputs();
     status.textContent = "";
     showAuthModal(true);
   });
@@ -651,8 +666,10 @@ function setupAdminAuth() {
     const user = (authUserInput?.value || "").trim().toLowerCase();
     const pass = authPassInput?.value || "";
 
-    if (apiBaseInput) {
-      setApiBase(apiBaseInput.value);
+    const apiBaseCandidate = authApiBaseInput?.value || apiBaseInput?.value || "";
+    if (apiBaseCandidate) {
+      setApiBase(apiBaseCandidate);
+      syncApiBaseInputs();
     }
 
     const apiBase = getApiBase();
@@ -751,6 +768,7 @@ function setupAdminAuth() {
 
     if (apiBaseInput) {
       setApiBase(apiBaseInput.value);
+      syncApiBaseInputs(apiBaseInput.value);
     }
 
     const next = {
@@ -791,6 +809,7 @@ function setupAdminAuth() {
       }
       if (apiBaseInput) {
         setApiBase(apiBaseInput.value);
+        syncApiBaseInputs(apiBaseInput.value);
       }
       if (!getApiBase()) {
         adminStatus.textContent = "Brak API base URL.";
@@ -857,6 +876,7 @@ function setupAdminAuth() {
     }
     setApiSession("", "", "");
     setAdminLoggedIn(null);
+    syncApiBaseInputs();
     ideaCache = loadJson(IDEA_STORAGE_KEY, []);
     if (!Array.isArray(ideaCache)) {
       ideaCache = [];

@@ -6,7 +6,7 @@ It defines what is active, what is frozen, what matters most, and what can run i
 
 ## Executive Summary
 - Primary lane: secure and stabilize the website + mobile console control surface.
-- Secondary lane: validate the new auth, role, and backend settings flow on VPS.
+- Secondary lane: run one mobile-device QA pass and close remaining surface polish only where it improves usability.
 - Controlled lane: experiments remain documented, but only `EXP-001` is promotion-prep relevant.
 - Frozen lane: `EXP-002` stays archived unless explicitly reopened.
 - Support lane: CI guardrails are implemented and verified; no urgent new work unless regressions appear.
@@ -14,19 +14,16 @@ It defines what is active, what is frozen, what matters most, and what can run i
 ## Priority Levels
 
 ### P0 - Immediate Control And Safety
-- Verify owner/operator flows against the real backend on VPS.
-- Confirm production env values are correct:
-  - `CTOA_ENV=prod`
-  - `CTOA_CORS_ORIGINS=<explicit origins only>`
-  - `CTOA_OWNER_PASSWORD`
-  - `CTOA_OPERATOR_PASSWORD`
-- Validate that owner-only endpoints reject operator actions.
-- Confirm the site can save/load admin settings through backend storage.
+- Done:
+  - owner/operator flows validated against the real backend on VPS
+  - production env owner/operator credentials confirmed
+  - owner-only endpoints reject operator actions with `403`
+  - site can save/load admin settings through backend storage
 
 ### P1 - Product Surface Stabilization
 - Finish website polish only where it improves usability directly.
-- Replace current menu sprite compromises with dedicated cleaned icons if needed.
-- Decide whether Parking Pomyslow remains local-only or becomes backend-backed.
+- Keep current menu atlas positions for this sprint; dedicated extracted icons are not worth the churn right now.
+- Parking Pomyslow is backend-backed with local fallback.
 - Run one mobile-device QA pass for layout, drawer behavior, and admin workflow.
 
 ### P2 - Release And Promotion Preparation
@@ -48,16 +45,18 @@ Current state:
 - local site is working
 - Enter login bug fixed
 - backend login/session integration exists
-- menu sprites are improved but still not final-quality UI assets
+- menu sprites are stable enough for current sprint; extraction work deferred
+- Parking Pomyslow syncs through backend when API session is active
 
 ### 2. Mobile Console API / Backend Security
-Status: active
+Status: validated
 Goal: owner/operator auth, role gates, backend settings persistence, production-safe CORS.
 Current state:
 - session login endpoints exist
 - owner-only gates exist on mutating actions
 - admin settings GET/PUT exists
 - prod startup guard blocks wildcard CORS
+- VPS validation passed for owner login, owner write, and operator `403` guard
 
 ### 3. CI / Guardrails
 Status: monitor only
@@ -88,37 +87,33 @@ Action: use as operational reference, no urgent new build work
 - Freeze new experiments.
 - Freeze broad site redesign ideas.
 - Freeze low-value cosmetic iteration unless tied to clarity or trust.
-- Freeze non-essential backend expansion until auth validation is complete.
+- Freeze non-essential backend expansion unless it directly supports release-readiness.
 
 ## What To Do Next
 
 ### Next 1
-Run VPS validation for owner/operator flows end-to-end.
+Run one mobile-device QA pass for the site.
 
 Success means:
-- owner can log in, save settings, sync, and use protected actions
-- operator can log in, read state, but is blocked from owner-only actions
-- site and backend agree on saved settings
+- menu is readable and tappable on device width
+- admin modal and drawer behave correctly on touch
+- Parking Pomyslow add/remove flow works with backend session
+- no blocking layout break appears on Samsung Note 10+ class viewport
 
 ### Next 2
-Make the asset decision for menu icons.
+Keep current sprite atlas approach for now.
 
-Choose one:
-- keep current improved atlas positions for now
-- or cut 4 dedicated icons from the sprite pack for cleaner UI
+Reason:
+- current icons are serviceable and already attributed
+- extracting dedicated files adds churn without meaningfully improving release readiness
 
 ### Next 3
-Decide storage model for Parking Pomyslow.
-
-Choose one:
-- local-only for private ideation
-- backend-backed for multi-device continuity
+Record and fix any mobile QA findings only if they affect usability or trust.
 
 ## Parallelizable Work
 
 ### Safe To Run In Parallel
-- VPS QA checklist execution
-- icon extraction / asset cleanup
+- mobile QA checklist execution
 - documentation cleanup and runbook refinement
 
 ### Should Stay Serial
@@ -161,19 +156,15 @@ Choose one:
 
 ### Agent A - VPS QA
 Scope:
-- execute owner/operator validation
-- verify protected endpoints
-- verify backend settings persistence
+- closed
 Deliverable:
 - short checklist with pass/fail and blockers only
 
 ### Agent B - UI Assets
 Scope:
-- extract or prepare 4 dedicated menu icons from the sprite pack
-- remove atlas compromise if possible
-- keep attribution intact
+- keep current atlas approach unless device QA shows a readability issue
 Deliverable:
-- final icon files or a clear recommendation to keep current atlas approach
+- clear recommendation only
 
 ### Agent C - Docs / Control Surface
 Scope:
@@ -191,6 +182,4 @@ Deliverable:
 - anything that does not improve control, trust, or deployment readiness
 
 ## Decision Gate After Tomorrow Morning
-- If VPS QA passes: continue with Parking Pomyslow storage decision.
-- If VPS QA fails: stop product expansion and fix auth/deploy gaps only.
-- If VPS QA is mixed: freeze visuals and finish backend clarity first.
+- VPS QA passed: continue with mobile QA and only minimal surface polish.
