@@ -2,6 +2,15 @@
 
 **Last Updated:** 2026-03-12T20:05:12+00:00
 
+## Mobile QA Validation (2026-03-19)
+
+- [x] Menu and mobile layout readability/tap flow validated (Samsung Note 10+ class viewport)
+- [x] Owner login via modal with API base validated
+- [x] Owner settings save + persist-after-refresh validated
+- [x] Parking Pomyslow add/remove and counter transitions validated
+- [x] Operator restrictions validated (`showPrices` and `reset localStorage` controls disabled)
+- [x] Overall mobile QA status: PASS
+
 ## Pre-Deployment Checks
 
 ### Code Quality

@@ -6,7 +6,7 @@ It defines what is active, what is frozen, what matters most, and what can run i
 
 ## Executive Summary
 - Primary lane: secure and stabilize the website + mobile console control surface.
-- Secondary lane: run one mobile-device QA pass and close remaining surface polish only where it improves usability.
+- Secondary lane: package `EXP-001` promotion evidence and release-lane readiness artifacts.
 - Controlled lane: experiments remain documented, but only `EXP-001` is promotion-prep relevant.
 - Frozen lane: `EXP-002` stays archived unless explicitly reopened.
 - Support lane: CI guardrails are implemented and verified; no urgent new work unless regressions appear.
@@ -24,7 +24,10 @@ It defines what is active, what is frozen, what matters most, and what can run i
 - Finish website polish only where it improves usability directly.
 - Keep current menu atlas positions for this sprint; dedicated extracted icons are not worth the churn right now.
 - Parking Pomyslow is backend-backed with local fallback.
-- Run one mobile-device QA pass for layout, drawer behavior, and admin workflow.
+- Done:
+  - mobile-device QA pass completed (Samsung Note 10+ class checks)
+  - owner/operator touch workflows validated
+  - no release-blocking mobile regressions found
 
 ### P2 - Release And Promotion Preparation
 - Keep `EXP-001` as the only experiment lane eligible for promotion prep.
@@ -92,28 +95,29 @@ Action: use as operational reference, no urgent new build work
 ## What To Do Next
 
 ### Next 1
-Run one mobile-device QA pass for the site.
+Prepare `EXP-001` promotion package for release-lane admission.
 
 Success means:
-- menu is readable and tappable on device width
-- admin modal and drawer behave correctly on touch
-- Parking Pomyslow add/remove flow works with backend session
-- no blocking layout break appears on Samsung Note 10+ class viewport
+- evidence bundle is complete and linked
+- approvals are captured (`qa-safety`, `ci-publisher`, `queen-ctoa`)
+- rollback note is attached and explicit
+- release-lane readiness checks are all green
 
 ### Next 2
-Keep current sprite atlas approach for now.
+Freeze scope after packaging and run promotion pre-check.
 
 Reason:
-- current icons are serviceable and already attributed
-- extracting dedicated files adds churn without meaningfully improving release readiness
+- avoid reopening UI scope now that mobile QA passed
+- preserve deterministic path to promotion decision
 
 ### Next 3
-Record and fix any mobile QA findings only if they affect usability or trust.
+Record promotion go/hold decision for `EXP-001` in experiment lane docs.
 
 ## Parallelizable Work
 
 ### Safe To Run In Parallel
-- mobile QA checklist execution
+- promotion evidence collation
+- approval collection and gate pre-check
 - documentation cleanup and runbook refinement
 
 ### Should Stay Serial
@@ -182,4 +186,4 @@ Deliverable:
 - anything that does not improve control, trust, or deployment readiness
 
 ## Decision Gate After Tomorrow Morning
-- VPS QA passed: continue with mobile QA and only minimal surface polish.
+- VPS QA passed and mobile QA passed: proceed with `EXP-001` promotion prep and gate review.
