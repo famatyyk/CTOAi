@@ -1,0 +1,96 @@
+name: CTOA Approval Watchdog
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/15 * * * *"
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  check-waiting-approvals:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check waiting approval publish jobs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          SLA_MINUTES: "60"
+        run: |
+          python - <<'PY'
+          import datetime as dt
+          import json
+          import os
+          import sys
+          import urllib.request
+
+          repo = os.environ.get("GITHUB_REPOSITORY", "famatyyk/CTOAi")
+          owner, name = repo.split("/", 1)
+          token = os.environ.get("GITHUB_TOKEN", "")
+          sla_minutes = int(os.environ.get("SLA_MINUTES", "60"))
+
+          headers = {
+              "User-Agent": "CTOA-Approval-Watchdog",
+              "Accept": "application/vnd.github+json",
+          }
+          if token:
+              headers["Authorization"] = f"Bearer {token}"
+
+          def fetch(url: str) -> dict:
+              req = urllib.request.Request(url, headers=headers)
+              with urllib.request.urlopen(req, timeout=30) as resp:
+                  return json.loads(resp.read().decode("utf-8"))
+
+          now = dt.datetime.now(dt.timezone.utc)
+          runs = fetch(f"https://api.github.com/repos/{owner}/{name}/actions/runs?per_page=50").get("workflow_runs", [])
+          waiting_alerts = []
+
+          for run in runs:
+              if run.get("name") != "CTOA Pipeline":
+                  continue
+              if run.get("status") != "waiting":
+                  continue
+
+              run_id = run["id"]
+              jobs = fetch(f"https://api.github.com/repos/{owner}/{name}/actions/runs/{run_id}/jobs").get("jobs", [])
+              publish = None
+              for job in jobs:
+                  if job.get("name") == "Approval Publish":
+                      publish = job
+                      break
+              if not publish or publish.get("status") != "waiting":
+                  continue
+
+              started_at = publish.get("started_at") or run.get("created_at")
+              if not started_at:
+                  continue
+              started = dt.datetime.fromisoformat(started_at.replace("Z", "+00:00"))
+              age_min = int((now - started).total_seconds() // 60)
+              if age_min >= sla_minutes:
+                  waiting_alerts.append(
+                      {
+                          "run_id": run_id,
+                          "age_min": age_min,
+                          "run_url": run.get("html_url"),
+                          "job_url": publish.get("html_url"),
+                      }
+                  )
+
+          print(f"Found {len(waiting_alerts)} waiting approval jobs beyond SLA ({sla_minutes} min).")
+          summary = os.environ.get("GITHUB_STEP_SUMMARY")
+          if summary:
+              with open(summary, "a", encoding="utf-8") as fh:
+                  fh.write("## Approval Watchdog\n\n")
+                  fh.write(f"- SLA threshold: {sla_minutes} minutes\n")
+                  fh.write(f"- Violations: {len(waiting_alerts)}\n\n")
+                  for alert in waiting_alerts:
+                      fh.write(
+                          f"- Run #{alert['run_id']} waiting for {alert['age_min']} min: {alert['run_url']}\n"
+                      )
+
+          if waiting_alerts:
+              print("Approval waiting SLA violated.")
+              sys.exit(1)
+          PY

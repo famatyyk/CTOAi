@@ -27,6 +27,33 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Preflight site validation
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          test -d docs/site
+          test -f docs/site/index.html
+          test -f docs/site/style.css
+          test -f docs/site/script.js
+
+          if ! grep -q "<title>" docs/site/index.html; then
+            echo "Missing <title> in docs/site/index.html"
+            exit 1
+          fi
+
+          if ! grep -q "Build:" docs/site/index.html; then
+            echo "Missing build strip marker in docs/site/index.html"
+            exit 1
+          fi
+
+          if [ ! -s docs/site/style.css ] || [ ! -s docs/site/script.js ]; then
+            echo "Site assets are empty."
+            exit 1
+          fi
+
+          echo "Site preflight passed."
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
 

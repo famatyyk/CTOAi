@@ -1,0 +1,43 @@
+name: CTOA CI Executive Weekly
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "30 8 * * 1"
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  ci-executive-report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Generate CI executive report
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          python scripts/ops/ci_executive_report.py \
+            --output artifacts/ci-executive-weekly.md \
+            --window-days 7 30
+
+      - name: Publish report in workflow summary
+        shell: bash
+        run: |
+          cat artifacts/ci-executive-weekly.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-executive-weekly
+          path: artifacts/ci-executive-weekly.md
+          if-no-files-found: error

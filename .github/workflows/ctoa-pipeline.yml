@@ -229,8 +229,27 @@ jobs:
               exit 1
             fi
           else
-            if git ls-files -z | xargs -0 grep -nIE "$pattern"; then
-              echo "Potential secrets detected in tracked files"
+            if [ -n "${{ github.event.before }}" ] && [ "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ]; then
+              if ! git diff --diff-filter=ACMRT --name-only -z "${{ github.event.before }}...${{ github.sha }}" > /tmp/changed-files.zlist; then
+                echo "Failed to compute push diff for secret scan"
+                exit 1
+              fi
+            else
+              git ls-files -z > /tmp/changed-files.zlist
+            fi
+
+            CHANGED_FILES=()
+            while IFS= read -r -d '' file; do
+              CHANGED_FILES+=("$file")
+            done < /tmp/changed-files.zlist
+
+            if [ "${#CHANGED_FILES[@]}" -eq 0 ]; then
+              echo "No changed files on push; skipping secret scan."
+              exit 0
+            fi
+
+            if grep -nIE "$pattern" -- "${CHANGED_FILES[@]}"; then
+              echo "Potential secrets detected in changed push files"
               exit 1
             fi
           fi
