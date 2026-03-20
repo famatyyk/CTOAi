@@ -84,6 +84,17 @@ function setApiSession(token, user, role) {
   }
 }
 
+function getConsoleUrl() {
+  const base = getApiBase();
+  if (base) {
+    return `${base}/console`;
+  }
+  if (typeof window !== "undefined" && window.location && /^https?:$/i.test(window.location.protocol)) {
+    return `${window.location.origin}/console`;
+  }
+  return "http://127.0.0.1:8787/console";
+}
+
 async function apiRequest(path, init = {}) {
   const base = getApiBase();
   if (!base) {
@@ -879,7 +890,7 @@ function setupAdminAuth() {
         adminStatus.textContent = "Przejscie do console wymaga roli owner.";
         return;
       }
-      window.location.href = "/console";
+      window.location.href = getConsoleUrl();
     });
   }
 
