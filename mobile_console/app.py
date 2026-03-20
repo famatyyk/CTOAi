@@ -21,6 +21,7 @@ from pydantic import BaseModel, Field
 
 ROOT = Path(__file__).resolve().parent.parent
 STATIC_DIR = ROOT / "mobile_console" / "static"
+LIVE_DASHBOARD_HTML = ROOT / "docs" / "site" / "live-dashboard.html"
 AUDIT_LOG = ROOT / "logs" / "mobile-console-audit.log"
 AUTO_TRAINER_DIR = Path(os.environ.get("CTOA_TRAINING_REPORT_DIR", str(ROOT / "runtime" / "training-reports")))
 GENERATED_DIR = Path(os.environ.get("CTOA_GENERATED_DIR", "/opt/ctoa/generated"))
@@ -383,6 +384,12 @@ def _audit(request: Request, command: str, code: int) -> None:
 @app.get("/")
 def index() -> FileResponse:
     return FileResponse(str(STATIC_DIR / "index.html"))
+
+
+@app.get("/live-dashboard")
+def live_dashboard() -> FileResponse:
+    """Serve the login-based live dashboard (username/password auth)."""
+    return FileResponse(str(LIVE_DASHBOARD_HTML))
 
 
 @app.get("/api/health")
