@@ -21,6 +21,9 @@ from pydantic import BaseModel, Field
 
 ROOT = Path(__file__).resolve().parent.parent
 STATIC_DIR = ROOT / "mobile_console" / "static"
+SITE_DIR = ROOT / "docs" / "site"
+SITE_ASSETS_DIR = SITE_DIR / "assets"
+SITE_INDEX_HTML = SITE_DIR / "index.html"
 LIVE_DASHBOARD_HTML = ROOT / "docs" / "site" / "live-dashboard.html"
 AUDIT_LOG = ROOT / "logs" / "mobile-console-audit.log"
 AUTO_TRAINER_DIR = Path(os.environ.get("CTOA_TRAINING_REPORT_DIR", str(ROOT / "runtime" / "training-reports")))
@@ -51,6 +54,7 @@ app.add_middleware(
 )
 
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+app.mount("/assets", StaticFiles(directory=str(SITE_ASSETS_DIR)), name="site-assets")
 
 
 class CommandRequest(BaseModel):
@@ -383,7 +387,17 @@ def _audit(request: Request, command: str, code: int) -> None:
 
 @app.get("/")
 def index() -> FileResponse:
-    return FileResponse(str(STATIC_DIR / "index.html"))
+    return FileResponse(str(SITE_INDEX_HTML))
+
+
+@app.get("/style.css")
+def site_style() -> FileResponse:
+    return FileResponse(str(SITE_DIR / "style.css"))
+
+
+@app.get("/script.js")
+def site_script() -> FileResponse:
+    return FileResponse(str(SITE_DIR / "script.js"))
 
 
 @app.get("/live-dashboard")
