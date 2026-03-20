@@ -2,6 +2,48 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
+			"label": "CTOA: Start Mobile Console (dev)",
+			"type": "shell",
+			"command": ".venv/Scripts/uvicorn.exe mobile_console.app:app --host 0.0.0.0 --port 8787 --reload",
+			"options": {
+				"env": {
+					"CTOA_OWNER_USER": "cto",
+					"CTOA_OWNER_PASSWORD": "ctoa2026",
+					"CTOA_OPERATOR_USER": "operator",
+					"CTOA_OPERATOR_PASSWORD": "ctoa2026",
+					"CTOA_MOBILE_TOKEN": "dev-token"
+				}
+			},
+			"isBackground": true,
+			"problemMatcher": {
+				"pattern": { "regexp": "^$" },
+				"background": {
+					"activeOnStart": true,
+					"beginsPattern": "Started reloader",
+					"endsPattern": "Application startup complete"
+				}
+			},
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated",
+				"focus": false
+			}
+		},
+		{
+			"label": "CTOA: Run All Tests",
+			"type": "shell",
+			"command": ".venv/Scripts/python.exe -m pytest tests/ --ignore=tests/e2e -v",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			},
+			"group": {
+				"kind": "test",
+				"isDefault": true
+			}
+		},
+		{
 			"label": "CTOA: Validate Pack",
 			"type": "shell",
 			"command": "echo CTOA AI Toolkit pack is configured",

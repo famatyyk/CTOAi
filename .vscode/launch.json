@@ -1,0 +1,39 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "CTOA: Start Mobile Console (dev)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": ["mobile_console.app:app", "--host", "0.0.0.0", "--port", "8787", "--reload"],
+      "env": {
+        "CTOA_OWNER_USER": "cto",
+        "CTOA_OWNER_PASSWORD": "ctoa2026",
+        "CTOA_OPERATOR_USER": "operator",
+        "CTOA_OPERATOR_PASSWORD": "ctoa2026",
+        "CTOA_MOBILE_TOKEN": "dev-token"
+      },
+      "console": "integratedTerminal",
+      "justMyCode": false
+    },
+    {
+      "name": "CTOA: Debug Current Test File",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["${file}", "-v"],
+      "console": "integratedTerminal",
+      "justMyCode": false
+    },
+    {
+      "name": "CTOA: Debug All Tests",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["tests/", "--ignore=tests/e2e", "-v"],
+      "console": "integratedTerminal",
+      "justMyCode": false
+    }
+  ]
+}
