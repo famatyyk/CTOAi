@@ -20,6 +20,7 @@ httpx>=0.28.0
 fastapi>=0.115.0
 uvicorn>=0.30.0
 playwright>=1.54.0
+psycopg2-binary>=2.9.9
 
 # Utilities
 python-dateutil>=2.8.2
