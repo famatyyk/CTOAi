@@ -145,6 +145,12 @@ Fast path:
 2. Verify generated files in `generated/` (local) or `/opt/ctoa/generated` (VPS)
 3. Validate with browser E2E smoke and full pytest
 
+Windows background loop (non-blocking):
+1. Start: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/ops/orchestrator-loop.ps1 -Action start`
+2. Status: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/ops/orchestrator-loop.ps1 -Action status`
+3. Tail log: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/ops/orchestrator-loop.ps1 -Action tail`
+4. Stop: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/ops/orchestrator-loop.ps1 -Action stop`
+
 ## Next Execution Plan
 
 1. Add generated artifact manifest (`manifest.json`) per orchestrator run.
