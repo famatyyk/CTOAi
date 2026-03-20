@@ -37,8 +37,16 @@ function normalizeApiBase(value) {
   return (value || "").trim().replace(/\/$/, "");
 }
 
+function inferSameOriginApiBase() {
+  if (typeof window === "undefined" || !window.location) {
+    return "";
+  }
+  return /^https?:$/i.test(window.location.protocol) ? normalizeApiBase(window.location.origin) : "";
+}
+
 function getApiBase() {
-  return normalizeApiBase(localStorage.getItem(ADMIN_API_BASE_KEY) || "");
+  const stored = normalizeApiBase(localStorage.getItem(ADMIN_API_BASE_KEY) || "");
+  return stored || inferSameOriginApiBase();
 }
 
 function setApiBase(value) {
