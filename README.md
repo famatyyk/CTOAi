@@ -28,6 +28,7 @@ CTOA AI Toolkit orchestrates 10+ AI agents (CTOA-001 through CTOA-010) to autono
 - **📚 Deep Dive:** [Architecture Guide](docs/ARCHITECTURE.md) (10 minutes)
 - **☁️ Deploy to VPS:** [VPS Setup Guide](deploy/vps/SETUP.md) (15 minutes)
 - **🛍️ Offers Website:** [CTOA Studio Landing](docs/site/index.html)
+- **📈 Live Progress Dashboard:** [CTOA Live Dashboard](docs/site/live-dashboard.html)
 - **🛡️ Core Safety:** [Core Guardrails](docs/CORE_GUARDRAILS.md)
 - **✅ Pre-Launch:** [Validation Checklist](docs/VALIDATION_CHECKLIST.md) (review before production)
 - **⚡ Real-Time Modules:** [Real-Time Script/Module Creation](docs/REALTIME_MODULE_CREATION.md)
