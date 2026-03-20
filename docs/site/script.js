@@ -497,8 +497,9 @@ function applyAdminState(state) {
   const adminUser = document.getElementById("admin-user-label");
   const adminRole = document.getElementById("admin-role-label");
   const resetButton = document.getElementById("reset-admin");
+  const openConsoleButton = document.getElementById("open-console");
 
-  if (!drawer || !banner || !stealthToggle || !pricesToggle || !heroNote || !homeText || !adminUser || !adminRole || !resetButton) {
+  if (!drawer || !banner || !stealthToggle || !pricesToggle || !heroNote || !homeText || !adminUser || !adminRole || !resetButton || !openConsoleButton) {
     return;
   }
 
@@ -519,6 +520,7 @@ function applyAdminState(state) {
 
   pricesToggle.disabled = !ownerMode;
   resetButton.disabled = !ownerMode;
+  openConsoleButton.hidden = !ownerMode;
 
   document.querySelectorAll(".price-tag").forEach((el) => {
     const price = el.getAttribute("data-price") || "";
@@ -613,6 +615,7 @@ function setupAdminAuth() {
   const exportButton = document.getElementById("export-admin");
   const syncButton = document.getElementById("sync-admin");
   const resetButton = document.getElementById("reset-admin");
+  const openConsoleButton = document.getElementById("open-console");
   const logoutButton = document.getElementById("logout-admin");
   const adminStatus = document.getElementById("admin-status");
   const apiBaseInput = document.getElementById("api-base");
@@ -865,6 +868,20 @@ function setupAdminAuth() {
     applyAdminState(loadAdminState());
     adminStatus.textContent = "Wyczyszczono localStorage i wylogowano.";
   });
+
+  if (openConsoleButton) {
+    openConsoleButton.addEventListener("click", () => {
+      if (!isAdminLoggedIn()) {
+        adminStatus.textContent = "Brak sesji admina.";
+        return;
+      }
+      if (!isOwnerSession()) {
+        adminStatus.textContent = "Przejscie do console wymaga roli owner.";
+        return;
+      }
+      window.location.href = "/console";
+    });
+  }
 
   logoutButton.addEventListener("click", async () => {
     if (getApiBase() && getApiToken()) {

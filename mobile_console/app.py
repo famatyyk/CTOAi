@@ -390,6 +390,11 @@ def index() -> FileResponse:
     return FileResponse(str(SITE_INDEX_HTML))
 
 
+@app.get("/console")
+def legacy_console() -> FileResponse:
+    return FileResponse(str(STATIC_DIR / "index.html"))
+
+
 @app.get("/style.css")
 def site_style() -> FileResponse:
     return FileResponse(str(SITE_DIR / "style.css"))
