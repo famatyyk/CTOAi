@@ -400,12 +400,12 @@ def _audit(request: Request, command: str, code: int) -> None:
 
 @app.get("/")
 def index() -> FileResponse:
-    return FileResponse(str(SITE_INDEX_HTML))
+    return FileResponse(str(SITE_INDEX_HTML), headers={"Cache-Control": "no-store"})
 
 
 @app.get("/console")
 def legacy_console() -> FileResponse:
-    return FileResponse(str(STATIC_DIR / "index.html"))
+    return FileResponse(str(STATIC_DIR / "index.html"), headers={"Cache-Control": "no-store"})
 
 
 @app.get("/style.css")
@@ -421,7 +421,7 @@ def site_script() -> FileResponse:
 @app.get("/live-dashboard")
 def live_dashboard() -> FileResponse:
     """Serve the login-based live dashboard (username/password auth)."""
-    return FileResponse(str(LIVE_DASHBOARD_HTML))
+    return FileResponse(str(LIVE_DASHBOARD_HTML), headers={"Cache-Control": "no-store"})
 
 
 @app.get("/api/health")

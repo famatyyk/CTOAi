@@ -53,6 +53,14 @@ async function refreshOwnerUi() {
   }
 }
 
+function applyRoleState(role) {
+  const normalized = String(role || 'guest').toLowerCase();
+  setRoleBadge(normalized);
+  if (ownerLiveDashboardBtn) {
+    ownerLiveDashboardBtn.style.display = normalized === 'owner' ? 'inline-block' : 'none';
+  }
+}
+
 function setRoleBadge(role) {
   if (!roleBadge) return;
   const normalized = String(role || 'guest').toLowerCase();
@@ -81,18 +89,17 @@ async function checkAuthAuto() {
       const authMode = getToken() ? 'legacy-token' : (getSessionToken() ? 'session' : 'unknown');
       authState.textContent = `Auth OK (${authMode}) | full_access=${data.full_access} | orchestrator_timer=${data.orchestrator_timer || 'unknown'}`;
       authState.style.color = '#7fff7f';
+      applyRoleState(data.role || 'guest');
       await refreshOwnerUi();
     } else {
       authState.textContent = 'Token NIEPOPRAWNY: zapisz aktualny CTOA_MOBILE_TOKEN';
       authState.style.color = '#ff9999';
-      setRoleBadge('guest');
-      if (ownerLiveDashboardBtn) ownerLiveDashboardBtn.style.display = 'none';
+      applyRoleState('guest');
     }
   } catch (e) {
     authState.textContent = 'Auto-check blad: ' + String(e);
     authState.style.color = '#ff9999';
-    setRoleBadge('guest');
-    if (ownerLiveDashboardBtn) ownerLiveDashboardBtn.style.display = 'none';
+    applyRoleState('guest');
   }
 }
 
