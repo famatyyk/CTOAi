@@ -7,6 +7,7 @@ import json
 import time
 import hmac
 import secrets
+import bcrypt
 from datetime import datetime, timezone
 from pathlib import Path
 from threading import Lock
@@ -82,12 +83,34 @@ class IdeaCreatePayload(BaseModel):
     text: str = Field(min_length=1, max_length=500)
 
 
+class LiveDashboardProfilePayload(BaseModel):
+    api_base: str = Field(default="", max_length=256)
+    refresh_seconds: int = Field(default=10, ge=5, le=120)
+
+
+class RegisterAccountPayload(BaseModel):
+    username: str = Field(min_length=3, max_length=64)
+    password: str = Field(min_length=8, max_length=256)
+    role: str = Field(default="operator", pattern="^(operator|owner)$")
+
+
+class ChangePasswordPayload(BaseModel):
+    password: str = Field(min_length=8, max_length=256)
+
+
+class ChangeRolePayload(BaseModel):
+    role: str = Field(pattern="^(operator|owner)$")
+
+
 ROLE_WEIGHT = {"operator": 1, "owner": 2}
 SESSION_TTL_SECONDS = int(os.getenv("CTOA_SESSION_TTL_SECONDS", "1800"))
 _SESSIONS: Dict[str, Dict[str, Any]] = {}
 _SESSIONS_LOCK = Lock()
 _ADMIN_SETTINGS_LOCK = Lock()
 _IDEA_PARKING_LOCK = Lock()
+_USER_PROFILES_LOCK = Lock()
+_USER_PROFILES_TABLE_READY = False
+_ACCOUNTS_TABLE_READY = False
 
 
 def _default_admin_settings() -> dict[str, Any]:
@@ -370,17 +393,36 @@ def health(ctx: dict[str, Any] = Depends(require_operator)) -> dict:
 @app.post("/api/auth/login")
 def auth_login(req: AuthLoginRequest, request: Request) -> dict:
     username = _normalize_user(req.username)
+
+    # 1. Try env-based credentials (owner/operator hardcoded — backward compat).
     creds = _admin_credentials()
     account = creds.get(username)
-    if not account:
+    matched_role: str | None = None
+
+    if account and hmac.compare_digest(req.password, account["password"]):
+        matched_role = account["role"]
+    else:
+        # 2. Try DB-backed account.
+        try:
+            db_account = _db_get_account(username)
+        except Exception:
+            db_account = None
+
+        if db_account and _verify_password(req.password, db_account["password_hash"]):
+            matched_role = db_account["role"]
+
+    if matched_role is None:
         _audit(request, f"auth_login:{username}", 401)
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    if not hmac.compare_digest(req.password, account["password"]):
-        _audit(request, f"auth_login:{username}", 401)
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+    token, expires_at = _create_session(username=username, role=matched_role)
 
-    token, expires_at = _create_session(username=username, role=account["role"])
+    # Best-effort profile bootstrap so each authenticated user has a DB profile.
+    try:
+        _load_live_dashboard_profile(username=username, role=matched_role)
+    except Exception:
+        pass
+
     _audit(request, f"auth_login:{username}", 0)
     return {
         "ok": True,
@@ -388,7 +430,7 @@ def auth_login(req: AuthLoginRequest, request: Request) -> dict:
         "token_type": "bearer",
         "expires_in": SESSION_TTL_SECONDS,
         "expires_at": datetime.fromtimestamp(expires_at, tz=timezone.utc).isoformat(),
-        "role": account["role"],
+        "role": matched_role,
         "username": username,
     }
 
@@ -409,6 +451,144 @@ def auth_logout(ctx: dict[str, Any] = Depends(require_operator)) -> dict:
     if token:
         _delete_session(token)
     return {"ok": True}
+
+
+# ── User account management ──────────────────────────────────────────────────
+
+@app.post("/api/users/register")
+def register_account(
+    req: RegisterAccountPayload,
+    request: Request,
+    ctx: dict[str, Any] = Depends(require_owner),
+) -> dict:
+    username = _normalize_user(req.username)
+
+    # Prevent overwriting env-based accounts.
+    env_creds = _admin_credentials()
+    if username in env_creds:
+        raise HTTPException(status_code=409, detail="Username reserved by system configuration")
+
+    try:
+        result = _db_create_account(
+            username=username,
+            password=req.password,
+            role=req.role,
+            created_by=str(ctx.get("username", "")),
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    _audit(request, f"account_register:{username}:role={req.role}", 0)
+    return {"ok": True, "account": result}
+
+
+@app.get("/api/users")
+def list_accounts(
+    ctx: dict[str, Any] = Depends(require_owner),
+) -> dict:
+    try:
+        db_accounts = _db_list_accounts()
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    # Also surface env-based accounts so the owner sees the full picture.
+    env_creds = _admin_credentials()
+    env_entries = [
+        {"username": u, "role": v["role"], "active": True,
+         "created_by": "env", "created_at": None, "updated_at": None, "source": "env"}
+        for u, v in env_creds.items()
+    ]
+
+    db_usernames = {a["username"] for a in db_accounts}
+    for entry in env_entries:
+        entry["source"] = "env"
+        db_accounts_with_source = [
+            {**a, "source": "db"} for a in db_accounts
+        ]
+
+    combined = db_accounts_with_source + [
+        e for e in env_entries if e["username"] not in db_usernames
+    ]
+
+    return {"ok": True, "accounts": combined, "count": len(combined)}
+
+
+@app.put("/api/users/{username}/password")
+def change_password(
+    username: str,
+    req: ChangePasswordPayload,
+    request: Request,
+    ctx: dict[str, Any] = Depends(require_operator),
+) -> dict:
+    caller = str(ctx.get("username", ""))
+    caller_role = str(ctx.get("role", "operator"))
+    target = _normalize_user(username)
+
+    # Only owner can change someone else's password.
+    if target != caller and ROLE_WEIGHT.get(caller_role, 0) < ROLE_WEIGHT["owner"]:
+        raise HTTPException(status_code=403, detail="Cannot change another user's password")
+
+    env_creds = _admin_credentials()
+    if target in env_creds:
+        raise HTTPException(status_code=409, detail="Cannot change password of an env-configured account via API")
+
+    try:
+        _db_update_password(username=target, password=req.password)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    _audit(request, f"account_password_change:{target}:by={caller}", 0)
+    return {"ok": True, "username": target}
+
+
+@app.put("/api/users/{username}/role")
+def change_role(
+    username: str,
+    req: ChangeRolePayload,
+    request: Request,
+    ctx: dict[str, Any] = Depends(require_owner),
+) -> dict:
+    target = _normalize_user(username)
+    caller = str(ctx.get("username", ""))
+
+    env_creds = _admin_credentials()
+    if target in env_creds:
+        raise HTTPException(status_code=409, detail="Cannot change role of an env-configured account via API")
+
+    try:
+        _db_update_role(username=target, role=req.role)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    _audit(request, f"account_role_change:{target}:role={req.role}:by={caller}", 0)
+    return {"ok": True, "username": target, "role": req.role}
+
+
+@app.delete("/api/users/{username}")
+def deactivate_account(
+    username: str,
+    request: Request,
+    ctx: dict[str, Any] = Depends(require_owner),
+) -> dict:
+    target = _normalize_user(username)
+    caller = str(ctx.get("username", ""))
+
+    if target == caller:
+        raise HTTPException(status_code=400, detail="Cannot deactivate your own account")
+
+    env_creds = _admin_credentials()
+    if target in env_creds:
+        raise HTTPException(status_code=409, detail="Cannot deactivate an env-configured account via API")
+
+    try:
+        _db_deactivate_account(username=target)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    _audit(request, f"account_deactivate:{target}:by={caller}", 0)
+    return {"ok": True, "username": target, "active": False}
 
 
 @app.get("/api/auth/auto-check")
@@ -664,6 +844,283 @@ def _db_exec(sql: str, params: tuple = ()) -> dict:
 
     cmd = f"psql {dsn} -t -A -c {json.dumps(filled)}"
     return _run(cmd, timeout=15)
+
+
+# ── Bcrypt account helpers ───────────────────────────────────────────────────
+
+def _hash_password(plaintext: str) -> str:
+    return bcrypt.hashpw(plaintext.encode(), bcrypt.gensalt(rounds=12)).decode()
+
+
+def _verify_password(plaintext: str, hashed: str) -> bool:
+    try:
+        return bcrypt.checkpw(plaintext.encode(), hashed.encode())
+    except Exception:
+        return False
+
+
+def _ensure_accounts_table() -> None:
+    global _ACCOUNTS_TABLE_READY
+    if _ACCOUNTS_TABLE_READY:
+        return
+    res = _db_exec(
+        "CREATE TABLE IF NOT EXISTS accounts ("
+        "id SERIAL PRIMARY KEY, "
+        "username TEXT NOT NULL UNIQUE, "
+        "password_hash TEXT NOT NULL, "
+        "role TEXT NOT NULL DEFAULT 'operator', "
+        "active BOOL NOT NULL DEFAULT TRUE, "
+        "created_by TEXT, "
+        "created_at TIMESTAMPTZ NOT NULL DEFAULT now(), "
+        "updated_at TIMESTAMPTZ NOT NULL DEFAULT now()"
+        ")"
+    )
+    if res.get("code", 1) != 0:
+        raise RuntimeError(f"DB error ensuring accounts table: {res.get('stderr','')[:200]}")
+    _ACCOUNTS_TABLE_READY = True
+
+
+def _db_get_account(username: str) -> dict[str, Any] | None:
+    _ensure_accounts_table()
+    res = _db_exec(
+        "SELECT username, password_hash, role, active FROM accounts WHERE username=%s AND active=TRUE LIMIT 1",
+        (username,),
+    )
+    if res.get("code", 1) != 0:
+        return None
+    row = (res.get("stdout", "") or "").strip()
+    if not row:
+        return None
+    parts = row.split("|", 3)
+    if len(parts) < 4:
+        return None
+    return {
+        "username": parts[0],
+        "password_hash": parts[1],
+        "role": parts[2],
+        "active": parts[3].strip() == "t",
+    }
+
+
+def _db_create_account(
+    username: str, password: str, role: str, created_by: str
+) -> dict[str, Any]:
+    _ensure_accounts_table()
+    password_hash = _hash_password(password)
+    res = _db_exec(
+        "INSERT INTO accounts (username, password_hash, role, created_by) VALUES (%s, %s, %s, %s) "
+        "ON CONFLICT (username) DO NOTHING RETURNING id",
+        (username, password_hash, role, created_by),
+    )
+    if res.get("code", 1) != 0:
+        raise RuntimeError(f"DB error creating account: {res.get('stderr','')[:200]}")
+    if not (res.get("stdout", "") or "").strip():
+        raise ValueError(f"Account '{username}' already exists")
+    return {"username": username, "role": role, "created_by": created_by}
+
+
+def _db_list_accounts() -> list[dict[str, Any]]:
+    _ensure_accounts_table()
+    res = _db_exec(
+        "SELECT username, role, active, created_by, created_at, updated_at "
+        "FROM accounts ORDER BY created_at DESC"
+    )
+    if res.get("code", 1) != 0:
+        return []
+    rows = []
+    for line in (res.get("stdout", "") or "").strip().splitlines():
+        if not line.strip():
+            continue
+        parts = line.split("|", 5)
+        rows.append({
+            "username": parts[0] if len(parts) > 0 else "",
+            "role": parts[1] if len(parts) > 1 else "",
+            "active": (parts[2] if len(parts) > 2 else "f").strip() == "t",
+            "created_by": parts[3] if len(parts) > 3 else "",
+            "created_at": parts[4] if len(parts) > 4 else "",
+            "updated_at": parts[5] if len(parts) > 5 else "",
+        })
+    return rows
+
+
+def _db_update_password(username: str, password: str) -> None:
+    _ensure_accounts_table()
+    password_hash = _hash_password(password)
+    res = _db_exec(
+        "UPDATE accounts SET password_hash=%s, updated_at=now() WHERE username=%s",
+        (password_hash, username),
+    )
+    if res.get("code", 1) != 0:
+        raise RuntimeError(f"DB error updating password: {res.get('stderr','')[:200]}")
+
+
+def _db_update_role(username: str, role: str) -> None:
+    _ensure_accounts_table()
+    res = _db_exec(
+        "UPDATE accounts SET role=%s, updated_at=now() WHERE username=%s",
+        (role, username),
+    )
+    if res.get("code", 1) != 0:
+        raise RuntimeError(f"DB error updating role: {res.get('stderr','')[:200]}")
+
+
+def _db_deactivate_account(username: str) -> None:
+    _ensure_accounts_table()
+    res = _db_exec(
+        "UPDATE accounts SET active=FALSE, updated_at=now() WHERE username=%s",
+        (username,),
+    )
+    if res.get("code", 1) != 0:
+        raise RuntimeError(f"DB error deactivating account: {res.get('stderr','')[:200]}")
+
+
+def _default_live_dashboard_profile() -> dict[str, Any]:
+    return {
+        "api_base": "",
+        "refresh_seconds": 10,
+    }
+
+
+def _normalize_live_dashboard_profile(payload: dict[str, Any] | None) -> dict[str, Any]:
+    data = payload or {}
+    default = _default_live_dashboard_profile()
+
+    raw_api_base = str(data.get("api_base", default["api_base"])).strip().rstrip("/")
+    if raw_api_base and not re.match(r"^https?://", raw_api_base, re.IGNORECASE):
+        raw_api_base = ""
+
+    try:
+        refresh_seconds = int(data.get("refresh_seconds", default["refresh_seconds"]))
+    except Exception:
+        refresh_seconds = default["refresh_seconds"]
+    refresh_seconds = max(5, min(120, refresh_seconds))
+
+    return {
+        "api_base": raw_api_base,
+        "refresh_seconds": refresh_seconds,
+    }
+
+
+def _ensure_user_profiles_table() -> None:
+    global _USER_PROFILES_TABLE_READY
+    with _USER_PROFILES_LOCK:
+        if _USER_PROFILES_TABLE_READY:
+            return
+
+        res = _db_exec(
+            "CREATE TABLE IF NOT EXISTS user_profiles ("
+            "username TEXT PRIMARY KEY, "
+            "role TEXT NOT NULL, "
+            "profile_json JSONB NOT NULL DEFAULT '{}'::jsonb, "
+            "created_at TIMESTAMPTZ NOT NULL DEFAULT now(), "
+            "updated_at TIMESTAMPTZ NOT NULL DEFAULT now()"
+            ")"
+        )
+        if res.get("code", 1) != 0:
+            raise RuntimeError(f"DB error while ensuring user_profiles: {res.get('stderr', '')[:200]}")
+
+        _USER_PROFILES_TABLE_READY = True
+
+
+def _save_live_dashboard_profile(username: str, role: str, payload: dict[str, Any]) -> dict[str, Any]:
+    _ensure_user_profiles_table()
+    normalized = _normalize_live_dashboard_profile(payload)
+    profile_json = json.dumps(normalized, ensure_ascii=True)
+
+    res = _db_exec(
+        "INSERT INTO user_profiles (username, role, profile_json) VALUES (%s, %s, %s::jsonb) "
+        "ON CONFLICT (username) DO UPDATE SET "
+        "role=EXCLUDED.role, profile_json=EXCLUDED.profile_json, updated_at=now() "
+        "RETURNING updated_at",
+        (username, role, profile_json),
+    )
+    if res.get("code", 1) != 0:
+        raise RuntimeError(f"DB error while saving user profile: {res.get('stderr', '')[:200]}")
+
+    return normalized
+
+
+def _load_live_dashboard_profile(username: str, role: str) -> dict[str, Any]:
+    _ensure_user_profiles_table()
+    res = _db_exec(
+        "SELECT role, profile_json::text, created_at, updated_at "
+        "FROM user_profiles WHERE username=%s LIMIT 1",
+        (username,),
+    )
+    if res.get("code", 1) != 0:
+        raise RuntimeError(f"DB error while loading user profile: {res.get('stderr', '')[:200]}")
+
+    row = (res.get("stdout", "") or "").strip()
+    if not row:
+        profile = _save_live_dashboard_profile(username=username, role=role, payload=_default_live_dashboard_profile())
+        return {
+            "username": username,
+            "role": role,
+            "profile": profile,
+            "created_at": None,
+            "updated_at": None,
+        }
+
+    parts = row.split("|", 3)
+    stored_role = parts[0] if len(parts) > 0 and parts[0] else role
+    profile_raw = parts[1] if len(parts) > 1 else "{}"
+    created_at = parts[2] if len(parts) > 2 else None
+    updated_at = parts[3] if len(parts) > 3 else None
+
+    try:
+        profile_data = json.loads(profile_raw)
+    except Exception:
+        profile_data = {}
+
+    profile = _normalize_live_dashboard_profile(profile_data)
+    if profile != profile_data:
+        profile = _save_live_dashboard_profile(username=username, role=stored_role, payload=profile)
+
+    return {
+        "username": username,
+        "role": stored_role,
+        "profile": profile,
+        "created_at": created_at,
+        "updated_at": updated_at,
+    }
+
+
+@app.get("/api/live-dashboard/profile")
+def get_live_dashboard_profile(ctx: dict[str, Any] = Depends(require_operator)) -> dict:
+    try:
+        profile = _load_live_dashboard_profile(
+            username=str(ctx.get("username", "")).strip().lower(),
+            role=str(ctx.get("role", "operator")),
+        )
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    return {
+        "ok": True,
+        **profile,
+    }
+
+
+@app.put("/api/live-dashboard/profile")
+def put_live_dashboard_profile(
+    req: LiveDashboardProfilePayload,
+    ctx: dict[str, Any] = Depends(require_operator),
+) -> dict:
+    username = str(ctx.get("username", "")).strip().lower()
+    role = str(ctx.get("role", "operator"))
+    payload = req.model_dump()
+
+    try:
+        profile = _save_live_dashboard_profile(username=username, role=role, payload=payload)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    return {
+        "ok": True,
+        "username": username,
+        "role": role,
+        "profile": profile,
+    }
 
 
 @app.post("/api/server/register")

@@ -106,6 +106,26 @@
       }
       th { color: var(--muted); font-weight: 600; }
       .muted { color: var(--muted); }
+      select {
+        background: var(--panel);
+        color: var(--txt);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 8px 10px;
+      }
+      .acc-actions { display: flex; gap: 6px; }
+      .btn-sm {
+        font-size: 12px;
+        padding: 4px 8px;
+        border-radius: 6px;
+        background: #214866;
+        color: #fff;
+        border: 0;
+        cursor: pointer;
+      }
+      .btn-danger { background: #7c1c1c; }
+      .form-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; align-items: center; }
+      .form-status { font-size: 13px; }
       @media (max-width: 900px) {
         .kpi, .wide, .full { grid-column: span 12; }
         .top { grid-template-columns: 1fr; }
@@ -122,10 +142,13 @@
         </div>
         <div class="controls">
           <input id="apiBase" type="text" placeholder="http://127.0.0.1:8787" />
-          <input id="token" type="password" placeholder="Bearer token" />
-          <button id="connect">Polacz</button>
+          <input id="username" type="text" placeholder="login" />
+          <input id="password" type="password" placeholder="haslo" />
+          <button id="loginBtn">Zaloguj</button>
+          <button id="logoutBtn">Wyloguj</button>
         </div>
       </div>
+      <p id="connStatus" class="sub">Brak aktywnej sesji.</p>
 
       <div class="grid">
         <section class="card kpi">
@@ -167,6 +190,27 @@
             <tbody id="serversTable"></tbody>
           </table>
         </section>
+
+        <section class="card full" id="accountsMgmt" style="display:none">
+          <div class="label">Zarzadzanie Kontami <span class="muted" style="font-size:11px">(tylko owner)</span></div>
+          <table style="margin-top:10px">
+            <thead><tr><th>Login</th><th>Rola</th><th>Zrodlo</th><th>Aktywny</th><th>Akcje</th></tr></thead>
+            <tbody id="accountsTableBody"></tbody>
+          </table>
+          <details style="margin-top:16px">
+            <summary style="cursor:pointer;color:var(--muted);font-size:13px">&#43; Nowe konto</summary>
+            <form id="registerForm" class="form-row" onsubmit="handleRegister(event)">
+              <input id="regUsername" type="text" placeholder="login" style="width:130px" />
+              <input id="regPassword" type="password" placeholder="haslo" style="width:130px" />
+              <select id="regRole">
+                <option value="operator">operator</option>
+                <option value="owner">owner</option>
+              </select>
+              <button type="submit" class="btn-sm">Zarejestruj</button>
+              <span id="regStatus" class="form-status muted"></span>
+            </form>
+          </details>
+        </section>
       </div>
     </div>
 
@@ -174,12 +218,19 @@
       const state = {
         apiBase: localStorage.getItem("ctoa_live_api") || "http://127.0.0.1:8787",
         token: sessionStorage.getItem("ctoa_live_token") || "",
+        username: localStorage.getItem("ctoa_live_username") || "",
+        role: sessionStorage.getItem("ctoa_live_role") || "",
+        refreshSeconds: 10,
+        poller: null,
       };
 
       const el = {
         apiBase: document.getElementById("apiBase"),
-        token: document.getElementById("token"),
-        connect: document.getElementById("connect"),
+        username: document.getElementById("username"),
+        password: document.getElementById("password"),
+        loginBtn: document.getElementById("loginBtn"),
+        logoutBtn: document.getElementById("logoutBtn"),
+        connStatus: document.getElementById("connStatus"),
         percent: document.getElementById("percent"),
         progressBar: document.getElementById("progressBar"),
         counts: document.getElementById("counts"),
@@ -190,10 +241,140 @@
         statusRows: document.getElementById("statusRows"),
         latestTable: document.getElementById("latestTable"),
         serversTable: document.getElementById("serversTable"),
+        accountsMgmt: document.getElementById("accountsMgmt"),
+        accountsTableBody: document.getElementById("accountsTableBody"),
+        regUsername: document.getElementById("regUsername"),
+        regPassword: document.getElementById("regPassword"),
+        regRole: document.getElementById("regRole"),
+        regStatus: document.getElementById("regStatus"),
       };
 
       el.apiBase.value = state.apiBase;
-      el.token.value = state.token;
+      el.username.value = state.username;
+
+      function setStatus(msg) {
+        el.connStatus.textContent = msg;
+      }
+
+      function toggleAccountsPanel() {
+        el.accountsMgmt.style.display = state.role === "owner" ? "" : "none";
+      }
+
+      function esc(s) {
+        return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      }
+
+      function renderAccounts(accounts) {
+        el.accountsTableBody.innerHTML = "";
+        if (!accounts || !accounts.length) {
+          el.accountsTableBody.innerHTML = '<tr><td colspan="5" class="muted">Brak kont.</td></tr>';
+          return;
+        }
+        for (const acc of accounts) {
+          const tr = document.createElement("tr");
+          const isEnv = acc.source === "env";
+          const isSelf = acc.username === state.username;
+          const altRole = acc.role === "owner" ? "operator" : "owner";
+          const safeUser = esc(acc.username);
+          const actionsHtml = isEnv
+            ? `<span class="muted" style="font-size:11px">env (tylko odczyt)</span>`
+            : `<div class="acc-actions">
+                <button class="btn-sm" onclick="handleRoleChange('${safeUser}', '${altRole}')">&rarr; ${altRole}</button>
+                ${!isSelf ? `<button class="btn-sm btn-danger" onclick="handleDeactivate('${safeUser}')">Dezaktywuj</button>` : ""}
+               </div>`;
+          tr.innerHTML = `<td>${safeUser}</td><td>${esc(acc.role)}</td><td>${esc(acc.source || "db")}</td><td>${acc.active ? "tak" : "nie"}</td><td>${actionsHtml}</td>`;
+          el.accountsTableBody.appendChild(tr);
+        }
+      }
+
+      async function loadAccounts() {
+        try {
+          const payload = await api("/api/users");
+          renderAccounts(payload.accounts || []);
+        } catch (err) {
+          el.accountsTableBody.innerHTML = `<tr><td colspan="5" class="muted">Blad: ${esc(String(err))}</td></tr>`;
+        }
+      }
+
+      async function handleRegister(event) {
+        event.preventDefault();
+        const username = (el.regUsername.value || "").trim().toLowerCase();
+        const password = (el.regPassword.value || "").trim();
+        const role = el.regRole.value;
+        if (!username || !password) {
+          el.regStatus.textContent = "Podaj login i haslo.";
+          return;
+        }
+        el.regStatus.textContent = "Rejestrowanie...";
+        try {
+          await api("/api/users/register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, password, role }),
+          });
+          el.regStatus.textContent = `Konto ${esc(username)} utworzone.`;
+          el.regUsername.value = "";
+          el.regPassword.value = "";
+          await loadAccounts();
+        } catch (err) {
+          el.regStatus.textContent = `Blad: ${esc(String(err))}`;
+        }
+      }
+
+      async function handleDeactivate(username) {
+        if (!confirm(`Dezaktywowac konto: ${username}?`)) return;
+        try {
+          await api(`/api/users/${encodeURIComponent(username)}`, { method: "DELETE" });
+          await loadAccounts();
+        } catch (err) {
+          alert(`Blad dezaktywacji: ${err}`);
+        }
+      }
+
+      async function handleRoleChange(username, newRole) {
+        if (!confirm(`Zmienic role ${username} na ${newRole}?`)) return;
+        try {
+          await api(`/api/users/${encodeURIComponent(username)}/role`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ role: newRole }),
+          });
+          await loadAccounts();
+        } catch (err) {
+          alert(`Blad zmiany roli: ${err}`);
+        }
+      }
+
+      function setSession({ token = "", username = "", role = "" }) {
+        state.token = token;
+        state.username = username;
+        state.role = role;
+
+        if (token) {
+          sessionStorage.setItem("ctoa_live_token", token);
+        } else {
+          sessionStorage.removeItem("ctoa_live_token");
+        }
+
+        if (username) {
+          localStorage.setItem("ctoa_live_username", username);
+          el.username.value = username;
+        } else {
+          localStorage.removeItem("ctoa_live_username");
+        }
+
+        if (role) {
+          sessionStorage.setItem("ctoa_live_role", role);
+        } else {
+          sessionStorage.removeItem("ctoa_live_role");
+        }
+        toggleAccountsPanel();
+      }
+
+      function saveApiBase() {
+        state.apiBase = (el.apiBase.value || "").trim().replace(/\/$/, "");
+        localStorage.setItem("ctoa_live_api", state.apiBase);
+      }
 
       function authHeaders() {
         const h = {};
@@ -203,10 +384,96 @@
         return h;
       }
 
-      async function api(path) {
-        const r = await fetch(`${state.apiBase}${path}`, { headers: authHeaders() });
+      async function api(path, options = {}) {
+        const headers = {
+          ...(options.headers || {}),
+          ...authHeaders(),
+        };
+        const r = await fetch(`${state.apiBase}${path}`, {
+          ...options,
+          headers,
+        });
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
+      }
+
+      async function loadProfile() {
+        const payload = await api("/api/live-dashboard/profile");
+        if (!payload || !payload.profile) return;
+
+        const p = payload.profile;
+        if (p.api_base) {
+          state.apiBase = String(p.api_base).trim().replace(/\/$/, "");
+          el.apiBase.value = state.apiBase;
+          localStorage.setItem("ctoa_live_api", state.apiBase);
+        }
+
+        const rs = Number(p.refresh_seconds || 10);
+        state.refreshSeconds = Math.max(5, Math.min(120, Number.isFinite(rs) ? rs : 10));
+      }
+
+      async function saveProfile() {
+        await api("/api/live-dashboard/profile", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            api_base: state.apiBase,
+            refresh_seconds: state.refreshSeconds,
+          }),
+        });
+      }
+
+      async function login() {
+        saveApiBase();
+        const username = (el.username.value || "").trim().toLowerCase();
+        const password = (el.password.value || "").trim();
+        if (!username || !password) {
+          setStatus("Podaj login i haslo.");
+          return;
+        }
+
+        const r = await fetch(`${state.apiBase}/api/auth/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password }),
+        });
+        if (!r.ok) {
+          throw new Error(`HTTP ${r.status}`);
+        }
+        const payload = await r.json();
+
+        setSession({
+          token: String(payload.token || ""),
+          username: String(payload.username || username),
+          role: String(payload.role || "operator"),
+        });
+        el.password.value = "";
+
+        await loadProfile();
+        await saveProfile();
+        if (state.role === "owner") { await loadAccounts(); }
+        setStatus(`Polaczono jako ${state.username} (${state.role}).`);
+      }
+
+      async function logout() {
+        try {
+          if (state.token) {
+            await api("/api/auth/logout", { method: "POST" });
+          }
+        } catch (_err) {
+          // Ignore logout failures and clear local session regardless.
+        }
+
+        setSession({ token: "", username: "", role: "" });
+        setStatus("Sesja zamknieta.");
+      }
+
+      function startPolling() {
+        if (state.poller) {
+          clearInterval(state.poller);
+        }
+        const ms = Math.max(5000, Math.min(120000, Math.floor(state.refreshSeconds * 1000)));
+        state.poller = setInterval(refresh, ms);
       }
 
       function pct(n) {
@@ -266,6 +533,11 @@
       }
 
       async function refresh() {
+        if (!state.token) {
+          el.serversState.textContent = "brak autoryzacji";
+          return;
+        }
+
         try {
           const [dashboard, latest] = await Promise.all([
             api("/api/dashboard"),
@@ -296,20 +568,48 @@
           renderLatest(items);
           renderServers(serversRows);
         } catch (e) {
+          if (String(e.message || "").includes("401")) {
+            setStatus("Sesja wygasla. Zaloguj ponownie.");
+          }
           el.serversState.textContent = `blad: ${e.message || e}`;
         }
       }
 
-      el.connect.addEventListener("click", () => {
-        state.apiBase = (el.apiBase.value || "").trim().replace(/\/$/, "");
-        state.token = (el.token.value || "").trim();
-        localStorage.setItem("ctoa_live_api", state.apiBase);
-        sessionStorage.setItem("ctoa_live_token", state.token);
-        refresh();
+      el.loginBtn.addEventListener("click", async () => {
+        try {
+          await login();
+          startPolling();
+          await refresh();
+        } catch (e) {
+          setStatus(`Blad logowania: ${e.message || e}`);
+        }
       });
 
-      refresh();
-      setInterval(refresh, 10000);
+      el.logoutBtn.addEventListener("click", async () => {
+        await logout();
+      });
+
+      (async () => {
+        setStatus(state.token ? "Przywracanie sesji..." : "Brak aktywnej sesji.");
+        if (state.token) {
+          try {
+            const me = await api("/api/auth/me");
+            setSession({
+              token: state.token,
+              username: String(me.username || state.username || ""),
+              role: String(me.role || state.role || "operator"),
+            });
+            await loadProfile();
+            if (state.role === "owner") { await loadAccounts(); }
+            setStatus(`Polaczono jako ${state.username} (${state.role}).`);
+            await refresh();
+          } catch (_e) {
+            await logout();
+          }
+        }
+
+        startPolling();
+      })();
     </script>
   </body>
 </html>

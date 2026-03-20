@@ -78,6 +78,33 @@ CREATE TABLE IF NOT EXISTS agent_runs (
     message     TEXT
 );
 
+-- ─── Registered user accounts (DB-backed auth) ────────────────────────────
+CREATE TABLE IF NOT EXISTS accounts (
+    id            SERIAL PRIMARY KEY,
+    username      TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    -- operator | owner
+    role          TEXT NOT NULL DEFAULT 'operator',
+    active        BOOL NOT NULL DEFAULT TRUE,
+    created_by    TEXT,
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+DROP TRIGGER IF EXISTS accounts_updated_at ON accounts;
+CREATE TRIGGER accounts_updated_at
+    BEFORE UPDATE ON accounts
+    FOR EACH ROW EXECUTE FUNCTION trg_set_updated_at();
+
+-- ─── User profiles (dashboard preferences per account) ─────────────────────
+CREATE TABLE IF NOT EXISTS user_profiles (
+    username    TEXT PRIMARY KEY,
+    role        TEXT NOT NULL,
+    profile_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 -- helper: update updated_at automatically
 CREATE OR REPLACE FUNCTION trg_set_updated_at()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
@@ -86,4 +113,9 @@ BEGIN NEW.updated_at = now(); RETURN NEW; END; $$;
 DROP TRIGGER IF EXISTS servers_updated_at ON servers;
 CREATE TRIGGER servers_updated_at
     BEFORE UPDATE ON servers
+    FOR EACH ROW EXECUTE FUNCTION trg_set_updated_at();
+
+DROP TRIGGER IF EXISTS user_profiles_updated_at ON user_profiles;
+CREATE TRIGGER user_profiles_updated_at
+    BEFORE UPDATE ON user_profiles
     FOR EACH ROW EXECUTE FUNCTION trg_set_updated_at();
