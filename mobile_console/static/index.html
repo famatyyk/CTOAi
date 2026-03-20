@@ -31,11 +31,15 @@
     #serverFeedback { margin-top:8px; padding:8px; border-radius:6px; font-size:13px; display:none; }
     #serverFeedback.ok    { background:#1e3a1e; color:#7fff7f; display:block; }
     #serverFeedback.error { background:#3a1e1e; color:#ff9999; display:block; }
+    .role-badge { display:inline-block; margin-left:8px; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:700; letter-spacing:.02em; text-transform:uppercase; vertical-align:middle; }
+    .role-owner { background:#123d26; color:#79f2b2; border:1px solid #1f7a4b; }
+    .role-operator { background:#17324a; color:#8dc5ff; border:1px solid #2f80ed; }
+    .role-guest { background:#2a2a2a; color:#bcbcbc; border:1px solid #555; }
   </style>
 </head>
 <body>
   <header class="top">
-    <h1>CTOA Console &nbsp;<a id="ownerLiveDashboardBtn" href="/live-dashboard" style="display:none;font-size:13px;font-weight:400;color:#56ccf2;text-decoration:none;background:#0d2233;padding:4px 10px;border-radius:6px;border:1px solid #2f80ed">&#8594; Live Dashboard</a></h1>
+    <h1>CTOA Console <span id="roleBadge" class="role-badge role-guest">guest</span> &nbsp;<a id="ownerLiveDashboardBtn" href="/live-dashboard" style="display:none;font-size:13px;font-weight:400;color:#56ccf2;text-decoration:none;background:#0d2233;padding:4px 10px;border-radius:6px;border:1px solid #2f80ed">&#8594; Live Dashboard</a></h1>
     <div class="token-row">
       <input id="token" type="password" placeholder="CTOA_MOBILE_TOKEN" />
       <button id="saveToken">Zapisz token</button>

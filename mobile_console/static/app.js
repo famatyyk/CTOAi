@@ -4,6 +4,7 @@ const cmdOut = document.getElementById('cmdOut');
 const presetSelect = document.getElementById('presetSelect');
 const authState = document.getElementById('authState');
 const ownerLiveDashboardBtn = document.getElementById('ownerLiveDashboardBtn');
+const roleBadge = document.getElementById('roleBadge');
 
 function getToken() {
   return localStorage.getItem('ctoa_mobile_token') || '';
@@ -40,12 +41,23 @@ async function refreshOwnerUi() {
   ownerLiveDashboardBtn.style.display = 'none';
   try {
     const me = await api('/api/auth/me');
-    if (String(me.role || '').toLowerCase() === 'owner') {
+    const role = String(me.role || '').toLowerCase();
+    setRoleBadge(role || 'guest');
+    if (role === 'owner') {
       ownerLiveDashboardBtn.style.display = 'inline-block';
     }
   } catch (_e) {
+    setRoleBadge('guest');
     ownerLiveDashboardBtn.style.display = 'none';
   }
+}
+
+function setRoleBadge(role) {
+  if (!roleBadge) return;
+  const normalized = String(role || 'guest').toLowerCase();
+  const knownRole = normalized === 'owner' || normalized === 'operator' ? normalized : 'guest';
+  roleBadge.textContent = knownRole;
+  roleBadge.className = `role-badge role-${knownRole}`;
 }
 
 document.getElementById('saveToken').onclick = () => {
@@ -72,11 +84,13 @@ async function checkAuthAuto() {
     } else {
       authState.textContent = 'Token NIEPOPRAWNY: zapisz aktualny CTOA_MOBILE_TOKEN';
       authState.style.color = '#ff9999';
+      setRoleBadge('guest');
       if (ownerLiveDashboardBtn) ownerLiveDashboardBtn.style.display = 'none';
     }
   } catch (e) {
     authState.textContent = 'Auto-check blad: ' + String(e);
     authState.style.color = '#ff9999';
+    setRoleBadge('guest');
     if (ownerLiveDashboardBtn) ownerLiveDashboardBtn.style.display = 'none';
   }
 }
@@ -346,4 +360,5 @@ async function fetchAgentLog(target) {
 });
 
 tokenInput.value = getToken();
+setRoleBadge('guest');
 void checkAuthAuto();
