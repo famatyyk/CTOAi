@@ -110,6 +110,7 @@ async function apiRequest(path, init = {}) {
   const response = await fetch(`${base}${path}`, {
     ...init,
     headers,
+    credentials: "include",
   });
   const text = await response.text();
   let payload = {};

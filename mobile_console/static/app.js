@@ -30,7 +30,8 @@ async function api(path, options = {}) {
   } else if (sessionToken) {
     headers.Authorization = `Bearer ${sessionToken}`;
   }
-  const res = await fetch(path, { ...options, headers });
+  const requestInit = { ...options, headers, credentials: 'include' };
+  const res = await fetch(path, requestInit);
   const data = await res.json();
   if (!res.ok) throw new Error(data.detail || JSON.stringify(data));
   return data;

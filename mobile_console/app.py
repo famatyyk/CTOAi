@@ -13,7 +13,7 @@ from pathlib import Path
 from threading import Lock
 from typing import Any, Dict, List, Optional
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
+from fastapi import Cookie, Depends, FastAPI, Header, HTTPException, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -306,6 +306,7 @@ def _try_auth_context(
     x_ctoa_token: Optional[str] = None,
     authorization: Optional[str] = None,
     x_ctoa_session: Optional[str] = None,
+    ctoa_session: Optional[str] = None,
 ) -> dict[str, Any] | None:
     # Backward-compatible owner auth using static token.
     expected = _mobile_token()
@@ -317,7 +318,7 @@ def _try_auth_context(
             "session_token": None,
         }
 
-    session_token = x_ctoa_session or _extract_bearer(authorization)
+    session_token = x_ctoa_session or ctoa_session or _extract_bearer(authorization)
     session = _get_session(session_token)
     if session:
         return {
@@ -334,16 +335,28 @@ def _token_valid(
     x_ctoa_token: Optional[str],
     authorization: Optional[str],
     x_ctoa_session: Optional[str],
+    ctoa_session: Optional[str],
 ) -> bool:
-    return _try_auth_context(x_ctoa_token=x_ctoa_token, authorization=authorization, x_ctoa_session=x_ctoa_session) is not None
+    return _try_auth_context(
+        x_ctoa_token=x_ctoa_token,
+        authorization=authorization,
+        x_ctoa_session=x_ctoa_session,
+        ctoa_session=ctoa_session,
+    ) is not None
 
 
 def require_operator(
     x_ctoa_token: Optional[str] = Header(default=None),
     authorization: Optional[str] = Header(default=None),
     x_ctoa_session: Optional[str] = Header(default=None),
+    ctoa_session: Optional[str] = Cookie(default=None),
 ) -> dict[str, Any]:
-    ctx = _try_auth_context(x_ctoa_token=x_ctoa_token, authorization=authorization, x_ctoa_session=x_ctoa_session)
+    ctx = _try_auth_context(
+        x_ctoa_token=x_ctoa_token,
+        authorization=authorization,
+        x_ctoa_session=x_ctoa_session,
+        ctoa_session=ctoa_session,
+    )
     if not ctx:
         raise HTTPException(status_code=401, detail="Unauthorized")
     return ctx
@@ -417,7 +430,7 @@ def health(ctx: dict[str, Any] = Depends(require_operator)) -> dict:
 
 
 @app.post("/api/auth/login")
-def auth_login(req: AuthLoginRequest, request: Request) -> dict:
+def auth_login(req: AuthLoginRequest, request: Request, response: Response) -> dict:
     username = _normalize_user(req.username)
 
     # 1. Try env-based credentials (owner/operator hardcoded — backward compat).
@@ -442,6 +455,15 @@ def auth_login(req: AuthLoginRequest, request: Request) -> dict:
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     token, expires_at = _create_session(username=username, role=matched_role)
+    response.set_cookie(
+        key="ctoa_session",
+        value=token,
+        max_age=SESSION_TTL_SECONDS,
+        httponly=True,
+        samesite="lax",
+        secure=False,
+        path="/",
+    )
 
     # Best-effort profile bootstrap so each authenticated user has a DB profile.
     try:
@@ -472,10 +494,11 @@ def auth_me(ctx: dict[str, Any] = Depends(require_operator)) -> dict:
 
 
 @app.post("/api/auth/logout")
-def auth_logout(ctx: dict[str, Any] = Depends(require_operator)) -> dict:
+def auth_logout(response: Response, ctx: dict[str, Any] = Depends(require_operator)) -> dict:
     token = str(ctx.get("session_token") or "")
     if token:
         _delete_session(token)
+    response.delete_cookie(key="ctoa_session", path="/")
     return {"ok": True}
 
 
@@ -622,12 +645,18 @@ def auth_auto_check(
     x_ctoa_token: Optional[str] = Header(default=None),
     authorization: Optional[str] = Header(default=None),
     x_ctoa_session: Optional[str] = Header(default=None),
+    ctoa_session: Optional[str] = Cookie(default=None),
 ) -> dict:
-    ctx = _try_auth_context(x_ctoa_token=x_ctoa_token, authorization=authorization, x_ctoa_session=x_ctoa_session)
+    ctx = _try_auth_context(
+        x_ctoa_token=x_ctoa_token,
+        authorization=authorization,
+        x_ctoa_session=x_ctoa_session,
+        ctoa_session=ctoa_session,
+    )
     valid = ctx is not None
     payload = {
         "ok": valid,
-        "token_present": bool(x_ctoa_token or authorization or x_ctoa_session),
+        "token_present": bool(x_ctoa_token or authorization or x_ctoa_session or ctoa_session),
         "token_valid": valid,
         "full_access": _full_access() if valid else False,
         "checked_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
