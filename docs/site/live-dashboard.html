@@ -453,6 +453,8 @@
         await saveProfile();
         if (state.role === "owner") { await loadAccounts(); }
         setStatus(`Polaczono jako ${state.username} (${state.role}).`);
+        // Main console is the default working page after login.
+        window.location.href = "/";
       }
 
       async function logout() {
@@ -583,6 +585,18 @@
         } catch (e) {
           setStatus(`Blad logowania: ${e.message || e}`);
         }
+      });
+
+      [el.apiBase, el.username, el.password].forEach((inputEl) => {
+        inputEl.addEventListener("keydown", async (ev) => {
+          if (ev.key !== "Enter") return;
+          ev.preventDefault();
+          try {
+            await login();
+          } catch (e) {
+            setStatus(`Blad logowania: ${e.message || e}`);
+          }
+        });
       });
 
       el.logoutBtn.addEventListener("click", async () => {

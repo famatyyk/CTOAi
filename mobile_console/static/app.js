@@ -3,9 +3,14 @@ const statusOut = document.getElementById('statusOut');
 const cmdOut = document.getElementById('cmdOut');
 const presetSelect = document.getElementById('presetSelect');
 const authState = document.getElementById('authState');
+const ownerLiveDashboardBtn = document.getElementById('ownerLiveDashboardBtn');
 
 function getToken() {
   return localStorage.getItem('ctoa_mobile_token') || '';
+}
+
+function getSessionToken() {
+  return sessionStorage.getItem('ctoa_live_token') || '';
 }
 
 function setToken(token) {
@@ -14,15 +19,33 @@ function setToken(token) {
 
 async function api(path, options = {}) {
   const token = getToken();
+  const sessionToken = getSessionToken();
   const headers = {
     'Content-Type': 'application/json',
-    'X-CTOA-Token': token,
     ...(options.headers || {}),
   };
+  if (token) {
+    headers['X-CTOA-Token'] = token;
+  } else if (sessionToken) {
+    headers.Authorization = `Bearer ${sessionToken}`;
+  }
   const res = await fetch(path, { ...options, headers });
   const data = await res.json();
   if (!res.ok) throw new Error(data.detail || JSON.stringify(data));
   return data;
+}
+
+async function refreshOwnerUi() {
+  if (!ownerLiveDashboardBtn) return;
+  ownerLiveDashboardBtn.style.display = 'none';
+  try {
+    const me = await api('/api/auth/me');
+    if (String(me.role || '').toLowerCase() === 'owner') {
+      ownerLiveDashboardBtn.style.display = 'inline-block';
+    }
+  } catch (_e) {
+    ownerLiveDashboardBtn.style.display = 'none';
+  }
 }
 
 document.getElementById('saveToken').onclick = () => {
@@ -31,19 +54,30 @@ document.getElementById('saveToken').onclick = () => {
   void checkAuthAuto();
 };
 
+tokenInput.addEventListener('keydown', (ev) => {
+  if (ev.key === 'Enter') {
+    ev.preventDefault();
+    document.getElementById('saveToken').click();
+  }
+});
+
 async function checkAuthAuto() {
   try {
     const data = await api('/api/auth/auto-check');
     if (data.token_valid) {
-      authState.textContent = `Token OK | full_access=${data.full_access} | orchestrator_timer=${data.orchestrator_timer || 'unknown'}`;
+      const authMode = getToken() ? 'legacy-token' : (getSessionToken() ? 'session' : 'unknown');
+      authState.textContent = `Auth OK (${authMode}) | full_access=${data.full_access} | orchestrator_timer=${data.orchestrator_timer || 'unknown'}`;
       authState.style.color = '#7fff7f';
+      await refreshOwnerUi();
     } else {
       authState.textContent = 'Token NIEPOPRAWNY: zapisz aktualny CTOA_MOBILE_TOKEN';
       authState.style.color = '#ff9999';
+      if (ownerLiveDashboardBtn) ownerLiveDashboardBtn.style.display = 'none';
     }
   } catch (e) {
     authState.textContent = 'Auto-check blad: ' + String(e);
     authState.style.color = '#ff9999';
+    if (ownerLiveDashboardBtn) ownerLiveDashboardBtn.style.display = 'none';
   }
 }
 
