@@ -11,7 +11,7 @@ function getToken() {
 }
 
 function getSessionToken() {
-  return sessionStorage.getItem('ctoa_live_token') || '';
+  return sessionStorage.getItem('ctoa_live_token') || sessionStorage.getItem('ctoa_admin_api_token_v1') || '';
 }
 
 function setToken(token) {

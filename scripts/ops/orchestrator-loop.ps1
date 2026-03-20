@@ -2,6 +2,7 @@ param(
     [ValidateSet('start','stop','status','tail')]
     [string]$Action = 'status',
     [int]$IntervalSeconds = 600,
+    [int]$ReportIntervalMinutes = 30,
     [string]$DbHost = '127.0.0.1',
     [string]$DbPort = '5432',
     [string]$DbName = 'ctoa',
@@ -16,6 +17,8 @@ $RuntimeDir = Join-Path $RepoRoot 'runtime'
 $LogsDir = Join-Path $RepoRoot 'logs'
 $PidFile = Join-Path $RuntimeDir 'orchestrator-loop.pid'
 $LogFile = Join-Path $LogsDir 'orchestrator-loop.log'
+$NightReportScript = Join-Path $RepoRoot 'scripts\ops\night-report.py'
+$NightReportFile = Join-Path $RuntimeDir 'night-report.md'
 
 New-Item -ItemType Directory -Path $RuntimeDir -Force | Out-Null
 New-Item -ItemType Directory -Path $LogsDir -Force | Out-Null
@@ -76,6 +79,25 @@ while (`$true) {
     }
     `$ts2 = (Get-Date).ToString('yyyy-MM-ddTHH:mm:ssK')
     Add-Content -Path '$LogFile' -Value "[`$ts2] LOOP_TICK end exit=`$code sleep=${IntervalSeconds}s"
+
+    `$reportDue = -not (Test-Path '$NightReportFile')
+    if (-not `$reportDue) {
+        try {
+            `$reportAgeMinutes = ((Get-Date) - (Get-Item '$NightReportFile').LastWriteTime).TotalMinutes
+            `$reportDue = `$reportAgeMinutes -ge ${ReportIntervalMinutes}
+        }
+        catch {
+            `$reportDue = `$true
+        }
+    }
+
+    if (`$reportDue -and (Test-Path '$NightReportScript')) {
+        `$reportOutput = & '$PythonExe' '$NightReportScript' --log-file '$LogFile' --report-file '$NightReportFile' 2>&1
+        if (`$null -ne `$reportOutput) {
+            `$reportOutput | ForEach-Object { Add-Content -Path '$LogFile' -Value (`$_.ToString()) }
+        }
+    }
+
     Start-Sleep -Seconds $IntervalSeconds
 }
 "@
@@ -114,6 +136,7 @@ function Show-Status {
         Write-Output "orchestrator-loop status: running (PID=$($proc.Id), Start=$($proc.StartTime))"
     }
     Write-Output "log: $LogFile"
+    Write-Output "night report: $NightReportFile"
 }
 
 function Get-LogTail {
