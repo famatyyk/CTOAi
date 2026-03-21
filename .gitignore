@@ -17,6 +17,11 @@ logs/
 artifacts/enc3/
 scripts/ops/enc3-analysis-report.txt
 scripts/ops/ghidra/*.class
+build/
+dist/
+ctoa-loader*.spec
+releases/loader/*.exe
+releases/loader/*.zip
 
 # Local client/generated diagnostics
 **/user_dir/ai_generated/
