@@ -1,0 +1,660 @@
+AJC
+ACADEMICJOURNALONCOMPUTING,ENGINEERINGANDAPPLIEDMATHEMATICS,VOL.2,NO.2,August2021
+EAcademic Journal Aon Computing, EngineerMing and Applied Mathematics
+Development of an intelligent agent for Tibia MMORPG
+ThiagoCastanheiraRetes1 and RafaelLimadeCarvalho1
+1FederalUniversityofTocantins,ComputerScienceDepartment,Tocantins,Brazil
+Receptiondateofthemanuscript:26/06/2021
+Acceptancedateofthemanuscript:05/08/2021
+Publicationdate:11/08/2021
+Abstract—ArtificialIntelligencehasalwaysbeenusedindesigningofautomatedagentsforplayinggamessuchasChess,Go,Defenseof
+theAncients2,SnakeGame,billiardandmanyothers. Inthiswork,wepresentthedevelopmentandperformanceevaluationofareactive
+agentfortheRPGGameTibia. TheintelligentagentisbuiltusingacombinationofAItechniquessuchasgraphsearchalgorithmA*and
+computervisiontoolsliketemplatematching. Usingfouralgorithmstogetglobalpositionofplayeringame,handleitshealthandmana,
+targetmonstersandwalkthroughthegame,wemanagedtodevelopafullyautomatedTibiaagentbasedinrawinputimage.Weevaluated
+theperformanceoftheagentinthreedifferentscenariosdoingtensessionsoffifteenminutesandfivesessionsofonehour,collectingand
+analyzingmetricssuchasXPGain,SuppliesUsageandBalance. Thesimulationresultsshowthatthedevelopedagentisabletoplaythe
+gameconsistentlyaccordingtoin-gamemetrics.
+Keywords—Automatedbots,TIBIA,ArtificialIntelligence,ComputerVision
+titles,inMarch2016[5].
+LookingtosurveyapproachesofsolvingSnakeGameand
+I. INTRODUCTION build an AI Bot that solves it in minimal amount of steps,
+Sharmaetal.[6],comparedBestFirstSearch,A*Search,A*
+Ga ming is a huge industry that generated $22.4 billion
+Searchwithforwardchecking,RandomMoveandAlmighty
+insalesin2014,accordingtotheEntertainmentSoft-
+Move according to its traits and proposes an AI bot mixing
+ware Association [1]. In a Massively Multiplayer Online
+them, aftertheevaluationofthem, theyproposedanAIbot
+Role-Playing Game (MMORPG), thousands of players can
+thatusedBestFirstSearchinthefirst4fruits,thenA*with
+play together inside a persistent game world [2]. Accord-
+Forward Checking for the next 34 fruits and then Almighty
+ingtoCano[1], "ofthetensofmillionsofplayerswhoplay
+Moveforthenext62fruits,whichresultedinanAIBotthat
+games daily, 20 percent play massively multiplayer online
+cansolveSnakeGamein100iterations,whichoutperforms
+role-playinggames(MMORPGs)".InsidethetheMMORPG
+the other algorithms alone. The authors propose in the dis-
+platforms, a lot of players use to trade virtual goods within
+cussionsessionadifferentgametotrainnormalplayersusing
+thrivingin-gameeconomies.
+ashadowsnakecontrolledbytheirAIBotwhichtheplayer
+According to Ferreira et al.[3], Tibia is a Massive Multi- hastomimictheirmovementstoearnscore.
+player Online Role-Playing Game (MMORPG), developed
+Lookingatthefieldofelectronicgames,theprogrammers
+byCipSoft. Tibiaisalsooneoftheoldestgamesinthegenre
+useAImostlytomodelautomatedbotsthatcomposethebe-
+(1997),withacommunitythatsurpasses500.000players,for
+havior of enemies as well as game assistants. On the other
+which40%oftheseareBrazilian.
+hand, there is a field of actuation in AI that tries to create
+Artificial Intelligence has many fields of actuation when
+an agent to play on behalf of a human player in electronic
+dealingwithgames. Aftermanyresearcheffortsinorderto
+games. Thesepieceofsoftwareareknownasgamebots[7].
+comeupwithanAIthatisabletoplayagainstahumanbe-
+Therefore, game bots usually uses AI in order to play the
+ing,in1997theDeepBluecomputer,madebyIBM,wasable
+games automatically and this function is considered a great
+to beat the world chess champion Garry Kasparov[4]. An-
+challengeandacomplexcomputationalbenchmark.
+othermilestonehappenedin2009whenanAInamedFuego
+Towardstheconstructionofsuchgamebots,Dharmawan
+beat Chou Chun-hsun, the world champion in GO, a chal-
+andHanafiah[8]discusstheusabilityofaclickerbotbased
+lengingboardgamefarmorecomplexthanchessinnumber
+intemplatematchingforgachagameswhicharegameswith
+ofpossibilities(eventhoughitwasusingasmallboardthan
+chances in freemium business models, these kind of games
+theofficialone)[4]. Moreover,inMarch2016Google’sAl-
+shareatraitwithMMORPGswhicharethecommonneedto
+phaGoAI,defeatedLeeSedol,thewinnerof18international
+farmlotsofresources,thatthebotssavestheuserlotsoftime
+andeffortbyautomatingthefarming. Initswork,theauthor
+Contactdata:ThiagoC.Retes,thiagoretes2@gmail.com prefer to present the results according to the computational
+ISSN: 2675-3588 1
+DEVELOPMENTOFANINTELLIGENTAGENTFORTIBIAMMORPG RETESANDCARVALHO
+performance and accuracy of the functions implemented in II. BACKGROUND
+the clicker bot, in this paper we took a different approach,
+Since the proposed intelligent agent is based in two main
+evaluatingtheperformanceofagentaccordingtosomemea-
+techniques,inSubsectionaitisshownthebasicbackground
+suresgivenbytheMMORPGitself.
+of A* search algorithm. In Subsection b shows the back-
+ground knowledge about Template Matching, the computer
+Regarding pathfinding in video games, Cui and Shi[9]
+visionalgorithmemployedaswell.
+discuss about A* algorithm and its related optimiza-
+tions Hierachical Pathfinding A*(HPA*) and Navigation
+a.A*Algorithm
+Mesh(NavMesh). Moreover, the authors describe optimiza-
+tionstotheheuristicfunctionusedbyA*byusinganover-
+TheA*algorithmisapath-searchingandgraphtraversalal-
+estimatingfunctioninordertotradeshortestpathforafaster
+gorithm, which is usually used due to its completeness and
+search,thenitdescribeswaystooptimizememoryusageof
+optimalefficiency[12]. ItcanbeseenasanextensiontoDi-
+A*withapproachessuchasallocatingaminimumnodebank
+jkstra’salgorithm.ItsmaindifferencetoDijkstra’salgorithm
+in memory and using Iterative Deepening A*(IDA*). The
+isthecostfunctionwhichis: f(x)=g(x)+h(x)whereg(x)
+authors also suggest using hash tables for the list of closed
+isthecosttoreachcurrentnodeandh(x)canbeagraphof
+nodesandabinaryheapforthelistofopennodesinorderto
+costs or an heuristic function that estimates the cost to the
+optimizethedatastructuresusedbyA*. CuiandShi[9]also
+goalnode.
+discussrelevantapplicationsinthegameindustrypresenting
+For its optimality it is necessary that the heuristic func-
+howwellknowntitlessuchasAgeofEmpiresII,Civilization
+tion h(x) meets certain requirements. The first condition
+V,andWorldofWarcrafthandlethepathfindingproblems.
+is that h(x) has to be an admissible heuristic. An admis-
+sible heuristic means that it never overestimates the cost to
+Inordertodevelopanautonomousnavigationsystemfor
+reachthegoal. Sinceg(x)isthecostoftheactualstate,then
+a robot, Ayala-Raggi et al. [10] used two view-based ap-
+f(x)=g(x)+h(x)neveroverestimatesthecostalongofeach
+proaches, one using SURF, RANSAC and Proscutes analy-
+path[12].
+sis and another one using template matching with Normal-
+Anotherrequirementisthattheheuristicfunctionh(x)has
+izedCrossCorrelation(NCC),bothusingapanoramicimage
+to be consistent. Consistency means for every state x and
+composed of 3 images of the camera in a robot that covers
+everysuccessorx(cid:48),thecostofreachingh(x)hastobelower
+76º x 3 = 228º. The main results indicated that the SURF
+thanthecostoftheactionfromxtox(cid:48) plush(x(cid:48)),whichcan
+approach was more consistent in regard to the addition of
+beseeninEquation1[12]:
+obstacleswhichNCCtemplatematchingfailed.
+h(x)<=c(x,a,x(cid:48))+h(x(cid:48)) (1)
+Since publication of Mnih et al.[11], that used raw in-
+put of screen to feed a deep learning model for playing
+AccordingtoHartetal.[13],givenanodes,asetT ofgoal
+49 Atari games and achieved super-human levels in 29 of
+nodesandthesuccessoroperatorΓ,theA*searchalgorithm
+them,academiccommunitymainlyfocusedinsolvingprob-
+canbedescribedas:
+lems adopting raw image input by applying machine learn-
+ing techniques. On the other hand, in this paper we try to 1. Marksasopenandcalculate f(s)
+bring another light in these problems by using knowledge-
+2. Selecttheopennodenwhosevalueof f(n)isthesmall-
+based systems with AI and Computer Vision techniques to
+est, resolving ties arbitrarily, but prioritizing any node
+play a complex game using raw image as the input for the
+n∈T
+proposedagent,butnotusingexpensivecomputationaltech-
+niquessuchasdeeplearning.
+3. Ifn∈T,marknasclosedandterminatethealgorithm.
+The main objective of this work is to present the devel- 4. Otherwise, mark n as closed, apply the successor op-
+opment of a reactive agent, based on artificial intelligence erator Γ to n. Calculate f(n(cid:48)) for each successor of n(cid:48)
+andimageprocessing,thatiscapableofplayingTibiausing andmarkasopen,everysuccessorthathasnotalready
+visualinformationandgeneratingcommoninputs. Thepro- beenmarkedasclosedyet. Remarkasopenanyclosed
+posedagentisthenevaluatedinthreedifferentscenariosand noden(cid:48)whichisasuccessorofnandforwhich f(n(cid:48))is
+thegamemetricsarecollectedinordertomeasureitsperfor- smallernowthanitwaswhenn(cid:48) wasmarkedasclosed.
+manceduringthegameplay. GotoStep2.
+The present work is organized as follows: Section II
+b.TemplateMatching
+presents the necessary background with the two main tech-
+niques used to develop the intelligent agent, such as A* al- Template matching is a method used in digital image pro-
+gorithmandTemplateMatchingfordealingwiththerawim- cessinginordertofindasmallimageinalargerone. Itcan
+age input. Section III explains the game Tibia, such as the be implemented by simply sliding the small image window
+map size, interface and mechanics. Section IV presents the inthelargerimageasa2Dconvolutionandcomparingpatch
+methodologyusedtocreatetheagentandevaluateit.Section oflargerimageunderthetemplateone. Severalcomparison
+Vpresentsthesimulationswedidforeachscenariopresented methods can be used, such as Cross Correlation or Square
+inSectionIVtheresultsandourinterpretationoftheresults. Difference.
+SectionVIpresentsourconclusionsabouttheworkandour The problem of template matching has been studied ex-
+possiblefuturedevelopments. tensively in the field of computer vision for years. Many
+ISSN: 2675-3588 2
+AJC
+ACADEMICJOURNALONCOMPUTING,ENGINEERINGANDAPPLIEDMATHEMATICS,VOL.2,NO.2,August2021
+EAcademic Journal Aon Computing, EngineerMing and Applied Mathematics
+approacheswereappliedinalmostalltasksofcomputervi- • Movement: Itisthecooldownbetweenmovementfrom
+sionsuchasstereovision,cameracalibration,recognitionof an SQM to another. Every SQM has a type that deter-
+objects,etc[14]. minestheamountofcooldowninconjunctionwiththe
+InBrunelli[15], theauthorpresentsthesimplesttemplate playerlevel.
+matchingtechniqueusedincomputervisionknownasplanar
+• AttackSpellGroup:everyattackspelladdssomeglobal
+distributionoflight.Thistechniquetakestheintensityvalues
+andtransformthemintoavectorx,thatcanbecompared,ina attackspellcooldownwhencast,ingeneralhasacostof
+2(two)secondsfromthelasttimethespellswereused;
+coordinate-wisefashion.Thisproducesaspatiallycongruent
+light distribution represented in a similar form by vector y.
+• Healing SpellGroup: Every healing spelladds in gen-
+TheformulaisgivenbyEquations2and3:
+erala1(one)secondglobalhealingspellcooldown;
+N
+d(x,y)= 1 ∑(x −y)2= 1 ||x−y||2 (2) • GeneralItemuse: Usuallytheplayercanuseoneitem
+N i i N 2 for every second with some exceptions like the potion
+i=1
+ofmanashield;
+1
+s(x,y)= (3) • Basic Attack: The basic attack is based in weapon
+1+d(x,y)
+equippedandhasacooldownof2seconds.
+The lower the value of d(x,y) or the higher the value of
+s(x,y),thebetterinindicationofpatternsimilarity.
+Sinces(x,y)isthecomparisonfunction,therearenumer-
+ous functions that can be used in its place. The library we a.Vocations
+used in our intelligent agent was OpenCV 4.2.0[16], and it
+Tibiahas4vocations,eachofthemwithuniquetraitsandits
+implementsthreeofthemwiththeirnormalizedvariants.Our
+advantagesanddisadvantages.
+agentwascodedtousethecomparatornamedcorrelationco-
+efficientnormalized. • Knight: is the vocation which excels at melee combat.
+It has the highest amount of health points gaining 15
+III. TIBIA health points, 25 oz of capacity and 5 mana points per
+level. It evolves faster in melee skills(club, axe and
+AsinanyMMORPG,themainideaofthegameistoevolve
+sword)andshieldingskill. Itsspellsaremostlyfocused
+theplayer’scharacterthroughhunting. Thisactiongivesthe
+inmeleecombatandtankingdamage. Itsmaindamage
+playermoneyandXP(indicatorforexperience),andallows
+attributeisbasedontheweaponituses(someweapons
+ittoparticipateinthegamehistorythroughquestsandwars.
+can have elemental damage thus making Knights ele-
+So an intelligent agent is a tool that has been used for a
+mentaldamagedealers).
+longtimebyplayerstoevolvetheircharactersthroughend-
+less hunts. The main idea behind an intelligent agent is to • Paladin: isthedistancecombatclass. Ithasabalanced
+automate an action to evolve the player’s character through amount of health points and mana points gaining 10
+simple algorithms. In this work the goal is to evaluate an healthpoints,20ozofcapacityand15manapointsper
+agentthroughoutmeasuresofefficiencyinordertoproduce level. Itevolvesfasterindistancefightingandshielding
+the maximum XP per hour on Tibia. The map of Tibia is skill. Its spells are mostly focused in distance combat
+composedof2304x2048SQM(SquareMetre)and14floors andselfregeneration.
+which gives a total exploration size of 66.060.288 SQMs,
+whetherallpartsofthemapisavailabletowalkthrough. • Druid:isthehealingmageclass.Ithastheleastamount
+AsitcanbeseeninFig. 1,theGraphicsUserInterfacein of health points and the most amount of mana points
+Tibiaiskeptassimpleaspossible. Attheupperrightcorner, gaining5healthpoints,10ozofcapacityand30mana
+there is the minimap which shows the player’s position in points per level. It evolves faster in magic level. Its
+the game and enables it to navigate through the world with spells are mostly focused in healing, although it has
+a click. Immediately beneath, there is located the current somenicecombatspellswithTerraandIceattributes.
+equippeditems.Belowit,therearethehealthandmanabars,
+• Sorcerer: is the damage dealer mage class. It has
+which indicates the current amount of life and mana of the
+the least amount of health points and most amount of
+character. Atthecenterofthescreen,thereisthemaingame
+manapoints,exactlylikedruids,sorcerergains5health
+screen. It consists of a matrix of 15x11 SQM and shows
+points,10ozofcapacityand30manapointsperlevel.It
+the actions of the characters in the player vision. Beneath
+evolvesfasterinmagiclevel.Itsspellsaremostfocused
+it, there is the hotkeys bar, which contains the shortcuts to
+indealingdamagewithFireandEnergyattributes.
+spells, items and text. Immediately bellow it, there are the
+textchannelswhichshowsalltheactionsthathappensduring
+the game play. The rest of the interface is placeholder for
+containersandwindowsthatshowspecificstatistics.
+b.Skills
+TibiaisaMMORPGwhicheveryactionhassomekindof
+cooldown involved. In general, there are 4 (four) types of Each player in Tibia can evolve different skills during their
+cooldowns that are important to consider when building an gameplay,theyrepresenttheirexpertisewithsaidtypeofac-
+intelligentagentforTibia: tion,theseskillscanbeseparatedin3maintypes:
+ISSN: 2675-3588 3
+DEVELOPMENTOFANINTELLIGENTAGENTFORTIBIAMMORPG RETESANDCARVALHO
+Fig.1:TibiaInterface.(a)InRed:Minimap,(b)InYellow:EquippedItems,(c)InOrange:HealthandManaBars,(d)InGreen:Main
+GameScreen,(e)InBlue:ShortcutsandHotkeys,(f)InViolet:TextChannels
+• Melee skills: They are 3 skills (club, axe, sword), re- othersforloot. WhatmakesagoodhuntingspotinTibiais
+sponsible for the damage done using melee weapons the combination of amount, density, respawn time of crea-
+and knight attack spells. Can be evolved by using ba- tures in it, the difficult of hunting there and its popularity.
+sicattackwhileusingaweaponoftheskilltype. Since Tibia is not a instanced MMORPG and its world is
+sharedbetweentheentiregameworld,thebesthuntingspots
+• Distanceskill: Itistheskillresponsibleforthedamage
+are usually disputed which may turn them a bad choice for
+done using distance weapons (bows and crossbows).
+hunting,sothepopularityofahuntingspotisafactortocon-
+Canbeevolvedbyusingbasicattackwhileusingabow
+sidertoobecausemosthuntingspotsdoesnotsupportmore
+oracrossbow.
+than a player hunting which will decrease the amount crea-
+tures each player will be able to kill. The hunting in Tibia
+• Magic Level: It is the skill responsible for the power
+basicallyconsistsofkillingcreaturesdoingaspecificcircu-
+of spells in general(healing and attack spells). Can be
+larroute,ensuringthatwhentheplayercompletestheroute,
+evolvedbyspendingmanapoints.
+monstershaverespawned.Eachvocationhasparticularhunt-
+ingspotsthatarebestsuitedtoit.
+c.Combat IV. METHODOLOGY
+The action of hunting creatures in Tibia involves attacking TheworldofTibiaiscomposedof2304x2048SQMsand14
+themuntiltheirhealthpointsreachzero. Playerscanattack floors, which gives a total size of 66.060.288 SQMs. This
+creatures in two ways: basic attack and attack spells. Most amountofinformationmustbeloadedbytheproposedagent
+creaturesthatgiveexperiencepointsinTibiaareaggressive, inordertousetheGPS(GlobalPositioningSystem)ofTibia.
+thismeansthattheywillengageincombatwiththeplayeras SinceeachSQMisrepresentedby3bytes(BGR),thewhole
+soonitswithacertainrangeofthem. Creaturesdon’thavea mapsizeaccountsto189MB.
+globalspellcooldownwhichmeanseverytwosecondsthey In order to make a fully automated hunt agent we built 4
+can cast all of their spells, however its unlikely to happen agentsthatrunsimultaneously:
+because the spells are cast by chance. In order to survive
+• GPS Algorithm: it is responsible for retrieving the
+theengagementplayerscanusehealingspellsandpotionsto
+globalpositionofthecharacter;
+restore their health points and to keep using spells they can
+usemanapotionstorestoretheirmanapoints.
+• Healing Algorithm: it is responsible for healing the
+characterandnotlettingitdie;
+d.Hunting
+• Target Algorithm: it is responsible for targeting mon-
+A variety of places in Tibia has spawns of creatures which
+sters, hencedefeatedthemand“looting”(collect)their
+each of them gives a specific amount of experience points
+items;
+and items dropped(loot) while having a specific amount of
+healthpointsandattack(whichisacombinationofbasicat- • CaveBotAlgorithm: itactstowalkaroundthehunting
+tackandspells),somecreaturesarebettertohuntforXPand placeaccordingtotheGPS;
+ISSN: 2675-3588 4
+AJC
+ACADEMICJOURNALONCOMPUTING,ENGINEERINGANDAPPLIEDMATHEMATICS,VOL.2,NO.2,August2021
+EAcademic Journal Aon Computing, EngineerMing and Applied Mathematics
+Set current position characterhasalreadyengagedsomeothermonster),thenthe
+Get Floor Using
+as the resultant algorithm will click the monster to attack it. After defeat-
+Template Matching
+coordinate
+ingtheengagedmonster,thetargetalgorithmsendsspecific
+keybindingstothepositionsaroundthecharacter,inorderto
+collecttheitemsgeneratedbythevictory.
+Resize Minimap to
+25% it's original size Yes
+in both dimensions
+Template matching
+isTargeting? Walk next SQM
+using minimap
+resized against full
+map resized
+No
+Get the best match Add half minimap size
+Get Current Position
+pixel and multiply by to each coordinate in
+4 each coordinate matched pixel
+Fig.2:DiagramofGPSAlgorithm
+Get Next Position Calculate path with A*
+In Fig. 2 is shown the proposed GPS algorithm, which Fig.4:DiagramofCavebotAlgorithm
+is an optimized template matching to get the minimap and
+In Fig. 4 is shown the cave bot algorithm, which takes
+matchagainstthefullmap. Thefirststepisgettingthefloor
+as input a circular buffer of positions to walk. It walks to
+which will be a template matching against each of 14 pos-
+thenextpositionwhilethereisnomonstertargeted. Ifthere
+siblefloorpositionslocatedattherightsideoftheminimap
+is a targeted monster it stops, then continue walking. The
+which provides the correct floor. After that, to find a good
+walking stage is based on the A* search of map space do-
+match, the algorithm resizes the minimap to 25% of its ori-
+ing optimal search decision based on the speed of the cur-
+gianlsize,ateachdimensionandmatchagainstacopyofthe
+rentpositiontowardsdestination. Themapoftibiacontains
+full map, also resized to 25% of its original size. This pro-
+information about the speed at each SQM which is used as
+cess reduces the search space to 1.179.648 pixels, which in
+weightsforA*algorithm.
+BGRmeans3.375MB.
+Thehealingalgorithmisasimplepixelcheckinthehealth
+a.AgentEvaluation
+and mana bars. If the specific pixel has not the expected
+color,thenaconfiguredhealingshortcutissenttothegame. Duringthegameplay,theTIBIA’scharacterhassomeperfor-
+mancemeasures. Ingeneral,TIBIAmeasuresthefollowing
+indexes:
+Yes
+1. XP Gain: this is the mainstream measure. It increases
+isTargeting?
+Yes Is there a whentheplayerkillscreaturesanddecreaseswhenthe
+red/pink pixel in the
+target window? playerdies;
+No 2. Loot: this is the sum of the value of all items dropped
+No
+bycreaturesingoldpieces;
+No
+3. Supplies:thisisthesumofthevalueofallitemswasted
+tohuntthecreaturesingoldpieces;
+Is there a
+configured monster in the Shift+Right Click
+target window? Around character
+and set isTargeting 4. Balance: this is the Loot minus the Supplies in gold
+to false
+pieces;
+Yes 5. KilledMonsters: theamountofkilledmonsters.
+Because Killed Monsters and Loot are linear dependen-
+Target Monster and
+set isTargeting to true
+cies of the other three, during the simulations, we evaluate
+theagentperformanceusingthreemainmeasures: XPGain,
+Fig.3:DiagramofTargetingAlgorithm
+Supplies,andBalance.
+In Fig. 3 is shown the target system, which is a tem-
+platematchingtogetthemonstersinthetargetwindowand
+V. SIMULATIONS AND RESULTS
+matchesthemagainstapreconfiguredmonstershuntinglist.
+Ifthematchisabovesomepreconfiguredthresholdandthere ThereisavarietyofmonstersinTibiaforhuntingalthough
+is no red/pink pixel in the target window (which means the since we only had a character of level 89 we had a limited
+ISSN: 2675-3588 5
+DEVELOPMENTOFANINTELLIGENTAGENTFORTIBIAMMORPG RETESANDCARVALHO
+varietyofhuntingplacestochoose,forthisreasonwechosen
+Simulation I - Scenario: Wasps
+threehuntingplacesthatwouldfitourtestcharacter.
+XP Gain Supplies Balance
+In order to evaluate the performance of the pro- 0,20
+posed agent, we designed three test scenarios: Sce-
+0,15
+nario I: Wasp cave(Ab’Dendriel), Scenario II: Nomads
+Cave(Ankrahmun/Darashia), andScenarioIII:LionSanctu- 0,10
+ary(Darashia). The scenarios are described in Table 1. For
+eachscenario,werantheagentfor10times,withsessionsof 0,05
+15minutesandfor5times,withsessionsof1hour. Foreach
+0,00
+runsession,theagentbeganinsimilarstarterpoints. 1 2 3 4 5 6 7 8 9 10
+Our choice of doing 10 sessions of 15 minutes was due
+Fig.5:NormalizedresultsofWaspsScenario.
+totwomainreasons. Firsttotestitsreliabilityandstability
+againstbiggersessionsintermsofresultsandseconddueto
+Tibiastaminasystem,whichgivesbonusXPinthefirst180 amountofmonstersdefeatedresultedinalowerstandardde-
+minutes of gameplay each day, hence, with our choice we viation of the balance variable. The variation that can be
+havebeenabletoconductonetestscenarioperday. noticedintheXPGainisduethenatureofthecavescenario.
+Thus,sometimestheagentendupwalkingthroughaholein
+TABLE1: DESCRIPTIONOFTHEEVALUATEDSCENARIOS.
+thecave,havingrestarteditsroute.
+Scenario Description
+Simulation II - Scenario: Nomads
+I.Wasps This is the easy level and the main mon-
+XP Gain Supplies Balance
+sterstheagenthastofaceisWasps. Each
+0,20
+Waspmayattackonlyforalowamountof
+damagewhichishealedbyonlyfoodthe 0,15
+agent is eating. The main difficulties an
+automatedagentcanfaceherearethemap 0,10
+exploration.
+0,05
+II.Nomads Thisismid-levelhuntingspotwhichholds
+ahigh-demanditem(ropebelt)whichhasa
+0,00
+goodvalueforLoothunting.Themaindif- 2 4 6 8 10
+ficultiesanautomatedagentmayfacehere
+arethehighamountofcreatures.
+Fig.6:NormalizedresultsofNomadsScenario.
+III.RoaringLions This is a high-level popular hunt spot for In Fig. 7 it is shown the agent performance during 10
+great XP Gain with little to no waste in
+sessions, using Scenario III. It can be noticed a high stan-
+terms of Balance. The main difficulties
+dard deviation in balance. This is due to the low drop rate
+anautomatedagentmayfaceherearethe
+of items from Roaring Lions. It can be noticed that the XP
+highamountofdamagecreaturesinflictto
+Gain and Supplies are tied due to the amount of supplies it
+it.
+takes to defeat a Roaring Lion. This is the unique Scenario
+that the proposed agent had to use Mana Potions to defeat
+the monsters, since each Mana Potion costs 56 gold pieces
+a.15minutessessions
+the balance got hit by it. It can be noticed too, that there
+In Fig. 5 it is shown the agent performance during the 10 is a standard deviation in XP too, which is mainly because
+sessions,usingtheScenarioI.Itcanbenoticedthatthebal- someplayerskilledmonstersofthehuntingplacewhilewe
+ance variable has a high standard deviation, deviating from were running the session during some sessions and secon-
+the average especially in runs 2,6,7,8,9. This happened be- darilybecausetheagentactuallykilledmoreRoaringLions
+causeoftherandomnatureofdropsinTibia. OnceaWasp duringthesessionsometimes.
+monsterisdefeated,thedroppeditemsdoesnotfollowapat-
+tern. Notice, however, thattheXPgainisstable, becauseit
+Simulation III - Scenario: Roaring Lions
+isrelatedtotheexperienceindefeatingtherelatedmonster. XP Gain Supplies Balance
+Considering the Supllies measure, it can be seen that there 0,50
+wasahigheruseofsuppliesinrun1andasuddenlylossdur-
+0,25
+ingrun5. Thishappensduetotheuseofbrownmushrooms
+assupplieswhichisusedonceevery264seconds. Soasthe 0,00
+agentisrunningduringsessionsof15minutes,itmeansthat
+itwillbeusedaround15∗60/264=3.4mushroomsforev- -0,25
+erysession. Therefore,therearesessionsthatwillusemore
+-0,50
+thantheexpected3mushrooms. 2 4 6 8 10
+In Fig. 6 it is shown the agent performance during 10
+Fig.7:NormalizedresultsofRoaringLionsScenario.
+sessions,usingScenarioIIaswell. Itcanbenoticedalower
+standardvariationinbalancewhencomparedwithScenario Wealsoconductedanotheranalysis,plottingeachmeasure
+I.Thisisduetothedroprateofvaluableitemsfromnomads intothethreeevaluatedscenarios. InFig. 8,itisshownthe
+being higher than of the wasps. This summed to the higher XPforallscenarios(withnonormalization). Lookingatthe
+ISSN: 2675-3588 6
+AJC
+ACADEMICJOURNALONCOMPUTING,ENGINEERINGANDAPPLIEDMATHEMATICS,VOL.2,NO.2,August2021
+EAcademic Journal Aon Computing, EngineerMing and Applied Mathematics
+8, as expected the XP Gain of Roaring Lions was clearly turebuttheimpacthasbeensmallerinthesehigherduration
+aboveWaspsandNomadsduetothenatureofeachscenario. sessions.
+We note too that nomads has a high XP Gain which is of
+course due to the Scenario being a higher level of difficult
+Simulation II - Scenario: Nomads
+thanWasps,sinceaWaspgives36XPwhileaNomadgives
+XP Gain Supplies Balance
+90XP. 0,25
+0,20
+XP Gain 0,15
+Roaring Lions Nomads Wasps
+100000 0,10
+0,05
+75000
+0,00
+50000 1 2 3 4 5
+25000
+Fig.11:NormalizedresultsofNomadsfor1hoursession.
+0
+2 4 6 8 10 In fig. 11 is shown the results of 5 sessions using the
+Run
+Scenario II. It can be noticed a lower standard deviation in
+comparisonwithfig. 6, whichshowsusthatthehigherthe
+Fig.8:XPGainresultsofallsimulations.
+duration of the sessions, stabler are our agent results. The
+Balance metric still shows a some standard deviation, but
+lowerwhencomparedtothe15minutessessions.
+Balance
+Roaring Lions Nomads Wasps
+30000
+Simulation III - Scenario: Roaring Lions
+20000 XP Gain Supplies Balance
+0,4
+10000
+0,3
+0
+0,2
+-10000
+2 4 6 8 10
+Run 0,1
+Fig.9:Balanceresultsofallsimulations. 0,0
+1 2 3 4 5
+In fig. 9 as expected balance of Roaring Lions scenario
+Fig.12:NormalizedresultsofRoaringLionsfor1hoursession.
+runs were the lowest since its nature is basically XP Gain
+without any profit. We also noticed that Wasps balance are Infig. 12isshowntheresultsof5sessionsusingtheSce-
+underNomadsbalancebecauseNomadsscenarioisahigher nario III. It can be noticed that there is almost no deviation
+level of difficulty than Wasps. In addition, it is noticeable in XP Gain and Supplies, which signals the stability of the
+thatthereisahighstandarddeviationinthebalancewhichis proposedagentinthisscenario. TheBalancestillhasahigh
+duetotherandomnessnatureoflootinTibia. deviationduetothelowdroprateofsomehighvalueitems
+fromRoaringLions.
+b.1hoursessions
+c.Comparisonwithhumanplayers
+Simulation I - Scenario: Wasps In order to evaluate the performance of the proposed agent
+XP Gain Supplies Balance we got a volunteer to run a session of 1 hour in Scenario I
+0,25 andScenarioII.Thevolunteerwasnotabletorunasessionin
+0,20 ScenarioIII,aftertryingtogotothehuntingplaceonetime
+anddying,hegaveupduetohisskillsnotbeingenoughfor
+0,15
+it. Ourvolunteerwasa26yearsoldwithbasicknowledgeof
+0,10
+thegame. Thesessionsweredoneusingthesamecharacter
+0,05 whichweconductedtheagentsessions.
+0,00 In fig. 13 is shown the comparison of the session done
+1 2 3 4 5
+bythevolunteerwiththebestandworstsessionsdonebythe
+agent in Scenario I. It can be noted that the agent achieved
+Fig.10:Normalizedresultsofwaspsfor1hoursession.
+almostthesameXPGainofthehumanplayer,whichmeans
+Infig. 10isshowntheresultsof5sessionsusingtheSce- it killed almost the same amount of creatures as the human
+narioI.Itcanbenoticedamuchlowerstandarddeviationin player did. In regards to balance, due to the random nature
+comparisonwithfig. 5,whichisprobablyduetothehigher ofloot,theagentmayhadabadluckinitsworstsessionbut
+duration of the sessions. This is a good result since it sig- almostthesamebalanceofthevolunteerinitsbestsession.
+nals the stability of the agent performance in this scenario. The Supplies were in the range of 60 to 140, so it did not
+TheBalancestillhashigherdeviationduetoitsrandomna- appearonthechart.
+ISSN: 2675-3588 7
+DEVELOPMENTOFANINTELLIGENTAGENTFORTIBIAMMORPG RETESANDCARVALHO
+the agent made XP close to what an human player would
+Comparison With Human - Scenario I - Wasps
+do,butwithoutdyingasingletimeintheevaluatedsessions.
+XP Gain Supplies Balance
+50000 Intheeasierscenarios,suitedtofarmgoldpieces,theagent
+40000 behaved well farming values near to what a human player
+wouldfarm.
+30000
+Future research investigations include: a) improvement
+20000 of the proposed agent framework to allow the evaluation of
+10000 players,gatheringalltheirinputsandoutputsvisiblethrough
+the screen, in order to evaluate the agent’s performance
+0
+Volunteer Best Worst againstotherplayers;b)comparisonwithagentsusingother
+Session approaches such as reinforcement learning; and c) bench-
+markwithmorehumanvolunteers;d)Researchtheoptimum
+Fig.13:ComparisonofHumanVolunteerwithBestandWorst valueofmapresizeforthebestperformanceoftheGPSAl-
+gorithm.
+sessionof1hourforScenarioI-Wasps.
+Comparison With Human - Scenario II - Nomads
+REFERENCES
+XP Gain Supplies Balance [1] N. Cano, Game hacking: developing autonomous bots for online
+80000 games. NoStarchPress,2016.
+60000 [2] J.Y.Wang,“CombatState-AwareInterestManagementforMassively
+Multiplayer Online Games,” Master’s thesis, TECHNISCHE UNI-
+40000 VERSITÄTMÜNCHEN,2017.
+20000 [3] N. Ferreira, P. Trovo, and S. Nesteriuk, “Emergence in game de-
+sign: Theoretical aspects and project’s potentialities,” in Interna-
+0 tional Conference on Distributed, Ambient, and Pervasive Interac-
+Volunteer Best Worst
+tions. Springer,2017,pp.597–611.
+Session
+[4] J.Schaeffer,M.Müller,andA.Kishimoto,“Go-bot,go,”IEEESpec-
+Fig.14:ComparisonofHumanVolunteerwithBestandWorst trum,vol.51,no.7,pp.48–53,2014,citedBy1.
+sessionof1hourforScenarioII-Nomads.
+[5] D.Silver, J.Schrittwieser, K.Simonyan, I.Antonoglou, A.Huang,
+A.Guez,T.Hubert,L.Baker,M.Lai,A.Boltonetal.,“Masteringthe
+gameofgowithouthumanknowledge,”nature,vol.550,no.7676,pp.
+In fig. 14 is shown the comparison of the session done
+354–359,2017.
+by the volunteer with the best and worst sessions done by
+[6] S.Sharma,S.Mishra,N.Deodhar,A.Katageri,andP.Sagar,“Solving
+theagentinScenarioII.Itcanbenotedthattheagent’sper-
+theclassicsnakegameusingai,”in2019IEEEPuneSectionInterna-
+formancewasbetterthanthevolunteerinbothXPGainand tionalConference(PuneCon),2019,pp.1–4.
+Balance. Supplies were in the range of 130 to 140, so they
+[7] A.Kang,S.Jeong,A.Mohaisen,andH.Kim,“Multimodalgamebot
+didnotappearonthechart. detectionusinguserbehavioralcharacteristics,”SpringerPlus,vol.5,
+When doing a preliminary comparison with public ses- 2016.
+sions recorded by some gamers, in the environment de- [8] T. Dharmawan and N. Hanafiah, “Clicker bot for gacha games
+scribed here as Nomads Scenario the proposed agent pro- usingimagerecognition,”ProcediaComputerScience,vol.179,pp.
+598–605, 2021, 5th International Conference on Computer Science
+duced around 15.000 balance of gold pieces per session of
+and Computational Intelligence 2020. [Online]. Available: https:
+15minuteswhichtranslatesinto60.000goldpiecesperhour //www.sciencedirect.com/science/article/pii/S1877050921000521
+against78.000ofCyf[17]andintheenvironmentdescribed
+[9] X.CuiandH.Shi,“A*-basedpathfindinginmoderncomputergames,”
+hereasRoaringLionsScenariotheproposedagentproduced International Journal of Computer Science and Network Security,
+aresultofaround70.000experiencepointspersessionof15 vol.11,no.1,pp.125–130,2011.
+minuteswhichtranslatesinto280.000experiencepointsper [10] S. E. Ayala-Raggi, P. d. J. González, S. Sánchez-Urrieta, and
+houragainst350.000experiencepointsperhourof[18].This A.Barreto-Flores,“Asimpleview-basedsoftwarearchitectureforan
+autonomousrobotnavigationsystem,”inImageAnalysisandRecogni-
+results are primarily due to faster input/output of the agent
+tion,M.KamelandA.Campilho,Eds. Cham:SpringerInternational
+anditsnatureasanautomatedagentofneverbeingaffected Publishing,2015,pp.287–296.
+byemotions.
+[11] V. Mnih, K. Kavukcuoglu, D. Silver, A. A. Rusu, J. Veness,
+M. G. Bellemare, A. Graves, M. Riedmiller, A. K. Fidjeland,
+G. Ostrovski, S. Petersen, C. Beattie, A. Sadik, I. Antonoglou,
+VI. FINAL REMARKS
+H. King, D. Kumaran, D. Wierstra, S. Legg, and D. Hassabis,
+“Human-levelcontrolthroughdeepreinforcementlearning,”Nature,
+Thispaperpresentedthedevelopmentandevaluationofare- vol. 518, no. 7540, pp. 529–533, Feb. 2015. [Online]. Available:
+http://dx.doi.org/10.1038/nature14236
+active agent for the MMORPG Tibia. The proposed agent
+usedonlyrawdatainputasthemainscreenofthegameand [12] S.J.RussellandP.Norvig,ArtificialIntelligence:amodernapproach,
+analgorithmbasedonTemplateMatchingtoprocesstheim- 3rded. Pearson,2009.
+ages. Furthermore, it has been implemented a GPS module [13] P. E. Hart, N. J. Nilsson, and B. Raphael, “A formal basis for the
+basedontheA*algorithmwhichisusedtoguidetheagent heuristicdeterminationofminimumcostpaths,” IEEETransactions
+onSystemsScienceandCybernetics,vol.4,no.2,pp.100–107,July
+throughthemapandtargetmonstersalongtheway.
+1968.
+The evaluation consisted of three distinct scenarios with
+[14] B. Cyganek, Object Detection and Recognition in Digital Images.
+three different levels of difficulties. For each scenario, the
+JohnWileyandSonsLtd,2013.
+agentissubmittedinsessionsof15minand1hour,andthree
+[15] R.Brunelli,Templatematchingtechniquesincomputervision:theory
+mainmeasuresarecollected: XP,Supplies,andBalance. As
+andpractice. Wiley,2009.[Online].Available:http://gen.lib.rus.ec/
+expected, in the most difficult scenario, the Roaring Lions, book/index.php?md5=3F5932473E6E9C09092322AC4F5EC6E0
+ISSN: 2675-3588 8
+AJC
+ACADEMICJOURNALONCOMPUTING,ENGINEERINGANDAPPLIEDMATHEMATICS,VOL.2,NO.2,August2021
+EAcademic Journal Aon Computing, EngineerMing and Applied Mathematics
+[16] G.Bradski,“TheOpenCVLibrary,”Dr.Dobb’sJournalofSoftware
+Tools,2000.
+[17] C.Plays,“Ropebeltfarm(level20+/70k+profit)-bonus: Arito’s
+task quest.” 2018. [Online]. Available: https://www.youtube.com/
+watch?v=f_si_oDb1LI
+[18] Itexo,“Ek54lion’srock-350k/h-osmelhoreslugaresdehuntpara
+knights,”2018.[Online].Available:https://www.youtube.com/watch?
+v=7q6fD6q2cYc
+ISSN: 2675-3588 9

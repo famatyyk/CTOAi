@@ -1,0 +1,30 @@
+# Hybrid Tibia Bot Dependencies
+# Install with: pip install -r requirements_hybrid.txt
+
+# Core vision & math
+opencv-python>=4.8.0          # Image processing, template matching
+numpy>=1.24.0                 # Numerical computing
+
+# Async event loop
+asyncio                        # Built-in (Python 3.7+)
+aiofiles>=23.0.0              # Async file I/O
+
+# Configuration & serialization
+pyyaml>=6.0                   # YAML config files
+python-dotenv>=1.0.0          # .env file support
+
+# Optional: LLM integration
+openai>=1.0.0                 # OpenAI API (optional, for --use-llm)
+
+# Optional: Input simulation
+pynput>=1.7.0                 # Keyboard/mouse control (optional)
+
+# Optional: Screenshot capture
+mss>=9.0.0                    # Fast screenshotting (optional)
+pillow>=10.0.0                # PIL image processing (optional)
+
+# Testing & development
+pytest>=7.4.0                 # Unit tests
+pytest-asyncio>=0.21.0        # Async test support
+black>=23.0.0                 # Code formatting
+mypy>=1.4.0                   # Type checking

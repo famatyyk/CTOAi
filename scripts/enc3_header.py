@@ -1,0 +1,26 @@
+"""Analyse ENC3 file header structure from init.lua"""
+import struct, os
+
+f = open(os.path.expandvars(r"%APPDATA%\MKLauncher\althea\init.lua"), "rb")
+b = f.read()
+f.close()
+
+print(f"File size: {len(b)} bytes")
+print(f"First 64 bytes hex: {b[:64].hex()}")
+print(f"First 64 bytes repr: {b[:64]}")
+print()
+print("=== HEADER PARSE ===")
+print(f"  [0:4]  magic = {b[0:4]}  = {b[0:4].hex()}")
+print(f"  [4]    byte4 = 0x{b[4]:02x} ({b[4]})")
+print(f"  [5]    byte5 = 0x{b[5]:02x} ({b[5]})")
+print(f"  [4:8]  uint32 LE = {struct.unpack_from('<I', b, 4)[0]}")
+print(f"  [8:12] uint32 LE = {struct.unpack_from('<I', b, 8)[0]}")
+print(f"  [12:16] uint32 LE = {struct.unpack_from('<I', b, 12)[0]}")
+print(f"  [4:8]  uint32 BE = {struct.unpack_from('>I', b, 4)[0]}")
+print()
+# Check if payload after magic looks like it could be XTEA (key 8 bytes?) or zlib (78 9C)
+print(f"  Watch for zlib magic 0x789C at [4:6]: {b[4:6].hex()}")
+print(f"  Watch for XTEA block (16-byte aligned cipher): {b[4:20].hex()}")
+print(f"  Payload length without magic: {len(b)-4}")
+print(f"  Is (len-4) % 8 == 0 (XTEA block): {(len(b)-4) % 8 == 0}")
+print(f"  Is (len-4) % 16 == 0 (AES block): {(len(b)-4) % 16 == 0}")
