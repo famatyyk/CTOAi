@@ -12,8 +12,8 @@ Architecture:
 
 from .bot_runner import BotConfig, HybridBotRunner
 from .metrics import MetricsCollector
-from .pathfinding import Pathfinder
-from .prompt_logic import PromptLogic
+from .pathfinding import Coordinate, Pathfinder, SQMType
+from .prompt_logic import GameState, PromptLogic
 from .state_manager import StateManager
 from .vision_layer import VisionLayer
 
@@ -24,6 +24,9 @@ __all__ = [
     "MetricsCollector",
     "VisionLayer",
     "Pathfinder",
+    "Coordinate",
+    "SQMType",
     "PromptLogic",
+    "GameState",
     "StateManager",
 ]
