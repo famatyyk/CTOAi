@@ -16,7 +16,7 @@ REQUIRED_FILES = [
     "scripts/ops/sprint028_validate.py",
     "scripts/ops/nightly_stability.py",
     "scripts/ops/evidence_retention.py",
-    "tests/test_mobile_console_dashboard_api.py",
+    "tests/test_mobile_console_generated_latest_api.py",
     "tests/test_nightly_stability_artifact.py",
     "tests/test_evidence_retention_policy.py",
     ".vscode/tasks.json",
@@ -28,7 +28,7 @@ REQUIRED_YAML_FILES = [
 ]
 
 REGRESSION_TEST_FILES = [
-    "tests/test_mobile_console_dashboard_api.py",
+    "tests/test_mobile_console_generated_latest_api.py",
     "tests/test_nightly_stability_artifact.py",
     "tests/test_evidence_retention_policy.py",
 ]
