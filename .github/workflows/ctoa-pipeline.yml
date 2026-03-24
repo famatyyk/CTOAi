@@ -149,6 +149,131 @@ jobs:
             echo "No tests directory found, skipping test execution"
           fi
 
+      - name: Sprint-016 RC hardening gate
+        shell: bash
+        run: |
+          python scripts/ops/sprint016_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-016-validation.json
+
+      - name: Sprint-017 GA closure gate
+        shell: bash
+        run: |
+          python scripts/ops/sprint017_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-017-validation.json
+
+      - name: Sprint-018 Post-GA assurance gate
+        shell: bash
+        run: |
+          python scripts/ops/sprint018_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-018-validation.json
+
+      - name: Sprint-019 Module quality hardening gate
+        shell: bash
+        run: |
+          python scripts/ops/sprint019_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-019-validation.json
+
+      - name: Sprint-020 Alert coverage + API surface gate
+        shell: bash
+        run: |
+          python scripts/ops/sprint020_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-020-validation.json
+
+      - name: Sprint-021 Governance consistency gate
+        shell: bash
+        run: |
+          python scripts/ops/sprint021_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-021-validation.json
+
+      - name: Sprint-022 CI evidence hardening gate
+        shell: bash
+        run: |
+          python scripts/ops/sprint022_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-022-validation.json
+
+      - name: Sprint-023 Validator hardening gate
+        shell: bash
+        run: |
+          python scripts/ops/sprint023_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-023-validation.json
+
+      - name: Sprint-024 Release scalability gate
+        shell: bash
+        run: |
+          python scripts/ops/sprint024_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-024-validation.json
+
+      - name: Sprint-025 Control plane + execution + governance gate
+        shell: bash
+        run: |
+          python scripts/ops/sprint025_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-025-validation.json
+
+      - name: Sprint-026 Reliability + observability + automation gate
+        shell: bash
+        run: |
+          python scripts/ops/sprint026_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-026-validation.json
+
+      - name: Sprint-027 Quality + delivery continuity gate
+        shell: bash
+        run: |
+          python scripts/ops/sprint027_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-027-validation.json
+
+      - name: Sprint-027 nightly trend + evidence batch
+        shell: bash
+        run: |
+          python scripts/ops/nightly_stability.py --json-out runtime/ci-artifacts/nightly-stability-ci.json
+
+      - name: Sprint-029 delivery gate
+        shell: bash
+        run: |
+          python scripts/ops/sprint029_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-029-validation.json
+
+      - name: Sprint-030 delivery gate
+        shell: bash
+        run: |
+          python scripts/ops/sprint030_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-030-validation.json
+
+      - name: Sprint-031 delivery gate
+        shell: bash
+        run: |
+          python scripts/ops/sprint031_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-031-validation.json
+
+      - name: Sprint-032 delivery gate
+        shell: bash
+        run: |
+          python scripts/ops/sprint032_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-032-validation.json
+
+      - name: Sprint-033 delivery gate
+        shell: bash
+        run: |
+          python scripts/ops/sprint033_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-033-validation.json
+
+      - name: Sprint-034 delivery gate
+        shell: bash
+        run: |
+          python scripts/ops/sprint034_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-034-validation.json
+
+      - name: Sprint-035 delivery gate
+        shell: bash
+        run: |
+          python scripts/ops/sprint035_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-035-validation.json
+
+      - name: Sprint-036 delivery gate
+        shell: bash
+        run: |
+          python scripts/ops/sprint036_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-036-validation.json
+
+      - name: Sprint-037 delivery gate
+        shell: bash
+        run: |
+          python scripts/ops/sprint037_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-037-validation.json
+
+      - name: Sprint-038 delivery gate
+        shell: bash
+        run: |
+          python scripts/ops/sprint038_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-038-validation.json
+
+      - name: Sprint-039 delivery gate
+        shell: bash
+        run: |
+          python scripts/ops/sprint039_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-039-validation.json
+
+      - name: Sprint-040 delivery gate
+        shell: bash
+        run: |
+          python scripts/ops/sprint040_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-040-validation.json
+
       - name: Python linting (flake8)
         shell: bash
         continue-on-error: true
@@ -177,6 +302,17 @@ jobs:
         with:
           name: generator-validator-samples
           path: runtime/ci-artifacts/generator-validator/**
+          if-no-files-found: ignore
+
+      - name: Upload Sprint-027 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sprint-027-evidence
+          path: |
+            runtime/ci-artifacts/sprint-027-validation.json
+            runtime/ci-artifacts/nightly-stability*.json
+            runtime/evidence/sprint-027/**
           if-no-files-found: ignore
 
       - name: Enforce response guardrail gate

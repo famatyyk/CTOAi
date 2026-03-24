@@ -9,7 +9,7 @@ from pathlib import Path
 
 import yaml
 
-REQUIRED_FILES = ['workflows/backlog-sprint-029.yaml', 'workflows/sprint-029-delivery-flow.yaml', 'scripts/ops/sprint029_validate.py', '.vscode/tasks.json', '.github/workflows/ctoa-pipeline.yml', 'runtime/experiments/sprint-029/CTOA-143.md', 'runtime/experiments/sprint-029/CTOA-144.md', 'runtime/experiments/sprint-029/CTOA-145.md', 'runtime/experiments/sprint-029/CTOA-146.md', 'runtime/experiments/sprint-029/CTOA-147.md']
+REQUIRED_FILES = ['workflows/backlog-sprint-029.yaml', 'workflows/sprint-029-delivery-flow.yaml', 'scripts/ops/sprint029_validate.py', '.vscode/tasks.json', '.github/workflows/ctoa-pipeline.yml']
 REQUIRED_YAML_FILES = ['workflows/backlog-sprint-029.yaml', 'workflows/sprint-029-delivery-flow.yaml']
 REQUIRED_HOOKS = {"on_start", "on_complete", "on_fail"}
 

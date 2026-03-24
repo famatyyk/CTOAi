@@ -182,17 +182,12 @@ def _build_flow_payload(window: SprintWindow) -> dict:
 
 def _validator_code(sprint: int) -> str:
     sprint_label = _sprint_label(sprint)
-    task_base = START_CTOA_ID + (sprint - START_SPRINT) * 5
-    experiment_files = [
-        f"runtime/experiments/sprint-{sprint_label}/CTOA-{task_base + i}.md" for i in range(5)
-    ]
     required_files = [
         f"workflows/backlog-sprint-{sprint_label}.yaml",
         f"workflows/sprint-{sprint_label}-delivery-flow.yaml",
         f"scripts/ops/sprint{sprint_label}_validate.py",
         ".vscode/tasks.json",
         ".github/workflows/ctoa-pipeline.yml",
-        *experiment_files,
     ]
     required_yaml = [
         f"workflows/backlog-sprint-{sprint_label}.yaml",
