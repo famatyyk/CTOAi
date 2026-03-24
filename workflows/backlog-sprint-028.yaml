@@ -36,7 +36,7 @@ items:
     title: Sprint-028 CI gate hardening
     type: quality
     priority: P2
-    status: READY_FOR_WAVE_1
+    status: DELIVERED
     description: >
       Add focused regression checks for dashboard + nightly evidence interactions and
       enforce stricter gate diagnostics.

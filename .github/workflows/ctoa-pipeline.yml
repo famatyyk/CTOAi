@@ -214,6 +214,11 @@ jobs:
         run: |
           python scripts/ops/nightly_stability.py --json-out runtime/ci-artifacts/nightly-stability-ci.json
 
+      - name: Sprint-028 CI gate hardening
+        shell: bash
+        run: |
+          python scripts/ops/sprint028_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-028-validation.json
+
       - name: Sprint-029 delivery gate
         shell: bash
         run: |
@@ -312,6 +317,17 @@ jobs:
           path: |
             runtime/ci-artifacts/sprint-027-validation.json
             runtime/ci-artifacts/nightly-stability*.json
+            runtime/evidence/sprint-027/**
+          if-no-files-found: ignore
+
+      - name: Upload Sprint-028 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sprint-028-evidence
+          path: |
+            runtime/ci-artifacts/sprint-028-validation.json
+            runtime/ci-artifacts/nightly-stability-sprint-028-ci.json
             runtime/evidence/sprint-027/**
           if-no-files-found: ignore
 

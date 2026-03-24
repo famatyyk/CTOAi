@@ -893,6 +893,30 @@
       }
     },
     {
+      "label": "CTOA: Sprint-028 Validate CI Gate Hardening",
+      "type": "shell",
+      "command": ".venv/Scripts/python.exe scripts/ops/sprint028_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-028-validation.json",
+      "isBackground": false,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "CTOA: Sprint-028 Wave-1 Run",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "CTOA: Run All Tests",
+        "CTOA: Sprint-028 Validate CI Gate Hardening",
+        "CTOA: Launch Pack"
+      ],
+      "isBackground": false,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
       "label": "CTOA: Nightly Stability Batch",
       "type": "shell",
       "command": ".venv/Scripts/python.exe scripts/ops/nightly_stability.py --json-out runtime/ci-artifacts/nightly-stability-$(Get-Date -Format yyyyMMdd).json",
