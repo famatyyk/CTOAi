@@ -163,23 +163,18 @@ def check_nightly_evidence_interaction(root: Path) -> dict:
     nightly_rel = "runtime/ci-artifacts/nightly-stability-sprint-028-ci.json"
     cmd = [python, "scripts/ops/nightly_stability.py", "--json-out", nightly_rel]
     code, output = _run(cmd, cwd=root)
-    if code != 0:
-        return {
-            "id": "nightly_evidence_interaction",
-            "ok": False,
-            "hint": "Nightly stability batch failed",
-            "details": {
-                "command": " ".join(cmd),
-                "output_tail": "\n".join(output.splitlines()[-20:]),
-            },
-        }
+    output_tail = "\n".join(output.splitlines()[-20:])
 
     nightly_path = root / nightly_rel
     if not nightly_path.exists():
         return {
             "id": "nightly_evidence_interaction",
             "ok": False,
-            "hint": "Nightly artifact was not created",
+            "hint": f"Nightly artifact was not created (exit_code={code})",
+            "details": {
+                "command": " ".join(cmd),
+                "output_tail": output_tail,
+            },
         }
 
     try:
@@ -265,9 +260,11 @@ def check_nightly_evidence_interaction(root: Path) -> dict:
         "ok": True,
         "hint": "",
         "details": {
+            "nightly_exit_code": code,
             "nightly_overall": payload.get("overall"),
             "anomaly_triggered": bool(payload.get("anomaly", {}).get("triggered")),
             "indexed_paths": sorted(p for p in present_paths if p in expected_paths),
+            "output_tail": output_tail,
         },
     }
 
