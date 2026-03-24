@@ -16,6 +16,7 @@ from typing import Any, Dict, List, Optional
 from fastapi import Cookie, Depends, FastAPI, Header, HTTPException, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -31,10 +32,68 @@ GENERATED_DIR = Path(os.environ.get("CTOA_GENERATED_DIR", "/opt/ctoa/generated")
 GENERATED_MANIFESTS_DIR = GENERATED_DIR / "manifests"
 ADMIN_SETTINGS_FILE = Path(os.environ.get("CTOA_ADMIN_SETTINGS_FILE", str(ROOT / "runtime" / "admin-panel-settings.json")))
 IDEA_PARKING_FILE = Path(os.environ.get("CTOA_IDEA_PARKING_FILE", str(ROOT / "runtime" / "idea-parking.json")))
+PRODUCT_MANIFEST_FILE = ROOT / "product" / "ctoa-toolkit.manifest.json"
+PRODUCT_STATE_DIR = Path(os.environ.get("CTOA_PRODUCT_STATE_DIR", str(ROOT / ".ctoa-local")))
+PRODUCT_USER_CONFIG_FILE = Path(os.environ.get("CTOA_PRODUCT_USER_CONFIG", str(PRODUCT_STATE_DIR / "user-config.json")))
 
 
 def _is_production_env() -> bool:
     return os.getenv("CTOA_ENV", "").strip().lower() in {"prod", "production"}
+
+
+def _load_json_file(path: Path) -> dict[str, Any]:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def _normalize_package_tier(value: str) -> str:
+    tier = str(value or "").strip().lower()
+    if tier in {"core", "pro", "studio"}:
+        return tier
+    return "studio"
+
+
+def _current_package_tier() -> str:
+    env_tier = os.getenv("CTOA_PACKAGE_TIER", "").strip()
+    if env_tier:
+        return _normalize_package_tier(env_tier)
+
+    if PRODUCT_USER_CONFIG_FILE.exists():
+        config = _load_json_file(PRODUCT_USER_CONFIG_FILE)
+        package_tier = str(config.get("package_tier", "")).strip()
+        if package_tier:
+            return _normalize_package_tier(package_tier)
+
+    if PRODUCT_MANIFEST_FILE.exists():
+        manifest = _load_json_file(PRODUCT_MANIFEST_FILE)
+        return _normalize_package_tier(str(manifest.get("default_package_tier", "studio")))
+
+    return "studio"
+
+
+def _mobile_console_enabled() -> bool:
+    override = os.getenv("CTOA_CAPABILITY_MOBILE_CONSOLE", "").strip().lower()
+    if override in {"1", "true", "yes", "on"}:
+        return True
+    if override in {"0", "false", "no", "off"}:
+        return False
+
+    package_tier_env = os.getenv("CTOA_PACKAGE_TIER", "").strip()
+    default_enabled = _current_package_tier() in {"pro", "studio"}
+    if package_tier_env:
+        return default_enabled
+
+    if not PRODUCT_USER_CONFIG_FILE.exists():
+        return default_enabled
+
+    config = _load_json_file(PRODUCT_USER_CONFIG_FILE)
+    features = config.get("features") if isinstance(config.get("features"), dict) else {}
+    if "mobile_console" in features:
+        return bool(features.get("mobile_console"))
+    return default_enabled
 
 app = FastAPI(title="CTOA Mobile Console", version="1.0.0")
 
@@ -52,6 +111,23 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def enforce_mobile_console_capability(request: Request, call_next):
+    path = request.url.path
+    gated = (
+        path == "/console"
+        or path == "/live-dashboard"
+        or path.startswith("/api/")
+        or path.startswith("/static/")
+    )
+    if gated and not _mobile_console_enabled():
+        detail = "mobile_console capability requires Pro or Studio package"
+        if path.startswith("/api/"):
+            return JSONResponse(status_code=403, content={"ok": False, "detail": detail})
+        return PlainTextResponse(detail, status_code=403)
+    return await call_next(request)
 
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 app.mount("/assets", StaticFiles(directory=str(SITE_ASSETS_DIR)), name="site-assets")

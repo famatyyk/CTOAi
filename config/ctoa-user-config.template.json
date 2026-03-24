@@ -1,12 +1,13 @@
 {
+  "package_tier": "Studio",
   "profile_name": "your-profile",
   "operator_handle": "your-operator",
   "deployment_mode": "self-hosted",
   "update_channel": "stable",
   "features": {
-    "mobile_console": false,
+    "mobile_console": true,
     "sealed_agents": true,
-    "dashboard": false
+    "dashboard": true
   },
   "notes": "Copy is created automatically to .ctoa-local/user-config.json during bootstrap. Edit the local copy, not this template."
 }

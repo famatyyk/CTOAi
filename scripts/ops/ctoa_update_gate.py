@@ -72,6 +72,7 @@ def run_gate(state_dir: Path) -> tuple[int, dict]:
         "product": manifest["product"],
         "version": manifest["version"],
         "channel": manifest["channel"],
+        "package_tier": state.get("package_tier") or manifest.get("default_package_tier", "Studio"),
         "message": "Update gate passed. Launch allowed.",
     }
 

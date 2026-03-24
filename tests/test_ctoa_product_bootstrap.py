@@ -8,6 +8,7 @@ from scripts.ops.ctoa_product_bootstrap import bootstrap
 def test_bootstrap_writes_local_json_and_sqlite_state(tmp_path: Path):
     result = bootstrap(
         state_dir=tmp_path,
+        package_tier="pro",
         profile_name="customer-a",
         operator_handle="owner-a",
         deployment_mode="self-hosted",
@@ -21,8 +22,11 @@ def test_bootstrap_writes_local_json_and_sqlite_state(tmp_path: Path):
 
     assert user_config["profile_name"] == "customer-a"
     assert user_config["operator_handle"] == "owner-a"
+    assert user_config["package_tier"] == "pro"
+    assert user_config["features"]["mobile_console"] is True
     assert bootstrap_state["product_version"] == "1.1.1"
     assert bootstrap_state["bootstrap_schema_version"] == 1
+    assert bootstrap_state["package_tier"] == "pro"
 
     conn = sqlite3.connect(tmp_path / "toolkit-state.db")
     try:

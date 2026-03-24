@@ -14,6 +14,9 @@ def _load_app_module(monkeypatch: MonkeyPatch, tmp_path: Path):
     monkeypatch.setenv("CTOA_OPERATOR_PASSWORD", "jakpod22")
     monkeypatch.setenv("CTOA_ADMIN_SETTINGS_FILE", str(tmp_path / "admin-settings.json"))
     monkeypatch.setenv("CTOA_IDEA_PARKING_FILE", str(tmp_path / "idea-parking.json"))
+    monkeypatch.setenv("CTOA_PRODUCT_STATE_DIR", str(tmp_path / ".ctoa-local"))
+    monkeypatch.setenv("CTOA_PRODUCT_USER_CONFIG", str(tmp_path / ".ctoa-local" / "user-config.json"))
+    monkeypatch.setenv("CTOA_PACKAGE_TIER", "studio")
 
     import mobile_console.app as mobile_app
 

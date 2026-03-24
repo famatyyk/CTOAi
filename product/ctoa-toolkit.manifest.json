@@ -5,6 +5,7 @@
   "minimum_supported_version": "1.1.1",
   "bootstrap_schema_version": 1,
   "bootstrap_required": true,
+  "default_package_tier": "Studio",
   "config_template": "config/ctoa-user-config.template.json",
   "update_strategy": "mandatory-before-launch"
 }
