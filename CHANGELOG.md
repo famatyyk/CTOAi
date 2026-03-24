@@ -2,6 +2,58 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.1] - 2026-03-24 (Sprint-028: Release Stabilization + Operator UX + Evidence Continuity)
+
+### Added
+- **Dashboard timeline stabilization**: mobile console trend view now caps visible rows, keeps overflow visible, and prioritizes critical signal groups
+- **Evidence retention policy**: `evidence_retention.py` applies bounded TTL and max-entry pruning for SHA256-indexed evidence artifacts
+- **Nightly anomaly tuning**: `nightly_stability.py` now emits an `anomaly` section with configurable thresholds and low-sample guard
+- **Sprint-028 CI gate**: `sprint028_validate.py` validates dashboard/nightly regressions and evidence interactions with actionable diagnostics
+
+### Validation
+- Sprint-028 release pack wave_1: PASS (automated)
+- Sprint-028 release pack wave_2: PASS (STRATEGOS sign-off)
+
+## [1.1.0] - 2026-03-24 (Sprint-027: Quality + Delivery Continuity + Automation Hardening)
+
+### Added
+- **Sprint-027 API regression coverage**: focused contract tests for execution, metrics, and dashboard reliability surfaces
+- **Nightly trend report v2**: `nightly_stability.py` now emits `trend_24h`, `trend_7d`, and `drift` sections
+- **Dashboard ergonomics pass**: grouped reason-code signals, collapsible sections, dominant signal summary, and 24h SLO timeline
+- **Sprint-027 evidence hardening**: validator and nightly runs now write SHA256-backed entries to `runtime/evidence/sprint-027/`
+- **CI evidence bundle**: pipeline runs nightly batch and uploads Sprint-027 evidence artifacts
+
+### Validation
+- Sprint-027 release pack wave_1: PASS (automated)
+- Sprint-027 release pack wave_2: PASS (STRATEGOS sign-off)
+
+## [1.0.9] - 2026-03-24 (Sprint-026: Reliability + Observability + Nightly Automation)
+
+### Added
+- **Execution metrics API**: `GET /api/agents/execution/metrics` with per-reason_code counts, `success_rate_24h`, `error_budget_remaining`, `alert_active`, and `alert_reason`
+- **Alert rule function**: `runner.alert_rules.check_generation_failed_spike()` integrated into metrics computation flow
+- **Nightly artifact schema test**: automated validation for `nightly_stability.py` output contract
+- **Dashboard SLO extensions**: `/api/dashboard` now exposes `top_reason_codes` and `slo_summary`
+- **Dashboard trend widget**: frontend mini trend summary for dominant reason_code + SLO status
+
+### Validation
+- Sprint-026 release pack wave_1: PASS (automated)
+- Sprint-026 release pack wave_2: PASS (STRATEGOS sign-off)
+
+## [1.0.8] - 2026-03-24 (Sprint-025: Control Plane UX + Execution Telemetry + Governance)
+
+### Added
+- **reason_code taxonomy**: `/api/agents/execution/run` now returns `reason_code` (`ARTIFACTS_READY` | `MANIFEST_PENDING` | `ARTIFACTS_PENDING` | `GENERATION_FAILED`) and full `reason_code_taxonomy` dict for operator-side display
+- **execution_trend per run**: execution endpoint returns last-N run summary (ready/failed/empty counts) via internal `_execution_trend_from_manifests()`
+- **Operator trend endpoint**: `GET /api/agents/execution/trend?limit_runs=N` — role-protected, returns per-run status breakdown and aggregate summary
+- **health_timeline + timeline_summary**: `/api/dashboard` now includes per-day quality timeline list and rolling summary (days, avg_quality, latest_day)
+- **Frontend timeline display**: `static/app.js` updated — one-click shows trend, dashboard always shows `timeline_summary` + last-5 `health_timeline_preview`
+- **Sprint-025 CI gate**: `sprint025_validate.py` gate inserted in `.github/workflows/ctoa-pipeline.yml`
+- **VS Code task chain**: Sprint-025 Validate + Wave-1 Run tasks added to `.vscode/tasks.json`
+
+### Docs
+- `docs/MOBILE_CONSOLE.md`: reason_code taxonomy table and operator trend endpoint documented
+
 ## [Unreleased]
 
 ### Security

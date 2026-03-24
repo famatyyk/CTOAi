@@ -1,6 +1,6 @@
 sprint: "028"
 theme: Release Stabilization + Operator UX + Evidence Continuity
-status: IN_PROGRESS
+status: CLOSED
 source_baseline: v1.1.0-approved
 proposed_release: v1.1.1
 
@@ -45,7 +45,7 @@ items:
     title: Release pack v1.1.1
     type: governance
     priority: P3
-    status: PENDING_WAVE_1
+    status: DELIVERED
     description: >
       Consolidate CTOA-138..141 into release candidate v1.1.1 with wave_1 and wave_2 approvals.
 
