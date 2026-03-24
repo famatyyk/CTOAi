@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import subprocess
 import sys
 from datetime import UTC, datetime
@@ -84,6 +85,72 @@ def _compute_window_trend(entries: list[dict], window_seconds: int) -> dict:
         "error_count": int(by_reason_code.get("GENERATION_FAILED", 0)),
         "dominant_reason_code": dominant_reason_code,
         "by_reason_code": by_reason_code,
+    }
+
+
+def _read_float_env(name: str, default: float) -> float:
+    raw = os.getenv(name, "").strip()
+    if not raw:
+        return default
+    try:
+        return float(raw)
+    except ValueError:
+        return default
+
+
+def _read_int_env(name: str, default: int) -> int:
+    raw = os.getenv(name, "").strip()
+    if not raw:
+        return default
+    try:
+        parsed = int(raw)
+        return parsed if parsed > 0 else default
+    except ValueError:
+        return default
+
+
+def _compute_anomaly_signal(trend_24h: dict, trend_7d: dict) -> dict:
+    min_runs_24h = _read_int_env("CTOA_ANOMALY_MIN_RUNS_24H", 4)
+    success_rate_drop_threshold = _read_float_env("CTOA_ANOMALY_SUCCESS_RATE_DROP", 0.08)
+    error_count_spike_threshold = _read_int_env("CTOA_ANOMALY_ERROR_COUNT_SPIKE", 2)
+
+    runs_24h = int(trend_24h.get("runs_total", 0) or 0)
+    success_rate_24h = float(trend_24h.get("success_rate", 1.0) or 1.0)
+    success_rate_7d = float(trend_7d.get("success_rate", 1.0) or 1.0)
+    error_count_24h = int(trend_24h.get("error_count", 0) or 0)
+    error_count_7d = int(trend_7d.get("error_count", 0) or 0)
+
+    success_rate_drop = round(success_rate_7d - success_rate_24h, 4)
+    error_count_spike = error_count_24h - error_count_7d
+    dominant_reason_code_shifted = trend_24h.get("dominant_reason_code") != trend_7d.get("dominant_reason_code")
+
+    low_sample = runs_24h < min_runs_24h
+
+    triggered_reasons: list[str] = []
+    if success_rate_drop >= success_rate_drop_threshold:
+        triggered_reasons.append("success_rate_drop")
+    if error_count_spike >= error_count_spike_threshold:
+        triggered_reasons.append("error_count_spike")
+
+    # Ignore dominant reason shifts on small sample windows to reduce false positives.
+    if dominant_reason_code_shifted and not low_sample and error_count_24h > 0:
+        triggered_reasons.append("dominant_reason_shift")
+
+    return {
+        "triggered": len(triggered_reasons) > 0,
+        "reasons": triggered_reasons,
+        "low_sample": low_sample,
+        "metrics": {
+            "runs_24h": runs_24h,
+            "success_rate_drop": success_rate_drop,
+            "error_count_spike": error_count_spike,
+            "dominant_reason_code_shifted": dominant_reason_code_shifted,
+        },
+        "thresholds": {
+            "min_runs_24h": min_runs_24h,
+            "success_rate_drop": success_rate_drop_threshold,
+            "error_count_spike": error_count_spike_threshold,
+        },
     }
 
 
@@ -200,6 +267,7 @@ def main() -> int:
             "error_count_delta_7d_vs_24h": int(trend_7d["error_count"] - trend_24h["error_count"]),
             "dominant_reason_code_changed": trend_24h["dominant_reason_code"] != trend_7d["dominant_reason_code"],
         },
+        "anomaly": _compute_anomaly_signal(trend_24h, trend_7d),
     }
 
     out_path_str = args.json_out or f"runtime/ci-artifacts/nightly-stability-{date_str}.json"

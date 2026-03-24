@@ -27,7 +27,7 @@ items:
     title: Nightly trend anomaly threshold tuning
     type: automation
     priority: P2
-    status: READY_FOR_WAVE_1
+    status: DELIVERED
     description: >
       Tune drift/anomaly thresholds in nightly trend report to reduce false positives
       while keeping early-failure sensitivity.
