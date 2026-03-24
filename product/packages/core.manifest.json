@@ -1,0 +1,36 @@
+{
+  "tier": "Core",
+  "description": "Public CTOA Toolkit core runtime and governance surface",
+  "include_paths": [
+    "agents",
+    "config",
+    "core",
+    "docs",
+    "policies",
+    "product",
+    "prompts",
+    "runner",
+    "schemas",
+    "scoring",
+    "scripts/ops",
+    "tests",
+    "tools",
+    "training",
+    "workflows",
+    "README.md",
+    "CHANGELOG.md",
+    "requirements.txt",
+    "requirements_hybrid.txt",
+    ".gitignore"
+  ],
+  "exclude_paths": [
+    "mobile_console",
+    "archived/runtime/private-storage",
+    "artifacts",
+    "decompiled_lua",
+    "decompiled_lua_reports",
+    "decompiled_lua_stage2",
+    "decrypted_xxtea",
+    "readable_pack"
+  ]
+}

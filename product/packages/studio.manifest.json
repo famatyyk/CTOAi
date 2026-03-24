@@ -1,0 +1,17 @@
+{
+  "tier": "Studio",
+  "description": "Internal-only CTOA Studio overlay and private operations surface",
+  "include_paths": [
+    "archived",
+    "DataAnalysisExpert",
+    "labs",
+    "releases",
+    "artifacts",
+    "decompiled_lua",
+    "decompiled_lua_reports",
+    "decompiled_lua_stage2",
+    "decrypted_xxtea",
+    "readable_pack"
+  ],
+  "visibility": "private"
+}

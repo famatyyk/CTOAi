@@ -1,0 +1,20 @@
+{
+  "tier": "Pro",
+  "description": "Commercial CTOA package with customer-facing console and sealed capabilities",
+  "extends": "Core",
+  "include_paths": [
+    "mobile_console",
+    "deploy",
+    "releases/loader",
+    "templates"
+  ],
+  "exclude_paths": [
+    "archived/runtime/private-storage",
+    "artifacts",
+    "decompiled_lua",
+    "decompiled_lua_reports",
+    "decompiled_lua_stage2",
+    "decrypted_xxtea",
+    "readable_pack"
+  ]
+}
