@@ -37,6 +37,7 @@ releases/loader/*.zip
 .env
 .env.*
 secrets/
+.ctoa-local/
 
 # OS
 .DS_Store

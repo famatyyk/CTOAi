@@ -56,6 +56,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- **Public/private product architecture**: added productization boundary document for public toolkit vs private studio assets
+- **Mandatory bootstrap flow**: `ctoa_product_bootstrap.py` creates ignored local JSON config and SQLite state for customer-specific setup
+- **Mandatory update gate**: `ctoa_update_gate.py` blocks launch until bootstrap exists and local version/schema match the tracked product manifest
+- **Product manifest + config template**: added tracked public manifest and local config template for customer bootstrap flows
+
 ### Security
 - **SSH Key Rotation (2026-03-12)**: Rotated ed25519 SSH key for VPS access
   - Old key removed from `/root/.ssh/authorized_keys` on VPS

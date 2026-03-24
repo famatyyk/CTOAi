@@ -146,9 +146,29 @@
       }
     },
     {
+      "label": "CTOA: Bootstrap Product Config",
+      "type": "shell",
+      "command": ".venv/Scripts/python.exe scripts/ops/ctoa_product_bootstrap.py",
+      "isBackground": false,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "CTOA: Check Update Gate",
+      "type": "shell",
+      "command": ".venv/Scripts/python.exe scripts/ops/ctoa_update_gate.py",
+      "isBackground": false,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
       "label": "CTOA: Launch Pack",
       "type": "shell",
-      "command": "echo Launching CTOA pack...; if (Test-Path .\\agents\\ctoa-agents.yaml) { echo Agents OK } else { echo Agents missing; exit 1 }; if (Test-Path .\\prompts\\braver-library.yaml) { echo Prompts OK } else { echo Prompts missing; exit 1 }; if (Test-Path .\\.github\\workflows\\ctoa-pipeline.yml) { echo CI Workflow OK } else { echo CI Workflow missing; exit 1 }; echo Launch dry-run PASS",
+      "command": ".venv/Scripts/python.exe scripts/ops/ctoa_update_gate.py; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; echo Launching CTOA pack...; if (Test-Path .\\agents\\ctoa-agents.yaml) { echo Agents OK } else { echo Agents missing; exit 1 }; if (Test-Path .\\prompts\\braver-library.yaml) { echo Prompts OK } else { echo Prompts missing; exit 1 }; if (Test-Path .\\.github\\workflows\\ctoa-pipeline.yml) { echo CI Workflow OK } else { echo CI Workflow missing; exit 1 }; echo Launch dry-run PASS",
       "isBackground": false,
       "presentation": {
         "reveal": "always",
@@ -907,6 +927,7 @@
       "dependsOrder": "sequence",
       "dependsOn": [
         "CTOA: Run All Tests",
+        "CTOA: Check Update Gate",
         "CTOA: Sprint-028 Validate CI Gate Hardening",
         "CTOA: Launch Pack"
       ],

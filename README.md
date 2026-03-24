@@ -37,6 +37,7 @@ Product map and ownership list:
 
 Repository hygiene and publication policy:
 - [docs/REPO_HYGIENE_POLICY.md](docs/REPO_HYGIENE_POLICY.md)
+- [docs/PRODUCT_PUBLIC_PRIVATE_ARCHITECTURE.md](docs/PRODUCT_PUBLIC_PRIVATE_ARCHITECTURE.md)
 
 ## Architecture At A Glance
 
@@ -54,11 +55,15 @@ Repository hygiene and publication policy:
 Common local commands:
 
 ```bash
+python scripts/ops/ctoa_product_bootstrap.py
+python scripts/ops/ctoa_update_gate.py
 python -m pytest -q
 python scripts/ops/sprint023_validate.py
 ```
 
 VS Code task shortcuts available in this workspace:
+- `CTOA: Bootstrap Product Config`
+- `CTOA: Check Update Gate`
 - `CTOA: Run All Tests`
 - `CTOA: Sprint-024 Validate Release Scalability`
 - `CTOA: Validate Pack`

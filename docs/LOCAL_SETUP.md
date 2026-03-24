@@ -51,6 +51,30 @@ Expected packages:
 
 ### 4. Configure Environment Variables
 
+### 4a. Bootstrap Local Product Config
+
+Before first launch, create a local product config and local state database:
+
+```bash
+python scripts/ops/ctoa_product_bootstrap.py
+```
+
+This creates ignored local files under `.ctoa-local/`:
+
+- `user-config.json`
+- `bootstrap-state.json`
+- `toolkit-state.db`
+
+### 4b. Mandatory Update Gate
+
+Every product launch must pass the update gate before the toolkit starts:
+
+```bash
+python scripts/ops/ctoa_update_gate.py
+```
+
+If the gate fails, update the repo and re-run bootstrap.
+
 **Windows (PowerShell):**
 ```powershell
 # These persist across sessions
@@ -216,9 +240,10 @@ pytest tests/ --cov=runner --cov-report=term-missing
 ## Next Steps
 
 1. **Run Tests:** `pytest tests/ -v`
-2. **Read Docs:** Review [SPRINT-002.md](../SPRINT-002.md)
-3. **Explore Agents:** Check `agents/definitions.py` and `scoring/tool_advisor.py`
-4. **Deploy to VPS:** See [deploy/vps/SETUP.md](../deploy/vps/SETUP.md)
+2. **Bootstrap Product State:** `python scripts/ops/ctoa_product_bootstrap.py`
+3. **Pass Update Gate:** `python scripts/ops/ctoa_update_gate.py`
+4. **Read Docs:** Review [SPRINT-002.md](../SPRINT-002.md)
+5. **Deploy to VPS:** See [deploy/vps/SETUP.md](../deploy/vps/SETUP.md)
 
 ---
 

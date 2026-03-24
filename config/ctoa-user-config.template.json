@@ -1,0 +1,12 @@
+{
+  "profile_name": "your-profile",
+  "operator_handle": "your-operator",
+  "deployment_mode": "self-hosted",
+  "update_channel": "stable",
+  "features": {
+    "mobile_console": false,
+    "sealed_agents": true,
+    "dashboard": false
+  },
+  "notes": "Copy is created automatically to .ctoa-local/user-config.json during bootstrap. Edit the local copy, not this template."
+}
