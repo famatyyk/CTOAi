@@ -1,0 +1,49 @@
+sprint: '037'
+theme: Continuous Quality + Delivery + Governance
+version: '1.0'
+lifecycle:
+  start: '2026-03-24'
+  target_wave1: '2026-03-27'
+  target_wave2: '2026-03-28'
+tasks:
+- id: CTOA-183
+  title: Quality gate expansion
+  on_start: read backlog scope and lock API contracts
+  on_complete: run focused tests and validator
+  on_fail: rollback sprint quality gate changes
+- id: CTOA-184
+  title: Nightly trend automation
+  depends_on:
+  - CTOA-183
+  on_start: review nightly artifact schema
+  on_complete: verify trend evidence and backward compatibility
+  on_fail: restore previous nightly artifact contract
+- id: CTOA-185
+  title: Dashboard ergonomics pass
+  depends_on:
+  - CTOA-183
+  on_start: review dashboard payload and rendering paths
+  on_complete: validate degraded-mode readability
+  on_fail: restore previous dashboard rendering
+- id: CTOA-186
+  title: CI evidence hardening
+  depends_on:
+  - CTOA-183
+  - CTOA-184
+  on_start: inspect CI artifact publishing steps
+  on_complete: confirm evidence export in CI
+  on_fail: revert CI evidence changes
+- id: CTOA-187
+  title: Release pack
+  depends_on:
+  - CTOA-183
+  - CTOA-184
+  - CTOA-185
+  - CTOA-186
+  on_start: confirm delivery status and evidence
+  on_complete: record wave_1 PASS and wave_2 sign-off
+  on_fail: hold release candidate and escalate
+gate_policy:
+  wave_1: all automated checks pass
+  wave_2: manual STRATEGOS sign-off
+  rollback_baseline: v1.1.0-approved

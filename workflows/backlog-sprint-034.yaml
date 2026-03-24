@@ -1,0 +1,41 @@
+sprint: '034'
+theme: Continuous Quality + Delivery + Governance
+status: PLANNING
+source_baseline: v1.1.0-approved
+proposed_release: v1.7.0
+items:
+- id: CTOA-168
+  title: Sprint-034 quality gate expansion
+  type: quality
+  priority: P1
+  status: READY_FOR_WAVE_1
+  description: Expand API and regression quality gates for current sprint scope.
+- id: CTOA-169
+  title: Sprint-034 nightly trend automation
+  type: automation
+  priority: P1
+  status: READY_FOR_WAVE_1
+  description: Extend nightly trend evidence and verify drift visibility.
+- id: CTOA-170
+  title: Sprint-034 dashboard ergonomics pass
+  type: ux
+  priority: P2
+  status: READY_FOR_WAVE_1
+  description: Improve operator dashboard readability in healthy and degraded modes.
+- id: CTOA-171
+  title: Sprint-034 CI evidence hardening
+  type: governance
+  priority: P2
+  status: READY_FOR_WAVE_1
+  description: Ensure validator and nightly evidence remain fully discoverable in
+    CI.
+- id: CTOA-172
+  title: Release pack v1.7.0
+  type: governance
+  priority: P3
+  status: PENDING_WAVE_1
+  description: Consolidate sprint deliverables and release pack approvals.
+slo_targets:
+  success_rate_24h_threshold: 0.93
+  error_budget_max_fails_per_window: 2
+  nightly_artifact_max_age_hours: 25
