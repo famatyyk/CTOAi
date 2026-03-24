@@ -1,0 +1,55 @@
+sprint: "028"
+theme: Release Stabilization + Operator UX + Evidence Continuity
+status: IN_PROGRESS
+source_baseline: v1.1.0-approved
+proposed_release: v1.1.1
+
+items:
+  - id: CTOA-138
+    title: Dashboard SLO timeline stabilization pass
+    type: ux
+    priority: P1
+    status: DELIVERED
+    description: >
+      Stabilize timeline rendering and compact degraded-mode view in operator dashboard,
+      including final polish for reason-code grouping and readability.
+
+  - id: CTOA-139
+    title: Evidence index retention policy
+    type: governance
+    priority: P1
+    status: DELIVERED
+    description: >
+      Introduce retention and pruning policy for runtime/evidence artifacts to prevent
+      unbounded growth and preserve auditability.
+
+  - id: CTOA-140
+    title: Nightly trend anomaly threshold tuning
+    type: automation
+    priority: P2
+    status: READY_FOR_WAVE_1
+    description: >
+      Tune drift/anomaly thresholds in nightly trend report to reduce false positives
+      while keeping early-failure sensitivity.
+
+  - id: CTOA-141
+    title: Sprint-028 CI gate hardening
+    type: quality
+    priority: P2
+    status: READY_FOR_WAVE_1
+    description: >
+      Add focused regression checks for dashboard + nightly evidence interactions and
+      enforce stricter gate diagnostics.
+
+  - id: CTOA-142
+    title: Release pack v1.1.1
+    type: governance
+    priority: P3
+    status: PENDING_WAVE_1
+    description: >
+      Consolidate CTOA-138..141 into release candidate v1.1.1 with wave_1 and wave_2 approvals.
+
+slo_targets:
+  success_rate_24h_threshold: 0.93
+  error_budget_max_fails_per_window: 2
+  nightly_artifact_max_age_hours: 25
