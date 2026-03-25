@@ -184,8 +184,8 @@ def _upsert_evidence_index(index_path: Path, entry: dict) -> None:
     index_path.write_text(json.dumps(filtered, indent=2), encoding="utf-8")
 
 
-def _record_evidence(root: Path, artifact_paths: list[Path]) -> None:
-    index_path = root / "runtime" / "evidence" / "sprint-027" / "evidence-index.json"
+def _record_evidence(root: Path, artifact_paths: list[Path], sprint_id: str = "027") -> None:
+    index_path = root / "runtime" / "evidence" / f"sprint-{sprint_id}" / "evidence-index.json"
     index_path.parent.mkdir(parents=True, exist_ok=True)
     recorded_at = datetime.now(UTC).isoformat().replace("+00:00", "Z")
     for artifact_path in artifact_paths:
@@ -201,6 +201,7 @@ def _record_evidence(root: Path, artifact_paths: list[Path]) -> None:
                 "path": str(artifact_path.relative_to(root)).replace("\\", "/"),
                 "sha256": sha,
                 "recorded_at": recorded_at,
+                "sprint_id": sprint_id,
             },
         )
 
@@ -209,13 +210,15 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="CTOA nightly stability batch")
     parser.add_argument("--root", default=".", help="Workspace root directory")
     parser.add_argument("--json-out", help="Write artifact JSON to file")
+    parser.add_argument("--sprint", default="027", help="Sprint number (zero-padded, e.g. '029')")
     parser.add_argument("--dry-run", action="store_true", help="Alias for normal run (always writes artifact)")
     args = parser.parse_args()
 
     root = Path(args.root).resolve()
+    sprint_id = str(args.sprint).zfill(3)
     python = sys.executable
 
-    print("[nightly_stability] Running pytest...")
+    print(f"[nightly_stability] Running pytest (sprint={sprint_id})...")
     test_code, test_out = _run(
         [python, "-m", "pytest", "tests/", "--ignore=tests/e2e", "-q", "--tb=no"],
         cwd=root,
@@ -236,9 +239,9 @@ def main() -> int:
 
     print(f"[nightly_stability] Tests: passed={passed_count} failed={failed_count}")
 
-    print("[nightly_stability] Running sprint027_validate...")
-    validator_artifact = root / "runtime" / "ci-artifacts" / "sprint-027-validation.json"
-    val_script = root / "scripts" / "ops" / "sprint027_validate.py"
+    print(f"[nightly_stability] Running sprint{sprint_id}_validate...")
+    validator_artifact = root / "runtime" / "ci-artifacts" / f"sprint-{sprint_id}-validation.json"
+    val_script = root / "scripts" / "ops" / f"sprint{sprint_id}_validate.py"
     val_code, val_out = _run(
         [python, str(val_script), "--run-tests", "--json-out", str(validator_artifact.relative_to(root))],
         cwd=root,
@@ -274,7 +277,7 @@ def main() -> int:
     out_path = root / out_path_str if not Path(out_path_str).is_absolute() else Path(out_path_str)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(artifact, indent=2), encoding="utf-8")
-    _record_evidence(root, [out_path, validator_artifact])
+    _record_evidence(root, [out_path, validator_artifact], sprint_id=sprint_id)
     print(f"[nightly_stability] Artifact written to {out_path}")
     print(f"[nightly_stability] Overall: {artifact['overall']}")
 

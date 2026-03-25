@@ -244,17 +244,23 @@ document.getElementById('launchIntel').onclick = async () => {
 document.getElementById('mythibiaOneClick').onclick = async () => {
   const out = document.getElementById('agentStatusOut');
   try {
-    const data = await api('/api/agents/mythibia/run', {
+    const data = await api('/api/agents/execution/run', {
       method: 'POST',
       body: JSON.stringify({}),
     });
     const names = (data.files || []).map((f) => f.name);
     out.textContent = JSON.stringify({
       ok: data.ok,
+      execution_status: data.execution_status,
+      reason_code: data.reason_code,
       url: data.url,
       generated_dir: data.generated_dir,
       files_count: data.files_count,
+      manifest: data.manifest || null,
+      execution_trend: data.execution_trend || {},
       server_state: data.server_state,
+      quality_gate: data.quality_gate || {},
+      warnings: data.warnings || [],
       client_sync: data.client_sync || {},
       files: names,
     }, null, 2);
@@ -301,9 +307,80 @@ function badgeStatus(s) {
   return `<span class="badge badge-${cls}">${s}</span>`;
 }
 
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function renderReasonGroup(title, items) {
+  if (!Array.isArray(items) || items.length === 0) {
+    return `<div class="trend-empty">Brak sygnałów dla grupy ${escapeHtml(title)}</div>`;
+  }
+  return items.map((item) => {
+    const code = escapeHtml(item.code || 'UNKNOWN');
+    const count = Number(item.count || 0);
+    const severity = escapeHtml(item.severity || 'warning');
+    return `
+      <div class="trend-chip trend-${severity}">
+        <span>${code}</span>
+        <strong>${count}</strong>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderTimeline(items) {
+  if (!Array.isArray(items) || items.length === 0) {
+    return '<div class="trend-empty">Brak zdarzeń 24h</div>';
+  }
+  const maxVisible = 8;
+  const visible = items.slice(0, maxVisible);
+  const hiddenCount = Math.max(0, items.length - visible.length);
+  const rows = visible.map((item) => {
+    const severity = escapeHtml(item.severity || 'warning');
+    const eventName = escapeHtml(item.event || 'pending');
+    const reasonCode = escapeHtml(item.reason_code || 'UNKNOWN');
+    const timestamp = escapeHtml(item.timestamp || '');
+    return `
+      <div class="timeline-item timeline-${severity}">
+        <div class="timeline-dot"></div>
+        <div>
+          <div class="timeline-main">${reasonCode} · ${eventName}</div>
+          <div class="timeline-meta">${timestamp}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  const overflow = hiddenCount > 0
+    ? `<div class="trend-empty">+${hiddenCount} kolejnych zdarzeń w oknie 24h</div>`
+    : '';
+
+  return rows + overflow;
+}
+
+function bindTrendToggles(root) {
+  root.querySelectorAll('[data-toggle-target]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const targetId = btn.getAttribute('data-toggle-target');
+      const panel = root.querySelector(`#${targetId}`);
+      if (!panel) return;
+      const expanded = btn.getAttribute('aria-expanded') === 'true';
+      btn.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+      panel.hidden = expanded;
+    });
+  });
+}
+
 document.getElementById('refreshDash').onclick = async () => {
   try {
     const d = await api('/api/dashboard');
+    const out = document.getElementById('agentStatusOut');
+    const trendSummary = document.getElementById('trendSummary');
 
     // stats row: [dt, modules_generated, programs_generated, avg_quality, launcher_day]
     if (d.stats && d.stats.length > 0) {
@@ -336,6 +413,94 @@ document.getElementById('refreshDash').onclick = async () => {
         `<tr><td>${r[0]||''}</td><td>${r[1]||''}</td><td><b>${r[2]||'?'}%</b></td><td>${badgeStatus((r[3]||'').trim())}</td></tr>`
       ).join('');
     }
+
+    const topReasons = Array.isArray(d.top_reason_codes) ? d.top_reason_codes : [];
+    const dominant = topReasons.length > 0 ? topReasons[0] : null;
+    const slo = d.slo_summary || {};
+    const groups = d.reason_code_groups || {};
+    const sloTimeline = Array.isArray(d.slo_timeline) ? d.slo_timeline : [];
+    if (trendSummary) {
+      const bars = topReasons.slice(0, 3).map((item) => {
+          const c = Number(item.count || 0);
+          const w = Math.max(8, Math.min(100, c * 20));
+          return `<div style="margin:4px 0"><span style="display:inline-block;min-width:165px">${item.code} (${c})</span><span style="display:inline-block;height:6px;background:#2f80ed;border-radius:999px;width:${w}px"></span></div>`;
+        }).join('');
+      const successRate = Number(slo.success_rate_24h ?? 1);
+      const successTarget = Number(slo.success_rate_target ?? 1);
+      const budgetLeft = Number(slo.error_budget_remaining ?? 0);
+      const alertActive = Boolean(slo.alert_active);
+      const successMet = Boolean(slo.success_rate_met);
+      const dominantLabel = dominant
+        ? `${escapeHtml(dominant.code)} (${dominant.count})`
+        : 'brak danych reason_code';
+
+      trendSummary.innerHTML =
+        `<div class="trend-shell">` +
+          `<div class="trend-head">` +
+            `<div><b>Dominujący reason_code:</b> ${dominantLabel}</div>` +
+            `<div class="trend-slo ${successMet ? 'trend-ready' : 'trend-critical'}">SLO 24h: ${(successRate * 100).toFixed(1)}% / target ${(successTarget * 100).toFixed(1)}% · budget_left=${budgetLeft} · alert=${alertActive ? 'ON' : 'OFF'}</div>` +
+          `</div>` +
+          `<div class="trend-bars">${bars || '<div class="trend-empty">Brak top reason codes</div>'}</div>` +
+          `<div class="trend-section">` +
+            `<button class="trend-toggle" type="button" data-toggle-target="trend-groups" aria-expanded="true">Reason code groups</button>` +
+            `<div id="trend-groups" class="trend-panel">` +
+              `<div class="trend-group"><div class="trend-group-title">Critical</div>${renderReasonGroup('critical', groups.critical)}</div>` +
+              `<div class="trend-group"><div class="trend-group-title">Warning</div>${renderReasonGroup('warning', groups.warning)}</div>` +
+              `<div class="trend-group"><div class="trend-group-title">Ready</div>${renderReasonGroup('ready', groups.ready)}</div>` +
+            `</div>` +
+          `</div>` +
+          `<div class="trend-section">` +
+            `<button class="trend-toggle" type="button" data-toggle-target="trend-timeline" aria-expanded="true">SLO timeline 24h</button>` +
+            `<div id="trend-timeline" class="trend-panel">${renderTimeline(sloTimeline)}</div>` +
+          `</div>` +
+        `</div>`;
+      bindTrendToggles(trendSummary);
+    }
+
+    const timelinePreview = (d.health_timeline || []).slice(0, 5).map((item) => ({
+      date: item.date,
+      avg_quality: item.avg_quality,
+      modules_generated: item.modules_generated,
+      programs_generated: item.programs_generated,
+      launcher_released: item.launcher_released,
+    }));
+
+    const dashboardView = {
+      dashboard_status: d.status,
+      degraded: d.degraded,
+      summary: d.summary || {},
+      timeline_summary: d.timeline_summary || {},
+      top_reason_codes: d.top_reason_codes || [],
+      reason_code_groups: d.reason_code_groups || {},
+      dominant_signal: d.dominant_signal || null,
+      slo_summary: d.slo_summary || {},
+      slo_timeline_preview: sloTimeline.slice(0, 5),
+      health_timeline_preview: timelinePreview,
+    };
+
+    if (d.degraded) {
+      const degradedSections = Array.isArray(d.summary?.degraded_sections)
+        ? d.summary.degraded_sections
+        : [];
+      const diagnostics = d.query_diagnostics || {};
+      const diagnosticsPreview = Object.entries(diagnostics)
+        .filter(([, meta]) => meta && meta.status !== 'ok')
+        .slice(0, 3)
+        .map(([name, meta]) => ({
+          section: name,
+          status: meta.status,
+          duration_ms: meta.duration_ms,
+          row_count: meta.row_count,
+        }));
+      dashboardView.degraded_compact = {
+        degraded_sections_count: degradedSections.length,
+        degraded_sections: degradedSections,
+        diagnostics_preview: diagnosticsPreview,
+      };
+      dashboardView.errors = d.errors || {};
+    }
+
+    out.textContent = JSON.stringify(dashboardView, null, 2);
   } catch (e) {
     document.getElementById('agentStatusOut').textContent = 'Dashboard error: ' + String(e);
   }

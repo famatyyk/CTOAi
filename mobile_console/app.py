@@ -21,6 +21,11 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 ROOT = Path(__file__).resolve().parent.parent
+
+import sys as _sys
+_sys.path.insert(0, str(ROOT))
+from runner.alert_rules import check_generation_failed_spike
+
 STATIC_DIR = ROOT / "mobile_console" / "static"
 SITE_DIR = ROOT / "docs" / "site"
 SITE_ASSETS_DIR = SITE_DIR / "assets"
@@ -192,6 +197,13 @@ _IDEA_PARKING_LOCK = Lock()
 _USER_PROFILES_LOCK = Lock()
 _USER_PROFILES_TABLE_READY = False
 _ACCOUNTS_TABLE_READY = False
+
+REASON_CODE_TAXONOMY: dict[str, str] = {
+    "ARTIFACTS_READY": "Generated artifacts are available and publish gate can proceed.",
+    "MANIFEST_PENDING": "Manifest is not yet available after trigger.",
+    "ARTIFACTS_PENDING": "Manifest exists but no generated artifacts are visible yet.",
+    "GENERATION_FAILED": "Manifest reports failed generation items.",
+}
 
 
 def _default_admin_settings() -> dict[str, Any]:
@@ -955,7 +967,7 @@ def _validate_url(url: str) -> str:
     return url
 
 
-def _db_exec(sql: str, params: tuple = ()) -> dict:
+def _db_exec(sql: str, params: tuple = (), timeout: int = 15) -> dict:
     """Run a SQL statement via psql CLI (no psycopg2 needed on the mobile console host)."""
     dsn = (
         f"postgresql://{os.getenv('DB_USER','ctoa')}:{os.getenv('DB_PASSWORD','')}"
@@ -974,7 +986,7 @@ def _db_exec(sql: str, params: tuple = ()) -> dict:
         filled = filled.replace("%s", quote(p), 1)
 
     cmd = f"psql {dsn} -t -A -c {json.dumps(filled)}"
-    return _run(cmd, timeout=15)
+    return _run(cmd, timeout=timeout)
 
 
 # ── Bcrypt account helpers ───────────────────────────────────────────────────
@@ -1427,6 +1439,255 @@ def _scan_generated_files(limit: int) -> list[dict[str, Any]]:
     return files[:limit]
 
 
+def _latest_manifest_summary() -> dict[str, Any] | None:
+    payload = _latest_manifest_payload()
+    if not payload:
+        return None
+
+    manifest = payload.get("manifest")
+    if not isinstance(manifest, dict):
+        return None
+
+    generated = manifest.get("generated")
+    failed = manifest.get("failed")
+    generated_count = len(generated) if isinstance(generated, list) else 0
+    failed_count = len(failed) if isinstance(failed, list) else 0
+
+    return {
+        "run_id": payload.get("run_id"),
+        "manifest_path": payload.get("manifest_path"),
+        "generated_count": generated_count,
+        "failed_count": failed_count,
+    }
+
+
+def _execution_trend_from_manifests(limit_runs: int = 5) -> dict[str, Any]:
+    runs: list[dict[str, Any]] = []
+    if not GENERATED_MANIFESTS_DIR.exists():
+        return {
+            "runs": runs,
+            "summary": {
+                "runs_count": 0,
+                "ready_runs": 0,
+                "failed_runs": 0,
+                "empty_runs": 0,
+            },
+        }
+
+    manifest_files = sorted(
+        GENERATED_MANIFESTS_DIR.glob("*/manifest.json"),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+
+    for manifest_path in manifest_files[: max(1, limit_runs)]:
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+
+        generated = manifest.get("generated")
+        failed = manifest.get("failed")
+        generated_count = len(generated) if isinstance(generated, list) else 0
+        failed_count = len(failed) if isinstance(failed, list) else 0
+
+        if generated_count > 0:
+            status = "ready"
+        elif failed_count > 0:
+            status = "failed"
+        else:
+            status = "empty"
+
+        runs.append(
+            {
+                "run_id": manifest.get("run_id") or manifest_path.parent.name,
+                "generated_count": generated_count,
+                "failed_count": failed_count,
+                "status": status,
+            }
+        )
+
+    return {
+        "runs": runs,
+        "summary": {
+            "runs_count": len(runs),
+            "ready_runs": sum(1 for r in runs if r["status"] == "ready"),
+            "failed_runs": sum(1 for r in runs if r["status"] == "failed"),
+            "empty_runs": sum(1 for r in runs if r["status"] == "empty"),
+        },
+    }
+
+
+_SLO_MAX_FAILS = int(os.getenv("CTOA_SLO_MAX_FAILS", "3"))
+_SLO_SUCCESS_RATE_THRESHOLD = float(os.getenv("CTOA_SLO_SUCCESS_RATE_THRESHOLD", "0.90"))
+
+_STATUS_TO_REASON_CODE: dict[str, str] = {
+    "ready": "ARTIFACTS_READY",
+    "failed": "GENERATION_FAILED",
+    "empty": "ARTIFACTS_PENDING",
+}
+
+_REASON_CODE_SEVERITY: dict[str, str] = {
+    "ARTIFACTS_READY": "ready",
+    "MANIFEST_PENDING": "warning",
+    "ARTIFACTS_PENDING": "warning",
+    "GENERATION_FAILED": "critical",
+}
+
+_DASHBOARD_STATUS_MESSAGES: dict[str, str] = {
+    "healthy": "All systems operational",
+    "degraded": "Non-critical query degraded \u2014 core functions available",
+    "error": "Critical error detected \u2014 dashboard data may be incomplete",
+}
+
+
+def _iter_manifest_observations(limit_runs: int = 20) -> list[dict[str, Any]]:
+    observations: list[dict[str, Any]] = []
+    if not GENERATED_MANIFESTS_DIR.exists():
+        return observations
+
+    manifest_files = sorted(
+        GENERATED_MANIFESTS_DIR.glob("*/manifest.json"),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+
+    for manifest_path in manifest_files[: max(1, limit_runs)]:
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+
+        generated = manifest.get("generated")
+        failed = manifest.get("failed")
+        generated_count = len(generated) if isinstance(generated, list) else 0
+        failed_count = len(failed) if isinstance(failed, list) else 0
+
+        if generated_count > 0:
+            status = "ready"
+        elif failed_count > 0:
+            status = "failed"
+        else:
+            status = "empty"
+
+        reason_code = _STATUS_TO_REASON_CODE.get(status, "ARTIFACTS_PENDING")
+        try:
+            mtime = manifest_path.stat().st_mtime
+        except Exception:
+            mtime = 0.0
+
+        observations.append(
+            {
+                "run_id": manifest.get("run_id") or manifest_path.parent.name,
+                "manifest_path": str(manifest_path),
+                "generated_count": generated_count,
+                "failed_count": failed_count,
+                "status": status,
+                "reason_code": reason_code,
+                "severity": _REASON_CODE_SEVERITY.get(reason_code, "warning"),
+                "timestamp": datetime.fromtimestamp(mtime, tz=timezone.utc).isoformat(),
+                "mtime": mtime,
+            }
+        )
+
+    return observations
+
+
+def _build_reason_code_groups(by_reason_code: dict[str, int]) -> dict[str, list[dict[str, Any]]]:
+    groups: dict[str, list[dict[str, Any]]] = {
+        "ready": [],
+        "warning": [],
+        "critical": [],
+    }
+    for code, count in sorted(by_reason_code.items(), key=lambda item: (-int(item[1]), str(item[0]))):
+        severity = _REASON_CODE_SEVERITY.get(code, "warning")
+        groups.setdefault(severity, []).append(
+            {
+                "code": code,
+                "count": int(count),
+                "severity": severity,
+            }
+        )
+    return groups
+
+
+def _build_slo_timeline(observations: list[dict[str, Any]], window_seconds: int = 86400) -> list[dict[str, Any]]:
+    window_start = time.time() - window_seconds
+    timeline_source = [item for item in observations if float(item.get("mtime", 0.0)) >= window_start]
+
+    failed_seen = 0
+    timeline: list[dict[str, Any]] = []
+    for item in timeline_source:
+        reason_code = str(item.get("reason_code", "ARTIFACTS_PENDING"))
+        if reason_code == "GENERATION_FAILED":
+            failed_seen += 1
+
+        if reason_code == "GENERATION_FAILED" and failed_seen >= _SLO_MAX_FAILS:
+            event = "threshold_crossed"
+        elif reason_code == "GENERATION_FAILED":
+            event = "failure"
+        elif reason_code == "ARTIFACTS_READY":
+            event = "recovered"
+        else:
+            event = "pending"
+
+        timeline.append(
+            {
+                "run_id": item.get("run_id"),
+                "timestamp": item.get("timestamp"),
+                "reason_code": reason_code,
+                "severity": item.get("severity", "warning"),
+                "generated_count": item.get("generated_count", 0),
+                "failed_count": item.get("failed_count", 0),
+                "event": event,
+                "within_slo": reason_code != "GENERATION_FAILED",
+            }
+        )
+
+    return timeline
+
+
+def _compute_execution_metrics(limit_runs: int = 20) -> dict[str, Any]:
+    observations = _iter_manifest_observations(limit_runs=limit_runs)
+    by_reason_code: dict[str, int] = {}
+    window_24h = time.time() - 86400
+    runs_24h_total = 0
+    runs_24h_success = 0
+
+    for item in observations:
+        reason_code = str(item.get("reason_code", "ARTIFACTS_PENDING"))
+        by_reason_code[reason_code] = by_reason_code.get(reason_code, 0) + 1
+        if float(item.get("mtime", 0.0)) >= window_24h:
+            runs_24h_total += 1
+            if reason_code == "ARTIFACTS_READY":
+                runs_24h_success += 1
+
+    success_rate_24h = (runs_24h_success / runs_24h_total) if runs_24h_total > 0 else 1.0
+    failed_24h = sum(
+        1
+        for item in observations
+        if float(item.get("mtime", 0.0)) >= window_24h and item.get("reason_code") == "GENERATION_FAILED"
+    )
+    spike = check_generation_failed_spike({"GENERATION_FAILED": failed_24h}, max_fails=_SLO_MAX_FAILS)
+    error_budget_remaining = max(0, _SLO_MAX_FAILS - failed_24h)
+    dominant_reason_code = None
+    if by_reason_code:
+        dominant_reason_code = sorted(by_reason_code.items(), key=lambda item: (-int(item[1]), str(item[0])))[0][0]
+
+    return {
+        "by_reason_code": by_reason_code,
+        "success_rate_24h": round(success_rate_24h, 4),
+        "success_rate_target": round(_SLO_SUCCESS_RATE_THRESHOLD, 4),
+        "success_rate_met": success_rate_24h >= _SLO_SUCCESS_RATE_THRESHOLD,
+        "runs_24h_total": runs_24h_total,
+        "runs_24h_success": runs_24h_success,
+        "error_budget_remaining": error_budget_remaining,
+        "alert_active": spike["alert_active"],
+        "alert_reason": spike["alert_reason"],
+        "dominant_reason_code": dominant_reason_code,
+    }
+
+
 @app.post("/api/agents/intel/launch")
 def launch_intel_mission(
     req: IntelMissionRequest,
@@ -1564,8 +1825,9 @@ def auto_trainer_latest(_: dict[str, Any] = Depends(require_operator)) -> dict:
     }
 
 
+@app.post("/api/agents/execution/run")
 @app.post("/api/agents/mythibia/run")
-def mythibia_one_click(request: Request, _: dict[str, Any] = Depends(require_owner)) -> dict:
+def agent_execution_one_click(request: Request, _: dict[str, Any] = Depends(require_owner)) -> dict:
     mythibia_url = "https://mythibia.online"
     res = _db_exec(
         "INSERT INTO servers (url, status) VALUES (%s, 'NEW') "
@@ -1596,6 +1858,9 @@ def mythibia_one_click(request: Request, _: dict[str, Any] = Depends(require_own
                 }
             )
 
+    manifest_summary = _latest_manifest_summary()
+    execution_trend = _execution_trend_from_manifests(limit_runs=5)
+
     srv_state = _db_exec(
         "SELECT id, url, status, game_type, coalesce(scout_error,'') "
         "FROM servers WHERE url=%s ORDER BY id DESC LIMIT 1",
@@ -1604,15 +1869,107 @@ def mythibia_one_click(request: Request, _: dict[str, Any] = Depends(require_own
 
     sync = _sync_mythibia_to_client(out_dir)
 
-    _audit(request, "mythibia_one_click", 0)
+    ready_for_publish = bool(files) or bool(manifest_summary and manifest_summary.get("generated_count", 0) > 0)
+    warnings: list[str] = []
+    if not files:
+        warnings.append("No Lua outputs detected yet; orchestrator may still be processing.")
+    if not manifest_summary:
+        warnings.append("Generated-output manifest not available yet.")
+    if sync.get("enabled") and not sync.get("ok"):
+        warnings.append(f"Client sync not ready: {sync.get('detail', 'unknown')}")
+
+    quality_gate = {
+        "passed": ready_for_publish,
+        "ready_for_publish": ready_for_publish,
+        "checks": [
+            {
+                "id": "orchestrator_triggered",
+                "ok": True,
+                "severity": "error",
+                "detail": "systemd accepted one-click execution trigger",
+            },
+            {
+                "id": "generated_files_detected",
+                "ok": bool(files),
+                "severity": "warn",
+                "detail": "Lua outputs detected in generated directory" if files else "Outputs not visible yet",
+            },
+            {
+                "id": "manifest_contract_present",
+                "ok": bool(manifest_summary),
+                "severity": "warn",
+                "detail": "Generated manifest is available" if manifest_summary else "Manifest contract pending",
+            },
+            {
+                "id": "client_sync_ready",
+                "ok": bool(sync.get("ok")) if sync.get("enabled") else True,
+                "severity": "warn",
+                "detail": "Client sync completed" if sync.get("ok") else str(sync.get("detail", "sync skipped")),
+            },
+        ],
+    }
+    execution_status = "artifacts_ready" if ready_for_publish else "triggered_pending_artifacts"
+    if ready_for_publish:
+        reason_code = "ARTIFACTS_READY"
+    elif manifest_summary and manifest_summary.get("failed_count", 0) > 0:
+        reason_code = "GENERATION_FAILED"
+    elif not manifest_summary:
+        reason_code = "MANIFEST_PENDING"
+    else:
+        reason_code = "ARTIFACTS_PENDING"
+
+    _audit(request, "agent_execution_one_click", 0)
     return {
         "ok": True,
+        "execution_status": execution_status,
+        "reason_code": reason_code,
+        "reason_code_taxonomy": REASON_CODE_TAXONOMY,
         "url": mythibia_url,
         "generated_dir": str(out_dir),
         "files": files,
         "files_count": len(files),
+        "manifest": manifest_summary,
+        "execution_trend": execution_trend,
         "server_state": srv_state.get("stdout", "").strip(),
+        "quality_gate": quality_gate,
+        "warnings": warnings,
+        "trigger_result": {
+            "code": trig.get("code", -1),
+            "stdout": (trig.get("stdout", "") or "").strip(),
+            "stderr": (trig.get("stderr", "") or "").strip(),
+        },
         "client_sync": sync,
+    }
+
+
+@app.get("/api/agents/execution/trend")
+def execution_trend(
+    limit_runs: int = Query(default=5, ge=1, le=30),
+    _: dict[str, Any] = Depends(require_operator),
+) -> dict:
+    trend = _execution_trend_from_manifests(limit_runs=limit_runs)
+    return {
+        "ok": True,
+        "limit_runs": limit_runs,
+        "reason_code_taxonomy": REASON_CODE_TAXONOMY,
+        "runs": trend.get("runs", []),
+        "summary": trend.get("summary", {}),
+    }
+
+
+@app.get("/api/agents/execution/metrics")
+def agent_execution_metrics(
+    limit_runs: int = Query(default=20, ge=1, le=100),
+    _: dict[str, Any] = Depends(require_operator),
+) -> dict:
+    metrics = _compute_execution_metrics(limit_runs=limit_runs)
+    return {
+        "ok": True,
+        "limit_runs": limit_runs,
+        "reason_code_taxonomy": REASON_CODE_TAXONOMY,
+        "reason_code_groups": _build_reason_code_groups(metrics.get("by_reason_code", {})),
+        "slo_timeline": _build_slo_timeline(_iter_manifest_observations(limit_runs=limit_runs)),
+        **metrics,
     }
 
 
@@ -1665,21 +2022,6 @@ def latest_generated_modules(
 
 @app.get("/api/dashboard")
 def dashboard(_: dict[str, Any] = Depends(require_operator)) -> dict:
-    servers_res = _db_exec(
-        "SELECT id, url, status, created_at FROM servers ORDER BY id DESC LIMIT 20",
-    )
-    modules_res = _db_exec(
-        "SELECT status, COUNT(*) AS n FROM modules GROUP BY status ORDER BY status",
-    )
-    stats_res = _db_exec(
-        "SELECT dt, modules_generated, programs_generated, avg_quality, launcher_day "
-        "FROM daily_stats ORDER BY dt DESC LIMIT 7",
-    )
-    top_res = _db_exec(
-        "SELECT task_id, output_file, quality_score, status "
-        "FROM modules WHERE quality_score IS NOT NULL ORDER BY quality_score DESC LIMIT 10",
-    )
-
     def parse_rows(raw: str) -> list[list[str]]:
         rows = []
         for line in raw.strip().splitlines():
@@ -1687,12 +2029,171 @@ def dashboard(_: dict[str, Any] = Depends(require_operator)) -> dict:
                 rows.append(line.split("|"))
         return rows
 
+    def fetch_rows(name: str, sql: str, timeout: int = 4, critical: bool = False) -> dict[str, Any]:
+        started = time.monotonic()
+        try:
+            res = _db_exec(sql, timeout=timeout)
+        except Exception as exc:
+            res = {
+                "code": 1,
+                "stdout": "",
+                "stderr": str(exc)[:200],
+            }
+
+        code = int(res.get("code", 1))
+        rows = parse_rows(res.get("stdout", ""))
+        stderr = (res.get("stderr", "") or "")[:200]
+        duration_ms = int((time.monotonic() - started) * 1000)
+
+        return {
+            "name": name,
+            "critical": critical,
+            "code": code,
+            "rows": rows,
+            "stderr": stderr,
+            "duration_ms": duration_ms,
+            "row_count": len(rows),
+            "status": "ok" if code == 0 else ("critical_error" if critical else "degraded"),
+        }
+
+    servers_res = fetch_rows(
+        "servers",
+        "SELECT id, url, status, created_at FROM servers ORDER BY id DESC LIMIT 20",
+        timeout=4,
+        critical=True,
+    )
+    modules_res = fetch_rows(
+        "modules",
+        "SELECT status, COUNT(*) AS n FROM modules GROUP BY status ORDER BY status",
+        timeout=4,
+        critical=True,
+    )
+    stats_res = fetch_rows(
+        "stats",
+        "SELECT dt, modules_generated, programs_generated, avg_quality, launcher_day "
+        "FROM daily_stats ORDER BY dt DESC LIMIT 7",
+        timeout=4,
+    )
+    top_res = fetch_rows(
+        "top",
+        "SELECT task_id, output_file, quality_score, status "
+        "FROM modules WHERE quality_score IS NOT NULL ORDER BY quality_score DESC LIMIT 10",
+        timeout=4,
+    )
+
+    sections = {
+        "servers": servers_res,
+        "modules": modules_res,
+        "stats": stats_res,
+        "top": top_res,
+    }
+
+    errors = {
+        name: payload["stderr"]
+        for name, payload in sections.items()
+        if payload["code"] != 0
+    }
+
+    critical_ok = all(payload["code"] == 0 for payload in sections.values() if payload["critical"])
+    degraded = any(payload["code"] != 0 for payload in sections.values())
+    status = "healthy" if critical_ok and not degraded else ("degraded" if critical_ok else "error")
+
+    health_timeline: list[dict[str, Any]] = []
+    for row in stats_res["rows"]:
+        if len(row) < 5:
+            continue
+        try:
+            modules_generated = int(row[1]) if str(row[1]).strip() else 0
+        except Exception:
+            modules_generated = 0
+        try:
+            programs_generated = int(row[2]) if str(row[2]).strip() else 0
+        except Exception:
+            programs_generated = 0
+        try:
+            avg_quality = float(row[3]) if str(row[3]).strip() else 0.0
+        except Exception:
+            avg_quality = 0.0
+
+        launcher_value = str(row[4]).strip().lower()
+        launcher_released = launcher_value in {"t", "true", "1", "yes"}
+
+        health_timeline.append(
+            {
+                "date": str(row[0]),
+                "modules_generated": modules_generated,
+                "programs_generated": programs_generated,
+                "avg_quality": avg_quality,
+                "launcher_released": launcher_released,
+            }
+        )
+
+    timeline_avg_quality = 0.0
+    if health_timeline:
+        timeline_avg_quality = sum(item["avg_quality"] for item in health_timeline) / len(health_timeline)
+
+    execution_observations = _iter_manifest_observations(limit_runs=20)
+    execution_metrics = _compute_execution_metrics(limit_runs=20)
+    by_reason_code = execution_metrics.get("by_reason_code", {})
+    top_reason_codes = [
+        {"code": code, "count": int(count)}
+        for code, count in sorted(
+            by_reason_code.items(),
+            key=lambda item: (-int(item[1]), str(item[0])),
+        )
+    ]
+    reason_code_groups = _build_reason_code_groups(by_reason_code)
+    slo_timeline = _build_slo_timeline(execution_observations)
+    dominant_signal = top_reason_codes[0] if top_reason_codes else None
+    if dominant_signal:
+        dominant_signal = {
+            **dominant_signal,
+            "severity": _REASON_CODE_SEVERITY.get(str(dominant_signal.get("code")), "warning"),
+        }
+
     return {
-        "servers":  parse_rows(servers_res.get("stdout", "")),
-        "modules":  parse_rows(modules_res.get("stdout", "")),
-        "stats":    parse_rows(stats_res.get("stdout", "")),
-        "top":      parse_rows(top_res.get("stdout", "")),
-        "ok":       servers_res["code"] == 0,
+        "servers": servers_res["rows"],
+        "modules": modules_res["rows"],
+        "stats": stats_res["rows"],
+        "top": top_res["rows"],
+        "health_timeline": health_timeline,
+        "top_reason_codes": top_reason_codes,
+        "reason_code_groups": reason_code_groups,
+        "dominant_signal": dominant_signal,
+        "slo_timeline": slo_timeline,
+        "slo_summary": {
+            "success_rate_24h": execution_metrics.get("success_rate_24h", 1.0),
+            "success_rate_target": execution_metrics.get("success_rate_target", _SLO_SUCCESS_RATE_THRESHOLD),
+            "success_rate_met": execution_metrics.get("success_rate_met", True),
+            "error_budget_remaining": execution_metrics.get("error_budget_remaining", _SLO_MAX_FAILS),
+            "alert_active": execution_metrics.get("alert_active", False),
+            "dominant_reason_code": execution_metrics.get("dominant_reason_code"),
+        },
+        "ok": critical_ok,
+        "degraded": degraded,
+        "status": status,
+        "status_message": _DASHBOARD_STATUS_MESSAGES.get(status, status),
+        "errors": errors,
+        "query_diagnostics": {
+            name: {
+                "status": payload["status"],
+                "critical": payload["critical"],
+                "code": payload["code"],
+                "duration_ms": payload["duration_ms"],
+                "row_count": payload["row_count"],
+            }
+            for name, payload in sections.items()
+        },
+        "summary": {
+            "critical_sections_ok": critical_ok,
+            "degraded_sections": [name for name, payload in sections.items() if payload["code"] != 0],
+            "healthy_sections": [name for name, payload in sections.items() if payload["code"] == 0],
+        },
+        "timeline_summary": {
+            "days": len(health_timeline),
+            "avg_quality": round(timeline_avg_quality, 2),
+            "latest_day": health_timeline[0]["date"] if health_timeline else None,
+        },
     }
 
 

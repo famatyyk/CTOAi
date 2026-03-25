@@ -49,6 +49,8 @@ def test_nightly_stability_writes_valid_artifact_schema(monkeypatch, tmp_path: P
         str(tmp_path),
         "--json-out",
         str(out_path),
+        "--sprint",
+        "027",
         "--dry-run",
     ]
     monkeypatch.setattr(nightly_stability.sys, "argv", argv)

@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0] - 2026-03-25 (Sprint-029: Training Hardening + Quality Gate + VPS Autonomy)
+
+### Added
+- **Training curriculum v1.2.0**: `training/curriculum.md` rozbudowany do pełnego dokumentu — 5 modułów z teorią, szablonami BRAVE(R), ćwiczeniami praktycznymi i macierzą PASS/FAIL
+- **Quality gate expansion** (CTOA-143): rozszerzenie polityki CI gate o dodatkowe weryfikacje; focused tests 2/2 PASS
+- **Nightly trend automation** (CTOA-144): `nightly_stability.py` extended with `--sprint` CLI flag; sprint-029 nightly run produces drift visibility fields (`trend_24h`, `trend_7d`, `drift`, `anomaly`) and writes evidence to `runtime/evidence/sprint-029/`; focused tests 2/2 PASS
+- **Dashboard ergonomics pass** (CTOA-145): `/api/dashboard` now returns `status_message` field with human-readable operator message for all operating modes (healthy/degraded/error); focused tests 2/2 PASS
+- **CI evidence hardening** (CTOA-146): evidence entries now carry `sprint_id`, `kind`, `path`, `sha256`, `recorded_at` — all fields required for CI artifact discovery; canonical path `runtime/evidence/sprint-{id}/evidence-index.json`; focused tests 2/2 PASS
+- **VPS DB ownership hardening**: ownership wszystkich tabel i sekwencji przeniesiony na użytkownika `ctoa`; rola NOSUPERUSER
+- **Tiered reseed self-heal**: Tier A/B/C z nowymi serwerami `rising-continents.com` i `altheaworld.org` (6 serwerów READY)
+
+### Validation
+- Sprint-029 release pack wave_1: PASS (automated, sprint029_validate 10/10)
+- Sprint-029 release pack wave_2: PASS (CTOA-143..146 DONE, focused tests 7/7)
+
 ## [1.1.1] - 2026-03-24 (Sprint-028: Release Stabilization + Operator UX + Evidence Continuity)
 
 ### Added

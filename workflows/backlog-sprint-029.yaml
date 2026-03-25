@@ -8,25 +8,25 @@ items:
   title: Sprint-029 quality gate expansion
   type: quality
   priority: P1
-  status: READY_FOR_WAVE_1
+  status: DONE
   description: Expand API and regression quality gates for current sprint scope.
 - id: CTOA-144
   title: Sprint-029 nightly trend automation
   type: automation
   priority: P1
-  status: READY_FOR_WAVE_1
+  status: DONE
   description: Extend nightly trend evidence and verify drift visibility.
 - id: CTOA-145
   title: Sprint-029 dashboard ergonomics pass
   type: ux
   priority: P2
-  status: READY_FOR_WAVE_1
+  status: DONE
   description: Improve operator dashboard readability in healthy and degraded modes.
 - id: CTOA-146
   title: Sprint-029 CI evidence hardening
   type: governance
   priority: P2
-  status: READY_FOR_WAVE_1
+  status: DONE
   description: Ensure validator and nightly evidence remain fully discoverable in
     CI.
 - id: CTOA-147
