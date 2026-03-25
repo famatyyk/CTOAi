@@ -20,9 +20,14 @@ try:
     import cv2
     import numpy as np
 except ImportError:
-    raise SystemExit("Missing dependency: pip install opencv-python numpy")
+    cv2 = None
+    np = None
 
 log = logging.getLogger("hybrid_bot.vision")
+
+
+def _vision_deps_available() -> bool:
+    return cv2 is not None and np is not None
 
 
 @dataclass
@@ -73,7 +78,11 @@ class VisionLayer:
         # Cache for speed optimization
         self._gps_cache: Optional[GPSPosition] = None
         self._health_cache: Optional[HealthState] = None
-        
+
+        if not _vision_deps_available():
+            log.warning("Vision dependencies unavailable; running in degraded mode (no template matching)")
+            return
+
         self._load_templates()
     
     def _load_templates(self) -> None:
@@ -103,6 +112,9 @@ class VisionLayer:
         Per paper: Minimap resized to 25% of actual size for speed.
         Returns global coordinates (x, y, z/floor).
         """
+        if not _vision_deps_available():
+            return self._gps_cache
+
         if minimap_screenshot is None or minimap_screenshot.size == 0:
             log.warning("Empty minimap screenshot")
             return None
@@ -157,6 +169,9 @@ class VisionLayer:
         Per paper: Check for red/pink pixels (hit/need heal).
         Returns HP percentage and critical status.
         """
+        if not _vision_deps_available():
+            return self._health_cache or HealthState(hp_percent=100.0, is_critical=False, is_poisoned=False)
+
         if healthbar_region is None or healthbar_region.size == 0:
             return HealthState(hp_percent=100.0, is_critical=False, is_poisoned=False)
         
@@ -215,6 +230,9 @@ class VisionLayer:
         Per paper: Match against preconfigured hunting list.
         Returns list of detected monsters with confidence.
         """
+        if not _vision_deps_available():
+            return []
+
         if game_screen is None or game_screen.size == 0:
             return []
         
@@ -265,6 +283,9 @@ class VisionLayer:
         Check if current target is engaged (red/pink outline detected).
         Per paper's target algorithm.
         """
+        if not _vision_deps_available():
+            return False
+
         if target_window is None or target_window.size == 0:
             return False
         
