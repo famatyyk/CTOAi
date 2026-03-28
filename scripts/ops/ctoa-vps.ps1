@@ -6,6 +6,7 @@ param(
         'Setup24x7',
         'EnableLiveHealth',
         'TailLiveHealth',
+        'TailMobileLogs',
         'ValidateServices',
         'StabilizeReportService',
         'WriteGithubPat',
@@ -281,6 +282,7 @@ switch ($Action) {
     'WhoAmI'              { Invoke-SshCommand 'whoami' }
     'Setup24x7'           { $sc = Get-SetupScript; Invoke-SshScript $sc }
     'TailLiveHealth'      { Invoke-SshCommand 'tail -n 80 -f /opt/ctoa/logs/health-live.log' }
+    'TailMobileLogs'      { Invoke-SshCommand 'journalctl -u ctoa-mobile-console.service -n 120 --no-pager' }
     'ReportErrorDetails'  { Invoke-SshCommand 'tail -n 60 /opt/ctoa/logs/runner.log' }
     'TailAgents'          { Invoke-SshCommand 'tail -n 100 -f /opt/ctoa/logs/agents-orchestrator.log' }
     'ShowServerStatus' {
@@ -559,7 +561,7 @@ sudo -u postgres psql -d ctoa -c "SELECT s.id, s.url, s.status, COUNT(m.id) AS m
         }
         'ListActions' {
                 $actions = @(
-                        'Verify','WhoAmI','Setup24x7','EnableLiveHealth','TailLiveHealth','ValidateServices',
+                        'Verify','WhoAmI','Setup24x7','EnableLiveHealth','TailLiveHealth','TailMobileLogs','ValidateServices',
                         'StabilizeReportService','WriteGithubPat','ReportViaServiceEnv','PublishWithSourcedEnv',
                         'InspectReportEnv','ReportErrorDetails','SetupDB','SetupAgents','TailAgents','FixDbPerms',
                     'RegisterServer','RegisterServerList','KickoffNow','MythibiaBurst','GlobalBurst','InstallKickoffTimer','ShowKickoffTimer',

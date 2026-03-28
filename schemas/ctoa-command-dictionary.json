@@ -1,0 +1,86 @@
+{
+  "version": "1.0.0",
+  "source": "shared-cli-web",
+  "commands": [
+    {
+      "command": "help",
+      "aliases": ["h"],
+      "description": "Show command legend"
+    },
+    {
+      "command": "menu",
+      "aliases": ["m"],
+      "description": "Open interactive command menu"
+    },
+    {
+      "command": "dev",
+      "aliases": [],
+      "description": "Developer profile: start mobile console"
+    },
+    {
+      "command": "ops",
+      "aliases": [],
+      "description": "Operations profile: run doctor checks"
+    },
+    {
+      "command": "prod",
+      "aliases": [],
+      "description": "Production profile: update gate + sprint validation"
+    },
+    {
+      "command": "status",
+      "aliases": ["s"],
+      "description": "Combined local + VPS + dashboard snapshot"
+    },
+    {
+      "command": "test",
+      "aliases": ["t"],
+      "description": "Run local test suite"
+    },
+    {
+      "command": "val",
+      "aliases": ["v"],
+      "description": "Run sprint validator: val <sprint>"
+    },
+    {
+      "command": "nightly",
+      "aliases": ["n"],
+      "description": "Run nightly batch: nightly [sprint]"
+    },
+    {
+      "command": "doctor",
+      "aliases": ["d"],
+      "description": "Run local guardrails and sprint checks"
+    },
+    {
+      "command": "vps",
+      "aliases": [],
+      "description": "Run raw VPS action: vps <ActionName>"
+    },
+    {
+      "command": "runner",
+      "aliases": [],
+      "description": "Runner service shortcuts: status|restart|logs"
+    },
+    {
+      "command": "report",
+      "aliases": [],
+      "description": "Report service shortcuts: status|restart|now|logs"
+    },
+    {
+      "command": "mobile",
+      "aliases": [],
+      "description": "Mobile service shortcuts: status|restart|logs"
+    },
+    {
+      "command": "logs",
+      "aliases": [],
+      "description": "Logs shortcuts: logs runner|health|agents|report|mobile"
+    },
+    {
+      "command": "dash",
+      "aliases": [],
+      "description": "Dashboard helpers: dash snap"
+    }
+  ]
+}

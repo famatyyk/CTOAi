@@ -109,8 +109,23 @@ document.getElementById('autoCheckToken').onclick = async () => {
 
 document.getElementById('refreshStatus').onclick = async () => {
   try {
-    const data = await api('/api/status');
-    statusOut.textContent = JSON.stringify(data, null, 2);
+    const [statusData, dictionaryData] = await Promise.all([
+      api('/api/status'),
+      api('/api/commands/dictionary').catch(() => null),
+    ]);
+
+    const view = {
+      ...statusData,
+      command_dictionary: dictionaryData
+        ? {
+            version: dictionaryData.version,
+            source: dictionaryData.source,
+            count: dictionaryData.count,
+          }
+        : null,
+    };
+
+    statusOut.textContent = JSON.stringify(view, null, 2);
   } catch (e) {
     statusOut.textContent = String(e);
   }

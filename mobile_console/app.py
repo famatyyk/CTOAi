@@ -40,6 +40,7 @@ IDEA_PARKING_FILE = Path(os.environ.get("CTOA_IDEA_PARKING_FILE", str(ROOT / "ru
 PRODUCT_MANIFEST_FILE = ROOT / "product" / "ctoa-toolkit.manifest.json"
 PRODUCT_STATE_DIR = Path(os.environ.get("CTOA_PRODUCT_STATE_DIR", str(ROOT / ".ctoa-local")))
 PRODUCT_USER_CONFIG_FILE = Path(os.environ.get("CTOA_PRODUCT_USER_CONFIG", str(PRODUCT_STATE_DIR / "user-config.json")))
+COMMAND_DICTIONARY_FILE = ROOT / "schemas" / "ctoa-command-dictionary.json"
 
 
 def _is_production_env() -> bool:
@@ -2219,4 +2220,17 @@ def agents_status(_: dict[str, Any] = Depends(require_operator)) -> dict:
     )
     out["last_runs_raw"] = last_runs.get("stdout", "")
     return out
+
+
+@app.get("/api/commands/dictionary")
+def commands_dictionary(_: dict[str, Any] = Depends(require_operator)) -> dict:
+    payload = _load_json_file(COMMAND_DICTIONARY_FILE)
+    commands = payload.get("commands") if isinstance(payload.get("commands"), list) else []
+    return {
+        "ok": True,
+        "version": str(payload.get("version", "unknown")),
+        "source": str(payload.get("source", "shared-cli-web")),
+        "count": len(commands),
+        "commands": commands,
+    }
 

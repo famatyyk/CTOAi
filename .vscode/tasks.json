@@ -52,6 +52,34 @@
       }
     },
     {
+      "label": "CTOA: Start Mobile Console (local baseline)",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-Command",
+        "$env:CTOA_CAPABILITY_MOBILE_CONSOLE='1'; if ([string]::IsNullOrWhiteSpace($env:CTOA_MOBILE_TOKEN)) { $env:CTOA_MOBILE_TOKEN='local-dev-token' }; & ./.venv/Scripts/python.exe -m uvicorn mobile_console.app:app --host 127.0.0.1 --port 8787"
+      ],
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": {
+          "regexp": "^$"
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "Uvicorn running on",
+          "endsPattern": "Application startup complete"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false
+      }
+    },
+    {
       "label": "CTOA: Run All Tests",
       "type": "shell",
       "command": ".venv/Scripts/python.exe -m pytest tests/ --ignore=tests/e2e -v",

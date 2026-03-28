@@ -3,6 +3,8 @@ CTOA Alerting Rules Configuration
 Defines thresholds and actions for VPS health monitoring
 """
 
+from typing import Any, Dict
+
 ALERT_RULES = {
     "cpu": {
         "threshold": 80,  # Percentage
@@ -97,3 +99,22 @@ ESCALATION = {
         "action_timeout": 300  # Auto-remediate after 5 min
     }
 }
+
+
+def check_generation_failed_spike(reason_counts: Dict[str, Any], max_fails: int = 3) -> Dict[str, Any]:
+    """Return alert state for generation failures in a rolling window."""
+    failed = int(reason_counts.get("GENERATION_FAILED", 0) or 0)
+    threshold = max(int(max_fails), 0)
+    alert_active = failed > threshold
+
+    if alert_active:
+        reason = f"GENERATION_FAILED spike: {failed}/{threshold} in 24h"
+    else:
+        reason = "ok"
+
+    return {
+        "alert_active": alert_active,
+        "alert_reason": reason,
+        "failed_count": failed,
+        "threshold": threshold,
+    }
