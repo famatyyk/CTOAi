@@ -43,6 +43,7 @@ TOP_LEVEL_ALLOWLIST = {
     "requirements_hybrid.txt",
     ".gitignore",
     ".luarc.json",
+    "ctoa.ps1",
     "ctoa-vps.ps1",
     "archived",
     "DataAnalysisExpert",
