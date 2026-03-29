@@ -24,6 +24,23 @@ try:
     from pynput.mouse import Button, Controller as MouseController
     HAS_PYNPUT = True
 except ImportError:
+    class _FallbackKey:
+        up = "up"
+        down = "down"
+        left = "left"
+        right = "right"
+        enter = "enter"
+        shift = "shift"
+        ctrl = "ctrl"
+        l = "l"
+
+    class _FallbackButton:
+        right = "right"
+
+    Key = _FallbackKey
+    Button = _FallbackButton
+    KeyboardController = None
+    MouseController = None
     HAS_PYNPUT = False
 
 log = logging.getLogger("hybrid_bot.executor")
