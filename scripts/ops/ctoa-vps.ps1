@@ -300,6 +300,7 @@ fi
 '@
     }
     'TailMobileLogs'      { Invoke-SshCommand 'journalctl -u ctoa-mobile-console.service -n 120 -f --no-pager' }
+    'TailMobileLogs'      { Invoke-SshCommand 'journalctl -u ctoa-mobile-console.service -n 120 --no-pager' }
     'ReportErrorDetails'  { Invoke-SshCommand 'tail -n 60 /opt/ctoa/logs/runner.log' }
     'TailAgents'          { Invoke-SshCommand 'tail -n 100 -f /opt/ctoa/logs/agents-orchestrator.log' }
     'ShowServerStatus' {

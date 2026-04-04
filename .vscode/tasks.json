@@ -70,6 +70,7 @@
         "background": {
           "activeOnStart": true,
           "beginsPattern": "Started server process",
+          "beginsPattern": "Uvicorn running on",
           "endsPattern": "Application startup complete"
         }
       },

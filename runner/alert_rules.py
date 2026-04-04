@@ -106,6 +106,7 @@ def check_generation_failed_spike(reason_counts: Dict[str, Any], max_fails: int 
     failed = int(reason_counts.get("GENERATION_FAILED", 0) or 0)
     threshold = max(int(max_fails), 0)
     alert_active = failed >= threshold
+    alert_active = failed > threshold
 
     if alert_active:
         reason = f"GENERATION_FAILED spike: {failed}/{threshold} in 24h"
