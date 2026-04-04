@@ -69,7 +69,7 @@
         },
         "background": {
           "activeOnStart": true,
-          "beginsPattern": "Uvicorn running on",
+          "beginsPattern": "Started server process",
           "endsPattern": "Application startup complete"
         }
       },
@@ -437,88 +437,6 @@
       }
     },
     {
-      "label": "CTOA: VPS Create ACC Creator",
-      "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        "scripts/ops/ctoa-vps.ps1",
-        "-Action",
-        "CreateAccCreator"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: VPS Create ACC Creator (mode picker)",
-      "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        "scripts/ops/ctoa-vps.ps1",
-        "-Action",
-        "CreateAccCreator",
-        "-AccountCreateMode",
-        "${input:ctoaAccountCreateMode}"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: VPS Create ACC Creator (strict-db)",
-      "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        "scripts/ops/ctoa-vps.ps1",
-        "-Action",
-        "CreateAccCreator",
-        "-AccountCreateMode",
-        "strict-db"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: VPS Create ACC Creator (loose-db)",
-      "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        "scripts/ops/ctoa-vps.ps1",
-        "-Action",
-        "CreateAccCreator",
-        "-AccountCreateMode",
-        "loose-db"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
       "label": "CTOA: VPS Dashboard Snapshot",
       "type": "shell",
       "command": "powershell",
@@ -544,7 +462,7 @@
         "-File",
         "scripts/ops/ctoa-vps.ps1",
         "-Action",
-        "MobileConsoleLogs"
+        "TailMobileLogs"
       ],
       "isBackground": false,
       "presentation": {
@@ -560,44 +478,6 @@
         "-NoProfile",
         "-Command",
         "$env:CTOA_SSH_RETRY_ATTEMPTS=20; $env:CTOA_SSH_RETRY_DELAY_SECONDS=2; & ./scripts/ops/ctoa-vps.ps1 -Action DashboardSnapshot"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: VPS Cloudflare Tunnel Status",
-      "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        "scripts/ops/ctoa-vps.ps1",
-        "-Action",
-        "CloudflareTunnelStatus"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: VPS Restart Cloudflare Tunnel",
-      "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        "scripts/ops/ctoa-vps.ps1",
-        "-Action",
-        "RestartCloudflareTunnel"
       ],
       "isBackground": false,
       "presentation": {
@@ -1273,26 +1153,15 @@
         "Setup24x7",
         "Verify",
         "WhoAmI",
+        "DashboardSnapshot",
+        "TailMobileLogs",
         "WriteGithubPat",
         "ValidateServices",
         "StabilizeReportService",
         "ReportViaServiceEnv",
         "PublishWithSourcedEnv",
         "InspectReportEnv",
-        "ReportErrorDetails",
-        "CreateAccCreator",
-        "DashboardSnapshot",
-        "CloudflareTunnelStatus",
-        "RestartCloudflareTunnel"
-      ]
-    },
-    {
-      "id": "ctoaAccountCreateMode",
-      "type": "pickString",
-      "description": "Select AccountCreateMode for CreateAccCreator",
-      "options": [
-        "strict-db",
-        "loose-db"
+        "ReportErrorDetails"
       ]
     }
   ]

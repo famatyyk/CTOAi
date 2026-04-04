@@ -334,7 +334,7 @@ jobs:
           path: |
             runtime/ci-artifacts/sprint-028-validation.json
             runtime/ci-artifacts/nightly-stability-sprint-028-ci.json
-            runtime/evidence/sprint-027/**
+            runtime/evidence/sprint-028/**
           if-no-files-found: ignore
 
       - name: Enforce response guardrail gate

@@ -417,7 +417,7 @@ function Invoke-LogsCommand {
 
     $name = (Get-ValueOrDefault -Value $Target -Fallback "runner").ToLowerInvariant()
     switch ($name) {
-        "runner" { Invoke-VpsAction -Action "TailAgents"; break }
+        "runner" { Invoke-VpsAction -Action "ReportErrorDetails"; break }
         "agents" { Invoke-VpsAction -Action "TailAgents"; break }
         "health" { Invoke-VpsAction -Action "ShowSystemHealth"; break }
         "report" { Invoke-VpsAction -Action "ReportErrorDetails"; break }

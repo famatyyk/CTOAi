@@ -32,6 +32,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
+import pytest
+
+pytestmark = pytest.mark.skip(reason="Manual local harness; excluded from automated CI validation")
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,

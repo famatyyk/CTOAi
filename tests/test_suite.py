@@ -123,7 +123,7 @@ class TestFileStructure(unittest.TestCase):
             "runner/status_sync.py",
             ".github/workflows/ctoa-pipeline.yml",
             "CHANGELOG.md",
-            "SPRINT-002.md"
+            "docs/history/sprints/SPRINT-002.md"
         ]
         base_path = Path(__file__).parent.parent
         for file_path in required_files:

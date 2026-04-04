@@ -92,3 +92,79 @@ def test_latest_generated_reads_manifest(monkeypatch: MonkeyPatch):
         assert payload["run_id"] == "20260320T010203Z"
         assert payload["count"] == 1
         assert payload["items"][0]["task_id"] == "SRV001-AUTO_HEAL"
+
+
+def test_commands_dictionary_requires_operator_auth(monkeypatch: MonkeyPatch):
+    with tempfile.TemporaryDirectory() as tmp:
+        module = _load_app_module(monkeypatch, Path(tmp))
+        client = TestClient(module.app)
+
+        response = client.get("/api/commands/dictionary")
+        assert response.status_code == 401
+
+
+def test_commands_dictionary_reads_valid_payload(monkeypatch: MonkeyPatch):
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_path = Path(tmp)
+        dictionary_file = tmp_path / "command-dictionary.json"
+        dictionary_file.write_text(
+            json.dumps(
+                {
+                    "version": "9.9.9",
+                    "source": "test-fixture",
+                    "commands": [{"command": "help", "aliases": ["h"], "description": "Show help"}],
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        module = _load_app_module(monkeypatch, tmp_path)
+        monkeypatch.setattr(module, "COMMAND_DICTIONARY_FILE", dictionary_file)
+        client = TestClient(module.app)
+
+        operator_token = _login_token(client, "ctoa-bot", "jakpod22")
+        headers = {"Authorization": f"Bearer {operator_token}"}
+
+        response = client.get("/api/commands/dictionary", headers=headers)
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["ok"] is True
+        assert payload["version"] == "9.9.9"
+        assert payload["source"] == "test-fixture"
+        assert payload["count"] == 1
+        assert payload["commands"][0]["command"] == "help"
+
+
+def test_commands_dictionary_handles_missing_or_invalid_file(monkeypatch: MonkeyPatch):
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_path = Path(tmp)
+        module = _load_app_module(monkeypatch, tmp_path)
+        client = TestClient(module.app)
+
+        operator_token = _login_token(client, "ctoa-bot", "jakpod22")
+        headers = {"Authorization": f"Bearer {operator_token}"}
+
+        missing_file = tmp_path / "missing-dictionary.json"
+        monkeypatch.setattr(module, "COMMAND_DICTIONARY_FILE", missing_file)
+
+        missing_response = client.get("/api/commands/dictionary", headers=headers)
+        assert missing_response.status_code == 200
+        missing_payload = missing_response.json()
+        assert missing_payload["ok"] is True
+        assert missing_payload["version"] == "unknown"
+        assert missing_payload["source"] == "shared-cli-web"
+        assert missing_payload["count"] == 0
+        assert missing_payload["commands"] == []
+
+        invalid_file = tmp_path / "invalid-dictionary.json"
+        invalid_file.write_text("{ this is not json", encoding="utf-8")
+        monkeypatch.setattr(module, "COMMAND_DICTIONARY_FILE", invalid_file)
+
+        invalid_response = client.get("/api/commands/dictionary", headers=headers)
+        assert invalid_response.status_code == 200
+        invalid_payload = invalid_response.json()
+        assert invalid_payload["ok"] is True
+        assert invalid_payload["version"] == "unknown"
+        assert invalid_payload["source"] == "shared-cli-web"
+        assert invalid_payload["count"] == 0
+        assert invalid_payload["commands"] == []
