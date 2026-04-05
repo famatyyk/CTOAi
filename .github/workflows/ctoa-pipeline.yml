@@ -187,7 +187,11 @@ jobs:
       - name: Sprint-027 nightly trend + evidence batch
         shell: bash
         run: |
-          python scripts/ops/nightly_stability.py --json-out runtime/ci-artifacts/nightly-stability-ci.json
+          if [ -f "workflows/backlog-sprint-027.yaml" ] && [ -f "workflows/sprint-027-quality-delivery-continuity-flow.yaml" ]; then
+            python scripts/ops/nightly_stability.py --json-out runtime/ci-artifacts/nightly-stability-ci.json
+          else
+            echo "Skipping Sprint-027 nightly batch: historical Sprint-027 assets are not present in this branch."
+          fi
 
       - name: Sprint-028 CI gate hardening
         shell: bash
