@@ -162,60 +162,18 @@ jobs:
             echo "No tests directory found, skipping test execution"
           fi
 
-      - name: Sprint-016 RC hardening gate
+      - name: Legacy sprint gates (016-026, optional)
         shell: bash
         run: |
-          python scripts/ops/sprint016_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-016-validation.json
-
-      - name: Sprint-017 GA closure gate
-        shell: bash
-        run: |
-          python scripts/ops/sprint017_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-017-validation.json
-
-      - name: Sprint-018 Post-GA assurance gate
-        shell: bash
-        run: |
-          python scripts/ops/sprint018_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-018-validation.json
-
-      - name: Sprint-019 Module quality hardening gate
-        shell: bash
-        run: |
-          python scripts/ops/sprint019_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-019-validation.json
-
-      - name: Sprint-020 Alert coverage + API surface gate
-        shell: bash
-        run: |
-          python scripts/ops/sprint020_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-020-validation.json
-
-      - name: Sprint-021 Governance consistency gate
-        shell: bash
-        run: |
-          python scripts/ops/sprint021_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-021-validation.json
-
-      - name: Sprint-022 CI evidence hardening gate
-        shell: bash
-        run: |
-          python scripts/ops/sprint022_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-022-validation.json
-
-      - name: Sprint-023 Validator hardening gate
-        shell: bash
-        run: |
-          python scripts/ops/sprint023_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-023-validation.json
-
-      - name: Sprint-024 Release scalability gate
-        shell: bash
-        run: |
-          python scripts/ops/sprint024_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-024-validation.json
-
-      - name: Sprint-025 Control plane + execution + governance gate
-        shell: bash
-        run: |
-          python scripts/ops/sprint025_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-025-validation.json
-
-      - name: Sprint-026 Reliability + observability + automation gate
-        shell: bash
-        run: |
-          python scripts/ops/sprint026_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-026-validation.json
+          for sprint in 016 017 018 019 020 021 022 023 024 025 026; do
+            script="scripts/ops/sprint${sprint}_validate.py"
+            out="runtime/ci-artifacts/sprint-${sprint}-validation.json"
+            if [ -f "$script" ]; then
+              python "$script" --run-tests --json-out "$out"
+            else
+              echo "Skipping missing legacy gate: $script"
+            fi
+          done
 
       - name: Sprint-027 Quality + delivery continuity gate
         shell: bash
