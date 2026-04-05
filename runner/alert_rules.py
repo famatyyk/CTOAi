@@ -13,7 +13,7 @@ ALERT_RULES = {
         "actions": ["log", "email", "slack"],
         "description": "CPU usage above 80%"
     },
-    
+
     "memory": {
         "threshold": 85,  # Percentage
         "duration": 300,
@@ -21,7 +21,7 @@ ALERT_RULES = {
         "actions": ["log", "email"],
         "description": "Memory usage above 85%"
     },
-    
+
     "disk": {
         "threshold": 90,  # Percentage
         "duration": 0,  # Immediate alert
@@ -29,14 +29,14 @@ ALERT_RULES = {
         "actions": ["log", "email", "slack", "auto-cleanup-logs"],
         "description": "Disk usage above 90%"
     },
-    
+
     "process_missing": {
         "processes": ["python3", "systemd"],
         "severity": "critical",
         "actions": ["log", "email", "slack", "auto-restart"],
         "description": "Critical process is missing/not running"
     },
-    
+
     "api_timeout": {
         "threshold": 10,  # Seconds
         "severity": "warning",
@@ -50,7 +50,7 @@ ACTION_CONFIG = {
         "enabled": True,
         "target": "/opt/ctoa/logs/alerts.log"
     },
-    
+
     "email": {
         "enabled": False,  # Enable with SMTP_SERVER env var
         "smtp_server": "${SMTP_SERVER}",
@@ -58,19 +58,19 @@ ACTION_CONFIG = {
         "to_addrs": "${ALERT_EMAIL}",
         "subject": "CTOA Alert: {alert_name}"
     },
-    
+
     "slack": {
         "enabled": False,  # Enable with SLACK_WEBHOOK env var
         "webhook_url": "${SLACK_WEBHOOK}",
         "channel": "#ctoa-alerts"
     },
-    
+
     "auto-restart": {
         "enabled": True,
         "service": "ctoa-runner.service",
         "max_restarts_per_hour": 3
     },
-    
+
     "auto-cleanup-logs": {
         "enabled": True,
         "target_dir": "/opt/ctoa/logs",
@@ -105,7 +105,7 @@ def check_generation_failed_spike(reason_counts: Dict[str, Any], max_fails: int 
     """Return alert state for generation failures in a rolling window."""
     failed = int(reason_counts.get("GENERATION_FAILED", 0) or 0)
     threshold = max(int(max_fails), 0)
-    alert_active = failed > threshold
+    alert_active = failed >= threshold
 
     if alert_active:
         reason = f"GENERATION_FAILED spike: {failed}/{threshold} in 24h"

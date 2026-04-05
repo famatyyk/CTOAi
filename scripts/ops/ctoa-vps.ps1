@@ -6,6 +6,7 @@ param(
         'Setup24x7',
         'EnableLiveHealth',
         'TailLiveHealth',
+        'DashboardSnapshot',
         'TailMobileLogs',
         'ValidateServices',
         'StabilizeReportService',
@@ -282,7 +283,23 @@ switch ($Action) {
     'WhoAmI'              { Invoke-SshCommand 'whoami' }
     'Setup24x7'           { $sc = Get-SetupScript; Invoke-SshScript $sc }
     'TailLiveHealth'      { Invoke-SshCommand 'tail -n 80 -f /opt/ctoa/logs/health-live.log' }
-    'TailMobileLogs'      { Invoke-SshCommand 'journalctl -u ctoa-mobile-console.service -n 120 --no-pager' }
+    'DashboardSnapshot'   { Invoke-SshScript @'
+set -e
+echo "=== Dashboard snapshot ==="
+systemctl status ctoa-mobile-console.service --no-pager -l | sed -n '1,20p' || true
+echo
+echo "=== Dashboard health ==="
+http_code=$(curl -sS -o /tmp/ctoa-health.out -w "%{http_code}" http://127.0.0.1:8787/api/health || true)
+if [ "$http_code" = "200" ]; then
+    cat /tmp/ctoa-health.out
+elif [ "$http_code" = "401" ] || [ "$http_code" = "403" ]; then
+    echo "dashboard-health-auth-required"
+else
+    echo "dashboard-health-unavailable (http=$http_code)"
+fi
+'@
+    }
+    'TailMobileLogs'      { Invoke-SshCommand 'journalctl -u ctoa-mobile-console.service -n 120 -f --no-pager' }
     'ReportErrorDetails'  { Invoke-SshCommand 'tail -n 60 /opt/ctoa/logs/runner.log' }
     'TailAgents'          { Invoke-SshCommand 'tail -n 100 -f /opt/ctoa/logs/agents-orchestrator.log' }
     'ShowServerStatus' {
@@ -561,7 +578,7 @@ sudo -u postgres psql -d ctoa -c "SELECT s.id, s.url, s.status, COUNT(m.id) AS m
         }
         'ListActions' {
                 $actions = @(
-                        'Verify','WhoAmI','Setup24x7','EnableLiveHealth','TailLiveHealth','TailMobileLogs','ValidateServices',
+                        'Verify','WhoAmI','Setup24x7','EnableLiveHealth','TailLiveHealth','DashboardSnapshot','TailMobileLogs','ValidateServices',
                         'StabilizeReportService','WriteGithubPat','ReportViaServiceEnv','PublishWithSourcedEnv',
                         'InspectReportEnv','ReportErrorDetails','SetupDB','SetupAgents','TailAgents','FixDbPerms',
                     'RegisterServer','RegisterServerList','KickoffNow','MythibiaBurst','GlobalBurst','InstallKickoffTimer','ShowKickoffTimer',
