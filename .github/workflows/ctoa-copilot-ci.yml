@@ -40,6 +40,11 @@ jobs:
           pip install numpy opencv-python-headless
           pip install pytest pytest-cov flake8 pylint
 
+      - name: Install Playwright browsers
+        shell: bash
+        run: |
+          python -m playwright install --with-deps
+
       - name: Run tests
         shell: bash
         continue-on-error: true
