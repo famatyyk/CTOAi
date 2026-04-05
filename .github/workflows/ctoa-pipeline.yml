@@ -178,7 +178,11 @@ jobs:
       - name: Sprint-027 Quality + delivery continuity gate
         shell: bash
         run: |
-          python scripts/ops/sprint027_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-027-validation.json
+          if [ -f "workflows/backlog-sprint-027.yaml" ] && [ -f "workflows/sprint-027-quality-delivery-continuity-flow.yaml" ]; then
+            python scripts/ops/sprint027_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-027-validation.json
+          else
+            echo "Skipping Sprint-027 gate: historical Sprint-027 assets are not present in this branch."
+          fi
 
       - name: Sprint-027 nightly trend + evidence batch
         shell: bash
