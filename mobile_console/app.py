@@ -31,6 +31,9 @@ SITE_DIR = ROOT / "docs" / "site"
 SITE_ASSETS_DIR = SITE_DIR / "assets"
 SITE_INDEX_HTML = SITE_DIR / "index.html"
 LIVE_DASHBOARD_HTML = ROOT / "docs" / "site" / "live-dashboard.html"
+PWA_MANIFEST_FILE = STATIC_DIR / "manifest.webmanifest"
+PWA_SERVICE_WORKER_FILE = STATIC_DIR / "sw.js"
+PWA_ICON_FILE = STATIC_DIR / "icon-console.svg"
 AUDIT_LOG = ROOT / "logs" / "mobile-console-audit.log"
 AUTO_TRAINER_DIR = Path(os.environ.get("CTOA_TRAINING_REPORT_DIR", str(ROOT / "runtime" / "training-reports")))
 GENERATED_DIR = Path(os.environ.get("CTOA_GENERATED_DIR", "/opt/ctoa/generated"))
@@ -304,13 +307,6 @@ def _write_idea_parking(ideas: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return normalized
 
 
-def _mobile_token() -> str:
-    token = os.getenv("CTOA_MOBILE_TOKEN", "")
-    if not token:
-        raise RuntimeError("Missing CTOA_MOBILE_TOKEN")
-    return token
-
-
 def _full_access() -> bool:
     return os.getenv("CTOA_MOBILE_FULL_ACCESS", "false").lower() == "true"
 
@@ -392,21 +388,10 @@ def _delete_session(token: str) -> None:
 
 
 def _try_auth_context(
-    x_ctoa_token: Optional[str] = None,
     authorization: Optional[str] = None,
     x_ctoa_session: Optional[str] = None,
     ctoa_session: Optional[str] = None,
 ) -> dict[str, Any] | None:
-    # Backward-compatible owner auth using static token.
-    expected = _mobile_token()
-    if x_ctoa_token and hmac.compare_digest(x_ctoa_token, expected):
-        return {
-            "username": os.getenv("CTOA_OWNER_USER", "CTO"),
-            "role": "owner",
-            "auth_mode": "legacy_token",
-            "session_token": None,
-        }
-
     session_token = x_ctoa_session or ctoa_session or _extract_bearer(authorization)
     session = _get_session(session_token)
     if session:
@@ -421,13 +406,11 @@ def _try_auth_context(
 
 
 def _token_valid(
-    x_ctoa_token: Optional[str],
     authorization: Optional[str],
     x_ctoa_session: Optional[str],
     ctoa_session: Optional[str],
 ) -> bool:
     return _try_auth_context(
-        x_ctoa_token=x_ctoa_token,
         authorization=authorization,
         x_ctoa_session=x_ctoa_session,
         ctoa_session=ctoa_session,
@@ -435,13 +418,11 @@ def _token_valid(
 
 
 def require_operator(
-    x_ctoa_token: Optional[str] = Header(default=None),
     authorization: Optional[str] = Header(default=None),
     x_ctoa_session: Optional[str] = Header(default=None),
     ctoa_session: Optional[str] = Cookie(default=None),
 ) -> dict[str, Any]:
     ctx = _try_auth_context(
-        x_ctoa_token=x_ctoa_token,
         authorization=authorization,
         x_ctoa_session=x_ctoa_session,
         ctoa_session=ctoa_session,
@@ -495,6 +476,29 @@ def index() -> FileResponse:
 @app.get("/console")
 def legacy_console() -> FileResponse:
     return FileResponse(str(STATIC_DIR / "index.html"), headers={"Cache-Control": "no-store"})
+
+
+@app.get("/manifest.webmanifest")
+def pwa_manifest() -> FileResponse:
+    return FileResponse(
+        str(PWA_MANIFEST_FILE),
+        media_type="application/manifest+json",
+        headers={"Cache-Control": "no-store"},
+    )
+
+
+@app.get("/sw.js")
+def pwa_service_worker() -> FileResponse:
+    return FileResponse(
+        str(PWA_SERVICE_WORKER_FILE),
+        media_type="application/javascript",
+        headers={"Cache-Control": "no-store"},
+    )
+
+
+@app.get("/icon-console.svg")
+def pwa_icon() -> FileResponse:
+    return FileResponse(str(PWA_ICON_FILE), media_type="image/svg+xml")
 
 
 @app.get("/style.css")
@@ -731,13 +735,11 @@ def deactivate_account(
 
 @app.get("/api/auth/auto-check")
 def auth_auto_check(
-    x_ctoa_token: Optional[str] = Header(default=None),
     authorization: Optional[str] = Header(default=None),
     x_ctoa_session: Optional[str] = Header(default=None),
     ctoa_session: Optional[str] = Cookie(default=None),
 ) -> dict:
     ctx = _try_auth_context(
-        x_ctoa_token=x_ctoa_token,
         authorization=authorization,
         x_ctoa_session=x_ctoa_session,
         ctoa_session=ctoa_session,
@@ -745,7 +747,7 @@ def auth_auto_check(
     valid = ctx is not None
     payload = {
         "ok": valid,
-        "token_present": bool(x_ctoa_token or authorization or x_ctoa_session or ctoa_session),
+        "token_present": bool(authorization or x_ctoa_session or ctoa_session),
         "token_valid": valid,
         "full_access": _full_access() if valid else False,
         "checked_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),

@@ -1,0 +1,40 @@
+name: ctoa-orchestrator
+description: |-
+  CTOA AI Toolkit Orchestrator — 10-agent autonomous sprint delivery system.
+  Capabilities:
+  - run_pipeline: Execute the full scout→ingest→brain→generate→validate→publish pipeline
+  - run_step: Execute a single pipeline step by name
+  - get_status: Return current task-state and agent run history
+  - sprint_info: Return active sprint backlog and progress
+metadata:
+  tags:
+    - ctoa
+    - autonomous-agents
+    - sprint-delivery
+    - tibia
+    - mmo
+  authors:
+    - famatyyk
+template:
+  name: ctoa-orchestrator
+  kind: hosted
+  protocols:
+    - protocol: responses
+      version: v1
+  environment_variables:
+    - name: AZURE_AI_PROJECT_ENDPOINT
+      value: ${AZURE_AI_PROJECT_ENDPOINT}
+    - name: AZURE_AI_MODEL_DEPLOYMENT_NAME
+      value: "{{chat}}"
+    - name: CTOA_ENV
+      value: ${CTOA_ENV}
+    - name: CTOA_OWNER_USER
+      value: ${CTOA_OWNER_USER}
+    - name: CTOA_BACKLOG_FILE
+      value: ${CTOA_BACKLOG_FILE}
+    - name: AGENT_MAX_TURNS
+      value: 10
+resources:
+  - kind: model
+    id: gpt-5
+    name: chat
