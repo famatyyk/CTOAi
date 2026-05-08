@@ -20,6 +20,11 @@ from typing import Any, Dict, Optional
 # executor.py lives in runner/agents/, so parents[2] points to repo root.
 ROOT = Path(__file__).resolve().parents[2]
 
+try:
+    from runner.agents.routing import select_track
+except ModuleNotFoundError:
+    from routing import select_track
+
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
@@ -801,21 +806,22 @@ def execute_agent_for_task(task: Dict[str, Any]) -> Dict[str, Any]:
     
     print(f"\n[agent-dispatch] Routing {task_id} to appropriate agent")
     
-    if "documentation" in domain:
+    track = select_track(domain)
+    if track == "track_a":
         return TrackAAgent.execute(task_id, deliverables)
-    elif "kpi" in domain or "automation" in domain and "metrics" in domain:
+    if track == "track_b":
         return TrackBAgent.execute(task_id, deliverables)
-    elif "reliability" in domain and "guardrails" in domain:
+    if track == "track_c":
         return TrackCAgent.execute(task_id, deliverables)
-    elif "governance" in domain:
+    if track == "track_d":
         return TrackDAgent.execute(task_id, deliverables)
-    else:
-        print(f"[agent] Unknown task type for {task_id}, marking as pending")
-        return {
-            "task_id": task_id,
-            "status": "awaiting_classification",
-            "timestamp": now_iso()
-        }
+
+    print(f"[agent] Unknown task type for {task_id}, marking as pending")
+    return {
+        "task_id": task_id,
+        "status": "awaiting_classification",
+        "timestamp": now_iso()
+    }
 
 
 if __name__ == "__main__":
