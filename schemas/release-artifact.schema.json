@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CTOA Release Artifact",
+  "type": "object",
+  "required": [
+    "sprint",
+    "generated_at",
+    "release_version",
+    "baseline_version",
+    "wave_1",
+    "wave_2",
+    "artifacts"
+  ],
+  "properties": {
+    "sprint": {"type": "string"},
+    "generated_at": {"type": "string"},
+    "release_version": {"type": "string"},
+    "baseline_version": {"type": "string"},
+    "wave_1": {
+      "type": "object",
+      "required": ["status", "evidence"],
+      "properties": {
+        "status": {"type": "string", "enum": ["PASS", "FAIL", "HOLD"]},
+        "evidence": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "wave_2": {
+      "type": "object",
+      "required": ["status", "approver"],
+      "properties": {
+        "status": {"type": "string", "enum": ["APPROVED", "REJECTED", "PENDING"]},
+        "approver": {"type": "string"}
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "path"],
+        "properties": {
+          "name": {"type": "string"},
+          "path": {"type": "string"}
+        }
+      }
+    }
+  }
+}
