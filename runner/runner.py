@@ -293,7 +293,8 @@ def build_report(backlog: Dict[str, Any], state: Dict[str, Any]) -> str:
     else:
         for t in active:
             lines.append(
-                f"- {t.get('id')}: {t.get('title')} | {t.get('status')} | {t.get('priority')} | assignees={','.join(t.get('assignees', []))}"
+                f"- {t.get('id')}: {t.get('title')} | {t.get('status')} | "
+                f"{t.get('priority')} | assignees={','.join(t.get('assignees', []))}"
             )
 
     lines.append("")
