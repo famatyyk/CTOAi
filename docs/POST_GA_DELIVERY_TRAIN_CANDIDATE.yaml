@@ -1,0 +1,13 @@
+version: 1
+status: candidate
+release_train: post-ga
+candidate_tag: v1.13.0-rc1
+baseline_reference: v1.1.0-approved
+source_of_truth:
+  - docs/POST_GA_DELIVERY_TRAIN_BASELINE.md
+  - docs/ROADMAP_V0.2.0_TO_V1.0.0.md
+gates:
+  wave_1: automated_checks_pass
+  wave_2: strategos_manual_signoff
+notes:
+  - Generated in Sprint-041 to restore README link integrity and governance traceability.
