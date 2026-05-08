@@ -25,6 +25,8 @@ ROOT = Path(__file__).resolve().parent.parent
 import sys as _sys
 _sys.path.insert(0, str(ROOT))
 from runner.alert_rules import check_generation_failed_spike
+from mobile_console.services.admin_settings_service import AdminSettingsService
+from mobile_console.services.ideas_service import IdeasService
 
 STATIC_DIR = ROOT / "mobile_console" / "static"
 SITE_DIR = ROOT / "docs" / "site"
@@ -303,6 +305,16 @@ def _write_idea_parking(ideas: list[dict[str, Any]]) -> list[dict[str, Any]]:
         IDEA_PARKING_FILE.write_text(json.dumps(normalized, ensure_ascii=True, indent=2), encoding="utf-8")
     return normalized
 
+
+_ADMIN_SETTINGS_SERVICE = AdminSettingsService(
+    read_settings=_read_admin_settings,
+    write_settings=_write_admin_settings,
+)
+_IDEAS_SERVICE = IdeasService(
+    read_items=_read_idea_parking,
+    write_items=_write_idea_parking,
+    normalize_item=_normalize_idea_item,
+)
 
 def _mobile_token() -> str:
     token = os.getenv("CTOA_MOBILE_TOKEN", "")
@@ -810,7 +822,7 @@ def status(_: dict[str, Any] = Depends(require_operator)) -> dict:
 def get_admin_settings(_: dict[str, Any] = Depends(require_operator)) -> dict:
     return {
         "ok": True,
-        "settings": _read_admin_settings(),
+        "settings": _ADMIN_SETTINGS_SERVICE.get(),
         "path": str(ADMIN_SETTINGS_FILE),
     }
 
@@ -821,7 +833,7 @@ def put_admin_settings(
     request: Request,
     ctx: dict[str, Any] = Depends(require_owner),
 ) -> dict:
-    saved = _write_admin_settings(req.model_dump())
+    saved = _ADMIN_SETTINGS_SERVICE.save(req.model_dump())
     _audit(request, f"admin_settings_save:{ctx.get('username','unknown')}", 0)
     return {
         "ok": True,
@@ -833,7 +845,7 @@ def put_admin_settings(
 
 @app.get("/api/ideas")
 def get_ideas(_: dict[str, Any] = Depends(require_operator)) -> dict:
-    ideas = _read_idea_parking()
+    ideas = _IDEAS_SERVICE.list_items()
     return {
         "ok": True,
         "ideas": ideas,
@@ -852,25 +864,17 @@ def post_idea(
     if not text:
         raise HTTPException(status_code=422, detail="Idea text cannot be empty")
 
-    ideas = _read_idea_parking()
-    idea = _normalize_idea_item(
-        {
-            "id": secrets.token_hex(8),
-            "text": text,
-            "createdAt": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
-            "author": ctx.get("username", ""),
-        }
+    idea, saved_count = _IDEAS_SERVICE.add(
+        text=text,
+        author=str(ctx.get("username", "")),
     )
     if not idea:
         raise HTTPException(status_code=422, detail="Invalid idea payload")
-
-    ideas.insert(0, idea)
-    saved = _write_idea_parking(ideas)
     _audit(request, f"idea_add:{ctx.get('username', 'unknown')}", 0)
     return {
         "ok": True,
         "idea": idea,
-        "count": len(saved),
+        "count": saved_count,
     }
 
 
@@ -884,18 +888,14 @@ def delete_idea(
     if not idea_id:
         raise HTTPException(status_code=422, detail="idea_id is required")
 
-    ideas = _read_idea_parking()
-    remaining = [item for item in ideas if str(item.get("id", "")) != idea_id]
-    deleted = len(ideas) - len(remaining)
+    deleted, remaining_count = _IDEAS_SERVICE.delete(idea_id)
     if deleted <= 0:
         raise HTTPException(status_code=404, detail="Idea not found")
-
-    saved = _write_idea_parking(remaining)
     _audit(request, f"idea_delete:{ctx.get('username', 'unknown')}:{idea_id}", 0)
     return {
         "ok": True,
         "deleted": deleted,
-        "count": len(saved),
+        "count": remaining_count,
     }
 
 
@@ -904,11 +904,11 @@ def clear_ideas(
     request: Request,
     ctx: dict[str, Any] = Depends(require_operator),
 ) -> dict:
-    _write_idea_parking([])
+    remaining_count = _IDEAS_SERVICE.clear()
     _audit(request, f"idea_clear_all:{ctx.get('username', 'unknown')}", 0)
     return {
         "ok": True,
-        "count": 0,
+        "count": remaining_count,
     }
 
 
