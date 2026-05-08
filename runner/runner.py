@@ -2,8 +2,6 @@
 import argparse
 import json
 import os
-import subprocess
-import sys
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
@@ -196,12 +194,12 @@ def tick(backlog: Dict[str, Any], state: Dict[str, Any], invoke_agents: bool = F
         if active_count >= max_parallel:
             break
         transitions.append(transition_task(task, "IN_PROGRESS", "scheduled by hourly planner"))
-        
+
         # If agents are enabled, invoke agent immediately when task starts
         if invoke_agents:
             agent_event = execute_task_agent(task, backlog)
             state.setdefault("history", []).append(agent_event)
-        
+
         active_count += 1
 
     state["last_tick_at"] = now_iso()
@@ -228,7 +226,7 @@ def execute_task_agent(task: Dict[str, Any], backlog: Dict[str, Any]) -> Dict[st
     """
     task_id = task.get("id", "unknown")
     print(f"[runner] Invoking AI agent for {task_id}")
-    
+
     try:
         # Route to appropriate agent
         result = execute_agent_for_task(task)
@@ -282,7 +280,13 @@ def build_report(backlog: Dict[str, Any], state: Dict[str, Any]) -> str:
         for t in tasks
         if t.get("status") in {"IN_PROGRESS", "IN_QA", "IN_CI_GATE", "WAITING_APPROVAL"}
     ]
-    active.sort(key=lambda t: (status_rank(str(t.get("status"))), priority_rank(str(t.get("priority"))), str(t.get("id"))))
+    active.sort(
+        key=lambda t: (
+            status_rank(str(t.get("status"))),
+            priority_rank(str(t.get("priority"))),
+            str(t.get("id")),
+        )
+    )
 
     if not active:
         lines.append("- none")
@@ -422,7 +426,7 @@ def main() -> None:
         save_yaml(STATE_FILE, state)
         print(f"[tick] completed at {state.get('last_tick_at')}")
         if invoke_agents:
-            print(f"[tick] AI agents invoked for new tasks")
+            print("[tick] AI agents invoked for new tasks")
         return
 
     if args.command == "approve":
