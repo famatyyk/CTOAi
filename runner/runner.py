@@ -2,8 +2,6 @@
 import argparse
 import json
 import os
-import subprocess
-import sys
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
@@ -16,8 +14,10 @@ import yaml
 # Import AI agent executor via package-native path with script-context fallback.
 try:
     from runner.agents import execute_agent_for_task
+    from runner.pipeline.scheduler import build_new_task_candidates, count_active_tasks
 except ModuleNotFoundError:
     from agents import execute_agent_for_task
+    from pipeline.scheduler import build_new_task_candidates, count_active_tasks
 
 ROOT = Path(__file__).resolve().parent.parent
 _DEFAULT_BACKLOG = ROOT / "workflows" / "backlog-sprint-001.yaml"
@@ -186,21 +186,20 @@ def tick(backlog: Dict[str, Any], state: Dict[str, Any], invoke_agents: bool = F
                 transitions.append(transition_task(task, target, f"auto transition {status} -> {target}"))
 
     active_states = {"IN_PROGRESS", "IN_QA", "IN_CI_GATE", "WAITING_APPROVAL"}
-    active_count = sum(1 for t in tasks if t.get("status") in active_states)
+    active_count = count_active_tasks(tasks, active_states)
 
-    candidates = [t for t in tasks if t.get("status") == "NEW"]
-    candidates.sort(key=lambda t: (priority_rank(str(t.get("priority", "P1"))), str(t.get("id", ""))))
+    candidates = build_new_task_candidates(tasks, priority_rank)
 
     for task in candidates:
         if active_count >= max_parallel:
             break
         transitions.append(transition_task(task, "IN_PROGRESS", "scheduled by hourly planner"))
-        
+
         # If agents are enabled, invoke agent immediately when task starts
         if invoke_agents:
             agent_event = execute_task_agent(task, backlog)
             state.setdefault("history", []).append(agent_event)
-        
+
         active_count += 1
 
     state["last_tick_at"] = now_iso()
@@ -227,7 +226,7 @@ def execute_task_agent(task: Dict[str, Any], backlog: Dict[str, Any]) -> Dict[st
     """
     task_id = task.get("id", "unknown")
     print(f"[runner] Invoking AI agent for {task_id}")
-    
+
     try:
         # Route to appropriate agent
         result = execute_agent_for_task(task)
@@ -281,14 +280,21 @@ def build_report(backlog: Dict[str, Any], state: Dict[str, Any]) -> str:
         for t in tasks
         if t.get("status") in {"IN_PROGRESS", "IN_QA", "IN_CI_GATE", "WAITING_APPROVAL"}
     ]
-    active.sort(key=lambda t: (status_rank(str(t.get("status"))), priority_rank(str(t.get("priority"))), str(t.get("id"))))
+    active.sort(
+        key=lambda t: (
+            status_rank(str(t.get("status"))),
+            priority_rank(str(t.get("priority"))),
+            str(t.get("id")),
+        )
+    )
 
     if not active:
         lines.append("- none")
     else:
         for t in active:
             lines.append(
-                f"- {t.get('id')}: {t.get('title')} | {t.get('status')} | {t.get('priority')} | assignees={','.join(t.get('assignees', []))}"
+                f"- {t.get('id')}: {t.get('title')} | {t.get('status')} | "
+                f"{t.get('priority')} | assignees={','.join(t.get('assignees', []))}"
             )
 
     lines.append("")
@@ -421,7 +427,7 @@ def main() -> None:
         save_yaml(STATE_FILE, state)
         print(f"[tick] completed at {state.get('last_tick_at')}")
         if invoke_agents:
-            print(f"[tick] AI agents invoked for new tasks")
+            print("[tick] AI agents invoked for new tasks")
         return
 
     if args.command == "approve":

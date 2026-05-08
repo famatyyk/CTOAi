@@ -10,7 +10,6 @@ Maps Sprint-007 tasks to AI agents that execute real work:
 """
 
 import json
-import os
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -19,6 +18,11 @@ from typing import Any, Dict, Optional
 
 # executor.py lives in runner/agents/, so parents[2] points to repo root.
 ROOT = Path(__file__).resolve().parents[2]
+
+try:
+    from runner.agents.routing import select_track
+except ModuleNotFoundError:
+    from routing import select_track
 
 
 def now_iso() -> str:
@@ -41,7 +45,7 @@ def invoke_copilot_chat(prompt: str, context: Dict[str, Any] = None) -> Optional
     """
     Invoke GitHub Copilot Chat via local subprocess.
     Requires: VS Code with GitHub Copilot extension + copilot CLI
-    
+
     In production, this would use Azure OpenAI or similar.
     For local dev, we use Copilot Chat extension if available.
     """
@@ -61,17 +65,17 @@ def invoke_copilot_chat(prompt: str, context: Dict[str, Any] = None) -> Optional
 
 class TrackAAgent:
     """Documentation Completion Track
-    
+
     Generates:
     - docs/runbook-disk-emergency.md
-    - docs/VALIDATION_CHECKLIST.md  
+    - docs/VALIDATION_CHECKLIST.md
     - Updates docs/ARCHITECTURE.md
     """
-    
+
     @staticmethod
     def execute(task_id: str, deliverables: list) -> Dict[str, Any]:
         print(f"\n[agent-track-a] {task_id}: Documentation generation started")
-        
+
         results = []
         for deliverable in deliverables:
             if "runbook-disk-emergency.md" in deliverable:
@@ -99,7 +103,7 @@ class TrackAAgent:
                 )
                 print(f"[agent-track-a] Created {p}")
                 results.append({"deliverable": deliverable, "status": "created"})
-                
+
         return {
             "task_id": task_id,
             "track": "A",
@@ -107,7 +111,7 @@ class TrackAAgent:
             "deliverables": results,
             "timestamp": now_iso()
         }
-    
+
     @staticmethod
     def create_runbook_disk_emergency() -> None:
         """Create emergency disk response runbook"""
@@ -213,7 +217,7 @@ If cleanup doesn't free sufficient space:
 - [runner.py](../runner/runner.py) - Task orchestration
 
 """.format(timestamp=now_iso())
-        
+
         path = ROOT / "docs" / "runbook-disk-emergency.md"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(runbook)
@@ -249,7 +253,7 @@ If cleanup doesn't free sufficient space:
 - [ ] Report generation successful
 - [ ] GitHub API connectivity via PAT token
 
-## Post-Deployment Checks  
+## Post-Deployment Checks
 
 ### Service Health (after VPS deployment)
 
@@ -345,7 +349,7 @@ curl http://localhost:9999/health 2>/dev/null | jq .
 - [runner.py](../runner/runner.py) - Main orchestration logic
 
 """.format(timestamp=now_iso())
-        
+
         path = ROOT / "docs" / "VALIDATION_CHECKLIST.md"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(checklist)
@@ -387,17 +391,17 @@ curl http://localhost:9999/health 2>/dev/null | jq .
 
 class TrackBAgent:
     """KPI Automation Track
-    
+
     Generates:
     - runner/weekly_report.py enhancements
     - KPI metrics pipelines
     - Approval lead-time calculations
     """
-    
+
     @staticmethod
     def execute(task_id: str, deliverables: list) -> Dict[str, Any]:
         print(f"\n[agent-track-b] {task_id}: KPI automation started")
-        
+
         results = []
         for deliverable in deliverables:
             if "weekly_report.py" in deliverable:
@@ -411,7 +415,7 @@ class TrackBAgent:
                 )
                 print(f"[agent-track-b] Created {p}")
                 results.append({"deliverable": deliverable, "status": "created"})
-                
+
         return {
             "task_id": task_id,
             "track": "B",
@@ -419,27 +423,27 @@ class TrackBAgent:
             "deliverables": results,
             "timestamp": now_iso()
         }
-    
+
     @staticmethod
     def enhance_weekly_report() -> None:
         """Enhance weekly report with standardized KPI layout"""
-        print(f"[agent-track-b] Enhancing weekly_report.py for KPI automation")
+        print("[agent-track-b] Enhancing weekly_report.py for KPI automation")
         # This would be implemented by AI agent
 
 
 class TrackCAgent:
     """Reliability Guardrails Track
-    
+
     Generates:
     - Service/timer drift detection
     - Health check scripting
     - Runner report enhancements
     """
-    
+
     @staticmethod
     def execute(task_id: str, deliverables: list) -> Dict[str, Any]:
         print(f"\n[agent-track-c] {task_id}: Reliability guardrails started")
-        
+
         results = []
         for deliverable in deliverables:
             if "drift_checker.py" in deliverable:
@@ -461,7 +465,7 @@ class TrackCAgent:
                 )
                 print(f"[agent-track-c] Created {p}")
                 results.append({"deliverable": deliverable, "status": "created"})
-                
+
         return {
             "task_id": task_id,
             "track": "C",
@@ -469,7 +473,7 @@ class TrackCAgent:
             "deliverables": results,
             "timestamp": now_iso()
         }
-    
+
     @staticmethod
     def create_drift_checker() -> None:
         """Create drift detection script for systemd services"""
@@ -493,7 +497,7 @@ from pathlib import Path
 SERVICES = [
     "ctoa-runner.service",
     "ctoa-runner.timer",
-    "ctoa-report.service", 
+    "ctoa-report.service",
     "ctoa-report.timer",
     "ctoa-health-live.service",
     "ctoa-retention-cleanup.timer"
@@ -511,14 +515,14 @@ def check_service_status(service: str) -> dict:
             capture_output=True, text=True, timeout=5
         )
         enabled = result_enabled.returncode == 0
-        
+
         # Check if service is active
         result_active = subprocess.run(
             ["systemctl", "is-active", service],
             capture_output=True, text=True, timeout=5
         )
         active = result_active.returncode == 0
-        
+
         return {
             "service": service,
             "enabled": enabled,
@@ -535,25 +539,25 @@ def check_service_status(service: str) -> dict:
 def main():
     print(f"[drift-checker] Starting service audit at {now_iso()}")
     print()
-    
+
     results = []
     drift_detected = False
-    
+
     for service in SERVICES:
         status = check_service_status(service)
         results.append(status)
-        
+
         if status.get("status") != "OK":
             drift_detected = True
-            
+
         status_icon = "[OK]" if status.get("status") == "OK" else "[!!]"
         print(f"{status_icon} {service}: {status.get('status')}")
-    
+
     print()
     print(f"[drift-checker] Report at {now_iso()}")
     print(f"[drift-checker] Total services checked: {len(results)}")
     print(f"[drift-checker] Drift detected: {drift_detected}")
-    
+
     if drift_detected:
         sys.exit(1)
     else:
@@ -569,17 +573,17 @@ if __name__ == "__main__":
 
 class TrackDAgent:
     """Governance Track
-    
+
     Generates:
     - Sprint closure gate logic
     - Backlog rollover procedure
     - Reusable templates
     """
-    
+
     @staticmethod
     def execute(task_id: str, deliverables: list) -> Dict[str, Any]:
         print(f"\n[agent-track-d] {task_id}: Governance automation started")
-        
+
         results = []
         for deliverable in deliverables:
             if "SPRINT_GOVERNANCE.md" in deliverable:
@@ -593,7 +597,7 @@ class TrackDAgent:
                 )
                 print(f"[agent-track-d] Created {p}")
                 results.append({"deliverable": deliverable, "status": "created"})
-                
+
         return {
             "task_id": task_id,
             "track": "D",
@@ -601,7 +605,7 @@ class TrackDAgent:
             "deliverables": results,
             "timestamp": now_iso()
         }
-    
+
     @staticmethod
     def create_sprint_governance() -> None:
         """Create sprint governance documentation"""
@@ -778,7 +782,7 @@ Agents are automatically invoked when tasks transition to IN_PROGRESS:
 - [README.md](README.md) — Project roadmap
 
 """.format(timestamp=now_iso())
-        
+
         path = ROOT / "docs" / "SPRINT_GOVERNANCE.md"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(governance, encoding='utf-8')
@@ -788,7 +792,7 @@ Agents are automatically invoked when tasks transition to IN_PROGRESS:
 def execute_agent_for_task(task: Dict[str, Any]) -> Dict[str, Any]:
     """
     Route task to appropriate agent based on domain/type.
-    
+
     Maps:
     - CTOA-031..034 → Track A (Documentation)
     - CTOA-035..038 → Track B (KPI Automation)
@@ -798,38 +802,39 @@ def execute_agent_for_task(task: Dict[str, Any]) -> Dict[str, Any]:
     task_id = task.get("id", "unknown")
     domain = task.get("domain", [])
     deliverables = task.get("deliverables", [])
-    
+
     print(f"\n[agent-dispatch] Routing {task_id} to appropriate agent")
-    
-    if "documentation" in domain:
+
+    track = select_track(domain)
+    if track == "track_a":
         return TrackAAgent.execute(task_id, deliverables)
-    elif "kpi" in domain or "automation" in domain and "metrics" in domain:
+    if track == "track_b":
         return TrackBAgent.execute(task_id, deliverables)
-    elif "reliability" in domain and "guardrails" in domain:
+    if track == "track_c":
         return TrackCAgent.execute(task_id, deliverables)
-    elif "governance" in domain:
+    if track == "track_d":
         return TrackDAgent.execute(task_id, deliverables)
-    else:
-        print(f"[agent] Unknown task type for {task_id}, marking as pending")
-        return {
-            "task_id": task_id,
-            "status": "awaiting_classification",
-            "timestamp": now_iso()
-        }
+
+    print(f"[agent] Unknown task type for {task_id}, marking as pending")
+    return {
+        "task_id": task_id,
+        "status": "awaiting_classification",
+        "timestamp": now_iso()
+    }
 
 
 if __name__ == "__main__":
     # For testing: python3 runner/agents.py
     print("CTOA AI Agent Executor")
     print(f"Repository root: {ROOT}")
-    
+
     test_task = {
         "id": "CTOA-031",
         "title": "Create emergency disk runbook",
         "domain": ["documentation"],
         "deliverables": ["docs/runbook-disk-emergency.md"]
     }
-    
+
     result = execute_agent_for_task(test_task)
-    print(f"\nAgent execution result:")
+    print("\nAgent execution result:")
     print(json.dumps(result, indent=2))
