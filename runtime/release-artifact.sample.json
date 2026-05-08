@@ -1,0 +1,22 @@
+{
+  "sprint": "041",
+  "generated_at": "2026-05-09T00:00:00Z",
+  "release_version": "v1.13.0",
+  "baseline_version": "v1.1.0-approved",
+  "wave_1": {
+    "status": "PASS",
+    "evidence": [
+      "https://github.com/famatyyk/CTOAi/actions/runs/25583151305"
+    ]
+  },
+  "wave_2": {
+    "status": "PENDING",
+    "approver": "STRATEGOS"
+  },
+  "artifacts": [
+    {
+      "name": "baseline-ci",
+      "path": "https://github.com/famatyyk/CTOAi/actions/runs/25583151305"
+    }
+  ]
+}
