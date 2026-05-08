@@ -16,8 +16,10 @@ import yaml
 # Import AI agent executor via package-native path with script-context fallback.
 try:
     from runner.agents import execute_agent_for_task
+    from runner.pipeline.scheduler import build_new_task_candidates, count_active_tasks
 except ModuleNotFoundError:
     from agents import execute_agent_for_task
+    from pipeline.scheduler import build_new_task_candidates, count_active_tasks
 
 ROOT = Path(__file__).resolve().parent.parent
 _DEFAULT_BACKLOG = ROOT / "workflows" / "backlog-sprint-001.yaml"
@@ -186,10 +188,9 @@ def tick(backlog: Dict[str, Any], state: Dict[str, Any], invoke_agents: bool = F
                 transitions.append(transition_task(task, target, f"auto transition {status} -> {target}"))
 
     active_states = {"IN_PROGRESS", "IN_QA", "IN_CI_GATE", "WAITING_APPROVAL"}
-    active_count = sum(1 for t in tasks if t.get("status") in active_states)
+    active_count = count_active_tasks(tasks, active_states)
 
-    candidates = [t for t in tasks if t.get("status") == "NEW"]
-    candidates.sort(key=lambda t: (priority_rank(str(t.get("priority", "P1"))), str(t.get("id", ""))))
+    candidates = build_new_task_candidates(tasks, priority_rank)
 
     for task in candidates:
         if active_count >= max_parallel:
