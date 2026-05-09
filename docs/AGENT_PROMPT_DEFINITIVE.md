@@ -1,16 +1,19 @@
 # Enhanced Agent/Prompt Definitive
 
-Single source of truth for agent roles, BRAVE(R) prompt lifecycle, real-time training/skilling, and release quality evidence in CTOA.
+Single source of truth for agent roles, BRAVE(R) prompt lifecycle,
+real-time training/skilling, and release quality evidence in CTOA.
 
 ## Scope
 
 This document standardizes:
+
 - agent role boundaries,
 - prompt lifecycle and governance,
 - real-time training and skilling loop,
 - KPI and evidence requirements for GO/NO-GO.
 
 For implementation detail, see:
+
 - [Architecture](./ARCHITECTURE.md)
 - [Agent Training Masterplan](./AGENT_TRAINING_MASTERPLAN.md)
 - [Real-Time Module Creation](./REALTIME_MODULE_CREATION.md)
@@ -20,13 +23,18 @@ For implementation detail, see:
 ## Canonical Terminology
 
 - **Agent:** a specialized execution role in the 10-agent operating model.
-- **Prompt Forge:** the capability that tunes BRAVE(R) prompts from telemetry and failures.
-- **Tool Advisor:** scoring/routing capability selecting tools based on relevance/cost/risk.
+- **Prompt Forge:** the capability that tunes BRAVE(R) prompts
+  from telemetry and failures.
+- **Tool Advisor:** scoring/routing capability selecting tools
+  based on relevance/cost/risk.
 - **Wave-1:** automated gate (validation + CI + evidence completeness).
 - **Wave-2:** manual approval gate with release sign-off.
-- **Training Event:** one closed loop from telemetry capture to validated prompt/skill decision.
-- **Skill Update:** a controlled change to agent behavior, templates, scoring, or routing policy.
-- **Promotion Criteria:** explicit threshold that allows an update to move from candidate to baseline.
+- **Training Event:** one closed loop from telemetry capture
+  to validated prompt/skill decision.
+- **Skill Update:** a controlled change to agent behavior,
+  templates, scoring, or routing policy.
+- **Promotion Criteria:** explicit threshold that allows an update
+  to move from candidate to baseline.
 
 ## Canonical Flow (Agent -> Prompt -> Scoring -> Governance)
 
@@ -40,13 +48,16 @@ For implementation detail, see:
 ## Real-Time Training & Skilling Loop
 
 Cycle:
-`telemetry -> failure analysis -> prompt update -> A/B comparison -> validation -> rollout`
+`telemetry -> failure analysis -> prompt update ->`
+`A/B comparison -> validation -> rollout`
 
 Cadence:
+
 - Scout/ingest refresh: every **30-60 min**
 - Prompt/skill tuning window: every **6h**
 - KPI and drift review: **daily**
-- Hard promotion gate: **weekly** (only with stable trend and no blocking regressions)
+- Hard promotion gate: **weekly**
+  (only with stable trend and no blocking regressions)
 
 ## Agent Roles (Canonical)
 
@@ -64,6 +75,7 @@ Cadence:
 ## KPI Template (All Agents)
 
 Each agent update should report:
+
 1. **Outcome KPI:** core task success metric (e.g., pass rate, discovery rate)
 2. **Quality KPI:** error/false-positive/regression signal
 3. **Efficiency KPI:** latency and/or cost per successful run
@@ -72,6 +84,7 @@ Each agent update should report:
 ## Minimal Evidence for GO/NO-GO
 
 Required per candidate update:
+
 1. Task output artifacts (or explicit no-output rationale)
 2. Validation results (test/validator status)
 3. Delta comparison against previous baseline (quality/cost/latency)
@@ -79,23 +92,27 @@ Required per candidate update:
 5. Decision log entry with owner and timestamp
 
 Gate mapping:
+
 - **Wave-1 PASS:** automated checks pass and evidence set is complete.
 - **Wave-2 PASS:** manual sign-off confirms release fitness.
 
 ## Documentation Rollout Checklist
 
 ### Definition of Ready (DoR)
+
 - Terminology aligned with this document
 - Target metrics and promotion criteria explicitly defined
 - Required evidence sources identified
 
 ### Definition of Done (DoD)
+
 - Linked docs updated without duplicated conflicting instructions
 - Wave-1/Wave-2 implications documented
 - Validation/checklist references updated
 - Change reviewed in sprint governance cadence
 
 ### Sprint Audit Cadence
+
 - Run a docs consistency audit once per sprint closure.
 - Verify source-of-truth links and remove stale duplicated guidance.
 - Record audit result in sprint release notes.
