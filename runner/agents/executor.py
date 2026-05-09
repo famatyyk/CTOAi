@@ -22,9 +22,10 @@ ROOT = Path(__file__).resolve().parents[2]
 try:
     from .routing import select_track
 except ImportError:
-    if __name__ != "__main__":
+    if __name__ == "__main__":
+        from routing import select_track
+    else:
         raise
-    from routing import select_track
 
 
 def now_iso() -> str:

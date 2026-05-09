@@ -26,12 +26,14 @@ def test_executor_import_with_runner_on_path(project_root):
     runner_dir = project_root / "runner"
     script = textwrap.dedent(
         f"""
+        import inspect
         import sys
 
         sys.path.insert(0, {str(runner_dir)!r})
         from agents.executor import execute_agent_for_task
 
         print(execute_agent_for_task.__name__)
+        print(list(inspect.signature(execute_agent_for_task).parameters))
         """
     )
 
@@ -44,4 +46,5 @@ def test_executor_import_with_runner_on_path(project_root):
     )
 
     assert result.returncode == 0, result.stderr
-    assert result.stdout.strip() == "execute_agent_for_task"
+    stdout_lines = result.stdout.strip().splitlines()
+    assert stdout_lines == ["execute_agent_for_task", "['task']"]
