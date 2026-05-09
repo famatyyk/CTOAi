@@ -210,17 +210,18 @@ def build_sla_alert(
     return "\n".join(lines) + "\n"
 
 
+
 def update_live_issue_sla_section(base: str, token: str, live_issue_number: int, body: Optional[str]) -> bool:
     start_marker = "<!-- ctoa-sla-section:start -->"
     end_marker = "<!-- ctoa-sla-section:end -->"
     section_pattern = re.compile(
-        rf"{re.escape(start_marker)}\n.*?\n{re.escape(end_marker)}",
+        rf"\n?{re.escape(start_marker)}\n[\s\S]*?\n{re.escape(end_marker)}\n?",
         re.DOTALL,
     )
 
     live_issue = github_api("GET", f"{base}/issues/{live_issue_number}", token)
     existing_body = str(live_issue.get("body", "")).rstrip()
-    body_without_sla = section_pattern.sub("", existing_body).strip()
+    body_without_sla = section_pattern.sub("\n", existing_body).rstrip()
 
     new_body = body_without_sla
     if body:

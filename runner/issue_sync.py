@@ -98,7 +98,9 @@ def group_backlog_issues_by_task_id(open_issues: List[Dict[str, Any]]) -> Dict[s
     return grouped
 
 
-def split_primary_and_duplicates(issues_by_task_id: Dict[str, List[Dict[str, Any]]]) -> Tuple[Dict[str, Dict[str, Any]], List[Dict[str, Any]]]:
+def split_primary_and_duplicates(
+    issues_by_task_id: Dict[str, List[Dict[str, Any]]]
+) -> Tuple[Dict[str, Dict[str, Any]], List[Dict[str, Any]]]:
     primary_by_task_id: Dict[str, Dict[str, Any]] = {}
     duplicates: List[Dict[str, Any]] = []
 
