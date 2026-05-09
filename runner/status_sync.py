@@ -103,6 +103,21 @@ def backlog_issue_map(open_issues: List[Dict[str, Any]]) -> Dict[str, Dict[str, 
     return out
 
 
+def list_open_issues(base: str, token: str) -> List[Dict[str, Any]]:
+    all_issues: List[Dict[str, Any]] = []
+    page = 1
+    while True:
+        issues_page = github_api("GET", f"{base}/issues?state=open&per_page=100&page={page}", token)
+        if not isinstance(issues_page, list):
+            raise RuntimeError("Invalid issues payload")
+
+        all_issues.extend(issues_page)
+        if len(issues_page) < 100:
+            break
+        page += 1
+    return all_issues
+
+
 def desired_status_label(task: Dict[str, Any]) -> str:
     status = str(task.get("status", "NEW")).lower()
     return f"status/{status}"
@@ -195,22 +210,34 @@ def build_sla_alert(
     return "\n".join(lines) + "\n"
 
 
-def post_sla_alert_if_needed(base: str, token: str, live_issue_number: int, body: Optional[str]) -> bool:
-    if not body:
+def update_live_issue_sla_section(base: str, token: str, live_issue_number: int, body: Optional[str]) -> bool:
+    start_marker = "<!-- ctoa-sla-section:start -->"
+    end_marker = "<!-- ctoa-sla-section:end -->"
+    section_pattern = re.compile(
+        rf"\n?{re.escape(start_marker)}\n.*?\n{re.escape(end_marker)}\n?",
+        re.DOTALL,
+    )
+
+    live_issue = github_api("GET", f"{base}/issues/{live_issue_number}", token)
+    existing_body = str(live_issue.get("body", "")).rstrip()
+    body_without_sla = section_pattern.sub("\n", existing_body).rstrip()
+
+    new_body = body_without_sla
+    if body:
+        sla_section = f"{start_marker}\n{body.rstrip()}\n{end_marker}"
+        if new_body:
+            new_body = f"{new_body}\n\n{sla_section}"
+        else:
+            new_body = sla_section
+    if new_body == existing_body:
+        print("[status-sync] SLA section unchanged")
         return False
 
-    marker = body.splitlines()[0].strip()
-    comments = github_api("GET", f"{base}/issues/{live_issue_number}/comments?per_page=100", token)
-    for c in comments:
-        if marker in str(c.get("body", "")):
-            print("[status-sync] SLA alert already posted for current task set")
-            return False
-
     github_api(
-        "POST",
-        f"{base}/issues/{live_issue_number}/comments",
+        "PATCH",
+        f"{base}/issues/{live_issue_number}",
         token,
-        {"body": body},
+        {"body": new_body},
     )
     return True
 
@@ -234,15 +261,15 @@ def main() -> None:
 
     ensure_status_labels(base, token)
 
-    open_issues = github_api("GET", f"{base}/issues?state=open&per_page=100", token)
+    open_issues = list_open_issues(base, token)
     issues = backlog_issue_map(open_issues)
 
     label_updates = sync_status_labels(base, token, tasks, issues)
 
     sla_body = build_sla_alert(tasks, issues, threshold_hours, alert_mode)
-    alert_posted = post_sla_alert_if_needed(base, token, live_issue_number, sla_body)
+    alert_updated = update_live_issue_sla_section(base, token, live_issue_number, sla_body)
 
-    print(f"[status-sync] labels_updated={label_updates} sla_alert_posted={alert_posted}")
+    print(f"[status-sync] labels_updated={label_updates} sla_section_updated={alert_updated}")
 
 
 if __name__ == "__main__":
