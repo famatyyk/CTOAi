@@ -6,9 +6,9 @@ def test_list_open_issues_paginates(monkeypatch):
 
     def fake_github_api(method, url, token, payload=None):
         calls.append((method, url, token, payload))
-        if "page=1" in url:
+        if url.endswith("page=1"):
             return [{"number": i} for i in range(100)]
-        if "page=2" in url:
+        if url.endswith("page=2"):
             return [{"number": 100}, {"number": 101}]
         return []
 
