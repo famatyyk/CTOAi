@@ -30,7 +30,7 @@ jobs:
         run: |
           mkdir -p runtime
           if [ ! -f runtime/task-state.yaml ]; then
-            python runner/runner.py tick
+            python -m runner.runner tick
           fi
 
       - name: Sync status labels and SLA alerts
