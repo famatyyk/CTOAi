@@ -20,8 +20,8 @@ from typing import Any, Dict, Optional
 ROOT = Path(__file__).resolve().parents[2]
 
 try:
-    from runner.agents.routing import select_track
-except ModuleNotFoundError:
+    from .routing import select_track
+except ImportError:
     from routing import select_track
 
 
