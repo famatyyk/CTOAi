@@ -19,9 +19,9 @@ from typing import Any, Dict, Optional
 # executor.py lives in runner/agents/, so parents[2] points to repo root.
 ROOT = Path(__file__).resolve().parents[2]
 
-try:
+if __package__:
     from .routing import select_track
-except ImportError:
+else:
     from routing import select_track
 
 

@@ -21,7 +21,7 @@ def test_runner_help_works_as_script_and_module(project_root):
         assert "CTOA VPS runner" in result.stdout
 
 
-def test_agents_executor_imports_when_runner_dir_is_on_sys_path(project_root):
+def test_executor_import_with_runner_on_path(project_root):
     runner_dir = project_root / "runner"
     script = (
         "import sys; "
