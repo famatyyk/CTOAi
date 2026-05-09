@@ -29,12 +29,20 @@ Reference:
 # 1) Start one orchestrator pass
 python -m runner.agents.orchestrator
 
-# 2) Inspect newest generated artifacts
+# 2) Inspect newest generated artifacts (Linux/macOS)
 find generated -type f -printf "%TY-%Tm-%Td %TH:%TM %p\n" | sort -r | head -40
 
 # 3) Validate
 python -m pytest tests/e2e/test_browser_smoke.py -m e2e -v
-python -m pytest -q
+python -m pytest tests/ --ignore=tests/e2e -v
+```
+
+PowerShell alternative for step 2 (Windows):
+
+```powershell
+Get-ChildItem -Path .\generated -Recurse -File |
+  Sort-Object LastWriteTime -Descending |
+  Select-Object -First 40 LastWriteTime, FullName
 ```
 
 ## VPS Real-Time Run (Ops Loop)
