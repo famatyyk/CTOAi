@@ -29,8 +29,11 @@ Reference:
 # 1) Start one orchestrator pass
 python -m runner.agents.orchestrator
 
-# 2) Inspect newest generated artifacts (Linux/macOS)
+# 2) Inspect newest generated artifacts
+# Linux (GNU find)
 find generated -type f -printf "%TY-%Tm-%Td %TH:%TM %p\n" | sort -r | head -40
+# macOS/BSD
+find generated -type f -exec stat -f "%Sm %N" -t "%Y-%m-%d %H:%M" {} \; | sort -r | head -40
 
 # 3) Validate
 python -m pytest tests/e2e/test_browser_smoke.py -m e2e -v
