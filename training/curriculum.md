@@ -7,6 +7,14 @@
 Wdrożyć zespół agentów do stabilnej pracy 24/7 z naciskiem na TIBIA/OpenTibia/MMO/Lua.  
 Każdy agent zna: BRAVE(R), CI Gate, Lua standards i procedury VPS ops.
 
+## Tryb ENCHANTED (warstwa motywacyjna)
+Opcjonalny tryb podkręcający trening bez zmiany kryteriów PASS/FAIL.
+
+- **XP za moduł:** każde zaliczenie modułu = +20 XP
+- **Streak bonus:** 3 moduły z rzędu zaliczone bez retestu = +10 XP
+- **Boss fight:** po zakończeniu Modułu 5 uczestnik robi 15-minutowy scenariusz „incident + hotfix + approval flow”
+- **Rangi:** `Apprentice` (0-39 XP), `Rune Crafter` (40-79 XP), `Archmage` (80-110 XP)
+
 ---
 
 ## Moduł 1 — BRAVE(R) Prompt Design (2h)
