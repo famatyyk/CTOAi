@@ -1,8 +1,10 @@
 # Real-Time Module Creation Flow
 
-This runbook explains near-real-time module generation and how training/skilling evidence is produced during execution.
+This runbook explains near-real-time module generation
+and how training/skilling evidence is produced during execution.
 
 Canonical policy source:
+
 - [Enhanced Agent/Prompt Definitive](./AGENT_PROMPT_DEFINITIVE.md)
 
 ## Pipeline At A Glance
@@ -15,6 +17,7 @@ Canonical policy source:
 6. Publisher: eligible artifacts are promoted by release criteria.
 
 Reference:
+
 - `runner/agents/orchestrator.py`
 - `runner/agents/generator_agent.py`
 
@@ -47,18 +50,23 @@ systemctl start --no-block ctoa-agents-orchestrator.service
 tail -n 120 /opt/ctoa/logs/agents-orchestrator.log
 
 # Check newest generated artifacts
-find /opt/ctoa/generated -type f -printf "%TY-%Tm-%Td %TH:%TM %p\n" | sort -r | head -40
+find /opt/ctoa/generated -type f -printf "%TY-%Tm-%Td %TH:%TM %p\n" \
+   | sort -r \
+   | head -40
 ```
 
 ## Real-Time Training/Skilling Hooks
 
 Each pass should produce data for:
+
 - **Training Event:** telemetry + failures + validator outcome + decision.
 - **Skill Update Candidate:** prompt/tool/routing change proposal.
 - **Promotion Criteria Check:** baseline comparison + gate outcome.
 
 Cycle:
-`telemetry -> failure analysis -> prompt update -> A/B -> validation -> rollout`
+
+- `telemetry -> failure analysis -> prompt update`
+- `A/B -> validation -> rollout`
 
 ## Minimum Validation Gates
 
@@ -89,5 +97,6 @@ Cycle:
    - Re-run browser smoke and inspect role-based responses.
 
 Related runbooks:
+
 - [VPS Agent Outputs](./runbook-vps-agent-outputs.md)
 - [Sprint Governance](./SPRINT_GOVERNANCE.md)
