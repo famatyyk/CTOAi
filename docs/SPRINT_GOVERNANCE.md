@@ -56,6 +56,30 @@ Sprint cannot be marked CLOSED until:
 3. Final report shows 100% progress
 4. Sprint documentation updated with closure timestamp
 
+### Wave Quality Gates (Training-Aware)
+
+Gate intent:
+- **Wave-1:** automated quality and evidence completeness
+- **Wave-2:** manual release approval with accountability
+
+**Wave-1 PASS requires:**
+1. Validator/test chain passes or has documented non-blocking exception
+2. No critical regression flags
+3. Evidence pack is complete:
+   - output artifacts,
+   - validator/test results,
+   - baseline delta (quality/cost/latency),
+   - risk note + fallback path
+
+**Wave-2 PASS requires:**
+1. Owner/reviewer sign-off on release fitness
+2. Decision log record with timestamp and rationale
+3. Confirmation that promotion criteria are met for any skill update
+
+Canonical definitions:
+- [Enhanced Agent/Prompt Definitive](./AGENT_PROMPT_DEFINITIVE.md)
+- [Agent Training Masterplan](./AGENT_TRAINING_MASTERPLAN.md)
+
 ## Backlog Rollover Procedure
 
 **Pre-Rollover:**
@@ -134,6 +158,8 @@ Agents are automatically invoked when tasks transition to IN_PROGRESS:
 - Timeline (Start/End/Duration)
 - Agent execution summary
 - Blockers and escalations (if any)
+- Wave-1/Wave-2 pass ratio
+- Training-event and promotion summary
 
 ## Escalation & Issue Management
 
@@ -163,10 +189,29 @@ Agents are automatically invoked when tasks transition to IN_PROGRESS:
 - Any escalations or blockers? (document and decide)
 ```
 
+## Documentation Governance Checklist
+
+### Definition of Ready (DoR)
+- Terms align with the canonical glossary (Agent, Prompt Forge, Tool Advisor, Wave-1/Wave-2)
+- Target KPI and promotion criteria are explicit
+- Required evidence sources are identified
+
+### Definition of Done (DoD)
+- Linked docs are synchronized and non-conflicting
+- Gate impact is documented (Wave-1/Wave-2)
+- Validation checklist links are current
+
+### Sprint Audit Cadence
+- Run one documentation consistency audit at sprint closure
+- Remove stale/duplicated instructions in favor of canonical links
+- Record audit result in sprint report/release pack
+
 ## References
 
 - [SPRINT-007.md](SPRINT-007.md) — Current sprint plan
 - [runner.py](runner/runner.py) — Task orchestration engine
 - [agents.py](runner/agents.py) — AI agent executors
 - [README.md](README.md) — Project roadmap
-
+- [Enhanced Agent/Prompt Definitive](./AGENT_PROMPT_DEFINITIVE.md)
+- [Agent Training Masterplan](./AGENT_TRAINING_MASTERPLAN.md)
+- [Validation Checklist](./VALIDATION_CHECKLIST.md)

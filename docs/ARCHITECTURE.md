@@ -260,6 +260,25 @@ You prioritize correctness, performance, and maintainability.
 
 ---
 
+## Canonical Execution & Learning Flow
+
+This architecture follows one canonical operating chain:
+
+1. **Agent** receives task context and expected output contract.
+2. **Prompt Engine (BRAVE(R))** renders execution prompt using current baseline template.
+3. **Scoring & Tool Selection** ranks and constrains tools under cost/risk/policy signals.
+4. **Governance** evaluates produced evidence through Wave-1 (automated) and Wave-2 (manual) gates.
+
+Real-time learning loop across these layers:
+`telemetry -> failure analysis -> prompt/skill update -> A/B -> validation -> rollout`
+
+Definitions and quality expectations are standardized in:
+- [Enhanced Agent/Prompt Definitive](./AGENT_PROMPT_DEFINITIVE.md)
+- [Agent Training Masterplan](./AGENT_TRAINING_MASTERPLAN.md)
+- [Sprint Governance](./SPRINT_GOVERNANCE.md)
+
+---
+
 ## Data Flow: Task Execution
 
 ### End-to-End Example: CTOA-001 Code Review
@@ -634,9 +653,13 @@ systemctl status ctoa-runner.timer
 
 ## See Also
 
+- [Enhanced Agent/Prompt Definitive](./AGENT_PROMPT_DEFINITIVE.md)
 - [Runner Implementation](../runner/runner.py)
 - [Agent Definitions](../agents/definitions.py)
 - [BRAVE(R) Templates](../prompts/braver_templates.py)
 - [Policy Pack Rules](../scoring/policy_pack.py)
+- [Agent Training Masterplan](./AGENT_TRAINING_MASTERPLAN.md)
+- [Real-Time Module Creation](./REALTIME_MODULE_CREATION.md)
+- [Sprint Governance](./SPRINT_GOVERNANCE.md)
 - [VPS Deployment](../deploy/vps/SETUP.md)
 - [Local Development](./LOCAL_SETUP.md)

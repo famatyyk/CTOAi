@@ -1,120 +1,96 @@
 # CTOA Agent Training Masterplan
 
-## Cel
-Wzmocnic pipeline: zwiad internetowy -> ingest do DB -> generacja -> walidacja -> feedback do promptow.
+This masterplan defines the operational training and skilling rhythm for the 10-agent system.
 
-## Agent 1: Scout
-- Misja: wykrywanie endpointow i sygnatur API serwerow.
-- Trening:
-  - rozszerzanie listy probe paths per profil silnika,
-  - lepsze rozpoznanie fallback engine,
-  - retry/backoff i timeout tuning.
-- KPI:
-  - endpoint discovery rate,
-  - false-positive rate,
-  - median scout time.
+Primary source of truth:
+- [Enhanced Agent/Prompt Definitive](./AGENT_PROMPT_DEFINITIVE.md)
 
-## Agent 2: Ingest
-- Misja: pobranie i normalizacja game_data.
-- Trening:
-  - mapowanie data_type na stabilny schema contract,
-  - deduplikacja i priorytet zrodel,
-  - degradacja kontrolowana przy partial data.
-- KPI:
-  - data completeness per server,
-  - schema validity,
-  - ingest success ratio.
+## Goal
 
-## Agent 3: Brain
-- Misja: planowanie taskow i priorytetow templatingu.
-- Trening:
-  - adaptacyjne kolejkowanie wg danych i jakosci,
-  - dynamiczne limity dzienne,
-  - anty-duplikacja taskow.
-- KPI:
-  - useful queue ratio,
-  - queue-to-generated conversion,
-  - waste (queued but obsolete).
+Strengthen the end-to-end pipeline:
+`scout -> ingest -> planning -> generation -> validation -> governance`
+with a closed real-time learning loop and explicit promotion gates.
 
-## Agent 4: Generator
-- Misja: render modulow Lua/Python.
-- Trening:
-  - twardsze output contracts,
-  - edge-case snippets i defensive coding,
-  - contextual generation z game_data.
-- KPI:
-  - first-pass generation success,
-  - syntax pass rate,
-  - avg lines per validated module.
+## Real-Time Training & Skilling Cycle
 
-## Agent 5: Validator
-- Misja: quality gate i scoring.
-- Trening:
-  - rozszerzenie testow semantycznych,
-  - mocniejszy scoring za stabilnosc runtime,
-  - wykrywanie anti-patternow.
-- KPI:
-  - validation precision,
-  - regression catch rate,
-  - score stability over time.
+`telemetry -> failure analysis -> prompt update -> A/B -> validation -> rollout`
 
-## Agent 6: Publisher
-- Misja: release gate i pakiety launcher day.
-- Trening:
-  - lepszy release-risk scoring,
-  - quality-aware packaging,
-  - rollback metadata i audit trail.
-- KPI:
-  - release success ratio,
-  - post-release incident rate,
-  - rollback readiness.
+- **Training Event:** one complete cycle from telemetry capture to validated decision.
+- **Skill Update:** controlled change to prompts, scoring/routing, or agent execution behavior.
+- **Promotion Criteria:** minimum threshold to move a candidate update into baseline.
 
-## Agent 7: Prompt Forge (trener promptow)
-- Misja: tuning promptow na bazie telemetry i wynikow walidacji.
-- Trening:
-  - A/B prompt variants,
-  - feedback loop z failed_modules/test_log,
-  - token-cost vs quality optimizer.
-- KPI:
-  - quality lift po iteracji,
-  - token efficiency,
-  - prompt drift control.
+## Operating Cadence
 
-## Agent 8: Tool Advisor
-- Misja: dobieranie narzedzi/modeli do typu zadania.
-- Trening:
-  - rankingi per task class,
-  - SLA-aware routing,
-  - privacy/cost constraints.
-- KPI:
-  - tool win-rate,
-  - cost per successful task,
-  - latency per task.
+1. Scout and ingest refresh: every **30-60 min**
+2. Prompt/skill tuning window: every **6h**
+3. KPI trend review: **daily**
+4. Hard promotion gate: **weekly** (only with stable quality trend and no critical regressions)
 
-## Agent 9: Orchestrator
-- Misja: synchronizacja calosci i odporność na awarie.
-- Trening:
-  - policy-based retries,
-  - concurrency windows,
-  - graceful degradation.
-- KPI:
-  - pipeline completion rate,
-  - mean cycle time,
-  - error containment index.
+## Agent-by-Agent Focus
 
-## Agent 10: Governance/Queen
-- Misja: decyzje GO/NO-GO i polityki.
-- Trening:
-  - risk scoring i priorytetyzacja,
-  - audit discipline,
-  - explicit escalation matrix.
-- KPI:
-  - decision accuracy,
-  - policy compliance,
-  - incident escalation time.
+### 1) Scout
+- Mission: discover endpoints and target signals.
+- Training focus: probe-path coverage, fallback detection, retry/backoff tuning.
 
-## Rytm operacyjny
-1. Zwiad: co 30-60 min seed + scout.
-2. Trening promptow: co 6h na podstawie intel report.
-3. Review KPI: daily.
-4. Hard gate: weekly, tylko po trendzie quality > 90.
+### 2) Ingest
+- Mission: fetch and normalize source data.
+- Training focus: schema contract stability, dedup/prioritization, partial-data degradation.
+
+### 3) Brain
+- Mission: queue and priority planning.
+- Training focus: adaptive ordering, dynamic limits, anti-duplication.
+
+### 4) Generator
+- Mission: generate Lua/Python modules with output contracts.
+- Training focus: edge-case handling, defensive generation, contextual rendering.
+
+### 5) Validator
+- Mission: quality gate and regression detection.
+- Training focus: semantic checks, runtime stability scoring, anti-pattern detection.
+
+### 6) Publisher
+- Mission: release packaging and rollback readiness.
+- Training focus: release-risk scoring, quality-aware packaging, audit metadata.
+
+### 7) Prompt Forge
+- Mission: optimize BRAVE(R) prompts from outcomes and failures.
+- Training focus: A/B variants, failed-module feedback loops, token-quality optimization.
+
+### 8) Tool Advisor
+- Mission: route tool/model choices by task class.
+- Training focus: ranked routing policies, SLA-awareness, privacy/cost constraints.
+
+### 9) Orchestrator
+- Mission: coordinate execution and error containment.
+- Training focus: policy retries, concurrency windows, graceful degradation.
+
+### 10) Governance/Queen
+- Mission: GO/NO-GO and policy compliance decisions.
+- Training focus: risk scoring, escalation discipline, evidence completeness.
+
+## KPI Template (Required for Every Agent)
+
+For each training event, report at least:
+1. **Outcome KPI** (success ratio for mission objective)
+2. **Quality KPI** (regression/false-positive/error signal)
+3. **Efficiency KPI** (latency and/or cost per successful run)
+4. **Stability KPI** (trend consistency across review window)
+
+## Promotion Criteria (Baseline Admission)
+
+A skill update can be promoted only when:
+1. Quality trend is stable or improving vs baseline.
+2. No critical regressions are detected by validators.
+3. Evidence pack is complete (artifacts, validation, delta, risk note, decision log).
+4. Governance confirms Wave-1 PASS and Wave-2 sign-off.
+
+## Evidence Sources
+
+- Execution telemetry and run summaries
+- Validator outputs and test results
+- A/B comparison report
+- Governance decision log
+
+Cross-reference for release-gate behavior:
+- [Sprint Governance](./SPRINT_GOVERNANCE.md)
+- [Validation Checklist](./VALIDATION_CHECKLIST.md)

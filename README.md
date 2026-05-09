@@ -87,6 +87,7 @@ Recent approved milestones:
 
 ## Documentation Index
 
+- [Enhanced Agent/Prompt Definitive](docs/AGENT_PROMPT_DEFINITIVE.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Core Guardrails](docs/CORE_GUARDRAILS.md)
 - [Local Setup](docs/LOCAL_SETUP.md)
