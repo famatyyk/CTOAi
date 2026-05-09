@@ -19,12 +19,10 @@ from typing import Any, Dict, Optional
 # executor.py lives in runner/agents/, so parents[2] points to repo root.
 ROOT = Path(__file__).resolve().parents[2]
 
-try:
-    from .routing import select_track
-except ImportError as ex:
-    if __package__ or "attempted relative import" not in str(ex):
-        raise
+if __name__ == "__main__":
     from routing import select_track
+else:
+    from .routing import select_track
 
 
 def now_iso() -> str:

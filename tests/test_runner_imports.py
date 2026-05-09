@@ -1,5 +1,6 @@
 import subprocess
 import sys
+import textwrap
 
 
 def test_runner_help_works_as_script_and_module(project_root):
@@ -23,11 +24,15 @@ def test_runner_help_works_as_script_and_module(project_root):
 
 def test_executor_import_with_runner_on_path(project_root):
     runner_dir = project_root / "runner"
-    script = (
-        "import sys; "
-        f"sys.path.insert(0, {str(runner_dir)!r}); "
-        "from agents.executor import execute_agent_for_task; "
-        "print(execute_agent_for_task.__name__)"
+    script = textwrap.dedent(
+        f"""
+        import sys
+
+        sys.path.insert(0, {str(runner_dir)!r})
+        from agents.executor import execute_agent_for_task
+
+        print(execute_agent_for_task.__name__)
+        """
     )
 
     result = subprocess.run(
