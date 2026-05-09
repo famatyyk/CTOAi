@@ -221,7 +221,8 @@ def update_live_issue_sla_section(base: str, token: str, live_issue_number: int,
 
     live_issue = github_api("GET", f"{base}/issues/{live_issue_number}", token)
     existing_body = str(live_issue.get("body", "")).rstrip()
-    body_without_sla = section_pattern.sub("\n", existing_body).rstrip()
+    body_without_sla = section_pattern.sub("", existing_body)
+    body_without_sla = re.sub(r"\n{3,}", "\n\n", body_without_sla).rstrip()
 
     new_body = body_without_sla
     if body:

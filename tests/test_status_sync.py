@@ -6,7 +6,7 @@ def test_update_live_issue_sla_section_appends_and_patches(monkeypatch):
 
     def fake_github_api(method, url, token, payload=None):
         if method == "GET":
-            return {"body": "# CTOA Live Status\n\n- Generated: now\n"}
+            return {"body": "# CTOA Live Status\n\n- Generated: now"}
         patched_payloads.append(payload)
         return {"number": 1}
 

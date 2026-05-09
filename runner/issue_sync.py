@@ -108,7 +108,7 @@ def split_primary_and_duplicates(
         valid_issues = [i for i in issues if isinstance(i.get("number"), int)]
         if not valid_issues:
             continue
-        sorted_issues = sorted(valid_issues, key=lambda i: int(i["number"]))
+        sorted_issues = sorted(valid_issues, key=lambda i: i["number"])
         primary_by_task_id[task_id] = sorted_issues[0]
         duplicates.extend(sorted_issues[1:])
 
