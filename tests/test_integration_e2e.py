@@ -17,9 +17,10 @@ import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
 
-import cv2
-import numpy as np
 import pytest
+
+cv2 = pytest.importorskip("cv2", reason="OpenCV is not installed")
+np = pytest.importorskip("numpy", reason="NumPy is not installed")
 
 # Import all bot modules
 from runner.hybrid_bot.bot_runner import HybridBotRunner

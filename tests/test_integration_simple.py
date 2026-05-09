@@ -12,8 +12,9 @@ import logging
 import tempfile
 from pathlib import Path
 
-import numpy as np
 import pytest
+
+np = pytest.importorskip("numpy", reason="NumPy is not installed")
 
 from runner.hybrid_bot.command_executor import CommandExecutor
 from runner.hybrid_bot.screenshot_provider import ScreenshotProvider
