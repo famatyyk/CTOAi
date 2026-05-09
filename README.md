@@ -1,18 +1,21 @@
 # CTOA AI Toolkit
 
-10-agent AI operating system for autonomous sprint delivery, BRAVE(R)-driven prompting, tool-advisor scoring, and auditable two-wave approvals.
+10-agent AI operating system for autonomous sprint delivery,
+BRAVE(R)-driven prompting, tool-advisor scoring,
+and auditable two-wave approvals.
 
 ## Command Center
 
 | Signal | Current State |
-|---|---|
+| --- | --- |
 | Baseline | v1.1.1 APPROVED |
 | Release Train | Sprint-028 closed (Wave-1 PASS, Wave-2 RECORDED) |
 | Delivery Mode | STRATEGOS (guarded autonomy) |
 | Validation | `pytest` + sprint validators + CI gate chain |
-| Next Action | Start productization track for configurable public toolkit packaging |
+| Next Action | Kick off productization for public toolkit packaging |
 
 Primary governance sources:
+
 - [Post-GA Candidate](docs/POST_GA_DELIVERY_TRAIN_CANDIDATE.yaml)
 - [Post-GA Baseline](docs/POST_GA_DELIVERY_TRAIN_BASELINE.md)
 - [Roadmap v0.2.0 -> v1.0.0](docs/ROADMAP_V0.2.0_TO_V1.0.0.md)
@@ -20,7 +23,8 @@ Primary governance sources:
 
 ## What This Repo Does
 
-- Orchestrates 10 specialized agents across analysis, generation, validation, and release governance.
+- Orchestrates 10 specialized agents across analysis, generation,
+  validation, and release governance.
 - Applies BRAVE(R) prompt templates for deterministic, policy-aware execution.
 - Scores tool choices using relevance/cost/risk signals before action.
 - Enforces release progression with explicit evidence and wave gates.
@@ -28,27 +32,34 @@ Primary governance sources:
 
 ## Active Product Portfolio
 
-- CTOA Control Plane: [mobile_console](mobile_console) + [scripts/ops/ctoa-vps.ps1](scripts/ops/ctoa-vps.ps1)
-- CTOA Agent Execution Engine: [runner](runner) + [agents](agents) + [prompts](prompts)
-- CTOA Release Governance: [workflows](workflows) + [policies](policies) + [runtime/experiments](runtime/experiments)
+- CTOA Control Plane:
+  [mobile_console](mobile_console) +
+  [scripts/ops/ctoa-vps.ps1](scripts/ops/ctoa-vps.ps1)
+- CTOA Agent Execution Engine:
+  [runner](runner) + [agents](agents) + [prompts](prompts)
+- CTOA Release Governance:
+  [workflows](workflows) + [policies](policies) +
+  [runtime/experiments](runtime/experiments)
 
 Product map and ownership list:
+
 - [docs/PRODUCT_PORTFOLIO.md](docs/PRODUCT_PORTFOLIO.md)
 
 Repository hygiene and publication policy:
+
 - [docs/REPO_HYGIENE_POLICY.md](docs/REPO_HYGIENE_POLICY.md)
-- [docs/PRODUCT_PUBLIC_PRIVATE_ARCHITECTURE.md](docs/PRODUCT_PUBLIC_PRIVATE_ARCHITECTURE.md)
+- [Public/Private Architecture](docs/PRODUCT_PUBLIC_PRIVATE_ARCHITECTURE.md)
 
 ## Architecture At A Glance
 
-| Area | Key Path | Responsibility |
-|---|---|---|
-| Agent definitions | [agents/definitions.py](agents/definitions.py) | Agent role model and capabilities |
-| Prompt engine | [prompts/braver_templates.py](prompts/braver_templates.py) | BRAVE(R) decision templates |
-| Tool scoring | [scoring](scoring) | Advisor logic and scoring rules |
-| Runtime execution | [runner](runner) | Execution, checks, and orchestration |
-| Governance policy | [policies](policies) | CI gate and release policy contracts |
-| Workflow specs | [workflows](workflows) | Sprint backlog and flow manifests |
+| Area | Path | Responsibility |
+| --- | --- | --- |
+| Agent definitions | `agents/definitions.py` | Role model and capabilities |
+| Prompt engine | `prompts/braver_templates.py` | BRAVE(R) templates |
+| Tool scoring | `scoring/` | Advisor logic and scoring rules |
+| Runtime execution | `runner/` | Execution, checks, orchestration |
+| Governance policy | `policies/` | CI gate and release contracts |
+| Workflow specs | `workflows/` | Sprint backlog and flow manifests |
 
 ## Operations
 
@@ -62,6 +73,7 @@ python scripts/ops/sprint023_validate.py
 ```
 
 VS Code task shortcuts available in this workspace:
+
 - `CTOA: Bootstrap Product Config`
 - `CTOA: Check Update Gate`
 - `CTOA: Run All Tests`
@@ -78,6 +90,7 @@ Every sprint follows a two-wave approval model:
 3. Baseline promotion: version moves only after Wave-2 record.
 
 Recent approved milestones:
+
 - v1.1.1 (Sprint-028)
 - v1.1.0 (Sprint-027)
 - v1.0.4 (Sprint-021)

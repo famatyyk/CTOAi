@@ -16,11 +16,16 @@ from __future__ import annotations
 import json
 import logging
 from dataclasses import dataclass, asdict
-from datetime import datetime, timedelta
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
 log = logging.getLogger("hybrid_bot.metrics")
+
+
+def _utcnow() -> datetime:
+    """Return timezone-aware UTC datetime."""
+    return datetime.now(timezone.utc)
 
 
 @dataclass
@@ -105,14 +110,14 @@ class MetricsCollector:
         self.disable_file_output = disable_file_output
         
         # Session tracking
-        self.session_id = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+        self.session_id = _utcnow().strftime("%Y%m%d_%H%M%S")
         self.metrics_file: Optional[Path] = None
         if not disable_file_output:
             self.metrics_file = self.output_dir / f"metrics_{self.session_id}.jsonl"
         
         # In-memory snapshots
         self.snapshots: list[MetricsSnapshot] = []
-        self.last_snapshot_time = datetime.utcnow()
+        self.last_snapshot_time = _utcnow()
     
     # ─── Metric Collection API ────────────────────────────────────────────
     
@@ -143,7 +148,7 @@ class MetricsCollector:
         supplies_per_hour = supplies_cost_gold / duration_hours if duration_hours > 0 else 0
         
         snapshot = MetricsSnapshot(
-            timestamp=datetime.utcnow().isoformat(),
+            timestamp=_utcnow().isoformat(),
             location=location,
             duration_seconds=duration_seconds,
             xp_gained=xp_gained,
@@ -162,7 +167,7 @@ class MetricsCollector:
         
         # Store in memory
         self.snapshots.append(snapshot)
-        self.last_snapshot_time = datetime.utcnow()
+        self.last_snapshot_time = _utcnow()
         
         # Write to file
         if self.metrics_file and not self.disable_file_output:
