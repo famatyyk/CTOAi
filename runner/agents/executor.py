@@ -20,9 +20,12 @@ from typing import Any, Dict, Optional
 ROOT = Path(__file__).resolve().parents[2]
 
 try:
-    from runner.agents.routing import select_track
-except ModuleNotFoundError:
-    from routing import select_track
+    from .routing import select_track
+except ImportError:
+    if __name__ == "__main__":
+        from routing import select_track
+    else:
+        raise
 
 
 def now_iso() -> str:

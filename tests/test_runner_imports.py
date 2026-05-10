@@ -1,0 +1,50 @@
+import subprocess
+import sys
+import textwrap
+
+
+def test_runner_help_works_as_script_and_module(project_root):
+    commands = [
+        [sys.executable, "runner/runner.py", "--help"],
+        [sys.executable, "-m", "runner.runner", "--help"],
+    ]
+
+    for command in commands:
+        result = subprocess.run(
+            command,
+            cwd=project_root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+        assert result.returncode == 0, result.stderr
+        assert "CTOA VPS runner" in result.stdout
+
+
+def test_executor_import_with_runner_on_path(project_root):
+    runner_dir = project_root / "runner"
+    script = textwrap.dedent(
+        f"""
+        import inspect
+        import sys
+
+        sys.path.insert(0, {str(runner_dir)!r})
+        from agents.executor import execute_agent_for_task
+
+        print(execute_agent_for_task.__name__)
+        print(list(inspect.signature(execute_agent_for_task).parameters))
+        """
+    )
+
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        cwd=project_root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    stdout_lines = result.stdout.strip().splitlines()
+    assert stdout_lines == ["execute_agent_for_task", "['task']"]

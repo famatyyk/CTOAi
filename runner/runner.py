@@ -13,10 +13,10 @@ import yaml
 
 # Import AI agent executor via package-native path with script-context fallback.
 try:
-    from runner.agents import execute_agent_for_task
+    from runner.agents.executor import execute_agent_for_task
     from runner.pipeline.scheduler import build_new_task_candidates, count_active_tasks
 except ModuleNotFoundError:
-    from agents import execute_agent_for_task
+    from agents.executor import execute_agent_for_task
     from pipeline.scheduler import build_new_task_candidates, count_active_tasks
 
 ROOT = Path(__file__).resolve().parent.parent
