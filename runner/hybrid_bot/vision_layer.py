@@ -48,14 +48,18 @@ class HealthState:
 
 
 @dataclass
-class TargetInfo:
-    """Detected monster from creature sprite template matching."""
+class Creature:
+    """Detected creature from sprite template matching."""
     name: str
     x: int
     y: int
-    distance: int  # in SQMs
-    is_engaged: bool  # Red/pink outline in target window
-    confidence: float  # Template match score
+    distance: int = 0  # in SQMs
+    is_engaged: bool = False  # Red/pink outline in target window
+    confidence: float = 0.0  # Template match score
+
+
+# Backward compatibility alias (existing tests/modules may still import TargetInfo)
+TargetInfo = Creature
 
 
 class VisionLayer:
@@ -223,7 +227,7 @@ class VisionLayer:
         self, 
         game_screen: np.ndarray, 
         creature_db: dict[str, np.ndarray] | None = None
-    ) -> list[TargetInfo]:
+    ) -> list[Creature]:
         """
         Target Algorithm: Template match creature sprites.
         
@@ -239,7 +243,7 @@ class VisionLayer:
         if creature_db is None:
             creature_db = self.creature_templates
         
-        detected: list[TargetInfo] = []
+        detected: list[Creature] = []
         
         for creature_name, creature_template in creature_db.items():
             try:
@@ -259,7 +263,7 @@ class VisionLayer:
                     screen_h, screen_w = game_screen.shape[:2]
                     distance = int(((screen_h // 2 - center_y) ** 2 + (screen_w // 2 - center_x) ** 2) ** 0.5 / 32)
                     
-                    target = TargetInfo(
+                    target = Creature(
                         name=creature_name,
                         x=center_x,
                         y=center_y,

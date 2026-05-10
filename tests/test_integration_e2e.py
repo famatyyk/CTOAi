@@ -19,10 +19,8 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-pytest.importorskip("cv2", reason="OpenCV is required for e2e integration tests")
-pytest.importorskip("numpy", reason="NumPy is required for e2e integration tests")
-import cv2
-import numpy as np
+cv2 = pytest.importorskip("cv2", reason="OpenCV is not installed")
+np = pytest.importorskip("numpy", reason="NumPy is not installed")
 
 # Import all bot modules
 from runner.hybrid_bot.bot_runner import HybridBotRunner
@@ -32,7 +30,7 @@ from runner.hybrid_bot.prompt_logic import Action, GameState, PromptLogic
 from runner.hybrid_bot.screenshot_provider import ScreenshotProvider
 from runner.hybrid_bot.state_manager import PlayerState, StateManager
 from runner.hybrid_bot.template_library import Template, TemplateLibrary
-from runner.hybrid_bot.vision_layer import VisionLayer
+from runner.hybrid_bot.vision_layer import Creature, VisionLayer
 
 log = logging.getLogger("test_integration")
 
@@ -128,12 +126,14 @@ class TestHybridBotE2E:
         # STEP 2: Vision detection
         # In real scenario, this would detect creatures in the screenshot
         detected_creatures = [
-            type('Creature', (), {
-                'name': 'wasp',
-                'x': 400,
-                'y': 300,
-                'confidence': 0.85
-            })()
+            Creature(
+                name="wasp",
+                x=400,
+                y=300,
+                distance=5,
+                is_engaged=True,
+                confidence=0.85,
+            )
         ]
         
         # STEP 3: Update state with detections
@@ -150,8 +150,8 @@ class TestHybridBotE2E:
                 name=detected_creatures[0].name,
                 x=detected_creatures[0].x,
                 y=detected_creatures[0].y,
-                distance=5,
-                is_engaged=True,
+                distance=detected_creatures[0].distance,
+                is_engaged=detected_creatures[0].is_engaged,
             )
         
         # STEP 4: Create game state for decision

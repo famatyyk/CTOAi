@@ -14,8 +14,7 @@ from pathlib import Path
 
 import pytest
 
-pytest.importorskip("numpy", reason="NumPy is required for integration tests")
-import numpy as np
+np = pytest.importorskip("numpy", reason="NumPy is not installed")
 
 from runner.hybrid_bot.command_executor import CommandExecutor
 from runner.hybrid_bot.screenshot_provider import ScreenshotProvider

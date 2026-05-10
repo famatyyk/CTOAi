@@ -76,8 +76,10 @@ All notable changes to this project will be documented in this file.
 - **Mandatory bootstrap flow**: `ctoa_product_bootstrap.py` creates ignored local JSON config and SQLite state for customer-specific setup
 - **Mandatory update gate**: `ctoa_update_gate.py` blocks launch until bootstrap exists and local version/schema match the tracked product manifest
 - **Product manifest + config template**: added tracked public manifest and local config template for customer bootstrap flows
+- **Vision typing contract hardening**: `runner/hybrid_bot/vision_layer.py` now declares explicit `Creature` model (`name`, `x`, `y`) and returns `list[Creature]` from `detect_creatures_from_sprites()`; backward compatibility kept via `TargetInfo = Creature`; `tests/test_integration_e2e.py` updated to use typed `Creature` fixtures instead of dynamic runtime class creation
 
 ### Security
+
 - **SSH Key Rotation (2026-03-12)**: Rotated ed25519 SSH key for VPS access
   - Old key removed from `/root/.ssh/authorized_keys` on VPS
   - New key generated locally at `~/.ssh/ctoa_vps_ed25519`
@@ -110,6 +112,7 @@ All notable changes to this project will be documented in this file.
 ## [0.1.0] - 2026-03-12
 
 ### Initial Release
+
 - CTOA AI Toolkit scaffold with 10-agent organization
 - BRAVE(R) prompt engine framework
 - Tool advisor scoring system
