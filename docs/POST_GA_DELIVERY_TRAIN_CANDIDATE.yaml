@@ -1,13 +1,15 @@
 version: 1
-status: candidate
+status: released
 release_train: post-ga
-candidate_tag: v1.13.0-rc1
-baseline_reference: v1.1.0-approved
+candidate_tag: v1.13.0
+baseline_reference: v1.13.0
 source_of_truth:
   - docs/POST_GA_DELIVERY_TRAIN_BASELINE.md
   - docs/ROADMAP_V0.2.0_TO_V1.0.0.md
 gates:
   wave_1: automated_checks_pass
   wave_2: strategos_manual_signoff
+released_at: "2026-05-10"
 notes:
   - Generated in Sprint-041 to restore README link integrity and governance traceability.
+  - v1.13.0 released on 2026-05-10 — Sprint-040 closed, Sprint-041 (Track C) initiated.
