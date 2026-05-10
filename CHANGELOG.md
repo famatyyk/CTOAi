@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.13.0] - 2026-05-10 (Sprint-040: Continuous Quality + Delivery + Governance)
+
+### Added
+- **Track C Productization plan** (`docs/PRODUCTIZATION_TRACK_C.md`): canonical reference
+  covering package tiering (Core/Pro/Studio), public/private surface hygiene rules,
+  operator adoption steps, and release cadence.
+- **Sprint-041 backlog** (`workflows/backlog-sprint-041.yaml`): Track C delivery items
+  CTOA-203..207 — tiering validation, surface hygiene, operator UX docs, packaging dry-run.
+- **Sprint-040 history doc** (`docs/history/sprints/SPRINT-040.md`): closure record.
+- **Release pack v1.13.0** (`runtime/experiments/sprint-040/CTOA-202.md`): Wave-1 and
+  Wave-2 gates recorded, baseline promoted.
+
+### Changed
+- `docs/POST_GA_DELIVERY_TRAIN_BASELINE.md`: baseline tag promoted to `v1.13.0`,
+  active sprint updated to Sprint-041.
+- `docs/POST_GA_DELIVERY_TRAIN_CANDIDATE.yaml`: status promoted from `candidate` to
+  `released`, candidate tag finalized as `v1.13.0`.
+- `workflows/backlog-sprint-040.yaml`: status set to `CLOSED`, all items `RELEASED`.
+
+### Validation
+- Test suite: `python -m pytest tests/ --ignore=tests/e2e -q` → 106 passed, 6 skipped
+- Core integrity: `python scripts/ops/core_guard.py --check` → PASSED
+- Wave-1 (automated): PASS | Wave-2 (STRATEGOS manual): PASS
+
 ## [1.2.0] - 2026-03-25 (Sprint-029: Training Hardening + Quality Gate + VPS Autonomy)
 
 ### Added

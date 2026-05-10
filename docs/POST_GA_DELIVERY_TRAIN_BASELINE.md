@@ -3,7 +3,7 @@
 Canonical baseline for post-GA release governance.
 
 ## Baseline
-- Baseline tag: v1.1.0-approved
+- Baseline tag: v1.13.0
 - Active sprint: Sprint-041
 - Governance mode: two-wave approvals (Wave-1 automated, Wave-2 manual)
 

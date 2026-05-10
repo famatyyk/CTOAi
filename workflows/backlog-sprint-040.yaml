@@ -1,6 +1,6 @@
 sprint: '040'
 theme: Continuous Quality + Delivery + Governance
-status: PLANNING
+status: CLOSED
 source_baseline: v1.1.0-approved
 proposed_release: v1.13.0
 items:
@@ -8,32 +8,32 @@ items:
   title: Sprint-040 quality gate expansion
   type: quality
   priority: P1
-  status: READY_FOR_WAVE_1
+  status: RELEASED
   description: Expand API and regression quality gates for current sprint scope.
 - id: CTOA-199
   title: Sprint-040 nightly trend automation
   type: automation
   priority: P1
-  status: READY_FOR_WAVE_1
+  status: RELEASED
   description: Extend nightly trend evidence and verify drift visibility.
 - id: CTOA-200
   title: Sprint-040 dashboard ergonomics pass
   type: ux
   priority: P2
-  status: READY_FOR_WAVE_1
+  status: RELEASED
   description: Improve operator dashboard readability in healthy and degraded modes.
 - id: CTOA-201
   title: Sprint-040 CI evidence hardening
   type: governance
   priority: P2
-  status: READY_FOR_WAVE_1
+  status: RELEASED
   description: Ensure validator and nightly evidence remain fully discoverable in
     CI.
 - id: CTOA-202
   title: Release pack v1.13.0
   type: governance
   priority: P3
-  status: PENDING_WAVE_1
+  status: RELEASED
   description: Consolidate sprint deliverables and release pack approvals.
 slo_targets:
   success_rate_24h_threshold: 0.93
