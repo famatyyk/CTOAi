@@ -19,8 +19,10 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-cv2 = pytest.importorskip("cv2", reason="OpenCV is required for e2e integration tests")
-np = pytest.importorskip("numpy", reason="NumPy is required for e2e integration tests")
+pytest.importorskip("cv2", reason="OpenCV is required for e2e integration tests")
+pytest.importorskip("numpy", reason="NumPy is required for e2e integration tests")
+import cv2
+import numpy as np
 
 # Import all bot modules
 from runner.hybrid_bot.bot_runner import HybridBotRunner
