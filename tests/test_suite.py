@@ -5,7 +5,7 @@ Tests core functionality for automation engine
 
 import unittest
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 import sys
 
@@ -65,7 +65,7 @@ class TestReporterBasics(unittest.TestCase):
     
     def test_timestamp_format(self):
         """Test ISO 8601 timestamp format"""
-        ts = datetime.utcnow().isoformat() + "Z"
+        ts = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
         parts = ts.split("T")
         self.assertEqual(len(parts), 2)
         self.assertRegex(ts, r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}')

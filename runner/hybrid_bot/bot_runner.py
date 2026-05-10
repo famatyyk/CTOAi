@@ -18,7 +18,7 @@ import asyncio
 import logging
 import time
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional, Callable, Any
 
@@ -29,6 +29,10 @@ from .state_manager import StateManager
 from .metrics import MetricsCollector
 
 log = logging.getLogger("hybrid_bot.runner")
+
+
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 @dataclass
@@ -161,7 +165,7 @@ class HybridBotRunner:
         # Execution state
         self.running = False
         self.pause_until: Optional[datetime] = None
-        self.last_action_time = datetime.utcnow()
+        self.last_action_time = _utcnow()
         self.tick_count = 0
     
     # ─── Main Loop ────────────────────────────────────────────────────────

@@ -1,5 +1,16 @@
 {
   "version": "2.0.0",
+  "windows": {
+    "options": {
+      "shell": {
+        "executable": "cmd.exe",
+        "args": [
+          "/d",
+          "/c"
+        ]
+      }
+    }
+  },
   "tasks": [
     {
       "label": "CTOA: Preflight Mobile Console Env",
@@ -196,7 +207,7 @@
     {
       "label": "CTOA: Launch Pack",
       "type": "shell",
-      "command": ".venv/Scripts/python.exe scripts/ops/ctoa_update_gate.py; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; echo Launching CTOA pack...; if (Test-Path .\\agents\\ctoa-agents.yaml) { echo Agents OK } else { echo Agents missing; exit 1 }; if (Test-Path .\\prompts\\braver-library.yaml) { echo Prompts OK } else { echo Prompts missing; exit 1 }; if (Test-Path .\\.github\\workflows\\ctoa-pipeline.yml) { echo CI Workflow OK } else { echo CI Workflow missing; exit 1 }; echo Launch dry-run PASS",
+      "command": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"& ./.venv/Scripts/python.exe scripts/ops/ctoa_update_gate.py; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; echo Launching CTOA pack...; if (Test-Path .\\agents\\ctoa-agents.yaml) { echo Agents OK } else { echo Agents missing; exit 1 }; if (Test-Path .\\prompts\\braver-library.yaml) { echo Prompts OK } else { echo Prompts missing; exit 1 }; if (Test-Path .\\.github\\workflows\\ctoa-pipeline.yml) { echo CI Workflow OK } else { echo CI Workflow missing; exit 1 }; echo Launch dry-run PASS\"",
       "isBackground": false,
       "presentation": {
         "reveal": "always",
@@ -848,7 +859,7 @@
     {
       "label": "CTOA: Nightly Stability Batch",
       "type": "shell",
-      "command": ".venv/Scripts/python.exe scripts/ops/nightly_stability.py --json-out runtime/ci-artifacts/nightly-stability-$(Get-Date -Format yyyyMMdd).json",
+      "command": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"& ./.venv/Scripts/python.exe scripts/ops/nightly_stability.py --json-out runtime/ci-artifacts/nightly-stability-$(Get-Date -Format yyyyMMdd).json\"",
       "isBackground": false,
       "presentation": {
         "reveal": "always",
