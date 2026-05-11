@@ -238,10 +238,10 @@ Agents are automatically invoked when tasks transition to IN_PROGRESS:
 
 ## References
 
-- [SPRINT-007.md](SPRINT-007.md) — Current sprint plan
-- [runner.py](runner/runner.py) — Task orchestration engine
-- [agents.py](runner/agents.py) — AI agent executors
-- [README.md](README.md) — Project roadmap
+- [SPRINT-007.md](./history/sprints/SPRINT-007.md) — Historical sprint example
+- [runner.py](../runner/runner.py) — Task orchestration engine
+- [orchestrator.py](../runner/agents/orchestrator.py) — Agent orchestration entrypoint
+- [README.md](../README.md) — Project roadmap
 - [Enhanced Agent/Prompt Definitive](./AGENT_PROMPT_DEFINITIVE.md)
 - [Agent Training Masterplan](./AGENT_TRAINING_MASTERPLAN.md)
 - [Validation Checklist](./VALIDATION_CHECKLIST.md)

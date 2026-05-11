@@ -65,7 +65,7 @@ class TestReporterBasics(unittest.TestCase):
     
     def test_timestamp_format(self):
         """Test ISO 8601 timestamp format"""
-        ts = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         parts = ts.split("T")
         self.assertEqual(len(parts), 2)
         self.assertRegex(ts, r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}')
