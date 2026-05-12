@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 import os
 import re
 import shutil
@@ -534,7 +534,7 @@ def health(ctx: dict[str, Any] = Depends(require_operator)) -> dict:
 def auth_login(req: AuthLoginRequest, request: Request, response: Response) -> dict:
     username = _normalize_user(req.username)
 
-    # 1. Try env-based credentials (owner/operator hardcoded — backward compat).
+    # 1. Try env-based credentials (owner/operator hardcoded â€” backward compat).
     creds = _admin_credentials()
     account = creds.get(username)
     matched_role: str | None = None
@@ -603,7 +603,7 @@ def auth_logout(response: Response, ctx: dict[str, Any] = Depends(require_operat
     return {"ok": True}
 
 
-# ── User account management ──────────────────────────────────────────────────
+# â”€â”€ User account management â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @app.post("/api/users/register")
 def register_account(
@@ -958,7 +958,7 @@ def command(req: CommandRequest, request: Request, _: dict[str, Any] = Depends(r
     return result
 
 
-# ── Server registration ──────────────────────────────────────────────────────
+# â”€â”€ Server registration â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def _validate_url(url: str) -> str:
     """Normalise and basic-validate a game server URL."""
@@ -990,7 +990,7 @@ def _db_exec(sql: str, params: tuple = (), timeout: int = 15) -> dict:
     return _run(cmd, timeout=timeout)
 
 
-# ── Bcrypt account helpers ───────────────────────────────────────────────────
+# â”€â”€ Bcrypt account helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def _hash_password(plaintext: str) -> str:
     return bcrypt.hashpw(plaintext.encode(), bcrypt.gensalt(rounds=12)).decode()
@@ -1541,6 +1541,78 @@ _DASHBOARD_STATUS_MESSAGES: dict[str, str] = {
     "error": "Critical error detected \u2014 dashboard data may be incomplete",
 }
 
+_DASHBOARD_STATUS_SEVERITY: dict[str, str] = {
+    "healthy": "info",
+    "degraded": "warning",
+    "error": "critical",
+}
+
+_DASHBOARD_STATUS_ACTIONS: dict[str, list[str]] = {
+    "healthy": [
+        "Monitor SLO trend and keep current rollout cadence.",
+    ],
+    "degraded": [
+        "Review query_diagnostics for affected sections.",
+        "Retry dashboard refresh after validating DB responsiveness.",
+    ],
+    "error": [
+        "Prioritize critical query recovery (servers/modules).",
+        "Validate database health and rerun dashboard query set.",
+    ],
+}
+
+
+def _build_dashboard_status_context(
+    *,
+    status: str,
+    sections: dict[str, dict[str, Any]],
+    errors: dict[str, str],
+) -> dict[str, Any]:
+    degraded_sections = [name for name, payload in sections.items() if payload["code"] != 0]
+    critical_sections = [
+        name
+        for name, payload in sections.items()
+        if payload["critical"] and payload["code"] != 0
+    ]
+
+    message = _DASHBOARD_STATUS_MESSAGES.get(status, status)
+    if status == "healthy":
+        detail = "All dashboard queries returned successfully."
+    elif status == "degraded":
+        if degraded_sections:
+            detail = (
+                "Some non-critical sections are degraded: "
+                + ", ".join(degraded_sections)
+                + ". Core sections remain available."
+            )
+        else:
+            detail = "Some non-critical dashboard sections are degraded."
+    else:
+        if critical_sections:
+            detail = (
+                "Critical sections failed: "
+                + ", ".join(critical_sections)
+                + ". Dashboard data may be incomplete."
+            )
+        else:
+            detail = "Critical dashboard queries failed. Dashboard data may be incomplete."
+
+    actions = list(_DASHBOARD_STATUS_ACTIONS.get(status, []))
+    if errors and status != "healthy":
+        actions.append("Inspect recent section errors and clear query blockers.")
+
+    error_preview = [f"{name}: {reason}" for name, reason in errors.items() if reason][:3]
+
+    return {
+        "message": message,
+        "detail": detail,
+        "severity": _DASHBOARD_STATUS_SEVERITY.get(status, "warning"),
+        "impacted_sections": degraded_sections,
+        "critical_sections": critical_sections,
+        "recommended_actions": actions,
+        "error_preview": error_preview,
+    }
+
 
 def _iter_manifest_observations(limit_runs: int = 20) -> list[dict[str, Any]]:
     observations: list[dict[str, Any]] = []
@@ -1771,7 +1843,7 @@ def intel_report(_: dict[str, Any] = Depends(require_operator)) -> dict:
             trainer_actions.append("Podnies rygor promptu: edge-cases + negative tests + output contract")
             trainer_actions.append("Zwieksz nacisk na walidowalnosc i deterministyczne API modulow")
         elif avg_q < 92:
-            trainer_actions.append("Dostrajać prompty pod stabilnosc i redukcje TODO/FIXME")
+            trainer_actions.append("DostrajaÄ‡ prompty pod stabilnosc i redukcje TODO/FIXME")
         else:
             trainer_actions.append("Tryb elite: utrzymanie jakosci i optymalizacja kosztu tokenow")
     else:
@@ -2019,7 +2091,7 @@ def latest_generated_modules(
     }
 
 
-# ── Dashboard ────────────────────────────────────────────────────────────────
+# â”€â”€ Dashboard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @app.get("/api/dashboard")
 def dashboard(_: dict[str, Any] = Depends(require_operator)) -> dict:
@@ -2152,6 +2224,12 @@ def dashboard(_: dict[str, Any] = Depends(require_operator)) -> dict:
             "severity": _REASON_CODE_SEVERITY.get(str(dominant_signal.get("code")), "warning"),
         }
 
+    status_context = _build_dashboard_status_context(
+        status=status,
+        sections=sections,
+        errors=errors,
+    )
+
     return {
         "servers": servers_res["rows"],
         "modules": modules_res["rows"],
@@ -2173,7 +2251,8 @@ def dashboard(_: dict[str, Any] = Depends(require_operator)) -> dict:
         "ok": critical_ok,
         "degraded": degraded,
         "status": status,
-        "status_message": _DASHBOARD_STATUS_MESSAGES.get(status, status),
+        "status_message": status_context["message"],
+        "status_context": status_context,
         "errors": errors,
         "query_diagnostics": {
             name: {
@@ -2233,4 +2312,6 @@ def commands_dictionary(_: dict[str, Any] = Depends(require_operator)) -> dict:
         "count": len(commands),
         "commands": commands,
     }
+
+
 
