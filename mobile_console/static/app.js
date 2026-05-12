@@ -1,4 +1,4 @@
-const tokenInput = document.getElementById('token');
+﻿const tokenInput = document.getElementById('token');
 const statusOut = document.getElementById('statusOut');
 const cmdOut = document.getElementById('cmdOut');
 const presetSelect = document.getElementById('presetSelect');
@@ -210,7 +210,7 @@ document.getElementById('runCmd').onclick = async () => {
   }
 };
 
-// ── Tab navigation ────────────────────────────────────────────────────────────
+// â”€â”€ Tab navigation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 document.querySelectorAll('.tab-btn').forEach((btn) => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active'));
@@ -220,7 +220,7 @@ document.querySelectorAll('.tab-btn').forEach((btn) => {
   });
 });
 
-// ── Server registration ───────────────────────────────────────────────────────
+// â”€â”€ Server registration â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 document.getElementById('registerServer').onclick = async () => {
   const url = document.getElementById('serverUrl').value.trim();
   const fb  = document.getElementById('serverFeedback');
@@ -231,10 +231,10 @@ document.getElementById('registerServer').onclick = async () => {
       body: JSON.stringify({ url }),
     });
     fb.className = 'ok';
-    fb.textContent = '✓ Serwer zarejestrowany. Agenci startują… ' + JSON.stringify(data.db || '');
+    fb.textContent = 'âś“ Serwer zarejestrowany. Agenci startujÄ…â€¦ ' + JSON.stringify(data.db || '');
   } catch (e) {
     fb.className = 'error';
-    fb.textContent = '✗ ' + String(e);
+    fb.textContent = 'âś— ' + String(e);
   }
 };
 
@@ -314,7 +314,7 @@ document.getElementById('autoTrainerLatest').onclick = async () => {
   }
 };
 
-// ── Dashboard ─────────────────────────────────────────────────────────────────
+// â”€â”€ Dashboard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function badgeStatus(s) {
   const map = { VALIDATED:'ok', GENERATED:'ok', READY:'ok', INGESTED:'waiting', SCOUTING:'waiting',
                 FAILED:'error', ERROR:'error', QUEUED:'queued', RELEASED:'ok', NEW:'queued' };
@@ -333,7 +333,7 @@ function escapeHtml(value) {
 
 function renderReasonGroup(title, items) {
   if (!Array.isArray(items) || items.length === 0) {
-    return `<div class="trend-empty">Brak sygnałów dla grupy ${escapeHtml(title)}</div>`;
+    return `<div class="trend-empty">Brak sygnaĹ‚Ăłw dla grupy ${escapeHtml(title)}</div>`;
   }
   return items.map((item) => {
     const code = escapeHtml(item.code || 'UNKNOWN');
@@ -350,7 +350,7 @@ function renderReasonGroup(title, items) {
 
 function renderTimeline(items) {
   if (!Array.isArray(items) || items.length === 0) {
-    return '<div class="trend-empty">Brak zdarzeń 24h</div>';
+    return '<div class="trend-empty">Brak zdarzeĹ„ 24h</div>';
   }
   const maxVisible = 8;
   const visible = items.slice(0, maxVisible);
@@ -364,7 +364,7 @@ function renderTimeline(items) {
       <div class="timeline-item timeline-${severity}">
         <div class="timeline-dot"></div>
         <div>
-          <div class="timeline-main">${reasonCode} · ${eventName}</div>
+          <div class="timeline-main">${reasonCode} Â· ${eventName}</div>
           <div class="timeline-meta">${timestamp}</div>
         </div>
       </div>
@@ -372,7 +372,7 @@ function renderTimeline(items) {
   }).join('');
 
   const overflow = hiddenCount > 0
-    ? `<div class="trend-empty">+${hiddenCount} kolejnych zdarzeń w oknie 24h</div>`
+    ? `<div class="trend-empty">+${hiddenCount} kolejnych zdarzeĹ„ w oknie 24h</div>`
     : '';
 
   return rows + overflow;
@@ -389,6 +389,68 @@ function bindTrendToggles(root) {
       panel.hidden = expanded;
     });
   });
+}
+
+function statusClassFromSeverity(severity) {
+  const key = String(severity || '').toLowerCase();
+  if (key === 'critical' || key === 'error') return 'status-critical';
+  if (key === 'warning' || key === 'degraded') return 'status-warning';
+  return 'status-info';
+}
+
+function renderDashboardStatusContext(payload) {
+  const messageEl = document.getElementById('dashStatusMessage');
+  const detailEl = document.getElementById('dashStatusDetail');
+  const impactedEl = document.getElementById('dashStatusImpacted');
+  const actionsEl = document.getElementById('dashStatusActions');
+  const dotEl = document.getElementById('dashStatusDot');
+  const severityEl = document.getElementById('dashStatusSeverity');
+
+  if (!messageEl || !detailEl || !impactedEl || !actionsEl || !dotEl || !severityEl) {
+    return;
+  }
+
+  const context = payload && typeof payload.status_context === 'object' ? payload.status_context : {};
+  const status = String((payload && payload.status) || '').toLowerCase();
+  const severity = String(
+    context.severity || (status === 'error' ? 'critical' : status === 'degraded' ? 'warning' : 'info')
+  ).toLowerCase();
+  const cssClass = statusClassFromSeverity(severity);
+
+  const message = String(context.message || (payload && payload.status_message) || status || 'Brak statusu');
+  const detail = String(context.detail || 'Brak dodatkowego opisu.');
+  const impacted = Array.isArray(context.impacted_sections) ? context.impacted_sections : [];
+  const criticalSections = Array.isArray(context.critical_sections) ? context.critical_sections : [];
+  const actions = Array.isArray(context.recommended_actions) ? context.recommended_actions : [];
+
+  dotEl.className = `dash-status-dot ${cssClass}`;
+  severityEl.className = `dash-status-badge ${cssClass}`;
+  severityEl.textContent = String(severity || 'info').toUpperCase();
+  messageEl.textContent = message;
+  detailEl.textContent = detail;
+
+  if (impacted.length > 0) {
+    impactedEl.innerHTML = impacted
+      .slice(0, 8)
+      .map((name) => {
+        const chipClass = criticalSections.includes(name)
+          ? 'dash-impact-chip-critical'
+          : 'dash-impact-chip-warning';
+        return `<span class="dash-impact-chip ${chipClass}">${escapeHtml(name)}</span>`;
+      })
+      .join('');
+  } else {
+    impactedEl.textContent = 'Brak sekcji.';
+  }
+
+  if (actions.length > 0) {
+    actionsEl.innerHTML = actions
+      .slice(0, 5)
+      .map((action) => `<li>${escapeHtml(action)}</li>`)
+      .join('');
+  } else {
+    actionsEl.innerHTML = '<li>Brak akcji.</li>';
+  }
 }
 
 document.getElementById('refreshDash').onclick = async () => {
@@ -408,7 +470,7 @@ document.getElementById('refreshDash').onclick = async () => {
       document.getElementById('dashModules').textContent = mods;
       document.getElementById('dashPrograms').textContent = progs;
       document.getElementById('dashQuality').textContent = qual.toFixed(1);
-      document.getElementById('dashLauncher').textContent = launched ? '🚀 RELEASED' : '⏳ pending';
+      document.getElementById('dashLauncher').textContent = launched ? 'đźš€ RELEASED' : 'âŹł pending';
       document.getElementById('dashModuleBar').style.width = Math.min(100, mods * 2) + '%';
       document.getElementById('dashProgramBar').style.width = Math.min(100, progs * 20) + '%';
     }
@@ -452,8 +514,8 @@ document.getElementById('refreshDash').onclick = async () => {
       trendSummary.innerHTML =
         `<div class="trend-shell">` +
           `<div class="trend-head">` +
-            `<div><b>Dominujący reason_code:</b> ${dominantLabel}</div>` +
-            `<div class="trend-slo ${successMet ? 'trend-ready' : 'trend-critical'}">SLO 24h: ${(successRate * 100).toFixed(1)}% / target ${(successTarget * 100).toFixed(1)}% · budget_left=${budgetLeft} · alert=${alertActive ? 'ON' : 'OFF'}</div>` +
+            `<div><b>DominujÄ…cy reason_code:</b> ${dominantLabel}</div>` +
+            `<div class="trend-slo ${successMet ? 'trend-ready' : 'trend-critical'}">SLO 24h: ${(successRate * 100).toFixed(1)}% / target ${(successTarget * 100).toFixed(1)}% Â· budget_left=${budgetLeft} Â· alert=${alertActive ? 'ON' : 'OFF'}</div>` +
           `</div>` +
           `<div class="trend-bars">${bars || '<div class="trend-empty">Brak top reason codes</div>'}</div>` +
           `<div class="trend-section">` +
@@ -472,6 +534,8 @@ document.getElementById('refreshDash').onclick = async () => {
       bindTrendToggles(trendSummary);
     }
 
+    renderDashboardStatusContext(d);
+
     const timelinePreview = (d.health_timeline || []).slice(0, 5).map((item) => ({
       date: item.date,
       avg_quality: item.avg_quality,
@@ -480,8 +544,11 @@ document.getElementById('refreshDash').onclick = async () => {
       launcher_released: item.launcher_released,
     }));
 
+    const statusContext = d.status_context || {};
     const dashboardView = {
       dashboard_status: d.status,
+      status_message: d.status_message || '',
+      status_context: statusContext,
       degraded: d.degraded,
       summary: d.summary || {},
       timeline_summary: d.timeline_summary || {},
@@ -511,12 +578,30 @@ document.getElementById('refreshDash').onclick = async () => {
         degraded_sections_count: degradedSections.length,
         degraded_sections: degradedSections,
         diagnostics_preview: diagnosticsPreview,
+        detail: statusContext.detail || '',
+        recommended_actions: Array.isArray(statusContext.recommended_actions)
+          ? statusContext.recommended_actions.slice(0, 3)
+          : [],
       };
       dashboardView.errors = d.errors || {};
     }
 
     out.textContent = JSON.stringify(dashboardView, null, 2);
   } catch (e) {
+    renderDashboardStatusContext({
+      status: 'error',
+      status_message: 'Dashboard error',
+      status_context: {
+        severity: 'critical',
+        detail: String(e),
+        impacted_sections: ['dashboard'],
+        critical_sections: ['dashboard'],
+        recommended_actions: [
+          'Sprawdz polaczenie z API i token sesyjny.',
+          'Ponow odswiezenie dashboardu.',
+        ],
+      },
+    });
     document.getElementById('agentStatusOut').textContent = 'Dashboard error: ' + String(e);
   }
 };
@@ -531,7 +616,7 @@ document.getElementById('refreshAgentStatus').onclick = async () => {
   }
 };
 
-// ── Agent logs ────────────────────────────────────────────────────────────────
+// â”€â”€ Agent logs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const agentLogOut = document.getElementById('agentLogOut');
 async function fetchAgentLog(target) {
   try {
@@ -550,3 +635,6 @@ async function fetchAgentLog(target) {
 tokenInput.value = getToken();
 setRoleBadge('guest');
 void checkAuthAuto();
+
+
+

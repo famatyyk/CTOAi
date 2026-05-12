@@ -1,7 +1,17 @@
-# CTOAi Workspace Instructions
+﻿# CTOAi Workspace Instructions
 
 ## Scope
 These instructions apply to all work in this repository.
+When constraints overlap, apply sections in this priority order:
+1. Architecture Defaults
+2. Canonical Commands
+3. Coding Conventions
+4. CI And Core Integrity
+5. Operational Pitfalls
+6. Link, Do Not Embed
+7. Agent Response Rules
+If instructions conflict within the same section, follow the most specific instruction.
+If ambiguity remains, choose the safest reversible action and state one explicit assumption before proceeding.
 
 ## Architecture Defaults
 - Treat the project as four coordinated layers: agent definitions, prompt/scoring engine, runner orchestration, and governance policy.
@@ -10,7 +20,7 @@ These instructions apply to all work in this repository.
   - prompt templates and tool scoring: `prompts/`, `scoring/`
   - orchestration runtime: `runner/`
   - release and approval policy: `policies/`, `workflows/`
-- Preserve BRAVE(R)-driven structure when editing agent execution logic.
+- Preserve BRAVE(R)-driven structure when editing agent execution logic: keep phases explicit as brief context setup, rule/constraint checks, action and tool execution, verification with evidence, exception handling, and end-of-step status reporting (see `docs/AGENT_PROMPT_DEFINITIVE.md` for canonical terminology).
 
 ## Canonical Commands
 - Use the workspace tasks in `.vscode/tasks.json` as first choice.
@@ -53,3 +63,5 @@ These instructions apply to all work in this repository.
 - Keep responses concise, direct, and implementation-oriented.
 - Do not expose internal reasoning.
 - When correcting output, correct once and proceed.
+
+

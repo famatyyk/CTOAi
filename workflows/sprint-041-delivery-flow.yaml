@@ -1,0 +1,49 @@
+﻿sprint: '041'
+theme: Post-GA Productization + Governance Continuity
+version: '1.0'
+lifecycle:
+  start: '2026-05-11'
+  target_wave1: '2026-05-14'
+  target_wave2: '2026-05-15'
+tasks:
+- id: CTOA-203
+  title: Quality gate expansion
+  on_start: review Sprint-041 backlog scope and lock quality contracts
+  on_complete: run focused tests and sprint validator
+  on_fail: rollback Sprint-041 quality gate changes
+- id: CTOA-204
+  title: Nightly trend automation
+  depends_on:
+  - CTOA-203
+  on_start: inspect nightly artifact schema and retention expectations
+  on_complete: verify trend evidence continuity
+  on_fail: restore previous nightly artifact contract
+- id: CTOA-205
+  title: Dashboard ergonomics pass
+  depends_on:
+  - CTOA-203
+  on_start: review dashboard payload and rendering paths
+  on_complete: validate healthy/degraded readability
+  on_fail: restore previous dashboard rendering
+- id: CTOA-206
+  title: CI evidence hardening
+  depends_on:
+  - CTOA-203
+  - CTOA-204
+  on_start: inspect CI artifact publishing steps
+  on_complete: confirm evidence export for Sprint-041
+  on_fail: revert CI evidence changes
+- id: CTOA-207
+  title: Release pack
+  depends_on:
+  - CTOA-203
+  - CTOA-204
+  - CTOA-205
+  - CTOA-206
+  on_start: confirm delivery status and evidence completeness
+  on_complete: record wave_1 PASS and wave_2 sign-off
+  on_fail: hold release candidate and escalate
+gate_policy:
+  wave_1: all automated checks pass
+  wave_2: manual STRATEGOS sign-off
+  rollback_baseline: v1.1.0-approved

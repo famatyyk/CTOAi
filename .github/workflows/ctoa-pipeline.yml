@@ -1,4 +1,4 @@
-name: CTOA Pipeline
+﻿name: CTOA Pipeline
 
 on:
   push:
@@ -257,6 +257,11 @@ jobs:
         shell: bash
         run: |
           python scripts/ops/sprint040_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-040-validation.json
+
+      - name: Sprint-041 delivery gate
+        shell: bash
+        run: |
+          python scripts/ops/sprint041_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-041-validation.json
 
       - name: Python linting (flake8)
         shell: bash

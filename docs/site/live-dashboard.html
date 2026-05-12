@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="pl">
   <head>
     <meta charset="UTF-8" />
@@ -126,10 +126,66 @@
       .btn-danger { background: #7c1c1c; }
       .form-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; align-items: center; }
       .form-status { font-size: 13px; }
+      .status-headline {
+        margin-top: 10px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 16px;
+        font-weight: 600;
+      }
+      .status-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        display: inline-block;
+        background: var(--muted);
+      }
+      .status-pill {
+        margin-left: auto;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 2px 8px;
+        font-size: 11px;
+        letter-spacing: .06em;
+      }
+      .sev-info { background: rgba(47, 196, 122, 0.2); color: var(--ok); }
+      .sev-warning { background: rgba(233, 180, 76, 0.2); color: var(--warn); }
+      .sev-critical { background: rgba(239, 107, 115, 0.2); color: var(--bad); }
+      .status-grid {
+        margin-top: 10px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      .status-sub { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+      .status-chips {
+        margin-top: 6px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .status-chip {
+        display: inline-block;
+        padding: 3px 8px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        font-size: 12px;
+      }
+      .chip-warning { background: rgba(233, 180, 76, 0.18); color: var(--warn); }
+      .chip-critical { background: rgba(239, 107, 115, 0.18); color: var(--bad); }
+      .status-actions {
+        margin: 6px 0 0 18px;
+        padding: 0;
+        display: grid;
+        gap: 6px;
+        font-size: 13px;
+      }
       @media (max-width: 900px) {
         .kpi, .wide, .full { grid-column: span 12; }
         .top { grid-template-columns: 1fr; }
         .controls { flex-wrap: wrap; }
+        .status-grid { grid-template-columns: 1fr; }
       }
     </style>
   </head>
@@ -173,6 +229,26 @@
         <section class="card wide">
           <div class="label">Statusy Modulow</div>
           <div class="rows" id="statusRows"></div>
+        </section>
+
+        <section class="card full">
+          <div class="label">Status Operacyjny Dashboard</div>
+          <div id="statusHeadline" class="status-headline">Brak danych statusu.</div>
+          <p id="statusDetail" class="muted">Zaloguj sie i odswiez dashboard, aby zobaczyc szczegoly.</p>
+          <div class="status-grid">
+            <div>
+              <div class="status-sub muted">Sekcje dotkniete</div>
+              <div id="statusImpacted" class="status-chips">
+                <span class="muted">Brak sekcji dotknietych problemem.</span>
+              </div>
+            </div>
+            <div>
+              <div class="status-sub muted">Rekomendowane akcje</div>
+              <ul id="statusActions" class="status-actions">
+                <li class="muted">Brak rekomendowanych akcji.</li>
+              </ul>
+            </div>
+          </div>
         </section>
 
         <section class="card full">
@@ -239,6 +315,10 @@
         latestCount: document.getElementById("latestCount"),
         latestRun: document.getElementById("latestRun"),
         statusRows: document.getElementById("statusRows"),
+        statusHeadline: document.getElementById("statusHeadline"),
+        statusDetail: document.getElementById("statusDetail"),
+        statusImpacted: document.getElementById("statusImpacted"),
+        statusActions: document.getElementById("statusActions"),
         latestTable: document.getElementById("latestTable"),
         serversTable: document.getElementById("serversTable"),
         accountsMgmt: document.getElementById("accountsMgmt"),
@@ -510,6 +590,66 @@
         return { total, done };
       }
 
+      function severityClass(severity) {
+        const key = String(severity || "").toLowerCase();
+        if (key === "critical" || key === "error") return "sev-critical";
+        if (key === "warning" || key === "degraded") return "sev-warning";
+        return "sev-info";
+      }
+
+      function renderStatusContext(dashboard) {
+        const statusContext = (dashboard && typeof dashboard.status_context === "object")
+          ? dashboard.status_context
+          : {};
+        const status = String((dashboard && dashboard.status) || "");
+        const severity = String(
+          statusContext.severity || (status === "error" ? "critical" : status === "degraded" ? "warning" : "info")
+        );
+        const message = String(
+          statusContext.message || (dashboard && dashboard.status_message) || status || "Brak statusu"
+        );
+        const detail = String(statusContext.detail || "");
+        const impactedSections = Array.isArray(statusContext.impacted_sections)
+          ? statusContext.impacted_sections
+          : [];
+        const criticalSections = Array.isArray(statusContext.critical_sections)
+          ? statusContext.critical_sections
+          : [];
+        const actions = Array.isArray(statusContext.recommended_actions)
+          ? statusContext.recommended_actions
+          : [];
+
+        const sevClass = severityClass(severity);
+        const severityLabel = String(severity).toUpperCase();
+
+        el.statusHeadline.innerHTML =
+          `<span class="status-dot ${sevClass}"></span>` +
+          `<span>${esc(message)}</span>` +
+          `<span class="status-pill ${sevClass}">${esc(severityLabel)}</span>`;
+
+        el.statusDetail.textContent = detail || "Brak dodatkowego opisu.";
+
+        if (impactedSections.length) {
+          el.statusImpacted.innerHTML = impactedSections
+            .map((name) => {
+              const chipClass = criticalSections.includes(name) ? "chip-critical" : "chip-warning";
+              return `<span class="status-chip ${chipClass}">${esc(name)}</span>`;
+            })
+            .join("");
+        } else {
+          el.statusImpacted.innerHTML = '<span class="muted">Brak sekcji dotknietych problemem.</span>';
+        }
+
+        if (actions.length) {
+          el.statusActions.innerHTML = actions
+            .slice(0, 5)
+            .map((action) => `<li>${esc(action)}</li>`)
+            .join("");
+        } else {
+          el.statusActions.innerHTML = '<li class="muted">Brak rekomendowanych akcji.</li>';
+        }
+      }
+
       function renderLatest(items) {
         el.latestTable.innerHTML = "";
         if (!items.length) {
@@ -539,6 +679,17 @@
       async function refresh() {
         if (!state.token) {
           el.serversState.textContent = "brak autoryzacji";
+          renderStatusContext({
+            status: "degraded",
+            status_message: "Brak autoryzacji",
+            status_context: {
+              severity: "warning",
+              detail: "Zaloguj sie, aby pobrac status dashboardu.",
+              impacted_sections: ["dashboard"],
+              critical_sections: [],
+              recommended_actions: ["Zaloguj sie i odswiez panel."],
+            },
+          });
           return;
         }
 
@@ -571,11 +722,27 @@
 
           renderLatest(items);
           renderServers(serversRows);
+          renderStatusContext(dashboard);
         } catch (e) {
-          if (String(e.message || "").includes("401")) {
+          const errMessage = String(e && (e.message || e));
+          if (errMessage.includes("401")) {
             setStatus("Sesja wygasla. Zaloguj ponownie.");
           }
-          el.serversState.textContent = `blad: ${e.message || e}`;
+          el.serversState.textContent = `blad: ${errMessage}`;
+          renderStatusContext({
+            status: "error",
+            status_message: "Blad odswiezania dashboardu",
+            status_context: {
+              severity: "critical",
+              detail: errMessage,
+              impacted_sections: ["dashboard"],
+              critical_sections: ["dashboard"],
+              recommended_actions: [
+                "Sprawdz sesje i ponow odswiezanie panelu.",
+                "Zweryfikuj dostepnosc API /api/dashboard.",
+              ],
+            },
+          });
         }
       }
 
@@ -629,3 +796,4 @@
     </script>
   </body>
 </html>
+
