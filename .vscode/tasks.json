@@ -757,7 +757,7 @@
                       "dependsOrder":  "sequence",
                       "dependsOn":  [
                                         "CTOA: Run All Tests",
-                                        "CTOA: Sprint-025 Validate Control Plane + Execution + Governance",
+                                        "CTOA: Sprint-041 Validate",
                                         "CTOA: Launch Pack"
                                     ],
                       "isBackground":  false
@@ -1190,3 +1190,4 @@
                    }
                ]
 }
+
