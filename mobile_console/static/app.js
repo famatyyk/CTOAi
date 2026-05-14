@@ -210,7 +210,7 @@ document.getElementById('runCmd').onclick = async () => {
   }
 };
 
-// â”€â”€ Tab navigation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Tab navigation ------------------------------------------------------------
 document.querySelectorAll('.tab-btn').forEach((btn) => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active'));
@@ -220,7 +220,7 @@ document.querySelectorAll('.tab-btn').forEach((btn) => {
   });
 });
 
-// â”€â”€ Server registration â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Server registration -------------------------------------------------------
 document.getElementById('registerServer').onclick = async () => {
   const url = document.getElementById('serverUrl').value.trim();
   const fb  = document.getElementById('serverFeedback');
@@ -231,10 +231,10 @@ document.getElementById('registerServer').onclick = async () => {
       body: JSON.stringify({ url }),
     });
     fb.className = 'ok';
-    fb.textContent = 'âś“ Serwer zarejestrowany. Agenci startujÄ…â€¦ ' + JSON.stringify(data.db || '');
+    fb.textContent = 'OK: Serwer zarejestrowany. Agenci startuja... ' + JSON.stringify(data.db || '');
   } catch (e) {
     fb.className = 'error';
-    fb.textContent = 'âś— ' + String(e);
+    fb.textContent = 'ERROR: ' + String(e);
   }
 };
 
@@ -314,7 +314,7 @@ document.getElementById('autoTrainerLatest').onclick = async () => {
   }
 };
 
-// â”€â”€ Dashboard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Dashboard -----------------------------------------------------------------
 function badgeStatus(s) {
   const map = { VALIDATED:'ok', GENERATED:'ok', READY:'ok', INGESTED:'waiting', SCOUTING:'waiting',
                 FAILED:'error', ERROR:'error', QUEUED:'queued', RELEASED:'ok', NEW:'queued' };
@@ -333,7 +333,7 @@ function escapeHtml(value) {
 
 function renderReasonGroup(title, items) {
   if (!Array.isArray(items) || items.length === 0) {
-    return `<div class="trend-empty">Brak sygnaĹ‚Ăłw dla grupy ${escapeHtml(title)}</div>`;
+    return `<div class="trend-empty">Brak sygnalow dla grupy ${escapeHtml(title)}</div>`;
   }
   return items.map((item) => {
     const code = escapeHtml(item.code || 'UNKNOWN');
@@ -350,7 +350,7 @@ function renderReasonGroup(title, items) {
 
 function renderTimeline(items) {
   if (!Array.isArray(items) || items.length === 0) {
-    return '<div class="trend-empty">Brak zdarzeĹ„ 24h</div>';
+    return '<div class="trend-empty">Brak zdarzen 24h</div>';
   }
   const maxVisible = 8;
   const visible = items.slice(0, maxVisible);
@@ -364,7 +364,7 @@ function renderTimeline(items) {
       <div class="timeline-item timeline-${severity}">
         <div class="timeline-dot"></div>
         <div>
-          <div class="timeline-main">${reasonCode} Â· ${eventName}</div>
+          <div class="timeline-main">${reasonCode} - ${eventName}</div>
           <div class="timeline-meta">${timestamp}</div>
         </div>
       </div>
@@ -372,7 +372,7 @@ function renderTimeline(items) {
   }).join('');
 
   const overflow = hiddenCount > 0
-    ? `<div class="trend-empty">+${hiddenCount} kolejnych zdarzeĹ„ w oknie 24h</div>`
+    ? `<div class="trend-empty">+${hiddenCount} kolejnych zdarzen w oknie 24h</div>`
     : '';
 
   return rows + overflow;
@@ -470,7 +470,7 @@ document.getElementById('refreshDash').onclick = async () => {
       document.getElementById('dashModules').textContent = mods;
       document.getElementById('dashPrograms').textContent = progs;
       document.getElementById('dashQuality').textContent = qual.toFixed(1);
-      document.getElementById('dashLauncher').textContent = launched ? 'đźš€ RELEASED' : 'âŹł pending';
+      document.getElementById('dashLauncher').textContent = launched ? 'RELEASED' : 'pending';
       document.getElementById('dashModuleBar').style.width = Math.min(100, mods * 2) + '%';
       document.getElementById('dashProgramBar').style.width = Math.min(100, progs * 20) + '%';
     }
@@ -514,8 +514,8 @@ document.getElementById('refreshDash').onclick = async () => {
       trendSummary.innerHTML =
         `<div class="trend-shell">` +
           `<div class="trend-head">` +
-            `<div><b>DominujÄ…cy reason_code:</b> ${dominantLabel}</div>` +
-            `<div class="trend-slo ${successMet ? 'trend-ready' : 'trend-critical'}">SLO 24h: ${(successRate * 100).toFixed(1)}% / target ${(successTarget * 100).toFixed(1)}% Â· budget_left=${budgetLeft} Â· alert=${alertActive ? 'ON' : 'OFF'}</div>` +
+            `<div><b>Dominujacy reason_code:</b> ${dominantLabel}</div>` +
+            `<div class="trend-slo ${successMet ? 'trend-ready' : 'trend-critical'}">SLO 24h: ${(successRate * 100).toFixed(1)}% / target ${(successTarget * 100).toFixed(1)}% | budget_left=${budgetLeft} | alert=${alertActive ? 'ON' : 'OFF'}</div>` +
           `</div>` +
           `<div class="trend-bars">${bars || '<div class="trend-empty">Brak top reason codes</div>'}</div>` +
           `<div class="trend-section">` +
@@ -616,7 +616,7 @@ document.getElementById('refreshAgentStatus').onclick = async () => {
   }
 };
 
-// â”€â”€ Agent logs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Agent logs ----------------------------------------------------------------
 const agentLogOut = document.getElementById('agentLogOut');
 async function fetchAgentLog(target) {
   try {

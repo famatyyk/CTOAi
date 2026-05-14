@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="pl">
   <head>
     <meta charset="UTF-8" />
@@ -40,6 +40,44 @@
         display: flex;
         gap: 8px;
         align-items: center;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+      .auth-block {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .auth-hidden {
+        display: none !important;
+      }
+      .session-pill {
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: rgba(47, 196, 122, 0.14);
+        color: var(--txt);
+        font-size: 12px;
+        padding: 7px 11px;
+        white-space: nowrap;
+      }
+      .quick-nav {
+        margin: 0 0 14px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .quick-nav a {
+        text-decoration: none;
+        color: var(--txt);
+        border: 1px solid var(--line);
+        background: rgba(24, 36, 48, 0.9);
+        border-radius: 999px;
+        padding: 6px 12px;
+        font-size: 12px;
+      }
+      .quick-nav a.active {
+        background: rgba(47, 128, 237, 0.25);
+        border-color: #2f80ed;
       }
       input {
         background: var(--panel);
@@ -198,13 +236,23 @@
         </div>
         <div class="controls">
           <input id="apiBase" type="text" placeholder="http://127.0.0.1:8787" />
-          <input id="username" type="text" placeholder="login" />
-          <input id="password" type="password" placeholder="haslo" />
-          <button id="loginBtn">Zaloguj</button>
-          <button id="logoutBtn">Wyloguj</button>
+          <div id="guestAuth" class="auth-block">
+            <input id="username" type="text" placeholder="login" />
+            <input id="password" type="password" placeholder="haslo" />
+            <button id="loginBtn">Zaloguj</button>
+          </div>
+          <div id="userAuth" class="auth-block auth-hidden">
+            <span id="sessionBadge" class="session-pill">Brak aktywnej sesji</span>
+          </div>
+          <button id="logoutBtn" class="auth-hidden">Wyloguj</button>
         </div>
       </div>
       <p id="connStatus" class="sub">Brak aktywnej sesji.</p>
+      <nav class="quick-nav" aria-label="Szybka nawigacja">
+        <a href="/">Start</a>
+        <a href="/console">Console</a>
+        <a href="/live-dashboard" class="active">Live Dashboard</a>
+      </nav>
 
       <div class="grid">
         <section class="card kpi">
@@ -291,8 +339,48 @@
     </div>
 
     <script>
+      function stripTrailingSlash(value) {
+        return String(value || "").trim().replace(/\/$/, "");
+      }
+
+      function isLoopbackHost(hostname) {
+        const host = String(hostname || "").toLowerCase();
+        return host === "127.0.0.1" || host === "localhost";
+      }
+
+      function normalizeApiBase(value) {
+        const normalized = stripTrailingSlash(value);
+        if (!normalized) return "";
+
+        let parsed;
+        try {
+          parsed = new URL(normalized);
+        } catch (_err) {
+          return normalized;
+        }
+
+        try {
+          const pageUrl = new URL(window.location.href);
+          if (isLoopbackHost(parsed.hostname) && !isLoopbackHost(pageUrl.hostname)) {
+            return stripTrailingSlash(pageUrl.origin);
+          }
+        } catch (_err) {
+          // Keep user-provided value when page URL is unavailable.
+        }
+
+        return normalized;
+      }
+
+      const inferredApiBase = (() => {
+        try {
+          return stripTrailingSlash(window.location.origin);
+        } catch (_err) {
+          return "";
+        }
+      })();
+
       const state = {
-        apiBase: localStorage.getItem("ctoa_live_api") || "http://127.0.0.1:8787",
+        apiBase: normalizeApiBase(localStorage.getItem("ctoa_live_api") || inferredApiBase || "http://127.0.0.1:8787"),
         token: sessionStorage.getItem("ctoa_live_token") || "",
         username: localStorage.getItem("ctoa_live_username") || "",
         role: sessionStorage.getItem("ctoa_live_role") || "",
@@ -306,6 +394,9 @@
         password: document.getElementById("password"),
         loginBtn: document.getElementById("loginBtn"),
         logoutBtn: document.getElementById("logoutBtn"),
+        guestAuth: document.getElementById("guestAuth"),
+        userAuth: document.getElementById("userAuth"),
+        sessionBadge: document.getElementById("sessionBadge"),
         connStatus: document.getElementById("connStatus"),
         percent: document.getElementById("percent"),
         progressBar: document.getElementById("progressBar"),
@@ -330,10 +421,34 @@
       };
 
       el.apiBase.value = state.apiBase;
+      localStorage.setItem("ctoa_live_api", state.apiBase);
       el.username.value = state.username;
+      renderAuthControls();
 
       function setStatus(msg) {
         el.connStatus.textContent = msg;
+      }
+
+      function renderAuthControls() {
+        const loggedIn = Boolean(state.token);
+        if (el.guestAuth) {
+          el.guestAuth.classList.toggle("auth-hidden", loggedIn);
+        }
+        if (el.userAuth) {
+          el.userAuth.classList.toggle("auth-hidden", !loggedIn);
+        }
+        if (el.logoutBtn) {
+          el.logoutBtn.classList.toggle("auth-hidden", !loggedIn);
+        }
+        if (el.sessionBadge) {
+          if (loggedIn) {
+            const who = state.username || "uzytkownik";
+            const role = state.role || "operator";
+            el.sessionBadge.textContent = `Sesja: ${who} (${role})`;
+          } else {
+            el.sessionBadge.textContent = "Brak aktywnej sesji";
+          }
+        }
       }
 
       function toggleAccountsPanel() {
@@ -449,10 +564,15 @@
           sessionStorage.removeItem("ctoa_live_role");
         }
         toggleAccountsPanel();
+        renderAuthControls();
       }
 
       function saveApiBase() {
-        state.apiBase = (el.apiBase.value || "").trim().replace(/\/$/, "");
+        state.apiBase = normalizeApiBase(el.apiBase.value);
+        if (!state.apiBase) {
+          state.apiBase = inferredApiBase || "http://127.0.0.1:8787";
+        }
+        el.apiBase.value = state.apiBase;
         localStorage.setItem("ctoa_live_api", state.apiBase);
       }
 
@@ -484,7 +604,7 @@
 
         const p = payload.profile;
         if (p.api_base) {
-          state.apiBase = String(p.api_base).trim().replace(/\/$/, "");
+          state.apiBase = normalizeApiBase(p.api_base);
           el.apiBase.value = state.apiBase;
           localStorage.setItem("ctoa_live_api", state.apiBase);
         }
@@ -531,12 +651,28 @@
         });
         el.password.value = "";
 
-        await loadProfile();
-        await saveProfile();
-        if (state.role === "owner") { await loadAccounts(); }
-        setStatus(`Polaczono jako ${state.username} (${state.role}).`);
-        // Main console is the default working page after login.
-        window.location.href = "/";
+        let profileError = "";
+        try {
+          await loadProfile();
+          await saveProfile();
+        } catch (e) {
+          profileError = String(e && (e.message || e));
+          console.warn("Profile sync unavailable:", profileError);
+        }
+        if (state.role === "owner") {
+          try {
+            await loadAccounts();
+          } catch (e) {
+            console.warn("Accounts list unavailable:", e);
+          }
+        }
+        if (profileError) {
+          setStatus(`Polaczono jako ${state.username} (${state.role}). Profil chwilowo niedostepny: ${profileError}`);
+        } else {
+          setStatus(`Polaczono jako ${state.username} (${state.role}).`);
+        }
+        // Stay on live dashboard after login to avoid cross-surface re-auth.
+        return;
       }
 
       async function logout() {
@@ -762,6 +898,8 @@
           ev.preventDefault();
           try {
             await login();
+            startPolling();
+            await refresh();
           } catch (e) {
             setStatus(`Blad logowania: ${e.message || e}`);
           }
@@ -782,10 +920,24 @@
               username: String(me.username || state.username || ""),
               role: String(me.role || state.role || "operator"),
             });
-            await loadProfile();
-            if (state.role === "owner") { await loadAccounts(); }
+            try {
+              await loadProfile();
+            } catch (e) {
+              console.warn("Profile restore unavailable:", e);
+            }
+            if (state.role === "owner") {
+              try {
+                await loadAccounts();
+              } catch (e) {
+                console.warn("Accounts restore unavailable:", e);
+              }
+            }
             setStatus(`Polaczono jako ${state.username} (${state.role}).`);
-            await refresh();
+            try {
+              await refresh();
+            } catch (e) {
+              console.warn("Initial refresh failed:", e);
+            }
           } catch (_e) {
             await logout();
           }
@@ -796,4 +948,9 @@
     </script>
   </body>
 </html>
+
+
+
+
+
 
