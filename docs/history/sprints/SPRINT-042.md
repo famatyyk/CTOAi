@@ -88,3 +88,12 @@ proves backup restore readiness, and protects recent login/navigation UX fixes w
 - Rollback baseline: v1.13.0.
 - Owner accountability: Strategos (primary), Core Architect and Documentation Sage (review).
 - Residual risks: no critical blockers observed; standard post-release monitoring retained.
+
+## Post-Release Monitoring Window (24h)
+
+- Status: STARTED.
+- Window: 2026-05-14T22:52:44.1938717Z to 2026-05-15T22:52:44.1969194Z (UTC).
+- Baseline: ValidateServices PASS, HealthCheckOneShot PASS, health-live ACTIVE, runner/report timers ACTIVE.
+- Evidence: runtime/ci-artifacts/sprint-042-post-release-monitoring-window.log, runtime/ci-artifacts/sprint-042-post-release-monitoring-24h.json, runtime/experiments/sprint-042/POST-RELEASE-24H.md.
+- Note: EnableLiveHealth action path is blocked for current least-privilege principal, but service is already enabled and running.
+

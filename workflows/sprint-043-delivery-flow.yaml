@@ -1,0 +1,61 @@
+sprint: '043'
+theme: Post-release monitoring continuity + least-privilege observability + governance-ready closure
+version: '1.0'
+lifecycle:
+  start: '2026-05-15'
+  target_wave1: '2026-05-17'
+  target_wave2: '2026-05-17'
+
+tasks:
+  - id: CTOA-215
+    title: Post-release 24h monitoring window
+    on_start: open 24h window and capture baseline checks for health, runner, and report
+    on_complete: publish monitoring artifact pair and short summary note
+    on_fail: keep release active, record degraded observability risk, and escalate
+
+  - id: CTOA-216
+    title: Least-privilege observability path hardening
+    depends_on:
+      - CTOA-215
+    on_start: map actions blocked by sudo policy and define wrapper-safe alternatives
+    on_complete: verify system health and dashboard actions run through approved paths
+    on_fail: maintain existing wrappers and keep monitoring in reduced mode
+
+  - id: CTOA-217
+    title: Sprint-043 kickoff control-plane alignment
+    depends_on:
+      - CTOA-215
+    on_start: publish sprint backlog, delivery flow, and DoD in sprint history
+    on_complete: confirm sprint scope, owners, and rollback baseline
+    on_fail: keep sprint in planning hold with explicit blockers
+
+  - id: CTOA-218
+    title: Sprint-043 validator and wave wiring
+    depends_on:
+      - CTOA-217
+    on_start: scaffold sprint043 validator from sprint042 baseline
+    on_complete: produce validation artifact and local wave task chain
+    on_fail: revert validator/task wiring to previous stable baseline
+
+  - id: CTOA-219
+    title: Wave-1 evidence pass
+    depends_on:
+      - CTOA-216
+      - CTOA-218
+    on_start: run focused tests and sprint043 validator
+    on_complete: publish wave-1 evidence bundle
+    on_fail: hold sprint in IN_CI_GATE and escalate blockers
+
+  - id: CTOA-220
+    title: Wave-2 sign-off and release memo
+    depends_on:
+      - CTOA-219
+    on_start: review wave-1 evidence and unresolved risk notes
+    on_complete: record manual sign-off and release readiness decision
+    on_fail: keep sprint in WAITING_APPROVAL and block release
+
+gate_policy:
+  wave_1: sprint043 validator PASS plus focused regression checks PASS
+  wave_2: manual STRATEGOS sign-off with accountability note
+  rollback_baseline: v1.13.0
+
