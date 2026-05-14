@@ -1,4 +1,4 @@
-param(
+﻿param(
     [Parameter(Mandatory = $true)]
     [ValidateSet(
         'Verify',
@@ -9,6 +9,7 @@ param(
         'DashboardSnapshot',
         'TailMobileLogs',
         'ValidateServices',
+        'HealthCheckOneShot',
         'StabilizeReportService',
         'WriteGithubPat',
         'ReportViaServiceEnv',
@@ -96,13 +97,13 @@ function Get-RemoteTarget() {
     $h = [Environment]::GetEnvironmentVariable('CTOA_VPS_HOST')
     if ([string]::IsNullOrWhiteSpace($h)) { $h = '46.225.110.52' }
     $u = [Environment]::GetEnvironmentVariable('CTOA_VPS_USER')
-    if ([string]::IsNullOrWhiteSpace($u)) { $u = 'root' }
+    if ([string]::IsNullOrWhiteSpace($u)) { $u = 'ctoa-admin' }
     return "$u@$h"
 }
 
 function Get-KeyPath() {
     $k = [Environment]::GetEnvironmentVariable('CTOA_VPS_KEY_PATH')
-    if ([string]::IsNullOrWhiteSpace($k)) { $k = Join-Path $env:USERPROFILE '.ssh\ctoa_vps_ed25519' }
+    if ([string]::IsNullOrWhiteSpace($k)) { $k = Join-Path $env:USERPROFILE '.ssh\ctoa_vps_auto_ed25519' }
     if (-not (Test-Path $k)) { throw "SSH key not found: $k" }
     return $k
 }
@@ -135,18 +136,28 @@ function Invoke-WithSshRetry([scriptblock]$Operation, [string]$Label) {
     throw ("[{0}] SSH failed after {1} attempts" -f $Label, $attempts)
 }
 
-function Invoke-SshCommand([string]$Cmd) {
+function Invoke-SshCommand([string]$Cmd, [switch]$AsCurrentUser) {
     $t = Get-RemoteTarget; $k = Get-KeyPath
+    $remoteUser = ($t -split '@')[0]
+    $runner = if ((-not $AsCurrentUser) -and ($remoteUser -ne 'root')) { 'sudo -n bash -s' } else { 'bash -s' }
+    $normalized = (($Cmd -replace "`r`n","`n") -replace "`r","`n") + "`n"
+    $encoded = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($normalized))
+    $remoteCmd = "printf %s '$encoded' | base64 -d | $runner"
+
     Invoke-WithSshRetry -Label 'Invoke-SshCommand' -Operation {
-        & ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new -i $k $t $Cmd
+        & ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new -i $k $t $remoteCmd
     }
 }
-
 function Invoke-SshScript([string]$Script) {
     $t = Get-RemoteTarget; $k = Get-KeyPath
-    $normalized = (($Script -replace "`r`n","`n") -replace "`r","`n")
+    $remoteUser = ($t -split '@')[0]
+    $runner = if ($remoteUser -eq 'root') { 'bash -s' } else { 'sudo -n bash -s' }
+    $normalized = (($Script -replace "`r`n","`n") -replace "`r","`n") + "`n"
+    $encoded = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($normalized))
+    $remoteCmd = "printf %s '$encoded' | base64 -d | $runner"
+
     Invoke-WithSshRetry -Label 'Invoke-SshScript' -Operation {
-        ($normalized + "`n") | & ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new -i $k $t "tr -d '\r' | bash -s"
+        & ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new -i $k $t $remoteCmd
     }
 }
 
@@ -280,7 +291,7 @@ switch ($Action) {
     'Verify'              {
         Invoke-RemoteVerify
     }
-    'WhoAmI'              { Invoke-SshCommand 'whoami' }
+    'WhoAmI'              { Invoke-SshCommand 'whoami' -AsCurrentUser }
     'Setup24x7'           { $sc = Get-SetupScript; Invoke-SshScript $sc }
     'TailLiveHealth'      { Invoke-SshCommand 'tail -n 80 -f /opt/ctoa/logs/health-live.log' }
     'DashboardSnapshot'   { Invoke-SshScript @'
@@ -484,7 +495,7 @@ echo "=== recent reseed log ==="
 tail -n 20 /opt/ctoa/logs/reseed-tier.log 2>/dev/null || echo 'reseed-tier.log-not-found'
 echo
 
-# ── SSH quality monitor ──────────────────────────────────────────────────────
+# Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬ SSH quality monitor Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬
 echo "=== SSH quality monitor (last 60 s) ==="
 SSH_FAIL_THRESHOLD=${CTOA_SSH_FAIL_THRESHOLD:-5}          # fails/min to trigger auto-heal
 WINDOW_SEC=60
@@ -500,7 +511,7 @@ echo "  SSH fail rate (per min)              : ${FAIL_RATE_INT}"
 echo "  Auto-heal threshold (per min)        : ${SSH_FAIL_THRESHOLD}"
 
 if [ "${FAIL_RATE_INT}" -ge "${SSH_FAIL_THRESHOLD}" ]; then
-  echo "  STATUS : DEGRADED – threshold exceeded, triggering auto-heal"
+  echo "  STATUS : DEGRADED Ă˘â‚¬â€ś threshold exceeded, triggering auto-heal"
 
   # reset-failed for ctoa services that depend heavily on outbound SSH / sshd
   SSH_HEAVY_SERVICES=(
@@ -523,7 +534,7 @@ else
   echo "  STATUS : OK"
 fi
 echo
-# ────────────────────────────────────────────────────────────────────────────
+# Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬
 '@
         }
         'ShowPipelineProgress' {
@@ -578,7 +589,7 @@ sudo -u postgres psql -d ctoa -c "SELECT s.id, s.url, s.status, COUNT(m.id) AS m
         }
         'ListActions' {
                 $actions = @(
-                        'Verify','WhoAmI','Setup24x7','EnableLiveHealth','TailLiveHealth','DashboardSnapshot','TailMobileLogs','ValidateServices',
+                        'Verify','WhoAmI','Setup24x7','EnableLiveHealth','TailLiveHealth','DashboardSnapshot','TailMobileLogs','ValidateServices','HealthCheckOneShot',
                         'StabilizeReportService','WriteGithubPat','ReportViaServiceEnv','PublishWithSourcedEnv',
                         'InspectReportEnv','ReportErrorDetails','SetupDB','SetupAgents','TailAgents','FixDbPerms',
                     'RegisterServer','RegisterServerList','KickoffNow','MythibiaBurst','GlobalBurst','InstallKickoffTimer','ShowKickoffTimer',
@@ -600,6 +611,7 @@ sudo -u postgres psql -d ctoa -c "SELECT s.id, s.url, s.status, COUNT(m.id) AS m
                 Write-Host 'powershell -ExecutionPolicy Bypass -File ctoa-vps.ps1 -Action ShowPipelineProgress'
                 Write-Host 'powershell -ExecutionPolicy Bypass -File ctoa-vps.ps1 -Action KickoffNow'
                 Write-Host 'powershell -ExecutionPolicy Bypass -File ctoa-vps.ps1 -Action GlobalBurst'
+                Write-Host 'powershell -ExecutionPolicy Bypass -File ctoa-vps.ps1 -Action HealthCheckOneShot'
                 Write-Host 'powershell -ExecutionPolicy Bypass -File ctoa-vps.ps1 -Action RegisterServerList -ServerUrls "https://url1,https://url2"'
                 Write-Host 'powershell -ExecutionPolicy Bypass -File ctoa-vps.ps1 -Action HealService -ServiceName ctoa-mobile-console'
         }
@@ -1371,6 +1383,53 @@ systemctl status ctoa-report.service --no-pager -l | head -n 20
 if [ -f /opt/ctoa/logs/runner.log ]; then tail -n 40 /opt/ctoa/logs/runner.log; else echo runner.log-not-present; fi
 '@
     }
+    'HealthCheckOneShot' {
+        Invoke-SshScript @'
+set -e
+mkdir -p /opt/ctoa/logs
+marker="ONE_SHOT_HEALTHCHECK_$(date -u +%Y%m%dT%H%M%SZ)"
+echo "$marker" >> /opt/ctoa/logs/runner.log
+
+echo "=== ValidateServices ==="
+systemctl start ctoa-runner.service
+systemctl start ctoa-report.service || true
+systemctl status ctoa-runner.service --no-pager -l | head -n 12
+systemctl status ctoa-report.service --no-pager -l | head -n 20
+if [ -f /opt/ctoa/logs/runner.log ]; then tail -n 40 /opt/ctoa/logs/runner.log; else echo runner.log-not-present; fi
+
+echo
+echo "=== DashboardSnapshot ==="
+systemctl status ctoa-mobile-console.service --no-pager -l | sed -n '1,20p' || true
+echo
+echo "=== Dashboard health ==="
+http_code=$(curl -sS -o /tmp/ctoa-health.out -w "%{http_code}" http://127.0.0.1:8787/api/health || true)
+if [ "$http_code" = "200" ]; then
+    cat /tmp/ctoa-health.out
+elif [ "$http_code" = "401" ] || [ "$http_code" = "403" ]; then
+    echo "dashboard-health-auth-required"
+else
+    echo "dashboard-health-unavailable (http=$http_code)"
+fi
+
+echo
+echo "=== InspectReportEnv ==="
+grep -n '^GITHUB_PAT=' /opt/ctoa/.env | sed 's/=.*/=***set***/' || echo PAT-not-set
+systemctl restart ctoa-report.service
+journalctl -u ctoa-report.service -n 12 --no-pager
+
+echo
+echo "=== Secret Sanity ==="
+if [ -f /opt/ctoa/logs/runner.log ]; then
+    segment="$(awk -v m="$marker" 'found{print} index($0,m){found=1}' /opt/ctoa/logs/runner.log)"
+    if printf '%s\n' "$segment" | grep -q '\[report\] GITHUB_PAT is not set'; then
+        echo "FAIL: GITHUB_PAT is still not set for report publish"
+        exit 2
+    fi
+fi
+
+echo "PASS: one-shot health check complete"
+'@
+    }
     'EnableLiveHealth' {
         Invoke-SshScript @'
 set -e
@@ -1745,3 +1804,7 @@ systemctl status ctoa-db.service --no-pager -l | sed -n '1,80p'
         Invoke-RemoteSyntaxValidation
     }
 }
+
+
+
+
