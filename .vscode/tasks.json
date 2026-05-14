@@ -1,4 +1,4 @@
-﻿{
+{
     "version":  "2.0.0",
     "tasks":  [
                   {
@@ -1166,6 +1166,30 @@
                                            "reveal":  "always",
                                            "panel":  "dedicated"
                                        }
+                  },
+                  {
+                      "label":  "CTOA: Sprint-042 Validate",
+                      "type":  "shell",
+                      "command":  ".venv/Scripts/python.exe scripts/ops/sprint042_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-042-validation.json",
+                      "isBackground":  false,
+                      "presentation":  {
+                                           "reveal":  "always",
+                                           "panel":  "dedicated"
+                                       }
+                  },
+                  {
+                      "label":  "CTOA: Sprint-042 Wave-1 Run",
+                      "dependsOrder":  "sequence",
+                      "dependsOn":  [
+                                        "CTOA: Run All Tests",
+                                        "CTOA: Sprint-042 Validate",
+                                        "CTOA: Launch Pack"
+                                    ],
+                      "isBackground":  false,
+                      "presentation":  {
+                                           "reveal":  "always",
+                                           "panel":  "dedicated"
+                                       }
                   }
               ],
     "inputs":  [
@@ -1190,4 +1214,5 @@
                    }
                ]
 }
+
 

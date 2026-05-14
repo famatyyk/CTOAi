@@ -11,6 +11,20 @@
 - [x] Operator restrictions validated (`showPrices` and `reset localStorage` controls disabled)
 - [x] Overall mobile QA status: PASS
 
+## Governance Gate (PR path + bypass control)
+
+- [ ] Changes follow PR -> `main` flow by default
+- [ ] Required checks are green: `PR Quality Report` and `CTOA Pipeline`
+- [ ] Current sprint validator artifact is attached in CI evidence
+- [ ] If bypass was used: incident note + 24h backfill PR are documented
+
+## Sprint-042 Wave-1 Checks
+
+- [ ] `scripts/ops/sprint042_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-042-validation.json` passes
+- [ ] `.vscode/tasks.json` contains `CTOA: Sprint-042 Validate` and `CTOA: Sprint-042 Wave-1 Run`
+- [ ] `.github/workflows/ctoa-pipeline.yml` runs Sprint-042 delivery gate
+- [ ] `runtime/ci-artifacts/sprint-042-validation.json` is exported in CI artifacts
+
 ## Pre-Deployment Checks
 
 ### Code Quality
@@ -128,4 +142,5 @@ curl http://localhost:9999/health 2>/dev/null | jq .
 - [ARCHITECTURE.md](ARCHITECTURE.md) - Overall system design
 - [SETUP.md](../deploy/vps/SETUP.md) - VPS environment setup
 - [runner.py](../runner/runner.py) - Main orchestration logic
+
 

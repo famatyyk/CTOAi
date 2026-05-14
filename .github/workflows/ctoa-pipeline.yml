@@ -1,4 +1,4 @@
-﻿name: CTOA Pipeline
+name: CTOA Pipeline
 
 on:
   push:
@@ -263,6 +263,11 @@ jobs:
         run: |
           python scripts/ops/sprint041_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-041-validation.json
 
+      - name: Sprint-042 delivery gate
+        shell: bash
+        run: |
+          python scripts/ops/sprint042_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-042-validation.json
+
       - name: Python linting (flake8)
         shell: bash
         continue-on-error: true
@@ -313,6 +318,17 @@ jobs:
             runtime/ci-artifacts/sprint-028-validation.json
             runtime/ci-artifacts/nightly-stability-sprint-028-ci.json
             runtime/evidence/sprint-028/**
+          if-no-files-found: ignore
+
+      - name: Upload Sprint-042 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sprint-042-evidence
+          path: |
+            runtime/ci-artifacts/sprint-042-validation.json
+            runtime/ci-artifacts/sprint-042-wave1-run.log
+            runtime/evidence/sprint-042/**
           if-no-files-found: ignore
 
       - name: Enforce response guardrail gate
@@ -509,3 +525,5 @@ jobs:
 
       - name: Publish Marker
         run: echo "Owner approved. Artifact is ready for public use from main."
+
+
