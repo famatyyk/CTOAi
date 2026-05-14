@@ -140,6 +140,31 @@ body {
   border-bottom: 1px solid rgba(215, 177, 94, 0.24);
 }
 
+.global-nav {
+  display: flex;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+  margin-top: 0.65rem;
+  margin-bottom: 0.55rem;
+}
+
+.global-nav a {
+  text-decoration: none;
+  color: var(--ink);
+  border: 1px solid rgba(47, 212, 191, 0.34);
+  background: rgba(10, 18, 35, 0.62);
+  border-radius: 999px;
+  padding: 0.34rem 0.72rem;
+  font-size: 0.82rem;
+  letter-spacing: 0.02em;
+}
+
+.global-nav a.active {
+  border-color: rgba(215, 177, 94, 0.62);
+  background: rgba(215, 177, 94, 0.16);
+  color: var(--gold);
+}
+
 .brand {
   color: var(--ink);
   text-decoration: none;
@@ -1045,6 +1070,17 @@ textarea {
     gap: 0.45rem;
   }
 
+  .global-nav {
+    gap: 0.4rem;
+    margin-top: 0.45rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .global-nav a {
+    font-size: 0.76rem;
+    padding: 0.3rem 0.62rem;
+  }
+
   .realm-root {
     min-height: calc(100vh - 90px);
     padding-top: 0.7rem;
@@ -1091,3 +1127,4 @@ textarea {
     padding: 0.85rem;
   }
 }
+

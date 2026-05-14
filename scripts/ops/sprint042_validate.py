@@ -28,6 +28,7 @@ FOCUSED_REGRESSION_TEST_FILES = [
     'tests/test_sprint029_validate.py',
     'tests/test_sprint041_dashboard_ergonomics.py',
     'tests/test_sprint041_live_dashboard_status_context_panel.py',
+    'tests/test_sprint042_auth_header_navigation.py',
 ]
 
 
@@ -228,3 +229,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

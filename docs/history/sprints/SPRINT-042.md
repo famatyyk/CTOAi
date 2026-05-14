@@ -1,7 +1,7 @@
 # Sprint-042 Plan - 3 Day Execution Window
 
 Sprint Period: 2026-05-15 to 2026-05-17
-Status: PLANNED
+Status: WAITING_APPROVAL (Wave-2 sign-off prepared 2026-05-15)
 Theme: Governance enforcement + least-privilege hardening + UI continuity
 Backlog File: workflows/backlog-sprint-042.yaml
 Delivery Flow: workflows/sprint-042-delivery-flow.yaml
@@ -61,3 +61,30 @@ proves backup restore readiness, and protects recent login/navigation UX fixes w
 2. Pull latest main branch on VPS.
 3. Run control tick and verify new backlog_id in runtime task state.
 4. Execute Wave-1 run once Day 3 tasks are complete.
+
+## Execution Outcome (Wave-2)
+
+### Task Status Snapshot
+
+| Task ID | Status | Evidence |
+|---|---|---|
+| CTOA-208 | RELEASED | docs/SPRINT_GOVERNANCE.md, docs/VALIDATION_CHECKLIST.md |
+| CTOA-209 | RELEASED | scripts/ops/sprint042_validate.py, runtime/ci-artifacts/sprint-042-validation.json |
+| CTOA-210 | RELEASED | deploy/vps/sudoers/90-ctoa-admin, deploy/vps/wrappers/ctoa-root-action.sh, deploy/vps/runbook-wrapper-map.md |
+| CTOA-211 | WAITING_APPROVAL | runtime/ci-artifacts/sprint-042-restore-drill.json |
+| CTOA-212 | WAITING_APPROVAL | tests/test_sprint042_auth_header_navigation.py |
+| CTOA-213 | WAITING_APPROVAL | runtime/ci-artifacts/sprint-042-wave1-run.log, runtime/ci-artifacts/sprint-042-validation.json |
+| CTOA-214 | WAITING_APPROVAL | runtime/experiments/sprint-042/CTOA-214.md |
+
+### Wave-1 Gate Result
+
+- Focused regression tests: PASS (18 passed).
+- Sprint validator: PASS (11/11 checks passed).
+- Evidence bundle generated under runtime/ci-artifacts.
+
+### Wave-2 Decision Summary
+
+- Decision: release readiness confirmed, pending final God Mode approval.
+- Rollback baseline: v1.13.0.
+- Owner accountability: Strategos (primary), Core Architect and Documentation Sage (review).
+- Residual risks: no critical blockers observed; standard post-release monitoring retained.

@@ -8,10 +8,12 @@ From Windows PowerShell:
 & C:\Windows\System32\OpenSSH\ssh.exe -i C:\Users\zycie\.ssh\ctoa_vps_auto_ed25519 ctoa-admin@116.202.96.250
 ```
 
-Privilege escalation (when required):
+Least-privilege root operations (when required):
 
 ```bash
-sudo -n /bin/bash
+sudo -n /opt/ctoa/scripts/ops/ctoa-root-action.sh validate-services
+sudo -n /opt/ctoa/scripts/ops/ctoa-root-action.sh inspect-report-env
+sudo -n /opt/ctoa/scripts/ops/ctoa-root-action.sh healthcheck-one-shot
 ```
 
 ## 2. Health-Check Flow
@@ -71,3 +73,23 @@ sudo -n systemctl status ctoa-backup.timer --no-pager
 sudo -n systemctl start ctoa-backup.service
 sudo -n tail -n 80 /opt/ctoa/logs/backup-nightly.log
 ```
+
+## 6. CTOA-211 Restore Drill Evidence
+
+Generate restore drill artifact (local repository evidence file):
+
+```powershell
+$env:CTOA_VPS_HOST='116.202.96.250'
+$env:CTOA_VPS_USER='ctoa-admin'
+$env:CTOA_VPS_KEY_PATH='C:\Users\zycie\.ssh\ctoa_vps_auto_ed25519'
+# run restore drill command bundle and write JSON artifact:
+# runtime/ci-artifacts/sprint-042-restore-drill.json
+```
+
+What must be captured:
+
+- latest config and DB backup paths,
+- retention policy confirmation (DB 7d, config 30d),
+- config restore dry-run output (extract to temporary directory),
+- DB restore dry-run output (archive integrity check + SQL preview parse),
+- command list with timestamps and exit codes.
