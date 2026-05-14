@@ -267,6 +267,10 @@ jobs:
         shell: bash
         run: |
           python scripts/ops/sprint042_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-042-validation.json
+      - name: Sprint-043 delivery gate
+        shell: bash
+        run: |
+          python scripts/ops/sprint043_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-043-validation.json
 
       - name: Python linting (flake8)
         shell: bash
@@ -329,6 +333,16 @@ jobs:
             runtime/ci-artifacts/sprint-042-validation.json
             runtime/ci-artifacts/sprint-042-wave1-run.log
             runtime/evidence/sprint-042/**
+          if-no-files-found: ignore
+      - name: Upload Sprint-043 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sprint-043-evidence
+          path: |
+            runtime/ci-artifacts/sprint-043-validation.json
+            runtime/ci-artifacts/sprint-043-wave1-run.log
+            runtime/evidence/sprint-043/**
           if-no-files-found: ignore
 
       - name: Enforce response guardrail gate
@@ -525,5 +539,6 @@ jobs:
 
       - name: Publish Marker
         run: echo "Owner approved. Artifact is ready for public use from main."
+
 
 
