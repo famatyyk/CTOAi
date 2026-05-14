@@ -1,0 +1,126 @@
+version: 1
+backlog_id: sprint-042
+window_days: 3
+focus: "Governance enforcement + VPS least-privilege hardening + UI continuity"
+owner: strategos
+
+rules:
+  max_parallel_tasks: 3
+  definition_of_done:
+    - implementation_created
+    - validation_passed
+    - evidence_recorded
+    - documentation_updated
+  release_policy:
+    - approval_required: true
+    - environment: production
+
+tasks:
+  - id: CTOA-208
+    title: "Enforce PR quality gates and bypass governance policy"
+    priority: P0
+    type: governance
+    domain: [governance, ci]
+    assignees: [strategos, core-architect, qa-terminator]
+    estimate_hours: 3
+    deliverables:
+      - "docs/SPRINT_GOVERNANCE.md"
+      - "docs/VALIDATION_CHECKLIST.md"
+    acceptance:
+      - "PR-only path and bypass exception policy documented"
+      - "Required check set includes PR Quality Report"
+      - "Governance checklist updated with escalation path"
+
+  - id: CTOA-209
+    title: "Create Sprint-042 validator and local wave task wiring"
+    priority: P0
+    type: quality
+    domain: [ci, quality, automation]
+    assignees: [qa-terminator, core-architect]
+    estimate_hours: 4
+    deliverables:
+      - "scripts/ops/sprint042_validate.py"
+      - ".vscode/tasks.json"
+      - "runtime/ci-artifacts/sprint-042-validation.json"
+    acceptance:
+      - "Validator checks backlog, flow, local tasks, and pipeline hook"
+      - "Wave-1 run task executes validator and tests without errors"
+      - "Validation artifact is generated in runtime/ci-artifacts"
+
+  - id: CTOA-210
+    title: "Least-privilege sudo phase 2 with dedicated wrappers"
+    priority: P0
+    type: security
+    domain: [security, ops, hardening]
+    assignees: [security-guardian, devops-master]
+    estimate_hours: 5
+    deliverables:
+      - "deploy/vps/sudoers/90-ctoa-admin"
+      - "scripts/ops/ctoa-vps.ps1"
+      - "deploy/vps/runbook-wrapper-map.md"
+    acceptance:
+      - "Generic root bash execution removed from default path"
+      - "Operational actions run through explicit allowed wrappers"
+      - "HealthCheckOneShot passes under narrowed sudo policy"
+
+  - id: CTOA-211
+    title: "Backup restore drill and retention evidence"
+    priority: P1
+    type: reliability
+    domain: [ops, backup, reliability]
+    assignees: [devops-master, qa-terminator]
+    estimate_hours: 4
+    deliverables:
+      - "docs/runbook-vps-mobile-console.md"
+      - "runtime/ci-artifacts/sprint-042-restore-drill.json"
+    acceptance:
+      - "Config and DB restore dry-run executed with no critical errors"
+      - "Retention 7d/30d confirmed from generated backup set"
+      - "Evidence file includes timestamp, commands, and result summary"
+
+  - id: CTOA-212
+    title: "Cross-surface navigation and auth-header regression coverage"
+    priority: P1
+    type: ux
+    domain: [ui, qa]
+    assignees: [code-smith, qa-terminator]
+    estimate_hours: 4
+    deliverables:
+      - "docs/site/index.html"
+      - "docs/site/live-dashboard.html"
+      - "mobile_console/static/index.html"
+      - "tests/test_sprint042_auth_header_navigation.py"
+    acceptance:
+      - "Shared navigation panel available on start, console, and live dashboard"
+      - "Login header state toggles correctly on login/logout"
+      - "Regression test covers owner and operator session behavior"
+
+  - id: CTOA-213
+    title: "Sprint-042 Wave-1 evidence run"
+    priority: P1
+    type: governance
+    domain: [qa, governance, release]
+    assignees: [qa-terminator, strategos]
+    estimate_hours: 3
+    deliverables:
+      - "runtime/ci-artifacts/sprint-042-wave1-run.log"
+      - "runtime/ci-artifacts/sprint-042-validation.json"
+    acceptance:
+      - "Focused tests pass"
+      - "Sprint validator reports PASS"
+      - "Wave-1 evidence artifacts are complete and linked"
+
+  - id: CTOA-214
+    title: "Sprint-042 Wave-2 sign-off and release readiness memo"
+    priority: P1
+    type: governance
+    domain: [governance, release]
+    assignees: [strategos, core-architect, documentation-sage]
+    estimate_hours: 2
+    deliverables:
+      - "docs/history/sprints/SPRINT-042.md"
+      - "runtime/experiments/sprint-042/CTOA-214.md"
+    acceptance:
+      - "All Sprint-042 tasks are in WAITING_APPROVAL or RELEASED"
+      - "Risk register and rollback baseline are recorded"
+      - "Manual wave-2 decision note includes owner accountability"

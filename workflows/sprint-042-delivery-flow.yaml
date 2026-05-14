@@ -1,0 +1,70 @@
+sprint: '042'
+theme: Governance enforcement + least-privilege hardening + UI continuity
+version: '1.0'
+lifecycle:
+  start: '2026-05-15'
+  target_wave1: '2026-05-17'
+  target_wave2: '2026-05-17'
+
+tasks:
+  - id: CTOA-208
+    title: Governance and PR quality gate policy
+    on_start: review branch protection and sprint governance requirements
+    on_complete: update governance docs and checklist references
+    on_fail: keep previous governance path and log exception
+
+  - id: CTOA-209
+    title: Sprint-042 validator and local tasks
+    depends_on:
+      - CTOA-208
+    on_start: scaffold sprint042 validator from sprint041 baseline
+    on_complete: confirm validator output artifact and vscode wave task
+    on_fail: rollback validator/task wiring to previous stable config
+
+  - id: CTOA-210
+    title: Least-privilege sudo phase 2
+    depends_on:
+      - CTOA-208
+    on_start: inventory privileged operations and required wrappers
+    on_complete: prove health check and service operations under narrowed sudoers
+    on_fail: restore previous sudoers policy and record risk note
+
+  - id: CTOA-211
+    title: Backup restore drill
+    depends_on:
+      - CTOA-210
+    on_start: prepare restore dry-run scenario and evidence template
+    on_complete: capture restore drill artifact and retention verification
+    on_fail: keep current backup flow and mark restore risk as open
+
+  - id: CTOA-212
+    title: Navigation and auth-header regression hardening
+    depends_on:
+      - CTOA-209
+    on_start: align navigation panel across start, console, and live dashboard
+    on_complete: pass regression tests for login header and cross-page navigation
+    on_fail: rollback ui changes and keep previous rendering path
+
+  - id: CTOA-213
+    title: Wave-1 evidence pass
+    depends_on:
+      - CTOA-209
+      - CTOA-210
+      - CTOA-211
+      - CTOA-212
+    on_start: run focused tests and sprint042 validator
+    on_complete: publish wave-1 artifact bundle
+    on_fail: keep sprint in IN_CI_GATE and escalate blockers
+
+  - id: CTOA-214
+    title: Wave-2 sign-off and release memo
+    depends_on:
+      - CTOA-213
+    on_start: review wave-1 evidence and unresolved risks
+    on_complete: record manual sign-off and release-readiness memo
+    on_fail: hold release and keep tasks in WAITING_APPROVAL
+
+gate_policy:
+  wave_1: sprint042 validator PASS plus focused regression tests PASS
+  wave_2: manual STRATEGOS sign-off with evidence links
+  rollback_baseline: v1.13.0
