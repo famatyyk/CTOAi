@@ -108,6 +108,31 @@ function Get-KeyPath() {
     return $k
 }
 
+function Get-LocalRootWrapperScript() {
+    $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
+    $wrapper = Join-Path $repoRoot 'deploy\vps\wrappers\ctoa-root-action.sh'
+    if (-not (Test-Path $wrapper)) {
+        throw "Missing local wrapper script: $wrapper"
+    }
+    return (Resolve-Path $wrapper).Path
+}
+
+function Ensure-RemoteRootWrapper() {
+    $t = Get-RemoteTarget
+    $k = Get-KeyPath
+    $localWrapper = Get-LocalRootWrapperScript
+    $remoteTmp = '/tmp/ctoa-root-action.sh'
+    $remoteDst = '/opt/ctoa/scripts/ops/ctoa-root-action.sh'
+
+    Invoke-WithSshRetry -Label 'CopyRootWrapper' -Operation {
+        & scp -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new -i $k $localWrapper "${t}:${remoteTmp}"
+    }
+
+    $installCmd = "sudo -n /usr/bin/install -m 750 $remoteTmp $remoteDst; sudo -n /usr/bin/chown root:root $remoteDst; sudo -n /usr/bin/sed -i 's/\r$//' $remoteDst"
+    Invoke-WithSshRetry -Label 'InstallRootWrapper' -Operation {
+        & ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new -i $k $t $installCmd
+    }
+}
 function Invoke-WithSshRetry([scriptblock]$Operation, [string]$Label) {
     $attempts = [int](Get-OptionalEnv 'CTOA_SSH_RETRY_ATTEMPTS' '5')
     $delaySeconds = [int](Get-OptionalEnv 'CTOA_SSH_RETRY_DELAY_SECONDS' '3')
@@ -1366,69 +1391,16 @@ if [ -f /opt/ctoa/logs/runner.log ]; then tail -n 20 /opt/ctoa/logs/runner.log; 
 '@
     }
     'InspectReportEnv' {
-        Invoke-SshScript @'
-set -e
-grep -n '^GITHUB_PAT=' /opt/ctoa/.env | sed 's/=.*/=***set***/' || echo PAT-not-set
-systemctl restart ctoa-report.service
-journalctl -u ctoa-report.service -n 12 --no-pager
-'@
+        Ensure-RemoteRootWrapper
+        Invoke-SshCommand 'sudo -n /opt/ctoa/scripts/ops/ctoa-root-action.sh inspect-report-env' -AsCurrentUser
     }
     'ValidateServices' {
-        Invoke-SshScript @'
-set -e
-systemctl start ctoa-runner.service
-systemctl start ctoa-report.service || true
-systemctl status ctoa-runner.service --no-pager -l | head -n 12
-systemctl status ctoa-report.service --no-pager -l | head -n 20
-if [ -f /opt/ctoa/logs/runner.log ]; then tail -n 40 /opt/ctoa/logs/runner.log; else echo runner.log-not-present; fi
-'@
+        Ensure-RemoteRootWrapper
+        Invoke-SshCommand 'sudo -n /opt/ctoa/scripts/ops/ctoa-root-action.sh validate-services' -AsCurrentUser
     }
     'HealthCheckOneShot' {
-        Invoke-SshScript @'
-set -e
-mkdir -p /opt/ctoa/logs
-marker="ONE_SHOT_HEALTHCHECK_$(date -u +%Y%m%dT%H%M%SZ)"
-echo "$marker" >> /opt/ctoa/logs/runner.log
-
-echo "=== ValidateServices ==="
-systemctl start ctoa-runner.service
-systemctl start ctoa-report.service || true
-systemctl status ctoa-runner.service --no-pager -l | head -n 12
-systemctl status ctoa-report.service --no-pager -l | head -n 20
-if [ -f /opt/ctoa/logs/runner.log ]; then tail -n 40 /opt/ctoa/logs/runner.log; else echo runner.log-not-present; fi
-
-echo
-echo "=== DashboardSnapshot ==="
-systemctl status ctoa-mobile-console.service --no-pager -l | sed -n '1,20p' || true
-echo
-echo "=== Dashboard health ==="
-http_code=$(curl -sS -o /tmp/ctoa-health.out -w "%{http_code}" http://127.0.0.1:8787/api/health || true)
-if [ "$http_code" = "200" ]; then
-    cat /tmp/ctoa-health.out
-elif [ "$http_code" = "401" ] || [ "$http_code" = "403" ]; then
-    echo "dashboard-health-auth-required"
-else
-    echo "dashboard-health-unavailable (http=$http_code)"
-fi
-
-echo
-echo "=== InspectReportEnv ==="
-grep -n '^GITHUB_PAT=' /opt/ctoa/.env | sed 's/=.*/=***set***/' || echo PAT-not-set
-systemctl restart ctoa-report.service
-journalctl -u ctoa-report.service -n 12 --no-pager
-
-echo
-echo "=== Secret Sanity ==="
-if [ -f /opt/ctoa/logs/runner.log ]; then
-    segment="$(awk -v m="$marker" 'found{print} index($0,m){found=1}' /opt/ctoa/logs/runner.log)"
-    if printf '%s\n' "$segment" | grep -q '\[report\] GITHUB_PAT is not set'; then
-        echo "FAIL: GITHUB_PAT is still not set for report publish"
-        exit 2
-    fi
-fi
-
-echo "PASS: one-shot health check complete"
-'@
+        Ensure-RemoteRootWrapper
+        Invoke-SshCommand 'sudo -n /opt/ctoa/scripts/ops/ctoa-root-action.sh healthcheck-one-shot' -AsCurrentUser
     }
     'EnableLiveHealth' {
         Invoke-SshScript @'

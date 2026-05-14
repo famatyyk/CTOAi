@@ -1,5 +1,5 @@
 Defaults:ctoa-admin env_reset
 Defaults:ctoa-admin secure_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 Cmnd_Alias CTOA_ROOT = \
-  /bin/bash, /usr/bin/bash, /usr/bin/systemctl, /usr/bin/journalctl, /usr/bin/tee, /usr/bin/cp, /usr/bin/mv, /usr/bin/chmod, /usr/bin/chown, /usr/bin/install, /usr/bin/sed, /usr/bin/grep, /usr/bin/awk, /usr/bin/find, /usr/bin/tail, /usr/bin/head, /usr/bin/curl, /usr/bin/python3, /usr/bin/pip3, /usr/bin/git, /usr/bin/apt-get, /usr/bin/apt, /usr/bin/psql, /usr/bin/createdb, /usr/bin/pg_isready, /usr/bin/openssl, /usr/bin/base64, /usr/bin/pg_dump, /usr/bin/pg_restore, /usr/bin/tar, /usr/bin/gzip, /usr/bin/fail2ban-client
+  /opt/ctoa/scripts/ops/ctoa-root-action.sh *, /usr/bin/systemctl, /usr/bin/journalctl, /usr/bin/tee, /usr/bin/cp, /usr/bin/mv, /usr/bin/chmod, /usr/bin/chown, /usr/bin/install, /usr/bin/sed, /usr/bin/grep, /usr/bin/awk, /usr/bin/find, /usr/bin/tail, /usr/bin/head, /usr/bin/curl, /usr/bin/python3, /usr/bin/pip3, /usr/bin/git, /usr/bin/apt-get, /usr/bin/apt, /usr/bin/psql, /usr/bin/createdb, /usr/bin/pg_isready, /usr/bin/openssl, /usr/bin/base64, /usr/bin/pg_dump, /usr/bin/pg_restore, /usr/bin/tar, /usr/bin/gzip, /usr/bin/fail2ban-client
 ctoa-admin ALL=(root) NOPASSWD: CTOA_ROOT
