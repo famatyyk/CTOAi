@@ -1,6 +1,6 @@
 # Sprint-047 Plan - 3 Day Execution Window
 
-Status: IN_PROGRESS (CTOA-239/240/241/242 completed; CTOA-243/244 pending)
+Status: WAITING_APPROVAL (Wave-1 PASS; CTOA-243 done, CTOA-244 sign-off submitted)
 Theme: VPS hygiene Phase-3 reconcile + Stage-2 execution kickoff + governance continuity
 Window: 2026-05-15 -> 2026-05-17
 Backlog: workflows/backlog-sprint-047.yaml
@@ -52,3 +52,17 @@ from Phase 2 to Phase 3/4 readiness while preserving governance quality gates an
 - Verified: CTOA-241 and CTOA-242 deliverables are published with evidence and operator guidance.
 - God Mode Decision Required: Approve execution closure for CTOA-243 and CTOA-244.
 
+
+## Wave-1 Execution Update (CTOA-243/244)
+
+- CTOA-243: PASS. Local Wave-1 chain executed with tests + sprint047 validator + launch dry-run evidence.
+- CTOA-244: PASS. Sign-off memo published with residual risks and explicit God Mode decision point.
+- Gate summary: tests PASS (133 passed, 6 skipped), sprint047_validate PASS (14/14), launch dry-run PASS.
+
+## Wave-1 Closure Block
+
+- Delivered By: STRATEGOS + QA TERMINATOR + DOCUMENTATION SAGE.
+- Verified: Wave-1 readiness gates were executed and evidenced in runtime artifacts.
+- Residual Risks: Phase-4 controlled re-apply on VPS is still pending execution.
+- Unresolved Blockers: NONE.
+- God Mode Decision Required: Approve closure of CTOA-243/244 and authorize Phase-4 controlled re-apply.
