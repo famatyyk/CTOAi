@@ -229,3 +229,41 @@ def test_auto_close_step9_if_ready_writes_evidence_and_updates_docs(tmp_path: Pa
     assert closure_path.exists()
     assert "Phase 5 Step-9 Closure" in readme_path.read_text(encoding="utf-8")
 
+def test_load_notify_env_file_parses_supported_lines(tmp_path: Path):
+    module = _load_module()
+
+    env_file = tmp_path / "phase5-notify.env"
+    env_file.write_text(
+        "# comment\n"
+        "CTOA_DISCORD_WEBHOOK_URL=https://discord.example/abc\n"
+        "CTOA_SLACK_WEBHOOK_URL='https://hooks.slack.example/xyz'\n"
+        "IGNORED_NO_EQUALS\n",
+        encoding="utf-8",
+    )
+
+    values = module.load_notify_env_file(env_file)
+
+    assert values["CTOA_DISCORD_WEBHOOK_URL"] == "https://discord.example/abc"
+    assert values["CTOA_SLACK_WEBHOOK_URL"] == "https://hooks.slack.example/xyz"
+
+
+def test_resolve_webhook_urls_prefers_cli_and_falls_back_to_env_file(tmp_path: Path):
+    module = _load_module()
+
+    env_file = tmp_path / "phase5-notify.env"
+    env_file.write_text(
+        "CTOA_DISCORD_WEBHOOK_URL=https://discord.example/from-file\n"
+        "CTOA_SLACK_WEBHOOK_URL=https://slack.example/from-file\n",
+        encoding="utf-8",
+    )
+
+    discord, slack, source = module.resolve_webhook_urls(
+        discord_cli="",
+        slack_cli="https://slack.example/from-cli",
+        notify_env_file=env_file,
+    )
+
+    assert discord == "https://discord.example/from-file"
+    assert slack == "https://slack.example/from-cli"
+    assert source == "notify_env_file"
+

@@ -23,6 +23,7 @@ DEFAULT_CHECKLIST_SCRIPT = ROOT / "scripts" / "ops" / "phase5_nightly_checklist.
 DEFAULT_CHECKLIST_OUTPUT = DEFAULT_EVIDENCE_DIR / "phase5-nightly-checklist.md"
 DEFAULT_CHECKLIST_JSON = ROOT / "runtime" / "ci-artifacts" / "phase5-nightly-checklist.json"
 DEFAULT_MORNING_BRIEF_OUT = DEFAULT_EVIDENCE_DIR / "phase5-morning-brief.md"
+DEFAULT_NOTIFY_ENV_FILE = ROOT / ".ctoa-local" / "phase5-notify.env"
 DEFAULT_STEP9_PLAN_PATH = ROOT / "docs" / "VPS_WORKTREE_HYGIENE_PLAN.md"
 DEFAULT_STEP9_CLOSURE_EVIDENCE_OUT = DEFAULT_EVIDENCE_DIR / "phase5-step9-closure.md"
 DEFAULT_EVIDENCE_README_PATH = DEFAULT_EVIDENCE_DIR / "README.md"
@@ -56,6 +57,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--checklist-output", default=str(DEFAULT_CHECKLIST_OUTPUT))
     parser.add_argument("--checklist-json-out", default=str(DEFAULT_CHECKLIST_JSON))
     parser.add_argument("--morning-brief-out", default=str(DEFAULT_MORNING_BRIEF_OUT))
+    parser.add_argument("--notify-env-file", default=str(DEFAULT_NOTIFY_ENV_FILE))
 
     parser.add_argument("--target-runs", type=int, default=3)
     parser.add_argument("--nightly-hour", type=int, default=2)
@@ -225,6 +227,55 @@ def _as_int(value: Any, default: int = 0) -> int:
         return int(value)
     except (TypeError, ValueError):
         return default
+
+
+def load_notify_env_file(path: Path) -> dict[str, str]:
+    if not path.exists():
+        return {}
+
+    values: dict[str, str] = {}
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+        if key:
+            values[key] = value
+    return values
+
+
+def resolve_webhook_urls(discord_cli: str, slack_cli: str, notify_env_file: Path) -> tuple[str, str, str]:
+    discord = discord_cli.strip()
+    slack = slack_cli.strip()
+    source = "cli"
+
+    if discord and slack:
+        return discord, slack, source
+
+    env_values = load_notify_env_file(notify_env_file)
+
+    if not discord:
+        discord = str(env_values.get("CTOA_DISCORD_WEBHOOK_URL", "")).strip()
+    if not slack:
+        slack = str(env_values.get("CTOA_SLACK_WEBHOOK_URL", "")).strip()
+
+    if discord or slack:
+        source = "notify_env_file"
+    elif discord_cli.strip() or slack_cli.strip():
+        source = "cli_partial"
+    else:
+        source = "none"
+
+    return discord, slack, source
+
+
+def render_notify_source_status(source: str, env_file: Path, discord_set: bool, slack_set: bool) -> str:
+    return (
+        "[phase5-notify-config] "
+        f"source={source} env_file={env_file} discord_set={discord_set} slack_set={slack_set}"
+    )
 
 
 def build_morning_brief(payload: dict[str, Any], pulled_new: int, skipped_existing: int) -> dict[str, Any]:
@@ -577,10 +628,25 @@ def main() -> int:
     write_morning_brief(morning_brief_path, morning_brief)
     print(render_morning_brief_status(morning_brief_path, morning_brief))
 
+    notify_env_file = Path(args.notify_env_file).expanduser().resolve()
+    discord_webhook_url, slack_webhook_url, notify_source = resolve_webhook_urls(
+        args.discord_webhook_url,
+        args.slack_webhook_url,
+        notify_env_file,
+    )
+    print(
+        render_notify_source_status(
+            notify_source,
+            notify_env_file,
+            discord_set=bool(discord_webhook_url),
+            slack_set=bool(slack_webhook_url),
+        )
+    )
+
     notification_result = send_attention_notifications(
         morning_brief,
-        discord_webhook_url=args.discord_webhook_url,
-        slack_webhook_url=args.slack_webhook_url,
+        discord_webhook_url=discord_webhook_url,
+        slack_webhook_url=slack_webhook_url,
     )
     print(render_attention_notify_status(notification_result))
 
