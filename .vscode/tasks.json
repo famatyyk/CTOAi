@@ -1273,6 +1273,41 @@
                                            "reveal":  "always",
                                            "panel":  "dedicated"
                                        }
+                  },
+                  {
+                      "label":  "CTOA: Sprint-046 Refresh Progress Diagram",
+                      "type":  "shell",
+                      "command":  ".venv/Scripts/python.exe scripts/ops/project_progress_diagram.py --backlog workflows/backlog-sprint-046.yaml --state runtime/task-state.yaml --output docs/history/sprints/SPRINT-046-PROGRESS.md --project-name Sprint-046",
+                      "isBackground":  false,
+                      "presentation":  {
+                                           "reveal":  "always",
+                                           "panel":  "dedicated"
+                                       }
+                  },
+                  {
+                      "label":  "CTOA: Sprint-046 Validate",
+                      "type":  "shell",
+                      "command":  ".venv/Scripts/python.exe scripts/ops/sprint046_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-046-validation.json",
+                      "isBackground":  false,
+                      "presentation":  {
+                                           "reveal":  "always",
+                                           "panel":  "dedicated"
+                                       }
+                  },
+                  {
+                      "label":  "CTOA: Sprint-046 Wave-1 Run",
+                      "dependsOrder":  "sequence",
+                      "dependsOn":  [
+                                        "CTOA: Sprint-046 Refresh Progress Diagram",
+                                        "CTOA: Run All Tests",
+                                        "CTOA: Sprint-046 Validate",
+                                        "CTOA: Launch Pack"
+                                    ],
+                      "isBackground":  false,
+                      "presentation":  {
+                                           "reveal":  "always",
+                                           "panel":  "dedicated"
+                                       }
                   }
               ],
     "inputs":  [

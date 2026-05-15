@@ -25,3 +25,14 @@ This directory stores non-destructive inventory evidence collected from the VPS 
 - phase1-20260515T130807Z.tar.gz
 
 The snapshot was generated on VPS and copied to this repository for traceability and Sprint governance evidence.
+## CTOA-237 Verification Snapshot: 20260515T135557Z
+
+- branch: main
+- head: c69e253
+- gate_expected_block: YES
+- purpose: verify operational pre-update dirty-worktree gate blocks update flow on VPS
+
+### Artifacts
+
+- ctoa-237-20260515T135557Z/preupdate-gate-20260515T135557Z.txt
+- ctoa-237-20260515T135557Z/preupdate-status-20260515T135557Z.txt
