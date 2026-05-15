@@ -1,0 +1,61 @@
+sprint: '044'
+theme: Operational drift prevention + control-plane regression coverage + governance-ready closure
+version: '1.0'
+lifecycle:
+  start: '2026-05-18'
+  target_wave1: '2026-05-20'
+  target_wave2: '2026-05-20'
+
+tasks:
+  - id: CTOA-221
+    title: Sprint-044 kickoff baseline and carry-over risk ledger
+    on_start: publish backlog, delivery flow, and kickoff baseline report
+    on_complete: confirm carry-over risks, owners, and rollback baseline
+    on_fail: keep sprint in planning hold with explicit blockers
+
+  - id: CTOA-222
+    title: VPS backlog drift guard hardening
+    depends_on:
+      - CTOA-221
+    on_start: inspect runner and report unit overrides for hardcoded sprint ids
+    on_complete: validate services read sprint backlog from approved environment path
+    on_fail: keep previous unit configuration and escalate drift risk
+
+  - id: CTOA-223
+    title: Sprint-044 validator and wave wiring
+    depends_on:
+      - CTOA-221
+    on_start: scaffold sprint044 validator from sprint043 baseline
+    on_complete: produce validation artifact and local wave task chain
+    on_fail: rollback validator/task wiring to previous stable baseline
+
+  - id: CTOA-224
+    title: Control tick and backlog parsing regression shield
+    depends_on:
+      - CTOA-223
+    on_start: define targeted tests for backlog selection and parser edge cases
+    on_complete: publish regression evidence artifact
+    on_fail: keep previous regression set and track test coverage gap
+
+  - id: CTOA-225
+    title: Wave-1 evidence pass
+    depends_on:
+      - CTOA-222
+      - CTOA-223
+      - CTOA-224
+    on_start: run focused tests, sprint044 validator, and targeted regressions
+    on_complete: publish wave-1 evidence bundle
+    on_fail: hold sprint in IN_CI_GATE and escalate blockers
+
+  - id: CTOA-226
+    title: Wave-2 sign-off and release memo
+    depends_on:
+      - CTOA-225
+    on_start: review wave-1 evidence and unresolved risk notes
+    on_complete: record manual sign-off and release readiness decision
+    on_fail: keep sprint in WAITING_APPROVAL and block release
+
+gate_policy:
+  wave_1: sprint044 validator PASS plus control-tick backlog regressions PASS
+  wave_2: manual STRATEGOS sign-off with carry-over risk closure note
+  rollback_baseline: v1.13.0
