@@ -1,0 +1,143 @@
+backlog_id: sprint-045
+last_tick_at: '2026-05-15T12:52:49+00:00'
+tasks:
+- id: CTOA-227
+  title: Open Sprint-045 kickoff baseline and risk ledger refresh
+  priority: P0
+  type: governance
+  domain:
+  - governance
+  - planning
+  - release
+  assignees:
+  - strategos
+  - core-architect
+  deliverables:
+  - workflows/backlog-sprint-045.yaml
+  - workflows/sprint-045-delivery-flow.yaml
+  - docs/history/sprints/SPRINT-045.md
+  status: RELEASED
+  ticks_in_status: 0
+  updated_at: '2026-05-15T12:52:40+00:00'
+- id: CTOA-228
+  title: Build reusable project progress diagram with percentage visibility
+  priority: P0
+  type: observability
+  domain:
+  - governance
+  - reporting
+  - automation
+  assignees:
+  - documentation-sage
+  - core-architect
+  deliverables:
+  - scripts/ops/project_progress_diagram.py
+  - docs/history/sprints/SPRINT-045-PROGRESS.md
+  - .vscode/tasks.json
+  status: RELEASED
+  ticks_in_status: 0
+  updated_at: '2026-05-15T12:52:40+00:00'
+- id: CTOA-229
+  title: Create Sprint-045 validator and local wave task wiring
+  priority: P1
+  type: quality
+  domain:
+  - ci
+  - qa
+  - automation
+  assignees:
+  - qa-terminator
+  - core-architect
+  deliverables:
+  - scripts/ops/sprint045_validate.py
+  - .vscode/tasks.json
+  - runtime/ci-artifacts/sprint-045-validation.json
+  status: RELEASED
+  ticks_in_status: 0
+  updated_at: '2026-05-15T12:52:40+00:00'
+- id: CTOA-230
+  title: Sprint-045 Wave-1 evidence run
+  priority: P1
+  type: governance
+  domain:
+  - qa
+  - governance
+  - release
+  assignees:
+  - qa-terminator
+  - strategos
+  deliverables:
+  - runtime/ci-artifacts/sprint-045-wave1-run.log
+  - runtime/ci-artifacts/sprint-045-validation.json
+  - docs/history/sprints/SPRINT-045-PROGRESS.md
+  status: RELEASED
+  ticks_in_status: 0
+  updated_at: '2026-05-15T12:52:40+00:00'
+  notes:
+  - at: '2026-05-15T12:52:40+00:00'
+    reason: manual approval
+    status: RELEASED
+- id: CTOA-231
+  title: Align canonical VPS host-target defaults with active infrastructure
+  priority: P1
+  type: reliability
+  domain:
+  - ops
+  - reliability
+  - hardening
+  assignees:
+  - devops-master
+  - security-guardian
+  deliverables:
+  - scripts/ops/ctoa-vps.ps1
+  - ctoa.ps1
+  - tests/test_suite.py
+  status: RELEASED
+  ticks_in_status: 0
+  updated_at: '2026-05-15T12:52:41+00:00'
+  notes:
+  - at: '2026-05-15T12:52:41+00:00'
+    reason: manual approval
+    status: RELEASED
+- id: CTOA-232
+  title: Sprint-045 Wave-2 sign-off and release memo
+  priority: P1
+  type: governance
+  domain:
+  - governance
+  - release
+  assignees:
+  - strategos
+  - core-architect
+  - documentation-sage
+  deliverables:
+  - docs/history/sprints/SPRINT-045.md
+  - runtime/experiments/sprint-045/CTOA-232.md
+  status: WAITING_APPROVAL
+  ticks_in_status: 0
+  updated_at: '2026-05-15T12:52:40+00:00'
+history:
+- at: '2026-05-15T12:52:40+00:00'
+  event: state_seed
+  reason: Post-unit-fix reseed for Sprint-045 approvals
+- at: '2026-05-15T12:52:40+00:00'
+  event: transition
+  task_id: CTOA-230
+  from_status: WAITING_APPROVAL
+  to_status: RELEASED
+  reason: manual approval
+- at: '2026-05-15T12:52:40+00:00'
+  event: approval
+  task_id: CTOA-230
+- at: '2026-05-15T12:52:41+00:00'
+  event: transition
+  task_id: CTOA-231
+  from_status: WAITING_APPROVAL
+  to_status: RELEASED
+  reason: manual approval
+- at: '2026-05-15T12:52:41+00:00'
+  event: approval
+  task_id: CTOA-231
+- at: '2026-05-15T12:52:49+00:00'
+  event: tick
+  active: 1

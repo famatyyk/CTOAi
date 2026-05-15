@@ -1,16 +1,16 @@
 # Project Progress Diagram - Sprint-045
 
-Generated: 2026-05-15T12:39:43Z
+Generated: 2026-05-15T12:53:17Z
 Backlog: sprint-045
 Source: C:/Users/zycie/CTOAi/workflows/backlog-sprint-045.yaml
-Completion: 0.0% (0/6 RELEASED)
+Completion: 83.3% (5/6 RELEASED)
 
 ```mermaid
 pie showData
     title Sprint-045 Progress Breakdown
-    "RELEASED" : 0.0
-    "IN_FLIGHT" : 0.0
-    "NEW" : 100.0
+    "RELEASED" : 83.3
+    "IN_FLIGHT" : 16.7
+    "NEW" : 0.0
     "BLOCKED" : 0.0
 ```
 
@@ -18,19 +18,19 @@ pie showData
 
 | Bucket | Tasks | Percent |
 |---|---|---|
-| RELEASED | 0 | 0.0% |
-| IN_FLIGHT | 0 | 0.0% |
-| NEW | 6 | 100.0% |
+| RELEASED | 5 | 83.3% |
+| IN_FLIGHT | 1 | 16.7% |
+| NEW | 0 | 0.0% |
 | BLOCKED | 0 | 0.0% |
 
 ## Raw Status Counts
 
-- NEW: 6
+- NEW: 0
 - IN_PROGRESS: 0
 - IN_QA: 0
 - IN_CI_GATE: 0
-- WAITING_APPROVAL: 0
-- RELEASED: 0
+- WAITING_APPROVAL: 1
+- RELEASED: 5
 - BLOCKED: 0
 
 ## Refresh Command
