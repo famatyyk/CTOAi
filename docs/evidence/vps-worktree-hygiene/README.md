@@ -133,4 +133,8 @@ The snapshot was generated on VPS and copied to this repository for traceability
 - phase5-drycheck-20260515T185948Z/cron-install.out.txt
 - phase5-drycheck-20260515T185948Z/remote-latest-path.txt
 - phase5-drycheck-20260515T185948Z/remote-head.txt
+## Phase 5 Nightly Checklist Automation
 
+- generator: scripts/ops/phase5_nightly_checklist.py
+- report: phase5-nightly-checklist.md
+- command: .venv/Scripts/python.exe scripts/ops/phase5_nightly_checklist.py --json-out runtime/ci-artifacts/phase5-nightly-checklist.json
