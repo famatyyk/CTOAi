@@ -1,0 +1,62 @@
+sprint: '047'
+theme: VPS hygiene Phase-3 reconcile + Stage-2 execution kickoff + governance continuity
+version: '1.0'
+lifecycle:
+  start: '2026-05-15'
+  target_wave1: '2026-05-16'
+  target_wave2: '2026-05-17'
+
+tasks:
+  - id: CTOA-239
+    title: Sprint-047 kickoff baseline
+    on_start: publish Sprint-047 backlog, flow, and objective baseline
+    on_complete: confirm stage objective scope and decision gates
+    on_fail: keep sprint in planning hold with explicit blockers
+
+  - id: CTOA-240
+    title: Sprint-046 release evidence normalization
+    depends_on:
+      - CTOA-239
+    on_start: reconcile progress and release transition markers
+    on_complete: publish consistent release-state evidence chain
+    on_fail: document mismatch and block downstream sign-off
+
+  - id: CTOA-241
+    title: VPS hygiene Phase-3 reconcile verification
+    depends_on:
+      - CTOA-239
+    on_start: run safe fetch/pull viability checks (fast-forward policy)
+    on_complete: record reconcile result or blocker taxonomy
+    on_fail: remain in protection mode and escalate blockers
+
+  - id: CTOA-242
+    title: Phase-4 controlled re-apply readiness
+    depends_on:
+      - CTOA-241
+    on_start: map stash groups to validation-backed re-apply order
+    on_complete: publish re-apply and rollback checkpoints
+    on_fail: freeze re-apply and retain stash preservation
+
+  - id: CTOA-243
+    title: Sprint-047 validator and Wave-1 wiring
+    depends_on:
+      - CTOA-239
+      - CTOA-240
+    on_start: scaffold sprint047 validator from sprint046 baseline
+    on_complete: produce validation artifact and local Wave-1 chain
+    on_fail: rollback validator wiring to previous stable baseline
+
+  - id: CTOA-244
+    title: Wave-1 readiness pass and sign-off memo
+    depends_on:
+      - CTOA-241
+      - CTOA-242
+      - CTOA-243
+    on_start: run tests, sprint047 validator, and launch pack dry-run
+    on_complete: publish Wave-1 evidence and sign-off memo
+    on_fail: hold sprint in IN_CI_GATE and escalate blockers
+
+gate_policy:
+  wave_1: sprint047 validator PASS plus focused quality regressions PASS
+  wave_2: manual STRATEGOS sign-off with blocker closure note
+  rollback_baseline: v1.13.1

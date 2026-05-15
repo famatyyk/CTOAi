@@ -36,3 +36,26 @@ The snapshot was generated on VPS and copied to this repository for traceability
 
 - ctoa-237-20260515T135557Z/preupdate-gate-20260515T135557Z.txt
 - ctoa-237-20260515T135557Z/preupdate-status-20260515T135557Z.txt
+
+## Phase 2 Snapshot: 20260515T140911Z
+
+- branch: main
+- head: c69e253
+- changed_entries_before: 24
+- untracked_entries_before: 18
+- stash_message: hygiene:phase2:20260515T140911Z
+- stash_exit_code: 0
+- post_status_clean: YES
+- stash_top: stash@{0}: On main: hygiene:phase2:20260515T140911Z
+
+### Artifacts
+
+- phase2-20260515T140911Z/summary.md
+- phase2-20260515T140911Z/status-short.txt
+- phase2-20260515T140911Z/status-porcelain.txt
+- phase2-20260515T140911Z/changed-paths.txt
+- phase2-20260515T140911Z/untracked.txt
+- phase2-20260515T140911Z/tracked-diff.patch
+- phase2-20260515T140911Z/post-status-porcelain.txt
+- pre-clean-20260515T140911Z.tar.gz
+- manual-edits-20260515T140911Z.tar.gz

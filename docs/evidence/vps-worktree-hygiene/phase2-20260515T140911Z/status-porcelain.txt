@@ -1,0 +1,24 @@
+ M deploy/vps/rotate-mobile-token.sh
+ M docs/VALIDATION_CHECKLIST.md
+ M docs/runbook-disk-emergency.md
+ M docs/site/live-dashboard.html
+ M mobile_console/static/app.js
+ M mobile_console/static/index.html
+?? backups/config/ctoa-config-20260514T202059Z.tar.gz
+?? backups/config/ctoa-config-20260514T222256Z.tar.gz
+?? backups/config/ctoa-config-20260515T025151Z.tar.gz
+?? backups/db/ctoa-db-20260514T202059Z.sql.gz
+?? backups/db/ctoa-db-20260514T222256Z.sql.gz
+?? deploy/vps/backup-nightly.sh
+?? docs/CONSISTENCY_REPORT.md
+?? docs/history/sprints/SPRINT-043.md
+?? docs/history/sprints/SPRINT-044.md
+?? scripts/ops/ctoa-root-action.sh
+?? workflows/backlog-sprint-042.yaml
+?? workflows/backlog-sprint-043.yaml
+?? workflows/backlog-sprint-044.yaml
+?? workflows/backlog-sprint-045.yaml
+?? workflows/sprint-042-delivery-flow.yaml
+?? workflows/sprint-043-delivery-flow.yaml
+?? workflows/sprint-044-delivery-flow.yaml
+?? workflows/sprint-045-delivery-flow.yaml

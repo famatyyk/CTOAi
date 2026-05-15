@@ -51,11 +51,14 @@ Goal: Restore predictable update flow without destructive git operations.
 
 1. Add a nightly dry-check job:
    - git -C /opt/ctoa status --porcelain should be empty.
-2. Add a pre-update gate in VPS scripts that aborts update when worktree is dirty and writes actionable report.
+2. Add a pre-update gate in VPS scripts that aborts update when worktree is dirty and writes actionable report. (DONE in Sprint-046)
 3. Require any emergency VPS edit to be mirrored to main within one sprint cycle.
 
 ## Immediate Next Actions
 
-1. Run Phase 1 inventory and publish evidence bundle.
-2. Classify current dirty files with owners.
-3. Execute Phase 2 backups and stashes before next sprint pull attempt.
+1. [x] Run Phase 1 inventory and publish evidence bundle. (DONE)
+2. [x] Classify current dirty files with owners. (DONE)
+3. [x] Implement and verify pre-update dirty-worktree gate. (DONE)
+4. [x] Execute Phase 2 backups and stashes before next sprint pull attempt. (DONE: 20260515T140911Z)
+5. [ ] Proceed to Phase 3 fast-forward reconcile only. (ACTIVE NEXT STEP)
+6. [ ] After Phase 3, execute controlled re-apply flow from Phase 4.
