@@ -255,7 +255,38 @@ set -e
 export DEBIAN_FRONTEND=noninteractive
 if ! command -v git >/dev/null 2>&1; then apt-get update -y; apt-get install -y git; fi
 if ! command -v python3 >/dev/null 2>&1; then apt-get update -y; apt-get install -y python3 python3-venv python3-pip; fi
+ctoa_preupdate_gate() {
+  local repo="$1"
+  local evidence_dir="$repo/runtime/evidence/worktree-hygiene"
+  local ts
+  ts="$(date -u +%Y%m%dT%H%M%SZ)"
+  mkdir -p "$evidence_dir"
+
+  local status_file="$evidence_dir/preupdate-status-${ts}.txt"
+  git -C "$repo" status --porcelain > "$status_file"
+
+  if [ -s "$status_file" ]; then
+    local report_file="$evidence_dir/preupdate-gate-${ts}.txt"
+    {
+      echo "[pre-update-gate] BLOCKED dirty worktree"
+      echo "repo=$repo"
+      echo "timestamp_utc=$ts"
+      echo "status_file=$status_file"
+      echo
+      echo "=== git status --short ==="
+      git -C "$repo" status --short || true
+      echo
+      echo "=== recommended next steps ==="
+      echo "1) Run Phase 1 inventory and back up changed files."
+      echo "2) Classify changes: keep-and-commit / keep-but-stash / archive-and-remove."
+      echo "3) Stash or commit changes, then rerun update action."
+    } > "$report_file"
+    cat "$report_file"
+    return 1
+  fi
+}
 if [ -d /opt/ctoa/.git ]; then
+  ctoa_preupdate_gate /opt/ctoa
   cd /opt/ctoa; git fetch --all; git checkout main; git pull --ff-only
 else
   rm -rf /opt/ctoa; git clone https://github.com/famatyyk/CTOAi.git /opt/ctoa
@@ -1455,7 +1486,38 @@ pg_isready -h 127.0.0.1 -U ctoa -d ctoa && echo '[SetupDB] DB ready'
     'SetupAgents' {
         Invoke-SshScript @'
     set -e
+ctoa_preupdate_gate() {
+  local repo="$1"
+  local evidence_dir="$repo/runtime/evidence/worktree-hygiene"
+  local ts
+  ts="$(date -u +%Y%m%dT%H%M%SZ)"
+  mkdir -p "$evidence_dir"
+
+  local status_file="$evidence_dir/preupdate-status-${ts}.txt"
+  git -C "$repo" status --porcelain > "$status_file"
+
+  if [ -s "$status_file" ]; then
+    local report_file="$evidence_dir/preupdate-gate-${ts}.txt"
+    {
+      echo "[pre-update-gate] BLOCKED dirty worktree"
+      echo "repo=$repo"
+      echo "timestamp_utc=$ts"
+      echo "status_file=$status_file"
+      echo
+      echo "=== git status --short ==="
+      git -C "$repo" status --short || true
+      echo
+      echo "=== recommended next steps ==="
+      echo "1) Run Phase 1 inventory and back up changed files."
+      echo "2) Classify changes: keep-and-commit / keep-but-stash / archive-and-remove."
+      echo "3) Stash or commit changes, then rerun update action."
+    } > "$report_file"
+    cat "$report_file"
+    return 1
+  fi
+}
     cd /opt/ctoa
+    ctoa_preupdate_gate /opt/ctoa
     git pull --ff-only
     .venv/bin/pip install -q psycopg2-binary
     mkdir -p /opt/ctoa/generated /opt/ctoa/releases /opt/ctoa/logs
@@ -1490,7 +1552,38 @@ pg_isready -h 127.0.0.1 -U ctoa -d ctoa && echo '[SetupDB] DB ready'
 
         $remoteScript = @'
 set -e
+ctoa_preupdate_gate() {
+  local repo="$1"
+  local evidence_dir="$repo/runtime/evidence/worktree-hygiene"
+  local ts
+  ts="$(date -u +%Y%m%dT%H%M%SZ)"
+  mkdir -p "$evidence_dir"
+
+  local status_file="$evidence_dir/preupdate-status-${ts}.txt"
+  git -C "$repo" status --porcelain > "$status_file"
+
+  if [ -s "$status_file" ]; then
+    local report_file="$evidence_dir/preupdate-gate-${ts}.txt"
+    {
+      echo "[pre-update-gate] BLOCKED dirty worktree"
+      echo "repo=$repo"
+      echo "timestamp_utc=$ts"
+      echo "status_file=$status_file"
+      echo
+      echo "=== git status --short ==="
+      git -C "$repo" status --short || true
+      echo
+      echo "=== recommended next steps ==="
+      echo "1) Run Phase 1 inventory and back up changed files."
+      echo "2) Classify changes: keep-and-commit / keep-but-stash / archive-and-remove."
+      echo "3) Stash or commit changes, then rerun update action."
+    } > "$report_file"
+    cat "$report_file"
+    return 1
+  fi
+}
 cd /opt/ctoa
+ctoa_preupdate_gate /opt/ctoa
 git fetch --quiet
 git reset --hard origin/main
 
@@ -1565,7 +1658,38 @@ echo [InstallGsReset] GS reset timer armed and active
 
         $remoteScript = @'
 set -e
+ctoa_preupdate_gate() {
+  local repo="$1"
+  local evidence_dir="$repo/runtime/evidence/worktree-hygiene"
+  local ts
+  ts="$(date -u +%Y%m%dT%H%M%SZ)"
+  mkdir -p "$evidence_dir"
+
+  local status_file="$evidence_dir/preupdate-status-${ts}.txt"
+  git -C "$repo" status --porcelain > "$status_file"
+
+  if [ -s "$status_file" ]; then
+    local report_file="$evidence_dir/preupdate-gate-${ts}.txt"
+    {
+      echo "[pre-update-gate] BLOCKED dirty worktree"
+      echo "repo=$repo"
+      echo "timestamp_utc=$ts"
+      echo "status_file=$status_file"
+      echo
+      echo "=== git status --short ==="
+      git -C "$repo" status --short || true
+      echo
+      echo "=== recommended next steps ==="
+      echo "1) Run Phase 1 inventory and back up changed files."
+      echo "2) Classify changes: keep-and-commit / keep-but-stash / archive-and-remove."
+      echo "3) Stash or commit changes, then rerun update action."
+    } > "$report_file"
+    cat "$report_file"
+    return 1
+  fi
+}
 cd /opt/ctoa
+ctoa_preupdate_gate /opt/ctoa
     echo "[InstallGsResetFromBranch] source ref: __SOURCE_REF__"
     git fetch --quiet origin "__SOURCE_REF__"
 git checkout -f FETCH_HEAD

@@ -102,6 +102,33 @@ class TestVPSConnectivity(unittest.TestCase):
         self.assertIn("$h = '116.202.96.250'", content)
         self.assertNotIn("$h = '46.225.110.52'", content)
 
+    def test_ctoa_vps_preupdate_gate_present(self):
+        """Ensure dirty-worktree gate exists in VPS update script"""
+        script = Path(__file__).parent.parent / "scripts" / "ops" / "ctoa-vps.ps1"
+        content = script.read_text(encoding="utf-8", errors="ignore")
+        self.assertIn("ctoa_preupdate_gate()", content)
+        self.assertIn("[pre-update-gate] BLOCKED dirty worktree", content)
+        self.assertIn("preupdate-gate-${ts}.txt", content)
+
+    def test_ctoa_vps_preupdate_gate_applied_to_update_paths(self):
+        """Ensure gate is called before pull/reset/checkout update flows"""
+        script = Path(__file__).parent.parent / "scripts" / "ops" / "ctoa-vps.ps1"
+        content = script.read_text(encoding="utf-8", errors="ignore")
+        self.assertGreaterEqual(content.count("ctoa_preupdate_gate /opt/ctoa"), 4)
+
+        self.assertIn(
+            "if [ -d /opt/ctoa/.git ]; then\n  ctoa_preupdate_gate /opt/ctoa\n  cd /opt/ctoa; git fetch --all; git checkout main; git pull --ff-only",
+            content,
+        )
+        self.assertIn(
+            "cd /opt/ctoa\nctoa_preupdate_gate /opt/ctoa\ngit fetch --quiet\ngit reset --hard origin/main",
+            content,
+        )
+        self.assertIn(
+            "cd /opt/ctoa\nctoa_preupdate_gate /opt/ctoa\n    echo \"[InstallGsResetFromBranch] source ref: __SOURCE_REF__\"\n    git fetch --quiet origin \"__SOURCE_REF__\"\ngit checkout -f FETCH_HEAD",
+            content,
+        )
+
 
 class TestGitHubIntegration(unittest.TestCase):
     """Test GitHub API integration (mock-friendly)"""
