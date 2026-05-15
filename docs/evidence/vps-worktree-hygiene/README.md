@@ -145,3 +145,6 @@ The snapshot was generated on VPS and copied to this repository for traceability
 - runner behavior: pulls VPS Phase-5 snapshots, regenerates checklist, writes morning brief, sends ATTENTION notifications (Discord/Slack), and prints short status lines
 - morning brief: phase5-morning-brief.md (PASS/ATTENTION summary for sprint log paste)
 - auto-close step9: use --auto-close-step9 (or the Require Complete task variant) to mark step 9 DONE when criteria are met
+- local scheduler install: powershell -NoProfile -ExecutionPolicy Bypass -File scripts/ops/install-phase5-morning-sync-task.ps1
+- local scheduler remove: powershell -NoProfile -ExecutionPolicy Bypass -File scripts/ops/remove-phase5-morning-sync-task.ps1
+- incident runbook: docs/runbook-phase5-alerts-incident.md

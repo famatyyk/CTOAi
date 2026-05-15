@@ -1350,6 +1350,26 @@
                                        }
                   },
                   {
+                      "label":  "CTOA: Install Phase-5 Morning Sync Task",
+                      "type":  "shell",
+                      "command":  "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/ops/install-phase5-morning-sync-task.ps1",
+                      "isBackground":  false,
+                      "presentation":  {
+                                           "reveal":  "always",
+                                           "panel":  "dedicated"
+                                       }
+                  },
+                  {
+                      "label":  "CTOA: Remove Phase-5 Morning Sync Task",
+                      "type":  "shell",
+                      "command":  "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/ops/remove-phase5-morning-sync-task.ps1",
+                      "isBackground":  false,
+                      "presentation":  {
+                                           "reveal":  "always",
+                                           "panel":  "dedicated"
+                                       }
+                  },
+                  {
                       "label":  "CTOA: Sprint-047 Wave-1 Run",
                       "dependsOrder":  "sequence",
                       "dependsOn":  [

@@ -68,5 +68,5 @@ Goal: Restore predictable update flow without destructive git operations.
 
 
 8. [x] Proceed to Phase 5 guardrails hardening and nightly cleanliness enforcement. (DONE: 20260515T185948Z)
-9. [ ] Monitor first 3 nightly dry-check runs and alert on any non-empty porcelain status. (ACTIVE NEXT STEP; one-command runner: scripts/ops/phase5_nightly_sync.py; require-complete+auto-close task available; morning brief: docs/evidence/vps-worktree-hygiene/phase5-morning-brief.md)
+9. [ ] Monitor first 3 nightly dry-check runs and alert on any non-empty porcelain status. (ACTIVE NEXT STEP; one-command runner: scripts/ops/phase5_nightly_sync.py; require-complete+auto-close task available; morning brief: docs/evidence/vps-worktree-hygiene/phase5-morning-brief.md; optional local scheduler: scripts/ops/install-phase5-morning-sync-task.ps1)
 
