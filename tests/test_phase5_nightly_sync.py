@@ -62,3 +62,42 @@ def test_render_short_status_includes_key_kpis():
     assert "alerts=0" in line
     assert "pulled_new=2" in line
     assert "skipped_existing=4" in line
+
+def test_build_morning_brief_returns_attention_when_pending_runs_exist():
+    module = _load_module()
+
+    payload = {
+        "overall_status": "IN_PROGRESS",
+        "selected_nightly_runs": 1,
+        "target_runs": 3,
+        "pending_runs": 2,
+        "alerts_count": 0,
+    }
+    brief = module.build_morning_brief(payload, pulled_new=1, skipped_existing=0)
+
+    assert brief["verdict"] == "ATTENTION"
+    assert brief["reason"] == "nightly_runs_pending"
+    assert brief["nightly_runs"] == "1/3"
+
+
+def test_render_morning_brief_markdown_includes_sprint_log_paste_line():
+    module = _load_module()
+
+    brief = {
+        "generated_utc": "20260516T070000Z",
+        "verdict": "PASS",
+        "reason": "three_nightly_runs_verified",
+        "checklist_status": "COMPLETE",
+        "nightly_runs": "3/3",
+        "pending": 0,
+        "alerts": 0,
+        "pulled_new": 1,
+        "skipped_existing": 3,
+    }
+    md = module.render_morning_brief_markdown(brief)
+
+    assert "# Phase-5 Morning Brief" in md
+    assert "verdict: PASS" in md
+    assert "## Sprint Log Paste" in md
+    assert "Phase-5 morning check: PASS" in md
+

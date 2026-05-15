@@ -1340,6 +1340,16 @@
                                        }
                   },
                   {
+                      "label":  "CTOA: Phase-5 Nightly Monitor Sync (Require Complete)",
+                      "type":  "shell",
+                      "command":  ".venv/Scripts/python.exe scripts/ops/phase5_nightly_sync.py --require-complete --checklist-json-out runtime/ci-artifacts/phase5-nightly-checklist.json",
+                      "isBackground":  false,
+                      "presentation":  {
+                                           "reveal":  "always",
+                                           "panel":  "dedicated"
+                                       }
+                  },
+                  {
                       "label":  "CTOA: Sprint-047 Wave-1 Run",
                       "dependsOrder":  "sequence",
                       "dependsOn":  [

@@ -10,6 +10,7 @@ import re
 import shlex
 import subprocess
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -19,6 +20,7 @@ DEFAULT_REMOTE_DIR = "/opt/ctoa/runtime/evidence/worktree-hygiene/phase5-drychec
 DEFAULT_CHECKLIST_SCRIPT = ROOT / "scripts" / "ops" / "phase5_nightly_checklist.py"
 DEFAULT_CHECKLIST_OUTPUT = DEFAULT_EVIDENCE_DIR / "phase5-nightly-checklist.md"
 DEFAULT_CHECKLIST_JSON = ROOT / "runtime" / "ci-artifacts" / "phase5-nightly-checklist.json"
+DEFAULT_MORNING_BRIEF_OUT = DEFAULT_EVIDENCE_DIR / "phase5-morning-brief.md"
 LOCAL_PREFIX = "phase5-drycheck-"
 TIMESTAMP_PATTERN = re.compile(r"^\d{8}T\d{6}Z$")
 
@@ -48,6 +50,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--checklist-script", default=str(DEFAULT_CHECKLIST_SCRIPT))
     parser.add_argument("--checklist-output", default=str(DEFAULT_CHECKLIST_OUTPUT))
     parser.add_argument("--checklist-json-out", default=str(DEFAULT_CHECKLIST_JSON))
+    parser.add_argument("--morning-brief-out", default=str(DEFAULT_MORNING_BRIEF_OUT))
 
     parser.add_argument("--target-runs", type=int, default=3)
     parser.add_argument("--nightly-hour", type=int, default=2)
@@ -203,6 +206,84 @@ def render_short_status(payload: dict[str, Any], pulled_new: int, skipped_existi
     )
 
 
+def _as_int(value: Any, default: int = 0) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def build_morning_brief(payload: dict[str, Any], pulled_new: int, skipped_existing: int) -> dict[str, Any]:
+    selected = _as_int(payload.get("selected_nightly_runs"), 0)
+    target = _as_int(payload.get("target_runs"), 3)
+    pending = _as_int(payload.get("pending_runs"), max(0, target - selected))
+    alerts = _as_int(payload.get("alerts_count"), 0)
+    checklist_status = str(payload.get("overall_status", "UNKNOWN"))
+
+    if alerts > 0:
+        verdict = "ATTENTION"
+        reason = "alerts_detected"
+    elif pending > 0:
+        verdict = "ATTENTION"
+        reason = "nightly_runs_pending"
+    else:
+        verdict = "PASS"
+        reason = "three_nightly_runs_verified"
+
+    return {
+        "generated_utc": datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ"),
+        "verdict": verdict,
+        "reason": reason,
+        "checklist_status": checklist_status,
+        "nightly_runs": f"{selected}/{target}",
+        "pending": pending,
+        "alerts": alerts,
+        "pulled_new": pulled_new,
+        "skipped_existing": skipped_existing,
+    }
+
+
+def render_morning_brief_markdown(brief: dict[str, Any]) -> str:
+    lines = [
+        "# Phase-5 Morning Brief",
+        "",
+        f"generated_utc: {brief['generated_utc']}",
+        f"verdict: {brief['verdict']}",
+        f"reason: {brief['reason']}",
+        "",
+        "## KPI Snapshot",
+        "",
+        f"- checklist_status: {brief['checklist_status']}",
+        f"- nightly_runs: {brief['nightly_runs']}",
+        f"- pending: {brief['pending']}",
+        f"- alerts: {brief['alerts']}",
+        f"- pulled_new: {brief['pulled_new']}",
+        f"- skipped_existing: {brief['skipped_existing']}",
+        "",
+        "## Sprint Log Paste",
+        "",
+        (
+            "- Phase-5 morning check: "
+            f"{brief['verdict']} (runs={brief['nightly_runs']}, pending={brief['pending']}, alerts={brief['alerts']}, "
+            f"checklist={brief['checklist_status']})"
+        ),
+    ]
+    return "\n".join(lines) + "\n"
+
+
+def write_morning_brief(path: Path, brief: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(render_morning_brief_markdown(brief), encoding="utf-8")
+
+
+def render_morning_brief_status(path: Path, brief: dict[str, Any]) -> str:
+    return (
+        "[phase5-morning-brief] "
+        f"verdict={brief['verdict']} runs={brief['nightly_runs']} pending={brief['pending']} alerts={brief['alerts']} "
+        f"output={path}"
+    )
+
+
 def main() -> int:
     args = parse_args()
 
@@ -251,7 +332,14 @@ def main() -> int:
 
     checklist_rc = run_checklist(args)
     checklist_payload = load_checklist_payload(Path(args.checklist_json_out).resolve())
-    print(render_short_status(checklist_payload, pulled_new=pulled_new, skipped_existing=skipped_existing))
+
+    short_status = render_short_status(checklist_payload, pulled_new=pulled_new, skipped_existing=skipped_existing)
+    print(short_status)
+
+    morning_brief = build_morning_brief(checklist_payload, pulled_new=pulled_new, skipped_existing=skipped_existing)
+    morning_brief_path = Path(args.morning_brief_out).resolve()
+    write_morning_brief(morning_brief_path, morning_brief)
+    print(render_morning_brief_status(morning_brief_path, morning_brief))
 
     return checklist_rc
 
