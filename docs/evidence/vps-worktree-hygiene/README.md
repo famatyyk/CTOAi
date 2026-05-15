@@ -116,3 +116,21 @@ The snapshot was generated on VPS and copied to this repository for traceability
 - phase4-exec-20260515T143536Z/patches/0002-hygiene-phase4-reapply-group-B-ops_scripts.patch
 - phase4-exec-20260515T143536Z/patches/0003-hygiene-phase4-reapply-group-D-runbooks_checklists.patch
 - phase4-exec-20260515T143536Z/patches/0004-hygiene-phase4-reapply-group-E-backup_artifacts.patch
+
+## Phase 5 Dry-Check Snapshot: 20260515T185948Z
+
+- branch: main
+- head: 9fe04e8
+- nightly_cron: 20 2 * * * /opt/ctoa/deploy/vps/worktree-nightly-drycheck.sh >> /opt/ctoa/logs/worktree-drycheck.log 2>&1
+- immediate_drycheck_result: PASS
+- worktree_status: CLEAN
+
+### Artifacts
+
+- phase5-drycheck-20260515T185948Z/summary.md
+- phase5-drycheck-20260515T185948Z/report.txt
+- phase5-drycheck-20260515T185948Z/status-porcelain.txt
+- phase5-drycheck-20260515T185948Z/cron-install.out.txt
+- phase5-drycheck-20260515T185948Z/remote-latest-path.txt
+- phase5-drycheck-20260515T185948Z/remote-head.txt
+

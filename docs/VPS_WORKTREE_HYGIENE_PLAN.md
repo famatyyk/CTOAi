@@ -67,5 +67,6 @@ Goal: Restore predictable update flow without destructive git operations.
 
 
 
-8. [ ] Proceed to Phase 5 guardrails hardening and nightly cleanliness enforcement. (ACTIVE NEXT STEP)
+8. [x] Proceed to Phase 5 guardrails hardening and nightly cleanliness enforcement. (DONE: 20260515T185948Z)
+9. [ ] Monitor first 3 nightly dry-check runs and alert on any non-empty porcelain status. (ACTIVE NEXT STEP)
 

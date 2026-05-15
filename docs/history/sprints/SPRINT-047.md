@@ -1,6 +1,6 @@
 # Sprint-047 Plan - 3 Day Execution Window
 
-Status: RELEASED (God Mode approved closure CTOA-243/244; Phase-4 controlled re-apply executed on VPS)
+Status: RELEASED (God Mode approved closure CTOA-243/244; Phase-4 controlled re-apply and Phase-5 guardrails hardening executed on VPS)
 Theme: VPS hygiene Phase-3 reconcile + Stage-2 execution kickoff + governance continuity
 Window: 2026-05-15 -> 2026-05-17
 Backlog: workflows/backlog-sprint-047.yaml
@@ -78,6 +78,13 @@ from Phase 2 to Phase 3/4 readiness while preserving governance quality gates an
 
 - Delivered By: STRATEGOS + DEVOPS MASTER + QA TERMINATOR + DOCUMENTATION SAGE.
 - Verified: Wave-1 PASS, God Mode approval registered, and Phase-4 execution evidence published.
-- Residual Risks: Phase-5 guardrail hardening remains as follow-up reliability work.
+- Residual Risks: No open implementation blockers; continue nightly worktree dry-check monitoring.
 - Unresolved Blockers: NONE.
 - God Mode Decision: APPROVED and executed.
+
+## Post-Release Hardening Update (2026-05-15)
+
+- Phase-5 guardrails hardening executed on VPS from main head 9fe04e8.
+- Nightly dry-check cron installed (02:20 UTC) via root action wrapper.
+- Immediate dry-check run PASS at 20260515T185948Z with CLEAN worktree state.
+- Evidence published under docs/evidence/vps-worktree-hygiene/phase5-drycheck-20260515T185948Z/.

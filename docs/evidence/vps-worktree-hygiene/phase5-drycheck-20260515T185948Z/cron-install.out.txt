@@ -1,0 +1,2 @@
+﻿installed-cron: 20 2 * * * /opt/ctoa/deploy/vps/worktree-nightly-drycheck.sh >> /opt/ctoa/logs/worktree-drycheck.log 2>&1
+20 2 * * * /opt/ctoa/deploy/vps/worktree-nightly-drycheck.sh >> /opt/ctoa/logs/worktree-drycheck.log 2>&1
