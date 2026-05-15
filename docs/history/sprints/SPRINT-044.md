@@ -1,7 +1,7 @@
 # Sprint-044 Plan - 3 Day Execution Window
 
 Sprint Period: 2026-05-18 to 2026-05-20
-Status: PLANNED (kickoff baseline prepared 2026-05-15)
+Status: IN_PROGRESS (CTOA-221..223 RELEASED on 2026-05-15; CTOA-224..226 pending)
 Theme: Operational drift prevention + control-plane regression coverage + governance-ready closure
 Backlog File: workflows/backlog-sprint-044.yaml
 Delivery Flow: workflows/sprint-044-delivery-flow.yaml
@@ -62,3 +62,32 @@ Wave-1 and Wave-2 governance path.
 3. Run control tick and verify backlog_id is sprint-044 in runtime task state.
 4. Verify runner/report services read backlog path from approved environment source.
 5. Execute Wave-1 run after CTOA-221..224 completion.
+
+
+## Execution Outcome (CTOA-222/223 Formal Closure)
+
+### Task Status Snapshot
+
+| Task ID | Status | Evidence |
+|---|---|---|
+| CTOA-221 | RELEASED | runtime/ci-artifacts/sprint-044-ctoa-222-vps-evidence.log, runtime/experiments/sprint-044/CTOA-222.md |
+| CTOA-222 | RELEASED | runtime/ci-artifacts/sprint-044-ctoa-222-vps-evidence.log, runtime/experiments/sprint-044/CTOA-222.md |
+| CTOA-223 | RELEASED | scripts/ops/sprint044_validate.py, .vscode/tasks.json, runtime/ci-artifacts/sprint-044-validation.json, runtime/ci-artifacts/sprint-044-wave1-run.log, runtime/experiments/sprint-044/CTOA-223.md |
+
+### CTOA-222 Evidence Summary
+
+- Correct VPS host verified: 116.202.96.250.
+- Runner/report unit overrides point to backlog-sprint-044 in systemd unit definitions.
+- /opt/ctoa/.env and runtime/task-state confirm backlog sprint-044.
+- validate-services run completed with runner/report status=0 and live status backlog=sprint-044.
+
+### CTOA-223 Evidence Summary
+
+- Sprint-044 validator PASS (11/11 checks passed).
+- Wave run evidence PASS: full local tests 122 passed, 6 skipped; launch dry-run PASS.
+- Sprint-044 task and CI wiring validated in .vscode/tasks.json and .github/workflows/ctoa-pipeline.yml.
+
+### Governance Decision
+
+- Manual approvals executed for CTOA-221, CTOA-222, and CTOA-223 at 2026-05-15T02:16:38Z.
+- Sprint remains IN_PROGRESS while CTOA-224..226 proceed through Wave-1 and Wave-2 gates.
