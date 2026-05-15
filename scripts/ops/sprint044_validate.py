@@ -29,6 +29,8 @@ FOCUSED_REGRESSION_TEST_FILES = [
     'tests/test_sprint041_dashboard_ergonomics.py',
     'tests/test_sprint041_live_dashboard_status_context_panel.py',
     'tests/test_sprint042_auth_header_navigation.py',
+    'tests/test_runner_backlog_selection.py',
+    'tests/test_sprint044_control_tick.py',
 ]
 
 

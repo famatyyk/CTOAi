@@ -1,7 +1,7 @@
 # Sprint-044 Plan - 3 Day Execution Window
 
 Sprint Period: 2026-05-18 to 2026-05-20
-Status: IN_PROGRESS (CTOA-221..223 RELEASED on 2026-05-15; CTOA-224..226 pending)
+Status: IN_PROGRESS (CTOA-221..225 RELEASED on 2026-05-15; CTOA-226 WAITING_APPROVAL)
 Theme: Operational drift prevention + control-plane regression coverage + governance-ready closure
 Backlog File: workflows/backlog-sprint-044.yaml
 Delivery Flow: workflows/sprint-044-delivery-flow.yaml
@@ -84,10 +84,32 @@ Wave-1 and Wave-2 governance path.
 ### CTOA-223 Evidence Summary
 
 - Sprint-044 validator PASS (11/11 checks passed).
-- Wave run evidence PASS: full local tests 122 passed, 6 skipped; launch dry-run PASS.
+- Wave run evidence PASS: full local tests 129 passed, 6 skipped; launch dry-run PASS.
 - Sprint-044 task and CI wiring validated in .vscode/tasks.json and .github/workflows/ctoa-pipeline.yml.
 
 ### Governance Decision
 
 - Manual approvals executed for CTOA-221, CTOA-222, and CTOA-223 at 2026-05-15T02:16:38Z.
-- Sprint remains IN_PROGRESS while CTOA-224..226 proceed through Wave-1 and Wave-2 gates.
+- Sprint remained IN_PROGRESS while CTOA-224..226 proceeded through Wave-1 and Wave-2 gates.
+
+
+## Execution Outcome (CTOA-224/225 Wave-1 Sign-Off)
+
+### Task Status Snapshot
+
+| Task ID | Status | Evidence |
+|---|---|---|
+| CTOA-224 | RELEASED | tests/test_runner_backlog_selection.py, tests/test_sprint044_control_tick.py, runtime/ci-artifacts/sprint-044-regression.json, runtime/experiments/sprint-044/CTOA-224.md |
+| CTOA-225 | RELEASED | runtime/ci-artifacts/sprint-044-wave1-run.log, runtime/ci-artifacts/sprint-044-validation.json, runtime/ci-artifacts/sprint-044-regression.json, runtime/experiments/sprint-044/CTOA-225.md |
+
+### Wave-1 Gate Result
+
+- Full local tests: PASS (129 passed, 6 skipped).
+- Sprint-044 validator: PASS (11/11 checks passed).
+- Targeted regressions: PASS (7 passed).
+- Launch pack dry-run: PASS (launch_allowed).
+
+### Governance Decision
+
+- Manual approvals executed for CTOA-224 and CTOA-225 after WAITING_APPROVAL on VPS.
+- Runtime status now shows RELEASED=5 and WAITING_APPROVAL=1 (CTOA-226 only).

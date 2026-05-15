@@ -358,6 +358,7 @@ jobs:
           path: |
             runtime/ci-artifacts/sprint-044-validation.json
             runtime/ci-artifacts/sprint-044-wave1-run.log
+            runtime/ci-artifacts/sprint-044-regression.json
             runtime/evidence/sprint-044/**
           if-no-files-found: ignore
 
