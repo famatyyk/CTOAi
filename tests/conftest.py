@@ -27,7 +27,7 @@ def config_path():
 def sample_env():
     """Fixture providing sample environment variables"""
     return {
-        "CTOA_VPS_HOST": "46.225.110.52",
+        "CTOA_VPS_HOST": "116.202.96.250",
         "CTOA_VPS_USER": "root",
         "CTOA_VPS_KEY_PATH": "/home/user/.ssh/ctoa_vps_ed25519",
     }

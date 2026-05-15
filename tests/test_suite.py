@@ -84,9 +84,23 @@ class TestVPSConnectivity(unittest.TestCase):
     def test_vps_host_config(self):
         """Verify VPS host is configured"""
         import os
-        host = os.environ.get("CTOA_VPS_HOST", "46.225.110.52")
+        host = os.environ.get("CTOA_VPS_HOST", "116.202.96.250")
         self.assertIsNotNone(host)
         self.assertRegex(host, r'\d+\.\d+\.\d+\.\d+')
+
+    def test_ctoa_cli_default_host_is_active_vps(self):
+        """Ensure CLI fallback host points to active VPS"""
+        script = Path(__file__).parent.parent / "ctoa.ps1"
+        content = script.read_text(encoding="utf-8", errors="ignore")
+        self.assertIn('return "116.202.96.250"', content)
+        self.assertNotIn('return "46.225.110.52"', content)
+
+    def test_ctoa_vps_script_default_host_is_active_vps(self):
+        """Ensure VPS ops fallback host points to active VPS"""
+        script = Path(__file__).parent.parent / "scripts" / "ops" / "ctoa-vps.ps1"
+        content = script.read_text(encoding="utf-8", errors="ignore")
+        self.assertIn("$h = '116.202.96.250'", content)
+        self.assertNotIn("$h = '46.225.110.52'", content)
 
 
 class TestGitHubIntegration(unittest.TestCase):

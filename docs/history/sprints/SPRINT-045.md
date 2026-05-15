@@ -1,7 +1,7 @@
 # Sprint-045 Plan - 3 Day Execution Window
 
 Sprint Period: 2026-05-21 to 2026-05-23
-Status: IN_PROGRESS (kickoff baseline published; Wave-1 readiness in progress)
+Status: IN_PROGRESS (CTOA-230 Wave-1 evidence complete; CTOA-231 host-target hardening complete; CTOA-232 pending sign-off)
 Theme: Project progress visibility + Wave-1 readiness + host-target governance hardening
 Backlog File: workflows/backlog-sprint-045.yaml
 Delivery Flow: workflows/sprint-045-delivery-flow.yaml
@@ -71,3 +71,31 @@ Primary diagram file: docs/history/sprints/SPRINT-045-PROGRESS.md
 
 The diagram expresses percentage split across RELEASED, in-flight pipeline,
 NEW, and BLOCKED tasks so sprint stakeholders can instantly read project progress.
+
+## Execution Outcome (CTOA-230/231 Wave-1 + Host Hardening)
+
+### Task Status Snapshot
+
+| Task ID | Status | Evidence |
+|---|---|---|
+| CTOA-230 | IN_CI_GATE | runtime/ci-artifacts/sprint-045-wave1-run.log, runtime/ci-artifacts/sprint-045-validation.json, docs/history/sprints/SPRINT-045-PROGRESS.md, runtime/experiments/sprint-045/CTOA-230.md |
+| CTOA-231 | IN_CI_GATE | ctoa.ps1, scripts/ops/ctoa-vps.ps1, scripts/ops/sync-mythibia-client.ps1, tests/test_suite.py, tests/conftest.py, runtime/experiments/sprint-045/CTOA-231.md |
+
+### Wave-1 Gate Result
+
+- Full local tests: PASS (131 passed, 6 skipped).
+- Sprint-045 validator: PASS (14/14 checks passed).
+- Launch pack dry-run: PASS (launch_allowed).
+- Progress diagram refreshed and published for Sprint-045.
+
+### Host-Target Hardening Result
+
+- Canonical CLI fallback host switched to 116.202.96.250.
+- Canonical VPS action script fallback host switched to 116.202.96.250.
+- ValidateServices/WhoAmI path confirmed against active host without manual host override.
+- Regression tests assert stale host fallback is not reintroduced.
+
+### Governance Note
+
+- CTOA-230 and CTOA-231 are ready for manual approval in Wave-2.
+- CTOA-232 remains final sign-off gate for Sprint-045 release.

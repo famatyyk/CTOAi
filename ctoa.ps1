@@ -22,7 +22,7 @@ function Get-CliVpsHost {
         $explicit = [Environment]::GetEnvironmentVariable("CTOA_VPS_HOST_CLI", "User")
     }
     if ([string]::IsNullOrWhiteSpace($explicit)) {
-        return "46.225.110.52"
+        return "116.202.96.250"
     }
     return $explicit
 }
