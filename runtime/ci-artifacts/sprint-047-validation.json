@@ -73,7 +73,7 @@
       "hint": "",
       "details": {
         "command": "C:\\Users\\zycie\\CTOAi\\.venv\\Scripts\\python.exe -m pytest tests/test_response_guardrails.py tests/test_sprint029_validate.py tests/test_sprint041_dashboard_ergonomics.py tests/test_sprint041_live_dashboard_status_context_panel.py tests/test_sprint042_auth_header_navigation.py tests/test_runner_backlog_selection.py tests/test_sprint044_control_tick.py -q",
-        "output_tail": ".........................                                                [100%]\n25 passed in 1.37s"
+        "output_tail": ".........................                                                [100%]\n25 passed in 1.93s"
       }
     }
   ],
@@ -82,5 +82,5 @@
     "failed_ids": [],
     "critical_failed_ids": []
   },
-  "timestamp": "2026-05-15T14:40:26.483512Z"
+  "timestamp": "2026-05-15T17:30:58.002593Z"
 }

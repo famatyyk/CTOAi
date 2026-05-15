@@ -6,3 +6,7 @@
 
 # Every hour: publish live report to GitHub
 0 * * * * cd /opt/ctoa && /usr/bin/python3 runner/runner.py report --publish >> logs/runner.log 2>&1
+
+# Nightly 02:20 UTC: dry-check VPS repo cleanliness (must stay empty)
+20 2 * * * cd /opt/ctoa && /opt/ctoa/deploy/vps/worktree-nightly-drycheck.sh >> logs/worktree-drycheck.log 2>&1
+

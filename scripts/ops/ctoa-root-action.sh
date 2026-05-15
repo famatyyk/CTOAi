@@ -75,6 +75,22 @@ case "$action" in
     echo "PASS: one-shot health check complete"
     ;;
 
+  worktree-drycheck)
+    /opt/ctoa/deploy/vps/worktree-nightly-drycheck.sh
+    ;;
+
+  install-worktree-drycheck-cron)
+    mkdir -p /opt/ctoa/logs
+    cron_line='20 2 * * * /opt/ctoa/deploy/vps/worktree-nightly-drycheck.sh >> /opt/ctoa/logs/worktree-drycheck.log 2>&1'
+    current_cron="$(crontab -l 2>/dev/null || true)"
+    {
+      printf '%s\n' "$current_cron" | grep -Fv '/opt/ctoa/deploy/vps/worktree-nightly-drycheck.sh' || true
+      printf '%s\n' "$cron_line"
+    } | sed '/^[[:space:]]*$/d' | crontab -
+    echo "installed-cron: $cron_line"
+    crontab -l | grep -F '/opt/ctoa/deploy/vps/worktree-nightly-drycheck.sh'
+    ;;
+
   *)
     echo "Unsupported wrapper action: $action" >&2
     exit 64

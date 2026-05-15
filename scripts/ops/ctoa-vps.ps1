@@ -10,6 +10,8 @@ param(
         'TailMobileLogs',
         'ValidateServices',
         'HealthCheckOneShot',
+        'WorktreeDryCheck',
+        'InstallWorktreeDryCheckCron',
         'StabilizeReportService',
         'WriteGithubPat',
         'ReportViaServiceEnv',
@@ -645,7 +647,7 @@ sudo -u postgres psql -d ctoa -c "SELECT s.id, s.url, s.status, COUNT(m.id) AS m
         }
         'ListActions' {
                 $actions = @(
-                        'Verify','WhoAmI','Setup24x7','EnableLiveHealth','TailLiveHealth','DashboardSnapshot','TailMobileLogs','ValidateServices','HealthCheckOneShot',
+                        'Verify','WhoAmI','Setup24x7','EnableLiveHealth','TailLiveHealth','DashboardSnapshot','TailMobileLogs','ValidateServices','HealthCheckOneShot','WorktreeDryCheck','InstallWorktreeDryCheckCron',
                         'StabilizeReportService','WriteGithubPat','ReportViaServiceEnv','PublishWithSourcedEnv',
                         'InspectReportEnv','ReportErrorDetails','SetupDB','SetupAgents','TailAgents','FixDbPerms',
                     'RegisterServer','RegisterServerList','KickoffNow','MythibiaBurst','GlobalBurst','InstallKickoffTimer','ShowKickoffTimer',
@@ -1432,6 +1434,14 @@ if [ -f /opt/ctoa/logs/runner.log ]; then tail -n 20 /opt/ctoa/logs/runner.log; 
     'HealthCheckOneShot' {
         Ensure-RemoteRootWrapper
         Invoke-SshCommand 'sudo -n /opt/ctoa/scripts/ops/ctoa-root-action.sh healthcheck-one-shot' -AsCurrentUser
+    }
+    'WorktreeDryCheck' {
+        Ensure-RemoteRootWrapper
+        Invoke-SshCommand 'sudo -n /opt/ctoa/scripts/ops/ctoa-root-action.sh worktree-drycheck' -AsCurrentUser
+    }
+    'InstallWorktreeDryCheckCron' {
+        Ensure-RemoteRootWrapper
+        Invoke-SshCommand 'sudo -n /opt/ctoa/scripts/ops/ctoa-root-action.sh install-worktree-drycheck-cron' -AsCurrentUser
     }
     'EnableLiveHealth' {
         Invoke-SshScript @'

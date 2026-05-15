@@ -130,6 +130,35 @@ class TestVPSConnectivity(unittest.TestCase):
         )
 
 
+    def test_phase5_worktree_drycheck_script_exists_and_checks_porcelain(self):
+        """Ensure Phase-5 nightly dry-check script enforces clean worktree."""
+        script = Path(__file__).parent.parent / "deploy" / "vps" / "worktree-nightly-drycheck.sh"
+        self.assertTrue(script.exists(), "Phase-5 dry-check script is missing")
+        content = script.read_text(encoding="utf-8", errors="ignore")
+        self.assertIn("git -C \"$repo\" status --porcelain=v1", content)
+        self.assertIn("Mirror emergency VPS edits to main within one sprint cycle", content)
+
+    def test_ctoa_root_action_supports_phase5_guardrail_actions(self):
+        """Ensure root wrapper can install and run Phase-5 dry-check guardrails."""
+        script = Path(__file__).parent.parent / "scripts" / "ops" / "ctoa-root-action.sh"
+        content = script.read_text(encoding="utf-8", errors="ignore")
+        self.assertIn("worktree-drycheck)", content)
+        self.assertIn("install-worktree-drycheck-cron)", content)
+        self.assertIn("worktree-nightly-drycheck.sh", content)
+
+    def test_ctoa_vps_exposes_phase5_guardrail_actions(self):
+        """Ensure ctoa-vps action map exposes Phase-5 guardrail operations."""
+        script = Path(__file__).parent.parent / "scripts" / "ops" / "ctoa-vps.ps1"
+        content = script.read_text(encoding="utf-8", errors="ignore")
+        self.assertIn("'WorktreeDryCheck'", content)
+        self.assertIn("'InstallWorktreeDryCheckCron'", content)
+
+    def test_vps_crontab_example_contains_nightly_worktree_drycheck(self):
+        """Ensure cron template documents nightly worktree dry-check schedule."""
+        script = Path(__file__).parent.parent / "deploy" / "vps" / "crontab.example"
+        content = script.read_text(encoding="utf-8", errors="ignore")
+        self.assertIn("worktree-nightly-drycheck.sh", content)
+
 class TestGitHubIntegration(unittest.TestCase):
     """Test GitHub API integration (mock-friendly)"""
     
@@ -183,3 +212,4 @@ if __name__ == "__main__":
     # Run with: python -m pytest tests/test_suite.py -v
     # Or: python -m unittest discover tests/ -v
     unittest.main(verbosity=2)
+
