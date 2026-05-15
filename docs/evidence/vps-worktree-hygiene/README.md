@@ -139,5 +139,7 @@ The snapshot was generated on VPS and copied to this repository for traceability
 - report: phase5-nightly-checklist.md
 - command: .venv/Scripts/python.exe scripts/ops/phase5_nightly_checklist.py --json-out runtime/ci-artifacts/phase5-nightly-checklist.json
 - one-command runner: .venv/Scripts/python.exe scripts/ops/phase5_nightly_sync.py
-- runner behavior: pulls VPS Phase-5 snapshots, regenerates checklist, writes morning brief, and prints short status lines
+- env vars: CTOA_DISCORD_WEBHOOK_URL, CTOA_SLACK_WEBHOOK_URL (optional; used for ATTENTION notifications)
+- runner behavior: pulls VPS Phase-5 snapshots, regenerates checklist, writes morning brief, sends ATTENTION notifications (Discord/Slack), and prints short status lines
 - morning brief: phase5-morning-brief.md (PASS/ATTENTION summary for sprint log paste)
+- auto-close step9: use --auto-close-step9 (or the Require Complete task variant) to mark step 9 DONE when criteria are met

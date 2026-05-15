@@ -1,6 +1,6 @@
 # Phase-5 Morning Brief
 
-generated_utc: 20260515T220051Z
+generated_utc: 20260515T222210Z
 verdict: ATTENTION
 reason: nightly_runs_pending
 
