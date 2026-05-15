@@ -1,14 +1,14 @@
-# CTOA-232 Final Sign-Off Preparation Memo (Sprint-045)
+# CTOA-232 Final Sign-Off Memo (Sprint-045)
 
 Date (UTC): 2026-05-15T12:52:49Z
-Decision: WAITING_APPROVAL
+Decision: RELEASED
 Owners: strategos (primary), core-architect (review), documentation-sage (record)
 
 ## Current State
 
 - Runtime backlog on VPS: sprint-045.
-- Sprint progress: 83.3% (5/6 RELEASED).
-- Remaining task in WAITING_APPROVAL: CTOA-232.
+- Sprint progress: 100.0% (6/6 RELEASED).
+- Remaining tasks in WAITING_APPROVAL: none.
 
 ## Evidence Bundle
 
@@ -23,6 +23,6 @@ Owners: strategos (primary), core-architect (review), documentation-sage (record
 - CTOA-231: RELEASED (host-target hardening complete).
 - No active blockers reported in latest ValidateServices snapshot.
 
-## Approval Request
+## Approval Outcome
 
-- Ready for manual approval of CTOA-232 and Sprint-045 release closure.
+- Manual approval for CTOA-232 executed on VPS and Sprint-045 release closure accepted.

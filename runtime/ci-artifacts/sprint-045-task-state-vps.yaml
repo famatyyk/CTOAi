@@ -1,5 +1,5 @@
 backlog_id: sprint-045
-last_tick_at: '2026-05-15T12:52:49+00:00'
+last_tick_at: '2026-05-15T12:58:17+00:00'
 tasks:
 - id: CTOA-227
   title: Open Sprint-045 kickoff baseline and risk ledger refresh
@@ -113,9 +113,13 @@ tasks:
   deliverables:
   - docs/history/sprints/SPRINT-045.md
   - runtime/experiments/sprint-045/CTOA-232.md
-  status: WAITING_APPROVAL
+  status: RELEASED
   ticks_in_status: 0
-  updated_at: '2026-05-15T12:52:40+00:00'
+  updated_at: '2026-05-15T12:58:14+00:00'
+  notes:
+  - at: '2026-05-15T12:58:14+00:00'
+    reason: manual approval
+    status: RELEASED
 history:
 - at: '2026-05-15T12:52:40+00:00'
   event: state_seed
@@ -141,3 +145,15 @@ history:
 - at: '2026-05-15T12:52:49+00:00'
   event: tick
   active: 1
+- at: '2026-05-15T12:58:14+00:00'
+  event: transition
+  task_id: CTOA-232
+  from_status: WAITING_APPROVAL
+  to_status: RELEASED
+  reason: manual approval
+- at: '2026-05-15T12:58:14+00:00'
+  event: approval
+  task_id: CTOA-232
+- at: '2026-05-15T12:58:17+00:00'
+  event: tick
+  active: 0

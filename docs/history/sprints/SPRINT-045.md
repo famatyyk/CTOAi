@@ -1,7 +1,7 @@
 # Sprint-045 Plan - 3 Day Execution Window
 
 Sprint Period: 2026-05-21 to 2026-05-23
-Status: IN_PROGRESS (CTOA-227..231 RELEASED on 2026-05-15; CTOA-232 WAITING_APPROVAL for final sign-off)
+Status: RELEASED (CTOA-227..232 RELEASED on 2026-05-15; Sprint-045 Wave-2 sign-off complete)
 Theme: Project progress visibility + Wave-1 readiness + host-target governance hardening
 Backlog File: workflows/backlog-sprint-045.yaml
 Delivery Flow: workflows/sprint-045-delivery-flow.yaml
@@ -100,20 +100,20 @@ NEW, and BLOCKED tasks so sprint stakeholders can instantly read project progres
 - Manual approvals executed for CTOA-230 and CTOA-231 on VPS; both are RELEASED.
 - CTOA-232 remains final sign-off gate for Sprint-045 release.
 
-## Execution Outcome (CTOA-232 Final Sign-Off Preparation)
+## Execution Outcome (CTOA-232 Final Sign-Off)
 
 ### Preparation Snapshot
 
 | Task ID | Status | Evidence |
 |---|---|---|
-| CTOA-232 | WAITING_APPROVAL | runtime/experiments/sprint-045/CTOA-232.md, runtime/ci-artifacts/sprint-045-task-state-vps.yaml, docs/history/sprints/SPRINT-045-PROGRESS.md |
+| CTOA-232 | RELEASED | runtime/experiments/sprint-045/CTOA-232.md, runtime/ci-artifacts/sprint-045-task-state-vps.yaml, docs/history/sprints/SPRINT-045-PROGRESS.md |
 
 ### Readiness Result
 
 - VPS runtime backlog switched to sprint-045.
-- Runtime status stabilized at RELEASED=5, WAITING_APPROVAL=1.
-- Progress diagram refreshed from VPS task-state to 83.3% completion.
+- Runtime status stabilized at RELEASED=6, WAITING_APPROVAL=0.
+- Progress diagram refreshed from VPS task-state to 100.0% completion.
 
 ### Governance Note
 
-- CTOA-232 is prepared for final manual sign-off and sprint release decision.
+- Manual approval executed for CTOA-232; Sprint-045 is formally closed as RELEASED.
