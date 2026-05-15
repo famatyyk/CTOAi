@@ -138,3 +138,5 @@ The snapshot was generated on VPS and copied to this repository for traceability
 - generator: scripts/ops/phase5_nightly_checklist.py
 - report: phase5-nightly-checklist.md
 - command: .venv/Scripts/python.exe scripts/ops/phase5_nightly_checklist.py --json-out runtime/ci-artifacts/phase5-nightly-checklist.json
+- one-command runner: .venv/Scripts/python.exe scripts/ops/phase5_nightly_sync.py
+- runner behavior: pulls VPS Phase-5 snapshots, regenerates checklist, and prints short status line
