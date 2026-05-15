@@ -63,6 +63,9 @@ Goal: Restore predictable update flow without destructive git operations.
 5. [x] Proceed to Phase 3 fast-forward reconcile only. (DONE: 20260515T141636Z)
 6. [x] Prepare controlled re-apply map, checkpoints, and rollback plan for Phase 4. (DONE: 20260515T141731Z)
 
-7. [ ] Execute Phase 4 controlled re-apply on VPS (group-by-group with validation). (ACTIVE NEXT STEP)
+7. [x] Execute Phase 4 controlled re-apply on VPS (group-by-group with validation). (DONE: 20260515T143659Z)
 
+
+
+8. [ ] Proceed to Phase 5 guardrails hardening and nightly cleanliness enforcement. (ACTIVE NEXT STEP)
 

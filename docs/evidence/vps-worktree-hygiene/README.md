@@ -93,3 +93,26 @@ The snapshot was generated on VPS and copied to this repository for traceability
 - phase4-readiness-20260515T141731Z/stash-list.txt
 - phase4-readiness-20260515T141731Z/stash-top-name-status.txt
 - phase4-readiness-20260515T141731Z/stash-top-stat.txt
+
+## Phase 4 Execution Snapshot: 20260515T143536Z
+
+- branch_name: phase4-reapply-20260515T143536Z
+- main_head_final_at_execution: e507f0b
+- all_groups_ok: YES
+- stash_drop_rc: 0
+- notes: Group C resolved as NO_COMMIT on resume because UI files were already aligned at execution base; initial blocker was missing node runtime on VPS.
+
+### Artifacts
+
+- phase4-exec-20260515T143536Z/summary.md
+- phase4-exec-20260515T143536Z/summary.json
+- phase4-exec-20260515T143536Z/group-A.log
+- phase4-exec-20260515T143536Z/group-B.log
+- phase4-exec-20260515T143536Z/group-C.log
+- phase4-exec-20260515T143536Z/group-C-resume.log
+- phase4-exec-20260515T143536Z/group-D-resume.log
+- phase4-exec-20260515T143536Z/group-E-resume.log
+- phase4-exec-20260515T143536Z/patches/0001-hygiene-phase4-reapply-group-A-governance_docs_workf.patch
+- phase4-exec-20260515T143536Z/patches/0002-hygiene-phase4-reapply-group-B-ops_scripts.patch
+- phase4-exec-20260515T143536Z/patches/0003-hygiene-phase4-reapply-group-D-runbooks_checklists.patch
+- phase4-exec-20260515T143536Z/patches/0004-hygiene-phase4-reapply-group-E-backup_artifacts.patch

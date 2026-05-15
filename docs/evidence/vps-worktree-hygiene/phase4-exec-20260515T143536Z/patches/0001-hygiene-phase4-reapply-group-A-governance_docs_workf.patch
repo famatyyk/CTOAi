@@ -1,0 +1,781 @@
+From 4666341f7dcd265a9613e2a21ae2cd311f257590 Mon Sep 17 00:00:00 2001
+From: CTOA VPS Operator <ctoa-vps@local>
+Date: Fri, 15 May 2026 14:35:37 +0000
+Subject: [PATCH 1/4] hygiene: phase4 reapply group A
+ (governance_docs_workflows)
+
+---
+ docs/CONSISTENCY_REPORT.md              |  10 +
+ docs/history/sprints/SPRINT-043.md      |  92 +--------
+ docs/history/sprints/SPRINT-044.md      | 136 +------------
+ workflows/backlog-sprint-043.yaml       | 113 +----------
+ workflows/backlog-sprint-044.yaml       | 246 +++++++++++++-----------
+ workflows/sprint-043-delivery-flow.yaml |  62 +-----
+ workflows/sprint-044-delivery-flow.yaml |  62 +-----
+ 7 files changed, 153 insertions(+), 568 deletions(-)
+ create mode 100644 docs/CONSISTENCY_REPORT.md
+
+diff --git a/docs/CONSISTENCY_REPORT.md b/docs/CONSISTENCY_REPORT.md
+new file mode 100644
+index 0000000..b377984
+--- /dev/null
++++ b/docs/CONSISTENCY_REPORT.md
+@@ -0,0 +1,10 @@
++# Documentation Consistency Report
++
++Generated: 2026-05-15T00:00:00+00:00
++
++- OK: docs/ARCHITECTURE.md
++- OK: deploy/vps/SETUP.md
++- OK: docs/runbook-disk-emergency.md
++- OK: docs/VALIDATION_CHECKLIST.md
++
++Status: PASS
+diff --git a/docs/history/sprints/SPRINT-043.md b/docs/history/sprints/SPRINT-043.md
+index 2ccff64..bfccd1c 100644
+--- a/docs/history/sprints/SPRINT-043.md
++++ b/docs/history/sprints/SPRINT-043.md
+@@ -1,91 +1,5 @@
+-# Sprint-043 Plan - 3 Day Execution Window
++# Track D Deliverable
+ 
+-Sprint Period: 2026-05-15 to 2026-05-17
+-Status: RELEASED (Wave-2 sign-off completed 2026-05-15)
+-Theme: Post-release monitoring continuity + least-privilege observability + governance-ready closure
+-Backlog File: workflows/backlog-sprint-043.yaml
+-Delivery Flow: workflows/sprint-043-delivery-flow.yaml
++Generated: 2026-05-15T02:00:00+00:00
+ 
+----
+-
+-## Sprint Goal
+-
+-Stabilize post-release operations after Sprint-042 by running the 24h monitoring window,
+-closing least-privilege observability gaps, and preparing Sprint-043 for standard
+-Wave-1 and Wave-2 governance gates.
+-
+-## Day-by-Day Task List (Owners + Done)
+-
+-### Day 1 - Monitoring Window and Reliability Baseline
+-
+-| Task ID | Task | Primary Owner | Supporting Owner(s) | Done Criteria |
+-|---|---|---|---|---|
+-| CTOA-215 | Run and document post-release 24h monitoring for health/report/runner | devops-master | qa-terminator | Monitoring window opened, baseline checks captured, summary note published |
+-| CTOA-216 | Align observability actions with least-privilege policy | security-guardian | devops-master | Wrapper-safe observability paths validated, no ad-hoc sudo prompts needed |
+-
+-### Day 2 - Control-Plane Kickoff and Quality Wiring
+-
+-| Task ID | Task | Primary Owner | Supporting Owner(s) | Done Criteria |
+-|---|---|---|---|---|
+-| CTOA-217 | Kick off Sprint-043 control-plane backlog and rollout checklist | strategos | core-architect | Backlog + flow + DoD published and aligned |
+-| CTOA-218 | Create Sprint-043 validator and wave task wiring | qa-terminator | core-architect | Validator artifact generated, wave task chain ready |
+-
+-### Day 3 - Governance Gates and Closure
+-
+-| Task ID | Task | Primary Owner | Supporting Owner(s) | Done Criteria |
+-|---|---|---|---|---|
+-| CTOA-219 | Sprint-043 Wave-1 evidence run | qa-terminator | strategos | Focused tests PASS, validator PASS, evidence bundle complete |
+-| CTOA-220 | Sprint-043 Wave-2 sign-off and release memo | strategos | core-architect, documentation-sage | Manual sign-off memo recorded with rollback baseline |
+-
+----
+-
+-## Definition of Done for Sprint-043
+-
+-1. All tasks CTOA-215..CTOA-220 reach WAITING_APPROVAL or RELEASED.
+-2. 24h post-release monitoring artifacts include baseline status for health-live, runner, and report.
+-3. Least-privilege observability paths are documented and executable without privileged drift.
+-4. Wave-1 evidence and Wave-2 sign-off are linked in the sprint report.
+-
+-## Risks and Mitigations
+-
+-- Risk: least-privilege policy blocks operational observability actions.
+-  - Mitigation: add explicit wrapper-safe routes and verify them in sprint scope.
+-- Risk: post-release drift appears after initial release confidence.
+-  - Mitigation: mandatory 24h monitoring evidence with clear PASS/DEGRADED markers.
+-- Risk: validator wiring slips and delays governance gates.
+-  - Mitigation: build Sprint-043 validator early (Day 2) and run dry checks before Wave-1.
+-
+-## Kickoff Commands
+-
+-1. Set active backlog on VPS to workflows/backlog-sprint-043.yaml.
+-2. Pull latest main branch on VPS.
+-3. Run control tick and verify backlog_id is sprint-043 in runtime task state.
+-4. Execute Wave-1 run after CTOA-215..218 completion.
+-
+-
+-## Execution Outcome (Wave-2)
+-
+-### Task Status Snapshot
+-
+-| Task ID | Status | Evidence |
+-|---|---|---|
+-| CTOA-215 | RELEASED | runtime/ci-artifacts/sprint-042-post-release-monitoring-window.log, runtime/ci-artifacts/sprint-042-post-release-monitoring-24h.json, runtime/experiments/sprint-042/POST-RELEASE-24H.md |
+-| CTOA-216 | RELEASED | deploy/vps/systemd/ctoa-agents-orchestrator.service, deploy/vps/systemd/ctoa-agents-orchestrator.timer |
+-| CTOA-217 | RELEASED | workflows/backlog-sprint-043.yaml, workflows/sprint-043-delivery-flow.yaml, docs/history/sprints/SPRINT-043.md |
+-| CTOA-218 | RELEASED | scripts/ops/sprint043_validate.py, .vscode/tasks.json, runtime/ci-artifacts/sprint-043-validation.json |
+-| CTOA-219 | RELEASED | runtime/ci-artifacts/sprint-043-wave1-run.log, runtime/ci-artifacts/sprint-043-validation.json |
+-| CTOA-220 | RELEASED | runtime/experiments/sprint-043/CTOA-220.md |
+-
+-### Wave-1 Gate Result
+-
+-- Full local tests: PASS (122 passed, 6 skipped).
+-- Sprint-043 validator: PASS (11/11 checks passed).
+-- Launch pack dry-run: PASS (launch_allowed).
+-
+-### Wave-2 Decision Summary
+-
+-- Decision: Sprint-043 released after Wave-2 sign-off.
+-- Rollback baseline: v1.13.0.
+-- Owner accountability: Strategos (primary), Core Architect and Documentation Sage (review).
+-- Operational note: CTOA-216 completed with orchestrator timer enabled/active; runner/report backlog override drift fixed to sprint-043.
+-- Residual risks: low; standard post-release monitoring retained.
++Auto-generated governance artifact for Sprint-007.
+diff --git a/docs/history/sprints/SPRINT-044.md b/docs/history/sprints/SPRINT-044.md
+index 12ef1f6..33330fb 100644
+--- a/docs/history/sprints/SPRINT-044.md
++++ b/docs/history/sprints/SPRINT-044.md
+@@ -1,135 +1,5 @@
+-# Sprint-044 Plan - 3 Day Execution Window
++# Track D Deliverable
+ 
+-Sprint Period: 2026-05-18 to 2026-05-20
+-Status: RELEASED (CTOA-221..226 RELEASED on 2026-05-15; Sprint-044 Wave-2 sign-off complete)
+-Theme: Operational drift prevention + control-plane regression coverage + governance-ready closure
+-Backlog File: workflows/backlog-sprint-044.yaml
+-Delivery Flow: workflows/sprint-044-delivery-flow.yaml
++Generated: 2026-05-15T12:51:04+00:00
+ 
+----
+-
+-## Sprint Goal
+-
+-Open Sprint-044 with a stable kickoff baseline that prevents backlog drift recurrence,
+-adds targeted regression coverage for control tick behavior, and prepares the standard
+-Wave-1 and Wave-2 governance path.
+-
+-## Day-by-Day Task List (Owners + Done)
+-
+-### Day 1 - Kickoff Baseline and Drift Guard Setup
+-
+-| Task ID | Task | Primary Owner | Supporting Owner(s) | Done Criteria |
+-|---|---|---|---|---|
+-| CTOA-221 | Open Sprint-044 kickoff baseline and carry-over risk ledger | strategos | core-architect | Backlog + flow + sprint baseline published and aligned |
+-| CTOA-222 | Harden VPS service backlog selection against drift | devops-master | security-guardian | Runner/report service paths verified with no hardcoded sprint override |
+-
+-### Day 2 - Quality Wiring and Regression Shield
+-
+-| Task ID | Task | Primary Owner | Supporting Owner(s) | Done Criteria |
+-|---|---|---|---|---|
+-| CTOA-223 | Create Sprint-044 validator and local wave task wiring | qa-terminator | core-architect | Validator artifact generated, wave task chain ready |
+-| CTOA-224 | Add targeted regression coverage for control tick and backlog parsing | code-smith | qa-terminator | Regression tests pass and evidence artifact produced |
+-
+-### Day 3 - Governance Gates and Closure
+-
+-| Task ID | Task | Primary Owner | Supporting Owner(s) | Done Criteria |
+-|---|---|---|---|---|
+-| CTOA-225 | Sprint-044 Wave-1 evidence run | qa-terminator | strategos | Focused tests PASS, validator PASS, evidence bundle complete |
+-| CTOA-226 | Sprint-044 Wave-2 sign-off and release memo | strategos | core-architect, documentation-sage | Manual sign-off memo recorded with rollback baseline |
+-
+----
+-
+-## Definition of Done for Sprint-044
+-
+-1. All tasks CTOA-221..CTOA-226 reach WAITING_APPROVAL or RELEASED.
+-2. Runner/report backlog selection is validated without hardcoded sprint drift.
+-3. Wave-1 evidence includes PASS for focused tests, sprint044 validator, and targeted regressions.
+-4. Wave-2 sign-off records owner accountability, residual risks, and rollback baseline.
+-
+-## Risks and Mitigations
+-
+-- Risk: backlog drift reappears through unit-level environment overrides.
+-  - Mitigation: explicit drift guard task with service-level verification and runbook update.
+-- Risk: control tick behavior regresses under malformed or missing backlog files.
+-  - Mitigation: dedicated regression scope in Sprint-044 with evidence artifact.
+-- Risk: validator/wave wiring lands late and compresses governance window.
+-  - Mitigation: complete validator work on Day 2 and run dry checks before Wave-1.
+-
+-## Kickoff Baseline Commands
+-
+-1. Set active backlog on VPS to workflows/backlog-sprint-044.yaml.
+-2. Pull latest main branch on VPS.
+-3. Run control tick and verify backlog_id is sprint-044 in runtime task state.
+-4. Verify runner/report services read backlog path from approved environment source.
+-5. Execute Wave-1 run after CTOA-221..224 completion.
+-
+-
+-## Execution Outcome (CTOA-222/223 Formal Closure)
+-
+-### Task Status Snapshot
+-
+-| Task ID | Status | Evidence |
+-|---|---|---|
+-| CTOA-221 | RELEASED | runtime/ci-artifacts/sprint-044-ctoa-222-vps-evidence.log, runtime/experiments/sprint-044/CTOA-222.md |
+-| CTOA-222 | RELEASED | runtime/ci-artifacts/sprint-044-ctoa-222-vps-evidence.log, runtime/experiments/sprint-044/CTOA-222.md |
+-| CTOA-223 | RELEASED | scripts/ops/sprint044_validate.py, .vscode/tasks.json, runtime/ci-artifacts/sprint-044-validation.json, runtime/ci-artifacts/sprint-044-wave1-run.log, runtime/experiments/sprint-044/CTOA-223.md |
+-
+-### CTOA-222 Evidence Summary
+-
+-- Correct VPS host verified: 116.202.96.250.
+-- Runner/report unit overrides point to backlog-sprint-044 in systemd unit definitions.
+-- /opt/ctoa/.env and runtime/task-state confirm backlog sprint-044.
+-- validate-services run completed with runner/report status=0 and live status backlog=sprint-044.
+-
+-### CTOA-223 Evidence Summary
+-
+-- Sprint-044 validator PASS (11/11 checks passed).
+-- Wave run evidence PASS: full local tests 129 passed, 6 skipped; launch dry-run PASS.
+-- Sprint-044 task and CI wiring validated in .vscode/tasks.json and .github/workflows/ctoa-pipeline.yml.
+-
+-### Governance Decision
+-
+-- Manual approvals executed for CTOA-221, CTOA-222, and CTOA-223 at 2026-05-15T02:16:38Z.
+-- Sprint remained IN_PROGRESS while CTOA-224..226 proceeded through Wave-1 and Wave-2 gates.
+-
+-
+-## Execution Outcome (CTOA-224/225 Wave-1 Sign-Off)
+-
+-### Task Status Snapshot
+-
+-| Task ID | Status | Evidence |
+-|---|---|---|
+-| CTOA-224 | RELEASED | tests/test_runner_backlog_selection.py, tests/test_sprint044_control_tick.py, runtime/ci-artifacts/sprint-044-regression.json, runtime/experiments/sprint-044/CTOA-224.md |
+-| CTOA-225 | RELEASED | runtime/ci-artifacts/sprint-044-wave1-run.log, runtime/ci-artifacts/sprint-044-validation.json, runtime/ci-artifacts/sprint-044-regression.json, runtime/experiments/sprint-044/CTOA-225.md |
+-
+-### Wave-1 Gate Result
+-
+-- Full local tests: PASS (129 passed, 6 skipped).
+-- Sprint-044 validator: PASS (11/11 checks passed).
+-- Targeted regressions: PASS (7 passed).
+-- Launch pack dry-run: PASS (launch_allowed).
+-
+-### Governance Decision
+-
+-- Manual approvals executed for CTOA-224 and CTOA-225 after WAITING_APPROVAL on VPS.
+-- Runtime status now shows RELEASED=5 and WAITING_APPROVAL=1 (CTOA-226 only).
+-
+-## Execution Outcome (CTOA-226 Wave-2 Sign-Off)
+-
+-### Task Status Snapshot
+-
+-| Task ID | Status | Evidence |
+-|---|---|---|
+-| CTOA-226 | RELEASED | docs/history/sprints/SPRINT-044.md, runtime/experiments/sprint-044/CTOA-226.md |
+-
+-### Wave-2 Gate Result
+-
+-- VPS ValidateServices: Backlog sprint-044, RELEASED=6, WAITING_APPROVAL=0.
+-- Live status publish cycle completed after validation.
+-- Sprint-044 closure condition satisfied: all tasks are RELEASED.
+-
+-### Governance Decision
+-
+-- Manual Wave-2 sign-off accepted for CTOA-226.
+-- Residual risks and rollback baseline recorded in runtime/experiments/sprint-044/CTOA-226.md.
+-- Sprint-044 is formally closed as RELEASED.
++Auto-generated governance artifact for Sprint-007.
+diff --git a/workflows/backlog-sprint-043.yaml b/workflows/backlog-sprint-043.yaml
+index 6e1b5ef..83aa623 100644
+--- a/workflows/backlog-sprint-043.yaml
++++ b/workflows/backlog-sprint-043.yaml
+@@ -1,112 +1 @@
+-version: 1
+-backlog_id: sprint-043
+-window_days: 3
+-focus: "Post-release monitoring continuity + least-privilege observability + governance-ready closure"
+-owner: strategos
+-
+-rules:
+-  max_parallel_tasks: 3
+-  definition_of_done:
+-    - implementation_created
+-    - validation_passed
+-    - evidence_recorded
+-    - documentation_updated
+-  release_policy:
+-    - approval_required: true
+-    - environment: production
+-
+-tasks:
+-  - id: CTOA-215
+-    title: "Run and document post-release 24h monitoring for health/report/runner"
+-    priority: P0
+-    type: reliability
+-    domain: [ops, observability, reliability]
+-    assignees: [devops-master, qa-terminator]
+-    estimate_hours: 3
+-    deliverables:
+-      - "runtime/ci-artifacts/sprint-042-post-release-monitoring-window.log"
+-      - "runtime/ci-artifacts/sprint-042-post-release-monitoring-24h.json"
+-      - "runtime/experiments/sprint-042/POST-RELEASE-24H.md"
+-    acceptance:
+-      - "24h monitoring window is opened with UTC start and target end timestamps"
+-      - "Baseline checks PASS for health-live, runner timer, and report timer"
+-      - "Short summary note is published with evidence links"
+-
+-  - id: CTOA-216
+-    title: "Align observability actions with least-privilege sudo policy"
+-    priority: P0
+-    type: security
+-    domain: [security, ops, hardening]
+-    assignees: [security-guardian, devops-master]
+-    estimate_hours: 4
+-    deliverables:
+-      - "scripts/ops/ctoa-vps.ps1"
+-      - "deploy/vps/wrappers/ctoa-root-action.sh"
+-      - "docs/runbook-vps-mobile-console.md"
+-    acceptance:
+-      - "Operational observability actions do not require ad-hoc sudo password prompts"
+-      - "Wrapper map includes explicit paths for system health and dashboard snapshot"
+-      - "Health and dashboard checks succeed through approved least-privilege routes"
+-
+-  - id: CTOA-217
+-    title: "Kick off Sprint-043 control-plane backlog and rollout checklist"
+-    priority: P1
+-    type: governance
+-    domain: [governance, release]
+-    assignees: [strategos, core-architect]
+-    estimate_hours: 2
+-    deliverables:
+-      - "workflows/backlog-sprint-043.yaml"
+-      - "workflows/sprint-043-delivery-flow.yaml"
+-      - "docs/history/sprints/SPRINT-043.md"
+-    acceptance:
+-      - "Backlog and delivery flow published with CTOA-215..220 scope"
+-      - "Sprint-043 Definition of Done is documented"
+-      - "Kickoff checklist references baseline and rollback policy"
+-
+-  - id: CTOA-218
+-    title: "Create Sprint-043 validator and wave task wiring"
+-    priority: P1
+-    type: quality
+-    domain: [ci, qa, automation]
+-    assignees: [qa-terminator, core-architect]
+-    estimate_hours: 4
+-    deliverables:
+-      - "scripts/ops/sprint043_validate.py"
+-      - ".vscode/tasks.json"
+-      - "runtime/ci-artifacts/sprint-043-validation.json"
+-    acceptance:
+-      - "Validator verifies backlog, flow, and sprint artifacts for Sprint-043"
+-      - "Wave-1 task chain executes tests and validator without errors"
+-      - "Validation artifact is produced under runtime/ci-artifacts"
+-
+-  - id: CTOA-219
+-    title: "Sprint-043 Wave-1 evidence run"
+-    priority: P1
+-    type: governance
+-    domain: [qa, governance, release]
+-    assignees: [qa-terminator, strategos]
+-    estimate_hours: 3
+-    deliverables:
+-      - "runtime/ci-artifacts/sprint-043-wave1-run.log"
+-      - "runtime/ci-artifacts/sprint-043-validation.json"
+-    acceptance:
+-      - "Focused tests PASS"
+-      - "Sprint-043 validator reports PASS"
+-      - "Wave-1 evidence links are complete"
+-
+-  - id: CTOA-220
+-    title: "Sprint-043 Wave-2 sign-off and release memo"
+-    priority: P1
+-    type: governance
+-    domain: [governance, release]
+-    assignees: [strategos, core-architect, documentation-sage]
+-    estimate_hours: 2
+-    deliverables:
+-      - "docs/history/sprints/SPRINT-043.md"
+-      - "runtime/experiments/sprint-043/CTOA-220.md"
+-    acceptance:
+-      - "All Sprint-043 tasks are in WAITING_APPROVAL or RELEASED"
+-      - "Residual risks and rollback baseline are recorded"
+-      - "Manual sign-off includes owner accountability"
+-
++Auto-generated governance artifact for Sprint-007.
+diff --git a/workflows/backlog-sprint-044.yaml b/workflows/backlog-sprint-044.yaml
+index 738302b..cd36eeb 100644
+--- a/workflows/backlog-sprint-044.yaml
++++ b/workflows/backlog-sprint-044.yaml
+@@ -1,112 +1,134 @@
+-version: 1
+-backlog_id: sprint-044
+-window_days: 3
+-focus: "Operational drift prevention + control-plane regression coverage + governance-ready closure"
+-owner: strategos
+-
+-rules:
+-  max_parallel_tasks: 3
+-  definition_of_done:
+-    - implementation_created
+-    - validation_passed
+-    - evidence_recorded
+-    - documentation_updated
+-  release_policy:
+-    - approval_required: true
+-    - environment: production
+-
+-tasks:
+-  - id: CTOA-221
+-    title: "Open Sprint-044 kickoff baseline and carry-over risk ledger"
+-    priority: P0
+-    type: governance
+-    domain: [governance, planning, release]
+-    assignees: [strategos, core-architect]
+-    estimate_hours: 2
+-    deliverables:
+-      - "workflows/backlog-sprint-044.yaml"
+-      - "workflows/sprint-044-delivery-flow.yaml"
+-      - "docs/history/sprints/SPRINT-044.md"
+-    acceptance:
+-      - "Sprint-044 backlog, delivery flow, and kickoff baseline are published"
+-      - "Carry-over risks from Sprint-043 are listed with owners"
+-      - "Kickoff checklist includes rollback baseline and accountability"
+-
+-  - id: CTOA-222
+-    title: "Harden VPS service backlog selection against drift"
+-    priority: P0
+-    type: reliability
+-    domain: [ops, reliability, hardening]
+-    assignees: [devops-master, security-guardian]
+-    estimate_hours: 4
+-    deliverables:
+-      - "deploy/vps/systemd/ctoa-runner.service"
+-      - "deploy/vps/systemd/ctoa-report.service"
+-      - "docs/runbook-vps-mobile-console.md"
+-    acceptance:
+-      - "Runner and report units avoid hardcoded sprint backlog override values"
+-      - "Service restart and state verification show backlog_id sprint-044"
+-      - "Runbook includes drift detection and remediation steps"
+-
+-  - id: CTOA-223
+-    title: "Create Sprint-044 validator and local wave task wiring"
+-    priority: P1
+-    type: quality
+-    domain: [ci, qa, automation]
+-    assignees: [qa-terminator, core-architect]
+-    estimate_hours: 4
+-    deliverables:
+-      - "scripts/ops/sprint044_validate.py"
+-      - ".vscode/tasks.json"
+-      - "runtime/ci-artifacts/sprint-044-validation.json"
+-    acceptance:
+-      - "Validator checks backlog, flow, and sprint history artifacts for Sprint-044"
+-      - "Wave-1 local task chain executes tests and validator without errors"
+-      - "Validation artifact is produced in runtime/ci-artifacts"
+-
+-  - id: CTOA-224
+-    title: "Add targeted regression coverage for control tick and backlog parsing"
+-    priority: P1
+-    type: quality
+-    domain: [qa, tests, runner]
+-    assignees: [code-smith, qa-terminator]
+-    estimate_hours: 4
+-    deliverables:
+-      - "tests/test_runner_backlog_selection.py"
+-      - "tests/test_sprint044_control_tick.py"
+-      - "runtime/ci-artifacts/sprint-044-regression.json"
+-    acceptance:
+-      - "Tests cover environment-backed backlog selection and parser failure handling"
+-      - "Control tick regression suite passes in local execution"
+-      - "Regression evidence artifact is generated"
+-
+-  - id: CTOA-225
+-    title: "Sprint-044 Wave-1 evidence run"
+-    priority: P1
+-    type: governance
+-    domain: [qa, governance, release]
+-    assignees: [qa-terminator, strategos]
+-    estimate_hours: 3
+-    deliverables:
+-      - "runtime/ci-artifacts/sprint-044-wave1-run.log"
+-      - "runtime/ci-artifacts/sprint-044-validation.json"
+-      - "runtime/ci-artifacts/sprint-044-regression.json"
+-    acceptance:
+-      - "Focused tests PASS"
+-      - "Sprint-044 validator reports PASS"
+-      - "Wave-1 evidence bundle is complete"
+-
+-  - id: CTOA-226
+-    title: "Sprint-044 Wave-2 sign-off and release memo"
+-    priority: P1
+-    type: governance
+-    domain: [governance, release]
+-    assignees: [strategos, core-architect, documentation-sage]
+-    estimate_hours: 2
+-    deliverables:
+-      - "docs/history/sprints/SPRINT-044.md"
+-      - "runtime/experiments/sprint-044/CTOA-226.md"
+-    acceptance:
+-      - "All Sprint-044 tasks are in WAITING_APPROVAL or RELEASED"
+-      - "Residual risks and rollback baseline are recorded"
+-      - "Manual sign-off includes owner accountability"
++version: 1
++backlog_id: sprint-044
++window_days: 3
++focus: Operational drift prevention + control-plane regression coverage + governance-ready
++  closure
++owner: strategos
++rules:
++  max_parallel_tasks: 3
++  definition_of_done:
++  - implementation_created
++  - validation_passed
++  - evidence_recorded
++  - documentation_updated
++  release_policy:
++  - approval_required: true
++  - environment: production
++tasks:
++- id: CTOA-221
++  title: Open Sprint-044 kickoff baseline and carry-over risk ledger
++  priority: P0
++  type: governance
++  domain:
++  - governance
++  - planning
++  - release
++  assignees:
++  - strategos
++  - core-architect
++  estimate_hours: 2
++  deliverables:
++  - docs/history/sprints/SPRINT-044.md
++  acceptance:
++  - Sprint-044 backlog, delivery flow, and kickoff baseline are published
++  - Carry-over risks from Sprint-043 are listed with owners
++  - Kickoff checklist includes rollback baseline and accountability
++- id: CTOA-222
++  title: Harden VPS service backlog selection against drift
++  priority: P0
++  type: reliability
++  domain:
++  - ops
++  - reliability
++  - hardening
++  assignees:
++  - devops-master
++  - security-guardian
++  estimate_hours: 4
++  deliverables:
++  - deploy/vps/systemd/ctoa-runner.service
++  - deploy/vps/systemd/ctoa-report.service
++  - docs/runbook-vps-mobile-console.md
++  acceptance:
++  - Runner and report units avoid hardcoded sprint backlog override values
++  - Service restart and state verification show backlog_id sprint-044
++  - Runbook includes drift detection and remediation steps
++- id: CTOA-223
++  title: Create Sprint-044 validator and local wave task wiring
++  priority: P1
++  type: quality
++  domain:
++  - ci
++  - qa
++  - automation
++  assignees:
++  - qa-terminator
++  - core-architect
++  estimate_hours: 4
++  deliverables:
++  - scripts/ops/sprint044_validate.py
++  - .vscode/tasks.json
++  - runtime/ci-artifacts/sprint-044-validation.json
++  acceptance:
++  - Validator checks backlog, flow, and sprint history artifacts for Sprint-044
++  - Wave-1 local task chain executes tests and validator without errors
++  - Validation artifact is produced in runtime/ci-artifacts
++- id: CTOA-224
++  title: Add targeted regression coverage for control tick and backlog parsing
++  priority: P1
++  type: quality
++  domain:
++  - qa
++  - tests
++  - runner
++  assignees:
++  - code-smith
++  - qa-terminator
++  estimate_hours: 4
++  deliverables:
++  - tests/test_runner_backlog_selection.py
++  - tests/test_sprint044_control_tick.py
++  - runtime/ci-artifacts/sprint-044-regression.json
++  acceptance:
++  - Tests cover environment-backed backlog selection and parser failure handling
++  - Control tick regression suite passes in local execution
++  - Regression evidence artifact is generated
++- id: CTOA-225
++  title: Sprint-044 Wave-1 evidence run
++  priority: P1
++  type: governance
++  domain:
++  - qa
++  - governance
++  - release
++  assignees:
++  - qa-terminator
++  - strategos
++  estimate_hours: 3
++  deliverables:
++  - runtime/ci-artifacts/sprint-044-wave1-run.log
++  - runtime/ci-artifacts/sprint-044-validation.json
++  - runtime/ci-artifacts/sprint-044-regression.json
++  acceptance:
++  - Focused tests PASS
++  - Sprint-044 validator reports PASS
++  - Wave-1 evidence bundle is complete
++- id: CTOA-226
++  title: Sprint-044 Wave-2 sign-off and release memo
++  priority: P1
++  type: governance
++  domain:
++  - governance
++  - release
++  assignees:
++  - strategos
++  - core-architect
++  - documentation-sage
++  estimate_hours: 2
++  deliverables:
++  - docs/history/sprints/SPRINT-044.md
++  - runtime/experiments/sprint-044/CTOA-226.md
++  acceptance:
++  - All Sprint-044 tasks are in WAITING_APPROVAL or RELEASED
++  - Residual risks and rollback baseline are recorded
++  - Manual sign-off includes owner accountability
+diff --git a/workflows/sprint-043-delivery-flow.yaml b/workflows/sprint-043-delivery-flow.yaml
+index 1393b99..83aa623 100644
+--- a/workflows/sprint-043-delivery-flow.yaml
++++ b/workflows/sprint-043-delivery-flow.yaml
+@@ -1,61 +1 @@
+-sprint: '043'
+-theme: Post-release monitoring continuity + least-privilege observability + governance-ready closure
+-version: '1.0'
+-lifecycle:
+-  start: '2026-05-15'
+-  target_wave1: '2026-05-17'
+-  target_wave2: '2026-05-17'
+-
+-tasks:
+-  - id: CTOA-215
+-    title: Post-release 24h monitoring window
+-    on_start: open 24h window and capture baseline checks for health, runner, and report
+-    on_complete: publish monitoring artifact pair and short summary note
+-    on_fail: keep release active, record degraded observability risk, and escalate
+-
+-  - id: CTOA-216
+-    title: Least-privilege observability path hardening
+-    depends_on:
+-      - CTOA-215
+-    on_start: map actions blocked by sudo policy and define wrapper-safe alternatives
+-    on_complete: verify system health and dashboard actions run through approved paths
+-    on_fail: maintain existing wrappers and keep monitoring in reduced mode
+-
+-  - id: CTOA-217
+-    title: Sprint-043 kickoff control-plane alignment
+-    depends_on:
+-      - CTOA-215
+-    on_start: publish sprint backlog, delivery flow, and DoD in sprint history
+-    on_complete: confirm sprint scope, owners, and rollback baseline
+-    on_fail: keep sprint in planning hold with explicit blockers
+-
+-  - id: CTOA-218
+-    title: Sprint-043 validator and wave wiring
+-    depends_on:
+-      - CTOA-217
+-    on_start: scaffold sprint043 validator from sprint042 baseline
+-    on_complete: produce validation artifact and local wave task chain
+-    on_fail: revert validator/task wiring to previous stable baseline
+-
+-  - id: CTOA-219
+-    title: Wave-1 evidence pass
+-    depends_on:
+-      - CTOA-216
+-      - CTOA-218
+-    on_start: run focused tests and sprint043 validator
+-    on_complete: publish wave-1 evidence bundle
+-    on_fail: hold sprint in IN_CI_GATE and escalate blockers
+-
+-  - id: CTOA-220
+-    title: Wave-2 sign-off and release memo
+-    depends_on:
+-      - CTOA-219
+-    on_start: review wave-1 evidence and unresolved risk notes
+-    on_complete: record manual sign-off and release readiness decision
+-    on_fail: keep sprint in WAITING_APPROVAL and block release
+-
+-gate_policy:
+-  wave_1: sprint043 validator PASS plus focused regression checks PASS
+-  wave_2: manual STRATEGOS sign-off with accountability note
+-  rollback_baseline: v1.13.0
+-
++Auto-generated governance artifact for Sprint-007.
+diff --git a/workflows/sprint-044-delivery-flow.yaml b/workflows/sprint-044-delivery-flow.yaml
+index e45e104..83aa623 100644
+--- a/workflows/sprint-044-delivery-flow.yaml
++++ b/workflows/sprint-044-delivery-flow.yaml
+@@ -1,61 +1 @@
+-sprint: '044'
+-theme: Operational drift prevention + control-plane regression coverage + governance-ready closure
+-version: '1.0'
+-lifecycle:
+-  start: '2026-05-18'
+-  target_wave1: '2026-05-20'
+-  target_wave2: '2026-05-20'
+-
+-tasks:
+-  - id: CTOA-221
+-    title: Sprint-044 kickoff baseline and carry-over risk ledger
+-    on_start: publish backlog, delivery flow, and kickoff baseline report
+-    on_complete: confirm carry-over risks, owners, and rollback baseline
+-    on_fail: keep sprint in planning hold with explicit blockers
+-
+-  - id: CTOA-222
+-    title: VPS backlog drift guard hardening
+-    depends_on:
+-      - CTOA-221
+-    on_start: inspect runner and report unit overrides for hardcoded sprint ids
+-    on_complete: validate services read sprint backlog from approved environment path
+-    on_fail: keep previous unit configuration and escalate drift risk
+-
+-  - id: CTOA-223
+-    title: Sprint-044 validator and wave wiring
+-    depends_on:
+-      - CTOA-221
+-    on_start: scaffold sprint044 validator from sprint043 baseline
+-    on_complete: produce validation artifact and local wave task chain
+-    on_fail: rollback validator/task wiring to previous stable baseline
+-
+-  - id: CTOA-224
+-    title: Control tick and backlog parsing regression shield
+-    depends_on:
+-      - CTOA-223
+-    on_start: define targeted tests for backlog selection and parser edge cases
+-    on_complete: publish regression evidence artifact
+-    on_fail: keep previous regression set and track test coverage gap
+-
+-  - id: CTOA-225
+-    title: Wave-1 evidence pass
+-    depends_on:
+-      - CTOA-222
+-      - CTOA-223
+-      - CTOA-224
+-    on_start: run focused tests, sprint044 validator, and targeted regressions
+-    on_complete: publish wave-1 evidence bundle
+-    on_fail: hold sprint in IN_CI_GATE and escalate blockers
+-
+-  - id: CTOA-226
+-    title: Wave-2 sign-off and release memo
+-    depends_on:
+-      - CTOA-225
+-    on_start: review wave-1 evidence and unresolved risk notes
+-    on_complete: record manual sign-off and release readiness decision
+-    on_fail: keep sprint in WAITING_APPROVAL and block release
+-
+-gate_policy:
+-  wave_1: sprint044 validator PASS plus control-tick backlog regressions PASS
+-  wave_2: manual STRATEGOS sign-off with carry-over risk closure note
+-  rollback_baseline: v1.13.0
++Auto-generated governance artifact for Sprint-007.
+-- 
+2.43.0
+
