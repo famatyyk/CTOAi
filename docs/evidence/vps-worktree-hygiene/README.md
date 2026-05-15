@@ -59,3 +59,37 @@ The snapshot was generated on VPS and copied to this repository for traceability
 - phase2-20260515T140911Z/post-status-porcelain.txt
 - pre-clean-20260515T140911Z.tar.gz
 - manual-edits-20260515T140911Z.tar.gz
+
+## Phase 3 Snapshot: 20260515T141636Z
+
+- branch: main
+- head_before: c69e253
+- head_after: 0981aa9
+- fetch_exit_code: 0
+- pull_exit_code: 0
+- status_before_clean: YES
+- status_after_clean: YES
+- reconcile_result: RECONCILE_OK
+
+### Artifacts
+
+- phase3-20260515T141636Z/summary.md
+- phase3-20260515T141636Z/fetch-output.txt
+- phase3-20260515T141636Z/pull-output.txt
+- phase3-20260515T141636Z/status-before.txt
+- phase3-20260515T141636Z/status-after.txt
+
+## Phase 4 Readiness Snapshot: 20260515T141731Z
+
+- stash_entries_detected: 1
+- stash_top: stash@{0}: On main: hygiene:phase2:20260515T140911Z
+- tracked_paths_in_top_stash: 6
+- grouped_ready_for_controlled_reapply: YES
+
+### Artifacts
+
+- phase4-readiness-20260515T141731Z/summary.md
+- phase4-readiness-20260515T141731Z/grouped-paths.json
+- phase4-readiness-20260515T141731Z/stash-list.txt
+- phase4-readiness-20260515T141731Z/stash-top-name-status.txt
+- phase4-readiness-20260515T141731Z/stash-top-stat.txt

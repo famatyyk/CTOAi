@@ -41,8 +41,8 @@ Goal: Restore predictable update flow without destructive git operations.
 ## Phase 4 - Controlled Re-apply
 
 1. Re-apply stashed changes one group at a time:
-   - git -C /opt/ctoa stash pop <stash>
-2. After each pop:
+   - git -C /opt/ctoa stash apply <stash>
+2. After each apply:
    - run targeted validation task(s)
    - commit immediately if valid
 3. Keep unrelated local edits isolated in separate commits.
@@ -60,5 +60,9 @@ Goal: Restore predictable update flow without destructive git operations.
 2. [x] Classify current dirty files with owners. (DONE)
 3. [x] Implement and verify pre-update dirty-worktree gate. (DONE)
 4. [x] Execute Phase 2 backups and stashes before next sprint pull attempt. (DONE: 20260515T140911Z)
-5. [ ] Proceed to Phase 3 fast-forward reconcile only. (ACTIVE NEXT STEP)
-6. [ ] After Phase 3, execute controlled re-apply flow from Phase 4.
+5. [x] Proceed to Phase 3 fast-forward reconcile only. (DONE: 20260515T141636Z)
+6. [x] Prepare controlled re-apply map, checkpoints, and rollback plan for Phase 4. (DONE: 20260515T141731Z)
+
+7. [ ] Execute Phase 4 controlled re-apply on VPS (group-by-group with validation). (ACTIVE NEXT STEP)
+
+

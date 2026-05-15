@@ -1,0 +1,17 @@
+{
+  "group_1_ops_scripts": [
+    "deploy/vps/rotate-mobile-token.sh"
+  ],
+  "group_2_docs_governance": [
+    "docs/VALIDATION_CHECKLIST.md",
+    "docs/runbook-disk-emergency.md"
+  ],
+  "group_3_ui_dashboard": [
+    "docs/site/live-dashboard.html",
+    "mobile_console/static/app.js",
+    "mobile_console/static/index.html"
+  ],
+  "group_4_workflows_backlogs": [],
+  "group_5_backups_artifacts": [],
+  "group_9_other": []
+}

@@ -1,6 +1,6 @@
 # Sprint-047 Plan - 3 Day Execution Window
 
-Status: IN_PROGRESS (Kickoff baseline opened on 2026-05-15)
+Status: IN_PROGRESS (CTOA-239/240/241/242 completed; CTOA-243/244 pending)
 Theme: VPS hygiene Phase-3 reconcile + Stage-2 execution kickoff + governance continuity
 Window: 2026-05-15 -> 2026-05-17
 Backlog: workflows/backlog-sprint-047.yaml
@@ -40,3 +40,15 @@ from Phase 2 to Phase 3/4 readiness while preserving governance quality gates an
 - Delivered By: STRATEGOS + CORE ARCHITECT + DOCUMENTATION SAGE.
 - Verified: Sprint-047 baseline files and dependency flow are published.
 - God Mode Decision Required: Approve Wave-1 execution of CTOA-241/242/243/244 after blocker assessment.
+## Execution Update (2026-05-15)
+
+- CTOA-241: PASS. VPS Phase-3 reconcile completed with fetch/pull --ff-only, clean worktree preserved.
+- CTOA-242: PASS. Controlled Phase-4 re-apply order, validation checkpoints, and rollback points are documented.
+- Sprint-047 remains IN_PROGRESS pending CTOA-243 validator final pass evidence and CTOA-244 sign-off memo.
+
+## Current Closure Block
+
+- Delivered By: STRATEGOS + DEVOPS MASTER + SECURITY GUARDIAN + QA TERMINATOR + DOCUMENTATION SAGE.
+- Verified: CTOA-241 and CTOA-242 deliverables are published with evidence and operator guidance.
+- God Mode Decision Required: Approve execution closure for CTOA-243 and CTOA-244.
+
