@@ -1,7 +1,7 @@
 # Sprint-043 Plan - 3 Day Execution Window
 
 Sprint Period: 2026-05-15 to 2026-05-17
-Status: IN_PROGRESS (opened 2026-05-15)
+Status: RELEASED (Wave-2 sign-off completed 2026-05-15)
 Theme: Post-release monitoring continuity + least-privilege observability + governance-ready closure
 Backlog File: workflows/backlog-sprint-043.yaml
 Delivery Flow: workflows/sprint-043-delivery-flow.yaml
@@ -62,3 +62,30 @@ Wave-1 and Wave-2 governance gates.
 3. Run control tick and verify backlog_id is sprint-043 in runtime task state.
 4. Execute Wave-1 run after CTOA-215..218 completion.
 
+
+## Execution Outcome (Wave-2)
+
+### Task Status Snapshot
+
+| Task ID | Status | Evidence |
+|---|---|---|
+| CTOA-215 | RELEASED | runtime/ci-artifacts/sprint-042-post-release-monitoring-window.log, runtime/ci-artifacts/sprint-042-post-release-monitoring-24h.json, runtime/experiments/sprint-042/POST-RELEASE-24H.md |
+| CTOA-216 | RELEASED | deploy/vps/systemd/ctoa-agents-orchestrator.service, deploy/vps/systemd/ctoa-agents-orchestrator.timer |
+| CTOA-217 | RELEASED | workflows/backlog-sprint-043.yaml, workflows/sprint-043-delivery-flow.yaml, docs/history/sprints/SPRINT-043.md |
+| CTOA-218 | RELEASED | scripts/ops/sprint043_validate.py, .vscode/tasks.json, runtime/ci-artifacts/sprint-043-validation.json |
+| CTOA-219 | RELEASED | runtime/ci-artifacts/sprint-043-wave1-run.log, runtime/ci-artifacts/sprint-043-validation.json |
+| CTOA-220 | RELEASED | runtime/experiments/sprint-043/CTOA-220.md |
+
+### Wave-1 Gate Result
+
+- Full local tests: PASS (122 passed, 6 skipped).
+- Sprint-043 validator: PASS (11/11 checks passed).
+- Launch pack dry-run: PASS (launch_allowed).
+
+### Wave-2 Decision Summary
+
+- Decision: Sprint-043 released after Wave-2 sign-off.
+- Rollback baseline: v1.13.0.
+- Owner accountability: Strategos (primary), Core Architect and Documentation Sage (review).
+- Operational note: CTOA-216 completed with orchestrator timer enabled/active; runner/report backlog override drift fixed to sprint-043.
+- Residual risks: low; standard post-release monitoring retained.
