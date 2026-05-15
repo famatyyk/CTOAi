@@ -1,29 +1,6 @@
 # CTOA Systems Validation Checklist
 
-**Last Updated:** 2026-03-12T20:05:12+00:00
-
-## Mobile QA Validation (2026-03-19)
-
-- [x] Menu and mobile layout readability/tap flow validated (Samsung Note 10+ class viewport)
-- [x] Owner login via modal with API base validated
-- [x] Owner settings save + persist-after-refresh validated
-- [x] Parking Pomyslow add/remove and counter transitions validated
-- [x] Operator restrictions validated (`showPrices` and `reset localStorage` controls disabled)
-- [x] Overall mobile QA status: PASS
-
-## Governance Gate (PR path + bypass control)
-
-- [ ] Changes follow PR -> `main` flow by default
-- [ ] Required checks are green: `PR Quality Report` and `CTOA Pipeline`
-- [ ] Current sprint validator artifact is attached in CI evidence
-- [ ] If bypass was used: incident note + 24h backfill PR are documented
-
-## Sprint-042 Wave-1 Checks
-
-- [ ] `scripts/ops/sprint042_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-042-validation.json` passes
-- [ ] `.vscode/tasks.json` contains `CTOA: Sprint-042 Validate` and `CTOA: Sprint-042 Wave-1 Run`
-- [ ] `.github/workflows/ctoa-pipeline.yml` runs Sprint-042 delivery gate
-- [ ] `runtime/ci-artifacts/sprint-042-validation.json` is exported in CI artifacts
+**Last Updated:** 2026-05-15T00:00:00+00:00
 
 ## Pre-Deployment Checks
 
@@ -48,7 +25,7 @@
 - [ ] Report generation successful
 - [ ] GitHub API connectivity via PAT token
 
-## Post-Deployment Checks  
+## Post-Deployment Checks
 
 ### Service Health (after VPS deployment)
 
@@ -142,5 +119,4 @@ curl http://localhost:9999/health 2>/dev/null | jq .
 - [ARCHITECTURE.md](ARCHITECTURE.md) - Overall system design
 - [SETUP.md](../deploy/vps/SETUP.md) - VPS environment setup
 - [runner.py](../runner/runner.py) - Main orchestration logic
-
 
