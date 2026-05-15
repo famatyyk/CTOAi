@@ -1,0 +1,61 @@
+sprint: '045'
+theme: Project progress visibility + Wave-1 readiness + host-target governance hardening
+version: '1.0'
+lifecycle:
+  start: '2026-05-21'
+  target_wave1: '2026-05-23'
+  target_wave2: '2026-05-23'
+
+tasks:
+  - id: CTOA-227
+    title: Sprint-045 kickoff baseline and risk ledger refresh
+    on_start: publish backlog, delivery flow, and sprint baseline report
+    on_complete: confirm carry-over risks, owners, and rollback baseline
+    on_fail: keep sprint in planning hold with explicit blockers
+
+  - id: CTOA-228
+    title: Project progress diagram automation
+    depends_on:
+      - CTOA-227
+    on_start: scaffold reusable CLI generator for backlog percentage diagram
+    on_complete: publish Sprint-045 progress diagram markdown and refresh task wiring
+    on_fail: keep manual progress reporting and track visibility gap
+
+  - id: CTOA-229
+    title: Sprint-045 validator and wave wiring
+    depends_on:
+      - CTOA-227
+      - CTOA-228
+    on_start: scaffold sprint045 validator from sprint044 baseline
+    on_complete: produce validation artifact and local wave task chain
+    on_fail: rollback validator/task wiring to previous stable baseline
+
+  - id: CTOA-230
+    title: Wave-1 evidence pass
+    depends_on:
+      - CTOA-229
+    on_start: run focused tests, sprint045 validator, and launch pack dry-run
+    on_complete: publish wave-1 evidence bundle
+    on_fail: hold sprint in IN_CI_GATE and escalate blockers
+
+  - id: CTOA-231
+    title: Canonical host-target default hardening
+    depends_on:
+      - CTOA-227
+    on_start: inspect CLI and VPS scripts for stale default host values
+    on_complete: align default host behavior with active infrastructure and tests
+    on_fail: enforce explicit host override requirement and document risk
+
+  - id: CTOA-232
+    title: Wave-2 sign-off and release memo
+    depends_on:
+      - CTOA-230
+      - CTOA-231
+    on_start: review wave-1 evidence, progress diagram, and unresolved risk notes
+    on_complete: record manual sign-off and release readiness decision
+    on_fail: keep sprint in WAITING_APPROVAL and block release
+
+gate_policy:
+  wave_1: sprint045 validator PASS plus focused quality regressions PASS
+  wave_2: manual STRATEGOS sign-off with residual risk closure note
+  rollback_baseline: v1.13.1

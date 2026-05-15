@@ -1,0 +1,112 @@
+version: 1
+backlog_id: sprint-045
+window_days: 3
+focus: "Project progress visibility + Wave-1 readiness + host-target governance hardening"
+owner: strategos
+
+rules:
+  max_parallel_tasks: 3
+  definition_of_done:
+    - implementation_created
+    - validation_passed
+    - evidence_recorded
+    - documentation_updated
+  release_policy:
+    - approval_required: true
+    - environment: production
+
+tasks:
+  - id: CTOA-227
+    title: "Open Sprint-045 kickoff baseline and risk ledger refresh"
+    priority: P0
+    type: governance
+    domain: [governance, planning, release]
+    assignees: [strategos, core-architect]
+    estimate_hours: 2
+    deliverables:
+      - "workflows/backlog-sprint-045.yaml"
+      - "workflows/sprint-045-delivery-flow.yaml"
+      - "docs/history/sprints/SPRINT-045.md"
+    acceptance:
+      - "Sprint-045 backlog, delivery flow, and kickoff baseline are published"
+      - "Carry-over risks from Sprint-044 are listed with owners"
+      - "Kickoff checklist includes rollback baseline and accountability"
+
+  - id: CTOA-228
+    title: "Build reusable project progress diagram with percentage visibility"
+    priority: P0
+    type: observability
+    domain: [governance, reporting, automation]
+    assignees: [documentation-sage, core-architect]
+    estimate_hours: 3
+    deliverables:
+      - "scripts/ops/project_progress_diagram.py"
+      - "docs/history/sprints/SPRINT-045-PROGRESS.md"
+      - ".vscode/tasks.json"
+    acceptance:
+      - "Diagram shows RELEASED, in-flight, NEW, and BLOCKED percentages"
+      - "Generator can target any backlog file via CLI"
+      - "Sprint-045 progress markdown is refreshable from a single task"
+
+  - id: CTOA-229
+    title: "Create Sprint-045 validator and local wave task wiring"
+    priority: P1
+    type: quality
+    domain: [ci, qa, automation]
+    assignees: [qa-terminator, core-architect]
+    estimate_hours: 4
+    deliverables:
+      - "scripts/ops/sprint045_validate.py"
+      - ".vscode/tasks.json"
+      - "runtime/ci-artifacts/sprint-045-validation.json"
+    acceptance:
+      - "Validator checks Sprint-045 backlog, flow, docs, and progress diagram"
+      - "Wave-1 local task chain executes tests and validator without errors"
+      - "Validation artifact is produced in runtime/ci-artifacts"
+
+  - id: CTOA-230
+    title: "Sprint-045 Wave-1 evidence run"
+    priority: P1
+    type: governance
+    domain: [qa, governance, release]
+    assignees: [qa-terminator, strategos]
+    estimate_hours: 3
+    deliverables:
+      - "runtime/ci-artifacts/sprint-045-wave1-run.log"
+      - "runtime/ci-artifacts/sprint-045-validation.json"
+      - "docs/history/sprints/SPRINT-045-PROGRESS.md"
+    acceptance:
+      - "Focused tests PASS"
+      - "Sprint-045 validator reports PASS"
+      - "Wave-1 evidence bundle is complete"
+
+  - id: CTOA-231
+    title: "Align canonical VPS host-target defaults with active infrastructure"
+    priority: P1
+    type: reliability
+    domain: [ops, reliability, hardening]
+    assignees: [devops-master, security-guardian]
+    estimate_hours: 3
+    deliverables:
+      - "scripts/ops/ctoa-vps.ps1"
+      - "ctoa.ps1"
+      - "tests/test_suite.py"
+    acceptance:
+      - "Canonical scripts no longer default to stale VPS IP"
+      - "Host-target behavior is covered by regression checks"
+      - "ValidateServices reaches active host without manual overrides"
+
+  - id: CTOA-232
+    title: "Sprint-045 Wave-2 sign-off and release memo"
+    priority: P1
+    type: governance
+    domain: [governance, release]
+    assignees: [strategos, core-architect, documentation-sage]
+    estimate_hours: 2
+    deliverables:
+      - "docs/history/sprints/SPRINT-045.md"
+      - "runtime/experiments/sprint-045/CTOA-232.md"
+    acceptance:
+      - "All Sprint-045 tasks are in WAITING_APPROVAL or RELEASED"
+      - "Residual risks and rollback baseline are recorded"
+      - "Manual sign-off includes owner accountability"
