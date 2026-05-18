@@ -18,12 +18,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
-      VPS_HOST: ${{ secrets.CTOA_VPS_HOST }}
-      VPS_USER: ${{ secrets.CTOA_VPS_USER }}
-      SSH_KEY: ${{ secrets.CTOA_VPS_SSH_KEY }}
+      VPS_HOST: ${{ secrets.CTOA_VPS_HOST != '' && secrets.CTOA_VPS_HOST || secrets.VPS_HOST }}
+      VPS_USER: ${{ secrets.CTOA_VPS_USER != '' && secrets.CTOA_VPS_USER || secrets.VPS_USER }}
+      SSH_KEY: ${{ secrets.CTOA_VPS_SSH_KEY != '' && secrets.CTOA_VPS_SSH_KEY || secrets.VPS_SSH_KEY }}
       DEFAULT_PUBLIC_KEY: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM0Got3A4+3U+6WperstMKOrQtr7EJMWvgNqxTeYgCoj ctoa@116.202.96.250
 
     steps:
+      - name: Validate required secrets
+        run: |
+          set -euo pipefail
+          if [ -z "$VPS_HOST" ] || [ -z "$VPS_USER" ] || [ -z "$SSH_KEY" ]; then
+            echo "Missing VPS secrets. Need one of sets:"
+            echo "- CTOA_VPS_HOST / CTOA_VPS_USER / CTOA_VPS_SSH_KEY"
+            echo "or"
+            echo "- VPS_HOST / VPS_USER / VPS_SSH_KEY"
+            exit 1
+          fi
+
       - name: Prepare SSH
         run: |
           set -euo pipefail
