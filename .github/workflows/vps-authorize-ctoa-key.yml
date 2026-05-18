@@ -1,0 +1,80 @@
+name: CTOA VPS Authorize CTOA Key
+
+on:
+  workflow_dispatch:
+    inputs:
+      public_key:
+        description: Public SSH key to authorize for ctoa user
+        required: true
+        type: string
+
+jobs:
+  authorize-key:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      VPS_HOST: ${{ secrets.CTOA_VPS_HOST }}
+      VPS_USER: ${{ secrets.CTOA_VPS_USER }}
+      SSH_KEY: ${{ secrets.CTOA_VPS_SSH_KEY }}
+
+    steps:
+      - name: Prepare SSH
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          printf "%s" "$SSH_KEY" > ~/.ssh/ctoa_vps
+          chmod 600 ~/.ssh/ctoa_vps
+          ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+
+      - name: Authorize key for ctoa
+        env:
+          PUBLIC_KEY: ${{ inputs.public_key }}
+        run: |
+          set -euo pipefail
+          PUB_B64=$(printf '%s' "$PUBLIC_KEY" | base64 -w0)
+
+          ssh -i ~/.ssh/ctoa_vps -o BatchMode=yes -o ConnectTimeout=12 \
+            "$VPS_USER@$VPS_HOST" "PUB_B64='$PUB_B64' bash -s" <<'ENDSSH'
+          set -euo pipefail
+
+          run_root() {
+            if [[ "$(id -u)" -eq 0 ]]; then
+              "$@"
+            else
+              sudo -n "$@"
+            fi
+          }
+
+          PUBLIC_KEY=$(printf '%s' "$PUB_B64" | base64 -d)
+
+          if ! getent passwd ctoa >/dev/null 2>&1; then
+            if command -v useradd >/dev/null 2>&1; then
+              run_root useradd -m -s /bin/bash ctoa
+            elif command -v adduser >/dev/null 2>&1; then
+              run_root adduser --disabled-password --gecos "" ctoa
+            else
+              echo "No useradd/adduser available" >&2
+              exit 1
+            fi
+          fi
+
+          run_root install -d -m 700 -o ctoa -g ctoa /home/ctoa/.ssh
+          run_root touch /home/ctoa/.ssh/authorized_keys
+          run_root chown ctoa:ctoa /home/ctoa/.ssh/authorized_keys
+          run_root chmod 600 /home/ctoa/.ssh/authorized_keys
+
+          if ! run_root grep -Fxq "$PUBLIC_KEY" /home/ctoa/.ssh/authorized_keys; then
+            printf '%s\n' "$PUBLIC_KEY" | run_root tee -a /home/ctoa/.ssh/authorized_keys >/dev/null
+          fi
+
+          run_root chown -R ctoa:ctoa /home/ctoa/.ssh
+          run_root chmod 700 /home/ctoa/.ssh
+          run_root chmod 600 /home/ctoa/.ssh/authorized_keys
+
+          run_root ls -ld /home/ctoa /home/ctoa/.ssh
+          run_root tail -n 2 /home/ctoa/.ssh/authorized_keys
+          ENDSSH
+
+      - name: Cleanup SSH material
+        if: always()
+        run: rm -f ~/.ssh/ctoa_vps
