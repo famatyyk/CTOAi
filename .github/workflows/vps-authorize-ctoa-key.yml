@@ -1,11 +1,16 @@
 name: CTOA VPS Authorize CTOA Key
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/vps-authorize-ctoa-key.yml
   workflow_dispatch:
     inputs:
       public_key:
         description: Public SSH key to authorize for ctoa user
-        required: true
+        required: false
         type: string
 
 jobs:
@@ -16,6 +21,7 @@ jobs:
       VPS_HOST: ${{ secrets.CTOA_VPS_HOST }}
       VPS_USER: ${{ secrets.CTOA_VPS_USER }}
       SSH_KEY: ${{ secrets.CTOA_VPS_SSH_KEY }}
+      DEFAULT_PUBLIC_KEY: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM0Got3A4+3U+6WperstMKOrQtr7EJMWvgNqxTeYgCoj ctoa@116.202.96.250
 
     steps:
       - name: Prepare SSH
@@ -28,9 +34,14 @@ jobs:
 
       - name: Authorize key for ctoa
         env:
-          PUBLIC_KEY: ${{ inputs.public_key }}
+          INPUT_PUBLIC_KEY: ${{ inputs.public_key }}
         run: |
           set -euo pipefail
+          PUBLIC_KEY="$INPUT_PUBLIC_KEY"
+          if [ -z "$PUBLIC_KEY" ]; then
+            PUBLIC_KEY="$DEFAULT_PUBLIC_KEY"
+          fi
+
           PUB_B64=$(printf '%s' "$PUBLIC_KEY" | base64 -w0)
 
           ssh -i ~/.ssh/ctoa_vps -o BatchMode=yes -o ConnectTimeout=12 \
