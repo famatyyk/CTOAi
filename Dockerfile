@@ -1,37 +1,35 @@
-# Multi-stage production build for CTOA Toolkit
-# Non-root user, health checks, minimal footprint
+# syntax=docker/dockerfile:1
+# Production-ready multi-stage image for CTOA toolkit.
 
-# Stage 1: Builder
-FROM python:3.12-slim as builder
+FROM python:3.12-slim AS builder
 
 WORKDIR /build
 COPY requirements.txt .
-RUN pip install --user --no-cache-dir -r requirements.txt
 
-# Stage 2: Runtime
-FROM python:3.12-slim
+# Build dependency wheels in a separate stage to keep runtime image smaller.
+RUN pip wheel --no-cache-dir --wheel-dir /wheels -r requirements.txt
 
-# Create non-root user
-RUN useradd -m -u 1000 ctoa
+FROM python:3.12-slim AS runtime
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    CTOA_MOBILE_TOKEN=change-me \
+    CTOA_MOBILE_FULL_ACCESS=false
+
+RUN useradd --create-home --uid 1000 ctoa
 
 WORKDIR /opt/ctoa
 
-# Copy Python packages from builder
-COPY --from=builder /root/.local /home/ctoa/.local
-ENV PATH=/home/ctoa/.local/bin:$PATH
+COPY --from=builder /wheels /wheels
+RUN pip install --no-cache-dir /wheels/* && rm -rf /wheels
 
-# Copy application
 COPY --chown=ctoa:ctoa . .
 
-# Set non-root user
 USER ctoa
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:8787/api/health', timeout=5)" || exit 1
-
-# Expose port for mobile console
 EXPOSE 8787
 
-# Default entrypoint
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+  CMD python -c "import os,urllib.request; t=os.getenv('CTOA_MOBILE_TOKEN',''); req=urllib.request.Request('http://127.0.0.1:8787/api/health', headers={'X-CTOA-Token': t}); urllib.request.urlopen(req, timeout=5)"
+
 CMD ["python", "-m", "uvicorn", "mobile_console.app:app", "--host", "0.0.0.0", "--port", "8787"]

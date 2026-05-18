@@ -1,54 +1,39 @@
-version: '3.8'
-
 services:
-  ctoa-runner:
+  ctoa:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: ctoa-runner
+    container_name: ctoa-mobile-console
     ports:
       - "8787:8787"
     volumes:
-      - ./config:/opt/ctoa/config
+      - ./:/opt/ctoa
       - ./runtime:/opt/ctoa/runtime
       - ./logs:/opt/ctoa/logs
     environment:
-      - CTOA_ENV=dev
-      - CTOA_MOBILE_TOKEN=dev-token-12345
-      - CTOA_MOBILE_FULL_ACCESS=true
-      - LOG_LEVEL=DEBUG
-    command: |
-      bash -c "
-      pip install -q uvicorn &&
-      python -m uvicorn mobile_console.app:app --host 0.0.0.0 --port 8787 --reload
-      "
-    networks:
-      - ctoa-network
-    restart: unless-stopped
+      CTOA_ENV: dev
+      CTOA_MOBILE_TOKEN: dev-token-change-me
+      CTOA_MOBILE_FULL_ACCESS: "false"
+    command: python -m uvicorn mobile_console.app:app --host 0.0.0.0 --port 8787 --reload
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8787/api/health"]
+      test: ["CMD", "python", "-c", "import os,urllib.request; t=os.getenv('CTOA_MOBILE_TOKEN',''); req=urllib.request.Request('http://127.0.0.1:8787/api/health', headers={'X-CTOA-Token': t}); urllib.request.urlopen(req, timeout=5)"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 5s
+      start_period: 15s
+    restart: unless-stopped
 
   ctoa-dev-shell:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: ctoa-dev-shell
-    volumes:
-      - ./:/opt/ctoa
-    environment:
-      - CTOA_ENV=dev
     command: /bin/bash
     stdin_open: true
     tty: true
-    networks:
-      - ctoa-network
+    volumes:
+      - ./:/opt/ctoa
+    environment:
+      CTOA_ENV: dev
     profiles:
       - dev
-
-networks:
-  ctoa-network:
-    driver: bridge

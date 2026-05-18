@@ -1,5 +1,4 @@
 .git
-.github
 .vscode
 .venv
 __pycache__
@@ -7,18 +6,12 @@ __pycache__
 *.pyo
 *.egg-info
 .DS_Store
-*.md
-.gitignore
 node_modules
 npm-debug.log
 .env
 .env.local
 secrets/
 .ssh
-runtime/
-logs/
-archived/
-backups/
 .pytest_cache
 .coverage
 htmlcov/
