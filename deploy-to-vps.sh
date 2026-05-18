@@ -11,7 +11,7 @@ Arguments:
   ssh_user      SSH user (example: ctoa)
   ssh_key_path  Path to SSH private key (example: ~/.ssh/ctoa_vps_ed25519)
   image_tag     Optional image tag (default: latest)
-  image_repo    Optional image repository prefix (example: docker.io/user/ctoa-toolkit)
+  image_repo    Optional image repository prefix (example: docker.io/famatyyk/ctoa-toolkit)
 
 Behavior:
   - Always builds local image ctoa-toolkit:<image_tag>
