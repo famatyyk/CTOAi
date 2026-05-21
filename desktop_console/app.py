@@ -46,6 +46,7 @@ class DesktopSettings:
     auto_refresh: bool = True
     check_updates_on_startup: bool = True
     endpoint_profile: str = "local"
+    onboarding_completed: bool = False
     profile_urls: dict[str, str] = field(default_factory=_default_profile_urls)
 
 
@@ -92,6 +93,7 @@ def _load_settings() -> DesktopSettings:
         auto_refresh=bool(payload.get("auto_refresh", True)),
         check_updates_on_startup=bool(payload.get("check_updates_on_startup", True)),
         endpoint_profile=endpoint_profile,
+        onboarding_completed=bool(payload.get("onboarding_completed", False)),
         profile_urls=profile_urls,
     )
 
@@ -146,8 +148,8 @@ class CtoaDesktopApp(tk.Tk):
     def __init__(self) -> None:
         super().__init__()
         self.title(f"{APP_NAME} v{APP_VERSION}")
-        self.geometry("1320x860")
-        self.minsize(1120, 740)
+        self.geometry("1360x900")
+        self.minsize(1160, 760)
 
         self._configure_styles()
 
@@ -175,6 +177,7 @@ class CtoaDesktopApp(tk.Tk):
         self.pending_update: UpdateInfo | None = None
         self._update_check_running = False
 
+        self._bind_shortcuts()
         self.show_login(preset_url=self.settings.base_url)
 
         if self.settings.check_updates_on_startup:
@@ -188,27 +191,33 @@ class CtoaDesktopApp(tk.Tk):
             pass
 
         palette = {
-            "bg": "#edf2f8",
+            "bg": "#eef3fa",
             "surface": "#ffffff",
             "hero": "#0f4c81",
-            "hero_text": "#ffffff",
-            "hero_soft": "#dcecff",
+            "hero_deep": "#0a3558",
+            "hero_text": "#f3f9ff",
+            "hero_soft": "#cfe4ff",
             "text": "#15253a",
             "muted": "#52627a",
             "metric": "#f4f8fc",
             "status": "#dfe7f2",
             "accent": "#1f76cc",
             "accent_active": "#185f9f",
+            "ok": "#1f8b4d",
+            "warn": "#a66a00",
+            "bad": "#b33939",
+            "rail": "#e4edf7",
         }
         self._palette = palette
         self.configure(bg=palette["bg"])
 
         style.configure("Root.TFrame", background=palette["bg"])
         style.configure("Shell.TFrame", background=palette["bg"])
-
         style.configure("Card.TFrame", background=palette["surface"], relief="solid", borderwidth=1)
         style.configure("Surface.TFrame", background=palette["surface"])
         style.configure("Hero.TFrame", background=palette["hero"], relief="solid", borderwidth=1)
+        style.configure("NavRail.TFrame", background=palette["rail"], relief="solid", borderwidth=1)
+        style.configure("StepCard.TFrame", background="#f2f7fe", relief="solid", borderwidth=1)
 
         style.configure(
             "Headline.TLabel",
@@ -235,10 +244,28 @@ class CtoaDesktopApp(tk.Tk):
             font=("Segoe UI", 10),
         )
         style.configure(
+            "Hint.TLabel",
+            background=palette["rail"],
+            foreground=palette["muted"],
+            font=("Segoe UI", 9),
+        )
+        style.configure(
             "Field.TLabel",
             background=palette["surface"],
             foreground=palette["muted"],
             font=("Segoe UI", 9, "bold"),
+        )
+        style.configure(
+            "StepTitle.TLabel",
+            background="#f2f7fe",
+            foreground=palette["text"],
+            font=("Segoe UI Semibold", 10),
+        )
+        style.configure(
+            "StepBody.TLabel",
+            background="#f2f7fe",
+            foreground=palette["muted"],
+            font=("Segoe UI", 9),
         )
 
         style.configure(
@@ -267,12 +294,68 @@ class CtoaDesktopApp(tk.Tk):
             foreground=palette["text"],
             font=("Segoe UI Semibold", 13),
         )
+        style.configure(
+            "MetricValueGood.TLabel",
+            background=palette["metric"],
+            foreground=palette["ok"],
+            font=("Segoe UI Semibold", 13),
+        )
+        style.configure(
+            "MetricValueWarn.TLabel",
+            background=palette["metric"],
+            foreground=palette["warn"],
+            font=("Segoe UI Semibold", 13),
+        )
+        style.configure(
+            "MetricValueBad.TLabel",
+            background=palette["metric"],
+            foreground=palette["bad"],
+            font=("Segoe UI Semibold", 13),
+        )
 
-        style.configure("Primary.TButton", padding=(14, 8), font=("Segoe UI Semibold", 10))
+        style.configure(
+            "BannerGood.TLabel",
+            background="#dff4e7",
+            foreground="#1f6d44",
+            font=("Segoe UI Semibold", 10),
+            padding=(10, 8),
+        )
+        style.configure(
+            "BannerWarn.TLabel",
+            background="#fff2dd",
+            foreground="#8f5c00",
+            font=("Segoe UI Semibold", 10),
+            padding=(10, 8),
+        )
+        style.configure(
+            "BannerBad.TLabel",
+            background="#ffe3e3",
+            foreground="#9d2323",
+            font=("Segoe UI Semibold", 10),
+            padding=(10, 8),
+        )
+
+        style.configure(
+            "Primary.TButton",
+            padding=(14, 8),
+            font=("Segoe UI Semibold", 10),
+            foreground="#ffffff",
+            background=palette["accent"],
+            borderwidth=0,
+            focusthickness=1,
+            focuscolor=palette["accent_active"],
+        )
         style.map(
             "Primary.TButton",
-            background=[("active", palette["accent_active"]), ("!disabled", palette["accent"])],
+            background=[("pressed", palette["accent_active"]), ("active", palette["accent_active"]), ("!disabled", palette["accent"])],
             foreground=[("!disabled", "#ffffff")],
+        )
+
+        style.configure(
+            "NavButton.TButton",
+            padding=(12, 8),
+            font=("Segoe UI Semibold", 10),
+            anchor="w",
         )
 
         style.configure(
@@ -297,6 +380,80 @@ class CtoaDesktopApp(tk.Tk):
             foreground="#344a63",
             font=("Segoe UI", 9),
         )
+
+    def _bind_shortcuts(self) -> None:
+        for sequence, callback in (
+            ("<F5>", self._shortcut_refresh),
+            ("<Control-r>", self._shortcut_refresh),
+            ("<Control-R>", self._shortcut_refresh),
+            ("<Control-1>", lambda: self._shortcut_tab(0)),
+            ("<Control-2>", lambda: self._shortcut_tab(1)),
+            ("<Control-3>", lambda: self._shortcut_tab(2)),
+            ("<Control-e>", self._shortcut_profiles),
+            ("<Control-E>", self._shortcut_profiles),
+            ("<Control-h>", self._shortcut_onboarding),
+            ("<Control-H>", self._shortcut_onboarding),
+            ("<Control-q>", self._shortcut_logout),
+            ("<Control-Q>", self._shortcut_logout),
+            ("<Control-Shift-A>", self._shortcut_admin),
+            ("<Control-Shift-a>", self._shortcut_admin),
+        ):
+            self.bind_all(sequence, lambda _event, cb=callback: self._execute_shortcut(cb))
+
+    def _execute_shortcut(self, callback: object) -> str:
+        try:
+            if callable(callback):
+                callback()
+        except Exception:
+            pass
+        return "break"
+
+    def _active_dashboard(self) -> object | None:
+        frame = self._frame
+        if frame is None:
+            return None
+        if frame.__class__.__name__ != "DashboardFrame":
+            return None
+        return frame
+
+    def _shortcut_refresh(self) -> None:
+        dashboard = self._active_dashboard()
+        if dashboard and hasattr(dashboard, "refresh"):
+            dashboard.refresh()
+
+    def _shortcut_tab(self, index: int) -> None:
+        dashboard = self._active_dashboard()
+        if dashboard and hasattr(dashboard, "go_tab"):
+            dashboard.go_tab(index)
+
+    def _shortcut_profiles(self) -> None:
+        dashboard = self._active_dashboard()
+        if dashboard is not None:
+            self.show_endpoint_config(return_to="dashboard")
+            return
+        frame = self._frame
+        if frame and frame.__class__.__name__ == "LoginFrame":
+            self.show_endpoint_config(return_to="login")
+
+    def _shortcut_onboarding(self) -> None:
+        origin = "dashboard" if self._active_dashboard() is not None else "login"
+        self.show_onboarding(origin=origin)
+
+    def _shortcut_logout(self) -> None:
+        dashboard = self._active_dashboard()
+        if dashboard is not None:
+            self.logout()
+
+    def _shortcut_admin(self) -> None:
+        if self._active_dashboard() is not None:
+            self.show_admin_console()
+
+    def _resolve_return_target(self, origin: str) -> str:
+        value = str(origin or "").strip().lower()
+        if value in {"dashboard", "register", "endpoint", "login"}:
+            return value
+        return "login"
+
     def _resolve_profile_url(self, profile: str, fallback: str = "") -> str:
         key = profile if profile in PROFILE_CHOICES else "local"
         candidate = _safe_normalize_url(self.settings.profile_urls.get(key, ""))
@@ -334,6 +491,18 @@ class CtoaDesktopApp(tk.Tk):
 
     def show_dashboard(self) -> None:
         self._mount(DashboardFrame(self))
+        if not self.settings.onboarding_completed:
+            self.after(140, lambda: self.show_onboarding(origin="dashboard"))
+
+    def show_onboarding(self, origin: str = "dashboard") -> None:
+        target = self._resolve_return_target(origin)
+        try:
+            OnboardingDialog(self, return_to=target)
+        except Exception:
+            messagebox.showinfo(
+                "Quick onboarding",
+                "1) Ustaw endpoint profile\n2) Sprawdz Ping API\n3) Zaloguj i uzyj Ctrl+1/2/3 + F5",
+            )
 
     def show_admin_console(self) -> None:
         if not self.auth or self.auth.role != "owner":
@@ -523,7 +692,7 @@ class CtoaDesktopApp(tk.Tk):
 
 class LoginFrame(ttk.Frame):
     def __init__(self, app: CtoaDesktopApp, preset_url: str, preset_username: str) -> None:
-        super().__init__(app, padding=8, style="Root.TFrame")
+        super().__init__(app, padding=10, style="Root.TFrame")
         self.app = app
 
         self.columnconfigure(0, weight=1)
@@ -531,24 +700,41 @@ class LoginFrame(ttk.Frame):
 
         shell = ttk.Frame(self, style="Shell.TFrame")
         shell.grid(row=0, column=0, sticky="nsew")
-        shell.columnconfigure(0, weight=5)
-        shell.columnconfigure(1, weight=6)
+        shell.columnconfigure(0, weight=11)
+        shell.columnconfigure(1, weight=9)
         shell.rowconfigure(0, weight=1)
 
-        hero = ttk.Frame(shell, style="Hero.TFrame", padding=(26, 24))
+        hero = ttk.Frame(shell, style="Hero.TFrame", padding=(24, 22))
         hero.grid(row=0, column=0, sticky="nsew", padx=(0, 12))
+        hero.columnconfigure(0, weight=1)
 
-        ttk.Label(hero, text="CTOA Control Room", style="HeroTitle.TLabel").pack(anchor="w")
+        ttk.Label(hero, text="CTOA Mission Control", style="HeroTitle.TLabel").grid(row=0, column=0, sticky="w")
         ttk.Label(
             hero,
-            text="Secure sign-in to live telemetry, agent orchestration and owner guardrails.",
+            text="Przejdz przez onboarding i uruchom dashboard z pelna kontrola pipeline.",
             style="HeroBody.TLabel",
+            wraplength=460,
             justify="left",
-            wraplength=360,
-        ).pack(anchor="w", pady=(8, 12))
-        ttk.Label(hero, text="- Local, stage i prod profiles in one place", style="HeroBody.TLabel").pack(anchor="w", pady=(4, 0))
-        ttk.Label(hero, text="- Instant API reachability check before login", style="HeroBody.TLabel").pack(anchor="w", pady=(4, 0))
-        ttk.Label(hero, text="- Built-in updater for release rollout", style="HeroBody.TLabel").pack(anchor="w", pady=(4, 0))
+        ).grid(row=1, column=0, sticky="w", pady=(6, 10))
+
+        self.hero_canvas = tk.Canvas(hero, height=220, highlightthickness=0, bd=0, relief="flat")
+        self.hero_canvas.grid(row=2, column=0, sticky="ew", pady=(2, 12))
+        self.hero_canvas.bind("<Configure>", lambda event: _draw_thematic_banner(self.hero_canvas, event.width, event.height))
+
+        steps = ttk.Frame(hero, style="Hero.TFrame")
+        steps.grid(row=3, column=0, sticky="ew")
+        steps.columnconfigure(0, weight=1)
+        for idx, (title, body) in enumerate(
+            (
+                ("Krok 1: Endpoint", "Wybierz profil local, stage lub prod i ustaw API URL."),
+                ("Krok 2: Polaczenie", "Uzyj Ping API przed logowaniem, aby sprawdzic lacznosc."),
+                ("Krok 3: Operacje", "Po loginie przejdz do dashboardu i uzyj Ctrl+1/2/3, F5."),
+            )
+        ):
+            card = ttk.Frame(steps, style="StepCard.TFrame", padding=(10, 8))
+            card.grid(row=idx, column=0, sticky="ew", pady=(0 if idx == 0 else 6, 0))
+            ttk.Label(card, text=title, style="StepTitle.TLabel").pack(anchor="w")
+            ttk.Label(card, text=body, style="StepBody.TLabel", wraplength=440, justify="left").pack(anchor="w", pady=(2, 0))
 
         card = ttk.Frame(shell, style="Card.TFrame", padding=(24, 22))
         card.grid(row=0, column=1, sticky="nsew")
@@ -556,7 +742,7 @@ class LoginFrame(ttk.Frame):
         ttk.Label(card, text="Sign In", style="Headline.TLabel").pack(anchor="w")
         ttk.Label(
             card,
-            text="Log in to access live dashboard and agent operations.",
+            text="Wejscie do live dashboard, agent missions i admin guardrails.",
             style="Subhead.TLabel",
         ).pack(anchor="w", pady=(0, 10))
 
@@ -594,8 +780,19 @@ class LoginFrame(ttk.Frame):
             command=lambda: _toggle_password_entry(form, reveal=self.show_password.get(), row=3),
         ).grid(row=4, column=1, sticky="w", pady=(2, 4), padx=(8, 0))
 
-        hint = "Local API: http://127.0.0.1:8787  |  VPS API: http(s)://<vps-host-or-domain>:8787"
-        ttk.Label(card, text=hint, style="Subhead.TLabel", wraplength=560, justify="left").pack(anchor="w", pady=(6, 12))
+        hint = "Local API: http://127.0.0.1:8787  |  VPS API: http(s)://<host-or-domain>:8787"
+        ttk.Label(card, text=hint, style="Subhead.TLabel", wraplength=520, justify="left").pack(anchor="w", pady=(6, 10))
+
+        shortcuts = ttk.Frame(card, style="StepCard.TFrame", padding=(10, 8))
+        shortcuts.pack(fill="x", pady=(0, 10))
+        ttk.Label(shortcuts, text="Szybkie skroty", style="StepTitle.TLabel").pack(anchor="w")
+        ttk.Label(
+            shortcuts,
+            text="Ctrl+H: onboarding  |  Ctrl+E: endpoint profiles  |  Enter: login",
+            style="StepBody.TLabel",
+            wraplength=500,
+            justify="left",
+        ).pack(anchor="w", pady=(2, 0))
 
         primary_actions = ttk.Frame(card, style="Surface.TFrame")
         primary_actions.pack(anchor="w")
@@ -604,7 +801,8 @@ class LoginFrame(ttk.Frame):
 
         utility_actions = ttk.Frame(card, style="Surface.TFrame")
         utility_actions.pack(anchor="w", pady=(10, 0))
-        ttk.Button(utility_actions, text="Ping API", command=self._ping_api).pack(side="left")
+        ttk.Button(utility_actions, text="Guided Onboarding", command=lambda: self.app.show_onboarding(origin="login")).pack(side="left")
+        ttk.Button(utility_actions, text="Ping API", command=self._ping_api).pack(side="left", padx=(10, 0))
         ttk.Button(utility_actions, text="Endpoint Profiles", command=self._open_endpoint_profiles).pack(side="left", padx=(10, 0))
         ttk.Button(utility_actions, text="Check Updates", command=lambda: self.app.check_for_updates(manual=True)).pack(side="left", padx=(10, 0))
 
@@ -841,7 +1039,7 @@ class EndpointConfigFrame(ttk.Frame):
 
         tester = CtoaApiClient(target_url)
         try:
-            payload = tester.health()
+            payload = tester.auth_auto_check()
         except Exception as exc:
             messagebox.showerror("Ping failed", _friendly_api_error(exc, target_url))
             return
@@ -860,7 +1058,7 @@ class EndpointConfigFrame(ttk.Frame):
 
 class DashboardFrame(ttk.Frame):
     def __init__(self, app: CtoaDesktopApp) -> None:
-        super().__init__(app, padding=8, style="Root.TFrame")
+        super().__init__(app, padding=10, style="Root.TFrame")
         self.app = app
         self._refresh_job: str | None = None
 
@@ -872,10 +1070,56 @@ class DashboardFrame(ttk.Frame):
 
         shell = ttk.Frame(self, style="Shell.TFrame")
         shell.grid(row=0, column=0, sticky="nsew")
-        shell.columnconfigure(0, weight=1)
-        shell.rowconfigure(3, weight=1)
+        shell.columnconfigure(1, weight=1)
+        shell.rowconfigure(0, weight=1)
 
-        header_card = ttk.Frame(shell, style="Card.TFrame", padding=(18, 16))
+        nav = ttk.Frame(shell, style="NavRail.TFrame", padding=(12, 12))
+        nav.grid(row=0, column=0, sticky="nsw", padx=(0, 12))
+
+        ttk.Label(nav, text="Mission Nav", style="Field.TLabel").pack(anchor="w", pady=(0, 8))
+
+        self.nav_tab_buttons: list[ttk.Button] = []
+        for idx, title in enumerate(("Overview", "Agents", "Raw JSON")):
+            button = ttk.Button(nav, text=title, style="NavButton.TButton", command=lambda i=idx: self.go_tab(i))
+            button.pack(fill="x", pady=(0 if idx == 0 else 6, 0))
+            self.nav_tab_buttons.append(button)
+
+        ttk.Separator(nav, orient="horizontal").pack(fill="x", pady=10)
+        self.nav_admin_button = ttk.Button(
+            nav,
+            text="Admin Console",
+            style="NavButton.TButton",
+            command=self.app.show_admin_console,
+        )
+        self.nav_admin_button.pack(fill="x")
+        ttk.Button(
+            nav,
+            text="Endpoint Profiles",
+            style="NavButton.TButton",
+            command=lambda: self.app.show_endpoint_config(return_to="dashboard"),
+        ).pack(fill="x", pady=(6, 0))
+        ttk.Button(
+            nav,
+            text="Guided Onboarding",
+            style="NavButton.TButton",
+            command=lambda: self.app.show_onboarding(origin="dashboard"),
+        ).pack(fill="x", pady=(6, 0))
+        ttk.Button(nav, text="Logout", style="NavButton.TButton", command=self.app.logout).pack(fill="x", pady=(6, 0))
+
+        ttk.Separator(nav, orient="horizontal").pack(fill="x", pady=10)
+        ttk.Label(
+            nav,
+            text="Skroty\nF5 lub Ctrl+R: refresh\nCtrl+1/2/3: taby\nCtrl+E: endpoint\nCtrl+Shift+A: admin\nCtrl+H: onboarding",
+            style="Hint.TLabel",
+            justify="left",
+        ).pack(anchor="w")
+
+        main = ttk.Frame(shell, style="Shell.TFrame")
+        main.grid(row=0, column=1, sticky="nsew")
+        main.columnconfigure(0, weight=1)
+        main.rowconfigure(4, weight=1)
+
+        header_card = ttk.Frame(main, style="Card.TFrame", padding=(18, 16))
         header_card.grid(row=0, column=0, sticky="ew")
         header_card.columnconfigure(0, weight=1)
 
@@ -911,26 +1155,28 @@ class DashboardFrame(ttk.Frame):
         self.interval_combo.set(str(self.refresh_seconds.get()))
         self.interval_combo.pack(side="left", padx=(8, 0))
         self.interval_combo.bind("<<ComboboxSelected>>", lambda _: self._on_refresh_pref_changed())
-
         ttk.Label(quick_actions, text="sec", style="Subhead.TLabel").pack(side="left", padx=(4, 0))
 
         tools_actions = ttk.Frame(controls, style="Surface.TFrame")
         tools_actions.pack(anchor="e", pady=(8, 0))
-        ttk.Button(
-            tools_actions,
-            text="Endpoint Profiles",
-            command=lambda: self.app.show_endpoint_config(return_to="dashboard"),
-        ).pack(side="left")
-        ttk.Button(
-            tools_actions,
-            text="Check updates",
-            command=lambda: self.app.check_for_updates(manual=True),
-        ).pack(side="left", padx=(10, 0))
+        ttk.Button(tools_actions, text="Check updates", command=lambda: self.app.check_for_updates(manual=True)).pack(side="left")
         ttk.Button(tools_actions, text="Install update", command=self.app.prompt_update_install).pack(side="left", padx=(8, 0))
 
-        metrics = ttk.Frame(shell, style="Shell.TFrame")
-        metrics.grid(row=1, column=0, sticky="ew", pady=(12, 10))
+        self.health_banner_var = tk.StringVar(value="Waiting for first refresh...")
+        self.health_banner_label = ttk.Label(main, textvariable=self.health_banner_var, style="BannerWarn.TLabel")
+        self.health_banner_label.grid(row=1, column=0, sticky="ew", pady=(10, 10))
+
+        metrics = ttk.Frame(main, style="Shell.TFrame")
+        metrics.grid(row=2, column=0, sticky="ew")
+        metrics.columnconfigure(0, weight=1)
+        metrics.columnconfigure(1, weight=1)
+        metrics.columnconfigure(2, weight=1)
+        metrics.columnconfigure(3, weight=1)
+        metrics.columnconfigure(4, weight=1)
+        metrics.columnconfigure(5, weight=1)
+
         self.metric_vars: dict[str, tk.StringVar] = {}
+        self.metric_labels: dict[str, ttk.Label] = {}
         metric_names = [
             "Pipeline status",
             "Success rate (24h)",
@@ -940,29 +1186,31 @@ class DashboardFrame(ttk.Frame):
             "Services",
         ]
         for idx, name in enumerate(metric_names):
-            row_idx, col_idx = divmod(idx, 3)
             card = ttk.Frame(metrics, style="MetricCard.TFrame", padding=10)
             card.grid(
-                row=row_idx,
-                column=col_idx,
+                row=0 if idx < 3 else 1,
+                column=idx if idx < 3 else idx - 3,
+                columnspan=2 if idx in (2, 5) else 1,
                 sticky="nsew",
-                padx=(0 if col_idx == 0 else 8, 0),
-                pady=(0 if row_idx == 0 else 8, 0),
+                padx=(0 if idx % 3 == 0 else 8, 0),
+                pady=(0 if idx < 3 else 8, 0),
             )
-            metrics.columnconfigure(col_idx, weight=1)
             ttk.Label(card, text=name, style="MetricName.TLabel").pack(anchor="w")
-            var = tk.StringVar(value="-")
-            self.metric_vars[name] = var
-            ttk.Label(card, textvariable=var, style="MetricValue.TLabel").pack(anchor="w", pady=(4, 0))
+            value_var = tk.StringVar(value="-")
+            self.metric_vars[name] = value_var
+            value_label = ttk.Label(card, textvariable=value_var, style="MetricValue.TLabel")
+            value_label.pack(anchor="w", pady=(4, 0))
+            self.metric_labels[name] = value_label
 
-        action_row = ttk.Frame(shell, style="Shell.TFrame")
-        action_row.grid(row=2, column=0, sticky="ew", pady=(0, 8))
+        action_row = ttk.Frame(main, style="Shell.TFrame")
+        action_row.grid(row=3, column=0, sticky="ew", pady=(8, 8))
         self.admin_button = ttk.Button(action_row, text="Open Admin Console", command=self.app.show_admin_console)
         self.admin_button.pack(side="left")
+        ttk.Button(action_row, text="Guided Onboarding", command=lambda: self.app.show_onboarding(origin="dashboard")).pack(side="left", padx=(8, 0))
         ttk.Button(action_row, text="Logout", command=self.app.logout).pack(side="left", padx=(8, 0))
 
-        self.notebook = ttk.Notebook(shell, style="Dashboard.TNotebook")
-        self.notebook.grid(row=3, column=0, sticky="nsew")
+        self.notebook = ttk.Notebook(main, style="Dashboard.TNotebook")
+        self.notebook.grid(row=4, column=0, sticky="nsew")
 
         overview_tab = ttk.Frame(self.notebook, style="Surface.TFrame", padding=10)
         agents_tab = ttk.Frame(self.notebook, style="Surface.TFrame", padding=10)
@@ -971,11 +1219,16 @@ class DashboardFrame(ttk.Frame):
         self.notebook.add(overview_tab, text="Overview")
         self.notebook.add(agents_tab, text="Agents")
         self.notebook.add(raw_tab, text="Raw JSON")
+        self.notebook.bind("<<NotebookTabChanged>>", lambda _: self._sync_nav_buttons())
 
         code_bg = "#f7fbff"
         code_fg = "#1c2c40"
 
-        self.overview_box = ScrolledText(overview_tab, wrap="word", font=("Consolas", 10), height=20)
+        self.insight_box = ScrolledText(overview_tab, wrap="word", font=("Segoe UI", 10), height=6)
+        self.insight_box.pack(fill="x", pady=(0, 8))
+        self.insight_box.configure(background="#eff6ff", foreground=code_fg, insertbackground=code_fg, relief="flat", borderwidth=0)
+
+        self.overview_box = ScrolledText(overview_tab, wrap="word", font=("Consolas", 10), height=17)
         self.overview_box.pack(fill="both", expand=True)
         self.overview_box.configure(background=code_bg, foreground=code_fg, insertbackground=code_fg, relief="flat", borderwidth=0)
 
@@ -994,9 +1247,26 @@ class DashboardFrame(ttk.Frame):
         self.raw_box.pack(fill="both", expand=True)
         self.raw_box.configure(background=code_bg, foreground=code_fg, insertbackground=code_fg, relief="flat", borderwidth=0)
 
+        self._sync_nav_buttons()
         self._load_remote_profile()
         self._sync_role_controls()
         self.refresh()
+
+    def go_tab(self, index: int) -> None:
+        tabs = self.notebook.tabs()
+        if not tabs:
+            return
+        safe_index = max(0, min(int(index), len(tabs) - 1))
+        self.notebook.select(safe_index)
+        self._sync_nav_buttons()
+
+    def _sync_nav_buttons(self) -> None:
+        try:
+            selected = self.notebook.index(self.notebook.select())
+        except Exception:
+            selected = 0
+        for idx, button in enumerate(self.nav_tab_buttons):
+            button.configure(state="disabled" if idx == selected else "normal")
     def destroy(self) -> None:
         if self._refresh_job is not None:
             try:
@@ -1042,6 +1312,7 @@ class DashboardFrame(ttk.Frame):
         role = self.app.auth.role if self.app.auth else "operator"
         state = "normal" if role == "owner" else "disabled"
         self.admin_button.configure(state=state)
+        self.nav_admin_button.configure(state=state)
         self.launch_agent_button.configure(state=state)
         self.intel_button.configure(state=state)
 
@@ -1095,6 +1366,7 @@ class DashboardFrame(ttk.Frame):
         intel_payload = payloads.get("intel_report", {})
 
         status_text = str(dashboard_payload.get("status") or payloads.get("status", {}).get("status") or "unknown")
+        status_lower = status_text.lower()
         self.metric_vars["Pipeline status"].set(status_text)
 
         slo_summary = dashboard_payload.get("slo_summary", {}) if isinstance(dashboard_payload, dict) else {}
@@ -1115,16 +1387,98 @@ class DashboardFrame(ttk.Frame):
         for key in ("orchestrator", "orchestrator_timer", "db"):
             value = str(agents_payload.get(key, "unknown")) if isinstance(agents_payload, dict) else "unknown"
             services.append(f"{key}={value}")
-        self.metric_vars["Services"].set(" | ".join(services))
+        services_text = " | ".join(services)
+        self.metric_vars["Services"].set(services_text)
 
         status_message = str(dashboard_payload.get("status_message", ""))
         top_reason = dashboard_payload.get("dominant_signal") if isinstance(dashboard_payload, dict) else None
+
+        critical_markers = ("critical", "error", "missing", "failed")
+        has_critical = any(marker in status_lower for marker in critical_markers) or any(
+            "missing" in part.lower() or "error" in part.lower() for part in services
+        )
+        has_warning = bool(degraded_sections) or "degraded" in status_lower
+
+        if has_critical or errors:
+            self.health_banner_var.set("Critical state detected. Investigate services/errors before running automation.")
+            self.health_banner_label.configure(style="BannerBad.TLabel")
+            self.metric_labels["Pipeline status"].configure(style="MetricValueBad.TLabel")
+        elif has_warning:
+            self.health_banner_var.set("System is operational with degraded signals. Continue with caution.")
+            self.health_banner_label.configure(style="BannerWarn.TLabel")
+            self.metric_labels["Pipeline status"].configure(style="MetricValueWarn.TLabel")
+        else:
+            self.health_banner_var.set("System healthy. Pipeline and services are within expected range.")
+            self.health_banner_label.configure(style="BannerGood.TLabel")
+            self.metric_labels["Pipeline status"].configure(style="MetricValueGood.TLabel")
+
+        if success_rate >= 0.95:
+            self.metric_labels["Success rate (24h)"].configure(style="MetricValueGood.TLabel")
+        elif success_rate >= 0.85:
+            self.metric_labels["Success rate (24h)"].configure(style="MetricValueWarn.TLabel")
+        else:
+            self.metric_labels["Success rate (24h)"].configure(style="MetricValueBad.TLabel")
+
+        try:
+            error_budget_num = float(error_budget)
+        except Exception:
+            error_budget_num = -1.0
+        if error_budget_num >= 3:
+            self.metric_labels["Error budget"].configure(style="MetricValueGood.TLabel")
+        elif error_budget_num >= 1:
+            self.metric_labels["Error budget"].configure(style="MetricValueWarn.TLabel")
+        else:
+            self.metric_labels["Error budget"].configure(style="MetricValueBad.TLabel")
+
+        try:
+            avg_quality_num = float(avg_quality)
+        except Exception:
+            avg_quality_num = 0.0
+        if avg_quality_num >= 0.8:
+            self.metric_labels["Average quality"].configure(style="MetricValueGood.TLabel")
+        elif avg_quality_num >= 0.5:
+            self.metric_labels["Average quality"].configure(style="MetricValueWarn.TLabel")
+        else:
+            self.metric_labels["Average quality"].configure(style="MetricValueBad.TLabel")
+
+        self.metric_labels["Degraded sections"].configure(
+            style="MetricValueWarn.TLabel" if degraded_sections else "MetricValueGood.TLabel"
+        )
+        self.metric_labels["Services"].configure(
+            style="MetricValueBad.TLabel" if has_critical else "MetricValueWarn.TLabel" if has_warning else "MetricValueGood.TLabel"
+        )
+
+        query_diagnostics = dashboard_payload.get("query_diagnostics", {}) if isinstance(dashboard_payload, dict) else {}
+        failing_queries = []
+        if isinstance(query_diagnostics, dict):
+            for key, value in query_diagnostics.items():
+                status = str(value.get("status", "")) if isinstance(value, dict) else ""
+                if status and status != "ok":
+                    failing_queries.append(f"{key}:{status}")
+
+        insight_lines = [
+            f"Status: {status_text}",
+            f"Message: {status_message or '-'}",
+            f"Dominant signal: {top_reason or 'none'}",
+            f"Success rate 24h: {success_rate * 100:.1f}%",
+            f"Services: {services_text}",
+        ]
+        if failing_queries:
+            insight_lines.append("Diagnostics: " + ", ".join(failing_queries))
+        if errors:
+            insight_lines.append("API errors: " + " | ".join(errors))
+
+        self.insight_box.configure(state="normal")
+        self.insight_box.delete("1.0", tk.END)
+        self.insight_box.insert(tk.END, "\n".join(insight_lines))
+        self.insight_box.configure(state="disabled")
+
         overview = {
             "status_message": status_message,
             "dominant_signal": top_reason,
             "slo_summary": slo_summary,
             "timeline_summary": timeline_summary,
-            "query_diagnostics": dashboard_payload.get("query_diagnostics", {}),
+            "query_diagnostics": query_diagnostics,
             "errors": errors,
         }
 
@@ -1141,7 +1495,6 @@ class DashboardFrame(ttk.Frame):
             self.app.set_status("Dashboard updated")
 
         self._schedule_next_refresh()
-
     def _run_one_click_agent(self) -> None:
         try:
             payload = self.app.api.run_agents_one_click()
@@ -1178,6 +1531,119 @@ class DashboardFrame(ttk.Frame):
         widget.insert(tk.END, json.dumps(payload, indent=2, ensure_ascii=True))
         widget.configure(state="disabled")
 
+
+class OnboardingDialog(tk.Toplevel):
+    def __init__(self, app: CtoaDesktopApp, return_to: str) -> None:
+        super().__init__(app)
+        self.app = app
+        self.return_to = app._resolve_return_target(return_to)
+
+        self.title("CTOA Guided Onboarding")
+        self.geometry("760x560")
+        self.minsize(700, 500)
+        self.transient(app)
+        self.configure(bg=app._palette.get("bg", "#eef3fa"))
+
+        self.protocol("WM_DELETE_WINDOW", self._close)
+
+        shell = ttk.Frame(self, style="Root.TFrame", padding=12)
+        shell.pack(fill="both", expand=True)
+
+        card = ttk.Frame(shell, style="Card.TFrame", padding=(20, 18))
+        card.pack(fill="both", expand=True)
+
+        ttk.Label(card, text="Guided Onboarding", style="SectionTitle.TLabel").pack(anchor="w")
+        ttk.Label(
+            card,
+            text="Krotka trasa: polaczenie API, konto, dashboard i skroty operacyjne.",
+            style="Subhead.TLabel",
+        ).pack(anchor="w", pady=(2, 10))
+
+        steps_wrap = ttk.Frame(card, style="Surface.TFrame")
+        steps_wrap.pack(fill="both", expand=True)
+        steps_wrap.columnconfigure(0, weight=1)
+        steps_wrap.columnconfigure(1, weight=1)
+
+        step_one = ttk.Frame(steps_wrap, style="StepCard.TFrame", padding=(12, 10))
+        step_one.grid(row=0, column=0, sticky="nsew", padx=(0, 6), pady=(0, 8))
+        ttk.Label(step_one, text="1. Ustaw endpoint", style="StepTitle.TLabel").pack(anchor="w")
+        ttk.Label(
+            step_one,
+            text="Skonfiguruj local, stage i prod. Po zmianie wykonaj Ping API.",
+            style="StepBody.TLabel",
+            wraplength=300,
+            justify="left",
+        ).pack(anchor="w", pady=(3, 8))
+        ttk.Button(step_one, text="Open Endpoint Profiles", command=self._open_profiles).pack(anchor="w")
+
+        step_two = ttk.Frame(steps_wrap, style="StepCard.TFrame", padding=(12, 10))
+        step_two.grid(row=0, column=1, sticky="nsew", padx=(6, 0), pady=(0, 8))
+        ttk.Label(step_two, text="2. Konto i autoryzacja", style="StepTitle.TLabel").pack(anchor="w")
+        ttk.Label(
+            step_two,
+            text="Jesli nie masz konta, utworz operatora i zaloguj sie przez ekran Sign In.",
+            style="StepBody.TLabel",
+            wraplength=300,
+            justify="left",
+        ).pack(anchor="w", pady=(3, 8))
+        ttk.Button(step_two, text="Create Account", command=self._open_register).pack(anchor="w")
+
+        step_three = ttk.Frame(steps_wrap, style="StepCard.TFrame", padding=(12, 10))
+        step_three.grid(row=1, column=0, sticky="nsew", padx=(0, 6), pady=(0, 8))
+        ttk.Label(step_three, text="3. Dashboard hierarchy", style="StepTitle.TLabel").pack(anchor="w")
+        ttk.Label(
+            step_three,
+            text="Najpierw health banner, potem karty metryk, dopiero potem szczegolowy JSON.",
+            style="StepBody.TLabel",
+            wraplength=300,
+            justify="left",
+        ).pack(anchor="w", pady=(3, 8))
+        ttk.Button(step_three, text="Go to Dashboard", command=self._open_dashboard).pack(anchor="w")
+
+        step_four = ttk.Frame(steps_wrap, style="StepCard.TFrame", padding=(12, 10))
+        step_four.grid(row=1, column=1, sticky="nsew", padx=(6, 0), pady=(0, 8))
+        ttk.Label(step_four, text="4. Skroty klawiaturowe", style="StepTitle.TLabel").pack(anchor="w")
+        ttk.Label(
+            step_four,
+            text="F5/Ctrl+R refresh | Ctrl+1/2/3 taby | Ctrl+E endpoint | Ctrl+Shift+A admin | Ctrl+Q logout",
+            style="StepBody.TLabel",
+            wraplength=300,
+            justify="left",
+        ).pack(anchor="w", pady=(3, 8))
+        ttk.Button(step_four, text="Mark Onboarding Complete", style="Primary.TButton", command=self._complete).pack(anchor="w")
+
+        footer = ttk.Frame(card, style="Surface.TFrame")
+        footer.pack(fill="x", pady=(4, 0))
+        ttk.Button(footer, text="Close", command=self._close).pack(side="right")
+
+        self.grab_set()
+        self.focus_set()
+
+    def _complete(self) -> None:
+        self.app.settings.onboarding_completed = True
+        _save_settings(self.app.settings)
+        self.app.set_status("Onboarding marked as completed")
+        self._close()
+
+    def _open_profiles(self) -> None:
+        self._close()
+        back_target = "dashboard" if self.app.auth else "login"
+        self.app.show_endpoint_config(return_to=back_target)
+
+    def _open_register(self) -> None:
+        self._close()
+        self.app.show_register(self.app.settings.base_url)
+
+    def _open_dashboard(self) -> None:
+        self._close()
+        if self.app.auth is not None:
+            self.app.show_dashboard()
+        else:
+            self.app.show_login(self.app.settings.base_url)
+
+    def _close(self) -> None:
+        if self.winfo_exists():
+            self.destroy()
 
 class AdminConsoleFrame(ttk.Frame):
     def __init__(self, app: CtoaDesktopApp) -> None:
@@ -1281,6 +1747,54 @@ class AdminConsoleFrame(ttk.Frame):
         self.output_box.configure(state="disabled")
 
 
+def _draw_thematic_banner(canvas: tk.Canvas, width: int, height: int) -> None:
+    safe_w = max(180, int(width or 0))
+    safe_h = max(100, int(height or 0))
+
+    canvas.delete("all")
+    layers = ["#0a3558", "#0d4069", "#15507f", "#1a5f93", "#2373aa"]
+    stripe_h = max(1, safe_h // len(layers))
+    for idx, color in enumerate(layers):
+        y0 = idx * stripe_h
+        y1 = safe_h if idx == len(layers) - 1 else (idx + 1) * stripe_h
+        canvas.create_rectangle(0, y0, safe_w, y1, fill=color, outline="")
+
+    moon_x = int(safe_w * 0.82)
+    moon_y = int(safe_h * 0.26)
+    moon_r = max(16, min(32, safe_h // 6))
+    canvas.create_oval(moon_x - moon_r, moon_y - moon_r, moon_x + moon_r, moon_y + moon_r, fill="#d9ebff", outline="")
+    canvas.create_oval(moon_x - moon_r + 10, moon_y - moon_r + 2, moon_x + moon_r + 10, moon_y + moon_r + 2, fill="#0f4c81", outline="")
+
+    ridge_base = int(safe_h * 0.66)
+    for idx in range(6):
+        x0 = int((safe_w / 6) * idx) - 24
+        x1 = x0 + int(safe_w / 4)
+        peak = ridge_base - (24 + (idx % 3) * 14)
+        fill = "#10395f" if idx % 2 == 0 else "#0e3152"
+        canvas.create_polygon(x0, safe_h, x1, safe_h, (x0 + x1) // 2, peak, fill=fill, outline="")
+
+    path_points = [
+        (int(safe_w * 0.18), safe_h),
+        (int(safe_w * 0.32), int(safe_h * 0.78)),
+        (int(safe_w * 0.46), int(safe_h * 0.72)),
+        (int(safe_w * 0.62), int(safe_h * 0.66)),
+        (int(safe_w * 0.78), int(safe_h * 0.6)),
+    ]
+    for idx in range(len(path_points) - 1):
+        x0, y0 = path_points[idx]
+        x1, y1 = path_points[idx + 1]
+        canvas.create_line(x0, y0, x1, y1, fill="#f2cf7a", width=3, capstyle=tk.ROUND)
+
+    rune_color = "#9fd5ff"
+    for idx in range(4):
+        cx = int(safe_w * (0.14 + idx * 0.2))
+        cy = int(safe_h * 0.28)
+        r = 12
+        canvas.create_oval(cx - r, cy - r, cx + r, cy + r, outline=rune_color, width=2)
+        canvas.create_line(cx - 6, cy, cx + 6, cy, fill=rune_color, width=2)
+        canvas.create_line(cx, cy - 6, cx, cy + 6, fill=rune_color, width=2)
+
+
 def _labeled_entry(parent: ttk.Frame, label: str, variable: tk.StringVar, row: int, show: str = "") -> ttk.Entry:
     ttk.Label(parent, text=label, style="Field.TLabel").grid(row=row, column=0, sticky="w", pady=4)
     entry = ttk.Entry(parent, textvariable=variable, width=62, show=show)
@@ -1304,6 +1818,19 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
