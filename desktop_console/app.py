@@ -28,10 +28,124 @@ DEFAULT_API_BASE = "http://127.0.0.1:8787"
 SETTINGS_FILE = Path(os.getenv("APPDATA", str(Path.home()))) / "CTOA" / "desktop-settings.json"
 UPDATE_DOWNLOAD_DIR = Path(os.getenv("LOCALAPPDATA", str(Path.home()))) / "CTOA" / "updates"
 PROFILE_CHOICES = ("local", "stage", "prod")
+THEME_CHOICES = ("arcane_night", "steel_ops", "classic_parchment")
+THEME_LABELS = {
+    "arcane_night": "Arcane Night (Dark)",
+    "steel_ops": "Steel Ops",
+    "classic_parchment": "Classic Tibia Parchment",
+}
+THEME_PALETTES = {
+    "arcane_night": {
+        "bg": "#0f1424",
+        "surface": "#151d31",
+        "hero": "#22345b",
+        "hero_deep": "#182542",
+        "hero_text": "#f2f6ff",
+        "hero_soft": "#c8d5ef",
+        "text": "#e9f0ff",
+        "muted": "#98a5c1",
+        "metric": "#1a243b",
+        "status": "#11192d",
+        "accent": "#4ea3ff",
+        "accent_active": "#2f87e6",
+        "ok": "#4ed9a1",
+        "warn": "#efc25e",
+        "bad": "#ff788a",
+        "rail": "#111a2d",
+        "step": "#1e2c4a",
+        "code_bg": "#101a2c",
+        "code_fg": "#d9e7ff",
+        "insight_bg": "#16253f",
+        "input_bg": "#101a2c",
+        "input_fg": "#edf3ff",
+        "banner_good_bg": "#173b2d",
+        "banner_good_fg": "#81f0c5",
+        "banner_warn_bg": "#47361b",
+        "banner_warn_fg": "#ffd480",
+        "banner_bad_bg": "#4b1d26",
+        "banner_bad_fg": "#ff9dad",
+    },
+    "steel_ops": {
+        "bg": "#141a22",
+        "surface": "#1b242f",
+        "hero": "#2a3a50",
+        "hero_deep": "#1d2a3c",
+        "hero_text": "#edf4fc",
+        "hero_soft": "#c5d3e3",
+        "text": "#e5edf7",
+        "muted": "#9aa9ba",
+        "metric": "#202b37",
+        "status": "#17202a",
+        "accent": "#4c9bc7",
+        "accent_active": "#3e82aa",
+        "ok": "#56ce96",
+        "warn": "#d9b45a",
+        "bad": "#ea8080",
+        "rail": "#17212b",
+        "step": "#253244",
+        "code_bg": "#15202a",
+        "code_fg": "#d8e3ef",
+        "insight_bg": "#1e2d3d",
+        "input_bg": "#111a23",
+        "input_fg": "#eaf2fa",
+        "banner_good_bg": "#183b32",
+        "banner_good_fg": "#8ae5be",
+        "banner_warn_bg": "#4a3a22",
+        "banner_warn_fg": "#ffd893",
+        "banner_bad_bg": "#48252c",
+        "banner_bad_fg": "#ffacac",
+    },
+    "classic_parchment": {
+        "bg": "#efe7d6",
+        "surface": "#f8f1e2",
+        "hero": "#6b4f2a",
+        "hero_deep": "#523d20",
+        "hero_text": "#fff6e3",
+        "hero_soft": "#f6e0b7",
+        "text": "#352718",
+        "muted": "#6f5a40",
+        "metric": "#f3e7cf",
+        "status": "#e8dbc0",
+        "accent": "#9b5f2a",
+        "accent_active": "#7c4a1f",
+        "ok": "#3f7a43",
+        "warn": "#9b6a14",
+        "bad": "#9a2f2f",
+        "rail": "#e2d5ba",
+        "step": "#f1e4cb",
+        "code_bg": "#f6ecda",
+        "code_fg": "#3c2f1d",
+        "insight_bg": "#efe2c8",
+        "input_bg": "#fff8eb",
+        "input_fg": "#352718",
+        "banner_good_bg": "#dff1df",
+        "banner_good_fg": "#28562a",
+        "banner_warn_bg": "#f8e9cf",
+        "banner_warn_fg": "#7d560e",
+        "banner_bad_bg": "#f8dbdb",
+        "banner_bad_fg": "#7e2323",
+    },
+}
 
 
-def _default_profile_urls() -> dict[str, str]:
-    return {
+def _theme_label(theme_name: str) -> str:
+    key = str(theme_name or "").strip().lower()
+    if key not in THEME_CHOICES:
+        key = "arcane_night"
+    return THEME_LABELS[key]
+
+
+def _theme_from_choice(value: object) -> str:
+    lowered = str(value or "").strip().lower()
+    if lowered in THEME_CHOICES:
+        return lowered
+    for key, label in THEME_LABELS.items():
+        if label.lower() == lowered:
+            return key
+    return "arcane_night"
+
+
+def _default_profile_urls() -> dict[str, str]:    return {
         "local": DEFAULT_API_BASE,
         "stage": str(os.getenv("CTOA_STAGE_API_BASE", "")).strip(),
         "prod": str(os.getenv("CTOA_PROD_API_BASE", "")).strip(),
@@ -47,6 +161,7 @@ class DesktopSettings:
     check_updates_on_startup: bool = True
     endpoint_profile: str = "local"
     onboarding_completed: bool = False
+    theme_name: str = "arcane_night"
     profile_urls: dict[str, str] = field(default_factory=_default_profile_urls)
 
 
@@ -82,6 +197,8 @@ def _load_settings() -> DesktopSettings:
     if endpoint_profile not in PROFILE_CHOICES:
         endpoint_profile = "local"
 
+    theme_name = _theme_from_choice(payload.get("theme_name", "arcane_night"))
+
     configured_base = _safe_normalize_url(payload.get("base_url", ""))
     base_url = configured_base or profile_urls.get(endpoint_profile) or profile_urls["local"]
 
@@ -94,6 +211,7 @@ def _load_settings() -> DesktopSettings:
         check_updates_on_startup=bool(payload.get("check_updates_on_startup", True)),
         endpoint_profile=endpoint_profile,
         onboarding_completed=bool(payload.get("onboarding_completed", False)),
+        theme_name=theme_name,
         profile_urls=profile_urls,
     )
 
@@ -151,9 +269,9 @@ class CtoaDesktopApp(tk.Tk):
         self.geometry("1360x900")
         self.minsize(1160, 760)
 
-        self._configure_styles()
-
         self.settings = _load_settings()
+        self._configure_styles(theme_name=self.settings.theme_name)
+
         effective_base = _safe_normalize_url(self.settings.base_url) or self._resolve_profile_url(
             self.settings.endpoint_profile,
             fallback=self.settings.base_url,
@@ -183,32 +301,18 @@ class CtoaDesktopApp(tk.Tk):
         if self.settings.check_updates_on_startup:
             self.after(900, lambda: self.check_for_updates(manual=False))
 
-    def _configure_styles(self) -> None:
+    def _configure_styles(self, theme_name: str | None = None) -> None:
         style = ttk.Style(self)
         try:
             style.theme_use("clam")
         except Exception:
             pass
 
-        palette = {
-            "bg": "#eef3fa",
-            "surface": "#ffffff",
-            "hero": "#0f4c81",
-            "hero_deep": "#0a3558",
-            "hero_text": "#f3f9ff",
-            "hero_soft": "#cfe4ff",
-            "text": "#15253a",
-            "muted": "#52627a",
-            "metric": "#f4f8fc",
-            "status": "#dfe7f2",
-            "accent": "#1f76cc",
-            "accent_active": "#185f9f",
-            "ok": "#1f8b4d",
-            "warn": "#a66a00",
-            "bad": "#b33939",
-            "rail": "#e4edf7",
-        }
+        selected_theme = _theme_from_choice(theme_name or self.settings.theme_name)
+        palette = dict(THEME_PALETTES.get(selected_theme, THEME_PALETTES["arcane_night"]))
+        self.settings.theme_name = selected_theme
         self._palette = palette
+        self._current_theme = selected_theme
         self.configure(bg=palette["bg"])
 
         style.configure("Root.TFrame", background=palette["bg"])
@@ -217,7 +321,7 @@ class CtoaDesktopApp(tk.Tk):
         style.configure("Surface.TFrame", background=palette["surface"])
         style.configure("Hero.TFrame", background=palette["hero"], relief="solid", borderwidth=1)
         style.configure("NavRail.TFrame", background=palette["rail"], relief="solid", borderwidth=1)
-        style.configure("StepCard.TFrame", background="#f2f7fe", relief="solid", borderwidth=1)
+        style.configure("StepCard.TFrame", background=palette["step"], relief="solid", borderwidth=1)
 
         style.configure(
             "Headline.TLabel",
@@ -257,13 +361,13 @@ class CtoaDesktopApp(tk.Tk):
         )
         style.configure(
             "StepTitle.TLabel",
-            background="#f2f7fe",
+            background=palette["step"],
             foreground=palette["text"],
             font=("Segoe UI Semibold", 10),
         )
         style.configure(
             "StepBody.TLabel",
-            background="#f2f7fe",
+            background=palette["step"],
             foreground=palette["muted"],
             font=("Segoe UI", 9),
         )
@@ -315,22 +419,22 @@ class CtoaDesktopApp(tk.Tk):
 
         style.configure(
             "BannerGood.TLabel",
-            background="#dff4e7",
-            foreground="#1f6d44",
+            background=palette["banner_good_bg"],
+            foreground=palette["banner_good_fg"],
             font=("Segoe UI Semibold", 10),
             padding=(10, 8),
         )
         style.configure(
             "BannerWarn.TLabel",
-            background="#fff2dd",
-            foreground="#8f5c00",
+            background=palette["banner_warn_bg"],
+            foreground=palette["banner_warn_fg"],
             font=("Segoe UI Semibold", 10),
             padding=(10, 8),
         )
         style.configure(
             "BannerBad.TLabel",
-            background="#ffe3e3",
-            foreground="#9d2323",
+            background=palette["banner_bad_bg"],
+            foreground=palette["banner_bad_fg"],
             font=("Segoe UI Semibold", 10),
             padding=(10, 8),
         )
@@ -365,11 +469,33 @@ class CtoaDesktopApp(tk.Tk):
             font=("Segoe UI", 9),
         )
 
+        style.configure(
+            "TEntry",
+            fieldbackground=palette["input_bg"],
+            foreground=palette["input_fg"],
+        )
+        style.configure(
+            "TCombobox",
+            fieldbackground=palette["input_bg"],
+            foreground=palette["input_fg"],
+            arrowsize=14,
+        )
+        style.map(
+            "TCombobox",
+            fieldbackground=[("readonly", palette["input_bg"])],
+            foreground=[("readonly", palette["input_fg"])],
+            selectbackground=[("readonly", palette["input_bg"])],
+            selectforeground=[("readonly", palette["input_fg"])],
+        )
+
+        self.option_add("*TCombobox*Listbox*Background", palette["input_bg"])
+        self.option_add("*TCombobox*Listbox*Foreground", palette["input_fg"])
+
         style.configure("Dashboard.TNotebook", background=palette["bg"], borderwidth=0)
         style.configure("Dashboard.TNotebook.Tab", padding=(16, 8), font=("Segoe UI Semibold", 10))
         style.map(
             "Dashboard.TNotebook.Tab",
-            background=[("selected", palette["surface"]), ("active", "#e7eff8")],
+            background=[("selected", palette["surface"]), ("active", palette["metric"])],
             foreground=[("selected", palette["text"]), ("active", palette["text"])],
         )
 
@@ -377,10 +503,43 @@ class CtoaDesktopApp(tk.Tk):
         style.configure(
             "StatusBar.TLabel",
             background=palette["status"],
-            foreground="#344a63",
+            foreground=palette["muted"],
             font=("Segoe UI", 9),
         )
 
+    def set_theme(self, theme_choice: object, rerender: bool = True) -> str:
+        theme_name = _theme_from_choice(theme_choice)
+        self.settings.theme_name = theme_name
+        _save_settings(self.settings)
+        self._configure_styles(theme_name=theme_name)
+        self.set_status(f"Theme switched to {_theme_label(theme_name)}")
+        if rerender:
+            self._rerender_active_frame()
+        return theme_name
+
+    def _rerender_active_frame(self) -> None:
+        frame = self._frame
+        if frame is None:
+            return
+
+        frame_name = frame.__class__.__name__
+        if frame_name == "DashboardFrame":
+            self.show_dashboard(trigger_onboarding=False)
+            return
+        if frame_name == "LoginFrame":
+            self.show_login(self.api.base_url)
+            return
+        if frame_name == "RegisterFrame":
+            self.show_register(self.api.base_url)
+            return
+        if frame_name == "EndpointConfigFrame":
+            return_to = getattr(frame, "return_to", "login")
+            self.show_endpoint_config(return_to=return_to)
+            return
+        if frame_name == "AdminConsoleFrame":
+            self.show_admin_console()
+            return
+        self.show_login(self.api.base_url)
     def _bind_shortcuts(self) -> None:
         for sequence, callback in (
             ("<F5>", self._shortcut_refresh),
@@ -397,6 +556,8 @@ class CtoaDesktopApp(tk.Tk):
             ("<Control-Q>", self._shortcut_logout),
             ("<Control-Shift-A>", self._shortcut_admin),
             ("<Control-Shift-a>", self._shortcut_admin),
+            ("<Control-t>", self._shortcut_cycle_theme),
+            ("<Control-T>", self._shortcut_cycle_theme),
         ):
             self.bind_all(sequence, lambda _event, cb=callback: self._execute_shortcut(cb))
 
@@ -448,6 +609,15 @@ class CtoaDesktopApp(tk.Tk):
         if self._active_dashboard() is not None:
             self.show_admin_console()
 
+    def _shortcut_cycle_theme(self) -> None:
+        current = _theme_from_choice(self.settings.theme_name)
+        try:
+            idx = THEME_CHOICES.index(current)
+        except ValueError:
+            idx = 0
+        next_theme = THEME_CHOICES[(idx + 1) % len(THEME_CHOICES)]
+        self.set_theme(next_theme, rerender=True)
+
     def _resolve_return_target(self, origin: str) -> str:
         value = str(origin or "").strip().lower()
         if value in {"dashboard", "register", "endpoint", "login"}:
@@ -489,9 +659,9 @@ class CtoaDesktopApp(tk.Tk):
     def show_register(self, preset_url: str = "") -> None:
         self._mount(RegisterFrame(self, preset_url=preset_url or self.settings.base_url or self.api.base_url))
 
-    def show_dashboard(self) -> None:
+    def show_dashboard(self, trigger_onboarding: bool = True) -> None:
         self._mount(DashboardFrame(self))
-        if not self.settings.onboarding_completed:
+        if trigger_onboarding and not self.settings.onboarding_completed:
             self.after(140, lambda: self.show_onboarding(origin="dashboard"))
 
     def show_onboarding(self, origin: str = "dashboard") -> None:
@@ -719,7 +889,7 @@ class LoginFrame(ttk.Frame):
 
         self.hero_canvas = tk.Canvas(hero, height=220, highlightthickness=0, bd=0, relief="flat")
         self.hero_canvas.grid(row=2, column=0, sticky="ew", pady=(2, 12))
-        self.hero_canvas.bind("<Configure>", lambda event: _draw_thematic_banner(self.hero_canvas, event.width, event.height))
+        self.hero_canvas.bind("<Configure>", lambda event: _draw_thematic_banner(self.hero_canvas, event.width, event.height, self.app._palette))
 
         steps = ttk.Frame(hero, style="Hero.TFrame")
         steps.grid(row=3, column=0, sticky="ew")
@@ -754,6 +924,7 @@ class LoginFrame(ttk.Frame):
         self.username = tk.StringVar(value=preset_username)
         self.password = tk.StringVar(value="")
         self.show_password = tk.BooleanVar(value=False)
+        self.theme_choice = tk.StringVar(value=_theme_label(app.settings.theme_name))
 
         profile_row = ttk.Frame(form, style="Surface.TFrame")
         profile_row.grid(row=0, column=0, columnspan=2, sticky="we", pady=(0, 4))
@@ -768,17 +939,30 @@ class LoginFrame(ttk.Frame):
         profile_combo.pack(side="left", padx=(10, 0))
         profile_combo.bind("<<ComboboxSelected>>", self._on_profile_selected)
 
-        base_entry = _labeled_entry(form, "API Base URL", self.base_url, row=1)
-        user_entry = _labeled_entry(form, "Username", self.username, row=2)
-        pass_entry = _labeled_entry(form, "Password", self.password, row=3, show="*")
+        theme_row = ttk.Frame(form, style="Surface.TFrame")
+        theme_row.grid(row=1, column=0, columnspan=2, sticky="we", pady=(0, 6))
+        ttk.Label(theme_row, text="Theme", style="Field.TLabel").pack(side="left")
+        theme_combo = ttk.Combobox(
+            theme_row,
+            textvariable=self.theme_choice,
+            values=[THEME_LABELS[key] for key in THEME_CHOICES],
+            state="readonly",
+            width=28,
+        )
+        theme_combo.pack(side="left", padx=(10, 0))
+        theme_combo.bind("<<ComboboxSelected>>", self._on_theme_selected)
+
+        base_entry = _labeled_entry(form, "API Base URL", self.base_url, row=2)
+        user_entry = _labeled_entry(form, "Username", self.username, row=3)
+        pass_entry = _labeled_entry(form, "Password", self.password, row=4, show="*")
 
         ttk.Checkbutton(
             form,
             text="Show password",
             style="Surface.TCheckbutton",
             variable=self.show_password,
-            command=lambda: _toggle_password_entry(form, reveal=self.show_password.get(), row=3),
-        ).grid(row=4, column=1, sticky="w", pady=(2, 4), padx=(8, 0))
+            command=lambda: _toggle_password_entry(form, reveal=self.show_password.get(), row=4),
+        ).grid(row=5, column=1, sticky="w", pady=(2, 4), padx=(8, 0))
 
         hint = "Local API: http://127.0.0.1:8787  |  VPS API: http(s)://<host-or-domain>:8787"
         ttk.Label(card, text=hint, style="Subhead.TLabel", wraplength=520, justify="left").pack(anchor="w", pady=(6, 10))
@@ -788,7 +972,7 @@ class LoginFrame(ttk.Frame):
         ttk.Label(shortcuts, text="Szybkie skroty", style="StepTitle.TLabel").pack(anchor="w")
         ttk.Label(
             shortcuts,
-            text="Ctrl+H: onboarding  |  Ctrl+E: endpoint profiles  |  Enter: login",
+            text="Ctrl+H: onboarding  |  Ctrl+E: endpoint profiles  |  Ctrl+T: next theme  |  Enter: login",
             style="StepBody.TLabel",
             wraplength=500,
             justify="left",
@@ -818,6 +1002,11 @@ class LoginFrame(ttk.Frame):
         url = self.app.settings.profile_urls.get(profile, "")
         if url:
             self.base_url.set(url)
+
+    def _on_theme_selected(self, _: object) -> None:
+        self._persist_profile_choice()
+        selected_theme = _theme_from_choice(self.theme_choice.get())
+        self.app.set_theme(selected_theme, rerender=True)
 
     def _persist_profile_choice(self) -> None:
         profile = self.profile_var.get().strip().lower()
@@ -968,6 +1157,7 @@ class EndpointConfigFrame(ttk.Frame):
         self.local_url = tk.StringVar(value=self.app.settings.profile_urls.get("local", DEFAULT_API_BASE))
         self.stage_url = tk.StringVar(value=self.app.settings.profile_urls.get("stage", ""))
         self.prod_url = tk.StringVar(value=self.app.settings.profile_urls.get("prod", ""))
+        self.theme_choice = tk.StringVar(value=_theme_label(self.app.settings.theme_name))
 
         profile_row = ttk.Frame(form, style="Surface.TFrame")
         profile_row.grid(row=0, column=0, columnspan=2, sticky="we", pady=(0, 4))
@@ -981,15 +1171,28 @@ class EndpointConfigFrame(ttk.Frame):
         )
         profile_combo.pack(side="left", padx=(10, 0))
 
-        _labeled_entry(form, "Local API URL", self.local_url, row=1)
-        _labeled_entry(form, "Stage API URL", self.stage_url, row=2)
-        _labeled_entry(form, "Prod API URL", self.prod_url, row=3)
+        theme_row = ttk.Frame(form, style="Surface.TFrame")
+        theme_row.grid(row=1, column=0, columnspan=2, sticky="we", pady=(0, 4))
+        ttk.Label(theme_row, text="Theme", style="Field.TLabel").pack(side="left")
+        theme_combo = ttk.Combobox(
+            theme_row,
+            textvariable=self.theme_choice,
+            values=[THEME_LABELS[key] for key in THEME_CHOICES],
+            state="readonly",
+            width=28,
+        )
+        theme_combo.pack(side="left", padx=(10, 0))
+
+        _labeled_entry(form, "Local API URL", self.local_url, row=2)
+        _labeled_entry(form, "Stage API URL", self.stage_url, row=3)
+        _labeled_entry(form, "Prod API URL", self.prod_url, row=4)
 
         actions = ttk.Frame(card, style="Surface.TFrame")
         actions.pack(anchor="w", pady=(14, 0))
 
         ttk.Button(actions, text="Save Profiles", style="Primary.TButton", command=self._save_profiles).pack(side="left")
         ttk.Button(actions, text="Apply Selected", command=self._apply_selected).pack(side="left", padx=(10, 0))
+        ttk.Button(actions, text="Apply Theme", command=self._apply_theme).pack(side="left", padx=(10, 0))
         ttk.Button(actions, text="Ping Selected", command=self._ping_selected).pack(side="left", padx=(10, 0))
         ttk.Button(actions, text="Back", command=self._go_back).pack(side="left", padx=(10, 0))
     def _normalized_values(self) -> tuple[str, str, str]:
@@ -1003,16 +1206,26 @@ class EndpointConfigFrame(ttk.Frame):
     def _save_profiles(self) -> None:
         local_url, stage_url, prod_url = self._normalized_values()
         self.app.update_profile_urls(local_url=local_url, stage_url=stage_url, prod_url=prod_url)
+
         self.app.settings.endpoint_profile = self.active_profile.get().strip().lower()
         self.app.settings.base_url = self.app._resolve_profile_url(self.app.settings.endpoint_profile, fallback=local_url)
+        self.app.settings.theme_name = _theme_from_choice(self.theme_choice.get())
         _save_settings(self.app.settings)
-        self.app.set_status("Endpoint profiles saved")
-        messagebox.showinfo("Saved", "Endpoint profile configuration saved.")
 
+        self.app.set_theme(self.app.settings.theme_name, rerender=False)
+        self.app.set_status("Endpoint profiles and theme saved")
+        messagebox.showinfo("Saved", "Endpoint profile configuration and theme were saved.")
+
+    def _apply_theme(self) -> None:
+        selected_theme = _theme_from_choice(self.theme_choice.get())
+        self.app.set_theme(selected_theme, rerender=False)
+        self.app.set_status(f"Theme preview: {_theme_label(selected_theme)}")
+        messagebox.showinfo("Theme applied", f"Active theme: {_theme_label(selected_theme)}")
     def _apply_selected(self) -> None:
         local_url, stage_url, prod_url = self._normalized_values()
         self.app.update_profile_urls(local_url=local_url, stage_url=stage_url, prod_url=prod_url)
         selected = self.active_profile.get().strip().lower()
+        selected_theme = _theme_from_choice(self.theme_choice.get())
 
         try:
             applied_url = self.app.apply_endpoint_profile(selected)
@@ -1020,7 +1233,8 @@ class EndpointConfigFrame(ttk.Frame):
             messagebox.showerror("Apply profile failed", str(exc))
             return
 
-        messagebox.showinfo("Profile applied", f"Active API Base URL: {applied_url}")
+        self.app.set_theme(selected_theme, rerender=False)
+        messagebox.showinfo("Profile applied", f"Active API Base URL: {applied_url}\nTheme: {_theme_label(selected_theme)}")
         self._go_back()
 
     def _ping_selected(self) -> None:
@@ -1109,7 +1323,7 @@ class DashboardFrame(ttk.Frame):
         ttk.Separator(nav, orient="horizontal").pack(fill="x", pady=10)
         ttk.Label(
             nav,
-            text="Skroty\nF5 lub Ctrl+R: refresh\nCtrl+1/2/3: taby\nCtrl+E: endpoint\nCtrl+Shift+A: admin\nCtrl+H: onboarding",
+            text="Skroty\nF5 lub Ctrl+R: refresh\nCtrl+1/2/3: taby\nCtrl+E: endpoint\nCtrl+Shift+A: admin\nCtrl+H: onboarding\nCtrl+T: kolejny motyw",
             style="Hint.TLabel",
             justify="left",
         ).pack(anchor="w")
@@ -1156,6 +1370,18 @@ class DashboardFrame(ttk.Frame):
         self.interval_combo.pack(side="left", padx=(8, 0))
         self.interval_combo.bind("<<ComboboxSelected>>", lambda _: self._on_refresh_pref_changed())
         ttk.Label(quick_actions, text="sec", style="Subhead.TLabel").pack(side="left", padx=(4, 0))
+
+        ttk.Label(quick_actions, text="Theme", style="Subhead.TLabel").pack(side="left", padx=(10, 0))
+        self.theme_choice = tk.StringVar(value=_theme_label(self.app.settings.theme_name))
+        self.theme_combo = ttk.Combobox(
+            quick_actions,
+            textvariable=self.theme_choice,
+            values=[THEME_LABELS[key] for key in THEME_CHOICES],
+            state="readonly",
+            width=24,
+        )
+        self.theme_combo.pack(side="left", padx=(8, 0))
+        self.theme_combo.bind("<<ComboboxSelected>>", self._on_theme_selected)
 
         tools_actions = ttk.Frame(controls, style="Surface.TFrame")
         tools_actions.pack(anchor="e", pady=(8, 0))
@@ -1221,12 +1447,14 @@ class DashboardFrame(ttk.Frame):
         self.notebook.add(raw_tab, text="Raw JSON")
         self.notebook.bind("<<NotebookTabChanged>>", lambda _: self._sync_nav_buttons())
 
-        code_bg = "#f7fbff"
-        code_fg = "#1c2c40"
+        palette = self.app._palette
+        code_bg = palette.get("code_bg", "#f7fbff")
+        code_fg = palette.get("code_fg", "#1c2c40")
+        insight_bg = palette.get("insight_bg", code_bg)
 
         self.insight_box = ScrolledText(overview_tab, wrap="word", font=("Segoe UI", 10), height=6)
         self.insight_box.pack(fill="x", pady=(0, 8))
-        self.insight_box.configure(background="#eff6ff", foreground=code_fg, insertbackground=code_fg, relief="flat", borderwidth=0)
+        self.insight_box.configure(background=insight_bg, foreground=code_fg, insertbackground=code_fg, relief="flat", borderwidth=0)
 
         self.overview_box = ScrolledText(overview_tab, wrap="word", font=("Consolas", 10), height=17)
         self.overview_box.pack(fill="both", expand=True)
@@ -1307,6 +1535,11 @@ class DashboardFrame(ttk.Frame):
             pass
 
         self._schedule_next_refresh()
+
+    def _on_theme_selected(self, _: object) -> None:
+        self._persist_profile_choice()
+        selected_theme = _theme_from_choice(self.theme_choice.get())
+        self.app.set_theme(selected_theme, rerender=True)
 
     def _sync_role_controls(self) -> None:
         role = self.app.auth.role if self.app.auth else "operator"
@@ -1605,7 +1838,7 @@ class OnboardingDialog(tk.Toplevel):
         ttk.Label(step_four, text="4. Skroty klawiaturowe", style="StepTitle.TLabel").pack(anchor="w")
         ttk.Label(
             step_four,
-            text="F5/Ctrl+R refresh | Ctrl+1/2/3 taby | Ctrl+E endpoint | Ctrl+Shift+A admin | Ctrl+Q logout",
+            text="F5/Ctrl+R refresh | Ctrl+1/2/3 taby | Ctrl+E endpoint | Ctrl+Shift+A admin | Ctrl+Q logout | Ctrl+T theme",
             style="StepBody.TLabel",
             wraplength=300,
             justify="left",
@@ -1687,11 +1920,26 @@ class AdminConsoleFrame(ttk.Frame):
         workbench.columnconfigure(1, weight=3)
         workbench.rowconfigure(0, weight=1)
 
+        palette = self.app._palette
+        code_bg = palette.get("code_bg", "#f7fbff")
+        code_fg = palette.get("code_fg", "#1c2c40")
+
         left = ttk.Frame(workbench, style="Surface.TFrame")
         left.grid(row=0, column=0, sticky="nsew", padx=(0, 10))
         left.rowconfigure(1, weight=1)
         ttk.Label(left, text="Allowed presets", style="Field.TLabel").grid(row=0, column=0, sticky="w", pady=(0, 6))
-        self.preset_list = tk.Listbox(left, width=52, height=26, relief="solid", borderwidth=1)
+        self.preset_list = tk.Listbox(
+            left,
+            width=52,
+            height=26,
+            relief="solid",
+            borderwidth=1,
+            background=code_bg,
+            foreground=code_fg,
+            selectbackground=palette.get("accent", "#1f76cc"),
+            selectforeground=palette.get("hero_text", "#ffffff"),
+            activestyle="none",
+        )
         self.preset_list.grid(row=1, column=0, sticky="nsew")
         self.preset_list.bind("<<ListboxSelect>>", self._on_preset_selected)
 
@@ -1701,7 +1949,7 @@ class AdminConsoleFrame(ttk.Frame):
         ttk.Label(right, text="Result output", style="Field.TLabel").grid(row=0, column=0, sticky="w", pady=(0, 6))
         self.output_box = ScrolledText(right, wrap="word", font=("Consolas", 10), height=26)
         self.output_box.grid(row=1, column=0, sticky="nsew")
-        self.output_box.configure(background="#f7fbff", foreground="#1c2c40", insertbackground="#1c2c40", relief="flat", borderwidth=0)
+        self.output_box.configure(background=code_bg, foreground=code_fg, insertbackground=code_fg, relief="flat", borderwidth=0)
 
         self._enforce_owner_guard()
         self.load_presets()
@@ -1747,12 +1995,26 @@ class AdminConsoleFrame(ttk.Frame):
         self.output_box.configure(state="disabled")
 
 
-def _draw_thematic_banner(canvas: tk.Canvas, width: int, height: int) -> None:
+def _draw_thematic_banner(
+    canvas: tk.Canvas,
+    width: int,
+    height: int,
+    palette: dict[str, str] | None = None,
+) -> None:
     safe_w = max(180, int(width or 0))
     safe_h = max(100, int(height or 0))
+    p = palette or THEME_PALETTES["arcane_night"]
 
+    canvas.configure(background=p.get("hero", "#22345b"))
     canvas.delete("all")
-    layers = ["#0a3558", "#0d4069", "#15507f", "#1a5f93", "#2373aa"]
+
+    layers = [
+        p.get("hero_deep", "#182542"),
+        p.get("hero", "#22345b"),
+        p.get("accent_active", "#2f87e6"),
+        p.get("accent", "#4ea3ff"),
+        p.get("hero_soft", "#c8d5ef"),
+    ]
     stripe_h = max(1, safe_h // len(layers))
     for idx, color in enumerate(layers):
         y0 = idx * stripe_h
@@ -1762,15 +2024,31 @@ def _draw_thematic_banner(canvas: tk.Canvas, width: int, height: int) -> None:
     moon_x = int(safe_w * 0.82)
     moon_y = int(safe_h * 0.26)
     moon_r = max(16, min(32, safe_h // 6))
-    canvas.create_oval(moon_x - moon_r, moon_y - moon_r, moon_x + moon_r, moon_y + moon_r, fill="#d9ebff", outline="")
-    canvas.create_oval(moon_x - moon_r + 10, moon_y - moon_r + 2, moon_x + moon_r + 10, moon_y + moon_r + 2, fill="#0f4c81", outline="")
+    canvas.create_oval(
+        moon_x - moon_r,
+        moon_y - moon_r,
+        moon_x + moon_r,
+        moon_y + moon_r,
+        fill=p.get("hero_text", "#f2f6ff"),
+        outline="",
+    )
+    canvas.create_oval(
+        moon_x - moon_r + 10,
+        moon_y - moon_r + 2,
+        moon_x + moon_r + 10,
+        moon_y + moon_r + 2,
+        fill=p.get("hero", "#22345b"),
+        outline="",
+    )
 
     ridge_base = int(safe_h * 0.66)
+    ridge_a = p.get("hero_deep", "#182542")
+    ridge_b = p.get("hero", "#22345b")
     for idx in range(6):
         x0 = int((safe_w / 6) * idx) - 24
         x1 = x0 + int(safe_w / 4)
         peak = ridge_base - (24 + (idx % 3) * 14)
-        fill = "#10395f" if idx % 2 == 0 else "#0e3152"
+        fill = ridge_a if idx % 2 == 0 else ridge_b
         canvas.create_polygon(x0, safe_h, x1, safe_h, (x0 + x1) // 2, peak, fill=fill, outline="")
 
     path_points = [
@@ -1783,9 +2061,17 @@ def _draw_thematic_banner(canvas: tk.Canvas, width: int, height: int) -> None:
     for idx in range(len(path_points) - 1):
         x0, y0 = path_points[idx]
         x1, y1 = path_points[idx + 1]
-        canvas.create_line(x0, y0, x1, y1, fill="#f2cf7a", width=3, capstyle=tk.ROUND)
+        canvas.create_line(
+            x0,
+            y0,
+            x1,
+            y1,
+            fill=p.get("warn", "#efc25e"),
+            width=3,
+            capstyle=tk.ROUND,
+        )
 
-    rune_color = "#9fd5ff"
+    rune_color = p.get("hero_text", "#f2f6ff")
     for idx in range(4):
         cx = int(safe_w * (0.14 + idx * 0.2))
         cy = int(safe_h * 0.28)
@@ -1793,7 +2079,6 @@ def _draw_thematic_banner(canvas: tk.Canvas, width: int, height: int) -> None:
         canvas.create_oval(cx - r, cy - r, cx + r, cy + r, outline=rune_color, width=2)
         canvas.create_line(cx - 6, cy, cx + 6, cy, fill=rune_color, width=2)
         canvas.create_line(cx, cy - 6, cx, cy + 6, fill=rune_color, width=2)
-
 
 def _labeled_entry(parent: ttk.Frame, label: str, variable: tk.StringVar, row: int, show: str = "") -> ttk.Entry:
     ttk.Label(parent, text=label, style="Field.TLabel").grid(row=row, column=0, sticky="w", pady=4)
@@ -1818,6 +2103,34 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
