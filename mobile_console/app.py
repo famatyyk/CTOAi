@@ -183,6 +183,12 @@ class RegisterAccountPayload(BaseModel):
     role: str = Field(default="operator", pattern="^(operator|owner)$")
 
 
+class SelfRegisterPayload(BaseModel):
+    username: str = Field(min_length=3, max_length=64)
+    password: str = Field(min_length=8, max_length=256)
+    registration_code: str = Field(default="", max_length=128)
+
+
 class ChangePasswordPayload(BaseModel):
     password: str = Field(min_length=8, max_length=256)
 
@@ -325,6 +331,19 @@ def _mobile_token() -> str:
 
 def _full_access() -> bool:
     return os.getenv("CTOA_MOBILE_FULL_ACCESS", "false").lower() == "true"
+
+
+def _self_register_enabled() -> bool:
+    return os.getenv("CTOA_SELF_REGISTER_ENABLED", "true").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+
+
+def _self_register_code() -> str:
+    return os.getenv("CTOA_SELF_REGISTER_CODE", "").strip()
 
 
 def _allowed_commands() -> List[str]:
@@ -601,6 +620,39 @@ def auth_logout(response: Response, ctx: dict[str, Any] = Depends(require_operat
         _delete_session(token)
     response.delete_cookie(key="ctoa_session", path="/")
     return {"ok": True}
+
+@app.post("/api/auth/register")
+def auth_register(req: SelfRegisterPayload, request: Request) -> dict:
+    if not _self_register_enabled():
+        raise HTTPException(status_code=403, detail="Self registration is disabled")
+
+    expected_code = _self_register_code()
+    provided_code = req.registration_code.strip()
+    if expected_code and not hmac.compare_digest(provided_code, expected_code):
+        _audit(request, f"self_register_code_invalid:{_normalize_user(req.username)}", 403)
+        raise HTTPException(status_code=403, detail="Invalid registration code")
+
+    username = _normalize_user(req.username)
+
+    # Prevent overwriting env-based accounts.
+    env_creds = _admin_credentials()
+    if username in env_creds:
+        raise HTTPException(status_code=409, detail="Username reserved by system configuration")
+
+    try:
+        result = _db_create_account(
+            username=username,
+            password=req.password,
+            role="operator",
+            created_by="self-register",
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    _audit(request, f"self_register:{username}", 0)
+    return {"ok": True, "account": result}
 
 
 # â”€â”€ User account management â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -2312,6 +2364,8 @@ def commands_dictionary(_: dict[str, Any] = Depends(require_operator)) -> dict:
         "count": len(commands),
         "commands": commands,
     }
+
+
 
 
 

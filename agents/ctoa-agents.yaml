@@ -1,4 +1,4 @@
-version: 1
+﻿version: 1
 organization: CTOA
 mode: autonomous-24x7
 priority_domains:
@@ -42,6 +42,13 @@ agents:
     outputs: [recommended_tool, ranked_alternatives]
     kpi: [cost_saving, tool_success_rate]
 
+  - id: design-infra-lead
+    role: DesignInfrastructureLead
+    mission: Projektowanie UX/UI produktu i infrastruktury wdrozen dla desktop/web
+    inputs: [product_requirements, brand_direction, infra_constraints]
+    outputs: [design_system, ui_asset_plan, infra_blueprint]
+    kpi: [ux_consistency, page_performance, release_reliability]
+
   - id: mmo-intel
     role: DomainAnalyst
     mission: Analiza danych i trendow MMO/Tibia/OpenTibia
@@ -83,3 +90,4 @@ agents:
     inputs: [qa_report, ci_results, owner_approval]
     outputs: [release_tag, published_artifact]
     kpi: [unauthorized_release_count, release_stability]
+
