@@ -1,0 +1,345 @@
+﻿name: CTOA Monitoring Alerts
+
+on:
+  workflow_run:
+    workflows:
+      - Browser E2E Smoke
+      - CTOA Approval Watchdog
+      - CTOA CI Executive Weekly
+      - CTOA Close On Gate
+      - CTOA Copilot CI-like
+      - CTOA Daily Insights
+      - CTOA Issue Sync
+      - CTOA Pipeline
+      - CTOA Status Sync
+      - CTOA Weekly Report
+      - site-pages
+      - CTOA VPS Global Save Cycle
+    types: [completed]
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+  issues: write
+
+jobs:
+  monitor-and-escalate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Evaluate runs and upsert P0 alerts
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          MONITORED_BRANCH: "main"
+          SELF_WORKFLOW_NAME: "CTOA Monitoring Alerts"
+          TZ_MONITOR: "Europe/Warsaw"
+        run: |
+          python - <<'PY'
+          import datetime as dt
+          import json
+          import os
+          import urllib.error
+          import urllib.parse
+          import urllib.request
+          from zoneinfo import ZoneInfo
+
+          token = os.environ["GITHUB_TOKEN"]
+          repo = os.environ.get("GITHUB_REPOSITORY", "famatyyk/CTOAi")
+          owner, name = repo.split("/", 1)
+          branch = os.environ.get("MONITORED_BRANCH", "main")
+          self_workflow = os.environ.get("SELF_WORKFLOW_NAME", "CTOA Monitoring Alerts")
+          tz_name = os.environ.get("TZ_MONITOR", "Europe/Warsaw")
+
+          ALERT_LABELS = ["alert", "p0", "monitoring", "main", "blocked"]
+          RECOVERY_LABEL = "recovered-once"
+
+          headers = {
+              "User-Agent": "CTOA-Monitoring-Alerts",
+              "Accept": "application/vnd.github+json",
+              "Authorization": f"Bearer {token}",
+              "X-GitHub-Api-Version": "2022-11-28",
+          }
+
+          def gh_request(method: str, path: str, payload=None):
+              url = f"https://api.github.com{path}"
+              body = None
+              req_headers = dict(headers)
+              if payload is not None:
+                  body = json.dumps(payload).encode("utf-8")
+                  req_headers["Content-Type"] = "application/json"
+              req = urllib.request.Request(url, data=body, headers=req_headers, method=method)
+              try:
+                  with urllib.request.urlopen(req, timeout=30) as resp:
+                      raw = resp.read().decode("utf-8")
+                      return json.loads(raw) if raw else {}
+              except urllib.error.HTTPError as exc:
+                  detail = exc.read().decode("utf-8", errors="replace")
+                  raise RuntimeError(f"GitHub API {method} {path} failed: {exc.code} {detail}")
+
+          def ensure_label(name_: str, color: str, desc: str):
+              try:
+                  gh_request(
+                      "POST",
+                      f"/repos/{owner}/{name}/labels",
+                      {"name": name_, "color": color, "description": desc},
+                  )
+              except RuntimeError as exc:
+                  if "422" not in str(exc):
+                      raise
+
+          def list_open_monitoring_issues():
+              q = urllib.parse.urlencode({"state": "open", "labels": "monitoring", "per_page": 100})
+              return gh_request("GET", f"/repos/{owner}/{name}/issues?{q}")
+
+          def issue_labels(issue):
+              out = []
+              for label in issue.get("labels", []):
+                  if isinstance(label, dict):
+                      out.append(label.get("name", ""))
+                  else:
+                      out.append(str(label))
+              return set(x for x in out if x)
+
+          def find_issue_by_title(title: str):
+              for issue in list_open_monitoring_issues():
+                  if issue.get("title") == title:
+                      return issue
+              return None
+
+          def add_comment(issue_number: int, text: str):
+              gh_request(
+                  "POST",
+                  f"/repos/{owner}/{name}/issues/{issue_number}/comments",
+                  {"body": text},
+              )
+
+          def add_labels(issue_number: int, labels):
+              if not labels:
+                  return
+              gh_request(
+                  "POST",
+                  f"/repos/{owner}/{name}/issues/{issue_number}/labels",
+                  {"labels": list(labels)},
+              )
+
+          def remove_label(issue_number: int, label: str):
+              try:
+                  gh_request("DELETE", f"/repos/{owner}/{name}/issues/{issue_number}/labels/{urllib.parse.quote(label)}")
+              except RuntimeError as exc:
+                  if "404" not in str(exc):
+                      raise
+
+          def close_issue(issue_number: int):
+              gh_request("PATCH", f"/repos/{owner}/{name}/issues/{issue_number}", {"state": "closed"})
+
+          def title_for(signal_name: str) -> str:
+              return f"[ALERT][P0][CTOAi/{branch}] {signal_name} did not pass"
+
+          def build_issue_body(payload: dict) -> str:
+              return "\n".join(
+                  [
+                      "## Detected",
+                      f"- Time UTC: {dt.datetime.now(dt.timezone.utc).isoformat()}",
+                      f"- Source event: {payload['event_name']}",
+                      "- Severity: P0",
+                      "",
+                      "## Failure Signal",
+                      f"- Name: {payload['signal_name']}",
+                      f"- Conclusion: {payload['conclusion']}",
+                      f"- Branch: {payload['branch']}",
+                      f"- Commit: {payload.get('sha', 'n/a')}",
+                      f"- URL: {payload.get('url', 'n/a')}",
+                      "",
+                      "## Impact",
+                      "- Required process did not pass.",
+                      "- Treat pipeline state as BLOCKED until recovery.",
+                      "",
+                      "## Required Actions",
+                      "1. Find root cause and prepare fix.",
+                      "2. Push repair and rerun affected checks.",
+                      "3. Update this issue with owner and ETA.",
+                      "",
+                      "## Closure Criteria",
+                      "- Two consecutive successful reruns for the same workflow and branch.",
+                      "- No active blocked signal for this alert.",
+                  ]
+              )
+
+          def upsert_failure(payload: dict):
+              title = title_for(payload["signal_name"])
+              issue = find_issue_by_title(title)
+              body = build_issue_body(payload)
+              if issue is None:
+                  gh_request(
+                      "POST",
+                      f"/repos/{owner}/{name}/issues",
+                      {
+                          "title": title,
+                          "body": body,
+                          "labels": ALERT_LABELS,
+                      },
+                  )
+                  print(f"Created alert issue: {title}")
+                  return
+
+              number = issue["number"]
+              labels = issue_labels(issue)
+              if RECOVERY_LABEL in labels:
+                  remove_label(number, RECOVERY_LABEL)
+              if "blocked" not in labels:
+                  add_labels(number, ["blocked"])
+
+              add_comment(
+                  number,
+                  "\n".join(
+                      [
+                          "Monitoring update:",
+                          f"- Time UTC: {dt.datetime.now(dt.timezone.utc).isoformat()}",
+                          f"- Conclusion: {payload['conclusion']}",
+                          f"- URL: {payload.get('url', 'n/a')}",
+                      ]
+                  ),
+              )
+              print(f"Updated existing alert issue #{number}: {title}")
+
+          def process_success(payload: dict):
+              title = title_for(payload["signal_name"])
+              issue = find_issue_by_title(title)
+              if issue is None:
+                  return
+
+              number = issue["number"]
+              labels = issue_labels(issue)
+
+              if RECOVERY_LABEL in labels:
+                  add_comment(
+                      number,
+                      "\n".join(
+                          [
+                              "Recovery update:",
+                              f"- Time UTC: {dt.datetime.now(dt.timezone.utc).isoformat()}",
+                              "- Second consecutive success detected.",
+                              "- Closing this alert.",
+                          ]
+                      ),
+                  )
+                  close_issue(number)
+                  remove_label(number, "blocked")
+                  remove_label(number, RECOVERY_LABEL)
+                  print(f"Closed recovered alert issue #{number}: {title}")
+                  return
+
+              add_labels(number, [RECOVERY_LABEL])
+              add_comment(
+                  number,
+                  "\n".join(
+                      [
+                          "Recovery update:",
+                          f"- Time UTC: {dt.datetime.now(dt.timezone.utc).isoformat()}",
+                          "- First success detected.",
+                          "- Waiting for one more consecutive success before auto-close.",
+                      ]
+                  ),
+              )
+              print(f"Marked first recovery for issue #{number}: {title}")
+
+          def handle_signal(payload: dict):
+              if payload.get("branch") != branch:
+                  return
+              conclusion = str(payload.get("conclusion") or "").lower()
+              if conclusion == "success":
+                  process_success(payload)
+              else:
+                  upsert_failure(payload)
+
+          def load_event_payload() -> dict:
+              event_path = os.environ.get("GITHUB_EVENT_PATH")
+              if not event_path or not os.path.exists(event_path):
+                  return {}
+              with open(event_path, "r", encoding="utf-8") as fh:
+                  return json.load(fh)
+
+          def is_inside_monitor_window() -> bool:
+              now_local = dt.datetime.now(ZoneInfo(tz_name))
+              start = now_local.replace(hour=8, minute=0, second=0, microsecond=0)
+              end = now_local.replace(hour=22, minute=30, second=0, microsecond=0)
+              return start <= now_local <= end
+
+          def process_latest_runs_snapshot(event_name: str):
+              if event_name == "schedule" and not is_inside_monitor_window():
+                  print("Outside monitor window for Europe/Warsaw. Exiting.")
+                  return
+
+              runs = gh_request(
+                  "GET",
+                  f"/repos/{owner}/{name}/actions/runs?branch={urllib.parse.quote(branch)}&per_page=100",
+              ).get("workflow_runs", [])
+
+              now_utc = dt.datetime.now(dt.timezone.utc)
+              horizon = dt.timedelta(hours=6)
+              latest_by_workflow = {}
+
+              for run in runs:
+                  if run.get("status") != "completed":
+                      continue
+                  if run.get("name") == self_workflow:
+                      continue
+                  updated_at = run.get("updated_at")
+                  if not updated_at:
+                      continue
+                  updated_dt = dt.datetime.fromisoformat(updated_at.replace("Z", "+00:00"))
+                  if now_utc - updated_dt > horizon:
+                      continue
+                  key = str(run.get("workflow_id") or run.get("name"))
+                  prev = latest_by_workflow.get(key)
+                  if prev is None:
+                      latest_by_workflow[key] = run
+                  else:
+                      prev_dt = dt.datetime.fromisoformat(prev["updated_at"].replace("Z", "+00:00"))
+                      if updated_dt > prev_dt:
+                          latest_by_workflow[key] = run
+
+              print(f"Evaluating {len(latest_by_workflow)} latest workflow runs.")
+              for run in latest_by_workflow.values():
+                  handle_signal(
+                      {
+                          "event_name": event_name,
+                          "signal_name": run.get("name", "unknown-workflow"),
+                          "conclusion": run.get("conclusion", "unknown"),
+                          "branch": run.get("head_branch", ""),
+                          "sha": run.get("head_sha", ""),
+                          "url": run.get("html_url", ""),
+                      }
+                  )
+
+          ensure_label("alert", "b60205", "Monitoring alert")
+          ensure_label("p0", "d93f0b", "Critical escalation")
+          ensure_label("monitoring", "1d76db", "Automated monitoring")
+          ensure_label("main", "0e8a16", "Main branch")
+          ensure_label("blocked", "5319e7", "Pipeline blocked")
+          ensure_label(RECOVERY_LABEL, "fbca04", "One successful rerun observed")
+
+          event_name = os.environ.get("GITHUB_EVENT_NAME", "")
+          payload = load_event_payload()
+
+          if event_name == "workflow_run":
+              run = payload.get("workflow_run", {})
+              if run.get("name") == self_workflow:
+                  print("Skipping self workflow run event.")
+              else:
+                  handle_signal(
+                      {
+                          "event_name": event_name,
+                          "signal_name": run.get("name", "unknown-workflow"),
+                          "conclusion": run.get("conclusion", "unknown"),
+                          "branch": run.get("head_branch", ""),
+                          "sha": run.get("head_sha", ""),
+                          "url": run.get("html_url", ""),
+                      }
+                  )
+          else:
+              process_latest_runs_snapshot(event_name)
+          PY
