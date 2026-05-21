@@ -146,27 +146,30 @@ class CtoaDesktopApp(tk.Tk):
     def __init__(self) -> None:
         super().__init__()
         self.title(f"{APP_NAME} v{APP_VERSION}")
-        self.geometry("1240x820")
-        self.minsize(1080, 720)
+        self.geometry("1320x860")
+        self.minsize(1120, 740)
 
         self._configure_styles()
 
         self.settings = _load_settings()
-        effective_base = self._resolve_profile_url(self.settings.endpoint_profile, fallback=self.settings.base_url)
+        effective_base = _safe_normalize_url(self.settings.base_url) or self._resolve_profile_url(
+            self.settings.endpoint_profile,
+            fallback=self.settings.base_url,
+        )
         self.settings.base_url = effective_base
         self.api = CtoaApiClient(effective_base)
         self.auth: AuthContext | None = None
 
         self._frame: ttk.Frame | None = None
-        self._content = ttk.Frame(self)
-        self._content.pack(fill="both", expand=True)
+        self._content = ttk.Frame(self, style="Root.TFrame")
+        self._content.pack(fill="both", expand=True, padx=14, pady=(12, 0))
 
         self.status_var = tk.StringVar(value="Ready")
         self.update_var = tk.StringVar(value=f"Version {APP_VERSION}")
         status_bar = ttk.Frame(self, style="StatusBar.TFrame")
-        status_bar.pack(side="bottom", fill="x")
-        ttk.Label(status_bar, textvariable=self.status_var, style="StatusBar.TLabel").pack(side="left", padx=8, pady=3)
-        ttk.Label(status_bar, textvariable=self.update_var, style="StatusBar.TLabel").pack(side="right", padx=8, pady=3)
+        status_bar.pack(side="bottom", fill="x", padx=14, pady=(0, 10))
+        ttk.Label(status_bar, textvariable=self.status_var, style="StatusBar.TLabel").pack(side="left", padx=8, pady=4)
+        ttk.Label(status_bar, textvariable=self.update_var, style="StatusBar.TLabel").pack(side="right", padx=8, pady=4)
 
         self.updater = GitHubReleaseUpdater()
         self.pending_update: UpdateInfo | None = None
@@ -183,14 +186,117 @@ class CtoaDesktopApp(tk.Tk):
             style.theme_use("clam")
         except Exception:
             pass
-        style.configure("Card.TFrame", relief="solid", borderwidth=1)
-        style.configure("Headline.TLabel", font=("Segoe UI", 20, "bold"))
-        style.configure("Subhead.TLabel", font=("Segoe UI", 10))
-        style.configure("MetricName.TLabel", font=("Segoe UI", 9))
-        style.configure("MetricValue.TLabel", font=("Segoe UI", 12, "bold"))
-        style.configure("StatusBar.TFrame", relief="flat")
-        style.configure("StatusBar.TLabel", font=("Segoe UI", 9))
 
+        palette = {
+            "bg": "#edf2f8",
+            "surface": "#ffffff",
+            "hero": "#0f4c81",
+            "hero_text": "#ffffff",
+            "hero_soft": "#dcecff",
+            "text": "#15253a",
+            "muted": "#52627a",
+            "metric": "#f4f8fc",
+            "status": "#dfe7f2",
+            "accent": "#1f76cc",
+            "accent_active": "#185f9f",
+        }
+        self._palette = palette
+        self.configure(bg=palette["bg"])
+
+        style.configure("Root.TFrame", background=palette["bg"])
+        style.configure("Shell.TFrame", background=palette["bg"])
+
+        style.configure("Card.TFrame", background=palette["surface"], relief="solid", borderwidth=1)
+        style.configure("Surface.TFrame", background=palette["surface"])
+        style.configure("Hero.TFrame", background=palette["hero"], relief="solid", borderwidth=1)
+
+        style.configure(
+            "Headline.TLabel",
+            background=palette["surface"],
+            foreground=palette["text"],
+            font=("Bahnschrift SemiBold", 23),
+        )
+        style.configure(
+            "SectionTitle.TLabel",
+            background=palette["surface"],
+            foreground=palette["text"],
+            font=("Bahnschrift SemiBold", 18),
+        )
+        style.configure(
+            "Subhead.TLabel",
+            background=palette["surface"],
+            foreground=palette["muted"],
+            font=("Segoe UI", 10),
+        )
+        style.configure(
+            "Meta.TLabel",
+            background=palette["bg"],
+            foreground=palette["muted"],
+            font=("Segoe UI", 10),
+        )
+        style.configure(
+            "Field.TLabel",
+            background=palette["surface"],
+            foreground=palette["muted"],
+            font=("Segoe UI", 9, "bold"),
+        )
+
+        style.configure(
+            "HeroTitle.TLabel",
+            background=palette["hero"],
+            foreground=palette["hero_text"],
+            font=("Bahnschrift SemiBold", 27),
+        )
+        style.configure(
+            "HeroBody.TLabel",
+            background=palette["hero"],
+            foreground=palette["hero_soft"],
+            font=("Segoe UI", 10),
+        )
+
+        style.configure("MetricCard.TFrame", background=palette["metric"], relief="solid", borderwidth=1)
+        style.configure(
+            "MetricName.TLabel",
+            background=palette["metric"],
+            foreground=palette["muted"],
+            font=("Segoe UI", 9),
+        )
+        style.configure(
+            "MetricValue.TLabel",
+            background=palette["metric"],
+            foreground=palette["text"],
+            font=("Segoe UI Semibold", 13),
+        )
+
+        style.configure("Primary.TButton", padding=(14, 8), font=("Segoe UI Semibold", 10))
+        style.map(
+            "Primary.TButton",
+            background=[("active", palette["accent_active"]), ("!disabled", palette["accent"])],
+            foreground=[("!disabled", "#ffffff")],
+        )
+
+        style.configure(
+            "Surface.TCheckbutton",
+            background=palette["surface"],
+            foreground=palette["muted"],
+            font=("Segoe UI", 9),
+        )
+
+        style.configure("Dashboard.TNotebook", background=palette["bg"], borderwidth=0)
+        style.configure("Dashboard.TNotebook.Tab", padding=(16, 8), font=("Segoe UI Semibold", 10))
+        style.map(
+            "Dashboard.TNotebook.Tab",
+            background=[("selected", palette["surface"]), ("active", "#e7eff8")],
+            foreground=[("selected", palette["text"]), ("active", palette["text"])],
+        )
+
+        style.configure("StatusBar.TFrame", background=palette["status"], relief="flat")
+        style.configure(
+            "StatusBar.TLabel",
+            background=palette["status"],
+            foreground="#344a63",
+            font=("Segoe UI", 9),
+        )
     def _resolve_profile_url(self, profile: str, fallback: str = "") -> str:
         key = profile if profile in PROFILE_CHOICES else "local"
         candidate = _safe_normalize_url(self.settings.profile_urls.get(key, ""))
@@ -417,20 +523,44 @@ class CtoaDesktopApp(tk.Tk):
 
 class LoginFrame(ttk.Frame):
     def __init__(self, app: CtoaDesktopApp, preset_url: str, preset_username: str) -> None:
-        super().__init__(app, padding=20)
+        super().__init__(app, padding=8, style="Root.TFrame")
         self.app = app
 
-        card = ttk.Frame(self, style="Card.TFrame", padding=18)
-        card.pack(fill="x", anchor="n")
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(0, weight=1)
 
-        ttk.Label(card, text="CTOA Windows Client", style="Headline.TLabel").pack(anchor="w")
+        shell = ttk.Frame(self, style="Shell.TFrame")
+        shell.grid(row=0, column=0, sticky="nsew")
+        shell.columnconfigure(0, weight=5)
+        shell.columnconfigure(1, weight=6)
+        shell.rowconfigure(0, weight=1)
+
+        hero = ttk.Frame(shell, style="Hero.TFrame", padding=(26, 24))
+        hero.grid(row=0, column=0, sticky="nsew", padx=(0, 12))
+
+        ttk.Label(hero, text="CTOA Control Room", style="HeroTitle.TLabel").pack(anchor="w")
+        ttk.Label(
+            hero,
+            text="Secure sign-in to live telemetry, agent orchestration and owner guardrails.",
+            style="HeroBody.TLabel",
+            justify="left",
+            wraplength=360,
+        ).pack(anchor="w", pady=(8, 12))
+        ttk.Label(hero, text="- Local, stage i prod profiles in one place", style="HeroBody.TLabel").pack(anchor="w", pady=(4, 0))
+        ttk.Label(hero, text="- Instant API reachability check before login", style="HeroBody.TLabel").pack(anchor="w", pady=(4, 0))
+        ttk.Label(hero, text="- Built-in updater for release rollout", style="HeroBody.TLabel").pack(anchor="w", pady=(4, 0))
+
+        card = ttk.Frame(shell, style="Card.TFrame", padding=(24, 22))
+        card.grid(row=0, column=1, sticky="nsew")
+
+        ttk.Label(card, text="Sign In", style="Headline.TLabel").pack(anchor="w")
         ttk.Label(
             card,
             text="Log in to access live dashboard and agent operations.",
             style="Subhead.TLabel",
         ).pack(anchor="w", pady=(0, 10))
 
-        form = ttk.Frame(card)
+        form = ttk.Frame(card, style="Surface.TFrame")
         form.pack(anchor="w", fill="x")
 
         self.profile_var = tk.StringVar(value=app.settings.endpoint_profile)
@@ -439,9 +569,17 @@ class LoginFrame(ttk.Frame):
         self.password = tk.StringVar(value="")
         self.show_password = tk.BooleanVar(value=False)
 
-        ttk.Label(form, text="Endpoint Profile").grid(row=0, column=0, sticky="w", pady=4)
-        profile_combo = ttk.Combobox(form, textvariable=self.profile_var, values=list(PROFILE_CHOICES), state="readonly", width=20)
-        profile_combo.grid(row=0, column=1, sticky="w", pady=4, padx=(8, 0))
+        profile_row = ttk.Frame(form, style="Surface.TFrame")
+        profile_row.grid(row=0, column=0, columnspan=2, sticky="we", pady=(0, 4))
+        ttk.Label(profile_row, text="Endpoint Profile", style="Field.TLabel").pack(side="left")
+        profile_combo = ttk.Combobox(
+            profile_row,
+            textvariable=self.profile_var,
+            values=list(PROFILE_CHOICES),
+            state="readonly",
+            width=14,
+        )
+        profile_combo.pack(side="left", padx=(10, 0))
         profile_combo.bind("<<ComboboxSelected>>", self._on_profile_selected)
 
         base_entry = _labeled_entry(form, "API Base URL", self.base_url, row=1)
@@ -451,25 +589,27 @@ class LoginFrame(ttk.Frame):
         ttk.Checkbutton(
             form,
             text="Show password",
+            style="Surface.TCheckbutton",
             variable=self.show_password,
             command=lambda: _toggle_password_entry(form, reveal=self.show_password.get(), row=3),
         ).grid(row=4, column=1, sticky="w", pady=(2, 4), padx=(8, 0))
 
         hint = "Local API: http://127.0.0.1:8787  |  VPS API: http(s)://<vps-host-or-domain>:8787"
-        ttk.Label(card, text=hint, style="Subhead.TLabel").pack(anchor="w", pady=(4, 10))
+        ttk.Label(card, text=hint, style="Subhead.TLabel", wraplength=560, justify="left").pack(anchor="w", pady=(6, 12))
 
-        actions = ttk.Frame(card)
-        actions.pack(anchor="w", pady=(8, 0))
+        primary_actions = ttk.Frame(card, style="Surface.TFrame")
+        primary_actions.pack(anchor="w")
+        ttk.Button(primary_actions, text="Login", style="Primary.TButton", command=self._login).pack(side="left")
+        ttk.Button(primary_actions, text="Create Account", command=self._open_register).pack(side="left", padx=(10, 0))
 
-        ttk.Button(actions, text="Login", command=self._login).pack(side="left")
-        ttk.Button(actions, text="Ping API", command=self._ping_api).pack(side="left", padx=(10, 0))
-        ttk.Button(actions, text="Endpoint Profiles", command=self._open_endpoint_profiles).pack(side="left", padx=(10, 0))
-        ttk.Button(actions, text="Create Account", command=self._open_register).pack(side="left", padx=(10, 0))
-        ttk.Button(actions, text="Check Updates", command=lambda: self.app.check_for_updates(manual=True)).pack(side="left", padx=(10, 0))
+        utility_actions = ttk.Frame(card, style="Surface.TFrame")
+        utility_actions.pack(anchor="w", pady=(10, 0))
+        ttk.Button(utility_actions, text="Ping API", command=self._ping_api).pack(side="left")
+        ttk.Button(utility_actions, text="Endpoint Profiles", command=self._open_endpoint_profiles).pack(side="left", padx=(10, 0))
+        ttk.Button(utility_actions, text="Check Updates", command=lambda: self.app.check_for_updates(manual=True)).pack(side="left", padx=(10, 0))
 
         for entry in (base_entry, user_entry, pass_entry):
             entry.bind("<Return>", self._on_enter)
-
     def _on_enter(self, _: object) -> None:
         self._login()
 
@@ -532,20 +672,23 @@ class LoginFrame(ttk.Frame):
 
 class RegisterFrame(ttk.Frame):
     def __init__(self, app: CtoaDesktopApp, preset_url: str) -> None:
-        super().__init__(app, padding=20)
+        super().__init__(app, padding=8, style="Root.TFrame")
         self.app = app
 
-        card = ttk.Frame(self, style="Card.TFrame", padding=18)
+        shell = ttk.Frame(self, style="Shell.TFrame")
+        shell.pack(fill="both", expand=True)
+
+        card = ttk.Frame(shell, style="Card.TFrame", padding=(24, 22))
         card.pack(fill="x", anchor="n")
 
-        ttk.Label(card, text="Create Account", font=("Segoe UI", 18, "bold")).pack(anchor="w")
+        ttk.Label(card, text="Create Account", style="SectionTitle.TLabel").pack(anchor="w")
         ttk.Label(
             card,
             text="Self-registration creates operator role account.",
             style="Subhead.TLabel",
-        ).pack(anchor="w", pady=(0, 10))
+        ).pack(anchor="w", pady=(0, 12))
 
-        form = ttk.Frame(card)
+        form = ttk.Frame(card, style="Surface.TFrame")
         form.pack(anchor="w", fill="x")
 
         self.base_url = tk.StringVar(value=preset_url)
@@ -560,12 +703,11 @@ class RegisterFrame(ttk.Frame):
         _labeled_entry(form, "Confirm Password", self.password_confirm, row=3, show="*")
         _labeled_entry(form, "Registration Code (optional)", self.registration_code, row=4)
 
-        actions = ttk.Frame(card)
-        actions.pack(anchor="w", pady=(12, 0))
-        ttk.Button(actions, text="Create Account", command=self._register).pack(side="left")
+        actions = ttk.Frame(card, style="Surface.TFrame")
+        actions.pack(anchor="w", pady=(14, 0))
+        ttk.Button(actions, text="Create Account", style="Primary.TButton", command=self._register).pack(side="left")
         ttk.Button(actions, text="Endpoint Profiles", command=self._open_endpoint_profiles).pack(side="left", padx=(10, 0))
         ttk.Button(actions, text="Back to Login", command=lambda: self.app.show_login(self.base_url.get())).pack(side="left", padx=(10, 0))
-
     def _open_endpoint_profiles(self) -> None:
         self.app.settings.base_url = _safe_normalize_url(self.base_url.get())
         _save_settings(self.app.settings)
@@ -604,21 +746,24 @@ class RegisterFrame(ttk.Frame):
 
 class EndpointConfigFrame(ttk.Frame):
     def __init__(self, app: CtoaDesktopApp, return_to: str) -> None:
-        super().__init__(app, padding=20)
+        super().__init__(app, padding=8, style="Root.TFrame")
         self.app = app
         self.return_to = return_to
 
-        card = ttk.Frame(self, style="Card.TFrame", padding=18)
+        shell = ttk.Frame(self, style="Shell.TFrame")
+        shell.pack(fill="both", expand=True)
+
+        card = ttk.Frame(shell, style="Card.TFrame", padding=(24, 22))
         card.pack(fill="x", anchor="n")
 
-        ttk.Label(card, text="Endpoint Profiles", font=("Segoe UI", 18, "bold")).pack(anchor="w")
+        ttk.Label(card, text="Endpoint Profiles", style="SectionTitle.TLabel").pack(anchor="w")
         ttk.Label(
             card,
             text="Configure local/stage/prod API endpoints and switch active profile.",
             style="Subhead.TLabel",
-        ).pack(anchor="w", pady=(0, 10))
+        ).pack(anchor="w", pady=(0, 12))
 
-        form = ttk.Frame(card)
+        form = ttk.Frame(card, style="Surface.TFrame")
         form.pack(anchor="w", fill="x")
 
         self.active_profile = tk.StringVar(value=self.app.settings.endpoint_profile)
@@ -626,22 +771,29 @@ class EndpointConfigFrame(ttk.Frame):
         self.stage_url = tk.StringVar(value=self.app.settings.profile_urls.get("stage", ""))
         self.prod_url = tk.StringVar(value=self.app.settings.profile_urls.get("prod", ""))
 
-        ttk.Label(form, text="Active profile").grid(row=0, column=0, sticky="w", pady=4)
-        profile_combo = ttk.Combobox(form, textvariable=self.active_profile, values=list(PROFILE_CHOICES), state="readonly", width=20)
-        profile_combo.grid(row=0, column=1, sticky="w", pady=4, padx=(8, 0))
+        profile_row = ttk.Frame(form, style="Surface.TFrame")
+        profile_row.grid(row=0, column=0, columnspan=2, sticky="we", pady=(0, 4))
+        ttk.Label(profile_row, text="Active profile", style="Field.TLabel").pack(side="left")
+        profile_combo = ttk.Combobox(
+            profile_row,
+            textvariable=self.active_profile,
+            values=list(PROFILE_CHOICES),
+            state="readonly",
+            width=14,
+        )
+        profile_combo.pack(side="left", padx=(10, 0))
 
         _labeled_entry(form, "Local API URL", self.local_url, row=1)
         _labeled_entry(form, "Stage API URL", self.stage_url, row=2)
         _labeled_entry(form, "Prod API URL", self.prod_url, row=3)
 
-        actions = ttk.Frame(card)
-        actions.pack(anchor="w", pady=(12, 0))
+        actions = ttk.Frame(card, style="Surface.TFrame")
+        actions.pack(anchor="w", pady=(14, 0))
 
-        ttk.Button(actions, text="Save Profiles", command=self._save_profiles).pack(side="left")
+        ttk.Button(actions, text="Save Profiles", style="Primary.TButton", command=self._save_profiles).pack(side="left")
         ttk.Button(actions, text="Apply Selected", command=self._apply_selected).pack(side="left", padx=(10, 0))
         ttk.Button(actions, text="Ping Selected", command=self._ping_selected).pack(side="left", padx=(10, 0))
         ttk.Button(actions, text="Back", command=self._go_back).pack(side="left", padx=(10, 0))
-
     def _normalized_values(self) -> tuple[str, str, str]:
         local_url = _safe_normalize_url(self.local_url.get())
         stage_url = _safe_normalize_url(self.stage_url.get())
@@ -708,31 +860,51 @@ class EndpointConfigFrame(ttk.Frame):
 
 class DashboardFrame(ttk.Frame):
     def __init__(self, app: CtoaDesktopApp) -> None:
-        super().__init__(app, padding=20)
+        super().__init__(app, padding=8, style="Root.TFrame")
         self.app = app
         self._refresh_job: str | None = None
 
         self.refresh_seconds = tk.IntVar(value=_normalize_refresh_seconds(self.app.settings.refresh_seconds))
         self.auto_refresh = tk.BooleanVar(value=self.app.settings.auto_refresh)
 
-        header = ttk.Frame(self)
-        header.pack(fill="x")
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(0, weight=1)
 
-        ttk.Label(header, text="Live Dashboard", font=("Segoe UI", 18, "bold")).pack(side="left")
+        shell = ttk.Frame(self, style="Shell.TFrame")
+        shell.grid(row=0, column=0, sticky="nsew")
+        shell.columnconfigure(0, weight=1)
+        shell.rowconfigure(3, weight=1)
 
-        right_actions = ttk.Frame(header)
-        right_actions.pack(side="right")
-        ttk.Button(right_actions, text="Refresh now", command=self.refresh).pack(side="left")
+        header_card = ttk.Frame(shell, style="Card.TFrame", padding=(18, 16))
+        header_card.grid(row=0, column=0, sticky="ew")
+        header_card.columnconfigure(0, weight=1)
+
+        left_meta = ttk.Frame(header_card, style="Surface.TFrame")
+        left_meta.grid(row=0, column=0, sticky="w")
+
+        ttk.Label(left_meta, text="Live Dashboard", style="SectionTitle.TLabel").pack(anchor="w")
+        self.identity_label = ttk.Label(left_meta, text="User: - | Role: - | Auth: -", style="Subhead.TLabel")
+        self.identity_label.pack(anchor="w", pady=(4, 0))
+        self.refresh_meta_label = ttk.Label(left_meta, text="Last refresh: never", style="Subhead.TLabel")
+        self.refresh_meta_label.pack(anchor="w", pady=(2, 0))
+
+        controls = ttk.Frame(header_card, style="Surface.TFrame")
+        controls.grid(row=0, column=1, sticky="e")
+
+        quick_actions = ttk.Frame(controls, style="Surface.TFrame")
+        quick_actions.pack(anchor="e")
+        ttk.Button(quick_actions, text="Refresh now", style="Primary.TButton", command=self.refresh).pack(side="left")
         ttk.Checkbutton(
-            right_actions,
+            quick_actions,
             text="Auto refresh",
+            style="Surface.TCheckbutton",
             variable=self.auto_refresh,
             command=self._on_refresh_pref_changed,
         ).pack(side="left", padx=(10, 0))
 
         self.interval_combo = ttk.Combobox(
-            right_actions,
-            width=6,
+            quick_actions,
+            width=5,
             values=["5", "10", "20", "30", "60", "120"],
             state="readonly",
         )
@@ -740,19 +912,24 @@ class DashboardFrame(ttk.Frame):
         self.interval_combo.pack(side="left", padx=(8, 0))
         self.interval_combo.bind("<<ComboboxSelected>>", lambda _: self._on_refresh_pref_changed())
 
-        ttk.Label(right_actions, text="sec").pack(side="left", padx=(4, 0))
-        ttk.Button(right_actions, text="Endpoint Profiles", command=lambda: self.app.show_endpoint_config(return_to="dashboard")).pack(side="left", padx=(10, 0))
-        ttk.Button(right_actions, text="Check updates", command=lambda: self.app.check_for_updates(manual=True)).pack(side="left", padx=(10, 0))
-        ttk.Button(right_actions, text="Install update", command=self.app.prompt_update_install).pack(side="left", padx=(8, 0))
+        ttk.Label(quick_actions, text="sec", style="Subhead.TLabel").pack(side="left", padx=(4, 0))
 
-        self.identity_label = ttk.Label(self, text="User: - | Role: - | Auth: -", style="Subhead.TLabel")
-        self.identity_label.pack(anchor="w", pady=(8, 2))
+        tools_actions = ttk.Frame(controls, style="Surface.TFrame")
+        tools_actions.pack(anchor="e", pady=(8, 0))
+        ttk.Button(
+            tools_actions,
+            text="Endpoint Profiles",
+            command=lambda: self.app.show_endpoint_config(return_to="dashboard"),
+        ).pack(side="left")
+        ttk.Button(
+            tools_actions,
+            text="Check updates",
+            command=lambda: self.app.check_for_updates(manual=True),
+        ).pack(side="left", padx=(10, 0))
+        ttk.Button(tools_actions, text="Install update", command=self.app.prompt_update_install).pack(side="left", padx=(8, 0))
 
-        self.refresh_meta_label = ttk.Label(self, text="Last refresh: never", style="Subhead.TLabel")
-        self.refresh_meta_label.pack(anchor="w", pady=(0, 10))
-
-        metrics = ttk.Frame(self)
-        metrics.pack(fill="x", pady=(0, 10))
+        metrics = ttk.Frame(shell, style="Shell.TFrame")
+        metrics.grid(row=1, column=0, sticky="ew", pady=(12, 10))
         self.metric_vars: dict[str, tk.StringVar] = {}
         metric_names = [
             "Pipeline status",
@@ -763,51 +940,63 @@ class DashboardFrame(ttk.Frame):
             "Services",
         ]
         for idx, name in enumerate(metric_names):
-            card = ttk.Frame(metrics, style="Card.TFrame", padding=10)
-            card.grid(row=0, column=idx, sticky="nsew", padx=(0 if idx == 0 else 8, 0))
-            metrics.columnconfigure(idx, weight=1)
+            row_idx, col_idx = divmod(idx, 3)
+            card = ttk.Frame(metrics, style="MetricCard.TFrame", padding=10)
+            card.grid(
+                row=row_idx,
+                column=col_idx,
+                sticky="nsew",
+                padx=(0 if col_idx == 0 else 8, 0),
+                pady=(0 if row_idx == 0 else 8, 0),
+            )
+            metrics.columnconfigure(col_idx, weight=1)
             ttk.Label(card, text=name, style="MetricName.TLabel").pack(anchor="w")
             var = tk.StringVar(value="-")
             self.metric_vars[name] = var
             ttk.Label(card, textvariable=var, style="MetricValue.TLabel").pack(anchor="w", pady=(4, 0))
 
-        action_row = ttk.Frame(self)
-        action_row.pack(fill="x", pady=(0, 8))
+        action_row = ttk.Frame(shell, style="Shell.TFrame")
+        action_row.grid(row=2, column=0, sticky="ew", pady=(0, 8))
         self.admin_button = ttk.Button(action_row, text="Open Admin Console", command=self.app.show_admin_console)
         self.admin_button.pack(side="left")
         ttk.Button(action_row, text="Logout", command=self.app.logout).pack(side="left", padx=(8, 0))
 
-        self.notebook = ttk.Notebook(self)
-        self.notebook.pack(fill="both", expand=True)
+        self.notebook = ttk.Notebook(shell, style="Dashboard.TNotebook")
+        self.notebook.grid(row=3, column=0, sticky="nsew")
 
-        overview_tab = ttk.Frame(self.notebook, padding=8)
-        agents_tab = ttk.Frame(self.notebook, padding=8)
-        raw_tab = ttk.Frame(self.notebook, padding=8)
+        overview_tab = ttk.Frame(self.notebook, style="Surface.TFrame", padding=10)
+        agents_tab = ttk.Frame(self.notebook, style="Surface.TFrame", padding=10)
+        raw_tab = ttk.Frame(self.notebook, style="Surface.TFrame", padding=10)
 
         self.notebook.add(overview_tab, text="Overview")
         self.notebook.add(agents_tab, text="Agents")
         self.notebook.add(raw_tab, text="Raw JSON")
 
+        code_bg = "#f7fbff"
+        code_fg = "#1c2c40"
+
         self.overview_box = ScrolledText(overview_tab, wrap="word", font=("Consolas", 10), height=20)
         self.overview_box.pack(fill="both", expand=True)
+        self.overview_box.configure(background=code_bg, foreground=code_fg, insertbackground=code_fg, relief="flat", borderwidth=0)
 
-        agents_controls = ttk.Frame(agents_tab)
+        agents_controls = ttk.Frame(agents_tab, style="Surface.TFrame")
         agents_controls.pack(fill="x", pady=(0, 8))
-        self.launch_agent_button = ttk.Button(agents_controls, text="Run One-Click Agent", command=self._run_one_click_agent)
+        self.launch_agent_button = ttk.Button(agents_controls, text="Run One-Click Agent", style="Primary.TButton", command=self._run_one_click_agent)
         self.launch_agent_button.pack(side="left")
         self.intel_button = ttk.Button(agents_controls, text="Launch Intel Mission", command=self._launch_intel)
         self.intel_button.pack(side="left", padx=(8, 0))
 
         self.agents_box = ScrolledText(agents_tab, wrap="word", font=("Consolas", 10), height=20)
         self.agents_box.pack(fill="both", expand=True)
+        self.agents_box.configure(background=code_bg, foreground=code_fg, insertbackground=code_fg, relief="flat", borderwidth=0)
 
         self.raw_box = ScrolledText(raw_tab, wrap="word", font=("Consolas", 10), height=20)
         self.raw_box.pack(fill="both", expand=True)
+        self.raw_box.configure(background=code_bg, foreground=code_fg, insertbackground=code_fg, relief="flat", borderwidth=0)
 
         self._load_remote_profile()
         self._sync_role_controls()
         self.refresh()
-
     def destroy(self) -> None:
         if self._refresh_job is not None:
             try:
@@ -992,48 +1181,64 @@ class DashboardFrame(ttk.Frame):
 
 class AdminConsoleFrame(ttk.Frame):
     def __init__(self, app: CtoaDesktopApp) -> None:
-        super().__init__(app, padding=20)
+        super().__init__(app, padding=8, style="Root.TFrame")
         self.app = app
 
-        ttk.Label(self, text="Admin Console", font=("Segoe UI", 18, "bold")).pack(anchor="w")
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(0, weight=1)
+
+        shell = ttk.Frame(self, style="Shell.TFrame")
+        shell.grid(row=0, column=0, sticky="nsew")
+        shell.columnconfigure(0, weight=1)
+        shell.rowconfigure(1, weight=1)
+
+        header = ttk.Frame(shell, style="Card.TFrame", padding=(18, 16))
+        header.grid(row=0, column=0, sticky="ew")
+
+        ttk.Label(header, text="Admin Console", style="SectionTitle.TLabel").pack(anchor="w")
         ttk.Label(
-            self,
+            header,
             text="Owner account only. Executes /api/command under backend guardrails.",
             style="Subhead.TLabel",
-        ).pack(anchor="w", pady=(0, 10))
+        ).pack(anchor="w", pady=(2, 10))
 
         self.command_var = tk.StringVar(value="")
 
-        row = ttk.Frame(self)
+        row = ttk.Frame(header, style="Surface.TFrame")
         row.pack(fill="x", pady=(0, 8))
-        ttk.Label(row, text="Command").pack(side="left")
-        ttk.Entry(row, textvariable=self.command_var, width=100).pack(side="left", fill="x", expand=True, padx=(8, 8))
-        ttk.Button(row, text="Run", command=self.run_command).pack(side="left")
+        ttk.Label(row, text="Command", style="Field.TLabel").pack(side="left")
+        ttk.Entry(row, textvariable=self.command_var, width=90).pack(side="left", fill="x", expand=True, padx=(8, 8))
+        ttk.Button(row, text="Run", style="Primary.TButton", command=self.run_command).pack(side="left")
 
-        actions = ttk.Frame(self)
-        actions.pack(fill="x", pady=(0, 8))
+        actions = ttk.Frame(header, style="Surface.TFrame")
+        actions.pack(fill="x")
         ttk.Button(actions, text="Load Presets", command=self.load_presets).pack(side="left")
         ttk.Button(actions, text="Back to Dashboard", command=self.app.show_dashboard).pack(side="left", padx=(10, 0))
 
-        split = ttk.Frame(self)
-        split.pack(fill="both", expand=True)
+        workbench = ttk.Frame(shell, style="Card.TFrame", padding=(14, 14))
+        workbench.grid(row=1, column=0, sticky="nsew", pady=(10, 0))
+        workbench.columnconfigure(0, weight=2)
+        workbench.columnconfigure(1, weight=3)
+        workbench.rowconfigure(0, weight=1)
 
-        left = ttk.Frame(split)
-        left.pack(side="left", fill="y", padx=(0, 8))
-        ttk.Label(left, text="Allowed presets").pack(anchor="w")
-        self.preset_list = tk.Listbox(left, width=52, height=26)
-        self.preset_list.pack(fill="y", expand=True)
+        left = ttk.Frame(workbench, style="Surface.TFrame")
+        left.grid(row=0, column=0, sticky="nsew", padx=(0, 10))
+        left.rowconfigure(1, weight=1)
+        ttk.Label(left, text="Allowed presets", style="Field.TLabel").grid(row=0, column=0, sticky="w", pady=(0, 6))
+        self.preset_list = tk.Listbox(left, width=52, height=26, relief="solid", borderwidth=1)
+        self.preset_list.grid(row=1, column=0, sticky="nsew")
         self.preset_list.bind("<<ListboxSelect>>", self._on_preset_selected)
 
-        right = ttk.Frame(split)
-        right.pack(side="left", fill="both", expand=True)
-        ttk.Label(right, text="Result output").pack(anchor="w")
+        right = ttk.Frame(workbench, style="Surface.TFrame")
+        right.grid(row=0, column=1, sticky="nsew")
+        right.rowconfigure(1, weight=1)
+        ttk.Label(right, text="Result output", style="Field.TLabel").grid(row=0, column=0, sticky="w", pady=(0, 6))
         self.output_box = ScrolledText(right, wrap="word", font=("Consolas", 10), height=26)
-        self.output_box.pack(fill="both", expand=True)
+        self.output_box.grid(row=1, column=0, sticky="nsew")
+        self.output_box.configure(background="#f7fbff", foreground="#1c2c40", insertbackground="#1c2c40", relief="flat", borderwidth=0)
 
         self._enforce_owner_guard()
         self.load_presets()
-
     def _enforce_owner_guard(self) -> None:
         role = self.app.auth.role if self.app.auth else "operator"
         if role == "owner":
@@ -1077,8 +1282,8 @@ class AdminConsoleFrame(ttk.Frame):
 
 
 def _labeled_entry(parent: ttk.Frame, label: str, variable: tk.StringVar, row: int, show: str = "") -> ttk.Entry:
-    ttk.Label(parent, text=label).grid(row=row, column=0, sticky="w", pady=4)
-    entry = ttk.Entry(parent, textvariable=variable, width=84, show=show)
+    ttk.Label(parent, text=label, style="Field.TLabel").grid(row=row, column=0, sticky="w", pady=4)
+    entry = ttk.Entry(parent, textvariable=variable, width=62, show=show)
     entry.grid(row=row, column=1, sticky="we", pady=4, padx=(8, 0))
     parent.columnconfigure(1, weight=1)
     return entry
@@ -1099,4 +1304,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+
+
 
