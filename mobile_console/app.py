@@ -323,10 +323,8 @@ _IDEAS_SERVICE = IdeasService(
 )
 
 def _mobile_token() -> str:
-    token = os.getenv("CTOA_MOBILE_TOKEN", "")
-    if not token:
-        raise RuntimeError("Missing CTOA_MOBILE_TOKEN")
-    return token
+    # Legacy static token is optional when session auth is used.
+    return os.getenv("CTOA_MOBILE_TOKEN", "").strip()
 
 
 def _full_access() -> bool:
@@ -430,7 +428,7 @@ def _try_auth_context(
 ) -> dict[str, Any] | None:
     # Backward-compatible owner auth using static token.
     expected = _mobile_token()
-    if x_ctoa_token and hmac.compare_digest(x_ctoa_token, expected):
+    if expected and x_ctoa_token and hmac.compare_digest(x_ctoa_token, expected):
         return {
             "username": os.getenv("CTOA_OWNER_USER", "CTO"),
             "role": "owner",
@@ -2364,6 +2362,7 @@ def commands_dictionary(_: dict[str, Any] = Depends(require_operator)) -> dict:
         "count": len(commands),
         "commands": commands,
     }
+
 
 
 

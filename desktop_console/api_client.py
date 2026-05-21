@@ -55,6 +55,8 @@ class CtoaApiClient:
             auth_mode=str(payload.get("auth_mode", "unknown")),
         )
 
+    def auth_auto_check(self) -> dict[str, Any]:
+        return self._request("GET", "/api/auth/auto-check")
     def status(self) -> dict[str, Any]:
         return self._request("GET", "/api/status")
 
@@ -161,3 +163,4 @@ def _normalize_base_url(raw_url: str) -> str:
     if not re.match(r"^https?://", value, re.IGNORECASE):
         value = f"http://{value}"
     return value
+

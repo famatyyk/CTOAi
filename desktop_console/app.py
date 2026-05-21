@@ -498,7 +498,7 @@ class LoginFrame(ttk.Frame):
         self._persist_profile_choice()
         try:
             self.app.api.set_base_url(self.base_url.get())
-            payload = self.app.api.health()
+            payload = self.app.api.auth_auto_check()
         except Exception as exc:
             messagebox.showerror("API check failed", _friendly_api_error(exc, self.base_url.get()))
             return
@@ -1099,3 +1099,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
