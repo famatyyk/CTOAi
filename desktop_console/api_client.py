@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import re
-from typing import Any
+from typing import Any, Iterable
 
 import requests
 
@@ -57,6 +57,47 @@ class CtoaApiClient:
 
     def status(self) -> dict[str, Any]:
         return self._request("GET", "/api/status")
+
+    def health(self) -> dict[str, Any]:
+        return self._request("GET", "/api/health")
+
+    def dashboard(self) -> dict[str, Any]:
+        return self._request("GET", "/api/dashboard")
+
+    def agents_status(self) -> dict[str, Any]:
+        return self._request("GET", "/api/agents/status")
+
+    def intel_report(self) -> dict[str, Any]:
+        return self._request("GET", "/api/agents/intel/report")
+
+    def launch_intel_mission(
+        self,
+        urls: Iterable[str] | None = None,
+        force_rescout: bool = False,
+        trigger_now: bool = True,
+    ) -> dict[str, Any]:
+        payload = {
+            "urls": [str(url).strip() for url in (urls or []) if str(url).strip()],
+            "force_rescout": bool(force_rescout),
+            "trigger_now": bool(trigger_now),
+        }
+        return self._request("POST", "/api/agents/intel/launch", json_body=payload)
+
+    def run_agents_one_click(self) -> dict[str, Any]:
+        return self._request("POST", "/api/agents/execution/run", json_body={})
+
+    def live_profile(self) -> dict[str, Any]:
+        return self._request("GET", "/api/live-dashboard/profile")
+
+    def save_live_profile(self, api_base: str, refresh_seconds: int) -> dict[str, Any]:
+        return self._request(
+            "PUT",
+            "/api/live-dashboard/profile",
+            json_body={
+                "api_base": str(api_base).strip(),
+                "refresh_seconds": int(refresh_seconds),
+            },
+        )
 
     def presets(self) -> list[str]:
         payload = self._request("GET", "/api/presets")
