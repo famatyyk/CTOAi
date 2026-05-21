@@ -119,7 +119,7 @@ function Get-LocalRootWrapperScript() {
     return (Resolve-Path $wrapper).Path
 }
 
-function Ensure-RemoteRootWrapper() {
+function Invoke-RemoteRootWrapper() {
     $t = Get-RemoteTarget
     $k = Get-KeyPath
     $localWrapper = Get-LocalRootWrapperScript

@@ -1,18 +1,18 @@
 # Phase-5 Morning Brief
 
-generated_utc: 20260515T224929Z
+generated_utc: 20260521T051007Z
 verdict: ATTENTION
-reason: nightly_runs_pending
+reason: alerts_detected
 
 ## KPI Snapshot
 
-- checklist_status: IN_PROGRESS
-- nightly_runs: 0/3
-- pending: 3
-- alerts: 0
-- pulled_new: 0
-- skipped_existing: 1
+- checklist_status: ATTENTION
+- nightly_runs: 3/3
+- pending: 0
+- alerts: 2
+- pulled_new: 1
+- skipped_existing: 6
 
 ## Sprint Log Paste
 
-- Phase-5 morning check: ATTENTION (runs=0/3, pending=3, alerts=0, checklist=IN_PROGRESS)
+- Phase-5 morning check: ATTENTION (runs=3/3, pending=0, alerts=2, checklist=ATTENTION)
