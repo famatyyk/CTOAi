@@ -315,9 +315,9 @@ cp deploy/vps/systemd/ctoa-mobile-token-rotation.service /etc/systemd/system/
 cp deploy/vps/systemd/ctoa-mobile-token-rotation.timer /etc/systemd/system/
 cp deploy/vps/systemd/ctoa-lab-runner.service /etc/systemd/system/
 cp deploy/vps/systemd/ctoa-lab-runner.timer /etc/systemd/system/
-cp deploy/vps/systemd/ctoa-mythibia-news-watcher.service /etc/systemd/system/
-cp deploy/vps/systemd/ctoa-mythibia-news-watcher.timer /etc/systemd/system/
-cp deploy/vps/systemd/ctoa-mythibia-news-api.service /etc/systemd/system/
+cp deploy/vps/systemd/ctoa-intel-news-watcher.service /etc/systemd/system/
+cp deploy/vps/systemd/ctoa-intel-news-watcher.timer /etc/systemd/system/
+cp deploy/vps/systemd/ctoa-intel-news-api.service /etc/systemd/system/
 cp deploy/vps/logrotate/ctoa /etc/logrotate.d/ctoa
 chmod +x /opt/ctoa/deploy/vps/cleanup-retention.sh
 chmod +x /opt/ctoa/deploy/vps/rotate-mobile-token.sh
@@ -329,8 +329,8 @@ systemctl enable --now ctoa-retention-cleanup.timer
 systemctl enable --now ctoa-mobile-token-rotation.timer
 # lab-runner module is currently not shipped; keep timer disabled to avoid noisy failures.
 systemctl disable --now ctoa-lab-runner.timer || true
-systemctl enable --now ctoa-mythibia-news-watcher.timer
-systemctl enable --now ctoa-mythibia-news-api.service
+systemctl enable --now ctoa-intel-news-watcher.timer
+systemctl enable --now ctoa-intel-news-api.service
 
 if [ "${CTOA_SETUP_SMOKE:-0}" = "1" ]; then
     echo "[Setup24x7] running optional smoke checks"
@@ -502,7 +502,7 @@ systemctl list-units \
     ctoa-auto-trainer.service \
     ctoa-health-live.service \
     ctoa-mobile-console.service \
-    ctoa-mythibia-news-api.service \
+    ctoa-intel-news-api.service \
     ctoa-agents-orchestrator.service \
     ctoa-runner.service \
     ctoa-report.service \
@@ -553,7 +553,7 @@ echo "=== recent reseed log ==="
 tail -n 20 /opt/ctoa/logs/reseed-tier.log 2>/dev/null || echo 'reseed-tier.log-not-found'
 echo
 
-# â”€â”€ SSH quality monitor â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬ SSH quality monitor Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬
 echo "=== SSH quality monitor (last 60 s) ==="
 SSH_FAIL_THRESHOLD=${CTOA_SSH_FAIL_THRESHOLD:-5}          # fails/min to trigger auto-heal
 WINDOW_SEC=60
@@ -569,7 +569,7 @@ echo "  SSH fail rate (per min)              : ${FAIL_RATE_INT}"
 echo "  Auto-heal threshold (per min)        : ${SSH_FAIL_THRESHOLD}"
 
 if [ "${FAIL_RATE_INT}" -ge "${SSH_FAIL_THRESHOLD}" ]; then
-  echo "  STATUS : DEGRADED â€“ threshold exceeded, triggering auto-heal"
+  echo "  STATUS : DEGRADED Ă˘â‚¬â€ś threshold exceeded, triggering auto-heal"
 
   # reset-failed for ctoa services that depend heavily on outbound SSH / sshd
   SSH_HEAVY_SERVICES=(
@@ -592,7 +592,7 @@ else
   echo "  STATUS : OK"
 fi
 echo
-# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬
 '@
         }
         'ShowPipelineProgress' {
@@ -676,7 +676,7 @@ sudo -u postgres psql -d ctoa -c "SELECT s.id, s.url, s.status, COUNT(m.id) AS m
     'ShowServiceRestarts' {
         Invoke-SshScript @'
 set -e
-services="ctoa-mobile-console.service ctoa-health-live.service ctoa-mythibia-news-api.service ctoa-agents-orchestrator.service ctoa-auto-trainer.service"
+services="ctoa-mobile-console.service ctoa-health-live.service ctoa-intel-news-api.service ctoa-agents-orchestrator.service ctoa-auto-trainer.service"
 echo "=== service restart counters ==="
 for s in $services; do
   printf "\n--- %s ---\n" "$s"
@@ -1910,6 +1910,7 @@ systemctl status ctoa-db.service --no-pager -l | sed -n '1,80p'
         Invoke-RemoteSyntaxValidation
     }
 }
+
 
 
 

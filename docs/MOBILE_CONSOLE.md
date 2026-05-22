@@ -21,7 +21,7 @@ Zmienne w `/opt/ctoa/.env`:
 - `CTOA_CORS_ORIGINS=https://twoja-domena.pl,https://admin.twoja-domena.pl`
 
 Uwaga:
-- `CTOA_MOBILE_FULL_ACCESS=true` daje praktycznie shell-level kontrolę.
+- `CTOA_MOBILE_FULL_ACCESS=true` daje praktycznie shell-level kontrole.
 - Uzywaj tylko przez VPN / trusted network / reverse proxy z TLS.
 - W trybie `CTOA_ENV=prod` backend nie wystartuje, jezeli `CTOA_CORS_ORIGINS` jest puste lub zawiera `*`.
 
@@ -76,7 +76,7 @@ Otworz:
 - `POST /api/agents/intel/launch`
 - `GET /api/agents/intel/report`
 - `GET /api/agents/auto-trainer/latest`
-- `POST /api/agents/mythibia/run`
+- `POST /api/agents/intel/run` (primary)
 
 ## Auto trainer (co 6h)
 
@@ -92,7 +92,7 @@ Artefakty raportu na VPS:
 Log:
 - `/opt/ctoa/logs/auto-trainer.log`
 
-## Auto-sync do klienta (po One-click Mythibia Run)
+## Auto-sync do klienta (po One-click Intel Run)
 
 One-click endpoint moze automatycznie kopiowac wygenerowane skrypty do katalogu klienta
 i tworzyc plik autoloadera.
@@ -102,8 +102,10 @@ Wymagane zmienne w `/opt/ctoa/.env`:
 - `CTOA_CLIENT_SCRIPTS_DIR=/sciezka/do/katalogu/skryptow/klienta`
 
 Opcjonalne:
-- `CTOA_CLIENT_AUTOLOADER_NAME=ctoa_mythibia_autoload.lua`
+- `CTOA_CLIENT_AUTOLOADER_NAME=ctoa_intel_autoload.lua`
 - `CTOA_CLIENT_INIT_FILE=/sciezka/do/pliku/init.lua`
 
-Po ustawieniu zmiennych endpoint `POST /api/agents/mythibia/run` zwraca sekcje `client_sync`
-z informacja o skopiowanych plikach i statusie autoloadera.
+Po ustawieniu zmiennych endpoint `POST /api/agents/intel/run` zwraca sekcje `client_sync` z informacja o skopiowanych plikach i statusie autoloadera .
+
+
+
