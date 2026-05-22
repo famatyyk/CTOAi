@@ -12,7 +12,7 @@ This file is the canonical map of what is considered a product in this repositor
   - `docs/MOBILE_CONSOLE.md`
 - Public API highlights:
   - `POST /api/agents/execution/run` (preferred)
-  - `POST /api/agents/mythibia/run` (legacy alias)
+  - `POST /api/agents/intel/run` (scan/intel primary)
 
 ## Product 2: CTOA Agent Execution Engine
 
@@ -74,7 +74,8 @@ External product naming should use neutral CTOA wording:
 Migration status:
 
 - Preferred endpoint enabled: `POST /api/agents/execution/run`
-- Legacy alias retained: `POST /api/agents/mythibia/run`
+- Primary scan endpoint: `POST /api/agents/intel/run`
+
 
 ## Definition of Product-Ready in Public Repo
 
@@ -84,3 +85,5 @@ A component is product-ready when all are true:
 2. It has at least one validation path (test/task/health check).
 3. It does not expose secrets or local-only data dumps.
 4. It is not a one-off forensic helper without product path.
+
+

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# gs-startup-sequence.sh  —  CTOA Ordered Startup After GS Reset
+# gs-startup-sequence.sh  â€”  CTOA Ordered Startup After GS Reset
 #
 # Called by gs-reset.sh Phase 4.
 # Services are started in strict bottom-up dependency order with readiness probes.
@@ -28,7 +28,7 @@ wait_active() {
 
 start_svc() {
   local svc="$1" wait="${2:-30}"
-  log "Starting $svc …"
+  log "Starting $svc â€¦"
   systemctl start "$svc" || die "Failed to start $svc"
   # Oneshot services don't stay "active"; skip the probe for them
   case "$svc" in
@@ -63,7 +63,7 @@ db_endpoint_ready() {
 }
 
 # =============================================================================
-# LAYER 0 — Database (everything depends on it)
+# LAYER 0 â€” Database (everything depends on it)
 # =============================================================================
 log "--- Layer 0: Database"
 if db_endpoint_ready; then
@@ -71,7 +71,7 @@ if db_endpoint_ready; then
   systemctl reset-failed ctoa-db.service >/dev/null 2>&1 || true
 else
   if ! systemctl start ctoa-db.service; then
-    log "INFO: ctoa-db.service did not start cleanly; checking endpoint 127.0.0.1:5432 …"
+    log "INFO: ctoa-db.service did not start cleanly; checking endpoint 127.0.0.1:5432 â€¦"
     if db_endpoint_ready; then
       log "Existing DB endpoint is reachable. Continuing startup with external/already-running DB."
       systemctl reset-failed ctoa-db.service >/dev/null 2>&1 || true
@@ -84,13 +84,13 @@ else
 fi
 
 # =============================================================================
-# LAYER 1 — Core monitoring & health
+# LAYER 1 â€” Core monitoring & health
 # =============================================================================
 log "--- Layer 1: Health / monitoring"
 start_svc ctoa-health-live.service 20
 
 # =============================================================================
-# LAYER 2 — Mobile console  (auth token must refresh before agents use it)
+# LAYER 2 â€” Mobile console  (auth token must refresh before agents use it)
 # =============================================================================
 log "--- Layer 2: Mobile console"
 start_svc ctoa-mobile-console.service 20
@@ -98,40 +98,40 @@ start_svc ctoa-mobile-console.service 20
 start_optional_timer ctoa-mobile-token-rotation.timer mobile-token-rotation
 
 # =============================================================================
-# LAYER 3 — MythibIA news pipeline
+# LAYER 3 â€” Intel news pipeline
 # =============================================================================
-log "--- Layer 3: MythibIA news"
-start_svc ctoa-mythibia-news-api.service 30
-start_optional_timer ctoa-mythibia-news-watcher.timer mythibia-news-watcher
+log "--- Layer 3: Intel news"
+start_svc ctoa-intel-news-api.service 30
+start_optional_timer ctoa-intel-news-watcher.timer intel-news-watcher
 
 # =============================================================================
-# LAYER 4 — Core runner
+# LAYER 4 â€” Core runner
 # =============================================================================
 log "--- Layer 4: Core runner timer"
 systemctl start ctoa-runner.timer || die "Failed to start ctoa-runner.timer"
 log "ctoa-runner.timer armed."
 
 # =============================================================================
-# LAYER 5 — Reports & retention
+# LAYER 5 â€” Reports & retention
 # =============================================================================
 log "--- Layer 5: Reports and retention"
 start_optional_timer ctoa-report.timer ctoa-report
 start_optional_timer ctoa-retention-cleanup.timer ctoa-retention-cleanup
 
 # =============================================================================
-# LAYER 6 — Lab runner
+# LAYER 6 â€” Lab runner
 # =============================================================================
 log "--- Layer 6: Lab runner"
 start_optional_timer ctoa-lab-runner.timer ctoa-lab-runner
 
 # =============================================================================
-# LAYER 7 — Auto-trainer
+# LAYER 7 â€” Auto-trainer
 # =============================================================================
 log "--- Layer 7: Auto-trainer"
 start_optional_timer ctoa-auto-trainer.timer ctoa-auto-trainer
 
 # =============================================================================
-# LAYER 8 — Agents orchestrator  (last, depends on all layers above)
+# LAYER 8 â€” Agents orchestrator  (last, depends on all layers above)
 # =============================================================================
 log "--- Layer 8: Agents orchestrator"
 systemctl start ctoa-agents-orchestrator.timer || die "Failed to start ctoa-agents-orchestrator.timer"
@@ -145,3 +145,4 @@ log "Startup sequence complete."
 log "Active CTOA units:"
 systemctl list-units 'ctoa-*' --state=active --no-pager --no-legend 2>&1 | tee -a "$LOG"
 exit 0
+

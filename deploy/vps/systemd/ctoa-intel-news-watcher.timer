@@ -1,5 +1,5 @@
 [Unit]
-Description=Run CTOA Mythibia news watcher every 2 minutes
+Description=Run CTOA Intel news watcher every 2 minutes
 
 [Timer]
 OnBootSec=90s
@@ -9,3 +9,4 @@ RandomizedDelaySec=20s
 
 [Install]
 WantedBy=timers.target
+

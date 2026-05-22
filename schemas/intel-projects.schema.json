@@ -1,7 +1,7 @@
-{
+﻿{
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "./schemas/mythibia-projects.schema.json",
-  "title": "Mythibia Lab Tasks",
+  "$id": "./schemas/intel-projects.schema.json",
+  "title": "Intel Lab Tasks",
   "type": "object",
   "additionalProperties": false,
   "required": ["version", "backlog_id", "owner", "scope", "tasks"],

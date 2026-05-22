@@ -1,0 +1,6 @@
+# CTOA developer tooling (Sprint-0 integration pack)
+pre-commit>=3.7.0
+ruff>=0.5.0
+mypy>=1.10.0
+bandit>=1.7.9
+pip-audit>=2.7.3

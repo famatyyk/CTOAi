@@ -1,4 +1,38 @@
 services:
+  ctoa-db:
+    image: postgres:16-alpine
+    container_name: ctoa-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-ctoa}
+      POSTGRES_USER: ${DB_USER:-ctoa}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-ctoa}
+    volumes:
+      - ctoa_pgdata:/var/lib/postgresql/data
+      - ./deploy/vps/db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-ctoa} -d ${DB_NAME:-ctoa}"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+
+  ctoa-redis:
+    image: redis:7-alpine
+    container_name: ctoa-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "no"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - ctoa_redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 8
+
   ctoa:
     build:
       context: .
@@ -14,13 +48,115 @@ services:
       CTOA_ENV: dev
       CTOA_MOBILE_TOKEN: dev-token-change-me
       CTOA_MOBILE_FULL_ACCESS: "false"
+      CTOA_INTEL_API_EXPECTED: "true"
+      CTOA_INTEL_API_BASE_URL: http://host.docker.internal:8890
+      DB_HOST: ctoa-db
+      DB_PORT: "5432"
+      DB_NAME: ${DB_NAME:-ctoa}
+      DB_USER: ${DB_USER:-ctoa}
+      DB_PASSWORD: ${DB_PASSWORD:-ctoa}
+      CTOA_REDIS_URL: redis://ctoa-redis:6379/0
+      CTOA_REDIS_QUEUE: ctoa:jobs
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     command: python -m uvicorn mobile_console.app:app --host 0.0.0.0 --port 8787 --reload
     healthcheck:
       test: ["CMD", "python", "-c", "import os,urllib.request; t=os.getenv('CTOA_MOBILE_TOKEN',''); req=urllib.request.Request('http://127.0.0.1:8787/api/health', headers={'X-CTOA-Token': t}); urllib.request.urlopen(req, timeout=5)"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 15s
+      start_period: 20s
+    depends_on:
+      ctoa-db:
+        condition: service_healthy
+      ctoa-redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  ctoa-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ctoa-worker
+    command: python -m runner.queue_worker
+    volumes:
+      - ./:/opt/ctoa
+      - ./logs:/opt/ctoa/logs
+    environment:
+      CTOA_ENV: dev
+      CTOA_REDIS_URL: redis://ctoa-redis:6379/0
+      CTOA_REDIS_QUEUE: ctoa:jobs
+      CTOA_REDIS_RESULTS: ctoa:jobs:results
+    depends_on:
+      ctoa-redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import os;from redis import Redis;Redis.from_url(os.getenv("CTOA_REDIS_URL","redis://ctoa-redis:6379/0")).ping()
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  ctoa-prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: ctoa-prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+    volumes:
+      - ./deploy/local/observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ctoa_prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    depends_on:
+      ctoa:
+        condition: service_started
+    restart: unless-stopped
+
+  ctoa-loki:
+    image: grafana/loki:3.0.0
+    container_name: ctoa-loki
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ./deploy/local/observability/loki-config.yml:/etc/loki/local-config.yaml:ro
+      - ctoa_loki_data:/loki
+    ports:
+      - "3100:3100"
+    restart: unless-stopped
+
+  ctoa-promtail:
+    image: grafana/promtail:3.0.0
+    container_name: ctoa-promtail
+    command: -config.file=/etc/promtail/promtail-config.yml
+    volumes:
+      - ./deploy/local/observability/promtail-config.yml:/etc/promtail/promtail-config.yml:ro
+      - ./logs:/var/log/ctoa
+    depends_on:
+      ctoa-loki:
+        condition: service_started
+    restart: unless-stopped
+
+  ctoa-grafana:
+    image: grafana/grafana:11.1.3
+    container_name: ctoa-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - ctoa_grafana_data:/var/lib/grafana
+      - ./deploy/local/observability/grafana/provisioning:/etc/grafana/provisioning:ro
+    ports:
+      - "3000:3000"
+    depends_on:
+      ctoa-prometheus:
+        condition: service_started
+      ctoa-loki:
+        condition: service_started
     restart: unless-stopped
 
   ctoa-dev-shell:
@@ -37,3 +173,12 @@ services:
       CTOA_ENV: dev
     profiles:
       - dev
+
+volumes:
+  ctoa_pgdata:
+  ctoa_redisdata:
+  ctoa_prometheus_data:
+  ctoa_loki_data:
+  ctoa_grafana_data:
+
+

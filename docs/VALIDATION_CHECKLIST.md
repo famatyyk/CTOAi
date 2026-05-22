@@ -120,3 +120,21 @@ curl http://localhost:9999/health 2>/dev/null | jq .
 - [SETUP.md](../deploy/vps/SETUP.md) - VPS environment setup
 - [runner.py](../runner/runner.py) - Main orchestration logic
 
+
+## Sprint-0 Integration Validation
+
+### Full Local Stack
+- [ ] `CTOA: Sprint-0 Compose Up (Full Stack)` completed
+- [ ] `CTOA: Sprint-0 Alembic Upgrade Head` completed
+- [ ] `CTOA: Sprint-0 Enqueue Worker Tick` completed
+- [ ] `CTOA: Sprint-0 Validate Integration Pack` completed
+
+### Observability
+- [ ] Prometheus healthy: `http://127.0.0.1:9090/-/healthy`
+- [ ] Loki ready: `http://127.0.0.1:3100/ready`
+- [ ] Metrics exposed by app: `http://127.0.0.1:8787/metrics`
+
+### Worker + Queue
+- [ ] Redis queue accepts jobs (`scripts/ops/queue_enqueue_job.py`)
+- [ ] Worker processes `orchestrator.tick` jobs
+- [ ] Worker result list (`ctoa:jobs:results`) is populated

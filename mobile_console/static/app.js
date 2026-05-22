@@ -149,18 +149,18 @@ document.getElementById('healthLog').onclick = async () => {
   }
 };
 
-document.getElementById('mythibiaApiLog').onclick = async () => {
+document.getElementById('intelApiLog').onclick = async () => {
   try {
-    const data = await api('/api/logs?target=mythibia_api&lines=120');
+    const data = await api('/api/logs?target=intel_api&lines=120');
     statusOut.textContent = (data.stdout || '') + (data.stderr || '');
   } catch (e) {
     statusOut.textContent = String(e);
   }
 };
 
-document.getElementById('mythibiaWatcherLog').onclick = async () => {
+document.getElementById('intelWatcherLog').onclick = async () => {
   try {
-    const data = await api('/api/logs?target=mythibia_watcher&lines=120');
+    const data = await api('/api/logs?target=intel_watcher&lines=120');
     statusOut.textContent = (data.stdout || '') + (data.stderr || '');
   } catch (e) {
     statusOut.textContent = String(e);
@@ -256,7 +256,7 @@ document.getElementById('launchIntel').onclick = async () => {
   }
 };
 
-document.getElementById('mythibiaOneClick').onclick = async () => {
+document.getElementById('intelOneClick').onclick = async () => {
   const out = document.getElementById('agentStatusOut');
   try {
     const data = await api('/api/agents/execution/run', {
@@ -280,7 +280,7 @@ document.getElementById('mythibiaOneClick').onclick = async () => {
       files: names,
     }, null, 2);
   } catch (e) {
-    out.textContent = 'Mythibia one-click error: ' + String(e);
+    out.textContent = 'Intel one-click error: ' + String(e);
   }
 };
 
@@ -635,6 +635,7 @@ async function fetchAgentLog(target) {
 tokenInput.value = getToken();
 setRoleBadge('guest');
 void checkAuthAuto();
+
 
 
 
