@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 import os
 import re
 import shutil
@@ -12,6 +12,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from threading import Lock
 from typing import Any, Dict, List, Optional
+from urllib.error import HTTPError, URLError
+from urllib.request import urlopen
 
 from fastapi import Cookie, Depends, FastAPI, Header, HTTPException, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -19,6 +21,26 @@ from fastapi.responses import FileResponse
 from fastapi.responses import JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
+
+try:
+    import psycopg2
+except Exception:
+    psycopg2 = None
+
+try:
+    from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, REGISTRY, generate_latest
+except Exception:
+    CONTENT_TYPE_LATEST = "text/plain; version=0.0.4; charset=utf-8"
+    Counter = None
+    Histogram = None
+    REGISTRY = None
+
+    def generate_latest() -> bytes:
+        return b""
+try:
+    from redis import Redis
+except Exception:
+    Redis = None
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -35,7 +57,8 @@ SITE_INDEX_HTML = SITE_DIR / "index.html"
 LIVE_DASHBOARD_HTML = ROOT / "docs" / "site" / "live-dashboard.html"
 AUDIT_LOG = ROOT / "logs" / "mobile-console-audit.log"
 AUTO_TRAINER_DIR = Path(os.environ.get("CTOA_TRAINING_REPORT_DIR", str(ROOT / "runtime" / "training-reports")))
-GENERATED_DIR = Path(os.environ.get("CTOA_GENERATED_DIR", "/opt/ctoa/generated"))
+_DEFAULT_GENERATED_DIR = (ROOT / "runtime" / "generated") if os.name == "nt" else Path("/opt/ctoa/generated")
+GENERATED_DIR = Path(os.environ.get("CTOA_GENERATED_DIR", str(_DEFAULT_GENERATED_DIR)))
 GENERATED_MANIFESTS_DIR = GENERATED_DIR / "manifests"
 ADMIN_SETTINGS_FILE = Path(os.environ.get("CTOA_ADMIN_SETTINGS_FILE", str(ROOT / "runtime" / "admin-panel-settings.json")))
 IDEA_PARKING_FILE = Path(os.environ.get("CTOA_IDEA_PARKING_FILE", str(ROOT / "runtime" / "idea-parking.json")))
@@ -47,6 +70,165 @@ COMMAND_DICTIONARY_FILE = ROOT / "schemas" / "ctoa-command-dictionary.json"
 
 def _is_production_env() -> bool:
     return os.getenv("CTOA_ENV", "").strip().lower() in {"prod", "production"}
+
+
+def _is_windows_host() -> bool:
+    return os.name == "nt"
+
+
+def _command_exists(name: str) -> bool:
+    return shutil.which(name) is not None
+
+
+def _read_orchestrator_loop_pid() -> int | None:
+    pid_file = ROOT / "runtime" / "orchestrator-loop.pid"
+    if not pid_file.exists():
+        return None
+    try:
+        return int(pid_file.read_text(encoding="utf-8").strip())
+    except Exception:
+        return None
+
+
+def _windows_orchestrator_state() -> str:
+    pid = _read_orchestrator_loop_pid()
+    if not pid:
+        return "inactive"
+
+    try:
+        probe = subprocess.run(
+            ["tasklist", "/FI", f"PID eq {pid}"],
+            text=True,
+            capture_output=True,
+            timeout=4,
+        )
+    except Exception:
+        return "active"
+
+    output = f"{probe.stdout}\n{probe.stderr}"
+    return "active" if str(pid) in output else "stale"
+
+
+def _service_is_active(unit: str) -> str:
+    if _command_exists("systemctl"):
+        res = _run(f"systemctl is-active {unit}", timeout=5)
+        return res["stdout"].strip() or res["stderr"].strip() or "unknown"
+
+    if _is_windows_host() and "ctoa-agents-orchestrator" in unit:
+        state = _windows_orchestrator_state()
+        if unit.endswith(".timer"):
+            return "manual" if state == "active" else "inactive"
+        return state
+
+    return "unsupported"
+
+
+def _disk_probe() -> dict:
+    if _command_exists("df"):
+        return _run("df -h /", timeout=10)
+
+    try:
+        usage = shutil.disk_usage(ROOT)
+        payload = {
+            "path": str(ROOT),
+            "total_gb": round(usage.total / (1024 ** 3), 2),
+            "used_gb": round((usage.total - usage.free) / (1024 ** 3), 2),
+            "free_gb": round(usage.free / (1024 ** 3), 2),
+        }
+        return {
+            "code": 0,
+            "stdout": json.dumps(payload, ensure_ascii=True),
+            "stderr": "",
+        }
+    except Exception as exc:
+        return {"code": 1, "stdout": "", "stderr": str(exc)[:200]}
+
+
+def _lab_tasks_probe() -> dict:
+    task_file = ROOT / "labs" / "tasks" / "intel-projects.yaml"
+    if not task_file.exists():
+        return {"code": 0, "stdout": "LAB_TASKS_MISSING", "stderr": ""}
+
+    try:
+        text = task_file.read_text(encoding="utf-8")
+        rough_count = text.count("- id:")
+        return {
+            "code": 0,
+            "stdout": f"LAB_TASKS_PRESENT rough_count={rough_count}",
+            "stderr": "",
+        }
+    except Exception as exc:
+        return {"code": 1, "stdout": "", "stderr": str(exc)[:200]}
+
+
+def _intel_api_health_probe() -> dict:
+    url = "http://127.0.0.1:8890/health"
+    if _is_windows_host() and os.getenv("CTOA_INTEL_API_EXPECTED", "false").lower() not in {"1", "true", "yes", "on"}:
+        payload = {"ok": False, "url": url, "state": "not_configured_local"}
+        return {"code": 0, "stdout": json.dumps(payload, ensure_ascii=True), "stderr": ""}
+
+    payload: dict[str, Any] = {"ok": False, "url": url}
+    try:
+        with urlopen(url, timeout=5) as response:
+            body = response.read().decode("utf-8")
+            payload["status"] = int(getattr(response, "status", 200))
+            try:
+                payload["body"] = json.loads(body)
+            except Exception:
+                payload["body_raw"] = body[:800]
+            payload["ok"] = True
+    except HTTPError as exc:
+        payload["error"] = f"http_{exc.code}"
+    except URLError as exc:
+        payload["error"] = str(exc.reason)
+    except Exception as exc:
+        payload["error"] = str(exc)
+
+    code = 0 if payload.get("ok") else 1
+    return {
+        "code": code,
+        "stdout": json.dumps(payload, ensure_ascii=True),
+        "stderr": "" if code == 0 else str(payload.get("error", "probe_failed"))[:200],
+    }
+
+
+def _intel_api_proxy(path: str = "/api/intel/status", timeout: int = 5) -> dict[str, Any]:
+    suffix = path if path.startswith("/") else f"/{path}"
+    base_url = os.getenv("CTOA_INTEL_API_BASE_URL", "http://127.0.0.1:8890").strip().rstrip("/")
+    url = f"{base_url}{suffix}"
+
+    if _is_windows_host() and os.getenv("CTOA_INTEL_API_EXPECTED", "false").lower() not in {"1", "true", "yes", "on"}:
+        return {
+            "ok": False,
+            "url": url,
+            "path": suffix,
+            "state": "not_configured_local",
+        }
+
+    payload: dict[str, Any] = {
+        "ok": False,
+        "url": url,
+        "path": suffix,
+    }
+
+    try:
+        with urlopen(url, timeout=timeout) as response:
+            body = response.read().decode("utf-8")
+            payload["status"] = int(getattr(response, "status", 200))
+            try:
+                payload["body"] = json.loads(body)
+            except Exception:
+                payload["body_raw"] = body[:800]
+            payload["ok"] = True
+    except HTTPError as exc:
+        payload["status"] = int(exc.code)
+        payload["error"] = f"http_{exc.code}"
+    except URLError as exc:
+        payload["error"] = str(exc.reason)
+    except Exception as exc:
+        payload["error"] = str(exc)
+
+    return payload
 
 
 def _load_json_file(path: Path) -> dict[str, Any]:
@@ -105,6 +287,39 @@ def _mobile_console_enabled() -> bool:
 
 app = FastAPI(title="CTOA Mobile Console", version="1.0.0")
 
+_PROM_METRICS_ENABLED = Counter is not None and Histogram is not None
+
+
+def _prom_get_or_create_counter(name: str, documentation: str, labels: list[str]):
+    if not _PROM_METRICS_ENABLED:
+        return None
+    try:
+        return Counter(name, documentation, labels)
+    except ValueError:
+        registry_map = getattr(REGISTRY, "_names_to_collectors", {}) if REGISTRY is not None else {}
+        return registry_map.get(name) or registry_map.get(name.removesuffix("_total"))
+
+
+def _prom_get_or_create_histogram(name: str, documentation: str, labels: list[str]):
+    if not _PROM_METRICS_ENABLED:
+        return None
+    try:
+        return Histogram(name, documentation, labels)
+    except ValueError:
+        registry_map = getattr(REGISTRY, "_names_to_collectors", {}) if REGISTRY is not None else {}
+        return registry_map.get(name)
+
+
+HTTP_REQUEST_TOTAL = _prom_get_or_create_counter(
+    "ctoa_http_requests_total", "Total HTTP requests", ["method", "path", "status"]
+)
+HTTP_REQUEST_LATENCY_SECONDS = _prom_get_or_create_histogram(
+    "ctoa_http_request_duration_seconds", "HTTP request latency", ["method", "path"]
+)
+REDIS_URL = os.getenv("CTOA_REDIS_URL", "redis://127.0.0.1:6379/0")
+REDIS_QUEUE = os.getenv("CTOA_REDIS_QUEUE", "ctoa:jobs")
+REDIS_RESULTS = os.getenv("CTOA_REDIS_RESULTS", "ctoa:jobs:results")
+
 cors_origins = [o.strip() for o in os.getenv("CTOA_CORS_ORIGINS", "*").split(",") if o.strip()]
 if _is_production_env() and (not cors_origins or "*" in cors_origins):
     raise RuntimeError(
@@ -137,6 +352,24 @@ async def enforce_mobile_console_capability(request: Request, call_next):
         return PlainTextResponse(detail, status_code=403)
     return await call_next(request)
 
+@app.middleware("http")
+async def collect_http_metrics(request: Request, call_next):
+    if not _PROM_METRICS_ENABLED:
+        return await call_next(request)
+
+    started = time.perf_counter()
+    path = request.url.path
+    status = "500"
+    try:
+        response = await call_next(request)
+        status = str(getattr(response, "status_code", 500))
+        return response
+    finally:
+        elapsed = time.perf_counter() - started
+        if HTTP_REQUEST_TOTAL is not None:
+            HTTP_REQUEST_TOTAL.labels(request.method, path, status).inc()
+        if HTTP_REQUEST_LATENCY_SECONDS is not None:
+            HTTP_REQUEST_LATENCY_SECONDS.labels(request.method, path).observe(elapsed)
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 app.mount("/assets", StaticFiles(directory=str(SITE_ASSETS_DIR)), name="site-assets")
 
@@ -157,6 +390,11 @@ class IntelMissionRequest(BaseModel):
     trigger_now: bool = True
 
 
+
+
+class QueueJobRequest(BaseModel):
+    action: str = Field(default="orchestrator.tick", min_length=3, max_length=80, pattern=r"^[a-zA-Z0-9_.:-]+$")
+    payload: dict[str, Any] = Field(default_factory=dict)
 class AuthLoginRequest(BaseModel):
     username: str = Field(min_length=3, max_length=64)
     password: str = Field(min_length=8, max_length=256)
@@ -349,12 +587,12 @@ def _allowed_commands() -> List[str]:
         "systemctl status ctoa-runner.timer --no-pager -l",
         "systemctl status ctoa-report.timer --no-pager -l",
         "systemctl status ctoa-health-live.service --no-pager -l",
-        "systemctl status ctoa-mythibia-news-api.service --no-pager -l",
-        "systemctl status ctoa-mythibia-news-watcher.timer --no-pager -l",
+        "systemctl status ctoa-intel-news-api.service --no-pager -l",
+        "systemctl status ctoa-intel-news-watcher.timer --no-pager -l",
         "tail -n 80 /opt/ctoa/logs/runner.log",
         "tail -n 80 /opt/ctoa/logs/health-live.log",
-        "tail -n 80 /opt/ctoa/logs/mythibia-news-api.log",
-        "tail -n 80 /opt/ctoa/logs/mythibia-news-watcher.log",
+        "tail -n 80 /opt/ctoa/logs/intel-news-api.log",
+        "tail -n 80 /opt/ctoa/logs/intel-news-watcher.log",
         "cd /opt/ctoa; CTOA_BACKLOG_FILE=/opt/ctoa/workflows/backlog-sprint-004.yaml python3 runner/runner.py report",
         "cd /opt/ctoa; python3 runner/drift_checker.py",
         "df -h",
@@ -487,6 +725,10 @@ def require_owner(ctx: dict[str, Any] = Depends(require_operator)) -> dict[str, 
     return ctx
 
 
+def _slice_command_output(value: str) -> str:
+    return (value or "")[-20000:]
+
+
 def _run(cmd: str, timeout: int = 20, cwd: Optional[str] = None) -> dict:
     proc = subprocess.run(
         cmd,
@@ -498,9 +740,61 @@ def _run(cmd: str, timeout: int = 20, cwd: Optional[str] = None) -> dict:
     )
     return {
         "code": proc.returncode,
-        "stdout": proc.stdout[-20000:],
-        "stderr": proc.stderr[-20000:],
+        "stdout": _slice_command_output(proc.stdout),
+        "stderr": _slice_command_output(proc.stderr),
     }
+
+
+def _run_argv(
+    args: list[str],
+    timeout: int = 20,
+    cwd: Optional[str] = None,
+    env: Optional[dict[str, str]] = None,
+) -> dict:
+    merged_env = os.environ.copy()
+    if env:
+        merged_env.update(env)
+
+    proc = subprocess.run(
+        args,
+        text=True,
+        capture_output=True,
+        timeout=timeout,
+        cwd=cwd,
+        env=merged_env,
+    )
+    return {
+        "code": proc.returncode,
+        "stdout": _slice_command_output(proc.stdout),
+        "stderr": _slice_command_output(proc.stderr),
+    }
+
+
+def _trigger_orchestrator_start(timeout: int = 8) -> dict:
+    if _command_exists("systemctl"):
+        return _run("systemctl start --no-block ctoa-agents-orchestrator.service", timeout=timeout)
+
+    if _is_windows_host():
+        script_path = ROOT / "scripts" / "ops" / "orchestrator-loop.ps1"
+        if not script_path.exists():
+            return {"code": 1, "stdout": "", "stderr": f"Missing script: {script_path}"}
+
+        return _run_argv(
+            [
+                "powershell.exe",
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                str(script_path),
+                "-Action",
+                "start",
+            ],
+            timeout=max(timeout, 15),
+            cwd=str(ROOT),
+        )
+
+    return {"code": 1, "stdout": "", "stderr": "No orchestrator trigger available on this host"}
 
 
 def _audit(request: Request, command: str, code: int) -> None:
@@ -542,6 +836,11 @@ def live_dashboard() -> FileResponse:
     return FileResponse(str(LIVE_DASHBOARD_HTML), headers={"Cache-Control": "no-store"})
 
 
+@app.get("/metrics")
+def metrics() -> PlainTextResponse:
+    if not _PROM_METRICS_ENABLED:
+        raise HTTPException(status_code=503, detail="prometheus metrics disabled")
+    return PlainTextResponse(generate_latest().decode("utf-8"), media_type=CONTENT_TYPE_LATEST)
 @app.get("/api/health")
 def health(ctx: dict[str, Any] = Depends(require_operator)) -> dict:
     return {"ok": True, "full_access": _full_access(), "role": ctx["role"], "username": ctx["username"]}
@@ -551,7 +850,7 @@ def health(ctx: dict[str, Any] = Depends(require_operator)) -> dict:
 def auth_login(req: AuthLoginRequest, request: Request, response: Response) -> dict:
     username = _normalize_user(req.username)
 
-    # 1. Try env-based credentials (owner/operator hardcoded â€” backward compat).
+    # 1. Try env-based credentials (owner/operator hardcoded Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ă„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€ž backward compat).
     creds = _admin_credentials()
     account = creds.get(username)
     matched_role: str | None = None
@@ -653,7 +952,7 @@ def auth_register(req: SelfRegisterPayload, request: Request) -> dict:
     return {"ok": True, "account": result}
 
 
-# â”€â”€ User account management â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬ User account management Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬
 
 @app.post("/api/users/register")
 def register_account(
@@ -817,8 +1116,7 @@ def auth_auto_check(
         payload["role"] = ctx["role"]
         payload["auth_mode"] = ctx["auth_mode"]
     if valid:
-        timer = _run("systemctl is-active ctoa-agents-orchestrator.timer", timeout=5)
-        payload["orchestrator_timer"] = timer["stdout"].strip() or "unknown"
+        payload["orchestrator_timer"] = _service_is_active("ctoa-agents-orchestrator.timer")
     else:
         payload["hint"] = "Uzyj loginu /api/auth/login i przeslij Authorization: Bearer <token>"
     return payload
@@ -831,41 +1129,46 @@ def presets(ctx: dict[str, Any] = Depends(require_operator)) -> dict:
 
 @app.get("/api/status")
 def status(_: dict[str, Any] = Depends(require_operator)) -> dict:
-    checks = {
-        "runner_timer": "systemctl is-active ctoa-runner.timer",
-        "report_timer": "systemctl is-active ctoa-report.timer",
-        "health_service": "systemctl is-active ctoa-health-live.service",
-        "mythibia_watcher_timer": "systemctl is-active ctoa-mythibia-news-watcher.timer",
-        "mythibia_api_service": "systemctl is-active ctoa-mythibia-news-api.service",
+    out = {
+        "runner_timer": _service_is_active("ctoa-runner.timer"),
+        "report_timer": _service_is_active("ctoa-report.timer"),
+        "health_service": _service_is_active("ctoa-health-live.service"),
+        "intel_watcher_timer": _service_is_active("ctoa-intel-news-watcher.timer"),
+        "intel_api_service": _service_is_active("ctoa-intel-news-api.service"),
     }
-    out = {}
-    for key, cmd in checks.items():
-        res = _run(cmd, timeout=10)
-        out[key] = (res["stdout"].strip() or res["stderr"].strip() or "unknown")
 
-    disk = _run("df -h /", timeout=10)
-    report = _run(
-        "cd /opt/ctoa; CTOA_BACKLOG_FILE=/opt/ctoa/workflows/backlog-sprint-004.yaml python3 runner/runner.py report",
+    report = _run_argv(
+        [_sys.executable, "runner/runner.py", "report"],
         timeout=20,
+        cwd=str(ROOT),
+        env={"CTOA_BACKLOG_FILE": str(ROOT / "workflows" / "backlog-sprint-004.yaml")},
     )
-
-    lab_status = _run(
-        "python3 - << 'PY'\nimport yaml\nfrom pathlib import Path\np=Path('/opt/ctoa/labs/tasks/mythibia-projects.yaml')\nif not p.exists():\n print('LAB_TASKS_MISSING')\n raise SystemExit(0)\nd=yaml.safe_load(p.read_text(encoding='utf-8')) or {}\nt=d.get('tasks',[]) or []\ncounts={}\nfor x in t:\n s=x.get('status','UNKNOWN')\n counts[s]=counts.get(s,0)+1\nprint({'counts':counts,'tasks':[(x.get('id'),x.get('status')) for x in t]})\nPY",
-        timeout=20,
-    )
-
-    mythibia_health = _run(
-        "python3 - << 'PY'\nimport json\nfrom urllib.request import urlopen\nfrom urllib.error import URLError, HTTPError\nurl='http://127.0.0.1:8890/health'\nout={'ok': False, 'url': url}\ntry:\n with urlopen(url, timeout=5) as r:\n  body=r.read().decode('utf-8')\n  out['status']=r.status\n  out['body']=json.loads(body)\n  out['ok']=True\nexcept HTTPError as e:\n out['error']=f'http_{e.code}'\nexcept URLError as e:\n out['error']=str(e.reason)\nexcept Exception as e:\n out['error']=str(e)\nprint(out)\nPY",
-        timeout=10,
-    )
+    intel_api_health = _intel_api_health_probe()
+    intel_status_proxy = _intel_api_proxy("/api/intel/status")
 
     return {
         "services": out,
-        "disk": disk,
+        "disk": _disk_probe(),
         "report": report,
-        "lab": lab_status,
-        "mythibia_api_health": mythibia_health,
+        "lab": _lab_tasks_probe(),
+        "intel_api_health": intel_api_health,
+        "intel_status_proxy": intel_status_proxy,
     }
+
+
+@app.get("/api/intel/status")
+def intel_status_proxy(_: dict[str, Any] = Depends(require_operator)) -> dict:
+    return _intel_api_proxy("/api/intel/status")
+
+
+@app.get("/api/intel/state")
+def intel_state_proxy(_: dict[str, Any] = Depends(require_operator)) -> dict:
+    return _intel_api_proxy("/api/intel/state")
+
+
+@app.get("/api/intel/diff")
+def intel_diff_proxy(_: dict[str, Any] = Depends(require_operator)) -> dict:
+    return _intel_api_proxy("/api/intel/diff")
 
 
 @app.get("/api/admin/settings")
@@ -966,29 +1269,60 @@ def clear_ideas(
 def logs(
     target: str = Query(
         default="runner",
-        pattern="^(runner|health|report|mythibia_api|mythibia_watcher"
+        pattern="^(runner|health|report|intel_api|intel_watcher"
                 "|agent_orchestrator|agent_scout|agent_brain|agent_generator"
                 "|agent_validator|agent_publisher)$",
     ),
     lines: int = Query(default=120, ge=10, le=500),
     _: dict[str, Any] = Depends(require_operator),
 ) -> dict:
-    mapping = {
-        "runner":            "/opt/ctoa/logs/runner.log",
-        "health":            "/opt/ctoa/logs/health-live.log",
-        "report":            "/opt/ctoa/logs/runner.log",
-        "mythibia_api":      "/opt/ctoa/logs/mythibia-news-api.log",
-        "mythibia_watcher":  "/opt/ctoa/logs/mythibia-news-watcher.log",
-        "agent_orchestrator": "/opt/ctoa/logs/agents-orchestrator.log",
-        "agent_scout":       "/opt/ctoa/logs/agents-orchestrator.log",
-        "agent_brain":       "/opt/ctoa/logs/agents-orchestrator.log",
-        "agent_generator":   "/opt/ctoa/logs/agents-orchestrator.log",
-        "agent_validator":   "/opt/ctoa/logs/agents-orchestrator.log",
-        "agent_publisher":   "/opt/ctoa/logs/agents-orchestrator.log",
-    }
+    if _is_windows_host():
+        base_logs = ROOT / "logs"
+        mapping = {
+            "runner": base_logs / "runner.log",
+            "health": base_logs / "health-live.log",
+            "report": base_logs / "runner.log",
+            "intel_api": base_logs / "intel-news-api.log",
+            "intel_watcher": base_logs / "intel-news-watcher.log",
+            "agent_orchestrator": base_logs / "agents-orchestrator.log",
+            "agent_scout": base_logs / "agents-orchestrator.log",
+            "agent_brain": base_logs / "agents-orchestrator.log",
+            "agent_generator": base_logs / "agents-orchestrator.log",
+            "agent_validator": base_logs / "agents-orchestrator.log",
+            "agent_publisher": base_logs / "agents-orchestrator.log",
+        }
+    else:
+        mapping = {
+            "runner": Path("/opt/ctoa/logs/runner.log"),
+            "health": Path("/opt/ctoa/logs/health-live.log"),
+            "report": Path("/opt/ctoa/logs/runner.log"),
+            "intel_api": Path("/opt/ctoa/logs/intel-news-api.log"),
+            "intel_watcher": Path("/opt/ctoa/logs/intel-news-watcher.log"),
+            "agent_orchestrator": Path("/opt/ctoa/logs/agents-orchestrator.log"),
+            "agent_scout": Path("/opt/ctoa/logs/agents-orchestrator.log"),
+            "agent_brain": Path("/opt/ctoa/logs/agents-orchestrator.log"),
+            "agent_generator": Path("/opt/ctoa/logs/agents-orchestrator.log"),
+            "agent_validator": Path("/opt/ctoa/logs/agents-orchestrator.log"),
+            "agent_publisher": Path("/opt/ctoa/logs/agents-orchestrator.log"),
+        }
+
     path = mapping[target]
-    cmd = f"tail -n {lines} {path} 2>/dev/null || echo '(log not found)'"
-    return _run(cmd, timeout=10)
+
+    if _command_exists("tail"):
+        cmd = f"tail -n {lines} {path} 2>/dev/null || echo '(log not found)'"
+        return _run(cmd, timeout=10)
+
+    if not path.exists():
+        return {"code": 0, "stdout": "(log not found)", "stderr": ""}
+
+    try:
+        content = path.read_text(encoding="utf-8", errors="replace").splitlines()
+        tail = "\n".join(content[-lines:])
+        if tail:
+            tail += "\n"
+        return {"code": 0, "stdout": tail, "stderr": ""}
+    except Exception as exc:
+        return {"code": 1, "stdout": "", "stderr": str(exc)[:200]}
 
 
 @app.post("/api/command")
@@ -1008,7 +1342,7 @@ def command(req: CommandRequest, request: Request, _: dict[str, Any] = Depends(r
     return result
 
 
-# â”€â”€ Server registration â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬ Server registration Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬
 
 def _validate_url(url: str) -> str:
     """Normalise and basic-validate a game server URL."""
@@ -1019,28 +1353,121 @@ def _validate_url(url: str) -> str:
 
 
 def _db_exec(sql: str, params: tuple = (), timeout: int = 15) -> dict:
-    """Run a SQL statement via psql CLI (no psycopg2 needed on the mobile console host)."""
+    """Run SQL via psycopg2 first, then psql/docker fallbacks."""
     dsn = (
         f"postgresql://{os.getenv('DB_USER','ctoa')}:{os.getenv('DB_PASSWORD','')}"
         f"@{os.getenv('DB_HOST','127.0.0.1')}:{os.getenv('DB_PORT','5432')}"
         f"/{os.getenv('DB_NAME','ctoa')}"
     )
-    # Build parameterised SQL by simple positional substitution (values are quoted)
+
+    psycopg2_error = ""
+    if psycopg2 is not None:
+        try:
+            conn = psycopg2.connect(
+                dbname=os.getenv("DB_NAME", "ctoa"),
+                user=os.getenv("DB_USER", "ctoa"),
+                password=os.getenv("DB_PASSWORD", ""),
+                host=os.getenv("DB_HOST", "127.0.0.1"),
+                port=os.getenv("DB_PORT", "5432"),
+                connect_timeout=timeout,
+            )
+            conn.autocommit = True
+            try:
+                with conn.cursor() as cur:
+                    cur.execute(sql, params)
+                    if cur.description:
+                        rows = cur.fetchall()
+                        lines = ["|".join("" if v is None else str(v) for v in row) for row in rows]
+                        stdout = "\n".join(lines)
+                    else:
+                        stdout = ""
+                return {"code": 0, "stdout": stdout, "stderr": ""}
+            finally:
+                conn.close()
+        except Exception as exc:
+            psycopg2_error = f"psycopg2 error: {exc}"
+    else:
+        psycopg2_error = "psycopg2 unavailable"
+
     def quote(v: object) -> str:
         if v is None:
             return "NULL"
         return "'" + str(v).replace("'", "''") + "'"
 
-    # Replace %s placeholders sequentially
     filled = sql
     for p in params:
         filled = filled.replace("%s", quote(p), 1)
 
-    cmd = f"psql {dsn} -t -A -c {json.dumps(filled)}"
-    return _run(cmd, timeout=timeout)
+    if _command_exists("psql"):
+        cmd = f"psql \"{dsn}\" -t -A -c {json.dumps(filled)}"
+        return _run(cmd, timeout=timeout)
+
+    if _command_exists("docker"):
+        args = ["docker", "exec", "-i"]
+        db_password = os.getenv("DB_PASSWORD", "")
+        if db_password:
+            args.extend(["-e", f"PGPASSWORD={db_password}"])
+
+        args.extend(
+            [
+                "ctoa-db",
+                "psql",
+                "-U",
+                os.getenv("DB_USER", "ctoa"),
+                "-d",
+                os.getenv("DB_NAME", "ctoa"),
+                "-t",
+                "-A",
+                "-c",
+                filled,
+            ]
+        )
+        return _run_argv(args, timeout=timeout)
+
+    return {
+        "code": 1,
+        "stdout": "",
+        "stderr": f"{psycopg2_error}; no psql executable and docker fallback unavailable.",
+    }
 
 
-# â”€â”€ Bcrypt account helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+def _redis_client() -> Redis | None:
+    if Redis is None:
+        return None
+    try:
+        return Redis.from_url(REDIS_URL, decode_responses=True)
+    except Exception:
+        return None
+
+
+def _enqueue_worker_job(action: str, payload: dict[str, Any], requested_by: str) -> dict[str, Any]:
+    if action not in {"orchestrator.tick", "orchestrator.report"}:
+        return {"ok": False, "detail": f"Unsupported action: {action}"}
+
+    cli = _redis_client()
+    if cli is None:
+        return {"ok": False, "detail": "Redis unavailable or redis package missing"}
+
+    job = {
+        "id": f"job-{secrets.token_hex(6)}",
+        "action": action,
+        "payload": payload or {},
+        "requested_by": requested_by,
+        "requested_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    try:
+        cli.lpush(REDIS_QUEUE, json.dumps(job, ensure_ascii=True))
+        depth = int(cli.llen(REDIS_QUEUE))
+        return {
+            "ok": True,
+            "queue": REDIS_QUEUE,
+            "results": REDIS_RESULTS,
+            "depth": depth,
+            "job": job,
+        }
+    except Exception as exc:
+        return {"ok": False, "detail": f"Redis enqueue failed: {exc}"}
 
 def _hash_password(plaintext: str) -> str:
     return bcrypt.hashpw(plaintext.encode(), bcrypt.gensalt(rounds=12)).decode()
@@ -1336,10 +1763,7 @@ def server_register(
         raise HTTPException(status_code=503, detail=f"DB error: {res['stderr'][:200]}")
 
     # Trigger one-shot orchestrator run (background)
-    _run(
-        "systemctl start ctoa-agents-orchestrator.service",
-        timeout=5,
-    )
+    _trigger_orchestrator_start(timeout=5)
 
     _audit(request, f"server_register:{url}", 0)
     return {"ok": True, "url": url, "db": res["stdout"].strip()}
@@ -1359,7 +1783,7 @@ def _slug(url: str) -> str:
     return re.sub(r"[^a-z0-9]+", "_", url.lower().split("//")[-1])[:40]
 
 
-def _sync_mythibia_to_client(source_dir: Path) -> dict:
+def _sync_intel_to_client(source_dir: Path) -> dict:
     enabled = os.getenv("CTOA_CLIENT_SYNC_ENABLED", "false").lower() == "true"
     if not enabled:
         return {
@@ -1385,7 +1809,8 @@ def _sync_mythibia_to_client(source_dir: Path) -> dict:
 
     try:
         client_root = Path(client_scripts)
-        target_dir = client_root / "mythibia_online"
+        target_slug = os.getenv("CTOA_CLIENT_TARGET_SLUG", "intel_target").strip() or "intel_target"
+        target_dir = client_root / target_slug
         target_dir.mkdir(parents=True, exist_ok=True)
 
         copied: list[str] = []
@@ -1394,12 +1819,12 @@ def _sync_mythibia_to_client(source_dir: Path) -> dict:
             shutil.copy2(src, dst)
             copied.append(src.name)
 
-        autoload_name = os.getenv("CTOA_CLIENT_AUTOLOADER_NAME", "ctoa_mythibia_autoload.lua").strip()
+        autoload_name = os.getenv("CTOA_CLIENT_AUTOLOADER_NAME", "ctoa_intel_autoload.lua").strip()
         autoload_path = client_root / autoload_name
 
         target_posix = target_dir.as_posix()
         lines = [
-            "-- CTOA auto-generated mythibia autoloader",
+            "-- CTOA auto-generated intel autoloader",
             f"local BASE = \"{target_posix}\"",
             "",
         ]
@@ -1841,7 +2266,7 @@ def launch_intel_mission(
 
     trigger = {"code": 0, "stdout": "skipped", "stderr": ""}
     if req.trigger_now:
-        trigger = _run("systemctl start --no-block ctoa-agents-orchestrator.service", timeout=8)
+        trigger = _trigger_orchestrator_start(timeout=8)
 
     _audit(request, f"intel_launch:{len(sanitized)}", int(trigger.get("code", 0)))
     return {
@@ -1893,7 +2318,7 @@ def intel_report(_: dict[str, Any] = Depends(require_operator)) -> dict:
             trainer_actions.append("Podnies rygor promptu: edge-cases + negative tests + output contract")
             trainer_actions.append("Zwieksz nacisk na walidowalnosc i deterministyczne API modulow")
         elif avg_q < 92:
-            trainer_actions.append("DostrajaÄ‡ prompty pod stabilnosc i redukcje TODO/FIXME")
+            trainer_actions.append("DostrajaÄ‚â€žĂ˘â‚¬ĹˇÄ‚ËĂ˘â€šÂ¬ÄąÄľĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ä‚â€ąĂ˘â‚¬Ë‡ prompty pod stabilnosc i redukcje TODO/FIXME")
         else:
             trainer_actions.append("Tryb elite: utrzymanie jakosci i optymalizacja kosztu tokenow")
     else:
@@ -1948,27 +2373,40 @@ def auto_trainer_latest(_: dict[str, Any] = Depends(require_operator)) -> dict:
     }
 
 
+@app.post("/api/agents/execution/enqueue")
+def agent_execution_enqueue(
+    req: QueueJobRequest,
+    request: Request,
+    ctx: dict[str, Any] = Depends(require_owner),
+) -> dict:
+    requested_by = str(ctx.get("username", "unknown"))
+    queued = _enqueue_worker_job(req.action, req.payload, requested_by=requested_by)
+    if not queued.get("ok"):
+        raise HTTPException(status_code=503, detail=str(queued.get("detail", "Queue enqueue failed")))
+    _audit(request, f"execution_enqueue:{req.action}:by={requested_by}", 0)
+    return queued
+
 @app.post("/api/agents/execution/run")
-@app.post("/api/agents/mythibia/run")
+@app.post("/api/agents/intel/run")
 def agent_execution_one_click(request: Request, _: dict[str, Any] = Depends(require_owner)) -> dict:
-    mythibia_url = "https://mythibia.online"
+    target_url = _validate_url(os.getenv("CTOA_INTEL_TARGET_URL", "https://tibiantis.online"))
     res = _db_exec(
         "INSERT INTO servers (url, status) VALUES (%s, 'NEW') "
         "ON CONFLICT (url) DO UPDATE SET status='NEW', updated_at=now() "
         "RETURNING id, status",
-        (mythibia_url,),
+        (target_url,),
     )
     if res["code"] != 0:
         raise HTTPException(status_code=503, detail=f"DB error: {res['stderr'][:200]}")
 
-    trig = _run("systemctl start --no-block ctoa-agents-orchestrator.service", timeout=8)
+    trig = _trigger_orchestrator_start(timeout=8)
     if trig["code"] != 0:
         raise HTTPException(status_code=503, detail=f"Orchestrator error: {trig['stderr'][:200]}")
 
     # Give systemd one-shot a moment to produce outputs.
     time.sleep(3)
 
-    slug = _slug(mythibia_url)
+    slug = _slug(target_url)
     out_dir = GENERATED_DIR / slug
     files: list[dict] = []
     if out_dir.exists():
@@ -1987,10 +2425,10 @@ def agent_execution_one_click(request: Request, _: dict[str, Any] = Depends(requ
     srv_state = _db_exec(
         "SELECT id, url, status, game_type, coalesce(scout_error,'') "
         "FROM servers WHERE url=%s ORDER BY id DESC LIMIT 1",
-        (mythibia_url,),
+        (target_url,),
     )
 
-    sync = _sync_mythibia_to_client(out_dir)
+    sync = _sync_intel_to_client(out_dir)
 
     ready_for_publish = bool(files) or bool(manifest_summary and manifest_summary.get("generated_count", 0) > 0)
     warnings: list[str] = []
@@ -2047,7 +2485,7 @@ def agent_execution_one_click(request: Request, _: dict[str, Any] = Depends(requ
         "execution_status": execution_status,
         "reason_code": reason_code,
         "reason_code_taxonomy": REASON_CODE_TAXONOMY,
-        "url": mythibia_url,
+        "url": target_url,
         "generated_dir": str(out_dir),
         "files": files,
         "files_count": len(files),
@@ -2141,7 +2579,7 @@ def latest_generated_modules(
     }
 
 
-# â”€â”€ Dashboard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬ Dashboard Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬Ä‚â€žĂ˘â‚¬ĹˇÄ‚â€ąĂ‚ÂĂ„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„â€žĂ„â€šĂ‹ÂÄ‚ËĂ˘â€šÂ¬ÄąË‡Ä‚â€šĂ‚Â¬
 
 @app.get("/api/dashboard")
 def dashboard(_: dict[str, Any] = Depends(require_operator)) -> dict:
@@ -2332,18 +2770,33 @@ def agents_status(_: dict[str, Any] = Depends(require_operator)) -> dict:
     units = {
         "orchestrator": "ctoa-agents-orchestrator.service",
         "orchestrator_timer": "ctoa-agents-orchestrator.timer",
-        "db": "ctoa-db",  # docker container
+        "db": "ctoa-db",
     }
     out: dict[str, str] = {}
+
     for key, unit in units.items():
         if key == "db":
-            res = _run("docker inspect --format '{{.State.Status}}' ctoa-db 2>/dev/null || echo missing", timeout=5)
-            out[key] = res["stdout"].strip() or "unknown"
-        else:
-            res = _run(f"systemctl is-active {unit}", timeout=5)
-            out[key] = res["stdout"].strip() or "unknown"
+            if _command_exists("docker"):
+                inspect = _run_argv(
+                    ["docker", "inspect", "--format", "{{.State.Status}}", "ctoa-db"],
+                    timeout=5,
+                )
+                if inspect.get("code", 1) == 0:
+                    out[key] = inspect.get("stdout", "").strip() or "unknown"
+                else:
+                    combined = f"{inspect.get('stdout','')} {inspect.get('stderr','')}".lower()
+                    if "no such object" in combined:
+                        out[key] = "missing"
+                    else:
+                        probe = _db_exec("SELECT 1", timeout=5)
+                        out[key] = "reachable" if probe.get("code", 1) == 0 else "unreachable"
+            else:
+                probe = _db_exec("SELECT 1", timeout=5)
+                out[key] = "reachable" if probe.get("code", 1) == 0 else "missing"
+            continue
 
-    # Last agent run times from DB
+        out[key] = _service_is_active(unit)
+
     last_runs = _db_exec(
         "SELECT agent, status, finished_at FROM agent_runs ORDER BY id DESC LIMIT 12",
     )
@@ -2362,6 +2815,22 @@ def commands_dictionary(_: dict[str, Any] = Depends(require_operator)) -> dict:
         "count": len(commands),
         "commands": commands,
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

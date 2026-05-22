@@ -204,6 +204,31 @@
                                        }
                   },
                   {
+                      "label":  "CTOA: Core Guard Check",
+                      "type":  "shell",
+                      "command":  ".venv/Scripts/python.exe scripts/ops/core_guard.py --check",
+                      "isBackground":  false,
+                      "presentation":  {
+                                           "reveal":  "always",
+                                           "panel":  "dedicated"
+                                       }
+                  },
+                  {
+                      "label":  "CTOA: Release Gate OneShot",
+                      "dependsOrder":  "sequence",
+                      "dependsOn":  [
+                                        "CTOA: Run All Tests",
+                                        "CTOA: Sprint-047 Validate",
+                                        "CTOA: Launch Pack",
+                                        "CTOA: Core Guard Check"
+                                    ],
+                      "isBackground":  false,
+                      "presentation":  {
+                                           "reveal":  "always",
+                                           "panel":  "dedicated"
+                                       }
+                  },
+                  {
                       "label":  "CTOA: VPS Run Action",
                       "type":  "shell",
                       "command":  "powershell",
@@ -1167,7 +1192,7 @@
                                            "panel":  "dedicated"
                                        }
                   },
-                                    {
+                  {
                       "label":  "CTOA: Sprint-042 Validate",
                       "type":  "shell",
                       "command":  ".venv/Scripts/python.exe scripts/ops/sprint042_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-042-validation.json",
@@ -1383,6 +1408,126 @@
                                            "reveal":  "always",
                                            "panel":  "dedicated"
                                        }
+                  },
+                  {
+                      "label":  "CTOA: Sprint-0 Compose Up (Full Stack)",
+                      "type":  "shell",
+                      "command":  "docker compose up -d ctoa-db ctoa-redis ctoa ctoa-worker ctoa-prometheus ctoa-loki ctoa-promtail ctoa-grafana",
+                      "isBackground":  false,
+                      "presentation":  {
+                                           "reveal":  "always",
+                                           "panel":  "dedicated"
+                                       }
+                  },
+                  {
+                      "label":  "CTOA: Sprint-0 Compose Down (Full Stack)",
+                      "type":  "shell",
+                      "command":  "docker compose down",
+                      "isBackground":  false,
+                      "presentation":  {
+                                           "reveal":  "always",
+                                           "panel":  "dedicated"
+                                       }
+                  },
+                  {
+                      "label":  "CTOA: Sprint-0 Alembic Upgrade Head",
+                      "type":  "shell",
+                      "command":  ".venv/Scripts/python.exe -m alembic upgrade head",
+                      "isBackground":  false,
+                      "presentation":  {
+                                           "reveal":  "always",
+                                           "panel":  "dedicated"
+                                       }
+                  },
+                  {
+                      "label":  "CTOA: Sprint-0 Enqueue Worker Tick",
+                      "type":  "shell",
+                      "command":  ".venv/Scripts/python.exe scripts/ops/queue_enqueue_job.py --action orchestrator.tick",
+                      "isBackground":  false,
+                      "presentation":  {
+                                           "reveal":  "always",
+                                           "panel":  "dedicated"
+                                       }
+                  },
+                  {
+                      "label":  "CTOA: Sprint-0 Validate Integration Pack",
+                      "type":  "shell",
+                      "command":  "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/ops/sprint0_validate.ps1",
+                      "isBackground":  false,
+                      "presentation":  {
+                                           "reveal":  "always",
+                                           "panel":  "dedicated"
+                                       }
+                  },
+                  {
+                      "label":  "CTOA: LAB-003 API Serve (Local)",
+                      "type":  "shell",
+                      "command":  ".venv/Scripts/python.exe -m uvicorn labs.projects.intel_news_api.app:app --host 127.0.0.1 --port 8890",
+                      "isBackground":  true,
+                      "presentation":  {
+                                           "reveal":  "always",
+                                           "panel":  "dedicated"
+                                       }
+                  },
+                  {
+                      "label":  "CTOA: LAB-003 Watcher Tick (Local)",
+                      "type":  "shell",
+                      "command":  ".venv/Scripts/python.exe -m labs.projects.intel_news_watcher.watcher --print-json",
+                      "isBackground":  false,
+                      "presentation":  {
+                                           "reveal":  "always",
+                                           "panel":  "dedicated"
+                                       }
+                  },
+                  {
+                      "label":  "CTOA: LAB-003 Watcher Timer (Local)",
+                      "type":  "shell",
+                      "command":  "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/ops/lab003_watcher_timer.ps1 -IntervalSeconds 300",
+                      "isBackground":  true,
+                      "presentation":  {
+                                           "reveal":  "always",
+                                           "panel":  "dedicated"
+                                       }
+                  },
+                  {
+                      "label":  "CTOA: LAB-003 Mobile Proxy Smoke (Local)",
+                      "type":  "shell",
+                      "command":  "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/ops/lab003_mobile_proxy_smoke.ps1 -BaseUrl http://127.0.0.1:8787",
+                      "isBackground":  false,
+                      "presentation":  {
+                                           "reveal":  "always",
+                                           "panel":  "dedicated"
+                                       }
+                  },
+                  {
+                      "label":  "CTOA: LAB-003 Validate Bundle (Local)",
+                      "type":  "shell",
+                      "command":  "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/ops/lab003_validate_bundle.ps1 -BaseUrl http://127.0.0.1:8787",
+                      "isBackground":  false,
+                      "presentation":  {
+                                           "reveal":  "always",
+                                           "panel":  "dedicated"
+                                       }
+                  },
+                  {
+                      "label":  "CTOA: LAB-003 Shift Guard (10h)",
+                      "type":  "shell",
+                      "command":  "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/ops/lab003_shift_guard.ps1 -DurationHours 10 -IntervalMinutes 30 -BaseUrl http://127.0.0.1:8787",
+                      "isBackground":  true,
+                      "presentation":  {
+                                           "reveal":  "always",
+                                           "panel":  "dedicated"
+                                       }
+                  },
+                  {
+                      "label":  "CTOA: LAB-003 Shift Guard Smoke (30m, Webhook)",
+                      "type":  "shell",
+                      "command":  "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/ops/lab003_shift_smoke_webhook.ps1 -BaseUrl http://127.0.0.1:8787 -AlertOnEveryFailure",
+                      "isBackground":  true,
+                      "presentation":  {
+                                           "reveal":  "always",
+                                           "panel":  "dedicated"
+                                       }
                   }
               ],
     "inputs":  [
@@ -1407,7 +1552,4 @@
                    }
                ]
 }
-
-
-
 
