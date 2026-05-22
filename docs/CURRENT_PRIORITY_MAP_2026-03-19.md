@@ -11,6 +11,44 @@ It defines what is active, what is frozen, what matters most, and what can run i
 - Frozen lane: `EXP-002` stays archived unless explicitly reopened.
 - Support lane: CI guardrails are implemented and verified; no urgent new work unless regressions appear.
 
+## Operational Addendum - 2026-05-22 (PR-Only Mode)
+
+### Decision
+- Strict PR-only mode is active for all next steps.
+- Direct pushes to `main` are disallowed by team policy, except explicit incident-level recovery approved by God Mode and recorded in an incident note.
+
+### PR-Only Execution Rule
+1. Create branch from `main` (`feat/*`, `fix/*`, `chore/*`).
+2. Push branch only and open a PR to `main`.
+3. Keep required checks green (`Build Test Gate`, `PR Quality Report`, and sprint-specific gates when applicable).
+4. Resolve all review conversations before merge.
+5. Require at least one approving review.
+6. Merge through PR only; no local `git push origin main`.
+
+### What We Have (Verified)
+- Sprint-049 validator and Wave-1 chain are wired and executable locally.
+- `Build Test Gate` and `Approval Publish` flow have been executed to green on `main`.
+- Evidence artifacts exist for Sprint-048 and Sprint-049 wave runs.
+- Core guard checks and sprint validator checks are passing.
+
+### What We Do Not Have Yet
+- Hard technical enforcement that blocks direct pushes to `main` in every environment.
+- Mandatory `PR Quality Report` check consistently enforced before merge.
+- Unified PR template with evidence, rollback, and approval checklist.
+- Automated weekly audit for merges that bypass PR path.
+
+### What Must Be Tightened Now
+- Enforce branch protection with no bypass on `main` for normal operations.
+- Keep required checks explicit and stable: `Build Test Gate`, `PR Quality Report`, and active sprint gate.
+- Add CODEOWNERS coverage for governance-critical paths (`.github/workflows/`, `workflows/`, `scripts/ops/`).
+- Keep approval evidence attached to PR before merge decision.
+
+### What We Need Next
+- A short PR runbook for operators (branch naming, checklist, merge policy).
+- A tracked incident exception template for emergency direct-main recovery.
+- A lightweight compliance script that flags local attempts to push `main`.
+- A weekly governance report for PR-only adherence, bypass count, and unresolved thread count.
+
 ## Priority Levels
 
 ### P0 - Immediate Control And Safety
@@ -138,6 +176,7 @@ Open a new candidate only in the next cycle, with a clean hypothesis and explici
 ## Working Rule For Tomorrow
 - One primary lane at a time.
 - Maximum one secondary lane.
+- PR-only first: no direct pushes to main.
 - Everything else is either frozen, delegated, or explicitly parked.
 
 ## Tomorrow Morning
