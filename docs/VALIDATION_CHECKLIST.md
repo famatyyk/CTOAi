@@ -138,3 +138,14 @@ curl http://localhost:9999/health 2>/dev/null | jq .
 - [ ] Redis queue accepts jobs (`scripts/ops/queue_enqueue_job.py`)
 - [ ] Worker processes `orchestrator.tick` jobs
 - [ ] Worker result list (`ctoa:jobs:results`) is populated
+## Sprint-048 Release Gate OneShot (Default Pre-Push)
+
+Use this as the default local pre-push chain for Sprint-048 governance safety.
+
+- [x] `CTOA: Run All Tests` completed (non-e2e suite)
+- [x] `CTOA: Sprint-048 Validate` completed (`runtime/ci-artifacts/sprint-048-validation.json`)
+- [x] `CTOA: Launch Pack` gate completed (`launch_allowed`)
+- [x] `CTOA: Core Guard Check` completed (`core integrity check PASSED`)
+
+Reference one-shot task:
+- [x] `CTOA: Release Gate OneShot`
