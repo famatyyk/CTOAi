@@ -1,4 +1,4 @@
-# Sprint-049 Plan - 3 Day Execution Window
+﻿# Sprint-049 Plan - 3 Day Execution Window
 
 Status: IN_PROGRESS
 Theme: Mainline CI stabilization + approval workflow closure + Sprint-049 wave execution
@@ -24,19 +24,20 @@ Approval Publish operational path, and preparing the next reusable Wave-1 execut
 
 ## Initial 10-Agent Assignment
 
-- AGENT 1 STRATEGOS: sprint execution control and final sign-off sequencing.
-- AGENT 2 CORE ARCHITECT: validator/task chain boundaries and deterministic behavior.
-- AGENT 3 DATA ENGINEER: quality telemetry consistency.
-- AGENT 4 ML/AI BRAIN: regression watch on quality-focused checks.
-- AGENT 5 SECURITY GUARDIAN: guardrail enforcement and safe release behavior.
-- AGENT 6 GAME LOGIC EXPERT: scope discipline against non-sprint feature creep.
-- AGENT 7 CODE SMITH: minimal, auditable implementation diffs.
-- AGENT 8 QA TERMINATOR: gate execution and certification.
-- AGENT 9 DEVOPS MASTER: workflow closure and deployment approval path support.
-- AGENT 10 DOCUMENTATION SAGE: evidence links, closure memo, and handoff narrative.
+- AGENT 1 STRATEGOS: sprint execution control, escalation, Approval Publish closure, and sign-off timing.
+- AGENT 2 CORE ARCHITECT: task chain consistency and validator constraints for Sprint-049 gates.
+- AGENT 3 DATA ENGINEER: quality snapshot artifact semantics, telemetry consistency, and evidence integrity.
+- AGENT 4 ML/AI BRAIN: track regression risk in focused checks and gate transitions.
+- AGENT 5 SECURITY GUARDIAN: enforce secret-safe approval handling and release guardrails.
+- AGENT 6 GAME LOGIC EXPERT: maintain scope discipline against non-sprint feature creep.
+- AGENT 7 CODE SMITH: implement minimal, auditable sprint diffs for validator and workflow wiring.
+- AGENT 8 QA TERMINATOR: certify gate outcomes, including waiting-to-approved state flow.
+- AGENT 9 DEVOPS MASTER: ensure workflow run stability and deployment approval path reliability.
+- AGENT 10 DOCUMENTATION SAGE: maintain sprint narrative, evidence links, and Sprint-050 handoff clarity.
 
 ## Kickoff Closure Block
 
 - Delivered By: STRATEGOS + CORE ARCHITECT + DOCUMENTATION SAGE.
 - Verified: Sprint-049 backlog and flow are published.
 - God Mode Decision Required: Approve Wave-1 execution once CTOA-252/253/254 are green.
+
