@@ -1,0 +1,59 @@
+[
+  {
+    "eventTimestamp": "2026-05-23T09:14:02.000Z",
+    "submissionTimestamp": "2026-05-23T09:14:07.000Z",
+    "operationName": {
+      "value": "Microsoft.Authorization/roleAssignments/write",
+      "localizedValue": "Create role assignment"
+    },
+    "status": {
+      "value": "Succeeded",
+      "localizedValue": "Succeeded"
+    },
+    "subStatus": {
+      "value": "Created",
+      "localizedValue": "Created"
+    },
+    "resourceId": "/subscriptions/11111111-2222-3333-4444-555555555555/resourceGroups/rg-prod/providers/Microsoft.KeyVault/vaults/kv-prod-01",
+    "caller": "admin@contoso.com",
+    "correlationId": "5fa5e0f7-2d3a-4de0-b1e8-7f5bb2a98710"
+  },
+  {
+    "eventTimestamp": "2026-05-23T11:48:31.000Z",
+    "submissionTimestamp": "2026-05-23T11:48:35.000Z",
+    "operationName": {
+      "value": "Microsoft.Network/networkSecurityGroups/securityRules/delete",
+      "localizedValue": "Delete NSG security rule"
+    },
+    "status": {
+      "value": "Failed",
+      "localizedValue": "Failed"
+    },
+    "subStatus": {
+      "value": "Forbidden",
+      "localizedValue": "Forbidden"
+    },
+    "resourceId": "/subscriptions/11111111-2222-3333-4444-555555555555/resourceGroups/rg-net/providers/Microsoft.Network/networkSecurityGroups/nsg-app/securityRules/allow-ssh-temp",
+    "caller": "spn-deploy-prod",
+    "correlationId": "f3d5c7cb-c5c2-4e80-96bf-2bf3a89995d9"
+  },
+  {
+    "eventTimestamp": "2026-05-23T13:03:55.000Z",
+    "submissionTimestamp": "2026-05-23T13:04:01.000Z",
+    "operationName": {
+      "value": "Microsoft.Compute/virtualMachines/delete",
+      "localizedValue": "Delete virtual machine"
+    },
+    "status": {
+      "value": "Succeeded",
+      "localizedValue": "Succeeded"
+    },
+    "subStatus": {
+      "value": "OK",
+      "localizedValue": "OK"
+    },
+    "resourceId": "/subscriptions/11111111-2222-3333-4444-555555555555/resourceGroups/rg-app/providers/Microsoft.Compute/virtualMachines/vm-api-prod-02",
+    "caller": "automation@contoso.com",
+    "correlationId": "b49702c2-0123-4d38-83b3-0209f5098b44"
+  }
+]
