@@ -12,7 +12,7 @@ and auditable two-wave approvals.
 | Release Train | Sprint-041 closed -> Sprint-042 ACTIVE (Track C Continuation) |
 | Delivery Mode | STRATEGOS (guarded autonomy) |
 | Validation | `pytest` + sprint validators + CI gate chain |
-| Next Action | Sprint-042 Track C continuation - operator adoption, infra hardening, community readiness |
+| Next Action | operator adoption + infra hardening + community readiness |
 
 Primary governance sources:
 
