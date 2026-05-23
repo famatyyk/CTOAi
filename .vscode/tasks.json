@@ -1221,6 +1221,96 @@
         "reveal": "always",
         "panel": "dedicated"
       }
+    },
+    {
+      "label": "CTOA: Azure Alerts Pipeline (sample dry-run)",
+      "type": "shell",
+      "command": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/ops/azure-alerts-runner.ps1 -Action sample-dry-run",
+      "isBackground": false,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "options": {
+        "env": {
+          "CTOA_AZURE_ALERT_WEBHOOK_URL": "${env:CTOA_AZURE_ALERT_WEBHOOK_URL}",
+          "CTOA_AZURE_DISCORD_WEBHOOK_URL": "${env:CTOA_AZURE_DISCORD_WEBHOOK_URL}",
+          "CTOA_AZURE_INGEST_SECRET": "${env:CTOA_AZURE_INGEST_SECRET}"
+        }
+      }
+    },
+    {
+      "label": "CTOA: Azure Alerts Pipeline (file source)",
+      "type": "shell",
+      "command": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/ops/azure-alerts-runner.ps1 -Action file-source",
+      "isBackground": false,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "options": {
+        "env": {
+          "CTOA_AZURE_ALERT_WEBHOOK_URL": "${env:CTOA_AZURE_ALERT_WEBHOOK_URL}",
+          "CTOA_AZURE_DISCORD_WEBHOOK_URL": "${env:CTOA_AZURE_DISCORD_WEBHOOK_URL}",
+          "CTOA_AZURE_INGEST_SECRET": "${env:CTOA_AZURE_INGEST_SECRET}"
+        }
+      }
+    },
+    {
+      "label": "CTOA: Azure Alerts Webhook Listener",
+      "type": "shell",
+      "command": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/ops/azure-alerts-runner.ps1 -Action listener",
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": {
+          "regexp": "^$"
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "listener",
+          "endsPattern": "never-match-this"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false
+      },
+      "options": {
+        "env": {
+          "CTOA_AZURE_ALERT_WEBHOOK_URL": "${env:CTOA_AZURE_ALERT_WEBHOOK_URL}",
+          "CTOA_AZURE_INGEST_SECRET": "${env:CTOA_AZURE_INGEST_SECRET}",
+          "CTOA_AZURE_DISCORD_WEBHOOK_URL": "${env:CTOA_AZURE_DISCORD_WEBHOOK_URL}"
+        }
+      }
+    },
+    {
+      "label": "CTOA: Azure Alerts Pipeline (poll 60s)",
+      "type": "shell",
+      "command": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/ops/azure-alerts-runner.ps1 -Action poll",
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": {
+          "regexp": "^$"
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "Azure alert poller started",
+          "endsPattern": "never-match-this"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false
+      },
+      "options": {
+        "env": {
+          "CTOA_AZURE_ALERT_WEBHOOK_URL": "${env:CTOA_AZURE_ALERT_WEBHOOK_URL}",
+          "CTOA_AZURE_INGEST_SECRET": "${env:CTOA_AZURE_INGEST_SECRET}",
+          "CTOA_AZURE_DISCORD_WEBHOOK_URL": "${env:CTOA_AZURE_DISCORD_WEBHOOK_URL}"
+        }
+      }
     }
   ],
   "inputs": [
