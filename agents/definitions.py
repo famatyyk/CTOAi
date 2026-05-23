@@ -1,5 +1,5 @@
-"""
-Agent Framework - 10 Agent Definitions
+﻿"""
+Agent Framework - 11 Agent Definitions
 CTOA AI Toolkit agent descriptions and tool assignments
 """
 
@@ -132,6 +132,19 @@ AGENTS = {
         ],
         "assigned_tasks": [],  # Infrastructure-owned
         "tool_score_weight": {"efficacy": 0.3, "safety": 0.1, "cost": 0.1, "latency": 0.5}
+    },
+
+    "design-infra-lead": {
+        "name": "Design and Infrastructure Lead Agent",
+        "description": "Owns UX/UI system design, visual assets, and deployment-grade web/desktop infrastructure",
+        "capabilities": [
+            "design-system-architecture",
+            "frontend-ux-implementation",
+            "visual-asset-pipeline",
+            "infrastructure-hardening"
+        ],
+        "assigned_tasks": ["CTOA-011", "CTOA-012"],
+        "tool_score_weight": {"efficacy": 0.35, "safety": 0.25, "cost": 0.2, "latency": 0.2}
     }
 }
 
@@ -150,3 +163,4 @@ def get_agents_for_task(task_id):
         if task_id in config.get("assigned_tasks", []):
             agents.append(agent_id)
     return agents
+

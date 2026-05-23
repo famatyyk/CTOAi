@@ -1,0 +1,32 @@
+On branch main
+Your branch is behind 'origin/main' by 17 commits, and can be fast-forwarded.
+  (use "git pull" to update your local branch)
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   deploy/vps/rotate-mobile-token.sh
+	modified:   docs/VALIDATION_CHECKLIST.md
+	modified:   docs/runbook-disk-emergency.md
+	modified:   docs/site/live-dashboard.html
+	modified:   mobile_console/static/app.js
+	modified:   mobile_console/static/index.html
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	backups/
+	deploy/vps/backup-nightly.sh
+	docs/CONSISTENCY_REPORT.md
+	docs/history/sprints/SPRINT-043.md
+	docs/history/sprints/SPRINT-044.md
+	scripts/ops/ctoa-root-action.sh
+	workflows/backlog-sprint-042.yaml
+	workflows/backlog-sprint-043.yaml
+	workflows/backlog-sprint-044.yaml
+	workflows/backlog-sprint-045.yaml
+	workflows/sprint-042-delivery-flow.yaml
+	workflows/sprint-043-delivery-flow.yaml
+	workflows/sprint-044-delivery-flow.yaml
+	workflows/sprint-045-delivery-flow.yaml
+
+no changes added to commit (use "git add" and/or "git commit -a")

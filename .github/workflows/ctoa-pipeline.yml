@@ -258,6 +258,50 @@ jobs:
         run: |
           python scripts/ops/sprint040_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-040-validation.json
 
+      - name: Sprint-041 delivery gate
+        shell: bash
+        run: |
+          python scripts/ops/sprint041_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-041-validation.json
+
+      - name: Sprint-042 delivery gate
+        shell: bash
+        run: |
+          python scripts/ops/sprint042_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-042-validation.json
+      - name: Sprint-043 delivery gate
+        shell: bash
+        run: |
+          python scripts/ops/sprint043_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-043-validation.json
+
+      - name: Sprint-044 delivery gate
+        shell: bash
+        run: |
+          python scripts/ops/sprint044_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-044-validation.json
+
+      - name: Sprint-045 delivery gate
+        shell: bash
+        run: |
+          python scripts/ops/sprint045_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-045-validation.json
+
+      - name: Sprint-046 delivery gate
+        shell: bash
+        run: |
+          python scripts/ops/sprint046_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-046-validation.json
+
+      - name: Sprint-047 delivery gate
+        shell: bash
+        run: |
+          python scripts/ops/sprint047_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-047-validation.json
+
+      - name: Sprint-048 delivery gate
+        shell: bash
+        run: |
+          python scripts/ops/sprint048_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-048-validation.json
+
+      - name: Sprint-049 delivery gate
+        shell: bash
+        run: |
+          python scripts/ops/sprint049_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-049-validation.json
+
       - name: Python linting (flake8)
         shell: bash
         continue-on-error: true
@@ -308,6 +352,99 @@ jobs:
             runtime/ci-artifacts/sprint-028-validation.json
             runtime/ci-artifacts/nightly-stability-sprint-028-ci.json
             runtime/evidence/sprint-028/**
+          if-no-files-found: ignore
+
+      - name: Upload Sprint-042 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sprint-042-evidence
+          path: |
+            runtime/ci-artifacts/sprint-042-validation.json
+            runtime/ci-artifacts/sprint-042-wave1-run.log
+            runtime/evidence/sprint-042/**
+          if-no-files-found: ignore
+      - name: Upload Sprint-043 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sprint-043-evidence
+          path: |
+            runtime/ci-artifacts/sprint-043-validation.json
+            runtime/ci-artifacts/sprint-043-wave1-run.log
+            runtime/evidence/sprint-043/**
+          if-no-files-found: ignore
+
+      - name: Upload Sprint-044 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sprint-044-evidence
+          path: |
+            runtime/ci-artifacts/sprint-044-validation.json
+            runtime/ci-artifacts/sprint-044-wave1-run.log
+            runtime/ci-artifacts/sprint-044-regression.json
+            runtime/evidence/sprint-044/**
+          if-no-files-found: ignore
+
+      - name: Upload Sprint-045 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sprint-045-evidence
+          path: |
+            runtime/ci-artifacts/sprint-045-validation.json
+            runtime/ci-artifacts/sprint-045-wave1-run.log
+            docs/history/sprints/SPRINT-045-PROGRESS.md
+            runtime/evidence/sprint-045/**
+          if-no-files-found: ignore
+
+      - name: Upload Sprint-046 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sprint-046-evidence
+          path: |
+            runtime/ci-artifacts/sprint-046-validation.json
+            runtime/ci-artifacts/sprint-046-wave1-run.log
+            docs/history/sprints/SPRINT-046-PROGRESS.md
+            runtime/evidence/sprint-046/**
+          if-no-files-found: ignore
+
+      - name: Upload Sprint-047 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sprint-047-evidence
+          path: |
+            runtime/ci-artifacts/sprint-047-validation.json
+            runtime/ci-artifacts/sprint-047-wave1-run.log
+            docs/history/sprints/SPRINT-047-PROGRESS.md
+            runtime/evidence/sprint-047/**
+          if-no-files-found: ignore
+
+      - name: Upload Sprint-048 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sprint-048-evidence
+          path: |
+            runtime/ci-artifacts/sprint-048-validation.json
+            runtime/ci-artifacts/sprint-048-wave1-run.log
+            docs/history/sprints/SPRINT-048-PROGRESS.md
+            runtime/evidence/sprint-048/**
+          if-no-files-found: ignore
+
+      - name: Upload Sprint-049 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sprint-049-evidence
+          path: |
+            runtime/ci-artifacts/sprint-049-validation.json
+            runtime/ci-artifacts/sprint-049-wave1-run.log
+            docs/history/sprints/SPRINT-049-PROGRESS.md
+            runtime/evidence/sprint-049/**
           if-no-files-found: ignore
 
       - name: Enforce response guardrail gate
@@ -504,3 +641,7 @@ jobs:
 
       - name: Publish Marker
         run: echo "Owner approved. Artifact is ready for public use from main."
+
+
+
+

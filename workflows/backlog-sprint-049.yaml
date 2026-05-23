@@ -1,0 +1,111 @@
+version: 1
+backlog_id: sprint-049
+window_days: 3
+focus: "Mainline CI stabilization + approval workflow closure + Sprint-049 wave execution"
+owner: strategos
+
+rules:
+  max_parallel_tasks: 3
+  definition_of_done:
+    - implementation_created
+    - validation_passed
+    - evidence_recorded
+    - documentation_updated
+  release_policy:
+    - approval_required: true
+    - environment: production
+
+tasks:
+  - id: CTOA-251
+    title: "Open Sprint-049 kickoff baseline and scope lock"
+    priority: P0
+    type: governance
+    domain: [governance, planning, release]
+    assignees: [strategos, core-architect, documentation-sage]
+    estimate_hours: 2
+    deliverables:
+      - "workflows/backlog-sprint-049.yaml"
+      - "workflows/sprint-049-delivery-flow.yaml"
+      - "docs/history/sprints/SPRINT-049.md"
+    acceptance:
+      - "Sprint-049 backlog and flow are published"
+      - "Scope and gate expectations are explicit"
+      - "Kickoff decision checkpoint is documented"
+
+  - id: CTOA-252
+    title: "Wire Sprint-049 validator and local Wave-1 chain"
+    priority: P0
+    type: quality
+    domain: [ci, qa, automation]
+    assignees: [qa-terminator, core-architect]
+    estimate_hours: 3
+    deliverables:
+      - "scripts/ops/sprint049_validate.py"
+      - ".vscode/tasks.json"
+      - "runtime/ci-artifacts/sprint-049-validation.json"
+    acceptance:
+      - "Validator checks Sprint-049 files, hooks, pipeline, and task wiring"
+      - "Wave-1 chain executes tests + validate + launch gate"
+      - "Validation artifact path is wired in CI"
+
+  - id: CTOA-253
+    title: "Harden legacy sprint validator compatibility on mainline"
+    priority: P1
+    type: reliability
+    domain: [ci, governance, qa]
+    assignees: [qa-terminator, code-smith]
+    estimate_hours: 2
+    deliverables:
+      - "scripts/ops/sprint043_validate.py"
+      - "scripts/ops/sprint044_validate.py"
+      - "runtime/experiments/sprint-049/CTOA-253.md"
+    acceptance:
+      - "Legacy flow artifacts no longer crash sprint validators"
+      - "Main Build Test Gate remains stable"
+      - "Mitigation evidence is documented"
+
+  - id: CTOA-254
+    title: "Operationalize Approval Publish completion path"
+    priority: P1
+    type: governance
+    domain: [governance, release, ops]
+    assignees: [strategos, devops-master]
+    estimate_hours: 2
+    deliverables:
+      - "runtime/experiments/sprint-049/CTOA-254.md"
+      - "docs/VALIDATION_CHECKLIST.md"
+    acceptance:
+      - "Approval Publish waiting status is handled deterministically"
+      - "Operator run path is documented"
+      - "Post-build workflow closure is verified"
+
+  - id: CTOA-255
+    title: "Execute Sprint-049 Wave-1 and collect evidence"
+    priority: P1
+    type: governance
+    domain: [governance, qa, release]
+    assignees: [strategos, qa-terminator, documentation-sage]
+    estimate_hours: 3
+    deliverables:
+      - "runtime/ci-artifacts/sprint-049-wave1-run.log"
+      - "runtime/experiments/sprint-049/CTOA-255.md"
+      - "docs/history/sprints/SPRINT-049-PROGRESS.md"
+    acceptance:
+      - "Wave-1 chain completes with green gates"
+      - "Evidence links are complete"
+      - "Residual risk notes are explicit"
+
+  - id: CTOA-256
+    title: "Publish Sprint-049 sign-off and Sprint-050 handoff"
+    priority: P1
+    type: governance
+    domain: [governance, release, planning]
+    assignees: [strategos, documentation-sage]
+    estimate_hours: 2
+    deliverables:
+      - "docs/history/sprints/SPRINT-049.md"
+      - "runtime/experiments/sprint-049/CTOA-256.md"
+    acceptance:
+      - "Sign-off includes delivered scope and unresolved items"
+      - "Sprint-050 handoff recommendations are documented"
+      - "God Mode checkpoint is explicit"

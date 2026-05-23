@@ -1,0 +1,2096 @@
+diff --git a/deploy/vps/rotate-mobile-token.sh b/deploy/vps/rotate-mobile-token.sh
+old mode 100644
+new mode 100755
+diff --git a/docs/VALIDATION_CHECKLIST.md b/docs/VALIDATION_CHECKLIST.md
+index b1a3982..6807e95 100644
+--- a/docs/VALIDATION_CHECKLIST.md
++++ b/docs/VALIDATION_CHECKLIST.md
+@@ -1,15 +1,6 @@
+ # CTOA Systems Validation Checklist
+ 
+-**Last Updated:** 2026-03-12T20:05:12+00:00
+-
+-## Mobile QA Validation (2026-03-19)
+-
+-- [x] Menu and mobile layout readability/tap flow validated (Samsung Note 10+ class viewport)
+-- [x] Owner login via modal with API base validated
+-- [x] Owner settings save + persist-after-refresh validated
+-- [x] Parking Pomyslow add/remove and counter transitions validated
+-- [x] Operator restrictions validated (`showPrices` and `reset localStorage` controls disabled)
+-- [x] Overall mobile QA status: PASS
++**Last Updated:** 2026-05-15T00:00:00+00:00
+ 
+ ## Pre-Deployment Checks
+ 
+@@ -34,7 +25,7 @@
+ - [ ] Report generation successful
+ - [ ] GitHub API connectivity via PAT token
+ 
+-## Post-Deployment Checks  
++## Post-Deployment Checks
+ 
+ ### Service Health (after VPS deployment)
+ 
+diff --git a/docs/runbook-disk-emergency.md b/docs/runbook-disk-emergency.md
+index f356c29..3efc388 100644
+--- a/docs/runbook-disk-emergency.md
++++ b/docs/runbook-disk-emergency.md
+@@ -1,6 +1,6 @@
+ # Emergency Disk Response Runbook
+ 
+-**Last Updated:** 2026-03-12T20:05:12+00:00
++**Last Updated:** 2026-05-15T00:00:00+00:00
+ 
+ ## Overview
+ This runbook guides emergency disk space management for CTOA VPS.
+diff --git a/docs/site/live-dashboard.html b/docs/site/live-dashboard.html
+index c86495c..baef72f 100644
+--- a/docs/site/live-dashboard.html
++++ b/docs/site/live-dashboard.html
+@@ -1,4 +1,4 @@
+-﻿<!doctype html>
++<!doctype html>
+ <html lang="pl">
+   <head>
+     <meta charset="UTF-8" />
+@@ -40,6 +40,44 @@
+         display: flex;
+         gap: 8px;
+         align-items: center;
++        flex-wrap: wrap;
++        justify-content: flex-end;
++      }
++      .auth-block {
++        display: flex;
++        gap: 8px;
++        align-items: center;
++      }
++      .auth-hidden {
++        display: none !important;
++      }
++      .session-pill {
++        border: 1px solid var(--line);
++        border-radius: 999px;
++        background: rgba(47, 196, 122, 0.14);
++        color: var(--txt);
++        font-size: 12px;
++        padding: 7px 11px;
++        white-space: nowrap;
++      }
++      .quick-nav {
++        margin: 0 0 14px;
++        display: flex;
++        flex-wrap: wrap;
++        gap: 8px;
++      }
++      .quick-nav a {
++        text-decoration: none;
++        color: var(--txt);
++        border: 1px solid var(--line);
++        background: rgba(24, 36, 48, 0.9);
++        border-radius: 999px;
++        padding: 6px 12px;
++        font-size: 12px;
++      }
++      .quick-nav a.active {
++        background: rgba(47, 128, 237, 0.25);
++        border-color: #2f80ed;
+       }
+       input {
+         background: var(--panel);
+@@ -198,13 +236,23 @@
+         </div>
+         <div class="controls">
+           <input id="apiBase" type="text" placeholder="http://127.0.0.1:8787" />
+-          <input id="username" type="text" placeholder="login" />
+-          <input id="password" type="password" placeholder="haslo" />
+-          <button id="loginBtn">Zaloguj</button>
+-          <button id="logoutBtn">Wyloguj</button>
++          <div id="guestAuth" class="auth-block">
++            <input id="username" type="text" placeholder="login" />
++            <input id="password" type="password" placeholder="haslo" />
++            <button id="loginBtn">Zaloguj</button>
++          </div>
++          <div id="userAuth" class="auth-block auth-hidden">
++            <span id="sessionBadge" class="session-pill">Brak aktywnej sesji</span>
++          </div>
++          <button id="logoutBtn" class="auth-hidden">Wyloguj</button>
+         </div>
+       </div>
+       <p id="connStatus" class="sub">Brak aktywnej sesji.</p>
++      <nav class="quick-nav" aria-label="Szybka nawigacja">
++        <a href="/">Start</a>
++        <a href="/console">Console</a>
++        <a href="/live-dashboard" class="active">Live Dashboard</a>
++      </nav>
+ 
+       <div class="grid">
+         <section class="card kpi">
+@@ -291,8 +339,48 @@
+     </div>
+ 
+     <script>
++      function stripTrailingSlash(value) {
++        return String(value || "").trim().replace(/\/$/, "");
++      }
++
++      function isLoopbackHost(hostname) {
++        const host = String(hostname || "").toLowerCase();
++        return host === "127.0.0.1" || host === "localhost";
++      }
++
++      function normalizeApiBase(value) {
++        const normalized = stripTrailingSlash(value);
++        if (!normalized) return "";
++
++        let parsed;
++        try {
++          parsed = new URL(normalized);
++        } catch (_err) {
++          return normalized;
++        }
++
++        try {
++          const pageUrl = new URL(window.location.href);
++          if (isLoopbackHost(parsed.hostname) && !isLoopbackHost(pageUrl.hostname)) {
++            return stripTrailingSlash(pageUrl.origin);
++          }
++        } catch (_err) {
++          // Keep user-provided value when page URL is unavailable.
++        }
++
++        return normalized;
++      }
++
++      const inferredApiBase = (() => {
++        try {
++          return stripTrailingSlash(window.location.origin);
++        } catch (_err) {
++          return "";
++        }
++      })();
++
+       const state = {
+-        apiBase: localStorage.getItem("ctoa_live_api") || "http://127.0.0.1:8787",
++        apiBase: normalizeApiBase(localStorage.getItem("ctoa_live_api") || inferredApiBase || "http://127.0.0.1:8787"),
+         token: sessionStorage.getItem("ctoa_live_token") || "",
+         username: localStorage.getItem("ctoa_live_username") || "",
+         role: sessionStorage.getItem("ctoa_live_role") || "",
+@@ -306,6 +394,9 @@
+         password: document.getElementById("password"),
+         loginBtn: document.getElementById("loginBtn"),
+         logoutBtn: document.getElementById("logoutBtn"),
++        guestAuth: document.getElementById("guestAuth"),
++        userAuth: document.getElementById("userAuth"),
++        sessionBadge: document.getElementById("sessionBadge"),
+         connStatus: document.getElementById("connStatus"),
+         percent: document.getElementById("percent"),
+         progressBar: document.getElementById("progressBar"),
+@@ -330,12 +421,36 @@
+       };
+ 
+       el.apiBase.value = state.apiBase;
++      localStorage.setItem("ctoa_live_api", state.apiBase);
+       el.username.value = state.username;
++      renderAuthControls();
+ 
+       function setStatus(msg) {
+         el.connStatus.textContent = msg;
+       }
+ 
++      function renderAuthControls() {
++        const loggedIn = Boolean(state.token);
++        if (el.guestAuth) {
++          el.guestAuth.classList.toggle("auth-hidden", loggedIn);
++        }
++        if (el.userAuth) {
++          el.userAuth.classList.toggle("auth-hidden", !loggedIn);
++        }
++        if (el.logoutBtn) {
++          el.logoutBtn.classList.toggle("auth-hidden", !loggedIn);
++        }
++        if (el.sessionBadge) {
++          if (loggedIn) {
++            const who = state.username || "uzytkownik";
++            const role = state.role || "operator";
++            el.sessionBadge.textContent = `Sesja: ${who} (${role})`;
++          } else {
++            el.sessionBadge.textContent = "Brak aktywnej sesji";
++          }
++        }
++      }
++
+       function toggleAccountsPanel() {
+         el.accountsMgmt.style.display = state.role === "owner" ? "" : "none";
+       }
+@@ -449,10 +564,15 @@
+           sessionStorage.removeItem("ctoa_live_role");
+         }
+         toggleAccountsPanel();
++        renderAuthControls();
+       }
+ 
+       function saveApiBase() {
+-        state.apiBase = (el.apiBase.value || "").trim().replace(/\/$/, "");
++        state.apiBase = normalizeApiBase(el.apiBase.value);
++        if (!state.apiBase) {
++          state.apiBase = inferredApiBase || "http://127.0.0.1:8787";
++        }
++        el.apiBase.value = state.apiBase;
+         localStorage.setItem("ctoa_live_api", state.apiBase);
+       }
+ 
+@@ -484,7 +604,7 @@
+ 
+         const p = payload.profile;
+         if (p.api_base) {
+-          state.apiBase = String(p.api_base).trim().replace(/\/$/, "");
++          state.apiBase = normalizeApiBase(p.api_base);
+           el.apiBase.value = state.apiBase;
+           localStorage.setItem("ctoa_live_api", state.apiBase);
+         }
+@@ -531,12 +651,28 @@
+         });
+         el.password.value = "";
+ 
+-        await loadProfile();
+-        await saveProfile();
+-        if (state.role === "owner") { await loadAccounts(); }
+-        setStatus(`Polaczono jako ${state.username} (${state.role}).`);
+-        // Main console is the default working page after login.
+-        window.location.href = "/";
++        let profileError = "";
++        try {
++          await loadProfile();
++          await saveProfile();
++        } catch (e) {
++          profileError = String(e && (e.message || e));
++          console.warn("Profile sync unavailable:", profileError);
++        }
++        if (state.role === "owner") {
++          try {
++            await loadAccounts();
++          } catch (e) {
++            console.warn("Accounts list unavailable:", e);
++          }
++        }
++        if (profileError) {
++          setStatus(`Polaczono jako ${state.username} (${state.role}). Profil chwilowo niedostepny: ${profileError}`);
++        } else {
++          setStatus(`Polaczono jako ${state.username} (${state.role}).`);
++        }
++        // Stay on live dashboard after login to avoid cross-surface re-auth.
++        return;
+       }
+ 
+       async function logout() {
+@@ -762,6 +898,8 @@
+           ev.preventDefault();
+           try {
+             await login();
++            startPolling();
++            await refresh();
+           } catch (e) {
+             setStatus(`Blad logowania: ${e.message || e}`);
+           }
+@@ -782,10 +920,24 @@
+               username: String(me.username || state.username || ""),
+               role: String(me.role || state.role || "operator"),
+             });
+-            await loadProfile();
+-            if (state.role === "owner") { await loadAccounts(); }
++            try {
++              await loadProfile();
++            } catch (e) {
++              console.warn("Profile restore unavailable:", e);
++            }
++            if (state.role === "owner") {
++              try {
++                await loadAccounts();
++              } catch (e) {
++                console.warn("Accounts restore unavailable:", e);
++              }
++            }
+             setStatus(`Polaczono jako ${state.username} (${state.role}).`);
+-            await refresh();
++            try {
++              await refresh();
++            } catch (e) {
++              console.warn("Initial refresh failed:", e);
++            }
+           } catch (_e) {
+             await logout();
+           }
+@@ -797,3 +949,8 @@
+   </body>
+ </html>
+ 
++
++
++
++
++
+diff --git a/mobile_console/static/app.js b/mobile_console/static/app.js
+index 6cbb097..23e1ef6 100644
+--- a/mobile_console/static/app.js
++++ b/mobile_console/static/app.js
+@@ -1,640 +1,640 @@
+-﻿const tokenInput = document.getElementById('token');
+-const statusOut = document.getElementById('statusOut');
+-const cmdOut = document.getElementById('cmdOut');
+-const presetSelect = document.getElementById('presetSelect');
+-const authState = document.getElementById('authState');
+-const ownerLiveDashboardBtn = document.getElementById('ownerLiveDashboardBtn');
+-const roleBadge = document.getElementById('roleBadge');
+-
+-function getToken() {
+-  return localStorage.getItem('ctoa_mobile_token') || '';
+-}
+-
+-function getSessionToken() {
+-  return sessionStorage.getItem('ctoa_live_token') || sessionStorage.getItem('ctoa_admin_api_token_v1') || '';
+-}
+-
+-function setToken(token) {
+-  localStorage.setItem('ctoa_mobile_token', token);
+-}
+-
+-async function api(path, options = {}) {
+-  const token = getToken();
+-  const sessionToken = getSessionToken();
+-  const headers = {
+-    'Content-Type': 'application/json',
+-    ...(options.headers || {}),
+-  };
+-  if (token) {
+-    headers['X-CTOA-Token'] = token;
+-  } else if (sessionToken) {
+-    headers.Authorization = `Bearer ${sessionToken}`;
+-  }
+-  const requestInit = { ...options, headers, credentials: 'include' };
+-  const res = await fetch(path, requestInit);
+-  const data = await res.json();
+-  if (!res.ok) throw new Error(data.detail || JSON.stringify(data));
+-  return data;
+-}
+-
+-async function refreshOwnerUi() {
+-  if (!ownerLiveDashboardBtn) return;
+-  ownerLiveDashboardBtn.style.display = 'none';
+-  try {
+-    const me = await api('/api/auth/me');
+-    const role = String(me.role || '').toLowerCase();
+-    setRoleBadge(role || 'guest');
+-    if (role === 'owner') {
+-      ownerLiveDashboardBtn.style.display = 'inline-block';
+-    }
+-  } catch (_e) {
+-    setRoleBadge('guest');
+-    ownerLiveDashboardBtn.style.display = 'none';
+-  }
+-}
+-
+-function applyRoleState(role) {
+-  const normalized = String(role || 'guest').toLowerCase();
+-  setRoleBadge(normalized);
+-  if (ownerLiveDashboardBtn) {
+-    ownerLiveDashboardBtn.style.display = normalized === 'owner' ? 'inline-block' : 'none';
+-  }
+-}
+-
+-function setRoleBadge(role) {
+-  if (!roleBadge) return;
+-  const normalized = String(role || 'guest').toLowerCase();
+-  const knownRole = normalized === 'owner' || normalized === 'operator' ? normalized : 'guest';
+-  roleBadge.textContent = knownRole;
+-  roleBadge.className = `role-badge role-${knownRole}`;
+-}
+-
+-document.getElementById('saveToken').onclick = () => {
+-  setToken(tokenInput.value.trim());
+-  alert('Token zapisany');
+-  void checkAuthAuto();
+-};
+-
+-tokenInput.addEventListener('keydown', (ev) => {
+-  if (ev.key === 'Enter') {
+-    ev.preventDefault();
+-    document.getElementById('saveToken').click();
+-  }
+-});
+-
+-async function checkAuthAuto() {
+-  try {
+-    const data = await api('/api/auth/auto-check');
+-    if (data.token_valid) {
+-      const authMode = getToken() ? 'legacy-token' : (getSessionToken() ? 'session' : 'unknown');
+-      authState.textContent = `Auth OK (${authMode}) | full_access=${data.full_access} | orchestrator_timer=${data.orchestrator_timer || 'unknown'}`;
+-      authState.style.color = '#7fff7f';
+-      applyRoleState(data.role || 'guest');
+-      await refreshOwnerUi();
+-    } else {
+-      authState.textContent = 'Token NIEPOPRAWNY: zapisz aktualny CTOA_MOBILE_TOKEN';
+-      authState.style.color = '#ff9999';
+-      applyRoleState('guest');
+-    }
+-  } catch (e) {
+-    authState.textContent = 'Auto-check blad: ' + String(e);
+-    authState.style.color = '#ff9999';
+-    applyRoleState('guest');
+-  }
+-}
+-
+-document.getElementById('autoCheckToken').onclick = async () => {
+-  await checkAuthAuto();
+-};
+-
+-document.getElementById('refreshStatus').onclick = async () => {
+-  try {
+-    const [statusData, dictionaryData] = await Promise.all([
+-      api('/api/status'),
+-      api('/api/commands/dictionary').catch(() => null),
+-    ]);
+-
+-    const view = {
+-      ...statusData,
+-      command_dictionary: dictionaryData
+-        ? {
+-            version: dictionaryData.version,
+-            source: dictionaryData.source,
+-            count: dictionaryData.count,
+-          }
+-        : null,
+-    };
+-
+-    statusOut.textContent = JSON.stringify(view, null, 2);
+-  } catch (e) {
+-    statusOut.textContent = String(e);
+-  }
+-};
+-
+-document.getElementById('runnerLog').onclick = async () => {
+-  try {
+-    const data = await api('/api/logs?target=runner&lines=120');
+-    statusOut.textContent = (data.stdout || '') + (data.stderr || '');
+-  } catch (e) {
+-    statusOut.textContent = String(e);
+-  }
+-};
+-
+-document.getElementById('healthLog').onclick = async () => {
+-  try {
+-    const data = await api('/api/logs?target=health&lines=120');
+-    statusOut.textContent = (data.stdout || '') + (data.stderr || '');
+-  } catch (e) {
+-    statusOut.textContent = String(e);
+-  }
+-};
+-
+-document.getElementById('mythibiaApiLog').onclick = async () => {
+-  try {
+-    const data = await api('/api/logs?target=mythibia_api&lines=120');
+-    statusOut.textContent = (data.stdout || '') + (data.stderr || '');
+-  } catch (e) {
+-    statusOut.textContent = String(e);
+-  }
+-};
+-
+-document.getElementById('mythibiaWatcherLog').onclick = async () => {
+-  try {
+-    const data = await api('/api/logs?target=mythibia_watcher&lines=120');
+-    statusOut.textContent = (data.stdout || '') + (data.stderr || '');
+-  } catch (e) {
+-    statusOut.textContent = String(e);
+-  }
+-};
+-
+-document.getElementById('loadPresets').onclick = async () => {
+-  try {
+-    const data = await api('/api/presets');
+-    presetSelect.innerHTML = '';
+-    data.commands.forEach((cmd) => {
+-      const opt = document.createElement('option');
+-      opt.textContent = cmd;
+-      opt.value = cmd;
+-      presetSelect.appendChild(opt);
+-    });
+-  } catch (e) {
+-    cmdOut.textContent = String(e);
+-  }
+-};
+-
+-document.getElementById('runPreset').onclick = async () => {
+-  const cmd = presetSelect.value;
+-  if (!cmd) return;
+-  try {
+-    const data = await api('/api/command', {
+-      method: 'POST',
+-      body: JSON.stringify({ command: cmd, timeout: 30 }),
+-    });
+-    cmdOut.textContent = (data.stdout || '') + (data.stderr || '');
+-  } catch (e) {
+-    cmdOut.textContent = String(e);
+-  }
+-};
+-
+-document.getElementById('runCmd').onclick = async () => {
+-  const cmd = document.getElementById('cmd').value.trim();
+-  if (!cmd) return;
+-  try {
+-    const data = await api('/api/command', {
+-      method: 'POST',
+-      body: JSON.stringify({ command: cmd, timeout: 60 }),
+-    });
+-    cmdOut.textContent = (data.stdout || '') + (data.stderr || '');
+-  } catch (e) {
+-    cmdOut.textContent = String(e);
+-  }
+-};
+-
+-// â”€â”€ Tab navigation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+-document.querySelectorAll('.tab-btn').forEach((btn) => {
+-  btn.addEventListener('click', () => {
+-    document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active'));
+-    document.querySelectorAll('.tab-panel').forEach((p) => p.classList.remove('active'));
+-    btn.classList.add('active');
+-    document.getElementById(btn.dataset.tab).classList.add('active');
+-  });
+-});
+-
+-// â”€â”€ Server registration â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+-document.getElementById('registerServer').onclick = async () => {
+-  const url = document.getElementById('serverUrl').value.trim();
+-  const fb  = document.getElementById('serverFeedback');
+-  if (!url) { fb.className = 'error'; fb.textContent = 'Podaj URL serwera'; return; }
+-  try {
+-    const data = await api('/api/server/register', {
+-      method: 'POST',
+-      body: JSON.stringify({ url }),
+-    });
+-    fb.className = 'ok';
+-    fb.textContent = 'âś“ Serwer zarejestrowany. Agenci startujÄ…â€¦ ' + JSON.stringify(data.db || '');
+-  } catch (e) {
+-    fb.className = 'error';
+-    fb.textContent = 'âś— ' + String(e);
+-  }
+-};
+-
+-document.getElementById('launchIntel').onclick = async () => {
+-  const raw = document.getElementById('intelUrls').value || '';
+-  const urls = raw
+-    .split('\n')
+-    .map((s) => s.trim())
+-    .filter(Boolean);
+-  const out = document.getElementById('agentStatusOut');
+-  try {
+-    const data = await api('/api/agents/intel/launch', {
+-      method: 'POST',
+-      body: JSON.stringify({ urls, force_rescout: true, trigger_now: true }),
+-    });
+-    out.textContent = JSON.stringify(data, null, 2);
+-  } catch (e) {
+-    out.textContent = 'Intel launch error: ' + String(e);
+-  }
+-};
+-
+-document.getElementById('mythibiaOneClick').onclick = async () => {
+-  const out = document.getElementById('agentStatusOut');
+-  try {
+-    const data = await api('/api/agents/execution/run', {
+-      method: 'POST',
+-      body: JSON.stringify({}),
+-    });
+-    const names = (data.files || []).map((f) => f.name);
+-    out.textContent = JSON.stringify({
+-      ok: data.ok,
+-      execution_status: data.execution_status,
+-      reason_code: data.reason_code,
+-      url: data.url,
+-      generated_dir: data.generated_dir,
+-      files_count: data.files_count,
+-      manifest: data.manifest || null,
+-      execution_trend: data.execution_trend || {},
+-      server_state: data.server_state,
+-      quality_gate: data.quality_gate || {},
+-      warnings: data.warnings || [],
+-      client_sync: data.client_sync || {},
+-      files: names,
+-    }, null, 2);
+-  } catch (e) {
+-    out.textContent = 'Mythibia one-click error: ' + String(e);
+-  }
+-};
+-
+-document.getElementById('intelReport').onclick = async () => {
+-  const out = document.getElementById('agentStatusOut');
+-  try {
+-    const data = await api('/api/agents/intel/report');
+-    out.textContent = JSON.stringify(data, null, 2);
+-  } catch (e) {
+-    out.textContent = 'Intel report error: ' + String(e);
+-  }
+-};
+-
+-document.getElementById('autoTrainerLatest').onclick = async () => {
+-  const out = document.getElementById('agentStatusOut');
+-  try {
+-    const data = await api('/api/agents/auto-trainer/latest');
+-    if (!data.exists) {
+-      out.textContent = 'Brak raportu auto-trainera: ' + (data.detail || 'unknown');
+-      return;
+-    }
+-    const meta = {
+-      ok: data.ok,
+-      exists: data.exists,
+-      updated_at: data.updated_at,
+-      json_summary: data.json || {},
+-    };
+-    out.textContent = JSON.stringify(meta, null, 2) + '\n\n' + (data.markdown || '');
+-  } catch (e) {
+-    out.textContent = 'Auto-trainer latest error: ' + String(e);
+-  }
+-};
+-
+-// â”€â”€ Dashboard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+-function badgeStatus(s) {
+-  const map = { VALIDATED:'ok', GENERATED:'ok', READY:'ok', INGESTED:'waiting', SCOUTING:'waiting',
+-                FAILED:'error', ERROR:'error', QUEUED:'queued', RELEASED:'ok', NEW:'queued' };
+-  const cls = map[s] || 'queued';
+-  return `<span class="badge badge-${cls}">${s}</span>`;
+-}
+-
+-function escapeHtml(value) {
+-  return String(value ?? '')
+-    .replaceAll('&', '&amp;')
+-    .replaceAll('<', '&lt;')
+-    .replaceAll('>', '&gt;')
+-    .replaceAll('"', '&quot;')
+-    .replaceAll("'", '&#39;');
+-}
+-
+-function renderReasonGroup(title, items) {
+-  if (!Array.isArray(items) || items.length === 0) {
+-    return `<div class="trend-empty">Brak sygnaĹ‚Ăłw dla grupy ${escapeHtml(title)}</div>`;
+-  }
+-  return items.map((item) => {
+-    const code = escapeHtml(item.code || 'UNKNOWN');
+-    const count = Number(item.count || 0);
+-    const severity = escapeHtml(item.severity || 'warning');
+-    return `
+-      <div class="trend-chip trend-${severity}">
+-        <span>${code}</span>
+-        <strong>${count}</strong>
+-      </div>
+-    `;
+-  }).join('');
+-}
+-
+-function renderTimeline(items) {
+-  if (!Array.isArray(items) || items.length === 0) {
+-    return '<div class="trend-empty">Brak zdarzeĹ„ 24h</div>';
+-  }
+-  const maxVisible = 8;
+-  const visible = items.slice(0, maxVisible);
+-  const hiddenCount = Math.max(0, items.length - visible.length);
+-  const rows = visible.map((item) => {
+-    const severity = escapeHtml(item.severity || 'warning');
+-    const eventName = escapeHtml(item.event || 'pending');
+-    const reasonCode = escapeHtml(item.reason_code || 'UNKNOWN');
+-    const timestamp = escapeHtml(item.timestamp || '');
+-    return `
+-      <div class="timeline-item timeline-${severity}">
+-        <div class="timeline-dot"></div>
+-        <div>
+-          <div class="timeline-main">${reasonCode} Â· ${eventName}</div>
+-          <div class="timeline-meta">${timestamp}</div>
+-        </div>
+-      </div>
+-    `;
+-  }).join('');
+-
+-  const overflow = hiddenCount > 0
+-    ? `<div class="trend-empty">+${hiddenCount} kolejnych zdarzeĹ„ w oknie 24h</div>`
+-    : '';
+-
+-  return rows + overflow;
+-}
+-
+-function bindTrendToggles(root) {
+-  root.querySelectorAll('[data-toggle-target]').forEach((btn) => {
+-    btn.addEventListener('click', () => {
+-      const targetId = btn.getAttribute('data-toggle-target');
+-      const panel = root.querySelector(`#${targetId}`);
+-      if (!panel) return;
+-      const expanded = btn.getAttribute('aria-expanded') === 'true';
+-      btn.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+-      panel.hidden = expanded;
+-    });
+-  });
+-}
+-
+-function statusClassFromSeverity(severity) {
+-  const key = String(severity || '').toLowerCase();
+-  if (key === 'critical' || key === 'error') return 'status-critical';
+-  if (key === 'warning' || key === 'degraded') return 'status-warning';
+-  return 'status-info';
+-}
+-
+-function renderDashboardStatusContext(payload) {
+-  const messageEl = document.getElementById('dashStatusMessage');
+-  const detailEl = document.getElementById('dashStatusDetail');
+-  const impactedEl = document.getElementById('dashStatusImpacted');
+-  const actionsEl = document.getElementById('dashStatusActions');
+-  const dotEl = document.getElementById('dashStatusDot');
+-  const severityEl = document.getElementById('dashStatusSeverity');
+-
+-  if (!messageEl || !detailEl || !impactedEl || !actionsEl || !dotEl || !severityEl) {
+-    return;
+-  }
+-
+-  const context = payload && typeof payload.status_context === 'object' ? payload.status_context : {};
+-  const status = String((payload && payload.status) || '').toLowerCase();
+-  const severity = String(
+-    context.severity || (status === 'error' ? 'critical' : status === 'degraded' ? 'warning' : 'info')
+-  ).toLowerCase();
+-  const cssClass = statusClassFromSeverity(severity);
+-
+-  const message = String(context.message || (payload && payload.status_message) || status || 'Brak statusu');
+-  const detail = String(context.detail || 'Brak dodatkowego opisu.');
+-  const impacted = Array.isArray(context.impacted_sections) ? context.impacted_sections : [];
+-  const criticalSections = Array.isArray(context.critical_sections) ? context.critical_sections : [];
+-  const actions = Array.isArray(context.recommended_actions) ? context.recommended_actions : [];
+-
+-  dotEl.className = `dash-status-dot ${cssClass}`;
+-  severityEl.className = `dash-status-badge ${cssClass}`;
+-  severityEl.textContent = String(severity || 'info').toUpperCase();
+-  messageEl.textContent = message;
+-  detailEl.textContent = detail;
+-
+-  if (impacted.length > 0) {
+-    impactedEl.innerHTML = impacted
+-      .slice(0, 8)
+-      .map((name) => {
+-        const chipClass = criticalSections.includes(name)
+-          ? 'dash-impact-chip-critical'
+-          : 'dash-impact-chip-warning';
+-        return `<span class="dash-impact-chip ${chipClass}">${escapeHtml(name)}</span>`;
+-      })
+-      .join('');
+-  } else {
+-    impactedEl.textContent = 'Brak sekcji.';
+-  }
+-
+-  if (actions.length > 0) {
+-    actionsEl.innerHTML = actions
+-      .slice(0, 5)
+-      .map((action) => `<li>${escapeHtml(action)}</li>`)
+-      .join('');
+-  } else {
+-    actionsEl.innerHTML = '<li>Brak akcji.</li>';
+-  }
+-}
+-
+-document.getElementById('refreshDash').onclick = async () => {
+-  try {
+-    const d = await api('/api/dashboard');
+-    const out = document.getElementById('agentStatusOut');
+-    const trendSummary = document.getElementById('trendSummary');
+-
+-    // stats row: [dt, modules_generated, programs_generated, avg_quality, launcher_day]
+-    if (d.stats && d.stats.length > 0) {
+-      const row = d.stats[0];
+-      const mods = parseInt(row[1]) || 0;
+-      const progs = parseInt(row[2]) || 0;
+-      const qual = parseFloat(row[3]) || 0;
+-      const launched = (row[4] || '').trim() === 't';
+-
+-      document.getElementById('dashModules').textContent = mods;
+-      document.getElementById('dashPrograms').textContent = progs;
+-      document.getElementById('dashQuality').textContent = qual.toFixed(1);
+-      document.getElementById('dashLauncher').textContent = launched ? 'đźš€ RELEASED' : 'âŹł pending';
+-      document.getElementById('dashModuleBar').style.width = Math.min(100, mods * 2) + '%';
+-      document.getElementById('dashProgramBar').style.width = Math.min(100, progs * 20) + '%';
+-    }
+-
+-    // servers table: [id, url, status, created_at]
+-    const srvBody = document.querySelector('#dashServers tbody');
+-    if (d.servers && d.servers.length > 0) {
+-      srvBody.innerHTML = d.servers.map(r =>
+-        `<tr><td>${r[0]||''}</td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis">${r[1]||''}</td><td>${badgeStatus((r[2]||'').trim())}</td></tr>`
+-      ).join('');
+-    }
+-
+-    // top modules: [task_id, output_file, quality_score, status]
+-    const topBody = document.querySelector('#dashTop tbody');
+-    if (d.top && d.top.length > 0) {
+-      topBody.innerHTML = d.top.map(r =>
+-        `<tr><td>${r[0]||''}</td><td>${r[1]||''}</td><td><b>${r[2]||'?'}%</b></td><td>${badgeStatus((r[3]||'').trim())}</td></tr>`
+-      ).join('');
+-    }
+-
+-    const topReasons = Array.isArray(d.top_reason_codes) ? d.top_reason_codes : [];
+-    const dominant = topReasons.length > 0 ? topReasons[0] : null;
+-    const slo = d.slo_summary || {};
+-    const groups = d.reason_code_groups || {};
+-    const sloTimeline = Array.isArray(d.slo_timeline) ? d.slo_timeline : [];
+-    if (trendSummary) {
+-      const bars = topReasons.slice(0, 3).map((item) => {
+-          const c = Number(item.count || 0);
+-          const w = Math.max(8, Math.min(100, c * 20));
+-          return `<div style="margin:4px 0"><span style="display:inline-block;min-width:165px">${item.code} (${c})</span><span style="display:inline-block;height:6px;background:#2f80ed;border-radius:999px;width:${w}px"></span></div>`;
+-        }).join('');
+-      const successRate = Number(slo.success_rate_24h ?? 1);
+-      const successTarget = Number(slo.success_rate_target ?? 1);
+-      const budgetLeft = Number(slo.error_budget_remaining ?? 0);
+-      const alertActive = Boolean(slo.alert_active);
+-      const successMet = Boolean(slo.success_rate_met);
+-      const dominantLabel = dominant
+-        ? `${escapeHtml(dominant.code)} (${dominant.count})`
+-        : 'brak danych reason_code';
+-
+-      trendSummary.innerHTML =
+-        `<div class="trend-shell">` +
+-          `<div class="trend-head">` +
+-            `<div><b>DominujÄ…cy reason_code:</b> ${dominantLabel}</div>` +
+-            `<div class="trend-slo ${successMet ? 'trend-ready' : 'trend-critical'}">SLO 24h: ${(successRate * 100).toFixed(1)}% / target ${(successTarget * 100).toFixed(1)}% Â· budget_left=${budgetLeft} Â· alert=${alertActive ? 'ON' : 'OFF'}</div>` +
+-          `</div>` +
+-          `<div class="trend-bars">${bars || '<div class="trend-empty">Brak top reason codes</div>'}</div>` +
+-          `<div class="trend-section">` +
+-            `<button class="trend-toggle" type="button" data-toggle-target="trend-groups" aria-expanded="true">Reason code groups</button>` +
+-            `<div id="trend-groups" class="trend-panel">` +
+-              `<div class="trend-group"><div class="trend-group-title">Critical</div>${renderReasonGroup('critical', groups.critical)}</div>` +
+-              `<div class="trend-group"><div class="trend-group-title">Warning</div>${renderReasonGroup('warning', groups.warning)}</div>` +
+-              `<div class="trend-group"><div class="trend-group-title">Ready</div>${renderReasonGroup('ready', groups.ready)}</div>` +
+-            `</div>` +
+-          `</div>` +
+-          `<div class="trend-section">` +
+-            `<button class="trend-toggle" type="button" data-toggle-target="trend-timeline" aria-expanded="true">SLO timeline 24h</button>` +
+-            `<div id="trend-timeline" class="trend-panel">${renderTimeline(sloTimeline)}</div>` +
+-          `</div>` +
+-        `</div>`;
+-      bindTrendToggles(trendSummary);
+-    }
+-
+-    renderDashboardStatusContext(d);
+-
+-    const timelinePreview = (d.health_timeline || []).slice(0, 5).map((item) => ({
+-      date: item.date,
+-      avg_quality: item.avg_quality,
+-      modules_generated: item.modules_generated,
+-      programs_generated: item.programs_generated,
+-      launcher_released: item.launcher_released,
+-    }));
+-
+-    const statusContext = d.status_context || {};
+-    const dashboardView = {
+-      dashboard_status: d.status,
+-      status_message: d.status_message || '',
+-      status_context: statusContext,
+-      degraded: d.degraded,
+-      summary: d.summary || {},
+-      timeline_summary: d.timeline_summary || {},
+-      top_reason_codes: d.top_reason_codes || [],
+-      reason_code_groups: d.reason_code_groups || {},
+-      dominant_signal: d.dominant_signal || null,
+-      slo_summary: d.slo_summary || {},
+-      slo_timeline_preview: sloTimeline.slice(0, 5),
+-      health_timeline_preview: timelinePreview,
+-    };
+-
+-    if (d.degraded) {
+-      const degradedSections = Array.isArray(d.summary?.degraded_sections)
+-        ? d.summary.degraded_sections
+-        : [];
+-      const diagnostics = d.query_diagnostics || {};
+-      const diagnosticsPreview = Object.entries(diagnostics)
+-        .filter(([, meta]) => meta && meta.status !== 'ok')
+-        .slice(0, 3)
+-        .map(([name, meta]) => ({
+-          section: name,
+-          status: meta.status,
+-          duration_ms: meta.duration_ms,
+-          row_count: meta.row_count,
+-        }));
+-      dashboardView.degraded_compact = {
+-        degraded_sections_count: degradedSections.length,
+-        degraded_sections: degradedSections,
+-        diagnostics_preview: diagnosticsPreview,
+-        detail: statusContext.detail || '',
+-        recommended_actions: Array.isArray(statusContext.recommended_actions)
+-          ? statusContext.recommended_actions.slice(0, 3)
+-          : [],
+-      };
+-      dashboardView.errors = d.errors || {};
+-    }
+-
+-    out.textContent = JSON.stringify(dashboardView, null, 2);
+-  } catch (e) {
+-    renderDashboardStatusContext({
+-      status: 'error',
+-      status_message: 'Dashboard error',
+-      status_context: {
+-        severity: 'critical',
+-        detail: String(e),
+-        impacted_sections: ['dashboard'],
+-        critical_sections: ['dashboard'],
+-        recommended_actions: [
+-          'Sprawdz polaczenie z API i token sesyjny.',
+-          'Ponow odswiezenie dashboardu.',
+-        ],
+-      },
+-    });
+-    document.getElementById('agentStatusOut').textContent = 'Dashboard error: ' + String(e);
+-  }
+-};
+-
+-document.getElementById('refreshAgentStatus').onclick = async () => {
+-  const out = document.getElementById('agentStatusOut');
+-  try {
+-    const d = await api('/api/agents/status');
+-    out.textContent = JSON.stringify(d, null, 2);
+-  } catch (e) {
+-    out.textContent = String(e);
+-  }
+-};
+-
+-// â”€â”€ Agent logs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+-const agentLogOut = document.getElementById('agentLogOut');
+-async function fetchAgentLog(target) {
+-  try {
+-    const d = await api(`/api/logs?target=${target}&lines=150`);
+-    agentLogOut.textContent = (d.stdout || '') + (d.stderr || '');
+-  } catch (e) {
+-    agentLogOut.textContent = String(e);
+-  }
+-}
+-
+-['orchestrator','scout','brain','generator','validator','publisher'].forEach((name) => {
+-  const btn = document.getElementById('log' + name.charAt(0).toUpperCase() + name.slice(1));
+-  if (btn) btn.onclick = () => fetchAgentLog('agent_' + name);
+-});
+-
+-tokenInput.value = getToken();
+-setRoleBadge('guest');
+-void checkAuthAuto();
++﻿const tokenInput = document.getElementById('token');
++const statusOut = document.getElementById('statusOut');
++const cmdOut = document.getElementById('cmdOut');
++const presetSelect = document.getElementById('presetSelect');
++const authState = document.getElementById('authState');
++const ownerLiveDashboardBtn = document.getElementById('ownerLiveDashboardBtn');
++const roleBadge = document.getElementById('roleBadge');
++
++function getToken() {
++  return localStorage.getItem('ctoa_mobile_token') || '';
++}
++
++function getSessionToken() {
++  return sessionStorage.getItem('ctoa_live_token') || sessionStorage.getItem('ctoa_admin_api_token_v1') || '';
++}
++
++function setToken(token) {
++  localStorage.setItem('ctoa_mobile_token', token);
++}
++
++async function api(path, options = {}) {
++  const token = getToken();
++  const sessionToken = getSessionToken();
++  const headers = {
++    'Content-Type': 'application/json',
++    ...(options.headers || {}),
++  };
++  if (token) {
++    headers['X-CTOA-Token'] = token;
++  } else if (sessionToken) {
++    headers.Authorization = `Bearer ${sessionToken}`;
++  }
++  const requestInit = { ...options, headers, credentials: 'include' };
++  const res = await fetch(path, requestInit);
++  const data = await res.json();
++  if (!res.ok) throw new Error(data.detail || JSON.stringify(data));
++  return data;
++}
++
++async function refreshOwnerUi() {
++  if (!ownerLiveDashboardBtn) return;
++  ownerLiveDashboardBtn.style.display = 'none';
++  try {
++    const me = await api('/api/auth/me');
++    const role = String(me.role || '').toLowerCase();
++    setRoleBadge(role || 'guest');
++    if (role === 'owner') {
++      ownerLiveDashboardBtn.style.display = 'inline-block';
++    }
++  } catch (_e) {
++    setRoleBadge('guest');
++    ownerLiveDashboardBtn.style.display = 'none';
++  }
++}
++
++function applyRoleState(role) {
++  const normalized = String(role || 'guest').toLowerCase();
++  setRoleBadge(normalized);
++  if (ownerLiveDashboardBtn) {
++    ownerLiveDashboardBtn.style.display = normalized === 'owner' ? 'inline-block' : 'none';
++  }
++}
++
++function setRoleBadge(role) {
++  if (!roleBadge) return;
++  const normalized = String(role || 'guest').toLowerCase();
++  const knownRole = normalized === 'owner' || normalized === 'operator' ? normalized : 'guest';
++  roleBadge.textContent = knownRole;
++  roleBadge.className = `role-badge role-${knownRole}`;
++}
++
++document.getElementById('saveToken').onclick = () => {
++  setToken(tokenInput.value.trim());
++  alert('Token zapisany');
++  void checkAuthAuto();
++};
++
++tokenInput.addEventListener('keydown', (ev) => {
++  if (ev.key === 'Enter') {
++    ev.preventDefault();
++    document.getElementById('saveToken').click();
++  }
++});
++
++async function checkAuthAuto() {
++  try {
++    const data = await api('/api/auth/auto-check');
++    if (data.token_valid) {
++      const authMode = getToken() ? 'legacy-token' : (getSessionToken() ? 'session' : 'unknown');
++      authState.textContent = `Auth OK (${authMode}) | full_access=${data.full_access} | orchestrator_timer=${data.orchestrator_timer || 'unknown'}`;
++      authState.style.color = '#7fff7f';
++      applyRoleState(data.role || 'guest');
++      await refreshOwnerUi();
++    } else {
++      authState.textContent = 'Token NIEPOPRAWNY: zapisz aktualny CTOA_MOBILE_TOKEN';
++      authState.style.color = '#ff9999';
++      applyRoleState('guest');
++    }
++  } catch (e) {
++    authState.textContent = 'Auto-check blad: ' + String(e);
++    authState.style.color = '#ff9999';
++    applyRoleState('guest');
++  }
++}
++
++document.getElementById('autoCheckToken').onclick = async () => {
++  await checkAuthAuto();
++};
++
++document.getElementById('refreshStatus').onclick = async () => {
++  try {
++    const [statusData, dictionaryData] = await Promise.all([
++      api('/api/status'),
++      api('/api/commands/dictionary').catch(() => null),
++    ]);
++
++    const view = {
++      ...statusData,
++      command_dictionary: dictionaryData
++        ? {
++            version: dictionaryData.version,
++            source: dictionaryData.source,
++            count: dictionaryData.count,
++          }
++        : null,
++    };
++
++    statusOut.textContent = JSON.stringify(view, null, 2);
++  } catch (e) {
++    statusOut.textContent = String(e);
++  }
++};
++
++document.getElementById('runnerLog').onclick = async () => {
++  try {
++    const data = await api('/api/logs?target=runner&lines=120');
++    statusOut.textContent = (data.stdout || '') + (data.stderr || '');
++  } catch (e) {
++    statusOut.textContent = String(e);
++  }
++};
++
++document.getElementById('healthLog').onclick = async () => {
++  try {
++    const data = await api('/api/logs?target=health&lines=120');
++    statusOut.textContent = (data.stdout || '') + (data.stderr || '');
++  } catch (e) {
++    statusOut.textContent = String(e);
++  }
++};
++
++document.getElementById('mythibiaApiLog').onclick = async () => {
++  try {
++    const data = await api('/api/logs?target=mythibia_api&lines=120');
++    statusOut.textContent = (data.stdout || '') + (data.stderr || '');
++  } catch (e) {
++    statusOut.textContent = String(e);
++  }
++};
++
++document.getElementById('mythibiaWatcherLog').onclick = async () => {
++  try {
++    const data = await api('/api/logs?target=mythibia_watcher&lines=120');
++    statusOut.textContent = (data.stdout || '') + (data.stderr || '');
++  } catch (e) {
++    statusOut.textContent = String(e);
++  }
++};
++
++document.getElementById('loadPresets').onclick = async () => {
++  try {
++    const data = await api('/api/presets');
++    presetSelect.innerHTML = '';
++    data.commands.forEach((cmd) => {
++      const opt = document.createElement('option');
++      opt.textContent = cmd;
++      opt.value = cmd;
++      presetSelect.appendChild(opt);
++    });
++  } catch (e) {
++    cmdOut.textContent = String(e);
++  }
++};
++
++document.getElementById('runPreset').onclick = async () => {
++  const cmd = presetSelect.value;
++  if (!cmd) return;
++  try {
++    const data = await api('/api/command', {
++      method: 'POST',
++      body: JSON.stringify({ command: cmd, timeout: 30 }),
++    });
++    cmdOut.textContent = (data.stdout || '') + (data.stderr || '');
++  } catch (e) {
++    cmdOut.textContent = String(e);
++  }
++};
++
++document.getElementById('runCmd').onclick = async () => {
++  const cmd = document.getElementById('cmd').value.trim();
++  if (!cmd) return;
++  try {
++    const data = await api('/api/command', {
++      method: 'POST',
++      body: JSON.stringify({ command: cmd, timeout: 60 }),
++    });
++    cmdOut.textContent = (data.stdout || '') + (data.stderr || '');
++  } catch (e) {
++    cmdOut.textContent = String(e);
++  }
++};
++
++// Tab navigation ------------------------------------------------------------
++document.querySelectorAll('.tab-btn').forEach((btn) => {
++  btn.addEventListener('click', () => {
++    document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active'));
++    document.querySelectorAll('.tab-panel').forEach((p) => p.classList.remove('active'));
++    btn.classList.add('active');
++    document.getElementById(btn.dataset.tab).classList.add('active');
++  });
++});
++
++// Server registration -------------------------------------------------------
++document.getElementById('registerServer').onclick = async () => {
++  const url = document.getElementById('serverUrl').value.trim();
++  const fb  = document.getElementById('serverFeedback');
++  if (!url) { fb.className = 'error'; fb.textContent = 'Podaj URL serwera'; return; }
++  try {
++    const data = await api('/api/server/register', {
++      method: 'POST',
++      body: JSON.stringify({ url }),
++    });
++    fb.className = 'ok';
++    fb.textContent = 'OK: Serwer zarejestrowany. Agenci startuja... ' + JSON.stringify(data.db || '');
++  } catch (e) {
++    fb.className = 'error';
++    fb.textContent = 'ERROR: ' + String(e);
++  }
++};
++
++document.getElementById('launchIntel').onclick = async () => {
++  const raw = document.getElementById('intelUrls').value || '';
++  const urls = raw
++    .split('\n')
++    .map((s) => s.trim())
++    .filter(Boolean);
++  const out = document.getElementById('agentStatusOut');
++  try {
++    const data = await api('/api/agents/intel/launch', {
++      method: 'POST',
++      body: JSON.stringify({ urls, force_rescout: true, trigger_now: true }),
++    });
++    out.textContent = JSON.stringify(data, null, 2);
++  } catch (e) {
++    out.textContent = 'Intel launch error: ' + String(e);
++  }
++};
++
++document.getElementById('mythibiaOneClick').onclick = async () => {
++  const out = document.getElementById('agentStatusOut');
++  try {
++    const data = await api('/api/agents/execution/run', {
++      method: 'POST',
++      body: JSON.stringify({}),
++    });
++    const names = (data.files || []).map((f) => f.name);
++    out.textContent = JSON.stringify({
++      ok: data.ok,
++      execution_status: data.execution_status,
++      reason_code: data.reason_code,
++      url: data.url,
++      generated_dir: data.generated_dir,
++      files_count: data.files_count,
++      manifest: data.manifest || null,
++      execution_trend: data.execution_trend || {},
++      server_state: data.server_state,
++      quality_gate: data.quality_gate || {},
++      warnings: data.warnings || [],
++      client_sync: data.client_sync || {},
++      files: names,
++    }, null, 2);
++  } catch (e) {
++    out.textContent = 'Mythibia one-click error: ' + String(e);
++  }
++};
++
++document.getElementById('intelReport').onclick = async () => {
++  const out = document.getElementById('agentStatusOut');
++  try {
++    const data = await api('/api/agents/intel/report');
++    out.textContent = JSON.stringify(data, null, 2);
++  } catch (e) {
++    out.textContent = 'Intel report error: ' + String(e);
++  }
++};
++
++document.getElementById('autoTrainerLatest').onclick = async () => {
++  const out = document.getElementById('agentStatusOut');
++  try {
++    const data = await api('/api/agents/auto-trainer/latest');
++    if (!data.exists) {
++      out.textContent = 'Brak raportu auto-trainera: ' + (data.detail || 'unknown');
++      return;
++    }
++    const meta = {
++      ok: data.ok,
++      exists: data.exists,
++      updated_at: data.updated_at,
++      json_summary: data.json || {},
++    };
++    out.textContent = JSON.stringify(meta, null, 2) + '\n\n' + (data.markdown || '');
++  } catch (e) {
++    out.textContent = 'Auto-trainer latest error: ' + String(e);
++  }
++};
++
++// Dashboard -----------------------------------------------------------------
++function badgeStatus(s) {
++  const map = { VALIDATED:'ok', GENERATED:'ok', READY:'ok', INGESTED:'waiting', SCOUTING:'waiting',
++                FAILED:'error', ERROR:'error', QUEUED:'queued', RELEASED:'ok', NEW:'queued' };
++  const cls = map[s] || 'queued';
++  return `<span class="badge badge-${cls}">${s}</span>`;
++}
++
++function escapeHtml(value) {
++  return String(value ?? '')
++    .replaceAll('&', '&amp;')
++    .replaceAll('<', '&lt;')
++    .replaceAll('>', '&gt;')
++    .replaceAll('"', '&quot;')
++    .replaceAll("'", '&#39;');
++}
++
++function renderReasonGroup(title, items) {
++  if (!Array.isArray(items) || items.length === 0) {
++    return `<div class="trend-empty">Brak sygnalow dla grupy ${escapeHtml(title)}</div>`;
++  }
++  return items.map((item) => {
++    const code = escapeHtml(item.code || 'UNKNOWN');
++    const count = Number(item.count || 0);
++    const severity = escapeHtml(item.severity || 'warning');
++    return `
++      <div class="trend-chip trend-${severity}">
++        <span>${code}</span>
++        <strong>${count}</strong>
++      </div>
++    `;
++  }).join('');
++}
++
++function renderTimeline(items) {
++  if (!Array.isArray(items) || items.length === 0) {
++    return '<div class="trend-empty">Brak zdarzen 24h</div>';
++  }
++  const maxVisible = 8;
++  const visible = items.slice(0, maxVisible);
++  const hiddenCount = Math.max(0, items.length - visible.length);
++  const rows = visible.map((item) => {
++    const severity = escapeHtml(item.severity || 'warning');
++    const eventName = escapeHtml(item.event || 'pending');
++    const reasonCode = escapeHtml(item.reason_code || 'UNKNOWN');
++    const timestamp = escapeHtml(item.timestamp || '');
++    return `
++      <div class="timeline-item timeline-${severity}">
++        <div class="timeline-dot"></div>
++        <div>
++          <div class="timeline-main">${reasonCode} - ${eventName}</div>
++          <div class="timeline-meta">${timestamp}</div>
++        </div>
++      </div>
++    `;
++  }).join('');
++
++  const overflow = hiddenCount > 0
++    ? `<div class="trend-empty">+${hiddenCount} kolejnych zdarzen w oknie 24h</div>`
++    : '';
++
++  return rows + overflow;
++}
++
++function bindTrendToggles(root) {
++  root.querySelectorAll('[data-toggle-target]').forEach((btn) => {
++    btn.addEventListener('click', () => {
++      const targetId = btn.getAttribute('data-toggle-target');
++      const panel = root.querySelector(`#${targetId}`);
++      if (!panel) return;
++      const expanded = btn.getAttribute('aria-expanded') === 'true';
++      btn.setAttribute('aria-expanded', expanded ? 'false' : 'true');
++      panel.hidden = expanded;
++    });
++  });
++}
++
++function statusClassFromSeverity(severity) {
++  const key = String(severity || '').toLowerCase();
++  if (key === 'critical' || key === 'error') return 'status-critical';
++  if (key === 'warning' || key === 'degraded') return 'status-warning';
++  return 'status-info';
++}
++
++function renderDashboardStatusContext(payload) {
++  const messageEl = document.getElementById('dashStatusMessage');
++  const detailEl = document.getElementById('dashStatusDetail');
++  const impactedEl = document.getElementById('dashStatusImpacted');
++  const actionsEl = document.getElementById('dashStatusActions');
++  const dotEl = document.getElementById('dashStatusDot');
++  const severityEl = document.getElementById('dashStatusSeverity');
++
++  if (!messageEl || !detailEl || !impactedEl || !actionsEl || !dotEl || !severityEl) {
++    return;
++  }
++
++  const context = payload && typeof payload.status_context === 'object' ? payload.status_context : {};
++  const status = String((payload && payload.status) || '').toLowerCase();
++  const severity = String(
++    context.severity || (status === 'error' ? 'critical' : status === 'degraded' ? 'warning' : 'info')
++  ).toLowerCase();
++  const cssClass = statusClassFromSeverity(severity);
++
++  const message = String(context.message || (payload && payload.status_message) || status || 'Brak statusu');
++  const detail = String(context.detail || 'Brak dodatkowego opisu.');
++  const impacted = Array.isArray(context.impacted_sections) ? context.impacted_sections : [];
++  const criticalSections = Array.isArray(context.critical_sections) ? context.critical_sections : [];
++  const actions = Array.isArray(context.recommended_actions) ? context.recommended_actions : [];
++
++  dotEl.className = `dash-status-dot ${cssClass}`;
++  severityEl.className = `dash-status-badge ${cssClass}`;
++  severityEl.textContent = String(severity || 'info').toUpperCase();
++  messageEl.textContent = message;
++  detailEl.textContent = detail;
++
++  if (impacted.length > 0) {
++    impactedEl.innerHTML = impacted
++      .slice(0, 8)
++      .map((name) => {
++        const chipClass = criticalSections.includes(name)
++          ? 'dash-impact-chip-critical'
++          : 'dash-impact-chip-warning';
++        return `<span class="dash-impact-chip ${chipClass}">${escapeHtml(name)}</span>`;
++      })
++      .join('');
++  } else {
++    impactedEl.textContent = 'Brak sekcji.';
++  }
++
++  if (actions.length > 0) {
++    actionsEl.innerHTML = actions
++      .slice(0, 5)
++      .map((action) => `<li>${escapeHtml(action)}</li>`)
++      .join('');
++  } else {
++    actionsEl.innerHTML = '<li>Brak akcji.</li>';
++  }
++}
++
++document.getElementById('refreshDash').onclick = async () => {
++  try {
++    const d = await api('/api/dashboard');
++    const out = document.getElementById('agentStatusOut');
++    const trendSummary = document.getElementById('trendSummary');
++
++    // stats row: [dt, modules_generated, programs_generated, avg_quality, launcher_day]
++    if (d.stats && d.stats.length > 0) {
++      const row = d.stats[0];
++      const mods = parseInt(row[1]) || 0;
++      const progs = parseInt(row[2]) || 0;
++      const qual = parseFloat(row[3]) || 0;
++      const launched = (row[4] || '').trim() === 't';
++
++      document.getElementById('dashModules').textContent = mods;
++      document.getElementById('dashPrograms').textContent = progs;
++      document.getElementById('dashQuality').textContent = qual.toFixed(1);
++      document.getElementById('dashLauncher').textContent = launched ? 'RELEASED' : 'pending';
++      document.getElementById('dashModuleBar').style.width = Math.min(100, mods * 2) + '%';
++      document.getElementById('dashProgramBar').style.width = Math.min(100, progs * 20) + '%';
++    }
++
++    // servers table: [id, url, status, created_at]
++    const srvBody = document.querySelector('#dashServers tbody');
++    if (d.servers && d.servers.length > 0) {
++      srvBody.innerHTML = d.servers.map(r =>
++        `<tr><td>${r[0]||''}</td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis">${r[1]||''}</td><td>${badgeStatus((r[2]||'').trim())}</td></tr>`
++      ).join('');
++    }
++
++    // top modules: [task_id, output_file, quality_score, status]
++    const topBody = document.querySelector('#dashTop tbody');
++    if (d.top && d.top.length > 0) {
++      topBody.innerHTML = d.top.map(r =>
++        `<tr><td>${r[0]||''}</td><td>${r[1]||''}</td><td><b>${r[2]||'?'}%</b></td><td>${badgeStatus((r[3]||'').trim())}</td></tr>`
++      ).join('');
++    }
++
++    const topReasons = Array.isArray(d.top_reason_codes) ? d.top_reason_codes : [];
++    const dominant = topReasons.length > 0 ? topReasons[0] : null;
++    const slo = d.slo_summary || {};
++    const groups = d.reason_code_groups || {};
++    const sloTimeline = Array.isArray(d.slo_timeline) ? d.slo_timeline : [];
++    if (trendSummary) {
++      const bars = topReasons.slice(0, 3).map((item) => {
++          const c = Number(item.count || 0);
++          const w = Math.max(8, Math.min(100, c * 20));
++          return `<div style="margin:4px 0"><span style="display:inline-block;min-width:165px">${item.code} (${c})</span><span style="display:inline-block;height:6px;background:#2f80ed;border-radius:999px;width:${w}px"></span></div>`;
++        }).join('');
++      const successRate = Number(slo.success_rate_24h ?? 1);
++      const successTarget = Number(slo.success_rate_target ?? 1);
++      const budgetLeft = Number(slo.error_budget_remaining ?? 0);
++      const alertActive = Boolean(slo.alert_active);
++      const successMet = Boolean(slo.success_rate_met);
++      const dominantLabel = dominant
++        ? `${escapeHtml(dominant.code)} (${dominant.count})`
++        : 'brak danych reason_code';
++
++      trendSummary.innerHTML =
++        `<div class="trend-shell">` +
++          `<div class="trend-head">` +
++            `<div><b>Dominujacy reason_code:</b> ${dominantLabel}</div>` +
++            `<div class="trend-slo ${successMet ? 'trend-ready' : 'trend-critical'}">SLO 24h: ${(successRate * 100).toFixed(1)}% / target ${(successTarget * 100).toFixed(1)}% | budget_left=${budgetLeft} | alert=${alertActive ? 'ON' : 'OFF'}</div>` +
++          `</div>` +
++          `<div class="trend-bars">${bars || '<div class="trend-empty">Brak top reason codes</div>'}</div>` +
++          `<div class="trend-section">` +
++            `<button class="trend-toggle" type="button" data-toggle-target="trend-groups" aria-expanded="true">Reason code groups</button>` +
++            `<div id="trend-groups" class="trend-panel">` +
++              `<div class="trend-group"><div class="trend-group-title">Critical</div>${renderReasonGroup('critical', groups.critical)}</div>` +
++              `<div class="trend-group"><div class="trend-group-title">Warning</div>${renderReasonGroup('warning', groups.warning)}</div>` +
++              `<div class="trend-group"><div class="trend-group-title">Ready</div>${renderReasonGroup('ready', groups.ready)}</div>` +
++            `</div>` +
++          `</div>` +
++          `<div class="trend-section">` +
++            `<button class="trend-toggle" type="button" data-toggle-target="trend-timeline" aria-expanded="true">SLO timeline 24h</button>` +
++            `<div id="trend-timeline" class="trend-panel">${renderTimeline(sloTimeline)}</div>` +
++          `</div>` +
++        `</div>`;
++      bindTrendToggles(trendSummary);
++    }
++
++    renderDashboardStatusContext(d);
++
++    const timelinePreview = (d.health_timeline || []).slice(0, 5).map((item) => ({
++      date: item.date,
++      avg_quality: item.avg_quality,
++      modules_generated: item.modules_generated,
++      programs_generated: item.programs_generated,
++      launcher_released: item.launcher_released,
++    }));
++
++    const statusContext = d.status_context || {};
++    const dashboardView = {
++      dashboard_status: d.status,
++      status_message: d.status_message || '',
++      status_context: statusContext,
++      degraded: d.degraded,
++      summary: d.summary || {},
++      timeline_summary: d.timeline_summary || {},
++      top_reason_codes: d.top_reason_codes || [],
++      reason_code_groups: d.reason_code_groups || {},
++      dominant_signal: d.dominant_signal || null,
++      slo_summary: d.slo_summary || {},
++      slo_timeline_preview: sloTimeline.slice(0, 5),
++      health_timeline_preview: timelinePreview,
++    };
++
++    if (d.degraded) {
++      const degradedSections = Array.isArray(d.summary?.degraded_sections)
++        ? d.summary.degraded_sections
++        : [];
++      const diagnostics = d.query_diagnostics || {};
++      const diagnosticsPreview = Object.entries(diagnostics)
++        .filter(([, meta]) => meta && meta.status !== 'ok')
++        .slice(0, 3)
++        .map(([name, meta]) => ({
++          section: name,
++          status: meta.status,
++          duration_ms: meta.duration_ms,
++          row_count: meta.row_count,
++        }));
++      dashboardView.degraded_compact = {
++        degraded_sections_count: degradedSections.length,
++        degraded_sections: degradedSections,
++        diagnostics_preview: diagnosticsPreview,
++        detail: statusContext.detail || '',
++        recommended_actions: Array.isArray(statusContext.recommended_actions)
++          ? statusContext.recommended_actions.slice(0, 3)
++          : [],
++      };
++      dashboardView.errors = d.errors || {};
++    }
++
++    out.textContent = JSON.stringify(dashboardView, null, 2);
++  } catch (e) {
++    renderDashboardStatusContext({
++      status: 'error',
++      status_message: 'Dashboard error',
++      status_context: {
++        severity: 'critical',
++        detail: String(e),
++        impacted_sections: ['dashboard'],
++        critical_sections: ['dashboard'],
++        recommended_actions: [
++          'Sprawdz polaczenie z API i token sesyjny.',
++          'Ponow odswiezenie dashboardu.',
++        ],
++      },
++    });
++    document.getElementById('agentStatusOut').textContent = 'Dashboard error: ' + String(e);
++  }
++};
++
++document.getElementById('refreshAgentStatus').onclick = async () => {
++  const out = document.getElementById('agentStatusOut');
++  try {
++    const d = await api('/api/agents/status');
++    out.textContent = JSON.stringify(d, null, 2);
++  } catch (e) {
++    out.textContent = String(e);
++  }
++};
++
++// Agent logs ----------------------------------------------------------------
++const agentLogOut = document.getElementById('agentLogOut');
++async function fetchAgentLog(target) {
++  try {
++    const d = await api(`/api/logs?target=${target}&lines=150`);
++    agentLogOut.textContent = (d.stdout || '') + (d.stderr || '');
++  } catch (e) {
++    agentLogOut.textContent = String(e);
++  }
++}
++
++['orchestrator','scout','brain','generator','validator','publisher'].forEach((name) => {
++  const btn = document.getElementById('log' + name.charAt(0).toUpperCase() + name.slice(1));
++  if (btn) btn.onclick = () => fetchAgentLog('agent_' + name);
++});
++
++tokenInput.value = getToken();
++setRoleBadge('guest');
++void checkAuthAuto();
+ 
+ 
+ 
+diff --git a/mobile_console/static/index.html b/mobile_console/static/index.html
+index a6b667c..1cc2ce4 100644
+--- a/mobile_console/static/index.html
++++ b/mobile_console/static/index.html
+@@ -1,228 +1,251 @@
+-﻿<!doctype html>
+-<html lang="pl">
+-<head>
+-  <meta charset="UTF-8" />
+-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+-  <title>CTOA Mobile Console</title>
+-  <link rel="stylesheet" href="/static/style.css?v=20260320b" />
+-  <style>
+-    .tabs { display:flex; gap:4px; flex-wrap:wrap; margin-bottom:12px; }
+-    .tab-btn { padding:8px 14px; border:1px solid #555; background:#222; color:#ccc; border-radius:6px; cursor:pointer; font-size:13px; }
+-    .tab-btn.active { background:#0078d4; color:#fff; border-color:#0078d4; }
+-    .tab-panel { display:none; }
+-    .tab-panel.active { display:block; }
+-    .badge { display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:bold; }
+-    .badge-ok      { background:#1e7e34; color:#fff; }
+-    .badge-error   { background:#c0392b; color:#fff; }
+-    .badge-waiting { background:#856404; color:#fff; }
+-    .badge-queued  { background:#444; color:#ddd; }
+-    .url-row { display:flex; gap:8px; flex-wrap:wrap; }
+-    .url-row input { flex:1; min-width:200px; padding:8px; border-radius:6px; border:1px solid #555; background:#1a1a1a; color:#eee; font-size:14px; }
+-    .dash-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+-    .dash-box { background:#1a1a1a; border:1px solid #333; border-radius:8px; padding:10px; }
+-    .dash-box h3 { margin:0 0 8px 0; font-size:13px; color:#888; text-transform:uppercase; letter-spacing:.5px; }
+-    .dash-num { font-size:28px; font-weight:bold; color:#0078d4; }
+-    .dash-label { font-size:11px; color:#666; }
+-    table.mini { width:100%; border-collapse:collapse; font-size:12px; }
+-    table.mini th { background:#2a2a2a; padding:4px 6px; text-align:left; color:#888; }
+-    table.mini td { padding:4px 6px; border-top:1px solid #333; word-break:break-all; }
+-    .progress-bar { background:#333; border-radius:4px; height:8px; margin-top:4px; }
+-    .progress-fill { background:#0078d4; border-radius:4px; height:8px; transition:width .4s; }
+-    #serverFeedback { margin-top:8px; padding:8px; border-radius:6px; font-size:13px; display:none; }
+-    #serverFeedback.ok    { background:#1e3a1e; color:#7fff7f; display:block; }
+-    #serverFeedback.error { background:#3a1e1e; color:#ff9999; display:block; }
+-    .role-badge { display:inline-block; margin-left:8px; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:700; letter-spacing:.02em; text-transform:uppercase; vertical-align:middle; }
+-    .role-owner { background:#123d26; color:#79f2b2; border:1px solid #1f7a4b; }
+-    .role-operator { background:#17324a; color:#8dc5ff; border:1px solid #2f80ed; }
+-    .role-guest { background:#2a2a2a; color:#bcbcbc; border:1px solid #555; }
+-    .dash-status-panel { margin-top:10px; padding:10px; border:1px solid #333; border-radius:8px; background:#161616; }
+-    .dash-status-head { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:700; margin-bottom:6px; }
+-    .dash-status-dot { width:10px; height:10px; border-radius:999px; display:inline-block; background:#777; }
+-    .dash-status-badge { margin-left:auto; border:1px solid #444; border-radius:999px; padding:2px 8px; font-size:11px; letter-spacing:.04em; }
+-    .status-info { background:rgba(47,196,122,.18); color:#7fff7f; }
+-    .status-warning { background:rgba(233,180,76,.18); color:#f2c66d; }
+-    .status-critical { background:rgba(239,107,115,.18); color:#ff8f98; }
+-    .dash-status-detail { font-size:13px; color:#b6c2d0; }
+-    .dash-status-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px; }
+-    .dash-status-list { margin-top:6px; font-size:12px; color:#c6d3e0; display:flex; flex-wrap:wrap; gap:6px; }
+-    .dash-impact-chip { display:inline-block; padding:3px 8px; border-radius:999px; border:1px solid #3a3a3a; font-size:11px; letter-spacing:.02em; }
+-    .dash-impact-chip-warning { background:rgba(233,180,76,.16); color:#f2c66d; border-color:rgba(233,180,76,.45); }
+-    .dash-impact-chip-critical { background:rgba(239,107,115,.16); color:#ff9aa3; border-color:rgba(239,107,115,.45); }
+-    .dash-status-actions { margin:6px 0 0 16px; padding:0; display:grid; gap:4px; font-size:12px; color:#d7e2ee; }
+-    @media (max-width: 900px) { .dash-status-grid { grid-template-columns:1fr; } }
+-  </style>
+-</head>
+-<body>
+-  <header class="top">
+-    <h1>CTOA Console <span id="roleBadge" class="role-badge role-guest">guest</span> &nbsp;<a id="ownerLiveDashboardBtn" href="/live-dashboard" style="display:none;font-size:13px;font-weight:400;color:#56ccf2;text-decoration:none;background:#0d2233;padding:4px 10px;border-radius:6px;border:1px solid #2f80ed">&#8594; Live Dashboard</a></h1>
+-    <div class="token-row">
+-      <input id="token" type="password" placeholder="CTOA_MOBILE_TOKEN" />
+-      <button id="saveToken">Zapisz token</button>
+-      <button id="autoCheckToken">Auto-check</button>
+-    </div>
+-    <div id="authState" style="font-size:12px;color:#888;margin-top:6px">Token: niezweryfikowany</div>
+-  </header>
+-
+-  <main>
+-    <!-- Tab navigation -->
+-    <div class="tabs">
+-      <button class="tab-btn active" data-tab="tab-agent">đź¤– Agenci</button>
+-      <button class="tab-btn" data-tab="tab-status">đź“ˇ Status</button>
+-      <button class="tab-btn" data-tab="tab-logs">đź“‹ Logi</button>
+-      <button class="tab-btn" data-tab="tab-cmd">âŚ¨ď¸Ź Terminal</button>
+-    </div>
+-
+-    <!-- TAB: Agenci (gĹ‚Ăłwny â€“ rejestracja + dashboard) -->
+-    <div id="tab-agent" class="tab-panel active">
+-
+-      <section class="card">
+-        <h2>đźŚ Zarejestruj serwer gry</h2>
+-        <p style="color:#888;font-size:13px;">Podaj URL serwera. System automatycznie zbierze dane i zacznie generowaÄ‡ moduĹ‚y.</p>
+-        <div class="url-row">
+-          <input id="serverUrl" type="url" placeholder="https://tibia-server.com" />
+-          <button id="registerServer">â–¶ Start</button>
+-        </div>
+-        <div id="serverFeedback"></div>
+-      </section>
+-
+-      <section class="card">
+-        <h2>đź›°ď¸Ź Misja zwiadowcza (internet â†’ DB â†’ trener)</h2>
+-        <p style="color:#888;font-size:13px;">Wklej URL-e (jeden na liniÄ™). Puste pole = domyĹ›lna lista intel.</p>
+-        <textarea id="intelUrls" rows="4" placeholder="https://example-server.com"></textarea>
+-        <div class="actions">
+-          <button id="launchIntel">Start zwiadu</button>
+-          <button id="mythibiaOneClick">One-click Mythibia Run</button>
+-          <button id="intelReport">Raport trenera</button>
+-          <button id="autoTrainerLatest">Auto-trainer latest</button>
+-        </div>
+-      </section>
+-
+-      <section class="card">
+-        <h2>đź“Š Dashboard agentĂłw</h2>
+-        <div class="actions">
+-          <button id="refreshDash">OdĹ›wieĹĽ dashboard</button>
+-          <button id="refreshAgentStatus">Status agentĂłw</button>
+-        </div>
+-
+-        <div class="dash-grid" id="dashStats" style="margin:12px 0">
+-          <div class="dash-box">
+-            <h3>ModuĹ‚y (dziĹ›)</h3>
+-            <div class="dash-num" id="dashModules">â€”</div>
+-            <div class="progress-bar"><div class="progress-fill" id="dashModuleBar" style="width:0%"></div></div>
+-            <div class="dash-label">limit: 50</div>
+-          </div>
+-          <div class="dash-box">
+-            <h3>Programy (dziĹ›)</h3>
+-            <div class="dash-num" id="dashPrograms">â€”</div>
+-            <div class="progress-bar"><div class="progress-fill" id="dashProgramBar" style="width:0%"></div></div>
+-            <div class="dash-label">limit: 5 @ â‰Ą90%</div>
+-          </div>
+-          <div class="dash-box">
+-            <h3>Avg Quality</h3>
+-            <div class="dash-num" id="dashQuality">â€”</div>
+-            <div class="dash-label">% (cel: 90+)</div>
+-          </div>
+-          <div class="dash-box">
+-            <h3>Launcher Day</h3>
+-            <div class="dash-num" id="dashLauncher">â€”</div>
+-            <div class="dash-label">status</div>
+-          </div>
+-        </div>
+-
+-        <h3 style="font-size:13px;color:#888;margin:10px 0 4px 0">Serwery</h3>
+-        <div id="dashServersWrap" style="overflow-x:auto">
+-          <table class="mini" id="dashServers">
+-            <thead><tr><th>ID</th><th>URL</th><th>Status</th></tr></thead>
+-            <tbody><tr><td colspan="3" style="color:#555">brak danych</td></tr></tbody>
+-          </table>
+-        </div>
+-
+-        <h3 style="font-size:13px;color:#888;margin:10px 0 4px 0">Top moduĹ‚y (jakoĹ›Ä‡)</h3>
+-        <div id="dashTopWrap" style="overflow-x:auto">
+-          <table class="mini" id="dashTop">
+-            <thead><tr><th>Task</th><th>Plik</th><th>Score</th><th>Status</th></tr></thead>
+-            <tbody><tr><td colspan="4" style="color:#555">brak danych</td></tr></tbody>
+-          </table>
+-        </div>
+-
+-        <div id="dashStatusPanel" class="dash-status-panel">
+-          <div class="dash-status-head">
+-            <span id="dashStatusDot" class="dash-status-dot status-info"></span>
+-            <span id="dashStatusMessage">Status operacyjny niedostepny.</span>
+-            <span id="dashStatusSeverity" class="dash-status-badge status-info">INFO</span>
+-          </div>
+-          <div id="dashStatusDetail" class="dash-status-detail">Uruchom odswiezenie dashboardu, aby pobrac status context.</div>
+-          <div class="dash-status-grid">
+-            <div>
+-              <div class="dash-label">Sekcje dotkniete</div>
+-              <div id="dashStatusImpacted" class="dash-status-list">Brak sekcji.</div>
+-            </div>
+-            <div>
+-              <div class="dash-label">Rekomendowane akcje</div>
+-              <ul id="dashStatusActions" class="dash-status-actions"><li>Brak akcji.</li></ul>
+-            </div>
+-          </div>
+-        </div>
+-
+-        <pre id="agentStatusOut" style="margin-top:10px;"></pre>
+-      </section>
+-    </div>
+-
+-    <!-- TAB: Live Status -->
+-    <div id="tab-status" class="tab-panel">
+-      <section class="card">
+-        <h2>Live Status</h2>
+-        <div class="actions">
+-          <button id="refreshStatus">OdĹ›wieĹĽ status</button>
+-          <button id="runnerLog">Runner log</button>
+-          <button id="healthLog">Health log</button>
+-          <button id="mythibiaApiLog">Mythibia API log</button>
+-          <button id="mythibiaWatcherLog">Mythibia Watcher log</button>
+-        </div>
+-        <pre id="statusOut"></pre>
+-      </section>
+-    </div>
+-
+-    <!-- TAB: Logi agentĂłw -->
+-    <div id="tab-logs" class="tab-panel">
+-      <section class="card">
+-        <h2>Logi agentĂłw</h2>
+-        <div class="actions">
+-          <button id="logOrchestrator">Orchestrator</button>
+-          <button id="logScout">Scout</button>
+-          <button id="logBrain">Brain</button>
+-          <button id="logGenerator">Generator</button>
+-          <button id="logValidator">Validator</button>
+-          <button id="logPublisher">Publisher</button>
+-        </div>
+-        <pre id="agentLogOut"></pre>
+-      </section>
+-    </div>
+-
+-    <!-- TAB: Terminal -->
+-    <div id="tab-cmd" class="tab-panel">
+-      <section class="card">
+-        <h2>Preset Commands</h2>
+-        <div class="actions">
+-          <button id="loadPresets">Pobierz presety</button>
+-        </div>
+-        <select id="presetSelect" size="6"></select>
+-        <button id="runPreset">Uruchom preset</button>
+-      </section>
+-
+-      <section class="card">
+-        <h2>Full Command</h2>
+-        <textarea id="cmd" rows="5" placeholder="np. systemctl status ctoa-runner.service --no-pager -l"></textarea>
+-        <div class="actions">
+-          <button id="runCmd">Uruchom komendÄ™</button>
+-        </div>
+-        <pre id="cmdOut"></pre>
+-      </section>
+-    </div>
+-  </main>
+-
+-  <script src="/static/app.js?v=20260320b"></script>
+-</body>
+-</html>
++<!doctype html>
++<html lang="pl">
++<head>
++  <meta charset="UTF-8" />
++  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
++  <title>CTOA Mobile Console</title>
++  <link rel="stylesheet" href="/static/style.css?v=20260514c" />
++  <style>
++    .tabs { display:flex; gap:4px; flex-wrap:wrap; margin-bottom:12px; }
++    .tab-btn { padding:8px 14px; border:1px solid #555; background:#222; color:#ccc; border-radius:6px; cursor:pointer; font-size:13px; }
++    .tab-btn.active { background:#0078d4; color:#fff; border-color:#0078d4; }
++    .tab-panel { display:none; }
++    .tab-panel.active { display:block; }
++    .badge { display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:bold; }
++    .badge-ok      { background:#1e7e34; color:#fff; }
++    .badge-error   { background:#c0392b; color:#fff; }
++    .badge-waiting { background:#856404; color:#fff; }
++    .badge-queued  { background:#444; color:#ddd; }
++    .url-row { display:flex; gap:8px; flex-wrap:wrap; }
++    .url-row input { flex:1; min-width:200px; padding:8px; border-radius:6px; border:1px solid #555; background:#1a1a1a; color:#eee; font-size:14px; }
++    .dash-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
++    .dash-box { background:#1a1a1a; border:1px solid #333; border-radius:8px; padding:10px; }
++    .dash-box h3 { margin:0 0 8px 0; font-size:13px; color:#888; text-transform:uppercase; letter-spacing:.5px; }
++    .dash-num { font-size:28px; font-weight:bold; color:#0078d4; }
++    .dash-label { font-size:11px; color:#666; }
++    table.mini { width:100%; border-collapse:collapse; font-size:12px; }
++    table.mini th { background:#2a2a2a; padding:4px 6px; text-align:left; color:#888; }
++    table.mini td { padding:4px 6px; border-top:1px solid #333; word-break:break-all; }
++    .progress-bar { background:#333; border-radius:4px; height:8px; margin-top:4px; }
++    .progress-fill { background:#0078d4; border-radius:4px; height:8px; transition:width .4s; }
++    #serverFeedback { margin-top:8px; padding:8px; border-radius:6px; font-size:13px; display:none; }
++    #serverFeedback.ok    { background:#1e3a1e; color:#7fff7f; display:block; }
++    #serverFeedback.error { background:#3a1e1e; color:#ff9999; display:block; }
++    .role-badge { display:inline-block; margin-left:8px; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:700; letter-spacing:.02em; text-transform:uppercase; vertical-align:middle; }
++    .role-owner { background:#123d26; color:#79f2b2; border:1px solid #1f7a4b; }
++    .role-operator { background:#17324a; color:#8dc5ff; border:1px solid #2f80ed; }
++    .role-guest { background:#2a2a2a; color:#bcbcbc; border:1px solid #555; }
++    .dash-status-panel { margin-top:10px; padding:10px; border:1px solid #333; border-radius:8px; background:#161616; }
++    .dash-status-head { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:700; margin-bottom:6px; }
++    .dash-status-dot { width:10px; height:10px; border-radius:999px; display:inline-block; background:#777; }
++    .dash-status-badge { margin-left:auto; border:1px solid #444; border-radius:999px; padding:2px 8px; font-size:11px; letter-spacing:.04em; }
++    .status-info { background:rgba(47,196,122,.18); color:#7fff7f; }
++    .status-warning { background:rgba(233,180,76,.18); color:#f2c66d; }
++    .status-critical { background:rgba(239,107,115,.18); color:#ff8f98; }
++    .dash-status-detail { font-size:13px; color:#b6c2d0; }
++    .dash-status-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px; }
++    .dash-status-list { margin-top:6px; font-size:12px; color:#c6d3e0; display:flex; flex-wrap:wrap; gap:6px; }
++    .dash-impact-chip { display:inline-block; padding:3px 8px; border-radius:999px; border:1px solid #3a3a3a; font-size:11px; letter-spacing:.02em; }
++    .dash-impact-chip-warning { background:rgba(233,180,76,.16); color:#f2c66d; border-color:rgba(233,180,76,.45); }
++    .dash-impact-chip-critical { background:rgba(239,107,115,.16); color:#ff9aa3; border-color:rgba(239,107,115,.45); }
++    .dash-status-actions { margin:6px 0 0 16px; padding:0; display:grid; gap:4px; font-size:12px; color:#d7e2ee; }
++    .global-nav { display:flex; flex-wrap:wrap; gap:8px; margin:10px 0 12px; }
++    .global-nav a {
++      text-decoration:none;
++      color:#cfe7ff;
++      border:1px solid #2f80ed66;
++      background:#0f2233;
++      border-radius:999px;
++      padding:6px 12px;
++      font-size:12px;
++    }
++    .global-nav a.active {
++      background:#1d4469;
++      border-color:#2f80ed;
++      color:#ffffff;
++    }
++    @media (max-width: 900px) { .dash-status-grid { grid-template-columns:1fr; } }
++  </style>
++</head>
++<body>
++  <header class="top">
++    <h1>CTOA Console <span id="roleBadge" class="role-badge role-guest">guest</span> &nbsp;<a id="ownerLiveDashboardBtn" href="/live-dashboard" style="display:none;font-size:13px;font-weight:400;color:#56ccf2;text-decoration:none;background:#0d2233;padding:4px 10px;border-radius:6px;border:1px solid #2f80ed">&#8594; Live Dashboard</a></h1>
++    <div class="token-row">
++      <input id="token" type="password" placeholder="CTOA_MOBILE_TOKEN" />
++      <button id="saveToken">Zapisz token</button>
++      <button id="autoCheckToken">Auto-check</button>
++    </div>
++    <div id="authState" style="font-size:12px;color:#888;margin-top:6px">Token: niezweryfikowany</div>
++  </header>
++
++  <nav class="global-nav" aria-label="Szybka nawigacja">
++    <a href="/">Start</a>
++    <a href="/console" class="active">Console</a>
++    <a href="/live-dashboard">Live Dashboard</a>
++  </nav>
++
++  <main>
++    <!-- Tab navigation -->
++    <div class="tabs">
++      <button class="tab-btn active" data-tab="tab-agent">Agenci</button>
++      <button class="tab-btn" data-tab="tab-status">Status</button>
++      <button class="tab-btn" data-tab="tab-logs">Logi</button>
++      <button class="tab-btn" data-tab="tab-cmd">Terminal</button>
++    </div>
++
++    <!-- TAB: Agenci (glowny - rejestracja + dashboard) -->
++    <div id="tab-agent" class="tab-panel active">
++
++      <section class="card">
++        <h2>Zarejestruj serwer gry</h2>
++        <p style="color:#888;font-size:13px;">Podaj URL serwera. System automatycznie zbierze dane i zacznie generowac moduly.</p>
++        <div class="url-row">
++          <input id="serverUrl" type="url" placeholder="https://tibia-server.com" />
++          <button id="registerServer">Start</button>
++        </div>
++        <div id="serverFeedback"></div>
++      </section>
++
++      <section class="card">
++        <h2>Misja zwiadowcza (internet - DB - trener)</h2>
++        <p style="color:#888;font-size:13px;">Wklej URL-e (jeden na linie). Puste pole = domyslna lista intel.</p>
++        <textarea id="intelUrls" rows="4" placeholder="https://example-server.com"></textarea>
++        <div class="actions">
++          <button id="launchIntel">Start zwiadu</button>
++          <button id="mythibiaOneClick">One-click Mythibia Run</button>
++          <button id="intelReport">Raport trenera</button>
++          <button id="autoTrainerLatest">Auto-trainer latest</button>
++        </div>
++      </section>
++
++      <section class="card">
++        <h2>Dashboard agentow</h2>
++        <div class="actions">
++          <button id="refreshDash">Odswiez dashboard</button>
++          <button id="refreshAgentStatus">Status agentow</button>
++        </div>
++
++        <div class="dash-grid" id="dashStats" style="margin:12px 0">
++          <div class="dash-box">
++            <h3>Moduly (dzis)</h3>
++            <div class="dash-num" id="dashModules">-</div>
++            <div class="progress-bar"><div class="progress-fill" id="dashModuleBar" style="width:0%"></div></div>
++            <div class="dash-label">limit: 50</div>
++          </div>
++          <div class="dash-box">
++            <h3>Programy (dzis)</h3>
++            <div class="dash-num" id="dashPrograms">-</div>
++            <div class="progress-bar"><div class="progress-fill" id="dashProgramBar" style="width:0%"></div></div>
++            <div class="dash-label">limit: 5 @ >=90%</div>
++          </div>
++          <div class="dash-box">
++            <h3>Avg Quality</h3>
++            <div class="dash-num" id="dashQuality">-</div>
++            <div class="dash-label">% (cel: 90+)</div>
++          </div>
++          <div class="dash-box">
++            <h3>Launcher Day</h3>
++            <div class="dash-num" id="dashLauncher">-</div>
++            <div class="dash-label">status</div>
++          </div>
++        </div>
++
++        <h3 style="font-size:13px;color:#888;margin:10px 0 4px 0">Serwery</h3>
++        <div id="dashServersWrap" style="overflow-x:auto">
++          <table class="mini" id="dashServers">
++            <thead><tr><th>ID</th><th>URL</th><th>Status</th></tr></thead>
++            <tbody><tr><td colspan="3" style="color:#555">brak danych</td></tr></tbody>
++          </table>
++        </div>
++
++        <h3 style="font-size:13px;color:#888;margin:10px 0 4px 0">Top moduly (jakosc)</h3>
++        <div id="dashTopWrap" style="overflow-x:auto">
++          <table class="mini" id="dashTop">
++            <thead><tr><th>Task</th><th>Plik</th><th>Score</th><th>Status</th></tr></thead>
++            <tbody><tr><td colspan="4" style="color:#555">brak danych</td></tr></tbody>
++          </table>
++        </div>
++
++        <div id="dashStatusPanel" class="dash-status-panel">
++          <div class="dash-status-head">
++            <span id="dashStatusDot" class="dash-status-dot status-info"></span>
++            <span id="dashStatusMessage">Status operacyjny niedostepny.</span>
++            <span id="dashStatusSeverity" class="dash-status-badge status-info">INFO</span>
++          </div>
++          <div id="dashStatusDetail" class="dash-status-detail">Uruchom odswiezenie dashboardu, aby pobrac status context.</div>
++          <div class="dash-status-grid">
++            <div>
++              <div class="dash-label">Sekcje dotkniete</div>
++              <div id="dashStatusImpacted" class="dash-status-list">Brak sekcji.</div>
++            </div>
++            <div>
++              <div class="dash-label">Rekomendowane akcje</div>
++              <ul id="dashStatusActions" class="dash-status-actions"><li>Brak akcji.</li></ul>
++            </div>
++          </div>
++        </div>
++
++        <pre id="agentStatusOut" style="margin-top:10px;"></pre>
++      </section>
++    </div>
++
++    <!-- TAB: Live Status -->
++    <div id="tab-status" class="tab-panel">
++      <section class="card">
++        <h2>Live Status</h2>
++        <div class="actions">
++          <button id="refreshStatus">Odswiez status</button>
++          <button id="runnerLog">Runner log</button>
++          <button id="healthLog">Health log</button>
++          <button id="mythibiaApiLog">Mythibia API log</button>
++          <button id="mythibiaWatcherLog">Mythibia Watcher log</button>
++        </div>
++        <pre id="statusOut"></pre>
++      </section>
++    </div>
++
++    <!-- TAB: Logi agentow -->
++    <div id="tab-logs" class="tab-panel">
++      <section class="card">
++        <h2>Logi agentow</h2>
++        <div class="actions">
++          <button id="logOrchestrator">Orchestrator</button>
++          <button id="logScout">Scout</button>
++          <button id="logBrain">Brain</button>
++          <button id="logGenerator">Generator</button>
++          <button id="logValidator">Validator</button>
++          <button id="logPublisher">Publisher</button>
++        </div>
++        <pre id="agentLogOut"></pre>
++      </section>
++    </div>
++
++    <!-- TAB: Terminal -->
++    <div id="tab-cmd" class="tab-panel">
++      <section class="card">
++        <h2>Preset Commands</h2>
++        <div class="actions">
++          <button id="loadPresets">Pobierz presety</button>
++        </div>
++        <select id="presetSelect" size="6"></select>
++        <button id="runPreset">Uruchom preset</button>
++      </section>
++
++      <section class="card">
++        <h2>Full Command</h2>
++        <textarea id="cmd" rows="5" placeholder="np. systemctl status ctoa-runner.service --no-pager -l"></textarea>
++        <div class="actions">
++          <button id="runCmd">Uruchom komende</button>
++        </div>
++        <pre id="cmdOut"></pre>
++      </section>
++    </div>
++  </main>
++
++  <script src="/static/app.js?v=20260514c"></script>
++</body>
++</html>
++
++
+ 
+ 

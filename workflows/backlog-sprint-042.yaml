@@ -1,0 +1,69 @@
+sprint: '042'
+theme: "Track C Continuation — Operator Adoption + Infrastructure Hardening + Community Readiness"
+status: ACTIVE
+source_baseline: v1.14.0
+proposed_release: v1.15.0
+
+items:
+- id: CTOA-208
+  title: Operator adoption workflow (get-started guide)
+  type: documentation
+  priority: P1
+  status: READY_FOR_WAVE_1
+  description: >
+    Create a step-by-step operator onboarding guide for CTOA v1.14.0 adoption.
+    Include: installation, configuration, first test run, troubleshooting quick-start.
+    Deliverable: docs/OPERATOR_GET_STARTED.md
+
+- id: CTOA-209
+  title: Infrastructure hardening audit (Phase-5 evolution)
+  type: operations
+  priority: P1
+  status: READY_FOR_WAVE_1
+  description: >
+    Conduct Phase-5 infrastructure review post-Sprint-041. Verify all worktree-drycheck,
+    nightly scheduling, and alert mechanisms are operating within SLO. Plan Phase-6 enhancements.
+    Deliverable: docs/PHASE_5_AUDIT_REPORT.md + Phase-6 roadmap sketch.
+
+- id: CTOA-210
+  title: Community engagement launch plan
+  type: governance
+  priority: P2
+  status: READY_FOR_WAVE_1
+  description: >
+    Define community engagement strategy for post-GA: Discord, GitHub Discussions,
+    contributor guidelines. Establish feedback loop for operator input.
+    Deliverable: docs/COMMUNITY_ENGAGEMENT_PLAN.md
+
+- id: CTOA-211
+  title: Mobile console UX refinement (accessibility pass)
+  type: quality
+  priority: P2
+  status: READY_FOR_WAVE_1
+  description: >
+    Review mobile console interface for accessibility, mobile responsiveness,
+    and operator usability feedback from v1.14.0 field data (if any).
+    Deliverable: updated mobile_console/, A11y report.
+
+- id: CTOA-212
+  title: Release v1.15.0 pack
+  type: governance
+  priority: P3
+  status: PENDING_WAVE_1
+  description: Consolidate Sprint-042 deliverables into the release pack.
+
+slo_targets:
+  success_rate_24h_threshold: 0.95
+  error_budget_max_fails_per_window: 1
+  nightly_artifact_max_age_hours: 25
+  infrastructure_uptime_target: 0.999
+
+strategic_notes:
+  - "Sprint-042 focuses on operationalization: making v1.14.0 easy for customers to adopt and support."
+  - "Phase-5 audit will inform Phase-6 planning (expected: automated deployment, self-healing guardrails)."
+  - "Community engagement creates feedback loop for future prioritization (Sprints 043+)."
+  - "Target release: v1.15.0 (mid-productization track, post-early-adopter phase)."
+
+dependencies:
+  - sprint-041: "[completed] Package tiering, surface hygiene, operator UX cadence provide foundation"
+  - upstream_gate: "v1.14.0 baseline promotion (completed 2026-05-18)"

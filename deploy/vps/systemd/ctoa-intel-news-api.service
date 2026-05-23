@@ -1,0 +1,18 @@
+[Unit]
+Description=CTOA Intel news API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/ctoa/labs/projects/intel_news_api
+Environment="PYTHONUNBUFFERED=1"
+ExecStart=/opt/ctoa/labs/projects/intel_news_api/.venv/bin/python3 -m uvicorn app:app --host 127.0.0.1 --port 8890
+Restart=always
+RestartSec=3
+StandardOutput=append:/opt/ctoa/logs/intel-news-api.log
+StandardError=append:/opt/ctoa/logs/intel-news-api.log
+
+[Install]
+WantedBy=multi-user.target
+

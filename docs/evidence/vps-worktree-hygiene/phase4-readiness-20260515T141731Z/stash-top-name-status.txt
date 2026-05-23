@@ -1,0 +1,6 @@
+M	deploy/vps/rotate-mobile-token.sh
+M	docs/VALIDATION_CHECKLIST.md
+M	docs/runbook-disk-emergency.md
+M	docs/site/live-dashboard.html
+M	mobile_console/static/app.js
+M	mobile_console/static/index.html

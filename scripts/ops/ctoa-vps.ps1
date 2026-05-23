@@ -9,6 +9,9 @@ param(
         'DashboardSnapshot',
         'TailMobileLogs',
         'ValidateServices',
+        'HealthCheckOneShot',
+        'WorktreeDryCheck',
+        'InstallWorktreeDryCheckCron',
         'StabilizeReportService',
         'WriteGithubPat',
         'ReportViaServiceEnv',
@@ -94,19 +97,44 @@ function Resolve-ServerUrl([string]$Candidate, [string]$Fallback) {
 
 function Get-RemoteTarget() {
     $h = [Environment]::GetEnvironmentVariable('CTOA_VPS_HOST')
-    if ([string]::IsNullOrWhiteSpace($h)) { $h = '46.225.110.52' }
+    if ([string]::IsNullOrWhiteSpace($h)) { $h = '116.202.96.250' }
     $u = [Environment]::GetEnvironmentVariable('CTOA_VPS_USER')
-    if ([string]::IsNullOrWhiteSpace($u)) { $u = 'root' }
+    if ([string]::IsNullOrWhiteSpace($u)) { $u = 'ctoa-admin' }
     return "$u@$h"
 }
 
 function Get-KeyPath() {
     $k = [Environment]::GetEnvironmentVariable('CTOA_VPS_KEY_PATH')
-    if ([string]::IsNullOrWhiteSpace($k)) { $k = Join-Path $env:USERPROFILE '.ssh\ctoa_vps_ed25519' }
+    if ([string]::IsNullOrWhiteSpace($k)) { $k = Join-Path $env:USERPROFILE '.ssh\ctoa_vps_auto_ed25519' }
     if (-not (Test-Path $k)) { throw "SSH key not found: $k" }
     return $k
 }
 
+function Get-LocalRootWrapperScript() {
+    $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
+    $wrapper = Join-Path $repoRoot 'deploy\vps\wrappers\ctoa-root-action.sh'
+    if (-not (Test-Path $wrapper)) {
+        throw "Missing local wrapper script: $wrapper"
+    }
+    return (Resolve-Path $wrapper).Path
+}
+
+function Invoke-RemoteRootWrapper() {
+    $t = Get-RemoteTarget
+    $k = Get-KeyPath
+    $localWrapper = Get-LocalRootWrapperScript
+    $remoteTmp = '/tmp/ctoa-root-action.sh'
+    $remoteDst = '/opt/ctoa/scripts/ops/ctoa-root-action.sh'
+
+    Invoke-WithSshRetry -Label 'CopyRootWrapper' -Operation {
+        & scp -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new -i $k $localWrapper "${t}:${remoteTmp}"
+    }
+
+    $installCmd = "sudo -n /usr/bin/install -m 750 $remoteTmp $remoteDst; sudo -n /usr/bin/chown root:root $remoteDst; sudo -n /usr/bin/sed -i 's/\r$//' $remoteDst"
+    Invoke-WithSshRetry -Label 'InstallRootWrapper' -Operation {
+        & ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new -i $k $t $installCmd
+    }
+}
 function Invoke-WithSshRetry([scriptblock]$Operation, [string]$Label) {
     $attempts = [int](Get-OptionalEnv 'CTOA_SSH_RETRY_ATTEMPTS' '5')
     $delaySeconds = [int](Get-OptionalEnv 'CTOA_SSH_RETRY_DELAY_SECONDS' '3')
@@ -135,18 +163,28 @@ function Invoke-WithSshRetry([scriptblock]$Operation, [string]$Label) {
     throw ("[{0}] SSH failed after {1} attempts" -f $Label, $attempts)
 }
 
-function Invoke-SshCommand([string]$Cmd) {
+function Invoke-SshCommand([string]$Cmd, [switch]$AsCurrentUser) {
     $t = Get-RemoteTarget; $k = Get-KeyPath
+    $remoteUser = ($t -split '@')[0]
+    $runner = if ((-not $AsCurrentUser) -and ($remoteUser -ne 'root')) { 'sudo -n bash -s' } else { 'bash -s' }
+    $normalized = (($Cmd -replace "`r`n","`n") -replace "`r","`n") + "`n"
+    $encoded = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($normalized))
+    $remoteCmd = "printf %s '$encoded' | base64 -d | $runner"
+
     Invoke-WithSshRetry -Label 'Invoke-SshCommand' -Operation {
-        & ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new -i $k $t $Cmd
+        & ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new -i $k $t $remoteCmd
     }
 }
-
 function Invoke-SshScript([string]$Script) {
     $t = Get-RemoteTarget; $k = Get-KeyPath
-    $normalized = (($Script -replace "`r`n","`n") -replace "`r","`n")
+    $remoteUser = ($t -split '@')[0]
+    $runner = if ($remoteUser -eq 'root') { 'bash -s' } else { 'sudo -n bash -s' }
+    $normalized = (($Script -replace "`r`n","`n") -replace "`r","`n") + "`n"
+    $encoded = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($normalized))
+    $remoteCmd = "printf %s '$encoded' | base64 -d | $runner"
+
     Invoke-WithSshRetry -Label 'Invoke-SshScript' -Operation {
-        ($normalized + "`n") | & ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new -i $k $t "tr -d '\r' | bash -s"
+        & ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new -i $k $t $remoteCmd
     }
 }
 
@@ -219,7 +257,38 @@ set -e
 export DEBIAN_FRONTEND=noninteractive
 if ! command -v git >/dev/null 2>&1; then apt-get update -y; apt-get install -y git; fi
 if ! command -v python3 >/dev/null 2>&1; then apt-get update -y; apt-get install -y python3 python3-venv python3-pip; fi
+ctoa_preupdate_gate() {
+  local repo="$1"
+  local evidence_dir="$repo/runtime/evidence/worktree-hygiene"
+  local ts
+  ts="$(date -u +%Y%m%dT%H%M%SZ)"
+  mkdir -p "$evidence_dir"
+
+  local status_file="$evidence_dir/preupdate-status-${ts}.txt"
+  git -C "$repo" status --porcelain > "$status_file"
+
+  if [ -s "$status_file" ]; then
+    local report_file="$evidence_dir/preupdate-gate-${ts}.txt"
+    {
+      echo "[pre-update-gate] BLOCKED dirty worktree"
+      echo "repo=$repo"
+      echo "timestamp_utc=$ts"
+      echo "status_file=$status_file"
+      echo
+      echo "=== git status --short ==="
+      git -C "$repo" status --short || true
+      echo
+      echo "=== recommended next steps ==="
+      echo "1) Run Phase 1 inventory and back up changed files."
+      echo "2) Classify changes: keep-and-commit / keep-but-stash / archive-and-remove."
+      echo "3) Stash or commit changes, then rerun update action."
+    } > "$report_file"
+    cat "$report_file"
+    return 1
+  fi
+}
 if [ -d /opt/ctoa/.git ]; then
+  ctoa_preupdate_gate /opt/ctoa
   cd /opt/ctoa; git fetch --all; git checkout main; git pull --ff-only
 else
   rm -rf /opt/ctoa; git clone https://github.com/famatyyk/CTOAi.git /opt/ctoa
@@ -246,9 +315,9 @@ cp deploy/vps/systemd/ctoa-mobile-token-rotation.service /etc/systemd/system/
 cp deploy/vps/systemd/ctoa-mobile-token-rotation.timer /etc/systemd/system/
 cp deploy/vps/systemd/ctoa-lab-runner.service /etc/systemd/system/
 cp deploy/vps/systemd/ctoa-lab-runner.timer /etc/systemd/system/
-cp deploy/vps/systemd/ctoa-mythibia-news-watcher.service /etc/systemd/system/
-cp deploy/vps/systemd/ctoa-mythibia-news-watcher.timer /etc/systemd/system/
-cp deploy/vps/systemd/ctoa-mythibia-news-api.service /etc/systemd/system/
+cp deploy/vps/systemd/ctoa-intel-news-watcher.service /etc/systemd/system/
+cp deploy/vps/systemd/ctoa-intel-news-watcher.timer /etc/systemd/system/
+cp deploy/vps/systemd/ctoa-intel-news-api.service /etc/systemd/system/
 cp deploy/vps/logrotate/ctoa /etc/logrotate.d/ctoa
 chmod +x /opt/ctoa/deploy/vps/cleanup-retention.sh
 chmod +x /opt/ctoa/deploy/vps/rotate-mobile-token.sh
@@ -260,8 +329,8 @@ systemctl enable --now ctoa-retention-cleanup.timer
 systemctl enable --now ctoa-mobile-token-rotation.timer
 # lab-runner module is currently not shipped; keep timer disabled to avoid noisy failures.
 systemctl disable --now ctoa-lab-runner.timer || true
-systemctl enable --now ctoa-mythibia-news-watcher.timer
-systemctl enable --now ctoa-mythibia-news-api.service
+systemctl enable --now ctoa-intel-news-watcher.timer
+systemctl enable --now ctoa-intel-news-api.service
 
 if [ "${CTOA_SETUP_SMOKE:-0}" = "1" ]; then
     echo "[Setup24x7] running optional smoke checks"
@@ -280,7 +349,7 @@ switch ($Action) {
     'Verify'              {
         Invoke-RemoteVerify
     }
-    'WhoAmI'              { Invoke-SshCommand 'whoami' }
+    'WhoAmI'              { Invoke-SshCommand 'whoami' -AsCurrentUser }
     'Setup24x7'           { $sc = Get-SetupScript; Invoke-SshScript $sc }
     'TailLiveHealth'      { Invoke-SshCommand 'tail -n 80 -f /opt/ctoa/logs/health-live.log' }
     'DashboardSnapshot'   { Invoke-SshScript @'
@@ -433,7 +502,7 @@ systemctl list-units \
     ctoa-auto-trainer.service \
     ctoa-health-live.service \
     ctoa-mobile-console.service \
-    ctoa-mythibia-news-api.service \
+    ctoa-intel-news-api.service \
     ctoa-agents-orchestrator.service \
     ctoa-runner.service \
     ctoa-report.service \
@@ -484,7 +553,7 @@ echo "=== recent reseed log ==="
 tail -n 20 /opt/ctoa/logs/reseed-tier.log 2>/dev/null || echo 'reseed-tier.log-not-found'
 echo
 
-# ── SSH quality monitor ──────────────────────────────────────────────────────
+# Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬ SSH quality monitor Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬
 echo "=== SSH quality monitor (last 60 s) ==="
 SSH_FAIL_THRESHOLD=${CTOA_SSH_FAIL_THRESHOLD:-5}          # fails/min to trigger auto-heal
 WINDOW_SEC=60
@@ -500,7 +569,7 @@ echo "  SSH fail rate (per min)              : ${FAIL_RATE_INT}"
 echo "  Auto-heal threshold (per min)        : ${SSH_FAIL_THRESHOLD}"
 
 if [ "${FAIL_RATE_INT}" -ge "${SSH_FAIL_THRESHOLD}" ]; then
-  echo "  STATUS : DEGRADED – threshold exceeded, triggering auto-heal"
+  echo "  STATUS : DEGRADED Ă˘â‚¬â€ś threshold exceeded, triggering auto-heal"
 
   # reset-failed for ctoa services that depend heavily on outbound SSH / sshd
   SSH_HEAVY_SERVICES=(
@@ -523,7 +592,7 @@ else
   echo "  STATUS : OK"
 fi
 echo
-# ────────────────────────────────────────────────────────────────────────────
+# Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬Ă˘â€ťâ‚¬
 '@
         }
         'ShowPipelineProgress' {
@@ -578,7 +647,7 @@ sudo -u postgres psql -d ctoa -c "SELECT s.id, s.url, s.status, COUNT(m.id) AS m
         }
         'ListActions' {
                 $actions = @(
-                        'Verify','WhoAmI','Setup24x7','EnableLiveHealth','TailLiveHealth','DashboardSnapshot','TailMobileLogs','ValidateServices',
+                        'Verify','WhoAmI','Setup24x7','EnableLiveHealth','TailLiveHealth','DashboardSnapshot','TailMobileLogs','ValidateServices','HealthCheckOneShot','WorktreeDryCheck','InstallWorktreeDryCheckCron',
                         'StabilizeReportService','WriteGithubPat','ReportViaServiceEnv','PublishWithSourcedEnv',
                         'InspectReportEnv','ReportErrorDetails','SetupDB','SetupAgents','TailAgents','FixDbPerms',
                     'RegisterServer','RegisterServerList','KickoffNow','MythibiaBurst','GlobalBurst','InstallKickoffTimer','ShowKickoffTimer',
@@ -600,13 +669,14 @@ sudo -u postgres psql -d ctoa -c "SELECT s.id, s.url, s.status, COUNT(m.id) AS m
                 Write-Host 'powershell -ExecutionPolicy Bypass -File ctoa-vps.ps1 -Action ShowPipelineProgress'
                 Write-Host 'powershell -ExecutionPolicy Bypass -File ctoa-vps.ps1 -Action KickoffNow'
                 Write-Host 'powershell -ExecutionPolicy Bypass -File ctoa-vps.ps1 -Action GlobalBurst'
+                Write-Host 'powershell -ExecutionPolicy Bypass -File ctoa-vps.ps1 -Action HealthCheckOneShot'
                 Write-Host 'powershell -ExecutionPolicy Bypass -File ctoa-vps.ps1 -Action RegisterServerList -ServerUrls "https://url1,https://url2"'
                 Write-Host 'powershell -ExecutionPolicy Bypass -File ctoa-vps.ps1 -Action HealService -ServiceName ctoa-mobile-console'
         }
     'ShowServiceRestarts' {
         Invoke-SshScript @'
 set -e
-services="ctoa-mobile-console.service ctoa-health-live.service ctoa-mythibia-news-api.service ctoa-agents-orchestrator.service ctoa-auto-trainer.service"
+services="ctoa-mobile-console.service ctoa-health-live.service ctoa-intel-news-api.service ctoa-agents-orchestrator.service ctoa-auto-trainer.service"
 echo "=== service restart counters ==="
 for s in $services; do
   printf "\n--- %s ---\n" "$s"
@@ -1354,22 +1424,24 @@ if [ -f /opt/ctoa/logs/runner.log ]; then tail -n 20 /opt/ctoa/logs/runner.log; 
 '@
     }
     'InspectReportEnv' {
-        Invoke-SshScript @'
-set -e
-grep -n '^GITHUB_PAT=' /opt/ctoa/.env | sed 's/=.*/=***set***/' || echo PAT-not-set
-systemctl restart ctoa-report.service
-journalctl -u ctoa-report.service -n 12 --no-pager
-'@
+        Ensure-RemoteRootWrapper
+        Invoke-SshCommand 'sudo -n /opt/ctoa/scripts/ops/ctoa-root-action.sh inspect-report-env' -AsCurrentUser
     }
     'ValidateServices' {
-        Invoke-SshScript @'
-set -e
-systemctl start ctoa-runner.service
-systemctl start ctoa-report.service || true
-systemctl status ctoa-runner.service --no-pager -l | head -n 12
-systemctl status ctoa-report.service --no-pager -l | head -n 20
-if [ -f /opt/ctoa/logs/runner.log ]; then tail -n 40 /opt/ctoa/logs/runner.log; else echo runner.log-not-present; fi
-'@
+        Ensure-RemoteRootWrapper
+        Invoke-SshCommand 'sudo -n /opt/ctoa/scripts/ops/ctoa-root-action.sh validate-services' -AsCurrentUser
+    }
+    'HealthCheckOneShot' {
+        Ensure-RemoteRootWrapper
+        Invoke-SshCommand 'sudo -n /opt/ctoa/scripts/ops/ctoa-root-action.sh healthcheck-one-shot' -AsCurrentUser
+    }
+    'WorktreeDryCheck' {
+        Ensure-RemoteRootWrapper
+        Invoke-SshCommand 'sudo -n /opt/ctoa/scripts/ops/ctoa-root-action.sh worktree-drycheck' -AsCurrentUser
+    }
+    'InstallWorktreeDryCheckCron' {
+        Ensure-RemoteRootWrapper
+        Invoke-SshCommand 'sudo -n /opt/ctoa/scripts/ops/ctoa-root-action.sh install-worktree-drycheck-cron' -AsCurrentUser
     }
     'EnableLiveHealth' {
         Invoke-SshScript @'
@@ -1424,7 +1496,38 @@ pg_isready -h 127.0.0.1 -U ctoa -d ctoa && echo '[SetupDB] DB ready'
     'SetupAgents' {
         Invoke-SshScript @'
     set -e
+ctoa_preupdate_gate() {
+  local repo="$1"
+  local evidence_dir="$repo/runtime/evidence/worktree-hygiene"
+  local ts
+  ts="$(date -u +%Y%m%dT%H%M%SZ)"
+  mkdir -p "$evidence_dir"
+
+  local status_file="$evidence_dir/preupdate-status-${ts}.txt"
+  git -C "$repo" status --porcelain > "$status_file"
+
+  if [ -s "$status_file" ]; then
+    local report_file="$evidence_dir/preupdate-gate-${ts}.txt"
+    {
+      echo "[pre-update-gate] BLOCKED dirty worktree"
+      echo "repo=$repo"
+      echo "timestamp_utc=$ts"
+      echo "status_file=$status_file"
+      echo
+      echo "=== git status --short ==="
+      git -C "$repo" status --short || true
+      echo
+      echo "=== recommended next steps ==="
+      echo "1) Run Phase 1 inventory and back up changed files."
+      echo "2) Classify changes: keep-and-commit / keep-but-stash / archive-and-remove."
+      echo "3) Stash or commit changes, then rerun update action."
+    } > "$report_file"
+    cat "$report_file"
+    return 1
+  fi
+}
     cd /opt/ctoa
+    ctoa_preupdate_gate /opt/ctoa
     git pull --ff-only
     .venv/bin/pip install -q psycopg2-binary
     mkdir -p /opt/ctoa/generated /opt/ctoa/releases /opt/ctoa/logs
@@ -1459,7 +1562,38 @@ pg_isready -h 127.0.0.1 -U ctoa -d ctoa && echo '[SetupDB] DB ready'
 
         $remoteScript = @'
 set -e
+ctoa_preupdate_gate() {
+  local repo="$1"
+  local evidence_dir="$repo/runtime/evidence/worktree-hygiene"
+  local ts
+  ts="$(date -u +%Y%m%dT%H%M%SZ)"
+  mkdir -p "$evidence_dir"
+
+  local status_file="$evidence_dir/preupdate-status-${ts}.txt"
+  git -C "$repo" status --porcelain > "$status_file"
+
+  if [ -s "$status_file" ]; then
+    local report_file="$evidence_dir/preupdate-gate-${ts}.txt"
+    {
+      echo "[pre-update-gate] BLOCKED dirty worktree"
+      echo "repo=$repo"
+      echo "timestamp_utc=$ts"
+      echo "status_file=$status_file"
+      echo
+      echo "=== git status --short ==="
+      git -C "$repo" status --short || true
+      echo
+      echo "=== recommended next steps ==="
+      echo "1) Run Phase 1 inventory and back up changed files."
+      echo "2) Classify changes: keep-and-commit / keep-but-stash / archive-and-remove."
+      echo "3) Stash or commit changes, then rerun update action."
+    } > "$report_file"
+    cat "$report_file"
+    return 1
+  fi
+}
 cd /opt/ctoa
+ctoa_preupdate_gate /opt/ctoa
 git fetch --quiet
 git reset --hard origin/main
 
@@ -1534,7 +1668,38 @@ echo [InstallGsReset] GS reset timer armed and active
 
         $remoteScript = @'
 set -e
+ctoa_preupdate_gate() {
+  local repo="$1"
+  local evidence_dir="$repo/runtime/evidence/worktree-hygiene"
+  local ts
+  ts="$(date -u +%Y%m%dT%H%M%SZ)"
+  mkdir -p "$evidence_dir"
+
+  local status_file="$evidence_dir/preupdate-status-${ts}.txt"
+  git -C "$repo" status --porcelain > "$status_file"
+
+  if [ -s "$status_file" ]; then
+    local report_file="$evidence_dir/preupdate-gate-${ts}.txt"
+    {
+      echo "[pre-update-gate] BLOCKED dirty worktree"
+      echo "repo=$repo"
+      echo "timestamp_utc=$ts"
+      echo "status_file=$status_file"
+      echo
+      echo "=== git status --short ==="
+      git -C "$repo" status --short || true
+      echo
+      echo "=== recommended next steps ==="
+      echo "1) Run Phase 1 inventory and back up changed files."
+      echo "2) Classify changes: keep-and-commit / keep-but-stash / archive-and-remove."
+      echo "3) Stash or commit changes, then rerun update action."
+    } > "$report_file"
+    cat "$report_file"
+    return 1
+  fi
+}
 cd /opt/ctoa
+ctoa_preupdate_gate /opt/ctoa
     echo "[InstallGsResetFromBranch] source ref: __SOURCE_REF__"
     git fetch --quiet origin "__SOURCE_REF__"
 git checkout -f FETCH_HEAD
@@ -1745,3 +1910,8 @@ systemctl status ctoa-db.service --no-pager -l | sed -n '1,80p'
         Invoke-RemoteSyntaxValidation
     }
 }
+
+
+
+
+

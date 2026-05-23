@@ -1,0 +1,74 @@
+From 8afd1beb519e53f54949cc14dea6439bb0f50373 Mon Sep 17 00:00:00 2001
+From: CTOA VPS Operator <ctoa-vps@local>
+Date: Fri, 15 May 2026 14:36:59 +0000
+Subject: [PATCH 3/4] hygiene: phase4 reapply group D (runbooks_checklists)
+
+---
+ docs/VALIDATION_CHECKLIST.md   | 28 ++--------------------------
+ docs/runbook-disk-emergency.md |  2 +-
+ 2 files changed, 3 insertions(+), 27 deletions(-)
+
+diff --git a/docs/VALIDATION_CHECKLIST.md b/docs/VALIDATION_CHECKLIST.md
+index 6f0bdc0..6807e95 100644
+--- a/docs/VALIDATION_CHECKLIST.md
++++ b/docs/VALIDATION_CHECKLIST.md
+@@ -1,29 +1,6 @@
+ # CTOA Systems Validation Checklist
+ 
+-**Last Updated:** 2026-03-12T20:05:12+00:00
+-
+-## Mobile QA Validation (2026-03-19)
+-
+-- [x] Menu and mobile layout readability/tap flow validated (Samsung Note 10+ class viewport)
+-- [x] Owner login via modal with API base validated
+-- [x] Owner settings save + persist-after-refresh validated
+-- [x] Parking Pomyslow add/remove and counter transitions validated
+-- [x] Operator restrictions validated (`showPrices` and `reset localStorage` controls disabled)
+-- [x] Overall mobile QA status: PASS
+-
+-## Governance Gate (PR path + bypass control)
+-
+-- [ ] Changes follow PR -> `main` flow by default
+-- [ ] Required checks are green: `PR Quality Report` and `CTOA Pipeline`
+-- [ ] Current sprint validator artifact is attached in CI evidence
+-- [ ] If bypass was used: incident note + 24h backfill PR are documented
+-
+-## Sprint-042 Wave-1 Checks
+-
+-- [ ] `scripts/ops/sprint042_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-042-validation.json` passes
+-- [ ] `.vscode/tasks.json` contains `CTOA: Sprint-042 Validate` and `CTOA: Sprint-042 Wave-1 Run`
+-- [ ] `.github/workflows/ctoa-pipeline.yml` runs Sprint-042 delivery gate
+-- [ ] `runtime/ci-artifacts/sprint-042-validation.json` is exported in CI artifacts
++**Last Updated:** 2026-05-15T00:00:00+00:00
+ 
+ ## Pre-Deployment Checks
+ 
+@@ -48,7 +25,7 @@
+ - [ ] Report generation successful
+ - [ ] GitHub API connectivity via PAT token
+ 
+-## Post-Deployment Checks  
++## Post-Deployment Checks
+ 
+ ### Service Health (after VPS deployment)
+ 
+@@ -143,4 +120,3 @@ curl http://localhost:9999/health 2>/dev/null | jq .
+ - [SETUP.md](../deploy/vps/SETUP.md) - VPS environment setup
+ - [runner.py](../runner/runner.py) - Main orchestration logic
+ 
+-
+diff --git a/docs/runbook-disk-emergency.md b/docs/runbook-disk-emergency.md
+index f356c29..3efc388 100644
+--- a/docs/runbook-disk-emergency.md
++++ b/docs/runbook-disk-emergency.md
+@@ -1,6 +1,6 @@
+ # Emergency Disk Response Runbook
+ 
+-**Last Updated:** 2026-03-12T20:05:12+00:00
++**Last Updated:** 2026-05-15T00:00:00+00:00
+ 
+ ## Overview
+ This runbook guides emergency disk space management for CTOA VPS.
+-- 
+2.43.0
+

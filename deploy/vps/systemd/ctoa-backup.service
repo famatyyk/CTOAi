@@ -1,0 +1,11 @@
+[Unit]
+Description=CTOA nightly backup task (config + PostgreSQL)
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/ctoa
+ExecStart=/bin/bash /opt/ctoa/deploy/vps/backup-nightly.sh
+StandardOutput=append:/opt/ctoa/logs/backup-nightly.log
+StandardError=append:/opt/ctoa/logs/backup-nightly.log

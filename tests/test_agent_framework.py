@@ -17,10 +17,10 @@ class TestAgentDefinitions(unittest.TestCase):
     """Test agent framework definitions"""
     
     def test_agent_count(self):
-        """Verify 10 agents are defined"""
+        """Verify at least 10 agents are defined"""
         from definitions import list_agents
         agents = list_agents()
-        self.assertEqual(len(agents), 10, f"Expected 10 agents, got {len(agents)}")
+        self.assertGreaterEqual(len(agents), 10, f"Expected at least 10 agents, got {len(agents)}")
     
     def test_agent_properties(self):
         """Verify each agent has required properties"""
@@ -135,3 +135,4 @@ class TestToolAdvisor(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+

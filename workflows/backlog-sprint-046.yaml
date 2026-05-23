@@ -1,0 +1,111 @@
+version: 1
+backlog_id: sprint-046
+window_days: 3
+focus: "10-agent operational cadence + Stage-1 governance baseline + VPS update gate enforcement"
+owner: strategos
+
+rules:
+  max_parallel_tasks: 3
+  definition_of_done:
+    - implementation_created
+    - validation_passed
+    - evidence_recorded
+    - documentation_updated
+  release_policy:
+    - approval_required: true
+    - environment: production
+
+tasks:
+  - id: CTOA-233
+    title: "Open Sprint-046 Stage-1 baseline with 10-agent accountability protocol"
+    priority: P0
+    type: governance
+    domain: [governance, planning, release]
+    assignees: [strategos, core-architect, documentation-sage]
+    estimate_hours: 2
+    deliverables:
+      - "workflows/backlog-sprint-046.yaml"
+      - "workflows/sprint-046-delivery-flow.yaml"
+      - "docs/history/sprints/SPRINT-046.md"
+    acceptance:
+      - "Sprint-046 backlog, flow, and Stage-1 baseline report are published"
+      - "10-agent accountability template is embedded in stage closeout"
+      - "God Mode decision gate for Wave-1 is explicit"
+
+  - id: CTOA-234
+    title: "Establish Sprint-046 progress visibility baseline"
+    priority: P0
+    type: observability
+    domain: [governance, reporting, automation]
+    assignees: [documentation-sage, core-architect]
+    estimate_hours: 2
+    deliverables:
+      - "docs/history/sprints/SPRINT-046-PROGRESS.md"
+      - ".vscode/tasks.json"
+    acceptance:
+      - "Sprint-046 progress markdown is refreshable with one local task"
+      - "Diagram shows RELEASED, in-flight, NEW, and BLOCKED percentages"
+      - "Initial baseline reflects Stage-1 launch state"
+
+  - id: CTOA-235
+    title: "Create Sprint-046 validator and Wave-1 local wiring"
+    priority: P1
+    type: quality
+    domain: [ci, qa, automation]
+    assignees: [qa-terminator, core-architect]
+    estimate_hours: 3
+    deliverables:
+      - "scripts/ops/sprint046_validate.py"
+      - ".vscode/tasks.json"
+      - "runtime/ci-artifacts/sprint-046-validation.json"
+    acceptance:
+      - "Validator checks Sprint-046 backlog, flow, docs, and local task wiring"
+      - "Wave-1 local chain executes tests and validator"
+      - "Validation artifact is generated in runtime/ci-artifacts"
+
+  - id: CTOA-236
+    title: "Execute Sprint-046 Stage-1 Wave-1 readiness pass"
+    priority: P1
+    type: governance
+    domain: [qa, governance, release]
+    assignees: [qa-terminator, strategos]
+    estimate_hours: 3
+    deliverables:
+      - "runtime/ci-artifacts/sprint-046-validation.json"
+      - "runtime/ci-artifacts/sprint-046-wave1-run.log"
+      - "docs/history/sprints/SPRINT-046-PROGRESS.md"
+    acceptance:
+      - "Focused regression checks PASS"
+      - "Sprint-046 validator reports PASS"
+      - "Wave-1 readiness evidence is complete"
+
+  - id: CTOA-237
+    title: "Verify VPS pre-update dirty-worktree gate in operations flow"
+    priority: P1
+    type: reliability
+    domain: [ops, reliability, hardening]
+    assignees: [devops-master, security-guardian]
+    estimate_hours: 2
+    deliverables:
+      - "scripts/ops/ctoa-vps.ps1"
+      - "docs/evidence/vps-worktree-hygiene/README.md"
+      - "tests/test_suite.py"
+    acceptance:
+      - "Update paths fail fast on dirty worktree"
+      - "Block report path is documented for operators"
+      - "Regression coverage protects gate behavior"
+
+  - id: CTOA-238
+    title: "Stage-1 sign-off report in 10-agent format"
+    priority: P1
+    type: governance
+    domain: [governance, release, documentation]
+    assignees: [strategos, core-architect, documentation-sage]
+    estimate_hours: 2
+    deliverables:
+      - "docs/history/sprints/SPRINT-046.md"
+      - "runtime/experiments/sprint-046/CTOA-238.md"
+    acceptance:
+      - "Stage-1 report has full 10-agent accountability section"
+      - "Closure block includes deliverer, verification, and God Mode decision"
+      - "Residual risks and next-step gate are documented"

@@ -19,12 +19,18 @@ ROOT = Path(__file__).resolve().parents[2]
 TOP_LEVEL_ALLOWLIST = {
     ".github",
     ".vscode",
+    ".dockerignore",
+    ".pre-commit-config.yaml",
     "agents",
     "config",
     "core",
+    "alembic",
+    "alembic.ini",
     "deploy",
+    "deploy-to-vps.sh",
     "docs",
     "mobile_console",
+    "desktop_console",
     "policies",
     "product",
     "prompts",
@@ -40,8 +46,11 @@ TOP_LEVEL_ALLOWLIST = {
     "README.md",
     "CHANGELOG.md",
     "requirements.txt",
+    "requirements-dev.txt",
     "requirements_hybrid.txt",
+    "docker-compose.yml",
     ".gitignore",
+    "Dockerfile",
     ".luarc.json",
     "ctoa.ps1",
     "ctoa-vps.ps1",
@@ -50,6 +59,7 @@ TOP_LEVEL_ALLOWLIST = {
     "labs",
     "releases",
     "templates",
+    "backups",
 }
 
 FLAGGED_TOP_LEVEL_PREFIXES = (

@@ -1,0 +1,76 @@
+sprint: '041'
+theme: "Track C Productization — Package Tiering + Public Surface Hygiene + Oper
+ator UX"
+status: CLOSED
+source_baseline: v1.13.0
+proposed_release: v1.14.0
+release_tag: v1.14.0
+release_date: 2026-05-18T00:57:00Z
+
+items:
+- id: CTOA-203
+  title: Package tiering validation (Core/Pro/Studio)
+  type: governance
+  priority: P1
+  status: RELEASED
+  completion_date: 2026-05-18T00:56:00Z
+  description: >
+    Validate that Core, Pro and Studio manifests are complete and consistent with
+    the CLIENT_DISTRIBUTION_MODEL. Verify include/exclude paths against actual repo
+    structure and produce a validation report.
+
+- id: CTOA-204
+  title: Public/private surface hygiene pass
+  type: quality
+  priority: P1
+  status: RELEASED
+  completion_date: 2026-05-18T00:56:00Z
+  description: >
+    Audit exposed APIs and documentation for private/studio content that should not
+    appear in the public Core tier. Update REPO_HYGIENE_POLICY if gaps are found.
+
+- id: CTOA-205
+  title: Operator UX release cadence documentation
+  type: documentation
+  priority: P2
+  status: RELEASED
+  completion_date: 2026-05-18T00:56:00Z
+  description: >
+    Document the release cadence for operators: how to adopt a new CTOA version,
+    what changes between tiers, and how to verify an update gate before upgrading.
+    Deliverable: docs/OPERATOR_RELEASE_CADENCE.md
+
+- id: CTOA-206
+  title: CTOA Toolkit public packaging dry-run
+  type: automation
+  priority: P2
+  status: RELEASED
+  completion_date: 2026-05-18T00:56:00Z
+  description: >
+    Produce a reproducible dry-run of packaging the Core tier as a distributable
+    archive (tar/zip) using the core.manifest.json path list. Verify no studio or
+    private paths leak into the output.
+
+- id: CTOA-207
+  title: Release v1.14.0 pack
+  type: governance
+  priority: P3
+  status: RELEASED
+  completion_date: 2026-05-18T00:57:00Z
+  description: Consolidate Sprint-041 Track C deliverables into the release pack.
+
+slo_targets:
+  success_rate_24h_threshold: 0.95
+  error_budget_max_fails_per_window: 1
+  nightly_artifact_max_age_hours: 25
+
+release_summary:
+  wave_1_result: PASS
+  wave_1_count: 153 passed, 6 skipped
+  wave_2_approval: SIGNED_BY_STRATEGOS
+  wave_2_timestamp: 2026-05-18T00:56:00Z
+  risk_level: GREEN
+  blocker_count: 0
+  evidence_artifacts:
+    - runtime/experiments/sprint-041/WAVE-1-EVIDENCE.md
+    - runtime/experiments/sprint-041/WAVE-2-DECISION-LOG.md

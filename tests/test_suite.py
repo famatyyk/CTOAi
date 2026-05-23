@@ -84,10 +84,80 @@ class TestVPSConnectivity(unittest.TestCase):
     def test_vps_host_config(self):
         """Verify VPS host is configured"""
         import os
-        host = os.environ.get("CTOA_VPS_HOST", "46.225.110.52")
+        host = os.environ.get("CTOA_VPS_HOST", "116.202.96.250")
         self.assertIsNotNone(host)
         self.assertRegex(host, r'\d+\.\d+\.\d+\.\d+')
 
+    def test_ctoa_cli_default_host_is_active_vps(self):
+        """Ensure CLI fallback host points to active VPS"""
+        script = Path(__file__).parent.parent / "ctoa.ps1"
+        content = script.read_text(encoding="utf-8", errors="ignore")
+        self.assertIn('return "116.202.96.250"', content)
+        self.assertNotIn('return "46.225.110.52"', content)
+
+    def test_ctoa_vps_script_default_host_is_active_vps(self):
+        """Ensure VPS ops fallback host points to active VPS"""
+        script = Path(__file__).parent.parent / "scripts" / "ops" / "ctoa-vps.ps1"
+        content = script.read_text(encoding="utf-8", errors="ignore")
+        self.assertIn("$h = '116.202.96.250'", content)
+        self.assertNotIn("$h = '46.225.110.52'", content)
+
+    def test_ctoa_vps_preupdate_gate_present(self):
+        """Ensure dirty-worktree gate exists in VPS update script"""
+        script = Path(__file__).parent.parent / "scripts" / "ops" / "ctoa-vps.ps1"
+        content = script.read_text(encoding="utf-8", errors="ignore")
+        self.assertIn("ctoa_preupdate_gate()", content)
+        self.assertIn("[pre-update-gate] BLOCKED dirty worktree", content)
+        self.assertIn("preupdate-gate-${ts}.txt", content)
+
+    def test_ctoa_vps_preupdate_gate_applied_to_update_paths(self):
+        """Ensure gate is called before pull/reset/checkout update flows"""
+        script = Path(__file__).parent.parent / "scripts" / "ops" / "ctoa-vps.ps1"
+        content = script.read_text(encoding="utf-8", errors="ignore")
+        self.assertGreaterEqual(content.count("ctoa_preupdate_gate /opt/ctoa"), 4)
+
+        self.assertIn(
+            "if [ -d /opt/ctoa/.git ]; then\n  ctoa_preupdate_gate /opt/ctoa\n  cd /opt/ctoa; git fetch --all; git checkout main; git pull --ff-only",
+            content,
+        )
+        self.assertIn(
+            "cd /opt/ctoa\nctoa_preupdate_gate /opt/ctoa\ngit fetch --quiet\ngit reset --hard origin/main",
+            content,
+        )
+        self.assertIn(
+            "cd /opt/ctoa\nctoa_preupdate_gate /opt/ctoa\n    echo \"[InstallGsResetFromBranch] source ref: __SOURCE_REF__\"\n    git fetch --quiet origin \"__SOURCE_REF__\"\ngit checkout -f FETCH_HEAD",
+            content,
+        )
+
+
+    def test_phase5_worktree_drycheck_script_exists_and_checks_porcelain(self):
+        """Ensure Phase-5 nightly dry-check script enforces clean worktree."""
+        script = Path(__file__).parent.parent / "deploy" / "vps" / "worktree-nightly-drycheck.sh"
+        self.assertTrue(script.exists(), "Phase-5 dry-check script is missing")
+        content = script.read_text(encoding="utf-8", errors="ignore")
+        self.assertIn("git -C \"$repo\" status --porcelain=v1", content)
+        self.assertIn("Mirror emergency VPS edits to main within one sprint cycle", content)
+
+    def test_ctoa_root_action_supports_phase5_guardrail_actions(self):
+        """Ensure root wrapper can install and run Phase-5 dry-check guardrails."""
+        script = Path(__file__).parent.parent / "scripts" / "ops" / "ctoa-root-action.sh"
+        content = script.read_text(encoding="utf-8", errors="ignore")
+        self.assertIn("worktree-drycheck)", content)
+        self.assertIn("install-worktree-drycheck-cron)", content)
+        self.assertIn("worktree-nightly-drycheck.sh", content)
+
+    def test_ctoa_vps_exposes_phase5_guardrail_actions(self):
+        """Ensure ctoa-vps action map exposes Phase-5 guardrail operations."""
+        script = Path(__file__).parent.parent / "scripts" / "ops" / "ctoa-vps.ps1"
+        content = script.read_text(encoding="utf-8", errors="ignore")
+        self.assertIn("'WorktreeDryCheck'", content)
+        self.assertIn("'InstallWorktreeDryCheckCron'", content)
+
+    def test_vps_crontab_example_contains_nightly_worktree_drycheck(self):
+        """Ensure cron template documents nightly worktree dry-check schedule."""
+        script = Path(__file__).parent.parent / "deploy" / "vps" / "crontab.example"
+        content = script.read_text(encoding="utf-8", errors="ignore")
+        self.assertIn("worktree-nightly-drycheck.sh", content)
 
 class TestGitHubIntegration(unittest.TestCase):
     """Test GitHub API integration (mock-friendly)"""
@@ -142,3 +212,4 @@ if __name__ == "__main__":
     # Run with: python -m pytest tests/test_suite.py -v
     # Or: python -m unittest discover tests/ -v
     unittest.main(verbosity=2)
+

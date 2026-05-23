@@ -1,0 +1,32 @@
+# Phase 1 Classification
+
+- branch: main
+- head: c69e25336c3c1e9cb1559718ff91806c3b6a775d
+- generated_utc: 20260515T130807Z
+
+| Status | Path | Category | Rationale |
+|---|---|---|---|
+|  M | deploy/vps/rotate-mobile-token.sh | keep-but-stash | ops-level change; stash until explicit reconciliation window |
+|  M | docs/VALIDATION_CHECKLIST.md | keep-and-commit | source/docs change likely intentional; review and commit in scoped branch |
+|  M | docs/runbook-disk-emergency.md | keep-and-commit | source/docs change likely intentional; review and commit in scoped branch |
+|  M | docs/site/live-dashboard.html | keep-and-commit | source/docs change likely intentional; review and commit in scoped branch |
+|  M | mobile_console/static/app.js | keep-and-commit | source/docs change likely intentional; review and commit in scoped branch |
+|  M | mobile_console/static/index.html | keep-and-commit | source/docs change likely intentional; review and commit in scoped branch |
+| ?? | backups/config/ctoa-config-20260514T202059Z.tar.gz | keep-but-stash | default safe path pending owner decision |
+| ?? | backups/config/ctoa-config-20260514T222256Z.tar.gz | keep-but-stash | default safe path pending owner decision |
+| ?? | backups/config/ctoa-config-20260515T025151Z.tar.gz | keep-but-stash | default safe path pending owner decision |
+| ?? | backups/db/ctoa-db-20260514T202059Z.sql.gz | keep-but-stash | default safe path pending owner decision |
+| ?? | backups/db/ctoa-db-20260514T222256Z.sql.gz | keep-but-stash | default safe path pending owner decision |
+| ?? | deploy/vps/backup-nightly.sh | keep-but-stash | ops-level change; stash until explicit reconciliation window |
+| ?? | docs/CONSISTENCY_REPORT.md | keep-and-commit | source/docs change likely intentional; review and commit in scoped branch |
+| ?? | docs/history/sprints/SPRINT-043.md | keep-and-commit | source/docs change likely intentional; review and commit in scoped branch |
+| ?? | docs/history/sprints/SPRINT-044.md | keep-and-commit | source/docs change likely intentional; review and commit in scoped branch |
+| ?? | scripts/ops/ctoa-root-action.sh | keep-and-commit | source/docs change likely intentional; review and commit in scoped branch |
+| ?? | workflows/backlog-sprint-042.yaml | keep-but-stash | default safe path pending owner decision |
+| ?? | workflows/backlog-sprint-043.yaml | keep-but-stash | default safe path pending owner decision |
+| ?? | workflows/backlog-sprint-044.yaml | keep-but-stash | default safe path pending owner decision |
+| ?? | workflows/backlog-sprint-045.yaml | keep-but-stash | default safe path pending owner decision |
+| ?? | workflows/sprint-042-delivery-flow.yaml | keep-but-stash | default safe path pending owner decision |
+| ?? | workflows/sprint-043-delivery-flow.yaml | keep-but-stash | default safe path pending owner decision |
+| ?? | workflows/sprint-044-delivery-flow.yaml | keep-but-stash | default safe path pending owner decision |
+| ?? | workflows/sprint-045-delivery-flow.yaml | keep-but-stash | default safe path pending owner decision |

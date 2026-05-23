@@ -1,5 +1,5 @@
 param(
-    [string]$VpsHost = '46.225.110.52',
+    [string]$VpsHost = '116.202.96.250',
     [string]$VpsUser = 'root',
     [string]$SshKeyPath = "$env:USERPROFILE\.ssh\ctoa_vps_ed25519",
     [string]$RemoteDir = '/opt/ctoa/generated/mythibia_online',

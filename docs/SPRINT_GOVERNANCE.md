@@ -20,7 +20,7 @@ and rollover procedures for the CTOA AI Toolkit.
 
 - Daily tick cycles via `runner.py tick --agents`
 - AI agents execute tasks and generate deliverables
-- State transitions: NEW → IN_PROGRESS → IN_QA → IN_CI_GATE → WAITING_APPROVAL
+- State transitions: NEW ??? IN_PROGRESS ??? IN_QA ??? IN_CI_GATE ??? WAITING_APPROVAL
 - Wave-based approvals (typically 3 tasks per wave, ~25% increment)
 
 ### Phase 3: Closure & Validation (Day 14)
@@ -89,6 +89,21 @@ Gate intent:
 2. Decision log record with timestamp and rationale
 3. Confirmation that promotion criteria are met for any skill update
 
+### PR Quality Gate Requirement (CTOA-208)
+
+Default promotion path to `main` is pull-request based.
+Required status checks for merge:
+
+1. `PR Quality Report`
+2. `CTOA Pipeline`
+
+### Bypass Exception Protocol (DEFCON 1-2 only)
+
+1. STRATEGOS/owner records explicit decision note with timestamp.
+2. Include reason, impacted scope, and rollback path in sprint evidence.
+3. Run local test + sprint validator evidence before bypass push.
+4. Open backfill PR within 24h to restore auditable review trail.
+
 Canonical definitions:
 
 - [Enhanced Agent/Prompt Definitive](./AGENT_PROMPT_DEFINITIVE.md)
@@ -129,19 +144,19 @@ Canonical definitions:
 
 ```text
 NEW
-  ↓ (tick: scheduled_by_planner)
+  ??? (tick: scheduled_by_planner)
 IN_PROGRESS (2 ticks)
-  ↓ (auto transition)
+  ??? (auto transition)
 IN_QA (1 tick)
-  ↓ (auto transition)
+  ??? (auto transition)
 IN_CI_GATE (1 tick)
-  ↓ (auto transition)
+  ??? (auto transition)
 WAITING_APPROVAL
-  ↓ (manual: approve --task CTOA-NNN)
+  ??? (manual: approve --task CTOA-NNN)
 RELEASED
 
 BLOCKED (manual: block_task with reason)
-  ↓ (manual: unblock_task)
+  ??? (manual: unblock_task)
 IN_PROGRESS (resume)
 ```
 

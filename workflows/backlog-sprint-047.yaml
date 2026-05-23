@@ -1,0 +1,111 @@
+version: 1
+backlog_id: sprint-047
+window_days: 3
+focus: "VPS hygiene Phase-3 reconcile + Stage-2 execution kickoff + governance continuity"
+owner: strategos
+
+rules:
+  max_parallel_tasks: 3
+  definition_of_done:
+    - implementation_created
+    - validation_passed
+    - evidence_recorded
+    - documentation_updated
+  release_policy:
+    - approval_required: true
+    - environment: production
+
+tasks:
+  - id: CTOA-239
+    title: "Open Sprint-047 kickoff and Stage-2 objective baseline"
+    priority: P0
+    type: governance
+    domain: [governance, planning, release]
+    assignees: [strategos, core-architect, documentation-sage]
+    estimate_hours: 2
+    deliverables:
+      - "workflows/backlog-sprint-047.yaml"
+      - "workflows/sprint-047-delivery-flow.yaml"
+      - "docs/history/sprints/SPRINT-047.md"
+    acceptance:
+      - "Sprint-047 backlog, flow, and kickoff baseline are published"
+      - "Stage-2 goals and constraints are explicit"
+      - "Accountability block includes God Mode decision points"
+
+  - id: CTOA-240
+    title: "Normalize Sprint-046 release state evidence and transition markers"
+    priority: P0
+    type: governance
+    domain: [governance, reporting]
+    assignees: [documentation-sage, data-engineer]
+    estimate_hours: 2
+    deliverables:
+      - "docs/history/sprints/SPRINT-046.md"
+      - "docs/history/sprints/SPRINT-046-PROGRESS.md"
+      - "docs/evidence/vps-worktree-hygiene/README.md"
+    acceptance:
+      - "Sprint-046 release evidence and progress markers are consistent"
+      - "Transition notes are linked from Sprint-047 kickoff"
+      - "Residual risk statements are explicit"
+
+  - id: CTOA-241
+    title: "Execute VPS hygiene Phase-3 reconcile (fast-forward only path)"
+    priority: P1
+    type: reliability
+    domain: [ops, reliability, governance]
+    assignees: [devops-master, security-guardian]
+    estimate_hours: 3
+    deliverables:
+      - "runtime/experiments/sprint-047/CTOA-241.md"
+      - "docs/evidence/vps-worktree-hygiene/README.md"
+    acceptance:
+      - "Fetch/pull viability is checked without destructive operations"
+      - "Any blockers are classified and documented"
+      - "Operator guidance for next safe action is recorded"
+
+  - id: CTOA-242
+    title: "Prepare controlled re-apply plan for stashed VPS changes (Phase-4 readiness)"
+    priority: P1
+    type: reliability
+    domain: [ops, qa, governance]
+    assignees: [devops-master, qa-terminator]
+    estimate_hours: 3
+    deliverables:
+      - "runtime/experiments/sprint-047/CTOA-242.md"
+      - "docs/VPS_WORKTREE_HYGIENE_PLAN.md"
+    acceptance:
+      - "Stash groups are mapped to safe re-apply order"
+      - "Validation checkpoints per re-apply step are defined"
+      - "Rollback points are documented"
+
+  - id: CTOA-243
+    title: "Create Sprint-047 validator and local Wave-1 wiring"
+    priority: P1
+    type: quality
+    domain: [ci, qa, automation]
+    assignees: [qa-terminator, core-architect]
+    estimate_hours: 3
+    deliverables:
+      - "scripts/ops/sprint047_validate.py"
+      - ".vscode/tasks.json"
+      - "runtime/ci-artifacts/sprint-047-validation.json"
+    acceptance:
+      - "Validator checks Sprint-047 backlog, flow, docs, and local task wiring"
+      - "Wave-1 local chain executes tests and validator"
+      - "Validation artifact is generated in runtime/ci-artifacts"
+
+  - id: CTOA-244
+    title: "Sprint-047 Wave-1 readiness pass and sign-off memo"
+    priority: P1
+    type: governance
+    domain: [governance, qa, release]
+    assignees: [strategos, qa-terminator, documentation-sage]
+    estimate_hours: 2
+    deliverables:
+      - "runtime/ci-artifacts/sprint-047-wave1-run.log"
+      - "runtime/experiments/sprint-047/CTOA-244.md"
+      - "docs/history/sprints/SPRINT-047.md"
+    acceptance:
+      - "Wave-1 gates are executed and evidenced"
+      - "Residual risks and unresolved blockers are explicit"
+      - "Sign-off block contains deliverer, verification, and God Mode decision"

@@ -1,0 +1,6 @@
+[phase5-drycheck] PASS: worktree clean
+repo: /opt/ctoa
+branch: main
+head: 9fe04e8
+status_file: /opt/ctoa/runtime/evidence/worktree-hygiene/phase5-drycheck/20260515T185948Z/status-porcelain.txt
+summary_file: /opt/ctoa/runtime/evidence/worktree-hygiene/phase5-drycheck/20260515T185948Z/summary.md

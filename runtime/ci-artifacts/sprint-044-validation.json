@@ -1,0 +1,71 @@
+{
+  "status": "PASS",
+  "summary": "11/11 checks passed",
+  "checks": [
+    {
+      "id": "file:workflows/backlog-sprint-044.yaml",
+      "ok": true,
+      "hint": ""
+    },
+    {
+      "id": "file:workflows/sprint-044-delivery-flow.yaml",
+      "ok": true,
+      "hint": ""
+    },
+    {
+      "id": "file:scripts/ops/sprint044_validate.py",
+      "ok": true,
+      "hint": ""
+    },
+    {
+      "id": "file:.vscode/tasks.json",
+      "ok": true,
+      "hint": ""
+    },
+    {
+      "id": "file:.github/workflows/ctoa-pipeline.yml",
+      "ok": true,
+      "hint": ""
+    },
+    {
+      "id": "syntax:workflows/backlog-sprint-044.yaml",
+      "ok": true,
+      "hint": ""
+    },
+    {
+      "id": "syntax:workflows/sprint-044-delivery-flow.yaml",
+      "ok": true,
+      "hint": ""
+    },
+    {
+      "id": "missing_hooks",
+      "ok": true,
+      "hint": ""
+    },
+    {
+      "id": "pipeline_gate",
+      "ok": true,
+      "hint": ""
+    },
+    {
+      "id": "local_tasks",
+      "ok": true,
+      "hint": ""
+    },
+    {
+      "id": "quality_regression_tests",
+      "ok": true,
+      "hint": "",
+      "details": {
+        "command": "C:\\Users\\zycie\\CTOAi\\.venv\\Scripts\\python.exe -m pytest tests/test_response_guardrails.py tests/test_sprint029_validate.py tests/test_sprint041_dashboard_ergonomics.py tests/test_sprint041_live_dashboard_status_context_panel.py tests/test_sprint042_auth_header_navigation.py tests/test_runner_backlog_selection.py tests/test_sprint044_control_tick.py -q",
+        "output_tail": ".........................                                                [100%]\n25 passed in 1.33s"
+      }
+    }
+  ],
+  "diagnostics": {
+    "failed_count": 0,
+    "failed_ids": [],
+    "critical_failed_ids": []
+  },
+  "timestamp": "2026-05-15T06:43:02.279270Z"
+}

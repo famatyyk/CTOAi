@@ -1,0 +1,12 @@
+ M .vscode/tasks.json
+ M docs/history/sprints/SPRINT-045-PROGRESS.md
+ M docs/history/sprints/SPRINT-045.md
+ M scripts/ops/project_progress_diagram.py
+ M workflows/backlog-sprint-045.yaml
+ M workflows/sprint-045-delivery-flow.yaml
+?? backups/config/ctoa-config-20260516T025300Z.tar.gz
+?? backups/config/ctoa-config-20260517T024526Z.tar.gz
+?? backups/config/ctoa-config-20260518T024700Z.tar.gz
+?? backups/config/ctoa-config-20260519T024651Z.tar.gz
+?? backups/config/ctoa-config-20260520T025251Z.tar.gz
+?? backups/config/ctoa-config-20260521T024851Z.tar.gz

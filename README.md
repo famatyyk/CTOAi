@@ -8,18 +8,19 @@ and auditable two-wave approvals.
 
 | Signal | Current State |
 | --- | --- |
-| Baseline | v1.1.1 APPROVED |
-| Release Train | Sprint-028 closed (Wave-1 PASS, Wave-2 RECORDED) |
+| Baseline | v1.13.0 APPROVED |
+| Release Train | Sprint-040 closed → Sprint-041 ACTIVE (Track C Productization) |
 | Delivery Mode | STRATEGOS (guarded autonomy) |
 | Validation | `pytest` + sprint validators + CI gate chain |
-| Next Action | Kick off productization for public toolkit packaging |
+| Next Action | Sprint-041 Track C delivery — package tiering, surface hygiene, operator UX |
 
 Primary governance sources:
 
 - [Post-GA Candidate](docs/POST_GA_DELIVERY_TRAIN_CANDIDATE.yaml)
 - [Post-GA Baseline](docs/POST_GA_DELIVERY_TRAIN_BASELINE.md)
 - [Roadmap v0.2.0 -> v1.0.0](docs/ROADMAP_V0.2.0_TO_V1.0.0.md)
-- [Sprint-028 Release Pack](runtime/experiments/sprint-028/CTOA-142.md)
+- [Sprint-040 Release Pack](runtime/experiments/sprint-040/CTOA-202.md)
+- [Track C Productization](docs/PRODUCTIZATION_TRACK_C.md)
 
 ## What This Repo Does
 
@@ -91,6 +92,8 @@ Every sprint follows a two-wave approval model:
 
 Recent approved milestones:
 
+- v1.13.0 (Sprint-040)
+- v1.2.0 (Sprint-029)
 - v1.1.1 (Sprint-028)
 - v1.1.0 (Sprint-027)
 - v1.0.4 (Sprint-021)

@@ -1,0 +1,7 @@
+ deploy/vps/rotate-mobile-token.sh |    0
+ docs/VALIDATION_CHECKLIST.md      |   13 +-
+ docs/runbook-disk-emergency.md    |    2 +-
+ docs/site/live-dashboard.html     |  191 +++++-
+ mobile_console/static/app.js      | 1274 ++++++++++++++++++-------------------
+ mobile_console/static/index.html  |  475 +++++++-------
+ 6 files changed, 1063 insertions(+), 892 deletions(-)

@@ -1,0 +1,31 @@
+[pre-update-gate] BLOCKED dirty worktree
+repo=/opt/ctoa
+timestamp_utc=20260515T135557Z
+status_file=/opt/ctoa/runtime/evidence/worktree-hygiene/preupdate-status-20260515T135557Z.txt
+
+=== git status --short ===
+ M deploy/vps/rotate-mobile-token.sh
+ M docs/VALIDATION_CHECKLIST.md
+ M docs/runbook-disk-emergency.md
+ M docs/site/live-dashboard.html
+ M mobile_console/static/app.js
+ M mobile_console/static/index.html
+?? backups/
+?? deploy/vps/backup-nightly.sh
+?? docs/CONSISTENCY_REPORT.md
+?? docs/history/sprints/SPRINT-043.md
+?? docs/history/sprints/SPRINT-044.md
+?? scripts/ops/ctoa-root-action.sh
+?? workflows/backlog-sprint-042.yaml
+?? workflows/backlog-sprint-043.yaml
+?? workflows/backlog-sprint-044.yaml
+?? workflows/backlog-sprint-045.yaml
+?? workflows/sprint-042-delivery-flow.yaml
+?? workflows/sprint-043-delivery-flow.yaml
+?? workflows/sprint-044-delivery-flow.yaml
+?? workflows/sprint-045-delivery-flow.yaml
+
+=== recommended next steps ===
+1) Run Phase 1 inventory and back up changed files.
+2) Classify changes: keep-and-commit / keep-but-stash / archive-and-remove.
+3) Stash or commit changes, then rerun update action.

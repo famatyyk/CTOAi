@@ -1,0 +1,4 @@
+/opt/ctoa/runtime/evidence/worktree-hygiene/phase4-exec-20260515T143536Z/patches/0001-hygiene-phase4-reapply-group-A-governance_docs_workf.patch
+/opt/ctoa/runtime/evidence/worktree-hygiene/phase4-exec-20260515T143536Z/patches/0002-hygiene-phase4-reapply-group-B-ops_scripts.patch
+/opt/ctoa/runtime/evidence/worktree-hygiene/phase4-exec-20260515T143536Z/patches/0003-hygiene-phase4-reapply-group-D-runbooks_checklists.patch
+/opt/ctoa/runtime/evidence/worktree-hygiene/phase4-exec-20260515T143536Z/patches/0004-hygiene-phase4-reapply-group-E-backup_artifacts.patch

@@ -1,10 +1,10 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="pl">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CTOA Mobile Console</title>
-  <link rel="stylesheet" href="/static/style.css?v=20260320b" />
+  <link rel="stylesheet" href="/static/style.css?v=20260514c" />
   <style>
     .tabs { display:flex; gap:4px; flex-wrap:wrap; margin-bottom:12px; }
     .tab-btn { padding:8px 14px; border:1px solid #555; background:#222; color:#ccc; border-radius:6px; cursor:pointer; font-size:13px; }
@@ -35,6 +35,36 @@
     .role-owner { background:#123d26; color:#79f2b2; border:1px solid #1f7a4b; }
     .role-operator { background:#17324a; color:#8dc5ff; border:1px solid #2f80ed; }
     .role-guest { background:#2a2a2a; color:#bcbcbc; border:1px solid #555; }
+    .dash-status-panel { margin-top:10px; padding:10px; border:1px solid #333; border-radius:8px; background:#161616; }
+    .dash-status-head { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:700; margin-bottom:6px; }
+    .dash-status-dot { width:10px; height:10px; border-radius:999px; display:inline-block; background:#777; }
+    .dash-status-badge { margin-left:auto; border:1px solid #444; border-radius:999px; padding:2px 8px; font-size:11px; letter-spacing:.04em; }
+    .status-info { background:rgba(47,196,122,.18); color:#7fff7f; }
+    .status-warning { background:rgba(233,180,76,.18); color:#f2c66d; }
+    .status-critical { background:rgba(239,107,115,.18); color:#ff8f98; }
+    .dash-status-detail { font-size:13px; color:#b6c2d0; }
+    .dash-status-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px; }
+    .dash-status-list { margin-top:6px; font-size:12px; color:#c6d3e0; display:flex; flex-wrap:wrap; gap:6px; }
+    .dash-impact-chip { display:inline-block; padding:3px 8px; border-radius:999px; border:1px solid #3a3a3a; font-size:11px; letter-spacing:.02em; }
+    .dash-impact-chip-warning { background:rgba(233,180,76,.16); color:#f2c66d; border-color:rgba(233,180,76,.45); }
+    .dash-impact-chip-critical { background:rgba(239,107,115,.16); color:#ff9aa3; border-color:rgba(239,107,115,.45); }
+    .dash-status-actions { margin:6px 0 0 16px; padding:0; display:grid; gap:4px; font-size:12px; color:#d7e2ee; }
+    .global-nav { display:flex; flex-wrap:wrap; gap:8px; margin:10px 0 12px; }
+    .global-nav a {
+      text-decoration:none;
+      color:#cfe7ff;
+      border:1px solid #2f80ed66;
+      background:#0f2233;
+      border-radius:999px;
+      padding:6px 12px;
+      font-size:12px;
+    }
+    .global-nav a.active {
+      background:#1d4469;
+      border-color:#2f80ed;
+      color:#ffffff;
+    }
+    @media (max-width: 900px) { .dash-status-grid { grid-template-columns:1fr; } }
   </style>
 </head>
 <body>
@@ -48,68 +78,74 @@
     <div id="authState" style="font-size:12px;color:#888;margin-top:6px">Token: niezweryfikowany</div>
   </header>
 
+  <nav class="global-nav" aria-label="Szybka nawigacja">
+    <a href="/">Start</a>
+    <a href="/console" class="active">Console</a>
+    <a href="/live-dashboard">Live Dashboard</a>
+  </nav>
+
   <main>
     <!-- Tab navigation -->
     <div class="tabs">
-      <button class="tab-btn active" data-tab="tab-agent">🤖 Agenci</button>
-      <button class="tab-btn" data-tab="tab-status">📡 Status</button>
-      <button class="tab-btn" data-tab="tab-logs">📋 Logi</button>
-      <button class="tab-btn" data-tab="tab-cmd">⌨️ Terminal</button>
+      <button class="tab-btn active" data-tab="tab-agent">Agenci</button>
+      <button class="tab-btn" data-tab="tab-status">Status</button>
+      <button class="tab-btn" data-tab="tab-logs">Logi</button>
+      <button class="tab-btn" data-tab="tab-cmd">Terminal</button>
     </div>
 
-    <!-- TAB: Agenci (główny – rejestracja + dashboard) -->
+    <!-- TAB: Agenci (glowny - rejestracja + dashboard) -->
     <div id="tab-agent" class="tab-panel active">
 
       <section class="card">
-        <h2>🌐 Zarejestruj serwer gry</h2>
-        <p style="color:#888;font-size:13px;">Podaj URL serwera. System automatycznie zbierze dane i zacznie generować moduły.</p>
+        <h2>Zarejestruj serwer gry</h2>
+        <p style="color:#888;font-size:13px;">Podaj URL serwera. System automatycznie zbierze dane i zacznie generowac moduly.</p>
         <div class="url-row">
           <input id="serverUrl" type="url" placeholder="https://tibia-server.com" />
-          <button id="registerServer">▶ Start</button>
+          <button id="registerServer">Start</button>
         </div>
         <div id="serverFeedback"></div>
       </section>
 
       <section class="card">
-        <h2>🛰️ Misja zwiadowcza (internet → DB → trener)</h2>
-        <p style="color:#888;font-size:13px;">Wklej URL-e (jeden na linię). Puste pole = domyślna lista intel.</p>
+        <h2>Misja zwiadowcza (internet - DB - trener)</h2>
+        <p style="color:#888;font-size:13px;">Wklej URL-e (jeden na linie). Puste pole = domyslna lista intel.</p>
         <textarea id="intelUrls" rows="4" placeholder="https://example-server.com"></textarea>
         <div class="actions">
           <button id="launchIntel">Start zwiadu</button>
-          <button id="mythibiaOneClick">One-click Mythibia Run</button>
+          <button id="intelOneClick">One-click Intel Run</button>
           <button id="intelReport">Raport trenera</button>
           <button id="autoTrainerLatest">Auto-trainer latest</button>
         </div>
       </section>
 
       <section class="card">
-        <h2>📊 Dashboard agentów</h2>
+        <h2>Dashboard agentow</h2>
         <div class="actions">
-          <button id="refreshDash">Odśwież dashboard</button>
-          <button id="refreshAgentStatus">Status agentów</button>
+          <button id="refreshDash">Odswiez dashboard</button>
+          <button id="refreshAgentStatus">Status agentow</button>
         </div>
 
         <div class="dash-grid" id="dashStats" style="margin:12px 0">
           <div class="dash-box">
-            <h3>Moduły (dziś)</h3>
-            <div class="dash-num" id="dashModules">—</div>
+            <h3>Moduly (dzis)</h3>
+            <div class="dash-num" id="dashModules">-</div>
             <div class="progress-bar"><div class="progress-fill" id="dashModuleBar" style="width:0%"></div></div>
             <div class="dash-label">limit: 50</div>
           </div>
           <div class="dash-box">
-            <h3>Programy (dziś)</h3>
-            <div class="dash-num" id="dashPrograms">—</div>
+            <h3>Programy (dzis)</h3>
+            <div class="dash-num" id="dashPrograms">-</div>
             <div class="progress-bar"><div class="progress-fill" id="dashProgramBar" style="width:0%"></div></div>
-            <div class="dash-label">limit: 5 @ ≥90%</div>
+            <div class="dash-label">limit: 5 @ >=90%</div>
           </div>
           <div class="dash-box">
             <h3>Avg Quality</h3>
-            <div class="dash-num" id="dashQuality">—</div>
+            <div class="dash-num" id="dashQuality">-</div>
             <div class="dash-label">% (cel: 90+)</div>
           </div>
           <div class="dash-box">
             <h3>Launcher Day</h3>
-            <div class="dash-num" id="dashLauncher">—</div>
+            <div class="dash-num" id="dashLauncher">-</div>
             <div class="dash-label">status</div>
           </div>
         </div>
@@ -122,12 +158,31 @@
           </table>
         </div>
 
-        <h3 style="font-size:13px;color:#888;margin:10px 0 4px 0">Top moduły (jakość)</h3>
+        <h3 style="font-size:13px;color:#888;margin:10px 0 4px 0">Top moduly (jakosc)</h3>
         <div id="dashTopWrap" style="overflow-x:auto">
           <table class="mini" id="dashTop">
             <thead><tr><th>Task</th><th>Plik</th><th>Score</th><th>Status</th></tr></thead>
             <tbody><tr><td colspan="4" style="color:#555">brak danych</td></tr></tbody>
           </table>
+        </div>
+
+        <div id="dashStatusPanel" class="dash-status-panel">
+          <div class="dash-status-head">
+            <span id="dashStatusDot" class="dash-status-dot status-info"></span>
+            <span id="dashStatusMessage">Status operacyjny niedostepny.</span>
+            <span id="dashStatusSeverity" class="dash-status-badge status-info">INFO</span>
+          </div>
+          <div id="dashStatusDetail" class="dash-status-detail">Uruchom odswiezenie dashboardu, aby pobrac status context.</div>
+          <div class="dash-status-grid">
+            <div>
+              <div class="dash-label">Sekcje dotkniete</div>
+              <div id="dashStatusImpacted" class="dash-status-list">Brak sekcji.</div>
+            </div>
+            <div>
+              <div class="dash-label">Rekomendowane akcje</div>
+              <ul id="dashStatusActions" class="dash-status-actions"><li>Brak akcji.</li></ul>
+            </div>
+          </div>
         </div>
 
         <pre id="agentStatusOut" style="margin-top:10px;"></pre>
@@ -139,20 +194,20 @@
       <section class="card">
         <h2>Live Status</h2>
         <div class="actions">
-          <button id="refreshStatus">Odśwież status</button>
+          <button id="refreshStatus">Odswiez status</button>
           <button id="runnerLog">Runner log</button>
           <button id="healthLog">Health log</button>
-          <button id="mythibiaApiLog">Mythibia API log</button>
-          <button id="mythibiaWatcherLog">Mythibia Watcher log</button>
+          <button id="intelApiLog">Intel API log</button>
+          <button id="intelWatcherLog">Intel Watcher log</button>
         </div>
         <pre id="statusOut"></pre>
       </section>
     </div>
 
-    <!-- TAB: Logi agentów -->
+    <!-- TAB: Logi agentow -->
     <div id="tab-logs" class="tab-panel">
       <section class="card">
-        <h2>Logi agentów</h2>
+        <h2>Logi agentow</h2>
         <div class="actions">
           <button id="logOrchestrator">Orchestrator</button>
           <button id="logScout">Scout</button>
@@ -180,13 +235,18 @@
         <h2>Full Command</h2>
         <textarea id="cmd" rows="5" placeholder="np. systemctl status ctoa-runner.service --no-pager -l"></textarea>
         <div class="actions">
-          <button id="runCmd">Uruchom komendę</button>
+          <button id="runCmd">Uruchom komende</button>
         </div>
         <pre id="cmdOut"></pre>
       </section>
     </div>
   </main>
 
-  <script src="/static/app.js?v=20260320b"></script>
+  <script src="/static/app.js?v=20260514c"></script>
 </body>
 </html>
+
+
+
+
+

@@ -1,0 +1,134 @@
+version: 1
+backlog_id: sprint-044
+window_days: 3
+focus: Operational drift prevention + control-plane regression coverage + governance-ready
+  closure
+owner: strategos
+rules:
+  max_parallel_tasks: 3
+  definition_of_done:
+  - implementation_created
+  - validation_passed
+  - evidence_recorded
+  - documentation_updated
+  release_policy:
+  - approval_required: true
+  - environment: production
+tasks:
+- id: CTOA-221
+  title: Open Sprint-044 kickoff baseline and carry-over risk ledger
+  priority: P0
+  type: governance
+  domain:
+  - governance
+  - planning
+  - release
+  assignees:
+  - strategos
+  - core-architect
+  estimate_hours: 2
+  deliverables:
+  - docs/history/sprints/SPRINT-044.md
+  acceptance:
+  - Sprint-044 backlog, delivery flow, and kickoff baseline are published
+  - Carry-over risks from Sprint-043 are listed with owners
+  - Kickoff checklist includes rollback baseline and accountability
+- id: CTOA-222
+  title: Harden VPS service backlog selection against drift
+  priority: P0
+  type: reliability
+  domain:
+  - ops
+  - reliability
+  - hardening
+  assignees:
+  - devops-master
+  - security-guardian
+  estimate_hours: 4
+  deliverables:
+  - deploy/vps/systemd/ctoa-runner.service
+  - deploy/vps/systemd/ctoa-report.service
+  - docs/runbook-vps-mobile-console.md
+  acceptance:
+  - Runner and report units avoid hardcoded sprint backlog override values
+  - Service restart and state verification show backlog_id sprint-044
+  - Runbook includes drift detection and remediation steps
+- id: CTOA-223
+  title: Create Sprint-044 validator and local wave task wiring
+  priority: P1
+  type: quality
+  domain:
+  - ci
+  - qa
+  - automation
+  assignees:
+  - qa-terminator
+  - core-architect
+  estimate_hours: 4
+  deliverables:
+  - scripts/ops/sprint044_validate.py
+  - .vscode/tasks.json
+  - runtime/ci-artifacts/sprint-044-validation.json
+  acceptance:
+  - Validator checks backlog, flow, and sprint history artifacts for Sprint-044
+  - Wave-1 local task chain executes tests and validator without errors
+  - Validation artifact is produced in runtime/ci-artifacts
+- id: CTOA-224
+  title: Add targeted regression coverage for control tick and backlog parsing
+  priority: P1
+  type: quality
+  domain:
+  - qa
+  - tests
+  - runner
+  assignees:
+  - code-smith
+  - qa-terminator
+  estimate_hours: 4
+  deliverables:
+  - tests/test_runner_backlog_selection.py
+  - tests/test_sprint044_control_tick.py
+  - runtime/ci-artifacts/sprint-044-regression.json
+  acceptance:
+  - Tests cover environment-backed backlog selection and parser failure handling
+  - Control tick regression suite passes in local execution
+  - Regression evidence artifact is generated
+- id: CTOA-225
+  title: Sprint-044 Wave-1 evidence run
+  priority: P1
+  type: governance
+  domain:
+  - qa
+  - governance
+  - release
+  assignees:
+  - qa-terminator
+  - strategos
+  estimate_hours: 3
+  deliverables:
+  - runtime/ci-artifacts/sprint-044-wave1-run.log
+  - runtime/ci-artifacts/sprint-044-validation.json
+  - runtime/ci-artifacts/sprint-044-regression.json
+  acceptance:
+  - Focused tests PASS
+  - Sprint-044 validator reports PASS
+  - Wave-1 evidence bundle is complete
+- id: CTOA-226
+  title: Sprint-044 Wave-2 sign-off and release memo
+  priority: P1
+  type: governance
+  domain:
+  - governance
+  - release
+  assignees:
+  - strategos
+  - core-architect
+  - documentation-sage
+  estimate_hours: 2
+  deliverables:
+  - docs/history/sprints/SPRINT-044.md
+  - runtime/experiments/sprint-044/CTOA-226.md
+  acceptance:
+  - All Sprint-044 tasks are in WAITING_APPROVAL or RELEASED
+  - Residual risks and rollback baseline are recorded
+  - Manual sign-off includes owner accountability

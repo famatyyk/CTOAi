@@ -40,6 +40,44 @@
         display: flex;
         gap: 8px;
         align-items: center;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+      .auth-block {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .auth-hidden {
+        display: none !important;
+      }
+      .session-pill {
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: rgba(47, 196, 122, 0.14);
+        color: var(--txt);
+        font-size: 12px;
+        padding: 7px 11px;
+        white-space: nowrap;
+      }
+      .quick-nav {
+        margin: 0 0 14px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .quick-nav a {
+        text-decoration: none;
+        color: var(--txt);
+        border: 1px solid var(--line);
+        background: rgba(24, 36, 48, 0.9);
+        border-radius: 999px;
+        padding: 6px 12px;
+        font-size: 12px;
+      }
+      .quick-nav a.active {
+        background: rgba(47, 128, 237, 0.25);
+        border-color: #2f80ed;
       }
       input {
         background: var(--panel);
@@ -126,10 +164,66 @@
       .btn-danger { background: #7c1c1c; }
       .form-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; align-items: center; }
       .form-status { font-size: 13px; }
+      .status-headline {
+        margin-top: 10px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 16px;
+        font-weight: 600;
+      }
+      .status-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        display: inline-block;
+        background: var(--muted);
+      }
+      .status-pill {
+        margin-left: auto;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 2px 8px;
+        font-size: 11px;
+        letter-spacing: .06em;
+      }
+      .sev-info { background: rgba(47, 196, 122, 0.2); color: var(--ok); }
+      .sev-warning { background: rgba(233, 180, 76, 0.2); color: var(--warn); }
+      .sev-critical { background: rgba(239, 107, 115, 0.2); color: var(--bad); }
+      .status-grid {
+        margin-top: 10px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      .status-sub { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+      .status-chips {
+        margin-top: 6px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .status-chip {
+        display: inline-block;
+        padding: 3px 8px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        font-size: 12px;
+      }
+      .chip-warning { background: rgba(233, 180, 76, 0.18); color: var(--warn); }
+      .chip-critical { background: rgba(239, 107, 115, 0.18); color: var(--bad); }
+      .status-actions {
+        margin: 6px 0 0 18px;
+        padding: 0;
+        display: grid;
+        gap: 6px;
+        font-size: 13px;
+      }
       @media (max-width: 900px) {
         .kpi, .wide, .full { grid-column: span 12; }
         .top { grid-template-columns: 1fr; }
         .controls { flex-wrap: wrap; }
+        .status-grid { grid-template-columns: 1fr; }
       }
     </style>
   </head>
@@ -142,13 +236,23 @@
         </div>
         <div class="controls">
           <input id="apiBase" type="text" placeholder="http://127.0.0.1:8787" />
-          <input id="username" type="text" placeholder="login" />
-          <input id="password" type="password" placeholder="haslo" />
-          <button id="loginBtn">Zaloguj</button>
-          <button id="logoutBtn">Wyloguj</button>
+          <div id="guestAuth" class="auth-block">
+            <input id="username" type="text" placeholder="login" />
+            <input id="password" type="password" placeholder="haslo" />
+            <button id="loginBtn">Zaloguj</button>
+          </div>
+          <div id="userAuth" class="auth-block auth-hidden">
+            <span id="sessionBadge" class="session-pill">Brak aktywnej sesji</span>
+          </div>
+          <button id="logoutBtn" class="auth-hidden">Wyloguj</button>
         </div>
       </div>
       <p id="connStatus" class="sub">Brak aktywnej sesji.</p>
+      <nav class="quick-nav" aria-label="Szybka nawigacja">
+        <a href="/">Start</a>
+        <a href="/console">Console</a>
+        <a href="/live-dashboard" class="active">Live Dashboard</a>
+      </nav>
 
       <div class="grid">
         <section class="card kpi">
@@ -173,6 +277,26 @@
         <section class="card wide">
           <div class="label">Statusy Modulow</div>
           <div class="rows" id="statusRows"></div>
+        </section>
+
+        <section class="card full">
+          <div class="label">Status Operacyjny Dashboard</div>
+          <div id="statusHeadline" class="status-headline">Brak danych statusu.</div>
+          <p id="statusDetail" class="muted">Zaloguj sie i odswiez dashboard, aby zobaczyc szczegoly.</p>
+          <div class="status-grid">
+            <div>
+              <div class="status-sub muted">Sekcje dotkniete</div>
+              <div id="statusImpacted" class="status-chips">
+                <span class="muted">Brak sekcji dotknietych problemem.</span>
+              </div>
+            </div>
+            <div>
+              <div class="status-sub muted">Rekomendowane akcje</div>
+              <ul id="statusActions" class="status-actions">
+                <li class="muted">Brak rekomendowanych akcji.</li>
+              </ul>
+            </div>
+          </div>
         </section>
 
         <section class="card full">
@@ -215,8 +339,48 @@
     </div>
 
     <script>
+      function stripTrailingSlash(value) {
+        return String(value || "").trim().replace(/\/$/, "");
+      }
+
+      function isLoopbackHost(hostname) {
+        const host = String(hostname || "").toLowerCase();
+        return host === "127.0.0.1" || host === "localhost";
+      }
+
+      function normalizeApiBase(value) {
+        const normalized = stripTrailingSlash(value);
+        if (!normalized) return "";
+
+        let parsed;
+        try {
+          parsed = new URL(normalized);
+        } catch (_err) {
+          return normalized;
+        }
+
+        try {
+          const pageUrl = new URL(window.location.href);
+          if (isLoopbackHost(parsed.hostname) && !isLoopbackHost(pageUrl.hostname)) {
+            return stripTrailingSlash(pageUrl.origin);
+          }
+        } catch (_err) {
+          // Keep user-provided value when page URL is unavailable.
+        }
+
+        return normalized;
+      }
+
+      const inferredApiBase = (() => {
+        try {
+          return stripTrailingSlash(window.location.origin);
+        } catch (_err) {
+          return "";
+        }
+      })();
+
       const state = {
-        apiBase: localStorage.getItem("ctoa_live_api") || "http://127.0.0.1:8787",
+        apiBase: normalizeApiBase(localStorage.getItem("ctoa_live_api") || inferredApiBase || "http://127.0.0.1:8787"),
         token: sessionStorage.getItem("ctoa_live_token") || "",
         username: localStorage.getItem("ctoa_live_username") || "",
         role: sessionStorage.getItem("ctoa_live_role") || "",
@@ -230,6 +394,9 @@
         password: document.getElementById("password"),
         loginBtn: document.getElementById("loginBtn"),
         logoutBtn: document.getElementById("logoutBtn"),
+        guestAuth: document.getElementById("guestAuth"),
+        userAuth: document.getElementById("userAuth"),
+        sessionBadge: document.getElementById("sessionBadge"),
         connStatus: document.getElementById("connStatus"),
         percent: document.getElementById("percent"),
         progressBar: document.getElementById("progressBar"),
@@ -239,6 +406,10 @@
         latestCount: document.getElementById("latestCount"),
         latestRun: document.getElementById("latestRun"),
         statusRows: document.getElementById("statusRows"),
+        statusHeadline: document.getElementById("statusHeadline"),
+        statusDetail: document.getElementById("statusDetail"),
+        statusImpacted: document.getElementById("statusImpacted"),
+        statusActions: document.getElementById("statusActions"),
         latestTable: document.getElementById("latestTable"),
         serversTable: document.getElementById("serversTable"),
         accountsMgmt: document.getElementById("accountsMgmt"),
@@ -250,10 +421,34 @@
       };
 
       el.apiBase.value = state.apiBase;
+      localStorage.setItem("ctoa_live_api", state.apiBase);
       el.username.value = state.username;
+      renderAuthControls();
 
       function setStatus(msg) {
         el.connStatus.textContent = msg;
+      }
+
+      function renderAuthControls() {
+        const loggedIn = Boolean(state.token);
+        if (el.guestAuth) {
+          el.guestAuth.classList.toggle("auth-hidden", loggedIn);
+        }
+        if (el.userAuth) {
+          el.userAuth.classList.toggle("auth-hidden", !loggedIn);
+        }
+        if (el.logoutBtn) {
+          el.logoutBtn.classList.toggle("auth-hidden", !loggedIn);
+        }
+        if (el.sessionBadge) {
+          if (loggedIn) {
+            const who = state.username || "uzytkownik";
+            const role = state.role || "operator";
+            el.sessionBadge.textContent = `Sesja: ${who} (${role})`;
+          } else {
+            el.sessionBadge.textContent = "Brak aktywnej sesji";
+          }
+        }
       }
 
       function toggleAccountsPanel() {
@@ -369,10 +564,15 @@
           sessionStorage.removeItem("ctoa_live_role");
         }
         toggleAccountsPanel();
+        renderAuthControls();
       }
 
       function saveApiBase() {
-        state.apiBase = (el.apiBase.value || "").trim().replace(/\/$/, "");
+        state.apiBase = normalizeApiBase(el.apiBase.value);
+        if (!state.apiBase) {
+          state.apiBase = inferredApiBase || "http://127.0.0.1:8787";
+        }
+        el.apiBase.value = state.apiBase;
         localStorage.setItem("ctoa_live_api", state.apiBase);
       }
 
@@ -404,7 +604,7 @@
 
         const p = payload.profile;
         if (p.api_base) {
-          state.apiBase = String(p.api_base).trim().replace(/\/$/, "");
+          state.apiBase = normalizeApiBase(p.api_base);
           el.apiBase.value = state.apiBase;
           localStorage.setItem("ctoa_live_api", state.apiBase);
         }
@@ -451,12 +651,28 @@
         });
         el.password.value = "";
 
-        await loadProfile();
-        await saveProfile();
-        if (state.role === "owner") { await loadAccounts(); }
-        setStatus(`Polaczono jako ${state.username} (${state.role}).`);
-        // Main console is the default working page after login.
-        window.location.href = "/";
+        let profileError = "";
+        try {
+          await loadProfile();
+          await saveProfile();
+        } catch (e) {
+          profileError = String(e && (e.message || e));
+          console.warn("Profile sync unavailable:", profileError);
+        }
+        if (state.role === "owner") {
+          try {
+            await loadAccounts();
+          } catch (e) {
+            console.warn("Accounts list unavailable:", e);
+          }
+        }
+        if (profileError) {
+          setStatus(`Polaczono jako ${state.username} (${state.role}). Profil chwilowo niedostepny: ${profileError}`);
+        } else {
+          setStatus(`Polaczono jako ${state.username} (${state.role}).`);
+        }
+        // Stay on live dashboard after login to avoid cross-surface re-auth.
+        return;
       }
 
       async function logout() {
@@ -510,6 +726,66 @@
         return { total, done };
       }
 
+      function severityClass(severity) {
+        const key = String(severity || "").toLowerCase();
+        if (key === "critical" || key === "error") return "sev-critical";
+        if (key === "warning" || key === "degraded") return "sev-warning";
+        return "sev-info";
+      }
+
+      function renderStatusContext(dashboard) {
+        const statusContext = (dashboard && typeof dashboard.status_context === "object")
+          ? dashboard.status_context
+          : {};
+        const status = String((dashboard && dashboard.status) || "");
+        const severity = String(
+          statusContext.severity || (status === "error" ? "critical" : status === "degraded" ? "warning" : "info")
+        );
+        const message = String(
+          statusContext.message || (dashboard && dashboard.status_message) || status || "Brak statusu"
+        );
+        const detail = String(statusContext.detail || "");
+        const impactedSections = Array.isArray(statusContext.impacted_sections)
+          ? statusContext.impacted_sections
+          : [];
+        const criticalSections = Array.isArray(statusContext.critical_sections)
+          ? statusContext.critical_sections
+          : [];
+        const actions = Array.isArray(statusContext.recommended_actions)
+          ? statusContext.recommended_actions
+          : [];
+
+        const sevClass = severityClass(severity);
+        const severityLabel = String(severity).toUpperCase();
+
+        el.statusHeadline.innerHTML =
+          `<span class="status-dot ${sevClass}"></span>` +
+          `<span>${esc(message)}</span>` +
+          `<span class="status-pill ${sevClass}">${esc(severityLabel)}</span>`;
+
+        el.statusDetail.textContent = detail || "Brak dodatkowego opisu.";
+
+        if (impactedSections.length) {
+          el.statusImpacted.innerHTML = impactedSections
+            .map((name) => {
+              const chipClass = criticalSections.includes(name) ? "chip-critical" : "chip-warning";
+              return `<span class="status-chip ${chipClass}">${esc(name)}</span>`;
+            })
+            .join("");
+        } else {
+          el.statusImpacted.innerHTML = '<span class="muted">Brak sekcji dotknietych problemem.</span>';
+        }
+
+        if (actions.length) {
+          el.statusActions.innerHTML = actions
+            .slice(0, 5)
+            .map((action) => `<li>${esc(action)}</li>`)
+            .join("");
+        } else {
+          el.statusActions.innerHTML = '<li class="muted">Brak rekomendowanych akcji.</li>';
+        }
+      }
+
       function renderLatest(items) {
         el.latestTable.innerHTML = "";
         if (!items.length) {
@@ -539,6 +815,17 @@
       async function refresh() {
         if (!state.token) {
           el.serversState.textContent = "brak autoryzacji";
+          renderStatusContext({
+            status: "degraded",
+            status_message: "Brak autoryzacji",
+            status_context: {
+              severity: "warning",
+              detail: "Zaloguj sie, aby pobrac status dashboardu.",
+              impacted_sections: ["dashboard"],
+              critical_sections: [],
+              recommended_actions: ["Zaloguj sie i odswiez panel."],
+            },
+          });
           return;
         }
 
@@ -571,11 +858,27 @@
 
           renderLatest(items);
           renderServers(serversRows);
+          renderStatusContext(dashboard);
         } catch (e) {
-          if (String(e.message || "").includes("401")) {
+          const errMessage = String(e && (e.message || e));
+          if (errMessage.includes("401")) {
             setStatus("Sesja wygasla. Zaloguj ponownie.");
           }
-          el.serversState.textContent = `blad: ${e.message || e}`;
+          el.serversState.textContent = `blad: ${errMessage}`;
+          renderStatusContext({
+            status: "error",
+            status_message: "Blad odswiezania dashboardu",
+            status_context: {
+              severity: "critical",
+              detail: errMessage,
+              impacted_sections: ["dashboard"],
+              critical_sections: ["dashboard"],
+              recommended_actions: [
+                "Sprawdz sesje i ponow odswiezanie panelu.",
+                "Zweryfikuj dostepnosc API /api/dashboard.",
+              ],
+            },
+          });
         }
       }
 
@@ -595,6 +898,8 @@
           ev.preventDefault();
           try {
             await login();
+            startPolling();
+            await refresh();
           } catch (e) {
             setStatus(`Blad logowania: ${e.message || e}`);
           }
@@ -615,10 +920,24 @@
               username: String(me.username || state.username || ""),
               role: String(me.role || state.role || "operator"),
             });
-            await loadProfile();
-            if (state.role === "owner") { await loadAccounts(); }
+            try {
+              await loadProfile();
+            } catch (e) {
+              console.warn("Profile restore unavailable:", e);
+            }
+            if (state.role === "owner") {
+              try {
+                await loadAccounts();
+              } catch (e) {
+                console.warn("Accounts restore unavailable:", e);
+              }
+            }
             setStatus(`Polaczono jako ${state.username} (${state.role}).`);
-            await refresh();
+            try {
+              await refresh();
+            } catch (e) {
+              console.warn("Initial refresh failed:", e);
+            }
           } catch (_e) {
             await logout();
           }
@@ -629,3 +948,9 @@
     </script>
   </body>
 </html>
+
+
+
+
+
+

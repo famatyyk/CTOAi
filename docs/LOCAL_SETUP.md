@@ -107,7 +107,7 @@ echo 'export CTOA_VPS_HOST="46.225.110.52"' >> ~/.bashrc
 python --version  # Should be 3.11+
 
 # Check imports
-python -c "import pytest; import requests; import paramiko; print('✓ All imports OK')"
+python -c "import pytest; import requests; import paramiko; print('âś“ All imports OK')"
 
 # Run tests (should pass or show clear error messages)
 pytest tests/ -v
@@ -253,5 +253,46 @@ pytest tests/ --cov=runner --cov-report=term-missing
 - **Docs:** [README.md](../README.md), [CHANGELOG.md](../CHANGELOG.md), [SPRINT-002.md](../SPRINT-002.md)
 - **Logs:** Check `.github/workflows/` for pipeline results
 
-Happy coding! 🚀
+Happy coding! đźš€
 
+
+## Sprint-0 Integration Pack
+
+Use this flow to run the full local integration stack (app + db + redis + worker + observability).
+
+### Tooling bootstrap
+
+```bash
+pip install -r requirements.txt
+pip install -r requirements-dev.txt
+pre-commit install
+```
+
+### Full stack startup
+
+```bash
+docker compose up -d ctoa-db ctoa-redis ctoa ctoa-worker ctoa-prometheus ctoa-loki ctoa-promtail ctoa-grafana
+```
+
+### Database migrations
+
+```bash
+.venv/Scripts/python.exe -m alembic upgrade head
+```
+
+### Quick validation
+
+```bash
+.venv/Scripts/python.exe scripts/ops/queue_enqueue_job.py --action orchestrator.tick
+curl http://127.0.0.1:8787/metrics
+curl http://127.0.0.1:9090/-/healthy
+curl http://127.0.0.1:3100/ready
+```
+
+### VS Code tasks (recommended)
+
+- `CTOA: Sprint-0 Compose Up (Full Stack)`
+- `CTOA: Sprint-0 Alembic Upgrade Head`
+- `CTOA: Sprint-0 Enqueue Worker Tick`
+- `CTOA: Sprint-0 Validate Integration Pack`
+- `CTOA: Sprint-0 Compose Down (Full Stack)`

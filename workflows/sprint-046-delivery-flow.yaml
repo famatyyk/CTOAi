@@ -1,0 +1,61 @@
+sprint: '046'
+theme: 10-agent operational cadence + Stage-1 governance baseline + VPS update gate enforcement
+version: '1.0'
+lifecycle:
+  start: '2026-05-15'
+  target_wave1: '2026-05-16'
+  target_wave2: '2026-05-17'
+
+tasks:
+  - id: CTOA-233
+    title: Sprint-046 Stage-1 kickoff baseline and accountability protocol
+    on_start: publish backlog, flow, and stage baseline report
+    on_complete: confirm 10-agent closure template and decision gate language
+    on_fail: keep sprint in planning hold with explicit blockers
+
+  - id: CTOA-234
+    title: Sprint-046 progress baseline automation
+    depends_on:
+      - CTOA-233
+    on_start: generate initial progress markdown and local refresh task wiring
+    on_complete: publish refreshable progress diagram for Sprint-046
+    on_fail: keep manual progress updates and record visibility gap
+
+  - id: CTOA-235
+    title: Sprint-046 validator and Wave-1 local wiring
+    depends_on:
+      - CTOA-233
+      - CTOA-234
+    on_start: scaffold sprint046 validator from sprint045 baseline
+    on_complete: produce validation artifact and local Wave-1 chain
+    on_fail: rollback validator/task wiring to previous stable baseline
+
+  - id: CTOA-236
+    title: Stage-1 Wave-1 readiness pass
+    depends_on:
+      - CTOA-235
+    on_start: run focused regressions, sprint046 validator, and launch pack dry-run
+    on_complete: publish Wave-1 readiness evidence bundle
+    on_fail: hold sprint in IN_CI_GATE and escalate blockers
+
+  - id: CTOA-237
+    title: VPS pre-update gate operations verification
+    depends_on:
+      - CTOA-236
+    on_start: execute update path checks under dirty-worktree conditions
+    on_complete: document block evidence and operator remediation flow
+    on_fail: enforce manual maintenance mode and log escalation
+
+  - id: CTOA-238
+    title: Stage-1 sign-off in 10-agent format
+    depends_on:
+      - CTOA-236
+      - CTOA-237
+    on_start: review evidence, risks, and accountable ownership per agent
+    on_complete: record Stage-1 sign-off and decision required from God Mode
+    on_fail: keep sprint in WAITING_APPROVAL and block Wave-2
+
+gate_policy:
+  wave_1: sprint046 validator PASS plus focused quality regressions PASS
+  wave_2: manual STRATEGOS sign-off with 10-agent accountability closure
+  rollback_baseline: v1.13.1
