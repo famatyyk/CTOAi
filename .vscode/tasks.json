@@ -1315,7 +1315,7 @@
     {
       "label": "CTOA: Eval Compare Run",
       "type": "shell",
-      "command": ".venv/Scripts/python.exe scripts/ops/aggregate_agent_eval.py evals/runs/${input:ctoaEvalRun}/results.azure-activity-baseline.gpt-5.4.jsonl && .venv/Scripts/python.exe scripts/ops/aggregate_agent_eval.py evals/runs/${input:ctoaEvalRun}/results.azure-activity-fact-first.gpt-5.4.jsonl && .venv/Scripts/python.exe scripts/ops/aggregate_agent_eval.py evals/runs/${input:ctoaEvalRun}/results.azure-activity-strict-evidence.gpt-5.4.jsonl && .venv/Scripts/python.exe scripts/ops/compare_eval_summaries.py --json-out evals/runs/${input:ctoaEvalRun}/comparison.gpt-5.4.json evals/runs/${input:ctoaEvalRun}/results.azure-activity-baseline.gpt-5.4.jsonl.summary.json evals/runs/${input:ctoaEvalRun}/results.azure-activity-fact-first.gpt-5.4.jsonl.summary.json evals/runs/${input:ctoaEvalRun}/results.azure-activity-strict-evidence.gpt-5.4.jsonl.summary.json",
+      "command": "python scripts/ops/aggregate_agent_eval.py evals/runs/${input:ctoaEvalRun}/results.azure-activity-baseline.gpt-5.4.jsonl && python scripts/ops/aggregate_agent_eval.py evals/runs/${input:ctoaEvalRun}/results.azure-activity-fact-first.gpt-5.4.jsonl && python scripts/ops/aggregate_agent_eval.py evals/runs/${input:ctoaEvalRun}/results.azure-activity-strict-evidence.gpt-5.4.jsonl && python scripts/ops/compare_eval_summaries.py --json-out evals/runs/${input:ctoaEvalRun}/comparison.gpt-5.4.json evals/runs/${input:ctoaEvalRun}/*.summary.json",
       "isBackground": false,
       "presentation": {
         "reveal": "always",
