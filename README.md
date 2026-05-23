@@ -21,6 +21,7 @@ Primary governance sources:
 - [Roadmap v0.2.0 -> v1.0.0](docs/ROADMAP_V0.2.0_TO_V1.0.0.md)
 - [Sprint-040 Release Pack](runtime/experiments/sprint-040/CTOA-202.md)
 - [Track C Productization](docs/PRODUCTIZATION_TRACK_C.md)
+
 ## Azure Activity Training Status
 
 - Active eval prompt: `azure-activity-fact-first` (confirmed by run-001, run-002, and run-003 3-variant comparisons)
@@ -128,6 +129,3 @@ Recent approved milestones:
 ## License
 
 MIT
-
-
-

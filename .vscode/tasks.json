@@ -1311,6 +1311,16 @@
           "CTOA_AZURE_DISCORD_WEBHOOK_URL": "${env:CTOA_AZURE_DISCORD_WEBHOOK_URL}"
         }
       }
+    },
+    {
+      "label": "CTOA: Eval Compare Run",
+      "type": "shell",
+      "command": ".venv/Scripts/python.exe scripts/ops/aggregate_agent_eval.py evals/runs/${input:ctoaEvalRun}/results.azure-activity-baseline.gpt-5.4.jsonl && .venv/Scripts/python.exe scripts/ops/aggregate_agent_eval.py evals/runs/${input:ctoaEvalRun}/results.azure-activity-fact-first.gpt-5.4.jsonl && .venv/Scripts/python.exe scripts/ops/aggregate_agent_eval.py evals/runs/${input:ctoaEvalRun}/results.azure-activity-strict-evidence.gpt-5.4.jsonl && .venv/Scripts/python.exe scripts/ops/compare_eval_summaries.py --json-out evals/runs/${input:ctoaEvalRun}/comparison.gpt-5.4.json evals/runs/${input:ctoaEvalRun}/results.azure-activity-baseline.gpt-5.4.jsonl.summary.json evals/runs/${input:ctoaEvalRun}/results.azure-activity-fact-first.gpt-5.4.jsonl.summary.json evals/runs/${input:ctoaEvalRun}/results.azure-activity-strict-evidence.gpt-5.4.jsonl.summary.json",
+      "isBackground": false,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
     }
   ],
   "inputs": [
@@ -1332,6 +1342,13 @@
         "InspectReportEnv",
         "ReportErrorDetails"
       ]
+    },
+    {
+      "id": "ctoaEvalRun",
+      "type": "promptString",
+      "description": "Run folder under evals/runs (e.g. run-003)",
+      "default": "run-003"
     }
   ]
 }
+
