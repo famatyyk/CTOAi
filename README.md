@@ -1,4 +1,4 @@
-# CTOA AI Toolkit
+﻿# CTOA AI Toolkit
 
 10-agent AI operating system for autonomous sprint delivery,
 BRAVE(R)-driven prompting, tool-advisor scoring,
@@ -9,10 +9,10 @@ and auditable two-wave approvals.
 | Signal | Current State |
 | --- | --- |
 | Baseline | v1.13.0 APPROVED |
-| Release Train | Sprint-040 closed → Sprint-041 ACTIVE (Track C Productization) |
+| Release Train | Sprint-040 closed â†’ Sprint-041 ACTIVE (Track C Productization) |
 | Delivery Mode | STRATEGOS (guarded autonomy) |
 | Validation | `pytest` + sprint validators + CI gate chain |
-| Next Action | Sprint-041 Track C delivery — package tiering, surface hygiene, operator UX |
+| Next Action | Sprint-041 Track C delivery â€” package tiering, surface hygiene, operator UX |
 
 Primary governance sources:
 
@@ -21,6 +21,13 @@ Primary governance sources:
 - [Roadmap v0.2.0 -> v1.0.0](docs/ROADMAP_V0.2.0_TO_V1.0.0.md)
 - [Sprint-040 Release Pack](runtime/experiments/sprint-040/CTOA-202.md)
 - [Track C Productization](docs/PRODUCTIZATION_TRACK_C.md)
+## Azure Activity Training Status
+
+- Active eval prompt: `azure-activity-fact-first` (selected after 3-variant comparison)
+- Prompt variants: [evals/prompt-variants](evals/prompt-variants)
+- Run artifacts: [evals/runs/run-001](evals/runs/run-001)
+- Editable AI Toolkit registry: [agents/toolkit/editable_agents.json](agents/toolkit/editable_agents.json)
+- Aggregator: `python scripts/ops/aggregate_agent_eval.py evals/runs/run-001/results.<variant>.<model>.jsonl`
 
 ## What This Repo Does
 
@@ -113,7 +120,11 @@ Recent approved milestones:
 - [Product Portfolio](docs/PRODUCT_PORTFOLIO.md)
 - [Repo Hygiene Policy](docs/REPO_HYGIENE_POLICY.md)
 - [Enhanced Top-3 Sprint Plan](docs/ENHANCED_TOP3_SPRINT_PLAN.md)
+- [Azure Alerts Automation Setup](docs/azure-alerts-automation-setup.md)
+- [Azure Activity Log Interpretation Runbook](docs/runbook-azure-activity-log-interpretation.md)
+- [Azure Agent Eval Dataset](evals/README-azure-agent-eval-dataset.md)
 
 ## License
 
 MIT
+
