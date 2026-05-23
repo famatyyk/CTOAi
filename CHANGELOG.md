@@ -100,6 +100,8 @@ All notable changes to this project will be documented in this file.
 - **AI Toolkit editable agent registry**: added `agents/toolkit/editable_agents.json` and loader helpers in `agents/definitions.py` for fast prompt/agent switching during evals
 - **Prompt-eval run artifacts (run-001)**: added real results and summaries for `azure-activity-baseline`, `azure-activity-fact-first`, and `azure-activity-strict-evidence` under `evals/runs/run-001/`
 - **Prompt selection decision**: activated `azure-activity-fact-first` as the maintained prompt based on highest `required_fields_coverage_rate` with `precision/recall=1.0` and no `facts_vs_inference` regression
+- **Prompt-eval run artifacts (run-002)**: added 12-case real-world Azure Activity dataset plus summaries for `azure-activity-baseline`, `azure-activity-fact-first`, and `azure-activity-strict-evidence` under `evals/runs/run-002/`
+- **Prompt selection confirmation**: `azure-activity-fact-first` remained the winner on run-002 with `required_fields_coverage_rate=0.9583`, `precision=1.0`, `recall=1.0`, and no `facts_vs_inference` regression
 - **Public/private product architecture**: added productization boundary document for public toolkit vs private studio assets
 - **Mandatory bootstrap flow**: `ctoa_product_bootstrap.py` creates ignored local JSON config and SQLite state for customer-specific setup
 - **Mandatory update gate**: `ctoa_update_gate.py` blocks launch until bootstrap exists and local version/schema match the tracked product manifest

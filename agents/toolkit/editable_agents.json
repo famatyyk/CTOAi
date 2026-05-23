@@ -6,22 +6,22 @@
                                                    "name":  "Azure Activity Baseline Agent",
                                                    "enabled":  false,
                                                    "prompt_path":  "evals/prompt-variants/azure-activity-baseline.md",
-                                                   "dataset_path":  "evals/runs/run-001/dataset.jsonl",
-                                                   "results_path":  "evals/runs/run-001/results.azure-activity-baseline.gpt5.jsonl"
+                                                   "dataset_path":  "evals/runs/run-002/dataset.jsonl",
+                                                   "results_path":  "evals/runs/run-002/results.azure-activity-baseline.gpt-5.4.jsonl"
                                                },
                    "azure-activity-fact-first":  {
                                                      "name":  "Azure Activity Fact-First Agent",
                                                      "enabled":  true,
                                                      "prompt_path":  "evals/prompt-variants/azure-activity-fact-first.md",
-                                                     "dataset_path":  "evals/runs/run-001/dataset.jsonl",
-                                                     "results_path":  "evals/runs/run-001/results.azure-activity-fact-first.gpt5.jsonl"
+                                                     "dataset_path":  "evals/runs/run-002/dataset.jsonl",
+                                                     "results_path":  "evals/runs/run-002/results.azure-activity-fact-first.gpt-5.4.jsonl"
                                                  },
                    "azure-activity-strict-evidence":  {
                                                           "name":  "Azure Activity Strict-Evidence Agent",
                                                           "enabled":  false,
                                                           "prompt_path":  "evals/prompt-variants/azure-activity-strict-evidence.md",
-                                                          "dataset_path":  "evals/runs/run-001/dataset.jsonl",
-                                                          "results_path":  "evals/runs/run-001/results.azure-activity-strict-evidence.gpt5.jsonl"
+                                                          "dataset_path":  "evals/runs/run-002/dataset.jsonl",
+                                                          "results_path":  "evals/runs/run-002/results.azure-activity-strict-evidence.gpt-5.4.jsonl"
                                                       }
                }
 }

@@ -23,11 +23,11 @@ Primary governance sources:
 - [Track C Productization](docs/PRODUCTIZATION_TRACK_C.md)
 ## Azure Activity Training Status
 
-- Active eval prompt: `azure-activity-fact-first` (selected after 3-variant comparison)
+- Active eval prompt: `azure-activity-fact-first` (confirmed by run-001 and run-002 3-variant comparisons)
 - Prompt variants: [evals/prompt-variants](evals/prompt-variants)
-- Run artifacts: [evals/runs/run-001](evals/runs/run-001)
+- Run artifacts: [evals/runs/run-001](evals/runs/run-001), [evals/runs/run-002](evals/runs/run-002)
 - Editable AI Toolkit registry: [agents/toolkit/editable_agents.json](agents/toolkit/editable_agents.json)
-- Aggregator: `python scripts/ops/aggregate_agent_eval.py evals/runs/run-001/results.<variant>.<model>.jsonl`
+- Aggregator: `python scripts/ops/aggregate_agent_eval.py evals/runs/run-002/results.<variant>.<model>.jsonl`
 
 ## What This Repo Does
 
@@ -127,4 +127,5 @@ Recent approved milestones:
 ## License
 
 MIT
+
 
