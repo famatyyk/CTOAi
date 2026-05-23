@@ -1,4 +1,4 @@
-﻿# CTOA AI Toolkit
+# CTOA AI Toolkit
 
 10-agent AI operating system for autonomous sprint delivery,
 BRAVE(R)-driven prompting, tool-advisor scoring,
@@ -87,10 +87,15 @@ VS Code task shortcuts available in this workspace:
 - `CTOA: Bootstrap Product Config`
 - `CTOA: Check Update Gate`
 - `CTOA: Run All Tests`
-- `CTOA: Sprint-024 Validate Release Scalability`
+- `CTOA: Sprint-042 Validate`
 - `CTOA: Validate Pack`
 - `CTOA: Launch Pack`
 
+Active runbook policy:
+
+- Active Wave-1 execution range: Sprint-027 and newer.
+- Legacy range: Sprint-012 to Sprint-026 (kept for historical traceability, not part of active runbook).
+- Legacy tasks can still be run manually for forensic/backfill work.
 ## Sprint Cadence (Post-GA)
 
 Every sprint follows a two-wave approval model:
