@@ -96,6 +96,9 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **Prompt-eval run artifacts (run-003)**: added 12 harder edge-case Azure Activity records covering partial logs, policy/noise events, and multi-step authorization failures under `evals/runs/run-003/`
+- **Automated winner selector**: added `scripts/ops/compare_eval_summaries.py` to compare multiple `*.summary.json` files using the current selection policy (`precision`, `recall`, `facts_vs_inference`, then `required_fields_coverage_rate`)
+- **Prompt selection confirmation (run-003)**: `azure-activity-fact-first` remained the winner on run-003 with `required_fields_coverage_rate=0.9258`, `precision=1.0`, `recall=1.0`, and `facts_vs_inference=1.0`; `azure-activity-baseline` regressed on partial-log edge cases
 - **Azure Activity alert pipeline + Discord routing**: delivered end-to-end normalize/classify/route flow with listener and runner tasks (`scripts/ops/azure_activity_alerts.py`, `scripts/ops/azure_activity_webhook_listener.py`, `scripts/ops/azure-alerts-runner.ps1`, `.vscode/tasks.json`)
 - **AI Toolkit editable agent registry**: added `agents/toolkit/editable_agents.json` and loader helpers in `agents/definitions.py` for fast prompt/agent switching during evals
 - **Prompt-eval run artifacts (run-001)**: added real results and summaries for `azure-activity-baseline`, `azure-activity-fact-first`, and `azure-activity-strict-evidence` under `evals/runs/run-001/`
