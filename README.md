@@ -8,7 +8,7 @@ and auditable two-wave approvals.
 
 | Signal | Current State |
 | --- | --- |
-| Baseline | v1.13.0 APPROVED |
+| Baseline | v1.14.0 APPROVED |
 | Release Train | Sprint-041 closed -> Sprint-042 ACTIVE (Track C Continuation) |
 | Delivery Mode | STRATEGOS (guarded autonomy) |
 | Validation | `pytest` + sprint validators + CI gate chain |
