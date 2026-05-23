@@ -22,7 +22,6 @@ log = logging.getLogger("hybrid_bot.state_manager")
 
 
 def _utcnow() -> datetime:
-    """Return timezone-aware UTC datetime."""
     return datetime.now(timezone.utc)
 
 
