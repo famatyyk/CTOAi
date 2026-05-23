@@ -1431,7 +1431,7 @@ def _db_exec(sql: str, params: tuple = (), timeout: int = 15) -> dict:
     }
 
 
-def _redis_client() -> Redis | None:
+def _redis_client() -> Optional[Any]:
     if Redis is None:
         return None
     try:
