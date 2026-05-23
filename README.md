@@ -9,10 +9,10 @@ and auditable two-wave approvals.
 | Signal | Current State |
 | --- | --- |
 | Baseline | v1.13.0 APPROVED |
-| Release Train | Sprint-040 closed â†’ Sprint-041 ACTIVE (Track C Productization) |
+| Release Train | Sprint-041 closed -> Sprint-042 ACTIVE (Track C Continuation) |
 | Delivery Mode | STRATEGOS (guarded autonomy) |
 | Validation | `pytest` + sprint validators + CI gate chain |
-| Next Action | Sprint-041 Track C delivery â€” package tiering, surface hygiene, operator UX |
+| Next Action | Sprint-042 Track C continuation - operator adoption, infra hardening, community readiness |
 
 Primary governance sources:
 
