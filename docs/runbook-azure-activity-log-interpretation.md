@@ -57,8 +57,17 @@ cat azure-webhook-payload.json | python scripts/ops/azure_activity_alerts.py \
 ```
 
 ## Automation Next Steps
+
 1. Ingest Activity Logs from Azure Monitor or Log Analytics into Event Hub or webhook endpoint.
 2. Normalize payload fields to guarantee operationName, status, subStatus, resourceId, caller, correlationId.
 3. Classify high-impact operations (RBAC, policy, networking, delete, Key Vault).
 4. Trigger alert routing only after enrichment (context, severity, owner).
 5. Route to notification channels (Teams, Discord, email) with correlationId-linked investigation links.
+## Discord-Only Production Note
+If your notification strategy is Discord-only:
+- keep CTOA_AZURE_ALERT_WEBHOOK_URL empty,
+- keep CTOA_AZURE_DISCORD_WEBHOOK_URL configured,
+- run routes that include discord_webhook and skip webhook.
+
+Quick verification:
+- powershell -NoProfile -ExecutionPolicy Bypass -File scripts/ops/azure-alerts-runner.ps1 -Action sample-dry-run
