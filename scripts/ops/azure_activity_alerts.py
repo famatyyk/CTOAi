@@ -394,7 +394,7 @@ def run_pipeline(args: argparse.Namespace) -> dict[str, Any]:
             routes=routes,
             output_jsonl=output_jsonl,
             webhook_url=args.webhook_url,
-            discord_webhook_url=args.discord_webhook_url,
+            discord_webhook_url=getattr(args, "discord_webhook_url", ""),
             dry_run=bool(args.dry_run),
         )
         routed += 1
@@ -424,3 +424,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
