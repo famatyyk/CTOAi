@@ -1,0 +1,5 @@
+name: CTOAi
+dockerfile_path: Dockerfile
+resources:
+  cpu: '2.0'
+  memory: 4.0Gi

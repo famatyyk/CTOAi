@@ -44,3 +44,15 @@ Use VS Code tasks:
 
 ## Automatic Env Loading
 Azure alert tasks now run through scripts/ops/azure-alerts-runner.ps1, which auto-loads .ctoa-local/azure-alerts.env for each run.
+
+## Must-Pass Smoke Suite
+Use a single smoke entrypoint to validate core Azure alert flow before merge:
+- Local command: python scripts/ops/smoke_must_pass.py
+- CI workflow: CTOA Smoke Must Pass (.github/workflows/ctoa-smoke-must-pass.yml)
+
+Smoke scope:
+- tests/test_azure_activity_alerts.py
+- sample dry-run via scripts/ops/azure_activity_alerts.py
+
+Report artifact:
+- runtime/ci-artifacts/smoke-must-pass-summary.json
