@@ -1,4 +1,4 @@
-﻿# CTOAi Workspace Instructions
+# CTOAi Workspace Instructions
 
 ## Scope
 These instructions apply to all work in this repository.
@@ -11,7 +11,7 @@ When constraints overlap, apply sections in this priority order:
 6. Link, Do Not Embed
 7. Agent Response Rules
 If instructions conflict within the same section, follow the most specific instruction.
-If ambiguity remains, choose the safest reversible action and state one explicit assumption before proceeding.
+If ambiguity remains, choose the safest reversible action and state at most one explicit assumption before proceeding.
 
 ## Architecture Defaults
 - Treat the project as four coordinated layers: agent definitions, prompt/scoring engine, runner orchestration, and governance policy.
@@ -20,7 +20,7 @@ If ambiguity remains, choose the safest reversible action and state one explicit
   - prompt templates and tool scoring: `prompts/`, `scoring/`
   - orchestration runtime: `runner/`
   - release and approval policy: `policies/`, `workflows/`
-- Preserve BRAVE(R)-driven structure when editing agent execution logic: keep phases explicit as brief context setup, rule/constraint checks, action and tool execution, verification with evidence, exception handling, and end-of-step status reporting (see `docs/AGENT_PROMPT_DEFINITIVE.md` for canonical terminology).
+- Preserve BRAVE(R)-driven structure when editing agent execution logic: keep phases explicit (brief context setup, rule or constraint checks, action and tool execution, verification with evidence, exception handling, and end-of-step status reporting). See `docs/AGENT_PROMPT_DEFINITIVE.md` for canonical terminology.
 
 ## Canonical Commands
 - Use the workspace tasks in `.vscode/tasks.json` as first choice.
@@ -63,8 +63,8 @@ If ambiguity remains, choose the safest reversible action and state one explicit
 - Keep responses concise, direct, and implementation-oriented.
 - Do not expose internal reasoning.
 - When correcting output, correct once and proceed.
-- When a user asks for help interpreting an Azure Activity Log, first summarize the timeline, `operationName`, `status`/`subStatus`, affected `resourceId`, `caller`, and `correlationId`.
+- When a user asks for help interpreting an Azure Activity Log, first summarize: timeline, `operationName`, `status` and `subStatus`, affected `resourceId`, `caller`, and `correlationId`.
 - Highlight security-sensitive or high-impact changes explicitly (for example role assignments, policy changes, deletes, networking changes, Key Vault access, or resource creation failures).
 - Explain likely impact in plain language, separate confirmed facts from inference, and suggest the next best investigation step using the fields already present in the log.
-- If the user only shares a partial screenshot or excerpt, ask for the raw Azure Activity Log entry (JSON/text) before making high-confidence conclusions.
+- If the user shares only a partial screenshot or excerpt, ask for the raw Azure Activity Log entry (JSON or text) before making high-confidence conclusions.
 
