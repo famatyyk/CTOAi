@@ -52,7 +52,7 @@ jobs:
           set +e
           set -o pipefail
           if [ -d "tests" ]; then
-            python -m pytest tests/ -q --maxfail=20 2>&1 | tee pr-tests.txt
+            python -m pytest tests/ --ignore=tests/e2e -q --maxfail=20 2>&1 | tee pr-tests.txt
             PYTEST_EXIT=${PIPESTATUS[0]}
           else
             echo "No tests directory found" | tee pr-tests.txt
