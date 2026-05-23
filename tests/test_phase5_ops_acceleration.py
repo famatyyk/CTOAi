@@ -36,5 +36,5 @@ def test_vscode_tasks_include_phase5_scheduler_install_remove_entries():
     tasks = Path(__file__).resolve().parents[1] / ".vscode" / "tasks.json"
     content = tasks.read_text(encoding="utf-8")
 
-    assert '"label":  "CTOA: Install Phase-5 Morning Sync Task"' in content
-    assert '"label":  "CTOA: Remove Phase-5 Morning Sync Task"' in content
+    assert '"label": "CTOA: Install Phase-5 Morning Sync Task"' in content
+    assert '"label": "CTOA: Remove Phase-5 Morning Sync Task"' in content
