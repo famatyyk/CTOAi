@@ -47,3 +47,11 @@ python scripts/ops/project_progress_diagram.py --backlog C:/Users/zycie/CTOAi/wo
 - Added tasks in `.vscode/tasks.json`: `CTOA: Sprint-043 Validate`, `CTOA: Sprint-043 Wave-1 Run`, `CTOA: Sprint-044 Validate`, `CTOA: Sprint-044 Wave-1 Run`.
 - Validation outcomes: `sprint043_validate` PASS 11/11, `sprint044_validate` PASS 11/11.
 - Result: Legacy flow artifacts do not crash validators, and local task gate compatibility is restored on mainline.
+
+## CTOA-254 Evidence (Approval Publish Operationalization)
+
+- Date: 2026-05-24
+- Scope: Validate deterministic operator path for `WAITING_APPROVAL` handling on sprint-049 backlog.
+- Command executed: `CTOA_BACKLOG_FILE=workflows/backlog-sprint-049.yaml` then `python runner/runner.py report`.
+- Verification: report generated successfully, `WAITING_APPROVAL: 0` shown in Status Counts, and `## Waiting Approval` rendered as `none` without runtime failure.
+- Result: Approval Publish completion path is documented and operationally verified.

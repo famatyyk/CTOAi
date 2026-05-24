@@ -149,3 +149,19 @@ Use this as the default local pre-push chain for Sprint-048 governance safety.
 
 Reference one-shot task:
 - [x] `CTOA: Release Gate OneShot`
+
+## Sprint-049 Approval Publish Completion Path
+
+Use this deterministic operator flow to close tasks from `WAITING_APPROVAL` to `RELEASED`.
+
+- [x] Set backlog scope for runner session: `CTOA_BACKLOG_FILE=workflows/backlog-sprint-049.yaml`
+- [x] Inspect approval queue: `python runner/runner.py report`
+- [x] Confirm `## Waiting Approval` is readable and parseable in report output
+- [x] If tasks are pending approval, release explicitly by task id: `python runner/runner.py approve --task CTOA-XXX`
+- [x] Re-run report and verify task moved to `RELEASED` and approval queue reflects the change
+
+Current verification snapshot (2026-05-24):
+
+- Report generated successfully for sprint-049 backlog
+- `WAITING_APPROVAL: 0` and `## Waiting Approval: none`
+- No runtime crash when reading approval section
