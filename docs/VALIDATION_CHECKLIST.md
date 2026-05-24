@@ -1,6 +1,6 @@
 # CTOA Systems Validation Checklist
 
-**Last Updated:** 2026-05-24T22:05:00+00:00
+**Last Updated:** 2026-05-24T22:25:00+00:00
 
 ## Pre-Deployment Checks
 
@@ -170,7 +170,7 @@ Current verification snapshot (2026-05-24):
 
 Use this path to keep approval closure auditable from `WAITING_APPROVAL` to `RELEASED`.
 
-### Operator Checklist
+### Sprint-051 Operator Checklist
 
 - [ ] Scope runner to Sprint-050 backlog: `CTOA_BACKLOG_FILE=workflows/backlog-sprint-050.yaml`
 - [ ] Capture baseline queue status: `python runner/runner.py report`
@@ -192,3 +192,31 @@ Use this path to keep approval closure auditable from `WAITING_APPROVAL` to `REL
 - If `## Waiting Approval` is missing: verify backlog scope variable and rerun report
 - If approval command fails: verify task id exists in current backlog and is in `WAITING_APPROVAL`
 - If transition does not persist: inspect runtime state write permissions and rerun one approval at a time
+
+## Sprint-051 Runtime State Synchronization And Closure Path
+
+Use this path to keep runtime status, approval closure, and sign-off evidence synchronized after Wave-1.
+
+### Operator Checklist
+
+- [ ] Scope runner to Sprint-051 backlog: `CTOA_BACKLOG_FILE=workflows/backlog-sprint-051.yaml`
+- [ ] Capture pre-wave snapshot: `python runner/runner.py report`
+- [ ] Execute Wave-1 gate chain: `CTOA: Sprint-051 Wave-1 Run`
+- [ ] Re-run status snapshot and compare `IN_CI_GATE`, `WAITING_APPROVAL`, `RELEASED` counts
+- [ ] Verify `## Waiting Approval` section reflects expected closure state (`none` or explicit task list)
+- [ ] If approvals are pending, close per task: `python runner/runner.py approve --task CTOA-XXX`
+- [ ] Re-check report and confirm closure state plus persisted runtime alignment
+- [ ] Publish summary and residual risk notes in tracked evidence under `releases/evidence/sprint-051/`
+
+### Sprint-051 Minimal Evidence Bundle (State/Evidence Sync)
+
+- `runner/runner.py report` snapshot before Wave-1 execution
+- Wave-1 gate outcomes (tests, sprint validate, launch, core guard)
+- `runner/runner.py report` snapshot after Wave-1 and after optional approvals
+- Drift statement: explicit note whether runtime state and governance evidence are aligned
+
+### Sprint-051 Failure Triage (State Sync)
+
+- If post-wave status remains unchanged unexpectedly: verify backlog scope and rerun report
+- If `WAITING_APPROVAL` is non-empty after approvals: verify each task id and rerun approve commands one-by-one
+- If state/evidence mismatch persists: record blocker with current counts and keep sprint in governance hold state

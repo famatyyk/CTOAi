@@ -1,6 +1,6 @@
 # Sprint-051 Plan - 3 Day Execution Window
 
-Status: NEW
+Status: RELEASED
 Theme: Runtime state sync hardening + approval closure continuity + Sprint-051 wave execution
 Window: 2026-05-28 -> 2026-05-30
 Backlog: workflows/backlog-sprint-051.yaml
@@ -39,3 +39,26 @@ Sprint-051 focuses on eliminating runtime state and governance evidence drift, p
 - Delivered By: STRATEGOS + CORE ARCHITECT + DOCUMENTATION SAGE.
 - Verified: Sprint-051 backlog and flow are published.
 - God Mode Decision Required: Approve Wave-1 execution once CTOA-265/266/267 are green.
+
+## Sprint-051 Sign-Off
+
+- Sign-Off Date: 2026-05-24
+- Decision: RELEASED
+- Delivered scope: CTOA-264, CTOA-265, CTOA-266, CTOA-267, CTOA-268, CTOA-269
+- Wave-1 gates: tests PASS, sprint-051 validate PASS, launch gate PASS, core guard PASS
+- Evidence bundle:
+- `docs/history/sprints/SPRINT-051-PROGRESS.md`
+- `releases/evidence/sprint-051/CTOA-266.md`
+- `releases/evidence/sprint-051/CTOA-267.md`
+- `releases/evidence/sprint-051/CTOA-268.md`
+- `releases/evidence/sprint-051/CTOA-269.md`
+
+## Sprint-052 Handoff Recommendations
+
+1. Add deterministic post-wave state reconciliation to persist runtime task transitions.
+2. Extend sprint validator checks to detect state/evidence mismatch conditions.
+3. Keep tracked evidence continuity checks as mandatory pre-sign-off gate.
+
+## God Mode Checkpoint
+
+Sprint-051 governance scope is closed and sign-off package is published.

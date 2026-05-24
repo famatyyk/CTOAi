@@ -99,3 +99,26 @@ Use these rules to decide when runtime outputs must be promoted from ignored loc
 3. Copy required artifacts to `releases/evidence/sprint-XXX/` and keep file names stable.
 4. Update sprint progress and sign-off docs with relative links to promoted paths.
 5. Re-run hygiene audit and ensure no sign-off-critical evidence remains runtime-only.
+
+## Sprint-051 Tracked Evidence Continuity Addendum
+
+Apply this continuity contract to every Sprint-051 sign-off-critical artifact.
+
+### Required Continuity Set
+
+- Wave gate artifacts: validation JSON and wave run transcript
+- Governance closure artifacts: approval/state sync notes and sign-off memo
+- Handoff artifact: Sprint-052 recommendation memo cited by Sprint-051 sign-off
+
+### Canonical Sprint-051 Targets
+
+- `releases/evidence/sprint-051/CTOA-266.md`
+- `releases/evidence/sprint-051/CTOA-267.md`
+- `releases/evidence/sprint-051/CTOA-268.md`
+- `releases/evidence/sprint-051/CTOA-269.md`
+- `docs/history/sprints/SPRINT-051-PROGRESS.md`
+- `docs/history/sprints/SPRINT-051.md`
+
+### Continuity Check
+
+Before sign-off, ensure every artifact referenced in `SPRINT-051-PROGRESS.md` resolves to a tracked repository path.
