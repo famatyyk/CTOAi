@@ -1574,6 +1574,16 @@
 			}
 		},
 		{
+			"label": "CTOA: Sprint-054 Wave Summary UTF-8",
+			"type": "shell",
+			"command": "python scripts/ops/wave_summary_utf8.py --sprint-id 054 --validation-json runtime/ci-artifacts/sprint-054-validation.json --output runtime/ci-artifacts/sprint-054-wave1-summary.txt --repo-hygiene-json runtime/repo-hygiene/latest.json --state-yaml runtime/task-state.yaml --backlog-yaml workflows/backlog-sprint-054.yaml",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
 			"label": "CTOA: Sprint-054 Wave-1 Run",
 			"dependsOrder": "sequence",
 			"dependsOn": [
@@ -1581,7 +1591,9 @@
 				"CTOA: Sprint-054 Validate",
 				"CTOA: Launch Pack",
 				"CTOA: Sprint-054 State Sync Dry Run",
-				"CTOA: Sprint-054 State Sync"
+				"CTOA: Sprint-054 State Sync",
+				"CTOA: Repo Hygiene Audit",
+				"CTOA: Sprint-054 Wave Summary UTF-8"
 			],
 			"isBackground": false,
 			"presentation": {

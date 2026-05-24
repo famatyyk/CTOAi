@@ -19,6 +19,7 @@ REQUIRED_FILES = [
     'scripts/ops/project_progress_diagram.py',
     'scripts/ops/sprint054_validate.py',
     'scripts/ops/sprint_state_sync.py',
+    'scripts/ops/wave_summary_utf8.py',
     '.vscode/tasks.json',
     '.github/workflows/ctoa-pipeline.yml',
 ]
@@ -103,13 +104,16 @@ def check_pipeline_gate(root: Path) -> dict:
     content = pipeline_path.read_text(encoding="utf-8")
     gate_present = "scripts/ops/sprint054_validate.py" in content
     artifact_present = "runtime/ci-artifacts/sprint-054-validation.json" in content
-    ok = gate_present and artifact_present
+    summary_present = "runtime/ci-artifacts/sprint-054-wave1-summary.txt" in content
+    ok = gate_present and artifact_present and summary_present
 
     hint_parts: list[str] = []
     if not gate_present:
         hint_parts.append("add sprint validator command")
     if not artifact_present:
         hint_parts.append("add sprint artifact path")
+    if not summary_present:
+        hint_parts.append("add utf-8 summary artifact path")
 
     return {
         "id": "pipeline_gate",
@@ -132,13 +136,14 @@ def check_local_tasks(root: Path) -> dict:
             "CTOA: Sprint-054 Refresh Progress Diagram",
             "CTOA: Sprint-054 Quality Snapshot",
             "CTOA: Sprint-054 State Sync",
+            "CTOA: Sprint-054 Wave Summary UTF-8",
         ]
     )
 
     return {
         "id": "local_tasks",
         "ok": labels_present,
-        "hint": "Add sprint validate, wave-1, state sync, progress diagram, and quality snapshot tasks" if not labels_present else "",
+        "hint": "Add sprint validate, wave-1, state sync, utf-8 summary, progress diagram, and quality snapshot tasks" if not labels_present else "",
     }
 
 

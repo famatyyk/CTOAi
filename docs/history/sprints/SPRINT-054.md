@@ -1,6 +1,6 @@
 # Sprint-054 Plan - 3 Day Execution Window
 
-Status: NEW
+Status: RELEASED
 Theme: UTF-8 wave summary artifact + RELEASED assertion continuity + evidence promotion discipline
 Window: 2026-06-06 -> 2026-06-08
 Backlog: workflows/backlog-sprint-054.yaml
@@ -39,3 +39,26 @@ Sprint-054 focuses on shipping a compact UTF-8 Wave summary artifact while prese
 - Delivered By: STRATEGOS + CORE ARCHITECT + DOCUMENTATION SAGE.
 - Verified: Sprint-054 backlog and flow are published.
 - God Mode Decision Required: Approve Wave-1 execution once CTOA-283/284/285 are green.
+
+## Sprint-054 Sign-Off
+
+- Sign-Off Date: 2026-05-25
+- Decision: RELEASED
+- Delivered scope: CTOA-282, CTOA-283, CTOA-284, CTOA-285, CTOA-286, CTOA-287
+- Wave-1 gates: tests PASS, sprint-054 validate PASS, launch gate PASS, state sync dry-run PASS, state sync PASS, repo hygiene PASS, core guard PASS
+- Evidence bundle:
+- docs/history/sprints/SPRINT-054-PROGRESS.md
+- releases/evidence/sprint-054/CTOA-284.md
+- releases/evidence/sprint-054/CTOA-285.md
+- releases/evidence/sprint-054/CTOA-286.md
+- releases/evidence/sprint-054/CTOA-287.md
+
+## Sprint-055 Handoff Recommendations
+
+1. Reuse scripts/ops/wave_summary_utf8.py for all upcoming wave runs.
+2. Keep continuity gate checks synchronized with CI artifact paths.
+3. Keep tracked evidence focused on sign-off-critical artifacts only.
+
+## God Mode Checkpoint
+
+Sprint-054 governance scope is closed and RELEASED with aligned runtime state evidence.
