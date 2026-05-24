@@ -38,3 +38,14 @@ pie showData
 ```bash
 python scripts/ops/project_progress_diagram.py --backlog C:/Users/zycie/Documents/GitHub/CTOAi/workflows/backlog-sprint-050.yaml --state C:/Users/zycie/Documents/GitHub/CTOAi/runtime/task-state.yaml --output C:/Users/zycie/Documents/GitHub/CTOAi/docs/history/sprints/SPRINT-050-PROGRESS.md --project-name Sprint-050
 ```
+
+## CTOA-259 Evidence (Sprint-050 Validator + Wave-1 Chain)
+
+- Date: 2026-05-24
+- Scope: Execute Sprint-050 Wave-1 chain post-commit and confirm all gates are green.
+- Gate outcomes:
+- `CTOA: Run All Tests` PASS (`168 passed, 5 skipped`).
+- `CTOA: Sprint-050 Validate` PASS (`14/14` checks passed).
+- `CTOA: Launch Pack` PASS (`launch_allowed`, `Launch dry-run PASS`).
+- Runtime artifact path: `runtime/ci-artifacts/sprint-050-validation.json`.
+- Result: Sprint-050 Wave-1 chain is operational and validator wiring is confirmed on `main`.
