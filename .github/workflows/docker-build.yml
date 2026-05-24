@@ -44,12 +44,29 @@ jobs:
   publish-acr:
     name: Publish image to ACR (CI workaround)
     needs: build-test
-    if: github.event_name != 'pull_request' && (vars.ACR_NAME != '' || vars.ACR_LOGIN_SERVER != '')
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Validate ACR credentials and target inputs
+        shell: bash
+        env:
+          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+          INPUT_ACR_NAME: ${{ vars.ACR_NAME }}
+          INPUT_ACR_LOGIN_SERVER: ${{ vars.ACR_LOGIN_SERVER }}
+        run: |
+          set -euo pipefail
+          if [ -z "${AZURE_CREDENTIALS}" ]; then
+            echo "::error::Missing required secret AZURE_CREDENTIALS."
+            exit 1
+          fi
+          if [ -z "${INPUT_ACR_NAME}" ] && [ -z "${INPUT_ACR_LOGIN_SERVER}" ]; then
+            echo "::error::Set repository variable ACR_NAME or ACR_LOGIN_SERVER."
+            exit 1
+          fi
 
       - name: Azure login
         uses: azure/login@v2
@@ -112,6 +129,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Validate Docker Hub credentials
+        shell: bash
+        env:
+          DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${DOCKER_HUB_TOKEN}" ]; then
+            echo "::error::Missing required secret DOCKER_HUB_TOKEN."
+            exit 1
+          fi
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -140,6 +168,27 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Validate VPS deploy secrets
+        shell: bash
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${VPS_HOST}" ]; then
+            echo "::error::Missing required secret VPS_HOST."
+            exit 1
+          fi
+          if [ -z "${VPS_USER}" ]; then
+            echo "::error::Missing required secret VPS_USER."
+            exit 1
+          fi
+          if [ -z "${VPS_SSH_KEY}" ]; then
+            echo "::error::Missing required secret VPS_SSH_KEY."
+            exit 1
+          fi
 
       - name: Write SSH key
         env:

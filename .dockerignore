@@ -1,5 +1,5 @@
 .git
-.vscode
+.vscode/*
 .venv
 __pycache__
 *.pyc
@@ -15,3 +15,8 @@ secrets/
 .pytest_cache
 .coverage
 htmlcov/
+runtime/
+logs/
+backups/
+archived/
+releases/
