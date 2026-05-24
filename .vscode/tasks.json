@@ -1680,6 +1680,84 @@
 			}
 		},
 		{
+			"label": "CTOA: Sprint-056 Validate",
+			"type": "shell",
+			"command": "python scripts/ops/run_validator_with_preflight.py scripts/ops/sprint056_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-056-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-056 Refresh Progress Diagram",
+			"type": "shell",
+			"command": "python scripts/ops/project_progress_diagram.py --backlog workflows/backlog-sprint-056.yaml --state runtime/task-state.yaml --output docs/history/sprints/SPRINT-056-PROGRESS.md --project-name Sprint-056",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-056 Quality Snapshot",
+			"type": "shell",
+			"command": "python scripts/ops/ci_executive_report.py --output runtime/ci-artifacts/ci-executive-weekly-sprint-056.md --window-days 7 30",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-056 State Sync Dry Run",
+			"type": "shell",
+			"command": "python scripts/ops/sprint_state_sync.py --backlog workflows/backlog-sprint-056.yaml --state runtime/task-state.yaml --reason \"automatic state sync after sprint-056 wave1\" --dry-run",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-056 State Sync",
+			"type": "shell",
+			"command": "python scripts/ops/sprint_state_sync.py --backlog workflows/backlog-sprint-056.yaml --state runtime/task-state.yaml --reason \"automatic state sync after sprint-056 wave1\"",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-056 Wave Summary UTF-8",
+			"type": "shell",
+			"command": "python scripts/ops/wave_summary_utf8.py --sprint-id 056 --validation-json runtime/ci-artifacts/sprint-056-validation.json --output runtime/ci-artifacts/sprint-056-wave1-summary.txt --repo-hygiene-json runtime/repo-hygiene/latest.json --state-yaml runtime/task-state.yaml --backlog-yaml workflows/backlog-sprint-056.yaml",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-056 Wave-1 Run",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: Run All Tests",
+				"CTOA: Sprint-056 Validate",
+				"CTOA: Launch Pack",
+				"CTOA: Sprint-056 State Sync Dry Run",
+				"CTOA: Sprint-056 State Sync",
+				"CTOA: Repo Hygiene Audit",
+				"CTOA: Sprint-056 Wave Summary UTF-8"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
 			"label": "CTOA: Install Phase-5 Morning Sync Task",
 			"type": "shell",
 			"command": ".venv/Scripts/powershell.exe -ExecutionPolicy Bypass -File scripts/ops/install-phase5-morning-sync-task.ps1",
