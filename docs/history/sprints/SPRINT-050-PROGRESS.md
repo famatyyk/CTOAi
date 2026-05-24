@@ -70,3 +70,28 @@ python scripts/ops/project_progress_diagram.py --backlog C:/Users/zycie/Document
 - Documented required promotion classes, runtime-only classes, canonical targets, and promotion workflow.
 - Tracked evidence: `releases/evidence/sprint-050/CTOA-261.md`.
 - Result: Sign-off-critical artifacts have explicit promotion rules and canonical tracked destinations.
+
+## CTOA-262 Evidence (Sprint-050 Wave-1 Execution)
+
+- Date: 2026-05-24
+- Scope: Execute Wave-1 chain and publish complete gate evidence with residual risk notes.
+- Gate outcomes:
+- `CTOA: Run All Tests` PASS (`168 passed, 5 skipped`).
+- `CTOA: Sprint-050 Validate` PASS (`14/14` checks passed).
+- `CTOA: Launch Pack` PASS (`launch_allowed`, `Launch dry-run PASS`).
+- `python scripts/ops/core_guard.py --check` PASS.
+- Runtime artifact: `runtime/ci-artifacts/sprint-050-wave1-run.log`.
+- Tracked evidence: `releases/evidence/sprint-050/CTOA-262.md`.
+- Residual risk: runtime task-state still reports Sprint-050 tasks as `NEW` and requires explicit operational state sync.
+- Result: Wave-1 chain is green and evidence set is complete for governance closure.
+
+## CTOA-263 Evidence (Sign-Off + Sprint-051 Handoff)
+
+- Date: 2026-05-24
+- Scope: Publish Sprint-050 closure summary and actionable Sprint-051 handoff recommendations.
+- Sign-off memo recorded: `releases/evidence/sprint-050/CTOA-263.md`.
+- Handoff focus:
+- Align runtime state transitions with governance evidence to prevent state/evidence drift.
+- Add deterministic post-wave state-sync step for status counts.
+- Keep CI checks for tracked sign-off evidence promotion paths.
+- Result: Sprint-050 closure package and Sprint-051 handoff are documented and auditable.

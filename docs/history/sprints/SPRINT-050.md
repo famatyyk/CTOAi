@@ -1,6 +1,6 @@
 # Sprint-050 Plan - 3 Day Execution Window
 
-Status: NEW
+Status: RELEASED
 Theme: Approval observability hardening + evidence promotion + Sprint-050 wave execution
 Window: 2026-05-25 -> 2026-05-27
 Backlog: workflows/backlog-sprint-050.yaml
@@ -39,3 +39,26 @@ Sprint-050 focuses on strengthening approval queue observability, promoting rele
 - Delivered By: STRATEGOS + CORE ARCHITECT + DOCUMENTATION SAGE.
 - Verified: Sprint-050 backlog and flow are published.
 - God Mode Decision Required: Approve Wave-1 execution once CTOA-259/260/261 are green.
+
+## Sprint-050 Sign-Off
+
+- Sign-Off Date: 2026-05-24
+- Decision: RELEASED
+- Delivered scope: CTOA-258, CTOA-259, CTOA-260, CTOA-261, CTOA-262, CTOA-263
+- Wave-1 gates: tests PASS, sprint-050 validate PASS, launch gate PASS, core guard PASS
+- Evidence bundle:
+- `docs/history/sprints/SPRINT-050-PROGRESS.md`
+- `releases/evidence/sprint-050/CTOA-260.md`
+- `releases/evidence/sprint-050/CTOA-261.md`
+- `releases/evidence/sprint-050/CTOA-262.md`
+- `releases/evidence/sprint-050/CTOA-263.md`
+
+## Sprint-051 Handoff Recommendations
+
+1. Add deterministic task-state synchronization after Wave-1 chain to align runtime status with governance evidence.
+2. Keep approval closure observability checks as mandatory pre-sign-off gate.
+3. Enforce tracked evidence promotion checks in CI for all sign-off-critical artifacts.
+
+## God Mode Checkpoint
+
+Sprint-050 governance scope is closed and sign-off package is published.
