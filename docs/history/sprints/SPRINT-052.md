@@ -1,6 +1,6 @@
 # Sprint-052 Plan - 3 Day Execution Window
 
-Status: NEW
+Status: RELEASED
 Theme: State-evidence alignment hardening + auto sync after Wave-1 + validator mismatch gate
 Window: 2026-05-31 -> 2026-06-02
 Backlog: workflows/backlog-sprint-052.yaml
@@ -39,3 +39,26 @@ Sprint-052 focuses on eliminating state/evidence drift by automating post-Wave-1
 - Delivered By: STRATEGOS + CORE ARCHITECT + DOCUMENTATION SAGE.
 - Verified: Sprint-052 backlog and flow are published.
 - God Mode Decision Required: Approve Wave-1 execution once CTOA-271/272/273 are green.
+
+## Sprint-052 Sign-Off
+
+- Sign-Off Date: 2026-05-25
+- Decision: RELEASED
+- Delivered scope: CTOA-270, CTOA-271, CTOA-272, CTOA-273, CTOA-274, CTOA-275
+- Wave-1 gates: tests PASS, sprint-052 validate PASS, launch gate PASS, core guard PASS, state sync PASS
+- Evidence bundle:
+- `docs/history/sprints/SPRINT-052-PROGRESS.md`
+- `releases/evidence/sprint-052/CTOA-272.md`
+- `releases/evidence/sprint-052/CTOA-273.md`
+- `releases/evidence/sprint-052/CTOA-274.md`
+- `releases/evidence/sprint-052/CTOA-275.md`
+
+## Sprint-053 Handoff Recommendations
+
+1. Add dry-run mode to state sync script for pre-write verification.
+2. Enforce CI rule that RELEASED sprint docs require sync+mismatch gates to pass.
+3. Keep tracked evidence continuity as mandatory gate before sign-off publication.
+
+## God Mode Checkpoint
+
+Sprint-052 governance scope is closed with aligned runtime state and sign-off evidence.
