@@ -1,0 +1,61 @@
+sprint: '051'
+theme: Runtime state sync hardening + approval closure continuity + Sprint-051 wave execution
+version: '1.0'
+lifecycle:
+  start: '2026-05-28'
+  target_wave1: '2026-05-29'
+  target_wave2: '2026-05-30'
+
+tasks:
+  - id: CTOA-264
+    title: Sprint-051 kickoff baseline
+    on_start: publish Sprint-051 backlog, flow, and kickoff baseline
+    on_complete: confirm Sprint-051 scope lock and decision checkpoints
+    on_fail: block sprint start and publish blockers
+
+  - id: CTOA-265
+    title: Sprint-051 validator and Wave-1 wiring
+    depends_on:
+      - CTOA-264
+    on_start: scaffold sprint051 validator and local task chain
+    on_complete: validator and Wave-1 tasks are runnable with artifacts
+    on_fail: revert task wiring to last stable baseline
+
+  - id: CTOA-266
+    title: Runtime state synchronization hardening
+    depends_on:
+      - CTOA-265
+    on_start: verify post-wave state sync checks and operator guidance are explicit
+    on_complete: state and evidence closure flow is documented and testable
+    on_fail: publish state-sync blocker notes and keep guardrail open
+
+  - id: CTOA-267
+    title: Tracked evidence continuity enforcement
+    depends_on:
+      - CTOA-266
+    on_start: map sign-off artifacts that must be retained in tracked paths
+    on_complete: release-significant evidence continuity is documented and adopted
+    on_fail: keep hygiene continuity risk open with remediation owner
+
+  - id: CTOA-268
+    title: Sprint-051 Wave-1 execution
+    depends_on:
+      - CTOA-265
+      - CTOA-266
+      - CTOA-267
+    on_start: execute tests, sprint051 validate, and launch gate
+    on_complete: publish Wave-1 evidence and residual risk summary
+    on_fail: hold sprint in IN_CI_GATE and document blocker details
+
+  - id: CTOA-269
+    title: Sign-off and Sprint-052 handoff
+    depends_on:
+      - CTOA-268
+    on_start: compile closure memo and Sprint-052 recommendations
+    on_complete: publish sign-off and God Mode checkpoint
+    on_fail: keep sprint open with unresolved closure items
+
+gate_policy:
+  wave_1: sprint051 validator PASS + launch gate PASS + core guard PASS
+  wave_2: manual STRATEGOS sign-off with blocker closure note
+  rollback_baseline: v1.15.0
