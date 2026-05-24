@@ -1403,6 +1403,61 @@
 			}
 		},
 		{
+			"label": "CTOA: Sprint-052 Validate",
+			"type": "shell",
+			"command": "python scripts/ops/run_validator_with_preflight.py scripts/ops/sprint052_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-052-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-052 Refresh Progress Diagram",
+			"type": "shell",
+			"command": "python scripts/ops/project_progress_diagram.py --backlog workflows/backlog-sprint-052.yaml --state runtime/task-state.yaml --output docs/history/sprints/SPRINT-052-PROGRESS.md --project-name Sprint-052",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-052 Quality Snapshot",
+			"type": "shell",
+			"command": "python scripts/ops/ci_executive_report.py --output runtime/ci-artifacts/ci-executive-weekly-sprint-052.md --window-days 7 30",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-052 State Sync",
+			"type": "shell",
+			"command": "python scripts/ops/sprint_state_sync.py --backlog workflows/backlog-sprint-052.yaml --state runtime/task-state.yaml --reason \"automatic state sync after sprint-052 wave1\"",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-052 Wave-1 Run",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: Run All Tests",
+				"CTOA: Sprint-052 Validate",
+				"CTOA: Launch Pack",
+				"CTOA: Sprint-052 State Sync"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
 			"label": "CTOA: Install Phase-5 Morning Sync Task",
 			"type": "shell",
 			"command": ".venv/Scripts/powershell.exe -ExecutionPolicy Bypass -File scripts/ops/install-phase5-morning-sync-task.ps1",
