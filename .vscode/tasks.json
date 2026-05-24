@@ -711,7 +711,7 @@
 		{
 			"label": "CTOA: Sprint-025 Validate Control Plane + Execution + Governance",
 			"type": "shell",
-			"command": "python scripts/ops/run_validator_with_preflight.py scripts/ops/sprint025_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-025-validation.json",
+			"command": "python scripts/ops/run_validator_with_preflight.py scripts/ops/sprint042_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-042-validation.json",
 			"isBackground": false,
 			"presentation": {
 				"reveal": "always",
@@ -789,6 +789,17 @@
 			"dependsOn": [
 				"CTOA: Repo Hygiene Audit",
 				"CTOA: Release Ready Pass"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "CTOA: Post-Release Smoke Verify",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: Check Update Gate",
+				"CTOA: Validate Pack",
+				"CTOA: Launch Pack",
+				"CTOA: DashboardSnapshot OneShot"
 			],
 			"isBackground": false
 		},
