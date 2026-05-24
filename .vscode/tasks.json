@@ -1223,6 +1223,54 @@
 			}
 		},
 		{
+			"label": "CTOA: Sprint-043 Validate",
+			"type": "shell",
+			"command": "python scripts/ops/run_validator_with_preflight.py scripts/ops/sprint043_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-043-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-043 Wave-1 Run",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: Run All Tests",
+				"CTOA: Sprint-043 Validate",
+				"CTOA: Launch Pack"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-044 Validate",
+			"type": "shell",
+			"command": "python scripts/ops/run_validator_with_preflight.py scripts/ops/sprint044_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-044-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-044 Wave-1 Run",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: Run All Tests",
+				"CTOA: Sprint-044 Validate",
+				"CTOA: Launch Pack"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
 			"label": "CTOA: Sprint-049 Validate",
 			"type": "shell",
 			"command": "python scripts/ops/run_validator_with_preflight.py scripts/ops/sprint049_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-049-validation.json",

@@ -38,3 +38,12 @@ pie showData
 ```bash
 python scripts/ops/project_progress_diagram.py --backlog C:/Users/zycie/CTOAi/workflows/backlog-sprint-049.yaml --state C:/Users/zycie/CTOAi/runtime/task-state.yaml --output C:/Users/zycie/CTOAi/docs/history/sprints/SPRINT-049-PROGRESS.md --project-name Sprint-049
 ```
+
+## CTOA-253 Evidence (Legacy Validator Compatibility)
+
+- Date: 2026-05-24
+- Scope: Wire missing local tasks required by legacy validators for Sprint-043 and Sprint-044.
+- Changes:
+- Added tasks in `.vscode/tasks.json`: `CTOA: Sprint-043 Validate`, `CTOA: Sprint-043 Wave-1 Run`, `CTOA: Sprint-044 Validate`, `CTOA: Sprint-044 Wave-1 Run`.
+- Validation outcomes: `sprint043_validate` PASS 11/11, `sprint044_validate` PASS 11/11.
+- Result: Legacy flow artifacts do not crash validators, and local task gate compatibility is restored on mainline.
