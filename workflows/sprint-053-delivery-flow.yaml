@@ -1,0 +1,61 @@
+sprint: '053'
+theme: State sync dry-run hardening + release gate assertions + Sprint-053 wave execution
+version: '1.0'
+lifecycle:
+  start: '2026-06-03'
+  target_wave1: '2026-06-04'
+  target_wave2: '2026-06-05'
+
+tasks:
+  - id: CTOA-276
+    title: Sprint-053 kickoff baseline
+    on_start: publish Sprint-053 backlog, flow, and kickoff baseline
+    on_complete: confirm Sprint-053 scope lock and decision checkpoints
+    on_fail: block sprint start and publish blockers
+
+  - id: CTOA-277
+    title: Sprint-053 validator and Wave-1 wiring
+    depends_on:
+      - CTOA-276
+    on_start: scaffold sprint053 validator and local task chain
+    on_complete: validator and Wave-1 tasks are runnable with artifacts
+    on_fail: revert task wiring to last stable baseline
+
+  - id: CTOA-278
+    title: Sprint state sync dry-run mode
+    depends_on:
+      - CTOA-277
+    on_start: add dry-run preview mode to sprint state synchronization script
+    on_complete: state sync dry-run and apply modes are both operational
+    on_fail: keep sync hardening open with blocker notes
+
+  - id: CTOA-279
+    title: RELEASED doc assertion gate
+    depends_on:
+      - CTOA-278
+    on_start: harden validator checks for RELEASED doc and runtime alignment
+    on_complete: mismatch assertion blocks invalid release state
+    on_fail: keep quality gate blocked with mismatch diagnostics
+
+  - id: CTOA-280
+    title: Sprint-053 Wave-1 execution
+    depends_on:
+      - CTOA-277
+      - CTOA-278
+      - CTOA-279
+    on_start: execute tests, sprint053 validate, launch gate, and state sync
+    on_complete: publish Wave-1 evidence and residual risk summary
+    on_fail: hold sprint in IN_CI_GATE and document blocker details
+
+  - id: CTOA-281
+    title: Sign-off and Sprint-054 handoff
+    depends_on:
+      - CTOA-280
+    on_start: compile closure memo and Sprint-054 recommendations
+    on_complete: publish sign-off and God Mode checkpoint
+    on_fail: keep sprint open with unresolved closure items
+
+gate_policy:
+  wave_1: sprint053 validator PASS + launch gate PASS + core guard PASS + state sync PASS
+  wave_2: manual STRATEGOS sign-off with blocker closure note
+  rollback_baseline: v1.15.0

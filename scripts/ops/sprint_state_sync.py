@@ -67,6 +67,16 @@ def _init_state_from_backlog(backlog: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _preview_release_counts(backlog_path: Path) -> tuple[int, int, str]:
+    backlog = _load_yaml(backlog_path)
+    if not backlog:
+        raise FileNotFoundError(f"Missing or empty backlog: {backlog_path}")
+
+    backlog_id = str(backlog.get("backlog_id", "unknown"))
+    total_tasks = len([t for t in (backlog.get("tasks") or []) if isinstance(t, dict)])
+    return total_tasks, total_tasks, backlog_id
+
+
 def synchronize_state(backlog_path: Path, state_path: Path, reason: str) -> tuple[int, int, str]:
     backlog = _load_yaml(backlog_path)
     if not backlog:
@@ -151,10 +161,22 @@ def main() -> int:
         default="automatic post-wave1 state synchronization",
         help="Reason stored in task notes/history",
     )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Preview expected release counts without writing runtime state",
+    )
     args = parser.parse_args()
 
     backlog_path = (ROOT / args.backlog).resolve()
     state_path = (ROOT / args.state).resolve()
+
+    if args.dry_run:
+        released, total, backlog_id = _preview_release_counts(backlog_path)
+        print(
+            f"[sprint_state_sync] dry-run backlog={backlog_id} target_release={released}/{total} state={state_path}"
+        )
+        return 0
 
     released, total, backlog_id = synchronize_state(backlog_path, state_path, args.reason)
     print(
