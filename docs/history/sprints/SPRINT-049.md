@@ -1,6 +1,6 @@
 ﻿# Sprint-049 Plan - 3 Day Execution Window
 
-Status: IN_PROGRESS
+Status: RELEASED
 Theme: Mainline CI stabilization + approval workflow closure + Sprint-049 wave execution
 Window: 2026-05-22 -> 2026-05-24
 Backlog: workflows/backlog-sprint-049.yaml
@@ -40,4 +40,24 @@ Approval Publish operational path, and preparing the next reusable Wave-1 execut
 - Delivered By: STRATEGOS + CORE ARCHITECT + DOCUMENTATION SAGE.
 - Verified: Sprint-049 backlog and flow are published.
 - God Mode Decision Required: Approve Wave-1 execution once CTOA-252/253/254 are green.
+
+## Sprint-049 Sign-Off
+
+- Sign-off date: 2026-05-24
+- Overall verdict: RELEASED
+- Scope delivered: CTOA-251 kickoff baseline, CTOA-252 Sprint-049 validator and Wave-1 wiring, CTOA-253 legacy validator compatibility hardening, CTOA-254 Approval Publish operationalization, CTOA-255 Wave-1 evidence capture.
+- Gate summary: Run All Tests PASS (168 passed, 5 skipped), Sprint-049 Validate PASS (14/14), Launch Pack PASS (launch_allowed).
+- Detailed closure memo: docs/history/sprints/SPRINT-049-HANDOFF-CTOA-256.md.
+
+## Sprint-050 Handoff Recommendations
+
+- Priority 1: Keep Approval Publish queue observability visible in daily runner report and preserve deterministic manual approve path.
+- Priority 2: Convert runtime-only validation snapshots needed for audits into tracked release evidence locations when they become sign-off artifacts.
+- Priority 3: Re-run Sprint-049 Wave-1 chain at Sprint-050 kickoff baseline to detect drift before new changes are layered.
+- Priority 4: Maintain legacy validator compatibility checks (Sprint-043/044) as non-regression guardrails during Sprint-050 task wiring.
+
+## Residual Risks
+
+- Mainline branch policy is currently bypass-enabled in remote; continue treating local evidence discipline and gate checks as mandatory.
+- Runtime artifact churn can obscure meaningful evidence unless commit scope remains explicit and minimal.
 
