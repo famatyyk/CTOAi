@@ -60,6 +60,9 @@ TOP_LEVEL_ALLOWLIST = {
     "releases",
     "templates",
     "backups",
+    ".foundry",
+    "agent.yaml",
+    "evals",
 }
 
 FLAGGED_TOP_LEVEL_PREFIXES = (

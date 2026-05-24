@@ -37,6 +37,14 @@ Goal: keep this repository focused on public CTOA products, while moving interna
 - isolate reverse-engineering helpers under clearly marked internal path
 - keep README and docs centered on active products
 
+## Approved Top-Level Exceptions
+
+The following entries are explicitly classified as product-relevant and remain allowlisted:
+
+- `.foundry` (Foundry workspace/project metadata used by tooling)
+- `agent.yaml` (root agent/runtime configuration contract)
+- `evals/` (evaluation scenarios and quality comparison inputs)
+
 ## Enforcement
 
 Run:
