@@ -55,3 +55,11 @@ python scripts/ops/project_progress_diagram.py --backlog C:/Users/zycie/CTOAi/wo
 - Command executed: `CTOA_BACKLOG_FILE=workflows/backlog-sprint-049.yaml` then `python runner/runner.py report`.
 - Verification: report generated successfully, `WAITING_APPROVAL: 0` shown in Status Counts, and `## Waiting Approval` rendered as `none` without runtime failure.
 - Result: Approval Publish completion path is documented and operationally verified.
+
+## CTOA-255 Evidence (Sprint-049 Wave-1 Execution)
+
+- Date: 2026-05-24
+- Scope: Execute Wave-1 chain and capture gate outcomes.
+- Gate outcomes: `CTOA: Run All Tests` PASS (`168 passed, 5 skipped`), `CTOA: Sprint-049 Validate` PASS (`14/14`), `CTOA: Launch Pack` PASS (`launch_allowed`, `Launch dry-run PASS`).
+- Runtime artifact: `runtime/ci-artifacts/sprint-049-wave1-run.log`.
+- Result: Wave-1 completed green with evidence recorded.
