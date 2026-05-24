@@ -302,6 +302,11 @@ jobs:
         run: |
           python scripts/ops/sprint049_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-049-validation.json
 
+      - name: Sprint-050 delivery gate
+        shell: bash
+        run: |
+          python scripts/ops/sprint050_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-050-validation.json
+
       - name: Python linting (flake8)
         shell: bash
         continue-on-error: true
@@ -445,6 +450,18 @@ jobs:
             runtime/ci-artifacts/sprint-049-wave1-run.log
             docs/history/sprints/SPRINT-049-PROGRESS.md
             runtime/evidence/sprint-049/**
+          if-no-files-found: ignore
+
+      - name: Upload Sprint-050 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sprint-050-evidence
+          path: |
+            runtime/ci-artifacts/sprint-050-validation.json
+            runtime/ci-artifacts/sprint-050-wave1-run.log
+            docs/history/sprints/SPRINT-050-PROGRESS.md
+            runtime/evidence/sprint-050/**
           if-no-files-found: ignore
 
       - name: Enforce response guardrail gate
