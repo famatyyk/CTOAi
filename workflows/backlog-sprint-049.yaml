@@ -109,3 +109,19 @@ tasks:
       - "Sign-off includes delivered scope and unresolved items"
       - "Sprint-050 handoff recommendations are documented"
       - "God Mode checkpoint is explicit"
+
+  - id: CTOA-257
+    title: "Classify repo hygiene allowlist follow-up items (.foundry, agent.yaml, evals)"
+    priority: P2
+    type: governance
+    domain: [governance, hygiene, release]
+    assignees: [strategos, core-architect]
+    estimate_hours: 1
+    deliverables:
+      - "scripts/ops/repo_hygiene_audit.py"
+      - "docs/REPO_HYGIENE_POLICY.md"
+      - "runtime/experiments/sprint-049/CTOA-257.md"
+    acceptance:
+      - "Each of .foundry, agent.yaml, and evals is classified as allowlist or relocation"
+      - "Repo hygiene audit no longer reports REVIEW_REQUIRED only because of these three entries"
+      - "Decision rationale is documented for future audits"
