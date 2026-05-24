@@ -1,6 +1,6 @@
 # CTOA Systems Validation Checklist
 
-**Last Updated:** 2026-05-15T00:00:00+00:00
+**Last Updated:** 2026-05-24T22:05:00+00:00
 
 ## Pre-Deployment Checks
 
@@ -165,3 +165,30 @@ Current verification snapshot (2026-05-24):
 - Report generated successfully for sprint-049 backlog
 - `WAITING_APPROVAL: 0` and `## Waiting Approval: none`
 - No runtime crash when reading approval section
+
+## Sprint-050 Approval Queue Observability And Closure Path
+
+Use this path to keep approval closure auditable from `WAITING_APPROVAL` to `RELEASED`.
+
+### Operator Checklist
+
+- [ ] Scope runner to Sprint-050 backlog: `CTOA_BACKLOG_FILE=workflows/backlog-sprint-050.yaml`
+- [ ] Capture baseline queue status: `python runner/runner.py report`
+- [ ] Record `Status Counts` values for `IN_CI_GATE`, `WAITING_APPROVAL`, `RELEASED`
+- [ ] Verify `## Waiting Approval` section is present and parseable (`none` or explicit task list)
+- [ ] If queue is non-empty, close each task explicitly: `python runner/runner.py approve --task CTOA-XXX`
+- [ ] Re-run report and verify task transition to `RELEASED`
+- [ ] Append command outputs and residual risks to sprint evidence note under `runtime/experiments/sprint-050/`
+
+### Minimal Evidence Bundle (Approval Closure)
+
+- `runner/runner.py report` output before approval action
+- `runner/runner.py approve --task ...` command transcript per approved task
+- `runner/runner.py report` output after approvals
+- Residual risk summary: pending blockers, skipped approvals, or `none`
+
+### Failure Triage (Approval Path)
+
+- If `## Waiting Approval` is missing: verify backlog scope variable and rerun report
+- If approval command fails: verify task id exists in current backlog and is in `WAITING_APPROVAL`
+- If transition does not persist: inspect runtime state write permissions and rerun one approval at a time

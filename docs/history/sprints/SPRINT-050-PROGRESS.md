@@ -49,3 +49,24 @@ python scripts/ops/project_progress_diagram.py --backlog C:/Users/zycie/Document
 - `CTOA: Launch Pack` PASS (`launch_allowed`, `Launch dry-run PASS`).
 - Runtime artifact path: `runtime/ci-artifacts/sprint-050-validation.json`.
 - Result: Sprint-050 Wave-1 chain is operational and validator wiring is confirmed on `main`.
+
+## CTOA-260 Evidence (Approval Observability + Operator Guidance)
+
+- Date: 2026-05-24
+- Scope: Harden approval queue observability and make closure path auditable.
+- Changes:
+- Added Sprint-050 approval closure checklist in `docs/VALIDATION_CHECKLIST.md`.
+- Added minimal evidence bundle requirements for approval actions.
+- Added approval failure triage guidance for queue visibility and state transition persistence.
+- Tracked evidence: `releases/evidence/sprint-050/CTOA-260.md`.
+- Result: Approval flow from `WAITING_APPROVAL` to `RELEASED` is explicit and operator-auditable.
+
+## CTOA-261 Evidence (Runtime Evidence Promotion Rules)
+
+- Date: 2026-05-24
+- Scope: Define deterministic policy for promoting release-significant runtime artifacts.
+- Changes:
+- Added Sprint-050 evidence promotion policy in `docs/REPO_HYGIENE_POLICY.md`.
+- Documented required promotion classes, runtime-only classes, canonical targets, and promotion workflow.
+- Tracked evidence: `releases/evidence/sprint-050/CTOA-261.md`.
+- Result: Sign-off-critical artifacts have explicit promotion rules and canonical tracked destinations.
