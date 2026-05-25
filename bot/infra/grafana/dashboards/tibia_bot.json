@@ -1,0 +1,97 @@
+{
+  "__inputs": [],
+  "__requires": [{"type": "grafana", "id": "grafana", "name": "Grafana", "version": "10.0.0"}],
+  "annotations": {"list": []},
+  "description": "Tibia Bot — live performance monitoring (gold/hr, exp/hr, kills, HP/MP)",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "fieldConfig": {
+        "defaults": {"color": {"mode": "thresholds"}, "thresholds": {"steps": [
+          {"color": "red", "value": 0},
+          {"color": "yellow", "value": 5000},
+          {"color": "green", "value": 15000}
+        ]}, "unit": "short"},
+        "overrides": []
+      },
+      "gridPos": {"h": 6, "w": 6, "x": 0, "y": 0},
+      "id": 1, "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "orientation": "auto", "textMode": "auto", "colorMode": "background"},
+      "title": "Gold / Hour",
+      "type": "stat",
+      "targets": [{"datasource": {"type": "prometheus"}, "expr": "bot_gold_per_hour", "legendFormat": "gold/hr"}]
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "fieldConfig": {
+        "defaults": {"color": {"mode": "thresholds"}, "thresholds": {"steps": [
+          {"color": "red", "value": 0},
+          {"color": "yellow", "value": 10000},
+          {"color": "green", "value": 50000}
+        ]}, "unit": "short"},
+        "overrides": []
+      },
+      "gridPos": {"h": 6, "w": 6, "x": 6, "y": 0},
+      "id": 2, "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "orientation": "auto", "textMode": "auto", "colorMode": "background"},
+      "title": "Exp / Hour",
+      "type": "stat",
+      "targets": [{"datasource": {"type": "prometheus"}, "expr": "bot_exp_per_hour", "legendFormat": "exp/hr"}]
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "thresholds": {"steps": [{"color": "blue", "value": 0}]}, "unit": "short"}, "overrides": []},
+      "gridPos": {"h": 6, "w": 6, "x": 12, "y": 0},
+      "id": 3, "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "orientation": "auto", "textMode": "auto", "colorMode": "background"},
+      "title": "Kills This Session",
+      "type": "stat",
+      "targets": [{"datasource": {"type": "prometheus"}, "expr": "bot_kills_total", "legendFormat": "kills"}]
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "fieldConfig": {"defaults": {"unit": "h"}, "overrides": []},
+      "gridPos": {"h": 6, "w": 6, "x": 18, "y": 0},
+      "id": 4, "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "orientation": "auto", "textMode": "auto", "colorMode": "value"},
+      "title": "Session Hours",
+      "type": "stat",
+      "targets": [{"datasource": {"type": "prometheus"}, "expr": "bot_session_hours", "legendFormat": "hours"}]
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "fieldConfig": {"defaults": {"custom": {"lineWidth": 2}, "color": {"mode": "palette-classic"}, "unit": "short"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 6},
+      "id": 5,
+      "options": {"legend": {"displayMode": "list", "placement": "bottom"}, "tooltip": {"mode": "multi"}},
+      "title": "Gold/hr & Exp/hr over time",
+      "type": "timeseries",
+      "targets": [
+        {"datasource": {"type": "prometheus"}, "expr": "bot_gold_per_hour", "legendFormat": "Gold/hr"},
+        {"datasource": {"type": "prometheus"}, "expr": "bot_exp_per_hour / 1000", "legendFormat": "Exp/hr (k)"}
+      ]
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "fieldConfig": {"defaults": {"custom": {"lineWidth": 2}, "color": {"mode": "palette-classic"}, "unit": "short", "min": 0, "max": 100}, "overrides": []},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 6},
+      "id": 6,
+      "options": {"legend": {"displayMode": "list", "placement": "bottom"}, "tooltip": {"mode": "multi"}},
+      "title": "Kill rate over time",
+      "type": "timeseries",
+      "targets": [
+        {"datasource": {"type": "prometheus"}, "expr": "rate(bot_kills_total[5m]) * 3600", "legendFormat": "Kills/hr"}
+      ]
+    }
+  ],
+  "refresh": "15s",
+  "schemaVersion": 38,
+  "tags": ["tibia", "bot"],
+  "templating": {"list": [{"current": {}, "hide": 0, "includeAll": false, "name": "DS_PROMETHEUS", "options": [], "query": "prometheus", "refresh": 1, "type": "datasource"}]},
+  "time": {"from": "now-1h", "to": "now"},
+  "timepicker": {},
+  "title": "Tibia Bot Performance",
+  "uid": "tibia-bot-v1",
+  "version": 1
+}
