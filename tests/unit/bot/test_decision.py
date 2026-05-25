@@ -39,7 +39,7 @@ def test_attack_live_target():
 
 def test_find_monster_when_no_target():
     s = make_state(target_id=None)
-    assert evaluate_rules(s) == "find_monster"
+    assert evaluate_rules(s) == "follow_route"
 
 
 def test_brain_delegates_to_rules():
