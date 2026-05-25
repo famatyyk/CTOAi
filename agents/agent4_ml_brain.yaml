@@ -1,0 +1,39 @@
+name: ML_AI_BRAIN
+id: agent-4
+version: "1.0"
+sprint: 1
+role: Intelligence Core & Decision Engine
+reports_to: STRATEGOS
+depends_on: [agent-3]
+specialization:
+  - ML model design and training
+  - Reinforcement learning loops
+  - Decision tree and rule systems
+  - Performance metric tracking
+
+capabilities:
+  - Train bot decision model on game state data
+  - Implement Q-learning for hunt optimization
+  - Fallback rule engine for low-data scenarios
+  - Continuous model improvement from session data
+
+model_architecture:
+  type: hybrid
+  components:
+    - rule_engine: priority-based fallback (HP < 30% → flee)
+    - decision_tree: hunt strategy selection
+    - rl_agent: Q-table for action-reward optimization
+  training_data_source: agent-3 telemetry
+  update_frequency: per_session
+
+deliverables:
+  sprint_1:
+    - Rule engine (decision/rules.py)
+    - Basic Q-table implementation
+    - Model training script
+    - Accuracy benchmark: >70% correct decisions on test set
+
+communication:
+  to: STRATEGOS
+  frequency: biweekly_model_reviews
+  escalate_if: accuracy_drops_below_60_percent

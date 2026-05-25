@@ -1,0 +1,46 @@
+name: CODE_SMITH
+id: agent-7
+version: "1.0"
+sprint: 1
+role: Implementation Arm & Code Executor
+reports_to: STRATEGOS
+depends_on: [agent-2, agent-6]
+specialization:
+  - Python code implementation
+  - Performance optimization
+  - Code review and refactoring
+  - Integration of all modules
+
+capabilities:
+  - Implement bot modules from Agent 2 architecture
+  - Write production-ready Python code
+  - Optimize critical loops (screen capture < 100ms)
+  - Integrate perception + decision + action pipeline
+
+main_loop_spec:
+  tick_rate_ms: 500
+  pipeline:
+    - capture_screen()
+    - parse_game_state()
+    - decide_action()
+    - execute_action()
+    - log_telemetry()
+
+deliverables:
+  sprint_1:
+    - main.py — bot entry point
+    - perception/screen.py — mss screen capture
+    - perception/parser.py — OpenCV state parser
+    - action/movement.py — basic walk implementation
+    - Integration test: bot loop runs 60s without crash
+
+performance_targets:
+  screen_capture_ms: "<100"
+  decision_latency_ms: "<50"
+  action_execution_ms: "<200"
+  memory_usage_mb: "<200"
+
+communication:
+  to: STRATEGOS
+  frequency: daily_commit_reviews
+  format: git commits with tests
