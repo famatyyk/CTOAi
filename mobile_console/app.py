@@ -798,7 +798,6 @@ def _trigger_orchestrator_start(timeout: int = 8) -> dict:
 
 
 def _audit(request: Request, command: str, code: int) -> None:
-    AUDIT_LOG.parent.mkdir(parents=True, exist_ok=True)
     entry = {
         "at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
         "ip": request.client.host if request.client else "unknown",
@@ -806,8 +805,14 @@ def _audit(request: Request, command: str, code: int) -> None:
         "command": command,
         "code": code,
     }
-    with AUDIT_LOG.open("a", encoding="utf-8") as f:
-        f.write(json.dumps(entry, ensure_ascii=True) + "\n")
+    try:
+        AUDIT_LOG.parent.mkdir(parents=True, exist_ok=True)
+        with AUDIT_LOG.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(entry, ensure_ascii=True) + "\n")
+    except OSError:
+        # Best-effort auditing: auth and API flows must remain available even
+        # when host/container log paths are not writable in test or CI envs.
+        return
 
 
 @app.get("/")
@@ -2815,7 +2820,6 @@ def commands_dictionary(_: dict[str, Any] = Depends(require_operator)) -> dict:
         "count": len(commands),
         "commands": commands,
     }
-
 
 
 
