@@ -1,5 +1,7 @@
 .git
 .vscode/*
+!.vscode/
+!.vscode/tasks.json
 .venv
 __pycache__
 *.pyc
