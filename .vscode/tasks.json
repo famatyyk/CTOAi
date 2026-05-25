@@ -135,6 +135,40 @@
       }
     },
     {
+      "label":  "CTOA: Install Phase-5 Morning Sync Task",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "scripts/ops/install-phase5-morning-sync-task.ps1"
+      ],
+      "isBackground": false,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label":  "CTOA: Remove Phase-5 Morning Sync Task",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "scripts/ops/remove-phase5-morning-sync-task.ps1"
+      ],
+      "isBackground": false,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
       "label": "CTOA: Sprint-012 Validate Toolchain",
       "type": "shell",
       "command": ".venv/Scripts/python.exe scripts/ops/sprint012_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-012-validation.json",
@@ -1146,6 +1180,54 @@
       "dependsOn": [
         "CTOA: Run All Tests",
         "CTOA: Sprint-040 Validate",
+        "CTOA: Launch Pack"
+      ],
+      "isBackground": false,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "CTOA: Sprint-041 Validate",
+      "type": "shell",
+      "command": ".venv/Scripts/python.exe scripts/ops/sprint041_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-041-validation.json",
+      "isBackground": false,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "CTOA: Sprint-041 Wave-1 Run",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "CTOA: Run All Tests",
+        "CTOA: Sprint-041 Validate",
+        "CTOA: Launch Pack"
+      ],
+      "isBackground": false,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "CTOA: Sprint-042 Validate",
+      "type": "shell",
+      "command": ".venv/Scripts/python.exe scripts/ops/sprint042_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-042-validation.json",
+      "isBackground": false,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "CTOA: Sprint-042 Wave-1 Run",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "CTOA: Run All Tests",
+        "CTOA: Sprint-042 Validate",
         "CTOA: Launch Pack"
       ],
       "isBackground": false,
