@@ -1,0 +1,63 @@
+{
+  "_meta": {
+    "version": "1.0.0",
+    "agent": "AGENT6_GAME_LOGIC_EXPERT",
+    "description": "Loot filter and item values for Tibia 7.4 OTS. Items worth >= min_value_gp are looted."
+  },
+  "loot_config": {
+    "min_value_gp": 10,
+    "always_loot_weight_limit_kg": 5.0
+  },
+  "equipment_consumables": {
+    "hotkeys": {
+      "hp_potion": "F1",
+      "mp_potion": "F2",
+      "strong_hp_potion": "F3",
+      "antidote_potion": "F4",
+      "attack_target": "space"
+    },
+    "thresholds": {
+      "use_hp_potion_at_pct": 60,
+      "use_mp_potion_at_pct": 30,
+      "use_strong_hp_at_pct": 40,
+      "flee_at_pct": 15,
+      "critical_flee_at_pct": 10
+    }
+  },
+  "valuable_items": [
+    {"name": "platinum coin", "value_gp": 100, "always_loot": true, "weight_kg": 0.01},
+    {"name": "crystal coin", "value_gp": 10000, "always_loot": true, "weight_kg": 0.01},
+    {"name": "gold coin", "value_gp": 1, "always_loot": true, "min_stack": 5, "weight_kg": 0.01},
+    {"name": "small diamond", "value_gp": 300, "always_loot": true, "weight_kg": 0.10},
+    {"name": "small ruby", "value_gp": 150, "always_loot": true, "weight_kg": 0.10},
+    {"name": "small emerald", "value_gp": 100, "always_loot": true, "weight_kg": 0.10},
+    {"name": "vampire shield", "value_gp": 800, "always_loot": true, "weight_kg": 52.0},
+    {"name": "scarab shield", "value_gp": 400, "always_loot": true, "weight_kg": 55.0},
+    {"name": "plate legs", "value_gp": 400, "always_loot": true, "weight_kg": 75.0},
+    {"name": "iron helmet", "value_gp": 150, "always_loot": true, "weight_kg": 30.0},
+    {"name": "battle hammer", "value_gp": 350, "always_loot": true, "weight_kg": 90.0},
+    {"name": "battle axe", "value_gp": 140, "always_loot": true, "weight_kg": 69.0},
+    {"name": "chain armor", "value_gp": 100, "always_loot": true, "weight_kg": 99.0},
+    {"name": "minotaur horn", "value_gp": 50, "always_loot": true, "weight_kg": 1.0},
+    {"name": "minotaur leather", "value_gp": 40, "always_loot": true, "weight_kg": 1.0},
+    {"name": "scarab coin", "value_gp": 20, "always_loot": true, "weight_kg": 0.10},
+    {"name": "orc leather", "value_gp": 15, "always_loot": true, "weight_kg": 2.0},
+    {"name": "wolf paw", "value_gp": 10, "always_loot": true, "weight_kg": 0.50},
+    {"name": "spider silk", "value_gp": 50, "always_loot": true, "weight_kg": 0.20},
+    {"name": "green dragon leather", "value_gp": 80, "always_loot": true, "weight_kg": 8.0},
+    {"name": "dragon ham", "value_gp": 50, "always_loot": false, "weight_kg": 35.0},
+    {"name": "strong health potion", "value_gp": 100, "always_loot": true, "weight_kg": 2.60},
+    {"name": "meat", "value_gp": 1, "always_loot": false, "weight_kg": 4.0},
+    {"name": "ham", "value_gp": 8, "always_loot": false, "weight_kg": 9.5}
+  ],
+  "skip_items": [
+    "rope",
+    "torch",
+    "lump of dirt",
+    "worm",
+    "cheese",
+    "leather boots",
+    "dagger",
+    "hand axe"
+  ]
+}
