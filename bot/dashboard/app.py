@@ -20,6 +20,11 @@ except ImportError:
     _FASTAPI_AVAILABLE = False
 
 from bot.data.telemetry import get_stats
+try:
+    from bot.safety.scheduler import get_scheduler as _get_scheduler
+    _SCHEDULER_AVAILABLE = True
+except Exception:
+    _SCHEDULER_AVAILABLE = False
 from bot.data.db import get_session_stats, get_connection
 
 _START_TIME = time.time()
@@ -30,6 +35,16 @@ if _FASTAPI_AVAILABLE:
     @app.get("/health")
     def health():
         return {"status": "ok", "uptime_s": int(time.time() - _START_TIME)}
+
+    @app.get("/scheduler")
+    def scheduler_status():
+        """Return current SessionScheduler state as JSON."""
+        if not _SCHEDULER_AVAILABLE:
+            return {"status": "unavailable"}
+        try:
+            return _get_scheduler().status()
+        except Exception as exc:
+            return {"status": "error", "detail": str(exc)}
 
     @app.get("/stats")
     def stats():
@@ -71,6 +86,12 @@ if _FASTAPI_AVAILABLE:
         """Simple HTML status dashboard — no JS framework needed."""
         s = get_stats()
         uptime_h = (time.time() - _START_TIME) / 3600
+        _sched_running = False
+        if _SCHEDULER_AVAILABLE:
+            try:
+                _sched_running = _get_scheduler().should_run()
+            except Exception:
+                pass
         html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -96,6 +117,7 @@ if _FASTAPI_AVAILABLE:
     <div class="card"><div class="val">{s.get('kills', 0)}</div><div class="lbl">Kills this session</div></div>
     <div class="card"><div class="val">{s.get('session_hours', 0):.2f}h</div><div class="lbl">Session time</div></div>
     <div class="card"><div class="val">{uptime_h:.2f}h</div><div class="lbl">Dashboard uptime</div></div>
+    <div class="card"><div class="val">{"ON" if _sched_running else "BREAK"}</div><div class="lbl">Scheduler state</div></div>
   </div>
   <p style="margin-top:2rem; color:#555; font-size:0.75rem">AGENT 9 DevOps Master + AGENT 3 Data Engineer — Sprint 5</p>
 </body>
