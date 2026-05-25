@@ -1,9 +1,13 @@
-"""AGENT 4: Q-learning model — Phase 2 AI (ACTIVE).
+"""AGENT 4: Double Q-learning — Sprint 6 AI upgrade.
 
-State space: (hp_bucket, mp_bucket, has_target, bag_full, level_tier, nearby)
+Replaces single tabular Q-learning with Double Q-learning (van Hasselt 2010).
+Two Q-tables (A and B) alternate updates — selection uses one, evaluation uses other.
+Eliminates overestimation bias → more stable policy, better combat decisions.
+
+State space: 6D (hp_bucket, mp_bucket, has_target, bag_full, level_tier, nearby)
 Action space: 10 actions
-Reward: shaped per combat outcome logged via telemetry
-Persistence: Q-table saved to data/qtable.json (auto-loaded on start)
+Hyperparameters: α=0.10, γ=0.90, ε=0.15 (decays to 0.05 over 50k steps)
+Persistence: both tables saved to data/qtable_a.json + data/qtable_b.json
 """
 from __future__ import annotations
 
@@ -23,118 +27,163 @@ ACTIONS = [
 ]
 
 # Hyperparameters
-ALPHA   = 0.10   # learning rate
-GAMMA   = 0.90   # discount factor
-EPSILON = 0.15   # exploration rate (ε-greedy)
+ALPHA        = 0.10    # learning rate
+GAMMA        = 0.90    # discount factor
+EPSILON_MAX  = 0.15    # initial exploration rate
+EPSILON_MIN  = 0.05    # minimum exploration rate (after decay)
+EPSILON_DECAY_STEPS = 50_000
 
-_QTABLE_PATH = Path(os.environ.get("BOT_DB_PATH", "data/bot.db")).parent / "qtable.json"
-_Q_TABLE: dict[str, dict[str, float]] = {}
+_DATA_DIR    = Path(os.environ.get("BOT_DB_PATH", "data/bot.db")).parent
+_QTABLE_A    = _DATA_DIR / "qtable_a.json"
+_QTABLE_B    = _DATA_DIR / "qtable_b.json"
+_STEPS_FILE  = _DATA_DIR / "dql_steps.json"
+
+# Two Q-tables
+_Q_A: dict[str, dict[str, float]] = {}
+_Q_B: dict[str, dict[str, float]] = {}
+_step_count: int = 0
 _loaded = False
 
 
-def _load_qtable() -> None:
-    global _loaded
+def _load() -> None:
+    global _loaded, _step_count
     if _loaded:
         return
     _loaded = True
-    if _QTABLE_PATH.exists():
+    for path, table in ((_QTABLE_A, _Q_A), (_QTABLE_B, _Q_B)):
+        if path.exists():
+            try:
+                with open(path, encoding="utf-8") as f:
+                    table.update(json.load(f))
+                logger.info("DQL table %s loaded: %d states", path.name, len(table))
+            except Exception as e:
+                logger.warning("DQL table load failed (%s): %s", path.name, e)
+    if _STEPS_FILE.exists():
         try:
-            with open(_QTABLE_PATH, encoding="utf-8") as f:
-                _Q_TABLE.update(json.load(f))
-            logger.info("Q-table loaded: %d states from %s", len(_Q_TABLE), _QTABLE_PATH)
-        except Exception as e:
-            logger.warning("Q-table load failed: %s", e)
+            _step_count = json.loads(_STEPS_FILE.read_text()).get("steps", 0)
+        except Exception:
+            pass
 
 
 def save_qtable() -> None:
-    """Persist Q-table to disk (call periodically / on shutdown)."""
+    """Persist both Q-tables and step counter to disk."""
     try:
-        _QTABLE_PATH.parent.mkdir(parents=True, exist_ok=True)
-        with open(_QTABLE_PATH, "w", encoding="utf-8") as f:
-            json.dump(_Q_TABLE, f)
-        logger.debug("Q-table saved: %d states", len(_Q_TABLE))
+        _DATA_DIR.mkdir(parents=True, exist_ok=True)
+        for path, table in ((_QTABLE_A, _Q_A), (_QTABLE_B, _Q_B)):
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(table, f)
+        _STEPS_FILE.write_text(json.dumps({"steps": _step_count}))
+        logger.debug("DQL tables saved: A=%d B=%d states, step=%d",
+                     len(_Q_A), len(_Q_B), _step_count)
     except Exception as e:
-        logger.warning("Q-table save failed: %s", e)
+        logger.warning("DQL save failed: %s", e)
+
+
+def _epsilon() -> float:
+    """Linearly decay ε from EPSILON_MAX → EPSILON_MIN over EPSILON_DECAY_STEPS."""
+    ratio = min(1.0, _step_count / EPSILON_DECAY_STEPS)
+    return EPSILON_MAX - ratio * (EPSILON_MAX - EPSILON_MIN)
 
 
 def _state_key(state: GameState) -> str:
-    hp_bucket    = min(4, int(state.hp_pct // 20))   # 0-4
-    mp_bucket    = min(4, int(state.mp_pct // 20))   # 0-4
-    has_target   = 1 if state.target_id else 0
-    bag_full     = 1 if state.bag_full else 0
-    level_tier   = min(4, (state.level - 1) // 10)   # 0=1-10, 1=11-20, 2=21-30, 3=31-40, 4=41+
-    has_nearby   = 1 if state.nearby_monsters else 0
+    hp_bucket  = min(4, int(state.hp_pct // 20))
+    mp_bucket  = min(4, int(state.mp_pct // 20))
+    has_target = 1 if state.target_id else 0
+    bag_full   = 1 if state.bag_full else 0
+    level_tier = min(4, (state.level - 1) // 10)
+    has_nearby = 1 if state.nearby_monsters else 0
     return f"{hp_bucket}_{mp_bucket}_{has_target}_{bag_full}_{level_tier}_{has_nearby}"
 
 
-def _get_row(key: str) -> dict[str, float]:
-    if key not in _Q_TABLE:
-        _Q_TABLE[key] = {a: 0.0 for a in ACTIONS}
-    return _Q_TABLE[key]
+def _row(table: dict, key: str) -> dict[str, float]:
+    if key not in table:
+        table[key] = {a: 0.0 for a in ACTIONS}
+    return table[key]
 
 
 def predict_action(state: GameState) -> str:
-    """Return action via ε-greedy policy. Falls back to rules on error."""
-    _load_qtable()
+    """ε-greedy Double Q-learning action selection.
+
+    Uses average of both Q-tables for exploitation (reduces overestimation).
+    """
+    _load()
+    global _step_count
     try:
-        if random.random() < EPSILON:
+        _step_count += 1
+        if random.random() < _epsilon():
             return random.choice(ACTIONS)   # explore
         key = _state_key(state)
-        row = _get_row(key)
-        return max(row, key=lambda a: row[a])  # exploit
+        row_a = _row(_Q_A, key)
+        row_b = _row(_Q_B, key)
+        # Average both tables for stable greedy selection
+        combined = {a: (row_a[a] + row_b[a]) / 2 for a in ACTIONS}
+        return max(combined, key=lambda a: combined[a])
     except Exception as e:
-        logger.warning("predict_action failed: %s", e)
+        logger.warning("DQL predict_action failed: %s", e)
         return "idle"
 
 
 def update_q(state: GameState, action: str, reward: float,
              next_state: GameState) -> None:
-    """Q-learning TD update: Q(s,a) ← Q(s,a) + α[r + γ·maxQ(s',·) − Q(s,a)]"""
-    _load_qtable()
+    """Double Q-learning update — alternates which table updates each step.
+
+    With prob 0.5:
+      - Table A selects best action for next state
+      - Table B evaluates that action (prevents maximisation bias)
+    Or vice versa.
+    """
+    _load()
     try:
         key      = _state_key(state)
         next_key = _state_key(next_state)
-        row      = _get_row(key)
-        next_row = _get_row(next_key)
-        current  = row.get(action, 0.0)
-        max_next = max(next_row.values())
-        row[action] = current + ALPHA * (reward + GAMMA * max_next - current)
+
+        if random.random() < 0.5:
+            # Update A, evaluate with B
+            row_a      = _row(_Q_A, key)
+            next_row_a = _row(_Q_A, next_key)
+            next_row_b = _row(_Q_B, next_key)
+            best_action_a = max(next_row_a, key=lambda a: next_row_a[a])
+            target = reward + GAMMA * next_row_b[best_action_a]
+            row_a[action] += ALPHA * (target - row_a.get(action, 0.0))
+        else:
+            # Update B, evaluate with A
+            row_b      = _row(_Q_B, key)
+            next_row_b = _row(_Q_B, next_key)
+            next_row_a = _row(_Q_A, next_key)
+            best_action_b = max(next_row_b, key=lambda a: next_row_b[a])
+            target = reward + GAMMA * next_row_a[best_action_b]
+            row_b[action] += ALPHA * (target - row_b.get(action, 0.0))
+
+        # Probabilistic save (1% chance per update)
+        if random.random() < 0.01:
+            save_qtable()
+
     except Exception as e:
-        logger.warning("update_q failed: %s", e)
+        logger.warning("DQL update_q failed: %s", e)
 
 
 def compute_reward(prev_state: GameState, action: str, result: str,
                    curr_state: GameState) -> float:
-    """Shape reward signal from state transition.
-
-    Positive:  killing target (hp dropped to 0), gaining exp, looting gold
-    Negative:  losing HP, using potion inefficiently, dying (hp→0)
-    """
+    """Shape reward signal from state transition (unchanged from Sprint 5)."""
     reward = 0.0
 
-    # Penalise HP loss heavily
     hp_delta = curr_state.hp_pct - prev_state.hp_pct
     if hp_delta < 0:
-        reward += hp_delta * 0.5   # e.g. -20% HP → -10 reward
+        reward += hp_delta * 0.5
 
-    # Reward for killing target
     if (prev_state.target_id is not None and prev_state.target_hp_pct > 0
             and curr_state.target_hp_pct == 0):
         reward += 15.0
 
-    # Reward for looting (assumed gold)
     if action == "loot" and result == "ok":
         reward += 5.0
 
-    # Penalise potion waste (used potion but HP was already high)
     if action in ("use_hp_potion", "use_strong_hp_potion") and prev_state.hp_pct > 70:
         reward -= 3.0
 
-    # Penalise fleeing unless critical
     if action == "flee_to_depot" and prev_state.hp_pct > 20:
         reward -= 2.0
 
-    # Penalise idle
     if action == "idle":
         reward -= 0.5
 

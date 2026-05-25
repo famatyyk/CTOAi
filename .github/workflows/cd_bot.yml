@@ -6,50 +6,72 @@ on:
     paths:
       - "bot/**"
       - "requirements-bot.txt"
+  workflow_dispatch:   # allow manual trigger
 
 permissions:
   contents: read
 
 jobs:
   deploy:
-    name: Deploy Bot to VPS
+    name: Deploy Bot Stack to VPS
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup SSH (uses existing VPS_SSH_KEY + VPS_HOST secrets)
+      - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts
 
-      - name: Deploy bot via existing deploy-to-vps.sh
+      - name: Sync repo to VPS
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USER: ${{ secrets.VPS_USERNAME }}
         run: |
-          chmod +x deploy-to-vps.sh
-          # Build bot image and stream to VPS over SSH
-          docker build -f bot/infra/Dockerfile -t tibia-bot:latest .
-          docker save tibia-bot:latest | \
-            ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
-            "$VPS_USER@$VPS_HOST" \
-            "docker load && \
-             mkdir -p /opt/tibia-bot/data && \
-             cd /opt/tibia-bot && \
-             docker run -d --name tibia-bot --restart unless-stopped \
-               -v /opt/tibia-bot/data:/app/data \
-               --pull never tibia-bot:latest || \
-             docker restart tibia-bot"
+          # Rsync entire repo to /opt/tibia-bot on VPS (fast incremental)
+          rsync -az --delete \
+            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
+            --exclude='.git' \
+            --exclude='__pycache__' \
+            --exclude='*.pyc' \
+            --exclude='.venv' \
+            --exclude='data/bot.db' \
+            --exclude='data/qtable*.json' \
+            . "$VPS_USER@$VPS_HOST:/opt/tibia-bot/"
 
-      - name: Verify deploy
+      - name: Deploy with docker compose
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USERNAME }}
+        run: |
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
+            "$VPS_USER@$VPS_HOST" << 'ENDSSH'
+          set -e
+          cd /opt/tibia-bot/bot/infra
+
+          # Pull latest images
+          docker compose pull prometheus grafana 2>/dev/null || true
+
+          # Build bot + dashboard images from local code
+          docker compose build --no-cache bot dashboard
+
+          # Restart stack with zero-downtime where possible
+          docker compose up -d --remove-orphans
+
+          # Wait for dashboard health check
+          sleep 5
+          curl -sf http://localhost:8000/health && echo "Dashboard: OK" || echo "Dashboard: not yet ready"
+          ENDSSH
+
+      - name: Verify stack
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USER: ${{ secrets.VPS_USERNAME }}
         run: |
           ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
             "$VPS_USER@$VPS_HOST" \
-            "docker ps | grep tibia-bot && echo 'Bot is running!' || echo 'WARNING: bot not running'"
+            "docker compose -f /opt/tibia-bot/bot/infra/docker-compose.yml ps --format table"

@@ -1,9 +1,9 @@
-"""Tests for Agent 4 Q-learning model."""
+"""Tests for Agent 4 Double Q-learning model (Sprint 6)."""
 import pytest
 from bot.perception.state import GameState
 from bot.decision.ml_model import (
     predict_action, update_q, compute_reward,
-    _state_key, _get_row, ACTIONS
+    _state_key, _Q_A, _Q_B, ACTIONS
 )
 
 
@@ -29,13 +29,19 @@ def test_state_key_format():
 
 
 def test_update_q_changes_value():
+    """update_q must change at least one Q-table."""
+    import bot.decision.ml_model as m
     s = make_state(hp=80, hp_max=100)
     ns = make_state(hp=60, hp_max=100)
     key = _state_key(s)
-    before = _get_row(key).get("attack", 0.0)
-    update_q(s, "attack", 10.0, ns)
-    after = _get_row(key)["attack"]
-    assert after != before
+    before_a = m._Q_A.get(key, {}).get("attack", 0.0)
+    before_b = m._Q_B.get(key, {}).get("attack", 0.0)
+    # Run many updates so both tables get touched
+    for _ in range(20):
+        update_q(s, "attack", 10.0, ns)
+    after_a = m._Q_A.get(key, {}).get("attack", 0.0)
+    after_b = m._Q_B.get(key, {}).get("attack", 0.0)
+    assert after_a != before_a or after_b != before_b
 
 
 def test_compute_reward_kill():
@@ -67,11 +73,12 @@ def test_compute_reward_loot():
 
 def test_brain_uses_ml(monkeypatch):
     from bot.decision import brain
-    from bot.decision.ml_model import predict_action as real_predict
     called = []
+
     def fake_predict(state):
         called.append(True)
         return "attack"
+
     monkeypatch.setattr("bot.decision.ml_model.predict_action", fake_predict)
     s = make_state()
     brain._USE_ML = True
