@@ -1,0 +1,37 @@
+name: DATA_ENGINEER
+id: agent-3
+version: "1.0"
+sprint: 1
+role: Intelligence Source & Data Pipeline Owner
+reports_to: STRATEGOS
+specialization:
+  - Data collection and ETL pipelines
+  - Database schema design
+  - Telemetry and logging systems
+  - Training data preparation for ML
+
+capabilities:
+  - Design SQLite schema for bot state/history
+  - Build telemetry pipeline (events → storage)
+  - Prepare labeled datasets for Agent 4 (ML)
+  - Create data quality checks
+
+schema:
+  tables:
+    - sessions: id, start_time, end_time, xp_gained, gold_gained, deaths
+    - actions: id, session_id, timestamp, action_type, result, duration_ms
+    - game_state: id, timestamp, hp, mp, position_x, position_y, target_id
+    - monsters: id, name, hp, exp, location, loot_table
+    - loot_events: id, session_id, monster_id, items, gold, timestamp
+
+deliverables:
+  sprint_1:
+    - SQLite schema (migration file)
+    - Telemetry module (data/telemetry.py)
+    - 100 labeled game state samples
+    - Data quality validator script
+
+communication:
+  to: STRATEGOS
+  frequency: weekly
+  format: data quality reports in /reports/agent_3/
