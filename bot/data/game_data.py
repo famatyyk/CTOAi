@@ -59,3 +59,14 @@ def should_loot_item(item_name: str) -> bool:
         if item["name"] == item_name:
             return item.get("always_loot", False) or item.get("value_gp", 0) >= data["loot_config"]["min_value_gp"]
     return False
+
+
+
+def get_all_routes() -> list:
+    result = load_routes()
+    return result if isinstance(result, list) else result.get('routes', [])
+
+
+def get_all_monsters() -> list:
+    result = load_monsters()
+    return result if isinstance(result, list) else result.get('monsters', [])
