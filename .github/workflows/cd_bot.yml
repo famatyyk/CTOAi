@@ -1,0 +1,48 @@
+name: Bot CD — Deploy to VPS
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "bot/**"
+      - "requirements-bot.txt"
+      - "bot/infra/**"
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy Bot to VPS
+    runs-on: ubuntu-latest
+    if: ${{ vars.BOT_VPS_IP != '' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.BOT_VPS_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ vars.BOT_VPS_IP }}" >> ~/.ssh/known_hosts
+
+      - name: Deploy via rsync + docker compose
+        env:
+          BOT_VPS_IP: ${{ vars.BOT_VPS_IP }}
+          BOT_VPS_USER: ${{ vars.BOT_VPS_USER || 'ubuntu' }}
+        run: |
+          export GIT_SSH_COMMAND="ssh -i ~/.ssh/deploy_key"
+          chmod +x scripts/ops/bot/deploy.sh
+          BOT_VPS_IP=$BOT_VPS_IP BOT_VPS_USER=$BOT_VPS_USER \
+            ssh -i ~/.ssh/deploy_key $BOT_VPS_USER@$BOT_VPS_IP \
+            "mkdir -p /opt/tibia-bot"
+          rsync -az --delete -e "ssh -i ~/.ssh/deploy_key" \
+            --exclude='.git' --exclude='__pycache__' --exclude='data/*.db' \
+            . $BOT_VPS_USER@$BOT_VPS_IP:/opt/tibia-bot/
+          ssh -i ~/.ssh/deploy_key $BOT_VPS_USER@$BOT_VPS_IP \
+            "cd /opt/tibia-bot/bot/infra && docker compose up -d --build --remove-orphans"
+
+      - name: Notify success
+        run: echo "Bot deployed to ${{ vars.BOT_VPS_IP }} ✅"
