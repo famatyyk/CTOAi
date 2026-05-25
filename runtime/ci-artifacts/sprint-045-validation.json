@@ -1,6 +1,6 @@
 {
-  "status": "PASS",
-  "summary": "14/14 checks passed",
+  "status": "FAIL",
+  "summary": "12/14 checks passed",
   "checks": [
     {
       "id": "file:workflows/backlog-sprint-045.yaml",
@@ -64,23 +64,28 @@
     },
     {
       "id": "local_tasks",
-      "ok": true,
-      "hint": ""
+      "ok": false,
+      "hint": "Add sprint validate, wave-1, and progress diagram tasks"
     },
     {
       "id": "quality_regression_tests",
-      "ok": true,
-      "hint": "",
+      "ok": false,
+      "hint": "Focused quality regression tests failed",
       "details": {
-        "command": "C:\\Users\\zycie\\CTOAi\\.venv\\Scripts\\python.exe -m pytest tests/test_response_guardrails.py tests/test_sprint029_validate.py tests/test_sprint041_dashboard_ergonomics.py tests/test_sprint041_live_dashboard_status_context_panel.py tests/test_sprint042_auth_header_navigation.py tests/test_runner_backlog_selection.py tests/test_sprint044_control_tick.py -q",
-        "output_tail": ".........................                                                [100%]\n25 passed in 0.96s"
+        "command": "/usr/bin/python -m pytest tests/test_response_guardrails.py tests/test_sprint029_validate.py tests/test_sprint041_dashboard_ergonomics.py tests/test_sprint041_live_dashboard_status_context_panel.py tests/test_sprint042_auth_header_navigation.py tests/test_runner_backlog_selection.py tests/test_sprint044_control_tick.py -q",
+        "output_tail": "/usr/bin/python: No module named pytest"
       }
     }
   ],
   "diagnostics": {
-    "failed_count": 0,
-    "failed_ids": [],
-    "critical_failed_ids": []
+    "failed_count": 2,
+    "failed_ids": [
+      "local_tasks",
+      "quality_regression_tests"
+    ],
+    "critical_failed_ids": [
+      "quality_regression_tests"
+    ]
   },
-  "timestamp": "2026-05-15T13:14:29.571444Z"
+  "timestamp": "2026-05-25T19:15:34.649704Z"
 }
