@@ -42,9 +42,17 @@ def test_find_monster_when_no_target():
     assert evaluate_rules(s) == "follow_route"
 
 
-def test_brain_delegates_to_rules():
-    s = make_state(hp=10, hp_max=100)
-    assert decide_action(s) == "flee_to_depot"
+def test_brain_uses_rules_as_fallback(monkeypatch):
+    """When ML is disabled, brain must delegate to rules engine."""
+    import bot.decision.brain as brain_mod
+    original = brain_mod._USE_ML
+    brain_mod._USE_ML = False
+    brain_mod._prev_state = None
+    try:
+        s = make_state(hp=10, hp_max=100)
+        assert decide_action(s) == "flee_to_depot"
+    finally:
+        brain_mod._USE_ML = original
 
 
 def test_bag_full_goes_depot():
