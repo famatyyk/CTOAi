@@ -32,6 +32,22 @@ CREATE TABLE IF NOT EXISTS game_state_log (
     pos_x INTEGER, pos_y INTEGER,
     target_id INTEGER
 );
+
+CREATE TABLE IF NOT EXISTS loot_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id INTEGER REFERENCES sessions(id),
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+    item_name TEXT NOT NULL,
+    gold_value INTEGER DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS exp_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id INTEGER REFERENCES sessions(id),
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+    exp_gained INTEGER DEFAULT 0,
+    monster_name TEXT DEFAULT ''
+);
 """
 
 
@@ -52,3 +68,29 @@ def close_session(session_id: int) -> None:
     with get_connection() as conn:
         conn.execute("UPDATE sessions SET end_time = CURRENT_TIMESTAMP WHERE id = ?",
                      (session_id,))
+
+
+def get_session_stats(session_id: int) -> dict:
+    """Return gold/hr, exp/hr, kills for a session."""
+    with get_connection() as conn:
+        conn.row_factory = sqlite3.Row
+        row = conn.execute(
+            """SELECT
+                 (julianday(COALESCE(end_time, CURRENT_TIMESTAMP)) - julianday(start_time)) * 24.0 AS hours,
+                 gold_gained, xp_gained
+               FROM sessions WHERE id = ?""",
+            (session_id,)
+        ).fetchone()
+        if not row or row["hours"] is None or row["hours"] <= 0:
+            return {"gold_hr": 0, "exp_hr": 0, "kills": 0, "session_hours": 0}
+        hours = row["hours"]
+        kills = conn.execute(
+            "SELECT COUNT(*) FROM exp_events WHERE session_id = ?", (session_id,)
+        ).fetchone()[0]
+        return {
+            "gold_hr": int(row["gold_gained"] / hours),
+            "exp_hr": int(row["xp_gained"] / hours),
+            "kills": kills,
+            "session_hours": round(hours, 2),
+        }
+

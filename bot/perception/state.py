@@ -23,6 +23,9 @@ class GameState:
     bag_full: bool = False
     is_attacking: bool = False
     timestamp: float = 0.0
+    # Agent 6 integration
+    level: int = 8
+    nearby_monsters: list = field(default_factory=list)  # list of monster names visible
 
     @property
     def hp_pct(self) -> float:
