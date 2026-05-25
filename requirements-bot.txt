@@ -1,0 +1,7 @@
+# AGENT 7: Tibia Bot dependencies
+mss>=9.0.1          # Screen capture
+opencv-python>=4.9  # Computer vision / state parsing
+pyautogui>=0.9.54   # Input simulation
+pynput>=1.7.6       # Low-level input
+numpy>=1.26         # Array ops for CV
+torch>=2.2.0        # ML model (Phase 2)
