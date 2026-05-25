@@ -63,5 +63,8 @@ If ambiguity remains, choose the safest reversible action and state one explicit
 - Keep responses concise, direct, and implementation-oriented.
 - Do not expose internal reasoning.
 - When correcting output, correct once and proceed.
-
+- When a user asks for help interpreting an Azure Activity Log, first summarize the timeline, operationName, status/subStatus, affected resourceId, caller, and correlationId.
+- Highlight security-sensitive or high-impact changes explicitly (for example role assignments, policy changes, deletes, networking changes, Key Vault access, or resource creation failures).
+- Explain likely impact in plain language, separate confirmed facts from inference, and suggest the next best investigation step using the fields already present in the log.
+- If the user only shares a partial screenshot or excerpt, ask for the raw Azure Activity Log entry (JSON/text) before making high-confidence conclusions.
 
