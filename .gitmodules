@@ -1,0 +1,3 @@
+[submodule "tools/rosetta-assembler"]
+	path = tools/rosetta-assembler
+	url = https://github.com/peonso/rosetta-assembler.git

@@ -1,0 +1,79 @@
+version: 1
+backlog_id: sprint-057
+window_days: 3
+focus: "Governance stabilization + doc sync + release-train alignment"
+owner: strategos
+
+rules:
+  max_parallel_tasks: 3
+  definition_of_done:
+    - implementation_created
+    - validation_passed
+    - evidence_recorded
+    - documentation_updated
+  release_policy:
+    - approval_required: true
+    - environment: production
+
+tasks:
+  - id: CTOA-300
+    title: "Open Sprint-057 kickoff baseline and scope lock"
+    priority: P0
+    type: governance
+    domain: [governance, planning, release]
+    assignees: [strategos, core-architect, documentation-sage]
+    estimate_hours: 2
+    deliverables:
+      - "workflows/backlog-sprint-057.yaml"
+      - "workflows/sprint-057-delivery-flow.yaml"
+      - "docs/history/sprints/SPRINT-057.md"
+    acceptance:
+      - "Sprint-057 backlog and flow are published"
+      - "Scope and gate expectations are explicit"
+      - "Kickoff decision checkpoint is documented"
+
+  - id: CTOA-301
+    title: "Stabilize governance and doc sync surfaces"
+    priority: P0
+    type: governance
+    domain: [docs, governance]
+    assignees: [strategos, documentation-sage, core-architect]
+    estimate_hours: 3
+    deliverables:
+      - "README.md"
+      - "docs/INFRASTRUCTURE_DECISION_LOG.md"
+      - "docs/SPRINT_GOVERNANCE.md"
+    acceptance:
+      - "Operator-facing references are centralized in operational docs"
+      - "README stays focused on high-level entrypoints"
+      - "Decision log captures the canonical Rosetta preset note"
+
+  - id: CTOA-302
+    title: "Refresh Sprint-057 progress and wave artifact plan"
+    priority: P1
+    type: quality
+    domain: [ops, observability, release]
+    assignees: [qa-terminator, devops-master]
+    estimate_hours: 2
+    deliverables:
+      - "docs/history/sprints/SPRINT-057-PROGRESS.md"
+      - "runtime/ci-artifacts/sprint-057-wave1-summary.txt"
+    acceptance:
+      - "Progress diagram template is aligned to Sprint-057"
+      - "Wave-1 evidence path is defined"
+      - "No stale Sprint-056 references remain in active planning docs"
+
+  - id: CTOA-303
+    title: "Define Sprint-057 gate and handoff criteria"
+    priority: P1
+    type: quality
+    domain: [ci, qa, governance]
+    assignees: [qa-terminator, core-architect, strategos]
+    estimate_hours: 2
+    deliverables:
+      - "workflows/sprint-057-delivery-flow.yaml"
+      - "docs/history/sprints/SPRINT-057.md"
+    acceptance:
+      - "Wave-1 and wave-2 exit signals are explicit"
+      - "Handoff criteria are documented"
+      - "Next sprint recommendation is recorded"

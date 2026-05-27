@@ -1,0 +1,43 @@
+sprint: '057'
+theme: Governance stabilization + doc sync + release-train alignment
+version: '1.0'
+lifecycle:
+  start: '2026-05-25'
+  target_wave1: '2026-05-26'
+  target_wave2: '2026-05-27'
+
+tasks:
+  - id: CTOA-300
+    title: Sprint-057 kickoff baseline
+    on_start: publish Sprint-057 backlog, flow, and kickoff baseline
+    on_complete: confirm Sprint-057 scope lock and decision checkpoints
+    on_fail: block sprint start and publish blockers
+
+  - id: CTOA-301
+    title: Governance and doc sync stabilization
+    depends_on:
+      - CTOA-300
+    on_start: centralize operator-facing notes in operational docs
+    on_complete: README and decision log are aligned
+    on_fail: keep governance stabilization open with blocker notes
+
+  - id: CTOA-302
+    title: Sprint-057 progress and evidence plan
+    depends_on:
+      - CTOA-301
+    on_start: define progress snapshot and evidence paths
+    on_complete: progress diagram and evidence locations are explicit
+    on_fail: keep observability planning open with blocker notes
+
+  - id: CTOA-303
+    title: Sprint-057 gate and handoff criteria
+    depends_on:
+      - CTOA-302
+    on_start: define Wave-1 and handoff exit signals
+    on_complete: sign-off and next-sprint recommendations are documented
+    on_fail: keep sprint open with unresolved handoff items
+
+gate_policy:
+  wave_1: governance docs aligned + progress path defined + core guard PASS + state sync PASS
+  wave_2: manual STRATEGOS sign-off with handoff note
+  rollback_baseline: v1.14.0

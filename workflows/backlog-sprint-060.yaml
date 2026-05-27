@@ -1,0 +1,69 @@
+version: 1
+backlog_id: sprint-060
+window_days: 3
+focus: "Sprint-060 kickoff + parity lock + wave readiness"
+owner: strategos
+
+rules:
+  max_parallel_tasks: 2
+  definition_of_done:
+    - implementation_created
+    - validation_passed
+    - evidence_recorded
+    - documentation_updated
+  release_policy:
+    - approval_required: true
+    - environment: production
+
+tasks:
+  - id: CTOA-311
+    title: "Lock Sprint-060 scope and gate contract"
+    priority: P0
+    type: governance
+    domain: [governance, planning, release]
+    assignees: [strategos, core-architect]
+    estimate_hours: 2
+    deliverables:
+      - "workflows/backlog-sprint-060.yaml"
+      - "workflows/sprint-060-delivery-flow.yaml"
+      - "docs/history/sprints/SPRINT-060.md"
+    acceptance:
+      - "Flow tasks and backlog tasks are 1:1 aligned"
+      - "Wave-1 gate criteria include docs alignment, state sync PASS, and core guard PASS"
+      - "Sprint-060 plan has no RELEASED claims while status is ACTIVE"
+
+  - id: CTOA-312
+    title: "Sync release-train references for Sprint-060 kickoff"
+    priority: P0
+    type: governance
+    domain: [docs, governance]
+    assignees: [strategos, documentation-sage]
+    estimate_hours: 2
+    deliverables:
+      - "README.md"
+      - "docs/ROADMAP_V0.2.0_TO_V1.0.0.md"
+      - "docs/SPRINT_GOVERNANCE.md"
+      - "docs/POST_GA_DELIVERY_TRAIN_BASELINE.md"
+      - "docs/POST_GA_DELIVERY_TRAIN_CANDIDATE.yaml"
+    acceptance:
+      - "README next action points to Sprint-060 wave readiness"
+      - "Roadmap and baseline references are consistent with Sprint-060 kickoff"
+      - "Sprint-060 plan/progress links are present in operator surfaces"
+
+  - id: CTOA-313
+    title: "Prepare non-interactive Sprint-060 Wave-1 chain"
+    priority: P1
+    type: quality
+    domain: [ops, automation, ci]
+    assignees: [code-smith, devops-master, qa-terminator]
+    estimate_hours: 3
+    deliverables:
+      - ".vscode/tasks.json"
+      - "scripts/ops/sprint060_validate.py"
+      - "runtime/ci-artifacts/sprint-060-validation.json"
+      - "runtime/ci-artifacts/sprint-060-wave1-summary.txt"
+      - "docs/history/sprints/SPRINT-060-PROGRESS.md"
+    acceptance:
+      - "Task label CTOA: Sprint-060 Wave-1 Run exists"
+      - "Wave-1 task produces validation + summary artifacts"
+      - "CI gate and artifact upload sections exist for Sprint-060"
