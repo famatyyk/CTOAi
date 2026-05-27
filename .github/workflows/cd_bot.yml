@@ -32,7 +32,6 @@ jobs:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USER: ${{ secrets.VPS_USERNAME }}
         run: |
-          # Rsync entire repo to /opt/tibia-bot on VPS (fast incremental)
           rsync -az --delete \
             -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
             --exclude='.git' \
@@ -42,7 +41,6 @@ jobs:
             --exclude='data/bot.db' \
             --exclude='data/qtable*.json' \
             . "$VPS_USER@$VPS_HOST:/opt/tibia-bot/"
-
 
       - name: Ensure .env on VPS
         env:
@@ -57,7 +55,9 @@ jobs:
             ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
               "$VPS_USER@$VPS_HOST" \
               "[ -f /opt/tibia-bot/.env ] || cp /opt/tibia-bot/.env.bot.example /opt/tibia-bot/.env"
-          fi      - name: Deploy with docker compose
+          fi
+
+      - name: Deploy with docker compose
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USER: ${{ secrets.VPS_USERNAME }}
