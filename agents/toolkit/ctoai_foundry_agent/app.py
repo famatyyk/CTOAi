@@ -53,8 +53,8 @@ class CTOAIFoundryRouter:
         self.endpoint = os.getenv("FOUNDRY_ENDPOINT", "")
         self.api_key = os.getenv("FOUNDRY_API_KEY", "")
         self.api_version = os.getenv("FOUNDRY_API_VERSION", "2024-10-21")
-        self.main_model = os.getenv("MODEL_MAIN_DEPLOYMENT", "gpt-4.1")
-        self.mini_model = os.getenv("MODEL_MINI_DEPLOYMENT", "gpt-4.1-mini")
+        self.main_model = os.getenv("MODEL_MAIN_DEPLOYMENT", "gpt-4o")
+        self.mini_model = os.getenv("MODEL_MINI_DEPLOYMENT", self.main_model)
         self.evidence_file = Path(
             os.getenv(
                 "EVIDENCE_FILE",
