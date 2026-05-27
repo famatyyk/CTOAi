@@ -53,8 +53,17 @@ jobs:
               "$VPS_USER@$VPS_HOST" "cat > /opt/tibia-bot/.env"
           else
             ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
-              "$VPS_USER@$VPS_HOST" \
-              "[ -f /opt/tibia-bot/.env ] || cp /opt/tibia-bot/.env.bot.example /opt/tibia-bot/.env"
+              "$VPS_USER@$VPS_HOST" bash << 'ENVEOF'
+            if [ ! -f /opt/tibia-bot/.env ]; then
+              cat > /opt/tibia-bot/.env << 'EOF'
+          BOT_DB_PATH=/app/data/bot.db
+          GRAFANA_PASSWORD=admin
+          BOT_LOG_LEVEL=INFO
+          OTS_HOST=127.0.0.1
+          OTS_PORT=7171
+          EOF
+            fi
+          ENVEOF
           fi
 
       - name: Deploy with docker compose
