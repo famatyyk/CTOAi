@@ -159,6 +159,36 @@ services:
         condition: service_started
     restart: unless-stopped
 
+  ctoa-foundry-agent:
+    build:
+      context: ./agents/toolkit/ctoai_foundry_agent
+      dockerfile: Dockerfile
+    container_name: ctoa-foundry-agent
+    restart: unless-stopped
+    command: python app.py --server
+    ports:
+      - "127.0.0.1:8088:8088"
+    environment:
+      FOUNDRY_ENDPOINT: ${FOUNDRY_ENDPOINT:?FOUNDRY_ENDPOINT must be set in .env}
+      FOUNDRY_API_KEY: ${FOUNDRY_API_KEY:?FOUNDRY_API_KEY must be set in .env}
+      FOUNDRY_API_VERSION: ${FOUNDRY_API_VERSION:-2024-10-21}
+      MODEL_MAIN_DEPLOYMENT: ${MODEL_MAIN_DEPLOYMENT:-gpt-4.1}
+      MODEL_MINI_DEPLOYMENT: ${MODEL_MINI_DEPLOYMENT:-gpt-4.1-mini}
+      EVIDENCE_FILE: /app/evidence/ctoai_foundry_agent.jsonl
+    volumes:
+      - ./runtime/evidence/aitk-agent:/app/evidence
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8088/health')\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    depends_on:
+      ctoa-db:
+        condition: service_healthy
+    profiles:
+      - ai
+
   ctoa-dev-shell:
     build:
       context: .
