@@ -14,7 +14,7 @@ COPY requirements-bot.txt .
 RUN pip install --no-cache-dir -r requirements-bot.txt
 
 COPY bot/ ./bot/
-COPY data/ ./data/ 2>/dev/null || true
+COPY data/ ./data/
 
 ENV BOT_DB_PATH=/app/data/bot.db
 ENV DISPLAY=:99
