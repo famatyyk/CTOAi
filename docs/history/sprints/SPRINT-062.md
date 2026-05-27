@@ -1,6 +1,6 @@
 # Sprint-062 Plan - 3 Day Execution Window
 
-Status: ACTIVE
+Status: RELEASED
 Theme: Sprint-062 product delta + agent execution quality
 Window: 2026-06-01 -> 2026-06-03
 Backlog: workflows/backlog-sprint-062.yaml
@@ -30,3 +30,23 @@ Sprint-062 shifts from governance-heavy execution to measurable product delta:
 ## God Mode Checkpoint (Kickoff)
 
 Sprint-062 starts only if objectives remain product-heavy: 1 process objective, 2 product objectives.
+## Sprint Closeout
+
+Sprint-062 closed: **RELEASED** (3/3 tasks RELEASED)
+
+### Delivery Summary
+
+| Task | Status | Exit Signal Met |
+|---|---|---|
+| CTOA-317 Wave execution ordering hardening | RELEASED | ✅ Wave-1 artifacts state-aligned on first run |
+| CTOA-318 Runner execution signal quality | RELEASED | ✅ Normalized execution summary + regression tests |
+| CTOA-319 Fact-first prompt contract reinforcement | RELEASED | ✅ Structure compliance evidence recorded |
+
+### Validation
+- `python scripts/ops/sprint062_validate.py --run-tests` → PASS (17/17)
+- All regression tests green
+
+### Gate Sign-Off
+- Wave-1 gate: ✅ PASS
+- Wave-2 gate: ✅ STRATEGOS sign-off — all KPIs met
+- Release baseline: v1.14.1 preserved, no rollback required

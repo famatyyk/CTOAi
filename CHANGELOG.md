@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.15.0] - 2026-05-27 (Sprint-062: Product Delta + Agent Execution Quality)
+
+### Added
+- **`vps-stack-deploy.yml`**: Manual-trigger GitHub Actions workflow for syncing CTOAi docker-compose stack to VPS — supports `.env` rotation via `CTOA_VPS_ENV_B64` secret.
+- **`.env.example`**: Documents all required environment variables (`DB_PASSWORD`, `REDIS_PASSWORD`, `GF_ADMIN_PASSWORD`, `CTOA_MOBILE_TOKEN`).
+
+### Changed
+- **`docker-compose.yml` security hardening**:
+  - PostgreSQL, Redis, Prometheus, Loki ports bound to `127.0.0.1` (not `0.0.0.0`)
+  - Redis: `--requirepass $REDIS_PASSWORD` (conditional, no-op when unset)
+  - Redis URLs: `redis://:${REDIS_PASSWORD:-}@ctoa-redis:6379/0`
+  - Grafana: `admin/admin` replaced with `${GF_ADMIN_PASSWORD:?}` (fail-fast)
+  - `DB_PASSWORD` fallback `ctoa` replaced with `:?` (fail-fast if not set)
+  - `CTOA_MOBILE_TOKEN` now reads from env var
+- **`.gitignore`**: Whitelisted `.env.example` and `.env.bot.example` so templates are tracked.
+- **Sprint-062 closeout**: `SPRINT-062.md` promoted from `ACTIVE` → `RELEASED`.
+
+### Validation
+- `python scripts/ops/sprint062_validate.py --run-tests` → PASS (17/17)
+- All regression tests green
+- `docker-compose.yml` YAML valid, all `:?` required vars satisfied by `.env.example`
+
 ## [1.14.1] - 2026-05-25 (Sprint-059: Wave-1 Closeout + Kickoff Readiness)
 
 ### Added
