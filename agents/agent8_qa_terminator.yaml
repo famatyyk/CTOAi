@@ -12,7 +12,7 @@ specialization:
 
 capabilities:
   - Write pytest unit and integration tests
-  - Set up coverage reporting (>80% target)
+  - "Set up coverage reporting (>80% target)"
   - Automate regression detection in CI
   - Create bug reports with reproduction steps
 
@@ -29,9 +29,31 @@ deliverables:
     - tests/unit/test_decision.py
     - tests/unit/test_safety.py
     - tests/integration/test_bot_loop.py
-    - Coverage report: >60% (sprint 1 baseline)
+    - "Coverage report: >60% (sprint 1 baseline)"
 
 communication:
   to: STRATEGOS
   frequency: daily_test_results
   escalate_if: critical_bug_found_or_coverage_drops
+
+inputs:
+  - build_artifacts
+  - test_suites
+  - coverage_reports
+
+outputs:
+  - qa_report                    # reports/agent_8/qa_report.json
+  - regression_results
+  - bug_list                     # triaged by P0–P3 severity
+
+kpi:
+  outcome: test_coverage_percent          # line coverage via pytest-cov (target ≥ 80%)
+  quality: critical_bug_escape_rate       # P0/P1 bugs reaching production (target = 0)
+  efficiency: test_execution_time_s       # full suite runtime (target ≤ 60s)
+  stability: regression_pass_rate         # % regression tests green on each PR
+
+bug_sla:
+  P0: resolve_within_2h
+  P1: resolve_within_8h
+  P2: resolve_within_1_sprint
+  P3: backlog

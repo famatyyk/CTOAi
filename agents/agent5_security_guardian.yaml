@@ -34,3 +34,19 @@ communication:
   to: STRATEGOS
   frequency: weekly_security_reviews
   escalate_if: detection_risk_high
+
+inputs:
+  - session_logs
+  - action_patterns              # from Agent 7 telemetry
+
+outputs:
+  - humanizer_module             # safety/humanizer.py
+  - session_limiter              # safety/session.py
+  - risk_assessment              # docs/security/RISK_ASSESSMENT.md
+  - anti_detection_test_suite
+
+kpi:
+  outcome: detection_risk_score           # composite risk score 0–100 (target ≤ 25)
+  quality: humanization_fidelity_percent  # % actions within human timing distribution
+  efficiency: jitter_overhead_ms          # added latency from humanization (target ≤ 20ms)
+  stability: undetected_sessions_percent  # sessions without ban/flag (target ≥ 99%)

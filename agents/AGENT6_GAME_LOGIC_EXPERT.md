@@ -32,16 +32,36 @@ You are the Tibia expert. Every game-specific decision needs your input. Without
 
 ---
 
-## GAME CONSTANTS (UI Coordinates — 1280x720)
+## GAME CONSTANTS (UI Coordinates — Resolution-Aware)
+
+Coordinates are **never hardcoded** — they are computed at runtime from the detected screen resolution using anchor ratios calibrated on 1280×720. Use `get_ui_coords()` to retrieve them for any display.
 
 ```python
 # data/game/game_constants.py
-HP_BAR_POS = (780, 45)
-MP_BAR_POS = (780, 60)
-INVENTORY_BTN = (1240, 120)
-BATTLE_LIST_POS = (1180, 200)
-MINIMAP_CENTER = (1215, 170)
+import pyautogui
+
+def get_screen_size() -> tuple[int, int]:
+    """Return (width, height) of the primary monitor."""
+    return pyautogui.size()
+
+def get_ui_coords() -> dict:
+    """Scale Tibia OTS UI coordinates to the current screen resolution.
+
+    Anchor ratios calibrated on 1280×720 (Canary OTS default window).
+    Multiply by actual (w/1280, h/720) to adapt to any display.
+    """
+    w, h = get_screen_size()
+    sx, sy = w / 1280, h / 720
+    return {
+        "HP_BAR_POS":      (int(780 * sx), int(45 * sy)),
+        "MP_BAR_POS":      (int(780 * sx), int(60 * sy)),
+        "INVENTORY_BTN":   (int(1240 * sx), int(120 * sy)),
+        "BATTLE_LIST_POS": (int(1180 * sx), int(200 * sy)),
+        "MINIMAP_CENTER":  (int(1215 * sx), int(170 * sy)),
+    }
 ```
+
+> **Rule:** Agent 7 must call `get_ui_coords()` at bot startup — never use raw pixel constants in bot logic.
 
 ---
 

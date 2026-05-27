@@ -42,3 +42,20 @@ communication:
   to: STRATEGOS
   frequency: as_needed
   format: JSON data files in /data/game/
+
+inputs:
+  - ots_version
+  - screen_resolution          # from pyautogui.size() at runtime
+  - character_stats
+
+outputs:
+  - monsters_json              # data/game/monsters.json
+  - hunt_routes_json           # data/game/hunt_routes.json
+  - game_constants_py          # data/game/game_constants.py (resolution-aware)
+  - ots_setup_guide            # docs/OTS_SETUP.md
+
+kpi:
+  outcome: hunt_efficiency_ratio          # xp/h actual vs theoretical
+  quality: strategy_success_percent       # sessions without death/disconnect
+  efficiency: knowledge_currency_days     # days since last monster DB update (max 30)
+  stability: coordinate_accuracy_percent  # UI hit rate at tested resolutions

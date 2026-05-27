@@ -35,3 +35,39 @@ communication:
   to: STRATEGOS
   frequency: end_of_each_sprint
   format: docs PR after every sprint
+
+inputs:
+  - source_code_changes
+  - adr_files
+  - sprint_retrospectives
+  - api_module_docstrings
+
+outputs:
+  - architecture_docs           # docs/ARCHITECTURE.md
+  - api_reference               # docs/API_REFERENCE.md
+  - setup_guide                 # docs/SETUP.md
+  - sprint_retro                # docs/sprints/SPRINT_X_RETRO.md
+
+kpi:
+  outcome: doc_coverage_percent           # % public modules with docs
+  quality: staleness_days_max             # oldest doc without review (target ≤ 30 days)
+  efficiency: docs_merged_per_sprint      # docs PRs closed per sprint
+  stability: dead_link_count              # broken internal/external links (target 0)
+
+escalate_if:
+  - doc_staleness_exceeds_30_days
+  - public_api_missing_docstring_gt_10_percent
+  - dead_links_gt_0_in_main_docs
+
+depends_on:
+  - agent-2    # architecture decisions → docs/ARCHITECTURE.md
+  - agent-5    # risk assessments → docs/security/
+  - agent-6    # OTS guides → docs/OTS_SETUP.md
+  - agent-8    # test coverage reports → sprint retros
+
+doc_standards:
+  api_tool: sphinx-autodoc
+  refresh_trigger: per_merge_to_main
+  staleness_max_days: 30
+  docstring_coverage_target: 95_percent
+  readability_target: flesch_kincaid_grade_lte_12

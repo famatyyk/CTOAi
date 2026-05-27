@@ -43,3 +43,24 @@ communication:
   to: STRATEGOS
   frequency: daily_for_decisions
   format: ADR + diagram files in /docs/architecture/
+
+inputs:
+  - requirements
+  - constraints
+  - tech_proposals
+
+outputs:
+  - adr                         # docs/architecture/ADR_*.md
+  - architecture_diagram        # docs/ARCHITECTURE.md
+  - api_spec                    # inter-module contracts
+  - module_dependency_map
+
+kpi:
+  outcome: adr_merge_time_days            # time from proposal to merged ADR (target ≤ 3 days)
+  quality: design_review_pass_rate        # % design reviews approved first pass
+  efficiency: api_spec_reuse_percent      # % interfaces reused across modules
+  stability: tech_debt_ratio              # unresolved tech debt items / total backlog
+
+escalate_if:
+  - design_review_rejected_twice
+  - tech_debt_ratio_gt_30_percent

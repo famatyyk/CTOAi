@@ -31,9 +31,23 @@ deliverables:
     - Rule engine (decision/rules.py)
     - Basic Q-table implementation
     - Model training script
-    - Accuracy benchmark: >70% correct decisions on test set
+    - "Accuracy benchmark: >70% correct decisions on test set"
 
 communication:
   to: STRATEGOS
   frequency: biweekly_model_reviews
   escalate_if: accuracy_drops_below_60_percent
+
+inputs:
+  - labeled_dataset              # from Agent 3 (≥ 100 samples)
+  - session_telemetry            # real-time from Agent 3
+
+outputs:
+  - decision_model               # decision/rules.py + q_table.pkl
+  - accuracy_benchmark           # reports/agent_4/benchmark.json
+
+kpi:
+  outcome: decision_accuracy_percent      # % correct decisions on held-out test set (target ≥ 70%)
+  quality: model_convergence_steps        # Q-table episodes to converge
+  efficiency: inference_latency_ms        # model.predict() latency (target ≤ 50ms)
+  stability: accuracy_drift_per_session   # max accuracy drop across consecutive sessions
