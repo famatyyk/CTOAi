@@ -7,6 +7,7 @@ WORKDIR /app
 
 # System deps for mss (X11 / display) and OpenCV
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc python3-dev libevdev-dev \
     libgl1 libglib2.0-0 xvfb x11-utils \
     && rm -rf /var/lib/apt/lists/*
 
