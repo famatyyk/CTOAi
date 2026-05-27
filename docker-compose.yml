@@ -6,7 +6,7 @@ services:
     environment:
       POSTGRES_DB: ${DB_NAME:-ctoa}
       POSTGRES_USER: ${DB_USER:-ctoa}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-ctoa}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set in .env}
     volumes:
       - ctoa_pgdata:/var/lib/postgresql/data
       - ./deploy/vps/db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
@@ -46,7 +46,7 @@ services:
       - ./logs:/opt/ctoa/logs
     environment:
       CTOA_ENV: dev
-      CTOA_MOBILE_TOKEN: dev-token-change-me
+      CTOA_MOBILE_TOKEN: ${CTOA_MOBILE_TOKEN:-dev-token-change-me}
       CTOA_MOBILE_FULL_ACCESS: "false"
       CTOA_INTEL_API_EXPECTED: "true"
       CTOA_INTEL_API_BASE_URL: http://host.docker.internal:8890
@@ -54,7 +54,7 @@ services:
       DB_PORT: "5432"
       DB_NAME: ${DB_NAME:-ctoa}
       DB_USER: ${DB_USER:-ctoa}
-      DB_PASSWORD: ${DB_PASSWORD:-ctoa}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set in .env}
       CTOA_REDIS_URL: redis://:${REDIS_PASSWORD:-}@ctoa-redis:6379/0
       CTOA_REDIS_QUEUE: ctoa:jobs
     extra_hosts:
