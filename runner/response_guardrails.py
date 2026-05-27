@@ -51,3 +51,20 @@ def validate_response(text: str) -> list[str]:
 def is_response_compliant(text: str) -> bool:
     """Check whether a response passes all guardrails."""
     return not validate_response(text)
+
+def validate_operational_structure(text: str) -> list[str]:
+    """Require operational responses to separate facts, inference, and next step."""
+    violations: list[str] = []
+    lowered = text.lower()
+
+    required_markers = ("facts", "inference", "next step")
+    missing = [marker for marker in required_markers if marker not in lowered]
+    if missing:
+        violations.append("missing operational structure markers: " + ", ".join(missing))
+
+    return violations
+
+
+def is_operational_structure_compliant(text: str) -> bool:
+    """Check if operational fact-first structure is present."""
+    return not validate_operational_structure(text)

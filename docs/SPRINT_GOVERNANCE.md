@@ -1,6 +1,6 @@
 # CTOA Sprint Governance Framework
 
-**Document Updated:** 2026-03-12T20:05:12+00:00
+**Document Updated:** 2026-05-25T00:00:00+00:00
 
 ## Overview
 
@@ -9,33 +9,47 @@ and rollover procedures for the CTOA AI Toolkit.
 
 ## Sprint Lifecycle
 
+### Release-Train Short Sprint Mode (3-Day Window)
+
+For active release-train micro-sprints (for example Sprint-058), use this compressed cadence:
+
+- Day 1: kickoff + scope lock + doc reference sync
+- Day 2: run non-interactive Wave-1 chain and publish artifacts
+- Day 3: finalize approvals/handoff or carry unresolved items forward
+
+This mode keeps the canonical state flow unchanged and only compresses schedule length.
+
 ### Phase 1: Planning & Kickoff (Day 1)
 
 - Create new backlog file: `workflows/backlog-sprint-NNN.yaml`
 - Create Sprint documentation: `SPRINT-NNN.md`
-- Update README.md with active sprint status
+- Create sprint progress snapshot: `SPRINT-NNN-PROGRESS.md`
+- Wire validator, local task, and CI gate entries for the sprint
+- Update README.md with active sprint status and current release train
 - Git commit: "chore: kickoff Sprint-NNN"
 
 ### Phase 2: Execution (Days 2-13)
 
-- Daily tick cycles via `runner.py tick --agents`
+- Run the Wave-1 chain for the sprint: tests, validator, launch gate, state sync dry-run, state sync, repo hygiene, core guard, progress refresh, wave summary
 - AI agents execute tasks and generate deliverables
-- State transitions: NEW ??? IN_PROGRESS ??? IN_QA ??? IN_CI_GATE ??? WAITING_APPROVAL
-- Wave-based approvals (typically 3 tasks per wave, ~25% increment)
+- State transitions: NEW -> IN_PROGRESS -> IN_QA -> IN_CI_GATE -> WAITING_APPROVAL
+- Evidence-first approvals: no task moves to RELEASED without the validator and release evidence pack
 
 ### Phase 3: Closure & Validation (Day 14)
 
 - Final approval of all remaining tasks
-- Generate final report: 100% completion check
-- Update sprint documentation with closure timestamp
+- Generate final report: 100% completion check plus evidence pack verification
+- Update sprint documentation with closure timestamp and handoff notes
 - Backup previous sprint state: `task-state-sprint-NNN-closed.yaml`
 
 ### Phase 4: Rollover & Next Planning
 
 - Switch backlog: update `CTOA_BACKLOG_FILE` env var on VPS
+- Refresh `runtime/task-state.yaml` through `sprint_state_sync.py`
+- Refresh progress and wave summary artifacts for the new backlog
 - Restart systemd timers: `sudo systemctl restart ctoa-runner.timer`
 - Verify new backlog loads and state re-initializes
-- Update README.md roadmap with next sprint
+- Update README.md roadmap with next sprint or archive note
 
 ## Approval Gates
 
@@ -47,8 +61,9 @@ All tasks require manual approval before transitioning to RELEASED state.
 
 1. Task must be in `WAITING_APPROVAL` status
 2. All deliverables must exist and be valid
-3. No blocking issues reported
-4. Definition of Done checklist verified
+3. Wave-1 evidence pack must be complete (`tests`, validator, launch gate, state sync, repo hygiene, core guard, wave summary)
+4. No blocking issues reported
+5. Definition of Done checklist verified
 
 **Approval Command:**
 
@@ -61,10 +76,10 @@ CTOA_BACKLOG_FILE=/opt/ctoa/workflows/backlog-sprint-NNN.yaml \
 
 Sprint cannot be marked CLOSED until:
 
-1. All tasks (10/10) are in RELEASED status
+1. All tasks in the current backlog are in RELEASED status
 2. No tasks in WAITING_APPROVAL or earlier states
 3. Final report shows 100% progress
-4. Sprint documentation updated with closure timestamp
+4. Sprint documentation updated with closure timestamp and release evidence links
 
 ### Wave Quality Gates (Training-Aware)
 
@@ -77,11 +92,7 @@ Gate intent:
 
 1. Validator/test chain passes or has documented non-blocking exception
 2. No critical regression flags
-3. Evidence pack is complete:
-   - output artifacts,
-   - validator/test results,
-   - baseline delta (quality/cost/latency),
-   - risk note + fallback path
+3. Evidence pack is complete: output artifacts, validator/test results, baseline delta (quality/cost/latency), state sync evidence, repo hygiene and core guard results, risk note + fallback path
 
 **Wave-2 PASS requires:**
 
@@ -96,6 +107,8 @@ Required status checks for merge:
 
 1. `PR Quality Report`
 2. `CTOA Pipeline`
+
+Direct pushes to `main` are reserved for documented incident recovery only.
 
 ### Bypass Exception Protocol (DEFCON 1-2 only)
 
@@ -115,8 +128,9 @@ Canonical definitions:
 
 1. Final sprint report: 100% completion
 2. Backup current state: `cp task-state.yaml task-state-sprint-NNN-closed.yaml`
-3. Verify git working directory clean: `git status`
-4. Commit final sprint documentation
+3. Refresh progress and summary artifacts
+4. Verify git working directory clean: `git status`
+5. Commit final sprint documentation
 
 **Rollover Steps:**
 
@@ -124,8 +138,10 @@ Canonical definitions:
   `echo 'CTOA_BACKLOG_FILE=/opt/ctoa/workflows/backlog-sprint-MMM.yaml' >> /opt/ctoa/.env`
 2. Pull latest backlog: `cd /opt/ctoa && git pull origin main`
 3. Verify backlog file exists: `test -f workflows/backlog-sprint-MMM.yaml`
-4. Control tick (no agents): `python3 runner/runner.py tick`
-5. Verify state reset and NEW tasks loaded: `python3 runner/runner.py report`
+4. Dry-run state sync: `python scripts/ops/sprint_state_sync.py --backlog workflows/backlog-sprint-MMM.yaml --state runtime/task-state.yaml --dry-run`
+5. Apply state sync: `python scripts/ops/sprint_state_sync.py --backlog workflows/backlog-sprint-MMM.yaml --state runtime/task-state.yaml`
+6. Refresh progress diagram: `python scripts/ops/project_progress_diagram.py --backlog workflows/backlog-sprint-MMM.yaml --state runtime/task-state.yaml --output docs/history/sprints/SPRINT-MMM-PROGRESS.md --project-name Sprint-MMM`
+7. Verify state reset and NEW tasks loaded: `python3 runner/runner.py report`
 
 **Validation:**
 
@@ -133,6 +149,7 @@ Canonical definitions:
 - All old tasks should be gone
 - All new tasks (CTOA-XXX) in state
 - `last_tick_at` recently updated
+- Progress snapshot and wave summary reflect the new backlog
 
 **Resume Operations:**
 
@@ -144,19 +161,19 @@ Canonical definitions:
 
 ```text
 NEW
-  ??? (tick: scheduled_by_planner)
-IN_PROGRESS (2 ticks)
-  ??? (auto transition)
-IN_QA (1 tick)
-  ??? (auto transition)
-IN_CI_GATE (1 tick)
-  ??? (auto transition)
+  -> IN_PROGRESS (planner or wave kickoff)
+IN_PROGRESS
+  -> IN_QA (task complete)
+IN_QA
+  -> IN_CI_GATE (quality gate pass)
+IN_CI_GATE
+  -> WAITING_APPROVAL (release evidence complete)
 WAITING_APPROVAL
-  ??? (manual: approve --task CTOA-NNN)
+  -> RELEASED (manual approve --task CTOA-NNN)
 RELEASED
 
 BLOCKED (manual: block_task with reason)
-  ??? (manual: unblock_task)
+  -> IN_PROGRESS (manual unblock_task)
 IN_PROGRESS (resume)
 ```
 
@@ -175,6 +192,7 @@ Agents are automatically invoked when tasks transition to IN_PROGRESS:
 - Execution logged in task history
 - Failed agents must be manually addressed (blocking issue)
 - Successful agents update task state automatically
+- Release evidence and summary artifacts must remain auditable
 
 ## Metrics & Reporting
 
@@ -186,6 +204,8 @@ Agents are automatically invoked when tasks transition to IN_PROGRESS:
   - Sprint progress percentage
   - Task status distribution
   - Approval lead-time metrics
+  - Wave-1 evidence completeness
+  - State sync and repo hygiene status
   - Top blockers (if any)
   - Health trend data
 
@@ -197,6 +217,7 @@ Agents are automatically invoked when tasks transition to IN_PROGRESS:
 - Agent execution summary
 - Blockers and escalations (if any)
 - Wave-1/Wave-2 pass ratio
+- Release evidence links and validation summary
 - Training-event and promotion summary
 
 ## Escalation & Issue Management
@@ -253,10 +274,10 @@ Agents are automatically invoked when tasks transition to IN_PROGRESS:
 
 ## References
 
-- [SPRINT-007.md](./history/sprints/SPRINT-007.md) — Historical sprint example
-- [runner.py](../runner/runner.py) — Task orchestration engine
-- [orchestrator.py](../runner/agents/orchestrator.py) — Agent orchestration entrypoint
-- [README.md](../README.md) — Project roadmap
+- [SPRINT-007.md](./history/sprints/SPRINT-007.md) Ă˘â‚¬â€ť Historical sprint example
+- [runner.py](../runner/runner.py) Ă˘â‚¬â€ť Task orchestration engine
+- [orchestrator.py](../runner/agents/orchestrator.py) Ă˘â‚¬â€ť Agent orchestration entrypoint
+- [README.md](../README.md) Ă˘â‚¬â€ť Project roadmap
 - [Enhanced Agent/Prompt Definitive](./AGENT_PROMPT_DEFINITIVE.md)
 - [Agent Training Masterplan](./AGENT_TRAINING_MASTERPLAN.md)
 - [Validation Checklist](./VALIDATION_CHECKLIST.md)

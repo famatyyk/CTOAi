@@ -1,0 +1,40 @@
+# Normalize line endings to LF for all text files.
+# This prevents CRLF/LF divergence between Windows and Linux environments.
+
+* text=auto eol=lf
+
+# Explicitly mark common text types
+*.py    text eol=lf
+*.yaml  text eol=lf
+*.yml   text eol=lf
+*.json  text eol=lf
+*.md    text eol=lf
+*.txt   text eol=lf
+*.sh    text eol=lf
+*.ps1   text eol=crlf
+*.toml  text eol=lf
+*.ini   text eol=lf
+*.cfg   text eol=lf
+*.lua   text eol=lf
+*.html  text eol=lf
+*.css   text eol=lf
+*.js    text eol=lf
+*.ts    text eol=lf
+
+# PowerShell stays CRLF (required on Windows)
+*.ps1   text eol=crlf
+*.psm1  text eol=crlf
+*.psd1  text eol=crlf
+
+# Binaries — do not touch
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.exe   binary
+*.zip   binary
+*.gz    binary
+*.tar   binary
+*.whl   binary
+*.pyc   binary

@@ -1,6 +1,6 @@
 version: 1
 scoring:
-  formula: "0.35*quality + 0.20*cost + 0.20*speed + 0.15*privacy + 0.10*integration"
+  formula: "0.30*quality + 0.20*cost + 0.20*speed + 0.15*privacy + 0.10*integration + 0.05*evidence_backing"
   scale: 0-10
   thresholds:
     recommend: 8.0
@@ -16,6 +16,8 @@ criteria:
     description: Szybkosc realizacji i time-to-value
   privacy:
     description: Kontrola danych, zgodnosc, ryzyko wycieku
+  evidence_backing:
+    description: Jak dobrze odpowiedz jest oparta na faktach i dowodach
   integration:
     description: Latwosc wdrozenia z VPS/GitHub/CI
 
@@ -23,6 +25,9 @@ decision_policy:
   - if: "privacy < 6"
     action: "reject"
     reason: "Niski poziom ochrony danych"
+  - if: "evidence_backing < 6"
+    action: "conditional"
+    reason: "Niewystarczajace oparcie o fakty/dowody"
   - if: "quality < 7"
     action: "conditional"
     reason: "Wymagany pilot i dodatkowa walidacja"

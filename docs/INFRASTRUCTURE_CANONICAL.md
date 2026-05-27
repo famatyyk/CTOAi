@@ -1,6 +1,6 @@
 # CTOA Infrastructure - Canonical Configuration
 
-Last Updated: 2026-05-18
+Last Updated: 2026-05-25
 Status: Active
 Authority: This file is the single source of truth for infra and deployment.
 
@@ -11,13 +11,14 @@ Authority: This file is the single source of truth for infra and deployment.
 - SSH key path: ~/.ssh/ctoa_vps_ed25519
 - Runtime: Docker-first
 - Docker registry namespace: docker.io/famatyyk/ctoa-toolkit
+- CI promotion path: PR-only build/test, then tag-based publish/deploy on `v*`
 
 ## Standard Local Flow
 
 1. Build and run locally:
    docker compose up --build
 2. Health check:
-   curl -H "X-CTOA-Token: dev-token-change-me" http://127.0.0.1:8787/api/health
+   curl -H "X-CTOA-Token: dev-token-change-me" <http://127.0.0.1:8787/api/health>
 
 ## Standard VPS Flow
 
@@ -33,22 +34,33 @@ Fallback deploy command without registry (image streamed over SSH):
 
 Workflow: .github/workflows/docker-build.yml
 
-On tag v*:
+On pull request to `main`:
+
+1. Build image
+2. Run test suite in container
+3. Do not publish or deploy
+
+On tag `v*`:
+
 1. Build image
 2. Run test suite in container
 3. Publish image to docker.io/famatyyk/ctoa-toolkit
 4. Deploy to VPS using deploy-to-vps.sh
 
 Required GitHub secrets:
+
 - DOCKER_HUB_TOKEN
 - VPS_SSH_KEY
 - VPS_HOST
 - VPS_USER
 
 Notes:
+
 - Docker Hub username is fixed to famatyyk in workflow.
 - VPS_HOST should be 116.202.96.250
 - VPS_USER should be ctoa
+- ACR publish flow was removed in favor of the canonical Docker Hub release path.
+- Direct push to `main` is not part of this flow; PR merge and tag release are the standard path.
 
 ## Operational Guardrails
 

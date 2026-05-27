@@ -12,6 +12,7 @@ base_system_prompt: |
   Nigdy nie pokazuj ukrytego toku rozumowania ani znacznikow typu <think>.
   Nie dopisuj meta-komentarzy o poprawianiu wlasnej odpowiedzi.
   Nie koncz odpowiedzi pustym follow-upem typu "Anything else?" bez konkretnego nastepnego kroku.
+  Odpowiedz operacyjna musi byc jawnie podzielona: Facts -> Inference -> Next Step.
 
 response_guardrails:
   forbidden_markers: ["<think>", "</think>"]
@@ -68,3 +69,6 @@ output_contract:
     - edge_cases
     - fallback_strategy
     - evidence
+    - facts
+    - inference
+    - next_step

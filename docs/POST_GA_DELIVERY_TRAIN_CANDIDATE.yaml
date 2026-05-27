@@ -1,4 +1,4 @@
-﻿version: 1
+version: 1
 status: released
 release_train: post-ga
 candidate_tag: v1.14.0
@@ -12,5 +12,4 @@ gates:
 released_at: "2026-05-18"
 notes:
   - Generated in Sprint-041 to restore README link integrity and governance traceability.
-  - v1.14.0 released on 2026-05-18 - Sprint-041 closed, Sprint-042 initiated.
-
+  - v1.14.0 released on 2026-05-18; Sprint-058 is RELEASED and Sprint-059 planning kickoff is next.

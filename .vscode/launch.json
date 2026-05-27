@@ -6,7 +6,14 @@
       "type": "debugpy",
       "request": "launch",
       "module": "uvicorn",
-      "args": ["mobile_console.app:app", "--host", "0.0.0.0", "--port", "8787", "--reload"],
+      "args": [
+        "mobile_console.app:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8787",
+        "--reload"
+      ],
       "env": {
         "CTOA_OWNER_USER": "cto",
         "CTOA_OWNER_PASSWORD": "ctoa2026",
@@ -22,7 +29,10 @@
       "type": "debugpy",
       "request": "launch",
       "module": "pytest",
-      "args": ["${file}", "-v"],
+      "args": [
+        "${file}",
+        "-v"
+      ],
       "console": "integratedTerminal",
       "justMyCode": false
     },
@@ -31,9 +41,37 @@
       "type": "debugpy",
       "request": "launch",
       "module": "pytest",
-      "args": ["tests/", "--ignore=tests/e2e", "-v"],
+      "args": [
+        "tests/",
+        "--ignore=tests/e2e",
+        "-v"
+      ],
       "console": "integratedTerminal",
       "justMyCode": false
+    },
+    {
+      "name": "AITK: Debug CTOAI Foundry Agent HTTP Server",
+      "type": "debugpy",
+      "request": "attach",
+      "connect": {
+        "host": "localhost",
+        "port": 5679
+      },
+      "preLaunchTask": "AITK: Open Agent Inspector",
+      "internalConsoleOptions": "neverOpen",
+      "postDebugTask": "AITK: Terminate All Tasks"
+    },
+    {
+      "name": "AITK: Debug CTOAI Foundry Agent in Terminal",
+      "type": "debugpy",
+      "request": "attach",
+      "connect": {
+        "host": "localhost",
+        "port": 5679
+      },
+      "preLaunchTask": "AITK: Run CTOAI Foundry Agent in Terminal",
+      "internalConsoleOptions": "neverOpen",
+      "postDebugTask": "AITK: Terminate All Tasks"
     }
   ]
 }

@@ -337,6 +337,36 @@ jobs:
         run: |
           python scripts/ops/sprint056_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-056-validation.json
 
+      - name: Sprint-057 delivery gate
+        shell: bash
+        run: |
+          python scripts/ops/sprint057_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-057-validation.json
+
+      - name: Sprint-058 delivery gate
+        shell: bash
+        run: |
+          python scripts/ops/sprint058_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-058-validation.json
+
+      - name: Sprint-059 delivery gate
+        shell: bash
+        run: |
+          python scripts/ops/sprint059_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-059-validation.json
+
+      - name: Sprint-060 delivery gate
+        shell: bash
+        run: |
+          python scripts/ops/sprint060_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-060-validation.json
+
+      - name: Sprint-061 delivery gate
+        shell: bash
+        run: |
+          python scripts/ops/sprint061_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-061-validation.json
+
+      - name: Sprint-062 delivery gate
+        shell: bash
+        run: |
+          python scripts/ops/sprint062_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-062-validation.json
+
       - name: Python linting (flake8)
         shell: bash
         continue-on-error: true
@@ -569,6 +599,80 @@ jobs:
             runtime/evidence/sprint-056/**
           if-no-files-found: ignore
 
+
+      - name: Upload Sprint-057 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sprint-057-evidence
+          path: |
+            runtime/ci-artifacts/sprint-057-validation.json
+            runtime/ci-artifacts/sprint-057-wave1-summary.txt
+            docs/history/sprints/SPRINT-057-PROGRESS.md
+            runtime/evidence/sprint-057/**
+          if-no-files-found: ignore
+
+      - name: Upload Sprint-058 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sprint-058-evidence
+          path: |
+            runtime/ci-artifacts/sprint-058-validation.json
+            runtime/ci-artifacts/sprint-058-wave1-summary.txt
+            docs/history/sprints/SPRINT-058-PROGRESS.md
+            runtime/evidence/sprint-058/**
+          if-no-files-found: ignore
+
+      - name: Upload Sprint-059 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sprint-059-evidence
+          path: |
+            runtime/ci-artifacts/sprint-059-validation.json
+            runtime/ci-artifacts/sprint-059-wave1-summary.txt
+            docs/history/sprints/SPRINT-059-PROGRESS.md
+            runtime/evidence/sprint-059/**
+          if-no-files-found: ignore
+
+      - name: Upload Sprint-060 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sprint-060-evidence
+          path: |
+            runtime/ci-artifacts/sprint-060-validation.json
+            runtime/ci-artifacts/sprint-060-wave1-summary.txt
+            docs/history/sprints/SPRINT-060-PROGRESS.md
+            runtime/evidence/sprint-060/**
+          if-no-files-found: ignore
+
+      - name: Upload Sprint-061 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sprint-061-evidence
+          path: |
+            runtime/ci-artifacts/sprint-061-validation.json
+            runtime/ci-artifacts/sprint-061-wave1-summary.txt
+            runtime/ci-artifacts/runner-execution-summary.json
+            docs/history/sprints/SPRINT-061-PROGRESS.md
+            runtime/evidence/sprint-061/**
+          if-no-files-found: ignore
+
+      - name: Upload Sprint-062 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sprint-062-evidence
+          path: |
+            runtime/ci-artifacts/sprint-062-validation.json
+            runtime/ci-artifacts/sprint-062-wave1-summary.txt
+            runtime/ci-artifacts/runner-execution-summary.json
+            docs/history/sprints/SPRINT-062-PROGRESS.md
+            runtime/evidence/sprint-062/**
+          if-no-files-found: ignore
       - name: Enforce response guardrail gate
         shell: bash
         run: |

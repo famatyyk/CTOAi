@@ -4,7 +4,7 @@ Canonical baseline for post-GA release governance.
 
 ## Baseline
 - Baseline tag: v1.14.0
-- Active sprint: Sprint-042
+- Active sprint: Sprint-059 (planning kickoff)
 - Governance mode: two-wave approvals (Wave-1 automated, Wave-2 manual)
 - Last promotion: v1.13.0 -> v1.14.0 (2026-05-18 Sprint-041 CTOA-203..207)
 
@@ -35,11 +35,12 @@ Canonical baseline for post-GA release governance.
 - QA/DevOps: Wave-1 gate evidence
 - God Mode: async scope/budget/timeline oversight
 
-## Next Sprint (Sprint-042)
+## Active Sprint Transition
 
-Sprint-042 is the active execution sprint (not planning).
-- Scope source: `workflows/backlog-sprint-042.yaml`
+Sprint-058 execution is complete and released; transition is now toward Sprint-059 planning kickoff.
+- Last completed scope: `workflows/backlog-sprint-058.yaml`
+- Last completed flow: `workflows/sprint-058-delivery-flow.yaml`
 - Proposed release: `v1.15.0`
-- Status: `ACTIVE`
+- Status: `TRANSITION_TO_SPRINT_059`
 
-Sprint files with higher numbers (e.g. 043..049) should be treated as pre-planning unless they are explicitly marked ACTIVE and wired into validators/tasks.
+Sprint files with higher numbers should be treated as pre-planning unless they are explicitly marked ACTIVE and wired into validators/tasks.

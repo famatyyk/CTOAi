@@ -9,18 +9,25 @@ and auditable two-wave approvals.
 | Signal | Current State |
 | --- | --- |
 | Baseline | v1.14.0 APPROVED |
-| Release Train | Sprint-041 closed -> Sprint-042 ACTIVE (Track C Continuation) |
+| Release Train | Sprint-059 RELEASED (Wave-1 evidence finalized) |
 | Delivery Mode | STRATEGOS (guarded autonomy) |
 | Validation | `pytest` + sprint validators + CI gate chain |
-| Next Action | operator adoption + infra hardening + community readiness |
+| Next Action | Sprint-061 kickoff package active: 1 process KPI + 2 product KPIs |
 
 Primary governance sources:
 
 - [Post-GA Candidate](docs/POST_GA_DELIVERY_TRAIN_CANDIDATE.yaml)
 - [Post-GA Baseline](docs/POST_GA_DELIVERY_TRAIN_BASELINE.md)
 - [Roadmap v0.2.0 -> v1.0.0](docs/ROADMAP_V0.2.0_TO_V1.0.0.md)
-- [Sprint-040 Release Pack](runtime/experiments/sprint-040/CTOA-202.md)
+- [Sprint-057 Release Pack](docs/history/sprints/SPRINT-057.md)
+- [Sprint-057 Progress](docs/history/sprints/SPRINT-057-PROGRESS.md)
 - [Track C Productization](docs/PRODUCTIZATION_TRACK_C.md)
+- [Sprint-058 Plan](docs/history/sprints/SPRINT-058.md)
+- [Sprint-059 Plan](docs/history/sprints/SPRINT-059.md)
+- [Sprint-060 Plan](docs/history/sprints/SPRINT-060.md)
+- [Sprint-060 Progress](docs/history/sprints/SPRINT-060-PROGRESS.md)
+- [Sprint-061 Plan](docs/history/sprints/SPRINT-061.md)
+- [Sprint-061 Progress](docs/history/sprints/SPRINT-061-PROGRESS.md)
 
 ## Azure Activity Training Status
 
@@ -79,7 +86,7 @@ Common local commands:
 python scripts/ops/ctoa_product_bootstrap.py
 python scripts/ops/ctoa_update_gate.py
 python -m pytest -q
-python scripts/ops/sprint023_validate.py
+python scripts/ops/sprint056_validate.py
 ```
 
 VS Code task shortcuts available in this workspace:
@@ -96,6 +103,7 @@ Active runbook policy:
 - Active Wave-1 execution range: Sprint-027 and newer.
 - Legacy range: Sprint-012 to Sprint-026 (kept for historical traceability, not part of active runbook).
 - Legacy tasks can still be run manually for forensic/backfill work.
+
 ## Sprint Cadence (Post-GA)
 
 Every sprint follows a two-wave approval model:
@@ -106,6 +114,7 @@ Every sprint follows a two-wave approval model:
 
 Recent approved milestones:
 
+- v1.14.0 (Sprint-056)
 - v1.13.0 (Sprint-040)
 - v1.2.0 (Sprint-029)
 - v1.1.1 (Sprint-028)
