@@ -43,7 +43,21 @@ jobs:
             --exclude='data/qtable*.json' \
             . "$VPS_USER@$VPS_HOST:/opt/tibia-bot/"
 
-      - name: Deploy with docker compose
+
+      - name: Ensure .env on VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USERNAME }}
+          BOT_ENV: ${{ secrets.VPS_BOT_ENV }}
+        run: |
+          if [ -n "$BOT_ENV" ]; then
+            echo "$BOT_ENV" | ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
+              "$VPS_USER@$VPS_HOST" "cat > /opt/tibia-bot/.env"
+          else
+            ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
+              "$VPS_USER@$VPS_HOST" \
+              "[ -f /opt/tibia-bot/.env ] || cp /opt/tibia-bot/.env.bot.example /opt/tibia-bot/.env"
+          fi      - name: Deploy with docker compose
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USER: ${{ secrets.VPS_USERNAME }}
