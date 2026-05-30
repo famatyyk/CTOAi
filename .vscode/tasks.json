@@ -1473,6 +1473,50 @@
         "reveal": "always",
         "panel": "dedicated"
       }
+    },
+    {
+      "label": "CTOA: Sprint-050 Validate",
+      "type": "shell",
+      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint050_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-050-validation.json",
+      "isBackground": false,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "CTOA: Sprint-050 Wave-1 Run",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "CTOA: Run All Tests",
+        "CTOA: Sprint-050 Validate",
+        "CTOA: Launch Pack"
+      ],
+      "isBackground": false,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "CTOA: Sprint-050 Refresh Progress Diagram",
+      "type": "shell",
+      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/project_progress_diagram.py --backlog workflows/backlog-sprint-050.yaml --state runtime/task-state.yaml --output docs/history/sprints/SPRINT-050-PROGRESS.md --project-name CTOAi",
+      "isBackground": false,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "CTOA: Sprint-050 Quality Snapshot",
+      "type": "shell",
+      "command": ".\\.venv\\Scripts\\python.exe -m pytest tests/test_response_guardrails.py -q",
+      "isBackground": false,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
     }
   ],
   "inputs": [
