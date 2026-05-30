@@ -1,9 +1,11 @@
-"""Sprint-066 plan validator."""
+"""Sprint-066 kickoff validator."""
 
 from __future__ import annotations
 
 import argparse
 import json
+import subprocess
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -16,7 +18,25 @@ REQUIRED_FILES = [
     'docs/history/sprints/SPRINT-066-PROGRESS.md',
 ]
 
-REQUIRED_HOOKS = {"on_start", "on_complete", "on_fail"}
+REQUIRED_TASK_LABELS = [
+    'CTOA: Sprint-066 Validate',
+    'CTOA: Sprint-066 State Sync',
+    'CTOA: Sprint-066 Refresh Progress Diagram',
+    'CTOA: Sprint-066 Wave Summary UTF-8',
+    'CTOA: Sprint-066 Quality Snapshot',
+    'CTOA: Sprint-066 Wave-1 Run',
+]
+
+REQUIRED_WORKFLOW_SNIPPETS = [
+    'Sprint-066 delivery gate',
+    'scripts/ops/sprint066_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-066-validation.json',
+    'Upload Sprint-066 evidence',
+    'runtime/ci-artifacts/sprint-066-validation.json',
+    'runtime/ci-artifacts/sprint-066-wave1-summary.txt',
+    'docs/history/sprints/SPRINT-066-PROGRESS.md',
+]
+
+REQUIRED_HOOKS = {'on_start', 'on_complete', 'on_fail'}
 
 
 def _safe_yaml_load(path: Path) -> Any:
@@ -25,11 +45,7 @@ def _safe_yaml_load(path: Path) -> Any:
 
 def _check_required_files(root: Path) -> dict[str, Any]:
     missing = [rel for rel in REQUIRED_FILES if not (root / rel).exists()]
-    return {
-        'id': 'required_files',
-        'ok': not missing,
-        'hint': '' if not missing else f"missing files: {', '.join(missing)}",
-    }
+    return {'id': 'required_files', 'ok': not missing, 'hint': '' if not missing else f"missing files: {', '.join(missing)}"}
 
 
 def _check_syntax(root: Path) -> list[dict[str, Any]]:
@@ -39,9 +55,18 @@ def _check_syntax(root: Path) -> list[dict[str, Any]]:
         try:
             _safe_yaml_load(path)
             checks.append({'id': f'syntax:{rel}', 'ok': True, 'hint': ''})
-        except Exception as exc:  # pragma: no cover
+        except Exception as exc:
             checks.append({'id': f'syntax:{rel}', 'ok': False, 'hint': str(exc)})
     return checks
+
+
+def _check_backlog_contract(root: Path) -> dict[str, Any]:
+    backlog = _safe_yaml_load(root / 'workflows/backlog-sprint-066.yaml')
+    tasks = backlog.get('tasks', []) if isinstance(backlog, dict) else []
+    ids = [task.get('id') for task in tasks if isinstance(task, dict)]
+    ok = isinstance(backlog, dict) and backlog.get('backlog_id') == 'sprint-066' and ids == ['CTOA-329', 'CTOA-330', 'CTOA-331']
+    hint = '' if ok else 'backlog_id must be sprint-066 and tasks must remain CTOA-329/330/331 in order'
+    return {'id': 'backlog_contract', 'ok': ok, 'hint': hint}
 
 
 def _check_hooks(root: Path) -> dict[str, Any]:
@@ -51,50 +76,54 @@ def _check_hooks(root: Path) -> dict[str, Any]:
     for task in tasks:
         if not REQUIRED_HOOKS.issubset(set(task.keys())):
             missing.append(task.get('id', '<unknown>'))
-    return {
-        'id': 'missing_hooks',
-        'ok': not missing,
-        'hint': '' if not missing else f"tasks missing hooks: {', '.join(missing)}",
-    }
+    return {'id': 'missing_hooks', 'ok': not missing, 'hint': '' if not missing else f"tasks missing hooks: {', '.join(missing)}"}
 
 
-def _check_plan_only(_root: Path) -> dict[str, Any]:
-    return {
-        'id': 'pipeline_gate',
-        'ok': True,
-        'hint': 'plan-only validator; execution wiring will be added in the implementation sprint',
-    }
+def _check_pipeline_gate(root: Path) -> dict[str, Any]:
+    workflow = (root / '.github/workflows/ctoa-pipeline.yml').read_text(encoding='utf-8')
+    missing = [snippet for snippet in REQUIRED_WORKFLOW_SNIPPETS if snippet not in workflow]
+    ok = not missing
+    return {'id': 'pipeline_gate', 'ok': ok, 'hint': '' if ok else f"missing workflow snippets: {', '.join(missing)}"}
 
 
-def _check_local_tasks(_root: Path) -> dict[str, Any]:
-    return {
-        'id': 'local_tasks',
-        'ok': True,
-        'hint': 'plan-only validator; local task wiring will be added in the implementation sprint',
-    }
+def _check_local_tasks(root: Path) -> dict[str, Any]:
+    tasks_json = (root / '.vscode/tasks.json').read_text(encoding='utf-8')
+    missing = [label for label in REQUIRED_TASK_LABELS if label not in tasks_json]
+    return {'id': 'local_tasks', 'ok': not missing, 'hint': '' if not missing else f"missing task labels: {', '.join(missing)}"}
 
 
-def _check_state_alignment(_root: Path) -> dict[str, Any]:
-    return {
-        'id': 'state_evidence_alignment',
-        'ok': True,
-        'hint': 'plan-only validator; runtime state alignment will be checked during execution',
-    }
+def _check_state_evidence_alignment(root: Path) -> dict[str, Any]:
+    backlog = _safe_yaml_load(root / 'workflows/backlog-sprint-066.yaml')
+    progress = root / 'docs/history/sprints/SPRINT-066-PROGRESS.md'
+    mission = root / 'docs/history/sprints/SPRINT-066.md'
+    ok = isinstance(backlog, dict) and backlog.get('backlog_id') == 'sprint-066' and progress.exists() and mission.exists()
+    hint = '' if ok else 'backlog and sprint evidence must all point at sprint-066'
+    return {'id': 'state_evidence_alignment', 'ok': ok, 'hint': hint}
 
 
-def _check_quality() -> dict[str, Any]:
-    return {'id': 'quality_regression_tests', 'ok': True, 'hint': ''}
+def _check_quality(run_tests: bool) -> dict[str, Any]:
+    test_path = Path('tests/test_response_guardrails.py')
+    if not run_tests:
+        return {'id': 'quality_regression_tests', 'ok': test_path.exists(), 'hint': '' if test_path.exists() else 'missing tests/test_response_guardrails.py'}
+
+    proc = subprocess.run([sys.executable, '-m', 'pytest', 'tests/test_response_guardrails.py', '-q'], capture_output=True, text=True)
+    if proc.stdout:
+        print(proc.stdout, end='')
+    if proc.stderr:
+        print(proc.stderr, end='', file=sys.stderr)
+    return {'id': 'quality_regression_tests', 'ok': proc.returncode == 0, 'hint': '' if proc.returncode == 0 else 'pytest tests/test_response_guardrails.py -q failed'}
 
 
-def build_report(root: Path) -> dict[str, Any]:
+def build_report(root: Path, run_tests: bool) -> dict[str, Any]:
     checks: list[dict[str, Any]] = []
     checks.append(_check_required_files(root))
     checks.extend(_check_syntax(root))
+    checks.append(_check_backlog_contract(root))
     checks.append(_check_hooks(root))
-    checks.append(_check_plan_only(root))
+    checks.append(_check_pipeline_gate(root))
     checks.append(_check_local_tasks(root))
-    checks.append(_check_state_alignment(root))
-    checks.append(_check_quality())
+    checks.append(_check_state_evidence_alignment(root))
+    checks.append(_check_quality(run_tests))
 
     failed = [chk['id'] for chk in checks if not chk.get('ok')]
     status = 'PASS' if not failed else 'FAIL'
@@ -111,13 +140,14 @@ def build_report(root: Path) -> dict[str, Any]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description='Sprint-066 plan validator')
+    parser = argparse.ArgumentParser(description='Sprint-066 kickoff validator')
     parser.add_argument('--root', default='.', help='Workspace root directory')
+    parser.add_argument('--run-tests', action='store_true', help='Run response guardrail regression test')
     parser.add_argument('--json-out', help='Write JSON report to file')
     args = parser.parse_args()
 
     root = Path(args.root).resolve()
-    report = build_report(root)
+    report = build_report(root, args.run_tests)
 
     if args.json_out:
         out_path = (root / args.json_out).resolve()

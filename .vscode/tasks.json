@@ -1619,6 +1619,74 @@
       }
     },
     {
+      "label": "CTOA: Sprint-066 Validate",
+      "type": "shell",
+      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint066_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-066-validation.json",
+      "isBackground": false,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "CTOA: Sprint-066 State Sync",
+      "type": "shell",
+      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint_state_sync.py --backlog workflows/backlog-sprint-066.yaml --state runtime/task-state.yaml",
+      "isBackground": false,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "CTOA: Sprint-066 Refresh Progress Diagram",
+      "type": "shell",
+      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/project_progress_diagram.py --backlog workflows/backlog-sprint-066.yaml --state runtime/task-state.yaml --output docs/history/sprints/SPRINT-066-PROGRESS.md --project-name CTOAi",
+      "isBackground": false,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "CTOA: Sprint-066 Wave Summary UTF-8",
+      "type": "shell",
+      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/wave_summary_utf8.py --state runtime/task-state.yaml --output runtime/ci-artifacts/sprint-066-wave1-summary.txt",
+      "isBackground": false,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "CTOA: Sprint-066 Quality Snapshot",
+      "type": "shell",
+      "command": ".\\.venv\\Scripts\\python.exe -m pytest tests/test_response_guardrails.py -q",
+      "isBackground": false,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "CTOA: Sprint-066 Wave-1 Run",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "CTOA: Run All Tests",
+        "CTOA: Sprint-066 Validate",
+        "CTOA: Launch Pack",
+        "CTOA: Sprint-066 State Sync",
+        "CTOA: Sprint-066 Refresh Progress Diagram",
+        "CTOA: Sprint-066 Wave Summary UTF-8",
+        "CTOA: Sprint-066 Quality Snapshot"
+      ],
+      "isBackground": false,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
       "label": "CTOA: Sprint-065 Validate",
       "type": "shell",
       "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint065_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-065-validation.json",
