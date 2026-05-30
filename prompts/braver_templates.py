@@ -1,7 +1,11 @@
 """
 BRAVE(R) Prompt Template System
-Business + Reasoning + Action + Value + Evidence + Reflection
+Business + Analysis + Action + Value + Evidence + Reflection
 """
+
+_COMPONENT_ALIASES = {
+    "reasoning": "analysis",
+}
 
 BRAVER_TEMPLATES = {
     "task-execution": {
@@ -13,19 +17,19 @@ Assigned to agents: {agents}
 Deadline: {deadline}
 Success criteria: {success_criteria}
 """,
-        
-        "reasoning": """
-## Reasoning
+
+        "analysis": """
+## Task Analysis
 Break down the task:
 1. What must be accomplished?
 2. What are the constraints?
 3. What could go wrong?
 4. What tools are available?
 
-Your reasoning:
+Decision inputs:
 {user_reasoning}
 """,
-        
+
         "action": """
 ## Action Plan
 Step-by-step execution:
@@ -37,7 +41,7 @@ Tools to use:
 Fallback if tool fails:
 {fallback_plan}
 """,
-        
+
         "value": """
 ## Expected Value & Impact
 - Immediate impact: {immediate_impact}
@@ -45,7 +49,7 @@ Fallback if tool fails:
 - Risk/benefit ratio: {risk_benefit}
 - Success probability: {success_probability}
 """,
-        
+
         "evidence": """
 ## Supporting Evidence
 Facts and data:
@@ -57,7 +61,7 @@ Similar completed tasks:
 Tool reliability data:
 {tool_reliability}
 """,
-        
+
         "reflection": """
 ## Reflection & Learning
 What went well:
@@ -72,7 +76,7 @@ Lessons for next time:
 Confidence in outcome: {confidence_level}/10
 """
     },
-    
+
     "decision-making": {
         "business": """
 ## Business Decision
@@ -81,9 +85,9 @@ Stakeholders: {stakeholders}
 Impact scope: {impact_scope}
 Time sensitivity: {time_sensitivity}
 """,
-        
-        "reasoning": """
-## Decision Reasoning
+
+        "analysis": """
+## Decision Analysis
 Options considered:
 {options}
 
@@ -93,7 +97,7 @@ Pros/cons analysis:
 Why this option wins:
 {why_chosen}
 """,
-        
+
         "action": """
 ## Implementation
 First steps:
@@ -105,7 +109,7 @@ Communication plan:
 Rollback plan if needed:
 {rollback}
 """,
-        
+
         "value": """
 ## Value Proposition
 Expected outcomes:
@@ -114,7 +118,7 @@ Expected outcomes:
 Measurable metrics:
 {metrics}
 """,
-        
+
         "evidence": """
 ## Decision Data
 Historical precedent:
@@ -123,7 +127,7 @@ Historical precedent:
 Supporting analysis:
 {supporting_data}
 """,
-        
+
         "reflection": """
 ## Post-Decision Review
 Was it the right call:
@@ -135,15 +139,24 @@ How to improve decisions next time:
     }
 }
 
+
 def get_template(template_type):
-    """Get BRAVE(R) template for a type"""
+    """Get BRAVE(R) template for a type."""
     return BRAVER_TEMPLATES.get(template_type)
 
+
+def normalize_component_name(component):
+    """Map legacy component names to the canonical runtime component name."""
+    return _COMPONENT_ALIASES.get(component, component)
+
+
 def render_template(template_type, component, **variables):
-    """Render a specific component with variables"""
-    template = BRAVER_TEMPLATES.get(template_type, {}).get(component, "")
+    """Render a specific component with variables."""
+    normalized = normalize_component_name(component)
+    template = BRAVER_TEMPLATES.get(template_type, {}).get(normalized, "")
     return template.format(**variables, missing_var="[UNKNOWN]")
 
+
 def get_all_components():
-    """Get all BRAVE(R) components"""
-    return ["business", "reasoning", "action", "value", "evidence", "reflection"]
+    """Get all BRAVE(R) runtime components."""
+    return ["business", "analysis", "action", "value", "evidence", "reflection"]

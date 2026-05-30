@@ -1,190 +1,141 @@
-﻿"""
-Agent Framework - 11 Agent Definitions
-CTOA AI Toolkit agent descriptions and tool assignments
-"""
+"""Agent registry backed by agents/ctoa-agents.yaml."""
 
-AGENTS = {
-    "lua-scripter": {
-        "name": "Lua Scripter Agent",
-        "description": "Writes and optimizes Lua code for bot scripting",
-        "capabilities": [
-            "lua-syntax-validation",
-            "code-generation",
-            "performance-optimization",
-            "library-integration"
-        ],
-        "assigned_tasks": ["CTOA-001", "CTOA-002", "CTOA-003", "CTOA-006"],
-        "tool_score_weight": {"efficacy": 0.4, "safety": 0.3, "cost": 0.2, "latency": 0.1}
-    },
-    
-    "bot-architect": {
-        "name": "Bot Architecture Agent",
-        "description": "Designs bot systems, pathing, and behavior trees",
-        "capabilities": [
-            "architecture-design",
-            "pathfinding-algorithms",
-            "state-machine-design",
-            "system-integration"
-        ],
-        "assigned_tasks": ["CTOA-002", "CTOA-005", "CTOA-007"],
-        "tool_score_weight": {"efficacy": 0.35, "safety": 0.25, "cost": 0.25, "latency": 0.15}
-    },
-    
-    "qa-safety": {
-        "name": "QA/Safety Agent",
-        "description": "Tests bot safety, validates detection evasion, prevents bans",
-        "capabilities": [
-            "threat-modeling",
-            "safety-validation",
-            "anti-detection-testing",
-            "regression-testing"
-        ],
-        "assigned_tasks": ["CTOA-001", "CTOA-003", "CTOA-008", "CTOA-009"],
-        "tool_score_weight": {"efficacy": 0.3, "safety": 0.5, "cost": 0.1, "latency": 0.1}
-    },
-    
-    "builder-engine": {
-        "name": "Builder/Engine Agent",
-        "description": "Implements core bot engine, resource management, state tracking",
-        "capabilities": [
-            "engine-development",
-            "resource-management",
-            "memory-optimization",
-            "state-persistence"
-        ],
-        "assigned_tasks": ["CTOA-001", "CTOA-003", "CTOA-004", "CTOA-009"],
-        "tool_score_weight": {"efficacy": 0.4, "safety": 0.2, "cost": 0.25, "latency": 0.15}
-    },
-    
-    "mmo-intel": {
-        "name": "MMO Intelligence Agent",
-        "description": "Collects game intelligence, tracks enemies, identifies opportunities",
-        "capabilities": [
-            "data-collection",
-            "pattern-recognition",
-            "threat-assessment",
-            "loot-analysis"
-        ],
-        "assigned_tasks": ["CTOA-005", "CTOA-007", "CTOA-008", "CTOA-010"],
-        "tool_score_weight": {"efficacy": 0.35, "safety": 0.25, "cost": 0.2, "latency": 0.2}
-    },
-    
-    "test-harness": {
-        "name": "Test Harness Agent",
-        "description": "Builds and runs automated tests for bot functionality",
-        "capabilities": [
-            "unit-testing",
-            "integration-testing",
-            "performance-benchmarking",
-            "ci-cd-integration"
-        ],
-        "assigned_tasks": [],  # Owned by infrastructure
-        "tool_score_weight": {"efficacy": 0.35, "safety": 0.3, "cost": 0.2, "latency": 0.15}
-    },
-    
-    "evaluator": {
-        "name": "Evaluator Agent",
-        "description": "Measures bot performance, success rates, and compliance",
-        "capabilities": [
-            "metrics-collection",
-            "performance-analysis",
-            "reporting",
-            "optimization-recommendations"
-        ],
-        "assigned_tasks": ["CTOA-010"],
-        "tool_score_weight": {"efficacy": 0.3, "safety": 0.25, "cost": 0.2, "latency": 0.25}
-    },
-    
-    "optimizer": {
-        "name": "Optimizer Agent",
-        "description": "Tunes bot performance, identifies bottlenecks, recommends improvements",
-        "capabilities": [
-            "profiling",
-            "bottleneck-analysis",
-            "tuning-recommendations",
-            "cost-optimization"
-        ],
-        "assigned_tasks": ["CTOA-007"],
-        "tool_score_weight": {"efficacy": 0.4, "safety": 0.15, "cost": 0.3, "latency": 0.15}
-    },
-    
-    "debugger": {
-        "name": "Debugger Agent",
-        "description": "Diagnoses bot failures, traces execution, identifies root causes",
-        "capabilities": [
-            "error-diagnosis",
-            "log-analysis",
-            "trace-execution",
-            "root-cause-analysis"
-        ],
-        "assigned_tasks": ["CTOA-009"],
-        "tool_score_weight": {"efficacy": 0.45, "safety": 0.2, "cost": 0.15, "latency": 0.2}
-    },
-    
-    "documenter": {
-        "name": "Documentation Agent",
-        "description": "Maintains runbooks, API docs, architecture diagrams",
-        "capabilities": [
-            "documentation-writing",
-            "diagram-generation",
-            "api-documentation",
-            "runbook-creation"
-        ],
-        "assigned_tasks": [],  # Infrastructure-owned
-        "tool_score_weight": {"efficacy": 0.3, "safety": 0.1, "cost": 0.1, "latency": 0.5}
-    },
+from __future__ import annotations
 
-    "design-infra-lead": {
-        "name": "Design and Infrastructure Lead Agent",
-        "description": "Owns UX/UI system design, visual assets, and deployment-grade web/desktop infrastructure",
-        "capabilities": [
-            "design-system-architecture",
-            "frontend-ux-implementation",
-            "visual-asset-pipeline",
-            "infrastructure-hardening"
-        ],
-        "assigned_tasks": ["CTOA-011", "CTOA-012"],
-        "tool_score_weight": {"efficacy": 0.35, "safety": 0.25, "cost": 0.2, "latency": 0.2}
-    }
+import json
+from pathlib import Path
+from typing import Any
+
+import yaml
+
+_REGISTRY_PATH = Path(__file__).with_name('ctoa-agents.yaml')
+_REQUIRED_AGENT_FIELDS = {
+    'id',
+    'name',
+    'description',
+    'role',
+    'mission',
+    'capabilities',
+    'assigned_tasks',
+    'tool_score_weight',
 }
 
+
+def _normalize_agent(agent: dict[str, Any]) -> dict[str, Any]:
+    return {
+        'name': str(agent.get('name', agent['id'])),
+        'description': str(agent.get('description', agent.get('mission', ''))),
+        'role': str(agent.get('role', '')),
+        'mission': str(agent.get('mission', '')),
+        'inputs': list(agent.get('inputs', [])),
+        'outputs': list(agent.get('outputs', [])),
+        'kpi': list(agent.get('kpi', [])),
+        'capabilities': list(agent.get('capabilities', [])),
+        'assigned_tasks': list(agent.get('assigned_tasks', [])),
+        'tool_score_weight': dict(agent.get('tool_score_weight', {})),
+    }
+
+
+def _read_registry_payload(registry_path: Path = _REGISTRY_PATH) -> dict[str, Any]:
+    if not registry_path.exists():
+        return {}
+    payload = yaml.safe_load(registry_path.read_text(encoding='utf-8-sig')) or {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def _load_registry(registry_path: Path = _REGISTRY_PATH) -> dict[str, dict[str, Any]]:
+    payload = _read_registry_payload(registry_path)
+    agents = payload.get('agents', [])
+
+    registry: dict[str, dict[str, Any]] = {}
+    for agent in agents:
+        if not isinstance(agent, dict) or 'id' not in agent:
+            continue
+        registry[str(agent['id'])] = _normalize_agent(agent)
+    return registry
+
+
+def validate_registry_consistency(registry_path: Path = _REGISTRY_PATH) -> list[str]:
+    payload = _read_registry_payload(registry_path)
+    raw_agents = payload.get('agents', []) if isinstance(payload, dict) else []
+    registry = _load_registry(registry_path)
+    issues: list[str] = []
+    seen_ids: set[str] = set()
+
+    for agent in raw_agents:
+        if not isinstance(agent, dict):
+            issues.append('registry contains a non-dict agent entry')
+            continue
+
+        agent_id = str(agent.get('id', ''))
+        if not agent_id:
+            issues.append('registry contains an agent without id')
+            continue
+        if agent_id in seen_ids:
+            issues.append(f'duplicate agent id: {agent_id}')
+        seen_ids.add(agent_id)
+
+        missing_fields = sorted(field for field in _REQUIRED_AGENT_FIELDS if field not in agent)
+        if missing_fields:
+            issues.append(f'{agent_id} missing fields: {", ".join(missing_fields)}')
+
+        weights = agent.get('tool_score_weight', {})
+        if not isinstance(weights, dict) or not weights:
+            issues.append(f'{agent_id} has invalid tool_score_weight')
+        else:
+            total = sum(float(value) for value in weights.values())
+            if abs(total - 1.0) > 0.11:
+                issues.append(f'{agent_id} tool_score_weight sums to {total:.2f}')
+
+        capabilities = agent.get('capabilities', [])
+        if not isinstance(capabilities, list) or not capabilities:
+            issues.append(f'{agent_id} has no capabilities')
+
+    if set(registry.keys()) != seen_ids:
+        issues.append('loaded registry keys do not match raw YAML ids')
+
+    return issues
+
+
+AGENTS = _load_registry()
+
+
 def get_agent_config(agent_id):
-    """Get agent configuration"""
+    """Get agent configuration."""
     return AGENTS.get(agent_id)
 
+
 def list_agents():
-    """List all agents"""
+    """List all agents."""
     return list(AGENTS.keys())
 
+
 def get_agents_for_task(task_id):
-    """Get agents assigned to a task"""
+    """Get agents assigned to a task."""
     agents = []
     for agent_id, config in AGENTS.items():
-        if task_id in config.get("assigned_tasks", []):
+        if task_id in config.get('assigned_tasks', []):
             agents.append(agent_id)
     return agents
 
 
-def _load_toolkit_registry(registry_path: str = "agents/toolkit/editable_agents.json"):
+def _load_toolkit_registry(registry_path: str = 'agents/toolkit/editable_agents.json'):
     """Load editable AI Toolkit agent registry from JSON file."""
-    import json
-    from pathlib import Path
-
     path = Path(registry_path)
     if not path.exists():
         return {}
 
-    with path.open("r", encoding="utf-8-sig") as handle:
+    with path.open('r', encoding='utf-8-sig') as handle:
         payload = json.load(handle)
 
-    return payload.get("agents", {}) if isinstance(payload, dict) else {}
+    return payload.get('agents', {}) if isinstance(payload, dict) else {}
 
 
-def list_toolkit_agents(registry_path: str = "agents/toolkit/editable_agents.json"):
+def list_toolkit_agents(registry_path: str = 'agents/toolkit/editable_agents.json'):
     """List editable toolkit agent IDs."""
     return list(_load_toolkit_registry(registry_path).keys())
 
 
-def get_toolkit_agent_config(agent_id: str, registry_path: str = "agents/toolkit/editable_agents.json"):
+def get_toolkit_agent_config(agent_id: str, registry_path: str = 'agents/toolkit/editable_agents.json'):
     """Get editable toolkit agent configuration by ID."""
     return _load_toolkit_registry(registry_path).get(agent_id)
