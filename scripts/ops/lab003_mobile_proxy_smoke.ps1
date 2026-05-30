@@ -1,7 +1,7 @@
 param(
     [string]$BaseUrl = "http://127.0.0.1:8787",
     [string]$Username = "",
-    [string]$Password = "",
+    [System.Management.Automation.PSCredential]$Credential,
     [switch]$IncludeBody
 )
 
@@ -12,7 +12,7 @@ function Resolve-InputValue {
     param(
         [string]$Current,
         [string]$EnvName,
-        [string]$DefaultValue
+        [string]$DefaultValue = ""
     )
 
     if (-not [string]::IsNullOrWhiteSpace($Current)) {
@@ -34,7 +34,21 @@ function Resolve-InputValue {
 }
 
 $resolvedUser = Resolve-InputValue -Current $Username -EnvName "CTOA_OWNER_USER" -DefaultValue "CTO"
-$resolvedPassword = Resolve-InputValue -Current $Password -EnvName "CTOA_OWNER_PASSWORD" -DefaultValue "asdzxc12"
+$resolvedPassword = ""
+
+if ($Credential) {
+    if ([string]::IsNullOrWhiteSpace($Username)) {
+        $resolvedUser = [string]$Credential.UserName
+    }
+    $resolvedPassword = [string]$Credential.GetNetworkCredential().Password
+}
+else {
+    $resolvedPassword = Resolve-InputValue -Current "" -EnvName "CTOA_OWNER_PASSWORD"
+}
+
+if ([string]::IsNullOrWhiteSpace($resolvedPassword)) {
+    throw "Missing password. Provide -Credential or set CTOA_OWNER_PASSWORD."
+}
 $normalizedBaseUrl = $BaseUrl.TrimEnd("/")
 
 $loginResponse = Invoke-RestMethod -Method Post -Uri "$normalizedBaseUrl/api/auth/login" -ContentType "application/json" -Body (@{
