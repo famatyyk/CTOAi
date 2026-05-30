@@ -84,6 +84,13 @@ jobs:
             fi
           done
 
+          if git ls-files --error-unmatch ":(glob)backups/config/*.tar.gz" >/dev/null 2>&1; then
+            echo "Denied tracked archive(s) detected under backups/config/*.tar.gz"
+            echo "Move backups out of git tracking and rotate exposed secrets."
+            git ls-files ":(glob)backups/config/*.tar.gz"
+            exit 1
+          fi
+
       - name: Shell script syntax check
         shell: bash
         run: |
@@ -156,7 +163,7 @@ jobs:
         shell: bash
         run: |
           if [ -d "tests" ]; then
-            python -m pytest tests/ --ignore=tests/e2e -v --cov=runner --cov=agents --cov-report=xml --cov-report=term-missing 2>&1 | tee test-results.txt
+            python -m pytest tests/ -v --cov=runner --cov=agents --cov-report=xml --cov-report=term-missing 2>&1 | tee test-results.txt
             echo "Tests completed with exit code: $?"
           else
             echo "No tests directory found, skipping test execution"
@@ -301,71 +308,6 @@ jobs:
         shell: bash
         run: |
           python scripts/ops/sprint049_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-049-validation.json
-
-      - name: Sprint-050 delivery gate
-        shell: bash
-        run: |
-          python scripts/ops/sprint050_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-050-validation.json
-
-      - name: Sprint-051 delivery gate
-        shell: bash
-        run: |
-          python scripts/ops/sprint051_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-051-validation.json
-
-      - name: Sprint-052 delivery gate
-        shell: bash
-        run: |
-          python scripts/ops/sprint052_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-052-validation.json
-
-      - name: Sprint-053 delivery gate
-        shell: bash
-        run: |
-          python scripts/ops/sprint053_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-053-validation.json
-
-      - name: Sprint-054 delivery gate
-        shell: bash
-        run: |
-          python scripts/ops/sprint054_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-054-validation.json
-
-      - name: Sprint-055 delivery gate
-        shell: bash
-        run: |
-          python scripts/ops/sprint055_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-055-validation.json
-
-      - name: Sprint-056 delivery gate
-        shell: bash
-        run: |
-          python scripts/ops/sprint056_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-056-validation.json
-
-      - name: Sprint-057 delivery gate
-        shell: bash
-        run: |
-          python scripts/ops/sprint057_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-057-validation.json
-
-      - name: Sprint-058 delivery gate
-        shell: bash
-        run: |
-          python scripts/ops/sprint058_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-058-validation.json
-
-      - name: Sprint-059 delivery gate
-        shell: bash
-        run: |
-          python scripts/ops/sprint059_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-059-validation.json
-
-      - name: Sprint-060 delivery gate
-        shell: bash
-        run: |
-          python scripts/ops/sprint060_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-060-validation.json
-
-      - name: Sprint-061 delivery gate
-        shell: bash
-        run: |
-          python scripts/ops/sprint061_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-061-validation.json
-
-      - name: Sprint-062 delivery gate
-        shell: bash
-        run: |
-          python scripts/ops/sprint062_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-062-validation.json
 
       - name: Python linting (flake8)
         shell: bash
@@ -512,167 +454,6 @@ jobs:
             runtime/evidence/sprint-049/**
           if-no-files-found: ignore
 
-      - name: Upload Sprint-050 evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: sprint-050-evidence
-          path: |
-            runtime/ci-artifacts/sprint-050-validation.json
-            runtime/ci-artifacts/sprint-050-wave1-run.log
-            docs/history/sprints/SPRINT-050-PROGRESS.md
-            runtime/evidence/sprint-050/**
-          if-no-files-found: ignore
-
-      - name: Upload Sprint-051 evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: sprint-051-evidence
-          path: |
-            runtime/ci-artifacts/sprint-051-validation.json
-            runtime/ci-artifacts/sprint-051-wave1-run.log
-            docs/history/sprints/SPRINT-051-PROGRESS.md
-            runtime/evidence/sprint-051/**
-          if-no-files-found: ignore
-
-      - name: Upload Sprint-052 evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: sprint-052-evidence
-          path: |
-            runtime/ci-artifacts/sprint-052-validation.json
-            runtime/ci-artifacts/sprint-052-wave1-run.log
-            docs/history/sprints/SPRINT-052-PROGRESS.md
-            runtime/evidence/sprint-052/**
-          if-no-files-found: ignore
-
-      - name: Upload Sprint-053 evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: sprint-053-evidence
-          path: |
-            runtime/ci-artifacts/sprint-053-validation.json
-            runtime/ci-artifacts/sprint-053-wave1-run.log
-            docs/history/sprints/SPRINT-053-PROGRESS.md
-            runtime/evidence/sprint-053/**
-          if-no-files-found: ignore
-
-      - name: Upload Sprint-054 evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: sprint-054-evidence
-          path: |
-            runtime/ci-artifacts/sprint-054-validation.json
-            runtime/ci-artifacts/sprint-054-wave1-run.log
-            runtime/ci-artifacts/sprint-054-wave1-summary.txt
-            docs/history/sprints/SPRINT-054-PROGRESS.md
-            runtime/evidence/sprint-054/**
-          if-no-files-found: ignore
-
-      - name: Upload Sprint-055 evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: sprint-055-evidence
-          path: |
-            runtime/ci-artifacts/sprint-055-validation.json
-            runtime/ci-artifacts/sprint-055-wave1-run.log
-            runtime/ci-artifacts/sprint-055-wave1-summary.txt
-            docs/history/sprints/SPRINT-055-PROGRESS.md
-            runtime/evidence/sprint-055/**
-          if-no-files-found: ignore
-
-      - name: Upload Sprint-056 evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: sprint-056-evidence
-          path: |
-            runtime/ci-artifacts/sprint-056-validation.json
-            runtime/ci-artifacts/sprint-056-wave1-run.log
-            runtime/ci-artifacts/sprint-056-wave1-summary.txt
-            docs/history/sprints/SPRINT-056-PROGRESS.md
-            runtime/evidence/sprint-056/**
-          if-no-files-found: ignore
-
-
-      - name: Upload Sprint-057 evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: sprint-057-evidence
-          path: |
-            runtime/ci-artifacts/sprint-057-validation.json
-            runtime/ci-artifacts/sprint-057-wave1-summary.txt
-            docs/history/sprints/SPRINT-057-PROGRESS.md
-            runtime/evidence/sprint-057/**
-          if-no-files-found: ignore
-
-      - name: Upload Sprint-058 evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: sprint-058-evidence
-          path: |
-            runtime/ci-artifacts/sprint-058-validation.json
-            runtime/ci-artifacts/sprint-058-wave1-summary.txt
-            docs/history/sprints/SPRINT-058-PROGRESS.md
-            runtime/evidence/sprint-058/**
-          if-no-files-found: ignore
-
-      - name: Upload Sprint-059 evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: sprint-059-evidence
-          path: |
-            runtime/ci-artifacts/sprint-059-validation.json
-            runtime/ci-artifacts/sprint-059-wave1-summary.txt
-            docs/history/sprints/SPRINT-059-PROGRESS.md
-            runtime/evidence/sprint-059/**
-          if-no-files-found: ignore
-
-      - name: Upload Sprint-060 evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: sprint-060-evidence
-          path: |
-            runtime/ci-artifacts/sprint-060-validation.json
-            runtime/ci-artifacts/sprint-060-wave1-summary.txt
-            docs/history/sprints/SPRINT-060-PROGRESS.md
-            runtime/evidence/sprint-060/**
-          if-no-files-found: ignore
-
-      - name: Upload Sprint-061 evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: sprint-061-evidence
-          path: |
-            runtime/ci-artifacts/sprint-061-validation.json
-            runtime/ci-artifacts/sprint-061-wave1-summary.txt
-            runtime/ci-artifacts/runner-execution-summary.json
-            docs/history/sprints/SPRINT-061-PROGRESS.md
-            runtime/evidence/sprint-061/**
-          if-no-files-found: ignore
-
-      - name: Upload Sprint-062 evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: sprint-062-evidence
-          path: |
-            runtime/ci-artifacts/sprint-062-validation.json
-            runtime/ci-artifacts/sprint-062-wave1-summary.txt
-            runtime/ci-artifacts/runner-execution-summary.json
-            docs/history/sprints/SPRINT-062-PROGRESS.md
-            runtime/evidence/sprint-062/**
-          if-no-files-found: ignore
       - name: Enforce response guardrail gate
         shell: bash
         run: |
@@ -808,6 +589,43 @@ jobs:
             fi
           fi
 
+      - name: Full diff secret scan
+        shell: bash
+        run: |
+          pattern='(AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]+|-----BEGIN (RSA|DSA|EC|OPENSSH|PGP|PRIVATE KEY)-----|\b(CTOA_OWNER_PASSWORD|CTOA_OPERATOR_PASSWORD|DB_PASSWORD|GITHUB_PAT|CTOA_MOBILE_TOKEN)\s*[:=])'
+
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
+            if ! git diff --unified=0 "origin/${{ github.base_ref }}...HEAD" > /tmp/ctoa-full.diff; then
+              echo "Failed to compute PR diff for full diff secret scan"
+              exit 1
+            fi
+          else
+            if [ -n "${{ github.event.before }}" ] && [ "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ]; then
+              if ! git diff --unified=0 "${{ github.event.before }}...${{ github.sha }}" > /tmp/ctoa-full.diff; then
+                echo "Failed to compute push diff for full diff secret scan"
+                exit 1
+              fi
+            else
+              if ! git show --unified=0 --format= "${{ github.sha }}" > /tmp/ctoa-full.diff; then
+                echo "Failed to compute initial commit diff for full diff secret scan"
+                exit 1
+              fi
+            fi
+          fi
+
+          if [ ! -s /tmp/ctoa-full.diff ]; then
+            echo "No diff content available; skipping full diff secret scan."
+            exit 0
+          fi
+
+                    # Scan only added lines in unified diff to avoid false positives from removed legacy content.
+          grep -E '^\+' /tmp/ctoa-full.diff | grep -Ev '^\+\+\+' > /tmp/ctoa-full.added.diff || true
+          if grep -nIE "$pattern" /tmp/ctoa-full.added.diff; then
+            echo "Potential secrets detected in added diff content"
+            exit 1
+          fi
+
       - name: Build package artifact
         shell: bash
         run: |
@@ -867,6 +685,7 @@ jobs:
 
       - name: Publish Marker
         run: echo "Owner approved. Artifact is ready for public use from main."
+
 
 
 

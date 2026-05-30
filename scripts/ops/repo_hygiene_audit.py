@@ -17,8 +17,12 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[2]
 
 TOP_LEVEL_ALLOWLIST = {
+    ".devcontainer",
+    ".env.example",
     ".github",
+    ".gitattributes",
     ".vscode",
+    ".gitmodules",
     ".dockerignore",
     ".pre-commit-config.yaml",
     "agents",
@@ -67,6 +71,7 @@ TOP_LEVEL_ALLOWLIST = {
     ".foundry",
     "agent.yaml",
     "evals",
+    "up",
 }
 
 FLAGGED_TOP_LEVEL_PREFIXES = (
