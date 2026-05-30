@@ -1203,7 +1203,7 @@
       }
     },
     {
-      "label":  "CTOA: Install Phase-5 Morning Sync Task",
+      "label": "CTOA: Install Phase-5 Morning Sync Task",
       "type": "shell",
       "command": "powershell",
       "args": [
@@ -1220,7 +1220,7 @@
       }
     },
     {
-      "label":  "CTOA: Remove Phase-5 Morning Sync Task",
+      "label": "CTOA: Remove Phase-5 Morning Sync Task",
       "type": "shell",
       "command": "powershell",
       "args": [
