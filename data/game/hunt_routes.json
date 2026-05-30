@@ -1,0 +1,460 @@
+{
+  "_meta": {
+    "version": "1.2.0",
+    "updated": "sprint7",
+    "description": "Tibia 7.4 OTS hunt routes — Rookgaard exits, Fibula dungeon, Mintwallin, advanced spots"
+  },
+  "routes": [
+  {
+    "id": "trolls_north",
+    "name": "Troll Cave North",
+    "monsters": [
+      "Troll"
+    ],
+    "min_level": 8,
+    "max_level": 16,
+    "gold_per_hour_estimate": 800,
+    "exp_per_hour_estimate": 1200,
+    "risk": "low",
+    "potions_required": {
+      "health_potion": 5,
+      "antidote": 0
+    },
+    "waypoints": [
+      {
+        "x": 0,
+        "y": 0,
+        "action": "start"
+      },
+      {
+        "x": 2,
+        "y": -3,
+        "action": "move"
+      },
+      {
+        "x": 5,
+        "y": -3,
+        "action": "move"
+      },
+      {
+        "x": 5,
+        "y": 0,
+        "action": "move"
+      },
+      {
+        "x": 3,
+        "y": 2,
+        "action": "move"
+      },
+      {
+        "x": 0,
+        "y": 0,
+        "action": "loop_back"
+      }
+    ],
+    "notes": "Circle route. Max 8 trolls on route. Depot nearby."
+  },
+  {
+    "id": "orcs_east",
+    "name": "Orc Camp East",
+    "monsters": [
+      "Orc",
+      "Goblin"
+    ],
+    "min_level": 10,
+    "max_level": 22,
+    "gold_per_hour_estimate": 1500,
+    "exp_per_hour_estimate": 2500,
+    "risk": "medium",
+    "potions_required": {
+      "health_potion": 15,
+      "antidote": 0
+    },
+    "waypoints": [
+      {
+        "x": 0,
+        "y": 0,
+        "action": "start"
+      },
+      {
+        "x": 8,
+        "y": 0,
+        "action": "move"
+      },
+      {
+        "x": 8,
+        "y": -6,
+        "action": "move"
+      },
+      {
+        "x": 4,
+        "y": -6,
+        "action": "move"
+      },
+      {
+        "x": 0,
+        "y": -3,
+        "action": "move"
+      },
+      {
+        "x": 0,
+        "y": 0,
+        "action": "loop_back"
+      }
+    ],
+    "notes": "Watch for Orc Warrior packs. Retreat if 3+ attackers."
+  },
+  {
+    "id": "minotaurs_maze",
+    "name": "Minotaur Maze",
+    "monsters": [
+      "Minotaur",
+      "Minotaur Guard"
+    ],
+    "min_level": 15,
+    "max_level": 32,
+    "gold_per_hour_estimate": 3000,
+    "exp_per_hour_estimate": 6000,
+    "risk": "medium",
+    "potions_required": {
+      "health_potion": 30,
+      "mana_potion": 10
+    },
+    "waypoints": [
+      {
+        "x": 0,
+        "y": 0,
+        "action": "start"
+      },
+      {
+        "x": 3,
+        "y": 0,
+        "action": "move"
+      },
+      {
+        "x": 3,
+        "y": -5,
+        "action": "move"
+      },
+      {
+        "x": -2,
+        "y": -5,
+        "action": "move"
+      },
+      {
+        "x": -2,
+        "y": -2,
+        "action": "move"
+      },
+      {
+        "x": 0,
+        "y": 0,
+        "action": "loop_back"
+      }
+    ],
+    "notes": "Core grind route lvl 15-30. Best exp/gold ratio in early game."
+  },
+  {
+    "id": "rotworms_underground",
+    "name": "Rotworm Underground",
+    "monsters": [
+      "Rotworm"
+    ],
+    "min_level": 15,
+    "max_level": 28,
+    "gold_per_hour_estimate": 2000,
+    "exp_per_hour_estimate": 3500,
+    "risk": "low",
+    "potions_required": {
+      "health_potion": 20,
+      "antidote": 5
+    },
+    "waypoints": [
+      {
+        "x": 0,
+        "y": 0,
+        "action": "start"
+      },
+      {
+        "x": 0,
+        "y": -8,
+        "action": "move"
+      },
+      {
+        "x": 4,
+        "y": -8,
+        "action": "move"
+      },
+      {
+        "x": 4,
+        "y": 0,
+        "action": "move"
+      },
+      {
+        "x": 0,
+        "y": 0,
+        "action": "loop_back"
+      }
+    ],
+    "notes": "Safe corridor. Good for bot — linear path, predictable spawns."
+  },
+  {
+    "id": "demon_skeletons_crypt",
+    "name": "Demon Skeleton Crypt",
+    "monsters": [
+      "Demon Skeleton"
+    ],
+    "min_level": 25,
+    "max_level": 40,
+    "gold_per_hour_estimate": 5000,
+    "exp_per_hour_estimate": 12000,
+    "risk": "high",
+    "potions_required": {
+      "strong_health_potion": 40,
+      "mana_potion": 20
+    },
+    "waypoints": [
+      {
+        "x": 0,
+        "y": 0,
+        "action": "start"
+      },
+      {
+        "x": 0,
+        "y": -4,
+        "action": "move"
+      },
+      {
+        "x": 5,
+        "y": -4,
+        "action": "move"
+      },
+      {
+        "x": 5,
+        "y": -8,
+        "action": "move"
+      },
+      {
+        "x": 0,
+        "y": -8,
+        "action": "move"
+      },
+      {
+        "x": 0,
+        "y": 0,
+        "action": "loop_back"
+      }
+    ],
+    "notes": "HIGH DANGER. Flee trigger at 20% HP. Never face 2+ at once."
+  },
+  {
+    "id": "scarabs_desert",
+    "name": "Scarab Desert Caves",
+    "monsters": [
+      "Scarab"
+    ],
+    "min_level": 22,
+    "max_level": 38,
+    "gold_per_hour_estimate": 4500,
+    "exp_per_hour_estimate": 10000,
+    "risk": "high",
+    "potions_required": {
+      "health_potion": 35,
+      "antidote": 15
+    },
+    "waypoints": [
+      {
+        "x": 0,
+        "y": 0,
+        "action": "start"
+      },
+      {
+        "x": 6,
+        "y": 0,
+        "action": "move"
+      },
+      {
+        "x": 6,
+        "y": -6,
+        "action": "move"
+      },
+      {
+        "x": 0,
+        "y": -6,
+        "action": "move"
+      },
+      {
+        "x": 0,
+        "y": 0,
+        "action": "loop_back"
+      }
+    ],
+    "notes": "Poison attacks. Always carry antidotes. Good coin drops."
+  },
+  {
+    "id": "dragon_hatchlings_lair",
+    "name": "Dragon Hatchling Lair",
+    "monsters": [
+      "Dragon Hatchling"
+    ],
+    "min_level": 35,
+    "max_level": 50,
+    "gold_per_hour_estimate": 8000,
+    "exp_per_hour_estimate": 18000,
+    "risk": "very_high",
+    "potions_required": {
+      "strong_health_potion": 60,
+      "mana_potion": 30
+    },
+    "waypoints": [
+      {
+        "x": 0,
+        "y": 0,
+        "action": "start"
+      },
+      {
+        "x": 4,
+        "y": 0,
+        "action": "move"
+      },
+      {
+        "x": 4,
+        "y": -4,
+        "action": "move"
+      },
+      {
+        "x": 0,
+        "y": -4,
+        "action": "move"
+      },
+      {
+        "x": 0,
+        "y": 0,
+        "action": "loop_back"
+      }
+    ],
+    "notes": "Endgame Sprint 1 target. NEVER engage 2+ dragons. Flee at 25% HP."
+  }
+,
+  {
+    "id": "fibula_dungeon_l1",
+    "name": "Fibula Dungeon — Level 1 (Trolls & Goblins)",
+    "monsters": ["Troll", "Goblin"],
+    "min_level": 8,
+    "max_level": 18,
+    "gold_per_hour_estimate": 900,
+    "exp_per_hour_estimate": 1500,
+    "risk": "low",
+    "potions_required": {"health_potion": 8, "antidote": 0},
+    "location": {"city": "Fibula", "floor": -1, "entry": {"x": 32127, "y": 32239, "z": 8}},
+    "waypoints": [
+      {"x": 32127, "y": 32239, "z": 8, "action": "start"},
+      {"x": 32131, "y": 32239, "z": 8, "action": "move"},
+      {"x": 32135, "y": 32243, "z": 8, "action": "move"},
+      {"x": 32139, "y": 32243, "z": 8, "action": "move"},
+      {"x": 32143, "y": 32247, "z": 8, "action": "move"},
+      {"x": 32139, "y": 32251, "z": 8, "action": "move"},
+      {"x": 32135, "y": 32251, "z": 8, "action": "move"},
+      {"x": 32131, "y": 32247, "z": 8, "action": "move"},
+      {"x": 32127, "y": 32239, "z": 8, "action": "loop_back"}
+    ],
+    "notes": "Fibula island underground. Entry via hole east of depot. Good for low-levels."
+  },
+  {
+    "id": "fibula_dungeon_l2",
+    "name": "Fibula Dungeon — Level 2 (Orcs & Minotaurs)",
+    "monsters": ["Orc", "Orc Warrior", "Minotaur"],
+    "min_level": 20,
+    "max_level": 35,
+    "gold_per_hour_estimate": 2200,
+    "exp_per_hour_estimate": 8000,
+    "risk": "medium",
+    "potions_required": {"health_potion": 20, "antidote": 0},
+    "location": {"city": "Fibula", "floor": -2, "entry": {"x": 32135, "y": 32247, "z": 9}},
+    "waypoints": [
+      {"x": 32135, "y": 32247, "z": 9, "action": "start"},
+      {"x": 32139, "y": 32247, "z": 9, "action": "move"},
+      {"x": 32143, "y": 32251, "z": 9, "action": "move"},
+      {"x": 32147, "y": 32255, "z": 9, "action": "move"},
+      {"x": 32151, "y": 32255, "z": 9, "action": "move"},
+      {"x": 32151, "y": 32251, "z": 9, "action": "move"},
+      {"x": 32147, "y": 32247, "z": 9, "action": "move"},
+      {"x": 32143, "y": 32243, "z": 9, "action": "move"},
+      {"x": 32135, "y": 32247, "z": 9, "action": "loop_back"}
+    ],
+    "notes": "Deeper Fibula dungeon. Two staircases. Watch for Orc Warriors patrolling near entrance."
+  },
+  {
+    "id": "mintwallin_minotaurs",
+    "name": "Mintwallin — Minotaur City",
+    "monsters": ["Minotaur", "Minotaur Archer", "Minotaur Guard"],
+    "min_level": 25,
+    "max_level": 45,
+    "gold_per_hour_estimate": 3500,
+    "exp_per_hour_estimate": 15000,
+    "risk": "medium",
+    "potions_required": {"health_potion": 30, "antidote": 2},
+    "location": {"city": "Mintwallin", "floor": -3, "entry": {"x": 32369, "y": 32453, "z": 11}},
+    "waypoints": [
+      {"x": 32369, "y": 32453, "z": 11, "action": "start"},
+      {"x": 32373, "y": 32453, "z": 11, "action": "move"},
+      {"x": 32377, "y": 32457, "z": 11, "action": "move"},
+      {"x": 32381, "y": 32461, "z": 11, "action": "move"},
+      {"x": 32385, "y": 32465, "z": 11, "action": "move"},
+      {"x": 32389, "y": 32461, "z": 11, "action": "move"},
+      {"x": 32385, "y": 32457, "z": 11, "action": "move"},
+      {"x": 32381, "y": 32453, "z": 11, "action": "move"},
+      {"x": 32377, "y": 32449, "z": 11, "action": "move"},
+      {"x": 32373, "y": 32449, "z": 11, "action": "move"},
+      {"x": 32369, "y": 32453, "z": 11, "action": "loop_back"}
+    ],
+    "notes": "Underground minotaur city beneath Kazordoon area. High density. Archer aggro range 7 sqm — approach carefully."
+  },
+  {
+    "id": "mintwallin_deep",
+    "name": "Mintwallin Deep — Mino Mage & Guard",
+    "monsters": ["Minotaur Guard", "Minotaur Mage"],
+    "min_level": 40,
+    "max_level": 65,
+    "gold_per_hour_estimate": 5500,
+    "exp_per_hour_estimate": 28000,
+    "risk": "high",
+    "potions_required": {"health_potion": 50, "antidote": 5},
+    "location": {"city": "Mintwallin", "floor": -4, "entry": {"x": 32381, "y": 32465, "z": 12}},
+    "waypoints": [
+      {"x": 32381, "y": 32465, "z": 12, "action": "start"},
+      {"x": 32385, "y": 32469, "z": 12, "action": "move"},
+      {"x": 32389, "y": 32473, "z": 12, "action": "move"},
+      {"x": 32393, "y": 32477, "z": 12, "action": "move"},
+      {"x": 32397, "y": 32473, "z": 12, "action": "move"},
+      {"x": 32393, "y": 32469, "z": 12, "action": "move"},
+      {"x": 32389, "y": 32465, "z": 12, "action": "move"},
+      {"x": 32381, "y": 32465, "z": 12, "action": "loop_back"}
+    ],
+    "notes": "Mino Mages cast Energy — bring strong health potions. Flee if HP < 40%. High exp/gold reward."
+  },
+  {
+    "id": "fibula_heroes",
+    "name": "Fibula Deep — Heroes Cave",
+    "monsters": ["Hero"],
+    "min_level": 60,
+    "max_level": 90,
+    "gold_per_hour_estimate": 8000,
+    "exp_per_hour_estimate": 45000,
+    "risk": "high",
+    "potions_required": {"health_potion": 80, "antidote": 0},
+    "location": {"city": "Fibula", "floor": -4, "entry": {"x": 32143, "y": 32259, "z": 11}},
+    "waypoints": [
+      {"x": 32143, "y": 32259, "z": 11, "action": "start"},
+      {"x": 32147, "y": 32259, "z": 11, "action": "move"},
+      {"x": 32151, "y": 32263, "z": 11, "action": "move"},
+      {"x": 32155, "y": 32267, "z": 11, "action": "move"},
+      {"x": 32151, "y": 32271, "z": 11, "action": "move"},
+      {"x": 32147, "y": 32271, "z": 11, "action": "move"},
+      {"x": 32143, "y": 32267, "z": 11, "action": "move"},
+      {"x": 32143, "y": 32259, "z": 11, "action": "loop_back"}
+    ],
+    "notes": "Strongest Fibula spot. Heroes have high HP and deal melee + physical. Excellent gold drops."
+  }
+]
+}

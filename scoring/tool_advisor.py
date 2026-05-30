@@ -75,7 +75,7 @@ TOOL_CATALOG = {
     }
 }
 
-def score_tool(tool_id, agent_weights=None):
+def score_tool(tool_id, agent_weights=None, context=None):
     """
     Score a tool based on efficacy, safety, cost, latency.
     
@@ -96,6 +96,18 @@ def score_tool(tool_id, agent_weights=None):
         (1 - tool["latency"]) * agent_weights.get("latency", 0.1)
     )
     
+    # Prefer evidence-backed choices for operational prompt contexts.
+    evidence_bonus = 0.0
+    if context is None:
+        context = {}
+    if context.get("operational_prompt"):
+        if context.get("evidence_backed"):
+            evidence_bonus = 0.03
+        else:
+            evidence_bonus = -0.05
+
+    weighted_score = max(0.0, min(1.0, weighted_score + evidence_bonus))
+
     return {
         "tool_id": tool_id,
         "name": tool["name"],
@@ -108,14 +120,14 @@ def score_tool(tool_id, agent_weights=None):
         "fallback": tool.get("fallback")
     }
 
-def rank_tools_for_task(task_type, agent_weights=None):
+def rank_tools_for_task(task_type, agent_weights=None, context=None):
     """
     Rank all tools for a given task type, by score.
     Returns sorted list (highest score first).
     """
     scores = []
     for tool_id in TOOL_CATALOG.keys():
-        score = score_tool(tool_id, agent_weights)
+        score = score_tool(tool_id, agent_weights, context=context)
         scores.append(score)
     
     # Sort by score (descending)

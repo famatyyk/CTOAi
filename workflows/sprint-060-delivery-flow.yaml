@@ -1,0 +1,35 @@
+sprint: '060'
+theme: Sprint-060 kickoff + parity lock + wave readiness
+version: '1.0'
+lifecycle:
+  start: '2026-05-29'
+  target_wave1: '2026-05-30'
+  target_wave2: '2026-05-31'
+
+tasks:
+  - id: CTOA-311
+    title: Sprint-060 scope and gate contract
+    on_start: publish Sprint-060 backlog, flow, and scope lock
+    on_complete: confirm task map parity and explicit Wave-1 gates
+    on_fail: block sprint start and publish blockers
+
+  - id: CTOA-312
+    title: Sprint-060 release-train doc sync
+    depends_on:
+      - CTOA-311
+    on_start: align README, roadmap, governance, and baseline references for Sprint-060 kickoff
+    on_complete: operator docs are consistent for Sprint-060 kickoff
+    on_fail: keep governance sync open with blocker notes
+
+  - id: CTOA-313
+    title: Sprint-060 Wave-1 readiness
+    depends_on:
+      - CTOA-312
+    on_start: validate task wrappers and prepare non-interactive wave chain
+    on_complete: validation + summary artifact paths are wired for Sprint-060
+    on_fail: keep sprint open with unresolved wave readiness items
+
+gate_policy:
+  wave_1: docs aligned + operator flow verified + core guard PASS + state sync PASS
+  wave_2: manual STRATEGOS sign-off with handoff note
+  rollback_baseline: v1.14.1

@@ -1,0 +1,111 @@
+version: 1
+backlog_id: sprint-052
+window_days: 3
+focus: "State-evidence alignment hardening + auto sync after Wave-1 + validator mismatch gate"
+owner: strategos
+
+rules:
+  max_parallel_tasks: 3
+  definition_of_done:
+    - implementation_created
+    - validation_passed
+    - evidence_recorded
+    - documentation_updated
+  release_policy:
+    - approval_required: true
+    - environment: production
+
+tasks:
+  - id: CTOA-270
+    title: "Open Sprint-052 kickoff baseline and scope lock"
+    priority: P0
+    type: governance
+    domain: [governance, planning, release]
+    assignees: [strategos, core-architect, documentation-sage]
+    estimate_hours: 2
+    deliverables:
+      - "workflows/backlog-sprint-052.yaml"
+      - "workflows/sprint-052-delivery-flow.yaml"
+      - "docs/history/sprints/SPRINT-052.md"
+    acceptance:
+      - "Sprint-052 backlog and flow are published"
+      - "Scope and gate expectations are explicit"
+      - "Kickoff decision checkpoint is documented"
+
+  - id: CTOA-271
+    title: "Wire Sprint-052 validator and local Wave-1 chain"
+    priority: P0
+    type: quality
+    domain: [ci, qa, automation]
+    assignees: [qa-terminator, core-architect]
+    estimate_hours: 3
+    deliverables:
+      - "scripts/ops/sprint052_validate.py"
+      - ".vscode/tasks.json"
+      - "runtime/ci-artifacts/sprint-052-validation.json"
+    acceptance:
+      - "Validator checks Sprint-052 files, hooks, pipeline, and task wiring"
+      - "Wave-1 chain executes tests plus validate plus launch gate"
+      - "Validation artifact path is wired in CI"
+
+  - id: CTOA-272
+    title: "Automate post-Wave-1 runtime state synchronization"
+    priority: P1
+    type: governance
+    domain: [governance, ops, observability]
+    assignees: [strategos, devops-master]
+    estimate_hours: 2
+    deliverables:
+      - "scripts/ops/sprint_state_sync.py"
+      - ".vscode/tasks.json"
+      - "releases/evidence/sprint-052/CTOA-272.md"
+    acceptance:
+      - "Wave-1 chain executes automatic state sync step"
+      - "Runtime task-state alignment is deterministic"
+      - "State sync action is auditable"
+
+  - id: CTOA-273
+    title: "Enforce state/evidence mismatch gate in validator"
+    priority: P1
+    type: quality
+    domain: [ci, qa, governance]
+    assignees: [qa-terminator, core-architect]
+    estimate_hours: 2
+    deliverables:
+      - "scripts/ops/sprint052_validate.py"
+      - "releases/evidence/sprint-052/CTOA-273.md"
+    acceptance:
+      - "Validator fails when sprint doc is RELEASED but runtime state is not aligned"
+      - "Mismatch check is marked critical"
+      - "Hint output explains mismatch counts"
+
+  - id: CTOA-274
+    title: "Execute Sprint-052 Wave-1 and collect evidence"
+    priority: P1
+    type: governance
+    domain: [governance, qa, release]
+    assignees: [strategos, qa-terminator, documentation-sage]
+    estimate_hours: 3
+    deliverables:
+      - "runtime/ci-artifacts/sprint-052-wave1-run.log"
+      - "releases/evidence/sprint-052/CTOA-274.md"
+      - "docs/history/sprints/SPRINT-052-PROGRESS.md"
+    acceptance:
+      - "Wave-1 chain completes with green gates"
+      - "Evidence links are complete"
+      - "Residual risk notes are explicit"
+
+  - id: CTOA-275
+    title: "Publish Sprint-052 sign-off and Sprint-053 handoff"
+    priority: P1
+    type: governance
+    domain: [governance, release, planning]
+    assignees: [strategos, documentation-sage]
+    estimate_hours: 2
+    deliverables:
+      - "docs/history/sprints/SPRINT-052.md"
+      - "releases/evidence/sprint-052/CTOA-275.md"
+    acceptance:
+      - "Sign-off includes delivered scope and unresolved items"
+      - "Sprint-053 handoff recommendations are documented"
+      - "God Mode checkpoint is explicit"

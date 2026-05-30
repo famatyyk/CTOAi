@@ -2,8 +2,6 @@ name: Docker Build, Test, Publish, Deploy
 
 on:
   push:
-    branches:
-      - main
     tags:
       - "v*"
   pull_request:
@@ -43,12 +41,23 @@ jobs:
 
   publish:
     needs: build-test
-    if: startsWith(github.ref, 'refs/tags/v') && secrets.DOCKER_HUB_TOKEN != ''
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Validate Docker Hub credentials
+        shell: bash
+        env:
+          DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${DOCKER_HUB_TOKEN}" ]; then
+            echo "::error::Missing required secret DOCKER_HUB_TOKEN."
+            exit 1
+          fi
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -72,12 +81,33 @@ jobs:
 
   deploy:
     needs: publish
-    if: startsWith(github.ref, 'refs/tags/v') && secrets.VPS_HOST != '' && secrets.VPS_USER != '' && secrets.VPS_SSH_KEY != ''
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Validate VPS deploy secrets
+        shell: bash
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${VPS_HOST}" ]; then
+            echo "::error::Missing required secret VPS_HOST."
+            exit 1
+          fi
+          if [ -z "${VPS_USER}" ]; then
+            echo "::error::Missing required secret VPS_USER."
+            exit 1
+          fi
+          if [ -z "${VPS_SSH_KEY}" ]; then
+            echo "::error::Missing required secret VPS_SSH_KEY."
+            exit 1
+          fi
 
       - name: Write SSH key
         env:

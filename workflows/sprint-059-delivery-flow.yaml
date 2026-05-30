@@ -1,0 +1,35 @@
+sprint: '059'
+theme: Sprint-059 kickoff + operator-flow carry-forward + wave readiness
+version: '1.0'
+lifecycle:
+  start: '2026-05-26'
+  target_wave1: '2026-05-27'
+  target_wave2: '2026-05-28'
+
+tasks:
+  - id: CTOA-308
+    title: Sprint-059 scope and gate contract
+    on_start: publish Sprint-059 backlog, flow, and scope lock
+    on_complete: confirm task map parity and explicit Wave-1 gates
+    on_fail: block sprint start and publish blockers
+
+  - id: CTOA-309
+    title: Sprint-059 release-train doc sync
+    depends_on:
+      - CTOA-308
+    on_start: align README, roadmap, governance, and baseline references for Sprint-059 kickoff
+    on_complete: operator docs are consistent for Sprint-059 kickoff
+    on_fail: keep governance sync open with blocker notes
+
+  - id: CTOA-310
+    title: Sprint-059 Wave-1 readiness
+    depends_on:
+      - CTOA-309
+    on_start: validate task wrappers and prepare non-interactive wave chain
+    on_complete: validation + summary artifact paths are wired for Sprint-059
+    on_fail: keep sprint open with unresolved wave readiness items
+
+gate_policy:
+  wave_1: docs aligned + operator flow verified + core guard PASS + state sync PASS
+  wave_2: manual STRATEGOS sign-off with handoff note
+  rollback_baseline: v1.14.0

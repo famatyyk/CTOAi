@@ -2,6 +2,42 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.15.0] - 2026-05-27 (Sprint-062: Product Delta + Agent Execution Quality)
+
+### Added
+- **`vps-stack-deploy.yml`**: Manual-trigger GitHub Actions workflow for syncing CTOAi docker-compose stack to VPS — supports `.env` rotation via `CTOA_VPS_ENV_B64` secret.
+- **`.env.example`**: Documents all required environment variables (`DB_PASSWORD`, `REDIS_PASSWORD`, `GF_ADMIN_PASSWORD`, `CTOA_MOBILE_TOKEN`).
+
+### Changed
+- **`docker-compose.yml` security hardening**:
+  - PostgreSQL, Redis, Prometheus, Loki ports bound to `127.0.0.1` (not `0.0.0.0`)
+  - Redis: `--requirepass $REDIS_PASSWORD` (conditional, no-op when unset)
+  - Redis URLs: `redis://:${REDIS_PASSWORD:-}@ctoa-redis:6379/0`
+  - Grafana: `admin/admin` replaced with `${GF_ADMIN_PASSWORD:?}` (fail-fast)
+  - `DB_PASSWORD` fallback `ctoa` replaced with `:?` (fail-fast if not set)
+  - `CTOA_MOBILE_TOKEN` now reads from env var
+- **`.gitignore`**: Whitelisted `.env.example` and `.env.bot.example` so templates are tracked.
+- **Sprint-062 closeout**: `SPRINT-062.md` promoted from `ACTIVE` → `RELEASED`.
+
+### Validation
+- `python scripts/ops/sprint062_validate.py --run-tests` → PASS (17/17)
+- All regression tests green
+- `docker-compose.yml` YAML valid, all `:?` required vars satisfied by `.env.example`
+
+## [1.14.1] - 2026-05-25 (Sprint-059: Wave-1 Closeout + Kickoff Readiness)
+
+### Added
+- **Sprint-059 kickoff pack**: backlog, delivery flow, sprint plan, progress snapshot, validator, local Wave-1 task chain, and CI gate/evidence upload wiring.
+
+### Changed
+- **Sprint-059 closeout**: sprint doc promoted to `RELEASED` with sign-off and release closure notes.
+- **Release-train signals**: README command center updated to Sprint-059 released and Sprint-060 as next action.
+- **Progress evidence**: Sprint-059 progress refreshed from runtime state and extended with release evidence snapshot.
+
+### Validation
+- `python scripts/ops/sprint059_validate.py` -> PASS (16/16)
+- `python scripts/ops/run_validator_with_preflight.py scripts/ops/sprint059_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-059-validation.json` -> PASS (17/17)
+- Wave-1 artifacts present: validation json, wave summary, progress snapshot, repo hygiene, and state sync (3/3 RELEASED)
 ## [1.13.0] - 2026-05-10 (Sprint-040: Continuous Quality + Delivery + Governance)
 
 ### Added
@@ -9,7 +45,7 @@ All notable changes to this project will be documented in this file.
   covering package tiering (Core/Pro/Studio), public/private surface hygiene rules,
   operator adoption steps, and release cadence.
 - **Sprint-041 backlog** (`workflows/backlog-sprint-041.yaml`): Track C delivery items
-  CTOA-203..207 — tiering validation, surface hygiene, operator UX docs, packaging dry-run.
+  CTOA-203..207 Ă˘â‚¬â€ť tiering validation, surface hygiene, operator UX docs, packaging dry-run.
 - **Sprint-040 history doc** (`docs/history/sprints/SPRINT-040.md`): closure record.
 - **Release pack v1.13.0** (`runtime/experiments/sprint-040/CTOA-202.md`): Wave-1 and
   Wave-2 gates recorded, baseline promoted.
@@ -22,20 +58,21 @@ All notable changes to this project will be documented in this file.
 - `workflows/backlog-sprint-040.yaml`: status set to `CLOSED`, all items `RELEASED`.
 
 ### Validation
-- Test suite: `python -m pytest tests/ --ignore=tests/e2e -q` → 106 passed, 6 skipped
-- Core integrity: `python scripts/ops/core_guard.py --check` → PASSED
+- Test suite: `python -m pytest tests/ --ignore=tests/e2e -q` Ă˘â€ â€™ 106 passed, 6 skipped
+- Core integrity: `python scripts/ops/core_guard.py --check` Ă˘â€ â€™ PASSED
 - Wave-1 (automated): PASS | Wave-2 (STRATEGOS manual): PASS
 
 ## [1.2.0] - 2026-03-25 (Sprint-029: Training Hardening + Quality Gate + VPS Autonomy)
 
 ### Added
-- **Training curriculum v1.2.0**: `training/curriculum.md` rozbudowany do pełnego dokumentu — 5 modułów z teorią, szablonami BRAVE(R), ćwiczeniami praktycznymi i macierzą PASS/FAIL
+
+- **Training curriculum v1.2.0**: `training/curriculum.md` rozbudowany do peÄąâ€šnego dokumentu Ă˘â‚¬â€ť 5 moduÄąâ€šÄ‚Ĺ‚w z teoriĂ„â€¦, szablonami BRAVE(R), Ă„â€ˇwiczeniami praktycznymi i macierzĂ„â€¦ PASS/FAIL
 - **Quality gate expansion** (CTOA-143): rozszerzenie polityki CI gate o dodatkowe weryfikacje; focused tests 2/2 PASS
 - **Nightly trend automation** (CTOA-144): `nightly_stability.py` extended with `--sprint` CLI flag; sprint-029 nightly run produces drift visibility fields (`trend_24h`, `trend_7d`, `drift`, `anomaly`) and writes evidence to `runtime/evidence/sprint-029/`; focused tests 2/2 PASS
 - **Dashboard ergonomics pass** (CTOA-145): `/api/dashboard` now returns `status_message` field with human-readable operator message for all operating modes (healthy/degraded/error); focused tests 2/2 PASS
-- **CI evidence hardening** (CTOA-146): evidence entries now carry `sprint_id`, `kind`, `path`, `sha256`, `recorded_at` — all fields required for CI artifact discovery; canonical path `runtime/evidence/sprint-{id}/evidence-index.json`; focused tests 2/2 PASS
-- **VPS DB ownership hardening**: ownership wszystkich tabel i sekwencji przeniesiony na użytkownika `ctoa`; rola NOSUPERUSER
-- **Tiered reseed self-heal**: Tier A/B/C z nowymi serwerami `rising-continents.com` i `altheaworld.org` (6 serwerów READY)
+- **CI evidence hardening** (CTOA-146): evidence entries now carry `sprint_id`, `kind`, `path`, `sha256`, `recorded_at` Ă˘â‚¬â€ť all fields required for CI artifact discovery; canonical path `runtime/evidence/sprint-{id}/evidence-index.json`; focused tests 2/2 PASS
+- **VPS DB ownership hardening**: ownership wszystkich tabel i sekwencji przeniesiony na uÄąÄ˝ytkownika `ctoa`; rola NOSUPERUSER
+- **Tiered reseed self-heal**: Tier A/B/C z nowymi serwerami `rising-continents.com` i `altheaworld.org` (6 serwerÄ‚Ĺ‚w READY)
 
 ### Validation
 - Sprint-029 release pack wave_1: PASS (automated, sprint029_validate 10/10)
@@ -66,6 +103,14 @@ All notable changes to this project will be documented in this file.
 - Sprint-027 release pack wave_1: PASS (automated)
 - Sprint-027 release pack wave_2: PASS (STRATEGOS sign-off)
 
+### Added
+- **Sprint-062 bootstrap pack**: added backlog, delivery flow, sprint plan, progress snapshot baseline, and validator for Sprint-062 execution track.
+- **Sprint-062 orchestration wiring**: added local task chain (`Validate`, `Refresh Progress Diagram`, `Quality Snapshot`, `State Sync`, `Wave Summary UTF-8`, `Wave-1 Run`) in `.vscode/tasks.json`.
+- **Sprint-062 CI gate and evidence upload**: added delivery gate and artifact upload bundle in `.github/workflows/ctoa-pipeline.yml`.
+- **Sprint-062 Wave-1 execution evidence**: generated validation, wave summary, runner execution summary, repo hygiene snapshot, and refreshed progress/state artifacts.
+
+### Changed
+- **Sprint-062 wave summary command fix**: corrected `--sprint-id` from `061` to `062` in Sprint-062 wave summary and Wave-1 run commands to keep artifact metadata consistent.
 ## [1.0.9] - 2026-03-24 (Sprint-026: Reliability + Observability + Nightly Automation)
 
 ### Added
@@ -84,9 +129,9 @@ All notable changes to this project will be documented in this file.
 ### Added
 - **reason_code taxonomy**: `/api/agents/execution/run` now returns `reason_code` (`ARTIFACTS_READY` | `MANIFEST_PENDING` | `ARTIFACTS_PENDING` | `GENERATION_FAILED`) and full `reason_code_taxonomy` dict for operator-side display
 - **execution_trend per run**: execution endpoint returns last-N run summary (ready/failed/empty counts) via internal `_execution_trend_from_manifests()`
-- **Operator trend endpoint**: `GET /api/agents/execution/trend?limit_runs=N` — role-protected, returns per-run status breakdown and aggregate summary
+- **Operator trend endpoint**: `GET /api/agents/execution/trend?limit_runs=N` Ă˘â‚¬â€ť role-protected, returns per-run status breakdown and aggregate summary
 - **health_timeline + timeline_summary**: `/api/dashboard` now includes per-day quality timeline list and rolling summary (days, avg_quality, latest_day)
-- **Frontend timeline display**: `static/app.js` updated — one-click shows trend, dashboard always shows `timeline_summary` + last-5 `health_timeline_preview`
+- **Frontend timeline display**: `static/app.js` updated Ă˘â‚¬â€ť one-click shows trend, dashboard always shows `timeline_summary` + last-5 `health_timeline_preview`
 - **Sprint-025 CI gate**: `sprint025_validate.py` gate inserted in `.github/workflows/ctoa-pipeline.yml`
 - **VS Code task chain**: Sprint-025 Validate + Wave-1 Run tasks added to `.vscode/tasks.json`
 
@@ -96,6 +141,15 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **Prompt-eval run artifacts (run-003)**: added 12 harder edge-case Azure Activity records covering partial logs, policy/noise events, and multi-step authorization failures under `evals/runs/run-003/`
+- **Automated winner selector**: added `scripts/ops/compare_eval_summaries.py` to compare multiple `*.summary.json` files using the current selection policy (`precision`, `recall`, `facts_vs_inference`, then `required_fields_coverage_rate`)
+- **Prompt selection confirmation (run-003)**: `azure-activity-fact-first` remained the winner on run-003 with `required_fields_coverage_rate=0.9258`, `precision=1.0`, `recall=1.0`, and `facts_vs_inference=1.0`; `azure-activity-baseline` regressed on partial-log edge cases
+- **Azure Activity alert pipeline + Discord routing**: delivered end-to-end normalize/classify/route flow with listener and runner tasks (`scripts/ops/azure_activity_alerts.py`, `scripts/ops/azure_activity_webhook_listener.py`, `scripts/ops/azure-alerts-runner.ps1`, `.vscode/tasks.json`)
+- **AI Toolkit editable agent registry**: added `agents/toolkit/editable_agents.json` and loader helpers in `agents/definitions.py` for fast prompt/agent switching during evals
+- **Prompt-eval run artifacts (run-001)**: added real results and summaries for `azure-activity-baseline`, `azure-activity-fact-first`, and `azure-activity-strict-evidence` under `evals/runs/run-001/`
+- **Prompt selection decision**: activated `azure-activity-fact-first` as the maintained prompt based on highest `required_fields_coverage_rate` with `precision/recall=1.0` and no `facts_vs_inference` regression
+- **Prompt-eval run artifacts (run-002)**: added 12-case real-world Azure Activity dataset plus summaries for `azure-activity-baseline`, `azure-activity-fact-first`, and `azure-activity-strict-evidence` under `evals/runs/run-002/`
+- **Prompt selection confirmation**: `azure-activity-fact-first` remained the winner on run-002 with `required_fields_coverage_rate=0.9583`, `precision=1.0`, `recall=1.0`, and no `facts_vs_inference` regression
 - **Public/private product architecture**: added productization boundary document for public toolkit vs private studio assets
 - **Mandatory bootstrap flow**: `ctoa_product_bootstrap.py` creates ignored local JSON config and SQLite state for customer-specific setup
 - **Mandatory update gate**: `ctoa_update_gate.py` blocks launch until bootstrap exists and local version/schema match the tracked product manifest

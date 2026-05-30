@@ -27,6 +27,12 @@ if not BACKLOG_FILE.is_absolute():
     BACKLOG_FILE = ROOT / BACKLOG_FILE
 STATE_FILE = ROOT / "runtime" / "task-state.yaml"
 
+_DEFAULT_EXECUTION_SUMMARY_ARTIFACT = ROOT / "runtime" / "ci-artifacts" / "runner-execution-summary.json"
+_EXEC_SUMMARY_RAW = os.environ.get("CTOA_EXECUTION_SUMMARY_ARTIFACT", str(_DEFAULT_EXECUTION_SUMMARY_ARTIFACT))
+EXECUTION_SUMMARY_ARTIFACT = Path(_EXEC_SUMMARY_RAW)
+if not EXECUTION_SUMMARY_ARTIFACT.is_absolute():
+    EXECUTION_SUMMARY_ARTIFACT = ROOT / EXECUTION_SUMMARY_ARTIFACT
+
 STATUS_FLOW = [
     "NEW",
     "IN_PROGRESS",
@@ -65,6 +71,17 @@ def save_yaml(path: Path, payload: Dict[str, Any]) -> None:
         os.fsync(f.fileno())
     tmp.replace(path)
 
+
+def save_json(path: Path, payload: Dict[str, Any]) -> None:
+    """Atomically persist JSON artifact for operator and CI consumption."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    with tmp.open("w", encoding="utf-8") as f:
+        json.dump(payload, f, indent=2, sort_keys=True)
+        f.write("\n")
+        f.flush()
+        os.fsync(f.fileno())
+    tmp.replace(path)
 
 def load_backlog() -> Dict[str, Any]:
     if not BACKLOG_FILE.exists():
@@ -247,12 +264,75 @@ def execute_task_agent(task: Dict[str, Any], backlog: Dict[str, Any]) -> Dict[st
         }
 
 
-def build_report(backlog: Dict[str, Any], state: Dict[str, Any]) -> str:
-    tasks = state.get("tasks", [])
+def estimate_next_approval_eta_hours(tasks: List[Dict[str, Any]]) -> Optional[int]:
+    """Estimate next approval availability from current pipeline stage distribution."""
+    waiting = [t for t in tasks if t.get("status") == "WAITING_APPROVAL"]
+    if waiting:
+        return 0
+
+    in_ci_gate = [t for t in tasks if t.get("status") == "IN_CI_GATE"]
+    in_qa = [t for t in tasks if t.get("status") == "IN_QA"]
+    in_progress = [t for t in tasks if t.get("status") == "IN_PROGRESS"]
+
+    if in_ci_gate:
+        return 1
+    if in_qa:
+        return 2
+    if in_progress:
+        return 3
+    return None
+
+
+def build_execution_summary(backlog: Dict[str, Any], state: Dict[str, Any]) -> Dict[str, Any]:
+    """Build normalized execution status summary usable by operators and automation."""
+    tasks = state.get("tasks", []) if isinstance(state.get("tasks"), list) else []
     counts = Counter([str(t.get("status", "UNKNOWN")) for t in tasks])
     total_tasks = len(tasks)
     released_count = counts.get("RELEASED", 0)
-    progress_pct = (released_count / total_tasks * 100.0) if total_tasks > 0 else 0.0
+    blocked_count = counts.get("BLOCKED", 0)
+    active_count = sum(counts.get(status, 0) for status in ("IN_PROGRESS", "IN_QA", "IN_CI_GATE", "WAITING_APPROVAL"))
+    waiting_approval_count = counts.get("WAITING_APPROVAL", 0)
+    progress_pct = round((released_count / total_tasks * 100.0), 1) if total_tasks > 0 else 0.0
+
+    status_counts = {status: int(counts.get(status, 0)) for status in STATUS_FLOW}
+    unknown_count = max(0, total_tasks - sum(status_counts.values()))
+
+    if blocked_count > 0:
+        operator_status = "needs_attention"
+    elif waiting_approval_count > 0:
+        operator_status = "awaiting_approval"
+    elif active_count > 0:
+        operator_status = "in_progress"
+    elif total_tasks > 0 and released_count == total_tasks:
+        operator_status = "released"
+    else:
+        operator_status = "idle"
+
+    return {
+        "schema_version": "ctoa.execution_summary.v1",
+        "generated_at": now_iso(),
+        "backlog_id": backlog.get("backlog_id", "unknown"),
+        "last_tick_at": state.get("last_tick_at"),
+        "operator_status": operator_status,
+        "progress_pct": progress_pct,
+        "total_tasks": total_tasks,
+        "released_count": released_count,
+        "active_count": active_count,
+        "waiting_approval_count": waiting_approval_count,
+        "blocked_count": blocked_count,
+        "next_approval_eta_hours": estimate_next_approval_eta_hours(tasks),
+        "status_counts": status_counts,
+        "unknown_count": unknown_count,
+    }
+
+
+def build_report(backlog: Dict[str, Any], state: Dict[str, Any]) -> str:
+    tasks = state.get("tasks", [])
+    summary = build_execution_summary(backlog, state)
+    counts = Counter([str(t.get("status", "UNKNOWN")) for t in tasks])
+    total_tasks = int(summary["total_tasks"])
+    released_count = int(summary["released_count"])
+    progress_pct = float(summary["progress_pct"])
 
     lines = []
     lines.append("# CTOA Live Status")
@@ -272,6 +352,19 @@ def build_report(backlog: Dict[str, Any], state: Dict[str, Any]) -> str:
     lines.append("## Status Counts")
     for status in STATUS_FLOW:
         lines.append(f"- {status}: {counts.get(status, 0)}")
+
+    lines.append("")
+    lines.append("## Execution Summary (Normalized)")
+    lines.append(f"- schema_version: {summary['schema_version']}")
+    lines.append(f"- operator_status: {summary['operator_status']}")
+    lines.append(f"- active_count: {summary['active_count']}")
+    lines.append(f"- waiting_approval_count: {summary['waiting_approval_count']}")
+    lines.append(f"- blocked_count: {summary['blocked_count']}")
+    eta_hours = summary.get("next_approval_eta_hours")
+    if eta_hours is None:
+        lines.append("- next_approval_eta_hours: unknown")
+    else:
+        lines.append(f"- next_approval_eta_hours: {eta_hours}")
 
     lines.append("")
     lines.append("## Active Tasks")
@@ -323,26 +416,13 @@ def build_report(backlog: Dict[str, Any], state: Dict[str, Any]) -> str:
 
     lines.append("")
     lines.append("## ETA to Next Approval")
-    if waiting:
+    eta_hours = summary.get("next_approval_eta_hours")
+    if eta_hours == 0:
         lines.append("- now (task already waiting for approval)")
+    elif eta_hours is None:
+        lines.append("- unknown (no active tasks in pipeline)")
     else:
-        in_ci_gate = [t for t in tasks if t.get("status") == "IN_CI_GATE"]
-        in_qa = [t for t in tasks if t.get("status") == "IN_QA"]
-        in_progress = [t for t in tasks if t.get("status") == "IN_PROGRESS"]
-
-        # Current automation moves one status step per hourly cycle.
-        eta_hours: Optional[int] = None
-        if in_ci_gate:
-            eta_hours = 1
-        elif in_qa:
-            eta_hours = 2
-        elif in_progress:
-            eta_hours = 3
-
-        if eta_hours is None:
-            lines.append("- unknown (no active tasks in pipeline)")
-        else:
-            lines.append(f"- approx {eta_hours}h (based on hourly auto-transitions)")
+        lines.append(f"- approx {eta_hours}h (based on hourly auto-transitions)")
 
     return "\n".join(lines) + "\n"
 
@@ -438,7 +518,12 @@ def main() -> None:
 
     if args.command == "report":
         markdown = build_report(backlog, state)
+        summary = build_execution_summary(backlog, state)
+        save_json(EXECUTION_SUMMARY_ARTIFACT, summary)
         print(markdown)
+        print(f"[report] execution summary artifact: {EXECUTION_SUMMARY_ARTIFACT}")
+        # Stable machine-readable runner status line for operators and scripts.
+        print(f"[report-summary] {json.dumps(summary, sort_keys=True)}")
         if args.publish:
             try:
                 upsert_live_issue(markdown)

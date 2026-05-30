@@ -2,6 +2,13 @@
 
 Reconstructed canonical roadmap reference used by README.
 
+## Current Release-Train Snapshot
+
+- Baseline tag: v1.14.0
+- Latest released sprint: Sprint-058 (RELEASED)
+- Next planned sprint: Sprint-059 (planning kickoff)
+- Operator source of truth: docs/history/sprints/SPRINT-058.md
+
 ## Track A: Governance Hardening
 - Policy-as-code baseline
 - CI gate standardization

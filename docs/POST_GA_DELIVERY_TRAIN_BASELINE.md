@@ -4,9 +4,9 @@ Canonical baseline for post-GA release governance.
 
 ## Baseline
 - Baseline tag: v1.14.0
-- Active sprint: Sprint-042
+- Active sprint: Sprint-059 (planning kickoff)
 - Governance mode: two-wave approvals (Wave-1 automated, Wave-2 manual)
-- Last promotion: v1.13.0 → v1.14.0 (2026-05-18 Sprint-041 CTOA-203..207)
+- Last promotion: v1.13.0 -> v1.14.0 (2026-05-18 Sprint-041 CTOA-203..207)
 
 ## Recent Release History
 
@@ -14,8 +14,8 @@ Canonical baseline for post-GA release governance.
 - **Date**: 2026-05-18
 - **Items**: CTOA-203, CTOA-204, CTOA-205, CTOA-206, CTOA-207
 - **Focus**: Package tiering validation, public/private surface hygiene, operator UX release cadence
-- **Wave-1**: 153 passed, 6 skipped (exceeds baseline) ✅
-- **Wave-2**: STRATEGOS signed approval ✅
+- **Wave-1**: 153 passed, 6 skipped (exceeds baseline) [PASS]
+- **Wave-2**: STRATEGOS signed approval [PASS]
 - **Risk**: GREEN (no blockers)
 - **Evidence**: `runtime/experiments/sprint-041/WAVE-{1,2}-*.md`
 
@@ -35,11 +35,12 @@ Canonical baseline for post-GA release governance.
 - QA/DevOps: Wave-1 gate evidence
 - God Mode: async scope/budget/timeline oversight
 
-## Next Sprint (Sprint-042)
+## Active Sprint Transition
 
-Sprint-042 backlog coming soon. Expected focus areas:
-- Continued productization track
-- Operator adoption workflow
-- Infrastructure hardening (Phase-5+ evolution)
+Sprint-058 execution is complete and released; transition is now toward Sprint-059 planning kickoff.
+- Last completed scope: `workflows/backlog-sprint-058.yaml`
+- Last completed flow: `workflows/sprint-058-delivery-flow.yaml`
+- Proposed release: `v1.15.0`
+- Status: `TRANSITION_TO_SPRINT_059`
 
-Monitor: `workflows/backlog-sprint-042.yaml` (TBD)
+Sprint files with higher numbers should be treated as pre-planning unless they are explicitly marked ACTIVE and wired into validators/tasks.

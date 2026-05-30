@@ -1,0 +1,100 @@
+name: Bot CD — Deploy to VPS
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "bot/**"
+      - "requirements-bot.txt"
+  workflow_dispatch:   # allow manual trigger
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy Bot Stack to VPS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_SSH_KEY_B64 }}" | base64 -d > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Sync repo to VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USERNAME }}
+        run: |
+          rsync -az --delete \
+            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
+            --exclude='.git' \
+            --exclude='__pycache__' \
+            --exclude='*.pyc' \
+            --exclude='.venv' \
+            --exclude='data/bot.db' \
+            --exclude='data/qtable*.json' \
+            . "$VPS_USER@$VPS_HOST:/opt/tibia-bot/"
+
+      - name: Ensure .env on VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USERNAME }}
+          BOT_ENV: ${{ secrets.VPS_BOT_ENV }}
+        run: |
+          if [ -n "$BOT_ENV" ]; then
+            echo "$BOT_ENV" | ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
+              "$VPS_USER@$VPS_HOST" "cat > /opt/tibia-bot/.env"
+          else
+            ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
+              "$VPS_USER@$VPS_HOST" bash << 'ENVEOF'
+            if [ ! -f /opt/tibia-bot/.env ]; then
+              cat > /opt/tibia-bot/.env << 'EOF'
+          BOT_DB_PATH=/app/data/bot.db
+          GRAFANA_PASSWORD=admin
+          BOT_LOG_LEVEL=INFO
+          OTS_HOST=127.0.0.1
+          OTS_PORT=7171
+          EOF
+            fi
+          ENVEOF
+          fi
+
+      - name: Deploy with docker compose
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USERNAME }}
+        run: |
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
+            "$VPS_USER@$VPS_HOST" << 'ENDSSH'
+          set -e
+          cd /opt/tibia-bot/bot/infra
+
+          # Pull latest images
+          docker compose pull prometheus grafana 2>/dev/null || true
+
+          # Build bot + dashboard images from local code
+          docker compose build --no-cache bot dashboard
+
+          # Restart stack with zero-downtime where possible
+          docker compose up -d --remove-orphans
+
+          # Wait for dashboard health check
+          sleep 5
+          curl -sf http://localhost:8000/health && echo "Dashboard: OK" || echo "Dashboard: not yet ready"
+          ENDSSH
+
+      - name: Verify stack
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USERNAME }}
+        run: |
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
+            "$VPS_USER@$VPS_HOST" \
+            "docker compose -f /opt/tibia-bot/bot/infra/docker-compose.yml ps --format table"

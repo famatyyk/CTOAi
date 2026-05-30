@@ -9,7 +9,12 @@ import yaml
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "runner"))
 
-from response_guardrails import is_response_compliant, validate_response
+from response_guardrails import (
+    is_response_compliant,
+    validate_response,
+    is_operational_structure_compliant,
+    validate_operational_structure,
+)
 
 
 def test_prompt_library_declares_response_guardrails():
@@ -63,3 +68,21 @@ def test_direct_corrected_answer_passes():
 
     assert validate_response(response) == []
     assert is_response_compliant(response)
+
+def test_operational_structure_missing_sections_is_rejected():
+    response = "Facts: one item only."
+    violations = validate_operational_structure(response)
+
+    assert any("missing operational structure markers" in item for item in violations)
+    assert not is_operational_structure_compliant(response)
+
+
+def test_operational_structure_facts_inference_next_step_passes():
+    response = (
+        "Facts: CI gate for Sprint-061 is PASS.\n"
+        "Inference: release risk is low after state alignment.\n"
+        "Next Step: run Wave-2 sign-off and publish artifacts."
+    )
+
+    assert validate_operational_structure(response) == []
+    assert is_operational_structure_compliant(response)

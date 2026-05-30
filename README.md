@@ -8,19 +8,35 @@ and auditable two-wave approvals.
 
 | Signal | Current State |
 | --- | --- |
-| Baseline | v1.13.0 APPROVED |
-| Release Train | Sprint-040 closed → Sprint-041 ACTIVE (Track C Productization) |
+| Baseline | v1.14.0 APPROVED |
+| Release Train | Sprint-059 RELEASED (Wave-1 evidence finalized) |
 | Delivery Mode | STRATEGOS (guarded autonomy) |
 | Validation | `pytest` + sprint validators + CI gate chain |
-| Next Action | Sprint-041 Track C delivery — package tiering, surface hygiene, operator UX |
+| Next Action | Sprint-061 kickoff package active: 1 process KPI + 2 product KPIs |
 
 Primary governance sources:
 
 - [Post-GA Candidate](docs/POST_GA_DELIVERY_TRAIN_CANDIDATE.yaml)
 - [Post-GA Baseline](docs/POST_GA_DELIVERY_TRAIN_BASELINE.md)
 - [Roadmap v0.2.0 -> v1.0.0](docs/ROADMAP_V0.2.0_TO_V1.0.0.md)
-- [Sprint-040 Release Pack](runtime/experiments/sprint-040/CTOA-202.md)
+- [Sprint-057 Release Pack](docs/history/sprints/SPRINT-057.md)
+- [Sprint-057 Progress](docs/history/sprints/SPRINT-057-PROGRESS.md)
 - [Track C Productization](docs/PRODUCTIZATION_TRACK_C.md)
+- [Sprint-058 Plan](docs/history/sprints/SPRINT-058.md)
+- [Sprint-059 Plan](docs/history/sprints/SPRINT-059.md)
+- [Sprint-060 Plan](docs/history/sprints/SPRINT-060.md)
+- [Sprint-060 Progress](docs/history/sprints/SPRINT-060-PROGRESS.md)
+- [Sprint-061 Plan](docs/history/sprints/SPRINT-061.md)
+- [Sprint-061 Progress](docs/history/sprints/SPRINT-061-PROGRESS.md)
+
+## Azure Activity Training Status
+
+- Active eval prompt: `azure-activity-fact-first` (confirmed by run-001, run-002, and run-003 3-variant comparisons)
+- Prompt variants: [evals/prompt-variants](evals/prompt-variants)
+- Run artifacts: [evals/runs/run-001](evals/runs/run-001), [evals/runs/run-002](evals/runs/run-002), [evals/runs/run-003](evals/runs/run-003)
+- Editable AI Toolkit registry: [agents/toolkit/editable_agents.json](agents/toolkit/editable_agents.json)
+- Aggregator: `python scripts/ops/aggregate_agent_eval.py evals/runs/run-003/results.<variant>.<model>.jsonl`
+- Comparator: `python scripts/ops/compare_eval_summaries.py evals/runs/run-003/*.summary.json`
 
 ## What This Repo Does
 
@@ -70,7 +86,7 @@ Common local commands:
 python scripts/ops/ctoa_product_bootstrap.py
 python scripts/ops/ctoa_update_gate.py
 python -m pytest -q
-python scripts/ops/sprint023_validate.py
+python scripts/ops/sprint056_validate.py
 ```
 
 VS Code task shortcuts available in this workspace:
@@ -78,9 +94,15 @@ VS Code task shortcuts available in this workspace:
 - `CTOA: Bootstrap Product Config`
 - `CTOA: Check Update Gate`
 - `CTOA: Run All Tests`
-- `CTOA: Sprint-024 Validate Release Scalability`
+- `CTOA: Sprint-042 Validate`
 - `CTOA: Validate Pack`
 - `CTOA: Launch Pack`
+
+Active runbook policy:
+
+- Active Wave-1 execution range: Sprint-027 and newer.
+- Legacy range: Sprint-012 to Sprint-026 (kept for historical traceability, not part of active runbook).
+- Legacy tasks can still be run manually for forensic/backfill work.
 
 ## Sprint Cadence (Post-GA)
 
@@ -92,6 +114,7 @@ Every sprint follows a two-wave approval model:
 
 Recent approved milestones:
 
+- v1.14.0 (Sprint-056)
 - v1.13.0 (Sprint-040)
 - v1.2.0 (Sprint-029)
 - v1.1.1 (Sprint-028)
@@ -113,6 +136,9 @@ Recent approved milestones:
 - [Product Portfolio](docs/PRODUCT_PORTFOLIO.md)
 - [Repo Hygiene Policy](docs/REPO_HYGIENE_POLICY.md)
 - [Enhanced Top-3 Sprint Plan](docs/ENHANCED_TOP3_SPRINT_PLAN.md)
+- [Azure Alerts Automation Setup](docs/azure-alerts-automation-setup.md)
+- [Azure Activity Log Interpretation Runbook](docs/runbook-azure-activity-log-interpretation.md)
+- [Azure Agent Eval Dataset](evals/README-azure-agent-eval-dataset.md)
 
 ## License
 

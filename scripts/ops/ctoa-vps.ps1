@@ -135,6 +135,10 @@ function Invoke-RemoteRootWrapper() {
         & ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new -i $k $t $installCmd
     }
 }
+
+function Ensure-RemoteRootWrapper() {
+    Invoke-RemoteRootWrapper
+}
 function Invoke-WithSshRetry([scriptblock]$Operation, [string]$Label) {
     $attempts = [int](Get-OptionalEnv 'CTOA_SSH_RETRY_ATTEMPTS' '5')
     $delaySeconds = [int](Get-OptionalEnv 'CTOA_SSH_RETRY_DELAY_SECONDS' '3')
@@ -352,21 +356,9 @@ switch ($Action) {
     'WhoAmI'              { Invoke-SshCommand 'whoami' -AsCurrentUser }
     'Setup24x7'           { $sc = Get-SetupScript; Invoke-SshScript $sc }
     'TailLiveHealth'      { Invoke-SshCommand 'tail -n 80 -f /opt/ctoa/logs/health-live.log' }
-    'DashboardSnapshot'   { Invoke-SshScript @'
-set -e
-echo "=== Dashboard snapshot ==="
-systemctl status ctoa-mobile-console.service --no-pager -l | sed -n '1,20p' || true
-echo
-echo "=== Dashboard health ==="
-http_code=$(curl -sS -o /tmp/ctoa-health.out -w "%{http_code}" http://127.0.0.1:8787/api/health || true)
-if [ "$http_code" = "200" ]; then
-    cat /tmp/ctoa-health.out
-elif [ "$http_code" = "401" ] || [ "$http_code" = "403" ]; then
-    echo "dashboard-health-auth-required"
-else
-    echo "dashboard-health-unavailable (http=$http_code)"
-fi
-'@
+    'DashboardSnapshot'   {
+        Ensure-RemoteRootWrapper
+        Invoke-SshCommand 'sudo -n /opt/ctoa/scripts/ops/ctoa-root-action.sh dashboard-snapshot' -AsCurrentUser
     }
     'TailMobileLogs'      { Invoke-SshCommand 'journalctl -u ctoa-mobile-console.service -n 120 -f --no-pager' }
     'ReportErrorDetails'  { Invoke-SshCommand 'tail -n 60 /opt/ctoa/logs/runner.log' }

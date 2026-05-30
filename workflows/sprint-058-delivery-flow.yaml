@@ -1,0 +1,35 @@
+sprint: '058'
+theme: Wave-1 execution readiness + release-train reference consistency
+version: '1.1'
+lifecycle:
+  start: '2026-05-25'
+  target_wave1: '2026-05-26'
+  target_wave2: '2026-05-27'
+
+tasks:
+  - id: CTOA-304
+    title: Sprint-058 scope and gate contract
+    on_start: publish Sprint-058 backlog, flow, and scope lock
+    on_complete: confirm task map parity and explicit Wave-1 gates
+    on_fail: block sprint start and publish blockers
+
+  - id: CTOA-305
+    title: Release-train operator doc sync
+    depends_on:
+      - CTOA-304
+    on_start: align README, roadmap, governance, and post-GA baseline references
+    on_complete: release-train references are consistent across operator docs
+    on_fail: keep governance sync open with blocker notes
+
+  - id: CTOA-306
+    title: Sprint-058 Wave-1 execution
+    depends_on:
+      - CTOA-305
+    on_start: run non-interactive wave chain and collect artifacts
+    on_complete: validation json, progress refresh, state sync, and utf-8 summary are published
+    on_fail: keep sprint open with unresolved wave evidence items
+
+gate_policy:
+  wave_1: docs aligned + operator flow verified + core guard PASS + state sync PASS
+  wave_2: manual STRATEGOS sign-off with handoff note
+  rollback_baseline: v1.14.0

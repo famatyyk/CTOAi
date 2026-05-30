@@ -1,0 +1,111 @@
+version: 1
+backlog_id: sprint-056
+window_days: 3
+focus: "UTF-8 summary continuity + gate reliability + release evidence discipline"
+owner: strategos
+
+rules:
+  max_parallel_tasks: 3
+  definition_of_done:
+    - implementation_created
+    - validation_passed
+    - evidence_recorded
+    - documentation_updated
+  release_policy:
+    - approval_required: true
+    - environment: production
+
+tasks:
+  - id: CTOA-294
+    title: "Open Sprint-056 kickoff baseline and scope lock"
+    priority: P0
+    type: governance
+    domain: [governance, planning, release]
+    assignees: [strategos, core-architect, documentation-sage]
+    estimate_hours: 2
+    deliverables:
+      - "workflows/backlog-sprint-056.yaml"
+      - "workflows/sprint-056-delivery-flow.yaml"
+      - "docs/history/sprints/SPRINT-056.md"
+    acceptance:
+      - "Sprint-056 backlog and flow are published"
+      - "Scope and gate expectations are explicit"
+      - "Kickoff decision checkpoint is documented"
+
+  - id: CTOA-295
+    title: "Wire Sprint-056 validator and local Wave-1 chain"
+    priority: P0
+    type: quality
+    domain: [ci, qa, automation]
+    assignees: [qa-terminator, core-architect]
+    estimate_hours: 3
+    deliverables:
+      - "scripts/ops/sprint056_validate.py"
+      - ".vscode/tasks.json"
+      - "runtime/ci-artifacts/sprint-056-validation.json"
+    acceptance:
+      - "Validator checks Sprint-056 files, hooks, pipeline, and task wiring"
+      - "Wave-1 chain executes tests plus validate plus launch gate"
+      - "Validation artifact path is wired in CI"
+
+  - id: CTOA-296
+    title: "Keep UTF-8 summary continuity stable"
+    priority: P1
+    type: governance
+    domain: [governance, ops, observability]
+    assignees: [strategos, documentation-sage]
+    estimate_hours: 2
+    deliverables:
+      - "runtime/ci-artifacts/sprint-056-wave1-summary.txt"
+      - "releases/evidence/sprint-056/CTOA-296.md"
+    acceptance:
+      - "Wave summary remains UTF-8 plain text"
+      - "Summary captures key gate outcomes in compact format"
+      - "Summary path is included in tracked sprint evidence"
+
+  - id: CTOA-297
+    title: "Maintain continuity gate reliability"
+    priority: P1
+    type: quality
+    domain: [ci, qa, governance]
+    assignees: [qa-terminator, core-architect]
+    estimate_hours: 2
+    deliverables:
+      - "scripts/ops/sprint056_validate.py"
+      - "releases/evidence/sprint-056/CTOA-297.md"
+    acceptance:
+      - "Validator asserts RELEASED docs require aligned runtime state"
+      - "Continuity gate checks summary artifact wiring in CI and tasks"
+      - "CI passes only when continuity conditions are satisfied"
+
+  - id: CTOA-298
+    title: "Execute Sprint-056 Wave-1 and collect evidence"
+    priority: P1
+    type: governance
+    domain: [governance, qa, release]
+    assignees: [strategos, qa-terminator, documentation-sage]
+    estimate_hours: 3
+    deliverables:
+      - "runtime/ci-artifacts/sprint-056-wave1-run.log"
+      - "runtime/ci-artifacts/sprint-056-wave1-summary.txt"
+      - "releases/evidence/sprint-056/CTOA-298.md"
+      - "docs/history/sprints/SPRINT-056-PROGRESS.md"
+    acceptance:
+      - "Wave-1 chain completes with green gates"
+      - "Evidence links are complete"
+      - "Residual risk notes are explicit"
+
+  - id: CTOA-299
+    title: "Publish Sprint-056 sign-off and Sprint-057 handoff"
+    priority: P1
+    type: governance
+    domain: [governance, release, planning]
+    assignees: [strategos, documentation-sage]
+    estimate_hours: 2
+    deliverables:
+      - "docs/history/sprints/SPRINT-056.md"
+      - "releases/evidence/sprint-056/CTOA-299.md"
+    acceptance:
+      - "Sign-off includes delivered scope and unresolved items"
+      - "Sprint-057 handoff recommendations are documented"
+      - "God Mode checkpoint is explicit"

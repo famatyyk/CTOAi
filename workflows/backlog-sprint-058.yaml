@@ -1,0 +1,69 @@
+version: 1
+backlog_id: sprint-058
+window_days: 3
+focus: "Wave-1 execution readiness + release-train reference consistency"
+owner: strategos
+
+rules:
+  max_parallel_tasks: 2
+  definition_of_done:
+    - implementation_created
+    - validation_passed
+    - evidence_recorded
+    - documentation_updated
+  release_policy:
+    - approval_required: true
+    - environment: production
+
+tasks:
+  - id: CTOA-304
+    title: "Lock Sprint-058 scope and Wave-1 gate contract"
+    priority: P0
+    type: governance
+    domain: [governance, planning, release]
+    assignees: [strategos, core-architect]
+    estimate_hours: 2
+    deliverables:
+      - "workflows/backlog-sprint-058.yaml"
+      - "workflows/sprint-058-delivery-flow.yaml"
+      - "docs/history/sprints/SPRINT-058.md"
+    acceptance:
+      - "Flow tasks and backlog tasks are 1:1 aligned"
+      - "Wave-1 gate criteria include docs alignment, state sync PASS, and core guard PASS"
+      - "Sprint-058 plan has no RELEASED claims while status is ACTIVE"
+
+  - id: CTOA-305
+    title: "Sync release-train references across operator docs"
+    priority: P0
+    type: governance
+    domain: [docs, governance]
+    assignees: [strategos, documentation-sage]
+    estimate_hours: 2
+    deliverables:
+      - "README.md"
+      - "docs/ROADMAP_V0.2.0_TO_V1.0.0.md"
+      - "docs/SPRINT_GOVERNANCE.md"
+      - "docs/POST_GA_DELIVERY_TRAIN_BASELINE.md"
+      - "docs/POST_GA_DELIVERY_TRAIN_CANDIDATE.yaml"
+    acceptance:
+      - "README release train points to Sprint-057 RELEASED and Sprint-058 next action"
+      - "Post-GA baseline active sprint points to Sprint-058"
+      - "Roadmap and sprint governance include a Sprint-058 execution note"
+
+  - id: CTOA-306
+    title: "Run non-interactive Sprint-058 Wave-1 chain"
+    priority: P1
+    type: quality
+    domain: [ops, automation, ci]
+    assignees: [code-smith, devops-master, qa-terminator]
+    estimate_hours: 3
+    deliverables:
+      - ".vscode/tasks.json"
+      - "scripts/ops/sprint058_validate.py"
+      - "runtime/ci-artifacts/sprint-058-validation.json"
+      - "runtime/ci-artifacts/sprint-058-wave1-summary.txt"
+      - "docs/history/sprints/SPRINT-058-PROGRESS.md"
+    acceptance:
+      - "Task label CTOA: Sprint-058 Wave-1 Run exists"
+      - "Wave-1 task exits with PASS and writes validation + summary artifacts"
+      - "Progress file refreshes against workflows/backlog-sprint-058.yaml"

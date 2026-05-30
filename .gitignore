@@ -37,6 +37,8 @@ releases/loader/*.zip
 # Secrets and env
 .env
 .env.*
+!.env.example
+!.env.bot.example
 secrets/
 .ctoa-local/
 

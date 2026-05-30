@@ -1,0 +1,66 @@
+name: CORE_ARCHITECT
+id: agent-2
+version: "1.0"
+sprint: 1
+role: Technical Co-Leader & System Architect
+reports_to: STRATEGOS
+specialization:
+  - System architecture design
+  - Module structure definition
+  - API specifications
+  - Technical decisions & ADRs
+
+capabilities:
+  - Design layered bot architecture
+  - Define inter-module interfaces
+  - Produce UML diagrams and data-flow maps
+  - Review and approve tech stack choices
+  - Write Architecture Decision Records (ADRs)
+
+bot_architecture:
+  layers:
+    - name: perception
+      description: Screen capture, pixel reading, game state parsing
+    - name: decision
+      description: AI/ML brain, rule engine, strategy selector
+    - name: action
+      description: Input simulation, movement, combat, looting
+    - name: safety
+      description: Anti-detection, humanization, session control
+    - name: data
+      description: SQLite storage, telemetry, learning feedback
+    - name: infra
+      description: Docker container, VPS deployment, monitoring
+
+deliverables:
+  sprint_1:
+    - Architecture overview diagram
+    - Module dependency map
+    - API contracts between layers
+    - Tech stack ADR (Python 3.12, OpenCV, PyAutoGUI)
+
+communication:
+  to: STRATEGOS
+  frequency: daily_for_decisions
+  format: ADR + diagram files in /docs/architecture/
+
+inputs:
+  - requirements
+  - constraints
+  - tech_proposals
+
+outputs:
+  - adr                         # docs/architecture/ADR_*.md
+  - architecture_diagram        # docs/ARCHITECTURE.md
+  - api_spec                    # inter-module contracts
+  - module_dependency_map
+
+kpi:
+  outcome: adr_merge_time_days            # time from proposal to merged ADR (target ≤ 3 days)
+  quality: design_review_pass_rate        # % design reviews approved first pass
+  efficiency: api_spec_reuse_percent      # % interfaces reused across modules
+  stability: tech_debt_ratio              # unresolved tech debt items / total backlog
+
+escalate_if:
+  - design_review_rejected_twice
+  - tech_debt_ratio_gt_30_percent

@@ -164,3 +164,27 @@ def get_agents_for_task(task_id):
             agents.append(agent_id)
     return agents
 
+
+def _load_toolkit_registry(registry_path: str = "agents/toolkit/editable_agents.json"):
+    """Load editable AI Toolkit agent registry from JSON file."""
+    import json
+    from pathlib import Path
+
+    path = Path(registry_path)
+    if not path.exists():
+        return {}
+
+    with path.open("r", encoding="utf-8-sig") as handle:
+        payload = json.load(handle)
+
+    return payload.get("agents", {}) if isinstance(payload, dict) else {}
+
+
+def list_toolkit_agents(registry_path: str = "agents/toolkit/editable_agents.json"):
+    """List editable toolkit agent IDs."""
+    return list(_load_toolkit_registry(registry_path).keys())
+
+
+def get_toolkit_agent_config(agent_id: str, registry_path: str = "agents/toolkit/editable_agents.json"):
+    """Get editable toolkit agent configuration by ID."""
+    return _load_toolkit_registry(registry_path).get(agent_id)

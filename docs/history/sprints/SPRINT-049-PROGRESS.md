@@ -38,3 +38,28 @@ pie showData
 ```bash
 python scripts/ops/project_progress_diagram.py --backlog C:/Users/zycie/CTOAi/workflows/backlog-sprint-049.yaml --state C:/Users/zycie/CTOAi/runtime/task-state.yaml --output C:/Users/zycie/CTOAi/docs/history/sprints/SPRINT-049-PROGRESS.md --project-name Sprint-049
 ```
+
+## CTOA-253 Evidence (Legacy Validator Compatibility)
+
+- Date: 2026-05-24
+- Scope: Wire missing local tasks required by legacy validators for Sprint-043 and Sprint-044.
+- Changes:
+- Added tasks in `.vscode/tasks.json`: `CTOA: Sprint-043 Validate`, `CTOA: Sprint-043 Wave-1 Run`, `CTOA: Sprint-044 Validate`, `CTOA: Sprint-044 Wave-1 Run`.
+- Validation outcomes: `sprint043_validate` PASS 11/11, `sprint044_validate` PASS 11/11.
+- Result: Legacy flow artifacts do not crash validators, and local task gate compatibility is restored on mainline.
+
+## CTOA-254 Evidence (Approval Publish Operationalization)
+
+- Date: 2026-05-24
+- Scope: Validate deterministic operator path for `WAITING_APPROVAL` handling on sprint-049 backlog.
+- Command executed: `CTOA_BACKLOG_FILE=workflows/backlog-sprint-049.yaml` then `python runner/runner.py report`.
+- Verification: report generated successfully, `WAITING_APPROVAL: 0` shown in Status Counts, and `## Waiting Approval` rendered as `none` without runtime failure.
+- Result: Approval Publish completion path is documented and operationally verified.
+
+## CTOA-255 Evidence (Sprint-049 Wave-1 Execution)
+
+- Date: 2026-05-24
+- Scope: Execute Wave-1 chain and capture gate outcomes.
+- Gate outcomes: `CTOA: Run All Tests` PASS (`168 passed, 5 skipped`), `CTOA: Sprint-049 Validate` PASS (`14/14`), `CTOA: Launch Pack` PASS (`launch_allowed`, `Launch dry-run PASS`).
+- Runtime artifact: `runtime/ci-artifacts/sprint-049-wave1-run.log`.
+- Result: Wave-1 completed green with evidence recorded.

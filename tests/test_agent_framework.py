@@ -121,6 +121,24 @@ class TestToolAdvisor(unittest.TestCase):
         self.assertGreater(score["score"], 0)
         self.assertLess(score["score"], 1)
     
+
+    def test_operational_prompt_prefers_evidence_backed_scoring(self):
+        """Verify operational prompt context prefers evidence-backed scoring"""
+        from tool_advisor import score_tool
+
+        base_weights = {"efficacy": 0.4, "safety": 0.3, "cost": 0.2, "latency": 0.1}
+        with_evidence = score_tool(
+            "github-api",
+            base_weights,
+            context={"operational_prompt": True, "evidence_backed": True},
+        )
+        without_evidence = score_tool(
+            "github-api",
+            base_weights,
+            context={"operational_prompt": True, "evidence_backed": False},
+        )
+
+        self.assertGreater(with_evidence["score"], without_evidence["score"])
     def test_tool_ranking(self):
         """Verify tools can be ranked"""
         from tool_advisor import rank_tools_for_task

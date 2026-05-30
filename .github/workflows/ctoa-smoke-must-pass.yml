@@ -1,0 +1,44 @@
+﻿name: CTOA Smoke Must Pass
+
+on:
+  pull_request:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke_must_pass:
+    name: Smoke Must Pass
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install deps
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest
+
+      - name: Run must-pass smoke suite
+        shell: bash
+        run: |
+          python scripts/ops/smoke_must_pass.py
+
+      - name: Upload smoke report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-must-pass-report
+          path: runtime/ci-artifacts/smoke-must-pass-summary.json
+          if-no-files-found: warn

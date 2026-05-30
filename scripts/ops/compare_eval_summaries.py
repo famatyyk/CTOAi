@@ -1,0 +1,125 @@
+﻿#!/usr/bin/env python3
+"""Compare multiple eval summary files and choose the best variant."""
+
+from __future__ import annotations
+
+import argparse
+import glob
+import json
+from pathlib import Path
+
+REQUIRED_KEYS = (
+    "required_fields_coverage_rate",
+    "facts_vs_inference_compliance_rate",
+    "next_step_grounding_rate",
+    "high_impact_detection_precision",
+    "high_impact_detection_recall",
+)
+
+
+def _variant_from_path(path: Path) -> str:
+    name = path.name
+    if name.startswith("results."):
+        parts = name.split(".")
+        if len(parts) >= 4:
+            return parts[1]
+    return path.stem
+
+
+def _expand_inputs(inputs: list[str]) -> tuple[list[Path], list[str]]:
+    expanded: list[Path] = []
+    missing: list[str] = []
+    for item in inputs:
+        matches = [Path(p) for p in glob.glob(item)]
+        if not matches:
+            missing.append(item)
+            continue
+        expanded.extend(matches)
+
+    unique: list[Path] = []
+    seen: set[str] = set()
+    for path in expanded:
+        key = str(path.resolve())
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(path)
+    return unique, missing
+
+
+def _load_summary(path: Path) -> dict:
+    payload = json.loads(path.read_text(encoding="utf-8-sig"))
+    missing = [key for key in REQUIRED_KEYS if key not in payload]
+    if missing:
+        raise ValueError(f"Missing keys in {path}: {', '.join(missing)}")
+    payload["variant"] = payload.get("variant") or _variant_from_path(path)
+    payload["path"] = str(path).replace("\\", "/")
+    return payload
+
+
+def _score_key(summary: dict) -> tuple:
+    return (
+        float(summary["high_impact_detection_precision"]),
+        float(summary["high_impact_detection_recall"]),
+        float(summary["facts_vs_inference_compliance_rate"]),
+        float(summary["required_fields_coverage_rate"]),
+        float(summary["next_step_grounding_rate"]),
+        summary["variant"],
+    )
+
+
+def _build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Compare multiple eval summary files and choose the best variant."
+    )
+    parser.add_argument(
+        "summaries",
+        nargs="+",
+        help="Summary JSON files or glob patterns (e.g. evals/runs/run-003/*.summary.json)",
+    )
+    parser.add_argument(
+        "--json-out",
+        dest="json_out",
+        default="",
+        help="Optional output path for writing comparison JSON (utf-8-sig).",
+    )
+    return parser
+
+
+def main() -> int:
+    args = _build_parser().parse_args()
+    paths, missing_patterns = _expand_inputs(args.summaries)
+    if missing_patterns:
+        print(json.dumps({"error": "missing_files", "paths": missing_patterns}, indent=2))
+        return 2
+
+    summaries = [_load_summary(path) for path in paths]
+    winner = sorted(summaries, key=_score_key, reverse=True)[0]
+
+    result = {
+        "winner": winner["variant"],
+        "winner_path": winner["path"],
+        "comparison_order": [
+            "high_impact_detection_precision",
+            "high_impact_detection_recall",
+            "facts_vs_inference_compliance_rate",
+            "required_fields_coverage_rate",
+            "next_step_grounding_rate",
+        ],
+        "summaries": summaries,
+    }
+
+    output_text = json.dumps(result, indent=2)
+    print(output_text)
+
+    if args.json_out:
+        out_path = Path(args.json_out)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(output_text, encoding="utf-8-sig")
+        print(f"Comparison written to: {out_path}")
+
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

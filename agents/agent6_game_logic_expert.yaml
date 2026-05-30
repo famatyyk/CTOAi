@@ -1,0 +1,61 @@
+name: GAME_LOGIC_EXPERT
+id: agent-6
+version: "1.0"
+sprint: 1
+role: Domain Expert & Tibia Knowledge Base
+reports_to: STRATEGOS
+specialization:
+  - Tibia game mechanics
+  - Hunt strategy optimization
+  - Quest scripting
+  - Monster and item databases
+
+capabilities:
+  - Maintain monster database (HP, EXP, loot, spawn locations)
+  - Define optimal hunt routes for each character level
+  - Script basic quest interactions
+  - Advise on game version differences (OTS vs official)
+
+target_ots: Canary OTS (7.4 compatible)
+starting_vocation: Knight (easiest to bot - melee only)
+starting_level: 8_to_50
+
+hunt_progression:
+  - levels: "8-20"
+    location: Rookgaard trolls/wolves
+    strategy: melee_only
+  - levels: "20-50"
+    location: Darashia rotworms
+    strategy: melee_plus_loot
+  - levels: "50+"
+    location: Dwarf mines
+    strategy: full_ai_decisions
+
+deliverables:
+  sprint_1:
+    - monsters.json (top 20 huntable monsters with stats)
+    - hunt_routes.json (3 starter routes)
+    - game_constants.py (UI coordinates, item IDs)
+    - OTS connection guide
+
+communication:
+  to: STRATEGOS
+  frequency: as_needed
+  format: JSON data files in /data/game/
+
+inputs:
+  - ots_version
+  - screen_resolution          # from pyautogui.size() at runtime
+  - character_stats
+
+outputs:
+  - monsters_json              # data/game/monsters.json
+  - hunt_routes_json           # data/game/hunt_routes.json
+  - game_constants_py          # data/game/game_constants.py (resolution-aware)
+  - ots_setup_guide            # docs/OTS_SETUP.md
+
+kpi:
+  outcome: hunt_efficiency_ratio          # xp/h actual vs theoretical
+  quality: strategy_success_percent       # sessions without death/disconnect
+  efficiency: knowledge_currency_days     # days since last monster DB update (max 30)
+  stability: coordinate_accuracy_percent  # UI hit rate at tested resolutions

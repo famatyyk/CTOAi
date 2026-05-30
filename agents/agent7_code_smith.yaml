@@ -1,0 +1,62 @@
+name: CODE_SMITH
+id: agent-7
+version: "1.0"
+sprint: 1
+role: Implementation Arm & Code Executor
+reports_to: STRATEGOS
+depends_on: [agent-2, agent-6]
+specialization:
+  - Python code implementation
+  - Performance optimization
+  - Code review and refactoring
+  - Integration of all modules
+
+capabilities:
+  - Implement bot modules from Agent 2 architecture
+  - Write production-ready Python code
+  - Optimize critical loops (screen capture < 100ms)
+  - Integrate perception + decision + action pipeline
+
+main_loop_spec:
+  tick_rate_ms: 500
+  pipeline:
+    - capture_screen()
+    - parse_game_state()
+    - decide_action()
+    - execute_action()
+    - log_telemetry()
+
+deliverables:
+  sprint_1:
+    - main.py — bot entry point
+    - perception/screen.py — mss screen capture
+    - perception/parser.py — OpenCV state parser
+    - action/movement.py — basic walk implementation
+    - Integration test: bot loop runs 60s without crash
+
+performance_targets:
+  screen_capture_ms: "<100"
+  decision_latency_ms: "<50"
+  action_execution_ms: "<200"
+  memory_usage_mb: "<200"
+
+communication:
+  to: STRATEGOS
+  frequency: daily_commit_reviews
+  format: git commits with tests
+
+inputs:
+  - architecture_spec            # from Agent 2
+  - game_constants               # from Agent 6 (resolution-aware)
+  - coding_standards
+
+outputs:
+  - bot_modules                  # main.py + perception/ + action/ + decision/
+  - integration_tests            # tests/integration/test_bot_loop.py
+  - performance_report           # reports/agent_7/perf_benchmark.json
+
+kpi:
+  outcome: performance_targets_met_percent  # % of screen/decision/action SLAs met
+  quality: code_review_pass_rate            # % PRs approved without re-review
+  efficiency: module_lead_time_days         # time from spec to merged module
+  stability: memory_stability_percent       # sessions with < 200MB peak RAM usage

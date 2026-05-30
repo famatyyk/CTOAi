@@ -37,6 +37,14 @@ Goal: keep this repository focused on public CTOA products, while moving interna
 - isolate reverse-engineering helpers under clearly marked internal path
 - keep README and docs centered on active products
 
+## Approved Top-Level Exceptions
+
+The following entries are explicitly classified as product-relevant and remain allowlisted:
+
+- `.foundry` (Foundry workspace/project metadata used by tooling)
+- `agent.yaml` (root agent/runtime configuration contract)
+- `evals/` (evaluation scenarios and quality comparison inputs)
+
 ## Enforcement
 
 Run:
@@ -60,3 +68,57 @@ Repo hygiene is package-aware:
 - Studio: internal/private overlays that must not remain in public customer distribution
 
 Package manifests live under `product/packages/` and should be updated before major cleanup waves.
+
+## Sprint-050 Evidence Promotion Rules
+
+Use these rules to decide when runtime outputs must be promoted from ignored locations to tracked evidence paths.
+
+### Promote To Tracked Paths (Required)
+
+- Validation artifacts used for sprint sign-off decisions (for example sprint validate JSON reports)
+- Wave execution transcripts that prove gate outcomes (tests, validate, launch)
+- Approval closure evidence that demonstrates transitions from `WAITING_APPROVAL` to `RELEASED`
+- Any artifact cited as authoritative in release notes or sprint handoff documents
+
+### Keep In Runtime Only (Default)
+
+- Debug-level intermediate files that are not referenced by sign-off docs
+- High-volume operational logs without release or governance impact
+- Local experimentation outputs that do not affect acceptance criteria
+
+### Canonical Promotion Targets
+
+- `releases/evidence/sprint-XXX/` for release-significant snapshots and sign-off attachments
+- `docs/history/sprints/SPRINT-XXX-PROGRESS.md` for concise, human-readable evidence summaries
+- `runtime/experiments/sprint-XXX/CTOA-YYY.md` for scoped operator notes before promotion
+
+### Promotion Workflow
+
+1. Identify candidate artifacts in `runtime/ci-artifacts/` and `runtime/experiments/`.
+2. Classify each artifact as required or runtime-only using the rules above.
+3. Copy required artifacts to `releases/evidence/sprint-XXX/` and keep file names stable.
+4. Update sprint progress and sign-off docs with relative links to promoted paths.
+5. Re-run hygiene audit and ensure no sign-off-critical evidence remains runtime-only.
+
+## Sprint-051 Tracked Evidence Continuity Addendum
+
+Apply this continuity contract to every Sprint-051 sign-off-critical artifact.
+
+### Required Continuity Set
+
+- Wave gate artifacts: validation JSON and wave run transcript
+- Governance closure artifacts: approval/state sync notes and sign-off memo
+- Handoff artifact: Sprint-052 recommendation memo cited by Sprint-051 sign-off
+
+### Canonical Sprint-051 Targets
+
+- `releases/evidence/sprint-051/CTOA-266.md`
+- `releases/evidence/sprint-051/CTOA-267.md`
+- `releases/evidence/sprint-051/CTOA-268.md`
+- `releases/evidence/sprint-051/CTOA-269.md`
+- `docs/history/sprints/SPRINT-051-PROGRESS.md`
+- `docs/history/sprints/SPRINT-051.md`
+
+### Continuity Check
+
+Before sign-off, ensure every artifact referenced in `SPRINT-051-PROGRESS.md` resolves to a tracked repository path.

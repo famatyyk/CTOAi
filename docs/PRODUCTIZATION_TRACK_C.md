@@ -1,9 +1,9 @@
-# CTOA Track C — Productization Plan
+﻿# CTOA Track C â€” Productization Plan
 
-**Track:** C — Productization
-**Sprint:** Sprint-040 / Sprint-041
+**Track:** C â€” Productization
+**Sprint:** Sprint-041 / Sprint-042
 **Status:** ACTIVE
-**Updated:** 2026-05-10
+**Updated:** 2026-05-23
 
 ---
 
@@ -69,7 +69,7 @@ Reference: `docs/CLIENT_DISTRIBUTION_MODEL.md`
 ### How Operators Adopt a New CTOA Version
 
 1. Check `CHANGELOG.md` for breaking changes in the target version.
-2. Run `python scripts/ops/ctoa_update_gate.py` — this verifies the current
+2. Run `python scripts/ops/ctoa_update_gate.py` â€” this verifies the current
    installation against the target baseline and reports go/no-go.
 3. If go: pull the new tag or archive and replace the installation.
 4. Verify core integrity post-install:
@@ -101,8 +101,8 @@ Reference: `docs/CLIENT_DISTRIBUTION_MODEL.md`
 - **Minor** (`x.Y.0`): new features, new sprint deliverables, tier additions.
 - **Major** (`X.0.0`): breaking API changes, governance policy overhauls.
 
-Current release: **v1.13.0** (Sprint-040 closed).
-Next planned: **v1.14.0** (Sprint-041, Track C delivery).
+Current release: **v1.14.0** (Sprint-041 closed).
+Next planned: **v1.15.0** (Sprint-042, Track C continuation).
 
 ---
 
@@ -114,15 +114,16 @@ Next planned: **v1.14.0** (Sprint-041, Track C delivery).
 - [ ] `docs/POST_GA_DELIVERY_TRAIN_CANDIDATE.yaml` `status` updated to `released`
 - [ ] `docs/POST_GA_DELIVERY_TRAIN_BASELINE.md` baseline tag updated
 - [ ] README Command Center table updated
-- [ ] `python scripts/ops/core_guard.py --check` → PASSED
-- [ ] `python -m pytest tests/ --ignore=tests/e2e -q` → all pass
+- [ ] `python scripts/ops/core_guard.py --check` â†’ PASSED
+- [ ] `python -m pytest tests/ --ignore=tests/e2e -q` â†’ all pass
 
 ---
 
 ## References
 
-- `docs/ROADMAP_V0.2.0_TO_V1.0.0.md` — canonical roadmap
-- `docs/CLIENT_DISTRIBUTION_MODEL.md` — tier distribution rules
-- `docs/REPO_HYGIENE_POLICY.md` — hygiene policy
-- `product/packages/` — tier manifests
-- `docs/PRODUCT_PORTFOLIO.md` — product map and API registry
+- `docs/ROADMAP_V0.2.0_TO_V1.0.0.md` â€” canonical roadmap
+- `docs/CLIENT_DISTRIBUTION_MODEL.md` â€” tier distribution rules
+- `docs/REPO_HYGIENE_POLICY.md` â€” hygiene policy
+- `product/packages/` â€” tier manifests
+- `docs/PRODUCT_PORTFOLIO.md` â€” product map and API registry
+
