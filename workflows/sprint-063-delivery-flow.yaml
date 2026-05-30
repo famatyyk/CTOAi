@@ -1,0 +1,35 @@
+sprint: '062'
+theme: Sprint-063 product delta + agent execution quality
+version: '1.0'
+lifecycle:
+  start: '2026-06-04'
+  target_wave1: '2026-06-05'
+  target_wave2: '2026-06-06'
+
+tasks:
+  - id: CTOA-320
+    title: Wave execution ordering hardening
+    on_start: lock execution order and coherence criteria for artifacts
+    on_complete: confirm deterministic state-aligned wave artifacts
+    on_fail: block wave closeout and record mismatch diagnostics
+
+  - id: CTOA-321
+    title: Runner execution signal quality
+    depends_on:
+      - CTOA-320
+    on_start: implement normalized execution summary for operators
+    on_complete: verify output quality and regression safety via tests
+    on_fail: keep sprint open with runner quality blockers
+
+  - id: CTOA-322
+    title: Fact-first prompt contract reinforcement
+    depends_on:
+      - CTOA-321
+    on_start: update prompt/scoring contract for evidence-first structure
+    on_complete: verify structure compliance with tests or eval evidence
+    on_fail: retain previous contract and document fallback decision
+
+gate_policy:
+  wave_1: execution-order deterministic + runner output quality checks PASS + state sync PASS
+  wave_2: manual STRATEGOS sign-off with KPI deltas
+  rollback_baseline: v1.14.1
