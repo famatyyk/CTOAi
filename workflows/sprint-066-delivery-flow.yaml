@@ -1,0 +1,35 @@
+sprint: '066'
+theme: Sprint-066 packaging + release hardening
+version: '1.0'
+lifecycle:
+  start: '2026-06-13'
+  target_wave1: '2026-06-14'
+  target_wave2: '2026-06-15'
+
+tasks:
+  - id: CTOA-329
+    title: Release/update manifest signing and launch gate hardening
+    on_start: verify manifest signature and launch gate invariants
+    on_complete: confirm launch remains gated until signed release metadata matches
+    on_fail: block launch and record manifest mismatch diagnostics
+
+  - id: CTOA-330
+    title: Bootstrap UX simplification
+    depends_on:
+      - CTOA-329
+    on_start: reduce manual steps and document the default bootstrap flow
+    on_complete: verify local state creation with reproducible operator guidance
+    on_fail: retain previous bootstrap flow and document fallback decision
+
+  - id: CTOA-331
+    title: Public/private surface cleanup and doc refresh
+    depends_on:
+      - CTOA-330
+    on_start: align docs and package manifests with public/private boundaries
+    on_complete: verify toolkit docs reflect current product narrative
+    on_fail: keep previous docs and record cleanup gaps explicitly
+
+gate_policy:
+  wave_1: manifest/signature gate PASS + bootstrap flow PASS + docs/hygiene audit PASS
+  wave_2: manual STRATEGOS sign-off with release-note and evidence review
+  rollback_baseline: v1.14.0
