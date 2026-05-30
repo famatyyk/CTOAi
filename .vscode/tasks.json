@@ -71,7 +71,7 @@
         "-ExecutionPolicy",
         "Bypass",
         "-Command",
-        "$env:CTOA_CAPABILITY_MOBILE_CONSOLE='1'; if ([string]::IsNullOrWhiteSpace($env:CTOA_MOBILE_TOKEN)) { $env:CTOA_MOBILE_TOKEN='local-dev-token' }; & .\\.venv\\Scripts\\python.exe -m uvicorn mobile_console.app:app --host 127.0.0.1 --port 8787"
+        "$env:CTOA_CAPABILITY_MOBILE_CONSOLE='1'; $mobileTokenPath='Env:CTOA_MOBILE_TOKEN'; if ([string]::IsNullOrWhiteSpace((Get-Item -Path $mobileTokenPath -ErrorAction SilentlyContinue).Value)) { Set-Item -Path $mobileTokenPath -Value 'local-dev-token' }; & .\\.venv\\Scripts\\python.exe -m uvicorn mobile_console.app:app --host 127.0.0.1 --port 8787"
       ],
       "isBackground": true,
       "problemMatcher": {
