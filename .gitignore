@@ -17,6 +17,7 @@ logs/
 artifacts/enc3/
 scripts/ops/enc3-analysis-report.txt
 scripts/ops/ghidra/*.class
+backups/config/*.tar.gz
 build/
 dist/
 ctoa-loader*.spec

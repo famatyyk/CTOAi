@@ -84,6 +84,13 @@ jobs:
             fi
           done
 
+          if git ls-files --error-unmatch ":(glob)backups/config/*.tar.gz" >/dev/null 2>&1; then
+            echo "Denied tracked archive(s) detected under backups/config/*.tar.gz"
+            echo "Move backups out of git tracking and rotate exposed secrets."
+            git ls-files ":(glob)backups/config/*.tar.gz"
+            exit 1
+          fi
+
       - name: Shell script syntax check
         shell: bash
         run: |
@@ -580,6 +587,41 @@ jobs:
               echo "Potential secrets detected in changed push files"
               exit 1
             fi
+          fi
+
+      - name: Full diff secret scan
+        shell: bash
+        run: |
+          pattern='(AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]+|-----BEGIN (RSA|DSA|EC|OPENSSH|PGP|PRIVATE KEY)-----|\b(CTOA_OWNER_PASSWORD|CTOA_OPERATOR_PASSWORD|DB_PASSWORD|GITHUB_PAT|CTOA_MOBILE_TOKEN)\s*[:=])'
+
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
+            if ! git diff --unified=0 "origin/${{ github.base_ref }}...HEAD" > /tmp/ctoa-full.diff; then
+              echo "Failed to compute PR diff for full diff secret scan"
+              exit 1
+            fi
+          else
+            if [ -n "${{ github.event.before }}" ] && [ "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ]; then
+              if ! git diff --unified=0 "${{ github.event.before }}...${{ github.sha }}" > /tmp/ctoa-full.diff; then
+                echo "Failed to compute push diff for full diff secret scan"
+                exit 1
+              fi
+            else
+              if ! git show --unified=0 --format= "${{ github.sha }}" > /tmp/ctoa-full.diff; then
+                echo "Failed to compute initial commit diff for full diff secret scan"
+                exit 1
+              fi
+            fi
+          fi
+
+          if [ ! -s /tmp/ctoa-full.diff ]; then
+            echo "No diff content available; skipping full diff secret scan."
+            exit 0
+          fi
+
+          if grep -nIE "$pattern" /tmp/ctoa-full.diff; then
+            echo "Potential secrets detected in full diff content"
+            exit 1
           fi
 
       - name: Build package artifact
