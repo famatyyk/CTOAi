@@ -78,8 +78,9 @@ jobs:
       # --------------------------------------------------------
       - name: Pull latest code on VPS
         run: |
+          # Best-effort sync only: GS cycle must not fail solely on VPS repo ownership drift.
           ssh -i ~/.ssh/ctoa_vps "$VPS_USER@$VPS_HOST" \
-            "git config --global --add safe.directory $CTOA_DIR && cd $CTOA_DIR && git fetch --quiet && git reset --hard origin/main 2>&1 | tail -3"
+            "git config --global --add safe.directory $CTOA_DIR && cd $CTOA_DIR && (git fetch --quiet && git reset --hard origin/main) >/tmp/ctoa-git-sync.log 2>&1; status=\$?; if [ \$status -ne 0 ]; then echo '::warning::VPS git sync skipped (non-blocking). Check repo ownership/permissions on server.'; tail -3 /tmp/ctoa-git-sync.log || true; else tail -3 /tmp/ctoa-git-sync.log; fi"
 
       # --------------------------------------------------------
       # 3. Validate shell script syntax on VPS (pre-reset gate)
