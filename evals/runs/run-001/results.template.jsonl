@@ -1,2 +1,0 @@
-﻿{"case_id":"AZ-001","variant":"azure-activity-baseline","model":"<model-name>","required_fields_coverage":1,"high_impact_detected":1,"expected_high_impact":1,"facts_vs_inference_ok":1,"next_step_grounded":1,"review_notes":""}
-{"case_id":"AZ-002","variant":"azure-activity-baseline","model":"<model-name>","required_fields_coverage":1,"high_impact_detected":1,"expected_high_impact":1,"facts_vs_inference_ok":1,"next_step_grounded":1,"review_notes":""}

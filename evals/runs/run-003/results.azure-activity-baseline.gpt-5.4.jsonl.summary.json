@@ -1,8 +1,0 @@
-﻿{
-  "total_cases": 12,
-  "required_fields_coverage_rate": 0.8742,
-  "facts_vs_inference_compliance_rate": 0.75,
-  "next_step_grounding_rate": 1.0,
-  "high_impact_detection_precision": 0.6667,
-  "high_impact_detection_recall": 1.0
-}
