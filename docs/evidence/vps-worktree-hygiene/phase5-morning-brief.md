@@ -1,6 +1,6 @@
 # Phase-5 Morning Brief
 
-generated_utc: 20260522T051008Z
+generated_utc: 20260531T051035Z
 verdict: ATTENTION
 reason: alerts_detected
 
@@ -10,8 +10,8 @@ reason: alerts_detected
 - nightly_runs: 3/3
 - pending: 0
 - alerts: 2
-- pulled_new: 1
-- skipped_existing: 7
+- pulled_new: 9
+- skipped_existing: 8
 
 ## Sprint Log Paste
 

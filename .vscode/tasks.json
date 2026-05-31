@@ -1,2022 +1,2317 @@
 {
-  "version": "2.0.0",
-  "windows": {
-    "options": {
-      "shell": {
-        "executable": "cmd.exe",
-        "args": [
-          "/d",
-          "/c"
-        ]
-      }
-    }
-  },
-  "tasks": [
-    {
-      "label": "CTOA: Preflight Mobile Console Env",
-      "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-Command",
-        "$required = 'CTOA_OWNER_USER','CTOA_OWNER_PASSWORD','CTOA_OPERATOR_USER','CTOA_OPERATOR_PASSWORD','CTOA_MOBILE_TOKEN'; $missing = $required | Where-Object { [string]::IsNullOrWhiteSpace((Get-Item -Path \"Env:$_\" -ErrorAction SilentlyContinue).Value) }; if ($missing.Count -gt 0) { Write-Error ('Missing required env vars: ' + ($missing -join ', ')); exit 1 }; Write-Host 'Mobile console env preflight PASS'"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Start Mobile Console (dev)",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\uvicorn.exe mobile_console.app:app --host 0.0.0.0 --port 8787 --reload",
-      "dependsOn": [
-        "CTOA: Preflight Mobile Console Env"
-      ],
-      "options": {
-        "env": {
-          "CTOA_OWNER_USER": "${env:CTOA_OWNER_USER}",
-          "CTOA_OWNER_PASSWORD": "${env:CTOA_OWNER_PASSWORD}",
-          "CTOA_OPERATOR_USER": "${env:CTOA_OPERATOR_USER}",
-          "CTOA_OPERATOR_PASSWORD": "${env:CTOA_OPERATOR_PASSWORD}",
-          "CTOA_MOBILE_TOKEN": "${env:CTOA_MOBILE_TOKEN}"
-        }
-      },
-      "isBackground": true,
-      "problemMatcher": {
-        "pattern": {
-          "regexp": "^$"
-        },
-        "background": {
-          "activeOnStart": true,
-          "beginsPattern": "Started reloader",
-          "endsPattern": "Application startup complete"
-        }
-      },
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated",
-        "focus": false
-      }
-    },
-    {
-      "label": "CTOA: Start Mobile Console (local baseline)",
-      "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-Command",
-        "$env:CTOA_CAPABILITY_MOBILE_CONSOLE='1'; $mobileTokenPath='Env:CTOA_MOBILE_TOKEN'; if ([string]::IsNullOrWhiteSpace((Get-Item -Path $mobileTokenPath -ErrorAction SilentlyContinue).Value)) { Set-Item -Path $mobileTokenPath -Value 'local-dev-token' }; & .\\.venv\\Scripts\\python.exe -m uvicorn mobile_console.app:app --host 127.0.0.1 --port 8787"
-      ],
-      "isBackground": true,
-      "problemMatcher": {
-        "pattern": {
-          "regexp": "^$"
-        },
-        "background": {
-          "activeOnStart": true,
-          "beginsPattern": "Started server process",
-          "endsPattern": "Application startup complete"
-        }
-      },
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated",
-        "focus": false
-      }
-    },
-    {
-      "label": "CTOA: Run All Tests",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe -m pytest tests/ --ignore=tests/e2e -v",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      },
-      "group": {
-        "kind": "test",
-        "isDefault": true
-      }
-    },
-    {
-      "label": "CTOA: Repo Hygiene Audit",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/repo_hygiene_audit.py --json-out runtime/repo-hygiene/latest.json",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Repo Migration Plan",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/repo_hygiene_migration_plan.py --input runtime/repo-hygiene/latest.json --json-out runtime/repo-hygiene/migration-plan.json --md-out docs/REPO_MIGRATION_BATCH_PLAN.md",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Repo Migration Execute B1-B2",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/repo_hygiene_execute_batches.py --plan runtime/repo-hygiene/migration-plan.json --batches 1,2 --apply",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-012 Validate Toolchain",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint012_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-012-validation.json",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-013 Validate Orchestration",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint013_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-013-validation.json",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-014 Validate Reliability",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint014_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-014-validation.json",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Start Discord Agent",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe -m runner.agents.discord_agent",
-      "isBackground": true,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Validate Pack",
-      "type": "shell",
-      "command": "echo CTOA AI Toolkit pack is configured",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Bootstrap Product Config",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/ctoa_product_bootstrap.py",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Check Update Gate",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/ctoa_update_gate.py",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Launch Pack",
-      "type": "shell",
-      "command": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"& .\\.venv\\Scripts\\python.exe scripts/ops/ctoa_update_gate.py; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; echo Launching CTOA pack...; if (Test-Path .\\agents\\ctoa-agents.yaml) { echo Agents OK } else { echo Agents missing; exit 1 }; if (Test-Path .\\prompts\\braver-library.yaml) { echo Prompts OK } else { echo Prompts missing; exit 1 }; if (Test-Path .\\.github\\workflows\\ctoa-pipeline.yml) { echo CI Workflow OK } else { echo CI Workflow missing; exit 1 }; echo Launch dry-run PASS\"",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: VPS Run Action",
-      "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        "scripts/ops/ctoa-vps.ps1",
-        "-Action",
-        "${input:ctoaVpsAction}"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: VPS Deploy Setup",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "CTOA: VPS Setup 24x7"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: VPS SSH Verify",
-      "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        "scripts/ops/ctoa-vps.ps1",
-        "-Action",
-        "Verify"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: VPS whoami",
-      "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        "scripts/ops/ctoa-vps.ps1",
-        "-Action",
-        "WhoAmI"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: VPS Setup 24x7",
-      "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        "scripts/ops/ctoa-vps.ps1",
-        "-Action",
-        "Setup24x7"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: VPS Write GitHub PAT",
-      "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        "scripts/ops/ctoa-vps.ps1",
-        "-Action",
-        "WriteGithubPat"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: VPS Validate Services",
-      "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        "scripts/ops/ctoa-vps.ps1",
-        "-Action",
-        "ValidateServices"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: VPS Stabilize Report Service",
-      "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        "scripts/ops/ctoa-vps.ps1",
-        "-Action",
-        "StabilizeReportService"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: VPS Report via service env",
-      "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        "scripts/ops/ctoa-vps.ps1",
-        "-Action",
-        "ReportViaServiceEnv"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: VPS Reconnect",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "CTOA: VPS SSH Verify"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: VPS publish with sourced env",
-      "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        "scripts/ops/ctoa-vps.ps1",
-        "-Action",
-        "PublishWithSourcedEnv"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: VPS inspect report env",
-      "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        "scripts/ops/ctoa-vps.ps1",
-        "-Action",
-        "InspectReportEnv"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: VPS report error details",
-      "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        "scripts/ops/ctoa-vps.ps1",
-        "-Action",
-        "ReportErrorDetails"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: VPS Dashboard Snapshot",
-      "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-NoProfile",
-        "-Command",
-        "$env:CTOA_SSH_RETRY_ATTEMPTS=12; $env:CTOA_SSH_RETRY_DELAY_SECONDS=3; & ./scripts/ops/ctoa-vps.ps1 -Action DashboardSnapshot"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: VPS Tail Mobile Logs",
-      "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        "scripts/ops/ctoa-vps.ps1",
-        "-Action",
-        "TailMobileLogs"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: VPS Dashboard Snapshot (retry20)",
-      "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-NoProfile",
-        "-Command",
-        "$env:CTOA_SSH_RETRY_ATTEMPTS=20; $env:CTOA_SSH_RETRY_DELAY_SECONDS=2; & ./scripts/ops/ctoa-vps.ps1 -Action DashboardSnapshot"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-015 Validate Plugin SDK",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint015_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-015-validation.json",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-016 Validate RC Hardening",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint016_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-016-validation.json",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-017 Validate GA Closure",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint017_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-017-validation.json",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-018 Validate Post-GA Assurance",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint018_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-018-validation.json",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-016 Wave-1 Run",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "CTOA: Run All Tests",
-        "CTOA: Sprint-016 Validate RC Hardening",
-        "CTOA: Launch Pack"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-018 Wave-1 Run",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "CTOA: Run All Tests",
-        "CTOA: Sprint-018 Validate Post-GA Assurance",
-        "CTOA: Launch Pack"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-019 Validate Module Quality",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint019_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-019-validation.json",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-019 Wave-1 Run",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "CTOA: Run All Tests",
-        "CTOA: Sprint-019 Validate Module Quality",
-        "CTOA: Launch Pack"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-020 Validate Alert Coverage",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint020_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-020-validation.json",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-020 Wave-1 Run",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "CTOA: Run All Tests",
-        "CTOA: Sprint-020 Validate Alert Coverage",
-        "CTOA: Launch Pack"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-021 Validate Governance Consistency",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint021_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-021-validation.json",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-021 Wave-1 Run",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "CTOA: Run All Tests",
-        "CTOA: Sprint-021 Validate Governance Consistency",
-        "CTOA: Launch Pack"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-022 Validate CI Evidence Hardening",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint022_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-022-validation.json",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-022 Wave-1 Run",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "CTOA: Run All Tests",
-        "CTOA: Sprint-022 Validate CI Evidence Hardening",
-        "CTOA: Launch Pack"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-023 Validate Validator Hardening",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint023_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-023-validation.json",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-023 Wave-1 Run",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "CTOA: Run All Tests",
-        "CTOA: Sprint-023 Validate Validator Hardening",
-        "CTOA: Launch Pack"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-024 Validate Release Scalability",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint024_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-024-validation.json",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-024 Wave-1 Run",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "CTOA: Run All Tests",
-        "CTOA: Sprint-024 Validate Release Scalability",
-        "CTOA: Launch Pack"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-025 Validate Control Plane + Execution + Governance",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint025_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-025-validation.json",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-025 Wave-1 Run",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "CTOA: Run All Tests",
-        "CTOA: Sprint-025 Validate Control Plane + Execution + Governance",
-        "CTOA: Launch Pack"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-017 Wave-1 Run",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "CTOA: Run All Tests",
-        "CTOA: Sprint-017 Validate GA Closure",
-        "CTOA: Launch Pack"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: DashboardSnapshot OneShot",
-      "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-Command",
-        "$env:CTOA_SSH_RETRY_ATTEMPTS=6; $env:CTOA_SSH_RETRY_DELAY_SECONDS=2; & ./scripts/ops/ctoa-vps.ps1 -Action DashboardSnapshot"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Release Ready Pass",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "CTOA: Run All Tests",
-        "CTOA: Sprint-025 Validate Control Plane + Execution + Governance",
-        "CTOA: Launch Pack"
-      ],
-      "isBackground": false
-    },
-    {
-      "label": "CTOA: Final Freeze",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "CTOA: Repo Hygiene Audit",
-        "CTOA: Release Ready Pass",
-        "CTOA: DashboardSnapshot OneShot"
-      ],
-      "isBackground": false
-    },
-    {
-      "label": "CTOA: Sprint-026 Validate Reliability + Observability + Automation",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint026_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-026-validation.json",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-026 Wave-1 Run",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "CTOA: Run All Tests",
-        "CTOA: Sprint-026 Validate Reliability + Observability + Automation",
-        "CTOA: Launch Pack"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-027 Validate Quality + Delivery Continuity",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint027_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-027-validation.json",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-027 Wave-1 Run",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "CTOA: Run All Tests",
-        "CTOA: Sprint-027 Validate Quality + Delivery Continuity",
-        "CTOA: Launch Pack"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-028 Validate CI Gate Hardening",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint028_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-028-validation.json",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-028 Wave-1 Run",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "CTOA: Run All Tests",
-        "CTOA: Check Update Gate",
-        "CTOA: Sprint-028 Validate CI Gate Hardening",
-        "CTOA: Launch Pack"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Nightly Stability Batch",
-      "type": "shell",
-      "command": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"& .\\.venv\\Scripts\\python.exe scripts/ops/nightly_stability.py --json-out runtime/ci-artifacts/nightly-stability-$(Get-Date -Format yyyyMMdd).json\"",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-029 Validate",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint029_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-029-validation.json",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-029 Wave-1 Run",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "CTOA: Run All Tests",
-        "CTOA: Sprint-029 Validate",
-        "CTOA: Launch Pack"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-030 Validate",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint030_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-030-validation.json",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-030 Wave-1 Run",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "CTOA: Run All Tests",
-        "CTOA: Sprint-030 Validate",
-        "CTOA: Launch Pack"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-031 Validate",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint031_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-031-validation.json",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-031 Wave-1 Run",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "CTOA: Run All Tests",
-        "CTOA: Sprint-031 Validate",
-        "CTOA: Launch Pack"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-032 Validate",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint032_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-032-validation.json",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-032 Wave-1 Run",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "CTOA: Run All Tests",
-        "CTOA: Sprint-032 Validate",
-        "CTOA: Launch Pack"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-033 Validate",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint033_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-033-validation.json",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-033 Wave-1 Run",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "CTOA: Run All Tests",
-        "CTOA: Sprint-033 Validate",
-        "CTOA: Launch Pack"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-034 Validate",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint034_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-034-validation.json",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-034 Wave-1 Run",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "CTOA: Run All Tests",
-        "CTOA: Sprint-034 Validate",
-        "CTOA: Launch Pack"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-035 Validate",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint035_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-035-validation.json",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-035 Wave-1 Run",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "CTOA: Run All Tests",
-        "CTOA: Sprint-035 Validate",
-        "CTOA: Launch Pack"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-036 Validate",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint036_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-036-validation.json",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-036 Wave-1 Run",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "CTOA: Run All Tests",
-        "CTOA: Sprint-036 Validate",
-        "CTOA: Launch Pack"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-037 Validate",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint037_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-037-validation.json",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-037 Wave-1 Run",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "CTOA: Run All Tests",
-        "CTOA: Sprint-037 Validate",
-        "CTOA: Launch Pack"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-038 Validate",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint038_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-038-validation.json",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-038 Wave-1 Run",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "CTOA: Run All Tests",
-        "CTOA: Sprint-038 Validate",
-        "CTOA: Launch Pack"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-039 Validate",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint039_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-039-validation.json",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-039 Wave-1 Run",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "CTOA: Run All Tests",
-        "CTOA: Sprint-039 Validate",
-        "CTOA: Launch Pack"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-040 Validate",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint040_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-040-validation.json",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-040 Wave-1 Run",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "CTOA: Run All Tests",
-        "CTOA: Sprint-040 Validate",
-        "CTOA: Launch Pack"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-041 Validate",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint041_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-041-validation.json",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-041 Wave-1 Run",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "CTOA: Run All Tests",
-        "CTOA: Sprint-041 Validate",
-        "CTOA: Launch Pack"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-042 Validate",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint042_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-042-validation.json",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-042 Wave-1 Run",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "CTOA: Run All Tests",
-        "CTOA: Sprint-042 Validate",
-        "CTOA: Launch Pack"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-043 Validate",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint043_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-043-validation.json",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-043 Wave-1 Run",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "CTOA: Run All Tests",
-        "CTOA: Sprint-043 Validate",
-        "CTOA: Launch Pack"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Install Phase-5 Morning Sync Task",
-      "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        "scripts/ops/install-phase5-morning-sync-task.ps1"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Remove Phase-5 Morning Sync Task",
-      "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        "scripts/ops/remove-phase5-morning-sync-task.ps1"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-044 Validate",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint044_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-044-validation.json",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-044 Wave-1 Run",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "CTOA: Run All Tests",
-        "CTOA: Sprint-044 Validate",
-        "CTOA: Launch Pack"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-045 Validate",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint045_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-045-validation.json",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-045 Wave-1 Run",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "CTOA: Run All Tests",
-        "CTOA: Sprint-045 Validate",
-        "CTOA: Launch Pack"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-045 Refresh Progress Diagram",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/project_progress_diagram.py --backlog workflows/backlog-sprint-045.yaml --state runtime/task-state.yaml --output docs/history/sprints/SPRINT-045-PROGRESS.md --project-name CTOAi",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-046 Validate",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint046_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-046-validation.json",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-046 Wave-1 Run",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "CTOA: Run All Tests",
-        "CTOA: Sprint-046 Validate",
-        "CTOA: Launch Pack"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-046 Refresh Progress Diagram",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/project_progress_diagram.py --backlog workflows/backlog-sprint-046.yaml --state runtime/task-state.yaml --output docs/history/sprints/SPRINT-046-PROGRESS.md --project-name CTOAi",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-047 Validate",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint047_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-047-validation.json",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-047 Wave-1 Run",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "CTOA: Run All Tests",
-        "CTOA: Sprint-047 Validate",
-        "CTOA: Launch Pack"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-047 Refresh Progress Diagram",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/project_progress_diagram.py --backlog workflows/backlog-sprint-047.yaml --state runtime/task-state.yaml --output docs/history/sprints/SPRINT-047-PROGRESS.md --project-name CTOAi",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-048 Validate",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint048_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-048-validation.json",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-048 Wave-1 Run",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "CTOA: Run All Tests",
-        "CTOA: Sprint-048 Validate",
-        "CTOA: Launch Pack"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-048 Refresh Progress Diagram",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/project_progress_diagram.py --backlog workflows/backlog-sprint-048.yaml --state runtime/task-state.yaml --output docs/history/sprints/SPRINT-048-PROGRESS.md --project-name CTOAi",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-048 Quality Snapshot",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe -m pytest tests/test_response_guardrails.py -q",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-049 Validate",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint049_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-049-validation.json",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-049 Wave-1 Run",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "CTOA: Run All Tests",
-        "CTOA: Sprint-049 Validate",
-        "CTOA: Launch Pack"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-049 Refresh Progress Diagram",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/project_progress_diagram.py --backlog workflows/backlog-sprint-049.yaml --state runtime/task-state.yaml --output docs/history/sprints/SPRINT-049-PROGRESS.md --project-name CTOAi",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-049 Quality Snapshot",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe -m pytest tests/test_response_guardrails.py -q",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-050 Validate",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint050_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-050-validation.json",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-050 Wave-1 Run",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "CTOA: Run All Tests",
-        "CTOA: Sprint-050 Validate",
-        "CTOA: Launch Pack"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-050 Refresh Progress Diagram",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/project_progress_diagram.py --backlog workflows/backlog-sprint-050.yaml --state runtime/task-state.yaml --output docs/history/sprints/SPRINT-050-PROGRESS.md --project-name CTOAi",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-050 Quality Snapshot",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe -m pytest tests/test_response_guardrails.py -q",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-063 Validate",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint063_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-063-validation.json",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-063 State Sync",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint_state_sync.py --backlog workflows/backlog-sprint-063.yaml --state runtime/task-state.yaml",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-063 Refresh Progress Diagram",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/project_progress_diagram.py --backlog workflows/backlog-sprint-063.yaml --state runtime/task-state.yaml --output docs/history/sprints/SPRINT-063-PROGRESS.md --project-name CTOAi",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-063 Wave Summary UTF-8",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/wave_summary_utf8.py --state runtime/task-state.yaml --output runtime/ci-artifacts/sprint-063-wave1-summary.txt",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-063 Quality Snapshot",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe -m pytest tests/test_response_guardrails.py -q",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-064 Validate",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint064_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-064-validation.json",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-064 State Sync",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint_state_sync.py --backlog workflows/backlog-sprint-064.yaml --state runtime/task-state.yaml",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-064 Refresh Progress Diagram",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/project_progress_diagram.py --backlog workflows/backlog-sprint-064.yaml --state runtime/task-state.yaml --output docs/history/sprints/SPRINT-064-PROGRESS.md --project-name CTOAi",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-064 Wave Summary UTF-8",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/wave_summary_utf8.py --state runtime/task-state.yaml --output runtime/ci-artifacts/sprint-064-wave1-summary.txt",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-064 Quality Snapshot",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe -m pytest tests/test_response_guardrails.py -q",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-066 Validate",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint066_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-066-validation.json",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-066 State Sync",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint_state_sync.py --backlog workflows/backlog-sprint-066.yaml --state runtime/task-state.yaml",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-066 Refresh Progress Diagram",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/project_progress_diagram.py --backlog workflows/backlog-sprint-066.yaml --state runtime/task-state.yaml --output docs/history/sprints/SPRINT-066-PROGRESS.md --project-name CTOAi",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-066 Wave Summary UTF-8",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/wave_summary_utf8.py --state runtime/task-state.yaml --output runtime/ci-artifacts/sprint-066-wave1-summary.txt",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-066 Quality Snapshot",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe -m pytest tests/test_response_guardrails.py -q",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-066 Wave-1 Run",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "CTOA: Run All Tests",
-        "CTOA: Sprint-066 Validate",
-        "CTOA: Launch Pack",
-        "CTOA: Sprint-066 State Sync",
-        "CTOA: Sprint-066 Refresh Progress Diagram",
-        "CTOA: Sprint-066 Wave Summary UTF-8",
-        "CTOA: Sprint-066 Quality Snapshot"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-067 Validate",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint067_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-067-validation.json",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-067 State Sync",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint_state_sync.py --backlog workflows/backlog-sprint-067.yaml --state runtime/task-state.yaml",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-067 Refresh Progress Diagram",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/project_progress_diagram.py --backlog workflows/backlog-sprint-067.yaml --state runtime/task-state.yaml --output docs/history/sprints/SPRINT-067-PROGRESS.md --project-name CTOAi",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-067 Wave Summary UTF-8",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/wave_summary_utf8.py --state runtime/task-state.yaml --output runtime/ci-artifacts/sprint-067-wave1-summary.txt",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-067 Quality Snapshot",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe -m pytest tests/test_response_guardrails.py -q",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-067 Wave-1 Run",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "CTOA: Run All Tests",
-        "CTOA: Sprint-067 Validate",
-        "CTOA: Launch Pack",
-        "CTOA: Sprint-067 State Sync",
-        "CTOA: Sprint-067 Refresh Progress Diagram",
-        "CTOA: Sprint-067 Wave Summary UTF-8",
-        "CTOA: Sprint-067 Quality Snapshot"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },    {
-      "label": "CTOA: Sprint-068 Validate",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint068_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-068-validation.json",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-068 State Sync",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint_state_sync.py --backlog workflows/backlog-sprint-068.yaml --state runtime/task-state.yaml",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-068 Refresh Progress Diagram",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/project_progress_diagram.py --backlog workflows/backlog-sprint-068.yaml --state runtime/task-state.yaml --output docs/history/sprints/SPRINT-068-PROGRESS.md --project-name CTOAi",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-068 Wave Summary UTF-8",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/wave_summary_utf8.py --sprint-id sprint-068 --validation-json runtime/ci-artifacts/sprint-068-validation.json --backlog-yaml workflows/backlog-sprint-068.yaml --state-yaml runtime/task-state.yaml --output runtime/ci-artifacts/sprint-068-wave1-summary.txt",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-068 Quality Snapshot",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe -m pytest tests/test_response_guardrails.py -q",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-068 Wave-1 Run",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "CTOA: Run All Tests",
-        "CTOA: Sprint-068 Validate",
-        "CTOA: Launch Pack",
-        "CTOA: Sprint-068 State Sync",
-        "CTOA: Sprint-068 Refresh Progress Diagram",
-        "CTOA: Sprint-068 Wave Summary UTF-8",
-        "CTOA: Sprint-068 Quality Snapshot"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-        },
-    {
-      "label": "CTOA: Sprint-069 Validate",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint069_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-069-validation.json",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-069 State Sync",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint_state_sync.py --backlog workflows/backlog-sprint-069.yaml --state runtime/task-state.yaml",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-069 Refresh Progress Diagram",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/project_progress_diagram.py --backlog workflows/backlog-sprint-069.yaml --state runtime/task-state.yaml --output docs/history/sprints/SPRINT-069-PROGRESS.md --project-name CTOAi",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-069 Wave Summary UTF-8",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/wave_summary_utf8.py --sprint-id sprint-069 --validation-json runtime/ci-artifacts/sprint-069-validation.json --backlog-yaml workflows/backlog-sprint-069.yaml --state-yaml runtime/task-state.yaml --output runtime/ci-artifacts/sprint-069-wave1-summary.txt",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-069 Quality Snapshot",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe -m pytest tests/test_response_guardrails.py -q",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-069 Wave-1 Run",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "CTOA: Run All Tests",
-        "CTOA: Sprint-069 Validate",
-        "CTOA: Launch Pack",
-        "CTOA: Sprint-069 State Sync",
-        "CTOA: Sprint-069 Refresh Progress Diagram",
-        "CTOA: Sprint-069 Wave Summary UTF-8",
-        "CTOA: Sprint-069 Quality Snapshot"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-065 Validate",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint065_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-065-validation.json",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-065 State Sync",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint_state_sync.py --backlog workflows/backlog-sprint-065.yaml --state runtime/task-state.yaml",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-065 Refresh Progress Diagram",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/project_progress_diagram.py --backlog workflows/backlog-sprint-065.yaml --state runtime/task-state.yaml --output docs/history/sprints/SPRINT-065-PROGRESS.md --project-name CTOAi",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-065 Wave Summary UTF-8",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe scripts/ops/wave_summary_utf8.py --state runtime/task-state.yaml --output runtime/ci-artifacts/sprint-065-wave1-summary.txt",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-065 Quality Snapshot",
-      "type": "shell",
-      "command": ".\\.venv\\Scripts\\python.exe -m pytest tests/test_response_guardrails.py -q",
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-065 Wave-1 Run",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "CTOA: Run All Tests",
-        "CTOA: Sprint-065 Validate",
-        "CTOA: Launch Pack",
-        "CTOA: Sprint-065 State Sync",
-        "CTOA: Sprint-065 Refresh Progress Diagram",
-        "CTOA: Sprint-065 Wave Summary UTF-8",
-        "CTOA: Sprint-065 Quality Snapshot"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-064 Wave-1 Run",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "CTOA: Run All Tests",
-        "CTOA: Sprint-064 Validate",
-        "CTOA: Launch Pack",
-        "CTOA: Sprint-064 State Sync",
-        "CTOA: Sprint-064 Refresh Progress Diagram",
-        "CTOA: Sprint-064 Wave Summary UTF-8",
-        "CTOA: Sprint-064 Quality Snapshot"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "CTOA: Sprint-063 Wave-1 Run",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "CTOA: Run All Tests",
-        "CTOA: Sprint-063 Validate",
-        "CTOA: Launch Pack",
-        "CTOA: Sprint-063 State Sync",
-        "CTOA: Sprint-063 Refresh Progress Diagram",
-        "CTOA: Sprint-063 Wave Summary UTF-8",
-        "CTOA: Sprint-063 Quality Snapshot"
-      ],
-      "isBackground": false,
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    }
-  ],
-  "inputs": [
-    {
-      "id": "ctoaVpsAction",
-      "type": "pickString",
-      "description": "Select VPS action for scripts/ops/ctoa-vps.ps1",
-      "options": [
-        "Setup24x7",
-        "Verify",
-        "WhoAmI",
-        "DashboardSnapshot",
-        "TailMobileLogs",
-        "WriteGithubPat",
-        "ValidateServices",
-        "StabilizeReportService",
-        "ReportViaServiceEnv",
-        "PublishWithSourcedEnv",
-        "InspectReportEnv",
-        "ReportErrorDetails"
-      ]
-    }
-  ]
+	"version": "2.0.0",
+	"windows": {
+		"options": {
+			"shell": {
+				"executable": "cmd.exe",
+				"args": [
+					"/d",
+					"/c"
+				]
+			}
+		}
+	},
+	"tasks": [
+		{
+			"label": "CTOA: Preflight Mobile Console Env",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-Command",
+				"$required = 'CTOA_OWNER_USER','CTOA_OWNER_PASSWORD','CTOA_OPERATOR_USER','CTOA_OPERATOR_PASSWORD','CTOA_MOBILE_TOKEN'; $missing = $required | Where-Object { [string]::IsNullOrWhiteSpace((Get-Item -Path \"Env:$_\" -ErrorAction SilentlyContinue).Value) }; if ($missing.Count -gt 0) { Write-Error ('Missing required env vars: ' + ($missing -join ', ')); exit 1 }; Write-Host 'Mobile console env preflight PASS'"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Start Mobile Console (dev)",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\uvicorn.exe mobile_console.app:app --host 0.0.0.0 --port 8787 --reload",
+			"dependsOn": [
+				"CTOA: Preflight Mobile Console Env"
+			],
+			"options": {
+				"env": {
+					"CTOA_OWNER_USER": "${env:CTOA_OWNER_USER}",
+					"CTOA_OWNER_PASSWORD": "${env:CTOA_OWNER_PASSWORD}",
+					"CTOA_OPERATOR_USER": "${env:CTOA_OPERATOR_USER}",
+					"CTOA_OPERATOR_PASSWORD": "${env:CTOA_OPERATOR_PASSWORD}",
+					"CTOA_MOBILE_TOKEN": "${env:CTOA_MOBILE_TOKEN}"
+				}
+			},
+			"isBackground": true,
+			"problemMatcher": {
+				"pattern": {
+					"regexp": "^$"
+				},
+				"background": {
+					"activeOnStart": true,
+					"beginsPattern": "Started reloader",
+					"endsPattern": "Application startup complete"
+				}
+			},
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated",
+				"focus": false
+			}
+		},
+		{
+			"label": "CTOA: Start Mobile Console (local baseline)",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-Command",
+				"$env:CTOA_CAPABILITY_MOBILE_CONSOLE='1'; $mobileTokenPath='Env:CTOA_MOBILE_TOKEN'; if ([string]::IsNullOrWhiteSpace((Get-Item -Path $mobileTokenPath -ErrorAction SilentlyContinue).Value)) { Set-Item -Path $mobileTokenPath -Value 'local-dev-token' }; & .\\.venv\\Scripts\\python.exe -m uvicorn mobile_console.app:app --host 127.0.0.1 --port 8787"
+			],
+			"isBackground": true,
+			"problemMatcher": {
+				"pattern": {
+					"regexp": "^$"
+				},
+				"background": {
+					"activeOnStart": true,
+					"beginsPattern": "Started server process",
+					"endsPattern": "Application startup complete"
+				}
+			},
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated",
+				"focus": false
+			}
+		},
+		{
+			"label": "CTOA: Run All Tests",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe -m pytest tests/ --ignore=tests/e2e -v",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			},
+			"group": {
+				"kind": "test",
+				"isDefault": true
+			}
+		},
+		{
+			"label": "CTOA: Repo Hygiene Audit",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/repo_hygiene_audit.py --json-out runtime/repo-hygiene/latest.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Repo Migration Plan",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/repo_hygiene_migration_plan.py --input runtime/repo-hygiene/latest.json --json-out runtime/repo-hygiene/migration-plan.json --md-out docs/REPO_MIGRATION_BATCH_PLAN.md",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Repo Migration Execute B1-B2",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/repo_hygiene_execute_batches.py --plan runtime/repo-hygiene/migration-plan.json --batches 1,2 --apply",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-012 Validate Toolchain",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint012_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-012-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-013 Validate Orchestration",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint013_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-013-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-014 Validate Reliability",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint014_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-014-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Start Discord Agent",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe -m runner.agents.discord_agent",
+			"isBackground": true,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Validate Pack",
+			"type": "shell",
+			"command": "echo CTOA AI Toolkit pack is configured",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Bootstrap Product Config",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/ctoa_product_bootstrap.py",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Check Update Gate",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/ctoa_update_gate.py",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Launch Pack",
+			"type": "shell",
+			"command": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"& .\\.venv\\Scripts\\python.exe scripts/ops/ctoa_update_gate.py; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; echo Launching CTOA pack...; if (Test-Path .\\agents\\ctoa-agents.yaml) { echo Agents OK } else { echo Agents missing; exit 1 }; if (Test-Path .\\prompts\\braver-library.yaml) { echo Prompts OK } else { echo Prompts missing; exit 1 }; if (Test-Path .\\.github\\workflows\\ctoa-pipeline.yml) { echo CI Workflow OK } else { echo CI Workflow missing; exit 1 }; echo Launch dry-run PASS\"",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: VPS Run Action",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"scripts/ops/ctoa-vps.ps1",
+				"-Action",
+				"${input:ctoaVpsAction}"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: VPS Deploy Setup",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: VPS Setup 24x7"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: VPS SSH Verify",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"scripts/ops/ctoa-vps.ps1",
+				"-Action",
+				"Verify"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: VPS whoami",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"scripts/ops/ctoa-vps.ps1",
+				"-Action",
+				"WhoAmI"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: VPS Setup 24x7",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"scripts/ops/ctoa-vps.ps1",
+				"-Action",
+				"Setup24x7"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: VPS Write GitHub PAT",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"scripts/ops/ctoa-vps.ps1",
+				"-Action",
+				"WriteGithubPat"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: VPS Validate Services",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"scripts/ops/ctoa-vps.ps1",
+				"-Action",
+				"ValidateServices"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: VPS Stabilize Report Service",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"scripts/ops/ctoa-vps.ps1",
+				"-Action",
+				"StabilizeReportService"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: VPS Report via service env",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"scripts/ops/ctoa-vps.ps1",
+				"-Action",
+				"ReportViaServiceEnv"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: VPS Reconnect",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: VPS SSH Verify"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: VPS publish with sourced env",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"scripts/ops/ctoa-vps.ps1",
+				"-Action",
+				"PublishWithSourcedEnv"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: VPS inspect report env",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"scripts/ops/ctoa-vps.ps1",
+				"-Action",
+				"InspectReportEnv"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: VPS report error details",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"scripts/ops/ctoa-vps.ps1",
+				"-Action",
+				"ReportErrorDetails"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: VPS Dashboard Snapshot",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"$env:CTOA_SSH_RETRY_ATTEMPTS=12; $env:CTOA_SSH_RETRY_DELAY_SECONDS=3; & ./scripts/ops/ctoa-vps.ps1 -Action DashboardSnapshot"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: VPS Tail Mobile Logs",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"scripts/ops/ctoa-vps.ps1",
+				"-Action",
+				"TailMobileLogs"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: VPS Dashboard Snapshot (retry20)",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"$env:CTOA_SSH_RETRY_ATTEMPTS=20; $env:CTOA_SSH_RETRY_DELAY_SECONDS=2; & ./scripts/ops/ctoa-vps.ps1 -Action DashboardSnapshot"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-015 Validate Plugin SDK",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint015_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-015-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-016 Validate RC Hardening",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint016_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-016-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-017 Validate GA Closure",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint017_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-017-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-018 Validate Post-GA Assurance",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint018_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-018-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-016 Wave-1 Run",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: Run All Tests",
+				"CTOA: Sprint-016 Validate RC Hardening",
+				"CTOA: Launch Pack"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-018 Wave-1 Run",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: Run All Tests",
+				"CTOA: Sprint-018 Validate Post-GA Assurance",
+				"CTOA: Launch Pack"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-019 Validate Module Quality",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint019_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-019-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-019 Wave-1 Run",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: Run All Tests",
+				"CTOA: Sprint-019 Validate Module Quality",
+				"CTOA: Launch Pack"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-020 Validate Alert Coverage",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint020_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-020-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-020 Wave-1 Run",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: Run All Tests",
+				"CTOA: Sprint-020 Validate Alert Coverage",
+				"CTOA: Launch Pack"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-021 Validate Governance Consistency",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint021_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-021-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-021 Wave-1 Run",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: Run All Tests",
+				"CTOA: Sprint-021 Validate Governance Consistency",
+				"CTOA: Launch Pack"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-022 Validate CI Evidence Hardening",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint022_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-022-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-022 Wave-1 Run",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: Run All Tests",
+				"CTOA: Sprint-022 Validate CI Evidence Hardening",
+				"CTOA: Launch Pack"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-023 Validate Validator Hardening",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint023_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-023-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-023 Wave-1 Run",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: Run All Tests",
+				"CTOA: Sprint-023 Validate Validator Hardening",
+				"CTOA: Launch Pack"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-024 Validate Release Scalability",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint024_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-024-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-024 Wave-1 Run",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: Run All Tests",
+				"CTOA: Sprint-024 Validate Release Scalability",
+				"CTOA: Launch Pack"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-025 Validate Control Plane + Execution + Governance",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint025_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-025-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-025 Wave-1 Run",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: Run All Tests",
+				"CTOA: Sprint-025 Validate Control Plane + Execution + Governance",
+				"CTOA: Launch Pack"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-017 Wave-1 Run",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: Run All Tests",
+				"CTOA: Sprint-017 Validate GA Closure",
+				"CTOA: Launch Pack"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: DashboardSnapshot OneShot",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-Command",
+				"$env:CTOA_SSH_RETRY_ATTEMPTS=6; $env:CTOA_SSH_RETRY_DELAY_SECONDS=2; & ./scripts/ops/ctoa-vps.ps1 -Action DashboardSnapshot"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Release Ready Pass",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: Run All Tests",
+				"CTOA: Sprint-025 Validate Control Plane + Execution + Governance",
+				"CTOA: Launch Pack"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "CTOA: Final Freeze",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: Repo Hygiene Audit",
+				"CTOA: Release Ready Pass",
+				"CTOA: DashboardSnapshot OneShot"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "CTOA: Sprint-026 Validate Reliability + Observability + Automation",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint026_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-026-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-026 Wave-1 Run",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: Run All Tests",
+				"CTOA: Sprint-026 Validate Reliability + Observability + Automation",
+				"CTOA: Launch Pack"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-027 Validate Quality + Delivery Continuity",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint027_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-027-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-027 Wave-1 Run",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: Run All Tests",
+				"CTOA: Sprint-027 Validate Quality + Delivery Continuity",
+				"CTOA: Launch Pack"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-028 Validate CI Gate Hardening",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint028_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-028-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-028 Wave-1 Run",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: Run All Tests",
+				"CTOA: Check Update Gate",
+				"CTOA: Sprint-028 Validate CI Gate Hardening",
+				"CTOA: Launch Pack"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Nightly Stability Batch",
+			"type": "shell",
+			"command": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"& .\\.venv\\Scripts\\python.exe scripts/ops/nightly_stability.py --json-out runtime/ci-artifacts/nightly-stability-$(Get-Date -Format yyyyMMdd).json\"",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-029 Validate",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint029_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-029-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-029 Wave-1 Run",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: Run All Tests",
+				"CTOA: Sprint-029 Validate",
+				"CTOA: Launch Pack"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-030 Validate",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint030_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-030-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-030 Wave-1 Run",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: Run All Tests",
+				"CTOA: Sprint-030 Validate",
+				"CTOA: Launch Pack"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-031 Validate",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint031_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-031-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-031 Wave-1 Run",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: Run All Tests",
+				"CTOA: Sprint-031 Validate",
+				"CTOA: Launch Pack"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-032 Validate",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint032_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-032-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-032 Wave-1 Run",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: Run All Tests",
+				"CTOA: Sprint-032 Validate",
+				"CTOA: Launch Pack"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-033 Validate",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint033_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-033-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-033 Wave-1 Run",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: Run All Tests",
+				"CTOA: Sprint-033 Validate",
+				"CTOA: Launch Pack"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-034 Validate",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint034_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-034-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-034 Wave-1 Run",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: Run All Tests",
+				"CTOA: Sprint-034 Validate",
+				"CTOA: Launch Pack"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-035 Validate",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint035_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-035-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-035 Wave-1 Run",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: Run All Tests",
+				"CTOA: Sprint-035 Validate",
+				"CTOA: Launch Pack"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-036 Validate",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint036_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-036-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-036 Wave-1 Run",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: Run All Tests",
+				"CTOA: Sprint-036 Validate",
+				"CTOA: Launch Pack"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-037 Validate",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint037_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-037-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-037 Wave-1 Run",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: Run All Tests",
+				"CTOA: Sprint-037 Validate",
+				"CTOA: Launch Pack"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-038 Validate",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint038_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-038-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-038 Wave-1 Run",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: Run All Tests",
+				"CTOA: Sprint-038 Validate",
+				"CTOA: Launch Pack"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-039 Validate",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint039_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-039-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-039 Wave-1 Run",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: Run All Tests",
+				"CTOA: Sprint-039 Validate",
+				"CTOA: Launch Pack"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-040 Validate",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint040_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-040-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-040 Wave-1 Run",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: Run All Tests",
+				"CTOA: Sprint-040 Validate",
+				"CTOA: Launch Pack"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-041 Validate",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint041_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-041-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-041 Wave-1 Run",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: Run All Tests",
+				"CTOA: Sprint-041 Validate",
+				"CTOA: Launch Pack"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-042 Validate",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint042_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-042-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-042 Wave-1 Run",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: Run All Tests",
+				"CTOA: Sprint-042 Validate",
+				"CTOA: Launch Pack"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-043 Validate",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint043_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-043-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-043 Wave-1 Run",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: Run All Tests",
+				"CTOA: Sprint-043 Validate",
+				"CTOA: Launch Pack"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Install Phase-5 Morning Sync Task",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"scripts/ops/install-phase5-morning-sync-task.ps1"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Remove Phase-5 Morning Sync Task",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"scripts/ops/remove-phase5-morning-sync-task.ps1"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-044 Validate",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint044_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-044-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-044 Wave-1 Run",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: Run All Tests",
+				"CTOA: Sprint-044 Validate",
+				"CTOA: Launch Pack"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-045 Validate",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint045_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-045-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-045 Wave-1 Run",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: Run All Tests",
+				"CTOA: Sprint-045 Validate",
+				"CTOA: Launch Pack"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-045 Refresh Progress Diagram",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/project_progress_diagram.py --backlog workflows/backlog-sprint-045.yaml --state runtime/task-state.yaml --output docs/history/sprints/SPRINT-045-PROGRESS.md --project-name CTOAi",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-046 Validate",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint046_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-046-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-046 Wave-1 Run",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: Run All Tests",
+				"CTOA: Sprint-046 Validate",
+				"CTOA: Launch Pack"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-046 Refresh Progress Diagram",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/project_progress_diagram.py --backlog workflows/backlog-sprint-046.yaml --state runtime/task-state.yaml --output docs/history/sprints/SPRINT-046-PROGRESS.md --project-name CTOAi",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-047 Validate",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint047_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-047-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-047 Wave-1 Run",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: Run All Tests",
+				"CTOA: Sprint-047 Validate",
+				"CTOA: Launch Pack"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-047 Refresh Progress Diagram",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/project_progress_diagram.py --backlog workflows/backlog-sprint-047.yaml --state runtime/task-state.yaml --output docs/history/sprints/SPRINT-047-PROGRESS.md --project-name CTOAi",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-048 Validate",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint048_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-048-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-048 Wave-1 Run",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: Run All Tests",
+				"CTOA: Sprint-048 Validate",
+				"CTOA: Launch Pack"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-048 Refresh Progress Diagram",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/project_progress_diagram.py --backlog workflows/backlog-sprint-048.yaml --state runtime/task-state.yaml --output docs/history/sprints/SPRINT-048-PROGRESS.md --project-name CTOAi",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-048 Quality Snapshot",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe -m pytest tests/test_response_guardrails.py -q",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-049 Validate",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint049_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-049-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-049 Wave-1 Run",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: Run All Tests",
+				"CTOA: Sprint-049 Validate",
+				"CTOA: Launch Pack"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-049 Refresh Progress Diagram",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/project_progress_diagram.py --backlog workflows/backlog-sprint-049.yaml --state runtime/task-state.yaml --output docs/history/sprints/SPRINT-049-PROGRESS.md --project-name CTOAi",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-049 Quality Snapshot",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe -m pytest tests/test_response_guardrails.py -q",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-050 Validate",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint050_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-050-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-050 Wave-1 Run",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: Run All Tests",
+				"CTOA: Sprint-050 Validate",
+				"CTOA: Launch Pack"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-050 Refresh Progress Diagram",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/project_progress_diagram.py --backlog workflows/backlog-sprint-050.yaml --state runtime/task-state.yaml --output docs/history/sprints/SPRINT-050-PROGRESS.md --project-name CTOAi",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-050 Quality Snapshot",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe -m pytest tests/test_response_guardrails.py -q",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-063 Validate",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint063_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-063-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-063 State Sync",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint_state_sync.py --backlog workflows/backlog-sprint-063.yaml --state runtime/task-state.yaml",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-063 Refresh Progress Diagram",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/project_progress_diagram.py --backlog workflows/backlog-sprint-063.yaml --state runtime/task-state.yaml --output docs/history/sprints/SPRINT-063-PROGRESS.md --project-name CTOAi",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-063 Wave Summary UTF-8",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/wave_summary_utf8.py --state runtime/task-state.yaml --output runtime/ci-artifacts/sprint-063-wave1-summary.txt",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-063 Quality Snapshot",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe -m pytest tests/test_response_guardrails.py -q",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-064 Validate",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint064_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-064-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-064 State Sync",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint_state_sync.py --backlog workflows/backlog-sprint-064.yaml --state runtime/task-state.yaml",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-064 Refresh Progress Diagram",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/project_progress_diagram.py --backlog workflows/backlog-sprint-064.yaml --state runtime/task-state.yaml --output docs/history/sprints/SPRINT-064-PROGRESS.md --project-name CTOAi",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-064 Wave Summary UTF-8",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/wave_summary_utf8.py --state runtime/task-state.yaml --output runtime/ci-artifacts/sprint-064-wave1-summary.txt",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-064 Quality Snapshot",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe -m pytest tests/test_response_guardrails.py -q",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-066 Validate",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint066_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-066-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-066 State Sync",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint_state_sync.py --backlog workflows/backlog-sprint-066.yaml --state runtime/task-state.yaml",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-066 Refresh Progress Diagram",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/project_progress_diagram.py --backlog workflows/backlog-sprint-066.yaml --state runtime/task-state.yaml --output docs/history/sprints/SPRINT-066-PROGRESS.md --project-name CTOAi",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-066 Wave Summary UTF-8",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/wave_summary_utf8.py --state runtime/task-state.yaml --output runtime/ci-artifacts/sprint-066-wave1-summary.txt",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-066 Quality Snapshot",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe -m pytest tests/test_response_guardrails.py -q",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-066 Wave-1 Run",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: Run All Tests",
+				"CTOA: Sprint-066 Validate",
+				"CTOA: Launch Pack",
+				"CTOA: Sprint-066 State Sync",
+				"CTOA: Sprint-066 Refresh Progress Diagram",
+				"CTOA: Sprint-066 Wave Summary UTF-8",
+				"CTOA: Sprint-066 Quality Snapshot"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-067 Validate",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint067_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-067-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-067 State Sync",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint_state_sync.py --backlog workflows/backlog-sprint-067.yaml --state runtime/task-state.yaml",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-067 Refresh Progress Diagram",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/project_progress_diagram.py --backlog workflows/backlog-sprint-067.yaml --state runtime/task-state.yaml --output docs/history/sprints/SPRINT-067-PROGRESS.md --project-name CTOAi",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-067 Wave Summary UTF-8",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/wave_summary_utf8.py --state runtime/task-state.yaml --output runtime/ci-artifacts/sprint-067-wave1-summary.txt",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-067 Quality Snapshot",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe -m pytest tests/test_response_guardrails.py -q",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-067 Wave-1 Run",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: Run All Tests",
+				"CTOA: Sprint-067 Validate",
+				"CTOA: Launch Pack",
+				"CTOA: Sprint-067 State Sync",
+				"CTOA: Sprint-067 Refresh Progress Diagram",
+				"CTOA: Sprint-067 Wave Summary UTF-8",
+				"CTOA: Sprint-067 Quality Snapshot"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-068 Validate",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint068_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-068-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-068 State Sync",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint_state_sync.py --backlog workflows/backlog-sprint-068.yaml --state runtime/task-state.yaml",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-068 Refresh Progress Diagram",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/project_progress_diagram.py --backlog workflows/backlog-sprint-068.yaml --state runtime/task-state.yaml --output docs/history/sprints/SPRINT-068-PROGRESS.md --project-name CTOAi",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-068 Wave Summary UTF-8",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/wave_summary_utf8.py --sprint-id sprint-068 --validation-json runtime/ci-artifacts/sprint-068-validation.json --backlog-yaml workflows/backlog-sprint-068.yaml --state-yaml runtime/task-state.yaml --output runtime/ci-artifacts/sprint-068-wave1-summary.txt",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-068 Quality Snapshot",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe -m pytest tests/test_response_guardrails.py -q",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-068 Wave-1 Run",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: Run All Tests",
+				"CTOA: Sprint-068 Validate",
+				"CTOA: Launch Pack",
+				"CTOA: Sprint-068 State Sync",
+				"CTOA: Sprint-068 Refresh Progress Diagram",
+				"CTOA: Sprint-068 Wave Summary UTF-8",
+				"CTOA: Sprint-068 Quality Snapshot"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-069 Validate",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint069_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-069-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-069 State Sync",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint_state_sync.py --backlog workflows/backlog-sprint-069.yaml --state runtime/task-state.yaml",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-069 Refresh Progress Diagram",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/project_progress_diagram.py --backlog workflows/backlog-sprint-069.yaml --state runtime/task-state.yaml --output docs/history/sprints/SPRINT-069-PROGRESS.md --project-name CTOAi",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-069 Wave Summary UTF-8",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/wave_summary_utf8.py --sprint-id sprint-069 --validation-json runtime/ci-artifacts/sprint-069-validation.json --backlog-yaml workflows/backlog-sprint-069.yaml --state-yaml runtime/task-state.yaml --output runtime/ci-artifacts/sprint-069-wave1-summary.txt",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-069 Quality Snapshot",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe -m pytest tests/test_response_guardrails.py -q",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-069 Wave-1 Run",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: Run All Tests",
+				"CTOA: Sprint-069 Validate",
+				"CTOA: Launch Pack",
+				"CTOA: Sprint-069 State Sync",
+				"CTOA: Sprint-069 Refresh Progress Diagram",
+				"CTOA: Sprint-069 Wave Summary UTF-8",
+				"CTOA: Sprint-069 Quality Snapshot"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-065 Validate",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint065_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-065-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-065 State Sync",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint_state_sync.py --backlog workflows/backlog-sprint-065.yaml --state runtime/task-state.yaml",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-065 Refresh Progress Diagram",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/project_progress_diagram.py --backlog workflows/backlog-sprint-065.yaml --state runtime/task-state.yaml --output docs/history/sprints/SPRINT-065-PROGRESS.md --project-name CTOAi",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-065 Wave Summary UTF-8",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/wave_summary_utf8.py --state runtime/task-state.yaml --output runtime/ci-artifacts/sprint-065-wave1-summary.txt",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-065 Quality Snapshot",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe -m pytest tests/test_response_guardrails.py -q",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-065 Wave-1 Run",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: Run All Tests",
+				"CTOA: Sprint-065 Validate",
+				"CTOA: Launch Pack",
+				"CTOA: Sprint-065 State Sync",
+				"CTOA: Sprint-065 Refresh Progress Diagram",
+				"CTOA: Sprint-065 Wave Summary UTF-8",
+				"CTOA: Sprint-065 Quality Snapshot"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-064 Wave-1 Run",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: Run All Tests",
+				"CTOA: Sprint-064 Validate",
+				"CTOA: Launch Pack",
+				"CTOA: Sprint-064 State Sync",
+				"CTOA: Sprint-064 Refresh Progress Diagram",
+				"CTOA: Sprint-064 Wave Summary UTF-8",
+				"CTOA: Sprint-064 Quality Snapshot"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "CTOA: Sprint-063 Wave-1 Run",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"CTOA: Run All Tests",
+				"CTOA: Sprint-063 Validate",
+				"CTOA: Launch Pack",
+				"CTOA: Sprint-063 State Sync",
+				"CTOA: Sprint-063 Refresh Progress Diagram",
+				"CTOA: Sprint-063 Wave Summary UTF-8",
+				"CTOA: Sprint-063 Quality Snapshot"
+			],
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
+			"label": "Copilot Probe Echo",
+			"type": "shell",
+			"command": "pwsh",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Write-Output 'task-ok'"
+			]
+		},
+		{
+			"label": "Copilot Probe GH",
+			"type": "shell",
+			"command": "gh",
+			"args": [
+				"--version"
+			]
+		},
+		{
+			"label": "Copilot GH Auth Status",
+			"type": "shell",
+			"command": "gh",
+			"args": [
+				"auth",
+				"status"
+			]
+		},
+		{
+			"label": "GH Run 267036 details",
+			"type": "shell",
+			"command": "gh",
+			"args": [
+				"run",
+				"view",
+				"26703626146",
+				"--repo",
+				"famatyyk/CTOAi",
+				"--json",
+				"databaseId,workflowName,status,conclusion,event,headBranch,headSha,createdAt,startedAt,updatedAt,url,jobs"
+			]
+		},
+		{
+			"label": "GH Run 267037 details",
+			"type": "shell",
+			"command": "gh",
+			"args": [
+				"run",
+				"view",
+				"26703795570",
+				"--repo",
+				"famatyyk/CTOAi",
+				"--json",
+				"databaseId,workflowName,status,conclusion,event,headBranch,headSha,createdAt,startedAt,updatedAt,url,jobs"
+			]
+		},
+		{
+			"label": "GH Run 267039 status",
+			"type": "shell",
+			"command": "gh",
+			"args": [
+				"run",
+				"view",
+				"26703902581",
+				"--repo",
+				"famatyyk/CTOAi",
+				"--json",
+				"databaseId,status,conclusion,createdAt,startedAt,updatedAt,url,jobs"
+			]
+		},
+		{
+			"label": "GH Run 267039 poll 2",
+			"type": "shell",
+			"command": "gh",
+			"args": [
+				"run",
+				"view",
+				"26703902581",
+				"--repo",
+				"famatyyk/CTOAi",
+				"--json",
+				"status,conclusion,updatedAt,url"
+			]
+		},
+		{
+			"label": "GH Watch run32",
+			"type": "shell",
+			"command": "gh",
+			"args": [
+				"run",
+				"watch",
+				"26703902581",
+				"--repo",
+				"famatyyk/CTOAi",
+				"--exit-status"
+			]
+		},
+		{
+			"label": "GH Run 267039 poll 3",
+			"type": "shell",
+			"command": "gh",
+			"args": [
+				"run",
+				"view",
+				"26703902581",
+				"--repo",
+				"famatyyk/CTOAi",
+				"--json",
+				"status,conclusion,updatedAt,url"
+			]
+		},
+		{
+			"label": "GH Latest Bot CD all events",
+			"type": "shell",
+			"command": "gh",
+			"args": [
+				"run",
+				"list",
+				"--repo",
+				"famatyyk/CTOAi",
+				"--workflow",
+				"cd_bot.yml",
+				"--limit",
+				"10",
+				"--json",
+				"databaseId,number,event,status,conclusion,headBranch,headSha,url,createdAt,updatedAt"
+			]
+		},
+		{
+			"label": "GH Run 267033 jobs",
+			"type": "shell",
+			"command": "gh",
+			"args": [
+				"run",
+				"view",
+				"26703354033",
+				"--repo",
+				"famatyyk/CTOAi",
+				"--json",
+				"databaseId,conclusion,status,url,jobs"
+			]
+		},
+		{
+			"label": "GH Run 267033 failed logs",
+			"type": "shell",
+			"command": "gh",
+			"args": [
+				"run",
+				"view",
+				"26703354033",
+				"--repo",
+				"famatyyk/CTOAi",
+				"--log-failed"
+			]
+		},
+		{
+			"label": "Inspect failed log tail",
+			"type": "shell",
+			"command": "pwsh",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"$p='c:\\Users\\zycie\\AppData\\Roaming\\Code\\User\\workspaceStorage\\1edd8a1233777d7267ce1e89924927ff\\GitHub.copilot-chat\\chat-session-resources\\d0c13311-37dd-4d62-b983-dc6cf6e16125\\call_MomEagrIxxbgC9UC65wHpzhC__vscode-1780193909649\\content.txt'; Write-Output ('LINES=' + (Get-Content $p | Measure-Object -Line).Lines); Get-Content $p -Tail 140"
+			]
+		},
+		{
+			"label": "Git status short",
+			"type": "shell",
+			"command": "git",
+			"args": [
+				"status",
+				"--short"
+			]
+		},
+		{
+			"label": "Git status via pwsh",
+			"type": "shell",
+			"command": "pwsh",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"git status --short"
+			]
+		},
+		{
+			"label": "Commit fix via GitHub API",
+			"type": "shell",
+			"command": "pwsh",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"$owner='famatyyk'; $repo='CTOAi'; $path='requirements-bot.txt'; $branch='main'; $msg='fix(cd): install fastapi and uvicorn for dashboard container'; $sha = gh api \"repos/$owner/$repo/contents/$path?ref=$branch\" --jq .sha; $content = [Convert]::ToBase64String([IO.File]::ReadAllBytes('requirements-bot.txt')); $body = @{ message=$msg; content=$content; sha=$sha; branch=$branch } | ConvertTo-Json -Compress; $body | gh api \"repos/$owner/$repo/contents/$path\" --method PUT --input -"
+			]
+		},
+		{
+			"label": "Detect current repo",
+			"type": "shell",
+			"command": "gh",
+			"args": [
+				"repo",
+				"view",
+				"--json",
+				"nameWithOwner,defaultBranchRef"
+			]
+		},
+		{
+			"label": "Get file sha from repo",
+			"type": "shell",
+			"command": "gh",
+			"args": [
+				"api",
+				"repos/famatyyk/CTOAi/contents/requirements-bot.txt?ref=main",
+				"--jq",
+				".sha"
+			]
+		},
+		{
+			"label": "Commit requirements fix to main",
+			"type": "shell",
+			"command": "pwsh",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"$repo='famatyyk/CTOAi'; $path='requirements-bot.txt'; $branch='main'; $msg='fix(cd): install fastapi and uvicorn for dashboard container'; $sha = gh api \"repos/$repo/contents/$path?ref=$branch\" --jq .sha; $content = [Convert]::ToBase64String([IO.File]::ReadAllBytes('requirements-bot.txt')); $body = @{ message=$msg; content=$content; sha=$sha; branch=$branch } | ConvertTo-Json -Compress; $body | gh api \"repos/$repo/contents/$path\" --method PUT --input - --jq '.commit.sha + \" \" + .commit.html_url'"
+			]
+		},
+		{
+			"label": "Test gh api in pwsh",
+			"type": "shell",
+			"command": "pwsh",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"gh api \"repos/famatyyk/CTOAi/contents/requirements-bot.txt?ref=main\" --jq .sha"
+			]
+		},
+		{
+			"label": "Commit requirements fix (explicit sha)",
+			"type": "shell",
+			"command": "pwsh",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"$content=[Convert]::ToBase64String([IO.File]::ReadAllBytes('requirements-bot.txt')); gh api repos/famatyyk/CTOAi/contents/requirements-bot.txt --method PUT -f message='fix(cd): install fastapi and uvicorn for dashboard container' -f content=\"$content\" -f sha='7d4d4a0429a38b5628442b59d4fda83cc64c1ac0' -f branch='main' --jq '.commit.sha + \" \" + .commit.html_url'"
+			]
+		},
+		{
+			"label": "Check updated file sha",
+			"type": "shell",
+			"command": "gh",
+			"args": [
+				"api",
+				"repos/famatyyk/CTOAi/contents/requirements-bot.txt?ref=main",
+				"--jq",
+				".sha"
+			]
+		},
+		{
+			"label": "Get latest commit for requirements file",
+			"type": "shell",
+			"command": "gh",
+			"args": [
+				"api",
+				"repos/famatyyk/CTOAi/commits?path=requirements-bot.txt&sha=main&per_page=1",
+				"--jq",
+				".[0].sha + \" \" + .[0].html_url + \" \" + .[0].commit.message"
+			]
+		},
+		{
+			"label": "List Bot CD runs",
+			"type": "shell",
+			"command": "gh",
+			"args": [
+				"run",
+				"list",
+				"-R",
+				"famatyyk/CTOAi",
+				"--workflow",
+				"Bot CD — Deploy to VPS",
+				"--limit",
+				"10",
+				"--json",
+				"databaseId,number,status,conclusion,displayTitle,url,headSha,createdAt"
+			]
+		},
+		{
+			"label": "Watch run 33",
+			"type": "shell",
+			"command": "gh",
+			"args": [
+				"run",
+				"view",
+				"-R",
+				"famatyyk/CTOAi",
+				"26704209649",
+				"--json",
+				"status,conclusion,url,jobs,headSha,number"
+			]
+		}
+	],
+	"inputs": [
+		{
+			"id": "ctoaVpsAction",
+			"type": "pickString",
+			"description": "Select VPS action for scripts/ops/ctoa-vps.ps1",
+			"options": [
+				"Setup24x7",
+				"Verify",
+				"WhoAmI",
+				"DashboardSnapshot",
+				"TailMobileLogs",
+				"WriteGithubPat",
+				"ValidateServices",
+				"StabilizeReportService",
+				"ReportViaServiceEnv",
+				"PublishWithSourcedEnv",
+				"InspectReportEnv",
+				"ReportErrorDetails"
+			]
+		}
+	]
 }
-
-
-
-
