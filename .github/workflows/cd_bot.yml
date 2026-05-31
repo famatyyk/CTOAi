@@ -15,7 +15,8 @@ jobs:
   deploy:
     name: Deploy Bot Stack to VPS
     runs-on: ubuntu-latest
-
+    env:
+      SSH_OPTS: "-i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o ServerAliveInterval=30 -o ServerAliveCountMax=10 -o TCPKeepAlive=yes"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -33,7 +34,7 @@ jobs:
           VPS_USER: ${{ secrets.VPS_USERNAME }}
         run: |
           rsync -az --delete \
-            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
+            -e "ssh $SSH_OPTS" \
             --exclude='.git' \
             --exclude='__pycache__' \
             --exclude='*.pyc' \
@@ -49,10 +50,10 @@ jobs:
           BOT_ENV: ${{ secrets.VPS_BOT_ENV }}
         run: |
           if [ -n "$BOT_ENV" ]; then
-            echo "$BOT_ENV" | ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
+            echo "$BOT_ENV" | ssh $SSH_OPTS \
               "$VPS_USER@$VPS_HOST" "cat > /opt/tibia-bot/.env"
           else
-            ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
+            ssh $SSH_OPTS \
               "$VPS_USER@$VPS_HOST" bash << 'ENVEOF'
             if [ ! -f /opt/tibia-bot/.env ]; then
               cat > /opt/tibia-bot/.env << 'EOF'
@@ -71,7 +72,7 @@ jobs:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USER: ${{ secrets.VPS_USERNAME }}
         run: |
-          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
+          ssh $SSH_OPTS \
             "$VPS_USER@$VPS_HOST" << 'ENDSSH'
           set -e
           cd /opt/tibia-bot/bot/infra
@@ -95,6 +96,6 @@ jobs:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USER: ${{ secrets.VPS_USERNAME }}
         run: |
-          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
+          ssh $SSH_OPTS \
             "$VPS_USER@$VPS_HOST" \
             "docker compose -f /opt/tibia-bot/bot/infra/docker-compose.yml ps --format table"
