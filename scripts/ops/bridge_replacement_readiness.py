@@ -60,9 +60,10 @@ def main() -> int:
     code_files = [f for f in findings["legacy_file_reference"] if f.endswith((".py", ".sh", ".ps1", ".yml", ".yaml"))]
     doc_files = [f for f in findings["legacy_file_reference"] if f.endswith((".md", ".txt"))]
     import_blockers = [f for f in findings["legacy_import_agents"] if f != "runner/runner.py"]
+    # archived/runtime/agents_legacy.py moved out with Studio extraction.
+    # Keep only active runtime compatibility reference in Core.
     allowed_code_refs = {
         "runner/agents/executor.py",
-        "archived/runtime/agents_legacy.py",
     }
     code_blockers = [f for f in code_files if f not in allowed_code_refs]
 
@@ -99,3 +100,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

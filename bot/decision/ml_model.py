@@ -7,7 +7,7 @@ Eliminates overestimation bias → more stable policy, better combat decisions.
 State space: 6D (hp_bucket, mp_bucket, has_target, bag_full, level_tier, nearby)
 Action space: 10 actions
 Hyperparameters: α=0.10, γ=0.90, ε=0.15 (decays to 0.05 over 50k steps)
-Persistence: both tables saved to data/qtable_a.json + data/qtable_b.json
+Persistence: runtime state saved to runtime/state/qtable_a.json + runtime/state/qtable_b.json
 """
 from __future__ import annotations
 
@@ -33,10 +33,29 @@ EPSILON_MAX  = 0.15    # initial exploration rate
 EPSILON_MIN  = 0.05    # minimum exploration rate (after decay)
 EPSILON_DECAY_STEPS = 50_000
 
-_DATA_DIR    = Path(os.environ.get("BOT_DB_PATH", "data/bot.db")).parent
-_QTABLE_A    = _DATA_DIR / "qtable_a.json"
-_QTABLE_B    = _DATA_DIR / "qtable_b.json"
-_STEPS_FILE  = _DATA_DIR / "dql_steps.json"
+_ROOT = Path(__file__).resolve().parents[2]
+
+# Runtime state location for mutable learning artifacts.
+# Legacy BOT_DB_PATH parent remains read-only fallback for migration continuity.
+_state_dir_raw = Path(os.environ.get("BOT_RUNTIME_STATE_DIR", "runtime/state"))
+if not _state_dir_raw.is_absolute():
+    _state_dir_raw = _ROOT / _state_dir_raw
+_STATE_DIR = _state_dir_raw
+# Backward-compatible alias used by legacy tests/hooks.
+_DATA_DIR = _STATE_DIR
+
+_legacy_dir_raw = Path(os.environ.get("BOT_DB_PATH", "data/bot.db")).parent
+if not _legacy_dir_raw.is_absolute():
+    _legacy_dir_raw = _ROOT / _legacy_dir_raw
+_LEGACY_STATE_DIR = _legacy_dir_raw
+
+_QTABLE_A = _STATE_DIR / "qtable_a.json"
+_QTABLE_B = _STATE_DIR / "qtable_b.json"
+_STEPS_FILE = _STATE_DIR / "dql_steps.json"
+
+_LEGACY_QTABLE_A = _LEGACY_STATE_DIR / "qtable_a.json"
+_LEGACY_QTABLE_B = _LEGACY_STATE_DIR / "qtable_b.json"
+_LEGACY_STEPS_FILE = _LEGACY_STATE_DIR / "dql_steps.json"
 
 # Two Q-tables
 _Q_A: dict[str, dict[str, float]] = {}
@@ -50,17 +69,24 @@ def _load() -> None:
     if _loaded:
         return
     _loaded = True
-    for path, table in ((_QTABLE_A, _Q_A), (_QTABLE_B, _Q_B)):
-        if path.exists():
+
+    for primary, legacy, table in (
+        (_QTABLE_A, _LEGACY_QTABLE_A, _Q_A),
+        (_QTABLE_B, _LEGACY_QTABLE_B, _Q_B),
+    ):
+        source = primary if primary.exists() else legacy
+        if source.exists():
             try:
-                with open(path, encoding="utf-8") as f:
+                with open(source, encoding="utf-8") as f:
                     table.update(json.load(f))
-                logger.info("DQL table %s loaded: %d states", path.name, len(table))
+                logger.info("DQL table %s loaded from %s: %d states", primary.name, source, len(table))
             except Exception as e:
-                logger.warning("DQL table load failed (%s): %s", path.name, e)
-    if _STEPS_FILE.exists():
+                logger.warning("DQL table load failed (%s): %s", source.name, e)
+
+    steps_source = _STEPS_FILE if _STEPS_FILE.exists() else _LEGACY_STEPS_FILE
+    if steps_source.exists():
         try:
-            _step_count = json.loads(_STEPS_FILE.read_text()).get("steps", 0)
+            _step_count = json.loads(steps_source.read_text()).get("steps", 0)
         except Exception:
             pass
 
@@ -68,7 +94,7 @@ def _load() -> None:
 def save_qtable() -> None:
     """Persist both Q-tables and step counter to disk."""
     try:
-        _DATA_DIR.mkdir(parents=True, exist_ok=True)
+        _STATE_DIR.mkdir(parents=True, exist_ok=True)
         for path, table in ((_QTABLE_A, _Q_A), (_QTABLE_B, _Q_B)):
             with open(path, "w", encoding="utf-8") as f:
                 json.dump(table, f)
@@ -188,3 +214,6 @@ def compute_reward(prev_state: GameState, action: str, result: str,
         reward -= 0.5
 
     return reward
+
+
+
