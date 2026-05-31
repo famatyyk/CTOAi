@@ -1,0 +1,35 @@
+sprint: '067'
+theme: Sprint-067 AI-layer consolidation + prompt/runtime governance
+version: '1.0'
+lifecycle:
+  start: '2026-06-16'
+  target_wave1: '2026-06-17'
+  target_wave2: '2026-06-18'
+
+tasks:
+  - id: CTOA-332
+    title: Canonical AI registry and runtime contract consolidation
+    on_start: audit live runtime consumers and collapse duplicate registry surfaces
+    on_complete: confirm one canonical registry feeds runtime and validation paths
+    on_fail: freeze further AI-layer edits and record the remaining duplication points
+
+  - id: CTOA-333
+    title: BRAVE prompt runtime alignment
+    depends_on:
+      - CTOA-332
+    on_start: replace reasoning-labelled runtime sections with analysis-oriented contracts
+    on_complete: verify guardrails and runtime prompt tests pass with backward-compatible behavior
+    on_fail: retain legacy aliases and document blocked runtime call sites
+
+  - id: CTOA-334
+    title: Prompt surface and governance boundary documentation
+    depends_on:
+      - CTOA-333
+    on_start: map canonical, live, and workflow-specific prompt surfaces
+    on_complete: verify docs explain source-of-truth boundaries and next governance steps
+    on_fail: preserve prior docs and log the unresolved ambiguity explicitly
+
+gate_policy:
+  wave_1: registry validation PASS + prompt guardrails PASS + docs boundary audit PASS
+  wave_2: manual STRATEGOS sign-off with prompt/governance review
+  rollback_baseline: v1.15.0

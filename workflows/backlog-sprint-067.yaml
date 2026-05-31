@@ -1,0 +1,67 @@
+version: 1
+backlog_id: sprint-067
+window_days: 3
+focus: "Sprint-067 AI-layer consolidation + prompt/runtime governance"
+owner: strategos
+
+rules:
+  max_parallel_tasks: 2
+  definition_of_done:
+    - implementation_created
+    - validation_passed
+    - evidence_recorded
+    - documentation_updated
+  release_policy:
+    - approval_required: true
+    - environment: production
+
+tasks:
+  - id: CTOA-332
+    title: "Consolidate the canonical AI registry and runtime contracts"
+    priority: P0
+    type: architecture
+    domain: [agents, ai, governance]
+    assignees: [strategos, core-architect, code-smith]
+    estimate_hours: 4
+    deliverables:
+      - "agents/ctoa-agents.yaml"
+      - "agents/definitions.py"
+      - "tests/test_agent_framework.py"
+      - "docs/history/sprints/SPRINT-067.md"
+      - "docs/history/sprints/SPRINT-067-PROGRESS.md"
+    acceptance:
+      - "Agent registry has one canonical source of truth and runtime consumers load from it"
+      - "Registry consistency validation is automated and covered by tests"
+      - "No duplicate hardcoded agent catalog remains in runtime code"
+
+  - id: CTOA-333
+    title: "Align BRAVE prompt runtime with non-reasoning operational contracts"
+    priority: P0
+    type: architecture
+    domain: [prompts, runtime, ai]
+    assignees: [prompt-forge, code-smith, qa-terminator]
+    estimate_hours: 4
+    deliverables:
+      - "prompts/braver-library.yaml"
+      - "prompts/braver_templates.py"
+      - "tests/test_response_guardrails.py"
+    acceptance:
+      - "Runtime prompt components no longer use reasoning as the canonical execution section name"
+      - "Backward-compatible aliases exist where needed for legacy callers"
+      - "Response guardrail contracts remain enforced in tests and CI"
+
+  - id: CTOA-334
+    title: "Document live vs canonical prompt surfaces and governance boundaries"
+    priority: P1
+    type: documentation
+    domain: [docs, governance, ai]
+    assignees: [documentation-sage, strategos]
+    estimate_hours: 3
+    deliverables:
+      - "docs/AGENT_PROMPT_DEFINITIVE.md"
+      - "README.md"
+      - "docs/history/sprints/SPRINT-067.md"
+    acceptance:
+      - "Docs clearly separate canonical policy, runtime prompt surfaces, and workflow-specific prompts"
+      - "Source-of-truth boundaries are explicit for agents, prompts, and governance"
+      - "Follow-on sprint work can start without re-auditing the prompt layer from scratch"
