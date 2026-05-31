@@ -84,8 +84,8 @@ jobs:
           docker builder prune -af || true
           docker image prune -af || true
 
-          # Build bot + dashboard images from local code
-          docker compose build --no-cache bot dashboard
+          # Build bot + dashboard images using cache to reduce VPS disk churn
+          docker compose build bot dashboard
 
           # Restart stack with zero-downtime where possible
           docker compose up -d --remove-orphans
