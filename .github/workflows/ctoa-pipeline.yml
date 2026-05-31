@@ -84,10 +84,10 @@ jobs:
             fi
           done
 
-          if git ls-files --error-unmatch ":(glob)backups/config/*.tar.gz" >/dev/null 2>&1; then
-            echo "Denied tracked archive(s) detected under backups/config/*.tar.gz"
+          if git ls-files "backups/**" | grep -E '\\.(tar\\.gz|sql\\.gz)$' >/dev/null 2>&1; then
+            echo "Denied tracked backup archives detected under backups/**"
             echo "Move backups out of git tracking and rotate exposed secrets."
-            git ls-files ":(glob)backups/config/*.tar.gz"
+            git ls-files "backups/**" | grep -E '\\.(tar\\.gz|sql\\.gz)$'
             exit 1
           fi
 
@@ -810,6 +810,7 @@ jobs:
 
       - name: Publish Marker
         run: echo "Owner approved. Artifact is ready for public use from main."
+
 
 
 
