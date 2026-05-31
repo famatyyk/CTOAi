@@ -640,8 +640,15 @@ systemctl status ctoa-runner.timer
 
 ---
 
-## Future Enhancements
+## Future Enhancements (Frozen Backlog)
 
+Status: Frozen as backlog until repository split and package boundaries are completed.
+Priority order:
+1. Repository structure and package ownership boundaries
+2. Migration execution by batches and CI gate hardening
+3. Return to future enhancements only after split completion
+
+Deferred items (not active sprint scope):
 1. **Multi-agent collaboration:** Agents can delegate to other agents
 2. **Learning:** Agent prompts improve based on human feedback
 3. **Distributed execution:** Run agents across multiple VPS nodes
@@ -663,3 +670,4 @@ systemctl status ctoa-runner.timer
 - [Sprint Governance](./SPRINT_GOVERNANCE.md)
 - [VPS Deployment](../deploy/vps/SETUP.md)
 - [Local Development](./LOCAL_SETUP.md)
+
