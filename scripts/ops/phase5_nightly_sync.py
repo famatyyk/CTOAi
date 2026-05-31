@@ -517,7 +517,7 @@ def update_step9_closure_in_readme(readme_path: Path, done_utc: str) -> bool:
         readme_path.write_text(content.rstrip("\n") + block + "\n", encoding="utf-8")
         return True
 
-    updated_content = re.sub(r"(- done_utc:\s*).*$", rf"\1{done_utc}", content, count=1, flags=re.MULTILINE)
+    updated_content = re.sub(r"(- done_utc:\s*).*$", rf"\g<1>{done_utc}", content, count=1, flags=re.MULTILINE)
     if updated_content != content:
         readme_path.write_text(updated_content, encoding="utf-8")
         return True
@@ -667,3 +667,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
