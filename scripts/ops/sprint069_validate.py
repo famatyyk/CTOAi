@@ -1,4 +1,4 @@
-"""Sprint-068 kickoff validator."""
+"""Sprint-069 kickoff validator."""
 
 from __future__ import annotations
 
@@ -12,32 +12,32 @@ from typing import Any
 import yaml
 
 REQUIRED_FILES = [
-    'workflows/backlog-sprint-068.yaml',
-    'workflows/sprint-068-delivery-flow.yaml',
-    'docs/history/sprints/SPRINT-068.md',
-    'docs/history/sprints/SPRINT-068-PROGRESS.md',
+    'workflows/backlog-sprint-069.yaml',
+    'workflows/sprint-069-delivery-flow.yaml',
+    'docs/history/sprints/SPRINT-069.md',
+    'docs/history/sprints/SPRINT-069-PROGRESS.md',
 ]
 
 REQUIRED_TASK_LABELS = [
-    'CTOA: Sprint-068 Validate',
-    'CTOA: Sprint-068 State Sync',
-    'CTOA: Sprint-068 Refresh Progress Diagram',
-    'CTOA: Sprint-068 Wave Summary UTF-8',
-    'CTOA: Sprint-068 Quality Snapshot',
-    'CTOA: Sprint-068 Wave-1 Run',
+    'CTOA: Sprint-069 Validate',
+    'CTOA: Sprint-069 State Sync',
+    'CTOA: Sprint-069 Refresh Progress Diagram',
+    'CTOA: Sprint-069 Wave Summary UTF-8',
+    'CTOA: Sprint-069 Quality Snapshot',
+    'CTOA: Sprint-069 Wave-1 Run',
 ]
 
 REQUIRED_WORKFLOW_SNIPPETS = [
-    'Sprint-068 delivery gate',
-    'scripts/ops/sprint068_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-068-validation.json',
-    'Upload Sprint-068 evidence',
-    'runtime/ci-artifacts/sprint-068-validation.json',
-    'runtime/ci-artifacts/sprint-068-wave1-summary.txt',
-    'docs/history/sprints/SPRINT-068-PROGRESS.md',
+    'Sprint-069 delivery gate',
+    'scripts/ops/sprint069_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-069-validation.json',
+    'Upload Sprint-069 evidence',
+    'runtime/ci-artifacts/sprint-069-validation.json',
+    'runtime/ci-artifacts/sprint-069-wave1-summary.txt',
+    'docs/history/sprints/SPRINT-069-PROGRESS.md',
 ]
 
 REQUIRED_HOOKS = {'on_start', 'on_complete', 'on_fail'}
-REQUIRED_TASK_IDS = ['CTOA-335', 'CTOA-336', 'CTOA-337']
+REQUIRED_TASK_IDS = ['CTOA-338', 'CTOA-339', 'CTOA-340']
 
 
 def _safe_yaml_load(path: Path) -> Any:
@@ -55,7 +55,7 @@ def _check_required_files(root: Path) -> dict[str, Any]:
 
 def _check_syntax(root: Path) -> list[dict[str, Any]]:
     checks: list[dict[str, Any]] = []
-    for rel in ('workflows/backlog-sprint-068.yaml', 'workflows/sprint-068-delivery-flow.yaml'):
+    for rel in ('workflows/backlog-sprint-069.yaml', 'workflows/sprint-069-delivery-flow.yaml'):
         path = root / rel
         try:
             _safe_yaml_load(path)
@@ -66,16 +66,16 @@ def _check_syntax(root: Path) -> list[dict[str, Any]]:
 
 
 def _check_backlog_contract(root: Path) -> dict[str, Any]:
-    backlog = _safe_yaml_load(root / 'workflows/backlog-sprint-068.yaml')
+    backlog = _safe_yaml_load(root / 'workflows/backlog-sprint-069.yaml')
     tasks = backlog.get('tasks', []) if isinstance(backlog, dict) else []
     ids = [task.get('id') for task in tasks if isinstance(task, dict)]
-    ok = isinstance(backlog, dict) and backlog.get('backlog_id') == 'sprint-068' and ids == REQUIRED_TASK_IDS
-    hint = '' if ok else 'backlog_id must be sprint-068 and tasks must remain CTOA-335/336/337 in order'
+    ok = isinstance(backlog, dict) and backlog.get('backlog_id') == 'sprint-069' and ids == REQUIRED_TASK_IDS
+    hint = '' if ok else 'backlog_id must be sprint-069 and tasks must remain CTOA-338/339/340 in order'
     return {'id': 'backlog_contract', 'ok': ok, 'hint': hint}
 
 
 def _check_hooks(root: Path) -> dict[str, Any]:
-    flow = _safe_yaml_load(root / 'workflows/sprint-068-delivery-flow.yaml')
+    flow = _safe_yaml_load(root / 'workflows/sprint-069-delivery-flow.yaml')
     tasks = flow.get('tasks', []) if isinstance(flow, dict) else []
     missing = []
     for task in tasks:
@@ -102,37 +102,37 @@ def _check_local_tasks(root: Path) -> dict[str, Any]:
 
 
 def _check_plan_scope(root: Path) -> dict[str, Any]:
-    backlog = _safe_yaml_load(root / 'workflows/backlog-sprint-068.yaml')
+    backlog = _safe_yaml_load(root / 'workflows/backlog-sprint-069.yaml')
     focus = backlog.get('focus', '') if isinstance(backlog, dict) else ''
-    ok = 'delivery/governance closure' in focus and 'validator CLI hardening' in focus
+    ok = 'delivery continuity' in focus and 'CLI contract alignment' in focus
     return {
         'id': 'plan_scope',
         'ok': ok,
-        'hint': '' if ok else 'focus should describe delivery/governance closure + validator CLI hardening',
+        'hint': '' if ok else 'focus should describe delivery continuity + CLI contract alignment',
     }
 
 
 def _check_state_evidence_alignment(root: Path) -> dict[str, Any]:
-    backlog = _safe_yaml_load(root / 'workflows/backlog-sprint-068.yaml')
-    progress = root / 'docs/history/sprints/SPRINT-068-PROGRESS.md'
-    mission = root / 'docs/history/sprints/SPRINT-068.md'
-    ok = isinstance(backlog, dict) and backlog.get('backlog_id') == 'sprint-068' and progress.exists() and mission.exists()
-    hint = '' if ok else 'backlog and sprint evidence must all point at sprint-068'
+    backlog = _safe_yaml_load(root / 'workflows/backlog-sprint-069.yaml')
+    progress = root / 'docs/history/sprints/SPRINT-069-PROGRESS.md'
+    mission = root / 'docs/history/sprints/SPRINT-069.md'
+    ok = isinstance(backlog, dict) and backlog.get('backlog_id') == 'sprint-069' and progress.exists() and mission.exists()
+    hint = '' if ok else 'backlog and sprint evidence must all point at sprint-069'
     return {'id': 'state_evidence_alignment', 'ok': ok, 'hint': hint}
 
 
 def _check_progress_alignment(root: Path) -> dict[str, Any]:
-    progress = (root / 'docs/history/sprints/SPRINT-068-PROGRESS.md').read_text(encoding='utf-8')
+    progress = (root / 'docs/history/sprints/SPRINT-069-PROGRESS.md').read_text(encoding='utf-8')
     normalized = progress.replace('\\\\', '/')
     source_ok = (
-        'Source: workflows/backlog-sprint-068.yaml' in normalized
-        or ('Source: ' in normalized and '/workflows/backlog-sprint-068.yaml' in normalized)
+        'Source: workflows/backlog-sprint-069.yaml' in normalized
+        or ('Source: ' in normalized and '/workflows/backlog-sprint-069.yaml' in normalized)
     )
-    ok = 'Backlog: sprint-068' in normalized and source_ok
+    ok = 'Backlog: sprint-069' in normalized and source_ok
     return {
         'id': 'progress_alignment',
         'ok': ok,
-        'hint': '' if ok else 'progress doc must point at sprint-068 backlog source',
+        'hint': '' if ok else 'progress doc must point at sprint-069 backlog source',
     }
 
 
@@ -177,7 +177,7 @@ def build_report(root: Path, run_tests: bool) -> dict[str, Any]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description='Sprint-068 kickoff validator')
+    parser = argparse.ArgumentParser(description='Sprint-069 kickoff validator')
     parser.add_argument('--root', default='.', help='Workspace root directory')
     parser.add_argument('--run-tests', action='store_true', help='Run response guardrail regression test')
     parser.add_argument('--json-out', help='Write JSON report to file')
@@ -190,9 +190,9 @@ def main() -> int:
         out_path = (root / args.json_out).resolve()
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(json.dumps(report, indent=2), encoding='utf-8')
-        print(f"[sprint068_validate] Report written to {out_path}")
+        print(f"[sprint069_validate] Report written to {out_path}")
 
-    print(f"[sprint068_validate] {report['status']} - {report['summary']}")
+    print(f"[sprint069_validate] {report['status']} - {report['summary']}")
     for chk in report['checks']:
         mark = 'OK' if chk.get('ok') else 'FAIL'
         suffix = f"  hint: {chk.get('hint')}" if chk.get('hint') else ''
@@ -200,11 +200,14 @@ def main() -> int:
 
     failed_ids = report['diagnostics']['failed_ids']
     if failed_ids:
-        print(f"[sprint068_validate] failed checks: {', '.join(failed_ids)}")
+        print(f"[sprint069_validate] failed checks: {', '.join(failed_ids)}")
 
     return 0 if report['status'] == 'PASS' else 1
 
 
 if __name__ == '__main__':
     raise SystemExit(main())
+
+
+
 

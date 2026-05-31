@@ -30,3 +30,16 @@ Harden the delivery/governance closure path by locking validator CLI contracts, 
 ## Gate Policy
 - Wave-1: automated validator + summary + docs/evidence checks pass.
 - Wave-2: manual STRATEGOS sign-off.
+
+## Post-Merge Closure (2026-05-31)
+
+Outcome:
+- PR #131 merged to main.
+- Sprint-068 Wave-1 refreshed on main with validator, state sync, progress regeneration, and response guardrail snapshot.
+- Validator alignment hardened to accept absolute progress source paths emitted by diagram generation.
+
+Evidence:
+- Validation report: runtime/ci-artifacts/sprint-068-validation.json (PASS 11/11)
+- Wave summary: runtime/ci-artifacts/sprint-068-wave1-summary.txt
+- Progress doc: docs/history/sprints/SPRINT-068-PROGRESS.md
+- Merge commit: 7be5a659767337fdc8a1949eecd6502b7a485ee9

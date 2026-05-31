@@ -1,0 +1,35 @@
+sprint: '069'
+theme: Sprint-069 delivery continuity + Wave-1 CLI contract alignment
+version: '1.0'
+lifecycle:
+  start: '2026-06-22'
+  target_wave1: '2026-06-23'
+  target_wave2: '2026-06-24'
+
+tasks:
+  - id: CTOA-338
+    title: Sprint-069 validator and Wave-1 contract stabilization
+    on_start: audit validator and task/CI command contracts for deterministic wave execution
+    on_complete: confirm Sprint-069 validator and wave wiring contracts are stable and test-covered
+    on_fail: freeze additional wiring changes and record unresolved contract gaps
+
+  - id: CTOA-339
+    title: Wave summary CLI wiring alignment
+    depends_on:
+      - CTOA-338
+    on_start: validate wave summary invocation parameters for task and CI compatibility
+    on_complete: confirm wave summary artifact is generated without manual command patching
+    on_fail: keep previous artifact flow and capture exact CLI mismatch for rollback
+
+  - id: CTOA-340
+    title: Governance docs and evidence closure
+    depends_on:
+      - CTOA-339
+    on_start: align sprint docs and evidence references with canonical Sprint-069 sources
+    on_complete: verify docs and progress artifacts point to Sprint-069 backlog and evidence set
+    on_fail: keep prior docs baseline and log unresolved governance ambiguity explicitly
+
+gate_policy:
+  wave_1: validator contract PASS + wave summary wiring PASS + docs/evidence alignment PASS
+  wave_2: manual STRATEGOS sign-off with governance review
+  rollback_baseline: v1.15.1

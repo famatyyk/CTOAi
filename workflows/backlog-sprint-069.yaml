@@ -1,0 +1,66 @@
+version: 1
+backlog_id: sprint-069
+window_days: 3
+focus: "Sprint-069 delivery continuity + Wave-1 CLI contract alignment"
+owner: strategos
+
+rules:
+  max_parallel_tasks: 2
+  definition_of_done:
+    - implementation_created
+    - validation_passed
+    - evidence_recorded
+    - documentation_updated
+  release_policy:
+    - approval_required: true
+    - environment: production
+
+tasks:
+  - id: CTOA-338
+    title: "Stabilize Sprint-069 validator and Wave-1 contract checks"
+    priority: P0
+    type: quality
+    domain: [governance, ci, validation]
+    assignees: [strategos, qa-terminator, code-smith]
+    estimate_hours: 4
+    deliverables:
+      - "scripts/ops/sprint068_validate.py"
+      - "scripts/ops/sprint069_validate.py"
+      - "tests/test_sprint_validator_contracts.py"
+    acceptance:
+      - "Validator main() paths emit deterministic diagnostics and stable exit codes"
+      - "CLI report writing and fail-path behavior are covered by automated tests"
+      - "CI gate consumers can rely on validator output shape without parser rewrites"
+
+  - id: CTOA-339
+    title: "Align Wave summary UTF-8 CLI wiring for local task and CI evidence flow"
+    priority: P0
+    type: quality
+    domain: [governance, artifacts, ci]
+    assignees: [qa-terminator, code-smith]
+    estimate_hours: 4
+    deliverables:
+      - "scripts/ops/wave_summary_utf8.py"
+      - "runtime/ci-artifacts/sprint-069-wave1-summary.txt"
+      - ".vscode/tasks.json"
+    acceptance:
+      - "Wave summary command wiring matches current required CLI parameters"
+      - "Wave summary artifact is generated during Wave-1 without manual overrides"
+      - "Artifact remains compact UTF-8 and sprint-evidence friendly"
+
+  - id: CTOA-340
+    title: "Publish Sprint-069 governance docs and evidence contract"
+    priority: P1
+    type: documentation
+    domain: [docs, governance, release]
+    assignees: [documentation-sage, strategos]
+    estimate_hours: 3
+    deliverables:
+      - "docs/history/sprints/SPRINT-069.md"
+      - "docs/history/sprints/SPRINT-069-PROGRESS.md"
+      - "workflows/backlog-sprint-069.yaml"
+      - "workflows/sprint-069-delivery-flow.yaml"
+    acceptance:
+      - "Docs capture DoD, gate policy, and artifact boundaries for Sprint-069"
+      - "Progress file points to canonical Sprint-069 backlog source"
+      - "Next sprint handoff can start without re-auditing governance wiring"
