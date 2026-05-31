@@ -134,3 +134,28 @@ def test_legacy_sprint_validator_quality_check_reports_pytest_failure(monkeypatc
     assert result['ok'] is False
     assert result['hint'] == 'Focused quality regression tests failed'
     assert 'pytest' in result['details']['command']
+
+
+def test_legacy_sprint_validators_flag_released_doc_state_mismatch(tmp_path: Path, validator_case):
+    sprint, module = validator_case
+    _write_workspace(tmp_path, sprint)
+    sprint_upper = f'SPRINT-{sprint}'
+    (tmp_path / f'docs/history/sprints/{sprint_upper}.md').write_text(f'# {sprint_upper}\nStatus: RELEASED\n', encoding='utf-8')
+    (tmp_path / 'runtime').mkdir(parents=True, exist_ok=True)
+    (tmp_path / 'runtime/task-state.yaml').write_text(
+        '\n'.join(
+            [
+                'backlog_id: other-sprint',
+                'tasks:',
+                '  - id: CTOA-001',
+                '    status: IN_PROGRESS',
+                '',
+            ]
+        ),
+        encoding='utf-8',
+    )
+
+    report = module.validate(tmp_path, run_tests=False)
+
+    assert report['status'] == 'FAIL'
+    assert 'state_evidence_alignment' in _failed_ids(report)
