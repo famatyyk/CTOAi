@@ -5,3 +5,5 @@ pyautogui>=0.9.54   # Input simulation
 pynput>=1.7.6       # Low-level input
 numpy>=1.26         # Array ops for CV
 torch>=2.2.0        # ML model (Phase 2)
+fastapi>=0.111      # Dashboard API server
+uvicorn[standard]>=0.30  # ASGI server for dashboard container
