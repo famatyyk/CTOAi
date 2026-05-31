@@ -133,3 +133,32 @@ def test_sprint066_quality_check_reports_pytest_failure(monkeypatch: pytest.Monk
     assert result['id'] == 'quality_regression_tests'
     assert result['ok'] is False
     assert 'pytest tests/test_response_guardrails.py -q failed' in result['hint']
+
+def test_sprint066_main_writes_json_and_reports_fail(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys):
+    module_path = PROJECT_ROOT / 'scripts' / 'ops' / 'sprint066_validate.py'
+    spec = importlib.util.spec_from_file_location('sprint066_validate_main', module_path)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    report = {
+        'status': 'FAIL',
+        'summary': '7/8 checks passed',
+        'checks': [{'id': 'local_tasks', 'ok': False, 'hint': 'missing'}],
+        'diagnostics': {'failed_ids': ['local_tasks'], 'failed_count': 1, 'critical_failed_ids': []},
+    }
+    monkeypatch.setattr(module, 'build_report', lambda root, run_tests: report)
+    monkeypatch.setattr(
+        module.argparse.ArgumentParser,
+        'parse_args',
+        lambda self: SimpleNamespace(root=str(tmp_path), run_tests=False, json_out='runtime/ci-artifacts/sprint-066-validation.json'),
+    )
+
+    exit_code = module.main()
+
+    assert exit_code == 1
+    saved = tmp_path / 'runtime/ci-artifacts/sprint-066-validation.json'
+    assert saved.exists()
+    out = capsys.readouterr().out
+    assert '[sprint066_validate] FAIL - 7/8 checks passed' in out
+    assert '[sprint066_validate] failed checks: local_tasks' in out

@@ -114,3 +114,49 @@ def test_main_writes_summary_and_returns_zero(tmp_path: Path, monkeypatch, capsy
     assert exit_code == 0
     assert output.exists()
     assert '[wave_summary_utf8] wrote' in capsys.readouterr().out
+
+def test_load_json_and_yaml_invalid_inputs_return_empty(tmp_path: Path):
+    module = _load_module()
+    bad_json = tmp_path / 'bad.json'
+    bad_yaml = tmp_path / 'bad.yaml'
+    bad_json.write_text('{not-valid', encoding='utf-8')
+    bad_yaml.write_text('- item\n- two\n', encoding='utf-8')
+
+    assert module._load_json(bad_json) == {}
+    assert module._load_yaml(bad_yaml) == {}
+
+
+def test_main_passes_paths_to_generate_summary(monkeypatch, tmp_path: Path, capsys):
+    module = _load_module()
+    captured = {}
+
+    def fake_generate_summary(**kwargs):
+        captured.update(kwargs)
+        out = kwargs['output']
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text('ok\n', encoding='utf-8')
+        return out
+
+    monkeypatch.setattr(module, 'generate_summary', fake_generate_summary)
+    monkeypatch.setattr(
+        module.argparse.ArgumentParser,
+        'parse_args',
+        lambda self: SimpleNamespace(
+            sprint_id='067',
+            validation_json=str(tmp_path / 'runtime/v.json'),
+            output=str(tmp_path / 'runtime/wave.txt'),
+            repo_hygiene_json=str(tmp_path / 'runtime/h.json'),
+            state_yaml=str(tmp_path / 'runtime/state.yaml'),
+            backlog_yaml=str(tmp_path / 'workflows/backlog-sprint-067.yaml'),
+        ),
+    )
+
+    exit_code = module.main()
+
+    assert exit_code == 0
+    assert captured['validation_json'] == Path(tmp_path / 'runtime/v.json')
+    assert captured['output'] == Path(tmp_path / 'runtime/wave.txt')
+    assert captured['repo_hygiene_json'] == Path(tmp_path / 'runtime/h.json')
+    assert captured['state_yaml'] == Path(tmp_path / 'runtime/state.yaml')
+    assert captured['backlog_yaml'] == Path(tmp_path / 'workflows/backlog-sprint-067.yaml')
+    assert '[wave_summary_utf8] wrote' in capsys.readouterr().out

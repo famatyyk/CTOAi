@@ -166,3 +166,27 @@ def test_check_quality_reports_pytest_failure(monkeypatch: pytest.MonkeyPatch):
     assert result['id'] == 'quality_regression_tests'
     assert result['ok'] is False
     assert 'pytest tests/test_response_guardrails.py -q failed' in result['hint']
+
+def test_main_writes_json_and_returns_nonzero_for_failed_report(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys):
+    module = _load_module()
+    report = {
+        'status': 'FAIL',
+        'summary': '10/11 checks passed',
+        'checks': [{'id': 'progress_alignment', 'ok': False, 'hint': 'mismatch'}],
+        'diagnostics': {'failed_ids': ['progress_alignment'], 'failed_count': 1, 'critical_failed_ids': []},
+    }
+    monkeypatch.setattr(module, 'build_report', lambda root, run_tests: report)
+    monkeypatch.setattr(
+        module.argparse.ArgumentParser,
+        'parse_args',
+        lambda self: SimpleNamespace(root=str(tmp_path), run_tests=False, json_out='runtime/ci-artifacts/sprint-067-validation.json'),
+    )
+
+    exit_code = module.main()
+
+    assert exit_code == 1
+    saved = tmp_path / 'runtime/ci-artifacts/sprint-067-validation.json'
+    assert saved.exists()
+    out = capsys.readouterr().out
+    assert '[sprint067_validate] FAIL - 10/11 checks passed' in out
+    assert '[sprint067_validate] failed checks: progress_alignment' in out
