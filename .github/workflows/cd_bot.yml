@@ -80,6 +80,10 @@ jobs:
           # Pull latest images
           docker compose pull prometheus grafana 2>/dev/null || true
 
+          # Reclaim Docker build space on VPS
+          docker builder prune -af || true
+          docker image prune -af || true
+
           # Build bot + dashboard images from local code
           docker compose build --no-cache bot dashboard
 
@@ -99,3 +103,4 @@ jobs:
           ssh $SSH_OPTS \
             "$VPS_USER@$VPS_HOST" \
             "docker compose -f /opt/tibia-bot/bot/infra/docker-compose.yml ps --format table"
+
