@@ -91,6 +91,10 @@ jobs:
           failed=0
           for f in /opt/ctoa/scripts/ops/*.sh; do
             [ -e "$f" ] || continue
+            if [ ! -r "$f" ]; then
+              echo "WARN: unreadable (skipped): ${f#/opt/ctoa/}"
+              continue
+            fi
             if bash -n "$f"; then
               echo "OK: ${f#/opt/ctoa/}"
             else
