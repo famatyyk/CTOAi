@@ -47,8 +47,21 @@ jobs:
       - name: Setup SSH key
         run: |
           mkdir -p ~/.ssh
-          echo "$SSH_KEY" > ~/.ssh/ctoa_vps
+
+          # Accept both plain private-key secrets and base64-encoded key secrets.
+          if printf '%s' "$SSH_KEY" | grep -q 'BEGIN .*PRIVATE KEY'; then
+            printf '%s\n' "$SSH_KEY" | tr -d '\r' > ~/.ssh/ctoa_vps
+          else
+            printf '%s' "$SSH_KEY" | tr -d '\r\n' | base64 -d > ~/.ssh/ctoa_vps
+          fi
+
           chmod 600 ~/.ssh/ctoa_vps
+
+          if ! ssh-keygen -y -f ~/.ssh/ctoa_vps >/dev/null 2>&1; then
+            echo '::error::CTOA_VPS_SSH_KEY is not a valid private key (plain or base64).'
+            exit 1
+          fi
+
           ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
 
       # --------------------------------------------------------
