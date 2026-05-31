@@ -1,0 +1,67 @@
+version: 1
+backlog_id: sprint-068
+window_days: 3
+focus: "Sprint-068 delivery/governance closure + validator CLI hardening"
+owner: strategos
+
+rules:
+  max_parallel_tasks: 2
+  definition_of_done:
+    - implementation_created
+    - validation_passed
+    - evidence_recorded
+    - documentation_updated
+  release_policy:
+    - approval_required: true
+    - environment: production
+
+tasks:
+  - id: CTOA-335
+    title: "Harden Sprint validator CLI contracts and failure diagnostics"
+    priority: P0
+    type: quality
+    domain: [governance, ci, validation]
+    assignees: [strategos, qa-terminator, code-smith]
+    estimate_hours: 4
+    deliverables:
+      - "scripts/ops/sprint066_validate.py"
+      - "scripts/ops/sprint067_validate.py"
+      - "tests/test_sprint_validator_contracts.py"
+      - "tests/test_sprint067_validate.py"
+    acceptance:
+      - "Validator main() paths emit deterministic diagnostics and stable exit codes"
+      - "CLI report writing and fail-path behavior are covered by automated tests"
+      - "CI gate consumers can rely on validator output shape without manual parsing changes"
+
+  - id: CTOA-336
+    title: "Strengthen Wave summary UTF-8 governance artifact contract"
+    priority: P0
+    type: quality
+    domain: [governance, artifacts, ci]
+    assignees: [qa-terminator, code-smith]
+    estimate_hours: 4
+    deliverables:
+      - "scripts/ops/wave_summary_utf8.py"
+      - "tests/test_wave_summary_utf8.py"
+      - "runtime/ci-artifacts/sprint-068-wave1-summary.txt"
+    acceptance:
+      - "Wave summary generator handles invalid/missing inputs deterministically"
+      - "CLI argument wiring and output contract are validated by tests"
+      - "Artifact remains compact UTF-8 and sprint-evidence friendly"
+
+  - id: CTOA-337
+    title: "Close governance-loop docs and rollout evidence for Sprint-068"
+    priority: P1
+    type: documentation
+    domain: [docs, governance, release]
+    assignees: [documentation-sage, strategos]
+    estimate_hours: 3
+    deliverables:
+      - "docs/history/sprints/SPRINT-068.md"
+      - "docs/history/sprints/SPRINT-068-PROGRESS.md"
+      - "workflows/backlog-sprint-068.yaml"
+      - "workflows/sprint-068-delivery-flow.yaml"
+    acceptance:
+      - "Docs capture DoD, gate policy, and artifact boundaries for Sprint-068"
+      - "Progress file points to canonical Sprint-068 backlog source"
+      - "Next sprint handoff can start without re-auditing governance wiring"

@@ -1,0 +1,35 @@
+sprint: '068'
+theme: Sprint-068 delivery/governance closure + validator CLI hardening
+version: '1.0'
+lifecycle:
+  start: '2026-06-19'
+  target_wave1: '2026-06-20'
+  target_wave2: '2026-06-21'
+
+tasks:
+  - id: CTOA-335
+    title: Sprint validator CLI contract hardening
+    on_start: audit validator main paths for deterministic fail diagnostics and artifact output
+    on_complete: confirm sprint validator CLI contracts are stable and covered by tests
+    on_fail: freeze further validator wiring changes and record unresolved CLI contract gaps
+
+  - id: CTOA-336
+    title: Wave summary UTF-8 artifact contract hardening
+    depends_on:
+      - CTOA-335
+    on_start: verify wave summary input-handling and output contract across edge cases
+    on_complete: confirm wave summary CLI and contract checks pass in CI and local validation
+    on_fail: preserve previous generator behavior and document the blocking contract mismatch
+
+  - id: CTOA-337
+    title: Governance-loop documentation and evidence closure
+    depends_on:
+      - CTOA-336
+    on_start: align sprint docs with gate policy and evidence artifact expectations
+    on_complete: verify docs and progress artifacts reflect canonical sprint-068 sources
+    on_fail: keep prior docs baseline and log unresolved governance ambiguity explicitly
+
+gate_policy:
+  wave_1: validator CLI contract PASS + wave summary contract PASS + docs/evidence alignment PASS
+  wave_2: manual STRATEGOS sign-off with governance review
+  rollback_baseline: v1.15.0
