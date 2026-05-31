@@ -79,7 +79,7 @@ jobs:
       - name: Pull latest code on VPS
         run: |
           ssh -i ~/.ssh/ctoa_vps "$VPS_USER@$VPS_HOST" \
-            "cd $CTOA_DIR && git fetch --quiet && git reset --hard origin/main 2>&1 | tail -3"
+            "git config --global --add safe.directory $CTOA_DIR && cd $CTOA_DIR && git fetch --quiet && git reset --hard origin/main 2>&1 | tail -3"
 
       # --------------------------------------------------------
       # 3. Validate shell script syntax on VPS (pre-reset gate)
