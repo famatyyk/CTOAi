@@ -111,23 +111,24 @@ jobs:
       - name: Trigger GS Reset
         run: |
           FORCE="${{ github.event.inputs.force_reset || 'false' }}"
-          if [ "$FORCE" = "true" ]; then
-            echo "Force flag set — executing gs-reset.sh directly …"
+          EVENT_NAME="${{ github.event_name }}"
+          if [ "$FORCE" = "true" ] || [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "Running gs-reset.sh directly (force flag or manual dispatch) ..."
             ssh -i ~/.ssh/ctoa_vps "$VPS_USER@$VPS_HOST" \
               "bash $CTOA_DIR/scripts/ops/gs-reset.sh 2>&1 | tail -80"
           else
-            echo "Waiting for systemd ctoa-gs-reset.timer to fire at 06:00 UTC …"
-            # Poll until the gs-reset log shows CYCLE COMPLETE or timeout
+            echo "Waiting for systemd ctoa-gs-reset.timer to fire at 06:00 UTC ..."
+            # Poll until the gs-reset log shows CYCLE COMPLETE or timeout.
             ELAPSED=0
             until ssh -i ~/.ssh/ctoa_vps "$VPS_USER@$VPS_HOST" \
                 "grep -q 'GS RESET CYCLE COMPLETE' $CTOA_DIR/logs/gs-reset.log 2>/dev/null" \
               || [ "$ELAPSED" -ge 900 ]; do
               sleep 30
               ELAPSED=$(( ELAPSED + 30 ))
-              echo "Waiting … ${ELAPSED}s elapsed"
+              echo "Waiting ... ${ELAPSED}s elapsed"
             done
             if [ "$ELAPSED" -ge 900 ]; then
-              echo "::error::GS reset did not complete within 15 min — check VPS logs"
+              echo "::error::GS reset did not complete within 15 min - check VPS logs"
               exit 1
             fi
           fi
