@@ -1,4 +1,4 @@
-﻿name: CTOA Monitoring Alerts
+name: CTOA Monitoring Alerts
 
 on:
   workflow_run:
@@ -252,6 +252,11 @@ jobs:
               conclusion = str(payload.get("conclusion") or "").lower()
               if conclusion == "success":
                   process_success(payload)
+              elif conclusion in {"cancelled", "skipped", "neutral"}:
+                  print(
+                      "Ignoring non-actionable workflow conclusion "
+                      f"'{conclusion}' for {payload.get('signal_name', 'unknown-signal')}"
+                  )
               else:
                   upsert_failure(payload)
 
