@@ -112,8 +112,19 @@ jobs:
         run: |
           FORCE="${{ github.event.inputs.force_reset || 'false' }}"
           EVENT_NAME="${{ github.event_name }}"
+          NOW_UTC_HHMM="$(date -u +%H%M)"
+
+          RUN_DIRECT="false"
           if [ "$FORCE" = "true" ] || [ "$EVENT_NAME" = "workflow_dispatch" ]; then
-            echo "Running gs-reset.sh directly (force flag or manual dispatch) ..."
+            RUN_DIRECT="true"
+          elif [ "$EVENT_NAME" = "schedule" ] && [ $((10#$NOW_UTC_HHMM)) -ge 600 ]; then
+            # If the scheduled run starts late (after 06:00 UTC), waiting for the timer can only time out.
+            RUN_DIRECT="true"
+            echo "Scheduled run started at ${NOW_UTC_HHMM} UTC (after 06:00) - executing gs-reset.sh directly."
+          fi
+
+          if [ "$RUN_DIRECT" = "true" ]; then
+            echo "Running gs-reset.sh directly ..."
             ssh -i ~/.ssh/ctoa_vps "$VPS_USER@$VPS_HOST" \
               "bash $CTOA_DIR/scripts/ops/gs-reset.sh 2>&1 | tail -80"
           else
