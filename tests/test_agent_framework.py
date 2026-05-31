@@ -49,6 +49,13 @@ class TestAgentDefinitions(unittest.TestCase):
             self.assertAlmostEqual(total, 1.0, places=1, 
                 msg=f"Agent {agent_id} weights don't sum to 1.0: {total}")
 
+    def test_registry_consistency_validator(self):
+        """Verify the YAML-backed registry passes consistency validation."""
+        from definitions import validate_registry_consistency
+
+        issues = validate_registry_consistency()
+        self.assertEqual(issues, [], f"Registry consistency issues: {issues}")
+
 
 class TestBraverTemplates(unittest.TestCase):
     """Test BRAVE(R) prompt templates"""
@@ -57,8 +64,9 @@ class TestBraverTemplates(unittest.TestCase):
         """Verify all BRAVE(R) components present"""
         from braver_templates import get_all_components
         components = get_all_components()
-        self.assertEqual(len(components), 6)  # Business, Reasoning, Action, Value, Evidence, Reflection
+        self.assertEqual(len(components), 6)  # Business, Analysis, Action, Value, Evidence, Reflection
         self.assertIn("business", components)
+        self.assertIn("analysis", components)
         self.assertIn("reflection", components)
     
     def test_template_types(self):

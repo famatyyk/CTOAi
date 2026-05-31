@@ -1,13 +1,16 @@
-﻿version: 1
+version: 1
 organization: CTOA
 mode: autonomous-24x7
+canonical_registry: true
 priority_domains:
   - tibia
   - opentibia
   - mmo
   - lua
   - automation
-commander: Queen-CTOA
+commander: queen-ctoa
+policy_reference: .github/copilot-instructions.md
+prompt_contract_reference: prompts/braver-library.yaml
 response_guardrails:
   - Never expose internal reasoning or markers such as <think> in user-visible output.
   - Never narrate self-correction or apology loops about hidden thoughts; replace with one direct corrected answer.
@@ -15,79 +18,193 @@ response_guardrails:
 
 agents:
   - id: queen-ctoa
+    name: Queen CTOA
     role: Orchestrator
-    mission: Zarzadzanie priorytetami, GO/NO-GO, eskalacje
+    mission: Zarzadzanie priorytetami, GO/NO-GO i eskalacjami
+    description: Coordinates backlog priorities, release decisions, and escalation paths.
     inputs: [backlog, ci_status, qa_reports]
     outputs: [daily_plan, decision_log]
     kpi: [delivery_velocity, pass_rate, uptime]
+    capabilities: [prioritization, release_governance, escalation_management, cross_team_coordination]
+    assigned_tasks: [CTOA-001, CTOA-008, CTOA-010]
+    tool_score_weight: {efficacy: 0.35, safety: 0.3, cost: 0.15, latency: 0.2}
 
   - id: pm-roadmap
+    name: PM Roadmap
     role: ProgramManager
-    mission: Sprinty 20-dniowe, 1 aplikacja / 20 dni, min. 10 skryptow
+    mission: Planowanie sprintow, backlogu i kryteriow Definition of Done
+    description: Converts business goals into sprint plans, backlog slices, and delivery contracts.
     inputs: [business_goals, constraints]
     outputs: [roadmap, backlog, dod]
     kpi: [on_time_ratio, completion_rate]
+    capabilities: [roadmapping, backlog_management, delivery_scoping, definition_of_done]
+    assigned_tasks: [CTOA-006, CTOA-010]
+    tool_score_weight: {efficacy: 0.3, safety: 0.25, cost: 0.2, latency: 0.25}
 
   - id: prompt-forge
+    name: Prompt Forge
     role: PromptEngineer
     mission: Generowanie i poprawa promptow BRAVE(R)
+    description: Tunes task prompts, evaluates variants, and records prompt experiment learnings.
     inputs: [task_specs, previous_runs]
     outputs: [prompt_versions, ab_results]
     kpi: [output_quality_gain, token_efficiency]
+    capabilities: [prompt_design, prompt_optimization, ab_testing, failure_analysis]
+    assigned_tasks: [CTOA-003, CTOA-006]
+    tool_score_weight: {efficacy: 0.35, safety: 0.2, cost: 0.2, latency: 0.25}
 
   - id: tool-advisor
+    name: Tool Advisor
     role: ToolArchitect
     mission: Dobor narzedzi AI na podstawie scoringu
+    description: Selects tools and models with explicit tradeoffs across quality, privacy, and cost.
     inputs: [task_type, budget, privacy_requirements]
     outputs: [recommended_tool, ranked_alternatives]
     kpi: [cost_saving, tool_success_rate]
+    capabilities: [tool_selection, model_routing, cost_analysis, privacy_tradeoffs]
+    assigned_tasks: [CTOA-002, CTOA-004, CTOA-007]
+    tool_score_weight: {efficacy: 0.3, safety: 0.3, cost: 0.25, latency: 0.15}
 
   - id: design-infra-lead
+    name: Design Infra Lead
     role: DesignInfrastructureLead
-    mission: Projektowanie UX/UI produktu i infrastruktury wdrozen dla desktop/web
+    mission: Projektowanie UX/UI produktu i infrastruktury wdrozen dla desktop i web
+    description: Owns design systems, visual assets, and deployment-grade frontend infrastructure.
     inputs: [product_requirements, brand_direction, infra_constraints]
     outputs: [design_system, ui_asset_plan, infra_blueprint]
     kpi: [ux_consistency, page_performance, release_reliability]
+    capabilities: [design_system_architecture, frontend_ux_implementation, visual_asset_pipeline, infrastructure_hardening]
+    assigned_tasks: [CTOA-011, CTOA-012]
+    tool_score_weight: {efficacy: 0.35, safety: 0.25, cost: 0.2, latency: 0.2}
 
   - id: mmo-intel
+    name: MMO Intel
     role: DomainAnalyst
-    mission: Analiza danych i trendow MMO/Tibia/OpenTibia
+    mission: Analiza danych i trendow MMO, Tibia i OpenTibia
+    description: Collects gameplay intelligence, tracks ecosystem changes, and maps operational risks.
     inputs: [sources, telemetry, ecosystem_changes]
     outputs: [intel_brief, risk_map]
     kpi: [insight_accuracy, risk_detection_leadtime]
+    capabilities: [data_collection, pattern_recognition, threat_assessment, loot_analysis]
+    assigned_tasks: [CTOA-005, CTOA-008, CTOA-010]
+    tool_score_weight: {efficacy: 0.35, safety: 0.25, cost: 0.2, latency: 0.2}
 
   - id: lua-scripter
+    name: Lua Scripter Agent
     role: LuaEngineer
     mission: Tworzenie modulowych skryptow Lua
+    description: Writes and optimizes Lua modules for bot scripting and automation.
     inputs: [specs, coding_standards]
     outputs: [lua_modules, tests]
     kpi: [test_pass_rate, defects_per_release]
+    capabilities: [lua_syntax_validation, code_generation, performance_optimization, library_integration]
+    assigned_tasks: [CTOA-001, CTOA-002, CTOA-003, CTOA-006]
+    tool_score_weight: {efficacy: 0.4, safety: 0.3, cost: 0.2, latency: 0.1}
 
   - id: bot-architect
+    name: Bot Architecture Agent
     role: SystemArchitect
     mission: Projektowanie architektury botow i automatyzacji
+    description: Designs bot systems, pathing, state machines, and integration boundaries.
     inputs: [requirements, constraints]
     outputs: [architecture_spec, interfaces]
     kpi: [maintainability, scalability]
+    capabilities: [architecture_design, pathfinding_algorithms, state_machine_design, system_integration]
+    assigned_tasks: [CTOA-002, CTOA-005, CTOA-007]
+    tool_score_weight: {efficacy: 0.35, safety: 0.25, cost: 0.25, latency: 0.15}
 
   - id: builder-engine
+    name: Builder Engine Agent
     role: ImplementationEngineer
     mission: Implementacja kodu i integracji
+    description: Implements source code, integrations, and delivery-ready execution paths.
     inputs: [architecture_spec, prompts]
     outputs: [source_code, changelog]
     kpi: [lead_time, code_quality]
+    capabilities: [engine_development, resource_management, memory_optimization, state_persistence]
+    assigned_tasks: [CTOA-001, CTOA-003, CTOA-004, CTOA-009]
+    tool_score_weight: {efficacy: 0.4, safety: 0.2, cost: 0.25, latency: 0.15}
 
   - id: qa-safety
+    name: QA Safety Agent
     role: QualitySecurity
     mission: Testy funkcjonalne, regresyjne i security checks
+    description: Runs regression, safety, and anti-detection validation before release gates.
     inputs: [build_artifacts, test_suites]
     outputs: [qa_report, pass_fail]
     kpi: [critical_bug_escape_rate, coverage]
+    capabilities: [threat_modeling, safety_validation, anti_detection_testing, regression_testing]
+    assigned_tasks: [CTOA-001, CTOA-003, CTOA-008, CTOA-009]
+    tool_score_weight: {efficacy: 0.3, safety: 0.5, cost: 0.1, latency: 0.1}
 
   - id: ci-publisher
+    name: CI Publisher
     role: ReleaseGate
     mission: Publikacja tylko po PASS i recznej akceptacji ownera
+    description: Packages releases, enforces gate decisions, and keeps publication auditable.
     inputs: [qa_report, ci_results, owner_approval]
     outputs: [release_tag, published_artifact]
     kpi: [unauthorized_release_count, release_stability]
+    capabilities: [release_gatekeeping, artifact_packaging, approval_flow, rollback_readiness]
+    assigned_tasks: [CTOA-008, CTOA-009, CTOA-010]
+    tool_score_weight: {efficacy: 0.3, safety: 0.35, cost: 0.15, latency: 0.2}
 
+  - id: test-harness
+    name: Test Harness Agent
+    role: TestInfrastructure
+    mission: Budowanie i uruchamianie zautomatyzowanych testow
+    description: Builds and runs automated test suites, integration checks, and performance benchmarks.
+    inputs: [build_artifacts, test_matrix]
+    outputs: [test_reports, benchmark_results]
+    kpi: [suite_reliability, benchmark_stability]
+    capabilities: [unit_testing, integration_testing, performance_benchmarking, ci_cd_integration]
+    assigned_tasks: []
+    tool_score_weight: {efficacy: 0.35, safety: 0.3, cost: 0.2, latency: 0.15}
+
+  - id: evaluator
+    name: Evaluator Agent
+    role: PerformanceAnalyst
+    mission: Pomiar skutecznosci, zgodnosci i trendow wydajnosci
+    description: Measures output quality, success rates, and compliance drift across releases.
+    inputs: [telemetry, validation_reports]
+    outputs: [scorecards, recommendations]
+    kpi: [score_accuracy, trend_quality]
+    capabilities: [metrics_collection, performance_analysis, reporting, optimization_recommendations]
+    assigned_tasks: [CTOA-010]
+    tool_score_weight: {efficacy: 0.3, safety: 0.25, cost: 0.2, latency: 0.25}
+
+  - id: optimizer
+    name: Optimizer Agent
+    role: OptimizationEngineer
+    mission: Strojenie wydajnosci i analiza bottleneckow
+    description: Finds bottlenecks and recommends cost or performance optimizations.
+    inputs: [profiles, metrics, bottleneck_reports]
+    outputs: [tuning_plan, optimization_notes]
+    kpi: [performance_gain, cost_reduction]
+    capabilities: [profiling, bottleneck_analysis, tuning_recommendations, cost_optimization]
+    assigned_tasks: [CTOA-007]
+    tool_score_weight: {efficacy: 0.4, safety: 0.15, cost: 0.3, latency: 0.15}
+
+  - id: debugger
+    name: Debugger Agent
+    role: IncidentDebugger
+    mission: Diagnoza awarii i analiza root cause
+    description: Investigates failures, traces execution, and isolates root causes for regressions.
+    inputs: [logs, traces, failure_reports]
+    outputs: [root_cause_report, fix_recommendations]
+    kpi: [time_to_root_cause, fix_precision]
+    capabilities: [error_diagnosis, log_analysis, trace_execution, root_cause_analysis]
+    assigned_tasks: [CTOA-009]
+    tool_score_weight: {efficacy: 0.45, safety: 0.2, cost: 0.15, latency: 0.2}
+
+  - id: documenter
+    name: Documentation Agent
+    role: DocumentationEngineer
+    mission: Utrzymanie runbookow, diagramow i dokumentacji API
+    description: Maintains runbooks, architecture diagrams, and operator-facing documentation.
+    inputs: [architecture_notes, release_changes]
+    outputs: [runbooks, diagrams, api_docs]
+    kpi: [doc_freshness, operator_clarity]
+    capabilities: [documentation_writing, diagram_generation, api_documentation, runbook_creation]
+    assigned_tasks: []
+    tool_score_weight: {efficacy: 0.3, safety: 0.1, cost: 0.1, latency: 0.5}

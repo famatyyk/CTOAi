@@ -124,10 +124,12 @@ class SessionScheduler:
     def _in_active_window(self, dt: datetime) -> bool:
         """True if current hour is within active window."""
         h = dt.hour
-        if self.active_start <= self.active_end:
-            return self.active_start <= h < self.active_end
+        if self.active_start == self.active_end:
+            return False
+        if self.active_start < self.active_end:
+            return self.active_start <= h <= self.active_end
         # Overnight window (e.g. 22:00–06:00)
-        return h >= self.active_start or h < self.active_end
+        return h >= self.active_start or h <= self.active_end
 
     def _plan_session(self) -> None:
         """Randomise session length with slight weekend variation."""

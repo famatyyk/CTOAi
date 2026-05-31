@@ -1,0 +1,65 @@
+version: 1
+backlog_id: sprint-065
+window_days: 3
+focus: "Sprint-065 product delta + agent execution quality"
+owner: strategos
+
+rules:
+  max_parallel_tasks: 2
+  definition_of_done:
+    - implementation_created
+    - validation_passed
+    - evidence_recorded
+    - documentation_updated
+  release_policy:
+    - approval_required: true
+    - environment: production
+
+tasks:
+  - id: CTOA-326
+    title: "Harden Wave execution ordering and artifact coherence"
+    priority: P0
+    type: process
+    domain: [ops, reliability, governance]
+    assignees: [strategos, devops-master, qa-terminator]
+    estimate_hours: 2
+    deliverables:
+      - ".vscode/tasks.json"
+      - "docs/history/sprints/SPRINT-065.md"
+      - "docs/history/sprints/SPRINT-065-PROGRESS.md"
+    acceptance:
+      - "Wave-1 chain always generates progress snapshot after state sync"
+      - "No duplicate task labels for active sprint wave run"
+      - "Wave summary and progress snapshot are state-aligned on first run"
+
+  - id: CTOA-327
+    title: "Improve agent execution signal quality in runner outputs"
+    priority: P0
+    type: product
+    domain: [runner, observability, quality]
+    assignees: [core-architect, code-smith]
+    estimate_hours: 4
+    deliverables:
+      - "runner/"
+      - "runtime/ci-artifacts/"
+      - "tests/"
+    acceptance:
+      - "Runner output includes normalized execution status summary usable by operators"
+      - "At least one new automated test covers status summary correctness"
+      - "No regression in existing pytest suite"
+
+  - id: CTOA-328
+    title: "Strengthen agent prompt contract for fact-first responses"
+    priority: P1
+    type: product
+    domain: [prompts, scoring, safety]
+    assignees: [core-architect, documentation-sage]
+    estimate_hours: 3
+    deliverables:
+      - "prompts/"
+      - "scoring/"
+      - "docs/"
+    acceptance:
+      - "Prompt contract explicitly separates facts, inference, and next action"
+      - "Scoring weights prefer evidence-backed responses for operational prompts"
+      - "At least one test/eval artifact demonstrates improved structure compliance"
