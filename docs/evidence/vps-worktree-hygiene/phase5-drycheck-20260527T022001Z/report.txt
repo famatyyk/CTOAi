@@ -1,0 +1,11 @@
+[phase5-drycheck] FAIL: dirty worktree detected
+repo: /opt/ctoa
+branch: main
+head: 9fe04e8
+status_file: /opt/ctoa/runtime/evidence/worktree-hygiene/phase5-drycheck/20260527T022001Z/status-porcelain.txt
+summary_file: /opt/ctoa/runtime/evidence/worktree-hygiene/phase5-drycheck/20260527T022001Z/summary.md
+
+Required action:
+1) Preserve or classify emergency edits.
+2) Mirror emergency VPS edits to main within one sprint cycle.
+3) Re-run the dry-check after cleanup.

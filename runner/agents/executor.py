@@ -7,6 +7,8 @@ Maps Sprint-007 tasks to AI agents that execute real work:
 - Track B: KPI Automation — generates metrics pipelines
 - Track C: Reliability — creates guardrails and health checks
 - Track D: Governance — documents procedures and automation
+
+Now with local Docker Model Runner support via CTOA_LLM_PROVIDER.
 """
 
 import json
@@ -27,6 +29,14 @@ except ImportError:
     else:
         raise
 
+try:
+    from runner.llm_providers import get_provider
+except ImportError:
+    try:
+        from llm_providers import get_provider
+    except ImportError:
+        get_provider = None
+
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
@@ -44,25 +54,41 @@ def write_deliverable(path_str: str, title: str, body: str) -> Path:
     return path
 
 
-def invoke_copilot_chat(prompt: str, context: Dict[str, Any] = None) -> Optional[str]:
-    """
-    Invoke GitHub Copilot Chat via local subprocess.
-    Requires: VS Code with GitHub Copilot extension + copilot CLI
-
-    In production, this would use Azure OpenAI or similar.
-    For local dev, we use Copilot Chat extension if available.
-    """
+def get_llm_provider():
+    """Get configured LLM provider (local model or Azure Foundry)."""
+    if get_provider is None:
+        print("[llm] LLM provider module not available")
+        return None
     try:
-        # Try to use VS Code Copilot CLI if available
-        cmd = [
-            sys.executable,
-            "-c",
-            f"import sys; print('{prompt}')"
-        ]
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
-        return result.stdout if result.returncode == 0 else None
+        return get_provider()
     except Exception as e:
-        print(f"[agent] Copilot invocation failed: {e}")
+        print(f"[llm] Failed to initialize provider: {e}")
+        return None
+
+
+def invoke_llm_for_task(task_id: str, prompt: str, context: Dict[str, Any] = None) -> Optional[str]:
+    """Invoke local or remote LLM to assist with task execution."""
+    provider = get_llm_provider()
+    if not provider:
+        print(f"[agent] No LLM provider available for {task_id}")
+        return None
+
+    try:
+        system_prompt = (
+            "You are CTOAI's AI agent assistant. Help generate documentation, "
+            "code, and procedures. Be concise and operational. "
+            "Always output valid markdown, Python, or structured text."
+        )
+        response = provider.complete(
+            system_prompt=system_prompt,
+            user_prompt=prompt,
+            temperature=0.1,
+            max_tokens=2048,
+        )
+        print(f"[agent] LLM response for {task_id} received ({len(response)} chars)")
+        return response
+    except Exception as e:
+        print(f"[agent] LLM invocation failed for {task_id}: {e}")
         return None
 
 

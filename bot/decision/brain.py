@@ -32,6 +32,15 @@ def decide_action(state: GameState) -> str:
 
             action = predict_action(state)
 
+            # Keep auto-follow deterministic even with ML enabled.
+            # This preserves party-follow behavior in no-combat states.
+            if action != "auto_follow":
+                try:
+                    if evaluate_rules(state) == "auto_follow":
+                        action = "auto_follow"
+                except Exception:
+                    pass
+
             # Save Q-table periodically on background thread (every ~100 calls)
             import random
             if random.random() < 0.01:

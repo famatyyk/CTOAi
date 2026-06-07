@@ -102,6 +102,47 @@ services:
       start_period: 10s
     restart: unless-stopped
 
+  ctoa-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile.bot
+    container_name: ctoa-bot
+    command: python -m bot.main
+    volumes:
+      - ./:/opt/ctoa
+      - ./runtime:/opt/ctoa/runtime
+      - ./logs:/opt/ctoa/logs
+    environment:
+      BOT_RUNTIME_STATE_DIR: runtime/state
+      BOT_LIVE_STATE_ENABLED: "1"
+      BOT_CAPTURE_MODE: ${BOT_CAPTURE_MODE:-region}
+      BOT_INPUT_BACKEND: ${BOT_INPUT_BACKEND:-pyautogui}
+      BOT_WINDOW_TITLES: ${BOT_WINDOW_TITLES:-KingsVale,Tibia,TibiaClient}
+      BOT_TARGET_TEMPLATE: ${BOT_TARGET_TEMPLATE:-}
+      BOT_TARGET_TEMPLATE_THRESHOLD: ${BOT_TARGET_TEMPLATE_THRESHOLD:-0.86}
+      BOT_TARGET_TEMPLATE_REGION: ${BOT_TARGET_TEMPLATE_REGION:-}
+    restart: unless-stopped
+    profiles:
+      - bot
+
+  ctoa-bot-dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.bot
+    container_name: ctoa-bot-dashboard
+    command: python -m uvicorn bot.dashboard.app:app --host 0.0.0.0 --port 8000
+    volumes:
+      - ./:/opt/ctoa
+      - ./runtime:/opt/ctoa/runtime
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      ctoa-bot:
+        condition: service_started
+    restart: unless-stopped
+    profiles:
+      - bot
+
   ctoa-prometheus:
     image: prom/prometheus:v2.54.1
     container_name: ctoa-prometheus

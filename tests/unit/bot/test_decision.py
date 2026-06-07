@@ -58,3 +58,24 @@ def test_brain_uses_rules_as_fallback(monkeypatch):
 def test_bag_full_goes_depot():
     s = make_state(bag_full=True)
     assert evaluate_rules(s) == "go_to_depot"
+
+
+def test_brain_ml_respects_auto_follow_rule(monkeypatch):
+    import bot.decision.brain as brain_mod
+    import bot.decision.rules as rules_mod
+
+    monkeypatch.setattr(brain_mod, "_USE_ML", True)
+    monkeypatch.setattr(brain_mod, "_prev_state", None)
+    monkeypatch.setattr(brain_mod, "_prev_action", "idle")
+    monkeypatch.setattr(rules_mod, "_auto_follow_enabled", lambda: True)
+
+    def _fake_predict_action(_state):
+        return "idle"
+
+    monkeypatch.setattr("bot.decision.ml_model.predict_action", _fake_predict_action)
+    monkeypatch.setattr("bot.decision.ml_model.update_q", lambda *args, **kwargs: None)
+    monkeypatch.setattr("bot.decision.ml_model.save_qtable", lambda: None)
+    monkeypatch.setattr("bot.decision.ml_model.compute_reward", lambda *args, **kwargs: 0.0)
+
+    s = make_state(target_id=None, nearby_monsters=[])
+    assert brain_mod.decide_action(s) == "auto_follow"

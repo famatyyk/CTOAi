@@ -1,0 +1,65 @@
+{
+  "default_profession": "druid",
+  "profiles": [
+    {
+      "window_title_contains": "pasanot",
+      "profession": "druid",
+      "min_level": 1,
+      "max_level": 9999
+    },
+    {
+      "window_title_contains": "gto gto gto gto",
+      "profession": "druid",
+      "min_level": 1,
+      "max_level": 9999
+    },
+    {
+      "window_title_contains": "elder druid",
+      "profession": "druid",
+      "min_level": 1,
+      "max_level": 9999
+    },
+    {
+      "window_title_contains": "knight",
+      "profession": "knight",
+      "min_level": 1,
+      "max_level": 9999
+    },
+    {
+      "window_title_contains": "paladin",
+      "profession": "paladin",
+      "min_level": 1,
+      "max_level": 9999
+    },
+    {
+      "window_title_contains": "sorcerer",
+      "profession": "sorcerer",
+      "min_level": 1,
+      "max_level": 9999
+    },
+    {
+      "window_title_contains": "druid",
+      "profession": "druid",
+      "min_level": 1,
+      "max_level": 9999
+    }
+  ],
+  "rotations": {
+    "knight": [
+      {"key": "f5", "min_level": 8, "cooldown_ms": 2200, "label": "exori"},
+      {"key": "f6", "min_level": 20, "cooldown_ms": 3000, "label": "exori gran"}
+    ],
+    "paladin": [
+      {"key": "f5", "min_level": 8, "cooldown_ms": 1600, "label": "exori con"},
+      {"key": "f6", "min_level": 25, "cooldown_ms": 2200, "label": "divine missile"}
+    ],
+    "sorcerer": [
+      {"key": "f5", "min_level": 8, "cooldown_ms": 1400, "label": "energy strike"},
+      {"key": "f6", "min_level": 28, "cooldown_ms": 2200, "label": "great energy beam"}
+    ],
+    "druid": [
+      {"key": "f5", "min_level": 8, "cooldown_ms": 1400, "label": "terra strike"},
+      {"key": "f6", "min_level": 28, "cooldown_ms": 2200, "label": "avalanche"}
+    ]
+  }
+}

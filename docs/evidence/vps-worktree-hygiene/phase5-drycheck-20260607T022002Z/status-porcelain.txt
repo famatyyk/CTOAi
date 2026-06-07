@@ -1,0 +1,29 @@
+ M .vscode/tasks.json
+ M docs/history/sprints/SPRINT-045-PROGRESS.md
+ M docs/history/sprints/SPRINT-045.md
+ M scripts/ops/ctoa-root-action.sh
+ M scripts/ops/project_progress_diagram.py
+ M workflows/backlog-sprint-045.yaml
+ M workflows/sprint-045-delivery-flow.yaml
+?? backups/config/ctoa-config-20260516T025300Z.tar.gz
+?? backups/config/ctoa-config-20260517T024526Z.tar.gz
+?? backups/config/ctoa-config-20260518T024700Z.tar.gz
+?? backups/config/ctoa-config-20260519T024651Z.tar.gz
+?? backups/config/ctoa-config-20260520T025251Z.tar.gz
+?? backups/config/ctoa-config-20260521T024851Z.tar.gz
+?? backups/config/ctoa-config-20260522T025251Z.tar.gz
+?? backups/config/ctoa-config-20260523T024351Z.tar.gz
+?? backups/config/ctoa-config-20260524T024321Z.tar.gz
+?? backups/config/ctoa-config-20260525T024021Z.tar.gz
+?? backups/config/ctoa-config-20260526T024138Z.tar.gz
+?? backups/config/ctoa-config-20260527T025500Z.tar.gz
+?? backups/config/ctoa-config-20260528T024531Z.tar.gz
+?? backups/config/ctoa-config-20260529T025018Z.tar.gz
+?? backups/config/ctoa-config-20260530T025418Z.tar.gz
+?? backups/config/ctoa-config-20260531T025251Z.tar.gz
+?? backups/config/ctoa-config-20260601T024033Z.tar.gz
+?? backups/config/ctoa-config-20260602T024616Z.tar.gz
+?? backups/config/ctoa-config-20260603T025411Z.tar.gz
+?? backups/config/ctoa-config-20260604T024658Z.tar.gz
+?? backups/config/ctoa-config-20260605T025159Z.tar.gz
+?? backups/config/ctoa-config-20260606T024731Z.tar.gz

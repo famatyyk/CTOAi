@@ -6,6 +6,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable
 
+from ..config.runtime_profile import get_bool
 from ..perception.state import GameState
 
 try:
@@ -18,6 +19,10 @@ _HP_CRITICAL  = _thresh.get("critical_flee_at_pct", 10)
 _HP_POTION    = _thresh.get("use_hp_potion_at_pct", 30)
 _MP_POTION    = _thresh.get("use_mp_potion_at_pct", 20)
 _HP_FLEE      = _thresh.get("flee_at_pct", 15)
+
+
+def _auto_follow_enabled() -> bool:
+    return get_bool("BOT_AUTO_FOLLOW", False)
 
 
 @dataclass
@@ -37,8 +42,9 @@ RULES: list[Rule] = [
     Rule("loot_dead",      6, lambda s: s.target_hp_pct == 0 and s.target_id is not None, "loot"),
     Rule("attack_target",  7, lambda s: s.target_id is not None and not s.is_attacking,   "attack"),
     Rule("find_nearby",    8, lambda s: s.target_id is None and bool(s.nearby_monsters),  "select_target"),
-    Rule("follow_route",   9, lambda s: s.target_id is None,       "follow_route"),
-    Rule("idle",          10, lambda s: True,                      "idle"),
+    Rule("auto_follow",    9, lambda s: _auto_follow_enabled() and s.target_id is None and not bool(s.nearby_monsters), "auto_follow"),
+    Rule("follow_route",  10, lambda s: s.target_id is None,       "follow_route"),
+    Rule("idle",          11, lambda s: True,                      "idle"),
 ]
 
 

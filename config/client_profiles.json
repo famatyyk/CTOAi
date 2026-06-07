@@ -1,0 +1,57 @@
+{
+  "default_profile": "default",
+  "defaults": {
+    "BOT_CAPTURE_MODE": "window",
+    "BOT_INPUT_BACKEND": "auto",
+    "BOT_INPUT_ONLY_WHEN_TIBIA_ACTIVE": true,
+    "BOT_WINDOW_TITLES": [
+      "Tibia",
+      "TibiaClient",
+      "KingsVale"
+    ],
+    "BOT_WINDOW_LOG_INTERVAL_SEC": 30,
+    "BOT_WINDOW_MIN_WIDTH": 640,
+    "BOT_WINDOW_MIN_HEIGHT": 480,
+    "BOT_ACTION_MODE": "full",
+    "BOT_AUTO_FOLLOW": false,
+    "BOT_SPELL_ROTATION_ENABLED": true,
+    "BOT_FOLLOW_KEY": "f12",
+    "BOT_AUTO_FOLLOW_INTERVAL_MS": 1200,
+    "BOT_AUTO_FOLLOW_STUCK_MS": 900,
+    "BOT_AUTO_FOLLOW_REFRESH_MS": 5000,
+    "BOT_OVERLAY_REFRESH_MS": 250
+  },
+  "profiles": {
+    "default": {},
+    "kingsvale_official": {
+      "BOT_CAPTURE_MODE": "window",
+      "BOT_INPUT_BACKEND": "pydirectinput",
+      "BOT_WINDOW_TITLES": [
+        "kingsVale -",
+        "Tibia",
+        "TibiaClient"
+      ],
+      "BOT_ACTION_MODE": "manual",
+      "BOT_AUTO_FOLLOW": false,
+      "BOT_SPELL_ROTATION_ENABLED": false,
+      "BOT_FOLLOW_KEY": "f12",
+      "BOT_AUTO_FOLLOW_INTERVAL_MS": 1200,
+      "BOT_AUTO_FOLLOW_STUCK_MS": 900,
+      "BOT_AUTO_FOLLOW_REFRESH_MS": 5000,
+      "BOT_OVERLAY_REFRESH_MS": 250,
+      "BOT_INPUT_ONLY_WHEN_TIBIA_ACTIVE": false
+    },
+    "otclient_generic": {
+      "BOT_CAPTURE_MODE": "window",
+      "BOT_INPUT_BACKEND": "pydirectinput",
+      "BOT_WINDOW_TITLES": [
+        "OTClient",
+        "Tibia",
+        "The Forgotten Server"
+      ],
+      "BOT_ACTION_MODE": "full",
+      "BOT_AUTO_FOLLOW": false,
+      "BOT_SPELL_ROTATION_ENABLED": true
+    }
+  }
+}

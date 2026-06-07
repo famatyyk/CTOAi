@@ -27,9 +27,11 @@ from bot.perception.screen import capture_region_pixels
 from bot.perception.parser import parse_game_state
 from bot.decision.brain import decide_action
 from bot.action import execute_action, set_current_state
+from bot.config.runtime_profile import get_bool, get_str
 from bot.safety.scheduler import get_scheduler
 from bot.data.db import create_session, close_session
 from bot.data.telemetry import set_session, log_event, get_stats
+from bot.runtime.live_state import emit_live_state
 
 TICK_MS    = 500    # ms per bot loop iteration
 STATS_EVERY = 240   # print stats every N ticks (~2 min)
@@ -37,8 +39,24 @@ STATS_EVERY = 240   # print stats every N ticks (~2 min)
 SCHED_CHECK_EVERY = 20
 
 
+def _manual_action(state) -> str:
+    if get_bool("BOT_AUTO_FOLLOW", False):
+        return "auto_follow"
+    if get_bool("BOT_SPELL_ROTATION_ENABLED", False) and getattr(state, "target_id", None) is not None:
+        return "rotate_spell"
+    return "idle"
+
+
 def run() -> None:
     logger.info("=== TIBIA BOT STARTING ===")
+    action_mode = get_str("BOT_ACTION_MODE", "full").strip().lower()
+    if action_mode in {"follow_only", "auto_follow_only", "autofollow_only"}:
+        logger.info("Action mode: follow_only (only auto_follow will be executed)")
+    elif action_mode in {"manual", "modules", "overlay"}:
+        logger.info("Action mode: manual (only explicitly enabled modules will run)")
+    else:
+        logger.info("Action mode: full (rules/ML decision engine)")
+
     session_id = create_session()
     set_session(session_id)
     scheduler  = get_scheduler()
@@ -61,6 +79,7 @@ def run() -> None:
         )
 
     tick = 0
+    prev_state = None
     try:
         while True:
             tick += 1
@@ -80,13 +99,19 @@ def run() -> None:
 
             # 1. Perceive
             pixels = capture_region_pixels()
-            state  = parse_game_state(pixels)
+            state  = parse_game_state(pixels, prev_state=prev_state)
+            prev_state = state
 
             # 2. Share state with action dispatcher (Agent 6 routing)
             set_current_state(state)
 
             # 3. Decide (includes DQN reward + Q-table update internally)
-            action = decide_action(state)
+            if action_mode in {"follow_only", "auto_follow_only", "autofollow_only"}:
+                action = "auto_follow"
+            elif action_mode in {"manual", "modules", "overlay"}:
+                action = _manual_action(state)
+            else:
+                action = decide_action(state)
 
             # 4. Act
             result = execute_action(action)
@@ -94,6 +119,15 @@ def run() -> None:
             # 5. Telemetry
             elapsed_ms = int((time.perf_counter() - t0) * 1000)
             log_event(action, result, elapsed_ms)
+            emit_live_state(
+                hp_pct=state.hp_pct,
+                mp_pct=state.mp_pct,
+                target_pct=state.target_hp_pct,
+                action=action,
+                action_result=result,
+                level=state.level,
+                tick_ms=elapsed_ms,
+            )
 
             if tick % 20 == 0:
                 logger.info(

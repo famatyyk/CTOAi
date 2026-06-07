@@ -2,6 +2,8 @@
 mss>=9.0.1          # Screen capture
 opencv-python>=4.9  # Computer vision / state parsing
 pyautogui>=0.9.54   # Input simulation
+pydirectinput>=1.0.4  # DirectInput-safe key/mouse dispatch
+pywin32>=306; platform_system == "Windows"  # Window integrations on Windows
 pynput>=1.7.6       # Low-level input
 numpy>=1.26         # Array ops for CV
 torch>=2.2.0        # ML model (Phase 2)

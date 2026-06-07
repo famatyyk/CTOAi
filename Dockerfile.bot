@@ -1,0 +1,14 @@
+# syntax=docker/dockerfile:1
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+WORKDIR /opt/ctoa
+
+COPY requirements.txt requirements-bot.txt ./
+RUN pip install --no-cache-dir -r requirements.txt -r requirements-bot.txt
+
+COPY . .
+
+CMD ["python", "-m", "bot.main"]

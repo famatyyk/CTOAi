@@ -12,17 +12,14 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Optional
 
+from .clock import utc_now
 from .pathfinding import Coordinate
 from .prompt_logic import GameState
 
 log = logging.getLogger("hybrid_bot.state_manager")
-
-
-def _utcnow() -> datetime:
-    return datetime.now(timezone.utc)
 
 
 @dataclass
@@ -76,7 +73,7 @@ class TargetState:
 class LocationMetrics:
     """Metrics collected at current hunting location."""
     location_name: str = ""
-    start_time: datetime = field(default_factory=_utcnow)
+    start_time: datetime = field(default_factory=utc_now)
     monsters_killed: int = 0
     experience_gained: int = 0
     loot_value: float = 0.0  # Gold
@@ -84,7 +81,7 @@ class LocationMetrics:
     
     @property
     def elapsed_minutes(self) -> float:
-        return (_utcnow() - self.start_time).total_seconds() / 60.0
+        return (utc_now() - self.start_time).total_seconds() / 60.0
     
     @property
     def xp_per_hour(self) -> float:
@@ -183,7 +180,7 @@ class StateManager:
         
         self.location_metrics = LocationMetrics(
             location_name=name,
-            start_time=_utcnow()
+            start_time=utc_now()
         )
         log.info(f"Started hunting at: {name}")
     

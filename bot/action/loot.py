@@ -1,18 +1,14 @@
 """AGENT 7: Looting action."""
 import time
 
-try:
-    import pyautogui
-    _GUI_AVAILABLE = True
-except Exception:
-    _GUI_AVAILABLE = False
+from .input_backend import is_available, press
 
 LOOT_HOTKEY = "f3"
 
 
 def loot_corpse() -> None:
     """Open corpse via hotkey (Shift+click in real Tibia — hotkey approach for OTS)."""
-    if not _GUI_AVAILABLE:
+    if not is_available():
         return
-    pyautogui.press(LOOT_HOTKEY)
+    press(LOOT_HOTKEY)
     time.sleep(0.2)

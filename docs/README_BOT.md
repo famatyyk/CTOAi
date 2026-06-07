@@ -69,6 +69,9 @@ pip install -r requirements-bot.txt
 
 # Run bot
 python -m bot.main
+
+# Optional live overlay (second terminal)
+python -m bot.overlay.status_overlay
 ```
 
 ### Docker (VPS)
@@ -78,11 +81,44 @@ cd bot/infra
 docker compose up -d
 ```
 
+### KingsVale / OTClient preset (screen + OpenCV + DirectInput)
+
+```bash
+# 1) Copy preset and edit local values
+copy config\kingsvale-bot.env.template .env.kingsvale
+
+# 2) Load env in PowerShell
+Get-Content .env.kingsvale | ForEach-Object {
+      if ($_ -and -not $_.StartsWith('#')) {
+            $k, $v = $_ -split '=', 2
+            [Environment]::SetEnvironmentVariable($k, $v, 'Process')
+      }
+}
+
+# 3) Run bot + overlay on host
+python -m bot.main
+python -m bot.overlay.status_overlay
+```
+
+Optional compose profile for bot services:
+
+```bash
+docker compose --profile bot up -d ctoa-bot ctoa-bot-dashboard
+```
+
 ### Environment Variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `BOT_DB_PATH` | `data/bot.db` | SQLite database path |
+| `BOT_CLIENT_CONFIG_FILE` | `config/client_profiles.json` | JSON file with multi-client profiles |
+| `BOT_CLIENT_PROFILE` | `default` | Active profile name from JSON (`kingsvale_official`, etc.) |
+| `BOT_AUTO_FOLLOW` | `0` | Enables auto-follow action when no target/monsters (`1/true/yes`) |
+| `BOT_FOLLOW_KEY` | `f12` | Follow hotkey used by auto-follow |
+| `BOT_AUTO_FOLLOW_INTERVAL_MS` | `1500` | Throttle interval for follow key presses |
+| `BOT_SPELL_ROTATION_FILE` | `config/bot_spell_rotation.json` | Editable spell rotation config |
+| `BOT_PROFESSION` | _(empty)_ | Force profession (`knight/paladin/sorcerer/druid`) |
+| `BOT_WINDOW_TITLE_ACTIVE` | _(empty)_ | Optional active title hint for profile-based profession detection |
 
 ---
 
@@ -130,8 +166,9 @@ docker compose up -d
 |--------|---------|
 | `__init__.py` | Action dispatcher, `execute_action(str)` |
 | `combat.py` | Attack, potions (hotkeys from `items.json`) |
-| `movement.py` | `walk_to(x, y)`, `idle_move()` |
+| `movement.py` | `walk_to(x, y)`, `idle_move()`, `auto_follow()` |
 | `loot.py` | Loot corpse hotkey |
+| `spell_rotation.py` | Profession+level aware rotating spell caster |
 
 **Action strings:**
 
@@ -142,10 +179,22 @@ docker compose up -d
 | `use_mp_potion` | MP < 20% |
 | `go_to_depot` | Bag full |
 | `loot` | Target dead |
-| `attack` | Target alive, not attacking |
+| `attack` | Target alive, not attacking (includes spell rotation cast attempt) |
+| `rotate_spell` | Manual/explicit spell rotation action |
+| `auto_follow` | Enabled by env + no target + no nearby monsters |
 | `select_target` | Nearby monsters, no target |
 | `follow_route` | No monsters nearby |
 | `idle` | Default fallback |
+
+### Cavebot / Auto-Follow / Spell Rotation
+
+- Cavebot stepping: `follow_route` uses route cursor and iterates `move` waypoints sequentially in a loop.
+- Auto-follow: enable `BOT_AUTO_FOLLOW=1`; bot presses follow key with throttle (`BOT_AUTO_FOLLOW_INTERVAL_MS`).
+- Spell rotation is editable in `config/bot_spell_rotation.json`:
+      - `rotations.<profession>[]` list order defines rotation order.
+      - `min_level` gates spells by level.
+      - `cooldown_ms` prevents spam and keeps natural cadence.
+      - profession detection order: `BOT_PROFESSION` override -> profile matching (`BOT_WINDOW_TITLE_ACTIVE`) -> `default_profession`.
 
 ---
 

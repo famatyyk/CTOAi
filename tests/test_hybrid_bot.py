@@ -4,9 +4,11 @@ Unit tests for Hybrid Tibia Bot modules.
 Run with: pytest tests/test_hybrid_bot.py -v
 """
 
+import asyncio
 import json
 import tempfile
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 import pytest
@@ -16,6 +18,7 @@ from runner.hybrid_bot import (
     Pathfinder,
     Coordinate,
     SQMType,
+    Action,
     PromptLogic,
     GameState,
     StateManager,
@@ -414,6 +417,81 @@ class TestIntegration:
         assert decision is not None
         assert decision.action is not None
         assert 1 <= decision.priority <= 10
+
+
+class TestTickLoopCharacterization:
+
+    def test_tick_stops_early_when_no_frame(self):
+        """Characterization: tick returns early when frame is missing."""
+        config = BotConfig()
+        runner = HybridBotRunner(config, screenshot_provider=lambda: None, command_executor=lambda _cmd: None)
+
+        runner._capture_frame = Mock(return_value=None)
+        runner._collect_perception = Mock()
+
+        asyncio.run(runner._tick())
+
+        assert runner.tick_count == 1
+        runner._collect_perception.assert_not_called()
+
+    def test_tick_applies_state_and_executes_decision(self):
+        """Characterization: tick updates state, then decides and executes action."""
+        config = BotConfig()
+        runner = HybridBotRunner(config, screenshot_provider=lambda: None, command_executor=lambda _cmd: None)
+
+        frame = SimpleNamespace(size=1)
+        position = SimpleNamespace(x=101, y=202, z=7)
+        health = SimpleNamespace(hp_percent=88.0, is_poisoned=True)
+        creature = SimpleNamespace(name="Wasp", x=111, y=212, distance=3, is_engaged=True)
+        decision = SimpleNamespace(action=Action.ATTACK, parameters={"mode": "melee"}, priority=5)
+
+        runner._capture_frame = Mock(return_value=frame)
+        runner._collect_perception = Mock(return_value=(position, health, [creature]))
+        runner.state = Mock()
+        runner.state.snapshot.return_value = SimpleNamespace()
+        runner.prompt_logic = Mock()
+        runner.prompt_logic.make_decision.return_value = decision
+        runner.action_executor = Mock()
+        runner.action_executor.execute.return_value = True
+
+        asyncio.run(runner._tick())
+
+        runner.state.update_player_state.assert_called_once_with(
+            101, 202, 7,
+            hp_percent=88.0,
+            mp_percent=0,
+            is_poisoned=True,
+        )
+        runner.state.update_target.assert_called_once_with(
+            name="Wasp",
+            x=111,
+            y=212,
+            distance=3,
+            is_engaged=True,
+        )
+        runner.state.clear_target.assert_not_called()
+        runner.prompt_logic.make_decision.assert_called_once_with(runner.state.snapshot.return_value)
+        runner.action_executor.execute.assert_called_once_with(Action.ATTACK, {"mode": "melee"})
+
+    def test_tick_emits_telemetry_every_100_ticks(self):
+        """Characterization: telemetry is emitted on each 100th tick."""
+        config = BotConfig()
+        runner = HybridBotRunner(config, screenshot_provider=lambda: None, command_executor=lambda _cmd: None)
+        runner.tick_count = 99
+
+        frame = SimpleNamespace(size=1)
+        decision = SimpleNamespace(action=Action.WAIT, parameters={}, priority=1)
+
+        runner._capture_frame = Mock(return_value=frame)
+        runner._collect_perception = Mock(return_value=(None, None, []))
+        runner._apply_state_updates = Mock()
+        runner._decide_and_execute = Mock(return_value=(decision, True))
+
+        with patch("runner.hybrid_bot.bot_runner.log.debug") as debug_log:
+            asyncio.run(runner._tick())
+
+        assert runner.tick_count == 100
+        assert debug_log.call_count >= 2
 
 
 # ─── Run tests ──────────────────────────────────────────────────────────

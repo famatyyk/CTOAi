@@ -2291,6 +2291,105 @@
 				"--json",
 				"status,conclusion,url,jobs,headSha,number"
 			]
+		},
+		{
+			"label": "tmp-show-pwd",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Get-Location"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "none"
+		},
+		{
+			"label": "CTOA: Runtime Loader Semantic Check",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe",
+			"args": [
+				"scripts\\ops\\capture_runtime_loader_transform_live.py"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "CTOA: Runtime Loader Semantic Check CMD",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/d",
+				"/c",
+				".\\.venv\\Scripts\\python.exe scripts\\ops\\capture_runtime_loader_transform_live.py"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "CTOA: Runtime-15 HOT1",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/d",
+				"/c",
+				"set CTOA_RUNTIME_TIMEBOX_SEC=300 && set CTOA_RUNTIME_REGION_DIFF_CHECKS=1 && set CTOA_RUNTIME_FIRST_TOUCH_BREAKPAGES=2 && c:\\Users\\zycie\\CTOAi\\.venv\\Scripts\\python.exe scripts\\ops\\capture_runtime_loader_transform_live.py"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "CTOA: Runtime Probe HOT1",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/d",
+				"/c",
+				"set CTOA_RUNTIME_TIMEBOX_SEC=60 && set CTOA_RUNTIME_REGION_DIFF_CHECKS=1 && set CTOA_RUNTIME_FIRST_TOUCH_BREAKPAGES=2 && c:\\Users\\zycie\\CTOAi\\.venv\\Scripts\\python.exe scripts\\ops\\capture_runtime_loader_transform_live.py"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "CTOA: Runtime Full HOT1",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/d",
+				"/c",
+				"set CTOA_RUNTIME_TIMEBOX_SEC=300 && set CTOA_RUNTIME_REGION_DIFF_CHECKS=1 && set CTOA_RUNTIME_FIRST_TOUCH_BREAKPAGES=2 && c:\\Users\\zycie\\CTOAi\\.venv\\Scripts\\python.exe scripts\\ops\\capture_runtime_loader_transform_live.py"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "CTOA: Runtime Probe MoveProtectExec",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/d",
+				"/c",
+				"set CTOA_RUNTIME_TIMEBOX_SEC=60 && set CTOA_RUNTIME_REGION_DIFF_CHECKS=1 && set CTOA_RUNTIME_FIRST_TOUCH_BREAKPAGES=2 && c:\\Users\\zycie\\CTOAi\\.venv\\Scripts\\python.exe scripts\\ops\\capture_runtime_loader_transform_live.py"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "CTOA: Runtime Probe MoveProtectExec 120",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/d",
+				"/c",
+				"set CTOA_RUNTIME_TIMEBOX_SEC=120 && set CTOA_RUNTIME_REGION_DIFF_CHECKS=1 && set CTOA_RUNTIME_FIRST_TOUCH_BREAKPAGES=2 && c:\\Users\\zycie\\CTOAi\\.venv\\Scripts\\python.exe scripts\\ops\\capture_runtime_loader_transform_live.py"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "CTOA: Runtime Probe Protect Phase",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/d",
+				"/c",
+				"set CTOA_RUNTIME_TIMEBOX_SEC=90 && set CTOA_RUNTIME_REGION_DIFF_CHECKS=1 && set CTOA_RUNTIME_FIRST_TOUCH_BREAKPAGES=2 && c:\\Users\\zycie\\CTOAi\\.venv\\Scripts\\python.exe scripts\\ops\\capture_runtime_loader_transform_live.py"
+			],
+			"isBackground": false
 		}
 	],
 	"inputs": [

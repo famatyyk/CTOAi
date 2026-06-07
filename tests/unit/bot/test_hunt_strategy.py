@@ -48,6 +48,26 @@ def test_next_waypoint_returns_coords():
     assert wp is None or (isinstance(wp, tuple) and len(wp) == 2)
 
 
+def test_next_waypoint_advances_with_cursor(monkeypatch):
+    import bot.decision.hunt_strategy as hs
+
+    hs._route_cursors.clear()
+    route = {
+        "id": "test-route",
+        "waypoints": [
+            {"x": 0, "y": 0, "action": "start"},
+            {"x": 1, "y": 1, "action": "move"},
+            {"x": 2, "y": 2, "action": "move"},
+            {"x": 0, "y": 0, "action": "loop_back"},
+        ],
+    }
+    monkeypatch.setattr(hs, "get_active_route", lambda *_args, **_kwargs: route)
+
+    assert hs.next_waypoint(20) == (1, 1)
+    assert hs.next_waypoint(20) == (2, 2)
+    assert hs.next_waypoint(20) == (1, 1)
+
+
 def test_rules_select_target_when_nearby():
     s = make_state(target_id=None, nearby_monsters=["Troll"])
     action = evaluate_rules(s)

@@ -18,10 +18,11 @@ import asyncio
 import logging
 import time
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 from typing import Optional, Callable, Any
 
+from .clock import utc_now
 from .vision_layer import VisionLayer, extract_healthbar_region, extract_minimap_region
 from .pathfinding import Pathfinder, Coordinate, WaypointBuffer
 from .prompt_logic import PromptLogic, Action
@@ -29,11 +30,6 @@ from .state_manager import StateManager
 from .metrics import MetricsCollector
 
 log = logging.getLogger("hybrid_bot.runner")
-
-
-def _utcnow() -> datetime:
-    """Return timezone-aware UTC datetime."""
-    return datetime.now(timezone.utc)
 
 
 @dataclass
@@ -166,7 +162,7 @@ class HybridBotRunner:
         # Execution state
         self.running = False
         self.pause_until: Optional[datetime] = None
-        self.last_action_time = _utcnow()
+        self.last_action_time = utc_now()
         self.tick_count = 0
     
     # ─── Main Loop ────────────────────────────────────────────────────────
@@ -194,67 +190,83 @@ class HybridBotRunner:
         
         try:
             # 1. Capture frame
-            if hasattr(self.screenshot_provider, 'capture') and callable(self.screenshot_provider.capture):
-                # It's a ScreenshotProvider instance
-                frame = self.screenshot_provider.capture()
-            else:
-                # It's a callable
-                frame = self.screenshot_provider()
-            
+            frame = self._capture_frame()
             if frame is None or frame.size == 0:
                 log.warning("No screenshot available")
                 return
-            
-            # 2. Run vision layer
-            position = self.vision.detect_position_from_minimap(
-                extract_minimap_region(frame)
-            )
-            health = self.vision.detect_health_from_healthbar(
-                extract_healthbar_region(frame)
-            )
-            creatures = self.vision.detect_creatures_from_sprites(frame)
-            
+
+            # 2. Run perception
+            position, health, creatures = self._collect_perception(frame)
+
             # 3. Update state
-            if position:
-                self.state.update_player_state(
-                    position.x, position.y, position.z,
-                    hp_percent=health.hp_percent if health else 100.0,
-                    mp_percent=0,  # TODO: detect mana
-                    is_poisoned=health.is_poisoned if health else False
-                )
-            
-            if creatures:
-                # Target closest creature
-                closest = creatures[0]
-                self.state.update_target(
-                    name=closest.name,
-                    x=closest.x,
-                    y=closest.y,
-                    distance=closest.distance,
-                    is_engaged=closest.is_engaged
-                )
-            else:
-                self.state.clear_target()
-            
-            # 4. Snapshot state for decisions
-            game_state = self.state.snapshot()
-            
-            # 5. Prompt logic: decide action
-            decision = self.prompt_logic.make_decision(game_state)
-            
-            # 6. Execute action
-            success = self.action_executor.execute(
-                decision.action,
-                decision.parameters
-            )
-            
-            # 7. Record decision (for debugging)
-            if self.tick_count % 100 == 0:  # Every 10s at 10Hz
-                log.debug(f"Tick {self.tick_count}: {decision.action.value} (priority {decision.priority})")
-                log.debug(self.state.print_summary())
+            self._apply_state_updates(position, health, creatures)
+
+            # 4-6. Decide and execute action
+            decision, success = self._decide_and_execute()
+
+            # 7. Emit tick telemetry
+            self._emit_tick_telemetry(decision)
             
         except Exception as e:
             log.error(f"Tick error: {e}", exc_info=True)
+
+    def _capture_frame(self):
+        """Capture one frame from configured screenshot source."""
+        if hasattr(self.screenshot_provider, 'capture') and callable(self.screenshot_provider.capture):
+            # It's a ScreenshotProvider instance
+            return self.screenshot_provider.capture()
+        # It's a callable
+        return self.screenshot_provider()
+
+    def _collect_perception(self, frame):
+        """Run vision perception on captured frame."""
+        position = self.vision.detect_position_from_minimap(
+            extract_minimap_region(frame)
+        )
+        health = self.vision.detect_health_from_healthbar(
+            extract_healthbar_region(frame)
+        )
+        creatures = self.vision.detect_creatures_from_sprites(frame)
+        return position, health, creatures
+
+    def _apply_state_updates(self, position, health, creatures) -> None:
+        """Apply perception outputs to state manager."""
+        if position:
+            self.state.update_player_state(
+                position.x, position.y, position.z,
+                hp_percent=health.hp_percent if health else 100.0,
+                mp_percent=0,  # TODO: detect mana
+                is_poisoned=health.is_poisoned if health else False
+            )
+
+        if creatures:
+            # Target closest creature
+            closest = creatures[0]
+            self.state.update_target(
+                name=closest.name,
+                x=closest.x,
+                y=closest.y,
+                distance=closest.distance,
+                is_engaged=closest.is_engaged
+            )
+        else:
+            self.state.clear_target()
+
+    def _decide_and_execute(self):
+        """Build game snapshot, choose action and execute it."""
+        game_state = self.state.snapshot()
+        decision = self.prompt_logic.make_decision(game_state)
+        success = self.action_executor.execute(
+            decision.action,
+            decision.parameters
+        )
+        return decision, success
+
+    def _emit_tick_telemetry(self, decision) -> None:
+        """Emit periodic decision telemetry for diagnostics."""
+        if self.tick_count % 100 == 0:  # Every 10s at 10Hz
+            log.debug(f"Tick {self.tick_count}: {decision.action.value} (priority {decision.priority})")
+            log.debug(self.state.print_summary())
     
     def stop(self) -> None:
         """Stop bot gracefully."""

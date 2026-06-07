@@ -1,6 +1,8 @@
 """AGENT 7: Screen capture module (mss-based)."""
 from __future__ import annotations
+import os
 import time
+from ..config.runtime_profile import get_str
 try:
     import mss
     import mss.tools
@@ -10,6 +12,16 @@ except ImportError:
 
 # Default capture region — Tibia client 1280x720
 DEFAULT_REGION = {"top": 0, "left": 0, "width": 1280, "height": 720}
+_CAPTURE_MODE = os.environ.get("BOT_CAPTURE_MODE", "region").strip().lower()
+
+
+def _capture_window_pixels():
+    try:
+        from .window import capture_window
+
+        return capture_window()
+    except Exception:
+        return None
 
 
 def capture_screen(region: dict | None = None) -> bytes | None:
@@ -27,6 +39,14 @@ def capture_screen(region: dict | None = None) -> bytes | None:
 
 def capture_region_pixels(region: dict | None = None):
     """Return numpy array of screen pixels (requires numpy+mss)."""
+    capture_mode = get_str("BOT_CAPTURE_MODE", _CAPTURE_MODE).strip().lower()
+    if capture_mode in {"window", "auto"}:
+        frame = _capture_window_pixels()
+        if frame is not None:
+            return frame
+        if capture_mode == "window":
+            return None
+
     if not _MSS_AVAILABLE:
         return None
 

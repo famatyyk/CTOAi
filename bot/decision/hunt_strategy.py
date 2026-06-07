@@ -15,6 +15,9 @@ except Exception:
     _GAME_DATA_AVAILABLE = False
 
 
+_route_cursors: dict[str, int] = {}
+
+
 def best_target_from_nearby(state: GameState) -> str | None:
     """Return name of highest-priority monster to attack from nearby list.
 
@@ -56,13 +59,22 @@ def get_potion_thresholds() -> dict[str, int]:
                 "flee_at_pct": 15, "critical_flee_at_pct": 10}
 
 
-def next_waypoint(level: int) -> tuple[int, int] | None:
-    """Return (x, y) of next waypoint for current level route, or None."""
+def next_waypoint(level: int, *, advance: bool = True) -> tuple[int, int] | None:
+    """Return (x, y) of next waypoint for current level route, or None.
+
+    Uses a per-route cursor so cavebot movement can step through the route.
+    """
     route = get_active_route(level)
     if not route or not route.get("waypoints"):
         return None
-    # Simple: return first non-start waypoint (real navigation done by movement module)
-    for wp in route["waypoints"]:
-        if wp.get("action") not in ("start", "loop_back"):
-            return wp["x"], wp["y"]
-    return None
+
+    route_id = str(route.get("id", "default"))
+    moves = [wp for wp in route["waypoints"] if wp.get("action") == "move"]
+    if not moves:
+        return None
+
+    idx = _route_cursors.get(route_id, 0) % len(moves)
+    wp = moves[idx]
+    if advance:
+        _route_cursors[route_id] = (idx + 1) % len(moves)
+    return int(wp["x"]), int(wp["y"])
