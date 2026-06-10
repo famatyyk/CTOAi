@@ -59,14 +59,14 @@ services:
     env_file: /opt/ctoa/.env
     environment:
       CTOA_LLM_PROVIDER: local
-      CTOA_LOCAL_MODEL_URL: http://ollama:11434/v1
+      CTOA_LOCAL_MODEL_URL: http://host.docker.internal:11434/v1
       DB_HOST: postgres
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "0.0.0.0:8001:8000"
     depends_on:
       postgres:
-        condition: service_healthy
-      ollama:
         condition: service_healthy
 
 volumes:
