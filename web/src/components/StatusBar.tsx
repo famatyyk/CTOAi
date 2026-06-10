@@ -1,0 +1,36 @@
+"use client"
+import { useEffect, useState } from "react"
+import { Activity, Database, Cpu } from "lucide-react"
+
+interface Status { runner: string; model: string }
+
+export default function StatusBar() {
+  const [status, setStatus] = useState<Status | null>(null)
+
+  useEffect(() => {
+    const check = () =>
+      fetch((process.env.NEXT_PUBLIC_API_URL ?? "http://116.202.96.250:8000") + "/api/status")
+        .then(r => r.json()).then(setStatus).catch(() => setStatus(null))
+    check()
+    const t = setInterval(check, 30000)
+    return () => clearInterval(t)
+  }, [])
+
+  const dot = status ? "bg-emerald-500" : "bg-red-500"
+
+  return (
+    <div className="flex items-center gap-4 px-4 py-2 border-b border-border text-xs text-zinc-400">
+      <div className="flex items-center gap-1.5">
+        <span className={`w-2 h-2 rounded-full ${dot} animate-pulse`} />
+        <span>VPS 116.202.96.250</span>
+      </div>
+      {status && (
+        <>
+          <div className="flex items-center gap-1"><Cpu className="w-3 h-3" />{status.model}</div>
+          <div className="flex items-center gap-1"><Activity className="w-3 h-3" />runner: {status.runner}</div>
+        </>
+      )}
+      <div className="flex items-center gap-1 ml-auto"><Database className="w-3 h-3" />PostgreSQL · backup 06:00</div>
+    </div>
+  )
+}
