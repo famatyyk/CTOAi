@@ -9,7 +9,7 @@ export default function StatusBar() {
 
   useEffect(() => {
     const check = () =>
-      fetch((process.env.NEXT_PUBLIC_API_URL ?? "http://116.202.96.250:8000") + "/api/status")
+      fetch("/api/status")
         .then(r => r.json()).then(setStatus).catch(() => setStatus(null))
     check()
     const t = setInterval(check, 30000)

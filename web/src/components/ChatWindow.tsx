@@ -5,7 +5,7 @@ import ReactMarkdown from "react-markdown"
 
 interface Message { role: "user" | "assistant"; content: string }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://116.202.96.250:8000"
+
 
 export default function ChatWindow() {
   const [messages, setMessages] = useState<Message[]>([])
@@ -24,7 +24,7 @@ export default function ChatWindow() {
     setLoading(true)
 
     try {
-      const res = await fetch(`${API_URL}/api/chat`, {
+      const res = await fetch(`/api/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: next }),
