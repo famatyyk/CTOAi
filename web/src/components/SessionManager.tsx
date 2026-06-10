@@ -6,7 +6,7 @@ export interface Session {
   id: string
   title: string
   createdAt: number
-  messages: { role: string; content: string }[]
+  messages: { role: "user" | "assistant"; content: string }[]
 }
 
 interface Props {
