@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const API_URL = process.env.VPS_API_URL ?? "http://116.202.96.250:8000";
+const API_URL = process.env.VPS_API_URL ?? "http://116.202.96.250:8001";
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
