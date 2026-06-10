@@ -18,6 +18,15 @@ interface Props {
 }
 
 export default function SessionManager({ activeId, onSelect, onNew, sessions, onDelete }: Props) {
+  const [modelLabel, setModelLabel] = useState<string>("...")
+
+  useEffect(() => {
+    fetch("/api/status")
+      .then(r => r.json())
+      .then(d => { if (d?.model) setModelLabel(d.model) })
+      .catch(() => setModelLabel("offline"))
+  }, [])
+
   return (
     <aside className="w-64 border-r border-border flex flex-col bg-panel shrink-0">
       <div className="px-4 py-5 border-b border-border">
@@ -50,7 +59,7 @@ export default function SessionManager({ activeId, onSelect, onNew, sessions, on
         ))}
       </nav>
       <div className="px-4 py-3 border-t border-border">
-        <p className="text-xs text-zinc-600">Qwen2.5-Coder 1.5B</p>
+        <p className="text-xs text-zinc-600">{modelLabel}</p>
       </div>
     </aside>
   )
