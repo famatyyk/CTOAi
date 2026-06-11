@@ -1,4 +1,4 @@
-# CTOAi Fine-Tune v25 — stability hardening
+# CTOAi Fine-Tune v26 — stability + OOM-safe load
 import subprocess, os, json, math
 from pathlib import Path
 
@@ -7,10 +7,10 @@ def run(cmd):
     print(("OK" if r.returncode==0 else "ERR") + " | " + cmd[:60])
     if r.returncode != 0: print((r.stdout+r.stderr)[-300:])
 
-run("pip install -q trl==0.8.6 peft==0.10.0 transformers==4.40.0 accelerate")
+run("pip install -q trl==0.8.6 peft==0.10.0 transformers==4.40.0 accelerate bitsandbytes")
 
 import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM, TrainingArguments, TrainerCallback
+from transformers import AutoTokenizer, AutoModelForCausalLM, TrainingArguments, TrainerCallback, BitsAndBytesConfig
 from peft import LoraConfig, get_peft_model, TaskType
 from trl import SFTTrainer
 from datasets import Dataset
@@ -50,12 +50,22 @@ print("OK")
 
 print(f"=== Model ({'fp32 CPU' if not USE_GPU else 'fp32 GPU'}) ===")
 if USE_GPU:
+    # Memory-safe load on T4: 4-bit NF4 weights, bf16 compute.
+    bnb_config = BitsAndBytesConfig(
+        load_in_4bit=True,
+        bnb_4bit_quant_type="nf4",
+        bnb_4bit_use_double_quant=True,
+        bnb_4bit_compute_dtype=torch.bfloat16,
+    )
     model = AutoModelForCausalLM.from_pretrained(
-        MODEL_ID, torch_dtype=torch.float32, device_map={"": 0}, trust_remote_code=True,
-        low_cpu_mem_usage=True
+        MODEL_ID,
+        quantization_config=bnb_config,
+        device_map="auto",
+        trust_remote_code=True,
+        low_cpu_mem_usage=True,
     )
 else:
-    # CPU: use float32, no device_map
+    # CPU: use float32, no quantization
     model = AutoModelForCausalLM.from_pretrained(
         MODEL_ID, torch_dtype=torch.float32, device_map=None, trust_remote_code=True,
         low_cpu_mem_usage=True
@@ -163,6 +173,7 @@ trainer.train()
 print("=== DONE ===")
 trainer.save_model("/kaggle/working/ctoa-lora")
 print("Saved to /kaggle/working/ctoa-lora")
+
 
 
 
