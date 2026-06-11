@@ -1,5 +1,5 @@
-# CTOAi Fine-Tune v23 — fix messages format parser
-import subprocess, os, json
+# CTOAi Fine-Tune v25 — stability hardening
+import subprocess, os, json, math
 from pathlib import Path
 
 def run(cmd):
@@ -10,7 +10,7 @@ def run(cmd):
 run("pip install -q trl==0.8.6 peft==0.10.0 transformers==4.40.0 accelerate")
 
 import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM, TrainingArguments
+from transformers import AutoTokenizer, AutoModelForCausalLM, TrainingArguments, TrainerCallback
 from peft import LoraConfig, get_peft_model, TaskType
 from trl import SFTTrainer
 from datasets import Dataset
@@ -48,10 +48,10 @@ tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, trust_remote_code=True)
 tokenizer.pad_token = tokenizer.eos_token
 print("OK")
 
-print(f"=== Model ({'fp32 CPU' if not USE_GPU else 'fp16 GPU'}) ===")
+print(f"=== Model ({'fp32 CPU' if not USE_GPU else 'fp32 GPU'}) ===")
 if USE_GPU:
     model = AutoModelForCausalLM.from_pretrained(
-        MODEL_ID, torch_dtype=torch.float16, device_map="auto", trust_remote_code=True,
+        MODEL_ID, torch_dtype=torch.float32, device_map={"": 0}, trust_remote_code=True,
         low_cpu_mem_usage=True
     )
 else:
@@ -73,6 +73,25 @@ lora = LoraConfig(
 )
 model = get_peft_model(model, lora)
 model.print_trainable_parameters()
+# Disable cache for training stability/perf and memory behavior.
+model.config.use_cache = False
+
+class FiniteGuardCallback(TrainerCallback):
+    """Stop immediately when loss or LoRA params become non-finite."""
+    def on_log(self, args, state, control, logs=None, model=None, **kwargs):
+        if logs and "loss" in logs:
+            loss = float(logs["loss"])
+            if not math.isfinite(loss):
+                raise RuntimeError(f"Non-finite loss detected: {loss}")
+
+    def on_step_end(self, args, state, control, model=None, **kwargs):
+        if model is None:
+            return
+        for name, param in model.named_parameters():
+            if not param.requires_grad:
+                continue
+            if not torch.isfinite(param).all():
+                raise RuntimeError(f"Non-finite trainable parameter detected: {name}")
 
 # Use bf16 training instead of fp16 to prevent NaN
 
@@ -113,11 +132,16 @@ args = TrainingArguments(
     num_train_epochs=1,
     per_device_train_batch_size=1,
     gradient_accumulation_steps=4,
-    learning_rate=5e-5,  # lower to prevent NaN
+    learning_rate=1e-5,  # extra conservative to avoid divergence
+    warmup_ratio=0.1,
+    lr_scheduler_type="cosine",
+    weight_decay=0.01,
+    optim="adamw_torch",
     fp16=False,  # CPU: no fp16
-    bf16=USE_GPU,  # bf16 on GPU to prevent NaN overflow
-    max_grad_norm=1.0,  # gradient clipping
+    bf16=USE_GPU,  # use bf16 only inside Trainer autocast on GPU
+    max_grad_norm=0.3,  # tighter gradient clipping
     logging_steps=10,
+    logging_first_step=True,
     save_strategy="epoch",
     no_cuda=not USE_GPU,
     dataloader_pin_memory=False,
@@ -132,11 +156,14 @@ trainer = SFTTrainer(
     tokenizer=tokenizer,
     dataset_text_field="text",
     max_seq_length=512,
+    callbacks=[FiniteGuardCallback()],
 )
 
 trainer.train()
 print("=== DONE ===")
 trainer.save_model("/kaggle/working/ctoa-lora")
 print("Saved to /kaggle/working/ctoa-lora")
+
+
 
 
