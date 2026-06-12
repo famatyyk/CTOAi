@@ -14,6 +14,7 @@ jobs:
       VPS_HOST: ${{ secrets.CTOA_VPS_HOST }}
       VPS_USER: ${{ secrets.CTOA_VPS_USER }}
       SSH_KEY: ${{ secrets.CTOA_VPS_SSH_KEY }}
+      VPS_PORT: ${{ secrets.CTOA_VPS_SSH_PORT }}
       CTOA_DIR: /opt/ctoa
 
     steps:
@@ -30,12 +31,23 @@ jobs:
             printf '%s' "$SSH_KEY" | tr -d '\r\n' | base64 -d > ~/.ssh/ctoa_vps
           fi
           chmod 600 ~/.ssh/ctoa_vps
-          ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+          ssh-keyscan -p "$VPS_PORT_EFFECTIVE" -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+
+      - name: Preflight SSH connectivity
+        shell: bash
+        run: |
+          VPS_PORT_EFFECTIVE="${VPS_PORT:-22}"
+          echo "Checking TCP connectivity to $VPS_HOST:$VPS_PORT_EFFECTIVE"
+          if ! timeout 10 bash -lc "</dev/tcp/$VPS_HOST/$VPS_PORT_EFFECTIVE" 2>/dev/null; then
+            echo "::error::Cannot reach $VPS_HOST:$VPS_PORT_EFFECTIVE from GitHub Actions (connection refused/timeout)."
+            echo "::error::Check sshd status, SSH port, firewall, and cloud security rules."
+            exit 1
+          fi
 
       - name: Run VPS hygiene probe
         shell: bash
         run: |
-          ssh -i ~/.ssh/ctoa_vps -o BatchMode=yes "$VPS_USER@$VPS_HOST" bash <<'ENDSSH' > /tmp/vps-hygiene-raw.txt
+          ssh -i ~/.ssh/ctoa_vps -p "${VPS_PORT:-22}" -o BatchMode=yes "$VPS_USER@$VPS_HOST" bash <<'ENDSSH' > /tmp/vps-hygiene-raw.txt
           set -e
           echo "timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           echo "host=$(hostname)"
