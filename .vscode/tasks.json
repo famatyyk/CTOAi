@@ -91,6 +91,34 @@
 			}
 		},
 		{
+			"label": "CTOA: Start CTOAi Free Mode",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-Command",
+				"$envPath = Join-Path (Get-Location) '.env'; if (-not (Test-Path $envPath)) { Write-Error 'Missing .env file'; exit 1 }; Get-Content $envPath | Where-Object { $_ -and -not $_.StartsWith('#') -and $_ -match '=' } | ForEach-Object { $name, $value = $_ -split '=', 2; [Environment]::SetEnvironmentVariable($name, $value, 'Process') }; & .\\.venv\\Scripts\\python.exe -m uvicorn api.main:app --host 127.0.0.1 --port 8011"
+			],
+			"isBackground": true,
+			"problemMatcher": {
+				"pattern": {
+					"regexp": "^$"
+				},
+				"background": {
+					"activeOnStart": true,
+					"beginsPattern": "Started server process",
+					"endsPattern": "Application startup complete"
+				}
+			},
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated",
+				"focus": false
+			}
+		},
+		{
 			"label": "CTOA: Run All Tests",
 			"type": "shell",
 			"command": ".\\.venv\\Scripts\\python.exe -m pytest tests/ --ignore=tests/e2e -v",
@@ -2390,6 +2418,705 @@
 				"set CTOA_RUNTIME_TIMEBOX_SEC=90 && set CTOA_RUNTIME_REGION_DIFF_CHECKS=1 && set CTOA_RUNTIME_FIRST_TOUCH_BREAKPAGES=2 && c:\\Users\\zycie\\CTOAi\\.venv\\Scripts\\python.exe scripts\\ops\\capture_runtime_loader_transform_live.py"
 			],
 			"isBackground": false
+		},
+		{
+			"label": "CTOA: Sprint-070 Local Archive Cleanup",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/d",
+				"/c",
+				"cd /d C:\\Users\\zycie\\CTOAi && mkdir _local_archive\\sprint-070\\training 2>nul && mkdir _local_archive\\sprint-070\\artifacts 2>nul && mkdir _local_archive\\sprint-070\\labs 2>nul && if exist training\\ctoa-merged move /Y training\\ctoa-merged _local_archive\\sprint-070\\training\\ && if exist training\\ctoa-1.5b-q4km.gguf move /Y training\\ctoa-1.5b-q4km.gguf _local_archive\\sprint-070\\training\\ && if exist training\\kaggle-output move /Y training\\kaggle-output _local_archive\\sprint-070\\training\\ && if exist training\\kaggle-output-final move /Y training\\kaggle-output-final _local_archive\\sprint-070\\training\\ && if exist training\\kaggle-output-v24 move /Y training\\kaggle-output-v24 _local_archive\\sprint-070\\training\\ && if exist training\\kaggle-output-v25 move /Y training\\kaggle-output-v25 _local_archive\\sprint-070\\training\\ && if exist training\\kaggle-output-v26 move /Y training\\kaggle-output-v26 _local_archive\\sprint-070\\training\\ && if exist training\\kaggle-output-v3 move /Y training\\kaggle-output-v3 _local_archive\\sprint-070\\training\\ && if exist training\\kaggle-upload move /Y training\\kaggle-upload _local_archive\\sprint-070\\training\\ && if exist training\\logs-v4 move /Y training\\logs-v4 _local_archive\\sprint-070\\training\\ && if exist training\\logs-v5 move /Y training\\logs-v5 _local_archive\\sprint-070\\training\\ && if exist training\\logs-v6 move /Y training\\logs-v6 _local_archive\\sprint-070\\training\\ && if exist training\\logs-v7 move /Y training\\logs-v7 _local_archive\\sprint-070\\training\\ && if exist artifacts\\enc3 move /Y artifacts\\enc3 _local_archive\\sprint-070\\artifacts\\ && if exist labs\\projects move /Y labs\\projects _local_archive\\sprint-070\\labs\\ && if exist labs\\__pycache__ move /Y labs\\__pycache__ _local_archive\\sprint-070\\labs\\ && (echo done>_local_archive\\sprint-070\\move.ok)"
+			],
+			"isBackground": false,
+			"group": "none"
+		},
+		{
+			"label": "CTOA: Sprint-070 Cleanup Documentation Sync",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"$root='C:\\Users\\zycie\\CTOAi'; $gitignore=Join-Path $root '.gitignore'; $cleanupDoc=Join-Path $root 'docs\\REPO_CLEANUP_WAVES.md'; $progressDoc=Join-Path $root 'docs\\history\\sprints\\SPRINT-070-PROGRESS.md'; $archiveRoot=Join-Path $root '_local_archive\\sprint-070'; $moved=@('training/ctoa-merged','training/ctoa-1.5b-q4km.gguf','training/kaggle-output','training/kaggle-output-final','training/kaggle-output-v24','training/kaggle-output-v25','training/kaggle-output-v26','training/kaggle-output-v3','training/kaggle-upload','training/logs-v4','training/logs-v5','training/logs-v6','training/logs-v7','artifacts/enc3','labs/projects','labs/__pycache__'); $manifest=[ordered]@{ archivedAt=(Get-Date).ToString('s'); archiveRoot='_local_archive/sprint-070'; moved=$moved; keptInPlace=@('bot','tools/rosetta-assembler'); rationale=@{ bot='active source surface'; 'tools/rosetta-assembler'='configured in .gitmodules as submodule'; labs='top-level directory left empty after archival of payload'; training='only source-side assets remain in place' } }; $manifest | ConvertTo-Json -Depth 6 | Set-Content -Path (Join-Path $archiveRoot 'manifest.json') -Encoding UTF8; $gitText=Get-Content $gitignore -Raw; if($gitText -notmatch '(?m)^_local_archive/$'){ Add-Content -Path $gitignore -Value \"`r`n# Local archive created during repo cleanup`r`n_local_archive/\" -Encoding UTF8 }; $cleanupText=Get-Content $cleanupDoc -Raw; if($cleanupText -notmatch '## Wave 2 and Wave 3 Executed'){ Add-Content -Path $cleanupDoc -Value \"`r`n## Wave 2 and Wave 3 Executed`r`n`r`n- Archive root: _local_archive/sprint-070`r`n- Executed moves:`r`n  - training/ctoa-merged`r`n  - training/ctoa-1.5b-q4km.gguf`r`n  - training/kaggle-output`r`n  - training/kaggle-output-final`r`n  - training/kaggle-output-v24`r`n  - training/kaggle-output-v25`r`n  - training/kaggle-output-v26`r`n  - training/kaggle-output-v3`r`n  - training/kaggle-upload`r`n  - training/logs-v4`r`n  - training/logs-v5`r`n  - training/logs-v6`r`n  - training/logs-v7`r`n  - artifacts/enc3`r`n  - labs/projects`r`n  - labs/__pycache__`r`n- Kept in place:`r`n  - bot (active source surface)`r`n  - tools/rosetta-assembler (.gitmodules submodule)`r`n- Result:`r`n  - training now keeps only source-side assets`r`n  - labs top-level payload removed`r`n  - artifacts forensic payload removed from main repo paths`r`n\" -Encoding UTF8 }; $progressText=Get-Content $progressDoc -Raw; if($progressText -notmatch '## Cleanup Execution Completed'){ Add-Content -Path $progressDoc -Value \"`r`n## Cleanup Execution Completed`r`n`r`n- Archive root created: _local_archive/sprint-070`r`n- Physical cleanup completed for training heavy outputs, artifacts payload, and labs payloads`r`n- Verification result:`r`n  - moved targets verified out of original paths`r`n  - training left with source-side assets only`r`n  - labs left empty`r`n- Explicit keep decisions preserved:`r`n  - bot`r`n  - tools/rosetta-assembler (submodule path from .gitmodules)`r`n\" -Encoding UTF8"
+			],
+			"isBackground": false,
+			"group": "none"
+		},
+		{
+			"label": "CTOA: Sprint-070 Cleanup Sync CMD",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/d",
+				"/c",
+				"cd /d C:\\Users\\zycie\\CTOAi && (findstr /x /c:\"_local_archive/\" .gitignore >nul || (echo.>>.gitignore && echo # Local archive created during repo cleanup>>.gitignore && echo _local_archive/>>.gitignore)) && (echo archivedAt=2026-06-12>_local_archive\\sprint-070\\manifest.txt) && (echo archiveRoot=_local_archive/sprint-070>>_local_archive\\sprint-070\\manifest.txt) && (echo moved=training/ctoa-merged>>_local_archive\\sprint-070\\manifest.txt) && (echo moved=training/ctoa-1.5b-q4km.gguf>>_local_archive\\sprint-070\\manifest.txt) && (echo moved=training/kaggle-output>>_local_archive\\sprint-070\\manifest.txt) && (echo moved=training/kaggle-output-final>>_local_archive\\sprint-070\\manifest.txt) && (echo moved=training/kaggle-output-v24>>_local_archive\\sprint-070\\manifest.txt) && (echo moved=training/kaggle-output-v25>>_local_archive\\sprint-070\\manifest.txt) && (echo moved=training/kaggle-output-v26>>_local_archive\\sprint-070\\manifest.txt) && (echo moved=training/kaggle-output-v3>>_local_archive\\sprint-070\\manifest.txt) && (echo moved=training/kaggle-upload>>_local_archive\\sprint-070\\manifest.txt) && (echo moved=training/logs-v4>>_local_archive\\sprint-070\\manifest.txt) && (echo moved=training/logs-v5>>_local_archive\\sprint-070\\manifest.txt) && (echo moved=training/logs-v6>>_local_archive\\sprint-070\\manifest.txt) && (echo moved=training/logs-v7>>_local_archive\\sprint-070\\manifest.txt) && (echo moved=artifacts/enc3>>_local_archive\\sprint-070\\manifest.txt) && (echo moved=labs/projects>>_local_archive\\sprint-070\\manifest.txt) && (echo moved=labs/__pycache__>>_local_archive\\sprint-070\\manifest.txt) && (echo kept=bot>>_local_archive\\sprint-070\\manifest.txt) && (echo kept=tools/rosetta-assembler>>_local_archive\\sprint-070\\manifest.txt) && (echo.>>docs\\REPO_CLEANUP_WAVES.md) && (echo ## Wave 2 and Wave 3 Executed>>docs\\REPO_CLEANUP_WAVES.md) && (echo.>>docs\\REPO_CLEANUP_WAVES.md) && (echo - Archive root: _local_archive/sprint-070>>docs\\REPO_CLEANUP_WAVES.md) && (echo - Executed moves: training heavy outputs, artifacts/enc3, labs/projects, labs/__pycache__>>docs\\REPO_CLEANUP_WAVES.md) && (echo - Kept in place: bot and tools/rosetta-assembler>>docs\\REPO_CLEANUP_WAVES.md) && (echo - Result: training now keeps source-side assets only>>docs\\REPO_CLEANUP_WAVES.md) && (echo.>>docs\\history\\sprints\\SPRINT-070-PROGRESS.md) && (echo ## Cleanup Execution Completed>>docs\\history\\sprints\\SPRINT-070-PROGRESS.md) && (echo.>>docs\\history\\sprints\\SPRINT-070-PROGRESS.md) && (echo - Archive root created: _local_archive/sprint-070>>docs\\history\\sprints\\SPRINT-070-PROGRESS.md) && (echo - Physical cleanup completed for training heavy outputs, artifacts payload, and labs payloads>>docs\\history\\sprints\\SPRINT-070-PROGRESS.md) && (echo - Verification: moved targets removed from original paths>>docs\\history\\sprints\\SPRINT-070-PROGRESS.md) && (echo - Explicit keep decisions preserved: bot and tools/rosetta-assembler>>docs\\history\\sprints\\SPRINT-070-PROGRESS.md)"
+			],
+			"isBackground": false,
+			"group": "none"
+		},
+		{
+			"label": "CTOA: Security Fixes Round1",
+			"type": "shell",
+			"command": "python",
+			"args": [
+				"-c",
+				"from pathlib import Path\nimport re\nroot=Path(r'C:\\Users\\zycie\\CTOAi')\napp_path=root/'mobile_console'/'app.py'\nexec_path=root/'runner'/'agents'/'executor.py'\ntext=app_path.read_text(encoding='utf-8')\nif 'import shlex' not in text:\n    text=text.replace('import subprocess\\n','import subprocess\\nimport shlex\\n',1)\nif 'from urllib.parse import urlparse' not in text:\n    text=text.replace('from urllib.request import urlopen\\n','from urllib.request import urlopen\\nfrom urllib.parse import urlparse\\n',1)\nrun_pat=re.compile(r'def _run\\(cmd: str, timeout: int = 20, cwd: Optional\\[str\\] = None\\) -> dict:\\n(?:    .*\\n)+?\\n(?=def _run_argv\\()',re.MULTILINE)\nrun_new='def _run(cmd: str, timeout: int = 20, cwd: Optional[str] = None) -> dict:\\n    try:\\n        args = shlex.split(cmd, posix=not _is_windows_host())\\n    except ValueError as exc:\\n        return {\\\"code\\\": 1, \\\"stdout\\\": \\\"\\\", \\\"stderr\\\": str(exc)[:200]}\\n\\n    if not args:\\n        return {\\\"code\\\": 1, \\\"stdout\\\": \\\"\\\", \\\"stderr\\\": \\\"Empty command\\\"}\\n\\n    return _run_argv(args, timeout=timeout, cwd=cwd)\\n\\n'\ntext=run_pat.sub(run_new,text,count=1)\nif 'def _validate_http_url(url: str) -> str:' not in text:\n    helper='\\n\\ndef _validate_http_url(url: str) -> str:\\n    parsed = urlparse(url)\\n    if parsed.scheme not in {\\\"http\\\", \\\"https\\\"}:\\n        raise ValueError(f\\\"Unsupported URL scheme: {parsed.scheme or \\'missing\\'}\\\")\\n    if not parsed.netloc:\\n        raise ValueError(\\\"URL host is required\\\")\\n    return url\\n'\n    text=text.replace('\\ndef _intel_api_health_probe() -> dict:\\n',helper+'\\n\\ndef _intel_api_health_probe() -> dict:\\n',1)\ntext=text.replace('    try:\\n        with urlopen(url, timeout=5) as response:\\n','    try:\\n        _validate_http_url(url)\\n        with urlopen(url, timeout=5) as response:\\n')\ntext=text.replace('    try:\\n        with urlopen(url, timeout=timeout) as response:\\n','    try:\\n        _validate_http_url(url)\\n        with urlopen(url, timeout=timeout) as response:\\n')\ntext=text.replace('        cmd = f\"tail -n {lines} {path} 2>/dev/null || echo \\'(log not found)\\'\"\\n        return _run(cmd, timeout=10)\\n','        result = _run_argv([\\\"tail\\\", \\\"-n\\\", str(lines), str(path)], timeout=10)\\n        if result.get(\\\"code\\\", 1) != 0:\\n            return {\\\"code\\\": 0, \\\"stdout\\\": \\\"(log not found)\\\", \\\"stderr\\\": \\\"\\\"}\\n        return result\\n')\ntext=text.replace('        cmd = f\"psql \\\\\\\"{dsn}\\\\\\\" -t -A -c {json.dumps(filled)}\"\\n        return _run(cmd, timeout=timeout)\\n','        return _run_argv([\\\"psql\\\", dsn, \\\"-t\\\", \\\"-A\\\", \\\"-c\\\", filled], timeout=timeout)\\n')\napp_path.write_text(text,encoding='utf-8')\nexec_text=exec_path.read_text(encoding='utf-8').replace('**Document Updated:** {timestamp}','**Document Timestamp:** {timestamp}')\nexec_path.write_text(exec_text,encoding='utf-8')\nprint('SECURITY_FIXES_APPLIED')"
+			],
+			"isBackground": false,
+			"group": "none"
+		},
+		{
+			"label": "CTOA: Terminal Health Check CMD",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/d",
+				"/c",
+				"echo TERMINAL_OK && cd /d C:\\Users\\zycie\\CTOAi && echo CWD=%CD% && \"C:\\Program Files\\Git\\cmd\\git.exe\" --version"
+			],
+			"isBackground": false,
+			"group": "none"
+		},
+		{
+			"label": "CTOA: Git Status Snapshot CMD",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/d",
+				"/c",
+				"cd /d C:\\Users\\zycie\\CTOAi && \"C:\\Program Files\\Git\\cmd\\git.exe\" status --short"
+			],
+			"isBackground": false,
+			"group": "none"
+		},
+		{
+			"label": "CTOA: Security Files Compile Check",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/d",
+				"/c",
+				"cd /d C:\\Users\\zycie\\CTOAi && .venv\\Scripts\\python.exe -m py_compile api\\main.py mobile_console\\app.py runner\\agents\\executor.py"
+			],
+			"isBackground": false,
+			"group": "none"
+		},
+		{
+			"label": "CTOA: Verify Security Fix Markers",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/d",
+				"/c",
+				"cd /d C:\\Users\\zycie\\CTOAi && .venv\\Scripts\\python.exe -c \"from pathlib import Path; p=Path('mobile_console/app.py'); t=p.read_text(encoding='utf-8'); checks=['import shlex','from urllib.parse import urlparse','def _validate_http_url(url: str) -> str:','shlex.split(cmd','_validate_http_url(url)','_run_argv([\\\"tail\\\", \\\"-n\\\", str(lines), str(path)]','_run_argv([\\\"psql\\\", dsn, \\\"-t\\\", \\\"-A\\\", \\\"-c\\\", filled]']; print('\\\\n'.join([f'{c}: {c in t}' for c in checks]))\""
+			],
+			"isBackground": false,
+			"group": "none"
+		},
+		{
+			"label": "CTOA: Verify SQL Construction Change",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/d",
+				"/c",
+				"cd /d C:\\Users\\zycie\\CTOAi && .venv\\Scripts\\python.exe -c \"from pathlib import Path; t=Path('runner/agents/executor.py').read_text(encoding='utf-8'); print('DOC_TIMESTAMP_MARKER:', '**Document Timestamp:** {timestamp}' in t); print('DOC_UPDATED_MARKER:', '**Document Updated:** {timestamp}' in t)\""
+			],
+			"isBackground": false,
+			"group": "none"
+		},
+		{
+			"label": "CTOA: Locate shell True and urlopen",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/d",
+				"/c",
+				"cd /d C:\\Users\\zycie\\CTOAi && powershell -NoProfile -Command \"Select-String -Path 'mobile_console/app.py' -Pattern 'shell=True','urlopen\\(' | ForEach-Object { '{0}:{1}' -f $_.LineNumber, $_.Line.Trim() }\""
+			],
+			"isBackground": false,
+			"group": "none"
+		},
+		{
+			"label": "CTOA: Locate executor SQL",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/d",
+				"/c",
+				"cd /d C:\\Users\\zycie\\CTOAi && powershell -NoProfile -Command \"Select-String -Path 'runner/agents/executor.py' -Pattern 'SELECT','format\\(','f\\\"','sql' | Select-Object -First 80 | ForEach-Object { '{0}:{1}' -f $_.LineNumber, $_.Line.Trim() }\""
+			],
+			"isBackground": false,
+			"group": "none"
+		},
+		{
+			"label": "CTOA: Scan mobile console markers py",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/d",
+				"/c",
+				"cd /d C:\\Users\\zycie\\CTOAi && .venv\\Scripts\\python.exe -c \"from pathlib import Path; p=Path('mobile_console/app.py'); lines=p.read_text(encoding='utf-8').splitlines(); keys=['shell=True','urlopen(','_run(cmd: str','def _run_argv(','def _validate_http_url'];\nfor i,l in enumerate(lines,1):\n  if any(k in l for k in keys): print(f'{i}:{l}')\""
+			],
+			"isBackground": false,
+			"group": "none"
+		},
+		{
+			"label": "CTOA: Scan executor markers py",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/d",
+				"/c",
+				"cd /d C:\\Users\\zycie\\CTOAi && .venv\\Scripts\\python.exe -c \"from pathlib import Path; p=Path('runner/agents/executor.py'); lines=p.read_text(encoding='utf-8').splitlines(); keys=['sql','SELECT','format(','f\\\"','sqlite','cursor.execute'];\nfor i,l in enumerate(lines,1):\n  if any(k in l for k in keys): print(f'{i}:{l}')\""
+			],
+			"isBackground": false,
+			"group": "none"
+		},
+		{
+			"label": "CTOA: Commit and Push Security+Hygiene",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/d",
+				"/c",
+				"cd /d C:\\Users\\zycie\\CTOAi && \"C:\\Program Files\\Git\\cmd\\git.exe\" add .github\\workflows\\pr_quality.yml api\\main.py mobile_console\\app.py runner\\agents\\executor.py .github\\workflows\\ctoa-vps-hygiene-weekly.yml && \"C:\\Program Files\\Git\\cmd\\git.exe\" commit -m \"Sprint-070: harden security findings and add weekly VPS hygiene workflow\" && \"C:\\Program Files\\Git\\cmd\\git.exe\" push origin main"
+			],
+			"isBackground": false,
+			"group": "none"
+		},
+		{
+			"label": "CTOA: Dispatch Hygiene and GS Workflows",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/d",
+				"/c",
+				"cd /d C:\\Users\\zycie\\CTOAi && set PATH=C:\\Program Files\\Git\\cmd;%PATH% && gh workflow run ctoa-vps-hygiene-weekly.yml -R famatyyk/CTOAi && gh workflow run vps-gs-cycle.yml -f force_reset=true -R famatyyk/CTOAi && gh run list -R famatyyk/CTOAi --workflow ctoa-vps-hygiene-weekly.yml --limit 1 --json databaseId,status,conclusion,url,updatedAt && gh run list -R famatyyk/CTOAi --workflow vps-gs-cycle.yml --limit 1 --json databaseId,status,conclusion,url,updatedAt"
+			],
+			"isBackground": false,
+			"group": "none"
+		},
+		{
+			"label": "CTOA: Inspect Workflow Failures",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/d",
+				"/c",
+				"cd /d C:\\Users\\zycie\\CTOAi && set PATH=C:\\Program Files\\Git\\cmd;%PATH% && gh run view 27396943315 -R famatyyk/CTOAi --json status,conclusion,url,jobs,name && gh run view 27396944542 -R famatyyk/CTOAi --json status,conclusion,url,jobs,name"
+			],
+			"isBackground": false,
+			"group": "none"
+		},
+		{
+			"label": "CTOA: Fetch Failed Workflow Logs",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/d",
+				"/c",
+				"cd /d C:\\Users\\zycie\\CTOAi && set PATH=C:\\Program Files\\Git\\cmd;%PATH% && gh run view 27396943315 -R famatyyk/CTOAi --log-failed > runtime\\ci-artifacts\\run-27396943315-failed.log && gh run view 27396944542 -R famatyyk/CTOAi --log-failed > runtime\\ci-artifacts\\run-27396944542-failed.log && powershell -NoProfile -Command \"Get-Content 'runtime/ci-artifacts/run-27396943315-failed.log' -Tail 80; '---'; Get-Content 'runtime/ci-artifacts/run-27396944542-failed.log' -Tail 80\""
+			],
+			"isBackground": false,
+			"group": "none"
+		},
+		{
+			"label": "CTOA: Commit Push SSH Port Preflight",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/d",
+				"/c",
+				"cd /d C:\\Users\\zycie\\CTOAi && \"C:\\Program Files\\Git\\cmd\\git.exe\" add .github\\workflows\\vps-gs-cycle.yml .github\\workflows\\ctoa-vps-hygiene-weekly.yml && \"C:\\Program Files\\Git\\cmd\\git.exe\" commit -m \"VPS workflows: add configurable SSH port and preflight connectivity check\" && \"C:\\Program Files\\Git\\cmd\\git.exe\" push origin main"
+			],
+			"isBackground": false,
+			"group": "none"
+		},
+		{
+			"label": "CTOA: Rerun VPS Workflows with Port Support",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/d",
+				"/c",
+				"cd /d C:\\Users\\zycie\\CTOAi && set PATH=C:\\Program Files\\Git\\cmd;%PATH% && gh workflow run ctoa-vps-hygiene-weekly.yml -R famatyyk/CTOAi && gh workflow run vps-gs-cycle.yml -f force_reset=true -R famatyyk/CTOAi && gh run list -R famatyyk/CTOAi --workflow ctoa-vps-hygiene-weekly.yml --limit 1 --json databaseId,status,conclusion,url,updatedAt && gh run list -R famatyyk/CTOAi --workflow vps-gs-cycle.yml --limit 1 --json databaseId,status,conclusion,url,updatedAt"
+			],
+			"isBackground": false,
+			"group": "none"
+		},
+		{
+			"label": "CTOA: Watch Workflow Outcomes",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/d",
+				"/c",
+				"cd /d C:\\Users\\zycie\\CTOAi && set PATH=C:\\Program Files\\Git\\cmd;%PATH% && gh run watch 27397196414 -R famatyyk/CTOAi --exit-status || echo HYGIENE_FAILED && gh run watch 27397199316 -R famatyyk/CTOAi --exit-status || echo GS_FAILED && gh run view 27397196414 -R famatyyk/CTOAi --json status,conclusion,url,jobs,name && gh run view 27397199316 -R famatyyk/CTOAi --json status,conclusion,url,jobs,name"
+			],
+			"isBackground": false,
+			"group": "none"
+		},
+		{
+			"label": "CTOA: Capture Preflight Failure Logs",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/d",
+				"/c",
+				"cd /d C:\\Users\\zycie\\CTOAi && set PATH=C:\\Program Files\\Git\\cmd;%PATH% && gh run view 27397196414 -R famatyyk/CTOAi --log-failed > runtime\\ci-artifacts\\run-27397196414-failed.log && gh run view 27397199316 -R famatyyk/CTOAi --log-failed > runtime\\ci-artifacts\\run-27397199316-failed.log && powershell -NoProfile -Command \"Get-Content 'runtime/ci-artifacts/run-27397196414-failed.log' -Tail 40; '---'; Get-Content 'runtime/ci-artifacts/run-27397199316-failed.log' -Tail 50\""
+			],
+			"isBackground": false,
+			"group": "none"
+		},
+		{
+			"label": "CTOA: Check VPS Secrets Presence",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/d",
+				"/c",
+				"cd /d C:\\Users\\zycie\\CTOAi && set PATH=C:\\Program Files\\Git\\cmd;%PATH% && gh secret list -R famatyyk/CTOAi"
+			],
+			"isBackground": false,
+			"group": "none"
+		},
+		{
+			"label": "CTOA: Detect VPS Host Candidates",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/d",
+				"/c",
+				"cd /d C:\\Users\\zycie\\CTOAi && powershell -NoProfile -Command \"$cands=@(); if(Test-Path $env:USERPROFILE'\\.ssh\\config'){ $cands += (Select-String -Path $env:USERPROFILE'\\.ssh\\config' -Pattern '^[ \\t]*HostName[ \\t]+' | ForEach-Object { ($_ -replace '^[ \\t]*HostName[ \\t]+','').Trim() }) }; $cands += (Select-String -Path . -Pattern '116\\.202\\.96\\.250|46\\.225\\.110\\.52' -Recurse -ErrorAction SilentlyContinue | ForEach-Object { $_.Matches.Value }); $cands = $cands | Where-Object { $_ -match '^[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+$' } | Select-Object -Unique; if(-not $cands){ 'NO_HOST_CANDIDATES' } else { $cands | ForEach-Object { 'HOST=' + $_ } }\""
+			],
+			"isBackground": false,
+			"group": "none"
+		},
+		{
+			"label": "CTOA: Test Port 22 Connectivity",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/d",
+				"/c",
+				"powershell -NoProfile -Command \"$hosts=@('116.202.96.250','46.225.110.52') | Select-Object -Unique; foreach($h in $hosts){ '---'; 'HOST=' + $h; $r=Test-NetConnection $h -Port 22 -WarningAction SilentlyContinue; 'TcpTestSucceeded=' + $r.TcpTestSucceeded; 'RemoteAddress=' + $r.RemoteAddress; 'RemotePort=' + $r.RemotePort }\""
+			],
+			"isBackground": false,
+			"group": "none"
+		},
+		{
+			"label": "CTOA: TNC 116.202.96.250",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Test-NetConnection -ComputerName 116.202.96.250 -Port 22 | Select-Object ComputerName,RemoteAddress,RemotePort,TcpTestSucceeded | Format-List"
+			],
+			"isBackground": false,
+			"group": "none"
+		},
+		{
+			"label": "CTOA: TNC 46.225.110.52",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Test-NetConnection -ComputerName 46.225.110.52 -Port 22 | Select-Object ComputerName,RemoteAddress,RemotePort,TcpTestSucceeded | Format-List"
+			],
+			"isBackground": false,
+			"group": "none"
+		},
+		{
+			"label": "CTOA: SSH Probe 46.225.110.52",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"ssh -o BatchMode=yes -o ConnectTimeout=10 -p 22 root@46.225.110.52 \"echo SSH_OK\""
+			],
+			"isBackground": false,
+			"group": "none"
+		},
+		{
+			"label": "Runtime Validation Compose Up",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/d",
+				"/c",
+				"cd /d c:\\Users\\zycie\\CTOAi && set CTOA_ENV_FILE=.env && docker compose up -d postgres api"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "none"
+		},
+		{
+			"label": "Runtime Validation HTTP E2E",
+			"type": "shell",
+			"command": "c:\\Users\\zycie\\CTOAi\\.venv\\Scripts\\python.exe",
+			"args": [
+				"-c",
+				"import json, urllib.request\nfrom urllib.error import HTTPError\n\ndef req(path, method='GET', token=None, payload=None):\n    url = 'http://127.0.0.1:8001' + path\n    data = None if payload is None else json.dumps(payload).encode('utf-8')\n    headers = {'Content-Type': 'application/json'}\n    if token:\n        headers['Authorization'] = f'Bearer {token}'\n    request = urllib.request.Request(url, data=data, headers=headers, method=method)\n    with urllib.request.urlopen(request, timeout=20) as response:\n        return response.status, json.loads(response.read().decode('utf-8'))\n\nstatus = req('/api/status')\nprint('STATUS_OK', status[0], status[1].get('provider'), status[1].get('route_mode'))\n\nlogin_status, login_data = req('/api/auth/login', 'POST', payload={'username':'famatyyk','password':'ctoa-owner'})\nassert login_status == 200, login_data\nowner_token = login_data['token']\nprint('OWNER_LOGIN_OK', login_status)\n\nme_status, me_data = req('/api/auth/me', token=owner_token)\nassert me_status == 200 and me_data['user']['role'] == 'owner', me_data\nprint('ME_OK', me_status, me_data['user']['role'])\n\ntry:\n    register_status, register_data = req('/api/auth/register', 'POST', payload={'username':'beast_member','password':'beastpass123','role':'member'})\n    assert register_status in (200, 409), register_data\n    print('REGISTER_OK', register_status)\nexcept HTTPError as e:\n    body = e.read().decode('utf-8')\n    raise AssertionError(f'register failed: {e.code} {body}')\n\ninvite_status, invite_data = req('/api/community/invite', 'POST', token=owner_token, payload={'username':'beast_member','role':'operator'})\nassert invite_status == 200, invite_data\ninvite_code = invite_data['invite']['code']\nprint('INVITE_OK', invite_status)\n\nmember_status, member_data = req('/api/auth/login', 'POST', payload={'username':'beast_member','password':'beastpass123'})\nassert member_status == 200, member_data\nmember_token = member_data['token']\nprint('MEMBER_LOGIN_OK', member_status)\n\naccept_status, accept_data = req('/api/community/invite/accept', 'POST', token=member_token, payload={'code': invite_code})\nassert accept_status == 200, accept_data\nmember_token = accept_data['token']\nprint('ACCEPT_OK', accept_status)\n\nmembers_status, members_data = req('/api/community/members', token=member_token)\nassert members_status == 200 and any(m['username'] == 'beast_member' for m in members_data['members']), members_data\nprint('MEMBERS_OK', members_status)\n\nfeed_status, feed_data = req('/api/community/feed', token=member_token)\nassert feed_status == 200, feed_data\nprint('FEED_OK', feed_status)\n\ninvites_status, invites_data = req('/api/community/invites', token=owner_token)\nassert invites_status == 200, invites_data\nprint('INVITES_OK', invites_status)\n\nprint('HTTP_E2E_OK')"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "none"
+		},
+		{
+			"label": "Runtime Validation Status Probe",
+			"type": "shell",
+			"command": "c:\\Users\\zycie\\CTOAi\\.venv\\Scripts\\python.exe",
+			"args": [
+				"-u",
+				"-c",
+				"import json,urllib.request; d=json.loads(urllib.request.urlopen('http://127.0.0.1:8001/api/status', timeout=20).read().decode('utf-8')); print('STATUS_OK', d.get('provider'), d.get('route_mode'))"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "none"
+		},
+		{
+			"label": "Runtime Validation Auth Community E2E",
+			"type": "shell",
+			"command": "c:\\Users\\zycie\\CTOAi\\.venv\\Scripts\\python.exe",
+			"args": [
+				"-u",
+				"-c",
+				"import json,urllib.request; u='http://127.0.0.1:8001';\n\ndef r(path, method='GET', token=None, payload=None):\n    data=None if payload is None else json.dumps(payload).encode();\n    headers={'Content-Type':'application/json'};\n    headers.update({'Authorization':f'Bearer {token}'} if token else {});\n    req=urllib.request.Request(u+path, data=data, headers=headers, method=method);\n    with urllib.request.urlopen(req, timeout=20) as resp:\n        return resp.status, json.loads(resp.read().decode())\n\ns, d = r('/api/auth/login', 'POST', payload={'username':'famatyyk','password':'ctoa-owner'}); assert s==200, d; ot=d['token']\nms, md = r('/api/auth/me', token=ot); assert ms==200 and md['user']['role']=='owner', md\nrs, rd = r('/api/auth/register', 'POST', payload={'username':'beast_member','password':'beastpass123','role':'member'}); assert rs in (200,409), rd\nis_, id_ = r('/api/community/invite', 'POST', token=ot, payload={'username':'beast_member','role':'operator'}); assert is_==200, id_; code=id_['invite']['code']\nls, ld = r('/api/auth/login', 'POST', payload={'username':'beast_member','password':'beastpass123'}); assert ls==200, ld; mt=ld['token']\nas_, ad = r('/api/community/invite/accept', 'POST', token=mt, payload={'code':code}); assert as_==200, ad; mt=ad['token']\nms2, md2 = r('/api/community/members', token=mt); assert ms2==200 and any(x['username']=='beast_member' for x in md2['members']), md2\nfs, fd = r('/api/community/feed', token=mt); assert fs==200, fd\nprint('HTTP_AUTH_COMMUNITY_E2E_OK')"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "none"
+		},
+		{
+			"label": "Runtime Validation Auth Community E2E Exec",
+			"type": "shell",
+			"command": "c:\\Users\\zycie\\CTOAi\\.venv\\Scripts\\python.exe",
+			"args": [
+				"-u",
+				"-c",
+				"exec(\"import json,urllib.request\\nu='http://127.0.0.1:8001'\\ndef r(path,method='GET',token=None,payload=None):\\n data=None if payload is None else json.dumps(payload).encode(); headers={'Content-Type':'application/json'};\\n headers.update({'Authorization':f'Bearer {token}'} if token else {}); req=urllib.request.Request(u+path,data=data,headers=headers,method=method);\\n with urllib.request.urlopen(req,timeout=20) as resp: return resp.status,json.loads(resp.read().decode())\\n s,d=r('/api/auth/login','POST',payload={'username':'famatyyk','password':'ctoa-owner'}); assert s==200,d; ot=d['token']\\n s,d=r('/api/auth/me',token=ot); assert s==200 and d['user']['role']=='owner',d\\n s,d=r('/api/auth/register','POST',payload={'username':'beast_member','password':'beastpass123','role':'member'}); assert s in (200,409),d\\n s,d=r('/api/community/invite','POST',token=ot,payload={'username':'beast_member','role':'operator'}); assert s==200,d; code=d['invite']['code']\\n s,d=r('/api/auth/login','POST',payload={'username':'beast_member','password':'beastpass123'}); assert s==200,d; mt=d['token']\\n s,d=r('/api/community/invite/accept','POST',token=mt,payload={'code':code}); assert s==200,d; mt=d['token']\\n s,d=r('/api/community/members',token=mt); assert s==200 and any(x['username']=='beast_member' for x in d['members']),d\\n s,d=r('/api/community/feed',token=mt); assert s==200,d\\n print('HTTP_AUTH_COMMUNITY_E2E_OK')\")"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "none"
+		},
+		{
+			"label": "Runtime Validation Auth Community Temp Script",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"$p = Join-Path $env:TEMP 'ctoa_http_e2e.py'; @'\nimport json, urllib.request\nu = 'http://127.0.0.1:8001'\n\ndef r(path, method='GET', token=None, payload=None):\n    data = None if payload is None else json.dumps(payload).encode('utf-8')\n    headers = {'Content-Type': 'application/json'}\n    if token:\n        headers['Authorization'] = f'Bearer {token}'\n    req = urllib.request.Request(u + path, data=data, headers=headers, method=method)\n    with urllib.request.urlopen(req, timeout=20) as resp:\n        return resp.status, json.loads(resp.read().decode('utf-8'))\n\nstatus, data = r('/api/status')\nassert status == 200, data\nprint('STATUS_OK', data.get('provider'), data.get('route_mode'))\n\nstatus, data = r('/api/auth/login', 'POST', payload={'username': 'famatyyk', 'password': 'ctoa-owner'})\nassert status == 200, data\nowner_token = data['token']\n\nstatus, data = r('/api/auth/me', token=owner_token)\nassert status == 200 and data['user']['role'] == 'owner', data\n\nstatus, data = r('/api/auth/register', 'POST', payload={'username': 'beast_member', 'password': 'beastpass123', 'role': 'member'})\nassert status in (200, 409), data\n\nstatus, data = r('/api/community/invite', 'POST', token=owner_token, payload={'username': 'beast_member', 'role': 'operator'})\nassert status == 200, data\ninvite_code = data['invite']['code']\n\nstatus, data = r('/api/auth/login', 'POST', payload={'username': 'beast_member', 'password': 'beastpass123'})\nassert status == 200, data\nmember_token = data['token']\n\nstatus, data = r('/api/community/invite/accept', 'POST', token=member_token, payload={'code': invite_code})\nassert status == 200, data\nmember_token = data['token']\n\nstatus, data = r('/api/community/members', token=member_token)\nassert status == 200 and any(m['username'] == 'beast_member' for m in data['members']), data\n\nstatus, data = r('/api/community/feed', token=member_token)\nassert status == 200, data\n\nstatus, data = r('/api/community/invites', token=owner_token)\nassert status == 200, data\n\nprint('HTTP_AUTH_COMMUNITY_E2E_OK')\n'@ | Set-Content -Path $p -Encoding UTF8; & c:\\Users\\zycie\\CTOAi\\.venv\\Scripts\\python.exe $p; $exit = $LASTEXITCODE; Remove-Item $p -Force; exit $exit"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "none"
+		},
+		{
+			"label": "Read Temp E2E Result",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Get-Content 'c:\\Users\\zycie\\AppData\\Roaming\\Code\\User\\workspaceStorage\\1edd8a1233777d7267ce1e89924927ff\\GitHub.copilot-chat\\chat-session-resources\\b4227942-a11c-4bcf-8f63-be3042a91f3c\\call_iMZD81YNG8zCM7fj9NyTeH2v__vscode-1781255392354\\content.txt' -Tail 200"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "none"
+		},
+		{
+			"label": "Filter Temp E2E Marker",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Select-String -Path 'c:\\Users\\zycie\\AppData\\Roaming\\Code\\User\\workspaceStorage\\1edd8a1233777d7267ce1e89924927ff\\GitHub.copilot-chat\\chat-session-resources\\b4227942-a11f-5f3c-8f63-be3042a91f3c\\call_iMZD81YNG8zCM7fj9NyTeH2v__vscode-1781255392354\\content.txt' -Pattern 'HTTP_AUTH_COMMUNITY_E2E_OK','STATUS_OK'"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "none"
+		},
+		{
+			"label": "Runtime Validation HTTP E2E Final",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"$scriptPath = 'c:\\Users\\zycie\\CTOAi\\runtime\\http_e2e_8001.py'; $logPath = 'c:\\Users\\zycie\\CTOAi\\runtime\\http_e2e_8001.log'; @'\nimport json\nimport urllib.request\n\nBASE = 'http://127.0.0.1:8001'\n\ndef req(path, method='GET', token=None, payload=None):\n    data = None if payload is None else json.dumps(payload).encode('utf-8')\n    headers = {'Content-Type': 'application/json'}\n    if token:\n        headers['Authorization'] = f'Bearer {token}'\n    request = urllib.request.Request(BASE + path, data=data, headers=headers, method=method)\n    with urllib.request.urlopen(request, timeout=20) as response:\n        return response.status, json.loads(response.read().decode('utf-8'))\n\nstatus, data = req('/api/status')\nassert status == 200, data\nprint('STATUS_OK', data.get('provider'), data.get('route_mode'))\n\nstatus, data = req('/api/auth/login', 'POST', payload={'username': 'famatyyk', 'password': 'ctoa-owner'})\nassert status == 200, data\nowner_token = data['token']\nprint('OWNER_LOGIN_OK')\n\nstatus, data = req('/api/auth/me', token=owner_token)\nassert status == 200 and data['user']['role'] == 'owner', data\nprint('ME_OK')\n\nstatus, data = req('/api/auth/register', 'POST', payload={'username': 'beast_member', 'password': 'beastpass123', 'role': 'member'})\nassert status in (200, 409), data\nprint('REGISTER_OK', status)\n\nstatus, data = req('/api/community/invite', 'POST', token=owner_token, payload={'username': 'beast_member', 'role': 'operator'})\nassert status == 200, data\ninvite_code = data['invite']['code']\nprint('INVITE_OK')\n\nstatus, data = req('/api/auth/login', 'POST', payload={'username': 'beast_member', 'password': 'beastpass123'})\nassert status == 200, data\nmember_token = data['token']\nprint('MEMBER_LOGIN_OK')\n\nstatus, data = req('/api/community/invite/accept', 'POST', token=member_token, payload={'code': invite_code})\nassert status == 200, data\nmember_token = data['token']\nprint('ACCEPT_OK')\n\nstatus, data = req('/api/community/members', token=member_token)\nassert status == 200 and any(m['username'] == 'beast_member' for m in data['members']), data\nprint('MEMBERS_OK')\n\nstatus, data = req('/api/community/feed', token=member_token)\nassert status == 200, data\nprint('FEED_OK')\n\nstatus, data = req('/api/community/invites', token=owner_token)\nassert status == 200, data\nprint('INVITES_OK')\n\nprint('HTTP_AUTH_COMMUNITY_E2E_OK')\n'@ | Set-Content -Path $scriptPath -Encoding UTF8; & 'c:\\Users\\zycie\\CTOAi\\.venv\\Scripts\\python.exe' $scriptPath 2>&1 | Tee-Object -FilePath $logPath; exit $LASTEXITCODE"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "none"
+		},
+		{
+			"label": "Read HTTP E2E Final Log",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Get-Content 'c:\\Users\\zycie\\CTOAi\\runtime\\http_e2e_8001.log' -Tail 80"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "none"
+		},
+		{
+			"label": "Locate E2E Artifacts",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Get-ChildItem -Path 'c:\\Users\\zycie\\CTOAi' -Recurse -File -Filter 'http_e2e_8001*' | Select-Object FullName,Length,LastWriteTime"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "none"
+		},
+		{
+			"label": "Read Stored Tool Output",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"$p='c:\\Users\\zycie\\AppData\\Roaming\\Code\\User\\workspaceStorage\\1edd8a1233777d7267ce1e89924927ff\\GitHub.copilot-chat\\chat-session-resources\\b4227942-a11c-4bcf-8f63-be3042a91f3c\\call_R2WoI2PEpGUJICJE9KTLTYBK__vscode-1781255392358\\content.txt'; if (Test-Path $p) { Get-Content $p -Tail 120 } else { Write-Output 'MISSING_OUTPUT_FILE' }"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "none"
+		},
+		{
+			"label": "Extract Markers From Stored Output",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"$p='c:\\Users\\zycie\\AppData\\Roaming\\Code\\User\\workspaceStorage\\1edd8a1233777d7267ce1e89924927ff\\GitHub.copilot-chat\\chat-session-resources\\b4227942-a11c-4bcf-8f63-be3042a91f3c\\call_R2WoI2PEpGUJICJE9KTLTYBK__vscode-1781255392358\\content.txt'; if (Test-Path $p) { Select-String -Path $p -Pattern 'STATUS_OK','OWNER_LOGIN_OK','ME_OK','REGISTER_OK','INVITE_OK','MEMBER_LOGIN_OK','ACCEPT_OK','MEMBERS_OK','FEED_OK','INVITES_OK','HTTP_AUTH_COMMUNITY_E2E_OK','Traceback','AssertionError','URLError' } else { Write-Output 'MISSING_OUTPUT_FILE' }"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "none"
+		},
+		{
+			"label": "Parse Stored Output Markers Python",
+			"type": "shell",
+			"command": "c:\\Users\\zycie\\CTOAi\\.venv\\Scripts\\python.exe",
+			"args": [
+				"-c",
+				"from pathlib import Path\np = Path(r'c:\\Users\\zycie\\AppData\\Roaming\\Code\\User\\workspaceStorage\\1edd8a1233777d7267ce1e89924927ff\\GitHub.copilot-chat\\chat-session-resources\\b4227942-a11c-4bcf-8f63-be3042a91f3c\\call_R2WoI2PEpGUJICJE9KTLTYBK__vscode-1781255392358\\content.txt')\nprint('EXISTS', p.exists())\nif p.exists():\n    text = p.read_text(encoding='utf-8', errors='replace')\n    keys = ['STATUS_OK','OWNER_LOGIN_OK','ME_OK','REGISTER_OK','INVITE_OK','MEMBER_LOGIN_OK','ACCEPT_OK','MEMBERS_OK','FEED_OK','INVITES_OK','HTTP_AUTH_COMMUNITY_E2E_OK','Traceback','AssertionError','URLError']\n    for k in keys:\n        print(k, '=>', ('YES' if k in text else 'NO'))"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "none"
+		},
+		{
+			"label": "Parse Stored Output Via Temp File",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"$py = Join-Path $env:TEMP 'parse_copilot_output.py'; @'\nfrom pathlib import Path\np = Path(r\"c:\\Users\\zycie\\AppData\\Roaming\\Code\\User\\workspaceStorage\\1edd8a1233777d7267ce1e89924927ff\\GitHub.copilot-chat\\chat-session-resources\\b4227942-a11c-4bcf-8f63-be3042a91f3c\\call_R2WoI2PEpGUJICJE9KTLTYBK__vscode-1781255392358\\content.txt\")\nprint('EXISTS', p.exists())\nif p.exists():\n    text = p.read_text(encoding='utf-8', errors='replace')\n    keys = [\n        'STATUS_OK','OWNER_LOGIN_OK','ME_OK','REGISTER_OK','INVITE_OK',\n        'MEMBER_LOGIN_OK','ACCEPT_OK','MEMBERS_OK','FEED_OK','INVITES_OK',\n        'HTTP_AUTH_COMMUNITY_E2E_OK','Traceback','AssertionError','URLError'\n    ]\n    for k in keys:\n        print(f\"{k} => {'YES' if k in text else 'NO'}\")\n'@ | Set-Content -Path $py -Encoding UTF8; & c:\\Users\\zycie\\CTOAi\\.venv\\Scripts\\python.exe $py; $code=$LASTEXITCODE; Remove-Item $py -Force; exit $code"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "none"
+		},
+		{
+			"label": "Parse Markers One Liner",
+			"type": "shell",
+			"command": "c:\\Users\\zycie\\CTOAi\\.venv\\Scripts\\python.exe",
+			"args": [
+				"-c",
+				"from pathlib import Path; p=Path(r'c:\\Users\\zycie\\AppData\\Roaming\\Code\\User\\workspaceStorage\\1edd8a1233777d7267ce1e89924927ff\\GitHub.copilot-chat\\chat-session-resources\\b4227942-a11c-4bcf-8f63-be3042a91f3c\\call_R2WoI2PEpGUJICJE9KTLTYBK__vscode-1781255392358\\content.txt'); print('EXISTS',p.exists()); text=p.read_text(encoding='utf-8',errors='replace') if p.exists() else ''; keys=['STATUS_OK','OWNER_LOGIN_OK','ME_OK','REGISTER_OK','INVITE_OK','MEMBER_LOGIN_OK','ACCEPT_OK','MEMBERS_OK','FEED_OK','INVITES_OK','HTTP_AUTH_COMMUNITY_E2E_OK','Traceback','AssertionError','URLError']; [print(k,'=>',('YES' if k in text else 'NO')) for k in keys]"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "none"
+		},
+		{
+			"label": "CTOA Temp: Git Status",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/d",
+				"/c",
+				"cd /d c:\\Users\\zycie\\CTOAi && git status --short"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "none"
+		},
+		{
+			"label": "CTOA Temp: Stop Stack",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/d",
+				"/c",
+				"cd /d c:\\Users\\zycie\\CTOAi && docker compose stop api postgres"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "none"
+		},
+		{
+			"label": "CTOA Temp: Workflow List",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/d",
+				"/c",
+				"cd /d c:\\Users\\zycie\\CTOAi && dir /b .github\\workflows"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "none"
+		},
+		{
+			"label": "CTOA Temp: Find Git",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"$candidates = @('C:\\Program Files\\Git\\cmd\\git.exe','C:\\Program Files\\Git\\bin\\git.exe','C:\\Program Files (x86)\\Git\\cmd\\git.exe'); $candidates | ForEach-Object { if (Test-Path $_) { Write-Output $_ } }"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "none"
+		},
+		{
+			"label": "CTOA Temp: Read Governance Instruction",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Get-Content 'c:\\Users\\zycie\\CTOAi\\.github\\instructions\\runner-governance.instructions.md' -TotalCount 220"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "none"
+		},
+		{
+			"label": "CTOA Temp: Read Smoke Workflow",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Get-Content 'c:\\Users\\zycie\\CTOAi\\.github\\workflows\\ctoa-smoke-must-pass.yml' -TotalCount 260"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "none"
+		},
+		{
+			"label": "CTOA Temp: Inspect Auth Defaults",
+			"type": "shell",
+			"command": "c:\\Users\\zycie\\CTOAi\\.venv\\Scripts\\python.exe",
+			"args": [
+				"-c",
+				"from pathlib import Path\np=Path('c:/Users/zycie/CTOAi/api/main.py')\nlines=p.read_text(encoding='utf-8').splitlines()\nfor i,l in enumerate(lines,1):\n    if any(k in l for k in ['AUTH_REQUIRED','JWT_SECRET','AUTH_STORE_PATH','famatyyk','ctoa-owner','def _load_auth_store','def _ensure_seed_owner']):\n        print(f'{i}:{l}')"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "none"
+		},
+		{
+			"label": "CTOA Temp: Inspect Auth Defaults One Liner",
+			"type": "shell",
+			"command": "c:\\Users\\zycie\\CTOAi\\.venv\\Scripts\\python.exe",
+			"args": [
+				"-c",
+				"from pathlib import Path; lines=Path(r'c:\\Users\\zycie\\CTOAi\\api\\main.py').read_text(encoding='utf-8').splitlines(); keys=['AUTH_REQUIRED','JWT_SECRET','AUTH_STORE_PATH','famatyyk','ctoa-owner','def _load_auth_store','def _ensure_seed_owner']; [print(f'{i+1}:{l}') for i,l in enumerate(lines) if any(k in l for k in keys)]"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "none"
+		},
+		{
+			"label": "CTOA Temp: Check New Script",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Test-Path 'c:\\Users\\zycie\\CTOAi\\scripts\\ops\\runtime_smoke_e2e_8001.py'; if (Test-Path 'c:\\Users\\zycie\\CTOAi\\scripts\\ops\\runtime_smoke_e2e_8001.py') { Get-Content 'c:\\Users\\zycie\\CTOAi\\scripts\\ops\\runtime_smoke_e2e_8001.py' -TotalCount 40 }"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "none"
+		},
+		{
+			"label": "CTOA Temp: Verify Script Exists",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"if (Test-Path 'c:\\Users\\zycie\\CTOAi\\scripts\\ops\\runtime_smoke_e2e_8001.py') { Write-Output 'SCRIPT_OK'; Get-Content 'c:\\Users\\zycie\\CTOAi\\scripts\\ops\\runtime_smoke_e2e_8001.py' -TotalCount 20 } else { Write-Output 'SCRIPT_MISSING' }"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "none"
+		},
+		{
+			"label": "CTOA Temp: Git Status Full Path",
+			"type": "shell",
+			"command": "\"C:\\Program Files\\Git\\cmd\\git.exe\"",
+			"args": [
+				"-C",
+				"c:\\Users\\zycie\\CTOAi",
+				"status",
+				"--short"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "none"
+		},
+		{
+			"label": "CTOA Temp: Stage Auth Community Set",
+			"type": "shell",
+			"command": "\"C:\\Program Files\\Git\\cmd\\git.exe\"",
+			"args": [
+				"-C",
+				"c:\\Users\\zycie\\CTOAi",
+				"add",
+				".dockerignore",
+				".env.example",
+				".vscode/tasks.json",
+				"api/main.py",
+				"docker-compose.yml",
+				"web/src/app/api/chat/route.ts",
+				"web/src/app/api/auth/route.ts",
+				"web/src/app/page.tsx",
+				"web/src/components/SessionManager.tsx",
+				"web/src/components/StatusBar.tsx",
+				"web/src/components/CommunityPanel.tsx",
+				"web/src/components/LoginPanel.tsx",
+				"web/tsconfig.json",
+				"web/.gitignore",
+				"web/next-env.d.ts",
+				"web/package-lock.json"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "none"
 		}
 	],
 	"inputs": [
