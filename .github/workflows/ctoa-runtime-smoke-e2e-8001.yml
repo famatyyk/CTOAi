@@ -1,0 +1,124 @@
+﻿name: CTOA Runtime Smoke E2E 8001
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  runtime_smoke_e2e_8001:
+    name: Runtime Smoke E2E on 8001
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+
+      - name: Prepare CI env file
+        shell: bash
+        run: |
+          cat > .env.ci <<EOF
+          DB_PASSWORD=ctoa-ci-password
+          CTOA_JWT_SECRET=ctoa-ci-jwt-secret
+          CTOA_AUTH_REQUIRED=true
+          EOF
+
+      - name: Start compose stack
+        shell: bash
+        run: |
+          CTOA_ENV_FILE=.env.ci docker compose up -d postgres api
+
+      - name: Wait for api/status
+        shell: bash
+        run: |
+          for i in {1..40}; do
+            if curl -fsS http://127.0.0.1:8001/api/status >/dev/null; then
+              break
+            fi
+            sleep 3
+          done
+          curl -fsS http://127.0.0.1:8001/api/status >/dev/null
+
+      - name: Run runtime smoke e2e
+        shell: bash
+        run: |
+          python - <<PY
+          import json
+          import urllib.request
+
+          base = http://127.0.0.1:8001
+
+          def req(path, method=GET, token=None, payload=None):
+              data = None if payload is None else json.dumps(payload).encode(utf-8)
+              headers = {Content-Type: application/json}
+              if token:
+                  headers[Authorization] = Bearer  + token
+              request = urllib.request.Request(base + path, data=data, headers=headers, method=method)
+              with urllib.request.urlopen(request, timeout=20) as response:
+                  return response.status, json.loads(response.read().decode(utf-8))
+
+          status, data = req(/api/status)
+          assert status == 200, data
+
+          status, data = req(/api/auth/login, POST, payload={username: famatyyk, password: ctoa-owner})
+          assert status == 200, data
+          owner_token = data[token]
+
+          status, data = req(/api/auth/me, token=owner_token)
+          assert status == 200 and data[user][role] == owner, data
+
+          status, data = req(/api/auth/register, POST, payload={username: beast_member, password: beastpass123, role: member})
+          assert status in (200, 409), data
+
+          status, data = req(/api/community/invite, POST, token=owner_token, payload={username: beast_member, role: operator})
+          assert status == 200, data
+          invite_code = data[invite][code]
+
+          status, data = req(/api/auth/login, POST, payload={username: beast_member, password: beastpass123})
+          assert status == 200, data
+          member_token = data[token]
+
+          status, data = req(/api/community/invite/accept, POST, token=member_token, payload={code: invite_code})
+          assert status == 200, data
+          member_token = data[token]
+
+          status, data = req(/api/community/members, token=member_token)
+          assert status == 200 and any(m.get(username) == beast_member for m in data.get(members, [])), data
+
+          status, data = req(/api/community/feed, token=member_token)
+          assert status == 200, data
+
+          status, data = req(/api/community/invites, token=owner_token)
+          assert status == 200, data
+
+          print(HTTP_AUTH_COMMUNITY_E2E_OK)
+          PY
+
+      - name: Collect compose logs
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p runtime/ci-artifacts
+          CTOA_ENV_FILE=.env.ci docker compose logs api postgres > runtime/ci-artifacts/runtime-smoke-e2e-8001-compose.log || true
+
+      - name: Teardown stack
+        if: always()
+        shell: bash
+        run: |
+          CTOA_ENV_FILE=.env.ci docker compose down -v || true
+
+      - name: Upload runtime smoke artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: runtime-smoke-e2e-8001
+          path: runtime/ci-artifacts/runtime-smoke-e2e-8001-compose.log
+          if-no-files-found: warn
