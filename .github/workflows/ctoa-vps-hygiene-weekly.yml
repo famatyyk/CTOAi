@@ -1,0 +1,87 @@
+name: "CTOA VPS Hygiene Weekly"
+
+on:
+  schedule:
+    - cron: "20 6 * * 1"
+  workflow_dispatch: {}
+
+jobs:
+  vps-hygiene:
+    name: "VPS Hygiene Weekly"
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      VPS_HOST: ${{ secrets.CTOA_VPS_HOST }}
+      VPS_USER: ${{ secrets.CTOA_VPS_USER }}
+      SSH_KEY: ${{ secrets.CTOA_VPS_SSH_KEY }}
+      CTOA_DIR: /opt/ctoa
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup SSH key
+        shell: bash
+        run: |
+          mkdir -p ~/.ssh
+          if printf '%s' "$SSH_KEY" | grep -q 'BEGIN .*PRIVATE KEY'; then
+            printf '%s\n' "$SSH_KEY" | tr -d '\r' > ~/.ssh/ctoa_vps
+          else
+            printf '%s' "$SSH_KEY" | tr -d '\r\n' | base64 -d > ~/.ssh/ctoa_vps
+          fi
+          chmod 600 ~/.ssh/ctoa_vps
+          ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+
+      - name: Run VPS hygiene probe
+        shell: bash
+        run: |
+          ssh -i ~/.ssh/ctoa_vps -o BatchMode=yes "$VPS_USER@$VPS_HOST" bash <<'ENDSSH' > /tmp/vps-hygiene-raw.txt
+          set -e
+          echo "timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "host=$(hostname)"
+          echo "disk_root=$(df -h / | awk 'NR==2 {print $5}')"
+          echo "docker_df_start"
+          docker system df || true
+          echo "docker_df_end"
+          echo "service_runner=$(systemctl is-active ctoa-runner.timer || true)"
+          echo "service_orchestrator=$(systemctl is-active ctoa-agents-orchestrator.timer || true)"
+          echo "service_health=$(systemctl is-active ctoa-health-live.service || true)"
+          echo "repo_hygiene_check_start"
+          cd /opt/ctoa
+          python3 scripts/ops/repo_hygiene_drift_check.py || true
+          echo "repo_hygiene_check_end"
+          ENDSSH
+
+      - name: Build sprint evidence report
+        shell: bash
+        run: |
+          mkdir -p runtime/ci-artifacts
+          REPORT="runtime/ci-artifacts/vps-hygiene-weekly-${{ github.run_id }}.md"
+          {
+            echo "# VPS Hygiene Weekly Report"
+            echo ""
+            echo "- workflow: CTOA VPS Hygiene Weekly"
+            echo "- run_id: ${{ github.run_id }}"
+            echo "- run_url: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            echo "- generated_at_utc: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo ""
+            echo "## Raw Probe Output"
+            echo '```text'
+            cat /tmp/vps-hygiene-raw.txt
+            echo '```'
+          } > "$REPORT"
+          echo "REPORT=$REPORT" >> "$GITHUB_ENV"
+
+      - name: Publish summary
+        shell: bash
+        run: |
+          echo "## VPS Hygiene Weekly" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Report file: $REPORT" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Run URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload sprint evidence artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vps-hygiene-weekly-${{ github.run_id }}
+          path: ${{ env.REPORT }}
+          if-no-files-found: error

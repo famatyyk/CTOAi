@@ -2,6 +2,7 @@
 import os
 import re
 import shutil
+import shlex
 import subprocess
 import json
 import time
@@ -13,6 +14,7 @@ from pathlib import Path
 from threading import Lock
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from urllib.error import HTTPError, URLError
+from urllib.parse import urlparse
 from urllib.request import urlopen
 
 from fastapi import Cookie, Depends, FastAPI, Header, HTTPException, Query, Request, Response
@@ -164,6 +166,13 @@ def _lab_tasks_probe() -> dict:
         return {"code": 1, "stdout": "", "stderr": str(exc)[:200]}
 
 
+
+def _require_http_url(url: str) -> str:
+    parsed = urlparse(url.strip())
+    if parsed.scheme.lower() not in {"http", "https"} or not parsed.netloc:
+        raise ValueError("URL must use http:// or https:// and include a host")
+    return url
+
 def _intel_api_health_probe() -> dict:
     url = "http://127.0.0.1:8890/health"
     if _is_windows_host() and os.getenv("CTOA_INTEL_API_EXPECTED", "false").lower() not in {"1", "true", "yes", "on"}:
@@ -172,7 +181,8 @@ def _intel_api_health_probe() -> dict:
 
     payload: dict[str, Any] = {"ok": False, "url": url}
     try:
-        with urlopen(url, timeout=5) as response:
+        safe_url = _require_http_url(url)
+        with urlopen(safe_url, timeout=5) as response:
             body = response.read().decode("utf-8")
             payload["status"] = int(getattr(response, "status", 200))
             try:
@@ -215,7 +225,8 @@ def _intel_api_proxy(path: str = "/api/intel/status", timeout: int = 5) -> dict[
     }
 
     try:
-        with urlopen(url, timeout=timeout) as response:
+        safe_url = _require_http_url(url)
+        with urlopen(safe_url, timeout=timeout) as response:
             body = response.read().decode("utf-8")
             payload["status"] = int(getattr(response, "status", 200))
             try:
@@ -234,6 +245,37 @@ def _intel_api_proxy(path: str = "/api/intel/status", timeout: int = 5) -> dict[
     return payload
 
 
+
+def _ctoa_api_proxy(path: str = "/api/status", timeout: int = 5) -> dict[str, Any]:
+    suffix = path if path.startswith("/") else f"/{path}"
+    base_url = os.getenv("CTOA_API_BASE_URL", "http://127.0.0.1:8001").strip().rstrip("/")
+    url = f"{base_url}{suffix}"
+
+    payload: dict[str, Any] = {
+        "ok": False,
+        "url": url,
+        "path": suffix,
+    }
+
+    try:
+        safe_url = _require_http_url(url)
+        with urlopen(safe_url, timeout=timeout) as response:
+            body = response.read().decode("utf-8")
+            payload["status"] = int(getattr(response, "status", 200))
+            try:
+                payload["body"] = json.loads(body)
+            except Exception:
+                payload["body_raw"] = body[:800]
+            payload["ok"] = True
+    except HTTPError as exc:
+        payload["status"] = int(exc.code)
+        payload["error"] = f"http_{exc.code}"
+    except URLError as exc:
+        payload["error"] = str(exc.reason)
+    except Exception as exc:
+        payload["error"] = str(exc)
+
+    return payload
 def _load_json_file(path: Path) -> dict[str, Any]:
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
@@ -765,19 +807,10 @@ def _slice_command_output(value: str) -> str:
 
 
 def _run(cmd: str, timeout: int = 20, cwd: Optional[str] = None) -> dict:
-    proc = subprocess.run(
-        cmd,
-        shell=True,
-        text=True,
-        capture_output=True,
-        timeout=timeout,
-        cwd=cwd,
-    )
-    return {
-        "code": proc.returncode,
-        "stdout": _slice_command_output(proc.stdout),
-        "stderr": _slice_command_output(proc.stderr),
-    }
+    args = shlex.split(cmd, posix=not _is_windows_host())
+    if not args:
+        return {"code": 1, "stdout": "", "stderr": "Empty command"}
+    return _run_argv(args, timeout=timeout, cwd=cwd)
 
 
 def _run_argv(
@@ -1344,8 +1377,10 @@ def logs(
     path = mapping[target]
 
     if _command_exists("tail"):
-        cmd = f"tail -n {lines} {path} 2>/dev/null || echo '(log not found)'"
-        return _run(cmd, timeout=10)
+        tail_result = _run_argv(["tail", "-n", str(lines), str(path)], timeout=10)
+        if int(tail_result.get("code", 1)) != 0:
+            return {"code": 0, "stdout": "(log not found)", "stderr": ""}
+        return tail_result
 
     if not path.exists():
         return {"code": 0, "stdout": "(log not found)", "stderr": ""}
@@ -1437,8 +1472,7 @@ def _db_exec(sql: str, params: tuple = (), timeout: int = 15) -> dict:
         filled = filled.replace("%s", quote(p), 1)
 
     if _command_exists("psql"):
-        cmd = f"psql \"{dsn}\" -t -A -c {json.dumps(filled)}"
-        return _run(cmd, timeout=timeout)
+        return _run_argv(["psql", dsn, "-t", "-A", "-c", filled], timeout=timeout)
 
     if _command_exists("docker"):
         args = ["docker", "exec", "-i"]
@@ -2874,4 +2908,25 @@ def commands_dictionary(_: dict[str, Any] = Depends(require_operator)) -> dict:
 
 
 
+
+
+
+@app.get("/api/dashboard/release-evidence")
+def dashboard_release_evidence(_: dict[str, Any] = Depends(require_operator)) -> dict:
+    status_payload = _ctoa_api_proxy("/api/status")
+    release_payload = _ctoa_api_proxy("/api/release-evidence")
+
+    release_body = release_payload.get("body") if isinstance(release_payload.get("body"), dict) else {}
+    release_state = str(release_body.get("state", "UNKNOWN")) if release_body else "UNKNOWN"
+
+    return {
+        "ok": bool(status_payload.get("ok")) and bool(release_payload.get("ok")),
+        "status": status_payload,
+        "release_evidence": release_payload,
+        "release_state": release_state,
+        "source": {
+            "status_endpoint": "/api/status",
+            "release_evidence_endpoint": "/api/release-evidence",
+        },
+    }
 

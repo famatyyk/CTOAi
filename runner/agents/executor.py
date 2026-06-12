@@ -245,7 +245,8 @@ If cleanup doesn't free sufficient space:
 - [SETUP.md](../deploy/vps/SETUP.md) - VPS configuration
 - [runner.py](../runner/runner.py) - Task orchestration
 
-""".format(timestamp=now_iso())
+"""
+        governance = governance.replace("__TIMESTAMP__", now_iso(), 1)
 
         path = ROOT / "docs" / "runbook-disk-emergency.md"
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -377,7 +378,8 @@ curl http://localhost:9999/health 2>/dev/null | jq .
 - [SETUP.md](../deploy/vps/SETUP.md) - VPS environment setup
 - [runner.py](../runner/runner.py) - Main orchestration logic
 
-""".format(timestamp=now_iso())
+"""
+        governance = governance.replace("__TIMESTAMP__", now_iso(), 1)
 
         path = ROOT / "docs" / "VALIDATION_CHECKLIST.md"
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -640,7 +642,7 @@ class TrackDAgent:
         """Create sprint governance documentation"""
         governance = """# CTOA Sprint Governance Framework
 
-**Document Updated:** {timestamp}
+**Document Updated:** __TIMESTAMP__
 
 ## Overview
 
@@ -810,7 +812,8 @@ Agents are automatically invoked when tasks transition to IN_PROGRESS:
 - [agents.py](runner/agents.py) — AI agent executors
 - [README.md](README.md) — Project roadmap
 
-""".format(timestamp=now_iso())
+"""
+        governance = governance.replace("__TIMESTAMP__", now_iso(), 1)
 
         path = ROOT / "docs" / "SPRINT_GOVERNANCE.md"
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -867,3 +870,4 @@ if __name__ == "__main__":
     result = execute_agent_for_task(test_task)
     print("\nAgent execution result:")
     print(json.dumps(result, indent=2))
+
