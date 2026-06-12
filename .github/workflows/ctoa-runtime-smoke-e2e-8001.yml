@@ -9,6 +9,9 @@ on:
 permissions:
   contents: read
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
 jobs:
   runtime_smoke_e2e_8001:
     name: Runtime Smoke E2E on 8001
@@ -49,36 +52,10 @@ jobs:
           done
           curl -fsS http://127.0.0.1:8001/api/status >/dev/null
 
-      - name: Run auth and community smoke
+      - name: Run runtime smoke script
         shell: bash
         run: |
-          python - <<'PY'
-          import json
-          import urllib.request
-
-          base = 'http://127.0.0.1:8001'
-
-          def req(path, method='GET', token=None, payload=None):
-              data = None if payload is None else json.dumps(payload).encode('utf-8')
-              headers = {'Content-Type': 'application/json'}
-              if token:
-                  headers['Authorization'] = 'Bearer ' + token
-              request = urllib.request.Request(base + path, data=data, headers=headers, method=method)
-              with urllib.request.urlopen(request, timeout=20) as response:
-                  return response.status, json.loads(response.read().decode('utf-8'))
-
-          status, data = req('/api/auth/login', 'POST', payload={'username': 'famatyyk', 'password': 'ctoa-owner'})
-          assert status == 200, data
-          token = data['token']
-
-          status, data = req('/api/auth/me', token=token)
-          assert status == 200 and data['user']['role'] == 'owner', data
-
-          status, data = req('/api/community/invites', token=token)
-          assert status == 200, data
-
-          print('RUNTIME_SMOKE_E2E_OK')
-          PY
+          python scripts/ops/runtime_smoke_e2e_8001.py
 
       - name: Collect compose logs
         if: always()
@@ -102,4 +79,3 @@ jobs:
           name: runtime-smoke-e2e-8001
           path: runtime/ci-artifacts/runtime-smoke-e2e-8001-compose.log
           if-no-files-found: warn
-
