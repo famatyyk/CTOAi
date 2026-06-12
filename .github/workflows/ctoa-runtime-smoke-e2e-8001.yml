@@ -35,7 +35,8 @@ jobs:
       - name: Start compose stack
         shell: bash
         run: |
-          export DB_PASSWORD=ctoa-ci-password`n          CTOA_ENV_FILE=.env.ci docker compose up -d postgres api
+          export DB_PASSWORD=ctoa-ci-password
+          CTOA_ENV_FILE=.env.ci docker compose up -d postgres api
 
       - name: Wait for API
         shell: bash
@@ -84,13 +85,15 @@ jobs:
         shell: bash
         run: |
           mkdir -p runtime/ci-artifacts
-          export DB_PASSWORD=ctoa-ci-password`n          CTOA_ENV_FILE=.env.ci docker compose logs api postgres > runtime/ci-artifacts/runtime-smoke-e2e-8001-compose.log || true
+          export DB_PASSWORD=ctoa-ci-password
+          CTOA_ENV_FILE=.env.ci docker compose logs api postgres > runtime/ci-artifacts/runtime-smoke-e2e-8001-compose.log || true
 
       - name: Teardown stack
         if: always()
         shell: bash
         run: |
-          export DB_PASSWORD=ctoa-ci-password`n          CTOA_ENV_FILE=.env.ci docker compose down -v || true
+          export DB_PASSWORD=ctoa-ci-password
+          CTOA_ENV_FILE=.env.ci docker compose down -v || true
 
       - name: Upload runtime smoke artifacts
         if: always()
