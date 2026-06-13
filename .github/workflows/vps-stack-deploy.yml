@@ -4,7 +4,9 @@ name: "VPS - Deploy CTOAi Stack"
 # Required GitHub Secrets:
 #   CTOA_VPS_HOST       - VPS IP or hostname
 #   CTOA_VPS_USER       - SSH user (usually: ctoa)
-#   CTOA_VPS_SSH_KEY    - SSH private key (raw, not base64)
+#   CTOA_VPS_SSH_KEY_B64 - SSH private key (base64)
+# Optional fallback secret:
+#   CTOA_VPS_SSH_KEY    - SSH private key (raw, legacy)
 # Optional GitHub Secrets:
 #   CTOA_VPS_ENV_B64    - base64-encoded .env file content (for secret rotation)
 #   CTOA_VPS_PORT       - SSH port override (optional; auto-detected if missing)
@@ -37,7 +39,8 @@ jobs:
     env:
       VPS_HOST: ${{ secrets.CTOA_VPS_HOST }}
       VPS_USER: ${{ secrets.CTOA_VPS_USER }}
-      SSH_KEY: ${{ secrets.CTOA_VPS_SSH_KEY }}
+      SSH_KEY_B64: ${{ secrets.CTOA_VPS_SSH_KEY_B64 }}
+      SSH_KEY_RAW: ${{ secrets.CTOA_VPS_SSH_KEY }}
       VPS_PORT: ${{ secrets.CTOA_VPS_PORT }}
       CTOA_DIR: /opt/ctoa
 
@@ -59,7 +62,14 @@ jobs:
       - name: Setup SSH key
         run: |
           mkdir -p ~/.ssh
-          echo "$SSH_KEY" > ~/.ssh/ctoa_vps
+          if [ -n "$SSH_KEY_B64" ]; then
+            echo "$SSH_KEY_B64" | base64 -d > ~/.ssh/ctoa_vps
+          elif [ -n "$SSH_KEY_RAW" ]; then
+            printf ''%s'' "$SSH_KEY_RAW" > ~/.ssh/ctoa_vps
+          else
+            echo "No SSH key secret provided"
+            exit 1
+          fi
           chmod 600 ~/.ssh/ctoa_vps
           ssh-keyscan -p "$SSH_PORT" -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
 
@@ -157,3 +167,4 @@ jobs:
           echo "- Stack: \`docker compose up -d\`" >> $GITHUB_STEP_SUMMARY
           echo "- SSH Port: ${SSH_PORT:-unknown}" >> $GITHUB_STEP_SUMMARY
           echo "- Time: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_STEP_SUMMARY
+
