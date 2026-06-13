@@ -8,6 +8,8 @@ import json
 import os
 import re
 import secrets
+import sys
+import threading
 import time
 
 import bcrypt
@@ -113,26 +115,47 @@ _SAFE_DISCLAIMER = (
     "The assistant does not have direct access to execute system-level operations."
 )
 
+_SAFETY_STARTUP_TIME: str = datetime.now(timezone.utc).isoformat()
+SAFETY_METRICS: Dict[str, int] = {"sanitizer_interventions": 0, "model_errors_masked": 0}
+_METRICS_LOCK = threading.Lock()
+
 
 def _sanitize_assistant_content(content: str) -> str:
     """Block fabricated administrative-action claims in assistant responses."""
     if _ADMIN_FABRICATION_RE.search(content):
+        with _METRICS_LOCK:
+            SAFETY_METRICS["sanitizer_interventions"] += 1
+        print(
+            json.dumps({"event": "safety_intervention", "timestamp": datetime.now(timezone.utc).isoformat(), "reason": "admin_fabrication"}),
+            file=sys.stderr,
+        )
         return _SAFE_DISCLAIMER
     return content
 
 
 def _friendly_model_error(exc: Exception) -> "tuple[int, str]":
     """Return (http_status, safe_detail) without exposing raw upstream error details."""
+    _http_status: Optional[int] = None
     if isinstance(exc, httpx.HTTPStatusError):
         sc = exc.response.status_code
+        _http_status = sc
         if sc == 429:
-            return 503, "Service temporarily unavailable: model capacity exceeded. Please retry shortly."
-        if sc >= 500:
-            return 503, "Model backend is temporarily unavailable. Please retry shortly."
-        return 502, "Model backend returned an unexpected response."
-    if isinstance(exc, (httpx.TimeoutException, httpx.ConnectError)):
-        return 503, "Model backend is unreachable. Please retry shortly."
-    return 502, "Model call failed. Please retry shortly."
+            _sc, _msg = 503, "Service temporarily unavailable: model capacity exceeded. Please retry shortly."
+        elif sc >= 500:
+            _sc, _msg = 503, "Model backend is temporarily unavailable. Please retry shortly."
+        else:
+            _sc, _msg = 502, "Model backend returned an unexpected response."
+    elif isinstance(exc, (httpx.TimeoutException, httpx.ConnectError)):
+        _sc, _msg = 503, "Model backend is unreachable. Please retry shortly."
+    else:
+        _sc, _msg = 502, "Model call failed. Please retry shortly."
+    with _METRICS_LOCK:
+        SAFETY_METRICS["model_errors_masked"] += 1
+    print(
+        json.dumps({"event": "model_error_masked", "timestamp": datetime.now(timezone.utc).isoformat(), "http_status": _http_status}),
+        file=sys.stderr,
+    )
+    return _sc, _msg
 
 
 
@@ -903,3 +926,21 @@ async def chat_completions(req: OpenAIChatRequest, authorization: Optional[str] 
         response["route"] = result["route"]
 
     return response
+
+
+@app.get("/api/safety/metrics")
+async def safety_metrics(authorization: Optional[str] = Header(default=None)) -> Dict[str, Any]:
+    user = _current_user(authorization, required=True)
+    _require_roles(user, ["owner", "operator"])
+    with _METRICS_LOCK:
+        snapshot = dict(SAFETY_METRICS)
+    return {**snapshot, "since": _SAFETY_STARTUP_TIME}
+
+
+@app.get("/api/safety/status")
+async def safety_status() -> Dict[str, Any]:
+    with _METRICS_LOCK:
+        interventions = SAFETY_METRICS["sanitizer_interventions"]
+    if interventions >= 10:
+        return {"status": "elevated", "interventions": interventions}
+    return {"status": "ok"}
