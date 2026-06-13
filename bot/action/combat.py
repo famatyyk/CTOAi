@@ -22,7 +22,7 @@ _GUI_AVAILABLE = is_available()
 
 
 def _can_act() -> bool:
-    return bool(_GUI_AVAILABLE) and is_available()
+    return bool(_GUI_AVAILABLE)
 
 
 def attack_target() -> None:
