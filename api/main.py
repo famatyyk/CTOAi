@@ -14,8 +14,9 @@ import time
 
 import bcrypt
 import httpx
-from fastapi import FastAPI, HTTPException, Header
+from fastapi import FastAPI, HTTPException, Header, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 
@@ -72,6 +73,12 @@ AUTH_STORE_FILE = Path(os.getenv("CTOA_AUTH_STORE_FILE", "runtime/state/auth_sto
 AUTH_REQUIRED = _env_bool("CTOA_AUTH_REQUIRED", True)
 JWT_SECRET = os.getenv("CTOA_JWT_SECRET", "change-me-ctoa-jwt-secret")
 JWT_TTL_SECONDS = _env_int("CTOA_JWT_TTL_SECONDS", 86400)
+
+CTOA_RATE_LIMIT_ENABLED = _env_bool("CTOA_RATE_LIMIT_ENABLED", True)
+CTOA_CHAT_RATE_LIMIT_PER_MIN = max(1, _env_int("CTOA_CHAT_RATE_LIMIT_PER_MIN", 24))
+CTOA_AUTH_RATE_LIMIT_PER_MIN = max(1, _env_int("CTOA_AUTH_RATE_LIMIT_PER_MIN", 20))
+CTOA_READ_RATE_LIMIT_PER_MIN = max(1, _env_int("CTOA_READ_RATE_LIMIT_PER_MIN", 120))
+CTOA_AUDIT_LOG_FILE = Path(os.getenv("CTOA_AUDIT_LOG_FILE", "runtime/state/http_audit.log"))
 
 COMPLEXITY_KEYWORDS = {
     "architecture",
@@ -417,6 +424,149 @@ def _extract_bearer(authorization: Optional[str]) -> Optional[str]:
     return authorization.split(" ", 1)[1].strip()
 
 
+
+_RATE_LIMIT_LOCK = threading.Lock()
+_AUDIT_LOCK = threading.Lock()
+_RATE_LIMIT_BUCKETS: Dict[str, Dict[str, int]] = {}
+
+
+def _client_ip_from_request(request: Request) -> str:
+    forwarded = request.headers.get("x-forwarded-for", "").strip()
+    if forwarded:
+        return forwarded.split(",", 1)[0].strip() or "unknown"
+    if request.client and request.client.host:
+        return request.client.host
+    return "unknown"
+
+
+def _rate_limit_group(path: str) -> Optional[str]:
+    if path.startswith("/api/chat") or path.startswith("/v1/chat/completions"):
+        return "chat"
+    if path.startswith("/api/auth") or path.startswith("/api/community"):
+        return "auth"
+    if path.startswith("/api/"):
+        return "read"
+    return None
+
+
+def _rate_limit_for_group(group: str) -> int:
+    if group == "chat":
+        return CTOA_CHAT_RATE_LIMIT_PER_MIN
+    if group == "auth":
+        return CTOA_AUTH_RATE_LIMIT_PER_MIN
+    return CTOA_READ_RATE_LIMIT_PER_MIN
+
+
+def _consume_rate_limit(ip: str, group: str, now_ts: Optional[float] = None) -> Dict[str, int]:
+    now = now_ts if now_ts is not None else time.time()
+    bucket = int(now // 60)
+    retry_after = max(1, 60 - int(now % 60))
+    limit = _rate_limit_for_group(group)
+    key = f"{group}:{ip}"
+
+    with _RATE_LIMIT_LOCK:
+        record = _RATE_LIMIT_BUCKETS.get(key)
+        if not record or record.get("bucket") != bucket:
+            record = {"bucket": bucket, "count": 0}
+
+        count = int(record.get("count", 0))
+        if count >= limit:
+            _RATE_LIMIT_BUCKETS[key] = record
+            return {"allowed": 0, "retry_after": retry_after, "limit": limit, "remaining": 0}
+
+        count += 1
+        record["count"] = count
+        _RATE_LIMIT_BUCKETS[key] = record
+
+        if len(_RATE_LIMIT_BUCKETS) > 5000:
+            stale = [k for k, v in _RATE_LIMIT_BUCKETS.items() if int(v.get("bucket", -1)) != bucket]
+            for stale_key in stale[:2000]:
+                _RATE_LIMIT_BUCKETS.pop(stale_key, None)
+
+        return {
+            "allowed": 1,
+            "retry_after": retry_after,
+            "limit": limit,
+            "remaining": max(0, limit - count),
+        }
+
+
+def _audit_actor_from_request(request: Request) -> str:
+    token = _extract_bearer(request.headers.get("authorization"))
+    if not token:
+        return "anonymous"
+    try:
+        payload = _jwt_decode(token)
+    except HTTPException:
+        return "invalid_token"
+    except Exception:
+        return "invalid_token"
+    actor = str(payload.get("sub", "")).strip()
+    return actor or "anonymous"
+
+
+def _append_audit_http(request: Request, status: int, actor: str, meta: Optional[Dict[str, Any]] = None) -> None:
+    entry = {
+        "at": datetime.now(timezone.utc).isoformat(),
+        "method": request.method,
+        "path": request.url.path,
+        "status": int(status),
+        "actor": actor,
+        "ip": _client_ip_from_request(request),
+        "ua": request.headers.get("user-agent", ""),
+        "meta": meta or {},
+    }
+    try:
+        CTOA_AUDIT_LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+        line = json.dumps(entry, ensure_ascii=True)
+        with _AUDIT_LOCK:
+            with CTOA_AUDIT_LOG_FILE.open("a", encoding="utf-8") as handle:
+                handle.write(line + "\n")
+    except OSError:
+        pass
+
+
+@app.middleware("http")
+async def security_middleware(request: Request, call_next):
+    path = request.url.path
+    is_api_request = path.startswith("/api/")
+    actor = _audit_actor_from_request(request) if is_api_request else "anonymous"
+    status_code = 500
+    meta: Dict[str, Any] = {}
+
+    if is_api_request and CTOA_RATE_LIMIT_ENABLED:
+        group = _rate_limit_group(path)
+        if group:
+            limit = _consume_rate_limit(_client_ip_from_request(request), group)
+            meta.update(
+                {
+                    "rate_group": group,
+                    "rate_limit": limit["limit"],
+                    "rate_remaining": limit["remaining"],
+                }
+            )
+            if not bool(limit["allowed"]):
+                retry_after = int(limit["retry_after"])
+                status_code = 429
+                meta["rate_limited"] = True
+                _append_audit_http(request, status_code, actor, meta)
+                return JSONResponse(
+                    {
+                        "detail": "Rate limit exceeded. Please retry shortly.",
+                        "code": "RATE_LIMITED",
+                        "retry_after": retry_after,
+                    },
+                    status_code=429,
+                    headers={"Retry-After": str(retry_after)},
+                )
+
+    try:
+        response = await call_next(request)
+        status_code = int(response.status_code)
+        return response
+    finally:
+        if is_api_request:
+            _append_audit_http(request, status_code, actor, meta)
 def _current_user(authorization: Optional[str], *, required: bool = True) -> Optional[Dict[str, Any]]:
     token = _extract_bearer(authorization)
     if not token:

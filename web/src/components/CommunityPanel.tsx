@@ -175,7 +175,7 @@ export default function CommunityPanel({ role, onCommunityCount }: CommunityPane
           <div className="max-h-44 overflow-y-auto">
             {feed.map((e) => (
               <div key={e.id} className="px-3 py-2 border-t border-zinc-900 text-xs">
-                <p className="text-zinc-300">{e.type} · @{e.actor} {" -> "} {e.target}</p>
+                <p className="text-zinc-300">{e.type} - @{e.actor} - {e.target}</p>
                 <p className="text-zinc-500">{new Date(e.at).toLocaleString()}</p>
               </div>
             ))}

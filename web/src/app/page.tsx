@@ -183,7 +183,7 @@ export default function Home() {
   }
 
   return (
-    <div className="flex h-screen bg-surface">
+    <div className="flex min-h-screen md:h-screen bg-surface flex-col md:flex-row">
       <SessionManager
         user={authUser}
         communityCount={communityCount}
@@ -194,7 +194,7 @@ export default function Home() {
         onDelete={handleDelete}
         onLogout={handleLogout}
       />
-      <main className="flex-1 flex flex-col min-w-0">
+      <main className="flex-1 flex flex-col min-w-0 min-h-0">
         <StatusBar user={authUser} communityCount={communityCount} />
         <ChatWindow
           key={activeId}

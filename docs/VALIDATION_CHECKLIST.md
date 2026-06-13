@@ -115,6 +115,15 @@ curl http://localhost:9999/health 2>/dev/null | jq .
 3. Check GitHub API rate limits
 4. View error: `sudo journalctl -u ctoa-report -n 20`
 
+## Final E2E Checklist (Web/API)
+
+- [ ] Auth: `POST /api/auth` login/register works with valid credentials and returns token cookie.
+- [ ] Auth guard: `GET /api/auth?path=me` without token returns 401.
+- [ ] Chat: Web chat request succeeds for normal payloads and returns assistant content.
+- [ ] Chat guard: oversized chat history/messages are capped by the web API route before proxy.
+- [ ] Community: `GET /api/auth?path=members` requires auth and returns 401 without token.
+- [ ] Deploy smoke: VPS deploy workflow smoke step passes (`/health`, `/api/status`, unauthenticated 401 checks).
+- [ ] Rollback pointer: follow rollback procedure in `docs/DEPLOYMENT.md` if smoke checks fail.
 ## References
 - [ARCHITECTURE.md](ARCHITECTURE.md) - Overall system design
 - [SETUP.md](../deploy/vps/SETUP.md) - VPS environment setup

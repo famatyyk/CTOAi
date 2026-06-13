@@ -5,6 +5,17 @@ export const maxDuration = 60
 export const dynamic = "force-dynamic"
 
 const API_URL = process.env.VPS_API_URL ?? "http://116.202.96.250:8001"
+const CHAT_MAX_MESSAGES = 40
+const CHAT_MAX_MESSAGE_CHARS = 4000
+const CHAT_RATE_LIMIT_PER_MIN = 24
+const CHAT_RATE_WINDOW_MS = 60_000
+
+type RateWindow = {
+  count: number
+  resetAt: number
+}
+
+const chatIpWindows = new Map<string, RateWindow>()
 
 const SAFETY_SYSTEM_MESSAGE =
   "Jestes CTOAi STRATEGOS - osobisty asystent CTO stworzony przez Jakuba P. (Famatyyk). " +
@@ -23,6 +34,51 @@ type ChatMessage = {
   content: string
 }
 
+
+function getClientIp(req: NextRequest): string {
+  const forwarded = req.headers.get("x-forwarded-for")
+  if (forwarded) {
+    const first = forwarded.split(",")[0]?.trim()
+    if (first) return first
+  }
+  const real = req.headers.get("x-real-ip")?.trim()
+  return real || "unknown"
+}
+
+function consumeRateWindow(ip: string): { allowed: boolean; retryAfter: number } {
+  const now = Date.now()
+  const current = chatIpWindows.get(ip)
+  if (!current || current.resetAt <= now) {
+    chatIpWindows.set(ip, { count: 1, resetAt: now + CHAT_RATE_WINDOW_MS })
+    return { allowed: true, retryAfter: 0 }
+  }
+
+  if (current.count >= CHAT_RATE_LIMIT_PER_MIN) {
+    return { allowed: false, retryAfter: Math.max(1, Math.ceil((current.resetAt - now) / 1000)) }
+  }
+
+  current.count += 1
+  chatIpWindows.set(ip, current)
+  return { allowed: true, retryAfter: 0 }
+}
+
+function normalizeMessages(messages: unknown): ChatMessage[] {
+  if (!Array.isArray(messages)) return []
+
+  return messages
+    .filter(
+      (m): m is ChatMessage =>
+        Boolean(m) &&
+        typeof m === "object" &&
+        typeof (m as { role?: unknown }).role === "string" &&
+        typeof (m as { content?: unknown }).content === "string",
+    )
+    .slice(-CHAT_MAX_MESSAGES)
+    .map((m) => ({
+      role: m.role,
+      content: m.content.slice(0, CHAT_MAX_MESSAGE_CHARS),
+    }))
+}
 function toSafeError(status: number): { status: number; detail: string; code: string } {
   if (status === 429 || status === 503) {
     return {
@@ -80,10 +136,22 @@ function prependSafetySystemMessage(messages: unknown): ChatMessage[] {
 }
 
 export async function POST(req: NextRequest) {
+  const ip = getClientIp(req)
+  const gate = consumeRateWindow(ip)
+  if (!gate.allowed) {
+    return NextResponse.json(
+      {
+        detail: "Rate limit exceeded. Please retry shortly.",
+        code: "RATE_LIMITED",
+        retry_after: gate.retryAfter,
+      },
+      { status: 429, headers: { "Retry-After": String(gate.retryAfter) } },
+    )
+  }
   const body = await req.json().catch(() => ({}))
   const payload = {
     ...(typeof body === "object" && body !== null ? body : {}),
-    messages: prependSafetySystemMessage((body as { messages?: unknown })?.messages),
+    messages: prependSafetySystemMessage(normalizeMessages((body as { messages?: unknown })?.messages)),
   }
 
   const token = (await cookies()).get("ctoa_token")?.value

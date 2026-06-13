@@ -50,7 +50,7 @@ export default function SessionManager({
   }, [])
 
   return (
-    <aside className="w-72 border-r border-border flex flex-col bg-panel shrink-0">
+    <aside className="w-full md:w-72 max-h-[46vh] md:max-h-none border-b md:border-b-0 md:border-r border-border flex flex-col bg-panel shrink-0">
       <div className="px-4 py-5 border-b border-border">
         <h1 className="text-white font-semibold tracking-tight">CTOAi</h1>
         <p className="text-xs text-zinc-500 mt-0.5">AI Operations Platform</p>
@@ -85,7 +85,7 @@ export default function SessionManager({
         </button>
       </div>
 
-      <nav className="flex-1 px-2 space-y-1 overflow-y-auto">
+      <nav className="flex-1 px-2 space-y-1 overflow-y-auto max-h-52 md:max-h-none">
         {sessions.map((s) => (
           <div
             key={s.id}

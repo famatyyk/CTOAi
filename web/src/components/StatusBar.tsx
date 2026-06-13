@@ -60,7 +60,7 @@ export default function StatusBar({ user, communityCount }: StatusBarProps) {
       )}
       <div className="flex items-center gap-1 ml-auto">
         <Database className="w-3 h-3" />
-        PostgreSQL · backup 06:00
+        PostgreSQL - backup 06:00
       </div>
     </div>
   )

@@ -1,4 +1,4 @@
-﻿name: "VPS - Deploy CTOAi Stack"
+name: "VPS - Deploy CTOAi Stack"
 
 # Manual trigger only - use this to sync docker-compose changes and restart stack.
 # Required GitHub Secrets:
@@ -160,6 +160,62 @@ jobs:
           fi
           ENDSSH
 
+
+      - name: Remote smoke checks
+        run: |
+          set -euo pipefail
+          set +e
+          SMOKE_OUTPUT=$(ssh -i ~/.ssh/ctoa_vps -p "$SSH_PORT" "$VPS_USER@$VPS_HOST" bash <<'ENDSSH'
+          set -euo pipefail
+          BASE_URL="http://localhost:8001"
+          FAILURES=0
+
+          check_code() {
+            local path="$1"
+            local expected="$2"
+            local code
+            code=$(curl -sS -o /tmp/ctoa_smoke_body.json -w "%{http_code}" "$BASE_URL$path" || true)
+            if [ "$code" != "$expected" ]; then
+              echo "FAIL code $path expected=$expected got=$code"
+              FAILURES=$((FAILURES + 1))
+            else
+              echo "PASS code $path => $code"
+            fi
+          }
+
+          code=$(curl -sS -o /tmp/ctoa_health_body.json -w "%{http_code}" "$BASE_URL/health" || true)
+          if [ "$code" != "200" ]; then
+            echo "FAIL code /health expected=200 got=$code"
+            FAILURES=$((FAILURES + 1))
+          elif ! grep -qi '"status"[[:space:]]*:[[:space:]]*"ok"' /tmp/ctoa_health_body.json; then
+            echo "FAIL /health missing status ok"
+            FAILURES=$((FAILURES + 1))
+          else
+            echo "PASS /health status ok"
+          fi
+
+          check_code "/api/status" "200"
+          check_code "/api/auth/me" "401"
+          check_code "/api/community/members" "401"
+
+          if [ "$FAILURES" -eq 0 ]; then
+            echo "SMOKE_STATUS=PASS"
+            exit 0
+          fi
+
+          echo "SMOKE_STATUS=FAIL"
+          exit 1
+          ENDSSH)
+          SMOKE_RC=$?
+          set -e
+
+          echo "$SMOKE_OUTPUT"
+          if [ "$SMOKE_RC" -eq 0 ] && echo "$SMOKE_OUTPUT" | grep -q "SMOKE_STATUS=PASS"; then
+            echo "- Smoke checks: PASS" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- Smoke checks: FAIL" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
       - name: Summary
         run: |
           echo "## VPS Stack Deploy Complete" >> $GITHUB_STEP_SUMMARY
