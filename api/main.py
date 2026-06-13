@@ -120,6 +120,27 @@ SAFETY_METRICS: Dict[str, int] = {"sanitizer_interventions": 0, "model_errors_ma
 _METRICS_LOCK = threading.Lock()
 
 
+SAFETY_ALERT_THRESHOLD = max(1, _env_int("CTOA_SAFETY_ALERT_THRESHOLD", 1))
+
+
+def _safety_telemetry_snapshot() -> Dict[str, Any]:
+    with _METRICS_LOCK:
+        sanitizer_interventions = int(SAFETY_METRICS.get("sanitizer_interventions", 0))
+        model_errors_masked = int(SAFETY_METRICS.get("model_errors_masked", 0))
+
+    total_events = sanitizer_interventions + model_errors_masked
+    alert_active = sanitizer_interventions >= SAFETY_ALERT_THRESHOLD
+    return {
+        "startup_time": _SAFETY_STARTUP_TIME,
+        "sanitizer_interventions": sanitizer_interventions,
+        "model_errors_masked": model_errors_masked,
+        "total_events": total_events,
+        "alert_threshold": SAFETY_ALERT_THRESHOLD,
+        "alert_active": alert_active,
+        "alert_level": "warning" if alert_active else "normal",
+    }
+
+
 def _sanitize_assistant_content(content: str) -> str:
     """Block fabricated administrative-action claims in assistant responses."""
     if _ADMIN_FABRICATION_RE.search(content):
@@ -614,6 +635,7 @@ def health() -> Dict[str, str]:
 
 @app.get("/api/status")
 def status() -> Dict[str, Any]:
+    safety = _safety_telemetry_snapshot()
     return {
         "runner": "active",
         "model": MODEL_SMALL,
@@ -623,6 +645,12 @@ def status() -> Dict[str, Any]:
         "small_backend_url": SMALL_BACKEND_URL,
         "large_backend_url": LARGE_BACKEND_URL,
         "auth_required": AUTH_REQUIRED,
+        "safety": {
+            "alert_active": safety["alert_active"],
+            "alert_level": safety["alert_level"],
+            "sanitizer_interventions": safety["sanitizer_interventions"],
+            "model_errors_masked": safety["model_errors_masked"],
+        },
     }
 
 
@@ -932,9 +960,19 @@ async def chat_completions(req: OpenAIChatRequest, authorization: Optional[str] 
 async def safety_metrics(authorization: Optional[str] = Header(default=None)) -> Dict[str, Any]:
     user = _current_user(authorization, required=True)
     _require_roles(user, ["owner", "operator"])
-    with _METRICS_LOCK:
-        snapshot = dict(SAFETY_METRICS)
-    return {**snapshot, "since": _SAFETY_STARTUP_TIME}
+    snapshot = _safety_telemetry_snapshot()
+    return {
+        "sanitizer_interventions": snapshot["sanitizer_interventions"],
+        "model_errors_masked": snapshot["model_errors_masked"],
+        "since": snapshot["startup_time"],
+    }
+
+
+@app.get("/api/safety/telemetry")
+async def safety_telemetry(authorization: Optional[str] = Header(default=None)) -> Dict[str, Any]:
+    user = _current_user(authorization, required=True)
+    _require_roles(user, ["owner", "operator"])
+    return _safety_telemetry_snapshot()
 
 
 @app.get("/api/safety/status")
@@ -944,3 +982,5 @@ async def safety_status() -> Dict[str, Any]:
     if interventions >= 10:
         return {"status": "elevated", "interventions": interventions}
     return {"status": "ok"}
+
+

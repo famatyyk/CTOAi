@@ -229,3 +229,58 @@ class TestModelErrorNoLeak:
         detail = resp.json().get("detail", "")
         assert "sk-proj-abc123" not in detail
         assert "upstream internal error" not in detail
+
+
+class TestSafetyTelemetryAndStatus:
+    def test_snapshot_helper_alert_inactive_below_threshold(self):
+        with patch.object(api_main, "SAFETY_ALERT_THRESHOLD", 3):
+            with patch.dict(api_main.SAFETY_METRICS, {"sanitizer_interventions": 2, "model_errors_masked": 1}, clear=True):
+                snapshot = api_main._safety_telemetry_snapshot()
+        assert snapshot["startup_time"] == api_main._SAFETY_STARTUP_TIME
+        assert snapshot["sanitizer_interventions"] == 2
+        assert snapshot["model_errors_masked"] == 1
+        assert snapshot["total_events"] == 3
+        assert snapshot["alert_threshold"] == 3
+        assert snapshot["alert_active"] is False
+        assert snapshot["alert_level"] == "normal"
+
+    def test_snapshot_helper_alert_active_at_threshold(self):
+        with patch.object(api_main, "SAFETY_ALERT_THRESHOLD", 2):
+            with patch.dict(api_main.SAFETY_METRICS, {"sanitizer_interventions": 2, "model_errors_masked": 4}, clear=True):
+                snapshot = api_main._safety_telemetry_snapshot()
+        assert snapshot["total_events"] == 6
+        assert snapshot["alert_threshold"] == 2
+        assert snapshot["alert_active"] is True
+        assert snapshot["alert_level"] == "warning"
+
+    def test_status_includes_safety_block(self):
+        from fastapi.testclient import TestClient
+        with patch.dict(api_main.SAFETY_METRICS, {"sanitizer_interventions": 1, "model_errors_masked": 2}, clear=True):
+            client = TestClient(api_main.app)
+            resp = client.get("/api/status")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert "safety" in body
+        assert body["safety"]["sanitizer_interventions"] == 1
+        assert body["safety"]["model_errors_masked"] == 2
+        assert body["safety"]["alert_level"] in ("normal", "warning")
+
+    def test_safety_telemetry_auth_and_owner_access(self):
+        from fastapi.testclient import TestClient
+        client = TestClient(api_main.app)
+
+        unauthorized = client.get("/api/safety/telemetry")
+        assert unauthorized.status_code == 401
+
+        owner_token = api_main._issue_token({"username": "famatyyk", "role": "owner"})
+        headers = {"Authorization": f"Bearer {owner_token}"}
+        authorized = client.get("/api/safety/telemetry", headers=headers)
+        assert authorized.status_code == 200
+        payload = authorized.json()
+        assert "startup_time" in payload
+        assert "sanitizer_interventions" in payload
+        assert "model_errors_masked" in payload
+        assert "total_events" in payload
+        assert "alert_threshold" in payload
+        assert "alert_active" in payload
+        assert payload["alert_level"] in ("normal", "warning")
