@@ -6,6 +6,7 @@ import hashlib
 import hmac
 import json
 import os
+import re
 import secrets
 import time
 
@@ -95,8 +96,44 @@ SYSTEM_PROMPT = (
     "Gdy pytaja kto cie stworzyl: mow z duma o Famatyyku aka Jakubie P. "
     "Gdy pytaja o agentow: opisz odpowiedniego agenta i jego role. "
     "Odpowiadaj po polsku gdy ktos pisze po polsku, po angielsku gdy po angielsku. "
-    "Badz konkretny, techniczny i pomocny jak dobry CTO."
+    "Badz konkretny, techniczny i pomocny jak dobry CTO. "
+    "CRITICAL: Never claim to have executed or completed any administrative or system action "
+    "(such as creating users, setting passwords, granting permissions, or shutting yourself down) "
+    "unless you have verified real-execution evidence. If asked to perform such actions, "
+    "state clearly that you do not have direct system access to execute them."
 )
+
+_ADMIN_FABRICATION_RE = re.compile(
+    r"(create[- ]user|set[- ]password|grant[- ]permissions?|self[- ]terminat|wylaczam\s+sie|jestem\s+juz\s+wylaczony|utworzylem\s+uzytkownika|I\s+have\s+(created|granted|set|terminated|shut\s+down))",
+    re.IGNORECASE,
+)
+_SAFE_DISCLAIMER = (
+    "[SAFETY] This response contained an unverified claim of executing an administrative "
+    "or system action and has been blocked to prevent misinformation. "
+    "The assistant does not have direct access to execute system-level operations."
+)
+
+
+def _sanitize_assistant_content(content: str) -> str:
+    """Block fabricated administrative-action claims in assistant responses."""
+    if _ADMIN_FABRICATION_RE.search(content):
+        return _SAFE_DISCLAIMER
+    return content
+
+
+def _friendly_model_error(exc: Exception) -> "tuple[int, str]":
+    """Return (http_status, safe_detail) without exposing raw upstream error details."""
+    if isinstance(exc, httpx.HTTPStatusError):
+        sc = exc.response.status_code
+        if sc == 429:
+            return 503, "Service temporarily unavailable: model capacity exceeded. Please retry shortly."
+        if sc >= 500:
+            return 503, "Model backend is temporarily unavailable. Please retry shortly."
+        return 502, "Model backend returned an unexpected response."
+    if isinstance(exc, (httpx.TimeoutException, httpx.ConnectError)):
+        return 503, "Model backend is unreachable. Please retry shortly."
+    return 502, "Model call failed. Please retry shortly."
+
 
 
 class Message(BaseModel):
@@ -486,7 +523,8 @@ async def _execute_chat(req: ChatRequest) -> Dict[str, Any]:
     except Exception as first_error:
         secondary = route.get("secondary")
         if not secondary:
-            raise HTTPException(status_code=502, detail=f"Model call failed: {first_error}") from first_error
+            _sc, _msg = _friendly_model_error(first_error)
+            raise HTTPException(status_code=_sc, detail=_msg) from first_error
         used_fallback = True
         try:
             data = await _call_model(
@@ -502,12 +540,10 @@ async def _execute_chat(req: ChatRequest) -> Dict[str, Any]:
             route["backend_url"] = route["secondary_backend_url"]
             route["backend_key"] = route["secondary_backend_key"]
         except Exception as second_error:
-            raise HTTPException(
-                status_code=502,
-                detail=f"Primary and fallback model failed: {first_error} | {second_error}",
-            ) from second_error
+            _sc2, _msg2 = _friendly_model_error(second_error)
+            raise HTTPException(status_code=_sc2, detail=_msg2) from second_error
 
-    content = data["choices"][0]["message"]["content"]
+    content = _sanitize_assistant_content(data["choices"][0]["message"]["content"])
 
     if quality_retry and route["primary"] == MODEL_SMALL and route.get("secondary"):
         user_chars = _estimate_chars([m for m in req.messages if m.role == "user"])
@@ -521,7 +557,7 @@ async def _execute_chat(req: ChatRequest) -> Dict[str, Any]:
                 req.temperature,
                 req.max_tokens,
             )
-            content = retry_data["choices"][0]["message"]["content"]
+            content = _sanitize_assistant_content(retry_data["choices"][0]["message"]["content"])
             route["reason"].append("fallback_quality")
             route["primary"] = route["secondary"]
             route["backend_url"] = route["secondary_backend_url"]
@@ -826,7 +862,7 @@ def release_evidence() -> Dict[str, Any]:
 async def chat(req: ChatRequest, authorization: Optional[str] = Header(default=None)) -> Dict[str, Any]:
     user = _current_user(authorization, required=AUTH_REQUIRED)
     result = await _execute_chat(req)
-    body: Dict[str, Any] = {"role": "assistant", "content": result["content"]}
+    body: Dict[str, Any] = {"role": "assistant", "content": _sanitize_assistant_content(result["content"])}
     if user:
         body["account"] = {"username": user["username"], "role": user["role"]}
     if req.debug_route:
@@ -858,7 +894,7 @@ async def chat_completions(req: OpenAIChatRequest, authorization: Optional[str] 
             {
                 "index": 0,
                 "finish_reason": "stop",
-                "message": {"role": "assistant", "content": result["content"]},
+                "message": {"role": "assistant", "content": _sanitize_assistant_content(result["content"])},
             }
         ],
     }
