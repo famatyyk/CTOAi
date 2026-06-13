@@ -1,12 +1,13 @@
-name: "VPS — Deploy CTOAi Stack"
+name: "VPS - Deploy CTOAi Stack"
 
-# Manual trigger only — use this to sync docker-compose changes and restart stack.
+# Manual trigger only - use this to sync docker-compose changes and restart stack.
 # Required GitHub Secrets:
-#   CTOA_VPS_HOST       — VPS IP or hostname
-#   CTOA_VPS_USER       — SSH user (usually: ctoa)
-#   CTOA_VPS_SSH_KEY    — SSH private key (raw, not base64)
+#   CTOA_VPS_HOST       - VPS IP or hostname
+#   CTOA_VPS_USER       - SSH user (usually: ctoa)
+#   CTOA_VPS_SSH_KEY    - SSH private key (raw, not base64)
 # Optional GitHub Secrets:
-#   CTOA_VPS_ENV_B64    — base64-encoded .env file content (for secret rotation)
+#   CTOA_VPS_ENV_B64    - base64-encoded .env file content (for secret rotation)
+#   CTOA_VPS_PORT       - SSH port override (optional; auto-detected if missing)
 
 on:
   workflow_dispatch:
@@ -36,26 +37,41 @@ jobs:
     env:
       VPS_HOST: ${{ secrets.CTOA_VPS_HOST }}
       VPS_USER: ${{ secrets.CTOA_VPS_USER }}
-      SSH_KEY:  ${{ secrets.CTOA_VPS_SSH_KEY }}
+      SSH_KEY: ${{ secrets.CTOA_VPS_SSH_KEY }}
+      VPS_PORT: ${{ secrets.CTOA_VPS_PORT }}
       CTOA_DIR: /opt/ctoa
 
     steps:
+      - name: Resolve SSH port
+        run: |
+          CANDIDATES="${VPS_PORT:-} 22 2222"
+          for p in $CANDIDATES; do
+            [ -z "$p" ] && continue
+            if timeout 3 bash -c "</dev/tcp/$VPS_HOST/$p" 2>/dev/null; then
+              echo "SSH_PORT=$p" >> "$GITHUB_ENV"
+              echo "Using SSH port $p"
+              exit 0
+            fi
+          done
+          echo "No reachable SSH port found for $VPS_HOST (tried: $CANDIDATES)"
+          exit 1
+
       - name: Setup SSH key
         run: |
           mkdir -p ~/.ssh
           echo "$SSH_KEY" > ~/.ssh/ctoa_vps
           chmod 600 ~/.ssh/ctoa_vps
-          ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+          ssh-keyscan -p "$SSH_PORT" -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
 
       - name: Verify VPS connectivity
         run: |
-          ssh -i ~/.ssh/ctoa_vps -o BatchMode=yes \
+          ssh -i ~/.ssh/ctoa_vps -p "$SSH_PORT" -o BatchMode=yes \
               -o ConnectTimeout=10 \
               "$VPS_USER@$VPS_HOST" "echo VPS_OK"
 
       - name: Pull latest code on VPS
         run: |
-          ssh -i ~/.ssh/ctoa_vps "$VPS_USER@$VPS_HOST" \
+          ssh -i ~/.ssh/ctoa_vps -p "$SSH_PORT" "$VPS_USER@$VPS_HOST" \
             "cd $CTOA_DIR && git fetch --quiet origin && git reset --hard origin/main 2>&1 | tail -5"
 
       - name: Update .env on VPS (if requested)
@@ -64,29 +80,28 @@ jobs:
           VPS_ENV_B64: ${{ secrets.CTOA_VPS_ENV_B64 }}
         run: |
           if [ -z "$VPS_ENV_B64" ]; then
-            echo "⚠️  CTOA_VPS_ENV_B64 secret not set — skipping .env update"
+            echo "CTOA_VPS_ENV_B64 secret not set - skipping .env update"
             exit 0
           fi
           echo "$VPS_ENV_B64" | base64 -d | \
-            ssh -i ~/.ssh/ctoa_vps "$VPS_USER@$VPS_HOST" \
+            ssh -i ~/.ssh/ctoa_vps -p "$SSH_PORT" "$VPS_USER@$VPS_HOST" \
               "cat > $CTOA_DIR/.env && chmod 600 $CTOA_DIR/.env"
-          echo "✅ .env deployed to VPS"
+          echo ".env deployed to VPS"
 
       - name: Verify .env exists on VPS
         run: |
-          ssh -i ~/.ssh/ctoa_vps "$VPS_USER@$VPS_HOST" bash <<'ENDSSH'
+          ssh -i ~/.ssh/ctoa_vps -p "$SSH_PORT" "$VPS_USER@$VPS_HOST" bash <<'ENDSSH'
           if [ ! -f /opt/ctoa/.env ]; then
-            echo "❌ /opt/ctoa/.env not found — create it manually or set CTOA_VPS_ENV_B64 secret"
-            echo "   Run: cp /opt/ctoa/.env.example /opt/ctoa/.env && nano /opt/ctoa/.env"
+            echo "/opt/ctoa/.env not found - create it manually or set CTOA_VPS_ENV_B64 secret"
+            echo "Run: cp /opt/ctoa/.env.example /opt/ctoa/.env && nano /opt/ctoa/.env"
             exit 1
           fi
-          echo "✅ .env exists on VPS"
-          # Verify required keys
+          echo ".env exists on VPS"
           for var in DB_PASSWORD REDIS_PASSWORD GF_ADMIN_PASSWORD; do
             if grep -q "^${var}=" /opt/ctoa/.env; then
-              echo "  ✅ ${var} set"
+              echo "${var} set"
             else
-              echo "  ⚠️  ${var} missing from .env"
+              echo "${var} missing from .env"
             fi
           done
           ENDSSH
@@ -94,14 +109,14 @@ jobs:
       - name: Pull Docker images (optional)
         if: ${{ inputs.pull_images == 'true' }}
         run: |
-          ssh -i ~/.ssh/ctoa_vps "$VPS_USER@$VPS_HOST" bash <<'ENDSSH'
+          ssh -i ~/.ssh/ctoa_vps -p "$SSH_PORT" "$VPS_USER@$VPS_HOST" bash <<'ENDSSH'
           cd /opt/ctoa
           docker compose pull postgres redis grafana prometheus loki 2>&1 | tail -10 || true
           ENDSSH
 
       - name: Restart CTOAi stack
         run: |
-          ssh -i ~/.ssh/ctoa_vps "$VPS_USER@$VPS_HOST" bash <<'ENDSSH'
+          ssh -i ~/.ssh/ctoa_vps -p "$SSH_PORT" "$VPS_USER@$VPS_HOST" bash <<'ENDSSH'
           set -e
           cd /opt/ctoa
           echo "=== Stopping old stack ==="
@@ -115,24 +130,23 @@ jobs:
 
       - name: Verify stack health
         run: |
-          ssh -i ~/.ssh/ctoa_vps "$VPS_USER@$VPS_HOST" bash <<'ENDSSH'
+          ssh -i ~/.ssh/ctoa_vps -p "$SSH_PORT" "$VPS_USER@$VPS_HOST" bash <<'ENDSSH'
           cd /opt/ctoa
           UNHEALTHY=$(docker compose ps --format json 2>/dev/null | \
             python3 -c "
           import json,sys
           data=sys.stdin.read()
-          # handle array or newline-delimited JSON
           try:
               items = json.loads(data)
           except:
-              items = [json.loads(l) for l in data.strip().split('\n') if l]
+              items = [json.loads(l) for l in data.strip().split('\\n') if l]
           bad = [s.get('Name','?') for s in items if s.get('Health','') in ('unhealthy','starting') or s.get('State','') not in ('running','')]
-          print('\n'.join(bad))
+          print('\\n'.join(bad))
           " 2>/dev/null || echo "")
           if [ -n "$UNHEALTHY" ]; then
-            echo "⚠️  Unhealthy/not-running services: $UNHEALTHY"
+            echo "Unhealthy/not-running services: $UNHEALTHY"
           else
-            echo "✅ All services running"
+            echo "All services running"
           fi
           ENDSSH
 
@@ -141,4 +155,5 @@ jobs:
           echo "## VPS Stack Deploy Complete" >> $GITHUB_STEP_SUMMARY
           echo "- Code: \`git reset --hard origin/main\`" >> $GITHUB_STEP_SUMMARY
           echo "- Stack: \`docker compose up -d\`" >> $GITHUB_STEP_SUMMARY
+          echo "- SSH Port: ${SSH_PORT:-unknown}" >> $GITHUB_STEP_SUMMARY
           echo "- Time: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_STEP_SUMMARY
