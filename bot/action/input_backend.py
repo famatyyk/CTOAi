@@ -9,9 +9,8 @@ Allowed values: pyautogui, pydirectinput, auto.
 """
 from __future__ import annotations
 
-import logging
-import os
 import ctypes
+import logging
 from typing import Callable
 
 from ..config.runtime_profile import get_bool, get_str
@@ -21,8 +20,17 @@ log = logging.getLogger(__name__)
 _mode = get_str("BOT_INPUT_BACKEND", "auto").strip().lower()
 _require_focus = get_bool("BOT_INPUT_ONLY_WHEN_TIBIA_ACTIVE", True)
 
-_press: Callable[[str], None]
-_click: Callable[[int, int], None]
+
+def _noop_press(_key: str) -> None:
+    return None
+
+
+def _noop_click(_x: int, _y: int) -> None:
+    return None
+
+
+_press: Callable[[str], None] = _noop_press
+_click: Callable[[int, int], None] = _noop_click
 _available = False
 _backend_name = "none"
 

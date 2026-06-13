@@ -17,9 +17,16 @@ STRONG_HP_POTION_KEY  = _hotkeys.get("strong_hp_potion", "f3")
 ANTIDOTE_KEY          = _hotkeys.get("antidote_potion", "f4")
 ATTACK_KEY            = _hotkeys.get("attack_target", "space")
 
+# Backward-compat flag used by integration tests and legacy callers.
+_GUI_AVAILABLE = is_available()
+
+
+def _can_act() -> bool:
+    return bool(_GUI_AVAILABLE) and is_available()
+
 
 def attack_target() -> None:
-    if not is_available():
+    if not _can_act():
         return
     think_pause()               # rare hesitation before attacking
     press(ATTACK_KEY)
@@ -27,28 +34,28 @@ def attack_target() -> None:
 
 
 def use_hp_potion() -> None:
-    if not is_available():
+    if not _can_act():
         return
     press(HP_POTION_HOTKEY)
     potion_delay()
 
 
 def use_strong_hp_potion() -> None:
-    if not is_available():
+    if not _can_act():
         return
     press(STRONG_HP_POTION_KEY)
     potion_delay()
 
 
 def use_mp_potion() -> None:
-    if not is_available():
+    if not _can_act():
         return
     press(MP_POTION_HOTKEY)
     potion_delay()
 
 
 def use_antidote() -> None:
-    if not is_available():
+    if not _can_act():
         return
     press(ANTIDOTE_KEY)
     potion_delay()
