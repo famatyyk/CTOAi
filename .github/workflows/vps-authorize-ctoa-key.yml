@@ -21,6 +21,7 @@ jobs:
       VPS_HOST: ${{ secrets.CTOA_VPS_HOST != '' && secrets.CTOA_VPS_HOST || secrets.VPS_HOST }}
       VPS_USER: ${{ secrets.CTOA_VPS_USER != '' && secrets.CTOA_VPS_USER || secrets.VPS_USER }}
       SSH_KEY: ${{ secrets.CTOA_VPS_SSH_KEY_B64 != '' && secrets.CTOA_VPS_SSH_KEY_B64 || secrets.VPS_SSH_KEY_B64 }}
+      VPS_PORT: ${{ secrets.CTOA_VPS_PORT != '' && secrets.CTOA_VPS_PORT || '' }}
       DEFAULT_PUBLIC_KEY: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM0Got3A4+3U+6WperstMKOrQtr7EJMWvgNqxTeYgCoj ctoa@116.202.96.250
 
     steps:
@@ -29,11 +30,26 @@ jobs:
           set -euo pipefail
           if [ -z "$VPS_HOST" ] || [ -z "$VPS_USER" ] || [ -z "$SSH_KEY" ]; then
             echo "Missing VPS secrets. Need one of sets:"
-            echo "- CTOA_VPS_HOST / CTOA_VPS_USER / CTOA_VPS_SSH_KEY"
+            echo "- CTOA_VPS_HOST / CTOA_VPS_USER / CTOA_VPS_SSH_KEY_B64"
             echo "or"
-            echo "- VPS_HOST / VPS_USER / VPS_SSH_KEY"
+            echo "- VPS_HOST / VPS_USER / VPS_SSH_KEY_B64"
             exit 1
           fi
+
+      - name: Resolve SSH port
+        run: |
+          set -euo pipefail
+          CANDIDATES="${VPS_PORT:-} 22 2222"
+          for p in $CANDIDATES; do
+            [ -z "$p" ] && continue
+            if timeout 3 bash -c "</dev/tcp/$VPS_HOST/$p" 2>/dev/null; then
+              echo "SSH_PORT=$p" >> "$GITHUB_ENV"
+              echo "Using SSH port $p"
+              exit 0
+            fi
+          done
+          echo "No reachable SSH port found for $VPS_HOST"
+          exit 1
 
       - name: Prepare SSH
         run: |
@@ -41,7 +57,7 @@ jobs:
           mkdir -p ~/.ssh
           echo "$SSH_KEY" | base64 -d > ~/.ssh/ctoa_vps
           chmod 600 ~/.ssh/ctoa_vps
-          ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+          ssh-keyscan -p "$SSH_PORT" -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
 
       - name: Authorize key for ctoa
         env:
@@ -55,7 +71,7 @@ jobs:
 
           PUB_B64=$(printf '%s' "$PUBLIC_KEY" | base64 -w0)
 
-          ssh -i ~/.ssh/ctoa_vps -o BatchMode=yes -o ConnectTimeout=12 \
+          ssh -i ~/.ssh/ctoa_vps -p "$SSH_PORT" -o BatchMode=yes -o ConnectTimeout=12 \
             "$VPS_USER@$VPS_HOST" "PUB_B64='$PUB_B64' bash -s" <<'ENDSSH'
           set -euo pipefail
 
