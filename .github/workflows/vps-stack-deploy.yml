@@ -82,7 +82,7 @@ jobs:
       - name: Pull latest code on VPS
         run: |
           ssh -i ~/.ssh/ctoa_vps -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=~/.ssh/known_hosts -p $SSH_PORT $VPS_USER@$VPS_HOST \
-            'mkdir -p ~/.ssh && ssh-keyscan -H github.com >> ~/.ssh/known_hosts 2>/dev/null || true; cd /opt/ctoa && git fetch --quiet origin && git reset --hard origin/main 2>&1 | tail -5'
+            'cd /opt/ctoa && git remote set-url origin https://github.com/famatyyk/CTOAi.git && git fetch --quiet origin && git reset --hard origin/main 2>&1 | tail -5'
 
       - name: Update .env on VPS (if requested)
         if: ${{ inputs.update_env == 'true' }}
