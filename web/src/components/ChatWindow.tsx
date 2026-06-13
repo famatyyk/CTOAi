@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 import { useState, useRef, useEffect } from "react"
 import { Send, Loader2 } from "lucide-react"
 import ReactMarkdown from "react-markdown"
@@ -54,8 +54,8 @@ export default function ChatWindow({ sessionId, initialMessages, onMessagesChang
       <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center gap-3 opacity-40">
-            <div className="text-5xl">🤖</div>
-            <p className="text-lg font-medium">CTOAi — STRATEGOS</p>
+            <div className="text-5xl">đź¤–</div>
+            <p className="text-lg font-medium">CTOAi â€” STRATEGOS</p>
             <p className="text-sm">Stworzony przez Famatyyka aka Jakuba P.</p>
           </div>
         )}
@@ -98,7 +98,7 @@ export default function ChatWindow({ sessionId, initialMessages, onMessagesChang
             <Send className="w-4 h-4" />
           </button>
         </div>
-        <p className="text-center text-xs text-zinc-600 mt-2">Enter wyslij · Shift+Enter nowa linia</p>
+        <p className="text-center text-xs text-zinc-600 mt-2">Enter wyslij Â· Shift+Enter nowa linia</p>
       </div>
     </div>
   )
