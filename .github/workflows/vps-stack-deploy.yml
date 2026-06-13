@@ -132,7 +132,7 @@ jobs:
           echo "=== Stopping old stack ==="
           docker compose down --remove-orphans 2>&1 | tail -5 || true
           echo "=== Starting new stack ==="
-          docker compose up -d 2>&1 | tail -20
+          docker compose up -d --build api 2>&1 | tail -40
           echo "=== Waiting for healthchecks ==="
           sleep 15
           docker compose ps 2>&1
@@ -167,5 +167,6 @@ jobs:
           echo "- Stack: \`docker compose up -d\`" >> $GITHUB_STEP_SUMMARY
           echo "- SSH Port: ${SSH_PORT:-unknown}" >> $GITHUB_STEP_SUMMARY
           echo "- Time: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_STEP_SUMMARY
+
 
 
