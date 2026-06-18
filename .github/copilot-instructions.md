@@ -20,7 +20,7 @@ If ambiguity remains, choose the safest reversible action and state at most one 
   - prompt templates and tool scoring: `prompts/`, `scoring/`
   - orchestration runtime: `runner/`
   - release and approval policy: `policies/`, `workflows/`
-- Preserve BRAVE(R)-driven structure when editing agent execution logic: keep phases explicit (brief context setup, rule or constraint checks, action and tool execution, verification with evidence, exception handling, and end-of-step status reporting). See `docs/AGENT_PROMPT_DEFINITIVE.md` for canonical terminology.
+- Preserve BRAVE(R)-driven structure when editing agent execution logic: keep phases explicit—Background (context setup), Role (agent persona and constraints), Action (tool execution steps), Values (decision criteria and guardrails), Examples (few-shot evidence), Result (structured output schema). See `docs/AGENT_PROMPT_DEFINITIVE.md` for canonical terminology.
 
 ## Canonical Commands
 - Use the workspace tasks in `.vscode/tasks.json` as first choice.
