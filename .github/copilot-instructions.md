@@ -59,6 +59,15 @@ If ambiguity remains, choose the safest reversible action and state at most one 
   - `docs/REPO_HYGIENE_POLICY.md`
   - `docs/MOBILE_CONSOLE.md`
 
+## LLM Model Selection
+- The API layer routes requests between a **small** model (fast, low-cost) and a **large** model (complex tasks), controlled by `CTOA_ROUTE_DEFAULT` and the auto-router in `api/main.py`.
+- Current defaults (Groq free tier): small → `llama-3.1-8b-instant`, large → `llama-3.3-70b-versatile`.
+- **Groq small-model alternatives:** `gemma2-9b-it`, `llama-3.2-3b-preview`, `mistral-saba-24b`.
+- **Groq large-model alternatives:** `deepseek-r1-distill-llama-70b` (reasoning), `qwen-qwq-32b` (reasoning), `llama-3.1-70b-versatile` (stable fallback).
+- **Local (Ollama) alternatives** to `ctoa-1.5b`: `phi4-mini`, `gemma3:1b`, `deepseek-coder:1.3b`; for higher quality with ≥8 GB RAM: `qwen2.5-coder:7b` or `codellama:7b`.
+- Override any model via `.env` (`CTOA_MODEL_SMALL`, `CTOA_MODEL_LARGE`, `CTOA_LOCAL_MODEL_NAME`). See `.env.example` for all provider knobs.
+- The runner layer uses `CTOA_LLM_PROVIDER` (`auto` | `local` | `azure`) to select the provider; `auto` prefers a healthy local Ollama instance and falls back to Azure Foundry (`gpt-4o`).
+
 ## Agent Response Rules
 - Keep responses concise, direct, and implementation-oriented.
 - Do not expose internal reasoning.
