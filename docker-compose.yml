@@ -1,73 +1,38 @@
+version: '3.8'
+
 services:
-  postgres:
+  ctoa-db:
     image: postgres:16-alpine
-    container_name: ctoa-postgres
-    restart: always
-    env_file: ${CTOA_ENV_FILE:-/opt/ctoa/.env}
+    container_name: ctoa-db
+    restart: unless-stopped
     environment:
-      POSTGRES_DB: ${DB_NAME:-ctoa}
-      POSTGRES_USER: ${DB_USER:-ctoa}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ctoa
+      POSTGRES_USER: ctoa
+      POSTGRES_PASSWORD: ctoa_dev_password_123
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - ctoa_pgdata:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-ctoa}"]
-      interval: 30s
+      test: ["CMD-SHELL", "pg_isready -U ctoa -d ctoa"]
+      interval: 10s
       timeout: 5s
       retries: 5
 
-  backup:
-    image: postgres:16-alpine
-    container_name: ctoa-backup
-    restart: always
-    depends_on:
-      postgres:
-        condition: service_healthy
-    env_file: ${CTOA_ENV_FILE:-/opt/ctoa/.env}
-    environment:
-      POSTGRES_HOST: postgres
-      POSTGRES_DB: ${DB_NAME:-ctoa}
-      POSTGRES_USER: ${DB_USER:-ctoa}
-      PGPASSWORD: ${DB_PASSWORD}
-    volumes:
-      - ./docker/backup:/backups
-      - ./docker/backup/crontab:/etc/crontabs/root:ro
-    entrypoint: crond -f -l 2
-
-  ollama:
-    image: ollama/ollama:latest
-    container_name: ctoa-ollama
-    restart: always
-    volumes:
-      - ollama_data:/root/.ollama
+  ctoa-redis:
+    image: redis:7-alpine
+    container_name: ctoa-redis
+    restart: unless-stopped
     ports:
-      - "127.0.0.1:11434:11434"
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - ctoa_redisdata:/data
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:11434/api/tags || exit 1"]
-      interval: 60s
-      timeout: 10s
-      retries: 3
-
-  api:
-    build:
-      context: .
-      dockerfile: Dockerfile.api
-    container_name: ctoa-api
-    restart: always
-    env_file: ${CTOA_ENV_FILE:-/opt/ctoa/.env}
-    environment:
-      CTOA_LLM_PROVIDER: ${CTOA_LLM_PROVIDER:-local}
-      DB_HOST: postgres
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    ports:
-      - "0.0.0.0:8001:8000"
-    depends_on:
-      postgres:
-        condition: service_healthy
+      test: ["CMD-SHELL", "redis-cli ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
 
 volumes:
-  pgdata:
-  ollama_data:
-
-
+  ctoa_pgdata:
+  ctoa_redisdata:
