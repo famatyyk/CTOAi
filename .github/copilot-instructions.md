@@ -1,3 +1,6 @@
+---
+applyTo: "onChatParticipant:github.copilot.default"
+---
 # CTOAi Workspace Instructions
 
 ## Scope
