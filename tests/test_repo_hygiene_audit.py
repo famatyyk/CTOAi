@@ -7,8 +7,8 @@ from scripts.ops import repo_hygiene_audit as module
 
 def test_tracked_top_level_entries_returns_top_level_names(monkeypatch):
     monkeypatch.setattr(
-        module.subprocess,
-        'run',
+        module,
+        'run_git',
         lambda *args, **kwargs: SimpleNamespace(returncode=0, stdout='docs/file.md\nrunner/app.py\nREADME.md\n', stderr=''),
     )
 
@@ -21,7 +21,16 @@ def test_tracked_top_level_entries_returns_empty_set_on_git_failure(monkeypatch)
     def fail(*args, **kwargs):
         raise module.subprocess.CalledProcessError(returncode=1, cmd=['git', 'ls-files'])
 
-    monkeypatch.setattr(module.subprocess, 'run', fail)
+    monkeypatch.setattr(module, 'run_git', fail)
+
+    assert module._tracked_top_level_entries() == set()
+
+
+def test_tracked_top_level_entries_returns_empty_set_on_git_unavailable(monkeypatch):
+    def fail(*args, **kwargs):
+        raise module.GitUnavailableError('git missing')
+
+    monkeypatch.setattr(module, 'run_git', fail)
 
     assert module._tracked_top_level_entries() == set()
 
@@ -65,6 +74,5 @@ def test_main_writes_json_and_honors_fail_on_findings(tmp_path: Path, monkeypatc
     assert '[repo-hygiene] status=REVIEW_REQUIRED findings=1' in out
     saved = json.loads((tmp_path / 'runtime/repo-hygiene.json').read_text(encoding='utf-8'))
     assert saved['finding_count'] == 1
-
 
 
