@@ -24,7 +24,7 @@ class _FakeResponse:
 def _load_app_module(monkeypatch: MonkeyPatch, tmp_path: Path):
     monkeypatch.setenv("CTOA_MOBILE_TOKEN", "test-mobile-token")
     monkeypatch.setenv("CTOA_OWNER_USER", "CTO")
-    monkeypatch.setenv("CTOA_OWNER_PASSWORD", "asdzxc12")
+    monkeypatch.setenv("CTOA_OWNER_PASSWORD", "ownerpass123")
     monkeypatch.setenv("CTOA_OPERATOR_USER", "ctoa-bot")
     monkeypatch.setenv("CTOA_OPERATOR_PASSWORD", "jakpod22")
     monkeypatch.setenv("CTOA_ADMIN_SETTINGS_FILE", str(tmp_path / "admin-settings.json"))
@@ -41,7 +41,7 @@ def _load_app_module(monkeypatch: MonkeyPatch, tmp_path: Path):
 
 
 def _auth_headers(client: TestClient) -> dict[str, str]:
-    response = client.post("/api/auth/login", json={"username": "CTO", "password": "asdzxc12"})
+    response = client.post("/api/auth/login", json={"username": "CTO", "password": "ownerpass123"})
     assert response.status_code == 200
     token = response.json().get("token")
     assert token
@@ -113,4 +113,5 @@ def test_intel_state_and_diff_proxy_success(monkeypatch: MonkeyPatch):
         assert diff_payload["ok"] is True
         assert state_payload["path"] == "/api/intel/state"
         assert diff_payload["path"] == "/api/intel/diff"
+
 

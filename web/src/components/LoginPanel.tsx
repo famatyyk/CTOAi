@@ -147,7 +147,7 @@ export default function LoginPanel({ onLogin }: LoginPanelProps) {
             </button>
 
             <p className="text-xs text-zinc-500">
-              Seed accounts: famatyyk / ctoa-owner, strategos / ctoa-ops, recruit / ctoa-community
+              First setup: create the owner with `/api/auth/bootstrap`, then use login.
             </p>
           </div>
         </section>

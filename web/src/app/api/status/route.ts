@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-const API_URL = process.env.VPS_API_URL ?? "http://116.202.96.250:8001";
+const API_URL = process.env.VPS_API_URL ?? "http://127.0.0.1:8011";
 
 export async function GET() {
   try {

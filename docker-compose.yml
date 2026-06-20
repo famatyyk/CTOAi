@@ -41,7 +41,7 @@ services:
     volumes:
       - ollama_data:/root/.ollama
     ports:
-      - "127.0.0.1:11434:11434"
+      - "${CTOA_BIND_HOST:-127.0.0.1}:11434:11434"
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:11434/api/tags || exit 1"]
       interval: 60s
@@ -61,7 +61,7 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
-      - "0.0.0.0:8001:8000"
+      - "${CTOA_BIND_HOST:-127.0.0.1}:8001:8000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -69,5 +69,4 @@ services:
 volumes:
   pgdata:
   ollama_data:
-
 
