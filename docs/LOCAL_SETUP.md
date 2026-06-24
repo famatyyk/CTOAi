@@ -124,6 +124,49 @@ python scripts/ops/ctoa_env_doctor.py
 
 If status is `FAIL`, fix reported issues first.
 
+### 7. Local CTOAi Chat (no credits)
+
+```bash
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/ops/ctoa-chat.ps1 -HealthOnly
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/ops/ctoa-chat.ps1 -Model qwen2.5-coder:1.5b
+```
+
+Interactive slash commands:
+
+- `/help`
+- `/mode architect|reviewer|debugger|security|ops|general`
+- `/safe on|off|status`
+- `/read <path>`
+- `/grep <pattern>`
+- `/git status`
+- `/test [pytest args]`
+- `/apply_patch <file.patch>`
+- `/apply_patch --from-chat <request>` + `/confirm yes|no`
+- `/commit --suggest`
+- `/commit --all <message>` or `/commit <message>`
+- `/plan <topic>`
+- `/history [n]`
+- `/rag on|off|status`
+
+### 8. CTOAi Daily Loop (v4)
+
+One-command local daily loop (preflight + smoke tests + AI plan + markdown report):
+
+```bash
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/ops/ctoa-daily.ps1
+```
+
+Options:
+
+- `-Mode ops|architect|reviewer`
+- `-Smoke "tests/test_suite.py -q"`
+- `-Strict` (non-zero exit on preflight FAIL or smoke fail)
+- `-PrintReport`
+
+Report output path:
+
+- `.ctoa-local/daily/YYYY-MM-DD.md`
+
 ---
 
 ## Git + SSH Hardening

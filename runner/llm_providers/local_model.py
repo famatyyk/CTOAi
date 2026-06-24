@@ -19,27 +19,49 @@ class LocalModelProvider(LLMProvider):
         self.model_name = os.getenv("CTOA_LOCAL_MODEL_NAME", "qwen2.5-coder:1.5b")
         self.timeout = float(os.getenv("CTOA_LOCAL_MODEL_TIMEOUT_SECS", "120"))
 
+    def _api_root(self) -> str:
+        if self.base_url.endswith("/v1"):
+            return self.base_url[:-3]
+        return self.base_url
+
     def health(self) -> bool:
         try:
             with httpx.Client(timeout=5) as client:
-                base = self.base_url.replace("/v1", "")
-                resp = client.get(base + "/api/tags")
+                resp = client.get(self._api_root() + "/api/tags")
                 return resp.status_code == 200
         except Exception as e:
             print(f"[LocalModel] Health check failed: {e}")
             return False
 
     def complete(self, system_prompt, user_prompt, temperature=0.1, max_tokens=2048):
-        payload = {
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ]
+        openai_payload = {
             "model": self.model_name,
-            "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
+            "messages": messages,
             "temperature": temperature,
             "max_tokens": max_tokens,
         }
         with httpx.Client(timeout=self.timeout) as client:
-            resp = client.post(self.base_url + "/chat/completions", json=payload)
-            resp.raise_for_status()
-            return resp.json()["choices"][0]["message"]["content"]
+            openai_url = self.base_url + "/chat/completions"
+            resp = client.post(openai_url, json=openai_payload)
+            if resp.status_code != 404:
+                resp.raise_for_status()
+                return resp.json()["choices"][0]["message"]["content"]
+
+            # Fallback for Ollama deployments exposing only native API.
+            native_payload = {
+                "model": self.model_name,
+                "messages": messages,
+                "stream": False,
+                "options": {
+                    "temperature": temperature,
+                    "num_predict": max_tokens,
+                },
+            }
+            native_url = self._api_root() + "/api/chat"
+            native_resp = client.post(native_url, json=native_payload)
+            native_resp.raise_for_status()
+            return native_resp.json()["message"]["content"]
