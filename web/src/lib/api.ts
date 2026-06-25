@@ -1,5 +1,6 @@
-// API client pointing to VPS
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://116.202.96.250:8000"
+import { getPublicApiUrl } from "@/lib/config"
+
+const API_URL = getPublicApiUrl()
 
 export async function streamChat(messages: { role: string; content: string }[]) {
   const res = await fetch(`${API_URL}/api/chat`, {
