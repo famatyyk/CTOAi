@@ -34,7 +34,7 @@ export default function StatusBar({ user, communityCount }: StatusBarProps) {
     <div className="flex items-center gap-4 px-4 py-2 border-b border-border text-xs text-zinc-400">
       <div className="flex items-center gap-1.5">
         <span className={`w-2 h-2 rounded-full ${dot} animate-pulse`} />
-        <span>VPS 116.202.96.250</span>
+        <span>VPS API</span>
       </div>
 
       <div className="flex items-center gap-1 text-emerald-300">

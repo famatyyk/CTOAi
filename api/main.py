@@ -46,6 +46,10 @@ def _env_int(name: str, default: int) -> int:
         return default
 
 
+def _is_production_env() -> bool:
+    return os.getenv("CTOA_ENV", "").strip().lower() in {"prod", "production"}
+
+
 def _backend_kind(url: str) -> str:
     lowered = (url or "").lower()
     local_markers = ("localhost", "127.0.0.1", "host.docker.internal")
@@ -71,7 +75,17 @@ RELEASE_EVIDENCE_FILE = Path(
 
 AUTH_STORE_FILE = Path(os.getenv("CTOA_AUTH_STORE_FILE", "runtime/state/auth_store.json"))
 AUTH_REQUIRED = _env_bool("CTOA_AUTH_REQUIRED", True)
-JWT_SECRET = os.getenv("CTOA_JWT_SECRET", "change-me-ctoa-jwt-secret")
+DEFAULT_DEV_JWT_SECRET = "change-me-ctoa-jwt-secret"
+
+
+def _load_jwt_secret() -> str:
+    secret = os.getenv("CTOA_JWT_SECRET", "").strip()
+    if _is_production_env() and (not secret or secret == DEFAULT_DEV_JWT_SECRET):
+        raise RuntimeError("CTOA_JWT_SECRET must be set to a non-default value in production")
+    return secret or DEFAULT_DEV_JWT_SECRET
+
+
+JWT_SECRET = _load_jwt_secret()
 JWT_TTL_SECONDS = _env_int("CTOA_JWT_TTL_SECONDS", 86400)
 
 CTOA_RATE_LIMIT_ENABLED = _env_bool("CTOA_RATE_LIMIT_ENABLED", True)
