@@ -11,7 +11,7 @@ interface Props {
   onMessagesChange: (msgs: Message[]) => void
 }
 
-export default function ChatWindow({ sessionId, initialMessages, onMessagesChange }: Props) {
+export default function ChatWindow({ initialMessages, onMessagesChange }: Props) {
   const [messages, setMessages] = useState<Message[]>(initialMessages)
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
