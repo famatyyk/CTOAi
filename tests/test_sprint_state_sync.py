@@ -1,4 +1,5 @@
 import importlib.util
+import json
 from pathlib import Path
 
 import pytest
@@ -68,6 +69,7 @@ def test_synchronize_state_initializes_and_releases_all_tasks(tmp_path: Path, mo
 
     backlog_path = tmp_path / 'workflows/backlog.yaml'
     state_path = tmp_path / 'runtime/task-state.yaml'
+    evidence_dir = tmp_path / 'runtime/ci-artifacts'
     backlog_path.parent.mkdir(parents=True, exist_ok=True)
     backlog_path.write_text(
         '\n'.join(
@@ -84,7 +86,12 @@ def test_synchronize_state_initializes_and_releases_all_tasks(tmp_path: Path, mo
         encoding='utf-8',
     )
 
-    released, total, backlog_id = module.synchronize_state(backlog_path, state_path, 'wave1 complete')
+    released, total, backlog_id = module.synchronize_state(
+        backlog_path,
+        state_path,
+        'wave1 complete',
+        evidence_dir=evidence_dir,
+    )
 
     assert (released, total, backlog_id) == (2, 2, 'sprint-067')
     payload = yaml.safe_load(state_path.read_text(encoding='utf-8'))
@@ -93,6 +100,15 @@ def test_synchronize_state_initializes_and_releases_all_tasks(tmp_path: Path, mo
     assert payload['history'][-1]['reason'] == 'wave1 complete'
     assert [task['status'] for task in payload['tasks']] == ['RELEASED', 'RELEASED']
     assert payload['tasks'][0]['notes'][-1]['status'] == 'RELEASED'
+
+    evidence_json = evidence_dir / 'sprint-067-release-evidence-pack.json'
+    evidence_md = evidence_dir / 'sprint-067-release-evidence-pack.md'
+    assert evidence_json.exists()
+    assert evidence_md.exists()
+    evidence = json.loads(evidence_json.read_text(encoding='utf-8'))
+    assert evidence['schema_version'] == 'ctoa.release_evidence_pack.v1'
+    assert evidence['backlog_id'] == 'sprint-067'
+    assert evidence['release']['released_count'] == 2
 
 
 def test_synchronize_state_reuses_matching_state_and_adds_missing_task(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
@@ -110,6 +126,7 @@ def test_synchronize_state_reuses_matching_state_and_adds_missing_task(tmp_path:
 
     backlog_path = tmp_path / 'workflows/backlog.yaml'
     state_path = tmp_path / 'runtime/task-state.yaml'
+    evidence_dir = tmp_path / 'runtime/ci-artifacts'
     backlog_path.parent.mkdir(parents=True, exist_ok=True)
     state_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -151,7 +168,12 @@ def test_synchronize_state_reuses_matching_state_and_adds_missing_task(tmp_path:
         encoding='utf-8',
     )
 
-    released, total, backlog_id = module.synchronize_state(backlog_path, state_path, 'wave1 complete')
+    released, total, backlog_id = module.synchronize_state(
+        backlog_path,
+        state_path,
+        'wave1 complete',
+        evidence_dir=evidence_dir,
+    )
 
     assert (released, total, backlog_id) == (2, 2, 'sprint-067')
     payload = yaml.safe_load(state_path.read_text(encoding='utf-8'))
@@ -162,5 +184,4 @@ def test_synchronize_state_reuses_matching_state_and_adds_missing_task(tmp_path:
     assert existing['status'] == 'RELEASED'
     assert added['title'] == 'Runtime'
     assert added['status'] == 'RELEASED'
-
 
