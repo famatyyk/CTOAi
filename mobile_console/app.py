@@ -51,6 +51,12 @@ ROOT = Path(__file__).resolve().parent.parent
 
 import sys as _sys
 _sys.path.insert(0, str(ROOT))
+from runtime_context import (
+    default_generated_dir,
+    is_production_env,
+    is_windows_host,
+    mobile_console_enabled,
+)
 from runner.alert_rules import check_generation_failed_spike
 from mobile_console.services.admin_settings_service import AdminSettingsService
 from mobile_console.services.ideas_service import IdeasService
@@ -62,7 +68,7 @@ SITE_INDEX_HTML = SITE_DIR / "index.html"
 LIVE_DASHBOARD_HTML = ROOT / "docs" / "site" / "live-dashboard.html"
 AUDIT_LOG = ROOT / "logs" / "mobile-console-audit.log"
 AUTO_TRAINER_DIR = Path(os.environ.get("CTOA_TRAINING_REPORT_DIR", str(ROOT / "runtime" / "training-reports")))
-_DEFAULT_GENERATED_DIR = (ROOT / "runtime" / "generated") if os.name == "nt" else Path("/opt/ctoa/generated")
+_DEFAULT_GENERATED_DIR = default_generated_dir(ROOT)
 GENERATED_DIR = Path(os.environ.get("CTOA_GENERATED_DIR", str(_DEFAULT_GENERATED_DIR)))
 GENERATED_MANIFESTS_DIR = GENERATED_DIR / "manifests"
 ADMIN_SETTINGS_FILE = Path(os.environ.get("CTOA_ADMIN_SETTINGS_FILE", str(ROOT / "runtime" / "admin-panel-settings.json")))
@@ -71,14 +77,6 @@ PRODUCT_MANIFEST_FILE = ROOT / "product" / "ctoa-toolkit.manifest.json"
 PRODUCT_STATE_DIR = Path(os.environ.get("CTOA_PRODUCT_STATE_DIR", str(ROOT / ".ctoa-local")))
 PRODUCT_USER_CONFIG_FILE = Path(os.environ.get("CTOA_PRODUCT_USER_CONFIG", str(PRODUCT_STATE_DIR / "user-config.json")))
 COMMAND_DICTIONARY_FILE = ROOT / "schemas" / "ctoa-command-dictionary.json"
-
-
-def _is_production_env() -> bool:
-    return os.getenv("CTOA_ENV", "").strip().lower() in {"prod", "production"}
-
-
-def _is_windows_host() -> bool:
-    return os.name == "nt"
 
 
 def _command_exists(name: str) -> bool:
@@ -119,7 +117,7 @@ def _service_is_active(unit: str) -> str:
         res = _run(f"systemctl is-active {unit}", timeout=5)
         return res["stdout"].strip() or res["stderr"].strip() or "unknown"
 
-    if _is_windows_host() and "ctoa-agents-orchestrator" in unit:
+    if is_windows_host() and "ctoa-agents-orchestrator" in unit:
         state = _windows_orchestrator_state()
         if unit.endswith(".timer"):
             return "manual" if state == "active" else "inactive"
@@ -284,52 +282,12 @@ def _load_json_file(path: Path) -> dict[str, Any]:
     return payload if isinstance(payload, dict) else {}
 
 
-def _normalize_package_tier(value: str) -> str:
-    tier = str(value or "").strip().lower()
-    if tier in {"core", "pro", "studio"}:
-        return tier
-    return "studio"
+def _is_production_env() -> bool:
+    return is_production_env()
 
 
-def _current_package_tier() -> str:
-    env_tier = os.getenv("CTOA_PACKAGE_TIER", "").strip()
-    if env_tier:
-        return _normalize_package_tier(env_tier)
-
-    if PRODUCT_USER_CONFIG_FILE.exists():
-        config = _load_json_file(PRODUCT_USER_CONFIG_FILE)
-        package_tier = str(config.get("package_tier", "")).strip()
-        if package_tier:
-            return _normalize_package_tier(package_tier)
-
-    if PRODUCT_MANIFEST_FILE.exists():
-        manifest = _load_json_file(PRODUCT_MANIFEST_FILE)
-        return _normalize_package_tier(str(manifest.get("default_package_tier", "studio")))
-
-    return "studio"
-
-
-def _mobile_console_enabled() -> bool:
-    override = os.getenv("CTOA_CAPABILITY_MOBILE_CONSOLE", "").strip().lower()
-    if override in {"1", "true", "yes", "on"}:
-        return True
-    if override in {"0", "false", "no", "off"}:
-        return False
-
-    package_tier_env = os.getenv("CTOA_PACKAGE_TIER", "").strip()
-    default_enabled = _current_package_tier() in {"pro", "studio"}
-    if package_tier_env:
-        return default_enabled
-
-    if not PRODUCT_USER_CONFIG_FILE.exists():
-        return default_enabled
-
-    config = _load_json_file(PRODUCT_USER_CONFIG_FILE)
-    features_raw = config.get("features")
-    features: dict[str, Any] = features_raw if isinstance(features_raw, dict) else {}
-    if "mobile_console" in features:
-        return bool(features.get("mobile_console"))
-    return default_enabled
+def _is_windows_host() -> bool:
+    return is_windows_host()
 
 app = FastAPI(title="CTOA Mobile Console", version="1.0.0")
 
@@ -373,7 +331,7 @@ REDIS_QUEUE = os.getenv("CTOA_REDIS_QUEUE", "ctoa:jobs")
 REDIS_RESULTS = os.getenv("CTOA_REDIS_RESULTS", "ctoa:jobs:results")
 
 cors_origins = [o.strip() for o in os.getenv("CTOA_CORS_ORIGINS", "*").split(",") if o.strip()]
-if _is_production_env() and (not cors_origins or "*" in cors_origins):
+if is_production_env() and (not cors_origins or "*" in cors_origins):
     raise RuntimeError(
         "Refusing to start in production with wildcard CORS. "
         "Set CTOA_CORS_ORIGINS to explicit origins, e.g. https://twoja-domena.pl"
@@ -397,7 +355,7 @@ async def enforce_mobile_console_capability(request: Request, call_next):
         or path.startswith("/api/")
         or path.startswith("/static/")
     )
-    if gated and not _mobile_console_enabled():
+    if gated and not mobile_console_enabled(PRODUCT_MANIFEST_FILE, PRODUCT_USER_CONFIG_FILE):
         detail = "mobile_console capability requires Pro or Studio package"
         if path.startswith("/api/"):
             return JSONResponse(status_code=403, content={"ok": False, "detail": detail})
@@ -670,7 +628,7 @@ def _admin_credentials() -> dict[str, dict[str, str]]:
 
 
 def _validate_security_config() -> None:
-    if not _is_production_env():
+    if not is_production_env():
         return
 
     required_env = [
@@ -1399,7 +1357,7 @@ def logs(
 def command(req: CommandRequest, request: Request, _: dict[str, Any] = Depends(require_owner)) -> dict:
     cmd = req.command.strip()
 
-    if _is_production_env() and _full_access():
+    if is_production_env() and _full_access():
         raise HTTPException(
             status_code=403,
             detail="Full shell access is disabled in production.",
@@ -2929,4 +2887,3 @@ def dashboard_release_evidence(_: dict[str, Any] = Depends(require_operator)) ->
             "release_evidence_endpoint": "/api/release-evidence",
         },
     }
-
