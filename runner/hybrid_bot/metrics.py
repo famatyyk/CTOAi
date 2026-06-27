@@ -17,7 +17,7 @@ import json
 import logging
 from dataclasses import dataclass, asdict
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 from .clock import utc_now
 
@@ -110,9 +110,13 @@ class MetricsCollector:
         self.metrics_file: Optional[Path] = None
         if not disable_file_output:
             self.metrics_file = self.output_dir / f"metrics_{self.session_id}.jsonl"
+        self.events_file: Optional[Path] = None
+        if not disable_file_output:
+            self.events_file = self.output_dir / f"events_{self.session_id}.jsonl"
         
         # In-memory snapshots
         self.snapshots: list[MetricsSnapshot] = []
+        self.events: list[dict[str, Any]] = []
         self.last_snapshot_time = utc_now()
     
     # ─── Metric Collection API ────────────────────────────────────────────
@@ -182,6 +186,16 @@ class MetricsCollector:
                 f.write('\n')
         except IOError as e:
             log.warning(f"Failed to write metrics file: {e}")
+
+    def _append_event_to_file(self, event: dict[str, Any]) -> None:
+        if not self.events_file or self.disable_file_output:
+            return
+        try:
+            with open(self.events_file, 'a', encoding="utf-8") as f:
+                json.dump(event, f, ensure_ascii=True, sort_keys=True)
+                f.write('\n')
+        except IOError as e:
+            log.warning(f"Failed to write metrics event file: {e}")
     
     def load_snapshots_from_file(self, filepath: Path | str) -> list[MetricsSnapshot]:
         """Load metrics snapshots from JSONL file."""
@@ -196,8 +210,29 @@ class MetricsCollector:
                         snapshots.append(MetricsSnapshot(**data))
         except (IOError, json.JSONDecodeError) as e:
             log.error(f"Failed to load metrics: {e}")
-        
+
         return snapshots
+
+    def record_event(
+        self,
+        name: str,
+        duration_ms: int,
+        ok: bool = True,
+        error: str = "",
+        details: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Record a runtime event such as a tick, stage, or error."""
+        event = {
+            "timestamp": utc_now().isoformat(),
+            "name": name,
+            "duration_ms": int(duration_ms),
+            "ok": bool(ok),
+            "error": error,
+            "details": details or {},
+        }
+        self.events.append(event)
+        self._append_event_to_file(event)
+        return event
     
     # ─── Analysis Functions ────────────────────────────────────────────────
     

@@ -48,6 +48,18 @@ CREATE TABLE IF NOT EXISTS exp_events (
     exp_gained INTEGER DEFAULT 0,
     monster_name TEXT DEFAULT ''
 );
+
+CREATE TABLE IF NOT EXISTS loop_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id INTEGER REFERENCES sessions(id),
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+    component TEXT NOT NULL,
+    stage TEXT NOT NULL,
+    duration_ms INTEGER DEFAULT 0,
+    ok INTEGER DEFAULT 1,
+    error TEXT DEFAULT '',
+    details TEXT DEFAULT ''
+);
 """
 
 
@@ -93,4 +105,3 @@ def get_session_stats(session_id: int) -> dict:
             "kills": kills,
             "session_hours": round(hours, 2),
         }
-
