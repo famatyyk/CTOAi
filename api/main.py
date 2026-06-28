@@ -23,7 +23,7 @@ from pydantic import BaseModel
 app = FastAPI(title="CTOAi API", version="1.3.0")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=cors_origins or ["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -44,6 +44,18 @@ def _env_int(name: str, default: int) -> int:
         return int(value)
     except ValueError:
         return default
+
+
+def _cors_origins() -> list[str]:
+    return [origin.strip() for origin in os.getenv("CTOA_CORS_ORIGINS", "*").split(",") if origin.strip()]
+
+
+cors_origins = _cors_origins()
+if _is_production_env() and (not cors_origins or "*" in cors_origins):
+    raise RuntimeError(
+        "Refusing to start in production with wildcard CORS. "
+        "Set CTOA_CORS_ORIGINS to explicit origins, e.g. https://twoja-domena.pl"
+    )
 
 
 def _backend_kind(url: str) -> str:
@@ -289,29 +301,42 @@ def _sanitize_username(username: str) -> str:
 
 def _seed_accounts() -> Dict[str, Dict[str, Any]]:
     now = _utc_now_iso()
-    return {
-        "famatyyk": {
-            "username": "famatyyk",
+    seeded: Dict[str, Dict[str, Any]] = {}
+
+    owner_password = os.getenv("CTOA_OWNER_PASSWORD", "").strip()
+    if owner_password:
+        owner_username = _sanitize_username(os.getenv("CTOA_OWNER_USER", "famatyyk"))
+        seeded[owner_username] = {
+            "username": owner_username,
             "display_name": "Famatyyk",
             "role": "owner",
-            "password_hash": _hash_password("ctoa-owner"),
+            "password_hash": _hash_password(owner_password),
             "created_at": now,
-        },
-        "strategos": {
-            "username": "strategos",
+        }
+
+    operator_password = os.getenv("CTOA_OPERATOR_PASSWORD", "").strip()
+    if operator_password:
+        operator_username = _sanitize_username(os.getenv("CTOA_OPERATOR_USER", "strategos"))
+        seeded[operator_username] = {
+            "username": operator_username,
             "display_name": "Strategos",
             "role": "operator",
-            "password_hash": _hash_password("ctoa-ops"),
+            "password_hash": _hash_password(operator_password),
             "created_at": now,
-        },
-        "recruit": {
-            "username": "recruit",
+        }
+
+    community_password = os.getenv("CTOA_COMMUNITY_PASSWORD", "").strip()
+    if community_password:
+        community_username = _sanitize_username(os.getenv("CTOA_COMMUNITY_USER", "recruit"))
+        seeded[community_username] = {
+            "username": community_username,
             "display_name": "Community Recruit",
             "role": "member",
-            "password_hash": _hash_password("ctoa-community"),
+            "password_hash": _hash_password(community_password),
             "created_at": now,
-        },
-    }
+        }
+
+    return seeded
 
 
 def _load_auth_store() -> Dict[str, Any]:
@@ -1132,5 +1157,3 @@ async def safety_status() -> Dict[str, Any]:
     if interventions >= 10:
         return {"status": "elevated", "interventions": interventions}
     return {"status": "ok"}
-
-

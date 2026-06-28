@@ -2,6 +2,7 @@
 import argparse
 import json
 import os
+import sys as _sys
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
@@ -20,6 +21,9 @@ except ModuleNotFoundError:
     from pipeline.scheduler import build_new_task_candidates, count_active_tasks
 
 ROOT = Path(__file__).resolve().parent.parent
+_sys.path.insert(0, str(ROOT))
+from scripts.ops.runtime_context import default_ci_artifacts_dir
+
 _DEFAULT_BACKLOG = ROOT / "workflows" / "backlog-sprint-001.yaml"
 _BACKLOG_RAW = os.environ.get("CTOA_BACKLOG_FILE", str(_DEFAULT_BACKLOG))
 BACKLOG_FILE = Path(_BACKLOG_RAW)
@@ -27,7 +31,7 @@ if not BACKLOG_FILE.is_absolute():
     BACKLOG_FILE = ROOT / BACKLOG_FILE
 STATE_FILE = ROOT / "runtime" / "task-state.yaml"
 
-_DEFAULT_EXECUTION_SUMMARY_ARTIFACT = ROOT / "runtime" / "ci-artifacts" / "runner-execution-summary.json"
+_DEFAULT_EXECUTION_SUMMARY_ARTIFACT = default_ci_artifacts_dir(ROOT) / "runner-execution-summary.json"
 _EXEC_SUMMARY_RAW = os.environ.get("CTOA_EXECUTION_SUMMARY_ARTIFACT", str(_DEFAULT_EXECUTION_SUMMARY_ARTIFACT))
 EXECUTION_SUMMARY_ARTIFACT = Path(_EXEC_SUMMARY_RAW)
 if not EXECUTION_SUMMARY_ARTIFACT.is_absolute():

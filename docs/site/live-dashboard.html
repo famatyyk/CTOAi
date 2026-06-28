@@ -718,7 +718,19 @@
           const line = document.createElement("div");
           line.className = "row";
           const color = /VALIDATED|RELEASED/.test(row.status) ? "ok" : /FAILED/.test(row.status) ? "bad" : "warn";
-          line.innerHTML = `<div>${row.status}</div><div class="mini"><span class="${color}" style="width:${p.toFixed(1)}%"></span></div><div>${row.n}</div>`;
+          const statusCell = document.createElement("div");
+          statusCell.textContent = row.status;
+          const miniCell = document.createElement("div");
+          miniCell.className = "mini";
+          const bar = document.createElement("span");
+          bar.className = color;
+          bar.style.width = `${p.toFixed(1)}%`;
+          miniCell.appendChild(bar);
+          const countCell = document.createElement("div");
+          countCell.textContent = String(row.n);
+          line.appendChild(statusCell);
+          line.appendChild(miniCell);
+          line.appendChild(countCell);
           el.statusRows.appendChild(line);
         }
 
@@ -794,7 +806,12 @@
         }
         for (const it of items.slice(0, 20)) {
           const tr = document.createElement("tr");
-          tr.innerHTML = `<td>${it.task_id || "-"}</td><td>${it.template || "-"}</td><td>${it.output_file || "-"}</td><td>${it.generated_at || "-"}</td>`;
+          const values = [it.task_id || "-", it.template || "-", it.output_file || "-", it.generated_at || "-"];
+          for (const value of values) {
+            const td = document.createElement("td");
+            td.textContent = String(value);
+            tr.appendChild(td);
+          }
           el.latestTable.appendChild(tr);
         }
       }
@@ -807,7 +824,12 @@
         }
         for (const r of rows.slice(0, 20)) {
           const tr = document.createElement("tr");
-          tr.innerHTML = `<td>${r[0] || "-"}</td><td>${r[1] || "-"}</td><td>${r[2] || "-"}</td><td>${r[3] || "-"}</td>`;
+          const values = [r[0] || "-", r[1] || "-", r[2] || "-", r[3] || "-"];
+          for (const value of values) {
+            const td = document.createElement("td");
+            td.textContent = String(value);
+            tr.appendChild(td);
+          }
           el.serversTable.appendChild(tr);
         }
       }
@@ -948,7 +970,6 @@
     </script>
   </body>
 </html>
-
 
 
 

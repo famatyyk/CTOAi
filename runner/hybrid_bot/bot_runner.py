@@ -187,27 +187,74 @@ class HybridBotRunner:
     async def _tick(self) -> None:
         """Single bot tick (100ms default)."""
         self.tick_count += 1
+        tick_started = time.perf_counter()
+        stage = "capture"
         
         try:
             # 1. Capture frame
+            capture_started = time.perf_counter()
             frame = self._capture_frame()
+            capture_ms = int((time.perf_counter() - capture_started) * 1000)
             if frame is None or frame.size == 0:
                 log.warning("No screenshot available")
+                self.metrics.record_event(
+                    "hybrid_bot.tick",
+                    int((time.perf_counter() - tick_started) * 1000),
+                    ok=False,
+                    error="no screenshot available",
+                    details={"tick": self.tick_count, "stage": stage, "capture_ms": capture_ms},
+                )
                 return
 
             # 2. Run perception
+            stage = "perception"
+            perception_started = time.perf_counter()
             position, health, creatures = self._collect_perception(frame)
+            perception_ms = int((time.perf_counter() - perception_started) * 1000)
 
             # 3. Update state
+            stage = "state"
+            state_started = time.perf_counter()
             self._apply_state_updates(position, health, creatures)
+            state_ms = int((time.perf_counter() - state_started) * 1000)
 
             # 4-6. Decide and execute action
+            stage = "decision"
+            decision_started = time.perf_counter()
             decision, success = self._decide_and_execute()
+            decision_ms = int((time.perf_counter() - decision_started) * 1000)
 
             # 7. Emit tick telemetry
+            stage = "telemetry"
+            telemetry_started = time.perf_counter()
             self._emit_tick_telemetry(decision)
+            telemetry_ms = int((time.perf_counter() - telemetry_started) * 1000)
+            total_ms = int((time.perf_counter() - tick_started) * 1000)
+            self.metrics.record_event(
+                "hybrid_bot.tick",
+                total_ms,
+                ok=True,
+                details={
+                    "tick": self.tick_count,
+                    "capture_ms": capture_ms,
+                    "perception_ms": perception_ms,
+                    "state_ms": state_ms,
+                    "decision_ms": decision_ms,
+                    "telemetry_ms": telemetry_ms,
+                    "decision": decision.action.value,
+                    "success": success,
+                },
+            )
             
         except Exception as e:
+            total_ms = int((time.perf_counter() - tick_started) * 1000)
+            self.metrics.record_event(
+                "hybrid_bot.tick",
+                total_ms,
+                ok=False,
+                error=f"{type(e).__name__}: {e}",
+                details={"tick": self.tick_count, "stage": stage},
+            )
             log.error(f"Tick error: {e}", exc_info=True)
 
     def _capture_frame(self):

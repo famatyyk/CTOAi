@@ -367,6 +367,27 @@ class TestMetrics:
             assert summary.total_duration_hours == 1.0
             assert len(summary.locations_visited) == 2
 
+    def test_record_event_writes_events_jsonl(self):
+        """Test runtime event recording and file output."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            collector = MetricsCollector(output_dir=tmpdir)
+
+            event = collector.record_event(
+                "hybrid_bot.tick",
+                42,
+                ok=False,
+                error="boom",
+                details={"tick": 7, "stage": "decision"},
+            )
+
+            assert event["name"] == "hybrid_bot.tick"
+            assert event["ok"] is False
+            assert collector.events[-1]["details"]["stage"] == "decision"
+
+            event_files = list(Path(tmpdir).glob("events_*.jsonl"))
+            assert len(event_files) == 1
+            assert '"name": "hybrid_bot.tick"' in event_files[0].read_text(encoding="utf-8")
+
 
 # ─── Config Tests ───────────────────────────────────────────────────────
 

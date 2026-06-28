@@ -1,6 +1,6 @@
 """AGENT 3: Telemetry — action events, loot, exp/hr, gold/hr."""
 from __future__ import annotations
-import time
+import json
 import logging
 from .db import get_connection, get_session_stats
 
@@ -28,6 +28,33 @@ def log_event(action: str, result: str, duration_ms: int = 0) -> None:
             )
     except Exception as e:
         logger.warning("Telemetry log_event failed: %s", e)
+
+
+def log_loop_event(
+    component: str,
+    stage: str,
+    duration_ms: int = 0,
+    ok: bool = True,
+    error: str = "",
+    details: str | dict | None = None,
+) -> None:
+    if _sid() is None:
+        return
+    if isinstance(details, dict):
+        details_payload = json.dumps(details, ensure_ascii=True, sort_keys=True)
+    else:
+        details_payload = str(details or "")
+    try:
+        with get_connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO loop_events (session_id, component, stage, duration_ms, ok, error, details)
+                VALUES (?,?,?,?,?,?,?)
+                """,
+                (_sid(), component, stage, duration_ms, 1 if ok else 0, error, details_payload),
+            )
+    except Exception as e:
+        logger.warning("Telemetry log_loop_event failed: %s", e)
 
 
 def log_loot(item_name: str, gold_value: int) -> None:

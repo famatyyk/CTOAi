@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import sys as _sys
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -11,6 +12,11 @@ from typing import Any
 import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
+_sys.path.insert(0, str(ROOT))
+from scripts.ops.runtime_context import default_ci_artifacts_dir
+from scripts.ops.release_evidence_pack import build_release_evidence_pack, write_release_evidence_pack
+
+DEFAULT_EVIDENCE_DIR = default_ci_artifacts_dir(ROOT)
 
 
 def _now_iso() -> str:
@@ -77,7 +83,12 @@ def _preview_release_counts(backlog_path: Path) -> tuple[int, int, str]:
     return total_tasks, total_tasks, backlog_id
 
 
-def synchronize_state(backlog_path: Path, state_path: Path, reason: str) -> tuple[int, int, str]:
+def synchronize_state(
+    backlog_path: Path,
+    state_path: Path,
+    reason: str,
+    evidence_dir: Path | None = None,
+) -> tuple[int, int, str]:
     backlog = _load_yaml(backlog_path)
     if not backlog:
         raise FileNotFoundError(f"Missing or empty backlog: {backlog_path}")
@@ -141,6 +152,20 @@ def synchronize_state(backlog_path: Path, state_path: Path, reason: str) -> tupl
     )
 
     _save_yaml_atomic(state_path, state)
+
+    evidence_pack = build_release_evidence_pack(
+        backlog_id=backlog_id,
+        backlog_path=backlog_path,
+        state_path=state_path,
+        released_count=released,
+        total_tasks=total_tasks,
+        reason=reason,
+        notes=[
+            "State synchronized from backlog to RELEASED.",
+            f"Released tasks: {released}/{total_tasks}.",
+        ],
+    )
+    write_release_evidence_pack(evidence_dir or DEFAULT_EVIDENCE_DIR, evidence_pack)
     return released, total_tasks, backlog_id
 
 
@@ -162,6 +187,11 @@ def main() -> int:
         help="Reason stored in task notes/history",
     )
     parser.add_argument(
+        "--evidence-dir",
+        default=str(DEFAULT_EVIDENCE_DIR),
+        help="Directory for release evidence pack outputs",
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Preview expected release counts without writing runtime state",
@@ -178,7 +208,13 @@ def main() -> int:
         )
         return 0
 
-    released, total, backlog_id = synchronize_state(backlog_path, state_path, args.reason)
+    evidence_dir = Path(args.evidence_dir).resolve()
+    released, total, backlog_id = synchronize_state(
+        backlog_path,
+        state_path,
+        args.reason,
+        evidence_dir=evidence_dir,
+    )
     print(
         f"[sprint_state_sync] backlog={backlog_id} released={released}/{total} state={state_path}"
     )

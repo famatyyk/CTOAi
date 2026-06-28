@@ -1,4 +1,4 @@
-﻿const tokenInput = document.getElementById('token');
+const tokenInput = document.getElementById('token');
 const statusOut = document.getElementById('statusOut');
 const cmdOut = document.getElementById('cmdOut');
 const presetSelect = document.getElementById('presetSelect');
@@ -478,17 +478,49 @@ document.getElementById('refreshDash').onclick = async () => {
     // servers table: [id, url, status, created_at]
     const srvBody = document.querySelector('#dashServers tbody');
     if (d.servers && d.servers.length > 0) {
-      srvBody.innerHTML = d.servers.map(r =>
-        `<tr><td>${r[0]||''}</td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis">${r[1]||''}</td><td>${badgeStatus((r[2]||'').trim())}</td></tr>`
-      ).join('');
+      srvBody.innerHTML = '';
+      d.servers.slice(0, 20).forEach((r) => {
+        const tr = document.createElement('tr');
+        const values = [r[0] || '', r[1] || '', r[2] || '', r[3] || ''];
+        values.forEach((value, index) => {
+          const td = document.createElement('td');
+          if (index === 1) {
+            td.style.maxWidth = '160px';
+            td.style.overflow = 'hidden';
+            td.style.textOverflow = 'ellipsis';
+          }
+          if (index === 2) {
+            td.innerHTML = badgeStatus(value);
+          } else {
+            td.textContent = String(value || '-');
+          }
+          tr.appendChild(td);
+        });
+        srvBody.appendChild(tr);
+      });
     }
 
     // top modules: [task_id, output_file, quality_score, status]
     const topBody = document.querySelector('#dashTop tbody');
     if (d.top && d.top.length > 0) {
-      topBody.innerHTML = d.top.map(r =>
-        `<tr><td>${r[0]||''}</td><td>${r[1]||''}</td><td><b>${r[2]||'?'}%</b></td><td>${badgeStatus((r[3]||'').trim())}</td></tr>`
-      ).join('');
+      topBody.innerHTML = '';
+      d.top.slice(0, 20).forEach((r) => {
+        const tr = document.createElement('tr');
+        const values = [r[0] || '', r[1] || '', r[2] || '', r[3] || ''];
+        values.forEach((value, index) => {
+          const td = document.createElement('td');
+          if (index === 2) {
+            const quality = Number(value);
+            td.innerHTML = `<b>${Number.isFinite(quality) ? quality : '?'}%</b>`;
+          } else if (index === 3) {
+            td.innerHTML = badgeStatus(value);
+          } else {
+            td.textContent = String(value || '-');
+          }
+          tr.appendChild(td);
+        });
+        topBody.appendChild(tr);
+      });
     }
 
     const topReasons = Array.isArray(d.top_reason_codes) ? d.top_reason_codes : [];
@@ -635,7 +667,3 @@ async function fetchAgentLog(target) {
 tokenInput.value = getToken();
 setRoleBadge('guest');
 void checkAuthAuto();
-
-
-
-
