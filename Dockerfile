@@ -7,7 +7,7 @@ WORKDIR /build
 COPY requirements.txt .
 
 # Build dependency wheels in a separate stage to keep runtime image smaller.
-RUN pip wheel --no-cache-dir --wheel-dir /wheels -r requirements.txt "numpy>=1.26"
+RUN pip wheel --no-cache-dir --wheel-dir /wheels -r requirements.txt "numpy>=1.26" "opencv-python-headless>=4.9"
 
 FROM python:3.12-slim AS runtime
 
