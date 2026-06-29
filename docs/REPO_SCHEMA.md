@@ -1,177 +1,235 @@
 # CTOAi Repo Schema
 
-## Purpose
+Status: refreshed on 2026-06-29.
 
-This document is an operational schema of the repository: what each top-level area owns, how execution flows through the system, and where governance gates are enforced.
+This document is the current repository map and foundation contract for CTOAi. It replaces the older schema that treated `mobile_console` and `desktop_console` as the main execution surfaces. The current direction is simpler:
 
-## Layered Architecture
+```text
+One job, one canonical surface.
+```
+
+## What CTOAi is
+
+CTOAi is an AI operations platform. Its current product body has several planes:
+
+| Plane | Meaning |
+| --- | --- |
+| Control Center | Main operator cockpit and visual command surface. |
+| Runtime Plane | Bot runtime, agents, scheduler, input backend and execution state. |
+| Ops Plane | VPS, Docker, deploys, rebuilds, disk, logs and service health. |
+| Governance Plane | Approvals, CI gates, evidence, policy and release decisions. |
+| Telemetry Plane | Metrics, monitoring, reports, alerts and runtime visibility. |
+| Interfaces | Web cockpit, Windows launcher, chat surface and API clients. |
+
+## Canonical surfaces
+
+| Job | Canonical surface | Notes |
+| --- | --- | --- |
+| Main operator cockpit | `web/src/app/control-center` | Daily work starts here. |
+| Chat engine | `web/src/components/ChatWindow.tsx` | Reused by standalone chat and Control Center. |
+| Control Center chat wrapper | `web/src/components/ControlCenterChatPanel.tsx` | Wrapper, not a separate chat product. |
+| Ops status API | `web/src/app/api/control-center/*` | Read-only VPS/Docker/Bot/GitHub visibility. |
+| Windows entry point | `desktop_console` | Launcher/profile/update shell, not the main cockpit. |
+| Backend/API compatibility | `mobile_console/app.py` | Backend and legacy API provider. |
+| Operator commands | `ctoa.ps1` and guarded scripts | Command engine under UI/API wrappers. |
+| Production runtime | VPS Docker stack | Live runtime target. |
+
+## Layered architecture
 
 ```mermaid
 flowchart TD
-    A[Work Intake\nGitHub Issues and PRs] --> B[Workflow Contracts\nworkflows and policies]
-    B --> C[Orchestration Runtime\nrunner]
-    C --> D[Prompt and Scoring\nprompts and scoring]
-    D --> E[Execution Surfaces\nmobile_console and desktop_console]
-    C --> F[Operations and Validation\nscripts/ops and .vscode/tasks]
-    F --> G[Evidence and Runtime State\nruntime and docs/evidence]
-    F --> H[CI Gates\n.github/workflows]
-    H --> A
+    U[Operator] --> CC[Control Center\nweb/src/app/control-center]
+    CC --> CHAT[Chat Engine\nChatWindow + /api/chat]
+    CC --> OPSAPI[Control Center Ops API\n/api/control-center/*]
+    CC --> DOCS[Docs Map\nfoundation cleanup + repo schema]
+    DESK[Desktop EXE\ndesktop_console] --> CC
+    OPSAPI --> VPS[VPS\n116.202.96.250:2222]
+    OPSAPI --> GH[GitHub\nCI, PRs, workflow runs]
+    VPS --> DOCKER[Docker Stack\ninfra-bot, dashboard, api, postgres]
+    DOCKER --> BOT[Bot Runtime\ninfra-bot]
+    MOB[mobile_console/app.py] --> API[Legacy/API compatibility]
+    RUN[runner + agents + prompts] --> GOV[Governance + sprint flow]
+    CI[.github/workflows] --> GOV
 ```
 
-## Top-Level Ownership Map
+## Top-level ownership map
 
-- agents/: Agent roster and static definitions.
-- prompts/: BRAVER prompt templates and domain packs.
-- scoring/: Tool ranking rules and advisor logic.
-- runner/: Execution and control-plane runtime.
-- workflows/: Sprint backlog and delivery flow contracts.
-- policies/: Governance policy packs used by gates.
-- scripts/ops/: Validation, release, VPS automation, and scheduler scripts.
-- .github/workflows/: CI pipelines and quality/security gates.
-- mobile_console/: FastAPI operational control surface.
-- desktop_console/: Desktop client and update client.
-- tests/: Unit and integration validation of contracts and behavior.
-- runtime/: Generated CI artifacts and operational state.
-- docs/: Architecture, runbooks, governance, and evidence.
-- core/: Protected assets and integrity manifest.
-- config/ and product/: Product metadata and bootstrap config.
+| Path | Owner role | Current decision |
+| --- | --- | --- |
+| `web/` | Main web UI, chat, Control Center and web API routes | Canonical cockpit |
+| `desktop_console/` | Windows desktop app, updater, endpoint profiles | Wrapper/launcher |
+| `mobile_console/` | FastAPI backend and legacy static console routes | Backend-only plus legacy UI |
+| `api/` | API entry points and chat/system integration | Active backend surface |
+| `bot/` | Bot runtime, dashboard reference and bot-specific services | Runtime Plane |
+| `deploy/` | VPS/systemd/Docker deployment definitions | Ops Plane |
+| `scripts/` | Local and VPS automation, validators and helpers | Command engine |
+| `ctoa.ps1` | Windows operator command surface | Command engine |
+| `runner/` | Agent/sprint orchestration runtime | Governance/runtime |
+| `agents/` | Agent definitions and role specs | Governance/runtime |
+| `prompts/` | BRAVE(R) templates and prompt packs | Prompt engine |
+| `scoring/` | Tool advisor and scoring logic | Governance/runtime |
+| `workflows/` | Sprint and delivery flow contracts | Governance Plane |
+| `policies/` | CI/security/governance policy contracts | Governance Plane |
+| `.github/workflows/` | GitHub Actions gates and automation | CI/Governance |
+| `tests/` | Python, JS and integration coverage | Validation |
+| `runtime/` | Generated runtime state and CI artifacts | Evidence/runtime state |
+| `docs/` | Architecture, runbooks, evidence and cleanup maps | Documentation |
+| `docs/site/live-dashboard.html` | Old static live dashboard | Legacy/reference |
+| `bot/dashboard/app.py` | Bot-specific status dashboard | Legacy/reference until absorbed |
 
-## Responsibility Tree
+## Responsibility tree
 
 ```text
 CTOAi/
-|- .github/workflows/        CI and gate orchestration
-|- .vscode/tasks.json        Local canonical run and validate tasks
-|- agents/                   Agent definitions and registry
-|- prompts/                  BRAVER templates and prompt packs
-|- scoring/                  Tool advisor and scoring rules
-|- workflows/                Sprint backlog and delivery flow YAML
-|- policies/                 CI and governance policy contracts
-|- runner/                   Runtime orchestrator and execution logic
-|- scripts/ops/              Validators, release ops, VPS and schedulers
-|- mobile_console/           API and static UI for operational console
-|- desktop_console/          Desktop app and update channel logic
-|- tests/                    Behavioral and contract tests
-|- runtime/                  Output artifacts, reports, gate JSON
-|- docs/                     Architecture and operational documentation
-|- core/                     Protected files and integrity controls
-|- config/ and product/      Product config and manifest metadata
-|- deploy/                   Deployment scripts and service definitions
+|- web/                         canonical Control Center, chat and web API routes
+|  |- src/app/control-center/    main operator cockpit
+|  |- src/app/api/control-center/ops/  read-only ops status endpoint
+|  |- src/components/ChatWindow.tsx    canonical chat UI engine
+|  |- src/components/ControlCenterShell.tsx
+|  |- src/components/ControlCenterChatPanel.tsx
+|  |- src/components/ControlCenterOpsGrid.tsx
+|  |- src/components/ControlCenterDetailPanels.tsx
+|- desktop_console/             Windows launcher/profile/updater shell
+|- mobile_console/              backend API and legacy UI compatibility
+|- api/                         API integration surface
+|- bot/                         bot runtime and reference bot dashboard
+|- deploy/                      VPS, Docker and service deployment definitions
+|- scripts/                     ops automation, validators and helper scripts
+|- ctoa.ps1                     Windows command engine
+|- runner/                      orchestration runtime
+|- agents/                      agent definitions
+|- prompts/                     BRAVE(R) prompt templates
+|- scoring/                     tool scoring and advisor logic
+|- workflows/                   sprint flow contracts
+|- policies/                    governance policy contracts
+|- .github/workflows/           CI and automation gates
+|- tests/                       validation suite
+|- runtime/                     generated evidence and runtime state
+|- docs/                        architecture, runbooks and cleanup decisions
 ```
 
-## Control and Delivery Flow
+## Interface consolidation map
+
+| Surface | Old role | New role |
+| --- | --- | --- |
+| `web/src/app/control-center` | New cockpit | Main cockpit |
+| `web/src/app/page.tsx` | Standalone chat/login | Transitional surface until Control Center owns login/session flow |
+| `desktop_console/app.py` | Full desktop console | Windows launcher/wrapper |
+| `mobile_console/static/index.html` | Operational console UI | Legacy UI until parity in Control Center |
+| `docs/site/live-dashboard.html` | Static live dashboard | Legacy reference until absorbed |
+| `bot/dashboard/app.py` | Bot status dashboard | Dev/runtime reference until absorbed |
+| `scripts/windows/open-control-center.ps1` | New helper | Lightweight Control Center opener |
+
+## Current Control Center endpoints
+
+| Endpoint | Purpose | Risk class |
+| --- | --- | --- |
+| `GET /api/control-center` | Backend reachability probe | Read-only |
+| `GET /api/control-center/ops` | VPS disk, Docker, bot runtime and GitHub CI details | Read-only |
+| `GET /api/control-center/legacy` | Read-only migration panel for old console capabilities | Read-only |
+| `POST /api/chat` | Chat completion route used by `ChatWindow` | User-initiated chat |
+
+## Current ops probes
+
+| Tile/panel | Probe |
+| --- | --- |
+| VPS disk | `ssh df -h /` and `ssh df -B1 /` |
+| Docker store | `docker system df` on VPS |
+| Docker images | `docker images --format '{{json .}}'` |
+| Bot runtime | `docker ps` filtered by `infra-bot` |
+| Bot logs preview | `docker logs --tail 40 infra-bot-1` |
+| GitHub CI | `gh run list --repo famatyyk/CTOAi` |
+
+These probes are read-only. Write operations such as restart, rebuild, cleanup or deploy need explicit guarded actions before they appear in the UI.
+
+## Delivery and governance flow
 
 ```mermaid
 sequenceDiagram
-    participant U as Operator
+    participant OP as Operator
+    participant CC as Control Center
     participant GH as GitHub
     participant CI as GitHub Actions
-    participant OPS as scripts/ops
-    participant RUN as runner
-    participant APP as mobile_console
+    participant OPS as Ops Scripts
+    participant RUN as Runner
+    participant VPS as VPS Docker Stack
 
-    U->>GH: Open issue or push branch
-    GH->>CI: Trigger workflow
-    CI->>OPS: Run validators and security gates
-    OPS->>RUN: Validate sprint and orchestration contracts
-    RUN->>APP: Serve status and command surfaces
-    OPS->>GH: Publish artifacts and gate result
-    GH->>U: Ready to merge or blocked
+    OP->>CC: inspect status, chat, docs and ops panels
+    CC->>VPS: read-only health probes
+    CC->>GH: read-only CI/run probes
+    OP->>GH: open PR or issue
+    GH->>CI: run gates
+    CI->>OPS: validators and policy checks
+    OPS->>RUN: sprint/governance validation
+    RUN->>GH: publish evidence and status
+    GH->>OP: merge/release decision
 ```
 
-## Canonical Validation Chain
+## Governance status mapping
 
-- CTOA: Run All Tests
-- CTOA: Sprint-040 Validate (or active sprint validator)
-- CTOA: Launch Pack
+Canonical sprint/task flow:
 
-## Governance Status Mapping v2
-
-Canonical flow:
-
+```text
 NEW -> IN_PROGRESS -> IN_QA -> IN_CI_GATE -> WAITING_APPROVAL -> RELEASED | BLOCKED
-
-### State semantics and source-of-truth files
-
-| Status | Operational meaning | Primary file ownership |
-| --- | --- | --- |
-| NEW | Task exists in backlog and is not scheduled yet. | runner/pipeline/scheduler.py, runner/runner.py |
-| IN_PROGRESS | Task is scheduled by the hourly planner and actively executed. | runner/runner.py |
-| IN_QA | Implementation is complete enough for QA regression checks. | runner/runner.py, scripts/ops/sprint0xx_validate.py |
-| IN_CI_GATE | Automated quality/security gates are running or blocked. | runner/runner.py, .github/workflows/ctoa-pipeline.yml, workflows/sprint-0xx-delivery-flow.yaml |
-| WAITING_APPROVAL | Wave-1 is done; awaiting manual Wave-2 sign-off. | runner/runner.py, workflows/sprint-0xx-delivery-flow.yaml |
-| RELEASED | Manual approval granted and release state accepted. | runner/runner.py |
-| BLOCKED | Task cannot progress because of gate/policy/reliability blocker. | runner/runner.py, workflows/sprint-0xx-delivery-flow.yaml |
-
-### Transition implementation map
-
-| Transition | Runtime implementation | Contract / policy hook |
-| --- | --- | --- |
-| NEW -> IN_PROGRESS | scheduler candidate selection + tick scheduling | runner/pipeline/scheduler.py, runner/runner.py |
-| IN_PROGRESS -> IN_QA | timed auto transition | runner/runner.py (AUTO_TRANSITIONS) |
-| IN_QA -> IN_CI_GATE | timed auto transition | runner/runner.py (AUTO_TRANSITIONS) |
-| IN_CI_GATE -> WAITING_APPROVAL | timed auto transition after gate pass window | runner/runner.py (AUTO_TRANSITIONS) |
-| WAITING_APPROVAL -> RELEASED | manual approve action | runner/runner.py (approve_task) |
-| any active state -> BLOCKED | blocker capture and hold logic | workflows/sprint-0xx-delivery-flow.yaml on_fail rules + runner report/status views |
-
-### Concrete workflow bindings (current sprint examples)
-
-- Sprint gate hold in CI phase:
-    workflows/sprint-042-delivery-flow.yaml uses on_fail rule that keeps sprint in IN_CI_GATE and escalates blockers.
-- Sprint release hold before manual sign-off:
-    workflows/sprint-042-delivery-flow.yaml uses on_fail rule that keeps tasks in WAITING_APPROVAL.
-- Backlog acceptance requiring approval/release states:
-    workflows/backlog-sprint-044.yaml requires tasks to be in WAITING_APPROVAL or RELEASED before final sign-off acceptance.
-
-### Governance flow diagram
-
-```mermaid
-stateDiagram-v2
-        [*] --> NEW
-        NEW --> IN_PROGRESS: scheduler tick and capacity check
-        IN_PROGRESS --> IN_QA: auto transition
-        IN_QA --> IN_CI_GATE: auto transition
-        IN_CI_GATE --> WAITING_APPROVAL: gates passed
-        WAITING_APPROVAL --> RELEASED: manual approval
-        IN_PROGRESS --> BLOCKED: execution blocker
-        IN_QA --> BLOCKED: regression blocker
-        IN_CI_GATE --> BLOCKED: CI or policy gate fail
-        WAITING_APPROVAL --> BLOCKED: sign-off hold or risk rejection
 ```
 
-## Operational Command Map v3
-
-This map binds local operational tasks to their validator or ops command path and the expected artifact output location.
-
-| VS Code task (tasks.json) | Validator or ops command | Output artifact |
+| Status | Operational meaning | Primary ownership |
 | --- | --- | --- |
-| CTOA: Run All Tests | python -m pytest tests/ --ignore=tests/e2e -v | none (terminal evidence only) |
-| CTOA: Check Update Gate | scripts/ops/ctoa_update_gate.py | none (gate decision in terminal or CI context) |
-| CTOA: Launch Pack | scripts/ops/ctoa_update_gate.py + launch dry-run checks | none (launch decision in terminal) |
-| CTOA: Repo Hygiene Audit | scripts/ops/repo_hygiene_audit.py --json-out runtime/repo-hygiene/latest.json | runtime/repo-hygiene/latest.json |
-| CTOA: Nightly Stability Batch | scripts/ops/nightly_stability.py --json-out runtime/ci-artifacts/nightly-stability-YYYYMMDD.json | runtime/ci-artifacts/nightly-stability-YYYYMMDD.json |
-| CTOA: Sprint-040 Validate | scripts/ops/sprint040_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-040-validation.json | runtime/ci-artifacts/sprint-040-validation.json |
-| CTOA: Sprint-041 Validate | scripts/ops/sprint041_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-041-validation.json | runtime/ci-artifacts/sprint-041-validation.json |
-| CTOA: Sprint-042 Validate | scripts/ops/sprint042_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-042-validation.json | runtime/ci-artifacts/sprint-042-validation.json |
+| `NEW` | Task exists but is not scheduled yet. | `runner/`, `workflows/` |
+| `IN_PROGRESS` | Work is actively scheduled/executed. | `runner/` |
+| `IN_QA` | Implementation is ready for regression checks. | `tests/`, `scripts/ops/` |
+| `IN_CI_GATE` | CI/security/policy gates are running or blocked. | `.github/workflows/`, `policies/` |
+| `WAITING_APPROVAL` | Automated wave passed; manual sign-off needed. | `workflows/`, sprint docs |
+| `RELEASED` | Accepted and recorded as released. | sprint release pack |
+| `BLOCKED` | Held by a policy, test, infra or approval blocker. | runner reports and gate evidence |
 
-### Wave task chaining model
+## Validation chain
 
-| Wave task | Composition | Expected artifact outcome |
-| --- | --- | --- |
-| CTOA: Sprint-040 Wave-1 Run | Run All Tests -> Sprint-040 Validate -> Launch Pack | sprint-040 validation JSON + launch pass/fail signal |
-| CTOA: Sprint-041 Wave-1 Run | Run All Tests -> Sprint-041 Validate -> Launch Pack | sprint-041 validation JSON + launch pass/fail signal |
-| CTOA: Sprint-042 Wave-1 Run | Run All Tests -> Sprint-042 Validate -> Launch Pack | sprint-042 validation JSON + launch pass/fail signal |
+| Scope | Command/source |
+| --- | --- |
+| Frontend web tests | `npm test` in `web/` |
+| Python tests | `python -m pytest` |
+| Sprint validators | `scripts/ops/sprint0xx_validate.py` |
+| Repo hygiene | `scripts/ops/repo_hygiene_audit.py` |
+| CI gates | `.github/workflows/` |
+| VPS status | Control Center ops endpoint and VPS runbooks |
 
-### Artifact conventions
+## Cleanup references
 
-- Sprint validator artifacts: runtime/ci-artifacts/sprint-0xx-validation.json
-- Nightly stability artifacts: runtime/ci-artifacts/nightly-stability-YYYYMMDD.json
-- Repo hygiene artifacts: runtime/repo-hygiene/latest.json
-- Composite Wave-1 tasks: aggregate outputs from their dependency chain, no dedicated single JSON by default
+| Document | Purpose |
+| --- | --- |
+| `docs/CTOAI_FOUNDATION_CLEANUP.md` | Active cleanup decision table |
+| `docs/CTOAI_LEGACY_FEATURE_INVENTORY.md` | Migration inventory for legacy UI capabilities |
+| `docs/CTOAI_COMMAND_RISK_MODEL.md` | Risk classes and confirmation model for operational commands |
+| `docs/CTOAI_SURFACE_CONSOLIDATION.md` | Rule for one canonical surface per job |
+| `docs/CTOAI_CONTROL_CENTER_PHASE1.md` | Control Center implementation history |
+| `docs/ARCHITECTURE.md` | Older high-level architecture, still useful but not the current interface map |
+| `docs/MOBILE_CONSOLE.md` | Mobile console/service runbook |
 
-## Quick Navigation
+## Deprecated assumptions
 
-- Architecture baseline: docs/ARCHITECTURE.md
-- Governance model: docs/SPRINT_GOVERNANCE.md
-- Core guardrails: docs/CORE_GUARDRAILS.md
-- Local setup and tasks: docs/LOCAL_SETUP.md
+The old assumption below is no longer current:
+
+```text
+mobile_console and desktop_console are the main execution surfaces.
+```
+
+The current assumption is:
+
+```text
+Control Center is the main operator cockpit.
+desktop_console is a Windows launcher/wrapper.
+mobile_console is backend/API compatibility plus legacy UI until parity.
+```
+
+## Quick navigation
+
+| Need | Start here |
+| --- | --- |
+| Daily operator cockpit | `web/src/app/control-center` |
+| Chat implementation | `web/src/components/ChatWindow.tsx` |
+| Control Center shell | `web/src/components/ControlCenterShell.tsx` |
+| Ops endpoint | `web/src/app/api/control-center/ops/route.ts` |
+| Windows launcher | `desktop_console/` and `scripts/windows/open-control-center.ps1` |
+| VPS/mobile service runbook | `docs/MOBILE_CONSOLE.md` |
+| Foundation cleanup | `docs/CTOAI_FOUNDATION_CLEANUP.md` |
