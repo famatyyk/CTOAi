@@ -5,6 +5,7 @@ services:
     build:
       context: ../..
       dockerfile: bot/infra/Dockerfile
+    command: sh -c "rm -f /tmp/.X99-lock /tmp/.X11-unix/X99; Xvfb :99 -screen 0 1280x720x24 >/tmp/xvfb.log 2>&1 & sleep 1; exec python -m bot.main"
     env_file: ../../.env
     volumes:
       - bot_data:/app/data
