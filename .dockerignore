@@ -26,7 +26,10 @@ releases/
 artifacts/
 build/
 dist/
-data/
+data/*
+!data/
+!data/game/
+!data/game/*.json
 reports/
 tmp/
 temp/

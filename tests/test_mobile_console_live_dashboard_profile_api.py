@@ -35,7 +35,7 @@ def _login_token(client: TestClient, username: str, password: str) -> str:
 
 
 def test_live_dashboard_profile_requires_auth(monkeypatch: MonkeyPatch):
-    with tempfile.TemporaryDirectory() as tmp:
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
         module = _load_app_module(monkeypatch, Path(tmp))
         client = TestClient(module.app)
 
@@ -44,7 +44,7 @@ def test_live_dashboard_profile_requires_auth(monkeypatch: MonkeyPatch):
 
 
 def test_live_dashboard_profile_get_and_put(monkeypatch: MonkeyPatch):
-    with tempfile.TemporaryDirectory() as tmp:
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
         module = _load_app_module(monkeypatch, Path(tmp))
         client = TestClient(module.app)
 

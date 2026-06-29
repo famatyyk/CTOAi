@@ -7,7 +7,7 @@ WORKDIR /build
 COPY requirements.txt .
 
 # Build dependency wheels in a separate stage to keep runtime image smaller.
-RUN pip wheel --no-cache-dir --wheel-dir /wheels -r requirements.txt
+RUN pip wheel --no-cache-dir --wheel-dir /wheels -r requirements.txt "numpy>=1.26" "opencv-python-headless>=4.9"
 
 FROM python:3.12-slim AS runtime
 
@@ -24,6 +24,9 @@ COPY --from=builder /wheels /wheels
 RUN pip install --no-cache-dir /wheels/* && rm -rf /wheels
 
 COPY --chown=ctoa:ctoa . .
+RUN chown ctoa:ctoa /opt/ctoa \
+    && mkdir -p runtime/state metrics \
+    && chown -R ctoa:ctoa runtime metrics
 
 USER ctoa
 
