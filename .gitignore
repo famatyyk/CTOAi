@@ -12,6 +12,8 @@ node_modules/
 tmp/
 runtime/
 logs/
+metrics/
+web/.next/
 
 # Reverse-engineering and large local artifacts
 artifacts/enc3/
