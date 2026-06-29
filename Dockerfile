@@ -4,10 +4,10 @@
 FROM python:3.12-slim AS builder
 
 WORKDIR /build
-COPY requirements.txt requirements-bot.txt ./
+COPY requirements.txt .
 
 # Build dependency wheels in a separate stage to keep runtime image smaller.
-RUN pip wheel --no-cache-dir --wheel-dir /wheels -r requirements.txt -r requirements-bot.txt
+RUN pip wheel --no-cache-dir --wheel-dir /wheels -r requirements.txt "numpy>=1.26"
 
 FROM python:3.12-slim AS runtime
 
