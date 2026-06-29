@@ -24,6 +24,9 @@ COPY --from=builder /wheels /wheels
 RUN pip install --no-cache-dir /wheels/* && rm -rf /wheels
 
 COPY --chown=ctoa:ctoa . .
+RUN chown ctoa:ctoa /opt/ctoa \
+    && mkdir -p runtime/state metrics \
+    && chown -R ctoa:ctoa runtime metrics
 
 USER ctoa
 
