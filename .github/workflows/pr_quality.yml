@@ -51,6 +51,11 @@ jobs:
         run: |
           python scripts/ops/validate_release_artifact_contract.py
 
+      - name: Sprint-070 cleanup contract check
+        shell: bash
+        run: |
+          python scripts/ops/sprint070_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-070-validation.json
+
 
       - name: Run tests
         run: |

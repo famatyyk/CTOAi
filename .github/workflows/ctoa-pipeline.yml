@@ -133,6 +133,11 @@ jobs:
         run: |
           python scripts/ops/validate_release_artifact_contract.py
 
+      - name: Sprint-070 cleanup contract check
+        shell: bash
+        run: |
+          python scripts/ops/sprint070_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-070-validation.json
+
       - name: Response guardrail regression check
         shell: bash
         continue-on-error: true
@@ -836,7 +841,6 @@ jobs:
 
       - name: Publish Marker
         run: echo "Owner approved. Artifact is ready for public use from main."
-
 
 
 

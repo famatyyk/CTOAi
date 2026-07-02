@@ -2493,6 +2493,16 @@
 			"group": "none"
 		},
 		{
+			"label": "CTOA: Sprint-070 Validate Cleanup Contract",
+			"type": "shell",
+			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/sprint070_validate.py --run-tests --json-out runtime/ci-artifacts/sprint-070-validation.json",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			}
+		},
+		{
 			"label": "CTOA: Security Fixes Round1",
 			"type": "shell",
 			"command": ".\\.venv\\Scripts\\python.exe",
