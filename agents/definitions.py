@@ -139,3 +139,36 @@ def list_toolkit_agents(registry_path: str = 'agents/toolkit/editable_agents.jso
 def get_toolkit_agent_config(agent_id: str, registry_path: str = 'agents/toolkit/editable_agents.json'):
     """Get editable toolkit agent configuration by ID."""
     return _load_toolkit_registry(registry_path).get(agent_id)
+
+
+class APICostOptimizerAgent:
+    """Compatibility facade for the YAML-backed API cost optimizer agent."""
+
+    def __init__(self) -> None:
+        self.id = 'api-cost-optimizer'
+        self.name = 'APICostOptimizerAgent'
+        self.role = 'Autonomous API Token and Financial Guardrail Auditor'
+        self.capabilities = [
+            'analyze_token_velocity',
+            'calculate_burn_rate',
+            'propose_model_fallback',
+            'financial_guardrail_audit',
+        ]
+        self.risk_threshold = 0.30
+        self.allowed_tools = [
+            'token_counter_service',
+            'billing_metrics_provider',
+            'local_file_patcher',
+        ]
+
+    def score_action_risk(self, tool_name: str, payload: dict[str, Any] | None = None) -> float:
+        """Return guarded-autonomy risk score for a proposed optimizer action."""
+        if tool_name == 'local_file_patcher':
+            return 0.28
+        if tool_name in {'token_counter_service', 'billing_metrics_provider'}:
+            return 0.05
+        return 0.30
+
+    def registry_config(self) -> dict[str, Any] | None:
+        """Return the canonical YAML registry config for this facade."""
+        return get_agent_config(self.id)

@@ -21,12 +21,6 @@ from pydantic import BaseModel
 
 
 app = FastAPI(title="CTOAi API", version="1.3.0")
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 
 def _env_bool(name: str, default: bool) -> bool:
@@ -44,6 +38,42 @@ def _env_int(name: str, default: int) -> int:
         return int(value)
     except ValueError:
         return default
+
+
+def _is_production_env() -> bool:
+    values = (
+        os.getenv("CTOA_ENV", "").strip().lower(),
+        os.getenv("ENV", "").strip().lower(),
+    )
+    return any(value in {"prod", "production"} for value in values)
+
+
+def _is_weak_secret(secret: str) -> bool:
+    normalized = (secret or "").strip()
+    lowered = normalized.lower()
+    if not normalized or len(normalized) < 32:
+        return True
+    if lowered.startswith("change-me") or lowered.startswith("changeme"):
+        return True
+    if lowered in {"default", "secret", "jwt-secret", "ctoa-jwt-secret"}:
+        return True
+    return False
+
+
+cors_origins = [origin.strip() for origin in os.getenv("CTOA_CORS_ORIGINS", "*").split(",") if origin.strip()]
+if _is_production_env() and (not cors_origins or "*" in cors_origins):
+    raise RuntimeError(
+        "Refusing to start in production with wildcard CORS. "
+        "Set CTOA_CORS_ORIGINS to explicit origins."
+    )
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=cors_origins or ["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 def _backend_kind(url: str) -> str:
@@ -71,8 +101,22 @@ RELEASE_EVIDENCE_FILE = Path(
 
 AUTH_STORE_FILE = Path(os.getenv("CTOA_AUTH_STORE_FILE", "runtime/state/auth_store.json"))
 AUTH_REQUIRED = _env_bool("CTOA_AUTH_REQUIRED", True)
-JWT_SECRET = os.getenv("CTOA_JWT_SECRET", "change-me-ctoa-jwt-secret")
+ALLOW_SEED_ACCOUNTS = _env_bool("CTOA_ALLOW_SEED_ACCOUNTS", False)
+AUTH_BOOTSTRAP_CODE = os.getenv("CTOA_AUTH_BOOTSTRAP_CODE", "").strip()
+JWT_SECRET = os.getenv("CTOA_JWT_SECRET", "").strip()
 JWT_TTL_SECONDS = _env_int("CTOA_JWT_TTL_SECONDS", 86400)
+
+if _is_weak_secret(JWT_SECRET):
+    if _is_production_env():
+        raise RuntimeError(
+            "Refusing to start in production with missing or weak CTOA_JWT_SECRET."
+        )
+    JWT_SECRET = secrets.token_urlsafe(48)
+    print(
+        "[security] WARNING: using ephemeral JWT secret in non-production. "
+        "Set CTOA_JWT_SECRET to a strong value.",
+        file=sys.stderr,
+    )
 
 CTOA_RATE_LIMIT_ENABLED = _env_bool("CTOA_RATE_LIMIT_ENABLED", True)
 CTOA_CHAT_RATE_LIMIT_PER_MIN = max(1, _env_int("CTOA_CHAT_RATE_LIMIT_PER_MIN", 24))
@@ -224,6 +268,12 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class BootstrapRequest(BaseModel):
+    username: str
+    password: str
+    bootstrap_code: str
+
+
 class InviteRequest(BaseModel):
     username: str
     role: Literal["owner", "operator", "member"] = "member"
@@ -326,8 +376,16 @@ def _load_auth_store() -> Dict[str, Any]:
         except (OSError, json.JSONDecodeError):
             pass
 
+    seeded_users: Dict[str, Dict[str, Any]] = {}
+    if ALLOW_SEED_ACCOUNTS:
+        seeded_users = _seed_accounts()
+        print(
+            "[security] WARNING: legacy seed accounts are enabled (CTOA_ALLOW_SEED_ACCOUNTS=true).",
+            file=sys.stderr,
+        )
+
     seeded = {
-        "users": _seed_accounts(),
+        "users": seeded_users,
         "invites": [],
         "activity": [
             {
@@ -336,7 +394,10 @@ def _load_auth_store() -> Dict[str, Any]:
                 "actor": "system",
                 "target": "community",
                 "at": _utc_now_iso(),
-                "meta": {"seeded_users": 3},
+                "meta": {
+                    "seeded_users": len(seeded_users),
+                    "seed_mode": "enabled" if ALLOW_SEED_ACCOUNTS else "disabled",
+                },
             }
         ],
     }
@@ -804,6 +865,54 @@ def status() -> Dict[str, Any]:
     }
 
 
+@app.post("/api/auth/bootstrap")
+def bootstrap(req: BootstrapRequest) -> Dict[str, Any]:
+    expected_code = AUTH_BOOTSTRAP_CODE
+    if not expected_code:
+        raise HTTPException(status_code=503, detail="Bootstrap is not configured")
+
+    provided_code = req.bootstrap_code.strip()
+    if not hmac.compare_digest(provided_code, expected_code):
+        raise HTTPException(status_code=403, detail="Invalid bootstrap code")
+
+    username = _sanitize_username(req.username)
+    password = req.password.strip()
+    if len(password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
+
+    store = _load_auth_store()
+    users = store.setdefault("users", {})
+    if users:
+        raise HTTPException(status_code=409, detail="Bootstrap is already completed")
+
+    users[username] = {
+        "username": username,
+        "display_name": username,
+        "role": "owner",
+        "password_hash": _hash_password(password),
+        "created_at": _utc_now_iso(),
+    }
+    _append_activity(
+        store,
+        event_type="bootstrap_owner_created",
+        actor=username,
+        target="account",
+        meta={"role": "owner"},
+    )
+    _save_auth_store(store)
+
+    token = _issue_token(users[username])
+    return {
+        "token": token,
+        "user": {
+            "username": username,
+            "display_name": users[username]["display_name"],
+            "role": users[username]["role"],
+            "created_at": users[username]["created_at"],
+        },
+    }
+
+
 @app.post("/api/auth/register")
 def register(req: RegisterRequest, authorization: Optional[str] = Header(default=None)) -> Dict[str, Any]:
     username = _sanitize_username(req.username)
@@ -817,7 +926,7 @@ def register(req: RegisterRequest, authorization: Optional[str] = Header(default
         raise HTTPException(status_code=409, detail="Username already exists")
 
     requested_role = req.role or "member"
-    if users and requested_role != "member":
+    if requested_role != "member":
         current = _current_user(authorization, required=True)
         _require_roles(current, ["owner"])
 

@@ -1,47 +1,18 @@
 import { NextRequest, NextResponse } from "next/server"
 import { cookies } from "next/headers"
+import { getServerApiUrl } from "@/lib/config"
+import { fetchWithTimeout } from "@/lib/fetchWithTimeout"
+import { createIpRateLimiter, getClientIp } from "@/lib/rateLimit"
 
-const API_URL = process.env.VPS_API_URL ?? "http://116.202.96.250:8001"
+const API_URL = getServerApiUrl()
 const AUTH_RATE_LIMIT_PER_MIN = 20
 const AUTH_RATE_WINDOW_MS = 60_000
 
-type RateWindow = {
-  count: number
-  resetAt: number
-}
+const consumeAuthRateWindow = createIpRateLimiter(AUTH_RATE_LIMIT_PER_MIN, AUTH_RATE_WINDOW_MS)
 
-const authIpWindows = new Map<string, RateWindow>()
-
-
-function getClientIp(req: NextRequest): string {
-  const forwarded = req.headers.get("x-forwarded-for")
-  if (forwarded) {
-    const first = forwarded.split(",")[0]?.trim()
-    if (first) return first
-  }
-  const real = req.headers.get("x-real-ip")?.trim()
-  return real || "unknown"
-}
-
-function consumeRateWindow(ip: string): { allowed: boolean; retryAfter: number } {
-  const now = Date.now()
-  const current = authIpWindows.get(ip)
-  if (!current || current.resetAt <= now) {
-    authIpWindows.set(ip, { count: 1, resetAt: now + AUTH_RATE_WINDOW_MS })
-    return { allowed: true, retryAfter: 0 }
-  }
-
-  if (current.count >= AUTH_RATE_LIMIT_PER_MIN) {
-    return { allowed: false, retryAfter: Math.max(1, Math.ceil((current.resetAt - now) / 1000)) }
-  }
-
-  current.count += 1
-  authIpWindows.set(ip, current)
-  return { allowed: true, retryAfter: 0 }
-}
 async function backendFetch(path: string, init?: RequestInit) {
   const token = (await cookies()).get("ctoa_token")?.value
-  return fetch(API_URL + path, {
+  return fetchWithTimeout(API_URL + path, {
     ...init,
     headers: {
       "Content-Type": "application/json",
@@ -49,7 +20,7 @@ async function backendFetch(path: string, init?: RequestInit) {
       ...(init?.headers || {}),
     },
     cache: "no-store",
-  })
+  }, 5000)
 }
 
 export async function GET(req: NextRequest) {
@@ -74,7 +45,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const ip = getClientIp(req)
-  const gate = consumeRateWindow(ip)
+  const gate = consumeAuthRateWindow(ip)
   if (!gate.allowed) {
     return NextResponse.json(
       {
@@ -90,11 +61,11 @@ export async function POST(req: NextRequest) {
 
   try {
     if (action === "register") {
-      const r = await fetch(API_URL + "/api/auth/register", {
+      const r = await fetchWithTimeout(API_URL + "/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body.payload || {}),
-      })
+      }, 5000)
       const data = await r.json()
       const response = NextResponse.json(data, { status: r.status })
       if (r.ok && data?.token) {
@@ -104,11 +75,11 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === "login") {
-      const r = await fetch(API_URL + "/api/auth/login", {
+      const r = await fetchWithTimeout(API_URL + "/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body.payload || {}),
-      })
+      }, 5000)
       const data = await r.json()
       const response = NextResponse.json(data, { status: r.status })
       if (r.ok && data?.token) {

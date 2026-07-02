@@ -14,6 +14,11 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
+try:
+    from scripts.ops.git_exec import GitUnavailableError, run_git
+except ModuleNotFoundError:  # pragma: no cover - direct script execution fallback
+    from git_exec import GitUnavailableError, run_git
+
 ROOT = Path(__file__).resolve().parents[2]
 
 TOP_LEVEL_ALLOWLIST = {
@@ -25,6 +30,7 @@ TOP_LEVEL_ALLOWLIST = {
     ".gitmodules",
     ".dockerignore",
     ".pre-commit-config.yaml",
+    "AGENTS.md",
     "agents",
     "bot",
     "api",
@@ -45,6 +51,8 @@ TOP_LEVEL_ALLOWLIST = {
     "product",
     "prompts",
     "runner",
+    "src",
+    "runtime_context.py",
     "runtime",
     "schemas",
     "scoring",
@@ -98,11 +106,15 @@ FLAGGED_TOP_LEVEL_FILES = {
 }
 
 LOCAL_ONLY_CANDIDATES = {
+    ".agents",
+    ".codex",
     ".ctoa-local",
     ".env",
     ".env.dev",
+    ".env.kingsvale",
     "Althea.log",
     "MythibiaV2.log",
+    "_local_archive",
     "build",
     "dist",
     "logs",
@@ -125,6 +137,7 @@ CORE_PUBLIC_PATHS = {
     "product",
     "prompts",
     "runner",
+    "src",
     "schemas",
     "scoring",
     "scripts",
@@ -195,14 +208,8 @@ def classify_distribution(path: str) -> dict[str, str]:
 def _tracked_top_level_entries() -> set[str]:
     """Return tracked top-level names so local generated files can be ignored."""
     try:
-        result = subprocess.run(
-            ["git", "ls-files"],
-            cwd=ROOT,
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-    except (subprocess.CalledProcessError, FileNotFoundError):
+        result = run_git(["ls-files"], cwd=ROOT, check=True)
+    except (subprocess.CalledProcessError, GitUnavailableError):
         return set()
 
     tracked: set[str] = set()

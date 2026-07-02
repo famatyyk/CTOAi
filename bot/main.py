@@ -30,7 +30,8 @@ from bot.action import execute_action, set_current_state
 from bot.config.runtime_profile import get_bool, get_str
 from bot.safety.scheduler import get_scheduler
 from bot.data.db import create_session, close_session
-from bot.data.telemetry import set_session, log_event, log_loop_event, get_stats
+from bot.data.telemetry import set_session, log_event, log_crash, log_recovery, get_stats
+from bot.data.telemetry import log_loop_event
 from bot.runtime.live_state import emit_live_state
 
 TICK_MS    = 500    # ms per bot loop iteration
@@ -74,6 +75,7 @@ def run() -> None:
 
     def _shutdown(sig, frame):
         logger.info("Shutdown signal received.")
+        log_recovery("shutdown", f"signal={sig}")
         _print_stats()
         close_session(session_id)
         sys.exit(0)
@@ -213,6 +215,7 @@ def run() -> None:
             },
         )
         logger.exception("Fatal error in bot loop: %s", e)
+        log_crash(type(e).__name__, str(e), details="fatal loop exception")
     finally:
         _print_stats()
         close_session(session_id)

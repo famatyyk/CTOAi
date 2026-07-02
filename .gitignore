@@ -5,6 +5,9 @@ __pycache__/
 
 # Node
 node_modules/
+web/.next/
+web/.turbo/
+web/out/
 
 # Logs and temp
 *.log
@@ -12,6 +15,8 @@ node_modules/
 tmp/
 runtime/
 logs/
+metrics/
+web/.next/
 
 # Reverse-engineering and large local artifacts
 artifacts/enc3/
@@ -41,6 +46,9 @@ releases/loader/*.zip
 !.env.bot.example
 secrets/
 .ctoa-local/
+.agents/
+.codex/
+_local_archive/
 
 # OS
 .DS_Store

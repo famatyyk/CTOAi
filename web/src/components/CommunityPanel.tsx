@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 
 interface CommunityMember {
   username: string
@@ -36,7 +36,7 @@ export default function CommunityPanel({ role, onCommunityCount }: CommunityPane
   const canInvite = role === "owner" || role === "operator"
   const canSetRole = role === "owner"
 
-  async function refresh() {
+  const refresh = useCallback(async () => {
     setError("")
     const [membersRes, feedRes] = await Promise.all([
       fetch("/api/auth?path=members", { cache: "no-store" }),
@@ -54,11 +54,11 @@ export default function CommunityPanel({ role, onCommunityCount }: CommunityPane
     setMembers(membersData.members || [])
     onCommunityCount((membersData.members || []).length)
     setFeed(feedData.events || [])
-  }
+  }, [onCommunityCount])
 
   useEffect(() => {
     refresh().catch(() => setError("Failed to load community data"))
-  }, [])
+  }, [refresh])
 
   async function createInvite() {
     if (!inviteUser.trim()) {
