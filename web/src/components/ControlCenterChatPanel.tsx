@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import ChatWindow from "@/components/ChatWindow"
 import type { StoredMessage } from "@/lib/sessionStorage"
 import { fetchWithTimeout } from "@/lib/fetchWithTimeout"
@@ -24,14 +24,13 @@ type ControlCenterViewer = {
 type SeedAccount = {
   label: string
   username: string
-  password: string
   role: string
 }
 
 const SEED_ACCOUNTS: SeedAccount[] = [
-  { label: "Community", username: "recruit", password: "ctoa-community", role: "member" },
-  { label: "Ops", username: "strategos", password: "ctoa-ops", role: "member" },
-  { label: "Owner", username: "famatyyk", password: "ctoa-owner", role: "owner" },
+  { label: "Community", username: "recruit", role: "member" },
+  { label: "Ops", username: "strategos", role: "member" },
+  { label: "Owner", username: "famatyyk", role: "owner" },
 ]
 
 const AUTO_LOGIN_KEY = "ctoa_control_center_seed_autologin_attempted"
@@ -88,34 +87,7 @@ export default function ControlCenterChatPanel() {
   const [downloadState, setDownloadState] = useState<"idle" | "ready" | "error">("idle")
   const [markdownState, setMarkdownState] = useState<"idle" | "ready" | "error">("idle")
 
-  useEffect(() => {
-    setMessages(loadMessages())
-    setReady(true)
-    refreshAuth()
-  }, [])
-
-  useEffect(() => {
-    if (typeof window === "undefined") return
-    if (autoLoginAttempted || authState !== "unauthenticated") return
-    const isLocalHost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-    if (!isLocalHost) return
-    if (window.localStorage.getItem(AUTO_LOGIN_KEY) === "done") return
-
-    const seed = SEED_ACCOUNTS[0]
-    window.localStorage.setItem(AUTO_LOGIN_KEY, "done")
-    setAutoLoginAttempted(true)
-    setMode("login")
-    setUsername(seed.username)
-    setPassword(seed.password)
-    void submitAuth(seed.username, seed.password, "login")
-  }, [autoLoginAttempted, authState])
-
-  useEffect(() => {
-    if (typeof window === "undefined") return
-    persistChatLog(messages)
-  }, [messages, viewer, codeReviewMode])
-
-  async function refreshAuth() {
+  const refreshAuth = useCallback(async () => {
     try {
       const response = await fetchWithTimeout("/api/auth?path=me", { cache: "no-store" }, 5000)
       if (!response.ok) {
@@ -139,7 +111,140 @@ export default function ControlCenterChatPanel() {
       setViewer(null)
       setAuthState("error")
     }
-  }
+  }, [])
+
+  const persistChatLog = useCallback(
+    (nextMessages: StoredMessage[]) => {
+      try {
+        window.localStorage.setItem(
+          CHAT_LOG_KEY,
+          JSON.stringify(
+            buildControlCenterChatLog(nextMessages, {
+              sessionId: SESSION_ID,
+              viewerName: viewer?.displayName || viewer?.username || null,
+              viewerRole: viewer?.role || null,
+              strictReviewMode: codeReviewMode,
+            }),
+          ),
+        )
+      } catch {
+        // Auto-log is helpful, not critical.
+      }
+    },
+    [viewer, codeReviewMode],
+  )
+
+  const submitSeedLogin = useCallback(
+    async (seedUsername: string) => {
+      setAuthLoading(true)
+      setAuthError("")
+
+      try {
+        const response = await fetch("/api/auth/seed-login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ username: seedUsername }),
+        })
+        const data = (await response.json()) as { user?: { username?: string }; detail?: string; error?: string }
+        if (!response.ok) {
+          throw new Error(data.detail || data.error || "Seed login failed.")
+        }
+        if (data.user?.username) {
+          await refreshAuth()
+        } else {
+          throw new Error("Seed login succeeded but no user was returned.")
+        }
+      } catch (error) {
+        setAuthState("unauthenticated")
+        setAuthError(error instanceof Error ? error.message : "Seed login failed.")
+      } finally {
+        setAuthLoading(false)
+      }
+    },
+    [refreshAuth],
+  )
+
+  const submitAuth = useCallback(
+    async (nextUsername?: string, nextPassword?: string, nextMode?: "login" | "register") => {
+      const login = (nextUsername ?? username).trim().toLowerCase()
+      const pass = (nextPassword ?? password).trim()
+      const action = nextMode ?? mode
+      if (!login || !pass) {
+        setAuthError("Username and password are required.")
+        return
+      }
+
+      setAuthLoading(true)
+      setAuthError("")
+
+      try {
+        const response = await fetch("/api/auth", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            action,
+            payload:
+              action === "register"
+                ? { username: login, password: pass, role: "member" }
+                : { username: login, password: pass },
+          }),
+        })
+        const data = (await response.json()) as { user?: { username?: string; display_name?: string; role?: string }; detail?: string; error?: string }
+        if (!response.ok) {
+          throw new Error(data.detail || data.error || "Authentication failed.")
+        }
+        if (data.user?.username) {
+          await refreshAuth()
+        } else {
+          throw new Error("Authentication succeeded but no user was returned.")
+        }
+      } catch (error) {
+        setAuthState("unauthenticated")
+        setAuthError(error instanceof Error ? error.message : "Authentication failed.")
+      } finally {
+        setAuthLoading(false)
+      }
+    },
+    [mode, password, refreshAuth, username],
+  )
+
+  const handleSeedAccount = useCallback(
+    (seed: SeedAccount) => {
+      setMode("login")
+      setUsername(seed.username)
+      setAuthError("")
+      void submitSeedLogin(seed.username)
+    },
+    [submitSeedLogin],
+  )
+
+  useEffect(() => {
+    setMessages(loadMessages())
+    setReady(true)
+    refreshAuth()
+  }, [refreshAuth])
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    if (autoLoginAttempted || authState !== "unauthenticated") return
+    const isLocalHost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+    if (!isLocalHost) return
+    if (window.localStorage.getItem(AUTO_LOGIN_KEY) === "done") return
+
+    const seed = SEED_ACCOUNTS[0]
+    window.localStorage.setItem(AUTO_LOGIN_KEY, "done")
+    setAutoLoginAttempted(true)
+    setMode("login")
+    setUsername(seed.username)
+    void submitSeedLogin(seed.username)
+  }, [autoLoginAttempted, authState, submitSeedLogin])
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    persistChatLog(messages)
+  }, [messages, persistChatLog])
 
   function handleMessagesChange(nextMessages: StoredMessage[]) {
     setMessages(nextMessages)
@@ -149,24 +254,6 @@ export default function ControlCenterChatPanel() {
 
   function resetChat() {
     handleMessagesChange([WELCOME_MESSAGE])
-  }
-
-  function persistChatLog(nextMessages: StoredMessage[]) {
-    try {
-      window.localStorage.setItem(
-        CHAT_LOG_KEY,
-        JSON.stringify(
-          buildControlCenterChatLog(nextMessages, {
-            sessionId: SESSION_ID,
-            viewerName: viewer?.displayName || viewer?.username || null,
-            viewerRole: viewer?.role || null,
-            strictReviewMode: codeReviewMode,
-          }),
-        ),
-      )
-    } catch {
-      // Auto-log is helpful, not critical.
-    }
   }
 
   async function copyTranscript() {
@@ -235,55 +322,6 @@ export default function ControlCenterChatPanel() {
     }
   }
 
-  function useSeedAccount(seed: SeedAccount) {
-    setMode("login")
-    setUsername(seed.username)
-    setPassword(seed.password)
-    setAuthError("")
-    void submitAuth(seed.username, seed.password, "login")
-  }
-
-  async function submitAuth(nextUsername?: string, nextPassword?: string, nextMode?: "login" | "register") {
-    const login = (nextUsername ?? username).trim().toLowerCase()
-    const pass = (nextPassword ?? password).trim()
-    const action = nextMode ?? mode
-    if (!login || !pass) {
-      setAuthError("Username and password are required.")
-      return
-    }
-
-    setAuthLoading(true)
-    setAuthError("")
-
-    try {
-      const response = await fetch("/api/auth", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          action,
-          payload:
-            action === "register"
-              ? { username: login, password: pass, role: "member" }
-              : { username: login, password: pass },
-        }),
-      })
-      const data = (await response.json()) as { user?: { username?: string; display_name?: string; role?: string }; detail?: string; error?: string }
-      if (!response.ok) {
-        throw new Error(data.detail || data.error || "Authentication failed.")
-      }
-      if (data.user?.username) {
-        await refreshAuth()
-      } else {
-        throw new Error("Authentication succeeded but no user was returned.")
-      }
-    } catch (error) {
-      setAuthState("unauthenticated")
-      setAuthError(error instanceof Error ? error.message : "Authentication failed.")
-    } finally {
-      setAuthLoading(false)
-    }
-  }
 
   return (
     <article className="flex h-[78vh] min-h-[36rem] flex-col overflow-hidden rounded-3xl border border-white/10 bg-[#151b33]">
@@ -352,7 +390,7 @@ export default function ControlCenterChatPanel() {
                     <p className="text-sm font-black text-white">Zaloguj się do czatu</p>
                     <p className="mt-2 max-w-xl text-sm leading-6 text-slate-400">
                       Czat Control Center potrzebuje aktywnej sesji, żeby wysyłać wiadomości bez błędu 401.
-                      Na localhost możesz wejść jednym kliknięciem przez lokalny seed account.
+                      Na localhost możesz wejść jednym kliknięciem przez lokalny seed account bez trzymania hasła w kliencie.
                     </p>
                   </div>
                   <button
@@ -369,7 +407,7 @@ export default function ControlCenterChatPanel() {
                     <button
                       key={seed.username}
                       type="button"
-                      onClick={() => useSeedAccount(seed)}
+                      onClick={() => handleSeedAccount(seed)}
                       disabled={authLoading}
                       className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-left text-xs text-slate-300 transition hover:border-cyan-300/40 hover:bg-cyan-300/10 hover:text-cyan-100 disabled:opacity-50"
                     >
@@ -392,7 +430,7 @@ export default function ControlCenterChatPanel() {
                         <button
                           key={seed.username}
                           type="button"
-                          onClick={() => useSeedAccount(seed)}
+                          onClick={() => handleSeedAccount(seed)}
                           disabled={authLoading}
                           className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-left text-xs text-slate-300 transition hover:border-cyan-300/40 hover:bg-cyan-300/10 hover:text-cyan-100 disabled:opacity-50"
                         >
@@ -420,11 +458,22 @@ export default function ControlCenterChatPanel() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => useSeedAccount(SEED_ACCOUNTS[0])}
+                    onClick={() => void submitAuth()}
                     disabled={authLoading}
                     className="rounded-2xl bg-cyan-300 px-4 py-3 text-sm font-black text-[#111629] transition hover:bg-cyan-200 disabled:opacity-50"
                   >
-                    {authLoading ? "Signing in..." : "Auto-login local seed"}
+                    {authLoading ? "Signing in..." : mode === "login" ? "Sign in" : "Create account"}
+                  </button>
+                </div>
+
+                <div className="mt-3 flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={() => handleSeedAccount(SEED_ACCOUNTS[0])}
+                    disabled={authLoading}
+                    className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-xs font-bold text-cyan-100 transition hover:bg-cyan-300/20 disabled:opacity-50"
+                  >
+                    Auto-login local seed
                   </button>
                 </div>
 
