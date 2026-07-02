@@ -26,10 +26,15 @@ REQUIRED_WORKFLOW_SNIPPETS = [
 ]
 
 REQUIRED_DOC_SNIPPETS = [
+    "## Status",
+    "Cleanup execution is complete and validated locally.",
+    "Repo hygiene audit currently reports no findings.",
     "Wave 2 and Wave 3 Executed",
     "Cleanup Execution Completed",
     "Cleanup contract: `docs/REPO_CLEANUP_WAVES.md`",
     "Archive root",
+    "Validation report: `runtime/ci-artifacts/sprint-070-validation.json`",
+    "Repo hygiene audit: `runtime/ci-artifacts/repo-hygiene-audit.json`",
 ]
 
 

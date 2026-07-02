@@ -24,7 +24,7 @@ def _write_workspace(root: Path) -> None:
         encoding="utf-8",
     )
     (root / "docs/history/sprints/SPRINT-070-PROGRESS.md").write_text(
-        "# Project Progress Diagram - CTOAi\n\n## Cleanup Execution Completed\n\n- Cleanup contract: `docs/REPO_CLEANUP_WAVES.md`\n",
+        "# Project Progress Diagram - CTOAi\n\n## Status\n\n- Cleanup execution is complete and validated locally.\n- Repo hygiene audit currently reports no findings.\n\n## Cleanup Execution Completed\n\n- Cleanup contract: `docs/REPO_CLEANUP_WAVES.md`\n\n## Evidence\n\n- Validation report: `runtime/ci-artifacts/sprint-070-validation.json`\n- Repo hygiene audit: `runtime/ci-artifacts/repo-hygiene-audit.json`\n",
         encoding="utf-8",
     )
     (root / ".vscode/tasks.json").write_text(
