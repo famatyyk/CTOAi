@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "updated_at": "2026-06-30T00:00:00+00:00",
+  "quick_presets": [
+    {
+      "name": "Kamil Full Rota",
+      "group": "kamil",
+      "cooldown_ms": 2800,
+      "steps": "key f2; wait 110; key f3; wait 110; key f4; wait 110; key f5"
+    },
+    {
+      "name": "Kamil Opener",
+      "group": "kamil",
+      "cooldown_ms": 2200,
+      "steps": "key f2; wait 110; key f3; wait 110; key f4"
+    },
+    {
+      "name": "Kamil Burst",
+      "group": "kamil",
+      "cooldown_ms": 1800,
+      "steps": "key f2; wait 110; key f3"
+    },
+    {
+      "name": "Kamil Heal",
+      "group": "kamil",
+      "cooldown_ms": 1200,
+      "steps": "key f1"
+    }
+  ],
+  "macros": [
+    {
+      "id": "macro-1",
+      "name": "Heal chain",
+      "trigger": "F1",
+      "group": "heal",
+      "cooldown_ms": 2200,
+      "primary": "key f1; wait 90; key f2",
+      "fallback": "key f3",
+      "notes": "Jedno uruchomienie = 3 kroki"
+    },
+    {
+      "id": "macro-2",
+      "name": "Burst combo",
+      "trigger": "F2",
+      "group": "burst",
+      "cooldown_ms": 3000,
+      "primary": "say exori gran; wait 120; key f5",
+      "fallback": "say exori",
+      "notes": "Fallback gdy burst jest jeszcze na CD"
+    },
+    {
+      "id": "macro-3",
+      "name": "Potion chain",
+      "trigger": "F3",
+      "group": "potion",
+      "cooldown_ms": 1200,
+      "primary": "key f1; wait 70; key f2; wait 70; key f4",
+      "fallback": "key f4",
+      "notes": "Sekwencja ratunkowa"
+    }
+  ]
+}
