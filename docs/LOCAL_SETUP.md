@@ -242,7 +242,7 @@ pytest tests/ --cov=runner --cov-report=term-missing
 1. **Run Tests:** `pytest tests/ -v`
 2. **Bootstrap Product State:** `python scripts/ops/ctoa_product_bootstrap.py`
 3. **Pass Update Gate:** `python scripts/ops/ctoa_update_gate.py`
-4. **Read Docs:** Review [SPRINT-002.md](../SPRINT-002.md)
+4. **Read Docs:** Review [SPRINT-002.md](history/sprints/SPRINT-002.md)
 5. **Deploy to VPS:** See [deploy/vps/SETUP.md](../deploy/vps/SETUP.md)
 
 ---
@@ -250,7 +250,7 @@ pytest tests/ --cov=runner --cov-report=term-missing
 ## Getting Help
 
 - **Issues:** [GitHub Issues](https://github.com/famatyyk/CTOAi/issues)
-- **Docs:** [README.md](../README.md), [CHANGELOG.md](../CHANGELOG.md), [SPRINT-002.md](../SPRINT-002.md)
+- **Docs:** [README.md](../README.md), [CHANGELOG.md](../CHANGELOG.md), [SPRINT-002.md](history/sprints/SPRINT-002.md)
 - **Logs:** Check `.github/workflows/` for pipeline results
 
 Happy coding! đźš€

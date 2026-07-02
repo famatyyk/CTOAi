@@ -1,0 +1,24 @@
+{
+  "sprint": "041",
+  "generated_at": "2026-05-18T00:00:00Z",
+  "release_version": "v1.14.0",
+  "baseline_version": "v1.13.0",
+  "wave_1": {
+    "status": "PASS",
+    "summary": "Automated gate passed"
+  },
+  "wave_2": {
+    "status": "PASS",
+    "summary": "Manual approval recorded"
+  },
+  "artifacts": [
+    {
+      "name": "validator output",
+      "path": "runtime/ci-artifacts/sprint-041-validation.json"
+    },
+    {
+      "name": "wave 1 evidence",
+      "path": "runtime/experiments/sprint-041/WAVE-1.md"
+    }
+  ]
+}

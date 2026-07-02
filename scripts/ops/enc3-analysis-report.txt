@@ -1,0 +1,7 @@
+ENC3 analysis report baseline
+
+- Target: Mythibia ENC3 runtime assets
+- Notes: Header length field matches payload size minus wrapper on sampled files
+- Notes: No trivial single-byte XOR recovery observed on sample payloads
+- Status: analysis notes available for side-by-side review
+

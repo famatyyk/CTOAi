@@ -123,6 +123,16 @@ jobs:
         run: |
           python scripts/ops/repo_hygiene_audit.py --fail-on-findings --json-out runtime/repo-hygiene/latest.json
 
+      - name: Markdown link check
+        shell: bash
+        run: |
+          python scripts/ops/link_check_docs.py
+
+      - name: Release artifact contract check
+        shell: bash
+        run: |
+          python scripts/ops/validate_release_artifact_contract.py
+
       - name: Response guardrail regression check
         shell: bash
         continue-on-error: true
@@ -826,7 +836,6 @@ jobs:
 
       - name: Publish Marker
         run: echo "Owner approved. Artifact is ready for public use from main."
-
 
 
 

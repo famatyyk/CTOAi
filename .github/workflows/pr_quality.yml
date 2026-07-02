@@ -41,6 +41,16 @@ jobs:
         run: |
           python scripts/ops/repo_hygiene_audit.py --fail-on-findings --json-out runtime/repo-hygiene/pr-quality.json
 
+      - name: Markdown link check
+        shell: bash
+        run: |
+          python scripts/ops/link_check_docs.py
+
+      - name: Release artifact contract check
+        shell: bash
+        run: |
+          python scripts/ops/validate_release_artifact_contract.py
+
 
       - name: Run tests
         run: |
