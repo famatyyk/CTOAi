@@ -16,12 +16,10 @@ function SupplyManager.checkSupplies(supplies, minLevels)
   supplies = supplies or {}
   minLevels = minLevels or {}
   local alerts = {}
-  local seen = {}
 
-  for item, amount in pairs(supplies) do
-    seen[item] = true
-    local min = asNumber(minLevels[item], SupplyManager.config.defaultReserve)
-    local current = asNumber(amount, 0)
+  for item, minAmount in pairs(minLevels) do
+    local min = asNumber(minAmount, SupplyManager.config.defaultReserve)
+    local current = asNumber(supplies[item], 0)
     if current <= min then
       table.insert(alerts, {
         item = item,
@@ -29,20 +27,6 @@ function SupplyManager.checkSupplies(supplies, minLevels)
         min = min,
         missing = math.max(0, min - current),
       })
-    end
-  end
-
-  for item, minAmount in pairs(minLevels) do
-    if not seen[item] then
-      local min = asNumber(minAmount, SupplyManager.config.defaultReserve)
-      if min > 0 then
-        table.insert(alerts, {
-          item = item,
-          amount = 0,
-          min = min,
-          missing = min,
-        })
-      end
     end
   end
 
