@@ -180,6 +180,7 @@ class OverlayApp:
         tk.Button(control_row, text="Start Bot", command=self._start_bot, width=12).pack(side="left")
         tk.Button(control_row, text="Stop Bot", command=self._stop_bot, width=12).pack(side="left", padx=(8, 0))
         tk.Button(control_row, text="Reload Config", command=self._reload_config, width=12).pack(side="left", padx=(8, 0))
+        tk.Button(control_row, text="Macro Pad", command=self._open_macro_pad, width=12).pack(side="left", padx=(8, 0))
 
         modules = tk.LabelFrame(frame, text="Modules", bg=_BG, fg=_FG, padx=8, pady=5)
         modules.pack(fill="x", pady=(10, 0))
@@ -404,6 +405,22 @@ class OverlayApp:
             except Exception:
                 pass
         self.bot_status.set("Bot: STOPPED")
+
+    def _open_macro_pad(self) -> None:
+        creation_flags = 0
+        if os.name == "nt":
+            creation_flags = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+
+        try:
+            subprocess.Popen(
+                [sys.executable, "-m", "bot.overlay.macro_overlay"],
+                cwd=str(self._project_root),
+                env=os.environ.copy(),
+                creationflags=creation_flags,
+            )
+            self.bot_status.set("Bot: macro pad opened")
+        except Exception as exc:
+            messagebox.showerror("Macro Pad", str(exc))
 
     def _refresh_diagnostics(self) -> None:
         self.diag_profile.set(f"Profile: {active_profile_name()}")

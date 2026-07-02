@@ -126,9 +126,32 @@ class CommandExecutor:
                 log.debug(f"Cast: {spell}")
                 return True
 
+            elif command.startswith("wait ") or command.startswith("pause "):
+                delay_text = command.split(" ", 1)[1].strip()
+                try:
+                    delay_ms = max(0.0, float(delay_text))
+                except ValueError:
+                    log.warning(f"Invalid wait command: {command}")
+                    return False
+                time.sleep(delay_ms / 1000.0)
+                log.debug(f"Wait: {delay_ms}ms")
+                return True
+
             elif command == "shift+rightclick":
                 self._attack_target()
                 log.debug("Attack target")
+                return True
+
+            elif command.startswith("combo ") or "+" in command:
+                combo = command[6:].strip() if command.startswith("combo ") else command.strip()
+                self._press_combo(combo)
+                log.debug(f"Combo: {combo}")
+                return True
+
+            elif command.startswith("key ") or command.startswith("press "):
+                key_name = command.split(" ", 1)[1].strip()
+                self._press_named_key(key_name)
+                log.debug(f"Key: {key_name}")
                 return True
 
             elif command in self.DIRECTION_MAP:
@@ -192,6 +215,65 @@ class CommandExecutor:
 
         if self.enable_delays:
             time.sleep(self.base_delay)
+
+    def _press_named_key(self, key_name: str) -> None:
+        """Press and release a named key (e.g. f1, space, enter, a)."""
+        key = self._resolve_key(key_name)
+        if key is None:
+            raise ValueError(f"Unknown key: {key_name}")
+        self._press_key(key)
+
+    def _press_combo(self, combo: str) -> None:
+        """Press and release a key combination (e.g. ctrl+shift+l)."""
+        parts = [part.strip() for part in combo.split("+") if part.strip()]
+        if not parts:
+            raise ValueError("Empty combo")
+
+        keys = [self._resolve_key(part) for part in parts]
+        if any(key is None for key in keys):
+            raise ValueError(f"Unknown combo key: {combo}")
+
+        # Hold modifiers first, then tap the final key.
+        for key in keys[:-1]:
+            self.keyboard.press(key)
+        final_key = keys[-1]
+        self.keyboard.press(final_key)
+        if self.enable_delays:
+            time.sleep(self.base_delay * 0.5)
+        self.keyboard.release(final_key)
+        for key in reversed(keys[:-1]):
+            self.keyboard.release(key)
+        if self.enable_delays:
+            time.sleep(self.base_delay)
+
+    def _resolve_key(self, key_name: str):
+        """Map a human-friendly key name to a pynput key object."""
+        normalized = key_name.strip().lower()
+        if not normalized:
+            return None
+
+        if len(normalized) == 1:
+            return normalized
+
+        special_map = {
+            "space": getattr(Key, "space", "space"),
+            "enter": Key.enter,
+            "return": Key.enter,
+            "tab": getattr(Key, "tab", "tab"),
+            "esc": getattr(Key, "esc", "esc"),
+            "escape": getattr(Key, "esc", "esc"),
+            "shift": Key.shift,
+            "ctrl": Key.ctrl,
+            "control": Key.ctrl,
+            "alt": getattr(Key, "alt", "alt"),
+        }
+        if normalized in special_map:
+            return special_map[normalized]
+
+        if normalized.startswith("f") and normalized[1:].isdigit():
+            return getattr(Key, normalized, None)
+
+        return getattr(Key, normalized, None)
 
     def _attack_target(self) -> None:
         """Shift+right-click to attack current target."""
@@ -294,6 +376,12 @@ class BatchCommandExecutor:
     async def execute(self) -> bool:
         """Execute all commands in sequence."""
         for command, duration in self.commands:
+            normalized = command.strip().lower()
+            if normalized in {"wait", "pause"}:
+                if duration > 0:
+                    await asyncio.sleep(duration)
+                continue
+
             success = await self.executor.execute_async(command)
             if not success:
                 log.warning(f"Batch execution stopped at: {command}")

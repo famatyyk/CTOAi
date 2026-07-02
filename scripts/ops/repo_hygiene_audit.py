@@ -30,6 +30,7 @@ TOP_LEVEL_ALLOWLIST = {
     ".gitmodules",
     ".dockerignore",
     ".pre-commit-config.yaml",
+    "AGENTS.md",
     "agents",
     "bot",
     "api",
@@ -103,11 +104,15 @@ FLAGGED_TOP_LEVEL_FILES = {
 }
 
 LOCAL_ONLY_CANDIDATES = {
+    ".agents",
+    ".codex",
     ".ctoa-local",
     ".env",
     ".env.dev",
+    ".env.kingsvale",
     "Althea.log",
     "MythibiaV2.log",
+    "_local_archive",
     "build",
     "dist",
     "logs",

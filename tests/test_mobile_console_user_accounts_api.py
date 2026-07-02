@@ -105,7 +105,7 @@ def _login(client: TestClient, username: str, password: str) -> str:
 # ── Registration ─────────────────────────────────────────────────────────────
 
 def test_register_requires_owner(monkeypatch: MonkeyPatch):
-    with tempfile.TemporaryDirectory() as tmp:
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
         module = _load_app_module(monkeypatch, Path(tmp))
         _patch_db(monkeypatch, module)
         client = TestClient(module.app)
@@ -120,7 +120,7 @@ def test_register_requires_owner(monkeypatch: MonkeyPatch):
 
 
 def test_register_creates_account(monkeypatch: MonkeyPatch):
-    with tempfile.TemporaryDirectory() as tmp:
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
         module = _load_app_module(monkeypatch, Path(tmp))
         store = _patch_db(monkeypatch, module)
         client = TestClient(module.app)
@@ -140,7 +140,7 @@ def test_register_creates_account(monkeypatch: MonkeyPatch):
 
 def test_register_conflict_with_env_account(monkeypatch: MonkeyPatch):
     """Registering an env-reserved username must return 409."""
-    with tempfile.TemporaryDirectory() as tmp:
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
         module = _load_app_module(monkeypatch, Path(tmp))
         _patch_db(monkeypatch, module)
         client = TestClient(module.app)
@@ -155,7 +155,7 @@ def test_register_conflict_with_env_account(monkeypatch: MonkeyPatch):
 
 
 def test_register_duplicate_rejected(monkeypatch: MonkeyPatch):
-    with tempfile.TemporaryDirectory() as tmp:
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
         module = _load_app_module(monkeypatch, Path(tmp))
         _patch_db(monkeypatch, module)
         client = TestClient(module.app)
@@ -173,7 +173,7 @@ def test_register_duplicate_rejected(monkeypatch: MonkeyPatch):
 
 def test_login_with_db_account(monkeypatch: MonkeyPatch):
     """Registering a DB account and then logging in with it must work."""
-    with tempfile.TemporaryDirectory() as tmp:
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
         module = _load_app_module(monkeypatch, Path(tmp))
         _patch_db(monkeypatch, module)
         client = TestClient(module.app)
@@ -195,7 +195,7 @@ def test_login_with_db_account(monkeypatch: MonkeyPatch):
 # ── Listing ──────────────────────────────────────────────────────────────────
 
 def test_list_accounts_requires_owner(monkeypatch: MonkeyPatch):
-    with tempfile.TemporaryDirectory() as tmp:
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
         module = _load_app_module(monkeypatch, Path(tmp))
         _patch_db(monkeypatch, module)
         client = TestClient(module.app)
@@ -206,7 +206,7 @@ def test_list_accounts_requires_owner(monkeypatch: MonkeyPatch):
 
 
 def test_list_accounts_returns_env_and_db(monkeypatch: MonkeyPatch):
-    with tempfile.TemporaryDirectory() as tmp:
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
         module = _load_app_module(monkeypatch, Path(tmp))
         _patch_db(monkeypatch, module)
         client = TestClient(module.app)
@@ -234,7 +234,7 @@ def test_list_accounts_returns_env_and_db(monkeypatch: MonkeyPatch):
 # ── Password change ───────────────────────────────────────────────────────────
 
 def test_change_password_own_account(monkeypatch: MonkeyPatch):
-    with tempfile.TemporaryDirectory() as tmp:
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
         module = _load_app_module(monkeypatch, Path(tmp))
         _patch_db(monkeypatch, module)
         client = TestClient(module.app)
@@ -264,7 +264,7 @@ def test_change_password_own_account(monkeypatch: MonkeyPatch):
 
 
 def test_change_password_other_requires_owner(monkeypatch: MonkeyPatch):
-    with tempfile.TemporaryDirectory() as tmp:
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
         module = _load_app_module(monkeypatch, Path(tmp))
         store = _patch_db(monkeypatch, module)
         store["frank"] = {
@@ -299,7 +299,7 @@ def test_change_password_other_requires_owner(monkeypatch: MonkeyPatch):
 # ── Role change ───────────────────────────────────────────────────────────────
 
 def test_change_role_requires_owner(monkeypatch: MonkeyPatch):
-    with tempfile.TemporaryDirectory() as tmp:
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
         module = _load_app_module(monkeypatch, Path(tmp))
         store = _patch_db(monkeypatch, module)
         store["henry"] = {
@@ -323,7 +323,7 @@ def test_change_role_requires_owner(monkeypatch: MonkeyPatch):
 
 
 def test_change_role_promotes_account(monkeypatch: MonkeyPatch):
-    with tempfile.TemporaryDirectory() as tmp:
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
         module = _load_app_module(monkeypatch, Path(tmp))
         store = _patch_db(monkeypatch, module)
         store["ivan"] = {
@@ -350,7 +350,7 @@ def test_change_role_promotes_account(monkeypatch: MonkeyPatch):
 # ── Deactivation ─────────────────────────────────────────────────────────────
 
 def test_deactivate_account(monkeypatch: MonkeyPatch):
-    with tempfile.TemporaryDirectory() as tmp:
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
         module = _load_app_module(monkeypatch, Path(tmp))
         store = _patch_db(monkeypatch, module)
         store["jane"] = {
@@ -378,7 +378,7 @@ def test_deactivate_account(monkeypatch: MonkeyPatch):
 
 
 def test_deactivate_self_fails(monkeypatch: MonkeyPatch):
-    with tempfile.TemporaryDirectory() as tmp:
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
         module = _load_app_module(monkeypatch, Path(tmp))
         store = _patch_db(monkeypatch, module)
         store["kyle"] = {

@@ -213,6 +213,43 @@
 			}
 		},
 		{
+			"label": "CTOA: Validate Agent Registry",
+			"type": "shell",
+			"command": "python",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			},
+			"problemMatcher": [],
+			"group": "test",
+			"args": [
+				"-m",
+				"pytest",
+				"tests/test_agent_framework.py",
+				"tests/test_api_cost_optimizer_agent.py",
+				"-v"
+			]
+		},
+		{
+			"label": "CTOA: Validate API Cost Optimizer Agent",
+			"type": "shell",
+			"command": "python",
+			"isBackground": false,
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated"
+			},
+			"problemMatcher": [],
+			"group": "test",
+			"args": [
+				"-m",
+				"pytest",
+				"tests/test_api_cost_optimizer_agent.py",
+				"-v"
+			]
+		},
+		{
 			"label": "CTOA: Bootstrap Product Config",
 			"type": "shell",
 			"command": ".\\.venv\\Scripts\\python.exe scripts/ops/ctoa_product_bootstrap.py",

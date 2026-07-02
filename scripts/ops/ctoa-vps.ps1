@@ -308,6 +308,25 @@ python3 -m pip install -r runner/requirements.txt
 python3 -m pip install 'fastapi>=0.115.0' 'uvicorn>=0.30.0'
 mkdir -p logs runtime
 if [ ! -f /opt/ctoa/.env ]; then printf 'GITHUB_PAT=\n' > /opt/ctoa/.env; fi
+append_env() {
+    local name="$1"
+    local value="$2"
+    if ! grep -q "^${name}=" /opt/ctoa/.env 2>/dev/null; then
+        printf '%s=%s\n' "$name" "$value" >> /opt/ctoa/.env
+    fi
+}
+append_env CTOA_RELEASES_DIR /opt/ctoa/releases/evidence
+append_env CTOA_REPO_HYGIENE_PATH /opt/ctoa/runtime/repo-hygiene/local-pr-quality.json
+append_env CTOA_API_COST_RUNS_DIR /opt/ctoa/evals/runs
+append_env CTOA_API_COST_REPORT_PATH /opt/ctoa/runtime/api-cost/latest.json
+append_env CTOA_API_COST_JSON_OUT /opt/ctoa/runtime/api-cost/latest.json
+append_env CTOA_API_COST_MD_OUT /opt/ctoa/runtime/api-cost/latest.md
+append_env CTOA_API_COST_MD_PATH /opt/ctoa/runtime/api-cost/latest.md
+append_env CTOA_EVAL_DATASET_PATH /opt/ctoa/evals/azure-activity-agent-eval-dataset.template.jsonl
+append_env CTOA_PROMPT_VARIANTS_DIR /opt/ctoa/evals/prompt-variants
+append_env CTOA_ACTION_AUDIT_PATH /opt/ctoa/runtime/control-center/action-audit.jsonl
+append_env CTOA_EVIDENCE_JSON_PATH /opt/ctoa/runtime/evidence/latest.json
+append_env CTOA_EVIDENCE_MD_PATH /opt/ctoa/runtime/evidence/latest.md
 cp deploy/vps/systemd/ctoa-runner.service /etc/systemd/system/
 cp deploy/vps/systemd/ctoa-runner.timer /etc/systemd/system/
 cp deploy/vps/systemd/ctoa-report.service /etc/systemd/system/
@@ -1402,7 +1421,7 @@ echo '[FixDbPerms] grants applied'
 '@
     }
     'ReportViaServiceEnv' { Invoke-SshCommand 'systemctl restart ctoa-report.service; journalctl -u ctoa-report.service -n 25 --no-pager' }
-    'PublishWithSourcedEnv' { Invoke-SshCommand 'cd /opt/ctoa; set -a; . /opt/ctoa/.env; set +a; . .venv/bin/activate; python3 runner/runner.py report --publish' }
+    'PublishWithSourcedEnv' { Invoke-SshCommand 'cd /opt/ctoa; set -a; . /opt/ctoa/.env; set +a; /opt/ctoa/.venv/bin/python3 runner/runner.py report --publish' }
     'WriteGithubPat' {
         $pat = Get-RequiredEnv 'CTOA_GITHUB_PAT'
         Invoke-SshCommand "sed -i '/^GITHUB_PAT/d' /opt/ctoa/.env; echo GITHUB_PAT=$pat >> /opt/ctoa/.env; echo PAT-written"
@@ -1523,12 +1542,31 @@ ctoa_preupdate_gate() {
     git pull --ff-only
     .venv/bin/pip install -q psycopg2-binary
     mkdir -p /opt/ctoa/generated /opt/ctoa/releases /opt/ctoa/logs
+    append_env() {
+        local name="$1"
+        local value="$2"
+        if ! grep -q "^${name}=" /opt/ctoa/.env 2>/dev/null; then
+            printf '%s=%s\n' "$name" "$value" >> /opt/ctoa/.env
+        fi
+    }
+    append_env CTOA_RELEASES_DIR /opt/ctoa/releases/evidence
+    append_env CTOA_REPO_HYGIENE_PATH /opt/ctoa/runtime/repo-hygiene/local-pr-quality.json
+    append_env CTOA_API_COST_RUNS_DIR /opt/ctoa/evals/runs
+    append_env CTOA_API_COST_REPORT_PATH /opt/ctoa/runtime/api-cost/latest.json
+    append_env CTOA_API_COST_JSON_OUT /opt/ctoa/runtime/api-cost/latest.json
+    append_env CTOA_API_COST_MD_OUT /opt/ctoa/runtime/api-cost/latest.md
+    append_env CTOA_API_COST_MD_PATH /opt/ctoa/runtime/api-cost/latest.md
+    append_env CTOA_EVAL_DATASET_PATH /opt/ctoa/evals/azure-activity-agent-eval-dataset.template.jsonl
+    append_env CTOA_PROMPT_VARIANTS_DIR /opt/ctoa/evals/prompt-variants
+    append_env CTOA_ACTION_AUDIT_PATH /opt/ctoa/runtime/control-center/action-audit.jsonl
+    append_env CTOA_EVIDENCE_JSON_PATH /opt/ctoa/runtime/evidence/latest.json
+    append_env CTOA_EVIDENCE_MD_PATH /opt/ctoa/runtime/evidence/latest.md
     cp deploy/vps/systemd/ctoa-agents-orchestrator.service /etc/systemd/system/
     cp deploy/vps/systemd/ctoa-agents-orchestrator.timer   /etc/systemd/system/
     systemctl daemon-reload
     systemctl enable --now ctoa-agents-orchestrator.timer
     grep -q 'CTOA_GENERATED_DIR' /opt/ctoa/.env 2>/dev/null || echo 'CTOA_GENERATED_DIR=/opt/ctoa/generated' >> /opt/ctoa/.env
-    grep -q 'CTOA_RELEASES_DIR'  /opt/ctoa/.env 2>/dev/null || echo 'CTOA_RELEASES_DIR=/opt/ctoa/releases'   >> /opt/ctoa/.env
+    grep -q 'CTOA_RELEASES_DIR'  /opt/ctoa/.env 2>/dev/null || echo 'CTOA_RELEASES_DIR=/opt/ctoa/releases/evidence'   >> /opt/ctoa/.env
     grep -q 'CTOA_REPO_DIR'      /opt/ctoa/.env 2>/dev/null || echo 'CTOA_REPO_DIR=/opt/ctoa'               >> /opt/ctoa/.env
     grep -q 'CTOA_DAILY_MODULE_LIMIT' /opt/ctoa/.env 2>/dev/null || echo 'CTOA_DAILY_MODULE_LIMIT=50' >> /opt/ctoa/.env
     grep -q 'CTOA_DAILY_PROGRAM_LIMIT' /opt/ctoa/.env 2>/dev/null || echo 'CTOA_DAILY_PROGRAM_LIMIT=5' >> /opt/ctoa/.env
@@ -1895,7 +1933,7 @@ systemctl status ctoa-db.service --no-pager -l | sed -n '1,80p'
     }
 
     'GsApiValidate' {
-        Invoke-SshCommand 'cd /opt/ctoa && . .venv/bin/activate && python3 scripts/ops/gs-api-validator.py 2>&1'
+        Invoke-SshCommand 'cd /opt/ctoa && /opt/ctoa/.venv/bin/python3 scripts/ops/gs-api-validator.py 2>&1'
     }
 
     'ValidateSyntax' {

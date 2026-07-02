@@ -49,7 +49,7 @@ def _auth_headers(client: TestClient) -> dict[str, str]:
 
 
 def test_intel_status_proxy_success(monkeypatch: MonkeyPatch):
-    with tempfile.TemporaryDirectory() as tmp:
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
         module = _load_app_module(monkeypatch, Path(tmp))
 
         def fake_urlopen(url: str, timeout: int = 5):
@@ -70,7 +70,7 @@ def test_intel_status_proxy_success(monkeypatch: MonkeyPatch):
 
 
 def test_intel_status_proxy_unavailable(monkeypatch: MonkeyPatch):
-    with tempfile.TemporaryDirectory() as tmp:
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
         module = _load_app_module(monkeypatch, Path(tmp))
 
         def fake_urlopen(_url: str, timeout: int = 5):
@@ -89,7 +89,7 @@ def test_intel_status_proxy_unavailable(monkeypatch: MonkeyPatch):
 
 
 def test_intel_state_and_diff_proxy_success(monkeypatch: MonkeyPatch):
-    with tempfile.TemporaryDirectory() as tmp:
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
         module = _load_app_module(monkeypatch, Path(tmp))
 
         def fake_urlopen(_url: str, timeout: int = 5):

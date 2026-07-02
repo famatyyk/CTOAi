@@ -49,6 +49,9 @@ Primary governance sources:
 
 ## Active Product Portfolio
 
+- CTOAi Control Center:
+  [web/src/app/control-center](web/src/app/control-center) +
+  [docs/REPO_SCHEMA.md](docs/REPO_SCHEMA.md)
 - CTOA Control Plane:
   [mobile_console](mobile_console) +
   [scripts/ops/ctoa-vps.ps1](scripts/ops/ctoa-vps.ps1)
@@ -61,6 +64,8 @@ Primary governance sources:
 Product map and ownership list:
 
 - [docs/PRODUCT_PORTFOLIO.md](docs/PRODUCT_PORTFOLIO.md)
+- [docs/REPO_SCHEMA.md](docs/REPO_SCHEMA.md)
+- [docs/CTOAI_FOUNDATION_CLEANUP.md](docs/CTOAI_FOUNDATION_CLEANUP.md)
 
 Repository hygiene and publication policy:
 

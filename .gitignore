@@ -15,6 +15,8 @@ web/out/
 tmp/
 runtime/
 logs/
+metrics/
+web/.next/
 
 # Reverse-engineering and large local artifacts
 artifacts/enc3/
@@ -44,6 +46,9 @@ releases/loader/*.zip
 !.env.bot.example
 secrets/
 .ctoa-local/
+.agents/
+.codex/
+_local_archive/
 
 # OS
 .DS_Store

@@ -10,6 +10,23 @@ Windows desktop client for CTOAi operations without using a browser.
 - Agent operations panel in dashboard
 - Admin console available only for owner role
 - Update checker against latest GitHub release with one-click update package download
+- Control Center launcher shortcut for the modern web cockpit
+
+## Control Center
+The desktop app remains the Windows EXE entry point. The modern cockpit lives in the web app:
+
+- Default URL: `http://127.0.0.1:3000/control-center`
+- Desktop shortcut: `Ctrl+Shift+C`
+- Settings key: `control_center_url`
+- Windows helper: `scripts/windows/open-control-center.ps1`
+
+This keeps the EXE useful as a launcher while the richer dashboard can evolve in `web`.
+
+PowerShell helper:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/windows/open-control-center.ps1
+```
 
 ## Credentials and roles
 Desktop authentication uses backend accounts from `mobile_console/app.py`:

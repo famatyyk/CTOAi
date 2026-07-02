@@ -25,7 +25,7 @@ def _load_app_module(monkeypatch: MonkeyPatch, tmp_path: Path, *, package_tier: 
 
 
 def test_mobile_console_api_blocked_for_core_tier(monkeypatch: MonkeyPatch):
-    with tempfile.TemporaryDirectory() as tmp:
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
         module = _load_app_module(monkeypatch, Path(tmp), package_tier="core")
         client = TestClient(module.app)
 
@@ -35,7 +35,7 @@ def test_mobile_console_api_blocked_for_core_tier(monkeypatch: MonkeyPatch):
 
 
 def test_mobile_console_console_route_blocked_for_core_tier(monkeypatch: MonkeyPatch):
-    with tempfile.TemporaryDirectory() as tmp:
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
         module = _load_app_module(monkeypatch, Path(tmp), package_tier="core")
         client = TestClient(module.app)
 
@@ -44,7 +44,7 @@ def test_mobile_console_console_route_blocked_for_core_tier(monkeypatch: MonkeyP
 
 
 def test_mobile_console_api_allowed_for_pro_tier(monkeypatch: MonkeyPatch):
-    with tempfile.TemporaryDirectory() as tmp:
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
         module = _load_app_module(monkeypatch, Path(tmp), package_tier="pro")
         client = TestClient(module.app)
 

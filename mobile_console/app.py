@@ -929,7 +929,10 @@ def index() -> FileResponse:
 
 @app.get("/console")
 def legacy_console() -> FileResponse:
-    return FileResponse(str(STATIC_DIR / "index.html"), headers={"Cache-Control": "no-store"})
+    return FileResponse(
+        str(STATIC_DIR / "index.html"),
+        headers={"Cache-Control": "no-store", "X-CTOAi-UI-Status": "legacy; canonical=control-center"},
+    )
 
 
 @app.get("/style.css")
@@ -945,7 +948,10 @@ def site_script() -> FileResponse:
 @app.get("/live-dashboard")
 def live_dashboard() -> FileResponse:
     """Serve the login-based live dashboard (username/password auth)."""
-    return FileResponse(str(LIVE_DASHBOARD_HTML), headers={"Cache-Control": "no-store"})
+    return FileResponse(
+        str(LIVE_DASHBOARD_HTML),
+        headers={"Cache-Control": "no-store", "X-CTOAi-UI-Status": "legacy; canonical=control-center"},
+    )
 
 
 @app.get("/metrics")
@@ -2973,4 +2979,3 @@ def dashboard_release_evidence(_: dict[str, Any] = Depends(require_operator)) ->
             "release_evidence_endpoint": "/api/release-evidence",
         },
     }
-

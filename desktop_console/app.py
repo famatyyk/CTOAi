@@ -25,6 +25,7 @@ except ImportError:
 
 
 DEFAULT_API_BASE = "http://127.0.0.1:8787"
+DEFAULT_CONTROL_CENTER_URL = "http://127.0.0.1:3000/control-center"
 SETTINGS_FILE = Path(os.getenv("APPDATA", str(Path.home()))) / "CTOA" / "desktop-settings.json"
 UPDATE_DOWNLOAD_DIR = Path(os.getenv("LOCALAPPDATA", str(Path.home()))) / "CTOA" / "updates"
 PROFILE_CHOICES = ("local", "stage", "prod")
@@ -155,6 +156,7 @@ def _default_profile_urls() -> dict[str, str]:    return {
 @dataclass(slots=True)
 class DesktopSettings:
     base_url: str = DEFAULT_API_BASE
+    control_center_url: str = DEFAULT_CONTROL_CENTER_URL
     username: str = ""
     refresh_seconds: int = 20
     auto_refresh: bool = True
@@ -201,10 +203,12 @@ def _load_settings() -> DesktopSettings:
 
     configured_base = _safe_normalize_url(payload.get("base_url", ""))
     base_url = configured_base or profile_urls.get(endpoint_profile) or profile_urls["local"]
+    control_center_url = _safe_normalize_url(payload.get("control_center_url", DEFAULT_CONTROL_CENTER_URL))
 
     refresh_seconds = _normalize_refresh_seconds(payload.get("refresh_seconds", 20))
     return DesktopSettings(
         base_url=base_url,
+        control_center_url=control_center_url or DEFAULT_CONTROL_CENTER_URL,
         username=str(payload.get("username") or ""),
         refresh_seconds=refresh_seconds,
         auto_refresh=bool(payload.get("auto_refresh", True)),
@@ -558,6 +562,8 @@ class CtoaDesktopApp(tk.Tk):
             ("<Control-Shift-a>", self._shortcut_admin),
             ("<Control-t>", self._shortcut_cycle_theme),
             ("<Control-T>", self._shortcut_cycle_theme),
+            ("<Control-Shift-C>", self._shortcut_control_center),
+            ("<Control-Shift-c>", self._shortcut_control_center),
         ):
             self.bind_all(sequence, lambda _event, cb=callback: self._execute_shortcut(cb))
 
@@ -617,6 +623,16 @@ class CtoaDesktopApp(tk.Tk):
             idx = 0
         next_theme = THEME_CHOICES[(idx + 1) % len(THEME_CHOICES)]
         self.set_theme(next_theme, rerender=True)
+
+    def _shortcut_control_center(self) -> None:
+        self.open_control_center()
+
+    def open_control_center(self) -> None:
+        url = _safe_normalize_url(self.settings.control_center_url) or DEFAULT_CONTROL_CENTER_URL
+        self.settings.control_center_url = url
+        _save_settings(self.settings)
+        webbrowser.open(url)
+        self.set_status(f"Opening Control Center: {url}")
 
     def _resolve_return_target(self, origin: str) -> str:
         value = str(origin or "").strip().lower()
@@ -2103,7 +2119,6 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
 
 
 
