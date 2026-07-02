@@ -2,6 +2,9 @@
 
 All notable changes to this project will be documented in this file.
 
+This file is release history only. Use `README.md` for the current operator
+entry point and `docs/INDEX.md` for documentation routing.
+
 ## [1.15.0] - 2026-05-27 (Sprint-062: Product Delta + Agent Execution Quality)
 
 ### Added
@@ -196,4 +199,3 @@ All notable changes to this project will be documented in this file.
 - Tool advisor scoring system
 - CI approval gate integration
 - Training module structure
-

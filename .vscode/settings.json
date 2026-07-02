@@ -1,5 +1,5 @@
 ﻿{
-    "python.defaultInterpreterPath":  "python",
+    "python.defaultInterpreterPath":  "C:\\Users\\zycie\\CTOAi\\.venv\\Scripts\\python.exe",
     "python.testing.pytestEnabled":  true,
     "python.testing.unittestEnabled":  false,
     "python.testing.pytestArgs":  [
@@ -7,9 +7,10 @@
                                       "--ignore=tests/e2e",
                                       "-v"
                                   ],
-    "python.testing.autoTestDiscoverOnSaveEnabled":  true,
+    "python.testing.autoTestDiscoverOnSaveEnabled":  false,
+    "explorer.openEditors.visible":  0,
     "[python]":  {
-                     "editor.defaultFormatter":  "ms-python.black-formatter"
+                     "editor.defaultFormatter":  "charliermarsh.ruff"
                  },
     "terminal.integrated.profiles.windows":  {
                                                  "PowerShell":  {
@@ -20,5 +21,24 @@
                                                                     "source":  "PowerShell"
                                                                 }
                                              },
-    "terminal.integrated.defaultProfile.windows":  "PowerShell"
+    "terminal.integrated.defaultProfile.windows":  "PowerShell",
+    "git.autofetch":  false,
+    "python.analysis.diagnosticMode":  "openFilesOnly",
+    "files.watcherExclude":  {
+                                 "**/.git/objects/**":  true,
+                                 "**/.git/subtree-cache/**":  true,
+                                 "**/.venv/**":  true,
+                                 "**/node_modules/**":  true,
+                                 "**/runtime/**":  true,
+                                 "**/logs/**":  true,
+                                 "**/data/**":  true
+                             },
+    "search.exclude":  {
+                           "**/.git":  true,
+                           "**/.venv":  true,
+                           "**/node_modules":  true,
+                           "**/runtime":  true,
+                           "**/logs":  true,
+                           "**/data":  true
+                       }
 }

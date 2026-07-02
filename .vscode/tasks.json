@@ -215,7 +215,7 @@
 		{
 			"label": "CTOA: Validate Agent Registry",
 			"type": "shell",
-			"command": "python",
+			"command": ".\\.venv\\Scripts\\python.exe",
 			"isBackground": false,
 			"presentation": {
 				"reveal": "always",
@@ -234,7 +234,7 @@
 		{
 			"label": "CTOA: Validate API Cost Optimizer Agent",
 			"type": "shell",
-			"command": "python",
+			"command": ".\\.venv\\Scripts\\python.exe",
 			"isBackground": false,
 			"presentation": {
 				"reveal": "always",
@@ -2495,7 +2495,7 @@
 		{
 			"label": "CTOA: Security Fixes Round1",
 			"type": "shell",
-			"command": "python",
+			"command": ".\\.venv\\Scripts\\python.exe",
 			"args": [
 				"-c",
 				"from pathlib import Path\nimport re\nroot=Path(r'C:\\Users\\zycie\\CTOAi')\napp_path=root/'mobile_console'/'app.py'\nexec_path=root/'runner'/'agents'/'executor.py'\ntext=app_path.read_text(encoding='utf-8')\nif 'import shlex' not in text:\n    text=text.replace('import subprocess\\n','import subprocess\\nimport shlex\\n',1)\nif 'from urllib.parse import urlparse' not in text:\n    text=text.replace('from urllib.request import urlopen\\n','from urllib.request import urlopen\\nfrom urllib.parse import urlparse\\n',1)\nrun_pat=re.compile(r'def _run\\(cmd: str, timeout: int = 20, cwd: Optional\\[str\\] = None\\) -> dict:\\n(?:    .*\\n)+?\\n(?=def _run_argv\\()',re.MULTILINE)\nrun_new='def _run(cmd: str, timeout: int = 20, cwd: Optional[str] = None) -> dict:\\n    try:\\n        args = shlex.split(cmd, posix=not _is_windows_host())\\n    except ValueError as exc:\\n        return {\\\"code\\\": 1, \\\"stdout\\\": \\\"\\\", \\\"stderr\\\": str(exc)[:200]}\\n\\n    if not args:\\n        return {\\\"code\\\": 1, \\\"stdout\\\": \\\"\\\", \\\"stderr\\\": \\\"Empty command\\\"}\\n\\n    return _run_argv(args, timeout=timeout, cwd=cwd)\\n\\n'\ntext=run_pat.sub(run_new,text,count=1)\nif 'def _validate_http_url(url: str) -> str:' not in text:\n    helper='\\n\\ndef _validate_http_url(url: str) -> str:\\n    parsed = urlparse(url)\\n    if parsed.scheme not in {\\\"http\\\", \\\"https\\\"}:\\n        raise ValueError(f\\\"Unsupported URL scheme: {parsed.scheme or \\'missing\\'}\\\")\\n    if not parsed.netloc:\\n        raise ValueError(\\\"URL host is required\\\")\\n    return url\\n'\n    text=text.replace('\\ndef _intel_api_health_probe() -> dict:\\n',helper+'\\n\\ndef _intel_api_health_probe() -> dict:\\n',1)\ntext=text.replace('    try:\\n        with urlopen(url, timeout=5) as response:\\n','    try:\\n        _validate_http_url(url)\\n        with urlopen(url, timeout=5) as response:\\n')\ntext=text.replace('    try:\\n        with urlopen(url, timeout=timeout) as response:\\n','    try:\\n        _validate_http_url(url)\\n        with urlopen(url, timeout=timeout) as response:\\n')\ntext=text.replace('        cmd = f\"tail -n {lines} {path} 2>/dev/null || echo \\'(log not found)\\'\"\\n        return _run(cmd, timeout=10)\\n','        result = _run_argv([\\\"tail\\\", \\\"-n\\\", str(lines), str(path)], timeout=10)\\n        if result.get(\\\"code\\\", 1) != 0:\\n            return {\\\"code\\\": 0, \\\"stdout\\\": \\\"(log not found)\\\", \\\"stderr\\\": \\\"\\\"}\\n        return result\\n')\ntext=text.replace('        cmd = f\"psql \\\\\\\"{dsn}\\\\\\\" -t -A -c {json.dumps(filled)}\"\\n        return _run(cmd, timeout=timeout)\\n','        return _run_argv([\\\"psql\\\", dsn, \\\"-t\\\", \\\"-A\\\", \\\"-c\\\", filled], timeout=timeout)\\n')\napp_path.write_text(text,encoding='utf-8')\nexec_text=exec_path.read_text(encoding='utf-8').replace('**Document Updated:** {timestamp}','**Document Timestamp:** {timestamp}')\nexec_path.write_text(exec_text,encoding='utf-8')\nprint('SECURITY_FIXES_APPLIED')"
@@ -2979,177 +2979,6 @@
 			"args": [
 				"-c",
 				"from pathlib import Path; p=Path(r'c:\\Users\\zycie\\AppData\\Roaming\\Code\\User\\workspaceStorage\\1edd8a1233777d7267ce1e89924927ff\\GitHub.copilot-chat\\chat-session-resources\\b4227942-a11c-4bcf-8f63-be3042a91f3c\\call_R2WoI2PEpGUJICJE9KTLTYBK__vscode-1781255392358\\content.txt'); print('EXISTS',p.exists()); text=p.read_text(encoding='utf-8',errors='replace') if p.exists() else ''; keys=['STATUS_OK','OWNER_LOGIN_OK','ME_OK','REGISTER_OK','INVITE_OK','MEMBER_LOGIN_OK','ACCEPT_OK','MEMBERS_OK','FEED_OK','INVITES_OK','HTTP_AUTH_COMMUNITY_E2E_OK','Traceback','AssertionError','URLError']; [print(k,'=>',('YES' if k in text else 'NO')) for k in keys]"
-			],
-			"isBackground": false,
-			"problemMatcher": [],
-			"group": "none"
-		},
-		{
-			"label": "CTOA Temp: Git Status",
-			"type": "shell",
-			"command": "cmd",
-			"args": [
-				"/d",
-				"/c",
-				"cd /d c:\\Users\\zycie\\CTOAi && git status --short"
-			],
-			"isBackground": false,
-			"problemMatcher": [],
-			"group": "none"
-		},
-		{
-			"label": "CTOA Temp: Stop Stack",
-			"type": "shell",
-			"command": "cmd",
-			"args": [
-				"/d",
-				"/c",
-				"cd /d c:\\Users\\zycie\\CTOAi && docker compose stop api postgres"
-			],
-			"isBackground": false,
-			"problemMatcher": [],
-			"group": "none"
-		},
-		{
-			"label": "CTOA Temp: Workflow List",
-			"type": "shell",
-			"command": "cmd",
-			"args": [
-				"/d",
-				"/c",
-				"cd /d c:\\Users\\zycie\\CTOAi && dir /b .github\\workflows"
-			],
-			"isBackground": false,
-			"problemMatcher": [],
-			"group": "none"
-		},
-		{
-			"label": "CTOA Temp: Find Git",
-			"type": "shell",
-			"command": "powershell",
-			"args": [
-				"-NoProfile",
-				"-Command",
-				"$candidates = @('C:\\Program Files\\Git\\cmd\\git.exe','C:\\Program Files\\Git\\bin\\git.exe','C:\\Program Files (x86)\\Git\\cmd\\git.exe'); $candidates | ForEach-Object { if (Test-Path $_) { Write-Output $_ } }"
-			],
-			"isBackground": false,
-			"problemMatcher": [],
-			"group": "none"
-		},
-		{
-			"label": "CTOA Temp: Read Governance Instruction",
-			"type": "shell",
-			"command": "powershell",
-			"args": [
-				"-NoProfile",
-				"-Command",
-				"Get-Content 'c:\\Users\\zycie\\CTOAi\\.github\\instructions\\runner-governance.instructions.md' -TotalCount 220"
-			],
-			"isBackground": false,
-			"problemMatcher": [],
-			"group": "none"
-		},
-		{
-			"label": "CTOA Temp: Read Smoke Workflow",
-			"type": "shell",
-			"command": "powershell",
-			"args": [
-				"-NoProfile",
-				"-Command",
-				"Get-Content 'c:\\Users\\zycie\\CTOAi\\.github\\workflows\\ctoa-smoke-must-pass.yml' -TotalCount 260"
-			],
-			"isBackground": false,
-			"problemMatcher": [],
-			"group": "none"
-		},
-		{
-			"label": "CTOA Temp: Inspect Auth Defaults",
-			"type": "shell",
-			"command": "c:\\Users\\zycie\\CTOAi\\.venv\\Scripts\\python.exe",
-			"args": [
-				"-c",
-				"from pathlib import Path\np=Path('c:/Users/zycie/CTOAi/api/main.py')\nlines=p.read_text(encoding='utf-8').splitlines()\nfor i,l in enumerate(lines,1):\n    if any(k in l for k in ['AUTH_REQUIRED','JWT_SECRET','AUTH_STORE_PATH','famatyyk','ctoa-owner','def _load_auth_store','def _ensure_seed_owner']):\n        print(f'{i}:{l}')"
-			],
-			"isBackground": false,
-			"problemMatcher": [],
-			"group": "none"
-		},
-		{
-			"label": "CTOA Temp: Inspect Auth Defaults One Liner",
-			"type": "shell",
-			"command": "c:\\Users\\zycie\\CTOAi\\.venv\\Scripts\\python.exe",
-			"args": [
-				"-c",
-				"from pathlib import Path; lines=Path(r'c:\\Users\\zycie\\CTOAi\\api\\main.py').read_text(encoding='utf-8').splitlines(); keys=['AUTH_REQUIRED','JWT_SECRET','AUTH_STORE_PATH','famatyyk','ctoa-owner','def _load_auth_store','def _ensure_seed_owner']; [print(f'{i+1}:{l}') for i,l in enumerate(lines) if any(k in l for k in keys)]"
-			],
-			"isBackground": false,
-			"problemMatcher": [],
-			"group": "none"
-		},
-		{
-			"label": "CTOA Temp: Check New Script",
-			"type": "shell",
-			"command": "powershell",
-			"args": [
-				"-NoProfile",
-				"-Command",
-				"Test-Path 'c:\\Users\\zycie\\CTOAi\\scripts\\ops\\runtime_smoke_e2e_8001.py'; if (Test-Path 'c:\\Users\\zycie\\CTOAi\\scripts\\ops\\runtime_smoke_e2e_8001.py') { Get-Content 'c:\\Users\\zycie\\CTOAi\\scripts\\ops\\runtime_smoke_e2e_8001.py' -TotalCount 40 }"
-			],
-			"isBackground": false,
-			"problemMatcher": [],
-			"group": "none"
-		},
-		{
-			"label": "CTOA Temp: Verify Script Exists",
-			"type": "shell",
-			"command": "powershell",
-			"args": [
-				"-NoProfile",
-				"-Command",
-				"if (Test-Path 'c:\\Users\\zycie\\CTOAi\\scripts\\ops\\runtime_smoke_e2e_8001.py') { Write-Output 'SCRIPT_OK'; Get-Content 'c:\\Users\\zycie\\CTOAi\\scripts\\ops\\runtime_smoke_e2e_8001.py' -TotalCount 20 } else { Write-Output 'SCRIPT_MISSING' }"
-			],
-			"isBackground": false,
-			"problemMatcher": [],
-			"group": "none"
-		},
-		{
-			"label": "CTOA Temp: Git Status Full Path",
-			"type": "shell",
-			"command": "\"C:\\Program Files\\Git\\cmd\\git.exe\"",
-			"args": [
-				"-C",
-				"c:\\Users\\zycie\\CTOAi",
-				"status",
-				"--short"
-			],
-			"isBackground": false,
-			"problemMatcher": [],
-			"group": "none"
-		},
-		{
-			"label": "CTOA Temp: Stage Auth Community Set",
-			"type": "shell",
-			"command": "\"C:\\Program Files\\Git\\cmd\\git.exe\"",
-			"args": [
-				"-C",
-				"c:\\Users\\zycie\\CTOAi",
-				"add",
-				".dockerignore",
-				".env.example",
-				".vscode/tasks.json",
-				"api/main.py",
-				"docker-compose.yml",
-				"web/src/app/api/chat/route.ts",
-				"web/src/app/api/auth/route.ts",
-				"web/src/app/page.tsx",
-				"web/src/components/SessionManager.tsx",
-				"web/src/components/StatusBar.tsx",
-				"web/src/components/CommunityPanel.tsx",
-				"web/src/components/LoginPanel.tsx",
-				"web/tsconfig.json",
-				"web/.gitignore",
-				"web/next-env.d.ts",
-				"web/package-lock.json"
 			],
 			"isBackground": false,
 			"problemMatcher": [],

@@ -30,3 +30,17 @@ Stabilize Wave-1 execution continuity by aligning task/CI CLI contracts and pres
 ## Gate Policy
 - Wave-1: automated validator + summary + docs/evidence checks pass.
 - Wave-2: manual STRATEGOS sign-off.
+
+## Post-Merge Closure (2026-07-02)
+
+Outcome:
+- Sprint-069 Fix-Next cleanup is closed out as a single evidence-backed change set.
+- Control Center and API surface changes now use the repo-local venv and timeout-protected backend probes.
+- Overlay smoke validation passed in this workspace (`status-overlay-smoke-ok`).
+
+Evidence:
+- Validation report: `runtime/ci-artifacts/sprint-069-validation.json`
+- Wave summary: `runtime/ci-artifacts/sprint-069-wave1-summary.txt`
+- Repo hygiene: `runtime/repo-hygiene/latest.json`
+- Overlay smoke: `scripts/ops/status_overlay_smoke.ps1`
+- Progress doc: `docs/history/sprints/SPRINT-069-PROGRESS.md`

@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server"
 import { controlCenterSnapshot } from "@/lib/controlCenterSnapshot"
 import { getServerApiUrl } from "@/lib/config"
+import { fetchWithTimeout } from "@/lib/fetchWithTimeout"
 
 export async function GET() {
   const apiUrl = getServerApiUrl()
 
   try {
-    const response = await fetch(`${apiUrl}/api/status`, { cache: "no-store" })
+    const response = await fetchWithTimeout(`${apiUrl}/api/status`, { cache: "no-store" }, 4000)
     const status = await response.json()
 
     return NextResponse.json({

@@ -1,6 +1,7 @@
 import { cookies } from "next/headers"
 import { NextResponse } from "next/server"
 import { getServerApiUrl } from "@/lib/config"
+import { fetchWithTimeout } from "@/lib/fetchWithTimeout"
 
 export const runtime = "nodejs"
 
@@ -15,13 +16,13 @@ const API_URL = getServerApiUrl()
 async function backendGet(path: string): Promise<LegacyFetchResult> {
   const token = (await cookies()).get("ctoa_token")?.value
   try {
-    const response = await fetch(`${API_URL}${path}`, {
+    const response = await fetchWithTimeout(`${API_URL}${path}`, {
       headers: {
         "Content-Type": "application/json",
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       cache: "no-store",
-    })
+    }, 4000)
     const body = await response.json().catch(() => ({}))
     return { ok: response.ok, status: response.status, body }
   } catch (error) {
