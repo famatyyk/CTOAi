@@ -44,3 +44,4 @@ Evidence:
 - Repo hygiene: `runtime/repo-hygiene/latest.json`
 - Overlay smoke: `scripts/ops/status_overlay_smoke.ps1`
 - Progress doc: `docs/history/sprints/SPRINT-069-PROGRESS.md`
+- Duplicate closure note: `docs/history/sprints/SPRINT-069-FIXNEXT-STATUS.md` was folded into this canonical sprint closure and removed.
