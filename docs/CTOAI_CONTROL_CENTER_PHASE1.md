@@ -13,7 +13,7 @@ The Phase 1 source of truth is this boundary map:
 | CTOAi Platform | The whole system: runtime, ops, governance, telemetry and interfaces. |
 | Control Center | The user-facing cockpit and launcher for daily operation. |
 | Runtime Plane | Bot runtime, agents, schedulers, input backend and execution state. |
-| Ops Plane | VPS, Docker, deploy, rebuilds, disk, service health and logs. |
+| Status Plane | Local evidence, repo hygiene, release packs and audit traces. |
 | Governance Plane | Approvals, security rules, evidence, CI gates and audit trail. |
 | Telemetry Plane | Metrics, reports, monitoring, alerts and runtime visibility. |
 | Interfaces | Web UI, Windows desktop launcher, mobile console and Codex/chat surface. |
@@ -27,7 +27,7 @@ Use a hybrid model:
 | `desktop_console` | Windows EXE entry point, profile selector and local launcher. |
 | `web` | Primary modern cockpit UI. |
 | `ctoa.ps1` | Local command engine for scripted actions. |
-| VPS Docker stack | Production runtime and operational target. |
+| Local runtime + evidence files | File-backed source of truth for the cockpit. |
 | Codex/chat | Operator workspace for guided work and troubleshooting. |
 
 This keeps the old launcher idea, but avoids trapping the whole product inside Tkinter. The desktop app should launch, configure and supervise. The web app should present the rich dashboard.
@@ -50,9 +50,7 @@ Initial left navigation:
 | --- | --- |
 | Overview | Global status and project health. |
 | Codex Chat | Work conversation and guided actions. |
-| VPS Ops | Server, disk, Docker and deploy state. |
-| Bot Runtime | Bot status, scheduler, input backend and logs. |
-| GitHub CI | PRs, checks, workflow runs and artifact cleanup. |
+| Local Status | Repo hygiene, release evidence, cost report and audit trace. |
 | Docs Map | Architecture, repo boundaries and foundation cleanup decisions. |
 
 ## Phase 1 data tiles
@@ -61,11 +59,10 @@ The first dashboard should expose:
 
 | Tile | Initial source |
 | --- | --- |
-| VPS free space | Last known VPS cleanup result, then live ops endpoint. |
-| Root disk usage | Last known VPS cleanup result, then live ops endpoint. |
-| Docker services | VPS audit command, then backend API. |
-| Bot runtime status | Docker container status and logs. |
-| GitHub artifacts | GitHub API or cached cleanup report. |
+| Repo hygiene | Local JSON report under `runtime/repo-hygiene/local-pr-quality.json`. |
+| Release evidence | Local evidence pack under `runtime/evidence/latest.json`. |
+| API cost report | Local cost report under `runtime/api-cost/latest.json`. |
+| Control Center audit | Local JSONL audit log under `runtime/control-center/action-audit.jsonl`. |
 | Codex/chat state | Local session state first, direct integration later. |
 
 ## Command model
@@ -75,10 +72,9 @@ All destructive or high-risk commands should start as read-only buttons. Write a
 Safe first commands:
 
 ```text
-VPS health audit
-Docker image report
-Bot runtime logs
-GitHub CI summary
+Refresh repo hygiene snapshot
+Refresh API cost report
+Rebuild evidence pack
 ```
 
 Later write commands:
@@ -98,7 +94,7 @@ Archive old artifacts
 3. Connect the shell to static last-known health data.
 4. Add backend endpoints for read-only status.
 5. Wire desktop EXE launcher to open the Control Center.
-6. Add guarded write actions after status is reliable.
+6. Add local refresh actions after status is reliable.
 7. Refresh repo schema after module names stabilize.
 
 ## Phase 2: launcher bridge
@@ -137,7 +133,7 @@ It currently returns a static, typed snapshot from:
 web/src/lib/controlCenterSnapshot.ts
 ```
 
-This is intentional. Static first prevents the UI from being blocked by VPS, GitHub or auth wiring. The next step is replacing each field with live read-only sources.
+This is intentional. Static first prevents the UI from being blocked by remote wiring or auth setup. The next step is replacing each field with local read-only sources.
 
 ## Phase 4: backend probe
 
@@ -179,7 +175,7 @@ Phase 1 is done when:
 | Platform boundaries are named | Started |
 | Desktop launcher role is clear | Wired through shortcut |
 | Existing chat is not broken | Preserved |
-| VPS/GitHub/bot tiles are visible | Started |
+| Local status tiles are visible | Started |
 | Status endpoint exists | Started |
 | Backend API probe exists | Started |
 | Frontend live probe exists | Started |
@@ -187,35 +183,31 @@ Phase 1 is done when:
 
 ## Phase 5: live ops tiles
 
-The first real read-only ops endpoint is:
+The first real local status endpoint is:
 
 ```text
 GET /api/control-center/ops
 ```
 
-It collects:
+It collects local file-backed status from:
 
 | Tile | Probe |
 | --- | --- |
-| VPS disk | `ssh df -h /` |
-| Docker store | `ssh ${CTOA_VPS_DOCKER_USER:-root}@vps docker system df` |
-| Bot runtime | `ssh ${CTOA_VPS_DOCKER_USER:-root}@vps docker ps` filtered by `infra-bot` |
-| GitHub CI | `gh run list --repo famatyyk/CTOAi` |
+| Repo hygiene | `runtime/repo-hygiene/local-pr-quality.json` |
+| Release evidence | `runtime/evidence/latest.json` |
+| API cost report | `runtime/api-cost/latest.json` |
+| Control Center audit | `runtime/control-center/action-audit.jsonl` |
 
-The route uses only fixed commands and timeouts. It is intentionally read-only. If SSH, GitHub CLI, Docker permissions or local paths are unavailable, the tile reports `unknown` instead of breaking the page.
+The route uses only fixed local reads and timeouts. It is intentionally read-only. If local paths are unavailable, the tile reports `unknown` instead of breaking the page.
 
 Configuration knobs:
 
 | Env var | Default |
 | --- | --- |
-| `CTOA_VPS_HOST` | `116.202.96.250` |
-| `CTOA_VPS_PORT` | `2222` |
-| `CTOA_VPS_USER` | `ctoa-admin` |
-| `CTOA_VPS_DOCKER_USER` | `root` |
-| `CTOA_VPS_KEY` | Windows or WSL default key path |
-| `CTOA_SSH_BIN` | `ssh` |
-| `CTOA_GH_BIN` | GitHub CLI path |
-| `CTOA_GITHUB_REPO` | `famatyyk/CTOAi` |
+| `CTOA_RELEASES_DIR` | `releases/evidence` |
+| `CTOA_REPO_HYGIENE_PATH` | `runtime/repo-hygiene/local-pr-quality.json` |
+| `CTOA_API_COST_REPORT_PATH` | `runtime/api-cost/latest.json` |
+| `CTOA_ACTION_AUDIT_PATH` | `runtime/control-center/action-audit.jsonl` |
 
 UI component:
 
@@ -235,10 +227,10 @@ The Control Center now has real detail panels layered on top of the status tiles
 
 | Panel | Data |
 | --- | --- |
-| VPS disk trend | `df -B1 /`, stored as in-browser session history |
-| Docker image breakdown | `docker images --format '{{json .}}'` |
-| Bot logs preview | `docker logs --tail 40 infra-bot-1` |
-| GitHub run list | `gh run list --json status,conclusion,name,displayTitle,databaseId,event,headBranch,createdAt,url` |
+| Repo hygiene | Repo hygiene JSON snapshot |
+| Release evidence | Evidence pack and sprint folder summary |
+| API cost report | Cost report JSON and eval artifact summary |
+| Control Center audit | JSONL audit trail with recent local actions |
 
 UI component:
 
@@ -251,9 +243,7 @@ The detail panels remain read-only. They are visible in Overview and focused tab
 | Tab | Details |
 | --- | --- |
 | Overview | All detail panels |
-| VPS Ops | VPS disk trend and Docker image breakdown |
-| Bot Runtime | Bot logs preview |
-| GitHub CI | GitHub run list |
+| Local Status | All local status panels |
 
 ## Phase 7: embedded chat and surface consolidation
 
