@@ -33,6 +33,7 @@ jobs:
           DB_PASSWORD=ctoa-ci-password
           CTOA_JWT_SECRET=ctoa-ci-jwt-secret
           CTOA_AUTH_REQUIRED=true
+          CTOA_ALLOW_SEED_ACCOUNTS=true
           EOF
 
       - name: Start compose stack

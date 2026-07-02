@@ -28,6 +28,7 @@ def test_resolve_git_uses_windows_fallback(monkeypatch, tmp_path: Path):
 
     monkeypatch.delenv("CTOA_GIT_BIN", raising=False)
     monkeypatch.setattr(git_exec.shutil, "which", lambda name: None)
+    monkeypatch.setattr(git_exec, "_expand_path", lambda value: fake_git)
     monkeypatch.setattr(git_exec, "WINDOWS_GIT_CANDIDATES", (str(fake_git),))
     monkeypatch.setattr(git_exec.os, "name", "nt", raising=False)
 
@@ -60,4 +61,3 @@ def test_run_git_uses_resolved_binary(monkeypatch):
     assert result.returncode == 0
     assert called["args"][0][0] == r"C:\git\git.exe"
     assert called["args"][0][1:] == ["status", "--short"]
-
