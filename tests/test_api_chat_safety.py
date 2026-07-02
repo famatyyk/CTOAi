@@ -2,6 +2,7 @@
 
 import sys
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
@@ -267,20 +268,39 @@ class TestSafetyTelemetryAndStatus:
 
     def test_safety_telemetry_auth_and_owner_access(self):
         from fastapi.testclient import TestClient
-        client = TestClient(api_main.app)
+        with TemporaryDirectory() as tmp_dir:
+            auth_store = Path(tmp_dir) / "auth_store.json"
+            api_main._atomic_write_json(
+                auth_store,
+                {
+                    "users": {
+                        "famatyyk": {
+                            "username": "famatyyk",
+                            "display_name": "Famatyyk",
+                            "role": "owner",
+                            "password_hash": api_main._hash_password("ownerpass123"),
+                            "created_at": api_main._utc_now_iso(),
+                        }
+                    },
+                    "invites": [],
+                    "activity": [],
+                },
+            )
+            with patch.object(api_main, "AUTH_STORE_FILE", auth_store):
+                client = TestClient(api_main.app)
 
-        unauthorized = client.get("/api/safety/telemetry")
-        assert unauthorized.status_code == 401
+                unauthorized = client.get("/api/safety/telemetry")
+                assert unauthorized.status_code == 401
 
-        owner_token = api_main._issue_token({"username": "famatyyk", "role": "owner"})
-        headers = {"Authorization": f"Bearer {owner_token}"}
-        authorized = client.get("/api/safety/telemetry", headers=headers)
-        assert authorized.status_code == 200
-        payload = authorized.json()
-        assert "startup_time" in payload
-        assert "sanitizer_interventions" in payload
-        assert "model_errors_masked" in payload
-        assert "total_events" in payload
-        assert "alert_threshold" in payload
-        assert "alert_active" in payload
-        assert payload["alert_level"] in ("normal", "warning")
+                owner_token = api_main._issue_token({"username": "famatyyk", "role": "owner"})
+                headers = {"Authorization": f"Bearer {owner_token}"}
+                authorized = client.get("/api/safety/telemetry", headers=headers)
+                assert authorized.status_code == 200
+                payload = authorized.json()
+                assert "startup_time" in payload
+                assert "sanitizer_interventions" in payload
+                assert "model_errors_masked" in payload
+                assert "total_events" in payload
+                assert "alert_threshold" in payload
+                assert "alert_active" in payload
+                assert payload["alert_level"] in ("normal", "warning")

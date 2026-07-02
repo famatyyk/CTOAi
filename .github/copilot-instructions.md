@@ -1,3 +1,6 @@
+---
+applyTo: "onChatParticipant:github.copilot.default"
+---
 # CTOAi Workspace Instructions
 
 ## Scope
@@ -95,21 +98,8 @@ Route tasks to the owning agent before implementing. Quick reference (see `agent
 - Do not narrate self-correction or apology loops; replace with one direct corrected answer.
 - Do not end with a generic follow-up question unless a concrete decision or next step is required from the user.
 - When correcting output, correct once and proceed.
+- When the user sends `/analyze-prompt`, analyze the prompt content first, then return: objective, constraints, ambiguities, likely failure modes, and a tightened prompt rewrite.
 - When a user asks for help interpreting an Azure Activity Log, first summarize: timeline, `operationName`, `status` and `subStatus`, affected `resourceId`, `caller`, and `correlationId`.
 - Highlight security-sensitive or high-impact changes explicitly (for example role assignments, policy changes, deletes, networking changes, Key Vault access, or resource creation failures).
 - Explain likely impact in plain language, separate confirmed facts from inference, and suggest the next best investigation step using the fields already present in the log.
 - If the user shares only a partial screenshot or excerpt, ask for the raw Azure Activity Log entry (JSON or text) before making high-confidence conclusions.
-
-## Output Contract
-When producing an implementation plan or significant agent response, include all of the following sections (omit only with explicit rationale):
-
-1. **Objective** — what must be accomplished.
-2. **Assumptions** — constraints and prerequisites taken as given.
-3. **Implementation Plan** — ordered steps with owner agent for each step.
-4. **Validation Plan** — how correctness will be verified (tests, validators, CI gates).
-5. **Acceptance Criteria** — measurable conditions for PASS.
-6. **Risks** — known failure modes and their blast radius.
-7. **Fallback Strategy** — rollback or safe degradation path.
-8. **Evidence** — artifacts or links produced (test output, logs, delta comparison).
-9. **Next Action** — the single most important next step with a responsible owner.
-

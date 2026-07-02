@@ -1,4 +1,4 @@
-﻿"""CTOA-205: Sprint-041 dashboard ergonomics focused tests.
+"""CTOA-205: Sprint-041 dashboard ergonomics focused tests.
 
 Verifies that /api/dashboard returns ergonomic status context
 for healthy, degraded, and error operating modes.
@@ -17,7 +17,7 @@ from fastapi.testclient import TestClient
 def _load_app_module(monkeypatch: MonkeyPatch, tmp_path: Path):
     monkeypatch.setenv("CTOA_MOBILE_TOKEN", "test-mobile-token")
     monkeypatch.setenv("CTOA_OWNER_USER", "CTO")
-    monkeypatch.setenv("CTOA_OWNER_PASSWORD", "asdzxc12")
+    monkeypatch.setenv("CTOA_OWNER_PASSWORD", "ownerpass123")
     monkeypatch.setenv("CTOA_OPERATOR_USER", "ctoa-bot")
     monkeypatch.setenv("CTOA_OPERATOR_PASSWORD", "jakpod22")
     monkeypatch.setenv("CTOA_ADMIN_SETTINGS_FILE", str(tmp_path / "admin-settings.json"))
@@ -133,3 +133,4 @@ def test_dashboard_error_status_context_highlights_critical_sections(monkeypatch
         assert context.get("severity") == "critical"
         assert "servers" in context.get("critical_sections", [])
         assert "servers" in str(context.get("detail", "")).lower()
+

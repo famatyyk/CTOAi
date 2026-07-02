@@ -1,6 +1,7 @@
 # Roadmap v0.2.0 to v1.0.0
 
-Reconstructed canonical roadmap reference used by README.
+Historical roadmap snapshot used by README links.
+For current status, use `README.md` plus the active sprint docs.
 
 ## Current Release-Train Snapshot
 
@@ -25,4 +26,4 @@ Reconstructed canonical roadmap reference used by README.
 - Operator UX and release cadence
 
 ## Outcome
-This file exists as canonical reference to prevent documentation drift and broken links.
+This file exists as a frozen reference to prevent documentation drift and broken links.

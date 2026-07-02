@@ -428,8 +428,7 @@ async function loadAdminStateFromBackend() {
 
 function getAdminUsers() {
   const fallback = Object.keys(ADMIN_ACCOUNTS).reduce((acc, username) => {
-    const defaultPass = username === "cto" ? encodeSecret("asdzxc12") : "";
-    acc[username] = { role: ADMIN_ACCOUNTS[username].role, pass: defaultPass };
+    acc[username] = { role: ADMIN_ACCOUNTS[username].role, pass: "" };
     return acc;
   }, {});
   const users = loadJson(ADMIN_USERS_KEY, fallback);
