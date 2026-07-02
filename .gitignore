@@ -5,6 +5,9 @@ __pycache__/
 
 # Node
 node_modules/
+web/.next/
+web/.turbo/
+web/out/
 
 # Logs and temp
 *.log

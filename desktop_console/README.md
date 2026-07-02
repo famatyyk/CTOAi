@@ -31,11 +31,11 @@ powershell -ExecutionPolicy Bypass -File scripts/windows/open-control-center.ps1
 ## Credentials and roles
 Desktop authentication uses backend accounts from `mobile_console/app.py`:
 - Owner username: `CTOA_OWNER_USER` (default: `CTO`)
-- Owner password: `CTOA_OWNER_PASSWORD` (default in code: `asdzxc12`)
+- Owner password: `CTOA_OWNER_PASSWORD` (required; no hardcoded default)
 - Optional operator username: `CTOA_OPERATOR_USER` (default: `ctoa-bot`)
 - Optional operator password: `CTOA_OPERATOR_PASSWORD` (empty by default, account disabled until set)
 
-Self-register (`/api/auth/register`) creates `operator` accounts in DB.
+Self-register (`/api/auth/register`) creates `member` accounts in DB.
 
 ## API Base URL (local vs VPS)
 - Local backend example: `http://127.0.0.1:8787`
@@ -66,8 +66,8 @@ Desktop app uses mobile console API:
 - owner command execution: `POST /api/command`
 
 Optional backend env variables:
-- `CTOA_SELF_REGISTER_ENABLED=true`
-- `CTOA_SELF_REGISTER_CODE=<optional invite code>`
+- `CTOA_SELF_REGISTER_ENABLED=false` (recommended default)
+- `CTOA_SELF_REGISTER_CODE=<required when self-register is enabled>`
 
 ## Run from source
 1. Install dependencies:

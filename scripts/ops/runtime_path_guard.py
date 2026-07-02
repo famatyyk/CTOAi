@@ -10,16 +10,19 @@ from __future__ import annotations
 
 import fnmatch
 import json
-import subprocess
-import sys
 from pathlib import Path
+
+try:
+    from scripts.ops.git_exec import GitUnavailableError, run_git
+except ModuleNotFoundError:  # pragma: no cover - direct script execution fallback
+    from git_exec import GitUnavailableError, run_git
 
 ROOT = Path(__file__).resolve().parents[2]
 POLICY_FILE = ROOT / "core" / "runtime-freeze-policy.json"
 
 
 def _tracked_files() -> list[str]:
-    out = subprocess.check_output(["git", "ls-files"], cwd=ROOT, text=True)
+    out = run_git(["ls-files"], cwd=ROOT).stdout
     return [line.strip().replace("\\", "/") for line in out.splitlines() if line.strip()]
 
 
@@ -79,7 +82,11 @@ def check() -> int:
 
 
 def main() -> int:
-    return check()
+    try:
+        return check()
+    except GitUnavailableError as exc:
+        print(f"[FAIL] {exc}")
+        return 2
 
 
 if __name__ == "__main__":

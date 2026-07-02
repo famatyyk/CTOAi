@@ -91,6 +91,21 @@ jobs:
             exit 1
           fi
 
+          generated_paths=(
+            "web/.next/**"
+            "web/.turbo/**"
+            "web/out/**"
+          )
+
+          for pattern in "${generated_paths[@]}"; do
+            if git ls-files "$pattern" | grep -q .; then
+              echo "Denied tracked generated web assets detected: $pattern"
+              echo "Keep generated outputs ignored and out of git tracking."
+              git ls-files "$pattern"
+              exit 1
+            fi
+          done
+
       - name: Shell script syntax check
         shell: bash
         run: |
@@ -826,7 +841,6 @@ jobs:
 
       - name: Publish Marker
         run: echo "Owner approved. Artifact is ready for public use from main."
-
 
 
 

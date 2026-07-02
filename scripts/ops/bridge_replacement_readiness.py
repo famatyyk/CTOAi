@@ -8,8 +8,12 @@ resolved before archiving the final legacy runtime file.
 from __future__ import annotations
 
 import re
-import subprocess
 from pathlib import Path
+
+try:
+    from scripts.ops.git_exec import GitUnavailableError, run_git
+except ModuleNotFoundError:  # pragma: no cover - direct script execution fallback
+    from git_exec import GitUnavailableError, run_git
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -20,7 +24,7 @@ PATTERNS = {
 
 
 def tracked_files() -> list[Path]:
-    out = subprocess.check_output(["git", "ls-files"], cwd=ROOT, text=True)
+    out = run_git(["ls-files"], cwd=ROOT).stdout
     return [ROOT / line.strip() for line in out.splitlines() if line.strip()]
 
 
@@ -55,7 +59,14 @@ def scan() -> dict[str, list[str]]:
 
 
 def main() -> int:
-    findings = scan()
+    print("Bridge replacement readiness report")
+    print("---------------------------------")
+    try:
+        findings = scan()
+    except GitUnavailableError as exc:
+        print(f"git_unavailable: {exc}")
+        print("NOT READY: configure Git before running readiness checks.")
+        return 2
 
     code_files = [f for f in findings["legacy_file_reference"] if f.endswith((".py", ".sh", ".ps1", ".yml", ".yaml"))]
     doc_files = [f for f in findings["legacy_file_reference"] if f.endswith((".md", ".txt"))]
@@ -66,9 +77,6 @@ def main() -> int:
         "runner/agents/executor.py",
     }
     code_blockers = [f for f in code_files if f not in allowed_code_refs]
-
-    print("Bridge replacement readiness report")
-    print("---------------------------------")
 
     for key, files in findings.items():
         print(f"{key}: {len(files)}")
@@ -100,4 +108,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
