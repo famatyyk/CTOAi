@@ -20,7 +20,12 @@ export type ChatReviewTemplate = {
 }
 
 function looksLikeCode(content: string): boolean {
-  return /```|^\s*(class|def|function|import|from)\b/m.test(content) || content.includes("(") || content.includes("=")
+  return (
+    /```/.test(content) ||
+    /^\s{4,}\S/m.test(content) ||
+    /^\s*(class|def|function|import|from|return|if|for|while|try|catch|except|const|let|var|local|export)\b/m.test(content) ||
+    /^\s*\w[\w\s]*\s*[:=]\s*.+$/m.test(content)
+  )
 }
 
 function countCodeLines(content: string): number {

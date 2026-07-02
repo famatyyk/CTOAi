@@ -84,4 +84,11 @@ pytest test_math.py
     expect(decision.blocked).toBe(false)
     expect(decision.label).toBe("published")
   })
+
+  it("does not treat ordinary prose with parentheses as code", () => {
+    const result = assessControlCenterChatQuality("Use the local API (recommended) and keep the review concise.")
+
+    expect(result.level).toBe("approved")
+    expect(result.issues).toHaveLength(0)
+  })
 })

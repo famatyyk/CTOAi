@@ -4,6 +4,17 @@ local function hasValue(map, key)
   return type(map) == "table" and map[key] == true
 end
 
+local function countValue(item)
+  if type(item) ~= "table" then
+    return 0
+  end
+  local count = tonumber(item.count)
+  if count == nil then
+    return 0
+  end
+  return count
+end
+
 function LootFilter.filter(items, whitelist, blacklist)
   items = items or {}
   whitelist = whitelist or {}
@@ -22,7 +33,7 @@ function LootFilter.filter(items, whitelist, blacklist)
 end
 
 function LootFilter.shouldStack(item)
-  return item.stackable == true and item.count > 1
+  return type(item) == "table" and item.stackable == true and countValue(item) > 1
 end
 
 function LootFilter.shouldLoot(item, whitelist, blacklist)
