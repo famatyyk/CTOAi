@@ -126,6 +126,7 @@ CTOAi/
 | --- | --- | --- |
 | `GET /api/control-center` | Backend reachability probe | Read-only |
 | `GET /api/control-center/ops` | VPS disk, Docker, bot runtime and GitHub CI details | Read-only |
+| `GET /api/control-center/evidence` | Release evidence, local quality, cost report and action audit summary | Read-only |
 | `GET /api/control-center/legacy` | Read-only migration panel for old console capabilities | Read-only |
 | `POST /api/chat` | Chat completion route used by `ChatWindow` | User-initiated chat |
 

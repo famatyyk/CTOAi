@@ -4,3 +4,4 @@
 - hp below critical triggers RETREAT
 - hp above critical keeps CONTINUE
 - threshold can be adjusted in config
+- invalid state fails closed

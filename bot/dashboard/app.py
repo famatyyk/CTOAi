@@ -55,6 +55,9 @@ if _FASTAPI_AVAILABLE:
             "exp_hr":        s.get("exp_hr", 0),
             "kills":         s.get("kills", 0),
             "session_hours": s.get("session_hours", 0),
+            "incidents":     s.get("incidents", 0),
+            "crashes":       s.get("crashes", 0),
+            "recoveries":    s.get("recoveries", 0),
             "uptime_s":      int(time.time() - _START_TIME),
         }
 
@@ -75,6 +78,15 @@ if _FASTAPI_AVAILABLE:
             "# HELP bot_session_hours Session duration in hours",
             "# TYPE bot_session_hours gauge",
             f'bot_session_hours {s.get("session_hours", 0)}',
+            "# HELP bot_incidents_total Total tracked incidents this session",
+            "# TYPE bot_incidents_total gauge",
+            f'bot_incidents_total {s.get("incidents", 0)}',
+            "# HELP bot_crashes_total Total crash incidents this session",
+            "# TYPE bot_crashes_total gauge",
+            f'bot_crashes_total {s.get("crashes", 0)}',
+            "# HELP bot_recoveries_total Total recovery actions this session",
+            "# TYPE bot_recoveries_total gauge",
+            f'bot_recoveries_total {s.get("recoveries", 0)}',
             "# HELP bot_uptime_seconds Bot process uptime in seconds",
             "# TYPE bot_uptime_seconds gauge",
             f'bot_uptime_seconds {int(time.time() - _START_TIME)}',
@@ -121,6 +133,8 @@ if _FASTAPI_AVAILABLE:
     <div class="card"><div class="val">{s.get('exp_hr', 0):,}</div><div class="lbl">Exp / hour</div></div>
     <div class="card"><div class="val">{s.get('kills', 0)}</div><div class="lbl">Kills this session</div></div>
     <div class="card"><div class="val">{s.get('session_hours', 0):.2f}h</div><div class="lbl">Session time</div></div>
+    <div class="card"><div class="val">{s.get('crashes', 0)}</div><div class="lbl">Crashes logged</div></div>
+    <div class="card"><div class="val">{s.get('recoveries', 0)}</div><div class="lbl">Recoveries logged</div></div>
     <div class="card"><div class="val">{uptime_h:.2f}h</div><div class="lbl">Dashboard uptime</div></div>
     <div class="card"><div class="val">{"ON" if _sched_running else "BREAK"}</div><div class="lbl">Scheduler state</div></div>
   </div>

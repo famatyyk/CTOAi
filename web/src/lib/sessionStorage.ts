@@ -1,6 +1,11 @@
+import type { ChatQualityAssessment } from "@/lib/chatQuality"
+
 export type StoredMessage = {
   role: "user" | "assistant"
   content: string
+  quality?: ChatQualityAssessment
+  publicationState?: "published" | "blocked"
+  publicationNote?: string
 }
 
 export type StoredSession = {
@@ -26,15 +31,47 @@ function activeKey(user: string): string {
 
 function normalizeMessage(message: unknown): StoredMessage | null {
   if (!message || typeof message !== "object") return null
-  const role = (message as { role?: unknown }).role
-  const content = (message as { content?: unknown }).content
+  const raw = message as {
+    role?: unknown
+    content?: unknown
+    quality?: unknown
+    publicationState?: unknown
+    publicationNote?: unknown
+  }
+  const role = raw.role
+  const content = raw.content
   if ((role !== "user" && role !== "assistant") || typeof content !== "string") return null
-  return { role, content: content.slice(0, MAX_MESSAGE_CHARS) }
+  const normalized: StoredMessage = { role, content: content.slice(0, MAX_MESSAGE_CHARS) }
+  if (raw.quality && typeof raw.quality === "object") {
+    const q = raw.quality as Partial<ChatQualityAssessment>
+    if ((q.level === "approved" || q.level === "review" || q.level === "draft") && typeof q.score === "number" && Array.isArray(q.issues)) {
+      normalized.quality = {
+        level: q.level,
+        score: q.score,
+        issues: q.issues.filter((issue): issue is string => typeof issue === "string").slice(0, 8),
+      }
+    }
+  }
+  if (raw.publicationState === "published" || raw.publicationState === "blocked") {
+    normalized.publicationState = raw.publicationState
+  }
+  if (typeof raw.publicationNote === "string" && raw.publicationNote.trim()) {
+    normalized.publicationNote = raw.publicationNote.slice(0, MAX_MESSAGE_CHARS)
+  }
+  return normalized
 }
 
 function normalizeSession(session: unknown): StoredSession | null {
   if (!session || typeof session !== "object") return null
-  const raw = session as { id?: unknown; title?: unknown; createdAt?: unknown; messages?: unknown }
+  const raw = session as {
+    id?: unknown
+    title?: unknown
+    createdAt?: unknown
+    messages?: unknown
+    quality?: unknown
+    publicationState?: unknown
+    publicationNote?: unknown
+  }
   if (typeof raw.id !== "string" || typeof raw.title !== "string") return null
   const createdAt = typeof raw.createdAt === "number" && Number.isFinite(raw.createdAt) ? raw.createdAt : Date.now()
   const messages = Array.isArray(raw.messages)

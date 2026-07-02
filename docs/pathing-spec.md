@@ -1,9 +1,14 @@
 # Pathing Spec
 
-## Goal
-Provide deterministic waypoint traversal with retry on blocked tile.
+## Scope
+Lua pathing helpers for waypoint traversal and blocked-tile recovery.
 
-## Rules
-- route loops when last waypoint is reached
-- blocked tile retry counter increments up to max retries
-- on retry budget exhausted, caller decides fallback strategy
+## Contract
+- Accept a route as a list of waypoints.
+- Normalize waypoint shapes before use.
+- Return a fallback waypoint if the route is empty or invalid.
+- Stop retrying after the configured retry budget is exhausted.
+
+## Acceptance
+- `scripts/lua/pathing_helper.lua` exposes `normalizeRoute`, `nextWaypoint`, and `retryBlocked`.
+- Blocked routes fail closed instead of looping forever.
