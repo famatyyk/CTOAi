@@ -51,7 +51,7 @@ def _extract_api_route_map(app) -> dict[str, list[str]]:
 
 
 def test_mobile_console_contract_snapshot_required_routes(monkeypatch: MonkeyPatch):
-    with tempfile.TemporaryDirectory() as tmp:
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
         tmp_path = Path(tmp)
         module = _load_app_module(monkeypatch, tmp_path)
         route_map = _extract_api_route_map(module.app)

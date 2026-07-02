@@ -5,6 +5,7 @@ services:
     build:
       context: ../..
       dockerfile: bot/infra/Dockerfile
+    command: sh -c "rm -f /tmp/.X99-lock /tmp/.X11-unix/X99; Xvfb :99 -screen 0 1280x720x24 >/tmp/xvfb.log 2>&1 & sleep 1; exec python -m bot.main"
     env_file: ../../.env
     volumes:
       - bot_data:/app/data
@@ -36,19 +37,5 @@ services:
       - "9090:9090"
     depends_on: [dashboard]
 
-  grafana:
-    image: grafana/grafana:10.4.1
-    ports:
-      - "3000:3000"
-    environment:
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
-      GF_PATHS_PROVISIONING: /etc/grafana/provisioning
-    volumes:
-      - grafana_data:/var/lib/grafana
-      - ./grafana/provisioning:/etc/grafana/provisioning:ro
-      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
-    depends_on: [prometheus]
-
 volumes:
   bot_data:
-  grafana_data:

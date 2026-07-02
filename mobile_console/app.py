@@ -661,16 +661,18 @@ def _extract_bearer(authorization: Optional[str]) -> str:
     return auth[7:].strip()
 
 
-def _create_session(username: str, role: str) -> tuple[str, int]:
+def _create_session(username: str, role: str) -> tuple[str, int, str]:
     token = secrets.token_urlsafe(32)
+    csrf_token = secrets.token_urlsafe(32)
     expires_at = int(time.time()) + SESSION_TTL_SECONDS
     with _SESSIONS_LOCK:
         _SESSIONS[token] = {
             "username": username,
             "role": role,
             "expires_at": expires_at,
+            "csrf_token": csrf_token,
         }
-    return token, expires_at
+    return token, expires_at, csrf_token
 
 
 def _get_session(token: str) -> dict[str, Any] | None:
@@ -709,14 +711,18 @@ def _try_auth_context(
             "session_token": None,
         }
 
-    session_token = x_ctoa_session or ctoa_session or _extract_bearer(authorization)
+    bearer_token = _extract_bearer(authorization)
+    session_token = x_ctoa_session or bearer_token or ctoa_session
     session = _get_session(session_token)
     if session:
+        auth_transport = "cookie" if ctoa_session and not (x_ctoa_session or bearer_token) else "header"
         return {
             "username": session["username"],
             "role": session["role"],
             "auth_mode": "session",
+            "auth_transport": auth_transport,
             "session_token": session_token,
+            "csrf_token": session.get("csrf_token", ""),
         }
 
     return None
@@ -736,10 +742,29 @@ def _token_valid(
     ) is not None
 
 
+def _csrf_required(request: Request, ctx: dict[str, Any]) -> bool:
+    return (
+        request.method.upper() in {"POST", "PUT", "PATCH", "DELETE"}
+        and ctx.get("auth_mode") == "session"
+        and ctx.get("auth_transport") == "cookie"
+    )
+
+
+def _verify_csrf(request: Request, ctx: dict[str, Any], x_csrf_token: Optional[str]) -> None:
+    if not _csrf_required(request, ctx):
+        return
+    expected = str(ctx.get("csrf_token") or "")
+    provided = (x_csrf_token or "").strip()
+    if not expected or not provided or not hmac.compare_digest(provided, expected):
+        raise HTTPException(status_code=403, detail="CSRF token missing or invalid")
+
+
 def require_operator(
+    request: Request,
     x_ctoa_token: Optional[str] = Header(default=None),
     authorization: Optional[str] = Header(default=None),
     x_ctoa_session: Optional[str] = Header(default=None),
+    x_csrf_token: Optional[str] = Header(default=None),
     ctoa_session: Optional[str] = Cookie(default=None),
 ) -> dict[str, Any]:
     ctx = _try_auth_context(
@@ -750,6 +775,7 @@ def require_operator(
     )
     if not ctx:
         raise HTTPException(status_code=401, detail="Unauthorized")
+    _verify_csrf(request, ctx, x_csrf_token)
     return ctx
 
 
@@ -848,7 +874,10 @@ def index() -> FileResponse:
 
 @app.get("/console")
 def legacy_console() -> FileResponse:
-    return FileResponse(str(STATIC_DIR / "index.html"), headers={"Cache-Control": "no-store"})
+    return FileResponse(
+        str(STATIC_DIR / "index.html"),
+        headers={"Cache-Control": "no-store", "X-CTOAi-UI-Status": "legacy; canonical=control-center"},
+    )
 
 
 @app.get("/style.css")
@@ -864,7 +893,10 @@ def site_script() -> FileResponse:
 @app.get("/live-dashboard")
 def live_dashboard() -> FileResponse:
     """Serve the login-based live dashboard (username/password auth)."""
-    return FileResponse(str(LIVE_DASHBOARD_HTML), headers={"Cache-Control": "no-store"})
+    return FileResponse(
+        str(LIVE_DASHBOARD_HTML),
+        headers={"Cache-Control": "no-store", "X-CTOAi-UI-Status": "legacy; canonical=control-center"},
+    )
 
 
 @app.get("/metrics")
@@ -902,14 +934,14 @@ def auth_login(req: AuthLoginRequest, request: Request, response: Response) -> d
         _audit(request, f"auth_login:{username}", 401)
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    token, expires_at = _create_session(username=username, role=matched_role)
+    token, expires_at, csrf_token = _create_session(username=username, role=matched_role)
     response.set_cookie(
         key="ctoa_session",
         value=token,
         max_age=SESSION_TTL_SECONDS,
         httponly=True,
         samesite="lax",
-        secure=False,
+        secure=_is_production_env(),
         path="/",
     )
 
@@ -926,6 +958,7 @@ def auth_login(req: AuthLoginRequest, request: Request, response: Response) -> d
         "token_type": "bearer",
         "expires_in": SESSION_TTL_SECONDS,
         "expires_at": datetime.fromtimestamp(expires_at, tz=timezone.utc).isoformat(),
+        "csrf_token": csrf_token,
         "role": matched_role,
         "username": username,
     }
@@ -938,6 +971,7 @@ def auth_me(ctx: dict[str, Any] = Depends(require_operator)) -> dict:
         "username": ctx["username"],
         "role": ctx["role"],
         "auth_mode": ctx["auth_mode"],
+        "csrf_token": ctx.get("csrf_token", ""),
     }
 
 
@@ -1141,6 +1175,7 @@ def auth_auto_check(
         payload["username"] = ctx["username"]
         payload["role"] = ctx["role"]
         payload["auth_mode"] = ctx["auth_mode"]
+        payload["csrf_token"] = ctx.get("csrf_token", "")
     if valid:
         payload["orchestrator_timer"] = _service_is_active("ctoa-agents-orchestrator.timer")
     else:

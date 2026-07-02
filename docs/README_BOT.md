@@ -72,6 +72,17 @@ python -m bot.main
 
 # Optional live overlay (second terminal)
 python -m bot.overlay.status_overlay
+
+# Macro studio for key sequences and cooldown-based slots
+python -m bot.overlay.macro_overlay
+
+Macro Studio shows a 2x2 quick preset grid for `kamil_client`: full rota, opener, burst, heal.
+
+# Kamil client one-click launcher
+powershell -ExecutionPolicy Bypass -File scripts/ops/launch_kamil_client_macro_studio.ps1
+
+The Kamil launcher auto-selects the `kamil_client` bot profile from the client path unless you pass `-ProfileOverride`.
+That profile defaults spell rotation to `monk`, and its override uses the offensive Kamil order from the real client profile, so `spell_rotation.py` follows it without manual env overrides.
 ```
 
 ### Docker (VPS)
@@ -117,7 +128,7 @@ docker compose --profile bot up -d ctoa-bot ctoa-bot-dashboard
 | `BOT_FOLLOW_KEY` | `f12` | Follow hotkey used by auto-follow |
 | `BOT_AUTO_FOLLOW_INTERVAL_MS` | `1500` | Throttle interval for follow key presses |
 | `BOT_SPELL_ROTATION_FILE` | `config/bot_spell_rotation.json` | Editable spell rotation config |
-| `BOT_PROFESSION` | _(empty)_ | Force profession (`knight/paladin/sorcerer/druid`) |
+| `BOT_PROFESSION` | _(empty)_ | Force profession (`knight/paladin/sorcerer/druid/monk`) |
 | `BOT_WINDOW_TITLE_ACTIVE` | _(empty)_ | Optional active title hint for profile-based profession detection |
 
 ---
@@ -194,7 +205,9 @@ docker compose --profile bot up -d ctoa-bot ctoa-bot-dashboard
       - `rotations.<profession>[]` list order defines rotation order.
       - `min_level` gates spells by level.
       - `cooldown_ms` prevents spam and keeps natural cadence.
-      - profession detection order: `BOT_PROFESSION` override -> profile matching (`BOT_WINDOW_TITLE_ACTIVE`) -> `default_profession`.
+      - profession detection order: `BOT_PROFESSION` override -> `BOT_CLIENT_PROFILE` default profession -> profile matching (`BOT_WINDOW_TITLE_ACTIVE`) -> `default_profession`.
+      - `client_profiles.kamil_client` can override both default profession and rotation entries for the Kamil client.
+      - Kamil's monk rotation is tuned to the profile's offensive spells (`exori gran`, `exori gran power`, `exori hur`, `exori gran hur`).
 
 ---
 

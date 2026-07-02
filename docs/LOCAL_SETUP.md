@@ -78,26 +78,26 @@ If the gate fails, update the repo and re-run bootstrap.
 **Windows (PowerShell):**
 ```powershell
 # These persist across sessions
-$env:CTOA_VPS_HOST = "46.225.110.52"
-$env:CTOA_VPS_USER = "root"
+$env:CTOA_VPS_HOST = "your-vps-host"
+$env:CTOA_VPS_USER = "your-vps-user"
 $env:CTOA_VPS_KEY_PATH = "$env:USERPROFILE\.ssh\ctoa_vps_ed25519"
 
 # Optional (only if testing agent execution):
 $env:CTOA_GITHUB_PAT = "your_token_here"
 
 # Persist to user profile:
-[Environment]::SetEnvironmentVariable("CTOA_VPS_HOST", "46.225.110.52", "User")
+[Environment]::SetEnvironmentVariable("CTOA_VPS_HOST", "your-vps-host", "User")
 # ... repeat for other vars
 ```
 
 **macOS/Linux (Bash):**
 ```bash
-export CTOA_VPS_HOST="46.225.110.52"
-export CTOA_VPS_USER="root"
+export CTOA_VPS_HOST="your-vps-host"
+export CTOA_VPS_USER="your-vps-user"
 export CTOA_VPS_KEY_PATH="$HOME/.ssh/ctoa_vps_ed25519"
 
 # Persist to ~/.bashrc or ~/.zshrc:
-echo 'export CTOA_VPS_HOST="46.225.110.52"' >> ~/.bashrc
+echo 'export CTOA_VPS_HOST="your-vps-host"' >> ~/.bashrc
 ```
 
 ### 5. Verify Setup
@@ -271,8 +271,10 @@ pre-commit install
 ### Full stack startup
 
 ```bash
-docker compose up -d ctoa-db ctoa-redis ctoa ctoa-worker ctoa-prometheus ctoa-loki ctoa-promtail ctoa-grafana
+docker compose up -d ctoa-db ctoa-redis ctoa ctoa-worker ctoa-prometheus ctoa-loki ctoa-promtail
 ```
+
+Grafana is no longer part of the default local stack. If you need dashboards later, run them as a separate optional service instead of blocking Control Center on port 3000.
 
 ### Database migrations
 
