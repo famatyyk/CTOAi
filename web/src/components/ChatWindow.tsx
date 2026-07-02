@@ -111,7 +111,7 @@ export default function ChatWindow({ initialMessages, onMessagesChange, strictRe
                       {m.publicationState === "blocked" ? (
                         <div className="rounded-2xl border border-pink-300/20 bg-pink-300/10 p-4">
                           <p className="text-xs font-bold uppercase tracking-[0.2em] text-pink-100">Publication blocked</p>
-                          <p className="mt-2 text-sm text-pink-100/90">{m.content}</p>
+                          <p className="mt-2 whitespace-pre-wrap text-sm text-pink-100/90">{m.content}</p>
                           {m.publicationNote ? <p className="mt-2 text-xs text-pink-100/70">{m.publicationNote}</p> : null}
                         </div>
                       ) : (

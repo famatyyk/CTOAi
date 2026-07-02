@@ -78,26 +78,26 @@ If the gate fails, update the repo and re-run bootstrap.
 **Windows (PowerShell):**
 ```powershell
 # These persist across sessions
-$env:CTOA_VPS_HOST = "116.202.96.250"
-$env:CTOA_VPS_USER = "ctoa"
+$env:CTOA_VPS_HOST = "your-vps-host"
+$env:CTOA_VPS_USER = "your-vps-user"
 $env:CTOA_VPS_KEY_PATH = "$env:USERPROFILE\.ssh\ctoa_vps_ed25519"
 
 # Optional (only if testing agent execution):
 $env:CTOA_GITHUB_PAT = "your_token_here"
 
 # Persist to user profile:
-[Environment]::SetEnvironmentVariable("CTOA_VPS_HOST", "116.202.96.250", "User")
+[Environment]::SetEnvironmentVariable("CTOA_VPS_HOST", "your-vps-host", "User")
 # ... repeat for other vars
 ```
 
 **macOS/Linux (Bash):**
 ```bash
-export CTOA_VPS_HOST="116.202.96.250"
-export CTOA_VPS_USER="ctoa"
+export CTOA_VPS_HOST="your-vps-host"
+export CTOA_VPS_USER="your-vps-user"
 export CTOA_VPS_KEY_PATH="$HOME/.ssh/ctoa_vps_ed25519"
 
 # Persist to ~/.bashrc or ~/.zshrc:
-echo 'export CTOA_VPS_HOST="116.202.96.250"' >> ~/.bashrc
+echo 'export CTOA_VPS_HOST="your-vps-host"' >> ~/.bashrc
 ```
 
 ### 5. Verify Setup
