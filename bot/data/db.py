@@ -48,6 +48,17 @@ CREATE TABLE IF NOT EXISTS exp_events (
     exp_gained INTEGER DEFAULT 0,
     monster_name TEXT DEFAULT ''
 );
+
+CREATE TABLE IF NOT EXISTS incident_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id INTEGER REFERENCES sessions(id),
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+    incident_type TEXT NOT NULL,
+    severity TEXT NOT NULL DEFAULT 'info',
+    summary TEXT NOT NULL,
+    details TEXT DEFAULT '',
+    recovered INTEGER DEFAULT 0
+);
 """
 
 
@@ -81,16 +92,37 @@ def get_session_stats(session_id: int) -> dict:
                FROM sessions WHERE id = ?""",
             (session_id,)
         ).fetchone()
-        if not row or row["hours"] is None or row["hours"] <= 0:
-            return {"gold_hr": 0, "exp_hr": 0, "kills": 0, "session_hours": 0}
-        hours = row["hours"]
         kills = conn.execute(
             "SELECT COUNT(*) FROM exp_events WHERE session_id = ?", (session_id,)
         ).fetchone()[0]
+        incidents = conn.execute(
+            "SELECT COUNT(*) FROM incident_events WHERE session_id = ?", (session_id,)
+        ).fetchone()[0]
+        crashes = conn.execute(
+            "SELECT COUNT(*) FROM incident_events WHERE session_id = ? AND incident_type = 'crash'",
+            (session_id,),
+        ).fetchone()[0]
+        recoveries = conn.execute(
+            "SELECT COUNT(*) FROM incident_events WHERE session_id = ? AND incident_type = 'recovery'",
+            (session_id,),
+        ).fetchone()[0]
+        if not row or row["hours"] is None or row["hours"] <= 0:
+            return {
+                "gold_hr": 0,
+                "exp_hr": 0,
+                "kills": kills,
+                "session_hours": 0,
+                "incidents": incidents,
+                "crashes": crashes,
+                "recoveries": recoveries,
+            }
+        hours = row["hours"]
         return {
             "gold_hr": int(row["gold_gained"] / hours),
             "exp_hr": int(row["xp_gained"] / hours),
             "kills": kills,
             "session_hours": round(hours, 2),
+            "incidents": incidents,
+            "crashes": crashes,
+            "recoveries": recoveries,
         }
-
