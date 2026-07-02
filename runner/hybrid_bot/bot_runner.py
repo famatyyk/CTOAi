@@ -20,7 +20,7 @@ import time
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Callable, Any
+from typing import Optional, Callable
 
 from .clock import utc_now
 from .vision_layer import VisionLayer, extract_healthbar_region, extract_minimap_region
@@ -35,6 +35,7 @@ log = logging.getLogger("hybrid_bot.runner")
 @dataclass
 class BotConfig:
     """Configuration for hybrid bot."""
+
     player_level: int = 50
     use_llm: bool = False
     llm_model: str = "gpt-3.5-turbo"
@@ -47,55 +48,55 @@ class BotConfig:
 
 class ActionExecutor:
     """Converts Action decisions into game commands."""
-    
+
     def __init__(self, send_command: Callable[[str], None]):
         """
         Initialize executor.
-        
+
         Args:
             send_command: Callback to send commands to game (e.g., via keyboard)
         """
         self.send_command = send_command
-    
+
     def execute(self, action: Action, parameters: dict | None = None) -> bool:
         """
         Execute an action in the game.
-        
+
         Returns True if successful, False otherwise.
         """
         try:
             if action == Action.WALK:
                 # Walking is handled by pathfinding
                 return True
-            
+
             elif action == Action.HEAL:
                 spell = parameters.get("spell", "exura") if parameters else "exura"
                 self.send_command(f"say {spell}")
                 return True
-            
+
             elif action == Action.ATTACK:
                 self.send_command("shift+rightclick")  # Standard Tibia attack
                 return True
-            
+
             elif action == Action.CAST_SPELL:
                 spell = parameters.get("spell", "") if parameters else ""
                 if spell:
                     self.send_command(f"say {spell}")
                 return True
-            
+
             elif action == Action.FLEE:
                 # Random direction movement
                 self.send_command("numpad 4")  # West
                 return True
-            
+
             elif action == Action.WAIT:
                 # No action
                 return True
-            
+
             else:
                 log.warning(f"Unknown action: {action}")
                 return False
-        
+
         except Exception as e:
             log.error(f"Failed to execute {action.value}: {e}")
             return False
@@ -104,7 +105,7 @@ class ActionExecutor:
 class HybridBotRunner:
     """
     Main bot orchestration engine.
-    
+
     Pseudocode:
     ```
     while running:
@@ -118,16 +119,16 @@ class HybridBotRunner:
         8. Sleep until next tick
     ```
     """
-    
+
     def __init__(
         self,
         config: BotConfig,
         screenshot_provider,  # ScreenshotProvider instance or callable
-        command_executor,     # CommandExecutor instance or callable
+        command_executor,  # CommandExecutor instance or callable
     ):
         """
         Initialize bot runner.
-        
+
         Args:
             config: Bot configuration
             screenshot_provider: ScreenshotProvider instance (with .capture() method) or callable returning np.ndarray
@@ -136,60 +137,61 @@ class HybridBotRunner:
         self.config = config
         self.screenshot_provider = screenshot_provider
         self.command_executor = command_executor
-        
+
         # Create command adapter based on type
-        if hasattr(command_executor, 'execute') and callable(command_executor.execute):
+        if hasattr(command_executor, "execute") and callable(command_executor.execute):
             # It's a CommandExecutor instance
-            command_callback = lambda cmd: command_executor.execute(cmd)
+            def command_callback(cmd):
+                return command_executor.execute(cmd)
+
         else:
             # It's already a callable
             command_callback = command_executor
-        
+
         # Component initialization
         self.vision = VisionLayer(templates_dir=config.screenshot_dir)
         self.pathfinder = Pathfinder(player_level=config.player_level)
         self.prompt_logic = PromptLogic(
-            use_llm=config.use_llm,
-            model_name=config.llm_model
+            use_llm=config.use_llm, model_name=config.llm_model
         )
         self.state = StateManager(initial_level=config.player_level)
         self.metrics = MetricsCollector(output_dir=config.metrics_dir)
         self.action_executor = ActionExecutor(command_callback)
-        
+
         # Waypoint tracking
         self.waypoint_buffer: Optional[WaypointBuffer] = None
-        
+
         # Execution state
         self.running = False
         self.pause_until: Optional[datetime] = None
         self.last_action_time = utc_now()
         self.tick_count = 0
-    
+
     # ─── Main Loop ────────────────────────────────────────────────────────
-    
+
     async def run(self) -> None:
         """Start main bot loop."""
         self.running = True
         log.info("🤖 Hybrid Bot Runner started")
-        
+
         try:
             while self.running:
                 await self._tick()
                 await asyncio.sleep(self.config.update_interval_ms / 1000.0)
-        
+
         except KeyboardInterrupt:
             log.info("Bot interrupted by user")
         except Exception as e:
             log.error(f"Fatal error in bot loop: {e}", exc_info=True)
         finally:
             self.stop()
-    
+
     async def _tick(self) -> None:
         """Single bot tick (100ms default)."""
         self.tick_count += 1
         tick_started = time.perf_counter()
         stage = "capture"
-        
+
         try:
             # 1. Capture frame
             capture_started = time.perf_counter()
@@ -202,7 +204,11 @@ class HybridBotRunner:
                     int((time.perf_counter() - tick_started) * 1000),
                     ok=False,
                     error="no screenshot available",
-                    details={"tick": self.tick_count, "stage": stage, "capture_ms": capture_ms},
+                    details={
+                        "tick": self.tick_count,
+                        "stage": stage,
+                        "capture_ms": capture_ms,
+                    },
                 )
                 return
 
@@ -245,7 +251,7 @@ class HybridBotRunner:
                     "success": success,
                 },
             )
-            
+
         except Exception as e:
             total_ms = int((time.perf_counter() - tick_started) * 1000)
             self.metrics.record_event(
@@ -259,7 +265,9 @@ class HybridBotRunner:
 
     def _capture_frame(self):
         """Capture one frame from configured screenshot source."""
-        if hasattr(self.screenshot_provider, 'capture') and callable(self.screenshot_provider.capture):
+        if hasattr(self.screenshot_provider, "capture") and callable(
+            self.screenshot_provider.capture
+        ):
             # It's a ScreenshotProvider instance
             return self.screenshot_provider.capture()
         # It's a callable
@@ -280,10 +288,12 @@ class HybridBotRunner:
         """Apply perception outputs to state manager."""
         if position:
             self.state.update_player_state(
-                position.x, position.y, position.z,
+                position.x,
+                position.y,
+                position.z,
                 hp_percent=health.hp_percent if health else 100.0,
                 mp_percent=0,  # TODO: detect mana
-                is_poisoned=health.is_poisoned if health else False
+                is_poisoned=health.is_poisoned if health else False,
             )
 
         if creatures:
@@ -294,7 +304,7 @@ class HybridBotRunner:
                 x=closest.x,
                 y=closest.y,
                 distance=closest.distance,
-                is_engaged=closest.is_engaged
+                is_engaged=closest.is_engaged,
             )
         else:
             self.state.clear_target()
@@ -303,43 +313,42 @@ class HybridBotRunner:
         """Build game snapshot, choose action and execute it."""
         game_state = self.state.snapshot()
         decision = self.prompt_logic.make_decision(game_state)
-        success = self.action_executor.execute(
-            decision.action,
-            decision.parameters
-        )
+        success = self.action_executor.execute(decision.action, decision.parameters)
         return decision, success
 
     def _emit_tick_telemetry(self, decision) -> None:
         """Emit periodic decision telemetry for diagnostics."""
         if self.tick_count % 100 == 0:  # Every 10s at 10Hz
-            log.debug(f"Tick {self.tick_count}: {decision.action.value} (priority {decision.priority})")
+            log.debug(
+                f"Tick {self.tick_count}: {decision.action.value} (priority {decision.priority})"
+            )
             log.debug(self.state.print_summary())
-    
+
     def stop(self) -> None:
         """Stop bot gracefully."""
         self.running = False
         log.info("Stopping Hybrid Bot")
         self._print_final_report()
-    
+
     # ─── Waypoint Management ──────────────────────────────────────────────
-    
+
     def set_waypoints(self, waypoints: list[tuple[int, int, int]]) -> None:
         """Set circular hunting path."""
         coords = [Coordinate(x, y, z) for x, y, z in waypoints]
         self.waypoint_buffer = WaypointBuffer(coords)
         log.info(f"Set {len(coords)} waypoints for cavebot")
-    
+
     def start_hunting_location(self, name: str) -> None:
         """Start hunting session at named location."""
         self.state.start_location(name)
         log.info(f"🏹 Starting hunt at: {name}")
-    
+
     # ─── Reporting ────────────────────────────────────────────────────────
-    
+
     def _print_final_report(self) -> None:
         """Print final session report."""
         print("\n" + self.metrics.print_session_report())
-        
+
         # Location breakdown
         summary = self.metrics.get_session_summary()
         if summary.total_duration_hours > 0:
@@ -350,7 +359,7 @@ class HybridBotRunner:
                 print(f"   Total XP: {stats['total_xp']:,}")
                 print(f"   XP/hour: {stats['average_xp_per_hour']:.0f}")
                 print(f"   Profit/hour: {stats['average_balance_per_hour']:.0f}g")
-    
+
     def get_status(self) -> dict:
         """Get current bot status."""
         summary = self.metrics.get_session_summary()
@@ -358,7 +367,11 @@ class HybridBotRunner:
             "running": self.running,
             "ticks": self.tick_count,
             "player": {
-                "position": (self.state.player.x, self.state.player.y, self.state.player.z),
+                "position": (
+                    self.state.player.x,
+                    self.state.player.y,
+                    self.state.player.z,
+                ),
                 "health": f"{self.state.player.hp_percent:.0f}%",
                 "level": self.state.player.level,
             },
@@ -373,5 +386,5 @@ class HybridBotRunner:
                 "balance_per_hour": f"{summary.average_balance_per_hour:.0f}g",
                 "session_xp": f"{summary.total_xp:,}",
                 "session_duration": f"{summary.total_duration_hours:.1f}h",
-            }
+            },
         }

@@ -27,6 +27,7 @@ _sys.path.insert(0, str(ROOT))
 def _default_ci_artifacts_dir(root: Path) -> Path:
     return root / "releases" / "evidence"
 
+
 _DEFAULT_BACKLOG = ROOT / "workflows" / "backlog-sprint-001.yaml"
 _BACKLOG_RAW = os.environ.get("CTOA_BACKLOG_FILE", str(_DEFAULT_BACKLOG))
 BACKLOG_FILE = Path(_BACKLOG_RAW)
@@ -34,8 +35,12 @@ if not BACKLOG_FILE.is_absolute():
     BACKLOG_FILE = ROOT / BACKLOG_FILE
 STATE_FILE = ROOT / "runtime" / "task-state.yaml"
 
-_DEFAULT_EXECUTION_SUMMARY_ARTIFACT = _default_ci_artifacts_dir(ROOT) / "runner-execution-summary.json"
-_EXEC_SUMMARY_RAW = os.environ.get("CTOA_EXECUTION_SUMMARY_ARTIFACT", str(_DEFAULT_EXECUTION_SUMMARY_ARTIFACT))
+_DEFAULT_EXECUTION_SUMMARY_ARTIFACT = (
+    _default_ci_artifacts_dir(ROOT) / "runner-execution-summary.json"
+)
+_EXEC_SUMMARY_RAW = os.environ.get(
+    "CTOA_EXECUTION_SUMMARY_ARTIFACT", str(_DEFAULT_EXECUTION_SUMMARY_ARTIFACT)
+)
 EXECUTION_SUMMARY_ARTIFACT = Path(_EXEC_SUMMARY_RAW)
 if not EXECUTION_SUMMARY_ARTIFACT.is_absolute():
     EXECUTION_SUMMARY_ARTIFACT = ROOT / EXECUTION_SUMMARY_ARTIFACT
@@ -89,6 +94,7 @@ def save_json(path: Path, payload: Dict[str, Any]) -> None:
         f.flush()
         os.fsync(f.fileno())
     tmp.replace(path)
+
 
 def load_backlog() -> Dict[str, Any]:
     if not BACKLOG_FILE.exists():
@@ -180,12 +186,16 @@ def priority_rank(priority: str) -> int:
     return order.get(priority, 9)
 
 
-def transition_task(task: Dict[str, Any], new_status: str, reason: str) -> Dict[str, Any]:
+def transition_task(
+    task: Dict[str, Any], new_status: str, reason: str
+) -> Dict[str, Any]:
     old_status = str(task.get("status", "UNKNOWN"))
     task["status"] = new_status
     task["ticks_in_status"] = 0
     task["updated_at"] = now_iso()
-    task.setdefault("notes", []).append({"at": now_iso(), "reason": reason, "status": new_status})
+    task.setdefault("notes", []).append(
+        {"at": now_iso(), "reason": reason, "status": new_status}
+    )
     return {
         "at": now_iso(),
         "event": "transition",
@@ -196,7 +206,9 @@ def transition_task(task: Dict[str, Any], new_status: str, reason: str) -> Dict[
     }
 
 
-def tick(backlog: Dict[str, Any], state: Dict[str, Any], invoke_agents: bool = False) -> Dict[str, Any]:
+def tick(
+    backlog: Dict[str, Any], state: Dict[str, Any], invoke_agents: bool = False
+) -> Dict[str, Any]:
     max_parallel = int(backlog.get("rules", {}).get("max_parallel_tasks", 3))
     tasks = state.get("tasks", [])
     transitions: List[Dict[str, Any]] = []
@@ -207,7 +219,11 @@ def tick(backlog: Dict[str, Any], state: Dict[str, Any], invoke_agents: bool = F
             task["ticks_in_status"] = int(task.get("ticks_in_status", 0)) + 1
             limit, target = AUTO_TRANSITIONS[status]
             if task["ticks_in_status"] >= limit:
-                transitions.append(transition_task(task, target, f"auto transition {status} -> {target}"))
+                transitions.append(
+                    transition_task(
+                        task, target, f"auto transition {status} -> {target}"
+                    )
+                )
 
     active_states = {"IN_PROGRESS", "IN_QA", "IN_CI_GATE", "WAITING_APPROVAL"}
     active_count = count_active_tasks(tasks, active_states)
@@ -217,7 +233,9 @@ def tick(backlog: Dict[str, Any], state: Dict[str, Any], invoke_agents: bool = F
     for task in candidates:
         if active_count >= max_parallel:
             break
-        transitions.append(transition_task(task, "IN_PROGRESS", "scheduled by hourly planner"))
+        transitions.append(
+            transition_task(task, "IN_PROGRESS", "scheduled by hourly planner")
+        )
 
         # If agents are enabled, invoke agent immediately when task starts
         if invoke_agents:
@@ -228,7 +246,9 @@ def tick(backlog: Dict[str, Any], state: Dict[str, Any], invoke_agents: bool = F
 
     state["last_tick_at"] = now_iso()
     state.setdefault("history", []).extend(transitions)
-    state.setdefault("history", []).append({"at": now_iso(), "event": "tick", "active": active_count})
+    state.setdefault("history", []).append(
+        {"at": now_iso(), "event": "tick", "active": active_count}
+    )
     return state
 
 
@@ -237,8 +257,12 @@ def approve_task(state: Dict[str, Any], task_id: str) -> Dict[str, Any]:
         if str(task.get("id")) == task_id:
             if task.get("status") != "WAITING_APPROVAL":
                 raise ValueError(f"Task {task_id} is not in WAITING_APPROVAL")
-            state.setdefault("history", []).append(transition_task(task, "RELEASED", "manual approval"))
-            state.setdefault("history", []).append({"at": now_iso(), "event": "approval", "task_id": task_id})
+            state.setdefault("history", []).append(
+                transition_task(task, "RELEASED", "manual approval")
+            )
+            state.setdefault("history", []).append(
+                {"at": now_iso(), "event": "approval", "task_id": task_id}
+            )
             return state
     raise ValueError(f"Task not found: {task_id}")
 
@@ -259,7 +283,7 @@ def execute_task_agent(task: Dict[str, Any], backlog: Dict[str, Any]) -> Dict[st
             "event": "agent_exec",
             "task_id": task_id,
             "status": result.get("status", "initiated"),
-            "agent_result": result
+            "agent_result": result,
         }
     except Exception as e:
         print(f"[runner] Agent execution failed for {task_id}: {e}")
@@ -267,7 +291,7 @@ def execute_task_agent(task: Dict[str, Any], backlog: Dict[str, Any]) -> Dict[st
             "at": now_iso(),
             "event": "agent_exec_error",
             "task_id": task_id,
-            "error": str(e)
+            "error": str(e),
         }
 
 
@@ -290,16 +314,23 @@ def estimate_next_approval_eta_hours(tasks: List[Dict[str, Any]]) -> Optional[in
     return None
 
 
-def build_execution_summary(backlog: Dict[str, Any], state: Dict[str, Any]) -> Dict[str, Any]:
+def build_execution_summary(
+    backlog: Dict[str, Any], state: Dict[str, Any]
+) -> Dict[str, Any]:
     """Build normalized execution status summary usable by operators and automation."""
     tasks = state.get("tasks", []) if isinstance(state.get("tasks"), list) else []
     counts = Counter([str(t.get("status", "UNKNOWN")) for t in tasks])
     total_tasks = len(tasks)
     released_count = counts.get("RELEASED", 0)
     blocked_count = counts.get("BLOCKED", 0)
-    active_count = sum(counts.get(status, 0) for status in ("IN_PROGRESS", "IN_QA", "IN_CI_GATE", "WAITING_APPROVAL"))
+    active_count = sum(
+        counts.get(status, 0)
+        for status in ("IN_PROGRESS", "IN_QA", "IN_CI_GATE", "WAITING_APPROVAL")
+    )
     waiting_approval_count = counts.get("WAITING_APPROVAL", 0)
-    progress_pct = round((released_count / total_tasks * 100.0), 1) if total_tasks > 0 else 0.0
+    progress_pct = (
+        round((released_count / total_tasks * 100.0), 1) if total_tasks > 0 else 0.0
+    )
 
     status_counts = {status: int(counts.get(status, 0)) for status in STATUS_FLOW}
     unknown_count = max(0, total_tasks - sum(status_counts.values()))
@@ -347,7 +378,9 @@ def build_report(backlog: Dict[str, Any], state: Dict[str, Any]) -> str:
     lines.append(f"- Generated: {now_iso()}")
     lines.append(f"- Backlog: {backlog.get('backlog_id', 'unknown')}")
     lines.append(f"- Last tick: {state.get('last_tick_at')}")
-    lines.append(f"- Sprint progress: {progress_pct:.1f}% ({released_count}/{total_tasks})")
+    lines.append(
+        f"- Sprint progress: {progress_pct:.1f}% ({released_count}/{total_tasks})"
+    )
     lines.append("")
 
     lines.append("## Sprint Progress")
@@ -409,7 +442,12 @@ def build_report(backlog: Dict[str, Any], state: Dict[str, Any]) -> str:
     lines.append("")
     lines.append("## Top Blockers")
     blocked = [t for t in tasks if t.get("status") == "BLOCKED"]
-    blocked.sort(key=lambda t: (priority_rank(str(t.get("priority", "P1"))), str(t.get("id", ""))))
+    blocked.sort(
+        key=lambda t: (
+            priority_rank(str(t.get("priority", "P1"))),
+            str(t.get("id", "")),
+        )
+    )
     if not blocked:
         lines.append("- none")
     else:
@@ -419,7 +457,9 @@ def build_report(backlog: Dict[str, Any], state: Dict[str, Any]) -> str:
             if isinstance(notes, list) and notes:
                 last_note = notes[-1]
                 reason = str(last_note.get("reason", reason))
-            lines.append(f"- {t.get('id')}: {t.get('title')} | {t.get('priority')} | reason={reason}")
+            lines.append(
+                f"- {t.get('id')}: {t.get('title')} | {t.get('priority')} | reason={reason}"
+            )
 
     lines.append("")
     lines.append("## ETA to Next Approval")
@@ -434,7 +474,9 @@ def build_report(backlog: Dict[str, Any], state: Dict[str, Any]) -> str:
     return "\n".join(lines) + "\n"
 
 
-def github_api(method: str, url: str, token: str, payload: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+def github_api(
+    method: str, url: str, token: str, payload: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
     data = None
     headers = {
         "Accept": "application/vnd.github+json",
@@ -495,13 +537,19 @@ def main() -> None:
     sub = parser.add_subparsers(dest="command", required=True)
 
     tick_p = sub.add_parser("tick", help="Advance scheduler state")
-    tick_p.add_argument("--agents", action="store_true", help="Invoke AI agents for new tasks")
+    tick_p.add_argument(
+        "--agents", action="store_true", help="Invoke AI agents for new tasks"
+    )
 
-    approve_p = sub.add_parser("approve", help="Manually approve task in WAITING_APPROVAL")
+    approve_p = sub.add_parser(
+        "approve", help="Manually approve task in WAITING_APPROVAL"
+    )
     approve_p.add_argument("--task", required=True, help="Task ID, e.g. CTOA-001")
 
     report_p = sub.add_parser("report", help="Generate live report")
-    report_p.add_argument("--publish", action="store_true", help="Publish report to GitHub issue")
+    report_p.add_argument(
+        "--publish", action="store_true", help="Publish report to GitHub issue"
+    )
 
     args = parser.parse_args()
 
