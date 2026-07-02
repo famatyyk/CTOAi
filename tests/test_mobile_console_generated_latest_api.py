@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 def _load_app_module(monkeypatch: MonkeyPatch, tmp_path: Path):
     monkeypatch.setenv("CTOA_MOBILE_TOKEN", "test-mobile-token")
     monkeypatch.setenv("CTOA_OWNER_USER", "CTO")
-    monkeypatch.setenv("CTOA_OWNER_PASSWORD", "asdzxc12")
+    monkeypatch.setenv("CTOA_OWNER_PASSWORD", "ownerpass123")
     monkeypatch.setenv("CTOA_OPERATOR_USER", "ctoa-bot")
     monkeypatch.setenv("CTOA_OPERATOR_PASSWORD", "jakpod22")
     monkeypatch.setenv("CTOA_ADMIN_SETTINGS_FILE", str(tmp_path / "admin-settings.json"))
@@ -168,3 +168,4 @@ def test_commands_dictionary_handles_missing_or_invalid_file(monkeypatch: Monkey
         assert invalid_payload["source"] == "shared-cli-web"
         assert invalid_payload["count"] == 0
         assert invalid_payload["commands"] == []
+

@@ -150,7 +150,7 @@ export default function LoginPanel({ onLogin }: LoginPanelProps) {
             </button>
 
             <p className="text-xs text-zinc-500">
-              Seed accounts are role-scoped. Public register uses member only.
+              First setup: create the owner with `/api/auth/bootstrap`, then use login. Seed accounts are role-scoped.
             </p>
           </div>
         </section>

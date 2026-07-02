@@ -16,7 +16,7 @@ def _load_app_module(
 ):
     monkeypatch.setenv("CTOA_MOBILE_TOKEN", "test-mobile-token")
     monkeypatch.setenv("CTOA_OWNER_USER", "CTO")
-    monkeypatch.setenv("CTOA_OWNER_PASSWORD", "asdzxc12")
+    monkeypatch.setenv("CTOA_OWNER_PASSWORD", "ownerpass123")
     monkeypatch.setenv("CTOA_OPERATOR_USER", "ctoa-bot")
     monkeypatch.setenv("CTOA_OPERATOR_PASSWORD", "jakpod22")
     monkeypatch.setenv("CTOA_ADMIN_SETTINGS_FILE", str(tmp_path / "admin-settings.json"))
@@ -75,7 +75,6 @@ def test_mobile_console_contract_snapshot_required_routes(monkeypatch: MonkeyPat
         assert not missing_paths, "Missing API paths in app contract: " + ", ".join(missing_paths)
         assert not method_mismatch, "API method mismatch: " + "; ".join(method_mismatch)
 
-
 def test_mobile_console_critical_endpoints_keep_security_regressions(monkeypatch: MonkeyPatch):
     with tempfile.TemporaryDirectory() as tmp:
         core_module = _load_app_module(
@@ -96,7 +95,7 @@ def test_mobile_console_critical_endpoints_keep_security_regressions(monkeypatch
         module = _load_app_module(monkeypatch, Path(tmp), package_tier="pro", mobile_console_enabled=True)
         client = TestClient(module.app)
 
-        login = client.post("/api/auth/login", json={"username": "CTO", "password": "asdzxc12"})
+        login = client.post("/api/auth/login", json={"username": "CTO", "password": "ownerpass123"})
         assert login.status_code == 200
         token = login.json()["token"]
 

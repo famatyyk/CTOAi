@@ -79,6 +79,16 @@ PRODUCT_USER_CONFIG_FILE = Path(os.environ.get("CTOA_PRODUCT_USER_CONFIG", str(P
 COMMAND_DICTIONARY_FILE = ROOT / "schemas" / "ctoa-command-dictionary.json"
 
 
+def _is_production_env() -> bool:
+    values = (
+        os.getenv("CTOA_ENV", "").strip().lower(),
+        os.getenv("ENV", "").strip().lower(),
+    )
+    return any(value in {"prod", "production"} for value in values)
+
+
+def _is_windows_host() -> bool:
+    return os.name == "nt"
 def _command_exists(name: str) -> bool:
     return shutil.which(name) is not None
 
@@ -580,7 +590,7 @@ def _full_access() -> bool:
 
 
 def _self_register_enabled() -> bool:
-    return os.getenv("CTOA_SELF_REGISTER_ENABLED", "true").strip().lower() in {
+    return os.getenv("CTOA_SELF_REGISTER_ENABLED", "false").strip().lower() in {
         "1",
         "true",
         "yes",
@@ -590,6 +600,15 @@ def _self_register_enabled() -> bool:
 
 def _self_register_code() -> str:
     return os.getenv("CTOA_SELF_REGISTER_CODE", "").strip()
+
+
+def _session_cookie_secure() -> bool:
+    override = os.getenv("CTOA_SESSION_COOKIE_SECURE", "").strip().lower()
+    if override in {"1", "true", "yes", "on"}:
+        return True
+    if override in {"0", "false", "no", "off"}:
+        return False
+    return _is_production_env()
 
 
 def _allowed_commands() -> List[str]:
@@ -989,8 +1008,10 @@ def auth_register(req: SelfRegisterPayload, request: Request) -> dict:
         raise HTTPException(status_code=403, detail="Self registration is disabled")
 
     expected_code = _self_register_code()
+    if not expected_code:
+        raise HTTPException(status_code=503, detail="Self registration code is not configured")
     provided_code = req.registration_code.strip()
-    if expected_code and not hmac.compare_digest(provided_code, expected_code):
+    if not hmac.compare_digest(provided_code, expected_code):
         _audit(request, f"self_register_code_invalid:{_normalize_user(req.username)}", 403)
         raise HTTPException(status_code=403, detail="Invalid registration code")
 
@@ -1005,7 +1026,7 @@ def auth_register(req: SelfRegisterPayload, request: Request) -> dict:
         result = _db_create_account(
             username=username,
             password=req.password,
-            role="operator",
+            role="member",
             created_by="self-register",
         )
     except ValueError as exc:

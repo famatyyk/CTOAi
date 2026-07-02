@@ -5,7 +5,6 @@ services:
     build:
       context: ../..
       dockerfile: bot/infra/Dockerfile
-    command: sh -c "rm -f /tmp/.X99-lock /tmp/.X11-unix/X99; Xvfb :99 -screen 0 1280x720x24 >/tmp/xvfb.log 2>&1 & sleep 1; exec python -m bot.main"
     env_file: ../../.env
     volumes:
       - bot_data:/app/data
@@ -25,7 +24,7 @@ services:
     volumes:
       - bot_data:/app/data
     ports:
-      - "8000:8000"
+      - "${CTOA_BIND_HOST:-127.0.0.1}:8000:8000"
     depends_on: [bot]
     restart: unless-stopped
 
@@ -34,7 +33,7 @@ services:
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
     ports:
-      - "9090:9090"
+      - "${CTOA_MONITOR_BIND_HOST:-127.0.0.1}:9090:9090"
     depends_on: [dashboard]
 
 volumes:

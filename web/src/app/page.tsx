@@ -77,7 +77,7 @@ export default function Home() {
     const action = payload.mode
     const body =
       payload.mode === "register"
-        ? { username: payload.username, password: payload.password, role: payload.role }
+        ? { username: payload.username, password: payload.password, role: "member" }
         : { username: payload.username, password: payload.password }
 
     const r = await fetch("/api/auth", {

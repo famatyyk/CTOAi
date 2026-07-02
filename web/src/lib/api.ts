@@ -1,6 +1,5 @@
-import { getPublicApiUrl } from "@/lib/config"
-
-const API_URL = getPublicApiUrl()
+// Default to local API; production/staging can override via NEXT_PUBLIC_API_URL.
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8011"
 
 export async function streamChat(messages: { role: string; content: string }[]) {
   const res = await fetch(`${API_URL}/api/chat`, {

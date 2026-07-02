@@ -11,6 +11,7 @@ from fastapi.testclient import TestClient
 def test_api_rejects_default_jwt_secret_in_production() -> None:
     env = os.environ.copy()
     env["CTOA_ENV"] = "production"
+    env["CTOA_CORS_ORIGINS"] = "https://example.com"
     env.pop("CTOA_JWT_SECRET", None)
 
     proc = subprocess.run(
@@ -23,12 +24,13 @@ def test_api_rejects_default_jwt_secret_in_production() -> None:
     )
 
     assert proc.returncode != 0
-    assert "CTOA_JWT_SECRET must be set" in (proc.stderr + proc.stdout)
+    assert "missing or weak CTOA_JWT_SECRET" in (proc.stderr + proc.stdout)
 
 
 def test_api_allows_non_default_jwt_secret_in_production() -> None:
     env = os.environ.copy()
     env["CTOA_ENV"] = "production"
+    env["CTOA_CORS_ORIGINS"] = "https://example.com"
     env["CTOA_JWT_SECRET"] = "prod-secret-with-enough-entropy-for-test"
 
     proc = subprocess.run(

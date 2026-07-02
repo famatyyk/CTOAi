@@ -17,7 +17,7 @@ from fastapi.testclient import TestClient
 def _load_app_module(monkeypatch: MonkeyPatch, tmp_path: Path):
     monkeypatch.setenv("CTOA_MOBILE_TOKEN", "test-mobile-token")
     monkeypatch.setenv("CTOA_OWNER_USER", "CTO")
-    monkeypatch.setenv("CTOA_OWNER_PASSWORD", "asdzxc12")
+    monkeypatch.setenv("CTOA_OWNER_PASSWORD", "ownerpass123")
     monkeypatch.setenv("CTOA_OPERATOR_USER", "ctoa-bot")
     monkeypatch.setenv("CTOA_OPERATOR_PASSWORD", "jakpod22")
     monkeypatch.setenv("CTOA_ADMIN_SETTINGS_FILE", str(tmp_path / "admin-settings.json"))
@@ -97,3 +97,4 @@ def test_dashboard_degraded_has_descriptive_status_message(monkeypatch: MonkeyPa
             f"status_message too short for degraded mode: {data['status_message']!r}"
         )
         assert data["status_message"] != "healthy", "Degraded mode must not reuse healthy message"
+
