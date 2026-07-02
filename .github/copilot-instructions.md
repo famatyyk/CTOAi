@@ -24,14 +24,7 @@ If ambiguity remains, choose the safest reversible action and state at most one 
   - prompt templates and tool scoring: `prompts/`, `scoring/`
   - orchestration runtime: `runner/`
   - release and approval policy: `policies/`, `workflows/`
-- Preserve **BRAVE(R)**-driven structure when editing agent execution logic. BRAVE(R) phases:
-  - **B**usiness — establish task context, priority, and success criteria.
-  - **R**easoning/Analysis — break down constraints, risks, and available tools.
-  - **A**ction — execute step-by-step with an explicit fallback for each step.
-  - **V**alue — state the immediate and long-term impact of the output.
-  - **E**vidence — attach validation results, delta comparisons, and artifacts.
-  - **R**eflection — record lessons learned and confidence level (0–10).
-- See `docs/AGENT_PROMPT_DEFINITIVE.md` for canonical terminology and `prompts/braver-library.yaml` for template contracts.
+- Preserve BRAVE(R)-driven structure when editing agent execution logic: keep phases explicit—Background (context setup), Role (agent persona and constraints), Action (tool execution steps), Values (decision criteria and guardrails), Examples (few-shot evidence), Result (structured output schema). See `docs/AGENT_PROMPT_DEFINITIVE.md` for canonical terminology.
 
 ## Canonical Commands
 - Use the workspace tasks in `.vscode/tasks.json` as first choice.

@@ -1,6 +1,6 @@
 """
 BRAVE(R) Prompt Template System
-Business + Analysis + Action + Value + Evidence + Reflection
+Background + Role + Action + Values + Examples + Result
 """
 
 _COMPONENT_ALIASES = {
