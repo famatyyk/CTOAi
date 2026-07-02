@@ -23,25 +23,54 @@ jobs:
       group: cd-bot-deploy-${{ github.ref }}
       cancel-in-progress: true
     env:
-      SSH_OPTS: "-i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o ServerAliveInterval=30 -o ServerAliveCountMax=10 -o TCPKeepAlive=yes"
+      VPS_HOST: ${{ secrets.CTOA_VPS_HOST != '' && secrets.CTOA_VPS_HOST || secrets.VPS_HOST }}
+      VPS_USER: ${{ secrets.CTOA_VPS_USER != '' && secrets.CTOA_VPS_USER || secrets.VPS_USERNAME }}
+      VPS_PORT: ${{ secrets.CTOA_VPS_PORT != '' && secrets.CTOA_VPS_PORT || secrets.VPS_PORT }}
+      SSH_KEY_B64: ${{ secrets.CTOA_VPS_SSH_KEY_B64 != '' && secrets.CTOA_VPS_SSH_KEY_B64 || secrets.VPS_SSH_KEY_B64 }}
+      SSH_KEY_RAW: ${{ secrets.CTOA_VPS_SSH_KEY != '' && secrets.CTOA_VPS_SSH_KEY || secrets.VPS_SSH_KEY }}
+      SSH_OPTS: "-i ~/.ssh/deploy_key -o StrictHostKeyChecking=accept-new -o ServerAliveInterval=30 -o ServerAliveCountMax=10 -o TCPKeepAlive=yes"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup SSH
         run: |
+          set -euo pipefail
+          if [ -z "${VPS_HOST:-}" ] || [ -z "${VPS_USER:-}" ]; then
+            echo "::error::Missing VPS host/user secrets. Set CTOA_VPS_HOST and CTOA_VPS_USER, or legacy VPS_HOST and VPS_USERNAME."
+            exit 1
+          fi
+
           mkdir -p ~/.ssh
-          echo "${{ secrets.VPS_SSH_KEY_B64 }}" | base64 -d > ~/.ssh/deploy_key
+          if [ -n "${SSH_KEY_B64:-}" ]; then
+            printf "%s" "$SSH_KEY_B64" | tr -d '\r\n' | base64 -d > ~/.ssh/deploy_key
+          elif [ -n "${SSH_KEY_RAW:-}" ]; then
+            printf "%s" "$SSH_KEY_RAW" > ~/.ssh/deploy_key
+          else
+            echo "::error::Missing VPS SSH key secret. Set CTOA_VPS_SSH_KEY_B64, CTOA_VPS_SSH_KEY, VPS_SSH_KEY_B64, or VPS_SSH_KEY."
+            exit 1
+          fi
           chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts
+
+          SSH_PORT=""
+          for candidate in ${VPS_PORT:-} 22 2222; do
+            [ -z "$candidate" ] && continue
+            if timeout 5 bash -lc "</dev/tcp/$VPS_HOST/$candidate" 2>/dev/null; then
+              SSH_PORT="$candidate"
+              break
+            fi
+          done
+          if [ -z "$SSH_PORT" ]; then
+            echo "::error::Cannot reach VPS SSH on configured/default ports for $VPS_HOST."
+            exit 1
+          fi
+          echo "SSH_PORT=$SSH_PORT" >> "$GITHUB_ENV"
+          ssh-keyscan -p "$SSH_PORT" -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
 
       - name: Sync repo to VPS
-        env:
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_USER: ${{ secrets.VPS_USERNAME }}
         run: |
           rsync -az --delete \
-            -e "ssh $SSH_OPTS" \
+            -e "ssh -p $SSH_PORT $SSH_OPTS" \
             --exclude='.git' \
             --exclude='__pycache__' \
             --exclude='*.pyc' \
@@ -52,15 +81,13 @@ jobs:
 
       - name: Ensure .env on VPS
         env:
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_USER: ${{ secrets.VPS_USERNAME }}
-          BOT_ENV: ${{ secrets.VPS_BOT_ENV }}
+          BOT_ENV: ${{ secrets.CTOA_VPS_BOT_ENV != '' && secrets.CTOA_VPS_BOT_ENV || secrets.VPS_BOT_ENV }}
         run: |
           if [ -n "$BOT_ENV" ]; then
-            echo "$BOT_ENV" | ssh $SSH_OPTS \
+            echo "$BOT_ENV" | ssh -p "$SSH_PORT" $SSH_OPTS \
               "$VPS_USER@$VPS_HOST" "cat > /opt/tibia-bot/.env"
           else
-            ssh $SSH_OPTS \
+            ssh -p "$SSH_PORT" $SSH_OPTS \
               "$VPS_USER@$VPS_HOST" bash << 'ENVEOF'
             if [ ! -f /opt/tibia-bot/.env ]; then
               cat > /opt/tibia-bot/.env << 'EOF'
@@ -75,11 +102,8 @@ jobs:
           fi
 
       - name: Deploy with docker compose
-        env:
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_USER: ${{ secrets.VPS_USERNAME }}
         run: |
-          ssh $SSH_OPTS \
+          ssh -p "$SSH_PORT" $SSH_OPTS \
             "$VPS_USER@$VPS_HOST" << 'ENDSSH'
           set -e
           cd /opt/tibia-bot/bot/infra
@@ -107,10 +131,7 @@ jobs:
           ENDSSH
 
       - name: Verify stack
-        env:
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_USER: ${{ secrets.VPS_USERNAME }}
         run: |
-          ssh $SSH_OPTS \
+          ssh -p "$SSH_PORT" $SSH_OPTS \
             "$VPS_USER@$VPS_HOST" \
             "docker compose -f /opt/tibia-bot/bot/infra/docker-compose.yml ps --format table"
