@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { SAFETY_SYSTEM_MESSAGE } from "@/lib/chatPolicy"
 import { getServerApiUrl } from "@/lib/config"
 import { createIpRateLimiter, getClientIp } from "@/lib/rateLimit"
+import { assessControlCenterChatQuality } from "@/lib/chatQuality"
 
 export const maxDuration = 60
 export const dynamic = "force-dynamic"
@@ -132,7 +133,9 @@ export async function POST(req: NextRequest) {
     }
 
     if (typeof data.content === "string") {
-      data.content = sanitizeAssistantContent(data.content)
+      const safeContent = sanitizeAssistantContent(data.content)
+      data.content = safeContent
+      data.quality = assessControlCenterChatQuality(safeContent)
     }
 
     return NextResponse.json(data, { status: r.status })
@@ -158,4 +161,3 @@ export async function POST(req: NextRequest) {
     clearTimeout(timer)
   }
 }
-

@@ -3,7 +3,15 @@ import pytest
 import os
 import tempfile
 from bot.data import db as db_module
-from bot.data.telemetry import set_session, log_event, log_loot, log_exp, get_stats
+from bot.data.telemetry import (
+    set_session,
+    log_event,
+    log_loot,
+    log_exp,
+    log_crash,
+    log_recovery,
+    get_stats,
+)
 from bot.data.db import create_session, close_session, get_session_stats
 
 
@@ -69,9 +77,23 @@ def test_get_stats_returns_dict():
     assert "gold_hr" in stats
     assert "exp_hr" in stats
     assert "kills" in stats
+    assert "incidents" in stats
+    assert "crashes" in stats
+    assert "recoveries" in stats
 
 
 def test_get_stats_no_session():
     set_session(None)
     stats = get_stats()
     assert stats["gold_hr"] == 0
+
+
+def test_log_incident_updates_session_stats():
+    sid = create_session()
+    set_session(sid)
+    log_crash("RuntimeError", "fatal loop exception")
+    log_recovery("shutdown", "signal=15")
+    stats = get_stats()
+    assert stats["incidents"] == 2
+    assert stats["crashes"] == 1
+    assert stats["recoveries"] == 1

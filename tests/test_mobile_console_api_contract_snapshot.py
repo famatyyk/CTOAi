@@ -4,9 +4,16 @@ import tempfile
 from pathlib import Path
 
 from _pytest.monkeypatch import MonkeyPatch
+from fastapi.testclient import TestClient
 
 
-def _load_app_module(monkeypatch: MonkeyPatch, tmp_path: Path):
+def _load_app_module(
+    monkeypatch: MonkeyPatch,
+    tmp_path: Path,
+    *,
+    package_tier: str = "studio",
+    mobile_console_enabled: bool | None = None,
+):
     monkeypatch.setenv("CTOA_MOBILE_TOKEN", "test-mobile-token")
     monkeypatch.setenv("CTOA_OWNER_USER", "CTO")
     monkeypatch.setenv("CTOA_OWNER_PASSWORD", "ownerpass123")
@@ -17,7 +24,9 @@ def _load_app_module(monkeypatch: MonkeyPatch, tmp_path: Path):
     monkeypatch.setenv("CTOA_GENERATED_DIR", str(tmp_path / "generated"))
     monkeypatch.setenv("CTOA_PRODUCT_STATE_DIR", str(tmp_path / ".ctoa-local"))
     monkeypatch.setenv("CTOA_PRODUCT_USER_CONFIG", str(tmp_path / ".ctoa-local" / "user-config.json"))
-    monkeypatch.setenv("CTOA_PACKAGE_TIER", "studio")
+    monkeypatch.setenv("CTOA_PACKAGE_TIER", package_tier)
+    if mobile_console_enabled is not None:
+        monkeypatch.setenv("CTOA_CAPABILITY_MOBILE_CONSOLE", "true" if mobile_console_enabled else "false")
 
     import mobile_console.app as mobile_app
 
@@ -66,3 +75,30 @@ def test_mobile_console_contract_snapshot_required_routes(monkeypatch: MonkeyPat
         assert not missing_paths, "Missing API paths in app contract: " + ", ".join(missing_paths)
         assert not method_mismatch, "API method mismatch: " + "; ".join(method_mismatch)
 
+def test_mobile_console_critical_endpoints_keep_security_regressions(monkeypatch: MonkeyPatch):
+    with tempfile.TemporaryDirectory() as tmp:
+        core_module = _load_app_module(
+            monkeypatch,
+            Path(tmp),
+            package_tier="core",
+            mobile_console_enabled=False,
+        )
+        core_client = TestClient(core_module.app)
+
+        blocked_login = core_client.post("/api/auth/login", json={"username": "CTO", "password": "asdzxc12"})
+        assert blocked_login.status_code == 403
+
+        blocked_console = core_client.get("/console")
+        assert blocked_console.status_code == 403
+
+    with tempfile.TemporaryDirectory() as tmp:
+        module = _load_app_module(monkeypatch, Path(tmp), package_tier="pro", mobile_console_enabled=True)
+        client = TestClient(module.app)
+
+        login = client.post("/api/auth/login", json={"username": "CTO", "password": "ownerpass123"})
+        assert login.status_code == 200
+        token = login.json()["token"]
+
+        health = client.get("/api/health", headers={"Authorization": f"Bearer {token}"})
+        assert health.status_code == 200
+        assert health.json()["ok"] is True

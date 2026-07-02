@@ -12,7 +12,7 @@ No write action enters Control Center without a risk class, owner intent and con
 
 | Risk class | Meaning | Examples | UI behavior |
 | --- | --- | --- | --- |
-| `read_only` | Reads state, logs, metrics or metadata. | `df -h /`, `docker ps`, `gh run list`, `/api/logs` | Can auto-refresh. |
+| `read_only` | Reads state, logs, metrics or metadata. | local JSON reports, evidence packs, audit JSONL, `/api/logs` | Can auto-refresh. |
 | `safe_write` | Changes local/UI preferences or low-risk state. | save endpoint profile, save dashboard preference | Needs clear label. |
 | `guarded_write` | Changes runtime state but is expected operational behavior. | restart bot, trigger controlled rebuild, enqueue known agent action | Needs confirmation and audit note. |
 | `dangerous` | Can delete data, disrupt production or rewrite history. | Docker prune, delete artifacts, user deletion, deploy rollback | Requires owner role, typed confirmation and audit note. |
@@ -22,6 +22,9 @@ No write action enters Control Center without a risk class, owner intent and con
 
 | Capability | Legacy source | Risk class | Control Center decision |
 | --- | --- | --- | --- |
+| Repo hygiene refresh | `scripts/ops/repo_hygiene_audit.py` | `safe_write` | Implemented as `repo-hygiene-refresh`. |
+| API cost refresh | `scripts/ops/api_cost_report.py` | `safe_write` | Implemented as `api-cost-refresh`. |
+| Evidence pack refresh | `scripts/ops/release_evidence_pack.py` | `safe_write` | Implemented as `evidence-pack-refresh`. |
 | Logs preview | `/api/logs` | `read_only` | Migrated. |
 | Dashboard summary | `/api/dashboard` | `read_only` | Migrated. |
 | Agent status | `/api/agents/status` | `read_only` | Migrated. |
@@ -55,9 +58,26 @@ Every `guarded_write` and `dangerous` action should record:
 | `role` | Actor role. |
 | `risk_class` | Risk class at execution time. |
 | `action` | Stable action id. |
-| `target` | VPS, Docker service, GitHub repo, user, etc. |
+| `target` | Local status area, report, or audited surface. |
 | `reason` | Human-entered reason or selected maintenance reason. |
 | `result` | Success/failure and short output. |
+
+Implemented audit sink:
+- `runtime/control-center/action-audit.jsonl`
+- includes read-only action runs too, and now also records actor role plus authorization outcome for gated actions.
+
+## Evidence flow
+
+The evidence/reporting lane is part of the same control model:
+
+1. Generate `runtime/api-cost/latest.json` from eval artifacts with `scripts/ops/api_cost_report.py`.
+2. Generate `runtime/evidence/latest.json` and `runtime/evidence/latest.md` with `scripts/ops/release_evidence_pack.py`.
+3. Record Control Center action history in `runtime/control-center/action-audit.jsonl`.
+4. Surface the current state in `GET /api/control-center/evidence` and the `Evidence` tab in Control Center.
+
+These paths are configurable through `CTOA_*` env vars in the scripts, API routes and Control Center evidence reader, so self-hosted or VPS deployments can move the runtime/evidence locations without breaking the cockpit.
+
+This keeps evidence visible in the cockpit before any release or guarded action is treated as complete.
 
 ## UI staging plan
 
@@ -80,4 +100,3 @@ These stay blocked until this model is implemented in code:
 | User delete/role change | Security-sensitive. |
 | One-click execution | Changes runtime state. |
 | Intel launch | External side effects and runtime load. |
-

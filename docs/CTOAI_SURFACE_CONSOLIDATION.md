@@ -11,7 +11,7 @@ The project has too many parallel surfaces. The fix is not to keep adding more w
 | Login/auth | Web auth flow backed by API | Desktop/mobile login screens become clients of the same auth contract. |
 | Windows entry point | `desktop_console` EXE | It becomes a launcher, not a separate product brain. |
 | Operations commands | `ctoa.ps1` and fixed API probes | UI buttons call guarded wrappers, not ad-hoc shell snippets. |
-| Backend status | `/api/control-center` and `/api/control-center/ops` | Old status widgets should read these endpoints or be deleted. |
+| Backend status | `/api/control-center` and `/api/control-center/ops` | Old status widgets should read these status endpoints or be deleted. |
 
 ## Current duplicates to collapse
 
@@ -20,7 +20,7 @@ The project has too many parallel surfaces. The fix is not to keep adding more w
 | Consoles | Desktop console, mobile console, web dashboard, scripts and VPS runbooks overlap. | Control Center is the operator console. Desktop is only the Windows launcher. |
 | Login screens | Web, desktop and mobile have separate UX. | One auth contract, one visual language, separate shells only where needed. |
 | Chats | Main web chat plus future cockpit chat risk becoming separate products. | One `ChatWindow` engine reused everywhere. |
-| Dashboards | Metrics/status are scattered across docs, desktop, web and VPS scripts. | One ops endpoint and one dashboard surface. |
+| Dashboards | Metrics/status are scattered across docs, desktop, web and helper scripts. | One status endpoint and one dashboard surface. |
 | Docs maps | `REPO_SCHEMA.md` is the refreshed repo map; cleanup decisions live beside it. | Keep schema and cleanup map aligned as boundaries change. |
 
 ## Rule going forward
@@ -58,7 +58,7 @@ Current canonical decisions:
 | Chat engine | `web/src/components/ChatWindow.tsx` |
 | Windows entry point | `desktop_console` as launcher |
 | Backend/API compatibility | `mobile_console/app.py` |
-| Ops status data | `web/src/app/api/control-center/*` |
+| Status data | `web/src/app/api/control-center/*` |
 | Operator command engine | `ctoa.ps1` and guarded wrappers |
 
 `docs/REPO_SCHEMA.md` has been refreshed and is no longer treated as stale. Use it as the current repository map, with `docs/CTOAI_FOUNDATION_CLEANUP.md` as the cleanup decision table.

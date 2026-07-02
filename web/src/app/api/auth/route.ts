@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { cookies } from "next/headers"
 import { getServerApiUrl } from "@/lib/config"
+import { fetchWithTimeout } from "@/lib/fetchWithTimeout"
 import { createIpRateLimiter, getClientIp } from "@/lib/rateLimit"
 
 const API_URL = getServerApiUrl()
@@ -11,7 +12,7 @@ const consumeAuthRateWindow = createIpRateLimiter(AUTH_RATE_LIMIT_PER_MIN, AUTH_
 
 async function backendFetch(path: string, init?: RequestInit) {
   const token = (await cookies()).get("ctoa_token")?.value
-  return fetch(API_URL + path, {
+  return fetchWithTimeout(API_URL + path, {
     ...init,
     headers: {
       "Content-Type": "application/json",
@@ -19,7 +20,7 @@ async function backendFetch(path: string, init?: RequestInit) {
       ...(init?.headers || {}),
     },
     cache: "no-store",
-  })
+  }, 5000)
 }
 
 export async function GET(req: NextRequest) {
@@ -60,11 +61,11 @@ export async function POST(req: NextRequest) {
 
   try {
     if (action === "register") {
-      const r = await fetch(API_URL + "/api/auth/register", {
+      const r = await fetchWithTimeout(API_URL + "/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body.payload || {}),
-      })
+      }, 5000)
       const data = await r.json()
       const response = NextResponse.json(data, { status: r.status })
       if (r.ok && data?.token) {
@@ -74,11 +75,11 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === "login") {
-      const r = await fetch(API_URL + "/api/auth/login", {
+      const r = await fetchWithTimeout(API_URL + "/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body.payload || {}),
-      })
+      }, 5000)
       const data = await r.json()
       const response = NextResponse.json(data, { status: r.status })
       if (r.ok && data?.token) {
