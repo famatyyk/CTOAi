@@ -46,6 +46,7 @@ TOP_LEVEL_ALLOWLIST = {
     "product",
     "prompts",
     "runner",
+    "runtime_context.py",
     "runtime",
     "schemas",
     "scoring",
