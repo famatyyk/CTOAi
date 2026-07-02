@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import type { ControlCenterOps, OpsTile } from "@/lib/controlCenterOps"
+import { fetchWithTimeout } from "@/lib/fetchWithTimeout"
 
 type OpsState =
   | { state: "loading"; ops: null; error: null }
@@ -30,7 +31,7 @@ export default function ControlCenterOpsGrid() {
 
     async function loadOps() {
       try {
-        const response = await fetch("/api/control-center/ops", { cache: "no-store" })
+        const response = await fetchWithTimeout("/api/control-center/ops", { cache: "no-store" }, 5000)
         const data = (await response.json()) as ControlCenterOps
         if (!cancelled) {
           setOps({ state: "ready", ops: data, error: null })
@@ -61,8 +62,8 @@ export default function ControlCenterOpsGrid() {
     <article className="rounded-3xl border border-white/10 bg-[#151b33] p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-sm font-black">Live ops tiles</p>
-          <p className="mt-1 text-sm text-slate-400">Read-only probes for VPS, Docker, bot runtime and GitHub CI.</p>
+          <p className="text-sm font-black">Local status tiles</p>
+          <p className="mt-1 text-sm text-slate-400">File-backed status from runtime evidence, audit and release artifacts. No remote monitoring required.</p>
         </div>
         <span className="rounded-full bg-white/10 px-3 py-1 text-xs text-slate-300">
           {ops.state === "loading" ? "loading" : ops.ops ? `updated ${new Date(ops.ops.generatedAt).toLocaleTimeString()}` : "offline"}
@@ -93,42 +94,42 @@ export default function ControlCenterOpsGrid() {
 }
 
 function placeholderTiles(): OpsTile[] {
-  const updatedAt = new Date().toISOString()
+  const updatedAt = "loading"
   return [
     {
-      id: "vps",
-      label: "VPS disk",
+      id: "repo-hygiene",
+      label: "Repo hygiene",
       status: "unknown",
       headline: "Loading",
-      detail: "Waiting for SSH read-only probe.",
-      source: "ssh df -h /",
+      detail: "Waiting for local repo hygiene snapshot.",
+      source: "runtime/repo-hygiene/local-pr-quality.json",
       updatedAt,
     },
     {
-      id: "docker",
-      label: "Docker store",
+      id: "release-evidence",
+      label: "Release evidence",
       status: "unknown",
       headline: "Loading",
-      detail: "Waiting for Docker storage report.",
-      source: "ssh docker system df",
+      detail: "Waiting for local release evidence files.",
+      source: "releases/evidence",
       updatedAt,
     },
     {
-      id: "bot",
-      label: "Bot runtime",
+      id: "api-cost",
+      label: "API cost",
       status: "unknown",
       headline: "Loading",
-      detail: "Waiting for infra-bot container status.",
-      source: "ssh docker ps",
+      detail: "Waiting for local API cost report.",
+      source: "runtime/api-cost/latest.json",
       updatedAt,
     },
     {
-      id: "github",
-      label: "GitHub CI",
+      id: "control-center-audit",
+      label: "Control Center audit",
       status: "unknown",
       headline: "Loading",
-      detail: "Waiting for GitHub Actions status.",
-      source: "gh run list",
+      detail: "Waiting for local action audit entries.",
+      source: "runtime/control-center/action-audit.jsonl",
       updatedAt,
     },
   ]

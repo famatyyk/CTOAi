@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import type { ReactNode } from "react"
+import { fetchWithTimeout } from "@/lib/fetchWithTimeout"
 
 type LegacyResult = {
   ok: boolean
@@ -34,7 +35,7 @@ export default function ControlCenterLegacyPanels() {
 
     async function loadLegacy() {
       try {
-        const response = await fetch("/api/control-center/legacy", { cache: "no-store" })
+        const response = await fetchWithTimeout("/api/control-center/legacy", { cache: "no-store" }, 5000)
         const snapshot = (await response.json()) as LegacySnapshot
         if (!cancelled) {
           setLegacy({ state: "ready", snapshot, error: null })
