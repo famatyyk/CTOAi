@@ -2,6 +2,7 @@ import { execFile } from "node:child_process"
 import { appendFile, mkdir } from "node:fs/promises"
 import path from "node:path"
 import { promisify } from "node:util"
+import { getControlCenterEvidenceConfig } from "@/lib/controlCenterEvidenceConfig"
 import type { ControlCenterRole, ControlCenterRiskClass } from "@/lib/controlCenterPolicy"
 import { canRunControlCenterAction, minimumRoleForRiskClass } from "@/lib/controlCenterPolicy"
 
@@ -251,8 +252,8 @@ export async function runControlCenterAction(input: {
 }
 
 async function appendAuditRecord(record: AuditRecord): Promise<void> {
-  const auditDir = path.join(getWorkspaceRoot(), "runtime", "control-center")
+  const auditPath = getControlCenterEvidenceConfig().actionAuditPath
+  const auditDir = path.dirname(auditPath)
   await mkdir(auditDir, { recursive: true })
-  const auditPath = path.join(auditDir, "action-audit.jsonl")
   await appendFile(auditPath, `${JSON.stringify(record)}\n`, "utf-8")
 }

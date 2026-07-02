@@ -125,6 +125,10 @@ export default function ControlCenterShell() {
 }
 
 function OverviewPanel({ onNavigate }: { onNavigate: (tab: ControlCenterTab) => void }) {
+  const resolveTargetTab = (label: string): ControlCenterTab => {
+    return label === "Evidence pack" ? "Evidence" : "Local Status"
+  }
+
   return (
     <>
       <div className="mb-5">
@@ -137,11 +141,11 @@ function OverviewPanel({ onNavigate }: { onNavigate: (tab: ControlCenterTab) => 
             key={card.label}
             type="button"
             tabIndex={0}
-            onClick={() => onNavigate(card.label.includes("Release") ? "Evidence" : "Local Status")}
+            onClick={() => onNavigate(resolveTargetTab(card.label))}
             onKeyDown={(event) => {
               if (event.key === "Enter" || event.key === " ") {
                 event.preventDefault()
-                onNavigate(card.label.includes("Release") ? "Evidence" : "Local Status")
+                onNavigate(resolveTargetTab(card.label))
               }
             }}
             className="relative cursor-pointer overflow-hidden rounded-3xl border border-white/10 bg-white/[0.06] p-6 text-left shadow-[0_18px_60px_rgba(0,0,0,0.25)] transition hover:-translate-y-0.5 hover:border-cyan-200/30 hover:bg-white/[0.08] focus:outline-none focus:ring-2 focus:ring-cyan-200/60"
@@ -158,7 +162,9 @@ function OverviewPanel({ onNavigate }: { onNavigate: (tab: ControlCenterTab) => 
               <ToneOrb tone={card.tone} />
             </div>
             <p className="relative mt-5 text-sm text-slate-400">{card.detail}</p>
-            <p className="relative mt-5 text-xs uppercase tracking-[0.2em] text-cyan-100/70">Kliknij, aby przejść do {card.label.includes("Release") ? "Evidence" : "Local Status"}</p>
+            <p className="relative mt-5 text-xs uppercase tracking-[0.2em] text-cyan-100/70">
+              Kliknij, aby przejść do {resolveTargetTab(card.label)}
+            </p>
           </button>
         ))}
       </section>
