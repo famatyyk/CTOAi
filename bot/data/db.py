@@ -49,6 +49,18 @@ CREATE TABLE IF NOT EXISTS exp_events (
     monster_name TEXT DEFAULT ''
 );
 
+CREATE TABLE IF NOT EXISTS loop_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id INTEGER REFERENCES sessions(id),
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+    component TEXT NOT NULL,
+    stage TEXT NOT NULL,
+    duration_ms INTEGER DEFAULT 0,
+    ok INTEGER DEFAULT 1,
+    error TEXT DEFAULT '',
+    details TEXT DEFAULT ''
+);
+
 CREATE TABLE IF NOT EXISTS incident_events (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     session_id INTEGER REFERENCES sessions(id),
