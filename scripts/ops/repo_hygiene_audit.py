@@ -110,6 +110,7 @@ LOCAL_ONLY_CANDIDATES = {
     "_local_archive",
     "build",
     "dist",
+    "node_modules",
     "logs",
     "metrics",
 }
