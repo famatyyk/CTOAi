@@ -87,3 +87,67 @@ def test_detect_profession_from_promoted_keyword(monkeypatch):
     }
 
     assert sr._detect_profession(30, cfg) == "druid"
+
+
+def test_detect_profession_from_client_profile_override(monkeypatch):
+    from bot.action import spell_rotation as sr
+
+    monkeypatch.setenv("BOT_PROFESSION", "")
+    monkeypatch.setenv("BOT_WINDOW_TITLE_ACTIVE", "")
+    monkeypatch.setenv("BOT_CLIENT_PROFILE", "kamil_client")
+
+    cfg = {
+        "default_profession": "druid",
+        "profiles": [],
+        "client_profiles": {
+            "kamil_client": {
+                "default_profession": "monk",
+            }
+        },
+        "rotations": {},
+    }
+
+    merged = sr._merge_rotation_config(cfg)
+    assert sr._detect_profession(30, merged) == "monk"
+
+
+def test_spell_rotation_uses_kamil_client_monk_profile(monkeypatch, tmp_path):
+    from bot.action import spell_rotation as sr
+
+    cfg = {
+        "default_profession": "druid",
+        "profiles": [],
+        "client_profiles": {
+            "kamil_client": {
+                "default_profession": "monk",
+                "rotations": {
+                    "monk": [
+                        {"key": "f2", "min_level": 8, "cooldown_ms": 1000},
+                    ]
+                },
+            }
+        },
+        "rotations": {
+            "druid": [],
+        },
+    }
+    cfg_path = tmp_path / "spell_rotation.json"
+    cfg_path.write_text(json.dumps(cfg), encoding="utf-8")
+
+    monkeypatch.setattr(sr, "_CONFIG_PATH", cfg_path)
+    monkeypatch.setattr(sr, "_CONFIG_CACHE", None)
+    monkeypatch.setattr(sr, "_CONFIG_MTIME", -1.0)
+    monkeypatch.setattr(sr, "_last_cast_ts", {})
+    monkeypatch.setattr(sr, "_rotation_index", {})
+
+    monkeypatch.setenv("BOT_PROFESSION", "")
+    monkeypatch.setenv("BOT_WINDOW_TITLE_ACTIVE", "")
+    monkeypatch.setenv("BOT_CLIENT_PROFILE", "kamil_client")
+
+    monkeypatch.setattr(sr, "is_available", lambda: True)
+    pressed = []
+    monkeypatch.setattr(sr, "press", lambda key: pressed.append(key))
+    monkeypatch.setattr(sr.time, "monotonic", lambda: 100.0)
+
+    assert sr.cast_rotation_spell(20) == "f2"
+    assert pressed == ["f2"]

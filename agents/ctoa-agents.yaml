@@ -208,3 +208,15 @@ agents:
     capabilities: [documentation_writing, diagram_generation, api_documentation, runbook_creation]
     assigned_tasks: []
     tool_score_weight: {efficacy: 0.3, safety: 0.1, cost: 0.1, latency: 0.5}
+
+  - id: api-cost-optimizer
+    name: APICostOptimizerAgent
+    role: CostGovernance
+    mission: Audyt zuzycia tokenow API, burn-rate i rekomendacji tanszych wariantow modeli
+    description: Analyzes token velocity, estimates financial risk, and proposes model fallback matrices under STRATEGOS guarded autonomy.
+    inputs: [eval_runs, billing_metrics, prompt_variants, budget_thresholds]
+    outputs: [cost_risk_report, model_fallback_matrix, token_burn_reduction_plan]
+    kpi: [token_burn_reduction_pct, budget_overrun_prevention, scoring_impact_accuracy]
+    capabilities: [analyze_token_velocity, calculate_burn_rate, propose_model_fallback, financial_guardrail_audit]
+    assigned_tasks: [CTOA-007, CTOA-010]
+    tool_score_weight: {efficacy: 0.25, safety: 0.25, cost: 0.35, latency: 0.15}

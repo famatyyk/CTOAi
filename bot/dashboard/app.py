@@ -55,6 +55,9 @@ if _FASTAPI_AVAILABLE:
             "exp_hr":        s.get("exp_hr", 0),
             "kills":         s.get("kills", 0),
             "session_hours": s.get("session_hours", 0),
+            "incidents":     s.get("incidents", 0),
+            "crashes":       s.get("crashes", 0),
+            "recoveries":    s.get("recoveries", 0),
             "uptime_s":      int(time.time() - _START_TIME),
         }
 
@@ -75,6 +78,15 @@ if _FASTAPI_AVAILABLE:
             "# HELP bot_session_hours Session duration in hours",
             "# TYPE bot_session_hours gauge",
             f'bot_session_hours {s.get("session_hours", 0)}',
+            "# HELP bot_incidents_total Total tracked incidents this session",
+            "# TYPE bot_incidents_total gauge",
+            f'bot_incidents_total {s.get("incidents", 0)}',
+            "# HELP bot_crashes_total Total crash incidents this session",
+            "# TYPE bot_crashes_total gauge",
+            f'bot_crashes_total {s.get("crashes", 0)}',
+            "# HELP bot_recoveries_total Total recovery actions this session",
+            "# TYPE bot_recoveries_total gauge",
+            f'bot_recoveries_total {s.get("recoveries", 0)}',
             "# HELP bot_uptime_seconds Bot process uptime in seconds",
             "# TYPE bot_uptime_seconds gauge",
             f'bot_uptime_seconds {int(time.time() - _START_TIME)}',
@@ -101,6 +113,9 @@ if _FASTAPI_AVAILABLE:
   <style>
     body {{ font-family: monospace; background: #1a1a2e; color: #e0e0e0; padding: 2rem; }}
     h1   {{ color: #ffd700; }}
+    a    {{ color: #ffd700; }}
+    .legacy {{ border: 1px solid #e9b44c66; background: rgba(233,180,76,.12); color: #ffe1a3;
+               border-radius: 10px; padding: .85rem 1rem; margin: 0 0 1rem; }}
     .card {{ background: #16213e; border: 1px solid #0f3460; border-radius: 8px;
              padding: 1rem; margin: 0.5rem 0; display: inline-block; min-width: 180px; }}
     .val  {{ font-size: 2rem; color: #e94560; font-weight: bold; }}
@@ -110,12 +125,16 @@ if _FASTAPI_AVAILABLE:
 </head>
 <body>
   <h1>🎖️ Tibia Bot — Live Dashboard</h1>
+  <div class="legacy"><strong>Legacy/dev dashboard:</strong> runtime metrics are being absorbed into
+    <a href="http://127.0.0.1:3000/control-center">CTOAi Control Center</a>. Keep this page for dev/reference until parity is complete.</div>
   <p style="color:#888">Auto-refreshes every 10s | <a href="/stats" style="color:#ffd700">/stats JSON</a> | <a href="/metrics" style="color:#ffd700">/metrics Prometheus</a></p>
   <div class="grid">
     <div class="card"><div class="val">{s.get('gold_hr', 0):,}</div><div class="lbl">Gold / hour</div></div>
     <div class="card"><div class="val">{s.get('exp_hr', 0):,}</div><div class="lbl">Exp / hour</div></div>
     <div class="card"><div class="val">{s.get('kills', 0)}</div><div class="lbl">Kills this session</div></div>
     <div class="card"><div class="val">{s.get('session_hours', 0):.2f}h</div><div class="lbl">Session time</div></div>
+    <div class="card"><div class="val">{s.get('crashes', 0)}</div><div class="lbl">Crashes logged</div></div>
+    <div class="card"><div class="val">{s.get('recoveries', 0)}</div><div class="lbl">Recoveries logged</div></div>
     <div class="card"><div class="val">{uptime_h:.2f}h</div><div class="lbl">Dashboard uptime</div></div>
     <div class="card"><div class="val">{"ON" if _sched_running else "BREAK"}</div><div class="lbl">Scheduler state</div></div>
   </div>

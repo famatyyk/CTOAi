@@ -2,7 +2,7 @@
 
 **Track:** C â€” Productization
 **Sprint:** Sprint-041 / Sprint-042
-**Status:** ACTIVE
+**Status:** HISTORICAL SNAPSHOT
 **Updated:** 2026-05-23
 
 ---
@@ -12,6 +12,9 @@
 Prepare CTOA AI Toolkit for structured public distribution through clearly
 defined packaging tiers, clean public/private surface hygiene, and a
 documented operator UX and release cadence.
+
+Use `README.md`, `docs/REPO_SCHEMA.md`, and `docs/CTOAI_FOUNDATION_CLEANUP.md`
+for current product boundaries.
 
 ---
 
@@ -126,4 +129,3 @@ Next planned: **v1.15.0** (Sprint-042, Track C continuation).
 - `docs/REPO_HYGIENE_POLICY.md` â€” hygiene policy
 - `product/packages/` â€” tier manifests
 - `docs/PRODUCT_PORTFOLIO.md` â€” product map and API registry
-

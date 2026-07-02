@@ -18,7 +18,7 @@ Get CTOA AI Toolkit running on your local machine in <10 minutes.
 ### 1. Clone Repository
 
 ```bash
-git clone https://github.com/famatyyk/CTOAi.git
+git clone git@github.com:famatyyk/CTOAi.git
 cd CTOAi
 ```
 
@@ -78,26 +78,26 @@ If the gate fails, update the repo and re-run bootstrap.
 **Windows (PowerShell):**
 ```powershell
 # These persist across sessions
-$env:CTOA_VPS_HOST = "46.225.110.52"
-$env:CTOA_VPS_USER = "root"
+$env:CTOA_VPS_HOST = "your-vps-host"
+$env:CTOA_VPS_USER = "your-vps-user"
 $env:CTOA_VPS_KEY_PATH = "$env:USERPROFILE\.ssh\ctoa_vps_ed25519"
 
 # Optional (only if testing agent execution):
 $env:CTOA_GITHUB_PAT = "your_token_here"
 
 # Persist to user profile:
-[Environment]::SetEnvironmentVariable("CTOA_VPS_HOST", "46.225.110.52", "User")
+[Environment]::SetEnvironmentVariable("CTOA_VPS_HOST", "your-vps-host", "User")
 # ... repeat for other vars
 ```
 
 **macOS/Linux (Bash):**
 ```bash
-export CTOA_VPS_HOST="46.225.110.52"
-export CTOA_VPS_USER="root"
+export CTOA_VPS_HOST="your-vps-host"
+export CTOA_VPS_USER="your-vps-user"
 export CTOA_VPS_KEY_PATH="$HOME/.ssh/ctoa_vps_ed25519"
 
 # Persist to ~/.bashrc or ~/.zshrc:
-echo 'export CTOA_VPS_HOST="46.225.110.52"' >> ~/.bashrc
+echo 'export CTOA_VPS_HOST="your-vps-host"' >> ~/.bashrc
 ```
 
 ### 5. Verify Setup
@@ -107,13 +107,61 @@ echo 'export CTOA_VPS_HOST="46.225.110.52"' >> ~/.bashrc
 python --version  # Should be 3.11+
 
 # Check imports
-python -c "import pytest; import requests; import paramiko; print('âś“ All imports OK')"
+python -c "import pytest; import requests; import paramiko; print('OK: imports available')"
 
 # Run tests (should pass or show clear error messages)
 pytest tests/ -v
 
 # Check VPS connectivity (if SSH key installed)
 scripts/ops/ctoa-vps.ps1 -Action Verify
+```
+
+### 6. Daily Git Preflight (before pull/rebase/push)
+
+```bash
+python scripts/ops/ctoa_env_doctor.py
+```
+
+If status is `FAIL`, fix reported issues first.
+
+---
+
+## Git + SSH Hardening
+
+### Git Not In PATH (Windows)
+
+If `git --version` fails but Git is installed, set one of:
+
+```powershell
+# Option 1: one-time current shell
+$env:Path += ';C:\Program Files\Git\cmd'
+
+# Option 2: persistent fallback for CTOA scripts
+[Environment]::SetEnvironmentVariable('CTOA_GIT_BIN', 'C:\Program Files\Git\cmd\git.exe', 'User')
+```
+
+### SSH Checklist (Local Dev)
+
+```bash
+# 1) key exists
+ls ~/.ssh
+
+# 2) agent has key
+ssh-add -l
+
+# 3) GitHub auth check
+ssh -T git@github.com
+```
+
+Expected success message contains `successfully authenticated`.
+
+### Clean Tree + Sync Routine
+
+```bash
+python scripts/ops/ctoa_env_doctor.py
+git fetch origin
+git rebase origin/main
+python scripts/ops/ctoa_env_doctor.py
 ```
 
 ---
@@ -271,8 +319,10 @@ pre-commit install
 ### Full stack startup
 
 ```bash
-docker compose up -d ctoa-db ctoa-redis ctoa ctoa-worker ctoa-prometheus ctoa-loki ctoa-promtail ctoa-grafana
+docker compose up -d ctoa-db ctoa-redis ctoa ctoa-worker ctoa-prometheus ctoa-loki ctoa-promtail
 ```
+
+Grafana is no longer part of the default local stack. If you need dashboards later, run them as a separate optional service instead of blocking Control Center on port 3000.
 
 ### Database migrations
 

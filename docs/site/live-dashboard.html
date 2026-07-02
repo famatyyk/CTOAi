@@ -79,6 +79,18 @@
         background: rgba(47, 128, 237, 0.25);
         border-color: #2f80ed;
       }
+      .legacy-banner {
+        margin: 0 0 14px;
+        border: 1px solid rgba(233, 180, 76, 0.45);
+        background: rgba(233, 180, 76, 0.12);
+        color: #ffe1a3;
+        border-radius: 12px;
+        padding: 10px 12px;
+        font-size: 13px;
+        line-height: 1.45;
+      }
+      .legacy-banner strong { color: #fff2cf; }
+      .legacy-banner a { color: #56ccf2; font-weight: 700; text-decoration: none; }
       input {
         background: var(--panel);
         color: var(--txt);
@@ -252,7 +264,13 @@
         <a href="/">Start</a>
         <a href="/console">Console</a>
         <a href="/live-dashboard" class="active">Live Dashboard</a>
+        <a href="http://127.0.0.1:3000/control-center">Control Center</a>
       </nav>
+
+      <section class="legacy-banner" role="status">
+        <strong>Legacy UI:</strong> ten live dashboard zostaje jako referencja do czasu przeniesienia pelnego parytetu do Control Center.
+        Canonical cockpit to <a href="http://127.0.0.1:3000/control-center">CTOAi Control Center</a>.
+      </section>
 
       <div class="grid">
         <section class="card kpi">
@@ -948,7 +966,6 @@
     </script>
   </body>
 </html>
-
 
 
 

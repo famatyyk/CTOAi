@@ -6,6 +6,7 @@ import StatusBar from "@/components/StatusBar"
 import SessionManager, { Session } from "@/components/SessionManager"
 import LoginPanel, { AuthUser } from "@/components/LoginPanel"
 import CommunityPanel from "@/components/CommunityPanel"
+import { loadActiveSessionId, loadUserSessions, saveActiveSessionId, saveUserSessions } from "@/lib/sessionStorage"
 
 function makeId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2)
@@ -15,16 +16,6 @@ function newSession(): Session {
   return { id: makeId(), title: "Nowa rozmowa", createdAt: Date.now(), messages: [] }
 }
 
-const ACTIVE_KEY = "ctoa_active_session"
-
-function loadSessions(user: string): Session[] {
-  if (typeof window === "undefined") return []
-  try {
-    return JSON.parse(localStorage.getItem(`ctoa_sessions_${user}`) || "[]")
-  } catch {
-    return []
-  }
-}
 
 export default function Home() {
   const [authUser, setAuthUser] = useState<AuthUser | null>(null)
@@ -60,24 +51,24 @@ export default function Home() {
       setActiveId("")
       return
     }
-    let s = loadSessions(authUser.username)
-    const savedActive = localStorage.getItem(`${ACTIVE_KEY}_${authUser.username}`)
+    let s = loadUserSessions(authUser.username)
+    const savedActive = loadActiveSessionId(authUser.username)
     if (s.length === 0) {
       const fresh = newSession()
       s = [fresh]
-      localStorage.setItem(`ctoa_sessions_${authUser.username}`, JSON.stringify(s))
+      s = saveUserSessions(authUser.username, s)
     }
     setSessions(s)
     const active = s.find((x) => x.id === savedActive) ? savedActive! : s[0].id
     setActiveId(active)
-    localStorage.setItem(`${ACTIVE_KEY}_${authUser.username}`, active)
+    saveActiveSessionId(authUser.username, active)
   }, [authUser])
 
   const saveSessions = useCallback(
     (nextSessions: Session[]) => {
       if (!authUser) return
       setSessions(nextSessions)
-      localStorage.setItem(`ctoa_sessions_${authUser.username}`, JSON.stringify(nextSessions))
+      saveUserSessions(authUser.username, nextSessions)
     },
     [authUser],
   )
@@ -86,7 +77,7 @@ export default function Home() {
     const action = payload.mode
     const body =
       payload.mode === "register"
-        ? { username: payload.username, password: payload.password, role: payload.role }
+        ? { username: payload.username, password: payload.password, role: "member" }
         : { username: payload.username, password: payload.password }
 
     const r = await fetch("/api/auth", {
@@ -119,7 +110,7 @@ export default function Home() {
     saveSessions(updated)
     setActiveId(s.id)
     if (authUser) {
-      localStorage.setItem(`${ACTIVE_KEY}_${authUser.username}`, s.id)
+      saveActiveSessionId(authUser.username, s.id)
     }
   }, [sessions, saveSessions, authUser])
 
@@ -127,7 +118,7 @@ export default function Home() {
     (id: string) => {
       setActiveId(id)
       if (authUser) {
-        localStorage.setItem(`${ACTIVE_KEY}_${authUser.username}`, id)
+        saveActiveSessionId(authUser.username, id)
       }
     },
     [authUser],
@@ -141,7 +132,7 @@ export default function Home() {
         saveSessions([fresh])
         setActiveId(fresh.id)
         if (authUser) {
-          localStorage.setItem(`${ACTIVE_KEY}_${authUser.username}`, fresh.id)
+          saveActiveSessionId(authUser.username, fresh.id)
         }
         return
       }
@@ -149,7 +140,7 @@ export default function Home() {
       if (activeId === id) {
         setActiveId(updated[0].id)
         if (authUser) {
-          localStorage.setItem(`${ACTIVE_KEY}_${authUser.username}`, updated[0].id)
+          saveActiveSessionId(authUser.username, updated[0].id)
         }
       }
     },
@@ -165,7 +156,7 @@ export default function Home() {
           const title = messages.find((m) => m.role === "user")?.content.slice(0, 40) || "Nowa rozmowa"
           return { ...s, messages, title }
         })
-        localStorage.setItem(`ctoa_sessions_${authUser.username}`, JSON.stringify(updated))
+        saveUserSessions(authUser.username, updated)
         return updated
       })
     },

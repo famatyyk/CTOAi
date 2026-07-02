@@ -13,6 +13,8 @@ Run from repository root:
 ## Command legend
 
 - `menu` (`m`) - interactive command picker for the most common workflows
+- `next` (`nx`) - show the recommended next step and current review lane
+- `cc` (`control-center`) - open the visual Control Center and start web dev if needed
 - `dev` - developer profile; starts mobile console in dev mode
 - `ops` - operator profile; runs core/risk/sprint health checks
 - `prod` - production profile; runs update gate and sprint-029 validation
@@ -34,6 +36,8 @@ Run from repository root:
 
 ```powershell
 # Interactive start
+.\ctoa.ps1 next
+.\ctoa.ps1 cc
 .\ctoa.ps1 menu
 
 # Profiles
@@ -85,6 +89,8 @@ This keeps dashboard/web and CLI aligned to the same command names and meanings.
 ## Suggested daily usage
 
 - Start with `menu` if you do not remember the command.
+- Start with `next` if you are overloaded and need one concrete recommendation.
+- Use `cc` when you need the visual cockpit instead of reading code or scripts; it starts web dev if port 3000 is not responding.
 - Use `dev` when you are building locally.
 - Use `ops` when you want a quick operational snapshot.
 - Use `prod` before release-facing work.

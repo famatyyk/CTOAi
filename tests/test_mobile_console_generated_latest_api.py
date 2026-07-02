@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 def _load_app_module(monkeypatch: MonkeyPatch, tmp_path: Path):
     monkeypatch.setenv("CTOA_MOBILE_TOKEN", "test-mobile-token")
     monkeypatch.setenv("CTOA_OWNER_USER", "CTO")
-    monkeypatch.setenv("CTOA_OWNER_PASSWORD", "asdzxc12")
+    monkeypatch.setenv("CTOA_OWNER_PASSWORD", "ownerpass123")
     monkeypatch.setenv("CTOA_OPERATOR_USER", "ctoa-bot")
     monkeypatch.setenv("CTOA_OPERATOR_PASSWORD", "jakpod22")
     monkeypatch.setenv("CTOA_ADMIN_SETTINGS_FILE", str(tmp_path / "admin-settings.json"))
@@ -37,7 +37,7 @@ def _login_token(client: TestClient, username: str, password: str) -> str:
 
 
 def test_latest_generated_requires_auth(monkeypatch: MonkeyPatch):
-    with tempfile.TemporaryDirectory() as tmp:
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
         module = _load_app_module(monkeypatch, Path(tmp))
         client = TestClient(module.app)
 
@@ -46,7 +46,7 @@ def test_latest_generated_requires_auth(monkeypatch: MonkeyPatch):
 
 
 def test_latest_generated_reads_manifest(monkeypatch: MonkeyPatch):
-    with tempfile.TemporaryDirectory() as tmp:
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
         tmp_path = Path(tmp)
         generated_dir = tmp_path / "generated"
         manifest_dir = generated_dir / "manifests" / "20260320T010203Z"
@@ -95,7 +95,7 @@ def test_latest_generated_reads_manifest(monkeypatch: MonkeyPatch):
 
 
 def test_commands_dictionary_requires_operator_auth(monkeypatch: MonkeyPatch):
-    with tempfile.TemporaryDirectory() as tmp:
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
         module = _load_app_module(monkeypatch, Path(tmp))
         client = TestClient(module.app)
 
@@ -104,7 +104,7 @@ def test_commands_dictionary_requires_operator_auth(monkeypatch: MonkeyPatch):
 
 
 def test_commands_dictionary_reads_valid_payload(monkeypatch: MonkeyPatch):
-    with tempfile.TemporaryDirectory() as tmp:
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
         tmp_path = Path(tmp)
         dictionary_file = tmp_path / "command-dictionary.json"
         dictionary_file.write_text(
@@ -136,7 +136,7 @@ def test_commands_dictionary_reads_valid_payload(monkeypatch: MonkeyPatch):
 
 
 def test_commands_dictionary_handles_missing_or_invalid_file(monkeypatch: MonkeyPatch):
-    with tempfile.TemporaryDirectory() as tmp:
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
         tmp_path = Path(tmp)
         module = _load_app_module(monkeypatch, tmp_path)
         client = TestClient(module.app)
@@ -168,3 +168,4 @@ def test_commands_dictionary_handles_missing_or_invalid_file(monkeypatch: Monkey
         assert invalid_payload["source"] == "shared-cli-web"
         assert invalid_payload["count"] == 0
         assert invalid_payload["commands"] == []
+

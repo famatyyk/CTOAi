@@ -107,8 +107,8 @@ export default function LoginPanel({ onLogin }: LoginPanelProps) {
             {mode === "register" && (
               <div>
                 <span className="text-xs text-zinc-400">Initial account type</span>
-                <div className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  {(Object.keys(ROLE_META) as AccountRole[]).map((r) => {
+                <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {(["member"] as AccountRole[]).map((r) => {
                     const Icon = ROLE_META[r].icon
                     const active = role === r
                     return (
@@ -131,6 +131,9 @@ export default function LoginPanel({ onLogin }: LoginPanelProps) {
                     )
                   })}
                 </div>
+                <p className="mt-2 text-xs text-zinc-500">
+                  Public registration starts as member only. Owner and operator access should come from the existing invite/bootstrap flow.
+                </p>
               </div>
             )}
 
@@ -147,7 +150,7 @@ export default function LoginPanel({ onLogin }: LoginPanelProps) {
             </button>
 
             <p className="text-xs text-zinc-500">
-              Seed accounts: famatyyk / ctoa-owner, strategos / ctoa-ops, recruit / ctoa-community
+              First setup: create the owner with `/api/auth/bootstrap`, then use login. Seed accounts are role-scoped.
             </p>
           </div>
         </section>

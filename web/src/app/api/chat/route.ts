@@ -1,68 +1,30 @@
 import { cookies } from "next/headers"
 import { NextRequest, NextResponse } from "next/server"
+import { SAFETY_SYSTEM_MESSAGE } from "@/lib/chatPolicy"
+import { getServerApiUrl } from "@/lib/config"
+import { createIpRateLimiter, getClientIp } from "@/lib/rateLimit"
+import { assessControlCenterChatQuality } from "@/lib/chatQuality"
 
 export const maxDuration = 60
 export const dynamic = "force-dynamic"
 
-const API_URL = process.env.VPS_API_URL ?? "http://116.202.96.250:8001"
+const API_URL = getServerApiUrl()
 const CHAT_MAX_MESSAGES = 40
 const CHAT_MAX_MESSAGE_CHARS = 4000
 const CHAT_RATE_LIMIT_PER_MIN = 24
 const CHAT_RATE_WINDOW_MS = 60_000
 
-type RateWindow = {
-  count: number
-  resetAt: number
-}
+const consumeChatRateWindow = createIpRateLimiter(CHAT_RATE_LIMIT_PER_MIN, CHAT_RATE_WINDOW_MS)
 
-const chatIpWindows = new Map<string, RateWindow>()
-
-const SAFETY_SYSTEM_MESSAGE =
-  "Jestes CTOAi STRATEGOS - osobisty asystent CTO stworzony przez Jakuba P. (Famatyyk). " +
-  "Odpowiadasz zawsze po polsku, jesli uzytkownik pisze po polsku. Po angielsku, jesli pisze po angielsku. " +
-  "Piszesz pelne, poprawne zdania. Unikasz bzdurnych slow i skrotow bez kontekstu. " +
-  "Jestes konkretny, techniczny i pomocny jak dobry CTO. " +
-  "Nie twierdzisz ze wykonales akcje administracyjne bez realnego potwierdzenia z systemu." +
-  "Odpowiadasz zawsze po polsku, jesli uzytkownik pisze po polsku. Po angielsku, jesli pisze po angielsku. " +
-  "Piszesz pelne, poprawne gramatycznie zdania. Unikasz niepotrzebnych skrotow i bezdusznych odpowiedzi. " +
-  "Jestes konkretny, techniczny i pomocny – jak dobry CTO. " +
-  "Nie twierdzisz, ze wykonales akcje administracyjne bez realnego potwierdzenia. " +
-  "Nie tworzysz kont, nie resetujesz hasel ani nie nadajesz uprawnien bez wyraznego potwierdzenia z systemu."
+type ChatRole = "user" | "assistant" | "system"
 
 type ChatMessage = {
-  role: string
+  role: ChatRole
   content: string
 }
 
 
-function getClientIp(req: NextRequest): string {
-  const forwarded = req.headers.get("x-forwarded-for")
-  if (forwarded) {
-    const first = forwarded.split(",")[0]?.trim()
-    if (first) return first
-  }
-  const real = req.headers.get("x-real-ip")?.trim()
-  return real || "unknown"
-}
-
-function consumeRateWindow(ip: string): { allowed: boolean; retryAfter: number } {
-  const now = Date.now()
-  const current = chatIpWindows.get(ip)
-  if (!current || current.resetAt <= now) {
-    chatIpWindows.set(ip, { count: 1, resetAt: now + CHAT_RATE_WINDOW_MS })
-    return { allowed: true, retryAfter: 0 }
-  }
-
-  if (current.count >= CHAT_RATE_LIMIT_PER_MIN) {
-    return { allowed: false, retryAfter: Math.max(1, Math.ceil((current.resetAt - now) / 1000)) }
-  }
-
-  current.count += 1
-  chatIpWindows.set(ip, current)
-  return { allowed: true, retryAfter: 0 }
-}
-
-function normalizeMessages(messages: unknown): ChatMessage[] {
+export function normalizeMessages(messages: unknown): ChatMessage[] {
   if (!Array.isArray(messages)) return []
 
   return messages
@@ -70,12 +32,12 @@ function normalizeMessages(messages: unknown): ChatMessage[] {
       (m): m is ChatMessage =>
         Boolean(m) &&
         typeof m === "object" &&
-        typeof (m as { role?: unknown }).role === "string" &&
+        ((m as { role?: unknown }).role === "user" || (m as { role?: unknown }).role === "assistant") &&
         typeof (m as { content?: unknown }).content === "string",
     )
     .slice(-CHAT_MAX_MESSAGES)
     .map((m) => ({
-      role: m.role,
+      role: m.role as "user" | "assistant",
       content: m.content.slice(0, CHAT_MAX_MESSAGE_CHARS),
     }))
 }
@@ -121,23 +83,13 @@ function sanitizeAssistantContent(content: string): string {
   return content
 }
 
-function prependSafetySystemMessage(messages: unknown): ChatMessage[] {
-  const normalized = Array.isArray(messages)
-    ? messages.filter(
-        (m): m is ChatMessage =>
-          Boolean(m) &&
-          typeof m === "object" &&
-          typeof (m as { role?: unknown }).role === "string" &&
-          typeof (m as { content?: unknown }).content === "string",
-      )
-    : []
-
-  return [{ role: "system", content: SAFETY_SYSTEM_MESSAGE }, ...normalized]
+function prependSafetySystemMessage(messages: ChatMessage[]): ChatMessage[] {
+  return [{ role: "system", content: SAFETY_SYSTEM_MESSAGE }, ...messages]
 }
 
 export async function POST(req: NextRequest) {
   const ip = getClientIp(req)
-  const gate = consumeRateWindow(ip)
+  const gate = consumeChatRateWindow(ip)
   if (!gate.allowed) {
     return NextResponse.json(
       {
@@ -181,7 +133,9 @@ export async function POST(req: NextRequest) {
     }
 
     if (typeof data.content === "string") {
-      data.content = sanitizeAssistantContent(data.content)
+      const safeContent = sanitizeAssistantContent(data.content)
+      data.content = safeContent
+      data.quality = assessControlCenterChatQuality(safeContent)
     }
 
     return NextResponse.json(data, { status: r.status })
@@ -207,4 +161,3 @@ export async function POST(req: NextRequest) {
     clearTimeout(timer)
   }
 }
-

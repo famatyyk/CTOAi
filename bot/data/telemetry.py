@@ -1,6 +1,6 @@
 """AGENT 3: Telemetry — action events, loot, exp/hr, gold/hr."""
 from __future__ import annotations
-import time
+import json
 import logging
 from .db import get_connection, get_session_stats
 
@@ -28,6 +28,67 @@ def log_event(action: str, result: str, duration_ms: int = 0) -> None:
             )
     except Exception as e:
         logger.warning("Telemetry log_event failed: %s", e)
+
+
+def log_loop_event(
+    component: str,
+    stage: str,
+    duration_ms: int = 0,
+    ok: bool = True,
+    error: str = "",
+    details: str | dict | None = None,
+) -> None:
+    if _sid() is None:
+        return
+    if isinstance(details, dict):
+        details_payload = json.dumps(details, ensure_ascii=True, sort_keys=True)
+    else:
+        details_payload = str(details or "")
+    try:
+        with get_connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO loop_events (session_id, component, stage, duration_ms, ok, error, details)
+                VALUES (?,?,?,?,?,?,?)
+                """,
+                (_sid(), component, stage, duration_ms, 1 if ok else 0, error, details_payload),
+            )
+    except Exception as e:
+        logger.warning("Telemetry log_loop_event failed: %s", e)
+
+
+def log_incident(
+    incident_type: str,
+    summary: str,
+    details: str = "",
+    severity: str = "info",
+    recovered: bool = False,
+) -> None:
+    """Record a crash/recovery incident for later inspection."""
+    if _sid() is None:
+        return
+    try:
+        with get_connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO incident_events
+                    (session_id, incident_type, severity, summary, details, recovered)
+                VALUES (?,?,?,?,?,?)
+                """,
+                (_sid(), incident_type, severity, summary, details, int(recovered)),
+            )
+    except Exception as e:
+        logger.warning("Telemetry log_incident failed: %s", e)
+
+
+def log_crash(error_type: str, error_message: str, details: str = "") -> None:
+    """Record an unrecovered fatal failure."""
+    log_incident("crash", error_type, details=details or error_message, severity="critical", recovered=False)
+
+
+def log_recovery(action: str, details: str = "") -> None:
+    """Record a recovery action after a failure or shutdown."""
+    log_incident("recovery", action, details=details, severity="info", recovered=True)
 
 
 def log_loot(item_name: str, gold_value: int) -> None:
@@ -69,9 +130,25 @@ def log_exp(exp_gained: int, monster_name: str = "") -> None:
 def get_stats() -> dict:
     """Return current session stats (gold/hr, exp/hr, kills)."""
     if _sid() is None:
-        return {"gold_hr": 0, "exp_hr": 0, "kills": 0, "session_hours": 0}
+        return {
+            "gold_hr": 0,
+            "exp_hr": 0,
+            "kills": 0,
+            "session_hours": 0,
+            "incidents": 0,
+            "crashes": 0,
+            "recoveries": 0,
+        }
     try:
         return get_session_stats(_sid())
     except Exception as e:
         logger.warning("Telemetry get_stats failed: %s", e)
-        return {"gold_hr": 0, "exp_hr": 0, "kills": 0, "session_hours": 0}
+        return {
+            "gold_hr": 0,
+            "exp_hr": 0,
+            "kills": 0,
+            "session_hours": 0,
+            "incidents": 0,
+            "crashes": 0,
+            "recoveries": 0,
+        }

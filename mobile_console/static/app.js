@@ -1,4 +1,6 @@
 ﻿const tokenInput = document.getElementById('token');
+const usernameInput = document.getElementById('username');
+const passwordInput = document.getElementById('password');
 const statusOut = document.getElementById('statusOut');
 const cmdOut = document.getElementById('cmdOut');
 const presetSelect = document.getElementById('presetSelect');
@@ -6,8 +8,11 @@ const authState = document.getElementById('authState');
 const ownerLiveDashboardBtn = document.getElementById('ownerLiveDashboardBtn');
 const roleBadge = document.getElementById('roleBadge');
 
+let legacyToken = '';
+let csrfToken = '';
+
 function getToken() {
-  return localStorage.getItem('ctoa_mobile_token') || '';
+  return legacyToken;
 }
 
 function getSessionToken() {
@@ -15,12 +20,13 @@ function getSessionToken() {
 }
 
 function setToken(token) {
-  localStorage.setItem('ctoa_mobile_token', token);
+  legacyToken = token;
 }
 
 async function api(path, options = {}) {
   const token = getToken();
   const sessionToken = getSessionToken();
+  const method = String(options.method || 'GET').toUpperCase();
   const headers = {
     'Content-Type': 'application/json',
     ...(options.headers || {}),
@@ -29,6 +35,9 @@ async function api(path, options = {}) {
     headers['X-CTOA-Token'] = token;
   } else if (sessionToken) {
     headers.Authorization = `Bearer ${sessionToken}`;
+  }
+  if (csrfToken && !['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+    headers['X-CSRF-Token'] = csrfToken;
   }
   const requestInit = { ...options, headers, credentials: 'include' };
   const res = await fetch(path, requestInit);
@@ -69,11 +78,59 @@ function setRoleBadge(role) {
   roleBadge.className = `role-badge role-${knownRole}`;
 }
 
-document.getElementById('saveToken').onclick = () => {
-  setToken(tokenInput.value.trim());
-  alert('Token zapisany');
+document.getElementById('saveToken').onclick = async () => {
+  const username = usernameInput ? usernameInput.value.trim() : '';
+  const password = passwordInput ? passwordInput.value : '';
+  const legacy = tokenInput.value.trim();
+
+  if (username && password) {
+    try {
+      const data = await api('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ username, password }),
+      });
+      setToken('');
+      csrfToken = data.csrf_token || '';
+      tokenInput.value = '';
+      if (passwordInput) passwordInput.value = '';
+      authState.textContent = `Sesja OK (${data.role || 'unknown'})`;
+      authState.style.color = '#7fff7f';
+      applyRoleState(data.role || 'guest');
+      await refreshOwnerUi();
+      return;
+    } catch (e) {
+      authState.textContent = 'Logowanie nieudane: ' + String(e);
+      authState.style.color = '#ff9999';
+      applyRoleState('guest');
+      return;
+    }
+  }
+
+  setToken(legacy);
+  authState.textContent = legacy
+    ? 'Legacy token aktywny tylko w biezacej karcie przegladarki.'
+    : 'Podaj login/haslo albo legacy token dla tej karty.';
+  authState.style.color = legacy ? '#f2c66d' : '#ff9999';
   void checkAuthAuto();
 };
+
+const logoutBtn = document.getElementById('logout');
+if (logoutBtn) {
+  logoutBtn.onclick = async () => {
+    try {
+      await api('/api/auth/logout', { method: 'POST' });
+    } catch (_e) {
+      // Logout should still clear client-side transient auth hints.
+    }
+    setToken('');
+    csrfToken = '';
+    tokenInput.value = '';
+    if (passwordInput) passwordInput.value = '';
+    authState.textContent = 'Sesja zakonczona';
+    authState.style.color = '#888';
+    applyRoleState('guest');
+  };
+}
 
 tokenInput.addEventListener('keydown', (ev) => {
   if (ev.key === 'Enter') {
@@ -86,17 +143,20 @@ async function checkAuthAuto() {
   try {
     const data = await api('/api/auth/auto-check');
     if (data.token_valid) {
-      const authMode = getToken() ? 'legacy-token' : (getSessionToken() ? 'session' : 'unknown');
+      csrfToken = data.csrf_token || csrfToken;
+      const authMode = data.auth_mode || (getToken() ? 'legacy-token-memory' : (getSessionToken() ? 'session' : 'cookie'));
       authState.textContent = `Auth OK (${authMode}) | full_access=${data.full_access} | orchestrator_timer=${data.orchestrator_timer || 'unknown'}`;
       authState.style.color = '#7fff7f';
       applyRoleState(data.role || 'guest');
       await refreshOwnerUi();
     } else {
-      authState.textContent = 'Token NIEPOPRAWNY: zapisz aktualny CTOA_MOBILE_TOKEN';
+      csrfToken = '';
+      authState.textContent = 'Sesja niepoprawna: zaloguj sie albo podaj legacy token dla tej karty.';
       authState.style.color = '#ff9999';
       applyRoleState('guest');
     }
   } catch (e) {
+    csrfToken = '';
     authState.textContent = 'Auto-check blad: ' + String(e);
     authState.style.color = '#ff9999';
     applyRoleState('guest');
@@ -315,22 +375,6 @@ document.getElementById('autoTrainerLatest').onclick = async () => {
 };
 
 // Dashboard -----------------------------------------------------------------
-function badgeStatus(s) {
-  const map = { VALIDATED:'ok', GENERATED:'ok', READY:'ok', INGESTED:'waiting', SCOUTING:'waiting',
-                FAILED:'error', ERROR:'error', QUEUED:'queued', RELEASED:'ok', NEW:'queued' };
-  const cls = map[s] || 'queued';
-  return `<span class="badge badge-${cls}">${s}</span>`;
-}
-
-function escapeHtml(value) {
-  return String(value ?? '')
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
-}
-
 function renderReasonGroup(title, items) {
   if (!Array.isArray(items) || items.length === 0) {
     return `<div class="trend-empty">Brak sygnalow dla grupy ${escapeHtml(title)}</div>`;
@@ -478,17 +522,25 @@ document.getElementById('refreshDash').onclick = async () => {
     // servers table: [id, url, status, created_at]
     const srvBody = document.querySelector('#dashServers tbody');
     if (d.servers && d.servers.length > 0) {
-      srvBody.innerHTML = d.servers.map(r =>
-        `<tr><td>${r[0]||''}</td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis">${r[1]||''}</td><td>${badgeStatus((r[2]||'').trim())}</td></tr>`
-      ).join('');
+      srvBody.innerHTML = d.servers.map(r => {
+        const id = escapeHtml(r[0] || '');
+        const url = escapeHtml(r[1] || '');
+        const status = badgeStatus(r[2]);
+        return `<tr><td>${id}</td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis">${url}</td><td>${status}</td></tr>`;
+      }).join('');
     }
 
     // top modules: [task_id, output_file, quality_score, status]
     const topBody = document.querySelector('#dashTop tbody');
     if (d.top && d.top.length > 0) {
-      topBody.innerHTML = d.top.map(r =>
-        `<tr><td>${r[0]||''}</td><td>${r[1]||''}</td><td><b>${r[2]||'?'}%</b></td><td>${badgeStatus((r[3]||'').trim())}</td></tr>`
-      ).join('');
+      topBody.innerHTML = d.top.map(r => {
+        const taskId = escapeHtml(r[0] || '');
+        const outputFile = escapeHtml(r[1] || '');
+        const quality = Number(r[2]);
+        const safeQuality = Number.isFinite(quality) ? quality : '?';
+        const status = badgeStatus(r[3]);
+        return `<tr><td>${taskId}</td><td>${outputFile}</td><td><b>${safeQuality}%</b></td><td>${status}</td></tr>`;
+      }).join('');
     }
 
     const topReasons = Array.isArray(d.top_reason_codes) ? d.top_reason_codes : [];
@@ -500,7 +552,8 @@ document.getElementById('refreshDash').onclick = async () => {
       const bars = topReasons.slice(0, 3).map((item) => {
           const c = Number(item.count || 0);
           const w = Math.max(8, Math.min(100, c * 20));
-          return `<div style="margin:4px 0"><span style="display:inline-block;min-width:165px">${item.code} (${c})</span><span style="display:inline-block;height:6px;background:#2f80ed;border-radius:999px;width:${w}px"></span></div>`;
+          const code = escapeHtml(item.code || 'UNKNOWN');
+          return `<div style="margin:4px 0"><span style="display:inline-block;min-width:165px">${code} (${c})</span><span style="display:inline-block;height:6px;background:#2f80ed;border-radius:999px;width:${w}px"></span></div>`;
         }).join('');
       const successRate = Number(slo.success_rate_24h ?? 1);
       const successTarget = Number(slo.success_rate_target ?? 1);
@@ -632,7 +685,7 @@ async function fetchAgentLog(target) {
   if (btn) btn.onclick = () => fetchAgentLog('agent_' + name);
 });
 
-tokenInput.value = getToken();
+tokenInput.value = '';
 setRoleBadge('guest');
 void checkAuthAuto();
 

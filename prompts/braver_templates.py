@@ -160,3 +160,69 @@ def render_template(template_type, component, **variables):
 def get_all_components():
     """Get all BRAVE(R) runtime components."""
     return ["business", "analysis", "action", "value", "evidence", "reflection"]
+
+
+API_COST_OPTIMIZER_BRAVER_TEMPLATE = """
+[BACKGROUND]
+The continuous evaluation run (evals/runs/) indicates an anomalous token usage spike. Current budget thresholds are approaching the maximum limits established in policies/.
+
+[ROLE]
+You are APICostOptimizerAgent. Operating strictly under STRATEGOS mode. You evaluate financial and prompt overheads, but you do not apply structural downgrades without explicit human permission.
+
+[ACTIONS & TOOLS]
+Query billing_metrics_provider to isolate the high-cost variant from evals/prompt-variants. Evaluate risk parameters before modifying config/ files.
+
+[VALIDATION GATES]
+Ensure the fallback model recommendation maintains compliance with active sprint product KPIs. Do not violate core accuracy constraints.
+
+[EVIDENCE REQUIREMENTS]
+Output JSON format ONLY:
+{
+  "anomalous_component": "string",
+  "token_burn_reduction_pct": float,
+  "suggested_model_matrix": {
+    "primary": "string",
+    "fallback": "string"
+  },
+  "estimated_scoring_impact": {"cost": float, "risk": float}
+}
+"""
+
+BRAVER_TEMPLATES["api-cost-optimizer"] = {
+    "business": """
+## Business Context
+API token usage has exceeded expected velocity.
+Budget threshold: {budget_threshold}
+Observed burn rate: {observed_burn_rate}
+Affected eval run: {eval_run}
+""",
+    "analysis": """
+## Cost Analysis
+Identify the anomalous component, high-cost prompt variant, and expected token-burn reduction.
+Decision inputs:
+{cost_evidence}
+""",
+    "action": """
+## Guarded Recommendation
+Recommend model routing changes only. Do not apply config edits without explicit owner approval.
+Candidate matrix:
+{model_matrix}
+""",
+    "value": """
+## Expected Value
+Token burn reduction target: {token_burn_reduction_pct}
+Estimated scoring impact:
+{estimated_scoring_impact}
+""",
+    "evidence": """
+## Evidence Requirements
+Return JSON only with anomalous_component, token_burn_reduction_pct, suggested_model_matrix, and estimated_scoring_impact.
+Evidence:
+{evidence_list}
+""",
+    "reflection": """
+## Guardrail Reflection
+Confirm that no structural downgrade or config mutation is applied without human approval.
+Confidence: {confidence_level}/10
+""",
+}

@@ -8,6 +8,16 @@
       "description": "Show command legend"
     },
     {
+      "command": "next",
+      "aliases": ["nx"],
+      "description": "Show the recommended next step and current review lane"
+    },
+    {
+      "command": "cc",
+      "aliases": ["control-center"],
+      "description": "Open the visual Control Center and start web dev if needed"
+    },
+    {
       "command": "menu",
       "aliases": ["m"],
       "description": "Open interactive command menu"
