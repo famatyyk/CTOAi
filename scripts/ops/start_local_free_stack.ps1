@@ -52,7 +52,7 @@ if (Test-Path $envPath) {
 }
 
 if ([string]::IsNullOrWhiteSpace($env:CTOA_MOBILE_TOKEN)) {
-    $env:CTOA_MOBILE_TOKEN = "local-dev-token"
+    Set-Item -Path Env:CTOA_MOBILE_TOKEN -Value "local-dev-token"
 }
 $env:CTOA_CAPABILITY_MOBILE_CONSOLE = "1"
 
