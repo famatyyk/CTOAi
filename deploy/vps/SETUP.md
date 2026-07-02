@@ -80,6 +80,20 @@ AZURE_OPENAI_KEY=xxxxxxxxxxxxxxxxxxxx
 # Agent Configuration
 CTOA_MAX_CONCURRENT_AGENTS=10
 CTOA_LOG_LEVEL=INFO
+
+# Reporting / evidence
+CTOA_RELEASES_DIR=/opt/ctoa/releases/evidence
+CTOA_REPO_HYGIENE_PATH=/opt/ctoa/runtime/repo-hygiene/local-pr-quality.json
+CTOA_API_COST_RUNS_DIR=/opt/ctoa/evals/runs
+CTOA_API_COST_REPORT_PATH=/opt/ctoa/runtime/api-cost/latest.json
+CTOA_API_COST_JSON_OUT=/opt/ctoa/runtime/api-cost/latest.json
+CTOA_API_COST_MD_OUT=/opt/ctoa/runtime/api-cost/latest.md
+CTOA_API_COST_MD_PATH=/opt/ctoa/runtime/api-cost/latest.md
+CTOA_EVAL_DATASET_PATH=/opt/ctoa/evals/azure-activity-agent-eval-dataset.template.jsonl
+CTOA_PROMPT_VARIANTS_DIR=/opt/ctoa/evals/prompt-variants
+CTOA_ACTION_AUDIT_PATH=/opt/ctoa/runtime/control-center/action-audit.jsonl
+CTOA_EVIDENCE_JSON_PATH=/opt/ctoa/runtime/evidence/latest.json
+CTOA_EVIDENCE_MD_PATH=/opt/ctoa/runtime/evidence/latest.md
 ENVFILE
 
 chmod 600 /opt/ctoa/.env
@@ -122,6 +136,8 @@ scripts/ops/ctoa-vps.ps1 -Action Setup24x7
 3. Recreates venv and installs `runner/requirements.txt`
 4. Installs/refreshes systemd units
 5. Enables timers/services and verifies their status
+
+The main runtime services are pinned to `/opt/ctoa/.venv/bin/python3`, so the VPS does not depend on the system `python3` for runner/report execution.
 
 ### Option B: Manual Deployment
 

@@ -25,6 +25,7 @@ TOP_LEVEL_ALLOWLIST = {
     ".gitmodules",
     ".dockerignore",
     ".pre-commit-config.yaml",
+    "AGENTS.md",
     "agents",
     "bot",
     "api",
@@ -45,6 +46,7 @@ TOP_LEVEL_ALLOWLIST = {
     "product",
     "prompts",
     "runner",
+    "runtime_context.py",
     "runtime",
     "schemas",
     "scoring",
@@ -98,11 +100,15 @@ FLAGGED_TOP_LEVEL_FILES = {
 }
 
 LOCAL_ONLY_CANDIDATES = {
+    ".agents",
+    ".codex",
     ".ctoa-local",
     ".env",
     ".env.dev",
+    ".env.kingsvale",
     "Althea.log",
     "MythibiaV2.log",
+    "_local_archive",
     "build",
     "dist",
     "logs",
