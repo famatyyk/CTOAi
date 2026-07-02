@@ -12,7 +12,7 @@ const LOCAL_SEED_PASSWORDS: Record<string, string> = {
 
 function isLocalHost(req: NextRequest): boolean {
   const host = req.nextUrl.hostname
-  return host === "localhost" || host === "127.0.0.1" || host === "::1"
+  return process.env.NODE_ENV === "development" && (host === "localhost" || host === "127.0.0.1" || host === "::1")
 }
 
 export async function POST(req: NextRequest) {
@@ -38,10 +38,11 @@ export async function POST(req: NextRequest) {
     5000,
   )
   const data = await response.json().catch(() => ({}))
-  const result = NextResponse.json(data, { status: response.status })
+  const { token: _token, ...safeData } = data as { token?: string; [key: string]: unknown }
+  const result = NextResponse.json(safeData, { status: response.status })
 
-  if (response.ok && data?.token) {
-    result.cookies.set("ctoa_token", data.token, { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 })
+  if (response.ok && _token) {
+    result.cookies.set("ctoa_token", _token, { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 })
   }
 
   return result

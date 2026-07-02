@@ -29,6 +29,12 @@ function escapeMarkdown(text: string): string {
   return text.replace(/\\/g, "\\\\").replace(/\*/g, "\\*").replace(/_/g, "\\_").replace(/`/g, "\\`")
 }
 
+function buildFence(content: string): string {
+  const matches = content.match(/`+/g) || []
+  const longest = matches.reduce((max, run) => Math.max(max, run.length), 0)
+  return "`".repeat(Math.max(3, longest + 1))
+}
+
 export function buildControlCenterChatTranscript(messages: StoredMessage[], metadata: ChatTranscriptMetadata): string {
   const generatedAt = metadata.generatedAt || new Date().toISOString()
   const header = [
@@ -56,11 +62,12 @@ export function buildControlCenterChatMarkdown(messages: StoredMessage[], metada
   ].filter(Boolean)
 
   for (const message of messages) {
+    const fence = buildFence(message.content)
     lines.push(`## ${message.role === "user" ? "User" : "Assistant"}`)
     lines.push("")
-    lines.push("```text")
+    lines.push(`${fence}text`)
     lines.push(message.content)
-    lines.push("```")
+    lines.push(fence)
     lines.push("")
     if (message.quality) {
       lines.push(`- Quality: \`${message.quality.level}\` (${message.quality.score}/100)`)

@@ -165,6 +165,51 @@ export default function ControlCenterChatPanel() {
     [refreshAuth],
   )
 
+  const submitAuth = useCallback(
+    async (nextUsername?: string, nextPassword?: string, nextMode?: "login" | "register") => {
+      const login = (nextUsername ?? username).trim().toLowerCase()
+      const pass = (nextPassword ?? password).trim()
+      const action = nextMode ?? mode
+      if (!login || !pass) {
+        setAuthError("Username and password are required.")
+        return
+      }
+
+      setAuthLoading(true)
+      setAuthError("")
+
+      try {
+        const response = await fetch("/api/auth", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            action,
+            payload:
+              action === "register"
+                ? { username: login, password: pass, role: "member" }
+                : { username: login, password: pass },
+          }),
+        })
+        const data = (await response.json()) as { user?: { username?: string; display_name?: string; role?: string }; detail?: string; error?: string }
+        if (!response.ok) {
+          throw new Error(data.detail || data.error || "Authentication failed.")
+        }
+        if (data.user?.username) {
+          await refreshAuth()
+        } else {
+          throw new Error("Authentication succeeded but no user was returned.")
+        }
+      } catch (error) {
+        setAuthState("unauthenticated")
+        setAuthError(error instanceof Error ? error.message : "Authentication failed.")
+      } finally {
+        setAuthLoading(false)
+      }
+    },
+    [mode, password, refreshAuth, username],
+  )
+
   const handleSeedAccount = useCallback(
     (seed: SeedAccount) => {
       setMode("login")
@@ -413,11 +458,22 @@ export default function ControlCenterChatPanel() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleSeedAccount(SEED_ACCOUNTS[0])}
+                    onClick={() => void submitAuth()}
                     disabled={authLoading}
                     className="rounded-2xl bg-cyan-300 px-4 py-3 text-sm font-black text-[#111629] transition hover:bg-cyan-200 disabled:opacity-50"
                   >
-                    {authLoading ? "Signing in..." : "Auto-login local seed"}
+                    {authLoading ? "Signing in..." : mode === "login" ? "Sign in" : "Create account"}
+                  </button>
+                </div>
+
+                <div className="mt-3 flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={() => handleSeedAccount(SEED_ACCOUNTS[0])}
+                    disabled={authLoading}
+                    className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-xs font-bold text-cyan-100 transition hover:bg-cyan-300/20 disabled:opacity-50"
+                  >
+                    Auto-login local seed
                   </button>
                 </div>
 
