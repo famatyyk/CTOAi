@@ -14,6 +14,12 @@ def test_classify_distribution_marks_mobile_console_as_pro_public():
     assert result["package_tier"] == "Pro"
 
 
+def test_classify_distribution_marks_src_as_core_public():
+    result = classify_distribution("src")
+    assert result["visibility"] == "public"
+    assert result["package_tier"] == "Core"
+
+
 def test_build_plan_carries_visibility_and_package_tier():
     plan = build_plan(
         [

@@ -36,7 +36,7 @@ def test_tracked_top_level_entries_returns_empty_set_on_git_unavailable(monkeypa
 
 
 def test_scan_top_level_ignores_untracked_local_outputs_and_flags_unknowns(tmp_path: Path, monkeypatch):
-    for name in ["docs", "mobile_console", "build", ".agents", ".codex", "_local_archive", "mystery_dir", "decompiled_sample"]:
+    for name in ["docs", "mobile_console", "src", "build", ".agents", ".codex", "_local_archive", "mystery_dir", "decompiled_sample"]:
         (tmp_path / name).mkdir(parents=True, exist_ok=True)
     (tmp_path / "analyze_enc3.py").write_text("print(1)\n", encoding="utf-8")
     (tmp_path / "AGENTS.md").write_text("# Repository Guidelines\n", encoding="utf-8")
@@ -51,6 +51,7 @@ def test_scan_top_level_ignores_untracked_local_outputs_and_flags_unknowns(tmp_p
     paths = {item["path"]: item for item in report["findings"]}
     assert "AGENTS.md" not in paths
     assert "build" not in paths
+    assert "src" not in paths
     assert ".agents" not in paths
     assert ".codex" not in paths
     assert "_local_archive" not in paths
