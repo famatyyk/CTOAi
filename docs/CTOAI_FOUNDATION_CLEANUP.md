@@ -95,6 +95,11 @@ Rule: operator starts in Control Center.
 5. Archive stale docs and old dashboards.
 6. Delete only after parity is visible and documented.
 
+Cleanup execution records belong in:
+
+- `docs/REPO_CLEANUP_WAVES.md`
+- `docs/history/sprints/SPRINT-070-PROGRESS.md`
+
 ## Near-term non-feature work
 
 | Task | Why it matters |

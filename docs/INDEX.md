@@ -31,6 +31,7 @@ canonical docs above when there is a conflict:
 - [Architecture](ARCHITECTURE.md): deeper architecture notes.
 - [CTOA CLI](CTOA_CLI.md): command-line operator surface.
 - [Product Public/Private Architecture](PRODUCT_PUBLIC_PRIVATE_ARCHITECTURE.md): product boundary rationale.
+- [Repo Cleanup Waves](REPO_CLEANUP_WAVES.md): cleanup wave contract and execution record.
 
 ## Historical Snapshots
 
