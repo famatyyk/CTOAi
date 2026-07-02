@@ -36,7 +36,7 @@ ssh "$REMOTE" bash <<REMOTE_SCRIPT
   cd $DEPLOY_DIR/bot/infra
 
   echo "[AGENT 9] Pulling latest images..."
-  docker compose pull --quiet grafana prometheus 2>/dev/null || true
+  docker compose pull --quiet prometheus 2>/dev/null || true
 
   echo "[AGENT 9] Building bot image..."
   docker compose build bot
@@ -50,4 +50,4 @@ ssh "$REMOTE" bash <<REMOTE_SCRIPT
   echo "[AGENT 9] Deploy complete!"
 REMOTE_SCRIPT
 
-echo "=== Deploy finished. Grafana: http://$VPS_IP:3000 ==="
+echo "=== Deploy finished. Prometheus: http://$VPS_IP:9090 ==="

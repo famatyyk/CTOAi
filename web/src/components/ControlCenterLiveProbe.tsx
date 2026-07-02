@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import type { ControlCenterSnapshot } from "@/lib/controlCenterSnapshot"
+import { fetchWithTimeout } from "@/lib/fetchWithTimeout"
 
 type ProbeState =
   | { state: "loading"; snapshot: null; error: null }
@@ -16,7 +17,7 @@ export default function ControlCenterLiveProbe() {
 
     async function loadProbe() {
       try {
-        const response = await fetch("/api/control-center", { cache: "no-store" })
+        const response = await fetchWithTimeout("/api/control-center", { cache: "no-store" }, 5000)
         const snapshot = (await response.json()) as ControlCenterSnapshot
         if (!cancelled) {
           setProbe({ state: "ready", snapshot, error: null })

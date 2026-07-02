@@ -6,6 +6,6 @@ Wants=network-online.target
 [Service]
 Type=oneshot
 WorkingDirectory=/opt/ctoa
-ExecStart=/usr/bin/python3 /opt/ctoa/runner/lab_runner.py
+ExecStart=/opt/ctoa/.venv/bin/python3 /opt/ctoa/runner/lab_runner.py
 StandardOutput=append:/opt/ctoa/logs/lab-runner.log
 StandardError=append:/opt/ctoa/logs/lab-runner.log

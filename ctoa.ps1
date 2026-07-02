@@ -15,6 +15,7 @@ $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $VpsScript = Join-Path $Root "scripts/ops/ctoa-vps.ps1"
 $CommandDictionaryFile = Join-Path $Root "schemas/ctoa-command-dictionary.json"
+$ControlCenterOpenScript = Join-Path $Root "scripts/windows/open-control-center.ps1"
 
 function Get-CliVpsHost {
     $explicit = [Environment]::GetEnvironmentVariable("CTOA_VPS_HOST_CLI", "Process")
@@ -32,15 +33,7 @@ function Get-PythonExe {
     if (Test-Path $venvPython) {
         return $venvPython
     }
-    return "python"
-}
-
-function Get-UvicornExe {
-    $venvUvicorn = Join-Path $Root ".venv/Scripts/uvicorn.exe"
-    if (Test-Path $venvUvicorn) {
-        return $venvUvicorn
-    }
-    return "uvicorn"
+    throw "Missing repo-local Python at $venvPython. Create the virtual environment with: python -m venv .venv"
 }
 
 function Invoke-FromRoot {
@@ -129,6 +122,8 @@ CTOAi CLI (MVP)
 
 Usage:
   .\\ctoa.ps1 help
+    .\\ctoa.ps1 next
+    .\\ctoa.ps1 cc
     .\\ctoa.ps1 menu
     .\\ctoa.ps1 dev
     .\\ctoa.ps1 ops
@@ -149,6 +144,8 @@ Usage:
 
 Short aliases:
   h = help
+    nx = next
+    cc = open Control Center
     m = menu
     s = status
   t = test
@@ -160,6 +157,8 @@ Short aliases:
     prod = release/profile gate
 
 Examples:
+    .\\ctoa.ps1 next
+    .\\ctoa.ps1 cc
     .\\ctoa.ps1 menu
     .\\ctoa.ps1 dev
     .\\ctoa.ps1 ops
@@ -178,6 +177,130 @@ Examples:
 "@ | Write-Host
 
         Write-Host ("Shared dictionary: version={0}, commands={1}" -f $dict.version, $dictCount) -ForegroundColor DarkGray
+}
+
+function Get-GitExe {
+    $cmd = Get-Command git -ErrorAction SilentlyContinue
+    if ($null -ne $cmd) {
+        return $cmd.Source
+    }
+
+    $windowsGit = "C:\Program Files\Git\cmd\git.exe"
+    if (Test-Path $windowsGit) {
+        return $windowsGit
+    }
+
+    return ""
+}
+
+function Get-NpmExe {
+    foreach ($name in @("npm.cmd", "npm")) {
+        $cmd = Get-Command $name -ErrorAction SilentlyContinue
+        if ($null -ne $cmd) {
+            return $cmd.Source
+        }
+    }
+
+    return ""
+}
+
+function Get-WorktreeSummary {
+    $git = Get-GitExe
+    if ([string]::IsNullOrWhiteSpace($git)) {
+        return "git unavailable in PATH; use C:\Program Files\Git\cmd\git.exe if you need raw git."
+    }
+
+    Push-Location $Root
+    try {
+        $lines = @(& $git status --short 2>$null)
+        if ($LASTEXITCODE -ne 0) {
+            return "git status failed; run scripts/ops/ctoa_env_doctor.py before sync/push work."
+        }
+        if (@($lines).Count -eq 0) {
+            return "clean"
+        }
+        return ("{0} changed/untracked paths" -f @($lines).Count)
+    }
+    finally {
+        Pop-Location
+    }
+}
+
+function Show-Next {
+    $worktree = Get-WorktreeSummary
+
+    Write-Host ""
+    Write-Host "CTOAi next step" -ForegroundColor Cyan
+    Write-Host ("Worktree: {0}" -f $worktree)
+    Write-Host ""
+    Write-Host "Do this now:" -ForegroundColor Cyan
+    Write-Host "  1. Run .\ctoa.ps1 cc if you need the visual Control Center."
+    Write-Host "  2. Open docs/INDEX.md if you need orientation."
+    Write-Host "  3. Continue the current lane: Control Center + evidence/reporting + VPS parity."
+    Write-Host ""
+    Write-Host "Do not start a new lane until this is clean:" -ForegroundColor Yellow
+    Write-Host "  - package current docs/env parity changes into one reviewable commit or PR"
+    Write-Host "  - keep unrelated bot/UI changes out of that review unit"
+    Write-Host ""
+    Write-Host "Useful commands:"
+    Write-Host "  .\ctoa.ps1 cc"
+    Write-Host "  .\ctoa.ps1 status"
+    Write-Host "  python -m pytest tests/test_vps_python_parity.py -q"
+    Write-Host "  cd web; npm test -- --run src/lib/__tests__/controlCenterEvidence.test.ts"
+}
+
+function Open-ControlCenter {
+    $url = [Environment]::GetEnvironmentVariable("CTOA_CONTROL_CENTER_URL", "Process")
+    if ([string]::IsNullOrWhiteSpace($url)) {
+        $url = [Environment]::GetEnvironmentVariable("CTOA_CONTROL_CENTER_URL", "User")
+    }
+    if ([string]::IsNullOrWhiteSpace($url)) {
+        $url = "http://127.0.0.1:3000/control-center"
+    }
+
+    $responding = $false
+    try {
+        Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 2 | Out-Null
+        $responding = $true
+        Write-Host "Control Center is responding: $url" -ForegroundColor Cyan
+    }
+    catch {
+        $webDir = Join-Path $Root "web"
+        Write-Host "Control Center is not responding yet: $url" -ForegroundColor Yellow
+        $npm = Get-NpmExe
+        if ([string]::IsNullOrWhiteSpace($npm)) {
+            Write-Host "npm was not found. Install Node.js or run from a shell where npm is available." -ForegroundColor Yellow
+        }
+        else {
+            Write-Host "Starting web dev server in background: cd web; npm run dev"
+            Start-Process -FilePath $npm -ArgumentList @("run", "dev") -WorkingDirectory $webDir -WindowStyle Hidden
+            Start-Sleep -Seconds 3
+        }
+
+        try {
+            Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 3 | Out-Null
+            $responding = $true
+            Write-Host "Control Center started: $url" -ForegroundColor Cyan
+        }
+        catch {
+            Write-Host "Control Center is still warming up. Browser will open now; refresh in a few seconds." -ForegroundColor Yellow
+        }
+    }
+
+    if (Test-Path $ControlCenterOpenScript) {
+        Invoke-FromRoot -FilePath "powershell" -Arguments @(
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            $ControlCenterOpenScript,
+            "-Url",
+            $url
+        )
+        return
+    }
+
+    Start-Process $url
 }
 
 function Resolve-Sprint {
@@ -232,8 +355,10 @@ function Invoke-Nightly {
 }
 
 function Invoke-Up {
-    $uvicorn = Get-UvicornExe
-    Invoke-FromRoot -FilePath $uvicorn -Arguments @(
+    $python = Get-PythonExe
+    Invoke-FromRoot -FilePath $python -Arguments @(
+        "-m",
+        "uvicorn",
         "mobile_console.app:app",
         "--host",
         "0.0.0.0",
@@ -529,41 +654,45 @@ function Get-ValueOrDefault {
 function Show-Menu {
     Write-Host "" 
     Write-Host "CTOAi CLI Menu" -ForegroundColor Cyan
-    Write-Host "  1. Help"
-    Write-Host "  2. Dev profile"
-    Write-Host "  3. Ops profile"
-    Write-Host "  4. Prod profile"
-    Write-Host "  5. Run tests"
-    Write-Host "  6. Validate sprint-029"
-    Write-Host "  7. Nightly sprint-029"
-    Write-Host "  8. Status snapshot (local+VPS+dashboard)"
-    Write-Host "  9. Runner status"
-    Write-Host " 10. Report restart"
-    Write-Host " 11. Mobile status"
-    Write-Host " 12. Logs runner"
-    Write-Host " 13. VPS ValidateServices"
-    Write-Host " 14. Dashboard snapshot"
-    Write-Host " 15. Report now"
+    Write-Host "  1. Next recommended step"
+    Write-Host "  2. Open Control Center"
+    Write-Host "  3. Help"
+    Write-Host "  4. Dev profile"
+    Write-Host "  5. Ops profile"
+    Write-Host "  6. Prod profile"
+    Write-Host "  7. Run tests"
+    Write-Host "  8. Validate sprint-029"
+    Write-Host "  9. Nightly sprint-029"
+    Write-Host " 10. Status snapshot (local+VPS+dashboard)"
+    Write-Host " 11. Runner status"
+    Write-Host " 12. Report restart"
+    Write-Host " 13. Mobile status"
+    Write-Host " 14. Logs runner"
+    Write-Host " 15. VPS ValidateServices"
+    Write-Host " 16. Dashboard snapshot"
+    Write-Host " 17. Report now"
     Write-Host "  0. Exit"
     Write-Host ""
 
     $choice = Read-Host "Select option"
     switch ($choice) {
-        "1" { Show-Help; break }
-        "2" { Invoke-DevProfile; break }
-        "3" { Invoke-OpsProfile; break }
-        "4" { Invoke-ProdProfile; break }
-        "5" { Invoke-Test; break }
-        "6" { Invoke-ValidateSprint -Sprint "029"; break }
-        "7" { Invoke-Nightly -Sprint "029"; break }
-        "8" { Invoke-StatusSnapshot; break }
-        "9" { Invoke-RunnerCommand -Subcommand "status"; break }
-        "10" { Invoke-ReportCommand -Subcommand "restart"; break }
-        "11" { Invoke-MobileCommand -Subcommand "status"; break }
-        "12" { Invoke-LogsCommand -Target "runner"; break }
-        "13" { Invoke-VpsAction -Action "ValidateServices"; break }
-        "14" { Invoke-DashboardSnapshot; break }
-        "15" { Invoke-ReportNow; break }
+        "1" { Show-Next; break }
+        "2" { Open-ControlCenter; break }
+        "3" { Show-Help; break }
+        "4" { Invoke-DevProfile; break }
+        "5" { Invoke-OpsProfile; break }
+        "6" { Invoke-ProdProfile; break }
+        "7" { Invoke-Test; break }
+        "8" { Invoke-ValidateSprint -Sprint "029"; break }
+        "9" { Invoke-Nightly -Sprint "029"; break }
+        "10" { Invoke-StatusSnapshot; break }
+        "11" { Invoke-RunnerCommand -Subcommand "status"; break }
+        "12" { Invoke-ReportCommand -Subcommand "restart"; break }
+        "13" { Invoke-MobileCommand -Subcommand "status"; break }
+        "14" { Invoke-LogsCommand -Target "runner"; break }
+        "15" { Invoke-VpsAction -Action "ValidateServices"; break }
+        "16" { Invoke-DashboardSnapshot; break }
+        "17" { Invoke-ReportNow; break }
         "0" { return }
         default { throw "Unknown menu option '$choice'." }
     }
@@ -572,6 +701,12 @@ function Show-Menu {
 switch ($Command.ToLowerInvariant()) {
     "help" { Show-Help; break }
     "h" { Show-Help; break }
+
+    "next" { Show-Next; break }
+    "nx" { Show-Next; break }
+
+    "cc" { Open-ControlCenter; break }
+    "control-center" { Open-ControlCenter; break }
 
     "menu" { Show-Menu; break }
     "m" { Show-Menu; break }

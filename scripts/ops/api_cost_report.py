@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable
@@ -57,6 +58,40 @@ def _read_json_or_jsonl(path: Path) -> list[dict[str, Any]]:
 
     payload = json.loads(text)
     return _extract_records(payload)
+
+
+def _read_jsonl_records(path: Path) -> list[dict[str, Any]]:
+    if not path.exists():
+        return []
+    rows: list[dict[str, Any]] = []
+    for line_no, line in enumerate(path.read_text(encoding="utf-8-sig").splitlines(), start=1):
+        line = line.strip()
+        if not line:
+            continue
+        payload = json.loads(line)
+        if isinstance(payload, dict):
+            rows.append(payload)
+        else:
+            raise ValueError(f"{path}:{line_no} is not a JSON object")
+    return rows
+
+
+def _configured_path(env_name: str, fallback: str) -> Path:
+    value = os.getenv(env_name, "").strip()
+    return Path(value) if value else Path(fallback)
+
+
+def _configured_path_from(env_names: list[str], fallback: str) -> Path:
+    for env_name in env_names:
+        value = os.getenv(env_name, "").strip()
+        if value:
+            return Path(value)
+    return Path(fallback)
+
+
+def _configured_optional_path(env_name: str) -> Path | None:
+    value = os.getenv(env_name, "").strip()
+    return Path(value) if value else None
 
 
 def _extract_records(payload: Any) -> list[dict[str, Any]]:
@@ -213,6 +248,40 @@ def load_cost_records(runs_dir: Path, pricing: dict[str, dict[str, float]] | Non
     return records
 
 
+def load_eval_artifact_summary(
+    dataset_path: Path | None = None,
+    prompt_variants_dir: Path | None = None,
+) -> dict[str, Any]:
+    dataset_path = dataset_path or _configured_path(
+        "CTOA_EVAL_DATASET_PATH",
+        "evals/azure-activity-agent-eval-dataset.template.jsonl",
+    )
+    prompt_variants_dir = prompt_variants_dir or _configured_path("CTOA_PROMPT_VARIANTS_DIR", "evals/prompt-variants")
+    dataset_records = _read_jsonl_records(dataset_path) if dataset_path.exists() else []
+    dataset_cases = len(dataset_records)
+    category_counts: dict[str, int] = {}
+    priority_counts: dict[str, int] = {}
+    for record in dataset_records:
+        category = str(record.get("category", "unknown"))
+        priority = str(record.get("priority", "unknown"))
+        category_counts[category] = category_counts.get(category, 0) + 1
+        priority_counts[priority] = priority_counts.get(priority, 0) + 1
+    prompt_variants = sorted(
+        path.stem
+        for path in prompt_variants_dir.glob("*.md")
+        if path.is_file()
+    ) if prompt_variants_dir.exists() else []
+    return {
+        "dataset_path": str(dataset_path).replace("\\", "/"),
+        "dataset_cases": dataset_cases,
+        "category_counts": dict(sorted(category_counts.items(), key=lambda item: (-item[1], item[0]))),
+        "priority_counts": dict(sorted(priority_counts.items(), key=lambda item: (-item[1], item[0]))),
+        "prompt_variants_dir": str(prompt_variants_dir).replace("\\", "/"),
+        "prompt_variant_count": len(prompt_variants),
+        "prompt_variants": prompt_variants,
+    }
+
+
 def _sum_by(records: list[CostRecord], field: str) -> list[dict[str, Any]]:
     buckets: dict[str, dict[str, Any]] = {}
     for record in records:
@@ -241,7 +310,13 @@ def _sum_by(records: list[CostRecord], field: str) -> list[dict[str, Any]]:
     return sorted(buckets.values(), key=lambda item: (item["cost_usd"], item["total_tokens"]), reverse=True)
 
 
-def build_report(records: list[CostRecord], runs_dir: Path, anomaly_threshold: float) -> dict[str, Any]:
+def build_report(
+    records: list[CostRecord],
+    runs_dir: Path,
+    anomaly_threshold: float,
+    dataset_path: Path | None = None,
+    prompt_variants_dir: Path | None = None,
+) -> dict[str, Any]:
     total_tokens = sum(record.total_tokens for record in records)
     total_cost = sum(record.cost_usd or 0.0 for record in records)
     records_with_cost = sum(1 for record in records if record.cost_usd is not None)
@@ -251,6 +326,7 @@ def build_report(records: list[CostRecord], runs_dir: Path, anomaly_threshold: f
     by_component = _sum_by(records, "component")
     by_model = _sum_by(records, "model")
     by_variant = _sum_by(records, "variant")
+    eval_artifacts = load_eval_artifact_summary(dataset_path, prompt_variants_dir)
 
     anomalies: list[dict[str, Any]] = []
     for bucket in by_component:
@@ -272,7 +348,7 @@ def build_report(records: list[CostRecord], runs_dir: Path, anomaly_threshold: f
     if top_component and total_tokens:
         reduction_pct = min(35.0, round((top_component["total_tokens"] / total_tokens) * 25.0, 2))
 
-    recommendations = _build_recommendations(records, anomalies, records_with_cost, reduction_pct)
+    recommendations = _build_recommendations(records, anomalies, records_with_cost, reduction_pct, eval_artifacts)
 
     report = {
         "generated_at_utc": dt.datetime.now(dt.UTC).isoformat(timespec="seconds"),
@@ -288,6 +364,7 @@ def build_report(records: list[CostRecord], runs_dir: Path, anomaly_threshold: f
         "token_burn_per_day": round(total_tokens / day_count, 2) if day_count else 0.0,
         "cost_burn_per_day_usd": round(total_cost / day_count, 6) if day_count else 0.0,
         "token_burn_reduction_pct": reduction_pct,
+        "eval_artifacts": eval_artifacts,
         "by_component": by_component,
         "by_model": by_model,
         "by_variant": by_variant,
@@ -314,10 +391,12 @@ def _build_recommendations(
     anomalies: list[dict[str, Any]],
     records_with_cost: int,
     reduction_pct: float,
+    eval_artifacts: dict[str, Any],
 ) -> list[str]:
     if not records:
         return [
             "Create evals/runs/ and store JSON or JSONL run artifacts with usage.total_tokens or cost_usd fields.",
+            f"Use the existing eval dataset at {eval_artifacts['dataset_path']} to keep the run corpus anchored.",
             "Add cost_usd to eval records or run this report with --pricing-json for explicit local estimates.",
         ]
 
@@ -364,16 +443,39 @@ def render_markdown(report: dict[str, Any]) -> str:
     for recommendation in report["recommendations"]:
         lines.append(f"- {recommendation}")
 
+    lines.extend(["", "## Eval Artifacts", ""])
+    lines.append(f"- Dataset cases: `{report['eval_artifacts']['dataset_cases']}`")
+    lines.append(f"- Prompt variants: `{report['eval_artifacts']['prompt_variant_count']}`")
+    if report["eval_artifacts"]["prompt_variants"]:
+        lines.append(f"- Variant names: `{', '.join(report['eval_artifacts']['prompt_variants'])}`")
+
     return "\n".join(lines) + "\n"
 
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Generate API cost report from evals/runs artifacts.")
-    parser.add_argument("--runs-dir", type=Path, default=DEFAULT_RUNS_DIR)
-    parser.add_argument("--pricing-json", type=Path, default=None)
-    parser.add_argument("--json-out", type=Path, default=DEFAULT_JSON_OUT)
-    parser.add_argument("--md-out", type=Path, default=DEFAULT_MD_OUT)
-    parser.add_argument("--anomaly-threshold", type=float, default=0.30)
+    parser.add_argument("--runs-dir", type=Path, default=_configured_path("CTOA_API_COST_RUNS_DIR", "evals/runs"))
+    parser.add_argument(
+        "--dataset-path",
+        type=Path,
+        default=_configured_path(
+            "CTOA_EVAL_DATASET_PATH",
+            "evals/azure-activity-agent-eval-dataset.template.jsonl",
+        ),
+    )
+    parser.add_argument(
+        "--prompt-variants-dir",
+        type=Path,
+        default=_configured_path("CTOA_PROMPT_VARIANTS_DIR", "evals/prompt-variants"),
+    )
+    parser.add_argument("--pricing-json", type=Path, default=_configured_optional_path("CTOA_API_COST_PRICING_JSON"))
+    parser.add_argument("--json-out", type=Path, default=_configured_path("CTOA_API_COST_JSON_OUT", "runtime/api-cost/latest.json"))
+    parser.add_argument(
+        "--md-out",
+        type=Path,
+        default=_configured_path_from(["CTOA_API_COST_MD_OUT", "CTOA_API_COST_MD_PATH"], "runtime/api-cost/latest.md"),
+    )
+    parser.add_argument("--anomaly-threshold", type=float, default=float(os.getenv("CTOA_API_COST_ANOMALY_THRESHOLD", "0.30")))
     return parser
 
 
@@ -381,7 +483,7 @@ def main() -> int:
     args = _build_parser().parse_args()
     pricing = _load_pricing(args.pricing_json)
     records = load_cost_records(args.runs_dir, pricing)
-    report = build_report(records, args.runs_dir, args.anomaly_threshold)
+    report = build_report(records, args.runs_dir, args.anomaly_threshold, args.dataset_path, args.prompt_variants_dir)
 
     args.json_out.parent.mkdir(parents=True, exist_ok=True)
     args.json_out.write_text(json.dumps(report, indent=2), encoding="utf-8")

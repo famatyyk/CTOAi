@@ -1,9 +1,10 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
-import type { ControlCenterOps, VpsDiskDetail } from "@/lib/controlCenterOps"
+import { useEffect, useState } from "react"
+import type { ControlCenterOps, LocalAuditAction } from "@/lib/controlCenterOps"
+import { fetchWithTimeout } from "@/lib/fetchWithTimeout"
 
-type PanelMode = "all" | "vps" | "docker" | "bot" | "github"
+type PanelMode = "all" | "repo" | "release" | "cost" | "audit"
 
 type DetailState =
   | { state: "loading"; ops: null; error: null }
@@ -12,31 +13,23 @@ type DetailState =
 
 export default function ControlCenterDetailPanels({ mode = "all" }: { mode?: PanelMode }) {
   const [details, setDetails] = useState<DetailState>({ state: "loading", ops: null, error: null })
-  const [diskHistory, setDiskHistory] = useState<Array<{ label: string; usePercent: number }>>([])
 
   useEffect(() => {
     let cancelled = false
 
     async function loadDetails() {
       try {
-        const response = await fetch("/api/control-center/ops", { cache: "no-store" })
+        const response = await fetchWithTimeout("/api/control-center/ops", { cache: "no-store" }, 5000)
         const ops = (await response.json()) as ControlCenterOps
-        if (cancelled) return
-        setDetails({ state: "ready", ops, error: null })
-
-        const disk = ops.details.vpsDisk
-        if (disk) {
-          setDiskHistory((previous) => {
-            const next = [...previous, { label: new Date(ops.generatedAt).toLocaleTimeString(), usePercent: disk.usePercent }]
-            return next.slice(-12)
-          })
+        if (!cancelled) {
+          setDetails({ state: "ready", ops, error: null })
         }
       } catch (error) {
         if (!cancelled) {
           setDetails({
             state: "error",
             ops: null,
-            error: error instanceof Error ? error.message : "Detail probe failed.",
+            error: error instanceof Error ? error.message : "Local status probe failed.",
           })
         }
       }
@@ -60,110 +53,148 @@ export default function ControlCenterDetailPanels({ mode = "all" }: { mode?: Pan
 
   return (
     <section className="grid gap-5">
-      {show("vps") ? <VpsDiskPanel disk={ops?.details.vpsDisk || null} history={diskHistory} /> : null}
-      {show("docker") ? <DockerImagesPanel images={ops?.details.dockerImages || []} /> : null}
-      {show("bot") ? <BotLogsPanel lines={ops?.details.botLogs?.lines || []} /> : null}
-      {show("github") ? <GithubRunsPanel runs={ops?.details.githubRuns || []} /> : null}
+      {show("repo") ? <RepoHygienePanel details={ops?.details.repoHygiene || null} /> : null}
+      {show("release") ? <ReleaseEvidencePanel details={ops?.details || null} /> : null}
+      {show("cost") ? <ApiCostPanel details={ops?.details.apiCostReport || null} /> : null}
+      {show("audit") ? <AuditPanel details={ops?.details.controlCenterAudit || null} /> : null}
+      {mode === "all" && ops?.details.recommendations?.length ? <RecommendationsPanel items={ops.details.recommendations} /> : null}
     </section>
   )
 }
 
-function VpsDiskPanel({ disk, history }: { disk: VpsDiskDetail | null; history: Array<{ label: string; usePercent: number }> }) {
-  const usedGb = disk ? formatGb(disk.usedBytes) : "..."
-  const availableGb = disk ? formatGb(disk.availableBytes) : "..."
-
+function RepoHygienePanel({ details }: { details: ControlCenterOps["details"]["repoHygiene"] | null }) {
+  const status = details?.status || "loading"
+  const findingCount = details?.findingCount ?? 0
+  const summary: ControlCenterOps["details"]["repoHygiene"]["summary"] = details?.summary || {}
+  const sourcePath = details?.sourcePath || "runtime/repo-hygiene/local-pr-quality.json"
   return (
     <article className="rounded-3xl border border-white/10 bg-[#151b33] p-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-sm font-black">VPS disk trend</p>
-          <p className="mt-1 text-sm text-slate-400">Session trend from read-only disk probes.</p>
-        </div>
-        <span className="rounded-full bg-cyan-300/10 px-3 py-1 text-xs font-bold text-cyan-200">
-          {disk ? `${disk.usePercent}% used` : "loading"}
-        </span>
-      </div>
-
+      <PanelHeader title="Repo hygiene" label={status} />
       <div className="mt-6 grid gap-4 md:grid-cols-3">
-        <Metric label="Used" value={usedGb} />
-        <Metric label="Available" value={availableGb} />
-        <Metric label="Mount" value={disk?.mount || "..."} />
+        <Metric label="Findings" value={String(findingCount)} />
+        <Metric label="Private" value={String(summary.private_count ?? 0)} />
+        <Metric label="Public" value={String(summary.public_count ?? 0)} />
       </div>
-
-      <div className="mt-6 flex h-40 items-end gap-2 rounded-3xl border border-white/10 bg-[#0e1327] p-4">
-        {(history.length ? history : [{ label: "loading", usePercent: 0 }]).map((point, index) => (
-          <div key={`${point.label}-${index}`} className="flex flex-1 flex-col items-center gap-2">
-            <div
-              className="w-full rounded-t-xl bg-gradient-to-t from-cyan-500 to-fuchsia-400"
-              style={{ height: `${Math.max(point.usePercent, 4)}%` }}
-              title={`${point.label}: ${point.usePercent}%`}
-            />
-            <span className="text-[10px] text-slate-500">{point.usePercent}%</span>
-          </div>
-        ))}
-      </div>
+      <p className="mt-4 text-sm leading-6 text-slate-400">
+        Review count: <span className="text-slate-100">{String(summary.review_count ?? 0)}</span>
+      </p>
+      <p className="mt-4 rounded-2xl border border-white/10 bg-[#0e1327] px-4 py-3 text-xs leading-6 text-slate-400">
+        Source: {sourcePath}
+      </p>
     </article>
   )
 }
 
-function DockerImagesPanel({ images }: { images: ControlCenterOps["details"]["dockerImages"] }) {
+function ReleaseEvidencePanel({ details }: { details: ControlCenterOps["details"] | null }) {
+  const latest = details?.latestReleaseEvidence || null
+  const sprints = details?.releaseSprints || []
+
   return (
     <article className="rounded-3xl border border-white/10 bg-[#151b33] p-6">
-      <PanelHeader title="Docker image breakdown" label={`${images.length || "..."} images`} />
-      <div className="mt-6 overflow-hidden rounded-3xl border border-white/10">
-        <div className="grid grid-cols-[1.2fr_0.7fr_0.7fr] bg-white/[0.06] px-4 py-3 text-xs uppercase tracking-[0.2em] text-slate-400">
-          <span>Image</span>
-          <span>Age</span>
-          <span>Size</span>
-        </div>
-        {(images.length ? images : placeholderRows()).map((image) => (
-          <div key={`${image.repository}:${image.tag}:${image.imageId}`} className="grid grid-cols-[1.2fr_0.7fr_0.7fr] border-t border-white/10 px-4 py-3 text-sm">
-            <span className="truncate font-semibold text-slate-100">{image.repository}:{image.tag}</span>
-            <span className="text-slate-400">{image.createdSince}</span>
-            <span className="text-cyan-100">{image.size}</span>
-          </div>
-        ))}
+      <PanelHeader title="Release evidence" label={latest ? "ready" : "missing"} />
+      <div className="mt-6 grid gap-4 md:grid-cols-3">
+        <Metric label="Files" value={String(details?.releaseEvidenceFileCount ?? 0)} />
+        <Metric label="Sprints" value={String(sprints.length)} />
+        <Metric label="Latest" value={latest ? latest.path.split(/[\\/]/).pop() || "n/a" : "n/a"} />
       </div>
-    </article>
-  )
-}
-
-function BotLogsPanel({ lines }: { lines: string[] }) {
-  return (
-    <article className="rounded-3xl border border-white/10 bg-[#151b33] p-6">
-      <PanelHeader title="Bot logs preview" label={`${lines.length || "..."} lines`} />
-      <pre className="mt-6 max-h-80 overflow-auto rounded-3xl border border-white/10 bg-[#090e1d] p-5 text-xs leading-6 text-slate-300">
-        {(lines.length ? lines : ["Waiting for infra-bot logs..."]).join("\n")}
-      </pre>
-    </article>
-  )
-}
-
-function GithubRunsPanel({ runs }: { runs: ControlCenterOps["details"]["githubRuns"] }) {
-  const sortedRuns = useMemo(() => runs.slice(0, 10), [runs])
-
-  return (
-    <article className="rounded-3xl border border-white/10 bg-[#151b33] p-6">
-      <PanelHeader title="GitHub run list" label={`${sortedRuns.length || "..."} latest`} />
       <div className="mt-6 grid gap-3">
-        {(sortedRuns.length ? sortedRuns : placeholderRuns()).map((run) => (
-          <a
-            key={run.databaseId || run.name}
-            href={run.url || undefined}
-            target="_blank"
-            rel="noreferrer"
-            className="rounded-3xl border border-white/10 bg-[#0e1327] p-4 transition hover:border-cyan-300/40 hover:bg-cyan-300/10"
-          >
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="font-bold text-slate-100">{run.displayTitle || run.name}</p>
-                <p className="mt-1 text-xs text-slate-500">{run.event} on {run.headBranch || "unknown branch"}</p>
+        {sprints.length ? (
+          sprints.map((sprint) => (
+            <div key={sprint.sprint} className="rounded-2xl border border-white/10 bg-[#0e1327] p-4">
+              <div className="flex items-center justify-between gap-4">
+                <p className="font-semibold text-slate-100">{sprint.sprint}</p>
+                <span className="rounded-full bg-cyan-300/10 px-3 py-1 text-xs font-bold text-cyan-100">{sprint.fileCount} files</span>
               </div>
-              <span className="rounded-full bg-white/10 px-3 py-1 text-xs text-slate-300">
-                {run.status}/{run.conclusion || "pending"}
+              <p className="mt-2 text-sm text-slate-400">Latest update {formatTimestamp(sprint.latestModifiedAt)}</p>
+            </div>
+          ))
+        ) : (
+          <p className="text-sm text-slate-500">No release evidence folders found yet.</p>
+        )}
+      </div>
+    </article>
+  )
+}
+
+function ApiCostPanel({ details }: { details: ControlCenterOps["details"]["apiCostReport"] | null }) {
+  const status = details?.status || "loading"
+  const recordsSeen = details?.recordsSeen ?? 0
+  const totalTokens = details?.totalTokens ?? 0
+  const totalCostUsd = details?.totalCostUsd ?? 0
+  const anomalyCount = details?.anomalyCount ?? 0
+  const evalArtifacts = details?.evalArtifacts || {
+    datasetPath: "evals/azure-activity-agent-eval-dataset.template.jsonl",
+    datasetCases: 0,
+    categoryCounts: {},
+    priorityCounts: {},
+    promptVariantsDir: "evals/prompt-variants",
+    promptVariantCount: 0,
+    promptVariants: [],
+  }
+  const sourcePath = details?.sourcePath || "runtime/api-cost/latest.json"
+  return (
+    <article className="rounded-3xl border border-white/10 bg-[#151b33] p-6">
+      <PanelHeader title="API cost report" label={status} />
+      <div className="mt-6 grid gap-4 md:grid-cols-4">
+        <Metric label="Rows" value={String(recordsSeen)} />
+        <Metric label="Tokens" value={String(totalTokens)} />
+        <Metric label="Cost" value={`$${totalCostUsd.toFixed(2)}`} />
+        <Metric label="Anomalies" value={String(anomalyCount)} />
+      </div>
+      <div className="mt-6 rounded-2xl border border-white/10 bg-[#0e1327] p-4 text-sm leading-6 text-slate-300">
+        Dataset cases: {evalArtifacts.datasetCases}, prompt variants: {evalArtifacts.promptVariantCount}
+      </div>
+      <div className="mt-4 rounded-2xl border border-white/10 bg-[#0e1327] p-4 text-sm leading-6 text-slate-300">
+        Source: {sourcePath}
+      </div>
+    </article>
+  )
+}
+
+function AuditPanel({ details }: { details: ControlCenterOps["details"]["controlCenterAudit"] | null }) {
+  const status = details?.status || "loading"
+  const recordCount = details?.recordCount ?? 0
+  const sourcePath = details?.sourcePath || "runtime/control-center/action-audit.jsonl"
+  const recentActions = details?.recentActions || []
+  return (
+    <article className="rounded-3xl border border-white/10 bg-[#151b33] p-6">
+      <PanelHeader title="Control Center audit" label={status} />
+      <div className="mt-6 grid gap-4 md:grid-cols-2">
+        <Metric label="Records" value={String(recordCount)} />
+        <Metric label="Recent" value={String(recentActions.length)} />
+      </div>
+      <div className="mt-6 grid gap-3">
+        {(recentActions.length ? recentActions : placeholderActions()).map((action, index) => (
+          <div key={`${action.action}-${index}`} className="rounded-2xl border border-white/10 bg-[#0e1327] p-4">
+            <div className="flex items-center justify-between gap-4">
+              <p className="font-semibold text-slate-100">{action.action || "unknown action"}</p>
+              <span className={`rounded-full px-3 py-1 text-xs font-bold ${action.ok ? "bg-cyan-300/10 text-cyan-100" : "bg-amber-300/10 text-amber-100"}`}>
+                {action.dryRun ? "dry-run" : "live"}
               </span>
             </div>
-          </a>
+            <p className="mt-2 text-sm text-slate-400">
+              {action.target || "n/a"} · {action.at || "unknown time"}
+            </p>
+            {action.reason ? <p className="mt-2 text-sm leading-6 text-slate-300">{action.reason}</p> : null}
+          </div>
+        ))}
+      </div>
+      <p className="mt-4 rounded-2xl border border-white/10 bg-[#0e1327] px-4 py-3 text-xs leading-6 text-slate-400">
+        Source: {sourcePath}
+      </p>
+    </article>
+  )
+}
+
+function RecommendationsPanel({ items }: { items: string[] }) {
+  return (
+    <article className="rounded-3xl border border-white/10 bg-[#151b33] p-6">
+      <PanelHeader title="Suggested next steps" label="local evidence" />
+      <div className="mt-5 space-y-3">
+        {items.map((item) => (
+          <div key={item} className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm leading-6 text-slate-300">
+            {item}
+          </div>
         ))}
       </div>
     </article>
@@ -184,33 +215,35 @@ function PanelHeader({ title, label }: { title: string; label: string }) {
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div>
         <p className="text-sm font-black">{title}</p>
-        <p className="mt-1 text-sm text-slate-400">Live read-only detail panel.</p>
+        <p className="mt-1 text-sm text-slate-400">Local file-backed status panel.</p>
       </div>
       <span className="rounded-full bg-white/10 px-3 py-1 text-xs text-slate-300">{label}</span>
     </div>
   )
 }
 
-function formatGb(bytes: number): string {
-  return `${(bytes / 1024 / 1024 / 1024).toFixed(2)} GiB`
+function formatTimestamp(value: string) {
+  const timestamp = Date.parse(value)
+  if (Number.isNaN(timestamp)) return "not generated yet"
+  return new Date(timestamp).toLocaleString()
 }
 
-function placeholderRows(): ControlCenterOps["details"]["dockerImages"] {
-  return [{ repository: "loading", tag: "latest", imageId: "loading", createdSince: "...", size: "..." }]
-}
-
-function placeholderRuns(): ControlCenterOps["details"]["githubRuns"] {
+function placeholderActions(): LocalAuditAction[] {
   return [
     {
-      databaseId: 0,
-      name: "Loading GitHub runs",
-      displayTitle: "Loading GitHub runs",
-      status: "loading",
-      conclusion: "",
-      event: "...",
-      headBranch: "",
-      createdAt: "",
-      url: "",
+      at: "loading",
+      auditId: "",
+      actor: "",
+      actorRole: "",
+      action: "loading",
+      target: "control-center",
+      riskClass: "",
+      minimumRole: "",
+      dryRun: true,
+      ok: false,
+      authorized: false,
+      reason: "",
+      outputPreview: "",
     },
   ]
 }

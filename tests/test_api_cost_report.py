@@ -103,3 +103,77 @@ def test_api_cost_report_uses_explicit_pricing_json(tmp_path):
     assert report["records_with_cost"] == 1
     assert report["total_tokens"] == 1_500_000
     assert report["total_cost_usd"] == 6.0
+
+
+def test_api_cost_report_includes_eval_artifact_summary(tmp_path):
+    module = _load_module()
+    dataset_path = tmp_path / "evals" / "azure-activity-agent-eval-dataset.template.jsonl"
+    dataset_path.parent.mkdir(parents=True)
+    dataset_path.write_text(
+        "\n".join(
+            [
+                json.dumps(
+                    {
+                        "case_id": "AZ-001",
+                        "category": "rbac_change",
+                        "priority": "high",
+                        "input": {"operationName": {"value": "Microsoft.Authorization/roleAssignments/write"}},
+                        "expected": {"must_include": ["timeline_summary"]},
+                    }
+                ),
+                json.dumps(
+                    {
+                        "case_id": "AZ-002",
+                        "category": "network_delete_failed",
+                        "priority": "high",
+                        "input": {"operationName": {"value": "Microsoft.Network/networkSecurityGroups/securityRules/delete"}},
+                        "expected": {"must_include": ["operation_summary"]},
+                    }
+                ),
+            ]
+        ),
+        encoding="utf-8",
+    )
+    prompt_variants_dir = tmp_path / "evals" / "prompt-variants"
+    prompt_variants_dir.mkdir(parents=True)
+    (prompt_variants_dir / "baseline.md").write_text("# baseline\n", encoding="utf-8")
+    (prompt_variants_dir / "strict.md").write_text("# strict\n", encoding="utf-8")
+
+    summary = module.load_eval_artifact_summary(dataset_path, prompt_variants_dir)
+
+    assert summary["dataset_cases"] == 2
+    assert summary["prompt_variant_count"] == 2
+    assert summary["prompt_variants"] == ["baseline", "strict"]
+    assert summary["category_counts"] == {"rbac_change": 1, "network_delete_failed": 1}
+    assert summary["priority_counts"] == {"high": 2}
+
+
+def test_api_cost_report_uses_configured_defaults(tmp_path, monkeypatch):
+    dataset_path = tmp_path / "custom" / "dataset.jsonl"
+    dataset_path.parent.mkdir(parents=True)
+    dataset_path.write_text(json.dumps({"case_id": "case-1", "category": "custom", "priority": "low"}) + "\n", encoding="utf-8")
+    prompt_variants_dir = tmp_path / "custom" / "prompt-variants"
+    prompt_variants_dir.mkdir(parents=True)
+    (prompt_variants_dir / "variant-a.md").write_text("# variant\n", encoding="utf-8")
+
+    monkeypatch.setenv("CTOA_EVAL_DATASET_PATH", str(dataset_path))
+    monkeypatch.setenv("CTOA_PROMPT_VARIANTS_DIR", str(prompt_variants_dir))
+
+    module = _load_module()
+    summary = module.load_eval_artifact_summary()
+
+    assert summary["dataset_path"] == str(dataset_path).replace("\\", "/")
+    assert summary["dataset_cases"] == 1
+    assert summary["prompt_variants_dir"] == str(prompt_variants_dir).replace("\\", "/")
+    assert summary["prompt_variant_count"] == 1
+
+
+def test_api_cost_report_uses_md_path_alias(tmp_path, monkeypatch):
+    md_out = tmp_path / "custom" / "runtime" / "api-cost" / "latest.md"
+    monkeypatch.setenv("CTOA_API_COST_MD_PATH", str(md_out))
+    monkeypatch.delenv("CTOA_API_COST_MD_OUT", raising=False)
+
+    module = _load_module()
+    parser = module._build_parser()
+
+    assert parser.parse_args([]).md_out == md_out

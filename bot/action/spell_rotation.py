@@ -21,6 +21,7 @@ _last_cast_ts: dict[str, float] = {}
 _rotation_index: dict[str, int] = {}
 
 _TITLE_PROFESSION_HINTS: tuple[tuple[str, str], ...] = (
+    ("monk", "monk"),
     ("elder druid", "druid"),
     ("master sorcerer", "sorcerer"),
     ("royal paladin", "paladin"),
@@ -36,11 +37,13 @@ def _default_config() -> dict[str, Any]:
     return {
         "default_profession": "knight",
         "profiles": [],
+        "client_profiles": {},
         "rotations": {
             "knight": [],
             "paladin": [],
             "sorcerer": [],
             "druid": [],
+            "monk": [],
         },
     }
 
@@ -69,6 +72,44 @@ def _load_config() -> dict[str, Any]:
     return _CONFIG_CACHE
 
 
+def _active_client_profile_lower() -> str:
+    return os.environ.get("BOT_CLIENT_PROFILE", "").strip().lower()
+
+
+def _merge_rotation_config(cfg: dict[str, Any]) -> dict[str, Any]:
+    merged = _default_config()
+    for key, value in cfg.items():
+        merged[key] = value
+
+    client_profile = _active_client_profile_lower()
+    client_profiles = cfg.get("client_profiles", {})
+    if not client_profile or not isinstance(client_profiles, dict):
+        return merged
+
+    profile_cfg = client_profiles.get(client_profile)
+    if not isinstance(profile_cfg, dict):
+        return merged
+
+    if profile_cfg.get("default_profession"):
+        merged["default_profession"] = str(profile_cfg.get("default_profession", "")).strip() or merged["default_profession"]
+
+    base_profiles = merged.get("profiles", [])
+    extra_profiles = profile_cfg.get("profiles", [])
+    if isinstance(base_profiles, list) and isinstance(extra_profiles, list):
+        merged["profiles"] = [*base_profiles, *extra_profiles]
+
+    base_rotations = merged.get("rotations", {})
+    extra_rotations = profile_cfg.get("rotations", {})
+    if isinstance(base_rotations, dict) and isinstance(extra_rotations, dict):
+        merged_rotations = dict(base_rotations)
+        for profession, spells in extra_rotations.items():
+            if isinstance(spells, list):
+                merged_rotations[str(profession).strip().lower()] = list(spells)
+        merged["rotations"] = merged_rotations
+
+    return merged
+
+
 def _active_window_title_lower() -> str:
     title = os.environ.get("BOT_WINDOW_TITLE_ACTIVE", "").strip().lower()
     if title:
@@ -89,6 +130,15 @@ def _detect_profession(level: int, cfg: dict[str, Any]) -> str:
     env_prof = os.environ.get("BOT_PROFESSION", "").strip().lower()
     if env_prof:
         return env_prof
+
+    client_profile = _active_client_profile_lower()
+    client_profiles = cfg.get("client_profiles", {})
+    if client_profile and isinstance(client_profiles, dict):
+        profile_cfg = client_profiles.get(client_profile)
+        if isinstance(profile_cfg, dict):
+            prof = str(profile_cfg.get("default_profession", "")).strip().lower()
+            if prof:
+                return prof
 
     title = _active_window_title_lower()
     profiles = cfg.get("profiles", [])
@@ -118,7 +168,7 @@ def cast_rotation_spell(level: int, profession_override: str | None = None) -> s
     if not is_available():
         return None
 
-    cfg = _load_config()
+    cfg = _merge_rotation_config(_load_config())
     profession = (profession_override or _detect_profession(level, cfg)).strip().lower()
     rotations = cfg.get("rotations", {})
     spells = rotations.get(profession, []) if isinstance(rotations, dict) else []

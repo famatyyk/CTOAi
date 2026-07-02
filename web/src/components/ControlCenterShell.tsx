@@ -2,13 +2,15 @@
 
 import { useMemo, useState } from "react"
 import { controlCenterSnapshot } from "@/lib/controlCenterSnapshot"
-import ControlCenterLiveProbe from "@/components/ControlCenterLiveProbe"
 import ControlCenterOpsGrid from "@/components/ControlCenterOpsGrid"
 import ControlCenterDetailPanels from "@/components/ControlCenterDetailPanels"
+import ControlCenterLiveProbe from "@/components/ControlCenterLiveProbe"
 import ControlCenterChatPanel from "@/components/ControlCenterChatPanel"
 import ControlCenterLegacyPanels from "@/components/ControlCenterLegacyPanels"
+import ControlCenterActionPanel from "@/components/ControlCenterActionPanel"
+import ControlCenterEvidencePanel from "@/components/ControlCenterEvidencePanel"
 
-const navSections = ["Overview", "Codex Chat", "VPS Ops", "Bot Runtime", "GitHub CI", "Docs Map"] as const
+const navSections = ["Overview", "Actions", "Codex Chat", "Local Status", "Evidence", "Docs Map"] as const
 
 type ControlCenterTab = (typeof navSections)[number]
 
@@ -21,8 +23,8 @@ const actionItems = [
 
 const timeline = [
   ["Cleaned local chaos", "CTOAi copies, worktrees, Downloads and cache cleanup."],
-  ["Cleaned GitHub noise", "Merged branches, workflow runs and 2254 artifacts removed."],
-  ["Recovered VPS", "Docker cleanup and bot image hardening restored breathing room."],
+  ["Cleaned release noise", "Merged branches, workflow runs and old artifacts removed."],
+  ["Recovered workspace", "Local cleanup and report hardening restored breathing room."],
   ["Starting Phase 1", "Control Center shell, names and module boundaries."],
 ]
 
@@ -40,23 +42,23 @@ function ToneOrb({ tone }: { tone: string }) {
 export default function ControlCenterShell() {
   const [activeTab, setActiveTab] = useState<ControlCenterTab>("Overview")
   const subtitle = useMemo(() => {
-    if (activeTab === "Overview") return "One place for Codex, VPS, Docker, bot runtime and project boundaries."
+    if (activeTab === "Overview") return "One place for Codex, local status, evidence and project boundaries."
+    if (activeTab === "Actions") return "Safe local command tiles with dry-run and audit trail."
     if (activeTab === "Codex Chat") return "Operator workspace for guided work, chat handoff and future Codex integration."
-    if (activeTab === "VPS Ops") return "Server, disk and Docker visibility before guarded operational actions."
-    if (activeTab === "Bot Runtime") return "Runtime status, containers, scheduler state and future log preview."
-    if (activeTab === "GitHub CI") return "Repository automation, checks, runs and artifact hygiene."
+    if (activeTab === "Local Status") return "File-backed status tiles for repo hygiene, release evidence, cost and audit."
+    if (activeTab === "Evidence") return "Release evidence, repo hygiene, cost reporting and audit traces."
     return "Architecture boundaries, canonical repo schema and foundation cleanup."
   }, [activeTab])
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[#111629] text-white">
+    <main className="min-h-screen overflow-x-hidden bg-[#111629] text-white">
       <div className="pointer-events-none fixed inset-0">
         <div className="absolute -left-32 -top-44 h-[34rem] w-[34rem] rounded-full bg-fuchsia-400/25 blur-3xl" />
         <div className="absolute -bottom-40 right-0 h-[30rem] w-[30rem] rounded-full bg-cyan-400/20 blur-3xl" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,#313a5b_0%,transparent_35%),linear-gradient(135deg,rgba(255,255,255,0.03)_0%,transparent_40%)]" />
       </div>
 
-      <section className="relative mx-auto flex min-h-screen w-full max-w-[1500px] items-center px-4 py-6 sm:px-8 lg:px-10">
+      <section className="relative mx-auto flex min-h-screen w-full max-w-[1500px] items-start px-4 py-6 sm:px-8 lg:px-10">
         <div className="grid w-full overflow-hidden rounded-[2rem] border border-white/10 bg-[#0d1122]/95 shadow-[0_34px_110px_rgba(0,0,0,0.55)] backdrop-blur md:grid-cols-[260px_1fr]">
           <aside className="border-b border-white/10 bg-[#12172c] p-6 md:border-b-0 md:border-r">
             <div className="mb-10">
@@ -94,7 +96,7 @@ export default function ControlCenterShell() {
             </div>
           </aside>
 
-          <div className="p-5 sm:p-7 lg:p-10">
+          <div className="min-h-0 p-5 sm:p-7 lg:p-10">
             <header className="mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
               <div>
                 <p className="text-sm font-bold uppercase tracking-[0.32em] text-cyan-200">Operator cockpit</p>
@@ -107,11 +109,13 @@ export default function ControlCenterShell() {
               </div>
             </header>
 
-            {activeTab === "Overview" ? <OverviewPanel /> : null}
+            <TabSwitchBar activeTab={activeTab} onChange={setActiveTab} />
+
+            {activeTab === "Overview" ? <OverviewPanel onNavigate={setActiveTab} /> : null}
+            {activeTab === "Actions" ? <ActionsPanel /> : null}
             {activeTab === "Codex Chat" ? <CodexPanel /> : null}
-            {activeTab === "VPS Ops" ? <VpsPanel /> : null}
-            {activeTab === "Bot Runtime" ? <BotPanel /> : null}
-            {activeTab === "GitHub CI" ? <GithubPanel /> : null}
+            {activeTab === "Local Status" ? <LocalStatusPanel /> : null}
+            {activeTab === "Evidence" ? <EvidencePanel /> : null}
             {activeTab === "Docs Map" ? <DocsPanel /> : null}
           </div>
         </div>
@@ -120,16 +124,29 @@ export default function ControlCenterShell() {
   )
 }
 
-function OverviewPanel() {
+function OverviewPanel({ onNavigate }: { onNavigate: (tab: ControlCenterTab) => void }) {
   return (
     <>
+      <div className="mb-5">
+        <ControlCenterLiveProbe />
+      </div>
+
       <section className="grid gap-5 lg:grid-cols-3">
         {controlCenterSnapshot.health.map((card) => (
-          <article
+          <button
             key={card.label}
-            className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.06] p-6 shadow-[0_18px_60px_rgba(0,0,0,0.25)]"
+            type="button"
+            tabIndex={0}
+            onClick={() => onNavigate(card.label.includes("Release") ? "Evidence" : "Local Status")}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault()
+                onNavigate(card.label.includes("Release") ? "Evidence" : "Local Status")
+              }
+            }}
+            className="relative cursor-pointer overflow-hidden rounded-3xl border border-white/10 bg-white/[0.06] p-6 text-left shadow-[0_18px_60px_rgba(0,0,0,0.25)] transition hover:-translate-y-0.5 hover:border-cyan-200/30 hover:bg-white/[0.08] focus:outline-none focus:ring-2 focus:ring-cyan-200/60"
           >
-            <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
+            <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
             <div className="relative flex items-start justify-between">
               <div>
                 <p className="text-sm font-bold text-slate-200">{card.label}</p>
@@ -141,7 +158,8 @@ function OverviewPanel() {
               <ToneOrb tone={card.tone} />
             </div>
             <p className="relative mt-5 text-sm text-slate-400">{card.detail}</p>
-          </article>
+            <p className="relative mt-5 text-xs uppercase tracking-[0.2em] text-cyan-100/70">Kliknij, aby przejść do {card.label.includes("Release") ? "Evidence" : "Local Status"}</p>
+          </button>
         ))}
       </section>
 
@@ -157,7 +175,32 @@ function OverviewPanel() {
         <PlatformMap />
         <CodexDock />
       </section>
+
+      <section className="mt-5">
+        <TimelinePanel />
+      </section>
     </>
+  )
+}
+
+function TabSwitchBar({ activeTab, onChange }: { activeTab: ControlCenterTab; onChange: (tab: ControlCenterTab) => void }) {
+  return (
+    <div className="mb-6 grid gap-2 rounded-3xl border border-white/10 bg-white/[0.04] p-2 sm:grid-cols-3 lg:grid-cols-6">
+      {navSections.map((tab) => (
+        <button
+          key={tab}
+          type="button"
+          onClick={() => onChange(tab)}
+          className={`rounded-2xl px-4 py-3 text-sm font-semibold transition ${
+            tab === activeTab
+              ? "bg-cyan-300 text-[#111629] shadow-[0_10px_25px_rgba(34,211,238,0.22)]"
+              : "text-slate-300 hover:bg-white/5 hover:text-white"
+          }`}
+        >
+          {tab}
+        </button>
+      ))}
+    </div>
   )
 }
 
@@ -184,41 +227,31 @@ function CodexPanel() {
   )
 }
 
-function VpsPanel() {
+function LocalStatusPanel() {
   return (
     <section className="space-y-5">
-      <ControlCenterLiveProbe />
       <ControlCenterOpsGrid />
-      <ControlCenterDetailPanels mode="vps" />
-      <ControlCenterDetailPanels mode="docker" />
+      <ControlCenterDetailPanels mode="all" />
     </section>
   )
 }
 
-function BotPanel() {
+function ActionsPanel() {
   return (
     <section className="space-y-5">
-      <ControlCenterOpsGrid />
-      <ControlCenterDetailPanels mode="bot" />
-      <article className="rounded-3xl border border-white/10 bg-[#151b33] p-6">
-        <p className="text-sm font-black">Runtime next cards</p>
-        <p className="mt-3 text-sm leading-6 text-slate-400">
-          Next step here is a log preview, scheduler state and restart count. For now the bot tile reads Docker status live.
-        </p>
-      </article>
+      <ControlCenterActionPanel target="local" />
     </section>
   )
 }
 
-function GithubPanel() {
+function EvidencePanel() {
   return (
     <section className="space-y-5">
-      <ControlCenterOpsGrid />
-      <ControlCenterDetailPanels mode="github" />
+      <ControlCenterEvidencePanel />
       <article className="rounded-3xl border border-white/10 bg-[#151b33] p-6">
-        <p className="text-sm font-black">GitHub next cards</p>
+        <p className="text-sm font-black">Why this matters</p>
         <p className="mt-3 text-sm leading-6 text-slate-400">
-          Next step here is a compact run list, open PR list and artifact hygiene panel. The current tile already reads latest GitHub Actions status.
+          Evidence and reporting are the bridge between the cockpit and release decisions: if the artifacts are missing, the dashboard should say so immediately.
         </p>
       </article>
     </section>
