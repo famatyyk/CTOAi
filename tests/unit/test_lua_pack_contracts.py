@@ -32,3 +32,27 @@ def test_auto_heal_contract():
     assert "function AutoHeal.nextAction" in text
     assert "criticalHpThreshold" in text
     assert "cooldownSeconds" in text
+
+
+def test_supply_manager_contract():
+    text = _read("scripts/lua/supply_manager.lua")
+    assert "function SupplyManager.checkSupplies" in text
+    assert "function SupplyManager.shouldRefill" in text
+    assert "function SupplyManager.nextAction" in text
+    assert "defaultReserve" in text
+
+
+def test_target_priority_contract():
+    text = _read("scripts/lua/target_priority.lua")
+    assert "function TargetPriority.score" in text
+    assert "function TargetPriority.pick" in text
+    assert "function TargetPriority.normalize" in text
+    assert "engaged" in text
+
+
+def test_loot_filter_contract():
+    text = _read("scripts/lua/loot_filter.lua")
+    assert "function LootFilter.filter" in text
+    assert "function LootFilter.shouldStack" in text
+    assert "function LootFilter.shouldLoot" in text
+    assert "function LootFilter.classify" in text
