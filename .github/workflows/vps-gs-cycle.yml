@@ -72,20 +72,36 @@ jobs:
           ssh-keyscan -p "$VPS_PORT_EFFECTIVE" -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
 
       # --------------------------------------------------------
-      # 1. Verify VPS connectivity
+      # 1. Verify VPS connectivity (with retries)
       # --------------------------------------------------------
       - name: Preflight SSH connectivity
+        id: preflight
         shell: bash
         run: |
           VPS_PORT_EFFECTIVE="${VPS_PORT:-22}"
           echo "Checking TCP connectivity to $VPS_HOST:$VPS_PORT_EFFECTIVE"
-          if ! timeout 10 bash -lc "</dev/tcp/$VPS_HOST/$VPS_PORT_EFFECTIVE" 2>/dev/null; then
-            echo "::error::Cannot reach $VPS_HOST:$VPS_PORT_EFFECTIVE from GitHub Actions (connection refused/timeout)."
+          VPS_REACHABLE=false
+          for attempt in 1 2 3; do
+            if timeout 10 bash -c "</dev/tcp/$VPS_HOST/$VPS_PORT_EFFECTIVE" 2>/dev/null; then
+              VPS_REACHABLE=true
+              break
+            fi
+            echo "Attempt $attempt/3 failed — waiting 10s before retry..."
+            sleep 10
+          done
+          if [ "$VPS_REACHABLE" = "true" ]; then
+            echo "vps_reachable=true" >> "$GITHUB_OUTPUT"
+            echo "VPS TCP connectivity confirmed."
+          else
+            echo "vps_reachable=false" >> "$GITHUB_OUTPUT"
+            echo "::error::Cannot reach $VPS_HOST:$VPS_PORT_EFFECTIVE from GitHub Actions (connection refused/timeout after 3 attempts)."
             echo "::error::Check sshd status, SSH port, firewall, and cloud security rules."
-            exit 1
+            # Do not exit 1 here — allow downstream steps to be skipped and the
+            # report step to capture the degraded state. The final step enforces failure.
           fi
 
       - name: Verify VPS connectivity
+        if: steps.preflight.outputs.vps_reachable == 'true'
         run: |
           ssh -i ~/.ssh/ctoa_vps -p "${VPS_PORT:-22}" -o BatchMode=yes \
               -o ConnectTimeout=10 \
@@ -95,6 +111,7 @@ jobs:
       # 2. Pull latest code on VPS  (agents receive new modules)
       # --------------------------------------------------------
       - name: Pull latest code on VPS
+        if: steps.preflight.outputs.vps_reachable == 'true'
         run: |
           # Best-effort sync only: GS cycle must not fail solely on VPS repo ownership drift.
           ssh -i ~/.ssh/ctoa_vps -p "${VPS_PORT:-22}" "$VPS_USER@$VPS_HOST" \
@@ -104,6 +121,7 @@ jobs:
       # 3. Validate shell script syntax on VPS (pre-reset gate)
       # --------------------------------------------------------
       - name: Validate shell script syntax
+        if: steps.preflight.outputs.vps_reachable == 'true'
         run: |
           ssh -i ~/.ssh/ctoa_vps -p "${VPS_PORT:-22}" -o BatchMode=yes "$VPS_USER@$VPS_HOST" bash <<'ENDSSH'
           failed=0
@@ -127,6 +145,7 @@ jobs:
       # 4. Trigger GS Reset (or wait for systemd timer to fire)
       # --------------------------------------------------------
       - name: Trigger GS Reset
+        if: steps.preflight.outputs.vps_reachable == 'true'
         run: |
           FORCE="${{ github.event.inputs.force_reset || 'false' }}"
           EVENT_NAME="${{ github.event_name }}"
@@ -168,15 +187,20 @@ jobs:
       - name: Collect GS reset log
         if: always()
         run: |
-          ssh -i ~/.ssh/ctoa_vps -p "${VPS_PORT:-22}" "$VPS_USER@$VPS_HOST" \
-            "tail -120 $CTOA_DIR/logs/gs-reset.log 2>/dev/null || echo '(no log found)'" \
-            > /tmp/gs-reset-tail.log
+          if [ "${{ steps.preflight.outputs.vps_reachable }}" = "true" ]; then
+            ssh -i ~/.ssh/ctoa_vps -p "${VPS_PORT:-22}" "$VPS_USER@$VPS_HOST" \
+              "tail -120 $CTOA_DIR/logs/gs-reset.log 2>/dev/null || echo '(no log found)'" \
+              > /tmp/gs-reset-tail.log 2>/dev/null || echo "(SSH failed while collecting log)" > /tmp/gs-reset-tail.log
+          else
+            echo "(VPS unreachable — log not available)" > /tmp/gs-reset-tail.log
+          fi
           cat /tmp/gs-reset-tail.log
 
       # --------------------------------------------------------
       # 5. Verify all CTOA systemd services are up
       # --------------------------------------------------------
       - name: Verify services are active
+        if: steps.preflight.outputs.vps_reachable == 'true'
         run: |
           ssh -i ~/.ssh/ctoa_vps -p "${VPS_PORT:-22}" "$VPS_USER@$VPS_HOST" \
             "systemctl is-active ctoa-health-live.service ctoa-db.service \
@@ -188,7 +212,7 @@ jobs:
       # 6. API validation via commanding agent
       # --------------------------------------------------------
       - name: Run API compliance check
-        if: ${{ github.event.inputs.skip_validation != 'true' }}
+        if: ${{ steps.preflight.outputs.vps_reachable == 'true' && github.event.inputs.skip_validation != 'true' }}
         run: |
           ssh -i ~/.ssh/ctoa_vps -p "${VPS_PORT:-22}" "$VPS_USER@$VPS_HOST" \
             "cd $CTOA_DIR && source .venv/bin/activate && \
@@ -200,6 +224,7 @@ jobs:
       - name: Post GS Cycle Report
         if: always()
         run: |
+          VPS_REACHABLE="${{ steps.preflight.outputs.vps_reachable }}"
           STATUS="${{ job.status }}"
           DATE=$(date -u '+%Y-%m-%d %H:%M UTC')
           {
@@ -207,12 +232,16 @@ jobs:
             echo ""
             echo "| Phase | Result |"
             echo "|-------|--------|"
-            echo "| VPS connectivity | ✅ |"
-            echo "| Code pull (git reset --hard) | ✅ |"
-            echo "| Shell syntax validation | $( [ '$STATUS' = 'success' ] && echo '✅' || echo '❌' ) |"
-            echo "| GS Reset (shutdown → rest → startup) | $( [ '$STATUS' = 'success' ] && echo '✅' || echo '❌' ) |"
-            echo "| Service health check | $( [ '$STATUS' = 'success' ] && echo '✅' || echo '❌' ) |"
-            echo "| API compliance validation | $( [ '$STATUS' = 'success' ] && echo '✅' || echo '⚠️ skipped/failed' ) |"
+            if [ "$VPS_REACHABLE" = "true" ]; then
+              echo "| VPS connectivity | ✅ |"
+            else
+              echo "| VPS connectivity | ❌ unreachable |"
+            fi
+            echo "| Code pull (git reset --hard) | $( [ "$VPS_REACHABLE" = "true" ] && echo '✅' || echo '⏭ skipped' ) |"
+            echo "| Shell syntax validation | $( [ "$STATUS" = "success" ] && echo '✅' || [ "$VPS_REACHABLE" != "true" ] && echo '⏭ skipped' || echo '❌' ) |"
+            echo "| GS Reset (shutdown → rest → startup) | $( [ "$STATUS" = "success" ] && echo '✅' || [ "$VPS_REACHABLE" != "true" ] && echo '⏭ skipped' || echo '❌' ) |"
+            echo "| Service health check | $( [ "$STATUS" = "success" ] && echo '✅' || [ "$VPS_REACHABLE" != "true" ] && echo '⏭ skipped' || echo '❌' ) |"
+            echo "| API compliance validation | $( [ "$STATUS" = "success" ] && echo '✅' || [ "$VPS_REACHABLE" != "true" ] && echo '⏭ skipped' || echo '⚠️ skipped/failed' ) |"
             echo ""
             echo "### GS Reset Log Tail"
             echo '```'
@@ -221,7 +250,18 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       # --------------------------------------------------------
-      # 8. Cleanup SSH key
+      # 8. Fail the job if VPS was not reachable (infra alert)
+      # --------------------------------------------------------
+      - name: Assert VPS reachable
+        if: always()
+        run: |
+          if [ "${{ steps.preflight.outputs.vps_reachable }}" != "true" ]; then
+            echo "::error::VPS was not reachable — GS cycle could not run. Check sshd, firewall, and cloud security rules on the VPS."
+            exit 1
+          fi
+
+      # --------------------------------------------------------
+      # 9. Cleanup SSH key
       # --------------------------------------------------------
       - name: Cleanup SSH key
         if: always()
