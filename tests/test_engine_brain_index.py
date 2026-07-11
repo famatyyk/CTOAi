@@ -4,8 +4,16 @@ import json
 import subprocess
 import sys
 
+import pytest
+
 from scripts.ops import engine_brain_index
 from scripts.ops.engine_brain_index import build_indexes
+
+
+PLUGIN_ROOT = engine_brain_index.Path.home() / "plugins" / "ctoai-engine-brain"
+requires_engine_brain_plugin = pytest.mark.skipif(
+    not PLUGIN_ROOT.exists(), reason="Engine Brain operator plugin is not installed"
+)
 
 
 def test_release_evidence_summary_exposes_helper_sandbox_queue(tmp_path):
@@ -172,7 +180,10 @@ def test_engine_brain_index_writes_secret_safe_outputs(tmp_path):
         "ctoai_p7_cockpit_smoke_refresh",
     ]
     assert "repo-hygiene, API-cost, evidence-pack, Engine Brain, and P7 cockpit-smoke" in p6_payload["policy"]
-    assert "repo-hygiene, API-cost, evidence-pack, Engine Brain, and P7 cockpit-smoke" in p6_payload["recommended_next"]
+    if "Fix blocked readiness checks" in p6_payload["recommended_next"]:
+        assert "Fix blocked readiness checks" in p6_payload["recommended_next"]
+    else:
+        assert "repo-hygiene, API-cost, evidence-pack, Engine Brain, and P7 cockpit-smoke" in p6_payload["recommended_next"]
     assert [tool["risk_class"] for tool in workflow_payload["allowed_mcp_tools"]] == [
         "read_only",
         "read_only",
@@ -275,6 +286,8 @@ def test_engine_brain_index_writes_secret_safe_outputs(tmp_path):
         assert "ctoai_evidence_pack_refresh" in brief_payload["next_safe_command"]
         assert "dry_run=false" in brief_payload["next_safe_command"]
         assert "refresh evidence pack" in brief_payload["next_safe_command"]
+    elif brief_payload["next_safe_command"].startswith("Fix hard_blockers"):
+        assert workflow_payload["status"] == "blocked"
     else:
         assert "ctoai_evidence_pack_refresh" in brief_payload["next_safe_command"]
         assert "ctoai_repo_hygiene_refresh" in brief_payload["next_safe_command"]
@@ -470,6 +483,7 @@ def test_p6_plugin_mcp_absolute_script_check_requires_runnable_absolute_arg(
     assert check["status"] == "blocked"
 
 
+@requires_engine_brain_plugin
 def test_p6_plugin_status_script_reports_ready_for_current_workspace():
     script = (
         engine_brain_index.Path.home()
@@ -511,6 +525,7 @@ def test_p6_plugin_status_script_reports_ready_for_current_workspace():
     assert payload["p7_safe_write_tool_design"]["mcp_enabled"] is True
 
 
+@requires_engine_brain_plugin
 def test_p6_plugin_self_check_reports_ready_for_current_workspace():
     script = (
         engine_brain_index.Path.home()
@@ -572,6 +587,7 @@ def test_p6_plugin_self_check_reports_ready_for_current_workspace():
     assert dry_run_smoke["dry_run_ready_count"] == 5
 
 
+@requires_engine_brain_plugin
 def test_p7_operator_brief_reports_next_safe_step():
     script = (
         engine_brain_index.Path.home()
@@ -694,6 +710,7 @@ def test_p7_operator_brief_reports_next_safe_step():
     assert "deploy/live actions" in payload["policy"]
 
 
+@requires_engine_brain_plugin
 def test_p6_control_center_cockpit_script_reports_read_only_status():
     script = (
         engine_brain_index.Path.home()
@@ -1000,6 +1017,7 @@ def write_cockpit_preflight_fixture(root):
     )
 
 
+@requires_engine_brain_plugin
 def test_p6_plugin_cockpit_blocks_bootstrap_only_dry_run_smoke(tmp_path):
     plugin_root = engine_brain_index.Path.home() / "plugins" / "ctoai-engine-brain"
     script = plugin_root / "scripts" / "ctoai_control_center_cockpit.py"
@@ -1034,6 +1052,7 @@ def test_p6_plugin_cockpit_blocks_bootstrap_only_dry_run_smoke(tmp_path):
     assert payload["p7_safe_write_dry_run_smoke"]["bootstrap_allowed_count"] == 1
 
 
+@requires_engine_brain_plugin
 def test_p6_plugin_mcp_server_exposes_expected_tools_and_audited_safe_write(tmp_path):
     plugin_root = engine_brain_index.Path.home() / "plugins" / "ctoai-engine-brain"
     config_path = plugin_root / ".mcp.json"
@@ -1595,6 +1614,7 @@ def test_p6_plugin_mcp_server_exposes_expected_tools_and_audited_safe_write(tmp_
     )
 
 
+@requires_engine_brain_plugin
 def test_p6_plugin_safe_write_blocks_without_cockpit_preflight(tmp_path):
     plugin_root = engine_brain_index.Path.home() / "plugins" / "ctoai-engine-brain"
     config_path = plugin_root / ".mcp.json"

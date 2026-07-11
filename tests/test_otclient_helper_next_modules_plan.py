@@ -10,13 +10,16 @@ def test_next_modules_plan_is_safe_and_ordered():
     supplemental = payload["supplemental_execution"]
 
     assert payload["status"] == "ready_for_sandbox_then_next_module_design"
-    assert payload["current_budget_priority"]["source"] == "runtime\\solteria_helper_dev\\helper_shell_budget_plan.json"
-    budget = json.loads((plan.ROOT / "runtime" / "solteria_helper_dev" / "helper_shell_budget_plan.json").read_text(encoding="utf-8"))
-    expected_domains = budget["next_extraction_domains"]
-    assert payload["current_budget_priority"]["top_non_shell_domain"] == expected_domains[0]
-    assert "diagnostics_smoke" in payload["current_budget_priority"]["next_extraction_domains"]
-    assert "runtime_cavebot" in payload["current_budget_priority"]["next_extraction_domains"]
-    assert "runtime_combat" in payload["current_budget_priority"]["next_extraction_domains"]
+    assert payload["current_budget_priority"]["source"] == "runtime/solteria_helper_dev/helper_shell_budget_plan.json"
+    expected_domains = payload["current_budget_priority"]["next_extraction_domains"]
+    if plan.SHELL_BUDGET_JSON.exists():
+        budget = json.loads(plan.SHELL_BUDGET_JSON.read_text(encoding="utf-8"))
+        assert expected_domains == budget["next_extraction_domains"]
+        assert payload["current_budget_priority"]["top_non_shell_domain"] == expected_domains[0]
+        assert {"diagnostics_smoke", "runtime_cavebot", "runtime_combat"}.issubset(expected_domains)
+    else:
+        assert expected_domains == []
+        assert payload["current_budget_priority"]["top_non_shell_domain"] == "unavailable"
     assert payload["source_policy"]["vbot"] == "source_required"
     assert payload["source_policy"]["external_bot_intake"] == "scripts/ops/otclient_external_bot_intake.py"
     assert "runtime_import_allowed must remain false" in payload["source_policy"]["external_bot_import_gate"]
@@ -125,7 +128,8 @@ def test_next_modules_plan_markdown_calls_out_runtime_blockers():
     assert "# Solteria Helper Next Modules Plan" in markdown
     assert "Current extraction map: complete" in markdown
     expected_domains = payload["current_budget_priority"]["next_extraction_domains"]
-    assert f"Budget top non-shell domain: `{expected_domains[0]}`" in markdown
+    expected_top = expected_domains[0] if expected_domains else "unavailable"
+    assert f"Budget top non-shell domain: `{expected_top}`" in markdown
     assert f"Budget next extraction domains: `{', '.join(expected_domains[:3])}" in markdown
     assert "External vBot source: `source_required`" in markdown
     assert "External bot intake: `scripts/ops/otclient_external_bot_intake.py`" in markdown

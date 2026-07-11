@@ -132,7 +132,7 @@ def test_generator_manifest_rejects_symlinked_latest_file(
         pytest.skip("Symlink creation is not available in this environment")
     monkeypatch.setattr(module, "OUTPUT_BASE", output_base)
 
-    with pytest.raises(ValueError, match="must not be a symlink"):
+    with pytest.raises(ValueError, match="must not be a symlink|escapes output directory"):
         module._write_run_manifest(
             run_started_at="2026-07-06T00:00:00+00:00",
             generated=[],

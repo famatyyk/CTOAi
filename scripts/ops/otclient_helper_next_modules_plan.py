@@ -255,13 +255,13 @@ SUPPLEMENTAL_EXECUTION = [
 
 
 def current_budget_priority() -> dict:
-    source = str(SHELL_BUDGET_JSON.relative_to(ROOT))
+    source = SHELL_BUDGET_JSON.relative_to(ROOT).as_posix()
     if not SHELL_BUDGET_JSON.is_file():
         return {
             "status": "missing",
             "source": source,
             "next_extraction_domains": [],
-            "top_non_shell_domain": "",
+            "top_non_shell_domain": "unavailable",
             "next_action": "Run otclient_helper_shell_budget_plan.py before choosing the next extraction.",
         }
     payload = json.loads(SHELL_BUDGET_JSON.read_text(encoding="utf-8"))
@@ -272,7 +272,7 @@ def current_budget_priority() -> dict:
         "helper_line_count": payload.get("helper_line_count"),
         "helper_function_count": payload.get("helper_function_count"),
         "next_extraction_domains": domains,
-        "top_non_shell_domain": domains[0] if domains else "",
+        "top_non_shell_domain": domains[0] if domains else "unavailable",
         "next_action": payload.get("next_action", ""),
     }
 

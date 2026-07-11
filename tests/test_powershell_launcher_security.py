@@ -1,8 +1,12 @@
-from pathlib import Path
 import subprocess
+import shutil
+from pathlib import Path
+
+import pytest
 
 
 ROOT = Path(__file__).resolve().parents[1]
+POWERSHELL = shutil.which("powershell") or shutil.which("pwsh")
 CTOA_CLI = ROOT / "ctoa.ps1"
 OPEN_CONTROL_CENTER = ROOT / "scripts" / "windows" / "open-control-center.ps1"
 KAMIL_LAUNCHER = ROOT / "scripts" / "ops" / "launch_kamil_client_macro_studio.ps1"
@@ -94,10 +98,11 @@ def test_ctoa_cli_uses_official_wrapper_for_helper_operations() -> None:
     assert 'Copy-Item -Path (Join-Path $source "*.otmod")' not in script
 
 
+@pytest.mark.skipif(POWERSHELL is None, reason="PowerShell runtime is unavailable")
 def test_control_center_opener_rejects_traversal_urls_at_runtime() -> None:
     result = subprocess.run(
         [
-            "powershell",
+            POWERSHELL,
             "-NoProfile",
             "-ExecutionPolicy",
             "Bypass",
@@ -118,10 +123,11 @@ def test_control_center_opener_rejects_traversal_urls_at_runtime() -> None:
     assert "Opening CTOAi Control Center" not in output
 
 
+@pytest.mark.skipif(POWERSHELL is None, reason="PowerShell runtime is unavailable")
 def test_control_center_opener_rejects_backslash_urls_at_runtime() -> None:
     result = subprocess.run(
         [
-            "powershell",
+            POWERSHELL,
             "-NoProfile",
             "-ExecutionPolicy",
             "Bypass",
@@ -142,10 +148,11 @@ def test_control_center_opener_rejects_backslash_urls_at_runtime() -> None:
     assert "Opening CTOAi Control Center" not in output
 
 
+@pytest.mark.skipif(POWERSHELL is None, reason="PowerShell runtime is unavailable")
 def test_ctoa_cli_rejects_control_center_traversal_env_url_before_probe() -> None:
     result = subprocess.run(
         [
-            "powershell",
+            POWERSHELL,
             "-NoProfile",
             "-ExecutionPolicy",
             "Bypass",

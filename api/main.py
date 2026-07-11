@@ -409,6 +409,13 @@ def _display_path(path_value: Path | str) -> str:
     raw = str(path_value or "").strip().replace("\\\\?\\", "")
     if not raw:
         return ""
+    if re.match(r"^[A-Za-z]:\\", raw):
+        normalized = raw.replace("\\", "/")
+        root_normalized = str(ROOT.resolve()).replace("\\", "/").rstrip("/")
+        if normalized.casefold().startswith(root_normalized.casefold() + "/"):
+            return normalized[len(root_normalized) + 1 :]
+        name = raw.rstrip("\\/").replace("\\", "/").rsplit("/", 1)[-1]
+        return f"[external]/{name or 'path'}"
     path_obj = Path(raw)
     if not path_obj.is_absolute():
         return raw.replace("\\", "/").lstrip("./")
