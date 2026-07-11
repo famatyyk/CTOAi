@@ -1,6 +1,6 @@
 # Engine Brain Symbol Map
 
-Generated at: `2026-07-11T07:10:18+00:00`
+Generated at: `2026-07-11T07:37:34+00:00`
 
 This is a lightweight map for navigation, not a full source dump.
 
@@ -4472,6 +4472,10 @@ This is a lightweight map for navigation, not a full source dump.
 - L41: def test_completion(prompt)
 - L68: def main()
 
+## `scripts/windows/install-ctoa-vscode-extensions.ps1`
+
+- L10: function Assert-ChildPath
+
 ## `scripts/windows/open-control-center.ps1`
 
 - L8: function Resolve-ControlCenterUrl
@@ -5574,15 +5578,15 @@ This is a lightweight map for navigation, not a full source dump.
 - L157: def test_register_duplicate_rejected(monkeypatch)
 - L174: def test_login_with_db_account(monkeypatch)
 - L195: def test_self_register_creates_member_without_operator_access(monkeypatch)
-- L221: def test_list_accounts_requires_owner(monkeypatch)
-- L232: def test_list_accounts_returns_env_and_db(monkeypatch)
-- L260: def test_change_password_own_account(monkeypatch)
-- L294: def test_change_password_other_requires_owner(monkeypatch)
-- L329: def test_change_role_requires_owner(monkeypatch)
-- L353: def test_change_role_promotes_account(monkeypatch)
-- L378: def test_role_change_revokes_existing_owner_session(monkeypatch)
-- L417: def test_deactivate_account(monkeypatch)
-- L450: def test_deactivate_self_fails(monkeypatch)
+- L223: def test_list_accounts_requires_owner(monkeypatch)
+- L234: def test_list_accounts_returns_env_and_db(monkeypatch)
+- L262: def test_change_password_own_account(monkeypatch)
+- L296: def test_change_password_other_requires_owner(monkeypatch)
+- L331: def test_change_role_requires_owner(monkeypatch)
+- L355: def test_change_role_promotes_account(monkeypatch)
+- L380: def test_role_change_revokes_existing_owner_session(monkeypatch)
+- L419: def test_deactivate_account(monkeypatch)
+- L452: def test_deactivate_self_fails(monkeypatch)
 
 ## `tests/test_mythibia_sync_security.py`
 
@@ -5625,7 +5629,7 @@ This is a lightweight map for navigation, not a full source dump.
 - L107: def test_sprint_validator_run_resolves_executable_before_launch(monkeypatch, tmp_path)
 - L113: def fake_resolve_executable(name)
 - L117: def fake_run(command)
-- L138: def test_late_sprint_validator_quality_check_uses_trusted_runner(monkeypatch)
+- L138: def test_latest_sprint_validator_quality_check_uses_trusted_runner(monkeypatch)
 - L146: def fake_run(command)
 - L167: def test_rosetta_python_assembler_uses_resolved_python(monkeypatch, tmp_path)
 - L179: def test_kv_attach_first_hit_launches_target_through_process_safety()

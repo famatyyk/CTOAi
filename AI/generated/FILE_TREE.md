@@ -1,6 +1,6 @@
 # Engine Brain File Tree
 
-Generated at: `2026-07-11T07:10:18+00:00`
+Generated at: `2026-07-11T07:37:34+00:00`
 
 Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 `node_modules`, `runtime`, `logs`, `data`, `.tmp`, build outputs.
@@ -42,7 +42,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `.github/workflows/ctoa-issue-sync.yml` | 687 |
 | `.github/workflows/ctoa-monitoring-alerts.yml` | 14232 |
 | `.github/workflows/ctoa-pipeline.yml` | 30243 |
-| `.github/workflows/ctoa-runtime-smoke-e2e-8001.yml` | 2121 |
+| `.github/workflows/ctoa-runtime-smoke-e2e-8001.yml` | 2546 |
 | `.github/workflows/ctoa-smoke-must-pass.yml` | 949 |
 | `.github/workflows/ctoa-status-sync.yml` | 980 |
 | `.github/workflows/ctoa-vps-hygiene-weekly.yml` | 3891 |
@@ -104,9 +104,9 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `AI/generated/DOC_SYNC.md` | 609 |
 | `AI/generated/ENGINE_BRAIN_PACK.json` | 5583 |
 | `AI/generated/ENGINE_BRAIN_PACK.md` | 412233 |
-| `AI/generated/ENV_DOCTOR.json` | 8345 |
+| `AI/generated/ENV_DOCTOR.json` | 8278 |
 | `AI/generated/ENV_DOCTOR.md` | 1368 |
-| `AI/generated/FILE_TREE.md` | 68186 |
+| `AI/generated/FILE_TREE.md` | 68251 |
 | `AI/generated/manifest.json` | 2062 |
 | `AI/generated/OWNERSHIP_MAP.json` | 16701 |
 | `AI/generated/OWNERSHIP_MAP.md` | 6492 |
@@ -120,7 +120,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `AI/generated/P7_OPERATOR_WORKFLOW.md` | 3015 |
 | `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.json` | 2705 |
 | `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.md` | 2024 |
-| `AI/generated/SYMBOL_MAP.md` | 260612 |
+| `AI/generated/SYMBOL_MAP.md` | 260709 |
 | `AI/KNOWN_BUGS.md` | 1384 |
 | `AI/LUA_INDEX.md` | 2874 |
 | `AI/OPERATIONS_AUDIT.md` | 5139 |
@@ -862,6 +862,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/rsa_scan.py` | 857 |
 | `scripts/test_local_model.py` | 3221 |
 | `scripts/windows/build-ctoa-desktop-exe.ps1` | 1210 |
+| `scripts/windows/install-ctoa-vscode-extensions.ps1` | 1852 |
 | `scripts/windows/open-control-center.ps1` | 2014 |
 | `scripts/windows/solteria_helper_test_env.ps1` | 407503 |
 | `src/main.py` | 15 |
@@ -955,12 +956,12 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `tests/test_mobile_console_self_register_hardening.py` | 3970 |
 | `tests/test_mobile_console_static_xss_security.py` | 1207 |
 | `tests/test_mobile_console_url_validation_security.py` | 6374 |
-| `tests/test_mobile_console_user_accounts_api.py` | 18791 |
+| `tests/test_mobile_console_user_accounts_api.py` | 18958 |
 | `tests/test_mythibia_sync_security.py` | 2163 |
 | `tests/test_mythibia_watcher_security.py` | 1983 |
 | `tests/test_night_report_security.py` | 1994 |
 | `tests/test_nightly_stability_artifact.py` | 3420 |
-| `tests/test_ops_process_safety.py` | 9146 |
+| `tests/test_ops_process_safety.py` | 9140 |
 | `tests/test_orchestrator_loop_security.py` | 2126 |
 | `tests/test_otclient_external_bot_intake.py` | 4551 |
 | `tests/test_otclient_helper_module_audit.py` | 21034 |
