@@ -33,6 +33,8 @@ def test_recovery_bridge_is_packaged_and_safe_by_default():
     assert "Helper.recoveryBridgeArm" in helper
     assert "Helper.recoveryBridgeDryRun" in helper
     assert "Helper.recoveryBridgeExecuteOnce" in helper
+    assert 'requestRuntimeSessionArm("recovery bridge sandbox confirmation")' in helper
+    assert 'moduleValue(externalRecoveryBridge, "resetKillSwitch")' in helper
     assert "Helper.recoveryBridgeKill" in helper
     assert 'moduleValue(externalRecoveryBridge, "dispatch"' in helper
     assert 'bridgeTrace.status == "executed"' in helper

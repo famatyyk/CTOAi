@@ -2261,6 +2261,8 @@ Helper.recoveryBridgeArm = function()
     local confirmed = moduleValue(externalModal, "confirm", Helper.recovery_bridge_confirm, "recovery_bridge_arm", now)
     Helper.recovery_bridge_confirm = nil
     if confirmed ~= true then status("Recovery bridge confirmation expired"); return false end
+    moduleValue(externalRecoveryBridge, "resetKillSwitch")
+    requestRuntimeSessionArm("recovery bridge sandbox confirmation")
     local sessionId = "sandbox-" .. tostring(now)
     local armed, result = moduleValue(externalRecoveryBridge, "arm", {
         session_id = sessionId,
@@ -2293,7 +2295,8 @@ Helper.recoveryBridgeDryRun = function()
     local vitals = readPlayerVitals()
     local spell = selectHealingSpell(HELPER_CONFIG.healing, vitals.hp_percent, now)
     local trace = recoveryBridgeDispatch(spell, vitals, now, true)
-    status("Recovery bridge dry-run: " .. tostring(trace.status) .. " / " .. tostring(trace.result))
+    local blockers = type(trace.blockers) == "table" and table.concat(trace.blockers, ",") or ""
+    status("Recovery bridge dry-run: " .. tostring(trace.status) .. " / " .. tostring(trace.result) .. (blockers ~= "" and (" / " .. blockers) or ""))
     return trace
 end
 
@@ -2302,7 +2305,8 @@ Helper.recoveryBridgeExecuteOnce = function()
     local vitals = readPlayerVitals()
     local spell = selectHealingSpell(HELPER_CONFIG.healing, vitals.hp_percent, now)
     local trace = recoveryBridgeDispatch(spell, vitals, now, false)
-    status("Recovery bridge execute-once: " .. tostring(trace.status) .. " / " .. tostring(trace.result))
+    local blockers = type(trace.blockers) == "table" and table.concat(trace.blockers, ",") or ""
+    status("Recovery bridge execute-once: " .. tostring(trace.status) .. " / " .. tostring(trace.result) .. (blockers ~= "" and (" / " .. blockers) or ""))
     return trace.status == "executed"
 end
 
