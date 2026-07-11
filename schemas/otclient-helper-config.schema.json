@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ctoa.local/schemas/otclient-helper-config.schema.json",
+  "title": "OTClient Helper HELPER_CONFIG",
+  "type": "object",
+  "required": ["schema_version", "name", "enabled", "safe_boot_runtime_disabled", "tick_ms", "modules", "healing", "tools", "hud"],
+  "additionalProperties": true,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "ctoa-helper-profile-v1"
+    },
+    "name": { "type": "string" },
+    "enabled": {
+      "type": "boolean",
+      "const": false,
+      "description": "Safe boot default: runtime starts disarmed."
+    },
+    "safe_boot_runtime_disabled": {
+      "type": "boolean",
+      "const": true,
+      "description": "Safe boot guard must stay enabled for generated and migrated profiles."
+    },
+    "tick_ms": { "type": "integer", "minimum": 100, "maximum": 5000 },
+    "hotkey": { "type": "string" },
+    "modules": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["overview", "healing", "heal_friend", "conditions", "targeting", "magic", "cavebot", "equipment", "helper", "scripting", "settings", "engine"],
+      "properties": {
+        "overview": { "type": "boolean" },
+        "healing": { "type": "boolean" },
+        "heal_friend": { "type": "boolean" },
+        "conditions": { "type": "boolean" },
+        "targeting": { "type": "boolean" },
+        "magic": { "type": "boolean" },
+        "cavebot": { "type": "boolean" },
+        "equipment": { "type": "boolean" },
+        "helper": { "type": "boolean" },
+        "scripting": { "type": "boolean" },
+        "settings": { "type": "boolean" },
+        "engine": { "type": "boolean" }
+      }
+    },
+    "healing": {
+      "type": "object",
+      "required": ["spell_enabled", "potion_enabled", "mana_potion_enabled"],
+      "additionalProperties": true,
+      "properties": {
+        "spell_enabled": { "type": "boolean" },
+        "potion_enabled": { "type": "boolean" },
+        "mana_potion_enabled": { "type": "boolean" },
+        "spell_threshold": { "type": "integer", "minimum": 1, "maximum": 100 },
+        "potion_threshold": { "type": "integer", "minimum": 1, "maximum": 100 },
+        "mana_potion_threshold": { "type": "integer", "minimum": 1, "maximum": 100 },
+        "threshold_jitter_percent": { "type": "integer", "minimum": 0, "maximum": 5 }
+      }
+    },
+    "tools": {
+      "type": "object",
+      "required": [
+        "auto_attack",
+        "auto_exeta",
+        "auto_haste",
+        "spell_rotation",
+        "rune_enabled",
+        "cavebot_enabled",
+        "cavebot_movement_enabled",
+        "timer_enabled",
+        "block_friendly_summons",
+        "feature_flags"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "auto_attack": { "type": "boolean", "const": false },
+        "auto_exeta": { "type": "boolean", "const": false },
+        "auto_haste": { "type": "boolean", "const": false },
+        "spell_rotation": { "type": "boolean", "const": false },
+        "rune_enabled": { "type": "boolean", "const": false },
+        "cavebot_enabled": { "type": "boolean", "const": false },
+        "cavebot_movement_enabled": { "type": "boolean", "const": false },
+        "timer_enabled": { "type": "boolean", "const": false },
+        "block_friendly_summons": {
+          "type": "boolean",
+          "const": true,
+          "description": "Targeting guard: generated profiles must not attack friendly summons or familiars."
+        },
+        "friendly_summon_name_fragments": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "feature_flags": {
+          "type": "object",
+          "required": ["diagnostics", "experimental_cavebot", "experimental_loot", "experimental_combat"],
+          "additionalProperties": true,
+          "properties": {
+            "diagnostics": { "type": "boolean" },
+            "experimental_cavebot": { "type": "boolean", "const": false },
+            "experimental_loot": { "type": "boolean", "const": false },
+            "experimental_combat": { "type": "boolean", "const": false }
+          }
+        }
+      }
+    },
+    "hud": {
+      "type": "object",
+      "required": ["enabled", "x", "y"],
+      "additionalProperties": true,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "x": { "type": "integer" },
+        "y": { "type": "integer" }
+      }
+    }
+  }
+}

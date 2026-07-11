@@ -1,0 +1,9 @@
+Module
+  name: ctoa_otclient
+  description: CTOA OTClient helper and native automation modules
+  author: CTOA AI Toolkit
+  website: github.com/famatyyk/CTOAi
+  version: 2.1.1a
+  autoLoad: true
+  autoLoadPriority: 1000
+  scripts: [ ctoa_otclient_loader ]
