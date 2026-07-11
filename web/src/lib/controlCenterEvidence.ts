@@ -152,6 +152,31 @@ export type ControlCenterEvidence = {
       runtimeState: string
       blockers: string[]
     }
+    conditionsShadowReplay: {
+      status: string
+      reportedStatus: string
+      generatedAtUnixMs: number | null
+      maxAgeSeconds: number
+      ageSeconds: number | null
+      fresh: boolean
+      contractValid: boolean
+      contractErrors: string[]
+      scenarioPackStatus: string
+      fixtureOnlyValidationPassed: boolean
+      runtimeReadinessClaimed: boolean
+      traceStatus: string
+      decision: string
+      decisionSha256: string
+      scenarioTotalCount: number
+      scenarioPassedCount: number
+      scenarioFailedCount: number
+      blockers: string[]
+      dispatchAllowed: boolean
+      runtimeActions: boolean
+      executesPlan: boolean
+      executeOnceAllowed: boolean
+      promotionAllowed: boolean
+    }
     nextAction: string
     nextCommand: string
     sourcePaths: {
@@ -165,6 +190,7 @@ export type ControlCenterEvidence = {
       smokeStatus: string
       livePromotion: string
       backgroundStatus: string
+      conditionsShadowReplay: string
     }
   }
   engineBrain: {
@@ -492,6 +518,157 @@ const BACKGROUND_WRAPPER_INVARIANTS: Record<string, unknown> = {
   client_process_stable: true,
   screenshot_count_stable: true,
 }
+const CONDITIONS_SHADOW_REPORT_SCHEMA = "ctoa.conditions-shadow-replay-report.v1"
+const CONDITIONS_SHADOW_TRACE_SCHEMA = "ctoa.conditions-shadow-trace.v1"
+const CONDITIONS_SHADOW_INPUT_SCHEMA = "ctoa.conditions-shadow-input.v1"
+const CONDITIONS_SHADOW_REPORT_MODE = "offline_shadow_replay"
+const CONDITIONS_SHADOW_REPORT_MAX_AGE_MS = 30_000
+const CONDITIONS_SHADOW_ACTION_FLAGS = [
+  "dispatch_allowed",
+  "runtime_actions",
+  "executes_plan",
+  "execute_once_allowed",
+  "promotion_allowed",
+] as const
+const CONDITIONS_SHADOW_REPORT_KEYS = [
+  "schema_version",
+  "generated_at_unix_ms",
+  "mode",
+  "operational_acceptance_status",
+  "scenario_pack_status",
+  "fixture_only_validation_passed",
+  "runtime_readiness_claimed",
+  "operational_trace",
+  "scenario_pack",
+  ...CONDITIONS_SHADOW_ACTION_FLAGS,
+  "intrusive_actions_performed",
+] as const
+const CONDITIONS_SHADOW_TRACE_KEYS = [
+  "schema_version",
+  "trace_id",
+  "source",
+  "evaluated_at_unix_ms",
+  "mode",
+  "action",
+  "condition",
+  "spell",
+  "input_sha256",
+  "canonical_input_sha256",
+  "observation_age_ms",
+  "p8_age_ms",
+  "recovery_trace_age_ms",
+  "recovery_age_ms",
+  "status",
+  "decision",
+  "blockers",
+  "decision_sha256",
+  "operator_review_required",
+  ...CONDITIONS_SHADOW_ACTION_FLAGS,
+  "intrusive_actions_performed",
+] as const
+const CONDITIONS_SHADOW_SCENARIO_PACK_KEYS = [
+  "status",
+  "fixture_only",
+  "operational_readiness_claimed",
+  "scenario_pack_sha256",
+  "total_count",
+  "passed_count",
+  "failed_count",
+  "cases",
+  ...CONDITIONS_SHADOW_ACTION_FLAGS,
+  "intrusive_actions_performed",
+] as const
+const CONDITIONS_SHADOW_CASE_KEYS = [
+  "name",
+  "mutation",
+  "expected_status",
+  "actual_status",
+  "expected_blockers",
+  "blockers",
+  "canonical_input_sha256",
+  "decision_sha256",
+  "deterministic",
+  "passed",
+  ...CONDITIONS_SHADOW_ACTION_FLAGS,
+  "intrusive_actions_performed",
+] as const
+const CONDITIONS_SHADOW_INPUT_HASH_KEYS = [
+  "profile",
+  "observation",
+  "p8_proof",
+  "recovery_trace",
+  "recovery_proof",
+] as const
+const CONDITIONS_SHADOW_BLOCKER_ORDER = [
+  "profile_missing", "profile_malformed", "profile_duplicate_keys", "profile_oversize", "profile_symlink_rejected",
+  "profile_not_regular", "profile_unreadable", "profile_schema_invalid", "profile_action_mismatch", "profile_condition_mismatch",
+  "profile_spell_mismatch", "profile_cooldown_policy_invalid", "profile_retry_budget_nonzero", "profile_p8_proof_not_required",
+  "profile_recovery_proof_not_required", "profile_unsafe_contract", "observation_missing", "observation_malformed",
+  "observation_duplicate_keys", "observation_oversize", "observation_symlink_rejected", "observation_not_regular",
+  "observation_unreadable", "observation_envelope_invalid", "observation_schema_invalid", "observation_future",
+  "observation_stale", "player_offline", "player_online_unknown", "player_dead", "player_life_unknown",
+  "protection_zone_inside", "protection_zone_unknown", "protection_zone_source_untrusted", "condition_mismatch",
+  "condition_absent", "condition_unknown", "cooldown_active", "cooldown_unknown", "cooldown_source_untrusted",
+  "observation_unsafe_contract", "p8_missing", "p8_malformed", "p8_duplicate_keys", "p8_oversize",
+  "p8_symlink_rejected", "p8_not_regular", "p8_unreadable", "p8_schema_invalid", "p8_future", "p8_stale",
+  "p8_observation_hash_mismatch", "p8_operational_acceptance_blocked", "p8_unsafe_contract", "recovery_trace_missing",
+  "recovery_trace_malformed", "recovery_trace_duplicate_keys", "recovery_trace_oversize", "recovery_trace_symlink_rejected",
+  "recovery_trace_not_regular", "recovery_trace_unreadable", "recovery_trace_schema_invalid", "recovery_trace_future",
+  "recovery_trace_stale", "recovery_trace_status_blocked", "recovery_trace_action_mismatch", "recovery_trace_unsafe_contract",
+  "recovery_missing", "recovery_malformed", "recovery_duplicate_keys", "recovery_oversize", "recovery_symlink_rejected",
+  "recovery_not_regular", "recovery_unreadable", "recovery_schema_invalid", "recovery_future", "recovery_stale",
+  "recovery_status_blocked", "recovery_action_mismatch", "recovery_condition_mismatch", "recovery_spell_mismatch",
+  "recovery_trace_hash_mismatch", "recovery_profile_hash_mismatch", "recovery_observation_hash_mismatch",
+  "recovery_p8_hash_mismatch", "recovery_unsafe_contract", "fixture_observation_not_operational",
+  "fixture_p8_proof_not_operational", "fixture_recovery_trace_not_operational", "fixture_recovery_proof_not_operational",
+] as const
+const CONDITIONS_SHADOW_BLOCKER_RANK = new Map(CONDITIONS_SHADOW_BLOCKER_ORDER.map((value, index) => [value, index]))
+const CONDITIONS_SHADOW_SCENARIO_MUTATIONS = new Set([
+  "none",
+  "profile_wrong_action",
+  "profile_wrong_condition",
+  "profile_wrong_spell",
+  "profile_retry_nonzero",
+  "profile_future_version",
+  "profile_malformed",
+  "profile_duplicate_keys",
+  "profile_oversized",
+  "profile_symlinked",
+  "profile_non_regular",
+  "profile_extra_field",
+  "observation_stale",
+  "observation_future",
+  "player_offline",
+  "player_online_unknown",
+  "player_dead",
+  "player_life_unknown",
+  "protection_zone_inside",
+  "protection_zone_unknown",
+  "condition_absent",
+  "condition_unknown",
+  "condition_wrong",
+  "cooldown_active",
+  "cooldown_unknown",
+  "observation_extra_field",
+  "observation_unsafe_contract",
+  "p8_missing",
+  "p8_blocked",
+  "p8_stale",
+  "p8_future",
+  "p8_unsafe_contract",
+  "p8_extra_field",
+  "recovery_missing",
+  "recovery_malformed",
+  "recovery_status_blocked",
+  "recovery_future",
+  "recovery_stale",
+  "recovery_wrong_action",
+  "recovery_wrong_condition",
+  "recovery_wrong_spell",
+  "recovery_hash_mismatch",
+  "recovery_extra_field",
+  "recovery_unsafe_contract",
+])
 
 export async function collectControlCenterEvidence(): Promise<ControlCenterEvidence> {
   const config = getControlCenterEvidenceConfig()
@@ -873,6 +1050,112 @@ function buildOperatorNextRecommendation({
 
 function isGuardedLiveCommand(command: string): boolean {
   return /PromoteLiveCtoa|ApproveLiveDeploy|live[-_\s]?deploy/i.test(command)
+}
+
+function jsonHasDuplicateObjectKeys(text: string): boolean {
+  let index = 0
+  let duplicate = false
+  const whitespace = /\s/
+
+  const skipWhitespace = () => {
+    while (index < text.length && whitespace.test(text[index])) index += 1
+  }
+  const parseStringToken = (): string => {
+    const start = index
+    if (text[index] !== '"') throw new Error("expected JSON string")
+    index += 1
+    while (index < text.length) {
+      const character = text[index]
+      if (character === "\\") {
+        index += 2
+        continue
+      }
+      index += 1
+      if (character === '"') return JSON.parse(text.slice(start, index)) as string
+    }
+    throw new Error("unterminated JSON string")
+  }
+  const parseValue = (): void => {
+    skipWhitespace()
+    const character = text[index]
+    if (character === "{") {
+      parseObject()
+      return
+    }
+    if (character === "[") {
+      index += 1
+      skipWhitespace()
+      if (text[index] === "]") {
+        index += 1
+        return
+      }
+      while (index < text.length) {
+        parseValue()
+        skipWhitespace()
+        if (text[index] === "]") {
+          index += 1
+          return
+        }
+        if (text[index] !== ",") throw new Error("invalid JSON array")
+        index += 1
+      }
+      throw new Error("unterminated JSON array")
+    }
+    if (character === '"') {
+      parseStringToken()
+      return
+    }
+    const start = index
+    while (index < text.length && !/[\s,}\]]/.test(text[index])) index += 1
+    if (start === index) throw new Error("invalid JSON value")
+  }
+  const parseObject = (): void => {
+    index += 1
+    const keys = new Set<string>()
+    skipWhitespace()
+    if (text[index] === "}") {
+      index += 1
+      return
+    }
+    while (index < text.length) {
+      skipWhitespace()
+      const key = parseStringToken()
+      if (keys.has(key)) duplicate = true
+      keys.add(key)
+      skipWhitespace()
+      if (text[index] !== ":") throw new Error("invalid JSON object")
+      index += 1
+      parseValue()
+      skipWhitespace()
+      if (text[index] === "}") {
+        index += 1
+        return
+      }
+      if (text[index] !== ",") throw new Error("invalid JSON object")
+      index += 1
+    }
+    throw new Error("unterminated JSON object")
+  }
+
+  try {
+    skipWhitespace()
+    parseValue()
+    skipWhitespace()
+    return duplicate || index !== text.length
+  } catch {
+    return true
+  }
+}
+
+async function readStrictJsonIfExists(filePath: string): Promise<Record<string, unknown> | null> {
+  try {
+    const text = await readBoundedTextFileIfExists(filePath, CONTROL_CENTER_EVIDENCE_JSON_MAX_BYTES)
+    if (text === null || jsonHasDuplicateObjectKeys(text)) return null
+    const parsed = JSON.parse(text)
+    return isRecord(parsed) ? parsed : null
+  } catch {
+    return null
+  }
 }
 
 async function readJsonIfExists(filePath: string): Promise<Record<string, unknown> | null> {
@@ -1633,6 +1916,289 @@ function summarizeBackgroundStatus(
   }
 }
 
+function hasExactKeys(value: unknown, expected: readonly string[]): value is Record<string, unknown> {
+  if (!isRecord(value)) return false
+  const keys = Object.keys(value)
+  return keys.length === expected.length && expected.every((key) => Object.prototype.hasOwnProperty.call(value, key))
+}
+
+function hasConditionsShadowNoActionContract(value: Record<string, unknown>): boolean {
+  return (
+    CONDITIONS_SHADOW_ACTION_FLAGS.every((key) => value[key] === false) &&
+    Array.isArray(value.intrusive_actions_performed) &&
+    value.intrusive_actions_performed.length === 0
+  )
+}
+
+function isConditionsShadowSha(value: unknown): value is string {
+  return typeof value === "string" && /^[a-f0-9]{64}$/.test(value) && value !== "0".repeat(64)
+}
+
+function conditionsShadowCanonicalValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(conditionsShadowCanonicalValue)
+  if (!isRecord(value)) return value
+  return Object.fromEntries(
+    Object.keys(value)
+      .sort()
+      .map((key) => [key, conditionsShadowCanonicalValue(value[key])]),
+  )
+}
+
+function conditionsShadowCanonicalSha(value: unknown): string {
+  const encoded = JSON.stringify(conditionsShadowCanonicalValue(value))
+  return encoded === undefined ? "" : crypto.createHash("sha256").update(encoded).digest("hex")
+}
+
+function isConditionsShadowIdentifier(value: unknown): value is string {
+  return typeof value === "string" && /^[a-z0-9][a-z0-9._-]{0,63}$/.test(value)
+}
+
+function isConditionsShadowAge(value: unknown): boolean {
+  return value === null || (typeof value === "number" && Number.isSafeInteger(value))
+}
+
+function conditionsShadowBlockers(value: unknown): string[] | null {
+  if (!Array.isArray(value) || value.length > CONDITIONS_SHADOW_BLOCKER_ORDER.length) return null
+  const blockers: string[] = []
+  let previousRank = -1
+  for (const item of value) {
+    if (typeof item !== "string") return null
+    const rank = CONDITIONS_SHADOW_BLOCKER_RANK.get(item as (typeof CONDITIONS_SHADOW_BLOCKER_ORDER)[number])
+    if (rank === undefined || rank <= previousRank) return null
+    blockers.push(item)
+    previousRank = rank
+  }
+  return blockers
+}
+
+function stringArraysEqual(left: string[], right: string[]): boolean {
+  return left.length === right.length && left.every((value, index) => value === right[index])
+}
+
+function validateConditionsShadowTrace(value: unknown): { valid: boolean; blockers: string[] } {
+  if (!hasExactKeys(value, CONDITIONS_SHADOW_TRACE_KEYS)) return { valid: false, blockers: [] }
+  const inputHashes = value.input_sha256
+  const blockers = conditionsShadowBlockers(value.blockers)
+  const status = value.status
+  const decision = value.decision
+  const fixedContract =
+    value.schema_version === CONDITIONS_SHADOW_TRACE_SCHEMA &&
+    isConditionsShadowIdentifier(value.trace_id) &&
+    value.source === "operational" &&
+    typeof value.evaluated_at_unix_ms === "number" &&
+    Number.isSafeInteger(value.evaluated_at_unix_ms) &&
+    value.evaluated_at_unix_ms > 0 &&
+    value.mode === "shadow_only" &&
+    value.action === "plan_paralyze_recovery" &&
+    value.condition === "paralyze" &&
+    value.spell === "exura" &&
+    hasExactKeys(inputHashes, CONDITIONS_SHADOW_INPUT_HASH_KEYS) &&
+    CONDITIONS_SHADOW_INPUT_HASH_KEYS.every((key) => isConditionsShadowSha(inputHashes[key])) &&
+    isConditionsShadowSha(value.canonical_input_sha256) &&
+    isConditionsShadowAge(value.observation_age_ms) &&
+    isConditionsShadowAge(value.p8_age_ms) &&
+    isConditionsShadowAge(value.recovery_trace_age_ms) &&
+    isConditionsShadowAge(value.recovery_age_ms) &&
+    (status === "shadow_plan_ready" || status === "operational_acceptance_blocked") &&
+    (decision === "would_plan_paralyze_recovery" || decision === "hold") &&
+    blockers !== null &&
+    isConditionsShadowSha(value.decision_sha256) &&
+    value.operator_review_required === true &&
+    hasConditionsShadowNoActionContract(value)
+  if (!fixedContract || blockers === null) return { valid: false, blockers: [] }
+  const stateConsistent =
+    (status === "shadow_plan_ready" && decision === "would_plan_paralyze_recovery" && blockers.length === 0) ||
+    (status === "operational_acceptance_blocked" && decision === "hold" && blockers.length > 0)
+  const expectedCanonicalInputSha = conditionsShadowCanonicalSha({
+    schema_version: CONDITIONS_SHADOW_INPUT_SCHEMA,
+    evaluated_at_unix_ms: value.evaluated_at_unix_ms,
+    input_sha256: inputHashes,
+  })
+  const expectedDecisionSha = conditionsShadowCanonicalSha({
+    schema_version: CONDITIONS_SHADOW_TRACE_SCHEMA,
+    canonical_input_sha256: value.canonical_input_sha256,
+    status,
+    decision,
+    action: value.action,
+    condition: value.condition,
+    spell: value.spell,
+    observation_age_ms: value.observation_age_ms,
+    p8_age_ms: value.p8_age_ms,
+    recovery_trace_age_ms: value.recovery_trace_age_ms,
+    recovery_age_ms: value.recovery_age_ms,
+    blockers,
+    operator_review_required: value.operator_review_required,
+    ...Object.fromEntries(CONDITIONS_SHADOW_ACTION_FLAGS.map((key) => [key, value[key]])),
+    intrusive_actions_performed: value.intrusive_actions_performed,
+  })
+  const hashesBound =
+    value.canonical_input_sha256 === expectedCanonicalInputSha &&
+    value.decision_sha256 === expectedDecisionSha &&
+    value.trace_id === `conditions-shadow-${expectedDecisionSha.slice(0, 16)}`
+  const valid = stateConsistent && hashesBound
+  return { valid, blockers: valid ? blockers : [] }
+}
+
+function validateConditionsShadowScenarioPack(value: unknown): boolean {
+  if (!hasExactKeys(value, CONDITIONS_SHADOW_SCENARIO_PACK_KEYS)) return false
+  const total = value.total_count
+  const passed = value.passed_count
+  const failed = value.failed_count
+  const cases = value.cases
+  if (
+    (value.status !== "passed" && value.status !== "failed") ||
+    value.fixture_only !== true ||
+    value.operational_readiness_claimed !== false ||
+    !isConditionsShadowSha(value.scenario_pack_sha256) ||
+    typeof total !== "number" ||
+    !Number.isSafeInteger(total) ||
+    total < 0 ||
+    total > 128 ||
+    typeof passed !== "number" ||
+    !Number.isSafeInteger(passed) ||
+    passed < 0 ||
+    typeof failed !== "number" ||
+    !Number.isSafeInteger(failed) ||
+    failed < 0 ||
+    !Array.isArray(cases) ||
+    cases.length !== total ||
+    !hasConditionsShadowNoActionContract(value)
+  ) {
+    return false
+  }
+  let allCasesPassed = true
+  const seenNames = new Set<string>()
+  for (const item of cases) {
+    if (!hasExactKeys(item, CONDITIONS_SHADOW_CASE_KEYS)) return false
+    const expectedBlockers = conditionsShadowBlockers(item.expected_blockers)
+    const actualBlockers = conditionsShadowBlockers(item.blockers)
+    const expectedStatus = item.expected_status
+    const actualStatus = item.actual_status
+    const name = item.name
+    const mutation = item.mutation
+    const caseContract =
+      isConditionsShadowIdentifier(name) &&
+      !seenNames.has(name) &&
+      typeof mutation === "string" &&
+      CONDITIONS_SHADOW_SCENARIO_MUTATIONS.has(mutation) &&
+      (expectedStatus === "shadow_plan_ready" || expectedStatus === "operational_acceptance_blocked") &&
+      (actualStatus === "shadow_plan_ready" || actualStatus === "operational_acceptance_blocked") &&
+      expectedBlockers !== null &&
+      actualBlockers !== null &&
+      isConditionsShadowSha(item.canonical_input_sha256) &&
+      isConditionsShadowSha(item.decision_sha256) &&
+      typeof item.deterministic === "boolean" &&
+      typeof item.passed === "boolean" &&
+      hasConditionsShadowNoActionContract(item)
+    if (!caseContract || expectedBlockers === null || actualBlockers === null) return false
+    seenNames.add(name)
+    const expectedStatusConsistent =
+      (expectedStatus === "shadow_plan_ready" && expectedBlockers.length === 0) ||
+      (expectedStatus === "operational_acceptance_blocked" && expectedBlockers.length > 0)
+    const actualStatusConsistent =
+      (actualStatus === "shadow_plan_ready" && actualBlockers.length === 0) ||
+      (actualStatus === "operational_acceptance_blocked" && actualBlockers.length > 0)
+    const computedPassed =
+      item.deterministic === true &&
+      expectedStatusConsistent &&
+      actualStatusConsistent &&
+      expectedStatus === actualStatus &&
+      stringArraysEqual(expectedBlockers, actualBlockers)
+    if (item.passed !== computedPassed) return false
+    allCasesPassed = allCasesPassed && item.passed === true
+  }
+  if (total === 0) {
+    return value.status === "failed" && passed === 0 && failed === 1 && cases.length === 0
+  }
+  return (
+    passed + failed === total &&
+    ((value.status === "passed" && allCasesPassed && passed === total && failed === 0) ||
+      (value.status === "failed" && !allCasesPassed && passed < total && failed > 0))
+  )
+}
+
+function summarizeConditionsShadowReplay(
+  payload: Record<string, unknown> | null,
+  artifactPresent: boolean,
+  nowMs = Date.now(),
+): ControlCenterEvidence["otclientHelper"]["conditionsShadowReplay"] {
+  const data = payload ?? {}
+  const trace = isRecord(data.operational_trace) ? data.operational_trace : {}
+  const scenarioPack = isRecord(data.scenario_pack) ? data.scenario_pack : {}
+  const traceValidation = validateConditionsShadowTrace(data.operational_trace)
+  const scenarioPackValid = validateConditionsShadowScenarioPack(data.scenario_pack)
+  const generatedAt = data.generated_at_unix_ms
+  const generatedAtValid = typeof generatedAt === "number" && Number.isSafeInteger(generatedAt) && generatedAt > 0
+  const reportedStatus =
+    data.operational_acceptance_status === "shadow_plan_ready_for_operator_review" ||
+    data.operational_acceptance_status === "operational_acceptance_blocked"
+      ? data.operational_acceptance_status
+      : artifactPresent
+        ? "invalid"
+        : "missing"
+  const scenarioPackStatus = data.scenario_pack_status === "passed" || data.scenario_pack_status === "failed"
+    ? data.scenario_pack_status
+    : "invalid"
+  const checks: Array<[string, boolean]> = [
+    ["report_keys", hasExactKeys(data, CONDITIONS_SHADOW_REPORT_KEYS)],
+    ["schema_version", data.schema_version === CONDITIONS_SHADOW_REPORT_SCHEMA],
+    ["generated_at_unix_ms", generatedAtValid],
+    ["mode", data.mode === CONDITIONS_SHADOW_REPORT_MODE],
+    ["operational_acceptance_status", reportedStatus !== "invalid" && reportedStatus !== "missing"],
+    ["scenario_pack_status", scenarioPackStatus !== "invalid"],
+    ["fixture_only_validation_passed", typeof data.fixture_only_validation_passed === "boolean"],
+    ["runtime_readiness_claimed", data.runtime_readiness_claimed === false],
+    ["no_action_contract", hasConditionsShadowNoActionContract(data)],
+    ["operational_trace", traceValidation.valid],
+    ["scenario_pack", scenarioPackValid],
+    ["generated_trace_binding", generatedAtValid && trace.evaluated_at_unix_ms === generatedAt],
+    ["scenario_pack_binding", scenarioPack.status === scenarioPackStatus],
+    ["fixture_status_binding", data.fixture_only_validation_passed === (scenarioPackStatus === "passed")],
+    [
+      "operational_status_binding",
+      (reportedStatus === "shadow_plan_ready_for_operator_review" && trace.status === "shadow_plan_ready" && scenarioPackStatus === "passed") ||
+        (reportedStatus === "operational_acceptance_blocked" &&
+          (trace.status === "operational_acceptance_blocked" || scenarioPackStatus === "failed")),
+    ],
+  ]
+  const contractErrors = artifactPresent ? checks.filter(([, passed]) => !passed).map(([name]) => name) : []
+  const contractValid = payload !== null && contractErrors.length === 0
+  const ageMs = generatedAtValid ? nowMs - generatedAt : null
+  const fresh = contractValid && ageMs !== null && ageMs >= 0 && ageMs <= CONDITIONS_SHADOW_REPORT_MAX_AGE_MS
+  const status = !artifactPresent
+    ? "missing"
+    : !contractValid
+      ? "invalid"
+      : !fresh
+        ? "stale"
+        : reportedStatus
+  return {
+    status,
+    reportedStatus,
+    generatedAtUnixMs: generatedAtValid ? generatedAt : null,
+    maxAgeSeconds: CONDITIONS_SHADOW_REPORT_MAX_AGE_MS / 1000,
+    ageSeconds: ageMs === null ? null : Math.round(ageMs) / 1000,
+    fresh,
+    contractValid,
+    contractErrors,
+    scenarioPackStatus,
+    fixtureOnlyValidationPassed: contractValid && data.fixture_only_validation_passed === true,
+    runtimeReadinessClaimed: false,
+    traceStatus: typeof trace.status === "string" ? sanitizeText(trace.status, 80) : "missing",
+    decision: contractValid && typeof trace.decision === "string" ? sanitizeText(trace.decision, 80) : "hold",
+    decisionSha256: isConditionsShadowSha(trace.decision_sha256) ? trace.decision_sha256 : "",
+    scenarioTotalCount: safeNonnegativeInteger(scenarioPack.total_count).value,
+    scenarioPassedCount: safeNonnegativeInteger(scenarioPack.passed_count).value,
+    scenarioFailedCount: safeNonnegativeInteger(scenarioPack.failed_count).value,
+    blockers: contractValid ? traceValidation.blockers : [],
+    dispatchAllowed: false,
+    runtimeActions: false,
+    executesPlan: false,
+    executeOnceAllowed: false,
+    promotionAllowed: false,
+  }
+}
+
 async function collectOtclientHelperStatus(
   config: ControlCenterEvidenceConfig,
 ): Promise<ControlCenterEvidence["otclientHelper"]> {
@@ -1646,6 +2212,8 @@ async function collectOtclientHelperStatus(
   const livePromotion = await readJsonIfExists(config.helperLivePromotionPath)
   const backgroundStatus = await readJsonIfExists(config.helperBackgroundStatusPath)
   const backgroundStatusArtifact = await statIfExists(config.helperBackgroundStatusPath)
+  const conditionsShadowReplay = await readStrictJsonIfExists(config.helperConditionsShadowReplayPath)
+  const conditionsShadowReplayArtifact = await statIfExists(config.helperConditionsShadowReplayPath)
 
   const releaseGateStatus = String(releaseGate?.status || "missing")
   const validationStatus = String(validation?.status || "missing")
@@ -1683,6 +2251,10 @@ async function collectOtclientHelperStatus(
   const files = Array.isArray(manifest?.files) ? manifest.files : []
   const readinessZip = isRecord(readiness?.zip) ? readiness.zip : {}
   const backgroundSummary = summarizeBackgroundStatus(backgroundStatus, backgroundStatusArtifact !== null)
+  const conditionsShadowSummary = summarizeConditionsShadowReplay(
+    conditionsShadowReplay,
+    conditionsShadowReplayArtifact !== null,
+  )
   const releasableToLive = releaseGateReleasableToLive && blockers.length === 0
   let status = "missing"
   if (manifest) {
@@ -1713,6 +2285,7 @@ async function collectOtclientHelperStatus(
     packageSha256: String(readinessZip.sha256 || ""),
     blockers: blockers.length ? blockers : Array.isArray(goalStatus?.blockers) ? goalStatus.blockers.map(String) : [],
     backgroundStatus: backgroundSummary,
+    conditionsShadowReplay: conditionsShadowSummary,
     nextAction: String(releaseGate?.next_action || goalStatus?.next_action || smokeStatus?.next_action || "Run ValidateDev."),
     nextCommand,
     sourcePaths: {
@@ -1726,6 +2299,7 @@ async function collectOtclientHelperStatus(
       smokeStatus: toControlCenterDisplayPath(config.helperSmokeStatusPath),
       livePromotion: toControlCenterDisplayPath(config.helperLivePromotionPath),
       backgroundStatus: toControlCenterDisplayPath(config.helperBackgroundStatusPath),
+      conditionsShadowReplay: toControlCenterDisplayPath(config.helperConditionsShadowReplayPath),
     },
   }
 }

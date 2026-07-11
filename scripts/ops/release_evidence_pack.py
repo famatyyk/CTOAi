@@ -9,9 +9,12 @@ This module keeps two related surfaces together:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import math
 import os
 import datetime as dt
+import re
 import stat
 from pathlib import Path
 from typing import Any
@@ -82,6 +85,240 @@ BACKGROUND_WRAPPER_INVARIANTS = {
     "client_process_stable": True,
     "screenshot_count_stable": True,
 }
+CONDITIONS_SHADOW_REPORT_SCHEMA = "ctoa.conditions-shadow-replay-report.v1"
+CONDITIONS_SHADOW_TRACE_SCHEMA = "ctoa.conditions-shadow-trace.v1"
+CONDITIONS_SHADOW_INPUT_SCHEMA = "ctoa.conditions-shadow-input.v1"
+CONDITIONS_SHADOW_MODE = "offline_shadow_replay"
+CONDITIONS_SHADOW_MAX_AGE_SECONDS = 30
+CONDITIONS_SHADOW_OPERATIONAL_STATUS_VALUES = {
+    "operational_acceptance_blocked",
+    "shadow_plan_ready_for_operator_review",
+}
+CONDITIONS_SHADOW_TRACE_STATUS_VALUES = {
+    "operational_acceptance_blocked",
+    "shadow_plan_ready",
+}
+CONDITIONS_SHADOW_SCENARIO_STATUS_VALUES = {"failed", "passed"}
+CONDITIONS_SHADOW_FALSE_FLAGS = (
+    "dispatch_allowed",
+    "runtime_actions",
+    "executes_plan",
+    "execute_once_allowed",
+    "promotion_allowed",
+)
+CONDITIONS_SHADOW_REPORT_KEYS = {
+    "schema_version",
+    "generated_at_unix_ms",
+    "mode",
+    "operational_acceptance_status",
+    "scenario_pack_status",
+    "fixture_only_validation_passed",
+    "runtime_readiness_claimed",
+    "operational_trace",
+    "scenario_pack",
+    *CONDITIONS_SHADOW_FALSE_FLAGS,
+    "intrusive_actions_performed",
+}
+CONDITIONS_SHADOW_TRACE_KEYS = {
+    "schema_version",
+    "trace_id",
+    "source",
+    "evaluated_at_unix_ms",
+    "mode",
+    "action",
+    "condition",
+    "spell",
+    "input_sha256",
+    "canonical_input_sha256",
+    "observation_age_ms",
+    "p8_age_ms",
+    "recovery_trace_age_ms",
+    "recovery_age_ms",
+    "status",
+    "decision",
+    "blockers",
+    "decision_sha256",
+    "operator_review_required",
+    *CONDITIONS_SHADOW_FALSE_FLAGS,
+    "intrusive_actions_performed",
+}
+CONDITIONS_SHADOW_INPUT_HASH_KEYS = {
+    "profile",
+    "observation",
+    "p8_proof",
+    "recovery_trace",
+    "recovery_proof",
+}
+CONDITIONS_SHADOW_SCENARIO_PACK_KEYS = {
+    "status",
+    "fixture_only",
+    "operational_readiness_claimed",
+    "scenario_pack_sha256",
+    "total_count",
+    "passed_count",
+    "failed_count",
+    "cases",
+    *CONDITIONS_SHADOW_FALSE_FLAGS,
+    "intrusive_actions_performed",
+}
+CONDITIONS_SHADOW_SCENARIO_CASE_KEYS = {
+    "name",
+    "mutation",
+    "expected_status",
+    "actual_status",
+    "expected_blockers",
+    "blockers",
+    "canonical_input_sha256",
+    "decision_sha256",
+    "deterministic",
+    "passed",
+    *CONDITIONS_SHADOW_FALSE_FLAGS,
+    "intrusive_actions_performed",
+}
+CONDITIONS_SHADOW_BLOCKER_ORDER = (
+    "profile_missing",
+    "profile_malformed",
+    "profile_duplicate_keys",
+    "profile_oversize",
+    "profile_symlink_rejected",
+    "profile_not_regular",
+    "profile_unreadable",
+    "profile_schema_invalid",
+    "profile_action_mismatch",
+    "profile_condition_mismatch",
+    "profile_spell_mismatch",
+    "profile_cooldown_policy_invalid",
+    "profile_retry_budget_nonzero",
+    "profile_p8_proof_not_required",
+    "profile_recovery_proof_not_required",
+    "profile_unsafe_contract",
+    "observation_missing",
+    "observation_malformed",
+    "observation_duplicate_keys",
+    "observation_oversize",
+    "observation_symlink_rejected",
+    "observation_not_regular",
+    "observation_unreadable",
+    "observation_envelope_invalid",
+    "observation_schema_invalid",
+    "observation_future",
+    "observation_stale",
+    "player_offline",
+    "player_online_unknown",
+    "player_dead",
+    "player_life_unknown",
+    "protection_zone_inside",
+    "protection_zone_unknown",
+    "protection_zone_source_untrusted",
+    "condition_mismatch",
+    "condition_absent",
+    "condition_unknown",
+    "cooldown_active",
+    "cooldown_unknown",
+    "cooldown_source_untrusted",
+    "observation_unsafe_contract",
+    "p8_missing",
+    "p8_malformed",
+    "p8_duplicate_keys",
+    "p8_oversize",
+    "p8_symlink_rejected",
+    "p8_not_regular",
+    "p8_unreadable",
+    "p8_schema_invalid",
+    "p8_future",
+    "p8_stale",
+    "p8_observation_hash_mismatch",
+    "p8_operational_acceptance_blocked",
+    "p8_unsafe_contract",
+    "recovery_trace_missing",
+    "recovery_trace_malformed",
+    "recovery_trace_duplicate_keys",
+    "recovery_trace_oversize",
+    "recovery_trace_symlink_rejected",
+    "recovery_trace_not_regular",
+    "recovery_trace_unreadable",
+    "recovery_trace_schema_invalid",
+    "recovery_trace_future",
+    "recovery_trace_stale",
+    "recovery_trace_status_blocked",
+    "recovery_trace_action_mismatch",
+    "recovery_trace_unsafe_contract",
+    "recovery_missing",
+    "recovery_malformed",
+    "recovery_duplicate_keys",
+    "recovery_oversize",
+    "recovery_symlink_rejected",
+    "recovery_not_regular",
+    "recovery_unreadable",
+    "recovery_schema_invalid",
+    "recovery_future",
+    "recovery_stale",
+    "recovery_status_blocked",
+    "recovery_action_mismatch",
+    "recovery_condition_mismatch",
+    "recovery_spell_mismatch",
+    "recovery_trace_hash_mismatch",
+    "recovery_profile_hash_mismatch",
+    "recovery_observation_hash_mismatch",
+    "recovery_p8_hash_mismatch",
+    "recovery_unsafe_contract",
+    "fixture_observation_not_operational",
+    "fixture_p8_proof_not_operational",
+    "fixture_recovery_trace_not_operational",
+    "fixture_recovery_proof_not_operational",
+)
+CONDITIONS_SHADOW_BLOCKER_RANK = {
+    name: index for index, name in enumerate(CONDITIONS_SHADOW_BLOCKER_ORDER)
+}
+CONDITIONS_SHADOW_SCENARIO_MUTATIONS = {
+    "none",
+    "profile_wrong_action",
+    "profile_wrong_condition",
+    "profile_wrong_spell",
+    "profile_retry_nonzero",
+    "profile_future_version",
+    "profile_malformed",
+    "profile_duplicate_keys",
+    "profile_oversized",
+    "profile_symlinked",
+    "profile_non_regular",
+    "profile_extra_field",
+    "observation_stale",
+    "observation_future",
+    "player_offline",
+    "player_online_unknown",
+    "player_dead",
+    "player_life_unknown",
+    "protection_zone_inside",
+    "protection_zone_unknown",
+    "condition_absent",
+    "condition_unknown",
+    "condition_wrong",
+    "cooldown_active",
+    "cooldown_unknown",
+    "observation_extra_field",
+    "observation_unsafe_contract",
+    "p8_missing",
+    "p8_blocked",
+    "p8_stale",
+    "p8_future",
+    "p8_unsafe_contract",
+    "p8_extra_field",
+    "recovery_missing",
+    "recovery_malformed",
+    "recovery_status_blocked",
+    "recovery_future",
+    "recovery_stale",
+    "recovery_wrong_action",
+    "recovery_wrong_condition",
+    "recovery_wrong_spell",
+    "recovery_hash_mismatch",
+    "recovery_extra_field",
+    "recovery_unsafe_contract",
+}
+CONDITIONS_SHADOW_SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+CONDITIONS_SHADOW_TRACE_ID_RE = re.compile(r"^conditions-shadow-[0-9a-f]{16}$")
+CONDITIONS_SHADOW_CASE_ID_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,63}$")
 
 
 def _now_iso() -> str:
@@ -231,8 +468,574 @@ def _read_json_or_none(path: Path) -> dict[str, Any] | None:
         return None
     try:
         return _read_json(path)
-    except (OSError, ValueError, json.JSONDecodeError, UnicodeDecodeError):
+    except (
+        OSError,
+        ValueError,
+        json.JSONDecodeError,
+        UnicodeDecodeError,
+        RecursionError,
+    ):
         return None
+
+
+class _DuplicateJsonKeyError(ValueError):
+    pass
+
+
+def _reject_duplicate_json_pairs(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise _DuplicateJsonKeyError(key)
+        result[key] = value
+    return result
+
+
+def _reject_json_constant(value: str) -> None:
+    raise ValueError(f"invalid JSON constant: {value}")
+
+
+def _parse_finite_json_float(value: str) -> float:
+    parsed = float(value)
+    if not math.isfinite(parsed):
+        raise ValueError(f"non-finite JSON number: {value}")
+    return parsed
+
+
+def _json_shape_within_bounds(
+    value: Any, *, max_depth: int = 64, max_nodes: int = 50_000
+) -> bool:
+    stack: list[tuple[Any, int]] = [(value, 0)]
+    visited = 0
+    while stack:
+        current, depth = stack.pop()
+        visited += 1
+        if depth > max_depth or visited > max_nodes:
+            return False
+        if isinstance(current, dict):
+            stack.extend((nested, depth + 1) for nested in current.values())
+        elif isinstance(current, list):
+            stack.extend((nested, depth + 1) for nested in current)
+    return True
+
+
+def _read_json_strict_or_none(path: Path) -> dict[str, Any] | None:
+    if _safe_file_stat(path) is None:
+        return None
+    try:
+        payload = json.loads(
+            _read_text_bounded(path, MAX_EVIDENCE_JSON_BYTES),
+            object_pairs_hook=_reject_duplicate_json_pairs,
+            parse_constant=_reject_json_constant,
+            parse_float=_parse_finite_json_float,
+        )
+    except (
+        OSError,
+        ValueError,
+        json.JSONDecodeError,
+        UnicodeDecodeError,
+        RecursionError,
+    ):
+        return None
+    return (
+        payload
+        if isinstance(payload, dict) and _json_shape_within_bounds(payload)
+        else None
+    )
+
+
+def _conditions_shadow_is_int(value: Any) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool)
+
+
+def _conditions_shadow_is_sha256(value: Any) -> bool:
+    return (
+        isinstance(value, str)
+        and CONDITIONS_SHADOW_SHA256_RE.fullmatch(value) is not None
+        and value != "0" * 64
+    )
+
+
+def _conditions_shadow_is_allowed(value: Any, allowed: set[str]) -> bool:
+    return isinstance(value, str) and value in allowed
+
+
+def _conditions_shadow_canonical_sha256(value: Any) -> str:
+    encoded = json.dumps(
+        value,
+        allow_nan=False,
+        ensure_ascii=True,
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _conditions_shadow_false_flags(payload: dict[str, Any]) -> bool:
+    return all(payload.get(key) is False for key in CONDITIONS_SHADOW_FALSE_FLAGS)
+
+
+def _conditions_shadow_empty_ledger(payload: dict[str, Any]) -> bool:
+    return payload.get("intrusive_actions_performed") == []
+
+
+def _conditions_shadow_blockers_valid(value: Any) -> bool:
+    if not isinstance(value, list) or len(value) > len(CONDITIONS_SHADOW_BLOCKER_ORDER):
+        return False
+    if not all(isinstance(item, str) for item in value):
+        return False
+    if any(item not in CONDITIONS_SHADOW_BLOCKER_RANK for item in value):
+        return False
+    expected = sorted(set(value), key=CONDITIONS_SHADOW_BLOCKER_RANK.__getitem__)
+    return value == expected
+
+
+def _conditions_shadow_unique_errors(errors: list[str]) -> list[str]:
+    return list(dict.fromkeys(errors))[:64]
+
+
+def _conditions_shadow_trace_errors(
+    trace: dict[str, Any], generated_at_unix_ms: Any
+) -> list[str]:
+    errors: list[str] = []
+    if set(trace) != CONDITIONS_SHADOW_TRACE_KEYS:
+        errors.append("operational_trace.exact_keys")
+    if trace.get("schema_version") != CONDITIONS_SHADOW_TRACE_SCHEMA:
+        errors.append("operational_trace.schema_version")
+    if trace.get("source") != "operational":
+        errors.append("operational_trace.source")
+    if trace.get("mode") != "shadow_only":
+        errors.append("operational_trace.mode")
+    for key, expected in (
+        ("action", "plan_paralyze_recovery"),
+        ("condition", "paralyze"),
+        ("spell", "exura"),
+    ):
+        if trace.get(key) != expected:
+            errors.append(f"operational_trace.{key}")
+
+    evaluated_at = trace.get("evaluated_at_unix_ms")
+    if (
+        not _conditions_shadow_is_int(evaluated_at)
+        or evaluated_at <= 0
+        or evaluated_at != generated_at_unix_ms
+    ):
+        errors.append("operational_trace.evaluated_at_unix_ms")
+    for key in (
+        "observation_age_ms",
+        "p8_age_ms",
+        "recovery_trace_age_ms",
+        "recovery_age_ms",
+    ):
+        value = trace.get(key)
+        if value is not None and not _conditions_shadow_is_int(value):
+            errors.append(f"operational_trace.{key}")
+
+    blockers = trace.get("blockers")
+    blockers_valid = _conditions_shadow_blockers_valid(blockers)
+    if not blockers_valid:
+        errors.append("operational_trace.blockers")
+    status = trace.get("status")
+    if not _conditions_shadow_is_allowed(status, CONDITIONS_SHADOW_TRACE_STATUS_VALUES):
+        errors.append("operational_trace.status")
+    decision = trace.get("decision")
+    if not _conditions_shadow_is_allowed(
+        decision, {"hold", "would_plan_paralyze_recovery"}
+    ):
+        errors.append("operational_trace.decision")
+    if blockers_valid and _conditions_shadow_is_allowed(
+        status, CONDITIONS_SHADOW_TRACE_STATUS_VALUES
+    ):
+        expected_status = (
+            "shadow_plan_ready" if not blockers else "operational_acceptance_blocked"
+        )
+        expected_decision = "would_plan_paralyze_recovery" if not blockers else "hold"
+        if status != expected_status:
+            errors.append("operational_trace.status_blocker_consistency")
+        if decision != expected_decision:
+            errors.append("operational_trace.decision_blocker_consistency")
+
+    input_hashes = trace.get("input_sha256")
+    input_hashes_valid = (
+        isinstance(input_hashes, dict)
+        and set(input_hashes) == CONDITIONS_SHADOW_INPUT_HASH_KEYS
+        and all(_conditions_shadow_is_sha256(value) for value in input_hashes.values())
+    )
+    if not input_hashes_valid:
+        errors.append("operational_trace.input_sha256")
+    canonical_input_sha = trace.get("canonical_input_sha256")
+    if not _conditions_shadow_is_sha256(canonical_input_sha):
+        errors.append("operational_trace.canonical_input_sha256")
+    elif input_hashes_valid and _conditions_shadow_is_int(evaluated_at):
+        expected_input_sha = _conditions_shadow_canonical_sha256(
+            {
+                "schema_version": CONDITIONS_SHADOW_INPUT_SCHEMA,
+                "evaluated_at_unix_ms": evaluated_at,
+                "input_sha256": input_hashes,
+            }
+        )
+        if canonical_input_sha != expected_input_sha:
+            errors.append("operational_trace.canonical_input_sha256_mismatch")
+
+    if trace.get("operator_review_required") is not True:
+        errors.append("operational_trace.operator_review_required")
+    for key in CONDITIONS_SHADOW_FALSE_FLAGS:
+        if trace.get(key) is not False:
+            errors.append(f"operational_trace.{key}")
+    if not _conditions_shadow_empty_ledger(trace):
+        errors.append("operational_trace.intrusive_actions_performed")
+
+    decision_sha = trace.get("decision_sha256")
+    if not _conditions_shadow_is_sha256(decision_sha):
+        errors.append("operational_trace.decision_sha256")
+    else:
+        decision_basis = {
+            "schema_version": CONDITIONS_SHADOW_TRACE_SCHEMA,
+            "canonical_input_sha256": canonical_input_sha,
+            "status": status,
+            "decision": decision,
+            "action": trace.get("action"),
+            "condition": trace.get("condition"),
+            "spell": trace.get("spell"),
+            "observation_age_ms": trace.get("observation_age_ms"),
+            "p8_age_ms": trace.get("p8_age_ms"),
+            "recovery_trace_age_ms": trace.get("recovery_trace_age_ms"),
+            "recovery_age_ms": trace.get("recovery_age_ms"),
+            "blockers": blockers,
+            "operator_review_required": trace.get("operator_review_required"),
+            **{key: trace.get(key) for key in CONDITIONS_SHADOW_FALSE_FLAGS},
+            "intrusive_actions_performed": trace.get("intrusive_actions_performed"),
+        }
+        if decision_sha != _conditions_shadow_canonical_sha256(decision_basis):
+            errors.append("operational_trace.decision_sha256_mismatch")
+    trace_id = trace.get("trace_id")
+    if (
+        not isinstance(trace_id, str)
+        or CONDITIONS_SHADOW_TRACE_ID_RE.fullmatch(trace_id) is None
+        or not isinstance(decision_sha, str)
+        or trace_id != f"conditions-shadow-{decision_sha[:16]}"
+    ):
+        errors.append("operational_trace.trace_id")
+    return errors
+
+
+def _conditions_shadow_scenario_errors(pack: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if set(pack) != CONDITIONS_SHADOW_SCENARIO_PACK_KEYS:
+        errors.append("scenario_pack.exact_keys")
+    status = pack.get("status")
+    if not _conditions_shadow_is_allowed(
+        status, CONDITIONS_SHADOW_SCENARIO_STATUS_VALUES
+    ):
+        errors.append("scenario_pack.status")
+    if pack.get("fixture_only") is not True:
+        errors.append("scenario_pack.fixture_only")
+    if pack.get("operational_readiness_claimed") is not False:
+        errors.append("scenario_pack.operational_readiness_claimed")
+    if not _conditions_shadow_is_sha256(pack.get("scenario_pack_sha256")):
+        errors.append("scenario_pack.scenario_pack_sha256")
+    for key in CONDITIONS_SHADOW_FALSE_FLAGS:
+        if pack.get(key) is not False:
+            errors.append(f"scenario_pack.{key}")
+    if not _conditions_shadow_empty_ledger(pack):
+        errors.append("scenario_pack.intrusive_actions_performed")
+
+    counts: dict[str, int] = {}
+    for key in ("total_count", "passed_count", "failed_count"):
+        value = pack.get(key)
+        if not _conditions_shadow_is_int(value) or value < 0:
+            errors.append(f"scenario_pack.{key}")
+        else:
+            counts[key] = value
+    cases = pack.get("cases")
+    if not isinstance(cases, list) or len(cases) > 128:
+        errors.append("scenario_pack.cases")
+        cases_to_validate: list[Any] = []
+    else:
+        cases_to_validate = cases
+
+    seen_names: set[str] = set()
+    passed_flags: list[bool] = []
+    for index, case in enumerate(cases_to_validate):
+        prefix = f"scenario_pack.cases[{index}]"
+        if not isinstance(case, dict):
+            errors.append(f"{prefix}.object")
+            continue
+        if set(case) != CONDITIONS_SHADOW_SCENARIO_CASE_KEYS:
+            errors.append(f"{prefix}.exact_keys")
+        name = case.get("name")
+        if (
+            not isinstance(name, str)
+            or CONDITIONS_SHADOW_CASE_ID_RE.fullmatch(name) is None
+            or name in seen_names
+        ):
+            errors.append(f"{prefix}.name")
+        else:
+            seen_names.add(name)
+        if not _conditions_shadow_is_allowed(
+            case.get("mutation"), CONDITIONS_SHADOW_SCENARIO_MUTATIONS
+        ):
+            errors.append(f"{prefix}.mutation")
+        expected_status = case.get("expected_status")
+        actual_status = case.get("actual_status")
+        if not _conditions_shadow_is_allowed(
+            expected_status, CONDITIONS_SHADOW_TRACE_STATUS_VALUES
+        ):
+            errors.append(f"{prefix}.expected_status")
+        if not _conditions_shadow_is_allowed(
+            actual_status, CONDITIONS_SHADOW_TRACE_STATUS_VALUES
+        ):
+            errors.append(f"{prefix}.actual_status")
+        expected_blockers = case.get("expected_blockers")
+        blockers = case.get("blockers")
+        expected_blockers_valid = _conditions_shadow_blockers_valid(expected_blockers)
+        blockers_valid = _conditions_shadow_blockers_valid(blockers)
+        if not expected_blockers_valid:
+            errors.append(f"{prefix}.expected_blockers")
+        if not blockers_valid:
+            errors.append(f"{prefix}.blockers")
+        if expected_blockers_valid and _conditions_shadow_is_allowed(
+            expected_status, CONDITIONS_SHADOW_TRACE_STATUS_VALUES
+        ):
+            expected_from_blockers = (
+                "shadow_plan_ready"
+                if not expected_blockers
+                else "operational_acceptance_blocked"
+            )
+            if expected_status != expected_from_blockers:
+                errors.append(f"{prefix}.expected_status_blocker_consistency")
+        if blockers_valid and _conditions_shadow_is_allowed(
+            actual_status, CONDITIONS_SHADOW_TRACE_STATUS_VALUES
+        ):
+            actual_from_blockers = (
+                "shadow_plan_ready"
+                if not blockers
+                else "operational_acceptance_blocked"
+            )
+            if actual_status != actual_from_blockers:
+                errors.append(f"{prefix}.actual_status_blocker_consistency")
+        for key in ("canonical_input_sha256", "decision_sha256"):
+            if not _conditions_shadow_is_sha256(case.get(key)):
+                errors.append(f"{prefix}.{key}")
+        deterministic = case.get("deterministic")
+        passed = case.get("passed")
+        if not isinstance(deterministic, bool):
+            errors.append(f"{prefix}.deterministic")
+        if not isinstance(passed, bool):
+            errors.append(f"{prefix}.passed")
+        else:
+            passed_flags.append(passed)
+        for key in CONDITIONS_SHADOW_FALSE_FLAGS:
+            if case.get(key) is not False:
+                errors.append(f"{prefix}.{key}")
+        ledger_empty = _conditions_shadow_empty_ledger(case)
+        if not ledger_empty:
+            errors.append(f"{prefix}.intrusive_actions_performed")
+        expected_passed = bool(
+            deterministic is True
+            and expected_status == actual_status
+            and expected_blockers_valid
+            and blockers_valid
+            and expected_blockers == blockers
+            and _conditions_shadow_false_flags(case)
+            and ledger_empty
+        )
+        if isinstance(passed, bool) and passed is not expected_passed:
+            errors.append(f"{prefix}.passed_consistency")
+
+    if len(counts) == 3 and isinstance(cases, list) and len(cases) <= 128:
+        total_count = counts["total_count"]
+        passed_count = counts["passed_count"]
+        failed_count = counts["failed_count"]
+        if total_count != len(cases):
+            errors.append("scenario_pack.total_count_consistency")
+        if total_count == 0:
+            if not (
+                passed_count == 0
+                and failed_count == 1
+                and status == "failed"
+                and cases == []
+            ):
+                errors.append("scenario_pack.empty_failure_consistency")
+        else:
+            actual_passed_count = sum(value is True for value in passed_flags)
+            actual_failed_count = len(cases) - actual_passed_count
+            if passed_count != actual_passed_count:
+                errors.append("scenario_pack.passed_count_consistency")
+            if failed_count != actual_failed_count:
+                errors.append("scenario_pack.failed_count_consistency")
+            expected_pack_status = (
+                "passed" if actual_passed_count == len(cases) else "failed"
+            )
+            if status != expected_pack_status:
+                errors.append("scenario_pack.status_count_consistency")
+    return errors
+
+
+def _conditions_shadow_contract_errors(payload: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if set(payload) != CONDITIONS_SHADOW_REPORT_KEYS:
+        errors.append("report.exact_keys")
+    if payload.get("schema_version") != CONDITIONS_SHADOW_REPORT_SCHEMA:
+        errors.append("report.schema_version")
+    if payload.get("mode") != CONDITIONS_SHADOW_MODE:
+        errors.append("report.mode")
+    generated_at = payload.get("generated_at_unix_ms")
+    if not _conditions_shadow_is_int(generated_at) or generated_at <= 0:
+        errors.append("report.generated_at_unix_ms")
+    operational_status = payload.get("operational_acceptance_status")
+    if not _conditions_shadow_is_allowed(
+        operational_status, CONDITIONS_SHADOW_OPERATIONAL_STATUS_VALUES
+    ):
+        errors.append("report.operational_acceptance_status")
+    scenario_status = payload.get("scenario_pack_status")
+    if not _conditions_shadow_is_allowed(
+        scenario_status, CONDITIONS_SHADOW_SCENARIO_STATUS_VALUES
+    ):
+        errors.append("report.scenario_pack_status")
+    if not isinstance(payload.get("fixture_only_validation_passed"), bool):
+        errors.append("report.fixture_only_validation_passed")
+    if payload.get("runtime_readiness_claimed") is not False:
+        errors.append("report.runtime_readiness_claimed")
+    for key in CONDITIONS_SHADOW_FALSE_FLAGS:
+        if payload.get(key) is not False:
+            errors.append(f"report.{key}")
+    if not _conditions_shadow_empty_ledger(payload):
+        errors.append("report.intrusive_actions_performed")
+
+    trace = payload.get("operational_trace")
+    if not isinstance(trace, dict):
+        errors.append("report.operational_trace")
+    else:
+        errors.extend(_conditions_shadow_trace_errors(trace, generated_at))
+    scenario_pack = payload.get("scenario_pack")
+    if not isinstance(scenario_pack, dict):
+        errors.append("report.scenario_pack")
+    else:
+        errors.extend(_conditions_shadow_scenario_errors(scenario_pack))
+
+    if isinstance(scenario_pack, dict):
+        pack_status = scenario_pack.get("status")
+        if scenario_status != pack_status:
+            errors.append("report.scenario_pack_status_consistency")
+        if payload.get("fixture_only_validation_passed") is not (
+            pack_status == "passed"
+        ):
+            errors.append("report.fixture_validation_consistency")
+    if isinstance(trace, dict) and isinstance(scenario_pack, dict):
+        expected_operational_status = (
+            "shadow_plan_ready_for_operator_review"
+            if trace.get("status") == "shadow_plan_ready"
+            and scenario_pack.get("status") == "passed"
+            else "operational_acceptance_blocked"
+        )
+        if operational_status != expected_operational_status:
+            errors.append("report.operational_status_consistency")
+    return _conditions_shadow_unique_errors(errors)
+
+
+def _conditions_shadow_summary(
+    payload: dict[str, Any] | None,
+    path: Path,
+    *,
+    now: dt.datetime | None = None,
+    artifact_present: bool | None = None,
+) -> dict[str, Any]:
+    present = payload is not None if artifact_present is None else artifact_present
+    data = payload if isinstance(payload, dict) else {}
+    if not isinstance(payload, dict):
+        errors = ["report.unreadable_or_malformed"]
+    elif not _json_shape_within_bounds(payload):
+        errors = ["report.structure_bounds"]
+    else:
+        errors = _conditions_shadow_contract_errors(data)
+    contract_valid = payload is not None and not errors
+    generated_at = data.get("generated_at_unix_ms")
+    observed_at = (now or dt.datetime.now(dt.UTC)).astimezone(dt.UTC)
+    age_seconds = (
+        (observed_at.timestamp() * 1000 - generated_at) / 1000
+        if _conditions_shadow_is_int(generated_at) and generated_at > 0
+        else None
+    )
+    timestamp_fresh = bool(
+        age_seconds is not None
+        and 0 <= age_seconds <= CONDITIONS_SHADOW_MAX_AGE_SECONDS
+    )
+    fresh = contract_valid and timestamp_fresh
+    reported_status = data.get("operational_acceptance_status")
+    reported_status_valid = _conditions_shadow_is_allowed(
+        reported_status, CONDITIONS_SHADOW_OPERATIONAL_STATUS_VALUES
+    )
+    if not present:
+        effective_status = "missing"
+    elif not contract_valid:
+        effective_status = "invalid"
+    elif not fresh:
+        effective_status = "stale"
+    else:
+        effective_status = str(reported_status)
+
+    trace = (
+        data.get("operational_trace")
+        if isinstance(data.get("operational_trace"), dict)
+        else {}
+    )
+    scenario_pack = (
+        data.get("scenario_pack") if isinstance(data.get("scenario_pack"), dict) else {}
+    )
+    blockers = trace.get("blockers")
+    safe_blockers = (
+        list(blockers) if _conditions_shadow_blockers_valid(blockers) else []
+    )
+    fixture_pack_passed = bool(
+        contract_valid
+        and data.get("fixture_only_validation_passed") is True
+        and scenario_pack.get("status") == "passed"
+    )
+    safe_count_values: dict[str, int] = {}
+    for key in ("total_count", "passed_count", "failed_count"):
+        value = scenario_pack.get(key)
+        safe_count_values[key] = (
+            value if _conditions_shadow_is_int(value) and value >= 0 else 0
+        )
+    return {
+        "status": effective_status,
+        "reported_status": reported_status if reported_status_valid else "invalid",
+        "mode": data.get("mode")
+        if data.get("mode") == CONDITIONS_SHADOW_MODE
+        else "invalid",
+        "generated_at_unix_ms": generated_at
+        if _conditions_shadow_is_int(generated_at) and generated_at > 0
+        else 0,
+        "max_age_seconds": CONDITIONS_SHADOW_MAX_AGE_SECONDS,
+        "age_seconds": round(age_seconds, 3) if age_seconds is not None else None,
+        "fresh": fresh,
+        "contract_valid": contract_valid,
+        "contract_errors": errors,
+        "trace_status": trace.get("status")
+        if _conditions_shadow_is_allowed(
+            trace.get("status"), CONDITIONS_SHADOW_TRACE_STATUS_VALUES
+        )
+        else "invalid",
+        "decision": trace.get("decision") if contract_valid else "hold",
+        "blockers": safe_blockers if contract_valid else [],
+        "operator_review_required": bool(
+            contract_valid and trace.get("operator_review_required") is True
+        ),
+        "fixture_validation_status": scenario_pack.get("status")
+        if _conditions_shadow_is_allowed(
+            scenario_pack.get("status"), CONDITIONS_SHADOW_SCENARIO_STATUS_VALUES
+        )
+        else "invalid",
+        "fixture_only_validation_passed": fixture_pack_passed,
+        "fixture_total_count": safe_count_values["total_count"],
+        "fixture_passed_count": safe_count_values["passed_count"],
+        "fixture_failed_count": safe_count_values["failed_count"],
+        "runtime_readiness_claimed": False,
+        **{key: False for key in CONDITIONS_SHADOW_FALSE_FLAGS},
+        "intrusive_actions_performed": [],
+        "path": str(path).replace("\\", "/"),
+    }
 
 
 def _safe_nonnegative_int(value: Any) -> tuple[int, bool]:
@@ -608,6 +1411,7 @@ def _helper_status(helper_dev_dir: Path) -> dict[str, Any]:
     smoke_status_path = helper_dev_dir / "smoke_status.json"
     live_promotion_path = helper_dev_dir / "live_promotion.json"
     background_status_path = helper_dev_dir / "background_status.json"
+    conditions_shadow_path = helper_dev_dir / "conditions_shadow_replay.json"
 
     helper_dir_safe = _safe_dir_stat(helper_dev_dir) is not None
     manifest = _read_json_or_none(manifest_path) if helper_dir_safe else None
@@ -633,6 +1437,14 @@ def _helper_status(helper_dev_dir: Path) -> dict[str, Any]:
         background_status,
         background_status_path,
         artifact_present=_safe_file_stat(background_status_path) is not None,
+    )
+    conditions_shadow = (
+        _read_json_strict_or_none(conditions_shadow_path) if helper_dir_safe else None
+    )
+    conditions_shadow_summary = _conditions_shadow_summary(
+        conditions_shadow,
+        conditions_shadow_path,
+        artifact_present=_safe_file_stat(conditions_shadow_path) is not None,
     )
 
     gates = gate.get("gates", []) if gate else []
@@ -782,6 +1594,7 @@ def _helper_status(helper_dev_dir: Path) -> dict[str, Any]:
         "blockers": blockers,
         "sandbox_smoke_queue": sandbox_smoke_queue,
         "background_status": background_summary,
+        "conditions_shadow": conditions_shadow_summary,
         "next_action": str(
             (gate or {}).get("next_action")
             or (goal_status or {}).get("next_action")
@@ -804,6 +1617,7 @@ def _helper_status(helper_dev_dir: Path) -> dict[str, Any]:
             "smoke_status": str(smoke_status_path).replace("\\", "/"),
             "live_promotion": str(live_promotion_path).replace("\\", "/"),
             "background_status": str(background_status_path).replace("\\", "/"),
+            "conditions_shadow": str(conditions_shadow_path).replace("\\", "/"),
         },
     }
 
@@ -1170,6 +1984,13 @@ def render_markdown(pack: dict[str, Any]) -> str:
             f"advisory_only=`{helper.get('background_status', {}).get('advisory_only', False)}` "
             f"promotion_allowed=`{helper.get('background_status', {}).get('promotion_allowed', False)}` "
             f"dispatch_allowed=`{helper.get('background_status', {}).get('dispatch_allowed', False)}`",
+            f"- Conditions Shadow: `{helper.get('conditions_shadow', {}).get('status', 'missing')}` "
+            f"contract_valid=`{helper.get('conditions_shadow', {}).get('contract_valid', False)}` "
+            f"fresh=`{helper.get('conditions_shadow', {}).get('fresh', False)}` "
+            f"fixtures=`{helper.get('conditions_shadow', {}).get('fixture_validation_status', 'missing')}` "
+            f"fixture_only_passed=`{helper.get('conditions_shadow', {}).get('fixture_only_validation_passed', False)}` "
+            f"runtime_readiness_claimed=`{helper.get('conditions_shadow', {}).get('runtime_readiness_claimed', False)}` "
+            f"dispatch_allowed=`{helper.get('conditions_shadow', {}).get('dispatch_allowed', False)}`",
             f"- Package SHA256: `{helper['package_sha256'] or 'missing'}`",
             f"- Next command: `{helper['next_command'] or 'n/a'}`",
         ]

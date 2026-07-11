@@ -138,6 +138,12 @@ and a promotion record whose manifest SHA256 matches. The observer cannot
 create that trust anchor. It may not send input, focus/capture a window,
 start/stop a client, write a smoke command, or change live files. Drift in a
 vocation profile remains blocking while that profile is executable Lua.
+`CTOA_HELPER_CONDITIONS_SHADOW_REPLAY_PATH` points to the read-only Control
+Center input `runtime/solteria_helper_dev/conditions_shadow_replay.json`. Only
+`ctoa.ps1 otp9` may refresh it, after collecting bounded `BackgroundNoScreen`
+evidence. The replay is data-only: fixture success is reported separately from
+operational acceptance, every action/dispatch/execute/promotion flag remains
+false, and malformed, stale, untrusted, or hash-inconsistent inputs fail closed.
 
 This keeps evidence visible in the cockpit before any release or guarded action is treated as complete.
 

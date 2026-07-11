@@ -15,6 +15,7 @@ export type ControlCenterEvidenceConfig = {
   helperSmokeStatusPath: string
   helperLivePromotionPath: string
   helperBackgroundStatusPath: string
+  helperConditionsShadowReplayPath: string
   engineBrainManifestPath: string
   engineBrainP6ReadinessPath: string
   engineBrainP6PluginHandoffSmokePath: string
@@ -81,6 +82,10 @@ export function getControlCenterEvidenceConfig(): ControlCenterEvidenceConfig {
     helperBackgroundStatusPath: configuredPath(
       "CTOA_HELPER_BACKGROUND_STATUS_PATH",
       path.join(helperDevDir, "background_status.json"),
+    ),
+    helperConditionsShadowReplayPath: configuredPath(
+      "CTOA_HELPER_CONDITIONS_SHADOW_REPLAY_PATH",
+      path.join(helperDevDir, "conditions_shadow_replay.json"),
     ),
     engineBrainManifestPath: configuredPath("CTOA_ENGINE_BRAIN_MANIFEST_PATH", "AI/generated/manifest.json"),
     engineBrainP6ReadinessPath: configuredPath("CTOA_ENGINE_BRAIN_P6_READINESS_PATH", "AI/generated/P6_CODEX_INTEGRATION_READINESS.json"),

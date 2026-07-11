@@ -21,6 +21,7 @@ const originalEnv = {
   CTOA_HELPER_SMOKE_STATUS_PATH: process.env.CTOA_HELPER_SMOKE_STATUS_PATH,
   CTOA_HELPER_LIVE_PROMOTION_PATH: process.env.CTOA_HELPER_LIVE_PROMOTION_PATH,
   CTOA_HELPER_BACKGROUND_STATUS_PATH: process.env.CTOA_HELPER_BACKGROUND_STATUS_PATH,
+  CTOA_HELPER_CONDITIONS_SHADOW_REPLAY_PATH: process.env.CTOA_HELPER_CONDITIONS_SHADOW_REPLAY_PATH,
   CTOA_ENGINE_BRAIN_MANIFEST_PATH: process.env.CTOA_ENGINE_BRAIN_MANIFEST_PATH,
   CTOA_ENGINE_BRAIN_P6_READINESS_PATH: process.env.CTOA_ENGINE_BRAIN_P6_READINESS_PATH,
   CTOA_ENGINE_BRAIN_P6_PLUGIN_HANDOFF_SMOKE_PATH: process.env.CTOA_ENGINE_BRAIN_P6_PLUGIN_HANDOFF_SMOKE_PATH,
@@ -67,6 +68,12 @@ function isolateEvidenceEnv(root: string) {
   process.env.CTOA_HELPER_SMOKE_STATUS_PATH = path.join(root, "runtime", "solteria_helper_dev", "smoke_status.json")
   process.env.CTOA_HELPER_LIVE_PROMOTION_PATH = path.join(root, "runtime", "solteria_helper_dev", "live_promotion.json")
   process.env.CTOA_HELPER_BACKGROUND_STATUS_PATH = path.join(root, "runtime", "solteria_helper_dev", "background_status.json")
+  process.env.CTOA_HELPER_CONDITIONS_SHADOW_REPLAY_PATH = path.join(
+    root,
+    "runtime",
+    "solteria_helper_dev",
+    "conditions_shadow_replay.json",
+  )
   process.env.CTOA_ENGINE_BRAIN_MANIFEST_PATH = path.join(root, "AI", "generated", "manifest.json")
   process.env.CTOA_ENGINE_BRAIN_P6_READINESS_PATH = path.join(root, "AI", "generated", "P6_CODEX_INTEGRATION_READINESS.json")
   process.env.CTOA_ENGINE_BRAIN_P6_PLUGIN_HANDOFF_SMOKE_PATH = path.join(root, "runtime", "control-center", "p6-plugin-handoff-smoke.json")
@@ -142,6 +149,118 @@ function backgroundNoScreenPayload(generatedAt: string) {
   }
 }
 
+function testCanonicalValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(testCanonicalValue)
+  if (typeof value !== "object" || value === null) return value
+  const record = value as Record<string, unknown>
+  return Object.fromEntries(Object.keys(record).sort().map((key) => [key, testCanonicalValue(record[key])]))
+}
+
+function testCanonicalSha(value: unknown): string {
+  return crypto.createHash("sha256").update(JSON.stringify(testCanonicalValue(value))).digest("hex")
+}
+
+function conditionsShadowReplayPayload(generatedAtUnixMs: number, ready = false) {
+  const hash = "a".repeat(64)
+  const blockers = ready ? [] : ["p8_operational_acceptance_blocked"]
+  const traceStatus = ready ? "shadow_plan_ready" : "operational_acceptance_blocked"
+  const decision = ready ? "would_plan_paralyze_recovery" : "hold"
+  const noAction = {
+    dispatch_allowed: false,
+    runtime_actions: false,
+    executes_plan: false,
+    execute_once_allowed: false,
+    promotion_allowed: false,
+    intrusive_actions_performed: [],
+  }
+  const inputHashes = {
+    profile: hash,
+    observation: hash,
+    p8_proof: hash,
+    recovery_trace: hash,
+    recovery_proof: hash,
+  }
+  const canonicalInputSha = testCanonicalSha({
+    schema_version: "ctoa.conditions-shadow-input.v1",
+    evaluated_at_unix_ms: generatedAtUnixMs,
+    input_sha256: inputHashes,
+  })
+  const decisionSha = testCanonicalSha({
+    schema_version: "ctoa.conditions-shadow-trace.v1",
+    canonical_input_sha256: canonicalInputSha,
+    status: traceStatus,
+    decision,
+    action: "plan_paralyze_recovery",
+    condition: "paralyze",
+    spell: "exura",
+    observation_age_ms: 1000,
+    p8_age_ms: 1000,
+    recovery_trace_age_ms: 1000,
+    recovery_age_ms: 1000,
+    blockers,
+    operator_review_required: true,
+    ...noAction,
+  })
+  const scenarioCase = {
+    name: "positive",
+    mutation: "none",
+    expected_status: "shadow_plan_ready",
+    actual_status: "shadow_plan_ready",
+    expected_blockers: [],
+    blockers: [],
+    canonical_input_sha256: hash,
+    decision_sha256: hash,
+    deterministic: true,
+    passed: true,
+    ...noAction,
+  }
+  return {
+    schema_version: "ctoa.conditions-shadow-replay-report.v1",
+    generated_at_unix_ms: generatedAtUnixMs,
+    mode: "offline_shadow_replay",
+    operational_acceptance_status: ready
+      ? "shadow_plan_ready_for_operator_review"
+      : "operational_acceptance_blocked",
+    scenario_pack_status: "passed",
+    fixture_only_validation_passed: true,
+    runtime_readiness_claimed: false,
+    operational_trace: {
+      schema_version: "ctoa.conditions-shadow-trace.v1",
+      trace_id: `conditions-shadow-${decisionSha.slice(0, 16)}`,
+      source: "operational",
+      evaluated_at_unix_ms: generatedAtUnixMs,
+      mode: "shadow_only",
+      action: "plan_paralyze_recovery",
+      condition: "paralyze",
+      spell: "exura",
+      input_sha256: inputHashes,
+      canonical_input_sha256: canonicalInputSha,
+      observation_age_ms: 1000,
+      p8_age_ms: 1000,
+      recovery_trace_age_ms: 1000,
+      recovery_age_ms: 1000,
+      status: traceStatus,
+      decision,
+      blockers,
+      decision_sha256: decisionSha,
+      operator_review_required: true,
+      ...noAction,
+    },
+    scenario_pack: {
+      status: "passed",
+      fixture_only: true,
+      operational_readiness_claimed: false,
+      scenario_pack_sha256: hash,
+      total_count: 1,
+      passed_count: 1,
+      failed_count: 0,
+      cases: [scenarioCase],
+      ...noAction,
+    },
+    ...noAction,
+  }
+}
+
 describe("Control Center evidence config", () => {
   it("resolves default relative evidence paths from the repository root", () => {
     for (const key of Object.keys(originalEnv)) {
@@ -160,6 +279,9 @@ describe("Control Center evidence config", () => {
     expect(config.helperReleaseGatePath).toBe(path.join(repoRoot, "runtime", "solteria_helper_dev", "release_gate.json"))
     expect(config.helperLivePromotionPath).toBe(path.join(repoRoot, "runtime", "solteria_helper_dev", "live_promotion.json"))
     expect(config.helperBackgroundStatusPath).toBe(path.join(repoRoot, "runtime", "solteria_helper_dev", "background_status.json"))
+    expect(config.helperConditionsShadowReplayPath).toBe(
+      path.join(repoRoot, "runtime", "solteria_helper_dev", "conditions_shadow_replay.json"),
+    )
     expect(config.engineBrainManifestPath).toBe(path.join(repoRoot, "AI", "generated", "manifest.json"))
     expect(config.engineBrainP6ReadinessPath).toBe(path.join(repoRoot, "AI", "generated", "P6_CODEX_INTEGRATION_READINESS.json"))
     expect(config.engineBrainP6PluginHandoffSmokePath).toBe(path.join(repoRoot, "runtime", "control-center", "p6-plugin-handoff-smoke.json"))
@@ -194,6 +316,7 @@ describe("Control Center evidence config", () => {
     const helperSmokePath = path.join(helperDevDir, "smoke_status.json")
     const helperLivePromotionPath = path.join(helperDevDir, "live_promotion.json")
     const helperBackgroundStatusPath = path.join(helperDevDir, "background_status.json")
+    const helperConditionsShadowReplayPath = path.join(helperDevDir, "conditions_shadow_replay.json")
     const helperZipPath = path.join(helperDevDir, "ctoa_otclient_v1.1b.zip")
     const helperZipSha = crypto.createHash("sha256").update("zip-content").digest("hex")
     const brainDir = path.join(root, "custom", "AI", "generated")
@@ -613,6 +736,7 @@ describe("Control Center evidence config", () => {
     process.env.CTOA_HELPER_SMOKE_STATUS_PATH = helperSmokePath
     process.env.CTOA_HELPER_LIVE_PROMOTION_PATH = helperLivePromotionPath
     process.env.CTOA_HELPER_BACKGROUND_STATUS_PATH = helperBackgroundStatusPath
+    process.env.CTOA_HELPER_CONDITIONS_SHADOW_REPLAY_PATH = helperConditionsShadowReplayPath
     process.env.CTOA_ENGINE_BRAIN_MANIFEST_PATH = brainManifestPath
     process.env.CTOA_ENGINE_BRAIN_P6_READINESS_PATH = brainP6ReadinessPath
     process.env.CTOA_ENGINE_BRAIN_P6_PLUGIN_HANDOFF_SMOKE_PATH = brainP6PluginHandoffSmokePath
@@ -640,6 +764,7 @@ describe("Control Center evidence config", () => {
     expect(config.helperReleaseGatePath).toBe(helperGatePath)
     expect(config.helperLivePromotionPath).toBe(helperLivePromotionPath)
     expect(config.helperBackgroundStatusPath).toBe(helperBackgroundStatusPath)
+    expect(config.helperConditionsShadowReplayPath).toBe(helperConditionsShadowReplayPath)
     expect(config.engineBrainManifestPath).toBe(brainManifestPath)
     expect(config.engineBrainP6ReadinessPath).toBe(brainP6ReadinessPath)
     expect(config.engineBrainP6PluginHandoffSmokePath).toBe(brainP6PluginHandoffSmokePath)
@@ -1213,6 +1338,149 @@ describe("Control Center evidence config", () => {
       expect(background.fresh, mutation).toBe(false)
       expect(background.contractErrors, mutation).toContain(expectedError)
     }
+  })
+
+  it("keeps fixture success separate from current P9 operational acceptance", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "ctoa-conditions-shadow-status-"))
+    isolateEvidenceEnv(root)
+    const helperDevDir = path.join(root, "runtime", "solteria_helper_dev")
+    const reportPath = path.join(helperDevDir, "conditions_shadow_replay.json")
+    await mkdir(helperDevDir, { recursive: true })
+
+    await writeFile(reportPath, JSON.stringify(conditionsShadowReplayPayload(Date.now(), false)), "utf-8")
+    const blocked = (await collectControlCenterEvidence()).otclientHelper.conditionsShadowReplay
+    expect(blocked).toMatchObject({
+      status: "operational_acceptance_blocked",
+      reportedStatus: "operational_acceptance_blocked",
+      fresh: true,
+      contractValid: true,
+      scenarioPackStatus: "passed",
+      fixtureOnlyValidationPassed: true,
+      runtimeReadinessClaimed: false,
+      traceStatus: "operational_acceptance_blocked",
+      blockers: ["p8_operational_acceptance_blocked"],
+      dispatchAllowed: false,
+      runtimeActions: false,
+      executesPlan: false,
+      executeOnceAllowed: false,
+      promotionAllowed: false,
+    })
+
+    await writeFile(reportPath, JSON.stringify(conditionsShadowReplayPayload(Date.now(), true)), "utf-8")
+    const reviewReady = (await collectControlCenterEvidence()).otclientHelper.conditionsShadowReplay
+    expect(reviewReady).toMatchObject({
+      status: "shadow_plan_ready_for_operator_review",
+      contractValid: true,
+      scenarioPassedCount: 1,
+      scenarioFailedCount: 0,
+      blockers: [],
+    })
+
+    await writeFile(reportPath, JSON.stringify(conditionsShadowReplayPayload(Date.now() - 31_000, true)), "utf-8")
+    const stale = (await collectControlCenterEvidence()).otclientHelper.conditionsShadowReplay
+    expect(stale.status).toBe("stale")
+    expect(stale.contractValid).toBe(true)
+    expect(stale.fresh).toBe(false)
+
+    const fixtureFailurePayload = conditionsShadowReplayPayload(Date.now(), true)
+    fixtureFailurePayload.operational_acceptance_status = "operational_acceptance_blocked"
+    fixtureFailurePayload.scenario_pack_status = "failed"
+    fixtureFailurePayload.fixture_only_validation_passed = false
+    fixtureFailurePayload.scenario_pack.status = "failed"
+    fixtureFailurePayload.scenario_pack.total_count = 0
+    fixtureFailurePayload.scenario_pack.passed_count = 0
+    fixtureFailurePayload.scenario_pack.failed_count = 1
+    fixtureFailurePayload.scenario_pack.cases = []
+    await writeFile(reportPath, JSON.stringify(fixtureFailurePayload), "utf-8")
+    const fixtureFailure = (await collectControlCenterEvidence()).otclientHelper.conditionsShadowReplay
+    expect(fixtureFailure).toMatchObject({
+      status: "operational_acceptance_blocked",
+      contractValid: true,
+      scenarioPackStatus: "failed",
+      fixtureOnlyValidationPassed: false,
+    })
+  })
+
+  it("fails closed for P9 report, trace, scenario and duplicate-key mutations", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "ctoa-conditions-shadow-contract-"))
+    isolateEvidenceEnv(root)
+    const helperDevDir = path.join(root, "runtime", "solteria_helper_dev")
+    const reportPath = path.join(helperDevDir, "conditions_shadow_replay.json")
+    await mkdir(helperDevDir, { recursive: true })
+
+    const mutations = [
+      "top_extra",
+      "top_dispatch",
+      "top_ledger",
+      "runtime_readiness_claimed",
+      "trace_runtime",
+      "trace_ledger",
+      "scenario_executes",
+      "case_promotion",
+      "count_mismatch",
+      "secret_blocker",
+      "status_mismatch",
+      "canonical_hash_mismatch",
+      "decision_hash_mismatch",
+      "trace_id_mismatch",
+      "unknown_mutation",
+      "duplicate_case_name",
+      "case_status_blocker_mismatch",
+    ] as const
+    for (const mutation of mutations) {
+      const payload = structuredClone(conditionsShadowReplayPayload(Date.now(), true)) as Record<string, unknown>
+      const trace = payload.operational_trace as Record<string, unknown>
+      const scenario = payload.scenario_pack as Record<string, unknown>
+      const scenarioCase = (scenario.cases as Array<Record<string, unknown>>)[0]
+      if (mutation === "top_extra") payload.extra_field = false
+      else if (mutation === "top_dispatch") payload.dispatch_allowed = true
+      else if (mutation === "top_ledger") payload.intrusive_actions_performed = ["screenshot_capture"]
+      else if (mutation === "runtime_readiness_claimed") payload.runtime_readiness_claimed = true
+      else if (mutation === "trace_runtime") trace.runtime_actions = true
+      else if (mutation === "trace_ledger") trace.intrusive_actions_performed = ["cast"]
+      else if (mutation === "scenario_executes") scenario.executes_plan = true
+      else if (mutation === "case_promotion") scenarioCase.promotion_allowed = true
+      else if (mutation === "count_mismatch") scenario.passed_count = 0
+      else if (mutation === "secret_blocker") trace.blockers = ["token=conditions-secret-value"]
+      else if (mutation === "status_mismatch") payload.operational_acceptance_status = "operational_acceptance_blocked"
+      else if (mutation === "canonical_hash_mismatch") trace.canonical_input_sha256 = "b".repeat(64)
+      else if (mutation === "decision_hash_mismatch") trace.decision_sha256 = "b".repeat(64)
+      else if (mutation === "trace_id_mismatch") trace.trace_id = "conditions-shadow-0000000000000000"
+      else if (mutation === "unknown_mutation") scenarioCase.mutation = "unreviewed_mutation"
+      else if (mutation === "duplicate_case_name") {
+        (scenario.cases as Array<Record<string, unknown>>).push(structuredClone(scenarioCase))
+        scenario.total_count = 2
+        scenario.passed_count = 2
+      } else scenarioCase.actual_status = "operational_acceptance_blocked"
+
+      await writeFile(reportPath, JSON.stringify(payload), "utf-8")
+      const summary = (await collectControlCenterEvidence()).otclientHelper.conditionsShadowReplay
+      expect(summary.status, mutation).toBe("invalid")
+      expect(summary.contractValid, mutation).toBe(false)
+      expect(summary.fresh, mutation).toBe(false)
+      expect(summary.blockers, mutation).toEqual([])
+      expect(summary.runtimeReadinessClaimed, mutation).toBe(false)
+      expect(summary.fixtureOnlyValidationPassed, mutation).toBe(false)
+      expect(summary.decision, mutation).toBe("hold")
+      expect(
+        [
+          summary.dispatchAllowed,
+          summary.runtimeActions,
+          summary.executesPlan,
+          summary.executeOnceAllowed,
+          summary.promotionAllowed,
+        ],
+        mutation,
+      ).toEqual([false, false, false, false, false])
+      expect(JSON.stringify(summary), mutation).not.toContain("conditions-secret-value")
+    }
+
+    const validText = JSON.stringify(conditionsShadowReplayPayload(Date.now(), true))
+    const duplicateText = validText.replace('"dispatch_allowed":false', '"dispatch_allowed":true,"dispatch_allowed":false')
+    await writeFile(reportPath, duplicateText, "utf-8")
+    const duplicate = (await collectControlCenterEvidence()).otclientHelper.conditionsShadowReplay
+    expect(duplicate.status).toBe("invalid")
+    expect(duplicate.contractValid).toBe(false)
   })
 
   it("bounds oversized action audit drilldown to a redacted tail sample", async () => {

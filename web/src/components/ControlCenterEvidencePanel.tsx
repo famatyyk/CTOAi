@@ -20,6 +20,7 @@ const statusTone: Record<string, string> = {
   first_safe_write_enabled: "border-cyan-300/30 bg-cyan-300/10 text-cyan-100",
   safe_write_tools_enabled: "border-cyan-300/30 bg-cyan-300/10 text-cyan-100",
   design_ready: "border-cyan-300/30 bg-cyan-300/10 text-cyan-100",
+  shadow_plan_ready_for_operator_review: "border-cyan-300/30 bg-cyan-300/10 text-cyan-100",
   implemented: "border-cyan-300/30 bg-cyan-300/10 text-cyan-100",
   releasable: "border-cyan-300/30 bg-cyan-300/10 text-cyan-100",
   promoted: "border-cyan-300/30 bg-cyan-300/10 text-cyan-100",
@@ -32,6 +33,8 @@ const statusTone: Record<string, string> = {
   needs_attention: "border-amber-300/30 bg-amber-300/10 text-amber-100",
   warn: "border-amber-300/30 bg-amber-300/10 text-amber-100",
   blocked: "border-pink-300/30 bg-pink-300/10 text-pink-100",
+  operational_acceptance_blocked: "border-pink-300/30 bg-pink-300/10 text-pink-100",
+  invalid: "border-pink-300/30 bg-pink-300/10 text-pink-100",
   FAIL: "border-pink-300/30 bg-pink-300/10 text-pink-100",
 }
 
@@ -107,6 +110,18 @@ export default function ControlCenterEvidencePanel() {
           : helperBackgroundStatus.blockers[0]
             ? `Blocked: ${helperBackgroundStatus.blockers[0]}.`
             : `Passive evidence: ${helperBackgroundStatus.status}.`
+  const helperConditionsShadow = evidence?.otclientHelper.conditionsShadowReplay
+  const helperConditionsShadowDetail = !helperConditionsShadow
+    ? "Waiting for the data-only Conditions replay report."
+    : !helperConditionsShadow.contractValid
+      ? `Contract blocked: ${helperConditionsShadow.contractErrors.slice(0, 2).join(", ") || "invalid artifact"}.`
+      : !helperConditionsShadow.fresh
+        ? `Replay stale after ${helperConditionsShadow.maxAgeSeconds}s; run a new bounded replay.`
+        : helperConditionsShadow.status === "shadow_plan_ready_for_operator_review"
+          ? `${helperConditionsShadow.scenarioPassedCount}/${helperConditionsShadow.scenarioTotalCount} deterministic fixtures; operator review required, all actions disabled.`
+          : helperConditionsShadow.blockers[0]
+            ? `Blocked: ${helperConditionsShadow.blockers[0]}; fixture pack ${helperConditionsShadow.scenarioPackStatus}.`
+            : `Conditions replay: ${helperConditionsShadow.status}.`
 
   return (
     <article className="rounded-3xl border border-white/10 bg-[#151b33] p-6">
@@ -328,7 +343,7 @@ export default function ControlCenterEvidencePanel() {
           </span>
         </div>
 
-        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-6">
+        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-7">
           <MetricCard
             label="Helper version"
             value={evidence?.otclientHelper.helperVersion || "loading"}
@@ -374,6 +389,12 @@ export default function ControlCenterEvidencePanel() {
             value={helperBackgroundStatus?.status || "loading"}
             detail={helperBackgroundDetail}
             tone={statusTone[helperBackgroundStatus?.status || "missing"] || statusTone.missing}
+          />
+          <MetricCard
+            label="P9 Conditions shadow"
+            value={helperConditionsShadow?.status || "loading"}
+            detail={helperConditionsShadowDetail}
+            tone={statusTone[helperConditionsShadow?.status || "missing"] || statusTone.missing}
           />
         </div>
 
@@ -945,6 +966,7 @@ export default function ControlCenterEvidencePanel() {
             <EvidenceLink label="Helper manifest" path={evidence?.otclientHelper.sourcePaths.manifest || "runtime/solteria_helper_dev/manifest.json"} />
             <EvidenceLink label="Helper live promotion" path={evidence?.otclientHelper.sourcePaths.livePromotion || "runtime/solteria_helper_dev/live_promotion.json"} />
             <EvidenceLink label="Helper BackgroundNoScreen" path={evidence?.otclientHelper.sourcePaths.backgroundStatus || "runtime/solteria_helper_dev/background_status.json"} />
+            <EvidenceLink label="Helper P9 Conditions shadow" path={evidence?.otclientHelper.sourcePaths.conditionsShadowReplay || "runtime/solteria_helper_dev/conditions_shadow_replay.json"} />
             <EvidenceLink label="Engine Brain manifest" path={evidence?.engineBrain.sourcePaths.manifest || "AI/generated/manifest.json"} />
             <EvidenceLink label="Engine Brain guardrail" path={evidence?.engineBrain.sourcePaths.secretGuardrail || "AI/generated/SECRET_GUARDRAIL.json"} />
             <EvidenceLink label="P6 plugin handoff smoke" path={evidence?.engineBrain.sourcePaths.p6PluginHandoffSmoke || "runtime/control-center/p6-plugin-handoff-smoke.json"} />
