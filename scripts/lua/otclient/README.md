@@ -137,10 +137,11 @@ Current helper logic includes:
 - module registry: `ctoa_helper_modules.lua` exports every implemented/prototype
   lane, profile key, operating mode, and gate so UI, audits, and docs stay
   aligned; `ctoa_helper_runtime_core.lua` separately owns runtime instances,
-  passive event delivery, and cooperative task scheduling with a fixed tick
-  budget. New runtime-core tasks are disabled by default and cannot execute
-  game actions;
-  aligned; `ctoa_native_helper.lua` keeps a fallback registry for manual loads;
+  passive event delivery, and fair round-robin cooperative task scheduling
+  with a fixed tick budget. A task deferred by the budget is considered first
+  on the next tick, while new runtime-core tasks remain disabled by default and
+  cannot execute game actions. `ctoa_native_helper.lua` keeps a fallback
+  registry for manual loads;
 - diagnostics domain: `ctoa_helper_diagnostics.lua` owns log append, diagnostics
   export paths, sample buffers, and export file writing while API probes and UI
   rendering stay in the helper shell;
