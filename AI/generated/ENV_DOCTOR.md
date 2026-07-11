@@ -1,6 +1,6 @@
 # Engine Brain Environment Doctor
 
-Generated at: `2026-07-11T12:47:45+00:00`
+Generated at: `2026-07-11T13:48:42+00:00`
 Overall status: `warn`
 
 | Check | Status | Key evidence |

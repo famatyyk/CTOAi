@@ -1,6 +1,6 @@
 # Engine Brain File Tree
 
-Generated at: `2026-07-11T12:54:03+00:00`
+Generated at: `2026-07-11T13:49:16+00:00`
 
 Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 `node_modules`, `runtime`, `logs`, `data`, `.tmp`, build outputs.
@@ -99,17 +99,17 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `AI/CODEX_CAPABILITY_MAP.md` | 5237 |
 | `AI/ENGINE_BRAIN_STATUS.md` | 132303 |
 | `AI/ENGINE_MEMORY.md` | 2971 |
-| `AI/FEATURE_ROADMAP.md` | 58116 |
+| `AI/FEATURE_ROADMAP.md` | 58324 |
 | `AI/generated/DOC_SYNC.json` | 1019 |
 | `AI/generated/DOC_SYNC.md` | 609 |
-| `AI/generated/ENGINE_BRAIN_PACK.json` | 5752 |
-| `AI/generated/ENGINE_BRAIN_PACK.md` | 414033 |
+| `AI/generated/ENGINE_BRAIN_PACK.json` | 5489 |
+| `AI/generated/ENGINE_BRAIN_PACK.md` | 267374 |
 | `AI/generated/ENV_DOCTOR.json` | 7626 |
 | `AI/generated/ENV_DOCTOR.md` | 1266 |
-| `AI/generated/FILE_TREE.md` | 68543 |
+| `AI/generated/FILE_TREE.md` | 68791 |
 | `AI/generated/manifest.json` | 2062 |
-| `AI/generated/OWNERSHIP_MAP.json` | 16930 |
-| `AI/generated/OWNERSHIP_MAP.md` | 6577 |
+| `AI/generated/OWNERSHIP_MAP.json` | 16932 |
+| `AI/generated/OWNERSHIP_MAP.md` | 6579 |
 | `AI/generated/P6_CODEX_INTEGRATION_READINESS.json` | 11010 |
 | `AI/generated/P6_CODEX_INTEGRATION_READINESS.md` | 6915 |
 | `AI/generated/P7_ACTION_READINESS.json` | 4870 |
@@ -120,7 +120,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `AI/generated/P7_OPERATOR_WORKFLOW.md` | 3015 |
 | `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.json` | 2705 |
 | `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.md` | 2024 |
-| `AI/generated/SYMBOL_MAP.md` | 261913 |
+| `AI/generated/SYMBOL_MAP.md` | 262833 |
 | `AI/KNOWN_BUGS.md` | 1384 |
 | `AI/LUA_INDEX.md` | 2874 |
 | `AI/OPERATIONS_AUDIT.md` | 5139 |
@@ -206,7 +206,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `docs/AGENT_PROMPT_DEFINITIVE.md` | 4201 |
 | `docs/AGENT_TRAINING_MASTERPLAN.md` | 3605 |
 | `docs/ARCHITECTURE.md` | 21905 |
-| `docs/audits/CTOAI_FULL_WORKSPACE_AUDIT_2026-07-06.md` | 7040 |
+| `docs/audits/CTOAI_FULL_WORKSPACE_AUDIT_2026-07-06.md` | 7045 |
 | `docs/audits/CTOAI_SECURITY_HARDENING_2026-07-06.md` | 114540 |
 | `docs/audits/CTOAI_WORKTREE_EXECUTION_PLAN_2026-07-11.md` | 8548 |
 | `docs/audits/CTOAI_WORKTREE_TRIAGE_2026-07-09.md` | 6985 |
@@ -217,7 +217,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `docs/COMMUNITY_ENGAGEMENT_PLAN.md` | 15939 |
 | `docs/CORE_GUARDRAILS.md` | 1090 |
 | `docs/CTOA_CLI.md` | 3810 |
-| `docs/CTOAI_COMMAND_RISK_MODEL.md` | 10206 |
+| `docs/CTOAI_COMMAND_RISK_MODEL.md` | 10349 |
 | `docs/CTOAI_CONTROL_CENTER_PHASE1.md` | 9084 |
 | `docs/CTOAI_FOUNDATION_CLEANUP.md` | 7779 |
 | `docs/CTOAI_LEGACY_FEATURE_INVENTORY.md` | 8857 |
@@ -444,7 +444,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `docs/operating-model.md` | 454 |
 | `docs/otclient/ctoai_runtime_2_execution_plan.md` | 5250 |
 | `docs/otclient/helper_redesign.md` | 7979 |
-| `docs/otclient/HELPER_RUNTIME_BRIDGE_V1.md` | 1694 |
+| `docs/otclient/HELPER_RUNTIME_BRIDGE_V1.md` | 2578 |
 | `docs/otclient/solteria_helper_development_plan.md` | 10365 |
 | `docs/otclient/solteria_helper_input_contracts.md` | 4430 |
 | `docs/otclient/solteria_helper_module_contract.md` | 4360 |
@@ -465,6 +465,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `docs/otclient/zerobot_reference.md` | 4707 |
 | `docs/OTCLIENT_INTEGRATION.md` | 13068 |
 | `docs/OTCLIENT_QUICKSTART.md` | 2776 |
+| `docs/P7_ROADMAP_STATE_REFRESH_DESIGN.md` | 2988 |
 | `docs/paper_extracted.txt` | 35869 |
 | `docs/pathing-spec.md` | 485 |
 | `docs/POST_GA_DELIVERY_TRAIN_BASELINE.md` | 1733 |
@@ -670,7 +671,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/lua/otclient/ctoa_helper_planner.lua` | 5062 |
 | `scripts/lua/otclient/ctoa_helper_profile_persistence.lua` | 14272 |
 | `scripts/lua/otclient/ctoa_helper_profile_schema.lua` | 25417 |
-| `scripts/lua/otclient/ctoa_helper_recovery_bridge.lua` | 5889 |
+| `scripts/lua/otclient/ctoa_helper_recovery_bridge.lua` | 9857 |
 | `scripts/lua/otclient/ctoa_helper_recovery_observer.lua` | 4249 |
 | `scripts/lua/otclient/ctoa_helper_recovery_runtime.lua` | 4956 |
 | `scripts/lua/otclient/ctoa_helper_route.lua` | 10784 |
@@ -681,12 +682,12 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/lua/otclient/ctoa_helper_scripting.lua` | 2946 |
 | `scripts/lua/otclient/ctoa_helper_targeting.lua` | 8172 |
 | `scripts/lua/otclient/ctoa_helper_timer_runtime.lua` | 4056 |
-| `scripts/lua/otclient/ctoa_helper_ui.lua` | 93266 |
+| `scripts/lua/otclient/ctoa_helper_ui.lua` | 94443 |
 | `scripts/lua/otclient/ctoa_helper_vocation_profiles.lua` | 3881 |
 | `scripts/lua/otclient/ctoa_ms_profile.lua` | 2412 |
 | `scripts/lua/otclient/ctoa_native_combat.lua` | 18058 |
 | `scripts/lua/otclient/ctoa_native_heal.lua` | 9644 |
-| `scripts/lua/otclient/ctoa_native_helper.lua` | 180090 |
+| `scripts/lua/otclient/ctoa_native_helper.lua` | 182845 |
 | `scripts/lua/otclient/ctoa_native_loot.lua` | 11632 |
 | `scripts/lua/otclient/ctoa_otclient.otmod` | 253 |
 | `scripts/lua/otclient/ctoa_otclient_loader.lua` | 7548 |
@@ -749,7 +750,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/ops/depack_window_aware_focused.py` | 8002 |
 | `scripts/ops/engine_brain_doctor.py` | 19184 |
 | `scripts/ops/engine_brain_index.py` | 112932 |
-| `scripts/ops/engine_brain_pack.py` | 9020 |
+| `scripts/ops/engine_brain_pack.py` | 9118 |
 | `scripts/ops/evidence_retention.py` | 2057 |
 | `scripts/ops/git_exec.py` | 2142 |
 | `scripts/ops/gs-api-validator.py` | 6610 |
@@ -779,6 +780,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/ops/otclient_helper_profile_audit.py` | 5236 |
 | `scripts/ops/otclient_helper_shell_budget_plan.py` | 12627 |
 | `scripts/ops/otclient_input_contract_fixtures.py` | 13415 |
+| `scripts/ops/otclient_recovery_bridge_sandbox_smoke.py` | 5749 |
 | `scripts/ops/phase5_nightly_checklist.py` | 10720 |
 | `scripts/ops/phase5_nightly_sync.py` | 24770 |
 | `scripts/ops/project_progress_diagram.py` | 6516 |
@@ -866,7 +868,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/windows/build-ctoa-desktop-exe.ps1` | 1210 |
 | `scripts/windows/install-ctoa-vscode-extensions.ps1` | 1852 |
 | `scripts/windows/open-control-center.ps1` | 2306 |
-| `scripts/windows/solteria_helper_test_env.ps1` | 407733 |
+| `scripts/windows/solteria_helper_test_env.ps1` | 416457 |
 | `src/main.py` | 15 |
 | `tests/conftest.py` | 1341 |
 | `tests/e2e/__init__.py` | 0 |
@@ -910,7 +912,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `tests/test_ctoa_helper_magic_shooter_direction.py` | 1997 |
 | `tests/test_ctoa_helper_otclient_observation_adapter.py` | 4485 |
 | `tests/test_ctoa_helper_profile_migration.py` | 3508 |
-| `tests/test_ctoa_helper_recovery_bridge.py` | 5285 |
+| `tests/test_ctoa_helper_recovery_bridge.py` | 8431 |
 | `tests/test_ctoa_helper_recovery_jitter.py` | 1480 |
 | `tests/test_ctoa_helper_recovery_observer.py` | 2775 |
 | `tests/test_ctoa_helper_runtime_core.py` | 6056 |
@@ -973,9 +975,11 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `tests/test_otclient_helper_module_contract.py` | 39127 |
 | `tests/test_otclient_helper_next_modules_plan.py` | 13483 |
 | `tests/test_otclient_helper_profile_audit.py` | 3639 |
-| `tests/test_otclient_helper_shell_budget_plan.py` | 3051 |
+| `tests/test_otclient_helper_shell_budget_plan.py` | 3270 |
 | `tests/test_otclient_helper_zerobot_shell.py` | 183122 |
 | `tests/test_otclient_input_contract_fixtures.py` | 2605 |
+| `tests/test_otclient_recovery_bridge_sandbox_smoke.py` | 758 |
+| `tests/test_p7_roadmap_state_refresh_design.py` | 1237 |
 | `tests/test_phase5_nightly_checklist.py` | 3890 |
 | `tests/test_phase5_nightly_checklist_more.py` | 3708 |
 | `tests/test_phase5_nightly_sync.py` | 8121 |

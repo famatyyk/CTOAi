@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-11T12:47:45+00:00",
+  "generated_at": "2026-07-11T13:48:42+00:00",
   "root": "C:\\Users\\zycie\\CTOAi",
   "overall_status": "warn",
   "status_counts": {
@@ -15,7 +15,7 @@
       "status": "ok",
       "root": "C:/Users/zycie/CTOAi",
       "branch": "codex/post-merge-engine-brain-sync",
-      "head": "cf6c332a91daa83327f0ee52d1497c281d7f4880",
+      "head": "b08e4bd20bb63e9b42fe5aba4c4925fb30faab7b",
       "dirty_count": 25,
       "dirty_sample": [
         "M AI/generated/DOC_SYNC.json",
@@ -59,12 +59,12 @@
       "containers": [
         {
           "name": "ctoa-api",
-          "status": "Up 41 hours",
+          "status": "Up 42 hours",
           "ports": "127.0.0.1:8001->8000/tcp"
         },
         {
           "name": "ctoa-postgres",
-          "status": "Up 41 hours (healthy)",
+          "status": "Up 42 hours (healthy)",
           "ports": "5432/tcp"
         }
       ],

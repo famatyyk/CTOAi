@@ -1,6 +1,6 @@
 # Engine Brain Symbol Map
 
-Generated at: `2026-07-11T12:54:03+00:00`
+Generated at: `2026-07-11T13:49:16+00:00`
 
 This is a lightweight map for navigation, not a full source dump.
 
@@ -2082,17 +2082,27 @@ This is a lightweight map for navigation, not a full source dump.
 
 ## `scripts/lua/otclient/ctoa_helper_recovery_bridge.lua`
 
-- L16: lua text
-- L20: lua number
-- L24: lua add
-- L28: lua RecoveryBridge.disarm
-- L34: lua RecoveryBridge.kill
-- L42: lua RecoveryBridge.resetKillSwitch
-- L49: lua RecoveryBridge.arm
-- L63: lua RecoveryBridge.preview
-- L94: lua RecoveryBridge.dispatch
-- L138: lua RecoveryBridge.snapshot
-- L149: lua RecoveryBridge.contract
+- L17: lua text
+- L21: lua number
+- L25: lua add
+- L29: lua RecoveryBridge.disarm
+- L35: lua RecoveryBridge.kill
+- L43: lua RecoveryBridge.resetKillSwitch
+- L50: lua RecoveryBridge.arm
+- L64: lua RecoveryBridge.preview
+- L95: lua RecoveryBridge.dispatch
+- L139: lua RecoveryBridge.snapshot
+- L150: lua call
+- L156: lua sandboxWorkDir
+- L165: lua RecoveryBridge.configure
+- L171: lua RecoveryBridge.dispatchHealing
+- L192: lua RecoveryBridge.controlStatus
+- L198: lua RecoveryBridge.controlArm
+- L225: lua RecoveryBridge.controlKill
+- L232: lua controlDispatch
+- L242: lua RecoveryBridge.controlDryRun
+- L246: lua RecoveryBridge.controlExecuteOnce
+- L250: lua RecoveryBridge.contract
 
 ## `scripts/lua/otclient/ctoa_helper_recovery_observer.lua`
 
@@ -2452,58 +2462,58 @@ This is a lightweight map for navigation, not a full source dump.
 - L339: lua amber
 - L362: lua emerald
 - L483: lua displayProfileName
-- L517: lua profileSchemaValue
-- L525: lua profileSchemaTable
-- L533: lua profilePersistenceValue
-- L541: lua profilePersistenceTable
-- L546: lua normalizeHelperHotkey
-- L557: lua hotkeyBindingDecision
-- L572: lua helperNowMs
-- L584: lua modalRequest
-- L600: lua appendLog
-- L619: lua status
-- L631: lua mergeTable
-- L639: lua reportClientCapabilities
-- L683: lua loadProfile
-- L727: lua applySafeBootRuntimeGuard
-- L758: lua runtimeArmingBlockedReason
-- L765: lua requestRuntimeSessionArm
-- L774: lua loadUiPrefs
-- L816: lua applyThemePreset
-- L832: lua applyWindowPlacement
-- L849: lua applyUiPrefs
-- L855: lua setThemePreset
-- L862: lua setCompactMode
-- L869: lua serializeLua
-- L877: lua exportProfile
-- L890: lua exportUiPrefs
-- L935: lua getSmokeCommandPath
-- L954: lua getDiagnosticsExportPath
-- L968: lua removeSmokeCommand
-- L976: lua readSmokeCommand
-- L989: lua applySmokeCommand
-- L1067: lua processSmokeCommand
-- L1116: lua markProfileDirty
-- L1161: lua setLastPotionStatus
-- L1170: lua setHudText
-- L1176: lua throttledRuntimeStatus
-- L1189: lua defer
-- L1211: lua addToSection
-- L1223: lua setSectionVisible
-- L1230: lua createWidget
-- L1238: lua sendHotkey
-- L1253: lua resolveActionbarSlot
-- L1263: lua sendActionbarSlot
-- L1271: lua castSpell
-- L1279: lua hasAttackTarget
-- L1283: lua getAttackTarget
-- L1295: lua isGameOnline
-- L1305: lua getLocalPlayer
-- L1317: lua getThingPosition
-- L1329: lua distanceChebyshev
-- L1336: lua normalizedCreatureName
-- L1352: lua isIgnoredCreatureName
-- L1370: lua creatureHasBlockingNpcIcon
+- L518: lua profileSchemaValue
+- L526: lua profileSchemaTable
+- L534: lua profilePersistenceValue
+- L542: lua profilePersistenceTable
+- L547: lua normalizeHelperHotkey
+- L558: lua hotkeyBindingDecision
+- L573: lua helperNowMs
+- L585: lua modalRequest
+- L601: lua appendLog
+- L620: lua status
+- L632: lua mergeTable
+- L640: lua reportClientCapabilities
+- L684: lua loadProfile
+- L728: lua applySafeBootRuntimeGuard
+- L759: lua runtimeArmingBlockedReason
+- L766: lua requestRuntimeSessionArm
+- L775: lua loadUiPrefs
+- L817: lua applyThemePreset
+- L833: lua applyWindowPlacement
+- L850: lua applyUiPrefs
+- L856: lua setThemePreset
+- L863: lua setCompactMode
+- L870: lua serializeLua
+- L878: lua exportProfile
+- L891: lua exportUiPrefs
+- L936: lua getSmokeCommandPath
+- L955: lua getDiagnosticsExportPath
+- L969: lua removeSmokeCommand
+- L977: lua readSmokeCommand
+- L990: lua applySmokeCommand
+- L1077: lua processSmokeCommand
+- L1126: lua markProfileDirty
+- L1171: lua setLastPotionStatus
+- L1180: lua setHudText
+- L1186: lua throttledRuntimeStatus
+- L1199: lua defer
+- L1221: lua addToSection
+- L1233: lua setSectionVisible
+- L1240: lua createWidget
+- L1248: lua sendHotkey
+- L1263: lua resolveActionbarSlot
+- L1273: lua sendActionbarSlot
+- L1281: lua castSpell
+- L1289: lua hasAttackTarget
+- L1293: lua getAttackTarget
+- L1305: lua isGameOnline
+- L1315: lua getLocalPlayer
+- L1327: lua getThingPosition
+- L1339: lua distanceChebyshev
+- L1346: lua normalizedCreatureName
+- L1362: lua isIgnoredCreatureName
+- L1380: lua creatureHasBlockingNpcIcon
 - ... 125 more symbols omitted
 
 ## `scripts/lua/otclient/ctoa_native_loot.lua`
@@ -3304,12 +3314,12 @@ This is a lightweight map for navigation, not a full source dump.
 
 ## `scripts/ops/engine_brain_pack.py`
 
-- L137: def is_secretish_path(path)
-- L150: def read_text(path)
-- L154: def fence_for(path)
-- L171: def append_file_section(lines, rel_path)
-- L208: def build_pack(pack_path, manifest_path)
-- L263: def main()
+- L139: def is_secretish_path(path)
+- L152: def read_text(path)
+- L156: def fence_for(path)
+- L173: def append_file_section(lines, rel_path)
+- L210: def build_pack(pack_path, manifest_path)
+- L265: def main()
 
 ## `scripts/ops/evidence_retention.py`
 
@@ -3539,6 +3549,13 @@ This is a lightweight map for navigation, not a full source dump.
 - L215: def render_markdown(report)
 - L265: def parse_args()
 - L274: def main()
+
+## `scripts/ops/otclient_recovery_bridge_sandbox_smoke.py`
+
+- L18: def load_json(path)
+- L26: def latest_smokeall()
+- L31: def lua_trace()
+- L72: def main()
 
 ## `scripts/ops/phase5_nightly_checklist.py`
 
@@ -4512,74 +4529,74 @@ This is a lightweight map for navigation, not a full source dump.
 - L177: function Write-TextAtomic
 - L204: function Write-TestPrefs
 - L230: function Write-SmokeCommand
-- L252: function Sync-CtoaRuntimeFiles
-- L259: function Copy-CtoaRuntimeFile
-- L342: function Ensure-CtoaBootHook
-- L423: function Get-HelperVersion
-- L433: function Get-LiveClientSummary
-- L455: function Get-SourceClientProcessSummaries
-- L486: function Start-LiveClientAfterPromotion
-- L514: function Get-DevPackageFiles
-- L573: function Get-LiveRootFallbackFiles
-- L579: function Get-DevFileManifest
-- L597: function Write-DevChangelog
-- L655: function Write-ReleaseReadinessReport
-- L699: function Write-DevValidationReport
-- L719: function New-DevPackage
-- L825: function Invoke-DevValidation
-- L880: function Resolve-SmokeTab
-- L907: function Initialize-Sandbox
-- L955: function Invoke-SmokePreflight
-- L1036: function Start-SandboxClient
-- L1045: function Get-SandboxProcesses
-- L1062: function Get-SandboxProcessSummaries
-- L1109: function Stop-SandboxClient
-- L1122: function Set-LiveCtoaEnabled
-- L1227: function Set-LiveCtoaUiOnly
-- L1326: function New-LiveCtoaBackup
-- L1371: function Assert-LiveDeployApproved
-- L1377: function Assert-ReleaseGateForLivePromotion
-- L1393: function Assert-LivePromotionMatchesStage
-- L1420: function Invoke-LivePromotion
-- L1501: function Invoke-LiveEmergencyRepair
-- L1564: function Capture-Screenshot
-- L1621: function Wait-ForSmokeTab
-- L1660: function Get-SmokeLogLineCount
-- L1668: function Test-AtCharacterSelect
-- L1677: function Invoke-SmokeStatus
-- L1755: function Invoke-HealFriendNoTargetSmoke
-- L1811: function Invoke-ConditionsObserverSmoke
-- L1870: function Invoke-EquipmentObserverSmoke
-- L1930: function Invoke-ScriptingPolicySmoke
-- L1990: function Invoke-PlannerStaticSmoke
-- L2040: function Invoke-RuntimePolicyStaticSmoke
-- L2093: function Invoke-DispatchGuardStaticSmoke
-- L2143: function Invoke-PlanQueueStaticSmoke
-- L2193: function Invoke-RuntimeReadinessStaticSmoke
-- L2244: function Invoke-ModuleStatusStaticSmoke
-- L2295: function Invoke-ActionCatalogStaticSmoke
-- L2349: function Invoke-DecisionTraceStaticSmoke
-- L2401: function Invoke-SandboxHandoffStaticSmoke
-- L2452: function Invoke-FeatureFlagsStaticSmoke
-- L2510: function Invoke-HudStaticSmoke
-- L2565: function Invoke-HotkeysStaticSmoke
-- L2619: function Invoke-ModalStaticSmoke
-- L2675: function Invoke-InputContractsStaticSmoke
-- L2697: function Invoke-RouteStaticSmoke
-- L2752: function Invoke-TargetingStaticSmoke
-- L2809: function Invoke-CombatRuntimeStaticSmoke
-- L2865: function Invoke-CavebotRuntimeStaticSmoke
-- L2921: function Invoke-LootRuntimeStaticSmoke
-- L2979: function Invoke-TimerRuntimeStaticSmoke
-- L3035: function Invoke-RecoveryRuntimeStaticSmoke
-- L3088: function Invoke-HealingVitalsSmoke
-- L3155: function Invoke-CombatSafetySmoke
-- L3186: function Get-ReportCheckStatus
-- L3241: function Invoke-CavebotSafetySmoke
-- L3271: function Test-CavebotStaticReport
-- L3327: function Invoke-LootSafetySmoke
-- L3354: function Test-LootReport
-- ... 25 more symbols omitted
+- L254: function Sync-CtoaRuntimeFiles
+- L261: function Copy-CtoaRuntimeFile
+- L344: function Ensure-CtoaBootHook
+- L425: function Get-HelperVersion
+- L435: function Get-LiveClientSummary
+- L457: function Get-SourceClientProcessSummaries
+- L488: function Start-LiveClientAfterPromotion
+- L516: function Get-DevPackageFiles
+- L575: function Get-LiveRootFallbackFiles
+- L581: function Get-DevFileManifest
+- L599: function Write-DevChangelog
+- L657: function Write-ReleaseReadinessReport
+- L701: function Write-DevValidationReport
+- L721: function New-DevPackage
+- L827: function Invoke-DevValidation
+- L882: function Resolve-SmokeTab
+- L909: function Initialize-Sandbox
+- L957: function Invoke-SmokePreflight
+- L1038: function Start-SandboxClient
+- L1047: function Get-SandboxProcesses
+- L1064: function Get-SandboxProcessSummaries
+- L1111: function Stop-SandboxClient
+- L1124: function Set-LiveCtoaEnabled
+- L1229: function Set-LiveCtoaUiOnly
+- L1328: function New-LiveCtoaBackup
+- L1373: function Assert-LiveDeployApproved
+- L1379: function Assert-ReleaseGateForLivePromotion
+- L1395: function Assert-LivePromotionMatchesStage
+- L1422: function Invoke-LivePromotion
+- L1503: function Invoke-LiveEmergencyRepair
+- L1566: function Capture-Screenshot
+- L1623: function Wait-ForSmokeTab
+- L1662: function Get-SmokeLogLineCount
+- L1670: function Test-AtCharacterSelect
+- L1679: function Invoke-SmokeStatus
+- L1757: function Invoke-HealFriendNoTargetSmoke
+- L1813: function Invoke-ConditionsObserverSmoke
+- L1872: function Invoke-EquipmentObserverSmoke
+- L1932: function Invoke-ScriptingPolicySmoke
+- L1992: function Invoke-PlannerStaticSmoke
+- L2042: function Invoke-RuntimePolicyStaticSmoke
+- L2095: function Invoke-DispatchGuardStaticSmoke
+- L2145: function Invoke-PlanQueueStaticSmoke
+- L2195: function Invoke-RuntimeReadinessStaticSmoke
+- L2246: function Invoke-ModuleStatusStaticSmoke
+- L2297: function Invoke-ActionCatalogStaticSmoke
+- L2351: function Invoke-DecisionTraceStaticSmoke
+- L2403: function Invoke-SandboxHandoffStaticSmoke
+- L2454: function Invoke-FeatureFlagsStaticSmoke
+- L2512: function Invoke-HudStaticSmoke
+- L2567: function Invoke-HotkeysStaticSmoke
+- L2621: function Invoke-ModalStaticSmoke
+- L2677: function Invoke-InputContractsStaticSmoke
+- L2699: function Invoke-RouteStaticSmoke
+- L2754: function Invoke-TargetingStaticSmoke
+- L2811: function Invoke-CombatRuntimeStaticSmoke
+- L2867: function Invoke-CavebotRuntimeStaticSmoke
+- L2923: function Invoke-LootRuntimeStaticSmoke
+- L2981: function Invoke-TimerRuntimeStaticSmoke
+- L3037: function Invoke-RecoveryRuntimeStaticSmoke
+- L3090: function Invoke-RecoveryBridgeStaticSmoke
+- L3134: function Invoke-RecoveryBridgeActionSmoke
+- L3142: function Send-And-WaitRecoveryBridgeCommand
+- L3184: function Invoke-HealingVitalsSmoke
+- L3251: function Invoke-CombatSafetySmoke
+- L3282: function Get-ReportCheckStatus
+- L3337: function Invoke-CavebotSafetySmoke
+- ... 28 more symbols omitted
 
 ## `tests/conftest.py`
 
@@ -4988,8 +5005,9 @@ This is a lightweight map for navigation, not a full source dump.
 ## `tests/test_ctoa_helper_recovery_bridge.py`
 
 - L11: def test_recovery_bridge_is_packaged_and_safe_by_default()
-- L28: def test_recovery_bridge_dry_run_arming_execution_and_kill_switch(tmp_path)
-- L92: def test_plan_heal_is_classified_and_guarded_by_runtime_policy(tmp_path)
+- L49: def test_recovery_bridge_dry_run_arming_execution_and_kill_switch(tmp_path)
+- L113: def test_plan_heal_is_classified_and_guarded_by_runtime_policy(tmp_path)
+- L159: def test_recovery_bridge_controller_runs_one_confirmed_sandbox_action(tmp_path)
 
 ## `tests/test_ctoa_helper_recovery_jitter.py`
 
@@ -5728,9 +5746,9 @@ This is a lightweight map for navigation, not a full source dump.
 ## `tests/test_otclient_helper_shell_budget_plan.py`
 
 - L7: def test_shell_budget_plan_measures_current_helper_pressure()
-- L24: def test_shell_budget_plan_has_ranked_domain_guidance()
-- L50: def test_shell_budget_plan_uses_lua_block_ends_not_next_function()
-- L78: def test_shell_budget_plan_writes_json_and_markdown(tmp_path)
+- L27: def test_shell_budget_plan_has_ranked_domain_guidance()
+- L53: def test_shell_budget_plan_uses_lua_block_ends_not_next_function()
+- L81: def test_shell_budget_plan_writes_json_and_markdown(tmp_path)
 
 ## `tests/test_otclient_helper_zerobot_shell.py`
 
@@ -5809,6 +5827,14 @@ This is a lightweight map for navigation, not a full source dump.
 
 - L7: def test_input_contract_fixture_report_covers_hotkeys_and_modal_states()
 - L37: def test_input_contract_fixture_markdown_and_json_outputs(tmp_path)
+
+## `tests/test_otclient_recovery_bridge_sandbox_smoke.py`
+
+- L9: def test_recovery_bridge_sandbox_smoke_is_bounded_and_wired()
+
+## `tests/test_p7_roadmap_state_refresh_design.py`
+
+- L12: def test_next_p7_action_has_complete_design_but_is_not_enabled()
 
 ## `tests/test_phase5_nightly_checklist.py`
 
