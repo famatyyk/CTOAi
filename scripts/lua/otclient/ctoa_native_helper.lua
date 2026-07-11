@@ -1058,6 +1058,15 @@ local function applySmokeCommand(command)
         return Helper.runMagicApiProbe()
     elseif action == "api_probe" and Helper.runApiProbe then
         return Helper.runApiProbe("manual")
+    elseif action == "recovery_bridge_dry_run" and Helper.recoveryBridgeDryRun then
+        return Helper.recoveryBridgeDryRun()
+    elseif action == "recovery_bridge_arm" and Helper.recoveryBridgeArm then
+        return Helper.recoveryBridgeArm()
+    elseif action == "recovery_bridge_execute_once" and Helper.recoveryBridgeExecuteOnce then
+        if command.confirm ~= true then status("Recovery bridge execute-once blocked: confirm required"); return false end
+        return Helper.recoveryBridgeExecuteOnce()
+    elseif action == "recovery_bridge_kill" and Helper.recoveryBridgeKill then
+        return Helper.recoveryBridgeKill()
     elseif action == "timer_probe" then local plan = moduleValue(externalTimerRuntime, "plan", HELPER_CONFIG.tools or {}, {online = g_game and g_game.isOnline and g_game.isOnline() or false, in_protection_zone = false, now_ms = g_clock and g_clock.millis and g_clock.millis() or 0}); status("Timer probe: " .. tostring(moduleValue(externalTimerRuntime, "summary", plan) or "unavailable")); return true
     elseif action == "diag_export" and Helper.exportDiagnostics then
         return Helper.exportDiagnostics()
@@ -2286,6 +2295,15 @@ Helper.recoveryBridgeDryRun = function()
     local trace = recoveryBridgeDispatch(spell, vitals, now, true)
     status("Recovery bridge dry-run: " .. tostring(trace.status) .. " / " .. tostring(trace.result))
     return trace
+end
+
+Helper.recoveryBridgeExecuteOnce = function()
+    local now = helperNowMs()
+    local vitals = readPlayerVitals()
+    local spell = selectHealingSpell(HELPER_CONFIG.healing, vitals.hp_percent, now)
+    local trace = recoveryBridgeDispatch(spell, vitals, now, false)
+    status("Recovery bridge execute-once: " .. tostring(trace.status) .. " / " .. tostring(trace.result))
+    return trace.status == "executed"
 end
 
 local function maybeHeal(now, vitals)

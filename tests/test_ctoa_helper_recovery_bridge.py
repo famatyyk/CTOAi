@@ -21,6 +21,8 @@ def test_recovery_bridge_is_packaged_and_safe_by_default():
     assert 'name = "ctoa_helper_recovery_bridge"' in registry
     assert "ctoa_helper_recovery_bridge.lua" in wrapper
     assert '"RecoveryBridgeStaticSmoke"' in wrapper
+    assert '"RecoveryBridgeActionSmoke"' in wrapper
+    assert "ctoa.recovery-bridge-action-smoke.v1" in wrapper
     assert 'module = "recovery_bridge"; action = "RecoveryBridgeStaticSmoke"' in wrapper
     assert "default_armed = false" in source
     assert "default_dry_run = true" in source
@@ -30,6 +32,7 @@ def test_recovery_bridge_is_packaged_and_safe_by_default():
     assert 'return suffix == "" or suffix == "/"' in helper
     assert "Helper.recoveryBridgeArm" in helper
     assert "Helper.recoveryBridgeDryRun" in helper
+    assert "Helper.recoveryBridgeExecuteOnce" in helper
     assert "Helper.recoveryBridgeKill" in helper
     assert 'moduleValue(externalRecoveryBridge, "dispatch"' in helper
     assert 'bridgeTrace.status == "executed"' in helper

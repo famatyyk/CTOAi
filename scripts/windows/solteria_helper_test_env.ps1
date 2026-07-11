@@ -1,5 +1,5 @@
 param(
-    [ValidateSet("PrepareDev", "ValidateDev", "Setup", "SmokePreflight", "SmokeStatus", "SmokeQueue", "GoalStatus", "LocalReady", "Launch", "Smoke", "SmokeAll", "SmokeAttach", "SmokeAttachModules", "SmokeAttachAll", "ThemeSnapshotMatrix", "HealingVitalsSmoke", "CombatSafetySmoke", "CavebotSafetySmoke", "TimerSafetySmoke", "LootSafetySmoke", "HealFriendNoTargetSmoke", "ConditionsObserverSmoke", "EquipmentObserverSmoke", "ScriptingPolicySmoke", "PlannerStaticSmoke", "RuntimePolicyStaticSmoke", "DispatchGuardStaticSmoke", "PlanQueueStaticSmoke", "RuntimeReadinessStaticSmoke", "ModuleStatusStaticSmoke", "ActionCatalogStaticSmoke", "DecisionTraceStaticSmoke", "DecisionPipelineStaticSmoke", "SandboxHandoffStaticSmoke", "FeatureFlagsStaticSmoke", "HudStaticSmoke", "HotkeysStaticSmoke", "ModalStaticSmoke", "InputContractsStaticSmoke", "RouteStaticSmoke", "TargetingStaticSmoke", "CombatRuntimeStaticSmoke", "CavebotRuntimeStaticSmoke", "LootRuntimeStaticSmoke", "TimerRuntimeStaticSmoke", "RecoveryRuntimeStaticSmoke", "RecoveryBridgeStaticSmoke", "RecoveryBridgeSandboxSmoke", "ProfileSchemaStaticSmoke", "OperatorSummaryStaticSmoke", "ExternalBotImportGateStaticSmoke", "HelperShellBudgetStaticSmoke", "HelperShellBudgetPlanStaticSmoke", "ModuleContract", "ModuleAudit", "ModuleStaticGates", "Snapshot", "ReadyCheck", "BackupLiveCtoa", "PromoteLiveCtoa", "EmergencyRepairLiveCtoa", "DisableLiveCtoa", "EnableLiveCtoa", "EnableLiveCtoaUiOnly", "Stop")]
+    [ValidateSet("PrepareDev", "ValidateDev", "Setup", "SmokePreflight", "SmokeStatus", "SmokeQueue", "GoalStatus", "LocalReady", "Launch", "Smoke", "SmokeAll", "SmokeAttach", "SmokeAttachModules", "SmokeAttachAll", "ThemeSnapshotMatrix", "HealingVitalsSmoke", "CombatSafetySmoke", "CavebotSafetySmoke", "TimerSafetySmoke", "LootSafetySmoke", "HealFriendNoTargetSmoke", "ConditionsObserverSmoke", "EquipmentObserverSmoke", "ScriptingPolicySmoke", "PlannerStaticSmoke", "RuntimePolicyStaticSmoke", "DispatchGuardStaticSmoke", "PlanQueueStaticSmoke", "RuntimeReadinessStaticSmoke", "ModuleStatusStaticSmoke", "ActionCatalogStaticSmoke", "DecisionTraceStaticSmoke", "DecisionPipelineStaticSmoke", "SandboxHandoffStaticSmoke", "FeatureFlagsStaticSmoke", "HudStaticSmoke", "HotkeysStaticSmoke", "ModalStaticSmoke", "InputContractsStaticSmoke", "RouteStaticSmoke", "TargetingStaticSmoke", "CombatRuntimeStaticSmoke", "CavebotRuntimeStaticSmoke", "LootRuntimeStaticSmoke", "TimerRuntimeStaticSmoke", "RecoveryRuntimeStaticSmoke", "RecoveryBridgeStaticSmoke", "RecoveryBridgeSandboxSmoke", "RecoveryBridgeActionSmoke", "ProfileSchemaStaticSmoke", "OperatorSummaryStaticSmoke", "ExternalBotImportGateStaticSmoke", "HelperShellBudgetStaticSmoke", "HelperShellBudgetPlanStaticSmoke", "ModuleContract", "ModuleAudit", "ModuleStaticGates", "Snapshot", "ReadyCheck", "BackupLiveCtoa", "PromoteLiveCtoa", "EmergencyRepairLiveCtoa", "DisableLiveCtoa", "EnableLiveCtoa", "EnableLiveCtoaUiOnly", "Stop")]
     [string]$Action = "Smoke",
     [ValidateSet("overview", "healing", "heal_friend", "conditions", "hunting", "hunting_magic", "cavebot", "equipment", "tools", "tools_pvp", "tools_hud", "tools_timer", "tools_diag", "profile", "ui", "scripting")]
     [string]$Tab = "overview",
@@ -233,7 +233,8 @@ function Write-SmokeCommand {
         [string]$ActiveTab,
         [string]$SmokeSubtab = "",
         [string]$CommandAction = "",
-        [string]$Theme = ""
+        [string]$Theme = "",
+        [switch]$Confirm
     )
     $modDir = Join-Path $ClientDir "mods\ctoa_otclient"
     New-Item -ItemType Directory -Force -Path $modDir | Out-Null
@@ -244,6 +245,7 @@ function Write-SmokeCommand {
     if (-not [string]::IsNullOrWhiteSpace($Theme)) {
         $lines += "theme=$Theme"
     }
+    if ($Confirm) { $lines += "confirm=true" }
     $commandText = ($lines -join "`n") + "`n"
     Write-TextAtomic -Text $commandText -Path (Join-Path $modDir "ctoa_smoke_command.lua")
     Write-TextAtomic -Text $commandText -Path (Join-Path $ClientDir "ctoa_smoke_command.lua")
@@ -3129,6 +3131,56 @@ function Invoke-RecoveryBridgeStaticSmoke {
     if ($failed.Count -gt 0) { throw "Recovery bridge static smoke failed" }
 }
 
+function Invoke-RecoveryBridgeActionSmoke {
+    $repo = Get-RepoRoot
+    $outRoot = Join-Path $repo $DevDir
+    New-Item -ItemType Directory -Force -Path $outRoot | Out-Null
+    $sandboxFull = Assert-SandboxClientPath -SandboxPath $SandboxClient -SourcePath $SourceClient
+    $logPath = Join-Path $sandboxFull "ctoa_local.log"
+    if (-not (Test-Path -LiteralPath $logPath)) { throw "Sandbox log is required for RecoveryBridgeActionSmoke" }
+
+    function Send-And-WaitRecoveryBridgeCommand {
+        param([string]$CommandAction, [string]$Needle, [switch]$Confirm)
+        $before = @(Get-Content -LiteralPath $logPath -ErrorAction SilentlyContinue).Count
+        Write-SmokeCommand -ClientDir $sandboxFull -ActiveTab "healing" -CommandAction $CommandAction -Confirm:$Confirm
+        $deadline = (Get-Date).AddSeconds(12)
+        while ((Get-Date) -lt $deadline) {
+            $lines = @(Get-Content -LiteralPath $logPath -ErrorAction SilentlyContinue)
+            $fresh = if ($lines.Count -gt $before) { @($lines[$before..($lines.Count - 1)]) } else { @() }
+            if ($fresh -match [regex]::Escape($Needle)) { return $true }
+            Start-Sleep -Milliseconds 200
+        }
+        return $false
+    }
+
+    $dryRun = Send-And-WaitRecoveryBridgeCommand -CommandAction "recovery_bridge_dry_run" -Needle "Recovery bridge dry-run: ready / dry_run"
+    $armRequest = Send-And-WaitRecoveryBridgeCommand -CommandAction "recovery_bridge_arm" -Needle "click ARM again to confirm"
+    Start-Sleep -Milliseconds 750
+    $armed = Send-And-WaitRecoveryBridgeCommand -CommandAction "recovery_bridge_arm" -Needle "Recovery bridge armed: sandbox Healing session"
+    $executed = Send-And-WaitRecoveryBridgeCommand -CommandAction "recovery_bridge_execute_once" -Needle "Recovery bridge execute-once: executed / success" -Confirm
+    $killed = Send-And-WaitRecoveryBridgeCommand -CommandAction "recovery_bridge_kill" -Needle "Recovery bridge KILL: runtime disarmed"
+    $checks = [ordered]@{ dry_run = $dryRun; arm_request = $armRequest; armed = $armed; executed_once = $executed; kill_switch = $killed }
+    $failed = @($checks.GetEnumerator() | Where-Object { $_.Value -ne $true } | ForEach-Object { $_.Key })
+    $report = [pscustomobject]@{
+        schema_version = "ctoa.recovery-bridge-action-smoke.v1"
+        created_at = (Get-Date).ToString("o")
+        status = if ($failed.Count -eq 0) { "passed" } else { "blocked" }
+        mode = "sandbox_single_healing_action"
+        checks = $checks
+        passed_count = @($checks.GetEnumerator() | Where-Object { $_.Value -eq $true }).Count
+        check_count = $checks.Count
+        failed = $failed
+        final_state = if ($killed) { "killed_and_disarmed" } else { "unknown" }
+        live_promotion = $false
+        next_action = if ($failed.Count -eq 0) { "Review evidence; do not promote live through this action." } else { "Inspect sandbox log and repair failed bridge step." }
+    }
+    $path = Join-Path $outRoot "recovery_bridge_action_smoke.json"
+    Write-JsonAtomic -InputObject $report -Path $path -Depth 8
+    Write-Output "[solteria-helper-test-env] Recovery bridge action smoke: $path"
+    Write-Output "[solteria-helper-test-env] Recovery bridge action status: $($report.status) ($($report.passed_count)/$($report.check_count))"
+    if ($failed.Count -gt 0) { throw "Recovery bridge action smoke failed: $($failed -join ', ')" }
+}
+
 function Invoke-HealingVitalsSmoke {
     $repo = Get-RepoRoot
     $outRoot = Join-Path $repo $DevDir
@@ -5312,6 +5364,9 @@ switch ($Action) {
     "RecoveryBridgeSandboxSmoke" {
         & (Join-Path (Get-RepoRoot) ".venv\Scripts\python.exe") (Join-Path (Get-RepoRoot) "scripts\ops\otclient_recovery_bridge_sandbox_smoke.py")
         if ($LASTEXITCODE -ne 0) { throw "Recovery bridge sandbox smoke failed" }
+    }
+    "RecoveryBridgeActionSmoke" {
+        Invoke-RecoveryBridgeActionSmoke
     }
     "ProfileSchemaStaticSmoke" {
         Invoke-ProfileSchemaStaticSmoke
