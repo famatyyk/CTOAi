@@ -94,7 +94,11 @@ function Assert-AlertWebhookUrl {
 }
 
 function Get-CurrentPowerShellPath {
-    $exeName = if ($PSVersionTable.PSEdition -eq "Core") { "pwsh.exe" } else { "powershell.exe" }
+    $exeName = if ($PSVersionTable.PSEdition -eq "Core") {
+        if ($IsWindows) { "pwsh.exe" } else { "pwsh" }
+    } else {
+        "powershell.exe"
+    }
     $candidate = Join-Path $PSHOME $exeName
     if (-not (Test-Path -LiteralPath $candidate -PathType Leaf)) {
         throw "Current PowerShell executable was not found."

@@ -47,6 +47,12 @@ function Resolve-ControlCenterUrl {
         throw "Control Center URL path must not include backslashes."
     }
 
+    $decodedCandidate = [System.Uri]::UnescapeDataString($Candidate)
+    $rawTraversalSegments = @($decodedCandidate -split "/" | Where-Object { $_ -eq "." -or $_ -eq ".." })
+    if ($rawTraversalSegments.Count -gt 0) {
+        throw "Control Center URL path must not contain traversal."
+    }
+
     $uri = $null
     if (-not [System.Uri]::TryCreate($Candidate, [System.UriKind]::Absolute, [ref]$uri)) {
         throw "Control Center URL must be absolute."
