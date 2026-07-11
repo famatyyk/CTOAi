@@ -1,13 +1,13 @@
 # Engine Brain Environment Doctor
 
-Generated at: `2026-07-11T13:48:42+00:00`
+Generated at: `2026-07-11T15:38:39+00:00`
 Overall status: `warn`
 
 | Check | Status | Key evidence |
 |---|---|---|
-| `git` | `ok` | branch=codex/post-merge-engine-brain-sync; dirty=25; path=C:\Program Files\Git\cmd\git.EXE |
+| `git` | `ok` | branch=codex/post-merge-engine-brain-sync; dirty=19; path=C:\Program Files\Git\cmd\git.EXE |
 | `docker` | `ok` | containers=2; running_broad=0; configured_broad=0 |
-| `vpn` | `ok` | warp_connected=True |
+| `vpn` | `warn` | warp_connected=False |
 | `vercel` | `ok` | version=54.10.3; project=ctoa-web |
 | `vscode` | `warn` | openai=['openai.chatgpt@26.623.141536']; old_dirs=2 |
 | `github` | `warn` | open_prs=6; dirty_prs=5; failed_runs=0 |

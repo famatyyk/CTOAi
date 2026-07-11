@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-11T13:49:44+00:00",
+  "generated_at": "2026-07-11T15:38:46+00:00",
   "root": "C:\\Users\\zycie\\CTOAi",
   "pack_path": "AI\\generated\\ENGINE_BRAIN_PACK.md",
   "profile": "all",
@@ -59,7 +59,7 @@
     {
       "path": "AI/ENGINE_BRAIN_STATUS.md",
       "included": true,
-      "bytes": 132303,
+      "bytes": 133319,
       "truncated": true,
       "reason": ""
     },
@@ -108,7 +108,7 @@
     {
       "path": "AI/FEATURE_ROADMAP.md",
       "included": true,
-      "bytes": 58324,
+      "bytes": 58676,
       "truncated": true,
       "reason": ""
     },
@@ -116,6 +116,20 @@
       "path": "docs/P7_ROADMAP_STATE_REFRESH_DESIGN.md",
       "included": true,
       "bytes": 2988,
+      "truncated": false,
+      "reason": ""
+    },
+    {
+      "path": "docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md",
+      "included": true,
+      "bytes": 6836,
+      "truncated": false,
+      "reason": ""
+    },
+    {
+      "path": "docs/otclient/HELPER_RUNTIME_MODULE_GATES_V1.md",
+      "included": true,
+      "bytes": 3906,
       "truncated": false,
       "reason": ""
     },
@@ -171,14 +185,14 @@
     {
       "path": "AI/generated/ENV_DOCTOR.md",
       "included": true,
-      "bytes": 1244,
+      "bytes": 1247,
       "truncated": false,
       "reason": ""
     },
     {
       "path": "AI/generated/OWNERSHIP_MAP.md",
       "included": true,
-      "bytes": 6502,
+      "bytes": 6504,
       "truncated": false,
       "reason": ""
     },
@@ -234,18 +248,18 @@
     {
       "path": "AI/generated/FILE_TREE.md",
       "included": true,
-      "bytes": 67542,
+      "bytes": 68161,
       "truncated": true,
       "reason": ""
     },
     {
       "path": "AI/generated/SYMBOL_MAP.md",
       "included": true,
-      "bytes": 255703,
+      "bytes": 258732,
       "truncated": true,
       "reason": ""
     }
   ],
-  "included_count": 34,
+  "included_count": 36,
   "truncated_count": 4
 }

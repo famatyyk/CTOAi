@@ -1,12 +1,12 @@
 # CTOAi Full Workspace Audit
 
-- Generated at UTC: `2026-07-11T13:49:23+00:00`
+- Generated at UTC: `2026-07-11T15:36:39+00:00`
 - Root: `C:\Users\zycie\CTOAi`
 - Coverage: `All files under workspace root, including .git internals.`
-- Files inventoried: `42370`
-- Non-regular entries skipped: `3913`
-- Git tracked files: `1333`
-- Dirty status entries: `25`
+- Files inventoried: `42687`
+- Non-regular entries skipped: `3923`
+- Git tracked files: `1342`
+- Dirty status entries: `24`
 - Runtime JSON inventory: `runtime/audits/ctoai-full-workspace-audit.json`
 
 ## Coverage Note
@@ -17,12 +17,12 @@ The JSON inventory lists every file found under the workspace root, including `.
 
 | Category | Files | Size |
 | --- | ---: | ---: |
-| `git_internal` | 937 | 3419.81 MB |
+| `git_internal` | 1150 | 3421.20 MB |
 | `local_secret_or_sensitive` | 7 | 0.08 MB |
-| `runtime_or_local_state` | 2580 | 836.16 MB |
-| `tracked_source` | 1327 | 11.50 MB |
+| `runtime_or_local_state` | 2671 | 877.51 MB |
+| `tracked_source` | 1336 | 11.61 MB |
 | `untracked_local` | 21 | 0.07 MB |
-| `untracked_source_candidate` | 6160 | 668.03 MB |
+| `untracked_source_candidate` | 6164 | 668.15 MB |
 | `vendor_or_cache` | 31338 | 594.64 MB |
 
 ## Largest Top-Level Areas
@@ -31,17 +31,17 @@ The JSON inventory lists every file found under the workspace root, including `.
 | --- | ---: | ---: |
 | `web` | 32304 | 1134.91 MB |
 | `.venv` | 4543 | 116.28 MB |
-| `runtime` | 2336 | 824.75 MB |
-| `.git` | 937 | 3419.81 MB |
-| `tests` | 511 | 7.99 MB |
-| `scripts` | 437 | 5.37 MB |
-| `docs` | 314 | 4.23 MB |
+| `runtime` | 2423 | 866.05 MB |
+| `.git` | 1150 | 3421.20 MB |
+| `tests` | 517 | 8.12 MB |
+| `scripts` | 443 | 5.46 MB |
+| `docs` | 315 | 4.24 MB |
 | `runner` | 154 | 1.55 MB |
 | `bot` | 144 | 0.73 MB |
 | `_local_archive` | 111 | 1.52 MB |
 | `.tmp` | 105 | 1.59 MB |
 | `workflows` | 89 | 0.18 MB |
-| `AI` | 45 | 0.90 MB |
+| `AI` | 45 | 0.91 MB |
 | `deploy` | 43 | 0.04 MB |
 | `.github` | 41 | 0.14 MB |
 | `releases` | 36 | 0.02 MB |
@@ -49,7 +49,7 @@ The JSON inventory lists every file found under the workspace root, including `.
 | `mobile_console` | 20 | 0.64 MB |
 | `.ruff_cache` | 17 | 0.01 MB |
 | `desktop_console` | 16 | 0.42 MB |
-| `metrics` | 11 | 0.01 MB |
+| `metrics` | 15 | 0.01 MB |
 | `.ctoa-local` | 9 | 0.04 MB |
 | `api` | 9 | 0.26 MB |
 | `training` | 8 | 0.07 MB |
@@ -62,11 +62,11 @@ The JSON inventory lists every file found under the workspace root, including `.
 
 | Check | Status | Evidence |
 | --- | --- | --- |
-| `regular_file_inventory` | `passed` | 42370 regular files inventoried. |
-| `non_regular_accounting` | `passed` | 3913 non-regular entries skipped ({'directory': 3913}). |
-| `bounded_hashing` | `passed` | 9935 files hashed with max size 2000000 bytes. |
+| `regular_file_inventory` | `passed` | 42687 regular files inventoried. |
+| `non_regular_accounting` | `passed` | 3923 non-regular entries skipped ({'directory': 3923}). |
+| `bounded_hashing` | `passed` | 10039 files hashed with max size 2000000 bytes. |
 | `sensitive_content_omitted` | `passed` | 7 sensitive-name files inventoried; 0 hashed. |
-| `git_status_captured` | `passed` | 25 git status entries captured. |
+| `git_status_captured` | `passed` | 24 git status entries captured. |
 
 ## Validation Evidence Gate
 
@@ -98,7 +98,7 @@ The JSON inventory lists every file found under the workspace root, including `.
 
 ### HIGH: workspace-state
 
-- Finding: Worktree is dirty with 25 status entries.
+- Finding: Worktree is dirty with 24 status entries.
 - Evidence: git status --short; see runtime audit JSON dirty_entries.
 - Action: Package current Helper/Control Center changes into one reviewable change set before opening another lane.
 
@@ -116,7 +116,7 @@ The JSON inventory lists every file found under the workspace root, including `.
 
 ### MEDIUM: runtime-state
 
-- Finding: Runtime/local state is large and active (2580 files).
+- Finding: Runtime/local state is large and active (2671 files).
 - Evidence: runtime/log/data/local dirs are visible in the file inventory.
 - Action: Continue writing release and Helper evidence to runtime, but keep canonical docs in docs/AI/release paths.
 
