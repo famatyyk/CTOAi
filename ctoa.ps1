@@ -199,6 +199,7 @@ Usage:
     .\\ctoa.ps1 otdeploy approve-live
     .\\ctoa.ps1 otest
     .\\ctoa.ps1 otbg
+    .\\ctoa.ps1 otp9
     .\\ctoa.ps1 brain <refresh|doctor|pack>
 
 Short aliases:
@@ -239,6 +240,7 @@ Examples:
   .\\ctoa.ps1 otdeploy approve-live
   .\\ctoa.ps1 otest
   .\\ctoa.ps1 otbg
+  .\\ctoa.ps1 otp9
   .\\ctoa.ps1 brain refresh
   .\\ctoa.ps1 brain doctor
   .\\ctoa.ps1 brain pack
@@ -794,6 +796,63 @@ function Invoke-OtBackgroundStatus {
     )
 }
 
+function Invoke-OtConditionsShadowReplay {
+    $powershell = (Get-Command powershell -ErrorAction Stop).Source
+    $wrapper = Join-Path $Root "scripts/windows/solteria_helper_test_env.ps1"
+    $backgroundPath = Join-Path $Root "runtime\solteria_helper_dev\background_status.json"
+    $observationStartedAt = [DateTime]::UtcNow.AddSeconds(-1)
+    $backgroundResult = Invoke-FromRootCapture -FilePath $powershell -Arguments @(
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        $wrapper,
+        "-Action",
+        "BackgroundStatus",
+        "-OperatorMode",
+        "BackgroundNoScreen"
+    )
+    if (-not [string]::IsNullOrWhiteSpace([string]$backgroundResult.output)) {
+        Write-Output $backgroundResult.output
+    }
+    if ([int]$backgroundResult.exit_code -notin @(0, 1)) {
+        throw "P9 Conditions shadow replay could not collect bounded P8 evidence (exit $($backgroundResult.exit_code))."
+    }
+    if (-not (Test-Path -LiteralPath $backgroundPath -PathType Leaf)) {
+        throw "P9 Conditions shadow replay requires a current BackgroundNoScreen artifact: $backgroundPath"
+    }
+    $backgroundItem = Get-Item -LiteralPath $backgroundPath -Force
+    if (
+        ($backgroundItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0 -or
+        $backgroundItem.LastWriteTimeUtc -lt $observationStartedAt
+    ) {
+        throw "P9 Conditions shadow replay rejects stale or reparse-point BackgroundNoScreen output."
+    }
+
+    $python = Join-Path $Root ".venv\Scripts\python.exe"
+    $scriptPath = Join-Path $Root "scripts\ops\otclient_conditions_shadow_replay.py"
+    if (-not (Test-Path -LiteralPath $python -PathType Leaf)) {
+        throw "P9 Conditions shadow replay requires the trusted repo interpreter: $python"
+    }
+    if (-not (Test-Path -LiteralPath $scriptPath -PathType Leaf)) {
+        throw "P9 Conditions shadow replay tool is missing: $scriptPath"
+    }
+
+    $previousOperatorMode = $env:CTOA_OPERATOR_MODE
+    try {
+        $env:CTOA_OPERATOR_MODE = "background_no_screen"
+        Invoke-FromRoot -FilePath $python -Arguments @($scriptPath)
+    }
+    finally {
+        if ($null -eq $previousOperatorMode) {
+            Remove-Item Env:CTOA_OPERATOR_MODE -ErrorAction SilentlyContinue
+        }
+        else {
+            $env:CTOA_OPERATOR_MODE = $previousOperatorMode
+        }
+    }
+}
+
 function Invoke-EngineBrain {
     param(
         [string]$Subcommand,
@@ -946,6 +1005,7 @@ switch ($Command.ToLowerInvariant()) {
     "otdeploy" { Invoke-OtHelperDeploy -Approval $Arg1; break }
     "otest" { Invoke-OtTestLoop; break }
     "otbg" { Invoke-OtBackgroundStatus; break }
+    "otp9" { Invoke-OtConditionsShadowReplay; break }
     "brain" { Invoke-EngineBrain -Subcommand $Arg1 -Profile $Arg2; break }
 
     default {

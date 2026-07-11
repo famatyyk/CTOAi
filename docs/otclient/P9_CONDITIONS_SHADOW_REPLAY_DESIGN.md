@@ -1,6 +1,7 @@
 # P9 Conditions Shadow Observation And Replay
 
-Status: `design_ready`; implementation and operational acceptance remain
+Implementation status: `offline_implementation_complete`. Operational acceptance:
+`operational_acceptance_blocked`; blocker reason:
 `blocked_by_p8_operational_acceptance`.
 
 ## Purpose
@@ -10,15 +11,16 @@ does not cast, dispatch, arm runtime, execute once, promote a package, or touch 
 client window. The product is a deterministic offline replay lane fed by the
 existing P8 heartbeat.
 
-P9 implementation may begin only after P8 has one jointly accepted proof set:
+P9 operational acceptance requires one jointly accepted P8 proof set:
 
 1. an official promotion-bound trusted manifest pin;
 2. one canonical process with a fresh online capability heartbeat newer than
    that process;
 3. full producer/consumer parity for the BackgroundNoScreen no-action contract.
 
-Until then, this document is a design contract and must not be represented as
-P9 runtime readiness.
+Offline/staging implementation is allowed while that proof is blocked because
+the complete lane is data-only, deterministic, and no-action. It must not be
+represented as P9 runtime readiness or operational acceptance.
 
 ## Data Flow
 
@@ -37,8 +39,7 @@ currently protected `v2.2.1` live client.
 
 ## Data-Only Profile
 
-Canonical path after P8 acceptance:
-`config/otclient/conditions-shadow-profile.json`.
+Canonical path: `config/otclient/conditions-shadow-profile.json`.
 
 Canonical schema: `ctoa.conditions-shadow-profile.v1`, JSON Schema draft
 2020-12, with `additionalProperties=false` at every object boundary.
@@ -122,7 +123,7 @@ cases for:
 Every case runs twice and asserts trace parity. Runtime and dispatch flags must
 remain false in every result.
 
-## Implementation Slices After P8 Acceptance
+## Implemented Offline Slices
 
 1. Strict profile, observation, trace, and report schemas plus fixtures.
 2. Passive Conditions observation added to the existing heartbeat through a
@@ -134,6 +135,13 @@ remain false in every result.
 6. Read-only Release Evidence and Control Center consumers with full mutation
    tests.
 7. Documentation, Engine Brain refresh, and separate P9 review commit.
+
+The first six slices are implemented in staging. `ctoa.ps1 otp9` first refreshes
+the bounded P8 artifact through the existing `BackgroundStatus` allowlist and
+then runs the repo-local replay tool. The fixture pack can pass independently,
+but a real trace remains `operational_acceptance_blocked` when P8, the optional
+Conditions observation, or the hash-bound Recovery predecessor is missing,
+stale, or unaccepted. No live promotion is implied.
 
 ## P9 Done Gate
 

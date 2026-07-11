@@ -65,7 +65,8 @@ Primary governance sources:
   [P8-P16 execution roadmap](AI/P8_P16_EXECUTION_ROADMAP.md). Routine evidence
   collection uses `.\ctoa.ps1 otbg` in `BackgroundNoScreen` mode, requires an
   official promotion-bound manifest pin, and never takes over the user's game
-  window.
+  window. `.\ctoa.ps1 otp9` reuses that bounded lane and then runs the P9
+  Conditions data-only shadow replay; it never dispatches or promotes live.
 
 Product map and ownership list:
 

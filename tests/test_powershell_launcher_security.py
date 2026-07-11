@@ -1,3 +1,4 @@
+import json
 import subprocess
 import shutil
 from pathlib import Path
@@ -8,6 +9,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 POWERSHELL = shutil.which("powershell") or shutil.which("pwsh")
 CTOA_CLI = ROOT / "ctoa.ps1"
+COMMAND_DICTIONARY = ROOT / "schemas" / "ctoa-command-dictionary.json"
 OPEN_CONTROL_CENTER = ROOT / "scripts" / "windows" / "open-control-center.ps1"
 KAMIL_LAUNCHER = ROOT / "scripts" / "ops" / "launch_kamil_client_macro_studio.ps1"
 MOBILE_CONSOLE_DOC = ROOT / "docs" / "MOBILE_CONSOLE.md"
@@ -96,8 +98,22 @@ def test_ctoa_cli_uses_official_wrapper_for_helper_operations() -> None:
     assert '"BackgroundNoScreen"' in script
     assert '"otdeploy" { Invoke-OtHelperDeploy -Approval $Arg1; break }' in script
     assert '"otbg" { Invoke-OtBackgroundStatus; break }' in script
+    assert '"otp9" { Invoke-OtConditionsShadowReplay; break }' in script
+    assert '"scripts\\ops\\otclient_conditions_shadow_replay.py"' in script
+    assert '".venv\\Scripts\\python.exe"' in script
+    assert "Invoke-FromRootCapture -FilePath $powershell" in script
+    assert '$env:CTOA_OPERATOR_MODE = "background_no_screen"' in script
+    assert "rejects stale or reparse-point BackgroundNoScreen output" in script
     assert 'Copy-Item -Path (Join-Path $source "*.lua")' not in script
     assert 'Copy-Item -Path (Join-Path $source "*.otmod")' not in script
+
+
+def test_p9_shadow_command_is_in_shared_command_dictionary() -> None:
+    dictionary = json.loads(COMMAND_DICTIONARY.read_text(encoding="utf-8"))
+    commands = {item["command"]: item for item in dictionary["commands"]}
+
+    assert commands["otp9"]["aliases"] == []
+    assert "no-action Conditions shadow replay" in commands["otp9"]["description"]
 
 
 @pytest.mark.skipif(POWERSHELL is None, reason="PowerShell runtime is unavailable")

@@ -102,6 +102,22 @@ separately from other package-code mismatch, but still blocks because those
 profiles are executable Lua. The wrapper only publishes the sample after client
 process identity and screenshot count are checked.
 
+Run the P9 Conditions data-only replay through the same bounded entry path:
+
+```powershell
+.\ctoa.ps1 otp9
+```
+
+`otp9` first invokes the allowlisted `BackgroundStatus` action, requires a fresh
+repo-local `background_status.json`, and then runs the trusted repo interpreter
+against `scripts\ops\otclient_conditions_shadow_replay.py`. It refreshes only
+the two repo-local evidence artifacts `background_status.json` and
+`conditions_shadow_replay.json`. A green fixture
+pack is reported separately from operational acceptance; missing or unaccepted
+P8, Conditions, or Recovery evidence remains blocked. The command never adds a
+wrapper action, interacts with the client window, dispatches, executes once, or
+promotes live.
+
 Emergency-disable CTOA modules in the normal live Solteria client when login is
 unstable:
 

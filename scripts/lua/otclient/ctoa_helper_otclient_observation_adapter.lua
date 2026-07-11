@@ -3,6 +3,8 @@
 
 local Adapter = rawget(_G, "CTOA_HELPER_OTCLIENT_OBSERVATION_ADAPTER") or {}
 
+local CONDITIONS_OBSERVATION_SCHEMA = "ctoa.conditions-observation.v1"
+
 local function call(owner, methodName, fallback, ...)
     if type(owner) ~= "table" and type(owner) ~= "userdata" then
         return fallback
@@ -98,6 +100,131 @@ local function cooldownActive(group)
     end
     local ok, active = pcall(cooldowns.isGroupCooldownIconActive, group)
     return ok and active == true
+end
+
+local function triStateBooleanCall(owner, methodNames, whenTrue, whenFalse)
+    if type(owner) ~= "table" and type(owner) ~= "userdata" then
+        return "unknown", "unavailable"
+    end
+    local observedFalse = false
+    for _, methodName in ipairs(methodNames or {}) do
+        local method = owner[methodName]
+        if type(method) == "function" then
+            local ok, value = pcall(method, owner)
+            if ok and type(value) == "boolean" then
+                if value then
+                    return whenTrue, "player_method"
+                end
+                observedFalse = true
+            end
+        end
+    end
+    if observedFalse then
+        return whenFalse, "player_method"
+    end
+    return "unknown", "unavailable"
+end
+
+local function playerAliveState(player)
+    if type(player) ~= "table" and type(player) ~= "userdata" then
+        return "unknown"
+    end
+    local dead, _ = triStateBooleanCall(player, {"isDead"}, "dead", "alive")
+    if dead ~= "unknown" then
+        return dead
+    end
+    for _, methodName in ipairs({"getHealthPercent", "getHealth"}) do
+        local method = player[methodName]
+        if type(method) == "function" then
+            local ok, value = pcall(method, player)
+            if ok and type(value) == "number" and value == value and
+                value > -math.huge and value < math.huge then
+                return value > 0 and "alive" or "dead"
+            end
+        end
+    end
+    return "unknown"
+end
+
+local function paralyzeState(player)
+    if (type(player) ~= "table" and type(player) ~= "userdata") or
+        type(player.hasState) ~= "function" then
+        return "unknown"
+    end
+    local function verifiedStateConstant(value)
+        return type(value) == "number" and value == value and value > 0 and
+            value < math.huge and value % 1 == 0
+    end
+    local candidates = {}
+    if verifiedStateConstant(_G.CreatureStateParalyze) then
+        candidates[#candidates + 1] = _G.CreatureStateParalyze
+    end
+    if verifiedStateConstant(_G.CreatureStateSlowed) then
+        candidates[#candidates + 1] = _G.CreatureStateSlowed
+    end
+    if #candidates == 0 then
+        return "unknown"
+    end
+    local observed = false
+    for _, candidate in ipairs(candidates) do
+        local ok, active = pcall(player.hasState, player, candidate)
+        if ok and type(active) == "boolean" then
+            observed = true
+            if active then
+                return "present"
+            end
+        end
+    end
+    return observed and "absent" or "unknown"
+end
+
+local function spellCooldownState(context)
+    local sourceModules = type(context) == "table" and context.modules or nil
+    local cooldowns = sourceModules and sourceModules.game_cooldown or
+        (modules and modules.game_cooldown or nil)
+    if not cooldowns or type(cooldowns.isGroupCooldownIconActive) ~= "function" then
+        return "unknown", "unavailable"
+    end
+    local ok, active = pcall(cooldowns.isGroupCooldownIconActive, 2)
+    if not ok or type(active) ~= "boolean" then
+        return "unknown", "unavailable"
+    end
+    return active and "active" or "ready", "game_cooldown_group"
+end
+
+function Adapter.conditionsSnapshot(context)
+    local ctx = context or {}
+    local game = ctx.game or rawget(_G, "g_game")
+    local online, _ = triStateBooleanCall(game, {"isOnline"}, "online", "offline")
+    local player = online == "online" and call(game, "getLocalPlayer", nil) or nil
+    local protectionZone, protectionZoneSource = triStateBooleanCall(player, {
+        "isInPz", "isInProtectionZone", "isInSafeZone", "isProtected"
+    }, "inside", "outside")
+    local cooldown, cooldownSource = "unknown", "unavailable"
+    if online == "online" then
+        cooldown, cooldownSource = spellCooldownState(ctx)
+    end
+    local observedAt = tonumber(ctx.observed_at_unix_ms) or 0
+    observedAt = math.max(0, math.floor(observedAt))
+    return {
+        schema_version = CONDITIONS_OBSERVATION_SCHEMA,
+        observed_at_unix_ms = observedAt,
+        observation_id = "conditions-" .. tostring(observedAt),
+        online = online,
+        alive = playerAliveState(player),
+        protection_zone = protectionZone,
+        protection_zone_source = protectionZoneSource,
+        condition_id = "paralyze",
+        condition_state = paralyzeState(player),
+        cooldown = cooldown,
+        cooldown_source = cooldownSource,
+        producer_source = "otclient_guarded_adapter",
+        dispatch_allowed = false,
+        runtime_actions = false,
+        executes_plan = false,
+        execute_once_allowed = false,
+        promotion_allowed = false,
+    }
 end
 
 function Adapter.combatSnapshot(context)
@@ -264,6 +391,8 @@ function Adapter.contract()
     return {
         mode = "read_only_adapter",
         guarded_globals = {"g_game", "g_map", "g_clock"},
+        conditions_observation_schema = CONDITIONS_OBSERVATION_SCHEMA,
+        owns_conditions_observation = true,
         runtime_actions = false,
         executes_plans = false,
         casts = false,

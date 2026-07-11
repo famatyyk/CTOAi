@@ -7,6 +7,124 @@ local SCHEMA_VERSION = "ctoa-client-capabilities-v1"
 local PROFILE_SCHEMA = "ctoa-helper-profile-v1"
 local HEARTBEAT_INTERVAL_MS = 5000
 
+local CONDITIONS_OBSERVATION_SCHEMA = "ctoa.conditions-observation.v1"
+local CONDITIONS_OBSERVATION_FIELDS = {
+    "schema_version", "observed_at_unix_ms", "observation_id", "online", "alive",
+    "protection_zone", "protection_zone_source", "condition_id", "condition_state",
+    "cooldown", "cooldown_source", "producer_source", "dispatch_allowed",
+    "runtime_actions", "executes_plan", "execute_once_allowed", "promotion_allowed",
+}
+local CONDITIONS_OBSERVATION_FIELD_SET = {}
+for _, field in ipairs(CONDITIONS_OBSERVATION_FIELDS) do
+    CONDITIONS_OBSERVATION_FIELD_SET[field] = true
+end
+
+local function oneOf(value, allowed)
+    if type(value) ~= "string" then
+        return false
+    end
+    for _, candidate in ipairs(allowed or {}) do
+        if value == candidate then
+            return true
+        end
+    end
+    return false
+end
+
+local function validObservationId(value)
+    return type(value) == "string" and #value >= 1 and #value <= 64 and
+        string.match(value, "^[a-z0-9][a-z0-9_%-]*$") ~= nil
+end
+
+local function sanitizeConditionsObservation(observation, observedAtUnixMs)
+    if type(observation) ~= "table" then
+        return nil
+    end
+    local fieldCount = 0
+    for key in next, observation do
+        if type(key) ~= "string" or CONDITIONS_OBSERVATION_FIELD_SET[key] ~= true then
+            return nil
+        end
+        fieldCount = fieldCount + 1
+    end
+    if fieldCount ~= #CONDITIONS_OBSERVATION_FIELDS then
+        return nil
+    end
+    for _, field in ipairs(CONDITIONS_OBSERVATION_FIELDS) do
+        if rawget(observation, field) == nil then
+            return nil
+        end
+    end
+
+    local observedAt = rawget(observation, "observed_at_unix_ms")
+    if type(observedAt) ~= "number" or observedAt % 1 ~= 0 or observedAt < 1 or
+        observedAt > 9999999999999 or observedAt ~= observedAtUnixMs then
+        return nil
+    end
+    if rawget(observation, "schema_version") ~= CONDITIONS_OBSERVATION_SCHEMA or
+        not validObservationId(rawget(observation, "observation_id")) or
+        not oneOf(rawget(observation, "online"), {"online", "offline", "unknown"}) or
+        not oneOf(rawget(observation, "alive"), {"alive", "dead", "unknown"}) or
+        not oneOf(rawget(observation, "protection_zone"), {"outside", "inside", "unknown"}) or
+        not oneOf(rawget(observation, "protection_zone_source"), {"player_method", "unavailable"}) or
+        rawget(observation, "condition_id") ~= "paralyze" or
+        not oneOf(rawget(observation, "condition_state"), {"present", "absent", "unknown"}) or
+        not oneOf(rawget(observation, "cooldown"), {"ready", "active", "unknown"}) or
+        not oneOf(rawget(observation, "cooldown_source"), {"game_cooldown_group", "unavailable"}) or
+        rawget(observation, "producer_source") ~= "otclient_guarded_adapter" then
+        return nil
+    end
+    for _, field in ipairs({
+        "dispatch_allowed", "runtime_actions", "executes_plan",
+        "execute_once_allowed", "promotion_allowed",
+    }) do
+        if rawget(observation, field) ~= false then
+            return nil
+        end
+    end
+
+    return {
+        schema_version = CONDITIONS_OBSERVATION_SCHEMA,
+        observed_at_unix_ms = observedAt,
+        observation_id = rawget(observation, "observation_id"),
+        online = rawget(observation, "online"),
+        alive = rawget(observation, "alive"),
+        protection_zone = rawget(observation, "protection_zone"),
+        protection_zone_source = rawget(observation, "protection_zone_source"),
+        condition_id = "paralyze",
+        condition_state = rawget(observation, "condition_state"),
+        cooldown = rawget(observation, "cooldown"),
+        cooldown_source = rawget(observation, "cooldown_source"),
+        producer_source = "otclient_guarded_adapter",
+        dispatch_allowed = false,
+        runtime_actions = false,
+        executes_plan = false,
+        execute_once_allowed = false,
+        promotion_allowed = false,
+    }
+end
+
+local function optionalConditionsObservation(context, observedAtUnixMs)
+    local data = context or {}
+    local adapter = data.observation_adapter or
+        rawget(_G, "CTOA_HELPER_OTCLIENT_OBSERVATION_ADAPTER")
+    if type(adapter) ~= "table" or type(adapter.conditionsSnapshot) ~= "function" then
+        return nil
+    end
+    local ok, observation = pcall(adapter.conditionsSnapshot, {
+        game = data.game,
+        modules = data.modules,
+        observed_at_unix_ms = observedAtUnixMs,
+    })
+    if not ok or type(observation) ~= "table" then
+        return nil
+    end
+    local sanitizedOk, sanitized = pcall(
+        sanitizeConditionsObservation, observation, observedAtUnixMs
+    )
+    return sanitizedOk and sanitized or nil
+end
+
 local function safeCall(target, methodName)
     if not target or type(target[methodName]) ~= "function" then
         return nil
@@ -185,6 +303,9 @@ function Reporter.snapshot(context)
     snapshot.heartbeat_interval_ms = HEARTBEAT_INTERVAL_MS
     snapshot.heartbeat_status = data.active == false and "offline" or "online"
     snapshot.online = data.online == true
+    snapshot.conditions_observation = optionalConditionsObservation(
+        data, snapshot.observed_at_unix_ms
+    )
     return snapshot
 end
 
@@ -278,6 +399,8 @@ function Reporter.contract()
         unknown_build_safe_fallback = true,
         writes_atomic_json = true,
         reports_runtime_core = true,
+        reports_optional_conditions_observation = true,
+        sanitizes_conditions_observation = true,
         deterministic_work_dir_path = true,
         no_screen_safe = true,
     }

@@ -16,11 +16,36 @@ ROOT = Path(__file__).resolve().parents[1]
 WRAPPER = ROOT / "scripts" / "windows" / "solteria_helper_test_env.ps1"
 CLI = ROOT / "ctoa.ps1"
 REPORTER = ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_client_reporter.lua"
+CONDITIONS_OBSERVATION_SCHEMA_FILE = (
+    ROOT / "schemas" / "conditions-observation.schema.json"
+)
 SANDBOX_SMOKE = (
     ROOT / "scripts" / "ops" / "otclient_runtime_module_gates_sandbox_smoke.py"
 )
 NOW = datetime(2026, 7, 11, 16, 0, tzinfo=timezone.utc)
 NOW_MS = int(NOW.timestamp() * 1_000)
+
+
+def _conditions_observation(observed_at_ms: int = NOW_MS - 1_000) -> dict[str, object]:
+    return {
+        "schema_version": evidence.CONDITIONS_OBSERVATION_SCHEMA,
+        "observed_at_unix_ms": observed_at_ms,
+        "observation_id": f"conditions-{observed_at_ms}",
+        "online": "online",
+        "alive": "alive",
+        "protection_zone": "outside",
+        "protection_zone_source": "player_method",
+        "condition_id": "paralyze",
+        "condition_state": "present",
+        "cooldown": "ready",
+        "cooldown_source": "game_cooldown_group",
+        "producer_source": "fixture",
+        "dispatch_allowed": False,
+        "runtime_actions": False,
+        "executes_plan": False,
+        "execute_once_allowed": False,
+        "promotion_allowed": False,
+    }
 
 
 def _sha256(path: Path) -> str:
@@ -159,6 +184,13 @@ def _mutate_capability(client: Path, mutation: str) -> None:
     _write_json(path, payload)
 
 
+def _set_conditions_observation(client: Path, value: object) -> None:
+    path = client / "mods" / "ctoa_otclient" / "ctoa_client_capabilities.json"
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload["conditions_observation"] = value
+    _write_json(path, payload)
+
+
 def test_bounded_tail_and_session_parser_ignore_old_errors(tmp_path: Path):
     log = tmp_path / "client.log"
     log.write_text(
@@ -198,8 +230,245 @@ def test_background_status_is_ready_only_from_trusted_live_evidence(
     assert report["capability"]["fresh"] is True
     assert report["capability"]["version_match"] is True
     assert report["capability"]["heartbeat_after_process_start"] is True
+    assert report["capability"]["conditions_observation"]["status"] == "missing"
+    assert (
+        report["capability"]["conditions_observation"]["p9_blocker"]
+        == "conditions_observation_missing"
+    )
     assert report["intrusive_actions_performed"] == []
     assert report["blockers"] == []
+
+
+def test_valid_conditions_observation_is_strictly_normalized_without_changing_p8(
+    tmp_path: Path,
+):
+    _, client, dev = _fixture(tmp_path)
+    _set_conditions_observation(client, _conditions_observation())
+
+    report = _build(client, dev)
+    observation = report["capability"]["conditions_observation"]
+
+    assert report["status"] == "ready"
+    assert report["blockers"] == []
+    assert observation == {
+        "status": "valid",
+        "present": True,
+        "valid": True,
+        "schema_version": evidence.CONDITIONS_OBSERVATION_SCHEMA,
+        "observed_at_unix_ms": NOW_MS - 1_000,
+        "observation_id": f"conditions-{NOW_MS - 1_000}",
+        "online": "online",
+        "alive": "alive",
+        "protection_zone": "outside",
+        "protection_zone_source": "player_method",
+        "condition_id": "paralyze",
+        "condition_state": "present",
+        "cooldown": "ready",
+        "cooldown_source": "game_cooldown_group",
+        "producer_source": "fixture",
+        "dispatch_allowed": False,
+        "runtime_actions": False,
+        "executes_plan": False,
+        "execute_once_allowed": False,
+        "promotion_allowed": False,
+        "validation_errors": [],
+        "p9_blocker": None,
+    }
+
+
+@pytest.mark.parametrize(
+    ("mutation", "expected_error", "p8_unsafe"),
+    [
+        ("explicit_null", "object_type", False),
+        ("wrong_schema", "schema_version", False),
+        ("extra_field", "fields_extra", False),
+        ("missing_field", "fields_missing", False),
+        ("wrong_enum_type", "online_enum", False),
+        ("nested_enum", "condition_state_enum", False),
+        ("timestamp_mismatch", "observed_at_mismatch", False),
+        ("unsafe_dispatch_allowed", "dispatch_allowed_unsafe", True),
+        ("unsafe_runtime_actions", "runtime_actions_unsafe", True),
+        ("unsafe_executes_plan", "executes_plan_unsafe", True),
+        ("unsafe_execute_once_allowed", "execute_once_allowed_unsafe", True),
+        ("unsafe_promotion_allowed", "promotion_allowed_unsafe", True),
+        ("oversize", "oversize", False),
+    ],
+)
+def test_conditions_observation_mutations_are_classified_by_p8_safety(
+    tmp_path: Path, mutation: str, expected_error: str, p8_unsafe: bool
+):
+    _, client, dev = _fixture(tmp_path)
+    value: object = _conditions_observation()
+    if mutation == "explicit_null":
+        value = None
+    else:
+        assert isinstance(value, dict)
+        if mutation == "wrong_schema":
+            value["schema_version"] = "ctoa.conditions-observation.v999"
+        elif mutation == "extra_field":
+            value["local_path"] = "C:/private/client.log"
+        elif mutation == "missing_field":
+            value.pop("cooldown")
+        elif mutation == "wrong_enum_type":
+            value["online"] = True
+        elif mutation == "nested_enum":
+            value["condition_state"] = {"raw_bitmask": 32}
+        elif mutation == "timestamp_mismatch":
+            value["observed_at_unix_ms"] = NOW_MS - 2_000
+        elif mutation.startswith("unsafe_"):
+            value[mutation.removeprefix("unsafe_")] = True
+        elif mutation == "oversize":
+            value["observation_id"] = "a" * (
+                evidence.MAX_CONDITIONS_OBSERVATION_BYTES + 1
+            )
+    _set_conditions_observation(client, value)
+
+    report = _build(client, dev)
+    observation = report["capability"]["conditions_observation"]
+
+    if p8_unsafe:
+        assert report["status"] == "blocked"
+        assert report["capability"]["status"] == "unsafe_runtime_claim"
+        assert report["capability"]["contract_valid"] is False
+        assert report["capability"]["fresh"] is False
+        assert "capability_unsafe_runtime_claim" in report["blockers"]
+    else:
+        assert report["status"] == "ready"
+        assert report["blockers"] == []
+    assert observation["status"] == "invalid"
+    assert observation["valid"] is False
+    assert observation["p9_blocker"] == "conditions_observation_invalid"
+    assert expected_error in observation["validation_errors"]
+    assert observation["runtime_actions"] is False
+    assert "private" not in json.dumps(observation)
+
+
+@pytest.mark.parametrize(
+    ("timestamp", "expected_status"),
+    [
+        (0, "invalid"),
+        (1, "valid"),
+        (9_999_999_999_999, "valid"),
+        (10_000_000_000_000, "invalid"),
+    ],
+)
+def test_conditions_observation_timestamp_bounds(timestamp: int, expected_status: str):
+    observation = _conditions_observation(timestamp)
+
+    normalized = evidence.summarize_conditions_observation(
+        observation,
+        expected_observed_at_unix_ms=timestamp,
+        require_timestamp_binding=True,
+    )
+
+    assert normalized["status"] == expected_status
+
+
+def test_conditions_observation_id_rejects_dot():
+    observation = _conditions_observation()
+    observation["observation_id"] = "conditions.with-dot"
+
+    normalized = evidence.summarize_conditions_observation(observation)
+
+    assert normalized["status"] == "invalid"
+    assert "observation_id" in normalized["validation_errors"]
+
+
+def test_conditions_observation_json_schema_matches_sanitizer_bounds():
+    schema = json.loads(CONDITIONS_OBSERVATION_SCHEMA_FILE.read_text(encoding="utf-8"))
+    timestamp = schema["properties"]["observed_at_unix_ms"]
+    observation_id = schema["properties"]["observation_id"]
+
+    assert timestamp["minimum"] == 1
+    assert timestamp["maximum"] == 9_999_999_999_999
+    assert observation_id["minLength"] == 1
+    assert observation_id["maxLength"] == 64
+    assert observation_id["pattern"] == "^[a-z0-9][a-z0-9_-]{0,63}$"
+
+
+def test_present_observation_is_unbound_when_parent_timestamp_is_invalid(
+    tmp_path: Path,
+):
+    _, client, dev = _fixture(tmp_path)
+    _set_conditions_observation(client, _conditions_observation())
+    capability_path = (
+        client / "mods" / "ctoa_otclient" / "ctoa_client_capabilities.json"
+    )
+    payload = json.loads(capability_path.read_text(encoding="utf-8"))
+    payload["observed_at_unix_ms"] = "invalid"
+    _write_json(capability_path, payload)
+
+    report = _build(client, dev)
+    observation = report["capability"]["conditions_observation"]
+
+    assert report["status"] == "blocked"
+    assert report["capability"]["status"] == "invalid_heartbeat"
+    assert observation["status"] == "invalid"
+    assert "parent_observed_at_unbound" in observation["validation_errors"]
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        "duplicate_top_flag",
+        "duplicate_nested_flag",
+        "nan",
+        "infinity",
+        "overflow",
+        "bounded_depth",
+        "deep_nesting",
+    ],
+)
+def test_bounded_json_rejects_duplicate_keys_and_non_finite_numbers(
+    tmp_path: Path, mutation: str
+):
+    _, client, dev = _fixture(tmp_path)
+    if mutation == "duplicate_nested_flag":
+        _set_conditions_observation(client, _conditions_observation())
+    capability_path = (
+        client / "mods" / "ctoa_otclient" / "ctoa_client_capabilities.json"
+    )
+    raw = capability_path.read_text(encoding="utf-8")
+    if mutation == "duplicate_top_flag":
+        raw = raw.replace(
+            '"runtime_actions": false',
+            '"runtime_actions": false, "runtime_actions": true',
+            1,
+        )
+    elif mutation == "duplicate_nested_flag":
+        nested_start = raw.index('"conditions_observation"')
+        flag_start = raw.index('"runtime_actions": false', nested_start)
+        flag_end = flag_start + len('"runtime_actions": false')
+        raw = raw[:flag_end] + ', "runtime_actions": true' + raw[flag_end:]
+    elif mutation == "nan":
+        raw = raw.replace(
+            f'"observed_at_unix_ms": {NOW_MS - 1_000}',
+            '"observed_at_unix_ms": NaN',
+            1,
+        )
+    elif mutation == "infinity":
+        raw = raw.replace(
+            f'"observed_at_unix_ms": {NOW_MS - 1_000}',
+            '"observed_at_unix_ms": Infinity',
+            1,
+        )
+    elif mutation == "overflow":
+        raw = raw.replace(
+            f'"observed_at_unix_ms": {NOW_MS - 1_000}',
+            '"observed_at_unix_ms": 1e999',
+            1,
+        )
+    elif mutation == "bounded_depth":
+        raw = '{"deep":' + "[" * 80 + "0" + "]" * 80 + "}"
+    elif mutation == "deep_nesting":
+        raw = "[" * 1100 + "0" + "]" * 1100
+    capability_path.write_text(raw, encoding="utf-8")
+
+    assert evidence.load_json_bounded(capability_path)[1] == "malformed"
+    report = _build(client, dev)
+    assert report["status"] == "blocked"
+    assert report["capability"]["status"] == "malformed"
+    assert "capability_malformed" in report["blockers"]
 
 
 @pytest.mark.parametrize(

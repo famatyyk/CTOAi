@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ctoa.local/schemas/conditions-recovery-trace.schema.json",
+  "title": "CTOAi Recovery Bridge Trace v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "trace_id",
+    "observed_at_unix_ms",
+    "source",
+    "status",
+    "decision",
+    "guard",
+    "action",
+    "result",
+    "blockers",
+    "dispatch_allowed",
+    "dry_run",
+    "runtime_actions",
+    "executes_plan",
+    "execute_once_allowed",
+    "promotion_allowed",
+    "intrusive_actions_performed"
+  ],
+  "properties": {
+    "schema_version": {"const": "ctoa.recovery-bridge-trace.v1"},
+    "trace_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z0-9][a-z0-9._-]*$"
+    },
+    "observed_at_unix_ms": {"type": "integer", "minimum": 1},
+    "source": {"enum": ["recovery_shadow", "fixture"]},
+    "status": {"enum": ["ready", "blocked", "unknown"]},
+    "decision": {"enum": ["plan_heal", "hold"]},
+    "guard": {"enum": ["passed", "blocked"]},
+    "action": {"enum": ["exura", "other"]},
+    "result": {"const": "dry_run"},
+    "blockers": {
+      "type": "array",
+      "maxItems": 16,
+      "items": {"type": "string", "minLength": 1, "maxLength": 64}
+    },
+    "dispatch_allowed": {"const": false},
+    "dry_run": {"const": true},
+    "runtime_actions": {"const": false},
+    "executes_plan": {"const": false},
+    "execute_once_allowed": {"const": false},
+    "promotion_allowed": {"const": false},
+    "intrusive_actions_performed": {"type": "array", "maxItems": 0}
+  }
+}

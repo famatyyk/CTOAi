@@ -1,0 +1,19 @@
+{
+  "schema_version": "ctoa.recovery-bridge-trace.v1",
+  "trace_id": "fixture-recovery-trace",
+  "observed_at_unix_ms": 1783799998000,
+  "source": "fixture",
+  "status": "ready",
+  "decision": "plan_heal",
+  "guard": "passed",
+  "action": "exura",
+  "result": "dry_run",
+  "blockers": [],
+  "dispatch_allowed": false,
+  "dry_run": true,
+  "runtime_actions": false,
+  "executes_plan": false,
+  "execute_once_allowed": false,
+  "promotion_allowed": false,
+  "intrusive_actions_performed": []
+}

@@ -188,6 +188,7 @@ local HELPER_CONFIG = {
 local externalModules = rawget(_G, "CTOA_HELPER_MODULES")
 local externalUi = rawget(_G, "CTOA_HELPER_UI")
 local externalClientReporter = rawget(_G, "CTOA_HELPER_CLIENT_REPORTER")
+local externalObservationAdapter = rawget(_G, "CTOA_HELPER_OTCLIENT_OBSERVATION_ADAPTER")
 local externalRuntimeCore = rawget(_G, "CTOA_HELPER_RUNTIME_CORE")
 local MODULE_LANES = {}
 local MODULE_LANE_INDEX = {}
@@ -666,6 +667,8 @@ local function reportClientCapabilities(now, force, active)
         runtime_session_armed = Helper.runtime_session_armed == true,
         runtime_enabled = HELPER_CONFIG.enabled == true,
         runtime_core = externalRuntimeCore,
+        observation_adapter = externalObservationAdapter,
+        modules = rawget(_G, "modules"),
     })
     if type(snapshot) ~= "table" then
         return false

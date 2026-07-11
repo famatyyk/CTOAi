@@ -123,6 +123,11 @@
       "description": "Collect passive BackgroundNoScreen Helper evidence without client interaction"
     },
     {
+      "command": "otp9",
+      "aliases": [],
+      "description": "Refresh bounded BackgroundNoScreen evidence and run the no-action Conditions shadow replay"
+    },
+    {
       "command": "brain",
       "aliases": [],
       "description": "Engine Brain helpers: refresh|doctor|pack [all|helper|control-center|infra|security]"

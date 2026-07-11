@@ -8,6 +8,7 @@ It only parses already-existing capability and log evidence.
 from __future__ import annotations
 
 import json
+import math
 import os
 import re
 import stat
@@ -17,8 +18,10 @@ from typing import Any
 
 
 MAX_CAPABILITY_BYTES = 64 * 1024
+MAX_CONDITIONS_OBSERVATION_BYTES = 4 * 1024
 MAX_LOG_TAIL_BYTES = 256 * 1024
 CAPABILITY_SCHEMA = "ctoa-client-capabilities-v1"
+CONDITIONS_OBSERVATION_SCHEMA = "ctoa.conditions-observation.v1"
 EXPECTED_HEARTBEAT_INTERVAL_MS = 5_000
 MAX_HEARTBEAT_AGE_MS = 15_000
 INITIALIZED_PATTERN = re.compile(r"Initialized successfully v[0-9][^\s]*")
@@ -27,6 +30,36 @@ RUNTIME_PATTERN = re.compile(r"\[CTOA-OTC-HELPER\] Runtime (armed|disarmed)(?::|
 LOG_TIMESTAMP_PATTERN = re.compile(
     r"^\[?(\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?)"
 )
+CONDITIONS_OBSERVATION_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}$")
+CONDITIONS_OBSERVATION_FIELDS = frozenset(
+    {
+        "schema_version",
+        "observed_at_unix_ms",
+        "observation_id",
+        "online",
+        "alive",
+        "protection_zone",
+        "protection_zone_source",
+        "condition_id",
+        "condition_state",
+        "cooldown",
+        "cooldown_source",
+        "producer_source",
+        "dispatch_allowed",
+        "runtime_actions",
+        "executes_plan",
+        "execute_once_allowed",
+        "promotion_allowed",
+    }
+)
+CONDITIONS_ACTION_FLAGS = (
+    "dispatch_allowed",
+    "runtime_actions",
+    "executes_plan",
+    "execute_once_allowed",
+    "promotion_allowed",
+)
+_MISSING = object()
 
 
 def _regular_file_lstat(path: Path) -> tuple[os.stat_result | None, str]:
@@ -110,12 +143,58 @@ def load_json_bounded(
     try:
         if not raw:
             return None, "empty"
-        payload = json.loads(raw.decode("utf-8"))
-    except (UnicodeError, ValueError):
+        payload = json.loads(
+            raw.decode("utf-8"),
+            object_pairs_hook=_json_object_without_duplicates,
+            parse_constant=_reject_json_non_finite,
+            parse_float=_json_finite_float,
+        )
+    except (UnicodeError, ValueError, RecursionError):
         return None, "malformed"
     if not isinstance(payload, dict):
         return None, "not_object"
+    if not _json_shape_within_bounds(payload):
+        return None, "malformed"
     return payload, "loaded"
+
+
+def _json_object_without_duplicates(
+    pairs: list[tuple[str, Any]],
+) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("duplicate JSON object key")
+        result[key] = value
+    return result
+
+
+def _reject_json_non_finite(value: str) -> Any:
+    raise ValueError(f"non-finite JSON number: {value}")
+
+
+def _json_finite_float(value: str) -> float:
+    parsed = float(value)
+    if not math.isfinite(parsed):
+        raise ValueError("non-finite JSON number")
+    return parsed
+
+
+def _json_shape_within_bounds(
+    value: Any, *, max_depth: int = 64, max_nodes: int = 50_000
+) -> bool:
+    stack: list[tuple[Any, int]] = [(value, 0)]
+    visited = 0
+    while stack:
+        current, depth = stack.pop()
+        visited += 1
+        if depth > max_depth or visited > max_nodes:
+            return False
+        if isinstance(current, dict):
+            stack.extend((nested, depth + 1) for nested in current.values())
+        elif isinstance(current, list):
+            stack.extend((nested, depth + 1) for nested in current)
+    return True
 
 
 def current_session(log_text: str) -> str:
@@ -202,6 +281,155 @@ def summarize_log(path: Path, now: datetime | None = None) -> dict[str, Any]:
     }
 
 
+def _normalized_conditions_observation(
+    status: str, errors: list[str]
+) -> dict[str, Any]:
+    return {
+        "status": status,
+        "present": status != "missing",
+        "valid": False,
+        "schema_version": "unknown",
+        "observed_at_unix_ms": None,
+        "observation_id": "",
+        "online": "unknown",
+        "alive": "unknown",
+        "protection_zone": "unknown",
+        "protection_zone_source": "unavailable",
+        "condition_id": "paralyze",
+        "condition_state": "unknown",
+        "cooldown": "unknown",
+        "cooldown_source": "unavailable",
+        "producer_source": "unknown",
+        "dispatch_allowed": False,
+        "runtime_actions": False,
+        "executes_plan": False,
+        "execute_once_allowed": False,
+        "promotion_allowed": False,
+        "validation_errors": errors,
+        "p9_blocker": (
+            "conditions_observation_missing"
+            if status == "missing"
+            else "conditions_observation_invalid"
+        ),
+    }
+
+
+def summarize_conditions_observation(
+    value: Any = _MISSING,
+    *,
+    expected_observed_at_unix_ms: int | None = None,
+    require_timestamp_binding: bool = False,
+) -> dict[str, Any]:
+    """Strictly validate and normalize the optional passive P9 observation.
+
+    Missing data is intentionally distinct from malformed data so a v2.2.1
+    heartbeat remains valid P8 evidence while both states stay blocked for P9.
+    No unvalidated strings or nested values are copied to the result.
+    """
+
+    if value is _MISSING:
+        return _normalized_conditions_observation("missing", [])
+    if not isinstance(value, dict):
+        return _normalized_conditions_observation("invalid", ["object_type"])
+
+    errors: list[str] = []
+    try:
+        encoded = json.dumps(
+            value,
+            allow_nan=False,
+            ensure_ascii=True,
+            separators=(",", ":"),
+            sort_keys=True,
+        ).encode("utf-8")
+    except (TypeError, ValueError):
+        encoded = b""
+        errors.append("encoding")
+    if len(encoded) > MAX_CONDITIONS_OBSERVATION_BYTES:
+        errors.append("oversize")
+
+    keys = frozenset(value)
+    if CONDITIONS_OBSERVATION_FIELDS - keys:
+        errors.append("fields_missing")
+    if keys - CONDITIONS_OBSERVATION_FIELDS:
+        errors.append("fields_extra")
+    if value.get("schema_version") != CONDITIONS_OBSERVATION_SCHEMA:
+        errors.append("schema_version")
+
+    observed_at = value.get("observed_at_unix_ms")
+    observed_at_valid = (
+        isinstance(observed_at, int)
+        and not isinstance(observed_at, bool)
+        and 1 <= observed_at <= 9_999_999_999_999
+    )
+    if not observed_at_valid:
+        errors.append("observed_at_unix_ms")
+    elif (
+        isinstance(expected_observed_at_unix_ms, int)
+        and not isinstance(expected_observed_at_unix_ms, bool)
+        and observed_at != expected_observed_at_unix_ms
+    ):
+        errors.append("observed_at_mismatch")
+    elif require_timestamp_binding and not (
+        isinstance(expected_observed_at_unix_ms, int)
+        and not isinstance(expected_observed_at_unix_ms, bool)
+    ):
+        errors.append("parent_observed_at_unbound")
+
+    observation_id = value.get("observation_id")
+    if not (
+        isinstance(observation_id, str)
+        and CONDITIONS_OBSERVATION_ID_PATTERN.fullmatch(observation_id)
+    ):
+        errors.append("observation_id")
+
+    enum_fields = {
+        "online": {"online", "offline", "unknown"},
+        "alive": {"alive", "dead", "unknown"},
+        "protection_zone": {"outside", "inside", "unknown"},
+        "protection_zone_source": {"player_method", "unavailable"},
+        "condition_id": {"paralyze"},
+        "condition_state": {"present", "absent", "unknown"},
+        "cooldown": {"ready", "active", "unknown"},
+        "cooldown_source": {"game_cooldown_group", "unavailable"},
+        "producer_source": {"otclient_guarded_adapter", "fixture"},
+    }
+    for field, allowed in enum_fields.items():
+        enum_value = value.get(field)
+        if not isinstance(enum_value, str) or enum_value not in allowed:
+            errors.append(f"{field}_enum")
+    for field in CONDITIONS_ACTION_FLAGS:
+        if value.get(field) is not False:
+            errors.append(f"{field}_unsafe")
+
+    if errors:
+        return _normalized_conditions_observation("invalid", errors)
+
+    return {
+        "status": "valid",
+        "present": True,
+        "valid": True,
+        "schema_version": CONDITIONS_OBSERVATION_SCHEMA,
+        "observed_at_unix_ms": observed_at,
+        "observation_id": observation_id,
+        "online": value["online"],
+        "alive": value["alive"],
+        "protection_zone": value["protection_zone"],
+        "protection_zone_source": value["protection_zone_source"],
+        "condition_id": "paralyze",
+        "condition_state": value["condition_state"],
+        "cooldown": value["cooldown"],
+        "cooldown_source": value["cooldown_source"],
+        "producer_source": value["producer_source"],
+        "dispatch_allowed": False,
+        "runtime_actions": False,
+        "executes_plan": False,
+        "execute_once_allowed": False,
+        "promotion_allowed": False,
+        "validation_errors": [],
+        "p9_blocker": None,
+    }
+
+
 def summarize_capability(
     payload: dict[str, Any] | None,
     load_status: str,
@@ -223,6 +451,7 @@ def summarize_capability(
             "contract_valid": False,
             "version_match": False,
             "heartbeat_after_process_start": False,
+            "conditions_observation": summarize_conditions_observation(),
         }
 
     schema_valid = payload.get("schema_version") == CAPABILITY_SCHEMA
@@ -249,6 +478,23 @@ def summarize_capability(
         observed_valid and process_start_valid and observed > process_start_unix_ms
     )
 
+    conditions_value = (
+        payload["conditions_observation"]
+        if "conditions_observation" in payload
+        else _MISSING
+    )
+    conditions_observation = summarize_conditions_observation(
+        conditions_value,
+        expected_observed_at_unix_ms=observed if observed_valid else None,
+        require_timestamp_binding=True,
+    )
+    nested_conditions_actions = bool(
+        isinstance(conditions_value, dict)
+        and any(
+            conditions_value.get(field) is True for field in CONDITIONS_ACTION_FLAGS
+        )
+    )
+
     runtime_actions_value = payload.get("runtime_actions")
     runtime_actions = runtime_actions_value is True
     runtime_actions_explicit_safe = runtime_actions_value is False
@@ -259,7 +505,7 @@ def summarize_capability(
     runtime_core_actions_explicit_safe = (
         core_present and runtime_core_actions_value is False
     )
-    unsafe = runtime_actions or runtime_core_actions
+    unsafe = runtime_actions or runtime_core_actions or nested_conditions_actions
     heartbeat_online = payload.get("heartbeat_status") == "online"
     game_online = payload.get("online") is True
     helper_version_value = payload.get("helper_version")
@@ -274,6 +520,7 @@ def summarize_capability(
     contract_valid = bool(
         runtime_actions_explicit_safe
         and runtime_core_actions_explicit_safe
+        and not nested_conditions_actions
         and heartbeat_online
         and game_online
         and helper_version_valid
@@ -336,4 +583,5 @@ def summarize_capability(
         "contract_valid": contract_valid,
         "version_match": version_match,
         "heartbeat_after_process_start": heartbeat_after_process_start,
+        "conditions_observation": conditions_observation,
     }
