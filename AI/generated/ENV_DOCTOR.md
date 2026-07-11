@@ -1,16 +1,16 @@
 # Engine Brain Environment Doctor
 
-Generated at: `2026-07-11T04:36:23+00:00`
+Generated at: `2026-07-11T07:10:44+00:00`
 Overall status: `warn`
 
 | Check | Status | Key evidence |
 |---|---|---|
-| `git` | `ok` | branch=codex/control-center-guarded-actions; dirty=22; path=C:\Program Files\Git\cmd\git.EXE |
+| `git` | `ok` | branch=codex/control-center-guarded-actions; dirty=44; path=C:\Program Files\Git\cmd\git.EXE |
 | `docker` | `ok` | containers=2; running_broad=0; configured_broad=0 |
 | `vpn` | `ok` | warp_connected=True |
 | `vercel` | `ok` | version=54.10.3; project=ctoa-web |
 | `vscode` | `warn` | openai=['openai.chatgpt@26.623.141536']; old_dirs=2 |
-| `github` | `warn` | open_prs=6; dirty_prs=6; failed_runs=0 |
+| `github` | `warn` | open_prs=7; dirty_prs=6; failed_runs=1 |
 | `update_gate` | `ok` | gate=ok; product=CTOA Toolkit; version=1.1.1 |
 
 ## GitHub Dirty PRs

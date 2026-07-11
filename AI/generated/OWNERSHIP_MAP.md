@@ -1,6 +1,6 @@
 # Engine Brain Ownership Map
 
-Generated at: `2026-07-11T04:36:01+00:00`
+Generated at: `2026-07-11T07:10:18+00:00`
 Source audit: `runtime\audits\ctoai-full-workspace-audit.json`
 Status: `ready`
 

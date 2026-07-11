@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-11T04:36:01+00:00",
+  "generated_at": "2026-07-11T07:10:18+00:00",
   "status": "safe_write_tools_enabled",
   "decision": "monitor_enabled_safe_write_tools",
   "policy": "P7 action readiness is evidence-only. MCP write tools stay disabled until every candidate has audit evidence and explicit enablement.",

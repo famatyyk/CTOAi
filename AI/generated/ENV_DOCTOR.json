@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-11T04:36:23+00:00",
+  "generated_at": "2026-07-11T07:10:44+00:00",
   "root": "C:\\Users\\zycie\\CTOAi",
   "overall_status": "warn",
   "status_counts": {
@@ -15,11 +15,15 @@
       "status": "ok",
       "root": "C:/Users/zycie/CTOAi",
       "branch": "codex/control-center-guarded-actions",
-      "head": "d9efb26e5b0777c70e7dcb60026347cd722fd514",
-      "dirty_count": 22,
+      "head": "098f3b4b9c2be835bab53f1698118691a8e4bea7",
+      "dirty_count": 44,
       "dirty_sample": [
         "M AI/generated/DOC_SYNC.json",
         "M AI/generated/DOC_SYNC.md",
+        "M AI/generated/ENGINE_BRAIN_PACK.json",
+        "M AI/generated/ENGINE_BRAIN_PACK.md",
+        "M AI/generated/ENV_DOCTOR.json",
+        "M AI/generated/ENV_DOCTOR.md",
         "M AI/generated/FILE_TREE.md",
         "M AI/generated/OWNERSHIP_MAP.json",
         "M AI/generated/OWNERSHIP_MAP.md",
@@ -38,8 +42,7 @@
         "M AI/generated/SYMBOL_MAP.md",
         "M AI/generated/manifest.json",
         "M data/bot.db",
-        "M docs/audits/CTOAI_FULL_WORKSPACE_AUDIT_2026-07-06.md",
-        "M docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md"
+        "M docs/otclient/solteria_helper_module_workplan.md"
       ],
       "remotes": [
         "origin\thttps://github.com/famatyyk/CTOAi.git (fetch)",
@@ -58,12 +61,12 @@
       "containers": [
         {
           "name": "ctoa-api",
-          "status": "Up 32 hours",
+          "status": "Up 35 hours",
           "ports": "127.0.0.1:8001->8000/tcp"
         },
         {
           "name": "ctoa-postgres",
-          "status": "Up 32 hours (healthy)",
+          "status": "Up 35 hours (healthy)",
           "ports": "5432/tcp"
         }
       ],
@@ -144,11 +147,9 @@
         "vinirossa.vscode-gitandgithub-pack@2.0.1",
         "ziyasal.vscode-open-in-github@1.3.6"
       ],
-      "python_interpreter": "C:\\Users\\zycie\\CTOAi\\.venv\\Scripts\\python.exe",
+      "python_interpreter": "python",
       "recommendations": [
-        "ms-vscode.powershell",
-        "medri.otcdochub",
-        "mateusbellei.otui-highlights"
+        "ms-vscode.powershell"
       ]
     },
     "github": {
@@ -160,12 +161,12 @@
           "name": "main"
         },
         "nameWithOwner": "famatyyk/CTOAi",
-        "pushedAt": "2026-07-05T01:47:52Z",
+        "pushedAt": "2026-07-11T06:07:51Z",
         "updatedAt": "2026-07-05T01:47:56Z",
         "url": "https://github.com/famatyyk/CTOAi",
         "visibility": "PUBLIC"
       },
-      "open_pr_count": 6,
+      "open_pr_count": 7,
       "dirty_prs": [
         {
           "isDraft": false,
@@ -217,7 +218,15 @@
         }
       ],
       "recent_run_count": 15,
-      "failed_recent_runs": []
+      "failed_recent_runs": [
+        {
+          "conclusion": "skipped",
+          "createdAt": "2026-07-11T06:08:20Z",
+          "status": "completed",
+          "url": "https://github.com/famatyyk/CTOAi/actions/runs/29142334465",
+          "workflowName": "CTOA Close On Gate"
+        }
+      ]
     },
     "update_gate": {
       "status": "ok",

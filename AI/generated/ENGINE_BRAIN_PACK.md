@@ -1,6 +1,6 @@
 # CTOAi Engine Brain Pack
 
-Generated at: `2026-07-11T04:36:23+00:00`
+Generated at: `2026-07-11T07:10:44+00:00`
 Repo root: `C:\Users\zycie\CTOAi`
 Profile: `helper`
 
@@ -2624,8 +2624,8 @@ Current guard behavior:
 ## Current Decision
 
 - Status: `ready`
-- Helper lines: `4350`
-- Helper functions: `158`
+- Helper lines: `4349`
+- Helper functions: `159`
 - Helper line budget: `4500`
 - Helper function budget: `130`
 - Helper budget status: `over_budget`
@@ -5283,9 +5283,9 @@ fresh `ctoa_local.log` lines plus safe boot state.
 ```json
 {
   "schema_version": 1,
-  "generated_at": "2026-07-11T04:36:01+00:00",
+  "generated_at": "2026-07-11T07:10:18+00:00",
   "root": "C:\\Users\\zycie\\CTOAi",
-  "file_count": 1255,
+  "file_count": 1230,
   "outputs": {
     "file_tree": "AI\\generated\\FILE_TREE.md",
     "symbol_map": "AI\\generated\\SYMBOL_MAP.md",
@@ -5346,17 +5346,17 @@ fresh `ctoa_local.log` lines plus safe boot state.
 ```markdown
 # Engine Brain Environment Doctor
 
-Generated at: `2026-07-11T04:36:23+00:00`
+Generated at: `2026-07-11T07:10:44+00:00`
 Overall status: `warn`
 
 | Check | Status | Key evidence |
 |---|---|---|
-| `git` | `ok` | branch=codex/control-center-guarded-actions; dirty=22; path=C:\Program Files\Git\cmd\git.EXE |
+| `git` | `ok` | branch=codex/control-center-guarded-actions; dirty=44; path=C:\Program Files\Git\cmd\git.EXE |
 | `docker` | `ok` | containers=2; running_broad=0; configured_broad=0 |
 | `vpn` | `ok` | warp_connected=True |
 | `vercel` | `ok` | version=54.10.3; project=ctoa-web |
 | `vscode` | `warn` | openai=['openai.chatgpt@26.623.141536']; old_dirs=2 |
-| `github` | `warn` | open_prs=6; dirty_prs=6; failed_runs=0 |
+| `github` | `warn` | open_prs=7; dirty_prs=6; failed_runs=1 |
 | `update_gate` | `ok` | gate=ok; product=CTOA Toolkit; version=1.1.1 |
 
 ## GitHub Dirty PRs
@@ -5375,7 +5375,7 @@ Overall status: `warn`
 ```markdown
 # Engine Brain Ownership Map
 
-Generated at: `2026-07-11T04:36:01+00:00`
+Generated at: `2026-07-11T07:10:18+00:00`
 Source audit: `runtime\audits\ctoai-full-workspace-audit.json`
 Status: `ready`
 
@@ -5457,7 +5457,7 @@ Status: `ready`
 ```markdown
 # Engine Brain Doc Sync
 
-Generated at: `2026-07-11T04:36:01+00:00`
+Generated at: `2026-07-11T07:10:18+00:00`
 Status: `passed`
 
 | Check | Path | Status | Missing |
@@ -5476,7 +5476,7 @@ Status: `passed`
 ```markdown
 # Engine Brain Secret Guardrail
 
-Generated at: `2026-07-11T04:36:01+00:00`
+Generated at: `2026-07-11T07:10:18+00:00`
 Status: `passed`
 Sensitive/local env path count in audit: `7`
 
@@ -5498,7 +5498,7 @@ Generated Engine Brain context must not include exact local sensitive/env paths 
 ```markdown
 # P6 Codex Integration Readiness
 
-Generated at: `2026-07-11T04:36:01+00:00`
+Generated at: `2026-07-11T07:10:18+00:00`
 Status: `ready_for_plugin_design`
 
 P6 allows only four read-only status/cockpit tools plus audited repo-hygiene, API-cost, evidence-pack, Engine Brain, and P7 cockpit-smoke safe-write refreshes. Do not add deploy/live shortcuts or bypass Control Center evidence gates.
@@ -5570,7 +5570,7 @@ Recommended next: Operate the plugin as four read-only status/cockpit tools plus
 ```markdown
 # P7 Operator Workflow
 
-Generated at: `2026-07-11T04:36:01+00:00`
+Generated at: `2026-07-11T07:10:18+00:00`
 Status: `safe_write_ready`
 Decision: `allow_bounded_safe_write_tools`
 
@@ -5618,7 +5618,7 @@ Next safe command: Use ctoai_repo_hygiene_refresh, ctoai_api_cost_refresh, ctoai
 ```markdown
 # P7 Action Readiness
 
-Generated at: `2026-07-11T04:36:01+00:00`
+Generated at: `2026-07-11T07:10:18+00:00`
 Status: `safe_write_tools_enabled`
 Decision: `monitor_enabled_safe_write_tools`
 
@@ -5646,7 +5646,7 @@ Next safe command: Design the next P7 plugin action only after risk model covera
 ```markdown
 # P7 Safe Write Tool Design
 
-Generated at: `2026-07-11T04:36:01+00:00`
+Generated at: `2026-07-11T07:10:18+00:00`
 Status: `implemented`
 Decision: `ready_for_dry_run_operation`
 
@@ -5688,7 +5688,7 @@ Next safe command: Run ctoai_evidence_pack_refresh with dry_run=true and verify 
 ```markdown
 # P7 Operator Brief
 
-Generated at: `2026-07-11T04:36:01+00:00`
+Generated at: `2026-07-11T07:10:18+00:00`
 Decision: `ready_for_p7_operator_workflow`
 Status: `ready`
 
@@ -5716,7 +5716,7 @@ Next safe command: Design the next P7 plugin action only after risk model covera
 ```markdown
 # Engine Brain File Tree
 
-Generated at: `2026-07-11T04:36:01+00:00`
+Generated at: `2026-07-11T07:10:18+00:00`
 
 Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 `node_modules`, `runtime`, `logs`, `data`, `.tmp`, build outputs.
@@ -5730,7 +5730,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `.devcontainer/devcontainer.json` | 1526 |
 | `.foundry/.deployment.json` | 114 |
 | `.github/ci-smoke-check.txt` | 38 |
-| `.github/copilot-instructions.md` | 4117 |
+| `.github/copilot-instructions.md` | 5576 |
 | `.github/dependabot.yml` | 467 |
 | `.github/instructions/ops-powershell-safety.instructions.md` | 1889 |
 | `.github/instructions/runner-governance.instructions.md` | 1744 |
@@ -5745,9 +5745,10 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `.github/ISSUE_TEMPLATE/ctoa-038-monitoring-alert-p0.md` | 740 |
 | `.github/prompts/pr-quality-build-gate-review.prompt.md` | 1729 |
 | `.github/prompts/sprint-wave1-readiness.prompt.md` | 1680 |
+| `.github/PULL_REQUEST_TEMPLATE/template.md` | 245 |
 | `.github/skills/ci-hotfix-workflow/SKILL.md` | 3039 |
 | `.github/workflows/browser-e2e-smoke.yml` | 1158 |
-| `.github/workflows/cd_bot.yml` | 3552 |
+| `.github/workflows/cd_bot.yml` | 4935 |
 | `.github/workflows/ctoa-approval-watchdog.yml` | 3519 |
 | `.github/workflows/ctoa-ci-executive-weekly.yml` | 1068 |
 | `.github/workflows/ctoa-close-on-gate.yml` | 887 |
@@ -5756,25 +5757,25 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `.github/workflows/ctoa-daily-insights.yml` | 941 |
 | `.github/workflows/ctoa-issue-sync.yml` | 687 |
 | `.github/workflows/ctoa-monitoring-alerts.yml` | 14232 |
-| `.github/workflows/ctoa-pipeline.yml` | 30241 |
-| `.github/workflows/ctoa-runtime-smoke-e2e-8001.yml` | 2162 |
+| `.github/workflows/ctoa-pipeline.yml` | 30243 |
+| `.github/workflows/ctoa-runtime-smoke-e2e-8001.yml` | 2121 |
 | `.github/workflows/ctoa-smoke-must-pass.yml` | 949 |
 | `.github/workflows/ctoa-status-sync.yml` | 980 |
 | `.github/workflows/ctoa-vps-hygiene-weekly.yml` | 3891 |
 | `.github/workflows/ctoa-weekly-report.yml` | 750 |
 | `.github/workflows/docker-build.yml` | 3569 |
 | `.github/workflows/main_ctoai.yml` | 3256 |
-| `.github/workflows/pr_quality.yml` | 2459 |
+| `.github/workflows/pr_quality.yml` | 1985 |
 | `.github/workflows/site-pages.yml` | 1537 |
 | `.github/workflows/vps-authorize-ctoa-key.yml` | 4091 |
-| `.github/workflows/vps-gs-cycle.yml` | 10304 |
+| `.github/workflows/vps-gs-cycle.yml` | 10161 |
 | `.github/workflows/vps-stack-deploy.yml` | 8480 |
 | `.luarc.json` | 268 |
 | `.pre-commit-config.yaml` | 784 |
-| `.vscode/extensions.json` | 133 |
-| `.vscode/launch.json` | 2052 |
-| `.vscode/settings.json` | 2240 |
-| `.vscode/tasks.json` | 74127 |
+| `.vscode/extensions.json` | 155 |
+| `.vscode/launch.json` | 2063 |
+| `.vscode/settings.json` | 1277 |
+| `.vscode/tasks.json` | 114679 |
 | `agent.yaml` | 80 |
 | `AGENTS.md` | 2819 |
 | `agents/AGENT10_DOCUMENTATION_SAGE.md` | 2620 |
@@ -5817,14 +5818,14 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `AI/FEATURE_ROADMAP.md` | 56235 |
 | `AI/generated/DOC_SYNC.json` | 1019 |
 | `AI/generated/DOC_SYNC.md` | 609 |
-| `AI/generated/ENGINE_BRAIN_PACK.json` | 5322 |
-| `AI/generated/ENGINE_BRAIN_PACK.md` | 264309 |
-| `AI/generated/ENV_DOCTOR.json` | 8056 |
-| `AI/generated/ENV_DOCTOR.md` | 1369 |
-| `AI/generated/FILE_TREE.md` | 70215 |
+| `AI/generated/ENGINE_BRAIN_PACK.json` | 5583 |
+| `AI/generated/ENGINE_BRAIN_PACK.md` | 412233 |
+| `AI/generated/ENV_DOCTOR.json` | 8345 |
+| `AI/generated/ENV_DOCTOR.md` | 1368 |
+| `AI/generated/FILE_TREE.md` | 68186 |
 | `AI/generated/manifest.json` | 2062 |
-| `AI/generated/OWNERSHIP_MAP.json` | 16787 |
-| `AI/generated/OWNERSHIP_MAP.md` | 6553 |
+| `AI/generated/OWNERSHIP_MAP.json` | 16701 |
+| `AI/generated/OWNERSHIP_MAP.md` | 6492 |
 | `AI/generated/P6_CODEX_INTEGRATION_READINESS.json` | 11010 |
 | `AI/generated/P6_CODEX_INTEGRATION_READINESS.md` | 6915 |
 | `AI/generated/P7_ACTION_READINESS.json` | 4870 |
@@ -5835,7 +5836,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `AI/generated/P7_OPERATOR_WORKFLOW.md` | 3015 |
 | `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.json` | 2705 |
 | `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.md` | 2024 |
-| `AI/generated/SYMBOL_MAP.md` | 256866 |
+| `AI/generated/SYMBOL_MAP.md` | 260612 |
 | `AI/KNOWN_BUGS.md` | 1384 |
 | `AI/LUA_INDEX.md` | 2874 |
 | `AI/OPERATIONS_AUDIT.md` | 5139 |
@@ -5851,8 +5852,8 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `alembic/env.py` | 1412 |
 | `alembic/versions/20260521_0001_sprint0_baseline.py` | 445 |
 | `api/__init__.py` | 2 |
-| `api/main.py` | 51764 |
-| `api/startup_guard.py` | 1323 |
+| `api/main.py` | 54572 |
+| `api/startup_guard.py` | 1328 |
 | `bot/__init__.py` | 1 |
 | `bot/action/__init__.py` | 2631 |
 | `bot/action/combat.py` | 1677 |
@@ -5861,7 +5862,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `bot/action/movement.py` | 2988 |
 | `bot/action/spell_rotation.py` | 6741 |
 | `bot/config/__init__.py` | 42 |
-| `bot/config/runtime_profile.py` | 6060 |
+| `bot/config/runtime_profile.py` | 5961 |
 | `bot/connection/__init__.py` | 1 |
 | `bot/connection/ots_config.py` | 2579 |
 | `bot/dashboard/__init__.py` | 1 |
@@ -5871,15 +5872,15 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `bot/decision/hunt_strategy.py` | 2683 |
 | `bot/decision/ml_model.py` | 7980 |
 | `bot/decision/rules.py` | 2199 |
-| `bot/infra/docker-compose.yml` | 1013 |
+| `bot/infra/docker-compose.yml` | 865 |
 | `bot/infra/grafana/dashboards/tibia_bot.json` | 4684 |
 | `bot/infra/grafana/provisioning/dashboards/default.yaml` | 175 |
 | `bot/infra/grafana/provisioning/datasources/prometheus.yaml` | 159 |
 | `bot/infra/prometheus.yml` | 159 |
-| `bot/main.py` | 5500 |
+| `bot/main.py` | 8297 |
 | `bot/overlay/__init__.py` | 0 |
 | `bot/overlay/macro_overlay.py` | 23823 |
-| `bot/overlay/status_overlay.py` | 21606 |
+| `bot/overlay/status_overlay.py` | 20975 |
 | `bot/perception/__init__.py` | 1 |
 | `bot/perception/memory_reader.py` | 8646 |
 | `bot/perception/parser.py` | 15541 |
@@ -5891,7 +5892,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `bot/safety/nonsecurity_random.py` | 951 |
 | `bot/safety/scheduler.py` | 6918 |
 | `bot/safety/session.py` | 1777 |
-| `CHANGELOG.md` | 14835 |
+| `CHANGELOG.md` | 14700 |
 | `config/bot_macro_pad.json` | 1487 |
 | `config/bot_spell_rotation.json` | 2749 |
 | `config/client_profiles.json` | 2161 |
@@ -5901,7 +5902,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `core/protected-files.txt` | 222 |
 | `core/runtime-freeze-policy.json` | 301 |
 | `ctoa-vps.ps1` | 547 |
-| `ctoa.ps1` | 28804 |
+| `ctoa.ps1` | 29733 |
 | `ctoa_ui_prefs.lua` | 397 |
 | `deploy/local/observability/grafana/provisioning/datasources/datasources.yml` | 224 |
 | `deploy/local/observability/loki-config.yml` | 539 |
@@ -5913,15 +5914,15 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `desktop_console/__init__.py` | 154 |
 | `desktop_console/api_client.py` | 6829 |
 | `desktop_console/app.py` | 90357 |
-| `desktop_console/README.md` | 3988 |
+| `desktop_console/README.md` | 3955 |
 | `desktop_console/update_client.py` | 8610 |
 | `desktop_console/version.py` | 136 |
-| `docker-compose.yml` | 1781 |
+| `docker-compose.yml` | 1800 |
 | `docs/adr/ADR-001-shared-clock-hybrid-modules.md` | 1201 |
 | `docs/AGENT_PROMPT_DEFINITIVE.md` | 4201 |
 | `docs/AGENT_TRAINING_MASTERPLAN.md` | 3605 |
 | `docs/ARCHITECTURE.md` | 21905 |
-| `docs/audits/CTOAI_FULL_WORKSPACE_AUDIT_2026-07-06.md` | 7040 |
+| `docs/audits/CTOAI_FULL_WORKSPACE_AUDIT_2026-07-06.md` | 6889 |
 | `docs/audits/CTOAI_SECURITY_HARDENING_2026-07-06.md` | 114540 |
 | `docs/audits/CTOAI_WORKTREE_EXECUTION_PLAN_2026-07-11.md` | 8548 |
 | `docs/audits/CTOAI_WORKTREE_TRIAGE_2026-07-09.md` | 6985 |
@@ -5934,7 +5935,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `docs/CTOA_CLI.md` | 3810 |
 | `docs/CTOAI_COMMAND_RISK_MODEL.md` | 10206 |
 | `docs/CTOAI_CONTROL_CENTER_PHASE1.md` | 9084 |
-| `docs/CTOAI_FOUNDATION_CLEANUP.md` | 7897 |
+| `docs/CTOAI_FOUNDATION_CLEANUP.md` | 7779 |
 | `docs/CTOAI_LEGACY_FEATURE_INVENTORY.md` | 8857 |
 | `docs/CTOAI_SURFACE_CONSOLIDATION.md` | 3282 |
 | `docs/DEPLOYMENT.md` | 6848 |
@@ -6144,16 +6145,15 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `docs/history/sprints/SPRINT-068-PROGRESS.md` | 902 |
 | `docs/history/sprints/SPRINT-068.md` | 1918 |
 | `docs/history/sprints/SPRINT-069-PROGRESS.md` | 942 |
-| `docs/history/sprints/SPRINT-069.md` | 2090 |
-| `docs/history/sprints/SPRINT-070-PROGRESS.md` | 1186 |
+| `docs/history/sprints/SPRINT-069.md` | 1316 |
 | `docs/history/sprints/SPRINT_007_AGENT_EXECUTION_REPORT.md` | 4393 |
 | `docs/HYBRID_BOT_IMPLEMENTATION.md` | 12154 |
-| `docs/INDEX.md` | 3512 |
+| `docs/INDEX.md` | 3421 |
 | `docs/INFRASTRUCTURE_CANONICAL.md` | 2069 |
 | `docs/INFRASTRUCTURE_DECISION_LOG.md` | 2450 |
 | `docs/ISSUE_TRIAGE.md` | 1784 |
 | `docs/LAB003_10H_WORK_SHIFT_PLAN.md` | 2605 |
-| `docs/LOCAL_SETUP.md` | 6501 |
+| `docs/LOCAL_SETUP.md` | 7359 |
 | `docs/loot-target-spec.md` | 507 |
 | `docs/MARKET_ANALYSIS_2025.md` | 4947 |
 | `docs/MOBILE_CONSOLE.md` | 5749 |
@@ -6166,12 +6166,13 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `docs/otclient/solteria_helper_module_workplan.md` | 12759 |
 | `docs/otclient/solteria_helper_next_modules_plan.md` | 18281 |
 | `docs/otclient/solteria_helper_sandbox_smoke_queue.md` | 10222 |
-| `docs/otclient/solteria_helper_shell_budget_plan.md` | 4262 |
+| `docs/otclient/solteria_helper_shell_budget_plan.md` | 4261 |
 | `docs/otclient/solteria_helper_supplemental_refactor_plan.md` | 27770 |
 | `docs/otclient/solteria_helper_test_env.md` | 26202 |
 | `docs/otclient/SOLTERIA_HELPER_V2_1_1_STYLE_MODERNIZATION_PLAN_2026-07-11.md` | 7950 |
 | `docs/otclient/SOLTERIA_HELPER_V2_1_1A_STABILIZATION_REFACTOR_PLAN_2026-07-11.md` | 2206 |
 | `docs/otclient/SOLTERIA_HELPER_V2_1_UX_PLAN_2026-07-11.md` | 1797 |
+| `docs/otclient/SOLTERIA_HELPER_V2_2_0_VOCATION_COMBAT_PLAN_2026-07-11.md` | 1741 |
 | `docs/otclient/SOLTERIA_HELPER_V2_EXECUTION_PLAN_2026-07-11.md` | 3394 |
 | `docs/otclient/tibia_control_center_helper_p0_plan.md` | 5553 |
 | `docs/otclient/VBOT_5_ARCHITECTURE_EXECUTION_PLAN_2026-07-11.md` | 5431 |
@@ -6189,12 +6190,10 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `docs/README_BOT.md` | 14155 |
 | `docs/README_INVENTORY.md` | 2172 |
 | `docs/REALTIME_MODULE_CREATION.md` | 3229 |
-| `docs/release-artifact.sample.json` | 527 |
-| `docs/REPO_CLEANUP_WAVES.md` | 1237 |
 | `docs/REPO_HYGIENE_POLICY.md` | 4830 |
 | `docs/REPO_SCHEMA.md` | 10994 |
 | `docs/ROADMAP_V0.2.0_TO_V1.0.0.md` | 878 |
-| `docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md` | 6578 |
+| `docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md` | 6491 |
 | `docs/runbook-althea-enc3-reverseeng.md` | 3502 |
 | `docs/runbook-azure-activity-log-interpretation.md` | 2855 |
 | `docs/runbook-disk-emergency.md` | 2223 |
@@ -6215,7 +6214,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `evals/README-azure-agent-eval-dataset.md` | 763 |
 | `evals/runs/README.md` | 1177 |
 | `mobile_console/__init__.py` | 0 |
-| `mobile_console/app.py` | 122220 |
+| `mobile_console/app.py` | 121249 |
 | `mobile_console/services/__init__.py` | 212 |
 | `mobile_console/services/admin_settings_service.py` | 604 |
 | `mobile_console/services/ideas_service.py` | 1685 |
@@ -6227,10 +6226,10 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `product/packages/pro.manifest.json` | 445 |
 | `product/packages/studio.manifest.json` | 371 |
 | `prompts/braver-library.yaml` | 3632 |
-| `prompts/braver_templates.py` | 5243 |
+| `prompts/braver_templates.py` | 5238 |
 | `prompts/design-infra-playbook.yaml` | 1014 |
 | `prompts/mmo-lua-pack.yaml` | 4062 |
-| `README.md` | 2605 |
+| `README.md` | 5711 |
 | `releases/evidence/release-validation-dashboardsnapshot-2026-05-24.md` | 921 |
 | `releases/evidence/sprint-050/CTOA-260.md` | 578 |
 | `releases/evidence/sprint-050/CTOA-261.md` | 609 |
@@ -6294,7 +6293,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `runner/health_trend.py` | 4412 |
 | `runner/http_safety.py` | 10943 |
 | `runner/hybrid_bot/__init__.py` | 1008 |
-| `runner/hybrid_bot/bot_runner.py` | 12100 |
+| `runner/hybrid_bot/bot_runner.py` | 14245 |
 | `runner/hybrid_bot/cli.py` | 7611 |
 | `runner/hybrid_bot/clock.py` | 250 |
 | `runner/hybrid_bot/command_executor.py` | 14571 |
@@ -6302,7 +6301,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `runner/hybrid_bot/gameplay_engine.py` | 11632 |
 | `runner/hybrid_bot/INTEGRATION_COMPLETE.md` | 14231 |
 | `runner/hybrid_bot/interactive_mode.py` | 11148 |
-| `runner/hybrid_bot/metrics.py` | 13589 |
+| `runner/hybrid_bot/metrics.py` | 15053 |
 | `runner/hybrid_bot/pathfinding.py` | 11395 |
 | `runner/hybrid_bot/performance_profiler.py` | 8328 |
 | `runner/hybrid_bot/prompt_logic.py` | 11668 |
@@ -6322,17 +6321,17 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `runner/queue_worker.py` | 4368 |
 | `runner/requirements.txt` | 54 |
 | `runner/response_guardrails.py` | 2491 |
-| `runner/runner.py` | 20492 |
+| `runner/runner.py` | 20638 |
 | `runner/status_sync.py` | 9396 |
 | `runner/tibia_sources.py` | 25210 |
 | `runner/weekly_report.py` | 8409 |
+| `runtime_context.py` | 2934 |
 | `schemas/ci-gate-policy.schema.json` | 1426 |
 | `schemas/ctoa-command-dictionary.json` | 3196 |
 | `schemas/intel-projects.schema.json` | 1136 |
 | `schemas/mobile_console_api_contract.snapshot.json` | 8456 |
 | `schemas/otclient-helper-config.schema.json` | 4451 |
 | `schemas/release-artifact.schema.json` | 1190 |
-| `scoring/policy_pack.py` | 533 |
 | `scoring/tibia-tool-matrix.yaml` | 1508 |
 | `scoring/tool-advisor-rules.yaml` | 1083 |
 | `scoring/tool_advisor.py` | 4485 |
@@ -6355,13 +6354,14 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/lua/event_logger.lua` | 2180 |
 | `scripts/lua/loot_filter.lua` | 1538 |
 | `scripts/lua/module_reporter.lua` | 1112 |
-| `scripts/lua/otclient/ctoa_ek_profile.lua` | 7257 |
+| `scripts/lua/otclient/ctoa_ed_profile.lua` | 2453 |
+| `scripts/lua/otclient/ctoa_ek_profile.lua` | 7667 |
 | `scripts/lua/otclient/ctoa_helper_action_catalog.lua` | 6301 |
 | `scripts/lua/otclient/ctoa_helper_cavebot_observer.lua` | 3342 |
 | `scripts/lua/otclient/ctoa_helper_cavebot_runtime.lua` | 15629 |
-| `scripts/lua/otclient/ctoa_helper_client_reporter.lua` | 8172 |
+| `scripts/lua/otclient/ctoa_helper_client_reporter.lua` | 8294 |
 | `scripts/lua/otclient/ctoa_helper_combat_observer.lua` | 5193 |
-| `scripts/lua/otclient/ctoa_helper_combat_runtime.lua` | 14747 |
+| `scripts/lua/otclient/ctoa_helper_combat_runtime.lua` | 16020 |
 | `scripts/lua/otclient/ctoa_helper_conditions.lua` | 7172 |
 | `scripts/lua/otclient/ctoa_helper_decision_pipeline.lua` | 6154 |
 | `scripts/lua/otclient/ctoa_helper_decision_trace.lua` | 3937 |
@@ -6378,13 +6378,13 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/lua/otclient/ctoa_helper_loot_runtime.lua` | 4304 |
 | `scripts/lua/otclient/ctoa_helper_modal.lua` | 5112 |
 | `scripts/lua/otclient/ctoa_helper_module_status.lua` | 4669 |
-| `scripts/lua/otclient/ctoa_helper_modules.lua` | 15397 |
+| `scripts/lua/otclient/ctoa_helper_modules.lua` | 15551 |
 | `scripts/lua/otclient/ctoa_helper_operator_summary.lua` | 5532 |
 | `scripts/lua/otclient/ctoa_helper_otclient_observation_adapter.lua` | 11308 |
 | `scripts/lua/otclient/ctoa_helper_plan_queue.lua` | 2684 |
 | `scripts/lua/otclient/ctoa_helper_planner.lua` | 5062 |
-| `scripts/lua/otclient/ctoa_helper_profile_persistence.lua` | 13054 |
-| `scripts/lua/otclient/ctoa_helper_profile_schema.lua` | 24927 |
+| `scripts/lua/otclient/ctoa_helper_profile_persistence.lua` | 14272 |
+| `scripts/lua/otclient/ctoa_helper_profile_schema.lua` | 25357 |
 | `scripts/lua/otclient/ctoa_helper_recovery_observer.lua` | 4249 |
 | `scripts/lua/otclient/ctoa_helper_recovery_runtime.lua` | 4956 |
 | `scripts/lua/otclient/ctoa_helper_route.lua` | 10784 |
@@ -6393,15 +6393,18 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/lua/otclient/ctoa_helper_runtime_readiness.lua` | 3844 |
 | `scripts/lua/otclient/ctoa_helper_sandbox_handoff.lua` | 4120 |
 | `scripts/lua/otclient/ctoa_helper_scripting.lua` | 2946 |
-| `scripts/lua/otclient/ctoa_helper_targeting.lua` | 7888 |
+| `scripts/lua/otclient/ctoa_helper_targeting.lua` | 8172 |
 | `scripts/lua/otclient/ctoa_helper_timer_runtime.lua` | 4056 |
 | `scripts/lua/otclient/ctoa_helper_ui.lua` | 93266 |
+| `scripts/lua/otclient/ctoa_helper_vocation_profiles.lua` | 3881 |
+| `scripts/lua/otclient/ctoa_ms_profile.lua` | 2412 |
 | `scripts/lua/otclient/ctoa_native_combat.lua` | 18058 |
 | `scripts/lua/otclient/ctoa_native_heal.lua` | 9644 |
-| `scripts/lua/otclient/ctoa_native_helper.lua` | 176123 |
+| `scripts/lua/otclient/ctoa_native_helper.lua` | 178789 |
 | `scripts/lua/otclient/ctoa_native_loot.lua` | 11632 |
-| `scripts/lua/otclient/ctoa_otclient.otmod` | 254 |
-| `scripts/lua/otclient/ctoa_otclient_loader.lua` | 7549 |
+| `scripts/lua/otclient/ctoa_otclient.otmod` | 253 |
+| `scripts/lua/otclient/ctoa_otclient_loader.lua` | 7548 |
+| `scripts/lua/otclient/ctoa_rp_profile.lua` | 2424 |
 | `scripts/lua/otclient/README.md` | 24871 |
 | `scripts/lua/pathing_helper.lua` | 1361 |
 | `scripts/lua/proximity_watch.lua` | 797 |
@@ -6413,26 +6416,26 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/ops/aggregate_agent_eval.py` | 2402 |
 | `scripts/ops/analyze-enc3.ps1` | 3809 |
 | `scripts/ops/api_cost_report.py` | 19017 |
-| `scripts/ops/assemble_by_handle_offset.py` | 6316 |
+| `scripts/ops/assemble_by_handle_offset.py` | 6315 |
 | `scripts/ops/assemble_io_dense_stream.py` | 1817 |
-| `scripts/ops/assemble_overlap_graph_variants.py` | 11611 |
-| `scripts/ops/assemble_window_aware_variants.py` | 5675 |
+| `scripts/ops/assemble_overlap_graph_variants.py` | 11610 |
+| `scripts/ops/assemble_window_aware_variants.py` | 5674 |
 | `scripts/ops/auto_trainer.py` | 7488 |
-| `scripts/ops/azure-alerts-runner.ps1` | 4908 |
+| `scripts/ops/azure-alerts-runner.ps1` | 4953 |
 | `scripts/ops/azure_activity_alerts.py` | 15878 |
 | `scripts/ops/azure_activity_webhook_listener.py` | 5693 |
 | `scripts/ops/bootstrap_sprints_029_040.py` | 16837 |
-| `scripts/ops/bridge_replacement_readiness.py` | 3507 |
+| `scripts/ops/bridge_replacement_readiness.py` | 3669 |
 | `scripts/ops/build-loader.ps1` | 556 |
-| `scripts/ops/capture_io_dense_live.py` | 12152 |
-| `scripts/ops/capture_loader_exec_aggressive.py` | 10263 |
-| `scripts/ops/capture_loader_exec_aggressive_live.py` | 10344 |
-| `scripts/ops/capture_loader_exec_burst.py` | 10994 |
-| `scripts/ops/capture_ntreadfile_stream.py` | 9445 |
-| `scripts/ops/capture_post_transform_mapview.py` | 6776 |
-| `scripts/ops/capture_post_transform_protect.py` | 6586 |
-| `scripts/ops/capture_runtime_crypto_decompress_live.py` | 14676 |
-| `scripts/ops/capture_runtime_loader_transform_live.py` | 42689 |
+| `scripts/ops/capture_io_dense_live.py` | 12151 |
+| `scripts/ops/capture_loader_exec_aggressive.py` | 10262 |
+| `scripts/ops/capture_loader_exec_aggressive_live.py` | 10343 |
+| `scripts/ops/capture_loader_exec_burst.py` | 10993 |
+| `scripts/ops/capture_ntreadfile_stream.py` | 9444 |
+| `scripts/ops/capture_post_transform_mapview.py` | 6564 |
+| `scripts/ops/capture_post_transform_protect.py` | 6399 |
+| `scripts/ops/capture_runtime_crypto_decompress_live.py` | 14260 |
+| `scripts/ops/capture_runtime_loader_transform_live.py` | 41844 |
 | `scripts/ops/ci_executive_report.py` | 10673 |
 | `scripts/ops/client_profile_router.py` | 885 |
 | `scripts/ops/compare_eval_summaries.py` | 3647 |
@@ -6441,7 +6444,8 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/ops/control_center_p7_evidence_review.py` | 15745 |
 | `scripts/ops/control_center_p7_safe_write_dry_run_smoke.py` | 17838 |
 | `scripts/ops/core_guard.py` | 3960 |
-| `scripts/ops/ctoa-vps.ps1` | 91475 |
+| `scripts/ops/ctoa-vps.ps1` | 92112 |
+| `scripts/ops/ctoa_env_doctor.py` | 6218 |
 | `scripts/ops/ctoa_full_workspace_audit.py` | 30604 |
 | `scripts/ops/ctoa_helper_smoke_report.py` | 10065 |
 | `scripts/ops/ctoa_helper_ui_mockup_v4.py` | 6281 |
@@ -6451,37 +6455,37 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/ops/ctoa_product_bootstrap.py` | 7977 |
 | `scripts/ops/ctoa_tibia_source_ingest.py` | 2209 |
 | `scripts/ops/ctoa_update_gate.py` | 4419 |
-| `scripts/ops/depack_anchor_windows.py` | 9657 |
-| `scripts/ops/depack_io_assembled_focused.py` | 3261 |
-| `scripts/ops/depack_stream_compare.py` | 2781 |
-| `scripts/ops/depack_stream_focused.py` | 4555 |
-| `scripts/ops/depack_top_candidates.py` | 10353 |
-| `scripts/ops/depack_window_aware_focused.py` | 8003 |
-| `scripts/ops/enc3-analysis-report.txt` | 284 |
+| `scripts/ops/depack_anchor_windows.py` | 9656 |
+| `scripts/ops/depack_io_assembled_focused.py` | 3260 |
+| `scripts/ops/depack_stream_compare.py` | 2780 |
+| `scripts/ops/depack_stream_focused.py` | 4554 |
+| `scripts/ops/depack_top_candidates.py` | 10352 |
+| `scripts/ops/depack_window_aware_focused.py` | 8002 |
 | `scripts/ops/engine_brain_doctor.py` | 19184 |
 | `scripts/ops/engine_brain_index.py` | 112932 |
 | `scripts/ops/engine_brain_pack.py` | 8967 |
 | `scripts/ops/evidence_retention.py` | 2057 |
+| `scripts/ops/git_exec.py` | 2142 |
 | `scripts/ops/gs-api-validator.py` | 6610 |
-| `scripts/ops/install-mythibia-autosync-task.ps1` | 1625 |
-| `scripts/ops/install-mythibia-watchdog-task.ps1` | 1554 |
-| `scripts/ops/install-mythibia-watcher-task.ps1` | 2597 |
-| `scripts/ops/install-phase5-morning-sync-task.ps1` | 1325 |
+| `scripts/ops/install-mythibia-autosync-task.ps1` | 1666 |
+| `scripts/ops/install-mythibia-watchdog-task.ps1` | 1594 |
+| `scripts/ops/install-mythibia-watcher-task.ps1` | 2664 |
+| `scripts/ops/install-phase5-morning-sync-task.ps1` | 1359 |
 | `scripts/ops/kv_attach_first_hit.py` | 2374 |
-| `scripts/ops/kv_first_hit_from_live_session.py` | 17641 |
+| `scripts/ops/kv_first_hit_from_live_session.py` | 17152 |
 | `scripts/ops/kv_raw_init_probe.py` | 643 |
 | `scripts/ops/kv_smoke_diag.py` | 857 |
 | `scripts/ops/kv_smoke_min.py` | 434 |
-| `scripts/ops/lab003_mobile_proxy_smoke.ps1` | 4643 |
-| `scripts/ops/lab003_shift_guard.ps1` | 8772 |
-| `scripts/ops/lab003_shift_smoke_webhook.ps1` | 5215 |
-| `scripts/ops/lab003_validate_bundle.ps1` | 3560 |
-| `scripts/ops/launch_kamil_client_macro_studio.ps1` | 3651 |
-| `scripts/ops/link_check_docs.py` | 2287 |
+| `scripts/ops/lab003_mobile_proxy_smoke.ps1` | 4695 |
+| `scripts/ops/lab003_shift_guard.ps1` | 8887 |
+| `scripts/ops/lab003_shift_smoke_webhook.ps1` | 5320 |
+| `scripts/ops/lab003_validate_bundle.ps1` | 3687 |
+| `scripts/ops/launch_kamil_client_macro_studio.ps1` | 3766 |
+| `scripts/ops/link_check_docs.py` | 1438 |
 | `scripts/ops/night-report.py` | 8009 |
 | `scripts/ops/nightly_stability.py` | 11554 |
-| `scripts/ops/orchestrator-loop-worker.ps1` | 2536 |
-| `scripts/ops/orchestrator-loop.ps1` | 5973 |
+| `scripts/ops/orchestrator-loop-worker.ps1` | 2613 |
+| `scripts/ops/orchestrator-loop.ps1` | 6161 |
 | `scripts/ops/otclient_external_bot_intake.py` | 14940 |
 | `scripts/ops/otclient_helper_module_audit.py` | 32156 |
 | `scripts/ops/otclient_helper_module_contract.py` | 27457 |
@@ -6493,11 +6497,11 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/ops/phase5_nightly_sync.py` | 24770 |
 | `scripts/ops/project_progress_diagram.py` | 6516 |
 | `scripts/ops/queue_enqueue_job.py` | 1142 |
-| `scripts/ops/release_evidence_pack.py` | 32975 |
-| `scripts/ops/remove-mythibia-autosync-task.ps1` | 443 |
-| `scripts/ops/remove-mythibia-watcher-task.ps1` | 796 |
-| `scripts/ops/remove-phase5-morning-sync-task.ps1` | 400 |
-| `scripts/ops/repo_hygiene_audit.py` | 8335 |
+| `scripts/ops/release_evidence_pack.py` | 35872 |
+| `scripts/ops/remove-mythibia-autosync-task.ps1` | 460 |
+| `scripts/ops/remove-mythibia-watcher-task.ps1` | 819 |
+| `scripts/ops/remove-phase5-morning-sync-task.ps1` | 415 |
+| `scripts/ops/repo_hygiene_audit.py` | 8244 |
 | `scripts/ops/repo_hygiene_migration_plan.py` | 7540 |
 | `scripts/ops/rosetta_bundle.py` | 7981 |
 | `scripts/ops/run-ghidra-enc3-analysis.ps1` | 1142 |
@@ -6505,8 +6509,8 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/ops/run-phase5-morning-sync.ps1` | 1246 |
 | `scripts/ops/run-x64dbg-enc3-dynamic-pass.py` | 10370 |
 | `scripts/ops/run_validator_with_preflight.py` | 1451 |
-| `scripts/ops/runtime_path_guard.py` | 2703 |
-| `scripts/ops/runtime_smoke_e2e_8001.py` | 2023 |
+| `scripts/ops/runtime_path_guard.py` | 2780 |
+| `scripts/ops/runtime_smoke_e2e_8001.py` | 1965 |
 | `scripts/ops/smoke_must_pass.py` | 2644 |
 | `scripts/ops/solteria_api_audit.py` | 9873 |
 | `scripts/ops/solteria_helper_goal_audit.py` | 17499 |
@@ -6518,12 +6522,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/ops/sprint030_validate.py` | 5367 |
 | `scripts/ops/sprint031_validate.py` | 5367 |
 | `scripts/ops/sprint032_validate.py` | 5367 |
-| `scripts/ops/sprint033_validate.py` | 5367 |
-| `scripts/ops/sprint034_validate.py` | 5367 |
-| `scripts/ops/sprint035_validate.py` | 5367 |
-| `scripts/ops/sprint036_validate.py` | 5367 |
-| `scripts/ops/sprint037_validate.py` | 5367 |
-| `scripts/ops/sprint038_validate.py
+| `scripts/ops/s
 
 [truncated]
 ```
@@ -6534,7 +6533,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 ```markdown
 # Engine Brain Symbol Map
 
-Generated at: `2026-07-11T04:36:01+00:00`
+Generated at: `2026-07-11T07:10:18+00:00`
 
 This is a lightweight map for navigation, not a full source dump.
 
@@ -6587,81 +6586,82 @@ This is a lightweight map for navigation, not a full source dump.
 - L32: def _env_bool(name, default)
 - L39: def _env_int(name, default)
 - L49: def _is_production_env()
-- L53: def _load_cors_origins()
-- L74: def _backend_kind(url)
-- L108: def _load_jwt_secret()
-- L121: def _api_self_register_enabled()
-- L126: def _api_self_register_code()
-- L130: def _validate_api_security_config()
-- L205: def _safety_telemetry_snapshot()
-- L223: def _sanitize_assistant_content(content)
-- L242: def _friendly_model_error(exc)
-- L279: class Message
-- L284: class ChatRequest
-- L294: class OpenAIChatRequest
-- L304: class RegisterRequest
-- L312: class LoginRequest
-- L317: class InviteRequest
-- L322: class AcceptInviteRequest
-- L326: class RoleUpdateRequest
-- L330: def _estimate_chars(messages)
-- L334: def _is_complex(messages)
-- L339: def _low_quality(content, user_chars)
-- L351: def _utc_now_iso()
-- L355: def _atomic_write_json(path, payload)
-- L390: def _display_path(path_value)
-- L406: def _redact_release_evidence_text(value)
-- L420: def _public_release_evidence_value(value, key)
-- L437: def _public_audit_value(value, key)
-- L454: def _read_release_evidence_payload(path)
-- L470: def _hash_password(password)
-- L474: def _verify_password(password, hashed)
-- L481: def _sanitize_username(username)
-- L490: def _seed_password(env_name)
-- L497: def _seed_accounts()
-- L530: def _default_account_seed_blocked()
-- L534: def _read_auth_store_payload(path)
-- L553: def _load_auth_store()
-- L584: def _save_auth_store(store)
-- L588: def _append_activity(store)
-- L611: def _b64url_encode(data)
-- L615: def _b64url_decode(data)
-- L620: def _jwt_encode(payload)
-- L631: def _jwt_decode(token)
-- L656: def _issue_token(user)
-- L667: def _extract_bearer(authorization)
-- L680: def _first_forwarded_ip(value)
-- L690: def _client_ip_from_request(request)
-- L700: def _rate_limit_group(path)
-- L710: def _rate_limit_for_group(group)
-- L718: def _consume_rate_limit(ip, group, now_ts)
-- L763: def _audit_actor_from_request(request)
-- L777: def _append_audit_http(request, status, actor, meta)
-- L803: async def security_middleware(request, call_next)
-- L845: def _current_user(authorization)
-- L868: def _require_roles(user, allowed)
-- L873: def _select_models(req)
-- L946: async def _call_model(model_name, backend_url, backend_key, messages, temperature, max_tokens)
-- L980: async def _execute_chat(req)
-- L1068: def _safe_chat_route_info(route_info)
-- L1084: def _require_chat_debug_route_user(user)
-- L1094: def health()
-- L1099: def status()
-- L1120: def register(req, authorization)
-- L1182: def login(req)
-- L1206: def me(authorization)
-- L1212: def create_invite(req, authorization)
-- L1249: def accept_invite(req, authorization)
-- L1297: def community_members(authorization)
-- L1317: def set_member_role(username, req, authorization)
-- L1358: def community_feed(authorization)
-- L1367: def community_invites(authorization)
-- L1378: def release_evidence()
-- L1459: async def chat(req, authorization)
-- L1478: async def chat_completions(req, authorization)
-- L1520: async def safety_metrics(authorization)
-- L1534: async def safety_telemetry(authorization)
-- L1543: async def safety_status()
+- L57: def _is_weak_secret(secret)
+- L85: def _backend_kind(url)
+- L134: def _api_self_register_enabled()
+- L138: def _api_self_register_code()
+- L142: def _validate_api_security_config()
+- L217: def _safety_telemetry_snapshot()
+- L235: def _sanitize_assistant_content(content)
+- L254: def _friendly_model_error(exc)
+- L291: class Message
+- L296: class ChatRequest
+- L306: class OpenAIChatRequest
+- L316: class RegisterRequest
+- L324: class LoginRequest
+- L329: class BootstrapRequest
+- L335: class InviteRequest
+- L340: class AcceptInviteRequest
+- L344: class RoleUpdateRequest
+- L348: def _estimate_chars(messages)
+- L352: def _is_complex(messages)
+- L357: def _low_quality(content, user_chars)
+- L369: def _utc_now_iso()
+- L373: def _atomic_write_json(path, payload)
+- L408: def _display_path(path_value)
+- L424: def _redact_release_evidence_text(value)
+- L438: def _public_release_evidence_value(value, key)
+- L455: def _public_audit_value(value, key)
+- L472: def _read_release_evidence_payload(path)
+- L488: def _hash_password(password)
+- L492: def _verify_password(password, hashed)
+- L499: def _sanitize_username(username)
+- L508: def _seed_password(env_name)
+- L515: def _seed_accounts()
+- L548: def _default_account_seed_blocked()
+- L552: def _read_auth_store_payload(path)
+- L571: def _load_auth_store()
+- L613: def _save_auth_store(store)
+- L617: def _append_activity(store)
+- L640: def _b64url_encode(data)
+- L644: def _b64url_decode(data)
+- L649: def _jwt_encode(payload)
+- L660: def _jwt_decode(token)
+- L685: def _issue_token(user)
+- L696: def _extract_bearer(authorization)
+- L709: def _first_forwarded_ip(value)
+- L719: def _client_ip_from_request(request)
+- L729: def _rate_limit_group(path)
+- L739: def _rate_limit_for_group(group)
+- L747: def _consume_rate_limit(ip, group, now_ts)
+- L792: def _audit_actor_from_request(request)
+- L806: def _append_audit_http(request, status, actor, meta)
+- L832: async def security_middleware(request, call_next)
+- L874: def _current_user(authorization)
+- L897: def _require_roles(user, allowed)
+- L902: def _select_models(req)
+- L975: async def _call_model(model_name, backend_url, backend_key, messages, temperature, max_tokens)
+- L1009: async def _execute_chat(req)
+- L1097: def _safe_chat_route_info(route_info)
+- L1113: def _require_chat_debug_route_user(user)
+- L1123: def health()
+- L1128: def status()
+- L1149: def bootstrap(req)
+- L1197: def register(req, authorization)
+- L1263: def login(req)
+- L1287: def me(authorization)
+- L1293: def create_invite(req, authorization)
+- L1330: def accept_invite(req, authorization)
+- L1378: def community_members(authorization)
+- L1398: def set_member_role(username, req, authorization)
+- L1439: def community_feed(authorization)
+- L1448: def community_invites(authorization)
+- L1459: def release_evidence()
+- L1540: async def chat(req, authorization)
+- L1559: async def chat_completions(req, authorization)
+- L1601: async def safety_metrics(authorization)
+- L1615: async def safety_telemetry(authorization)
+- L1624: async def safety_status()
 
 ## `api/startup_guard.py`
 
@@ -6790,10 +6790,11 @@ This is a lightweight map for navigation, not a full source dump.
 
 ## `bot/main.py`
 
-- L42: def _manual_action(state)
-- L50: def run()
-- L64: def _shutdown(sig, frame)
-- L74: def _print_stats()
+- L43: def _manual_action(state)
+- L51: def _record_loop_telemetry(tick, elapsed_ms, stage, ok, details)
+- L62: def run()
+- L76: def _shutdown(sig, frame)
+- L86: def _print_stats()
 
 ## `bot/overlay/macro_overlay.py`
 
@@ -7084,86 +7085,86 @@ This is a lightweight map for navigation, not a full source dump.
 ## `mobile_console/app.py`
 
 - L48: def generate_latest()
-- L92: def _is_production_env()
-- L96: def _is_windows_host()
-- L100: def _command_exists(name)
-- L104: def _read_orchestrator_loop_pid()
-- L114: def _windows_orchestrator_state()
-- L128: def _service_is_active(unit)
-- L142: def _disk_probe()
-- L163: def _lab_tasks_probe()
-- L181: def _require_http_url(url)
-- L188: def _require_local_runtime_api_base_url(url, label)
-- L210: def _require_local_runtime_proxy_path(path, label)
-- L235: def _private_intel_targets_allowed()
-- L244: def _is_private_or_local_intel_host(hostname)
-- L261: def _safe_proxy_error(exc)
-- L265: def _intel_api_health_probe()
-- L298: def _intel_api_proxy(path, timeout)
-- L355: def _ctoa_api_proxy(path, timeout)
-- L404: def _load_json_file(path)
-- L421: def _read_generated_manifest_json(path)
-- L438: def _atomic_local_state_temp_path(path)
-- L442: def _remove_local_state_temp(path)
-- L449: def _atomic_write_local_json(path, payload)
-- L463: def _atomic_write_text(path, text)
-- L476: def _atomic_write_bytes(path, data)
-- L489: def _read_local_json_bounded(path, max_bytes)
-- L503: def _read_text_bounded(path, max_bytes)
-- L515: def _read_tail_text_bounded(path, lines, max_bytes)
-- L531: def _read_json_bounded(path, max_bytes)
-- L546: def _normalize_package_tier(value)
-- L553: def _current_package_tier()
-- L571: def _mobile_console_enabled()
-- L598: def _prom_get_or_create_counter(name, documentation, labels)
-- L611: def _prom_get_or_create_histogram(name, documentation, labels)
-- L651: async def enforce_mobile_console_capability(request, call_next)
-- L667: async def collect_http_metrics(request, call_next)
-- L688: class CommandRequest
-- L694: class ServerRegisterRequest
-- L698: class IntelMissionRequest
-- L706: class GuardedActionRequest
-- L711: class QueueJobRequest
-- L714: class AuthLoginRequest
-- L719: class AdminSettingsPayload
-- L725: class IdeaCreatePayload
-- L729: class LiveDashboardProfilePayload
-- L734: class RegisterAccountPayload
-- L740: class SelfRegisterPayload
-- L746: class ChangePasswordPayload
-- L750: class ChangeRolePayload
-- L772: def _default_admin_settings()
-- L780: def _normalize_admin_settings(payload)
-- L790: def _read_admin_settings()
-- L800: def _write_admin_settings(payload)
-- L807: def _normalize_idea_item(payload, fallback_author)
-- L829: def _read_idea_parking()
-- L848: def _write_idea_parking(ideas)
-- L873: def _mobile_token()
-- L878: def _full_access()
-- L882: def _self_register_enabled()
-- L892: def _self_register_code()
-- L896: def _safe_command_specs()
-- L941: def _allowed_commands()
-- L945: def _normalize_user(username)
-- L949: def _admin_credentials()
-- L963: def _validate_security_config()
-- L993: def _extract_bearer(authorization)
-- L1002: def _create_session(username, role)
-- L1016: def _get_session(token)
-- L1029: def _delete_session(token)
-- L1036: def _delete_sessions_for_user(username)
-- L1048: def _try_auth_context(x_ctoa_token, authorization, x_ctoa_session, ctoa_session)
-- L1082: def _token_valid(x_ctoa_token, authorization, x_ctoa_session, ctoa_session)
-- L1096: def _csrf_required(request, ctx)
-- L1104: def _verify_csrf(request, ctx, x_csrf_token)
-- L1113: def require_authenticated(request, x_ctoa_token, authorization, x_ctoa_session, x_csrf_token, ctoa_session)
-- L1133: def require_operator(ctx)
-- L1140: def require_owner(ctx)
-- L1147: def _slice_command_output(value)
-- L1151: def _redact_audit_text(value, max_length)
-- L1175: def _redact_command_output(value)
-- ... 91 more symbols omitted
+- L98: def _is_production_env()
+- L106: def _is_windows_host()
+- L108: def _command_exists(name)
+- L112: def _read_orchestrator_loop_pid()
+- L122: def _windows_orchestrator_state()
+- L136: def _service_is_active(unit)
+- L150: def _disk_probe()
+- L171: def _lab_tasks_probe()
+- L189: def _require_http_url(url)
+- L196: def _require_local_runtime_api_base_url(url, label)
+- L218: def _require_local_runtime_proxy_path(path, label)
+- L243: def _private_intel_targets_allowed()
+- L252: def _is_private_or_local_intel_host(hostname)
+- L269: def _safe_proxy_error(exc)
+- L273: def _intel_api_health_probe()
+- L306: def _intel_api_proxy(path, timeout)
+- L363: def _ctoa_api_proxy(path, timeout)
+- L412: def _load_json_file(path)
+- L429: def _is_production_env()
+- L433: def _read_generated_manifest_json(path)
+- L450: def _atomic_local_state_temp_path(path)
+- L454: def _remove_local_state_temp(path)
+- L461: def _atomic_write_local_json(path, payload)
+- L475: def _atomic_write_text(path, text)
+- L488: def _atomic_write_bytes(path, data)
+- L501: def _read_local_json_bounded(path, max_bytes)
+- L515: def _read_text_bounded(path, max_bytes)
+- L527: def _read_tail_text_bounded(path, lines, max_bytes)
+- L543: def _read_json_bounded(path, max_bytes)
+- L558: def _normalize_package_tier(value)
+- L565: def _is_windows_host()
+- L573: def _prom_get_or_create_counter(name, documentation, labels)
+- L586: def _prom_get_or_create_histogram(name, documentation, labels)
+- L626: async def enforce_mobile_console_capability(request, call_next)
+- L642: async def collect_http_metrics(request, call_next)
+- L663: class CommandRequest
+- L669: class ServerRegisterRequest
+- L673: class IntelMissionRequest
+- L681: class GuardedActionRequest
+- L686: class QueueJobRequest
+- L689: class AuthLoginRequest
+- L694: class AdminSettingsPayload
+- L700: class IdeaCreatePayload
+- L704: class LiveDashboardProfilePayload
+- L709: class RegisterAccountPayload
+- L715: class SelfRegisterPayload
+- L721: class ChangePasswordPayload
+- L725: class ChangeRolePayload
+- L747: def _default_admin_settings()
+- L755: def _normalize_admin_settings(payload)
+- L765: def _read_admin_settings()
+- L775: def _write_admin_settings(payload)
+- L782: def _normalize_idea_item(payload, fallback_author)
+- L804: def _read_idea_parking()
+- L823: def _write_idea_parking(ideas)
+- L848: def _mobile_token()
+- L853: def _full_access()
+- L857: def _self_register_enabled()
+- L866: def _self_register_code()
+- L870: def _session_cookie_secure()
+- L879: def _safe_command_specs()
+- L924: def _allowed_commands()
+- L928: def _normalize_user(username)
+- L932: def _admin_credentials()
+- L946: def _validate_security_config()
+- L976: def _extract_bearer(authorization)
+- L985: def _create_session(username, role)
+- L999: def _get_session(token)
+- L1012: def _delete_session(token)
+- L1019: def _delete_sessions_for_user(username)
+- L1031: def _try_auth_context(x_ctoa_token, authorization, x_ctoa_session, ctoa_session)
+- L1065: def _token_valid(x_ctoa_token, authorization, x_ctoa_session, ctoa_session)
+- L1079: def _csrf_required(request, ctx)
+- L1087: def _verify_csrf(request, ctx, x_csrf_token)
+- L1096: def require_authenticated(request, x_ctoa_token, authorization, x_ctoa_session, x_csrf_token, ctoa_session)
+- L1116: def require_operator(ctx)
+- L1123: def require_owner(ctx)
+- L1130: def _slice_command_output(value)
+- L1134: def _redact_audit_text(value, max_length)
+- ... 92 more symbols omitted
 
 ## `mobile_console/services/admin_settings_service.py`
 
@@ -7492,23 +7493,24 @@ This is a lightweight map for navigation, not a full source dump.
 ## `runner/hybrid_bot/bot_runner.py`
 
 - L36: class BotConfig
-- L48: class ActionExecutor
-- L51: def __init__(self, send_command)
-- L60: def execute(self, action, parameters)
-- L104: class HybridBotRunner
-- L122: def __init__(self, config, screenshot_provider, command_executor)
-- L170: async def run(self)
-- L187: async def _tick(self)
-- L213: def _capture_frame(self)
-- L221: def _collect_perception(self, frame)
-- L232: def _apply_state_updates(self, position, health, creatures)
-- L255: def _decide_and_execute(self)
-- L265: def _emit_tick_telemetry(self, decision)
-- L271: def stop(self)
-- L279: def set_waypoints(self, waypoints)
-- L285: def start_hunting_location(self, name)
-- L292: def _print_final_report(self)
-- L307: def get_status(self)
+- L49: class ActionExecutor
+- L52: def __init__(self, send_command)
+- L61: def execute(self, action, parameters)
+- L105: class HybridBotRunner
+- L123: def __init__(self, config, screenshot_provider, command_executor)
+- L144: def command_callback(cmd)
+- L172: async def run(self)
+- L189: async def _tick(self)
+- L266: def _capture_frame(self)
+- L276: def _collect_perception(self, frame)
+- L287: def _apply_state_updates(self, position, health, creatures)
+- L312: def _decide_and_execute(self)
+- L319: def _emit_tick_telemetry(self, decision)
+- L327: def stop(self)
+- L335: def set_waypoints(self, waypoints)
+- L341: def start_hunting_location(self, name)
+- L348: def _print_final_report(self)
+- L363: def get_status(self)
 
 ## `runner/hybrid_bot/cli.py`
 
@@ -7610,14 +7612,16 @@ This is a lightweight map for navigation, not a full source dump.
 - L77: def __post_init__(self)
 - L82: class MetricsCollector
 - L92: def __init__(self, output_dir, snapshot_interval_seconds, disable_file_output)
-- L127: def record_snapshot(self, location, duration_seconds, xp_gained, monsters_killed, loot_value_gold, supplies_cost_gold, player_health_percent, player_level, distance_traveled_sqm, notes)
-- L186: def _append_snapshot_to_file(self, snapshot)
-- L195: def load_snapshots_from_file(self, filepath)
-- L218: def get_session_summary(self)
-- L253: def get_location_stats(self, location)
-- L274: def print_session_report(self)
-- L310: def export_metrics_csv(self, output_file)
-- L337: def compare_with_manual_metrics(bot_metrics, manual_xp_per_hour, manual_balance_per_hour)
+- L136: def record_snapshot(self, location, duration_seconds, xp_gained, monsters_killed, loot_value_gold, supplies_cost_gold, player_health_percent, player_level, distance_traveled_sqm, notes)
+- L195: def _append_snapshot_to_file(self, snapshot)
+- L204: def _append_event_to_file(self, event)
+- L214: def load_snapshots_from_file(self, filepath)
+- L234: def record_event(self, name, duration_ms, ok, error, details)
+- L256: def get_session_summary(self)
+- L293: def get_location_stats(self, location)
+- L314: def print_session_report(self)
+- L350: def export_metrics_csv(self, output_file)
+- L377: def compare_with_manual_metrics(bot_metrics, manual_xp_per_hour, manual_balance_per_hour)
 
 ## `runner/hybrid_bot/pathfinding.py`
 
@@ -7835,27 +7839,28 @@ This is a lightweight map for navigation, not a full source dump.
 
 ## `runner/runner.py`
 
-- L63: def now_iso()
-- L67: def _atomic_temp_path(path)
-- L71: def _remove_temp_path(path)
-- L78: def load_yaml(path)
-- L86: def save_yaml(path, payload)
-- L99: def save_json(path, payload)
-- L114: def load_backlog()
-- L120: def init_state(backlog)
-- L152: def load_state(backlog)
-- L192: def status_rank(status)
-- L199: def priority_rank(priority)
-- L204: def transition_task(task, new_status, reason)
-- L224: def tick(backlog, state, invoke_agents)
-- L270: def approve_task(state, task_id)
-- L285: def execute_task_agent(task, backlog)
-- L313: def estimate_next_approval_eta_hours(tasks)
-- L332: def build_execution_summary(backlog, state)
-- L382: def build_report(backlog, state)
-- L492: def github_api(method, url, token, payload)
-- L514: def upsert_live_issue(markdown)
-- L552: def main()
+- L33: def _default_ci_artifacts_dir(root)
+- L71: def now_iso()
+- L75: def _atomic_temp_path(path)
+- L79: def _remove_temp_path(path)
+- L86: def load_yaml(path)
+- L94: def save_yaml(path, payload)
+- L107: def save_json(path, payload)
+- L123: def load_backlog()
+- L129: def init_state(backlog)
+- L161: def load_state(backlog)
+- L201: def status_rank(status)
+- L208: def priority_rank(priority)
+- L213: def transition_task(task, new_status, reason)
+- L233: def tick(backlog, state, invoke_agents)
+- L279: def approve_task(state, task_id)
+- L294: def execute_task_agent(task, backlog)
+- L322: def estimate_next_approval_eta_hours(tasks)
+- L341: def build_execution_summary(backlog, state)
+- L391: def build_report(backlog, state)
+- L501: def github_api(method, url, token, payload)
+- L523: def upsert_live_issue(markdown)
+- L561: def main()
 
 ## `runner/status_sync.py`
 
@@ -7912,15 +7917,7 @@ This is a lightweight map for navigation, not a full source dump.
 - L611: def source_definition(source_kind)
 - L618: def collected_from_file(source_kind, path)
 - L634: def _validate_source_url(url)
-- L642: def _blocked_reason(status_code, content)
-- L650: def _timestamp_slug(value)
-- L655: def _safe_archive_path(root, relative)
-- L664: def _temporary_path(path)
-- L668: def _atomic_write_bytes(path, content)
-- L681: def _atomic_write_json(path, payload)
-- L686: def _next_action(status)
-
-## `runner/weekly_report.py`
+- L642: def _blocked_reason(status_code,
 
 [truncated]
 ```
