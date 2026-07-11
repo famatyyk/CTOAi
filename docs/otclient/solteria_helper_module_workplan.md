@@ -3,7 +3,7 @@
 ## Current Decision
 
 - Status: `ready`
-- Helper lines: `4349`
+- Helper lines: `4350`
 - Helper functions: `159`
 - Helper line budget: `4500`
 - Helper function budget: `130`
