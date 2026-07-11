@@ -95,6 +95,18 @@ export default function ControlCenterEvidencePanel() {
     : evidence?.actionAuditDrilldown.latestAt
       ? `Latest ${formatTimestamp(evidence.actionAuditDrilldown.latestAt)}`
       : "No audit records found."
+  const helperBackgroundStatus = evidence?.otclientHelper.backgroundStatus
+  const helperBackgroundDetail = !helperBackgroundStatus
+    ? "Waiting for passive background evidence."
+    : !helperBackgroundStatus.contractValid
+      ? `Contract blocked: ${helperBackgroundStatus.contractErrors.slice(0, 2).join(", ") || "invalid artifact"}.`
+      : !helperBackgroundStatus.fresh
+        ? `Snapshot stale after ${helperBackgroundStatus.maxAgeSeconds}s; collect a new passive sample.`
+        : helperBackgroundStatus.status === "ready"
+          ? `${helperBackgroundStatus.integrityStatus} · ${helperBackgroundStatus.runtimeState} · advisory only; promotion and dispatch disabled.`
+          : helperBackgroundStatus.blockers[0]
+            ? `Blocked: ${helperBackgroundStatus.blockers[0]}.`
+            : `Passive evidence: ${helperBackgroundStatus.status}.`
 
   return (
     <article className="rounded-3xl border border-white/10 bg-[#151b33] p-6">
@@ -316,7 +328,7 @@ export default function ControlCenterEvidencePanel() {
           </span>
         </div>
 
-        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-6">
           <MetricCard
             label="Helper version"
             value={evidence?.otclientHelper.helperVersion || "loading"}
@@ -356,6 +368,12 @@ export default function ControlCenterEvidencePanel() {
             value={evidence?.otclientHelper.smokePreflightStatus || "loading"}
             detail={`Sandbox status: ${evidence?.otclientHelper.smokeStatus || "missing"}`}
             tone={statusTone[evidence?.otclientHelper.smokePreflightStatus || "missing"] || statusTone.missing}
+          />
+          <MetricCard
+            label="BackgroundNoScreen"
+            value={helperBackgroundStatus?.status || "loading"}
+            detail={helperBackgroundDetail}
+            tone={statusTone[helperBackgroundStatus?.status || "missing"] || statusTone.missing}
           />
         </div>
 
@@ -926,6 +944,7 @@ export default function ControlCenterEvidencePanel() {
             <EvidenceLink label="Helper release gate" path={evidence?.otclientHelper.sourcePaths.releaseGate || "runtime/solteria_helper_dev/release_gate.json"} />
             <EvidenceLink label="Helper manifest" path={evidence?.otclientHelper.sourcePaths.manifest || "runtime/solteria_helper_dev/manifest.json"} />
             <EvidenceLink label="Helper live promotion" path={evidence?.otclientHelper.sourcePaths.livePromotion || "runtime/solteria_helper_dev/live_promotion.json"} />
+            <EvidenceLink label="Helper BackgroundNoScreen" path={evidence?.otclientHelper.sourcePaths.backgroundStatus || "runtime/solteria_helper_dev/background_status.json"} />
             <EvidenceLink label="Engine Brain manifest" path={evidence?.engineBrain.sourcePaths.manifest || "AI/generated/manifest.json"} />
             <EvidenceLink label="Engine Brain guardrail" path={evidence?.engineBrain.sourcePaths.secretGuardrail || "AI/generated/SECRET_GUARDRAIL.json"} />
             <EvidenceLink label="P6 plugin handoff smoke" path={evidence?.engineBrain.sourcePaths.p6PluginHandoffSmoke || "runtime/control-center/p6-plugin-handoff-smoke.json"} />

@@ -25,6 +25,7 @@ Advanced Tibia automation modules designed specifically for **OTClient** using n
 | **ctoa_helper_equipment_observer.lua** | Passive equipment-slot observations | `_G.CTOA_HELPER_EQUIPMENT_OBSERVER`, `ctoa.equipment-observation.v1`, `equipment.observed` |
 | **ctoa_helper_otclient_observation_adapter.lua** | Guarded read-only OTClient snapshot provider | `_G.CTOA_HELPER_OTCLIENT_OBSERVATION_ADAPTER`, target/spectator/PZ/cooldown/latency reads |
 | **ctoa_helper_diagnostics.lua** | Passive log and diagnostics export helpers | `_G.CTOA_HELPER_DIAGNOSTICS`, `ctoa_local.log`, `ctoa_diag_export.lua` |
+| **ctoa_helper_client_reporter.lua** | Passive BackgroundNoScreen heartbeat | `_G.CTOA_HELPER_CLIENT_REPORTER`, deterministic work-dir JSON, zero runtime actions |
 | **ctoa_helper_hotkeys.lua** | Passive hotkey parser, formatter, and binding-decision helpers | `_G.CTOA_HELPER_HOTKEYS`, normalize/display/bindingDecision helpers |
 | **ctoa_helper_modal.lua** | Passive confirmation lifecycle and decision-text helpers | `_G.CTOA_HELPER_MODAL`, request/status/decisionText helpers |
 | **ctoa_helper_route.lua** | Passive cavebot route engine helpers | `_G.CTOA_HELPER_ROUTE`, waypoint labels, mutations, stats, contract |
@@ -260,6 +261,10 @@ Current helper logic includes:
   `FLAG`, while prototype lanes show `OBSERVE` or `GATED` from the same
   registry without enabling new runtime actions;
 - safe boot guard: runtime, healing, targeting, haste, exeta, runes, timer, and cavebot movement are disabled after profile load unless the operator arms them;
+- BackgroundNoScreen reporter: writes only the bounded capability heartbeat at
+  `mods/ctoa_otclient/ctoa_client_capabilities.json` under the client work
+  directory. The external `ctoa.ps1 otbg` reader never sends input, focuses or
+  captures a window, starts/stops the client, or authorizes runtime/promotion;
 - recovery engine: HP spell rotation, HP actionbar potion, MP actionbar potion, shared recovery gap, and real local-player vitals before percent fallback;
 - combat engine: monster-only targeting, ignored NPC names, NPC icon blocking, priority target scoring, chase mode, PZ guard, action locks, exeta/rune/rotation planning, and debug decision text;
 - cavebot route loop: waypoint editor, guarded `LocalPlayer:autoWalk`, PZ guard, path probe, retry budget, and automatic movement disable on repeated failure;

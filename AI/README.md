@@ -36,6 +36,8 @@ needed for a task instead of relying on one long prompt.
 - `PACKET_INDEX.md`: protocol/packet status and known gaps.
 - `CLASS_INDEX.md`: important Python/Lua classes and tables.
 - `FEATURE_ROADMAP.md`: next implementation lanes.
+- `P8_P16_EXECUTION_ROADMAP.md`: background-first post-P7 phase sequence and
+  evidence gates through design-only Combat/CaveBot work.
 - `KNOWN_BUGS.md`: known risks and suspected defects.
 - `TECH_DEBT.md`: cleanup backlog.
 - `SPECIALIZED_PROMPTS.md`: project-aware task personas.

@@ -198,6 +198,7 @@ Usage:
     .\\ctoa.ps1 otmockup
     .\\ctoa.ps1 otdeploy approve-live
     .\\ctoa.ps1 otest
+    .\\ctoa.ps1 otbg
     .\\ctoa.ps1 brain <refresh|doctor|pack>
 
 Short aliases:
@@ -237,6 +238,7 @@ Examples:
   .\\ctoa.ps1 otmockup
   .\\ctoa.ps1 otdeploy approve-live
   .\\ctoa.ps1 otest
+  .\\ctoa.ps1 otbg
   .\\ctoa.ps1 brain refresh
   .\\ctoa.ps1 brain doctor
   .\\ctoa.ps1 brain pack
@@ -776,6 +778,22 @@ function Invoke-OtTestLoop {
     Invoke-OtHelperPreview
 }
 
+function Invoke-OtBackgroundStatus {
+    $powershell = (Get-Command powershell -ErrorAction Stop).Source
+    $wrapper = Join-Path $Root "scripts/windows/solteria_helper_test_env.ps1"
+    Invoke-FromRoot -FilePath $powershell -Arguments @(
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        $wrapper,
+        "-Action",
+        "BackgroundStatus",
+        "-OperatorMode",
+        "BackgroundNoScreen"
+    )
+}
+
 function Invoke-EngineBrain {
     param(
         [string]$Subcommand,
@@ -927,6 +945,7 @@ switch ($Command.ToLowerInvariant()) {
     "otmockup" { Invoke-OtHelperMockup; break }
     "otdeploy" { Invoke-OtHelperDeploy -Approval $Arg1; break }
     "otest" { Invoke-OtTestLoop; break }
+    "otbg" { Invoke-OtBackgroundStatus; break }
     "brain" { Invoke-EngineBrain -Subcommand $Arg1 -Profile $Arg2; break }
 
     default {

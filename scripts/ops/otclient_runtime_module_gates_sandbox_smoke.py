@@ -13,6 +13,21 @@ import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
+if __package__:
+    from .otclient_headless_evidence import (
+        bounded_tail_text,
+        current_session,
+        latest_api_probe,
+        latest_runtime_state,
+    )
+else:
+    from otclient_headless_evidence import (
+        bounded_tail_text,
+        current_session,
+        latest_api_probe,
+        latest_runtime_state,
+    )
+
 
 ROOT = Path(__file__).resolve().parents[2]
 LUA_DIR = ROOT / "scripts" / "lua" / "otclient"
@@ -53,26 +68,6 @@ def latest_smoke_all() -> Path | None:
     return max(reports, key=lambda path: path.stat().st_mtime) if reports else None
 
 
-def current_session(log_text: str) -> str:
-    marker = "Initialized successfully v2.2.1"
-    index = log_text.rfind(marker)
-    return log_text[index:] if index >= 0 else ""
-
-
-def latest_api_probe(session_text: str) -> str:
-    lines = [
-        line
-        for line in session_text.splitlines()
-        if re.search(r"\[CTOA-OTC-HELPER\] API probe \((startup|manual)\):", line)
-    ]
-    return lines[-1] if lines else ""
-
-
-def latest_runtime_state(session_text: str) -> str:
-    markers = re.findall(r"\[CTOA-OTC-HELPER\] Runtime (armed|disarmed)(?::|\b)", session_text)
-    return markers[-1] if markers else "unknown"
-
-
 def run_lua_fail_closed(
     online: bool, alive: bool, client_ready: bool, outside_pz: bool
 ) -> tuple[dict[str, bool], str]:
@@ -84,7 +79,7 @@ def run_lua_fail_closed(
             "actual_environment_gate_behavior": False,
             "high_risk_and_out_of_scope_deferred": False,
         }, "lua_interpreter_missing"
-    probe = r'''
+    probe = r"""
 local engine = dofile(arg[1])
 local conditions = dofile(arg[2])
 local equipment = dofile(arg[3])
@@ -197,7 +192,7 @@ local amulet = policy.decision({next_action = "plan_amulet_swap", runtime_action
 assert(poison.status == "blocked" and has(poison.reasons, "action_not_approved_v1"))
 assert(amulet.status == "blocked" and has(amulet.reasons, "action_not_approved_v1"))
 print("high_risk_and_out_of_scope_deferred=passed")
-'''
+"""
     with tempfile.TemporaryDirectory(prefix="ctoa-runtime-gates-") as temp_dir:
         probe_path = Path(temp_dir) / "probe.lua"
         probe_path.write_text(probe, encoding="utf-8")
@@ -237,16 +232,22 @@ print("high_risk_and_out_of_scope_deferred=passed")
 def main() -> int:
     manifest_path = DEV / "manifest.json"
     manifest = load_json(manifest_path)
+    helper_version = str(manifest.get("helper_version") or "unknown")
+    initialized_marker = f"Initialized successfully {helper_version}"
     manifest_mtime = manifest_path.stat().st_mtime if manifest_path.is_file() else 0
-    manifest_files = {item.get("path"): item for item in manifest.get("files", []) if isinstance(item, dict)}
+    manifest_files = {
+        item.get("path"): item
+        for item in manifest.get("files", [])
+        if isinstance(item, dict)
+    }
     module_attach_path = DEV / "module_attach_smoke.json"
     module_attach = load_json(module_attach_path)
     smoke_all_path = latest_smoke_all()
     smoke_all = load_json(smoke_all_path) if smoke_all_path else {}
     log_path = SANDBOX / "ctoa_local.log"
     boot_path = SANDBOX / "ctoa_boot.log"
-    log_text = log_path.read_text(encoding="utf-8", errors="replace") if log_path.is_file() else ""
-    boot_text = boot_path.read_text(encoding="utf-8", errors="replace") if boot_path.is_file() else ""
+    log_text = bounded_tail_text(log_path)
+    boot_text = bounded_tail_text(boot_path)
 
     current_session_text = current_session(log_text)
     api_line = latest_api_probe(current_session_text)
@@ -260,17 +261,24 @@ def main() -> int:
     runtime_state = latest_runtime_state(current_session_text)
     checks: dict[str, bool] = {
         "manifest_present": bool(manifest.get("files")),
-        "sandbox_workdir_log": log_path.is_file() and "Initialized successfully v2.2.1" in log_text,
+        "sandbox_workdir_log": log_path.is_file() and initialized_marker in log_text,
         "sandbox_online": online and client_ready and alive,
         "runtime_disarmed": runtime_state == "disarmed",
         "module_attach_sequence": module_attach.get("status") == "passed"
-        and module_attach.get("required_sequence") == ["conditions", "equipment", "heal_friend"],
-        "module_attach_current": module_attach_path.is_file() and module_attach_path.stat().st_mtime >= manifest_mtime,
-        "smoke_attach_all_16": smoke_all.get("covered_count") == smoke_all.get("expected_count") == 16
+        and module_attach.get("required_sequence")
+        == ["conditions", "equipment", "heal_friend"],
+        "module_attach_current": module_attach_path.is_file()
+        and module_attach_path.stat().st_mtime >= manifest_mtime,
+        "smoke_attach_all_16": smoke_all.get("covered_count")
+        == smoke_all.get("expected_count")
+        == 16
         and not smoke_all.get("missing"),
-        "smoke_attach_all_current": bool(smoke_all_path and smoke_all_path.stat().st_mtime >= manifest_mtime),
+        "smoke_attach_all_current": bool(
+            smoke_all_path and smoke_all_path.stat().st_mtime >= manifest_mtime
+        ),
         "gate_modules_loaded": all(
-            f"Loaded: ctoa_helper_{lane}_runtime_gate" in boot_text for lane in GATE_FILES
+            f"Loaded: ctoa_helper_{lane}_runtime_gate" in boot_text
+            for lane in GATE_FILES
         ),
     }
 
@@ -285,10 +293,13 @@ def main() -> int:
         manifest_key = f"mods/ctoa_otclient/{GATE_FILES[lane]}"
         checks[f"{lane}_source_manifest_parity"] = (
             source_path.is_file()
-            and manifest_files.get(manifest_key, {}).get("sha256") == sha256(source_path)
+            and manifest_files.get(manifest_key, {}).get("sha256")
+            == sha256(source_path)
         )
 
-    lua_checks, lua_detail = run_lua_fail_closed(online, alive, client_ready, outside_pz)
+    lua_checks, lua_detail = run_lua_fail_closed(
+        online, alive, client_ready, outside_pz
+    )
     checks.update(lua_checks)
     passed_count = sum(checks.values())
     status = "passed" if passed_count == len(checks) else "failed"
@@ -337,7 +348,9 @@ def main() -> int:
     temp.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
     temp.replace(OUTPUT)
     print(f"[runtime-module-gates-sandbox-smoke] JSON: {OUTPUT}")
-    print(f"[runtime-module-gates-sandbox-smoke] Status: {status} ({passed_count}/{len(checks)})")
+    print(
+        f"[runtime-module-gates-sandbox-smoke] Status: {status} ({passed_count}/{len(checks)})"
+    )
     return 0 if status == "passed" else 1
 
 

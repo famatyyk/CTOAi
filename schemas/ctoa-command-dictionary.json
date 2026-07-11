@@ -118,6 +118,11 @@
       "description": "Run official ValidateDev and open the local Helper preview"
     },
     {
+      "command": "otbg",
+      "aliases": [],
+      "description": "Collect passive BackgroundNoScreen Helper evidence without client interaction"
+    },
+    {
       "command": "brain",
       "aliases": [],
       "description": "Engine Brain helpers: refresh|doctor|pack [all|helper|control-center|infra|security]"

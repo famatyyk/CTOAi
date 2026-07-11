@@ -169,6 +169,9 @@ function Reporter.detect(context)
         profile_schema = PROFILE_SCHEMA,
         safe_fallback = not protocolReady,
         runtime_actions = false,
+        runtime_session_armed = data.runtime_session_armed == true,
+        runtime_state = data.runtime_session_armed == true and "armed" or "disarmed",
+        runtime_enabled = data.runtime_enabled == true,
         runtime_core = runtimeCoreSnapshot(data.runtime_core),
     }
 end
@@ -185,20 +188,47 @@ function Reporter.snapshot(context)
     return snapshot
 end
 
+local function resourceDir(resources, methodName)
+    if not resources or type(resources[methodName]) ~= "function" then
+        return ""
+    end
+    local ok, value = pcall(function()
+        return resources[methodName]()
+    end)
+    if not ok or type(value) ~= "string" or value == "" then
+        return ""
+    end
+    local last = string.sub(value, -1)
+    if last ~= "/" and last ~= "\\" then
+        return value .. "/"
+    end
+    return value
+end
+
 function Reporter.resolvePath(uiPath, resources)
+    local workDir = resourceDir(resources, "getWorkDir")
     if type(uiPath) == "string" and uiPath ~= "" then
         local resolved = string.gsub(uiPath, "ctoa_ui_prefs%.lua$", "ctoa_client_capabilities.json")
         if resolved ~= uiPath then
+            if workDir ~= "" and string.sub(resolved, 1, 9) == "user_dir/" then
+                return workDir .. "mods/ctoa_otclient/ctoa_client_capabilities.json"
+            end
+            if workDir ~= "" and string.sub(resolved, 1, 14) == "ctoa_otclient/" then
+                return workDir .. "mods/" .. resolved
+            end
+            if workDir ~= "" and string.sub(resolved, 1, 1) == "/" and
+                not string.match(resolved, "^/[A-Za-z]:") then
+                return workDir .. "mods/ctoa_otclient/ctoa_client_capabilities.json"
+            end
             return resolved
         end
     end
-    if resources and type(resources.getUserDir) == "function" then
-        local ok, userDir = pcall(function()
-            return resources.getUserDir()
-        end)
-        if ok and userDir and userDir ~= "" then
-            return userDir .. "/ctoa_client_capabilities.json"
-        end
+    if workDir ~= "" then
+        return workDir .. "mods/ctoa_otclient/ctoa_client_capabilities.json"
+    end
+    local userDir = resourceDir(resources, "getUserDir")
+    if userDir ~= "" then
+        return userDir .. "ctoa_client_capabilities.json"
     end
     return "ctoa_client_capabilities.json"
 end
@@ -248,6 +278,8 @@ function Reporter.contract()
         unknown_build_safe_fallback = true,
         writes_atomic_json = true,
         reports_runtime_core = true,
+        deterministic_work_dir_path = true,
+        no_screen_safe = true,
     }
 end
 

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-11T15:38:46+00:00",
+  "generated_at": "2026-07-11T17:22:01+00:00",
   "root": "C:\\Users\\zycie\\CTOAi",
   "pack_path": "AI\\generated\\ENGINE_BRAIN_PACK.md",
   "profile": "all",
@@ -10,7 +10,7 @@
     {
       "path": "AI/README.md",
       "included": true,
-      "bytes": 2439,
+      "bytes": 2574,
       "truncated": false,
       "reason": ""
     },
@@ -59,7 +59,7 @@
     {
       "path": "AI/ENGINE_BRAIN_STATUS.md",
       "included": true,
-      "bytes": 133319,
+      "bytes": 134323,
       "truncated": true,
       "reason": ""
     },
@@ -108,8 +108,15 @@
     {
       "path": "AI/FEATURE_ROADMAP.md",
       "included": true,
-      "bytes": 58676,
+      "bytes": 60028,
       "truncated": true,
+      "reason": ""
+    },
+    {
+      "path": "AI/P8_P16_EXECUTION_ROADMAP.md",
+      "included": true,
+      "bytes": 7499,
+      "truncated": false,
       "reason": ""
     },
     {
@@ -122,14 +129,14 @@
     {
       "path": "docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md",
       "included": true,
-      "bytes": 6836,
+      "bytes": 7701,
       "truncated": false,
       "reason": ""
     },
     {
       "path": "docs/otclient/HELPER_RUNTIME_MODULE_GATES_V1.md",
       "included": true,
-      "bytes": 3906,
+      "bytes": 4319,
       "truncated": false,
       "reason": ""
     },
@@ -185,7 +192,7 @@
     {
       "path": "AI/generated/ENV_DOCTOR.md",
       "included": true,
-      "bytes": 1247,
+      "bytes": 1241,
       "truncated": false,
       "reason": ""
     },
@@ -199,7 +206,7 @@
     {
       "path": "AI/generated/DOC_SYNC.md",
       "included": true,
-      "bytes": 596,
+      "bytes": 667,
       "truncated": false,
       "reason": ""
     },
@@ -241,25 +248,25 @@
     {
       "path": "AI/generated/P7_OPERATOR_BRIEF.md",
       "included": true,
-      "bytes": 1351,
+      "bytes": 1484,
       "truncated": false,
       "reason": ""
     },
     {
       "path": "AI/generated/FILE_TREE.md",
       "included": true,
-      "bytes": 68161,
+      "bytes": 68369,
       "truncated": true,
       "reason": ""
     },
     {
       "path": "AI/generated/SYMBOL_MAP.md",
       "included": true,
-      "bytes": 258732,
+      "bytes": 263070,
       "truncated": true,
       "reason": ""
     }
   ],
-  "included_count": 36,
+  "included_count": 37,
   "truncated_count": 4
 }

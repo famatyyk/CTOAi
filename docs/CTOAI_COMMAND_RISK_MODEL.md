@@ -125,6 +125,19 @@ The Helper evidence surface includes `CTOA_HELPER_LIVE_PROMOTION_PATH`, which
 is read-only and points to `runtime/solteria_helper_dev/live_promotion.json`
 by default. Control Center may display that live-promotion evidence, but it
 must not run live deploy shortcuts or bypass `PromoteLiveCtoa -ApproveLiveDeploy`.
+`CTOA_HELPER_BACKGROUND_STATUS_PATH` points to the advisory-only
+`runtime/solteria_helper_dev/background_status.json`. Its producer runs only as
+`BackgroundStatus -OperatorMode BackgroundNoScreen`: a positive allowlist blocks
+every other wrapper action, child processes cannot downgrade the mode, and the
+result always keeps `promotion_allowed=false` and `dispatch_allowed=false`.
+The action may read bounded heartbeat/log/process/hash state and write the
+repo-local report. Hash reads are restricted to bounded Helper paths from an
+officially promoted manifest. Readiness requires one canonical live process,
+an explicit online post-start heartbeat, explicit false runtime-action claims,
+and a promotion record whose manifest SHA256 matches. The observer cannot
+create that trust anchor. It may not send input, focus/capture a window,
+start/stop a client, write a smoke command, or change live files. Drift in a
+vocation profile remains blocking while that profile is executable Lua.
 
 This keeps evidence visible in the cockpit before any release or guarded action is treated as complete.
 

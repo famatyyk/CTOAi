@@ -20,6 +20,7 @@ const originalEnv = {
   CTOA_HELPER_SMOKE_PREFLIGHT_PATH: process.env.CTOA_HELPER_SMOKE_PREFLIGHT_PATH,
   CTOA_HELPER_SMOKE_STATUS_PATH: process.env.CTOA_HELPER_SMOKE_STATUS_PATH,
   CTOA_HELPER_LIVE_PROMOTION_PATH: process.env.CTOA_HELPER_LIVE_PROMOTION_PATH,
+  CTOA_HELPER_BACKGROUND_STATUS_PATH: process.env.CTOA_HELPER_BACKGROUND_STATUS_PATH,
   CTOA_ENGINE_BRAIN_MANIFEST_PATH: process.env.CTOA_ENGINE_BRAIN_MANIFEST_PATH,
   CTOA_ENGINE_BRAIN_P6_READINESS_PATH: process.env.CTOA_ENGINE_BRAIN_P6_READINESS_PATH,
   CTOA_ENGINE_BRAIN_P6_PLUGIN_HANDOFF_SMOKE_PATH: process.env.CTOA_ENGINE_BRAIN_P6_PLUGIN_HANDOFF_SMOKE_PATH,
@@ -65,6 +66,7 @@ function isolateEvidenceEnv(root: string) {
   process.env.CTOA_HELPER_SMOKE_PREFLIGHT_PATH = path.join(root, "runtime", "solteria_helper_dev", "smoke_preflight.json")
   process.env.CTOA_HELPER_SMOKE_STATUS_PATH = path.join(root, "runtime", "solteria_helper_dev", "smoke_status.json")
   process.env.CTOA_HELPER_LIVE_PROMOTION_PATH = path.join(root, "runtime", "solteria_helper_dev", "live_promotion.json")
+  process.env.CTOA_HELPER_BACKGROUND_STATUS_PATH = path.join(root, "runtime", "solteria_helper_dev", "background_status.json")
   process.env.CTOA_ENGINE_BRAIN_MANIFEST_PATH = path.join(root, "AI", "generated", "manifest.json")
   process.env.CTOA_ENGINE_BRAIN_P6_READINESS_PATH = path.join(root, "AI", "generated", "P6_CODEX_INTEGRATION_READINESS.json")
   process.env.CTOA_ENGINE_BRAIN_P6_PLUGIN_HANDOFF_SMOKE_PATH = path.join(root, "runtime", "control-center", "p6-plugin-handoff-smoke.json")
@@ -101,6 +103,7 @@ describe("Control Center evidence config", () => {
     expect(config.helperManifestPath).toBe(path.join(repoRoot, "runtime", "solteria_helper_dev", "manifest.json"))
     expect(config.helperReleaseGatePath).toBe(path.join(repoRoot, "runtime", "solteria_helper_dev", "release_gate.json"))
     expect(config.helperLivePromotionPath).toBe(path.join(repoRoot, "runtime", "solteria_helper_dev", "live_promotion.json"))
+    expect(config.helperBackgroundStatusPath).toBe(path.join(repoRoot, "runtime", "solteria_helper_dev", "background_status.json"))
     expect(config.engineBrainManifestPath).toBe(path.join(repoRoot, "AI", "generated", "manifest.json"))
     expect(config.engineBrainP6ReadinessPath).toBe(path.join(repoRoot, "AI", "generated", "P6_CODEX_INTEGRATION_READINESS.json"))
     expect(config.engineBrainP6PluginHandoffSmokePath).toBe(path.join(repoRoot, "runtime", "control-center", "p6-plugin-handoff-smoke.json"))
@@ -134,6 +137,7 @@ describe("Control Center evidence config", () => {
     const helperPreflightPath = path.join(helperDevDir, "smoke_preflight.json")
     const helperSmokePath = path.join(helperDevDir, "smoke_status.json")
     const helperLivePromotionPath = path.join(helperDevDir, "live_promotion.json")
+    const helperBackgroundStatusPath = path.join(helperDevDir, "background_status.json")
     const helperZipPath = path.join(helperDevDir, "ctoa_otclient_v1.1b.zip")
     const helperZipSha = crypto.createHash("sha256").update("zip-content").digest("hex")
     const brainDir = path.join(root, "custom", "AI", "generated")
@@ -280,6 +284,36 @@ describe("Control Center evidence config", () => {
       "utf-8",
     )
     await writeFile(
+      helperBackgroundStatusPath,
+      JSON.stringify({
+        schema_version: "ctoa.otclient-headless-status.v1",
+        status: "ready",
+        mode: "background_no_screen",
+        generated_at_utc: new Date().toISOString(),
+        advisory_only: true,
+        safe_to_run_while_playing: true,
+        promotion_allowed: false,
+        dispatch_allowed: false,
+        runtime_actions: false,
+        process_state: "running",
+        integrity: {
+          status: "passed",
+          matched_file_count: 58,
+          manifest_file_count: 58,
+          mutable_drift_count: 1,
+        },
+        capability: {
+          status: "fresh",
+          fresh: true,
+          runtime_state: "disarmed",
+          runtime_actions: false,
+          runtime_core_actions: false,
+        },
+        blockers: [],
+      }),
+      "utf-8",
+    )
+    await writeFile(
       brainManifestPath,
       JSON.stringify({
         generated_at: "2026-07-06T06:23:09+00:00",
@@ -391,8 +425,8 @@ describe("Control Center evidence config", () => {
         roadmap_generation: {
           status: "ready",
           doc_sync_status: "passed",
-          doc_count: 3,
-          ready_doc_count: 3,
+          doc_count: 4,
+          ready_doc_count: 4,
           hard_blockers: [],
           next_action: "Keep roadmap generation read-only in Control Center Evidence.",
           blocked_until: "risk model coverage, audit replay evidence, Control Center gates, and tests exist before adding any new MCP write tool.",
@@ -547,6 +581,7 @@ describe("Control Center evidence config", () => {
     process.env.CTOA_HELPER_SMOKE_PREFLIGHT_PATH = helperPreflightPath
     process.env.CTOA_HELPER_SMOKE_STATUS_PATH = helperSmokePath
     process.env.CTOA_HELPER_LIVE_PROMOTION_PATH = helperLivePromotionPath
+    process.env.CTOA_HELPER_BACKGROUND_STATUS_PATH = helperBackgroundStatusPath
     process.env.CTOA_ENGINE_BRAIN_MANIFEST_PATH = brainManifestPath
     process.env.CTOA_ENGINE_BRAIN_P6_READINESS_PATH = brainP6ReadinessPath
     process.env.CTOA_ENGINE_BRAIN_P6_PLUGIN_HANDOFF_SMOKE_PATH = brainP6PluginHandoffSmokePath
@@ -573,6 +608,7 @@ describe("Control Center evidence config", () => {
     expect(config.helperDevDir).toBe(helperDevDir)
     expect(config.helperReleaseGatePath).toBe(helperGatePath)
     expect(config.helperLivePromotionPath).toBe(helperLivePromotionPath)
+    expect(config.helperBackgroundStatusPath).toBe(helperBackgroundStatusPath)
     expect(config.engineBrainManifestPath).toBe(brainManifestPath)
     expect(config.engineBrainP6ReadinessPath).toBe(brainP6ReadinessPath)
     expect(config.engineBrainP6PluginHandoffSmokePath).toBe(brainP6PluginHandoffSmokePath)
@@ -626,6 +662,29 @@ describe("Control Center evidence config", () => {
     expect(evidence.otclientHelper.stagedFileCount).toBe(1)
     expect(evidence.otclientHelper.packageSha256).toBe(helperZipSha)
     expect(evidence.otclientHelper.nextCommand).toContain("-Action Launch")
+    expect(evidence.otclientHelper.backgroundStatus).toMatchObject({
+      status: "ready",
+      reportedStatus: "ready",
+      mode: "background_no_screen",
+      maxAgeSeconds: 30,
+      fresh: true,
+      contractValid: true,
+      contractErrors: [],
+      advisoryOnly: true,
+      safeToRunWhilePlaying: true,
+      promotionAllowed: false,
+      dispatchAllowed: false,
+      runtimeActions: false,
+      processState: "running",
+      integrityStatus: "passed",
+      matchedFileCount: 58,
+      manifestFileCount: 58,
+      mutableDriftCount: 1,
+      capabilityStatus: "fresh",
+      capabilityFresh: true,
+      runtimeState: "disarmed",
+      blockers: [],
+    })
     expect(evidence.engineBrain.status).toBe("ready")
     expect(evidence.engineBrain.fileCount).toBe(1056)
     expect(evidence.engineBrain.docSyncStatus).toBe("passed")
@@ -665,8 +724,8 @@ describe("Control Center evidence config", () => {
     expect(evidence.engineBrain.p7NextSafeCommand).toContain("ctoai_repo_hygiene_refresh")
     expect(evidence.engineBrain.p7RoadmapGenerationStatus).toBe("ready")
     expect(evidence.engineBrain.p7RoadmapGenerationDocSyncStatus).toBe("passed")
-    expect(evidence.engineBrain.p7RoadmapGenerationReadyDocCount).toBe(3)
-    expect(evidence.engineBrain.p7RoadmapGenerationDocCount).toBe(3)
+    expect(evidence.engineBrain.p7RoadmapGenerationReadyDocCount).toBe(4)
+    expect(evidence.engineBrain.p7RoadmapGenerationDocCount).toBe(4)
     expect(evidence.engineBrain.p7RoadmapGenerationHardBlockerCount).toBe(0)
     expect(evidence.engineBrain.p7RoadmapGenerationBlockedUntil).toContain("risk model coverage")
     expect(evidence.engineBrain.p7ActionReadinessStatus).toBe("safe_write_tools_enabled")
@@ -790,8 +849,8 @@ describe("Control Center evidence config", () => {
       roadmapGeneration: {
         status: "ready",
         docSyncStatus: "passed",
-        docCount: 3,
-        readyDocCount: 3,
+        docCount: 4,
+        readyDocCount: 4,
         hardBlockerCount: 0,
       },
       cockpitHandoff: {
@@ -979,6 +1038,83 @@ describe("Control Center evidence config", () => {
     expect(JSON.stringify(bootstrapEvidence)).not.toContain(root.replace(/\\/g, "/"))
     expect(JSON.stringify(bootstrapEvidence)).not.toContain(root)
   }, 15_000)
+
+  it("fails closed for stale and invalid BackgroundNoScreen evidence", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "ctoa-background-status-"))
+    isolateEvidenceEnv(root)
+    const helperDevDir = path.join(root, "runtime", "solteria_helper_dev")
+    const backgroundStatusPath = path.join(helperDevDir, "background_status.json")
+    const validPayload = {
+      schema_version: "ctoa.otclient-headless-status.v1",
+      status: "ready",
+      mode: "background_no_screen",
+      generated_at_utc: new Date(Date.now() - 31_000).toISOString(),
+      advisory_only: true,
+      safe_to_run_while_playing: true,
+      promotion_allowed: false,
+      dispatch_allowed: false,
+      runtime_actions: false,
+      process_state: "running",
+      integrity: {
+        status: "passed",
+        matched_file_count: 58,
+        manifest_file_count: 58,
+        mutable_drift_count: 1,
+      },
+      capability: {
+        status: "fresh",
+        fresh: true,
+        runtime_state: "disarmed",
+        runtime_actions: false,
+        runtime_core_actions: false,
+      },
+      blockers: [],
+    }
+    await mkdir(helperDevDir, { recursive: true })
+    await writeFile(backgroundStatusPath, JSON.stringify(validPayload), "utf-8")
+
+    const staleEvidence = await collectControlCenterEvidence()
+
+    expect(staleEvidence.otclientHelper.backgroundStatus).toMatchObject({
+      status: "stale",
+      reportedStatus: "ready",
+      fresh: false,
+      contractValid: true,
+      promotionAllowed: false,
+      dispatchAllowed: false,
+      runtimeActions: false,
+    })
+    expect(staleEvidence.otclientHelper.livePromoted).toBe(false)
+    expect(staleEvidence.otclientHelper.releasableToLive).toBe(false)
+
+    await writeFile(
+      backgroundStatusPath,
+      JSON.stringify({
+        ...validPayload,
+        generated_at_utc: new Date().toISOString(),
+        advisory_only: false,
+        promotion_allowed: true,
+        blockers: "token=background-secret-value",
+        integrity: { ...validPayload.integrity, matched_file_count: "not-a-number" },
+      }),
+      "utf-8",
+    )
+
+    const invalidEvidence = await collectControlCenterEvidence()
+    const invalidBackground = invalidEvidence.otclientHelper.backgroundStatus
+
+    expect(invalidBackground.status).toBe("blocked")
+    expect(invalidBackground.contractValid).toBe(false)
+    expect(invalidBackground.fresh).toBe(false)
+    expect(invalidBackground.matchedFileCount).toBe(0)
+    expect(invalidBackground.blockers).toEqual([])
+    expect(invalidBackground.contractErrors).toEqual(
+      expect.arrayContaining(["advisory_only", "promotion_allowed", "blockers", "matched_file_count"]),
+    )
+    expect(JSON.stringify(invalidEvidence)).not.toContain("background-secret-value")
+    expect(invalidEvidence.otclientHelper.livePromoted).toBe(false)
+    expect(invalidEvidence.otclientHelper.releasableToLive).toBe(false)
+  })
 
   it("bounds oversized action audit drilldown to a redacted tail sample", async () => {
     const root = await mkdtemp(path.join(os.tmpdir(), "ctoa-action-audit-tail-"))

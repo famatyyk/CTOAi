@@ -66,6 +66,13 @@ lane result may remain `blocked_fail_closed` when PZ is unknown/in-zone or real
 domain evidence and operator confirmation are absent. That is the intended
 safe result; a later domain-specific acceptance must be reviewed separately.
 
+`BackgroundNoScreen` evidence is intentionally weaker than action acceptance.
+It may prove heartbeat freshness, runtime state, bounded log health, and
+immutable manifest parity while the user plays, but it is always advisory with
+`dispatch_allowed=false` and `promotion_allowed=false`. It cannot satisfy a
+domain observation, operator confirmation, execute-once smoke, visual review,
+or live approval by itself.
+
 ## Deliberate Boundary
 
 - Conditions execution is not enabled by this gate.

@@ -21,6 +21,7 @@ the system changes:
 - [Full Workspace Audit](audits/CTOAI_FULL_WORKSPACE_AUDIT_2026-07-06.md): complete file inventory summary and current risk findings.
 - [Security Hardening Note](audits/CTOAI_SECURITY_HARDENING_2026-07-06.md): auth, CORS, self-registration, and release-evidence hardening record.
 - [Three Development Plans](roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md): Helper, Control Center/evidence, and Engine Brain roadmap options.
+- [P8-P16 Execution Roadmap](../AI/P8_P16_EXECUTION_ROADMAP.md): BackgroundNoScreen foundation, independent low-risk replay lanes, separate-runner release automation, and deferred Combat/CaveBot twins.
 
 ## Active Working Docs
 

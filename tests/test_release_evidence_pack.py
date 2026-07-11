@@ -1,4 +1,5 @@
 import importlib.util
+import datetime as dt
 import json
 from pathlib import Path
 
@@ -15,6 +16,35 @@ def _load_module():
     assert spec.loader is not None
     spec.loader.exec_module(module)
     return module
+
+
+def _background_payload(generated_at: str) -> dict[str, object]:
+    return {
+        "schema_version": "ctoa.otclient-headless-status.v1",
+        "status": "ready",
+        "mode": "background_no_screen",
+        "generated_at_utc": generated_at,
+        "advisory_only": True,
+        "safe_to_run_while_playing": True,
+        "promotion_allowed": False,
+        "dispatch_allowed": False,
+        "runtime_actions": False,
+        "process_state": "running",
+        "integrity": {
+            "status": "passed",
+            "matched_file_count": 58,
+            "manifest_file_count": 58,
+            "mutable_drift_count": 1,
+        },
+        "capability": {
+            "status": "fresh",
+            "fresh": True,
+            "runtime_state": "disarmed",
+            "runtime_actions": False,
+            "runtime_core_actions": False,
+        },
+        "blockers": [],
+    }
 
 
 def test_build_evidence_pack_handles_missing_artifacts(tmp_path: Path):
@@ -34,6 +64,9 @@ def test_build_evidence_pack_handles_missing_artifacts(tmp_path: Path):
     assert pack["api_cost_report"]["status"] == "missing"
     assert pack["control_center_audit"]["record_count"] == 0
     assert pack["otclient_helper"]["status"] == "missing"
+    assert pack["otclient_helper"]["background_status"]["status"] == "missing"
+    assert pack["otclient_helper"]["background_status"]["contract_valid"] is False
+    assert pack["otclient_helper"]["background_status"]["fresh"] is False
     assert pack["p7_operator_brief"]["status"] == "missing"
     assert pack["p7_operator_brief"]["roadmap_generation"]["status"] == "missing"
     assert (
@@ -44,8 +77,60 @@ def test_build_evidence_pack_handles_missing_artifacts(tmp_path: Path):
     assert any("api_cost_report" in item for item in pack["recommendations"])
 
 
+def test_background_status_expires_without_affecting_live_promotion(tmp_path: Path):
+    module = _load_module()
+    helper_dev_dir = tmp_path / "runtime" / "solteria_helper_dev"
+    helper_dev_dir.mkdir(parents=True)
+    generated_at = (
+        dt.datetime.now(dt.UTC)
+        - dt.timedelta(seconds=module.BACKGROUND_STATUS_MAX_AGE_SECONDS + 1)
+    ).isoformat()
+    (helper_dev_dir / "background_status.json").write_text(
+        json.dumps(_background_payload(generated_at)), encoding="utf-8"
+    )
+
+    helper = module._helper_status(helper_dev_dir)
+    background = helper["background_status"]
+
+    assert background["reported_status"] == "ready"
+    assert background["status"] == "stale"
+    assert background["contract_valid"] is True
+    assert background["fresh"] is False
+    assert background["promotion_allowed"] is False
+    assert background["dispatch_allowed"] is False
+    assert helper["live_promoted"] is False
+    assert helper["releasable_to_live"] is False
+
+
+def test_background_status_invalid_contract_and_counts_fail_closed(tmp_path: Path):
+    module = _load_module()
+    helper_dev_dir = tmp_path / "runtime" / "solteria_helper_dev"
+    helper_dev_dir.mkdir(parents=True)
+    payload = _background_payload(dt.datetime.now(dt.UTC).isoformat())
+    payload["promotion_allowed"] = True
+    payload["blockers"] = "not-a-list"
+    integrity = payload["integrity"]
+    assert isinstance(integrity, dict)
+    integrity["matched_file_count"] = "not-a-number"
+    (helper_dev_dir / "background_status.json").write_text(
+        json.dumps(payload), encoding="utf-8"
+    )
+
+    background = module._helper_status(helper_dev_dir)["background_status"]
+
+    assert background["status"] == "blocked"
+    assert background["contract_valid"] is False
+    assert background["fresh"] is False
+    assert background["matched_file_count"] == 0
+    assert background["blockers"] == []
+    assert {"promotion_allowed", "blockers", "matched_file_count"}.issubset(
+        background["contract_errors"]
+    )
+
+
 def test_build_evidence_pack_reads_current_artifacts(tmp_path: Path):
     module = _load_module()
+    background_generated_at = dt.datetime.now(dt.UTC).replace(microsecond=0).isoformat()
 
     releases_dir = tmp_path / "releases" / "evidence"
     sprint_dir = releases_dir / "sprint-056"
@@ -155,6 +240,37 @@ def test_build_evidence_pack_reads_current_artifacts(tmp_path: Path):
     )
     (helper_dev_dir / "smoke_status.json").write_text(
         json.dumps({"status": "not_running"}), encoding="utf-8"
+    )
+    (helper_dev_dir / "background_status.json").write_text(
+        json.dumps(
+            {
+                "schema_version": "ctoa.otclient-headless-status.v1",
+                "status": "ready",
+                "mode": "background_no_screen",
+                "generated_at_utc": background_generated_at,
+                "advisory_only": True,
+                "safe_to_run_while_playing": True,
+                "promotion_allowed": False,
+                "dispatch_allowed": False,
+                "runtime_actions": False,
+                "process_state": "running",
+                "integrity": {
+                    "status": "passed",
+                    "matched_file_count": 58,
+                    "manifest_file_count": 58,
+                    "mutable_drift_count": 1,
+                },
+                "capability": {
+                    "status": "fresh",
+                    "fresh": True,
+                    "runtime_state": "disarmed",
+                    "runtime_actions": False,
+                    "runtime_core_actions": False,
+                },
+                "blockers": [],
+            }
+        ),
+        encoding="utf-8",
     )
     (helper_dev_dir / "goal_status.json").write_text(
         json.dumps(
@@ -288,16 +404,49 @@ def test_build_evidence_pack_reads_current_artifacts(tmp_path: Path):
     assert pack["otclient_helper"]["module_contract"]["check_count"] == 16
     assert pack["otclient_helper"]["module_contract"]["forbidden_count"] == 0
     assert pack["otclient_helper"]["module_audit"]["status"] == "needs_modularization"
-    assert pack["otclient_helper"]["module_audit"]["helper_budget_status"] == "over_budget"
+    assert (
+        pack["otclient_helper"]["module_audit"]["helper_budget_status"] == "over_budget"
+    )
     assert pack["otclient_helper"]["module_audit"]["helper_line_count"] == 5100
     assert pack["otclient_helper"]["module_audit"]["helper_line_budget"] == 4500
     assert pack["otclient_helper"]["module_audit"]["next_supplemental_id"] == ""
     assert pack["otclient_helper"]["module_audit"]["next_module_id"] == "heal_friend"
     assert pack["otclient_helper"]["package_sha256"] == "abc123"
-    assert pack["otclient_helper"]["sandbox_smoke_queue"]["status"] == "ready_for_operator"
+    assert (
+        pack["otclient_helper"]["sandbox_smoke_queue"]["status"] == "ready_for_operator"
+    )
     assert pack["otclient_helper"]["sandbox_smoke_queue"]["required_count"] == 5
     assert pack["otclient_helper"]["sandbox_smoke_queue"]["queued_count"] == 4
-    assert pack["otclient_helper"]["sandbox_smoke_queue"]["next_steps"][0]["step_id"] == "launch_sandbox"
+    assert (
+        pack["otclient_helper"]["sandbox_smoke_queue"]["next_steps"][0]["step_id"]
+        == "launch_sandbox"
+    )
+    assert pack["otclient_helper"]["background_status"] == {
+        "status": "ready",
+        "reported_status": "ready",
+        "mode": "background_no_screen",
+        "generated_at_utc": background_generated_at,
+        "max_age_seconds": 30,
+        "age_seconds": pytest.approx(0, abs=2),
+        "fresh": True,
+        "contract_valid": True,
+        "contract_errors": [],
+        "advisory_only": True,
+        "safe_to_run_while_playing": True,
+        "promotion_allowed": False,
+        "dispatch_allowed": False,
+        "runtime_actions": False,
+        "process_state": "running",
+        "integrity_status": "passed",
+        "matched_file_count": 58,
+        "manifest_file_count": 58,
+        "mutable_drift_count": 1,
+        "capability_status": "fresh",
+        "capability_fresh": True,
+        "runtime_state": "disarmed",
+        "blockers": [],
+        "path": str(helper_dev_dir / "background_status.json").replace("\\", "/"),
+    }
     assert pack["p7_operator_brief"]["status"] == "ready"
     assert pack["p7_operator_brief"]["decision"] == "ready_for_p7_operator_workflow"
     assert pack["p7_operator_brief"]["warning_count"] == 2
@@ -344,8 +493,7 @@ def test_build_evidence_pack_reads_current_artifacts(tmp_path: Path):
     assert pack["p7_operator_brief"]["safe_write_tool_design"]["mcp_enabled"] is True
     assert pack["p7_operator_brief"]["roadmap_generation"]["status"] == "ready"
     assert (
-        pack["p7_operator_brief"]["roadmap_generation"]["doc_sync_status"]
-        == "passed"
+        pack["p7_operator_brief"]["roadmap_generation"]["doc_sync_status"] == "passed"
     )
     assert pack["p7_operator_brief"]["roadmap_generation"]["ready_doc_count"] == 3
     assert pack["p7_operator_brief"]["roadmap_generation"]["doc_count"] == 3

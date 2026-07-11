@@ -1,6 +1,6 @@
 # CTOAi Three Development Plans
 
-Basis: full workspace audit with `42687` inventoried files and `1342` git-tracked files.
+Basis: full workspace audit with `42879` inventoried files and `1346` git-tracked files.
 
 ## Plan 1: Helper-First Productization
 
@@ -12,6 +12,7 @@ Goal: turn the OTClient/Solteria Helper into a safe, repeatable product lane bef
 - Require `PrepareDev`, `ValidateDev`, `SmokePreflight`, in-world `SmokeAttachAll`, and explicit live approval.
 - Expand `otclient_helper_profile_audit.py` from text checks toward schema-backed migration validation.
 - Keep Control Center Helper status read-only and backed by runtime artifacts.
+- Make `BackgroundNoScreen` the default routine Helper evidence lane: no mouse/keyboard input, focus, screenshots, client launch/stop, or live-client writes; use bounded passive heartbeat/log/process/hash reads, require an official promotion-bound pin, treat executable-profile drift as blocking, and write only repo-local runtime evidence.
 - Keep the post-Recovery runtime sequence fixed: Conditions paralyze-only gate, then Equipment ring-only rollback gate, then Heal Friend exact-whitelist gate. Require action-bound predecessor traces and current `RuntimeModuleGatesSandboxSmoke` evidence; Combat and CaveBot remain `deferred_high_risk` and may receive passive refactor work only.
 
 ### 31-60 Days
@@ -22,7 +23,7 @@ Goal: turn the OTClient/Solteria Helper into a safe, repeatable product lane bef
 
 ### 61-90 Days
 
-- Make `SmokeAttachAll` the final visual acceptance source with full in-world screenshots.
+- Keep visual acceptance explicit, but move `SmokeAttachAll` screenshots to a separate runner/VM or user-provided review so routine Codex work never takes over the user's only screen.
 - Block `releasable_to_live=true` unless staged package hashes match full in-world evidence.
 - Package Helper release notes and evidence as one reviewable artifact.
 
@@ -49,6 +50,7 @@ Goal: make Control Center the operator cockpit for status, evidence, safe comman
 ### 31-60 Days
 
 - Add release-evidence drilldowns for Helper, repo hygiene, API cost, action audit, and VPS parity.
+- Surface `background_status.json` as a read-only Helper tile with heartbeat freshness, immutable parity, runtime state, and zero action controls.
 - Add stale-artifact detection: manifest age, package hash mismatch with Helper dev-lane path containment, missing smoke, missing action audit.
 - Add one operator-safe `next` recommendation surface that never bypasses gates.
 
@@ -86,3 +88,4 @@ Goal: make `AI/` the local, secret-safe planning/context layer and evolve it int
 - Keep the local `ctoai-engine-brain` plugin bounded to `ctoai_engine_brain_status`, `ctoai_engine_brain_self_check`, `ctoai_engine_brain_brief`, plus audited `ctoai_evidence_pack_refresh` and `ctoai_api_cost_refresh` safe-write tools.
 - Keep deploy/live actions out of the plugin MCP surface; only dry-run-first evidence/reporting refreshes may write, and they must append Control Center action-audit evidence.
 - Prepare a plugin-style operator surface for audit, release evidence, and roadmap generation.
+- Keep `AI/P8_P16_EXECUTION_ROADMAP.md` as the post-P7 execution contract: P8 background observability, P9-P11 independent low-risk shadow/replay lanes, P12 execute-once sandbox review, P13 evidence/roadmap state, P14 independent runner, and P15-P16 design-only Combat/CaveBot twins.

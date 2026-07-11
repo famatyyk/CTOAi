@@ -24,15 +24,66 @@ DEFAULT_HELPER_DEV_DIR = Path("runtime/solteria_helper_dev")
 DEFAULT_ENGINE_BRAIN_OPERATOR_BRIEF_PATH = Path("AI/generated/P7_OPERATOR_BRIEF.json")
 MAX_EVIDENCE_JSON_BYTES = 1024 * 1024
 MAX_ACTION_AUDIT_BYTES = 1024 * 1024
+BACKGROUND_STATUS_SCHEMA = "ctoa.otclient-headless-status.v1"
+BACKGROUND_STATUS_MODE = "background_no_screen"
+BACKGROUND_STATUS_MAX_AGE_SECONDS = 30
+BACKGROUND_STATUS_VALUES = {
+    "ready",
+    "blocked",
+    "idle",
+    "waiting_for_passive_heartbeat",
+    "observation_pending",
+}
+BACKGROUND_INTEGRITY_STATUS_VALUES = {"passed", "failed", "untrusted_pin"}
+BACKGROUND_CAPABILITY_STATUS_VALUES = {
+    "fresh",
+    "stale",
+    "missing",
+    "unsafe_runtime_claim",
+    "schema_mismatch",
+    "invalid_contract",
+    "version_mismatch",
+    "invalid_heartbeat",
+    "heartbeat_before_process",
+    "heartbeat_offline",
+    "game_offline",
+    "malformed",
+    "oversize",
+    "symlink_rejected",
+    "not_regular",
+    "not_object",
+    "changed_during_open",
+    "unreadable",
+    "explicit_path_mismatch",
+}
+BACKGROUND_BLOCKER_VALUES = {
+    "live_manifest_pin_untrusted",
+    "live_manifest_parity_failed",
+    "live_files_changed_or_unverifiable",
+    "active_client_process_count_invalid",
+    "active_client_process_start_invalid",
+    "current_session_lua_exception",
+    "client_process_changed_during_observation",
+    "screenshot_count_changed_during_observation",
+    *(f"capability_{status}" for status in BACKGROUND_CAPABILITY_STATUS_VALUES),
+}
 
 
 def _now_iso() -> str:
-    return dt.datetime.now(dt.UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    return (
+        dt.datetime.now(dt.UTC)
+        .replace(microsecond=0)
+        .isoformat()
+        .replace("+00:00", "Z")
+    )
 
 
 def _safe_filename(value: str) -> str:
     text = str(value or "").strip().lower()
-    return "".join(ch if ch.isalnum() or ch in {"-", "_"} else "-" for ch in text) or "unknown"
+    return (
+        "".join(ch if ch.isalnum() or ch in {"-", "_"} else "-" for ch in text)
+        or "unknown"
+    )
 
 
 def build_release_evidence_pack(
@@ -71,13 +122,17 @@ def build_release_evidence_pack(
     }
 
 
-def write_release_evidence_pack(output_dir: Path, pack: dict[str, Any]) -> tuple[Path, Path]:
+def write_release_evidence_pack(
+    output_dir: Path, pack: dict[str, Any]
+) -> tuple[Path, Path]:
     output_dir.mkdir(parents=True, exist_ok=True)
     backlog_id = _safe_filename(str(pack.get("backlog_id", "unknown")))
     json_path = output_dir / f"{backlog_id}-release-evidence-pack.json"
     md_path = output_dir / f"{backlog_id}-release-evidence-pack.md"
 
-    json_path.write_text(json.dumps(pack, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    json_path.write_text(
+        json.dumps(pack, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
 
     release = pack.get("release", {}) if isinstance(pack.get("release"), dict) else {}
     release_count = release.get("released_count", 0)
@@ -165,6 +220,201 @@ def _read_json_or_none(path: Path) -> dict[str, Any] | None:
         return None
 
 
+def _safe_nonnegative_int(value: Any) -> tuple[int, bool]:
+    if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
+        return value, True
+    return 0, False
+
+
+def _parse_utc_timestamp(value: Any) -> dt.datetime | None:
+    if not isinstance(value, str) or not value or len(value) > 64:
+        return None
+    try:
+        parsed = dt.datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        return None
+    return parsed.astimezone(dt.UTC)
+
+
+def _background_status_summary(
+    payload: dict[str, Any] | None,
+    path: Path,
+    *,
+    now: dt.datetime | None = None,
+    artifact_present: bool | None = None,
+) -> dict[str, Any]:
+    observed_at = (now or dt.datetime.now(dt.UTC)).astimezone(dt.UTC)
+    present = payload is not None if artifact_present is None else artifact_present
+    data = payload if isinstance(payload, dict) else {}
+    integrity = data.get("integrity") if isinstance(data.get("integrity"), dict) else {}
+    capability = (
+        data.get("capability") if isinstance(data.get("capability"), dict) else {}
+    )
+    log = data.get("log") if isinstance(data.get("log"), dict) else {}
+
+    raw_blockers = data.get("blockers")
+    blockers_valid = (
+        isinstance(raw_blockers, list)
+        and len(raw_blockers) <= 16
+        and all(item in BACKGROUND_BLOCKER_VALUES for item in raw_blockers)
+    )
+    blockers = list(raw_blockers[:8]) if blockers_valid else []
+
+    matched_file_count, matched_valid = _safe_nonnegative_int(
+        integrity.get("matched_file_count")
+    )
+    manifest_file_count, manifest_valid = _safe_nonnegative_int(
+        integrity.get("manifest_file_count")
+    )
+    mutable_drift_count, mutable_valid = _safe_nonnegative_int(
+        integrity.get("mutable_drift_count")
+    )
+
+    generated_at_raw = data.get("generated_at_utc")
+    generated_at = _parse_utc_timestamp(generated_at_raw)
+    age_seconds = (
+        (observed_at - generated_at).total_seconds()
+        if generated_at is not None
+        else None
+    )
+    timestamp_fresh = bool(
+        age_seconds is not None
+        and 0 <= age_seconds <= BACKGROUND_STATUS_MAX_AGE_SECONDS
+    )
+
+    reported_status = data.get("status")
+    mode = data.get("mode")
+    process_state_value = data.get("process_state")
+    runtime_state_value = capability.get("runtime_state") or log.get("runtime_state")
+    integrity_status_value = integrity.get("status")
+    capability_status_value = capability.get("status")
+    contract_errors: list[str] = []
+    checks = (
+        ("schema_version", data.get("schema_version") == BACKGROUND_STATUS_SCHEMA),
+        ("mode", mode == BACKGROUND_STATUS_MODE),
+        ("status", reported_status in BACKGROUND_STATUS_VALUES),
+        ("advisory_only", data.get("advisory_only") is True),
+        (
+            "safe_to_run_while_playing",
+            data.get("safe_to_run_while_playing") is True,
+        ),
+        ("promotion_allowed", data.get("promotion_allowed") is False),
+        ("dispatch_allowed", data.get("dispatch_allowed") is False),
+        ("runtime_actions", data.get("runtime_actions") is False),
+        ("blockers", blockers_valid),
+        ("integrity", isinstance(data.get("integrity"), dict)),
+        ("capability", isinstance(data.get("capability"), dict)),
+        (
+            "process_state",
+            process_state_value in {"running", "not_running", "ambiguous"},
+        ),
+        (
+            "runtime_state",
+            runtime_state_value in {"armed", "disarmed", "unknown"},
+        ),
+        (
+            "integrity_status",
+            integrity_status_value in BACKGROUND_INTEGRITY_STATUS_VALUES,
+        ),
+        (
+            "capability_status",
+            capability_status_value in BACKGROUND_CAPABILITY_STATUS_VALUES,
+        ),
+        ("capability_fresh", isinstance(capability.get("fresh"), bool)),
+        ("capability_runtime_actions", capability.get("runtime_actions") is False),
+        (
+            "capability_runtime_core_actions",
+            capability.get("runtime_core_actions") is False,
+        ),
+        ("matched_file_count", matched_valid),
+        ("manifest_file_count", manifest_valid),
+        ("mutable_drift_count", mutable_valid),
+        ("generated_at_utc", generated_at is not None),
+    )
+    contract_errors.extend(name for name, passed in checks if not passed)
+    contract_valid = payload is not None and not contract_errors
+    fresh = contract_valid and timestamp_fresh
+    capability_fresh = capability.get("fresh") is True
+    integrity_status = (
+        integrity_status_value
+        if integrity_status_value in BACKGROUND_INTEGRITY_STATUS_VALUES
+        else "invalid"
+    )
+    capability_status = (
+        capability_status_value
+        if capability_status_value in BACKGROUND_CAPABILITY_STATUS_VALUES
+        else "invalid"
+    )
+    ready = bool(
+        contract_valid
+        and fresh
+        and reported_status == "ready"
+        and integrity_status == "passed"
+        and capability_status == "fresh"
+        and capability_fresh
+        and not blockers
+    )
+
+    if not present:
+        effective_status = "missing"
+    elif not contract_valid:
+        effective_status = "blocked"
+    elif not fresh:
+        effective_status = "stale"
+    elif ready:
+        effective_status = "ready"
+    elif reported_status == "ready":
+        effective_status = "blocked"
+    else:
+        effective_status = str(reported_status)
+
+    runtime_state = (
+        runtime_state_value
+        if runtime_state_value in {"armed", "disarmed"}
+        else "unknown"
+    )
+    process_state = (
+        process_state_value
+        if process_state_value in {"running", "not_running", "ambiguous"}
+        else "unknown"
+    )
+
+    return {
+        "status": effective_status,
+        "reported_status": (
+            reported_status
+            if reported_status in BACKGROUND_STATUS_VALUES
+            else "invalid"
+        ),
+        "mode": mode if mode == BACKGROUND_STATUS_MODE else "invalid",
+        "generated_at_utc": (
+            generated_at.isoformat(timespec="seconds") if generated_at else ""
+        ),
+        "max_age_seconds": BACKGROUND_STATUS_MAX_AGE_SECONDS,
+        "age_seconds": round(age_seconds, 3) if age_seconds is not None else None,
+        "fresh": fresh,
+        "contract_valid": contract_valid,
+        "contract_errors": contract_errors,
+        "advisory_only": data.get("advisory_only") is True,
+        "safe_to_run_while_playing": data.get("safe_to_run_while_playing") is True,
+        "promotion_allowed": data.get("promotion_allowed") is True,
+        "dispatch_allowed": data.get("dispatch_allowed") is True,
+        "runtime_actions": data.get("runtime_actions") is True,
+        "process_state": process_state,
+        "integrity_status": integrity_status,
+        "matched_file_count": matched_file_count,
+        "manifest_file_count": manifest_file_count,
+        "mutable_drift_count": mutable_drift_count,
+        "capability_status": capability_status,
+        "capability_fresh": capability_fresh,
+        "runtime_state": runtime_state,
+        "blockers": blockers,
+        "path": str(path).replace("\\", "/"),
+    }
+
+
 def _count_jsonl_records(path: Path) -> int:
     file_stat = _safe_file_stat(path)
     if file_stat is None or file_stat.st_size <= 0:
@@ -206,14 +456,18 @@ def _find_latest_markdown(releases_dir: Path) -> dict[str, str] | None:
     if latest is None:
         return None
 
-    modified_at = dt.datetime.fromtimestamp(latest[0], tz=dt.UTC).isoformat(timespec="seconds")
+    modified_at = dt.datetime.fromtimestamp(latest[0], tz=dt.UTC).isoformat(
+        timespec="seconds"
+    )
     return {"path": str(latest[1]).replace("\\", "/"), "modified_at": modified_at}
 
 
 def _count_markdown_files(releases_dir: Path) -> int:
     if _safe_dir_stat(releases_dir) is None:
         return 0
-    return sum(1 for path in releases_dir.rglob("*.md") if _safe_file_stat(path) is not None)
+    return sum(
+        1 for path in releases_dir.rglob("*.md") if _safe_file_stat(path) is not None
+    )
 
 
 def _helper_status(helper_dev_dir: Path) -> dict[str, Any]:
@@ -227,6 +481,7 @@ def _helper_status(helper_dev_dir: Path) -> dict[str, Any]:
     smoke_preflight_path = helper_dev_dir / "smoke_preflight.json"
     smoke_status_path = helper_dev_dir / "smoke_status.json"
     live_promotion_path = helper_dev_dir / "live_promotion.json"
+    background_status_path = helper_dev_dir / "background_status.json"
 
     helper_dir_safe = _safe_dir_stat(helper_dev_dir) is not None
     manifest = _read_json_or_none(manifest_path) if helper_dir_safe else None
@@ -234,11 +489,25 @@ def _helper_status(helper_dev_dir: Path) -> dict[str, Any]:
     readiness = _read_json_or_none(readiness_path) if helper_dir_safe else None
     gate = _read_json_or_none(gate_path) if helper_dir_safe else None
     goal_status = _read_json_or_none(goal_status_path) if helper_dir_safe else None
-    module_contract = _read_json_or_none(module_contract_path) if helper_dir_safe else None
+    module_contract = (
+        _read_json_or_none(module_contract_path) if helper_dir_safe else None
+    )
     module_audit = _read_json_or_none(module_audit_path) if helper_dir_safe else None
-    smoke_preflight = _read_json_or_none(smoke_preflight_path) if helper_dir_safe else None
+    smoke_preflight = (
+        _read_json_or_none(smoke_preflight_path) if helper_dir_safe else None
+    )
     smoke_status = _read_json_or_none(smoke_status_path) if helper_dir_safe else None
-    live_promotion = _read_json_or_none(live_promotion_path) if helper_dir_safe else None
+    live_promotion = (
+        _read_json_or_none(live_promotion_path) if helper_dir_safe else None
+    )
+    background_status = (
+        _read_json_or_none(background_status_path) if helper_dir_safe else None
+    )
+    background_summary = _background_status_summary(
+        background_status,
+        background_status_path,
+        artifact_present=_safe_file_stat(background_status_path) is not None,
+    )
 
     gates = gate.get("gates", []) if gate else []
     live_approval_gate = next(
@@ -250,7 +519,9 @@ def _helper_status(helper_dev_dir: Path) -> dict[str, Any]:
         None,
     )
     live_approval_evidence = str((live_approval_gate or {}).get("evidence", ""))
-    live_promotion_has_approval = (live_promotion or {}).get("approval_switch") == "ApproveLiveDeploy"
+    live_promotion_has_approval = (live_promotion or {}).get(
+        "approval_switch"
+    ) == "ApproveLiveDeploy"
     blockers = [
         f"{item.get('name', 'gate')}: {item.get('reason') or item.get('status') or 'pending'}"
         for item in gates
@@ -282,7 +553,9 @@ def _helper_status(helper_dev_dir: Path) -> dict[str, Any]:
             ][:5],
         }
 
-    release_gate_releasable_to_live = bool(gate and gate.get("releasable_to_live") is True)
+    release_gate_releasable_to_live = bool(
+        gate and gate.get("releasable_to_live") is True
+    )
     releasable_to_live = release_gate_releasable_to_live and not blockers
     release_gate_status = str(gate.get("status", "missing")) if gate else "missing"
     live_promoted = bool(
@@ -316,7 +589,12 @@ def _helper_status(helper_dev_dir: Path) -> dict[str, Any]:
     next_command = (
         str((gate or {}).get("next_command") or "")
         if release_gate_status == "passed"
-        else str((gate or {}).get("next_command") or (goal_status or {}).get("next_command") or (smoke_status or {}).get("next_command") or "")
+        else str(
+            (gate or {}).get("next_command")
+            or (goal_status or {}).get("next_command")
+            or (smoke_status or {}).get("next_command")
+            or ""
+        )
     )
 
     zip_info = readiness.get("zip", {}) if readiness else {}
@@ -338,15 +616,25 @@ def _helper_status(helper_dev_dir: Path) -> dict[str, Any]:
             "status": str((module_contract or {}).get("status", "missing")),
             "passed_count": int((module_contract or {}).get("passed_count", 0) or 0),
             "check_count": int((module_contract or {}).get("check_count", 0) or 0),
-            "forbidden_count": int((module_contract or {}).get("forbidden_count", 0) or 0),
+            "forbidden_count": int(
+                (module_contract or {}).get("forbidden_count", 0) or 0
+            ),
             "path": str(module_contract_path).replace("\\", "/"),
         },
         "module_audit": {
             "status": str((module_audit or {}).get("status", "missing")),
-            "helper_budget_status": str((module_audit or {}).get("helper_budget_status", "missing")),
-            "helper_line_count": int((module_audit or {}).get("helper_line_count", 0) or 0),
-            "helper_line_budget": int((module_audit or {}).get("helper_line_budget", 0) or 0),
-            "next_supplemental_id": str((module_audit or {}).get("next_supplemental_id", "")),
+            "helper_budget_status": str(
+                (module_audit or {}).get("helper_budget_status", "missing")
+            ),
+            "helper_line_count": int(
+                (module_audit or {}).get("helper_line_count", 0) or 0
+            ),
+            "helper_line_budget": int(
+                (module_audit or {}).get("helper_line_budget", 0) or 0
+            ),
+            "next_supplemental_id": str(
+                (module_audit or {}).get("next_supplemental_id", "")
+            ),
             "next_module_id": str((module_audit or {}).get("next_module_id", "")),
             "path": str(module_audit_path).replace("\\", "/"),
         },
@@ -356,12 +644,23 @@ def _helper_status(helper_dev_dir: Path) -> dict[str, Any]:
         "live_promotion_created_at": str((live_promotion or {}).get("created_at", "")),
         "live_client": str((live_promotion or {}).get("live_client", "")),
         "live_backup_path": str((live_promotion or {}).get("backup", "")),
-        "staged_file_count": len((manifest or {}).get("files", [])) if isinstance((manifest or {}).get("files"), list) else 0,
-        "package_path": str(zip_info.get("path", "")) if isinstance(zip_info, dict) else "",
-        "package_sha256": str(zip_info.get("sha256", "")) if isinstance(zip_info, dict) else "",
+        "staged_file_count": len((manifest or {}).get("files", []))
+        if isinstance((manifest or {}).get("files"), list)
+        else 0,
+        "package_path": str(zip_info.get("path", ""))
+        if isinstance(zip_info, dict)
+        else "",
+        "package_sha256": str(zip_info.get("sha256", ""))
+        if isinstance(zip_info, dict)
+        else "",
         "blockers": blockers,
         "sandbox_smoke_queue": sandbox_smoke_queue,
-        "next_action": str((gate or {}).get("next_action") or (goal_status or {}).get("next_action") or "Run ValidateDev."),
+        "background_status": background_summary,
+        "next_action": str(
+            (gate or {}).get("next_action")
+            or (goal_status or {}).get("next_action")
+            or "Run ValidateDev."
+        ),
         "next_command": next_command,
         "paths": {
             "dev_dir": str(helper_dev_dir).replace("\\", "/"),
@@ -372,10 +671,13 @@ def _helper_status(helper_dev_dir: Path) -> dict[str, Any]:
             "goal_status": str(goal_status_path).replace("\\", "/"),
             "module_contract": str(module_contract_path).replace("\\", "/"),
             "module_audit": str(module_audit_path).replace("\\", "/"),
-            "sandbox_smoke_queue": str((helper_dev_dir / "sandbox_smoke_queue.json")).replace("\\", "/"),
+            "sandbox_smoke_queue": str(
+                (helper_dev_dir / "sandbox_smoke_queue.json")
+            ).replace("\\", "/"),
             "smoke_preflight": str(smoke_preflight_path).replace("\\", "/"),
             "smoke_status": str(smoke_status_path).replace("\\", "/"),
             "live_promotion": str(live_promotion_path).replace("\\", "/"),
+            "background_status": str(background_status_path).replace("\\", "/"),
         },
     }
 
@@ -427,17 +729,25 @@ def _p7_operator_brief_status(operator_brief_path: Path) -> dict[str, Any]:
     warnings = brief.get("warnings", [])
     hard_blockers = hard_blockers if isinstance(hard_blockers, list) else []
     warnings = warnings if isinstance(warnings, list) else []
-    action_readiness = brief.get("action_readiness") if isinstance(brief.get("action_readiness"), dict) else {}
+    action_readiness = (
+        brief.get("action_readiness")
+        if isinstance(brief.get("action_readiness"), dict)
+        else {}
+    )
     enabled_safe_write_tools = (
         action_readiness.get("enabled_safe_write_tools")
         if isinstance(action_readiness.get("enabled_safe_write_tools"), list)
         else []
     )
     safe_write_tool_design = (
-        brief.get("safe_write_tool_design") if isinstance(brief.get("safe_write_tool_design"), dict) else {}
+        brief.get("safe_write_tool_design")
+        if isinstance(brief.get("safe_write_tool_design"), dict)
+        else {}
     )
     roadmap_generation = (
-        brief.get("roadmap_generation") if isinstance(brief.get("roadmap_generation"), dict) else {}
+        brief.get("roadmap_generation")
+        if isinstance(brief.get("roadmap_generation"), dict)
+        else {}
     )
     roadmap_hard_blockers = (
         roadmap_generation.get("hard_blockers")
@@ -457,8 +767,12 @@ def _p7_operator_brief_status(operator_brief_path: Path) -> dict[str, Any]:
             "status": str(action_readiness.get("status", "missing")),
             "decision": str(action_readiness.get("decision", "missing")),
             "candidate_count": int(action_readiness.get("candidate_count", 0)),
-            "audited_candidate_count": int(action_readiness.get("audited_candidate_count", 0)),
-            "mcp_write_tool_count": int(action_readiness.get("mcp_write_tool_count", 0)),
+            "audited_candidate_count": int(
+                action_readiness.get("audited_candidate_count", 0)
+            ),
+            "mcp_write_tool_count": int(
+                action_readiness.get("mcp_write_tool_count", 0)
+            ),
             "enabled_safe_write_tools": [
                 {
                     "action_id": str(item.get("action_id", "")),
@@ -473,16 +787,24 @@ def _p7_operator_brief_status(operator_brief_path: Path) -> dict[str, Any]:
         "safe_write_tool_design": {
             "status": str(safe_write_tool_design.get("status", "missing")),
             "decision": str(safe_write_tool_design.get("decision", "missing")),
-            "selected_action_id": str(safe_write_tool_design.get("selected_action_id", "")),
-            "proposed_mcp_tool": str(safe_write_tool_design.get("proposed_mcp_tool", "")),
+            "selected_action_id": str(
+                safe_write_tool_design.get("selected_action_id", "")
+            ),
+            "proposed_mcp_tool": str(
+                safe_write_tool_design.get("proposed_mcp_tool", "")
+            ),
             "risk_class": str(safe_write_tool_design.get("risk_class", "")),
             "mode": str(safe_write_tool_design.get("mode", "missing")),
             "mcp_enabled": bool(safe_write_tool_design.get("mcp_enabled", False)),
-            "next_safe_command": str(safe_write_tool_design.get("next_safe_command", "")),
+            "next_safe_command": str(
+                safe_write_tool_design.get("next_safe_command", "")
+            ),
         },
         "roadmap_generation": {
             "status": str(roadmap_generation.get("status", "missing")),
-            "doc_sync_status": str(roadmap_generation.get("doc_sync_status", "missing")),
+            "doc_sync_status": str(
+                roadmap_generation.get("doc_sync_status", "missing")
+            ),
             "doc_count": int(roadmap_generation.get("doc_count", 0)),
             "ready_doc_count": int(roadmap_generation.get("ready_doc_count", 0)),
             "hard_blockers": [str(item) for item in roadmap_hard_blockers[:8]],
@@ -506,9 +828,19 @@ def _list_release_sprints(releases_dir: Path) -> list[dict[str, Any]]:
 
     result: list[dict[str, Any]] = []
     for sprint_dir in sprint_dirs[:6]:
-        md_files = sorted([path for path in sprint_dir.glob("*.md") if _safe_file_stat(path) is not None])
+        md_files = sorted(
+            [
+                path
+                for path in sprint_dir.glob("*.md")
+                if _safe_file_stat(path) is not None
+            ]
+        )
         sprint_stat = _safe_dir_stat(sprint_dir)
-        md_stats = [file_stat for path in md_files if (file_stat := _safe_file_stat(path)) is not None]
+        md_stats = [
+            file_stat
+            for path in md_files
+            if (file_stat := _safe_file_stat(path)) is not None
+        ]
         latest = max(
             (file_stat.st_mtime for file_stat in md_stats),
             default=sprint_stat.st_mtime if sprint_stat else 0,
@@ -517,7 +849,9 @@ def _list_release_sprints(releases_dir: Path) -> list[dict[str, Any]]:
             {
                 "sprint": sprint_dir.name,
                 "file_count": len(md_files),
-                "latest_modified_at": dt.datetime.fromtimestamp(latest, tz=dt.UTC).isoformat(timespec="seconds"),
+                "latest_modified_at": dt.datetime.fromtimestamp(
+                    latest, tz=dt.UTC
+                ).isoformat(timespec="seconds"),
             }
         )
     return result
@@ -531,17 +865,23 @@ def build_evidence_pack(
     helper_dev_dir: Path | None = None,
     operator_brief_path: Path | None = None,
 ) -> dict[str, Any]:
-    releases_dir = releases_dir or _configured_path("CTOA_RELEASES_DIR", "releases/evidence")
+    releases_dir = releases_dir or _configured_path(
+        "CTOA_RELEASES_DIR", "releases/evidence"
+    )
     quality_path = quality_path or _configured_path(
         "CTOA_REPO_HYGIENE_PATH",
         "runtime/repo-hygiene/local-pr-quality.json",
     )
-    cost_report_path = cost_report_path or _configured_path("CTOA_API_COST_REPORT_PATH", "runtime/api-cost/latest.json")
+    cost_report_path = cost_report_path or _configured_path(
+        "CTOA_API_COST_REPORT_PATH", "runtime/api-cost/latest.json"
+    )
     action_audit_path = action_audit_path or _configured_path(
         "CTOA_ACTION_AUDIT_PATH",
         "runtime/control-center/action-audit.jsonl",
     )
-    helper_dev_dir = helper_dev_dir or _configured_path("CTOA_HELPER_DEV_DIR", str(DEFAULT_HELPER_DEV_DIR))
+    helper_dev_dir = helper_dev_dir or _configured_path(
+        "CTOA_HELPER_DEV_DIR", str(DEFAULT_HELPER_DEV_DIR)
+    )
     operator_brief_path = operator_brief_path or _configured_path(
         "CTOA_ENGINE_BRAIN_OPERATOR_BRIEF_PATH",
         str(DEFAULT_ENGINE_BRAIN_OPERATOR_BRIEF_PATH),
@@ -567,28 +907,45 @@ def build_evidence_pack(
     if quality is None:
         recommendations.append("Run repo hygiene quality generation before sign-off.")
     elif quality_status != "PASS":
-        recommendations.append("Review the repo hygiene findings before treating the pack as release-ready.")
+        recommendations.append(
+            "Review the repo hygiene findings before treating the pack as release-ready."
+        )
 
     if cost_report is None:
-        recommendations.append(f"Generate {cost_report_path} with scripts/ops/api_cost_report.py.")
+        recommendations.append(
+            f"Generate {cost_report_path} with scripts/ops/api_cost_report.py."
+        )
     elif cost_records == 0:
-        recommendations.append("Cost report exists but has no records; verify eval artifacts in evals/runs.")
+        recommendations.append(
+            "Cost report exists but has no records; verify eval artifacts in evals/runs."
+        )
 
     if action_audit_count == 0:
-        recommendations.append("Exercise at least one Control Center action so the audit trail is visible.")
+        recommendations.append(
+            "Exercise at least one Control Center action so the audit trail is visible."
+        )
 
     if helper["status"] == "missing":
-        recommendations.append("Run PrepareDev and ValidateDev before Helper release review.")
+        recommendations.append(
+            "Run PrepareDev and ValidateDev before Helper release review."
+        )
     elif helper["status"] not in {"releasable", "promoted"}:
         recommendations.append(helper["next_action"])
 
     if p7_operator_brief["status"] == "missing":
-        recommendations.append("Run .\\ctoa.ps1 brain refresh before P7 operator workflow review.")
+        recommendations.append(
+            "Run .\\ctoa.ps1 brain refresh before P7 operator workflow review."
+        )
     elif p7_operator_brief["status"] != "ready":
-        recommendations.append(p7_operator_brief["next_safe_command"] or "Review P7 operator brief blockers before workflow expansion.")
+        recommendations.append(
+            p7_operator_brief["next_safe_command"]
+            or "Review P7 operator brief blockers before workflow expansion."
+        )
 
     if not recommendations:
-        recommendations.append("Evidence pack is ready for review. Keep fresh traces attached to the release note.")
+        recommendations.append(
+            "Evidence pack is ready for review. Keep fresh traces attached to the release note."
+        )
 
     return {
         "generated_at_utc": dt.datetime.now(dt.UTC).isoformat(timespec="seconds"),
@@ -616,7 +973,9 @@ def build_evidence_pack(
             "records_seen": cost_records,
             "total_tokens": total_tokens,
             "total_cost_usd": total_cost,
-            "anomaly_count": len(cost_report.get("anomalies", [])) if cost_report else 0,
+            "anomaly_count": len(cost_report.get("anomalies", []))
+            if cost_report
+            else 0,
         },
         "control_center_audit": {
             "status": "ready" if action_audit_count else "missing",
@@ -677,6 +1036,14 @@ def render_markdown(pack: dict[str, Any]) -> str:
             f"- Sandbox smoke queue: `{helper.get('sandbox_smoke_queue', {}).get('status', 'missing')}`",
             f"- LivePromotion: `{helper['live_promotion_status']}`",
             f"- Live promoted at: `{helper['live_promotion_created_at'] or 'n/a'}`",
+            f"- BackgroundNoScreen: `{helper.get('background_status', {}).get('status', 'missing')}` "
+            f"integrity=`{helper.get('background_status', {}).get('integrity_status', 'missing')}` "
+            f"capability=`{helper.get('background_status', {}).get('capability_status', 'missing')}` "
+            f"contract_valid=`{helper.get('background_status', {}).get('contract_valid', False)}` "
+            f"fresh=`{helper.get('background_status', {}).get('fresh', False)}` "
+            f"advisory_only=`{helper.get('background_status', {}).get('advisory_only', False)}` "
+            f"promotion_allowed=`{helper.get('background_status', {}).get('promotion_allowed', False)}` "
+            f"dispatch_allowed=`{helper.get('background_status', {}).get('dispatch_allowed', False)}`",
             f"- Package SHA256: `{helper['package_sha256'] or 'missing'}`",
             f"- Next command: `{helper['next_command'] or 'n/a'}`",
         ]
@@ -715,8 +1082,8 @@ def render_markdown(pack: dict[str, Any]) -> str:
             f"- Warnings: `{p7['warning_count']}`",
             f"- Action readiness: `{p7['action_readiness']['status']}`",
             (
-            f"- Action candidates audited: "
-            f"`{p7['action_readiness']['audited_candidate_count']}/{p7['action_readiness']['candidate_count']}`"
+                f"- Action candidates audited: "
+                f"`{p7['action_readiness']['audited_candidate_count']}/{p7['action_readiness']['candidate_count']}`"
             ),
             f"- MCP write tools: `{p7['action_readiness']['mcp_write_tool_count']}`",
             f"- Action next safe command: `{p7['action_readiness']['next_safe_command'] or 'n/a'}`",
@@ -756,31 +1123,60 @@ def render_markdown(pack: dict[str, Any]) -> str:
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Generate a compact evidence pack from local CTOAi artifacts.")
-    parser.add_argument("--releases-dir", type=Path, default=_configured_path("CTOA_RELEASES_DIR", "releases/evidence"))
+    parser = argparse.ArgumentParser(
+        description="Generate a compact evidence pack from local CTOAi artifacts."
+    )
+    parser.add_argument(
+        "--releases-dir",
+        type=Path,
+        default=_configured_path("CTOA_RELEASES_DIR", "releases/evidence"),
+    )
     parser.add_argument(
         "--quality-path",
         type=Path,
-        default=_configured_path("CTOA_REPO_HYGIENE_PATH", "runtime/repo-hygiene/local-pr-quality.json"),
+        default=_configured_path(
+            "CTOA_REPO_HYGIENE_PATH", "runtime/repo-hygiene/local-pr-quality.json"
+        ),
     )
     parser.add_argument(
         "--cost-report-path",
         type=Path,
-        default=_configured_path("CTOA_API_COST_REPORT_PATH", "runtime/api-cost/latest.json"),
+        default=_configured_path(
+            "CTOA_API_COST_REPORT_PATH", "runtime/api-cost/latest.json"
+        ),
     )
     parser.add_argument(
         "--action-audit-path",
         type=Path,
-        default=_configured_path("CTOA_ACTION_AUDIT_PATH", "runtime/control-center/action-audit.jsonl"),
+        default=_configured_path(
+            "CTOA_ACTION_AUDIT_PATH", "runtime/control-center/action-audit.jsonl"
+        ),
     )
-    parser.add_argument("--helper-dev-dir", type=Path, default=_configured_path("CTOA_HELPER_DEV_DIR", str(DEFAULT_HELPER_DEV_DIR)))
+    parser.add_argument(
+        "--helper-dev-dir",
+        type=Path,
+        default=_configured_path("CTOA_HELPER_DEV_DIR", str(DEFAULT_HELPER_DEV_DIR)),
+    )
     parser.add_argument(
         "--operator-brief-path",
         type=Path,
-        default=_configured_path("CTOA_ENGINE_BRAIN_OPERATOR_BRIEF_PATH", str(DEFAULT_ENGINE_BRAIN_OPERATOR_BRIEF_PATH)),
+        default=_configured_path(
+            "CTOA_ENGINE_BRAIN_OPERATOR_BRIEF_PATH",
+            str(DEFAULT_ENGINE_BRAIN_OPERATOR_BRIEF_PATH),
+        ),
     )
-    parser.add_argument("--json-out", type=Path, default=_configured_path("CTOA_EVIDENCE_JSON_PATH", "runtime/evidence/latest.json"))
-    parser.add_argument("--md-out", type=Path, default=_configured_path("CTOA_EVIDENCE_MD_PATH", "runtime/evidence/latest.md"))
+    parser.add_argument(
+        "--json-out",
+        type=Path,
+        default=_configured_path(
+            "CTOA_EVIDENCE_JSON_PATH", "runtime/evidence/latest.json"
+        ),
+    )
+    parser.add_argument(
+        "--md-out",
+        type=Path,
+        default=_configured_path("CTOA_EVIDENCE_MD_PATH", "runtime/evidence/latest.md"),
+    )
     return parser
 
 

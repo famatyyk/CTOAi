@@ -20,13 +20,11 @@ Snapshot date: 2026-07-11 Europe/Warsaw
 - Nested `AGENTS.md` added for `AI/` and `scripts/lua/`.
 - Docker compose defaults hardened to loopback through `CTOA_BIND_HOST`,
   `CTOA_BOT_DASHBOARD_BIND_HOST`, and `CTOA_MONITOR_BIND_HOST`.
-- OTClient Helper `v2.1.1a` is live with current 49-file SHA-256 parity and
-  fresh `Initialized successfully v2.1.1a` boot evidence. The stabilization
-  patch passed its production gate:
-  Graphite uses an amber accent, adaptive sidebar geometry and button/state
-  roles are UI-owned, shell pressure is bounded to 4350 lines / 158 functions,
-  the 20-shot theme matrix, 32/32 module gates, 16/16 attach smoke, and singleton
-  relog evidence pass, and runtime remains disarmed.
+- OTClient Helper `v2.2.1` is live-promoted. The official wrapper created a
+  backup, verified 58/58 staged/live manifest hashes at promotion, completed the
+  release gate and GoalStatus, and refreshed Control Center evidence. Later
+  profile edits during play are mutable drift and do not redefine immutable
+  package-code parity.
 - Helper P6 Module Lane is repo- and sandbox-complete. Its evidence-aware module audit promotes
   passive lanes only when the dedicated smoke, current module gates, ReadyCheck,
   and a newer in-world tab screenshot all exist. Heal Friend, Conditions,
@@ -41,7 +39,7 @@ Snapshot date: 2026-07-11 Europe/Warsaw
   returns `hold_feature_flag_disabled`, zero planned items, and a read-only
   container capability sample. Every report has newer in-world tab evidence and
   runtime remains disarmed. The next functional step is a separately reviewed
-  runtime bridge after the completed v2.1.1a stabilization.
+  runtime bridge after the completed v2.2.1 stabilization.
 - Post-Recovery sequencing is now enforced by three independent passive safety
   gates rather than a generic module gate. Conditions comes first and
   allowlists only paralyze-recovery dry-run; Equipment follows with ring-only,
@@ -53,8 +51,24 @@ Snapshot date: 2026-07-11 Europe/Warsaw
   CaveBot remain `deferred_high_risk`. Current evidence passes ValidateDev
   121/121, ModuleStaticGates 36/36, each domain static gate 9/9, ordered module
   attach 4/4, full attach 16/16, and RuntimeModuleGatesSandboxSmoke 19/19.
-  Runtime is disarmed; dispatch and live promotion remain false, and the only
-  release blocker is the intentionally absent approval for the new live package.
+  These gates remain dry-run/no-dispatch even though the package itself is now
+  live-promoted; runtime acceptance and package promotion are separate states.
+- P8 `BackgroundNoScreen` is the active lane. It adds bounded passive heartbeat
+  and log readers, immutable live/manifest parity, an advisory-only
+  `background_status.json`, a positive wrapper allowlist, primitive GUI/input/
+  screenshot/start-stop/live-write guards, `ctoa.ps1 otbg`, and a read-only
+  Control Center status tile. It records process/screenshot stability and never
+  authorizes dispatch or promotion. The staged source version is `v2.3.0`; the
+  protected live client remains `v2.2.1` during this development cycle. Canonical sequence:
+  `AI/P8_P16_EXECUTION_ROADMAP.md`.
+- P8 trust is fail-closed: only a manifest with `official_live_promotion`
+  provenance and a matching SHA256 in `live_promotion.json` can anchor parity.
+  The observer cannot create that pin. Fresh readiness also requires exactly one
+  canonical client process and an explicit online heartbeat newer than it.
+- Vocation-profile drift is visible as its own count but cannot satisfy parity:
+  the current profile is executable Lua. A later schema-validated data-only
+  persistence format is required before normal profile changes can be trusted as
+  non-code drift.
 - CTOAi Runtime 2 execution has started from the reviewed vBot architecture:
   `ctoa_helper_runtime_core.lua` now provides a passive runtime registry,
   failure-isolated event bus, and 4 ms budgeted cooperative scheduler with
@@ -76,8 +90,8 @@ Snapshot date: 2026-07-11 Europe/Warsaw
   and equipment observation domains. Guarded providers expose only read state;
   the verified safe-boot snapshot contains five registered tasks, zero enabled
   tasks, and no executed tick work.
-- Runtime 2 P4 executor work remains outside the v2.1.1a stabilization scope.
-  The v2.1.1a Helper goal and release gate completed with a fresh manifest,
+- Runtime 2 P4 executor work remains outside the v2.2.1 stabilization scope.
+  The v2.2.1 Helper goal and release gate completed with a fresh manifest,
   static gates, theme matrix, in-world attach, relog evidence, and separately
   approved live promotion.
 - Runtime 2 packaging now carries Runtime Core, five observers, and the guarded

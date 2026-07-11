@@ -36,6 +36,7 @@ Run from repository root:
 - `otmockup` - render and open the helper UI mockup
 - `otdeploy approve-live` - promote the staged Helper through the official wrapper after all release gates pass
 - `otest` - run `ValidateDev` through the official wrapper and open the local preview; never touches live
+- `otbg` - collect bounded passive `BackgroundNoScreen` evidence against an official promotion pin; never launches, stops, focuses, captures, sends input to, or writes inside a client
 - `brain refresh` - regenerate secret-safe Engine Brain file tree and symbol map
 - `brain doctor` - run secret-safe Engine Brain environment audit
 - `brain pack [all|helper|control-center|infra|security]` - build a portable secret-safe Engine Brain markdown pack
@@ -76,6 +77,7 @@ Run from repository root:
 .\ctoa.ps1 report now
 .\ctoa.ps1 otprofile "EK monk, bez aoe na 1, exeta od 2 visible, potion F1 heal 80"
 .\ctoa.ps1 otest
+.\ctoa.ps1 otbg
 .\ctoa.ps1 otdeploy approve-live
 .\ctoa.ps1 brain refresh
 .\ctoa.ps1 brain doctor

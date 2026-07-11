@@ -14,6 +14,7 @@ export type ControlCenterEvidenceConfig = {
   helperSmokePreflightPath: string
   helperSmokeStatusPath: string
   helperLivePromotionPath: string
+  helperBackgroundStatusPath: string
   engineBrainManifestPath: string
   engineBrainP6ReadinessPath: string
   engineBrainP6PluginHandoffSmokePath: string
@@ -77,6 +78,10 @@ export function getControlCenterEvidenceConfig(): ControlCenterEvidenceConfig {
     helperSmokePreflightPath: configuredPath("CTOA_HELPER_SMOKE_PREFLIGHT_PATH", path.join(helperDevDir, "smoke_preflight.json")),
     helperSmokeStatusPath: configuredPath("CTOA_HELPER_SMOKE_STATUS_PATH", path.join(helperDevDir, "smoke_status.json")),
     helperLivePromotionPath: configuredPath("CTOA_HELPER_LIVE_PROMOTION_PATH", path.join(helperDevDir, "live_promotion.json")),
+    helperBackgroundStatusPath: configuredPath(
+      "CTOA_HELPER_BACKGROUND_STATUS_PATH",
+      path.join(helperDevDir, "background_status.json"),
+    ),
     engineBrainManifestPath: configuredPath("CTOA_ENGINE_BRAIN_MANIFEST_PATH", "AI/generated/manifest.json"),
     engineBrainP6ReadinessPath: configuredPath("CTOA_ENGINE_BRAIN_P6_READINESS_PATH", "AI/generated/P6_CODEX_INTEGRATION_READINESS.json"),
     engineBrainP6PluginHandoffSmokePath: configuredPath(

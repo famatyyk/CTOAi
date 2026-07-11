@@ -1,6 +1,8 @@
 param(
-    [ValidateSet("PrepareDev", "ValidateDev", "Setup", "SmokePreflight", "SmokeStatus", "SmokeQueue", "GoalStatus", "LocalReady", "Launch", "Smoke", "SmokeAll", "SmokeAttach", "SmokeAttachModules", "SmokeAttachAll", "ThemeSnapshotMatrix", "HealingVitalsSmoke", "CombatSafetySmoke", "CavebotSafetySmoke", "TimerSafetySmoke", "LootSafetySmoke", "HealFriendNoTargetSmoke", "ConditionsObserverSmoke", "EquipmentObserverSmoke", "ScriptingPolicySmoke", "PlannerStaticSmoke", "RuntimePolicyStaticSmoke", "DispatchGuardStaticSmoke", "PlanQueueStaticSmoke", "RuntimeReadinessStaticSmoke", "ModuleStatusStaticSmoke", "ActionCatalogStaticSmoke", "DecisionTraceStaticSmoke", "DecisionPipelineStaticSmoke", "SandboxHandoffStaticSmoke", "FeatureFlagsStaticSmoke", "HudStaticSmoke", "HotkeysStaticSmoke", "ModalStaticSmoke", "InputContractsStaticSmoke", "RouteStaticSmoke", "TargetingStaticSmoke", "CombatRuntimeStaticSmoke", "CavebotRuntimeStaticSmoke", "LootRuntimeStaticSmoke", "TimerRuntimeStaticSmoke", "RecoveryRuntimeStaticSmoke", "RecoveryBridgeStaticSmoke", "ConditionsRuntimeGateStaticSmoke", "EquipmentRuntimeGateStaticSmoke", "HealFriendRuntimeGateStaticSmoke", "RuntimeModuleGatesSandboxSmoke", "RecoveryBridgeSandboxSmoke", "RecoveryBridgeActionSmoke", "ProfileSchemaStaticSmoke", "OperatorSummaryStaticSmoke", "ExternalBotImportGateStaticSmoke", "HelperShellBudgetStaticSmoke", "HelperShellBudgetPlanStaticSmoke", "ModuleContract", "ModuleAudit", "ModuleStaticGates", "Snapshot", "ReadyCheck", "BackupLiveCtoa", "PromoteLiveCtoa", "EmergencyRepairLiveCtoa", "DisableLiveCtoa", "EnableLiveCtoa", "EnableLiveCtoaUiOnly", "Stop")]
+    [ValidateSet("PrepareDev", "ValidateDev", "Setup", "SmokePreflight", "SmokeStatus", "SmokeQueue", "GoalStatus", "BackgroundStatus", "LocalReady", "Launch", "Smoke", "SmokeAll", "SmokeAttach", "SmokeAttachModules", "SmokeAttachAll", "ThemeSnapshotMatrix", "HealingVitalsSmoke", "CombatSafetySmoke", "CavebotSafetySmoke", "TimerSafetySmoke", "LootSafetySmoke", "HealFriendNoTargetSmoke", "ConditionsObserverSmoke", "EquipmentObserverSmoke", "ScriptingPolicySmoke", "PlannerStaticSmoke", "RuntimePolicyStaticSmoke", "DispatchGuardStaticSmoke", "PlanQueueStaticSmoke", "RuntimeReadinessStaticSmoke", "ModuleStatusStaticSmoke", "ActionCatalogStaticSmoke", "DecisionTraceStaticSmoke", "DecisionPipelineStaticSmoke", "SandboxHandoffStaticSmoke", "FeatureFlagsStaticSmoke", "HudStaticSmoke", "HotkeysStaticSmoke", "ModalStaticSmoke", "InputContractsStaticSmoke", "RouteStaticSmoke", "TargetingStaticSmoke", "CombatRuntimeStaticSmoke", "CavebotRuntimeStaticSmoke", "LootRuntimeStaticSmoke", "TimerRuntimeStaticSmoke", "RecoveryRuntimeStaticSmoke", "RecoveryBridgeStaticSmoke", "ConditionsRuntimeGateStaticSmoke", "EquipmentRuntimeGateStaticSmoke", "HealFriendRuntimeGateStaticSmoke", "RuntimeModuleGatesSandboxSmoke", "RecoveryBridgeSandboxSmoke", "RecoveryBridgeActionSmoke", "ProfileSchemaStaticSmoke", "OperatorSummaryStaticSmoke", "ExternalBotImportGateStaticSmoke", "HelperShellBudgetStaticSmoke", "HelperShellBudgetPlanStaticSmoke", "ModuleContract", "ModuleAudit", "ModuleStaticGates", "Snapshot", "ReadyCheck", "BackupLiveCtoa", "PromoteLiveCtoa", "EmergencyRepairLiveCtoa", "DisableLiveCtoa", "EnableLiveCtoa", "EnableLiveCtoaUiOnly", "Stop")]
     [string]$Action = "Smoke",
+    [ValidateSet("Interactive", "BackgroundNoScreen")]
+    [string]$OperatorMode = "Interactive",
     [ValidateSet("overview", "healing", "heal_friend", "conditions", "hunting", "hunting_magic", "cavebot", "equipment", "tools", "tools_pvp", "tools_hud", "tools_timer", "tools_diag", "profile", "ui", "scripting")]
     [string]$Tab = "overview",
     [string]$SourceClient = "$env:LOCALAPPDATA\Solteria\client",
@@ -18,6 +20,35 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+$script:BackgroundNoScreen = $OperatorMode -eq "BackgroundNoScreen"
+$script:InheritedBackgroundNoScreen = $env:CTOA_OPERATOR_MODE -eq "background_no_screen"
+
+function Get-BackgroundAllowedActions {
+    return @("BackgroundStatus")
+}
+
+function Assert-InteractiveOperatorMode {
+    param([Parameter(Mandatory = $true)][string]$Operation)
+    if ($script:BackgroundNoScreen -or $script:InheritedBackgroundNoScreen) {
+        throw "BackgroundNoScreen forbids interactive operation: $Operation"
+    }
+}
+
+function Assert-OperatorModeAction {
+    if ($script:InheritedBackgroundNoScreen -and -not $script:BackgroundNoScreen) {
+        throw "CTOA_OPERATOR_MODE=background_no_screen cannot be downgraded by a child process."
+    }
+    if (-not $script:BackgroundNoScreen) {
+        return
+    }
+    $env:CTOA_OPERATOR_MODE = "background_no_screen"
+    if ($ApproveLiveDeploy -or $LaunchAfterPromote -or $ToggleHelper -or $DismissDialogs) {
+        throw "BackgroundNoScreen rejects live approval, launch, toggle, and dialog parameters."
+    }
+    if ($Action -notin (Get-BackgroundAllowedActions)) {
+        throw "BackgroundNoScreen forbids action '$Action'. Use BackgroundStatus or an allowlisted static action."
+    }
+}
 
 function Get-RepoRoot {
     return (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
@@ -63,6 +94,43 @@ function Assert-UnderLocalAppData {
         throw "Refusing to operate outside LOCALAPPDATA: $full"
     }
     return $full
+}
+
+function Assert-ExactLiveClientPath {
+    param([Parameter(Mandatory = $true)][string]$Path)
+    $full = (Assert-UnderLocalAppData -Path $Path).TrimEnd([char[]]@('\', '/'))
+    $expected = [System.IO.Path]::GetFullPath(
+        (Join-Path $env:LOCALAPPDATA "Solteria\client")
+    ).TrimEnd([char[]]@('\', '/'))
+    if (-not $full.Equals($expected, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "BackgroundNoScreen requires the canonical live client path: $expected"
+    }
+    return $full
+}
+
+function Assert-ExactBackgroundOutputPath {
+    param(
+        [Parameter(Mandatory = $true)][string]$RepoRoot,
+        [Parameter(Mandatory = $true)][string]$Candidate
+    )
+    $runtimeRoot = [System.IO.Path]::GetFullPath((Join-Path $RepoRoot "runtime"))
+    $expected = [System.IO.Path]::GetFullPath(
+        (Join-Path $runtimeRoot "solteria_helper_dev")
+    ).TrimEnd([char[]]@('\', '/'))
+    $full = [System.IO.Path]::GetFullPath($Candidate).TrimEnd([char[]]@('\', '/'))
+    if (-not $full.Equals($expected, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "BackgroundNoScreen output must be exactly: $expected"
+    }
+    foreach ($directory in @($runtimeRoot, $expected)) {
+        if (-not (Test-Path -LiteralPath $directory -PathType Container)) {
+            throw "BackgroundNoScreen output directory is missing: $directory"
+        }
+        $item = Get-Item -LiteralPath $directory -Force
+        if (($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+            throw "BackgroundNoScreen rejects reparse output directory: $directory"
+        }
+    }
+    return $expected
 }
 
 function Assert-SandboxClientPath {
@@ -236,6 +304,7 @@ function Write-SmokeCommand {
         [string]$Theme = "",
         [switch]$Confirm
     )
+    Assert-InteractiveOperatorMode -Operation "write smoke command"
     $modDir = Join-Path $ClientDir "mods\ctoa_otclient"
     New-Item -ItemType Directory -Force -Path $modDir | Out-Null
     $lines = @("tab=$ActiveTab", "subtab=$SmokeSubtab")
@@ -253,6 +322,7 @@ function Write-SmokeCommand {
 
 function Sync-CtoaRuntimeFiles {
     param([string]$ClientDir)
+    Assert-InteractiveOperatorMode -Operation "sync runtime files"
     $repo = Get-RepoRoot
     $stageRoot = Join-Path (Join-Path $repo $DevDir) "latest"
     $modDir = Join-Path $ClientDir "mods\ctoa_otclient"
@@ -480,9 +550,16 @@ function Get-SourceClientProcessSummaries {
         } catch {
             continue
         }
+        $startUnixMs = 0
+        try {
+            $startUnixMs = ([DateTimeOffset]$item.CreationDate).ToUnixTimeMilliseconds()
+        } catch {
+            $startUnixMs = 0
+        }
         $summaries += [pscustomobject]@{
             id = [int]$item.ProcessId
             start_time = [string]$item.CreationDate
+            start_unix_ms = $startUnixMs
             path = $fullPath
         }
     }
@@ -490,6 +567,7 @@ function Get-SourceClientProcessSummaries {
 }
 
 function Start-LiveClientAfterPromotion {
+    Assert-InteractiveOperatorMode -Operation "start live client"
     $sourceRoot = Assert-UnderLocalAppData -Path $SourceClient
     $exe = [System.IO.Path]::GetFullPath((Join-Path $sourceRoot "solteria-client.exe"))
     if (-not (Test-Path -LiteralPath $exe)) {
@@ -919,6 +997,7 @@ function Resolve-SmokeTab {
 }
 
 function Initialize-Sandbox {
+    Assert-InteractiveOperatorMode -Operation "initialize sandbox"
     $sandboxRoot = Assert-SandboxClientPath -SandboxPath $SandboxClient -SourcePath $SourceClient
     if (-not (Test-Path -LiteralPath $SourceClient)) {
         throw "Source client does not exist: $SourceClient"
@@ -1048,6 +1127,7 @@ function Invoke-SmokePreflight {
 }
 
 function Start-SandboxClient {
+    Assert-InteractiveOperatorMode -Operation "start sandbox client"
     $sandboxRoot = Assert-SandboxClientPath -SandboxPath $SandboxClient -SourcePath $SourceClient
     $exe = Join-Path $sandboxRoot "solteria-client.exe"
     if (-not (Test-Path -LiteralPath $exe)) {
@@ -1121,6 +1201,7 @@ function Get-SandboxProcessSummaries {
 }
 
 function Stop-SandboxClient {
+    Assert-InteractiveOperatorMode -Operation "stop sandbox client"
     Get-SandboxProcesses | ForEach-Object {
         Stop-Process -Id $_.Id -Force
     }
@@ -1135,6 +1216,7 @@ function Stop-SandboxClient {
 
 function Set-LiveCtoaEnabled {
     param([bool]$Enabled)
+    Assert-InteractiveOperatorMode -Operation "change live helper enablement"
     $modDir = Join-Path $SourceClient "mods\ctoa_otclient"
     if (-not (Test-Path -LiteralPath $modDir)) {
         throw "CTOA module directory not found: $modDir"
@@ -1243,6 +1325,7 @@ function Set-LiveCtoaEnabled {
 }
 
 function Set-LiveCtoaUiOnly {
+    Assert-InteractiveOperatorMode -Operation "change live helper UI-only state"
     $modDir = Join-Path $SourceClient "mods\ctoa_otclient"
     if (-not (Test-Path -LiteralPath $modDir)) {
         throw "CTOA module directory not found: $modDir"
@@ -1346,6 +1429,7 @@ function Set-LiveCtoaUiOnly {
 }
 
 function New-LiveCtoaBackup {
+    Assert-InteractiveOperatorMode -Operation "create live client backup"
     Assert-UnderLocalAppData -Path $SourceClient | Out-Null
     if (-not (Test-Path -LiteralPath $SourceClient)) {
         throw "Source client does not exist: $SourceClient"
@@ -1412,34 +1496,195 @@ function Assert-ReleaseGateForLivePromotion {
     }
 }
 
-function Assert-LivePromotionMatchesStage {
+function Get-VerifiedStagePromotionEntries {
     param(
         [Parameter(Mandatory = $true)]
-        [string]$Stage,
-        [Parameter(Mandatory = $true)]
-        [string]$LiveClient
+        [string]$Stage
     )
-    $verified = 0
-    foreach ($relative in Get-DevPackageFiles) {
+    $maxFiles = 128
+    $maxFileBytes = 2MB
+    $maxTotalBytes = 16MB
+    $relativeFiles = @(Get-DevPackageFiles)
+    if ($relativeFiles.Count -eq 0 -or $relativeFiles.Count -gt $maxFiles) {
+        throw "Promotion verification failed: package file count must be 1..$maxFiles."
+    }
+    $seen = @{}
+    $totalBytes = [long]0
+    $verifiedEntries = New-Object System.Collections.Generic.List[object]
+    foreach ($relativeValue in $relativeFiles) {
+        $relative = ([string]$relativeValue).Replace('\', '/')
+        if (
+            [string]::IsNullOrWhiteSpace($relative) -or
+            [System.IO.Path]::IsPathRooted($relative) -or
+            $relative -match '(^|/)\.\.?($|/)'
+        ) {
+            throw "Promotion verification failed: invalid package path: $relative"
+        }
+        $caseKey = $relative.ToLowerInvariant()
+        if ($seen.ContainsKey($caseKey)) {
+            throw "Promotion verification failed: duplicate case-insensitive package path: $relative"
+        }
+        $seen[$caseKey] = $true
+
         $sourcePath = Join-Path $Stage $relative
-        $destPath = Join-Path $LiveClient $relative
         if (-not (Test-Path -LiteralPath $sourcePath)) {
             throw "Promotion verification failed: staged file is missing: $sourcePath"
         }
+        $sourceInfo = Get-Item -LiteralPath $sourcePath -Force
+        if (($sourceInfo.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+            throw "Promotion verification failed: reparse stage file is forbidden: $($sourceInfo.FullName)"
+        }
+        if ($sourceInfo.PSIsContainer) {
+            throw "Promotion verification failed: staged package entry is not a file: $($sourceInfo.FullName)"
+        }
+        if ([long]$sourceInfo.Length -gt $maxFileBytes) {
+            throw "Promotion verification failed: stage file exceeds 2 MiB: $($sourceInfo.FullName)"
+        }
+        $sourceBytes = [long]$sourceInfo.Length
+        $sourceWriteTicks = [long]$sourceInfo.LastWriteTimeUtc.Ticks
+        if ($totalBytes + $sourceBytes -gt $maxTotalBytes) {
+            throw "Promotion verification failed: stage package exceeds 16 MiB total."
+        }
+        $totalBytes += $sourceBytes
+
+        $sourceHash = (Get-FileHash -LiteralPath $sourcePath -Algorithm SHA256).Hash.ToLowerInvariant()
+        $sourceAfter = Get-Item -LiteralPath $sourcePath -Force
+        if (
+            ($sourceAfter.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0 -or
+            $sourceAfter.PSIsContainer -or
+            [long]$sourceAfter.Length -ne $sourceBytes -or
+            [long]$sourceAfter.LastWriteTimeUtc.Ticks -ne $sourceWriteTicks
+        ) {
+            throw "Promotion verification failed: stage file changed during hashing: $relative"
+        }
+        $verifiedEntries.Add([pscustomobject][ordered]@{
+            path = $relative
+            sha256 = $sourceHash
+            bytes = $sourceBytes
+        })
+    }
+    return @($verifiedEntries.ToArray())
+}
+
+function Assert-LivePromotionMatchesStage {
+    param(
+        [Parameter(Mandatory = $true)]
+        [object[]]$StageEntries,
+        [Parameter(Mandatory = $true)]
+        [string]$LiveClient
+    )
+    if ($StageEntries.Count -eq 0 -or $StageEntries.Count -gt 128) {
+        throw "Promotion verification failed: verified stage entry count must be 1..128."
+    }
+    $seen = @{}
+    $totalBytes = [long]0
+    $verifiedEntries = New-Object System.Collections.Generic.List[object]
+    foreach ($entry in $StageEntries) {
+        $relative = ([string]$entry.path).Replace('\', '/')
+        $caseKey = $relative.ToLowerInvariant()
+        if ($seen.ContainsKey($caseKey)) {
+            throw "Promotion verification failed: duplicate case-insensitive verified path: $relative"
+        }
+        $seen[$caseKey] = $true
+        $expectedBytes = [long]$entry.bytes
+        $expectedHash = ([string]$entry.sha256).ToLowerInvariant()
+        if ($expectedBytes -lt 0 -or $expectedBytes -gt 2MB) {
+            throw "Promotion verification failed: verified entry exceeds 2 MiB: $relative"
+        }
+        if ($expectedHash -notmatch '^[0-9a-f]{64}$') {
+            throw "Promotion verification failed: invalid verified SHA256: $relative"
+        }
+        $totalBytes += $expectedBytes
+        if ($totalBytes -gt 16MB) {
+            throw "Promotion verification failed: verified entries exceed 16 MiB total."
+        }
+
+        $destPath = Join-Path $LiveClient $relative
         if (-not (Test-Path -LiteralPath $destPath)) {
             throw "Promotion verification failed: live file is missing: $destPath"
         }
-        $sourceHash = (Get-FileHash -LiteralPath $sourcePath -Algorithm SHA256).Hash
-        $destHash = (Get-FileHash -LiteralPath $destPath -Algorithm SHA256).Hash
-        if ($sourceHash -ne $destHash) {
+        $destInfo = Get-Item -LiteralPath $destPath -Force
+        if (($destInfo.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+            throw "Promotion verification failed: live reparse file is forbidden: $($destInfo.FullName)"
+        }
+        if ($destInfo.PSIsContainer) {
+            throw "Promotion verification failed: live package entry is not a file: $($destInfo.FullName)"
+        }
+        if ([long]$destInfo.Length -ne $expectedBytes) {
+            throw "Promotion verification failed: byte-size mismatch for $relative"
+        }
+        $destWriteTicks = [long]$destInfo.LastWriteTimeUtc.Ticks
+        $destHash = (Get-FileHash -LiteralPath $destPath -Algorithm SHA256).Hash.ToLowerInvariant()
+        if ($destHash -ne $expectedHash) {
             throw "Promotion verification failed: SHA256 mismatch for $relative"
         }
-        $verified += 1
+        $destAfter = Get-Item -LiteralPath $destPath -Force
+        if (
+            ($destAfter.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0 -or
+            $destAfter.PSIsContainer -or
+            [long]$destAfter.Length -ne $expectedBytes -or
+            [long]$destAfter.LastWriteTimeUtc.Ticks -ne $destWriteTicks
+        ) {
+            throw "Promotion verification failed: live file changed during hashing: $relative"
+        }
+        $verifiedEntries.Add([pscustomobject][ordered]@{
+            path = $relative
+            sha256 = $destHash
+            bytes = $expectedBytes
+        })
     }
-    return $verified
+    return @($verifiedEntries.ToArray())
+}
+
+function Write-LiveManifestSnapshot {
+    param(
+        [Parameter(Mandatory = $true)][string]$OutRoot,
+        [Parameter(Mandatory = $true)][string]$CreatedAt,
+        [Parameter(Mandatory = $true)][string]$Origin,
+        [Parameter(Mandatory = $true)][string]$HelperVersion,
+        [Parameter(Mandatory = $true)][object[]]$VerifiedEntries
+    )
+    if ($VerifiedEntries.Count -eq 0 -or $VerifiedEntries.Count -gt 128) {
+        throw "Cannot snapshot live manifest outside the 1..128 file limit."
+    }
+    $totalBytes = [long]0
+    $seen = @{}
+    $files = @()
+    foreach ($entry in $VerifiedEntries) {
+        $relative = ([string]$entry.path).Replace('\', '/')
+        $caseKey = $relative.ToLowerInvariant()
+        if ($seen.ContainsKey($caseKey)) {
+            throw "Cannot snapshot duplicate case-insensitive path: $relative"
+        }
+        $seen[$caseKey] = $true
+        $bytes = [long]$entry.bytes
+        if ($bytes -lt 0 -or $bytes -gt 2MB) {
+            throw "Cannot snapshot file outside the 2 MiB limit: $relative"
+        }
+        $totalBytes += $bytes
+        if ($totalBytes -gt 16MB) {
+            throw "Cannot snapshot package above the 16 MiB total limit."
+        }
+        $files += [pscustomobject][ordered]@{
+            path = $relative
+            sha256 = ([string]$entry.sha256).ToLowerInvariant()
+            bytes = $bytes
+        }
+    }
+    $snapshot = [ordered]@{
+        schema_version = "ctoa.solteria-live-manifest.v1"
+        generated_at_utc = $CreatedAt
+        origin = $Origin
+        helper_version = $HelperVersion
+        files = @($files)
+    }
+    $path = Join-Path $OutRoot "live_manifest.json"
+    Write-JsonAtomic -InputObject $snapshot -Path $path -Depth 8
+    return [System.IO.Path]::GetFullPath($path)
 }
 
 function Invoke-LivePromotion {
+    Assert-InteractiveOperatorMode -Operation "promote live helper"
     Assert-LiveDeployApproved
     Assert-UnderLocalAppData -Path $SourceClient | Out-Null
 
@@ -1452,8 +1697,10 @@ function Invoke-LivePromotion {
 
     Write-Output "[solteria-helper-test-env] Checking existing release gate for staged package before live promotion."
     Assert-ReleaseGateForLivePromotion -OutRoot $outRoot
+    $stageEntries = @(Get-VerifiedStagePromotionEntries -Stage $stage)
     $backupRoot = New-LiveCtoaBackup
-    foreach ($relative in Get-DevPackageFiles) {
+    foreach ($entry in $stageEntries) {
+        $relative = [string]$entry.path
         $sourcePath = Join-Path $stage $relative
         if (-not (Test-Path -LiteralPath $sourcePath)) {
             throw "Staged package is missing required file: $sourcePath"
@@ -1462,7 +1709,8 @@ function Invoke-LivePromotion {
         New-Item -ItemType Directory -Force -Path (Split-Path -Parent $destPath) | Out-Null
         Copy-Item -LiteralPath $sourcePath -Destination $destPath -Force
     }
-    $verifiedFileCount = Assert-LivePromotionMatchesStage -Stage $stage -LiveClient $SourceClient
+    $verifiedEntries = @(Assert-LivePromotionMatchesStage -StageEntries $stageEntries -LiveClient $SourceClient)
+    $helperVersion = Get-HelperVersion
     $removedRootFallbacks = @()
     foreach ($relative in Get-LiveRootFallbackFiles) {
         $fallbackPath = Join-Path $SourceClient $relative
@@ -1496,23 +1744,28 @@ function Invoke-LivePromotion {
         }
     }
 
+    $promotionCreatedAt = (Get-Date).ToString("s")
+    $liveManifestPath = Write-LiveManifestSnapshot -OutRoot $outRoot -CreatedAt $promotionCreatedAt -Origin "official_live_promotion" -HelperVersion $helperVersion -VerifiedEntries $verifiedEntries
+    $liveManifestSha256 = (Get-FileHash -LiteralPath $liveManifestPath -Algorithm SHA256).Hash.ToLowerInvariant()
     $report = [pscustomobject]@{
         name = "solteria-helper-live-promotion"
-        created_at = (Get-Date).ToString("s")
-        helper_version = (Get-HelperVersion)
+        created_at = $promotionCreatedAt
+        helper_version = $helperVersion
         source_stage = [System.IO.Path]::GetFullPath($stage)
         live_client = [System.IO.Path]::GetFullPath($SourceClient)
         backup = [System.IO.Path]::GetFullPath($backupRoot)
         approval_switch = "ApproveLiveDeploy"
-        verified_file_count = $verifiedFileCount
+        verified_file_count = $verifiedEntries.Count
         verification = "stage_live_sha256_match"
+        live_manifest = $liveManifestPath
+        live_manifest_sha256 = $liveManifestSha256
         launch_after_promote = $LaunchAfterPromote.IsPresent
         launch_result = $launchResult
         removed_root_fallbacks = $removedRootFallbacks
         note = "Promotion copied staged helper files, removed stale root fallback helper files, and ensured the CTOA boot hook; it does not stop or restart the live client. Use -LaunchAfterPromote to launch the live client after promotion when it is not already running."
     }
     $reportPath = Join-Path $outRoot "live_promotion.json"
-    $report | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $reportPath -Encoding ASCII
+    Write-JsonAtomic -InputObject $report -Path $reportPath -Depth 8
     Write-Output "[solteria-helper-test-env] Live promotion complete: $SourceClient"
     Write-Output "[solteria-helper-test-env] Promotion report: $reportPath"
     if (-not [string]::IsNullOrWhiteSpace($launchError)) {
@@ -1521,6 +1774,7 @@ function Invoke-LivePromotion {
 }
 
 function Invoke-LiveEmergencyRepair {
+    Assert-InteractiveOperatorMode -Operation "repair live helper"
     Assert-UnderLocalAppData -Path $SourceClient | Out-Null
 
     $repo = Get-RepoRoot
@@ -1588,6 +1842,7 @@ function Capture-Screenshot {
         [string]$Name,
         [IntPtr]$WindowHandle = [IntPtr]::Zero
     )
+    Assert-InteractiveOperatorMode -Operation "capture screenshot"
     Add-Type -AssemblyName System.Windows.Forms,System.Drawing
     $repo = Get-RepoRoot
     $outDir = Join-Path $repo $ScreenshotDir
@@ -5149,6 +5404,7 @@ function Invoke-ThemeSnapshotMatrix {
     New-Item -ItemType Directory -Force -Path $devRoot | Out-Null
     $themes = @("classic", "graphite", "amber", "emerald")
     $tabs = @("overview", "profile", "cavebot", "healing", "ui")
+    $helperVersion = Get-HelperVersion
     $shots = New-Object System.Collections.Generic.List[object]
 
     foreach ($theme in $themes) {
@@ -5157,7 +5413,7 @@ function Invoke-ThemeSnapshotMatrix {
             $lineCount = Get-SmokeLogLineCount
             Write-SmokeCommand -ClientDir $sandboxRoot -ActiveTab $resolved.Active -SmokeSubtab $resolved.Subtab -CommandAction "theme_set" -Theme $theme
             Wait-ForSmokeTab -ActiveTab $resolved.Active -SmokeSubtab $resolved.Subtab -Required -AfterLineCount $lineCount | Out-Null
-            $name = "solteria-helper-v2.2.1-theme-$theme-$tabName.png"
+            $name = "solteria-helper-$helperVersion-theme-$theme-$tabName.png"
             $path = Capture-Screenshot -Name $name -WindowHandle $proc.MainWindowHandle
             $shots.Add([pscustomobject]@{ theme = $theme; tab = $tabName; path = $path })
             Write-Output "[solteria-helper-test-env] Theme snapshot: $theme/$tabName -> $path"
@@ -5170,7 +5426,7 @@ function Invoke-ThemeSnapshotMatrix {
     $report = [pscustomobject]@{
         name = "solteria-helper-theme-snapshot-matrix"
         created_at = (Get-Date).ToString("s")
-        helper_version = "v2.2.1"
+        helper_version = $helperVersion
         status = if ($shots.Count -eq 20) { "passed" } else { "failed" }
         screenshot_count = $shots.Count
         expected_count = 20
@@ -5311,6 +5567,116 @@ function Invoke-SmokeAll {
     }
 }
 
+function Get-BackgroundProcessSample {
+    $items = @(Get-SourceClientProcessSummaries | Sort-Object id)
+    $tokens = @($items | ForEach-Object { "{0}|{1}" -f $_.id, $_.start_time })
+    $startUnixMs = 0
+    if ($items.Count -eq 1) {
+        $startUnixMs = [long]$items[0].start_unix_ms
+    }
+    return [pscustomobject]@{
+        count = $items.Count
+        signature = ($tokens -join ";")
+        start_unix_ms = $startUnixMs
+    }
+}
+
+function Get-BackgroundScreenshotCount {
+    $repo = Get-RepoRoot
+    $root = Join-Path $repo $ScreenshotDir
+    if (-not (Test-Path -LiteralPath $root)) {
+        return 0
+    }
+    return @(Get-ChildItem -LiteralPath $root -Filter "*.png" -File -ErrorAction SilentlyContinue).Count
+}
+
+function Invoke-BackgroundStatus {
+    $repo = Get-RepoRoot
+    $sourceRoot = Assert-ExactLiveClientPath -Path $SourceClient
+    $outRoot = Assert-ExactBackgroundOutputPath -RepoRoot $repo -Candidate (Join-Path $repo $DevDir)
+    $scriptPath = Join-Path $repo "scripts\ops\otclient_headless_status.py"
+    $python = Join-Path $repo ".venv\Scripts\python.exe"
+    if (-not (Test-Path -LiteralPath $python -PathType Leaf)) {
+        throw "BackgroundNoScreen requires the trusted repo interpreter: $python"
+    }
+
+    $beforeProcesses = Get-BackgroundProcessSample
+    $beforeScreenshots = Get-BackgroundScreenshotCount
+    $arguments = @(
+        $scriptPath,
+        "--client-root", $sourceRoot,
+        "--dev-dir", $outRoot,
+        "--process-count", ([string]$beforeProcesses.count),
+        "--process-start-unix-ms", ([string]$beforeProcesses.start_unix_ms),
+        "--json-out", (Join-Path $outRoot "background_status.json"),
+        "--no-write"
+    )
+    $rawPayload = @(& $python @arguments)
+    $observerExitCode = $LASTEXITCODE
+    if ($observerExitCode -gt 1) {
+        throw "BackgroundStatus evidence collection failed before producing evidence."
+    }
+    try {
+        $payload = ($rawPayload -join "`n") | ConvertFrom-Json
+    } catch {
+        throw "BackgroundStatus returned malformed evidence."
+    }
+
+    $afterProcesses = Get-BackgroundProcessSample
+    $afterScreenshots = Get-BackgroundScreenshotCount
+    $processStable = $beforeProcesses.signature -ceq $afterProcesses.signature
+    $screenshotsStable = $beforeScreenshots -eq $afterScreenshots
+    $payload.checks | Add-Member -NotePropertyName "client_process_stable_during_wrapper" -NotePropertyValue $processStable -Force
+    $payload.checks | Add-Member -NotePropertyName "screenshot_count_stable_during_wrapper" -NotePropertyValue $screenshotsStable -Force
+    $payload | Add-Member -NotePropertyName "wrapper_invariants" -NotePropertyValue ([pscustomobject]@{
+        client_process_stable = $processStable
+        screenshot_count_stable = $screenshotsStable
+    }) -Force
+    $blockers = @($payload.blockers)
+    if (-not $processStable) {
+        $blockers += "client_process_changed_during_observation"
+    }
+    if (-not $screenshotsStable) {
+        $blockers += "screenshot_count_changed_during_observation"
+    }
+    if (-not $processStable -or -not $screenshotsStable) {
+        $payload.status = "blocked"
+        $payload.next_action = "Discard this sample; repeat passive observation after the external state is stable."
+    }
+    $payload.blockers = @($blockers | Select-Object -Unique)
+    $payload.passed_check_count = @(
+        $payload.checks.PSObject.Properties | Where-Object { $_.Value -eq $true }
+    ).Count
+    $payload.check_count = @($payload.checks.PSObject.Properties).Count
+
+    $outRoot = Assert-ExactBackgroundOutputPath -RepoRoot $repo -Candidate $outRoot
+    $outputPath = [System.IO.Path]::GetFullPath((Join-Path $outRoot "background_status.json"))
+    $expectedOutputPath = [System.IO.Path]::GetFullPath(
+        (Join-Path (Join-Path $repo "runtime\solteria_helper_dev") "background_status.json")
+    )
+    if (-not $outputPath.Equals($expectedOutputPath, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "BackgroundNoScreen publication escaped the exact runtime output path."
+    }
+    if ($NoReport) {
+        $payload | ConvertTo-Json -Depth 12
+    } else {
+        Write-JsonAtomic -InputObject $payload -Path $outputPath -Depth 12
+        Write-Output "[otclient-headless-status] JSON: $outputPath"
+        Write-Output "[otclient-headless-status] Status: $($payload.status)"
+        Write-Output "[otclient-headless-status] Next: $($payload.next_action)"
+    }
+
+    if (-not $processStable) {
+        throw "BackgroundStatus observed a client process change and stored a blocked sample."
+    }
+    if (-not $screenshotsStable) {
+        throw "BackgroundStatus observed a screenshot-count change and stored a blocked sample."
+    }
+    Write-Output "[solteria-helper-test-env] BackgroundNoScreen invariants passed: process and screenshot state unchanged."
+}
+
+Assert-OperatorModeAction
+
 switch ($Action) {
     "PrepareDev" {
         New-DevPackage
@@ -5333,6 +5699,9 @@ switch ($Action) {
     }
     "GoalStatus" {
         Invoke-GoalStatus
+    }
+    "BackgroundStatus" {
+        Invoke-BackgroundStatus
     }
     "LocalReady" {
         Invoke-LocalReady

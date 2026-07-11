@@ -69,6 +69,39 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_hel
 current blockers, and the next safe command when a next gate still exists. It
 does not launch, stop, or overwrite any client.
 
+Collect passive live evidence while the user keeps the only game screen:
+
+```powershell
+.\ctoa.ps1 otbg
+```
+
+Equivalent explicit wrapper command:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action BackgroundStatus -OperatorMode BackgroundNoScreen
+```
+
+`BackgroundNoScreen` has a positive allowlist containing only
+`BackgroundStatus`. The mode is inherited by child processes and cannot be
+downgraded. It rejects live approval, launch, helper-toggle, and dialog-control
+parameters before dispatch. The action performs bounded passive reads, checks
+immutable live parity against the manifest cryptographically bound to the
+official promotion report, and writes only
+`runtime\solteria_helper_dev\background_status.json`. It does not move the
+mouse, send keys, focus or capture a window, start/stop a client, write a smoke
+command, copy into live, or approve promotion. Use `-NoReport` for stdout-only
+JSON with no evidence-file write. It requires the canonical
+`%LOCALAPPDATA%\Solteria\client` root and the trusted repo-local interpreter.
+
+Missing, stale, offline, cross-client, incomplete, or pre-process capability
+heartbeat is reported as waiting/blocked rather than ready. A missing or
+untrusted official live-manifest pin also blocks; the observer never creates
+that pin. Only `PromoteLiveCtoa -ApproveLiveDeploy` writes it and binds its
+SHA256 into `live_promotion.json`. Mutable vocation-profile drift is counted
+separately from other package-code mismatch, but still blocks because those
+profiles are executable Lua. The wrapper only publishes the sample after client
+process identity and screenshot count are checked.
+
 Emergency-disable CTOA modules in the normal live Solteria client when login is
 unstable:
 
@@ -397,6 +430,7 @@ runtime\solteria_helper_dev\smoke_preflight.json
 runtime\solteria_helper_dev\smoke_status.json
 runtime\solteria_helper_dev\ready_check.json
 runtime\solteria_helper_dev\live_promotion.json
+runtime\solteria_helper_dev\background_status.json
 runtime\solteria_helper_dev\live_backup_<timestamp>\backup_manifest.json
 runtime\solteria_helper_dev\latest\
 runtime\solteria_helper_dev\ctoa_otclient_<version>.zip
@@ -551,7 +585,10 @@ HP/MP, movement, combat, magic, and container APIs.
 
 ## Test Account
 
-For live in-game UI/runtime checks, use a separate low-risk test character in the sandbox. Keep the main play client logged in normally. The sandbox should be used for:
+Interactive in-game UI/runtime checks are no longer routine background work.
+Use a separate runner/VM, or an explicitly scheduled user-visible session with a
+low-risk sandbox character. Keep the main play client untouched. That separate
+interactive lane is used only for:
 
 - helper UI screenshots,
 - tab persistence checks,

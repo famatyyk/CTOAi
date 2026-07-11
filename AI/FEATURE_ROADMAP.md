@@ -4,22 +4,35 @@
 
 - Engine Brain Plan 3 is operational and maintained as the secret-safe context
   foundation; roadmap work now consumes its generated evidence.
-- Helper `v2.1.1a` is live-promoted, while all new runtime bridge work remains
-  sandbox-first and does not imply another live promotion.
+- Helper `v2.2.1` is live-promoted with 58-file manifest parity at promotion.
+  Vocation-profile drift after play is tracked separately, but remains blocking
+  because the current Lua profile is executable rather than data-only.
+- P8 `BackgroundNoScreen` is the active implementation lane. It replaces routine
+  mouse/focus/screenshot testing with bounded passive evidence and never implies
+  another live promotion. The next staged source version is `v2.3.0`; live stays
+  on `v2.2.1` until a later explicit release cycle.
+- P8 trust is promotion-bound: the observer cannot create its own live manifest,
+  and readiness requires one canonical process plus an explicit online heartbeat
+  newer than that process.
 - P6 is ready for plugin design and the five bounded P7 safe-write refresh tools
   are enabled with audit coverage.
 
 ## Now
 
-1. **Conditions runtime safety gate** — owner: Helper Runtime; status:
+1. **BackgroundNoScreen foundation (P8)** — owner: Helper Runtime + Evidence;
+   status: `implementation_active`; risk: `read_only_observability`. Contract:
+   `AI/P8_P16_EXECUTION_ROADMAP.md`. The only allowed wrapper action in this mode
+   is `BackgroundStatus`; it cannot launch, stop, focus, capture, send input, or
+   write inside a client.
+2. **Conditions runtime safety gate** — owner: Helper Runtime; status:
    `static_contract_accepted`; risk: `runtime_recovery`. It follows the accepted
    Recovery Bridge and allowlists only a paralyze-recovery dry-run. Runtime
    dispatch remains false until fresh condition and sandbox evidence exists.
-2. **Equipment runtime safety gate** — owner: Helper Runtime; status:
+3. **Equipment runtime safety gate** — owner: Helper Runtime; status:
    `static_contract_accepted`; risk: `runtime_equipment`. It is ordered after
    Conditions and allowlists only a ring-swap dry-run with exact item IDs,
    rollback snapshot, zero retry, and no live promotion.
-3. **Heal Friend runtime safety gate** — owner: Helper Runtime; status:
+4. **Heal Friend runtime safety gate** — owner: Helper Runtime; status:
    `static_contract_accepted`; risk: `runtime_cast`. It is ordered after both
    Conditions and Equipment and requires exact persisted whitelist plus stable
    party target identity. Contract:
@@ -27,11 +40,14 @@
 
 ## Next
 
-- Capture fresh package/static/in-world evidence for Conditions, then design its
-  sandbox execute-once bridge without enabling live dispatch.
-- Repeat the independent acceptance sequence for rollback-ready Equipment and
-  only then for exact-whitelist Heal Friend.
-- Add decision-trace replay and bounded runtime evidence export.
+- Complete P8 producer/consumer parity so a fresh capability heartbeat is visible
+  through `ctoa.ps1 otbg` and Control Center without touching the game window.
+- P9 captures and replays Conditions evidence before any execute-once bridge.
+- P10 repeats the independent shadow/replay sequence for rollback-ready Equipment;
+  P11 does the same for exact-whitelist Heal Friend.
+- P12 is the first possible execute-once sandbox phase, still with no live dispatch.
+- P13 adds decision/result replay and machine-readable roadmap state; P14 moves
+  visual acceptance to a separate runner/VM.
 - Add sandbox-to-live promotion visibility without implicit promotion.
 - Index a supplied TFS fork and protocol sources; do not infer missing server
   behavior.
@@ -39,7 +55,7 @@
 - **Roadmap state refresh** remains `design_only`; retain its audited P7
   contract without enabling another safe-write tool; the active safe-write tool count stays five.
 - Keep Combat and CaveBot explicitly `deferred_high_risk` until all three safer
-  lanes have independent acceptance evidence and a new review opens them.
+  lanes have independent acceptance evidence and a new review opens P15/P16.
 
 ## Guardrails And Maintenance
 
@@ -57,6 +73,10 @@ feature work.
   actions off unless explicitly enabled.
 - Treat the live Solteria client as protected. Development uses
   `runtime\solteria_helper_dev` and the sandbox client first.
+- Treat the user's single game screen as protected too. Routine agent work uses
+  `BackgroundNoScreen`, bounded passive reads, and repo-local evidence only.
+  Screenshot/focus/input/start-stop actions require an explicitly interactive
+  session or a separate runner; they are not fallback behavior.
 - Keep helper sandbox path validation strict: `SandboxClient` must stay under
   `%LOCALAPPDATA%`, use separator-aware containment, and must not equal or sit
   inside `SourceClient`.
@@ -66,11 +86,9 @@ feature work.
 - A post-promotion live client launch is not implicit. Operators must add
   `-LaunchAfterPromote`; the wrapper may launch a missing live client but must
   never stop or restart an existing live client.
-- Current Helper `v2.1.1a` is live-promoted with 49-file SHA-256 parity and
-  fresh `Initialized successfully v2.1.1a` boot evidence. Its production gate
-  passed after UI stabilization, shell-budget reduction, a 20-shot theme
-  matrix, 32/32 module static gates, 16/16 in-world attach coverage, and
-  singleton relog evidence; runtime remained disarmed.
+- Current Helper `v2.2.1` is live-promoted. Its promotion report verified 58
+  staged/live SHA-256 matches; release gate and GoalStatus passed. Runtime module
+  acceptance remains fail-closed and separate from package promotion.
 - Helper P6 Module Lane is repo- and sandbox-complete: Healing/Recovery, Combat,
   CaveBot, Loot, Timer, Heal Friend, Conditions, Equipment, and Scripting are
   all `static_gated` by dedicated reports, current ModuleStaticGates and
@@ -81,7 +99,7 @@ feature work.
   `hold_feature_flag_disabled` with zero planned items. No attack, movement,
   sio, condition recovery, equipment swap, loot move/open/use, timer cast,
   eval, or snippet runtime was enabled. The next functional phase requires a
-  separate runtime-bridge review after the completed v2.1.1a stabilization.
+  separate runtime-bridge review after the completed v2.2.1 stabilization.
 
 ## P0: Make This Brain Usable In Daily Codex Work
 

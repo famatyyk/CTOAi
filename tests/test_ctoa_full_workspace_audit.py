@@ -34,6 +34,8 @@ def test_three_development_plans_render_expected_plan_names():
     assert "Plan 3: Engine Brain And CTOAi Platform" in markdown
     assert "P6_CODEX_INTEGRATION_READINESS.md" in markdown
     assert "P7_OPERATOR_BRIEF.md" in markdown
+    assert "BackgroundNoScreen" in markdown
+    assert "AI/P8_P16_EXECUTION_ROADMAP.md" in markdown
     assert "ctoai-engine-brain" in markdown
     assert "ctoai_engine_brain_self_check" in markdown
     assert "ctoai_engine_brain_brief" in markdown
@@ -180,7 +182,10 @@ def test_full_workspace_audit_markdown_reports_validation_evidence_gate():
     assert "## Validation Evidence Gate" in markdown
     assert "- Status: `evidence_ready`" in markdown
     assert "- Missing command evidence: `<none>`" in markdown
-    assert "| `python_non_e2e` | `passed` | `133.75s` | 1039 passed, 32 skipped |" in markdown
+    assert (
+        "| `python_non_e2e` | `passed` | `133.75s` | 1039 passed, 32 skipped |"
+        in markdown
+    )
 
 
 def test_full_workspace_audit_does_not_follow_symlinked_files(tmp_path, monkeypatch):

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-11T15:38:22+00:00",
+  "generated_at": "2026-07-11T17:21:42+00:00",
   "decision": "ready_for_p7_operator_workflow",
   "status": "ready",
   "hard_blockers": [],
@@ -118,15 +118,22 @@
       "file_count": 35,
       "sprint_count": 7,
       "latest_path": "releases\\evidence\\sprint-056\\CTOA-299.md",
-      "release_evidence_generated_at": "2026-07-10T23:35:40+00:00",
-      "otclient_helper_status": "promoted",
-      "otclient_helper_release_gate_status": "passed",
-      "otclient_helper_next_action": "Live promotion is complete for the current staged package.",
+      "release_evidence_generated_at": "2026-07-11T17:19:15+00:00",
+      "otclient_helper_status": "blocked",
+      "otclient_helper_release_gate_status": "blocked",
+      "otclient_helper_next_action": "SmokePreflight is stale for the current dev manifest; rerun SmokePreflight.",
       "otclient_helper_module_contract": {
         "status": "passed",
-        "passed_count": 30,
-        "check_count": 30,
+        "passed_count": 32,
+        "check_count": 32,
         "forbidden_count": 0
+      },
+      "otclient_helper_background_status": {
+        "status": "blocked",
+        "integrity_status": "untrusted_pin",
+        "capability_status": "missing",
+        "runtime_state": "armed",
+        "safe_to_run_while_playing": true
       },
       "sandbox_smoke_queue": {
         "status": "passed",
@@ -139,12 +146,12 @@
     },
     "action_audit": {
       "status": "ready",
-      "record_count": 122,
-      "latest_at": "2026-07-08T00:12:34.350356Z",
+      "record_count": 129,
+      "latest_at": "2026-07-11T17:19:15.095382Z",
       "invalid_record_count": 0,
       "risk_counts": {
         "read_only": 2,
-        "safe_write": 120
+        "safe_write": 127
       }
     },
     "recommended_tool_order": [
@@ -157,8 +164,9 @@
     "status": "ready",
     "doc_sync_status": "passed",
     "doc_sync_roadmap_plan3_status": "passed",
-    "doc_count": 3,
-    "ready_doc_count": 3,
+    "doc_sync_roadmap_p8_p16_status": "passed",
+    "doc_count": 4,
+    "ready_doc_count": 4,
     "hard_blockers": [],
     "docs": [
       {
@@ -170,6 +178,12 @@
       {
         "name": "engine_brain_status",
         "path": "AI/ENGINE_BRAIN_STATUS.md",
+        "status": "passed",
+        "missing_markers": []
+      },
+      {
+        "name": "p8_p16_execution_roadmap",
+        "path": "AI/P8_P16_EXECUTION_ROADMAP.md",
         "status": "passed",
         "missing_markers": []
       },

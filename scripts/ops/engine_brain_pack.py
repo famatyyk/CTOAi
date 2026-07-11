@@ -41,6 +41,7 @@ CURATED_FILES = [
     "AI/PACKET_INDEX.md",
     "AI/CLASS_INDEX.md",
     "AI/FEATURE_ROADMAP.md",
+    "AI/P8_P16_EXECUTION_ROADMAP.md",
     "docs/P7_ROADMAP_STATE_REFRESH_DESIGN.md",
     "docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md",
     "docs/otclient/HELPER_RUNTIME_MODULE_GATES_V1.md",
@@ -86,6 +87,7 @@ PROFILE_FILES = {
         "AI/README.md",
         "AI/ENGINE_BRAIN_STATUS.md",
         "AI/FEATURE_ROADMAP.md",
+        "AI/P8_P16_EXECUTION_ROADMAP.md",
         "AI/LUA_INDEX.md",
         "AI/OTCLIENT_INDEX.md",
         "docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md",
@@ -111,6 +113,7 @@ PROFILE_FILES = {
         "AI/README.md",
         "AI/ENGINE_BRAIN_STATUS.md",
         "AI/FEATURE_ROADMAP.md",
+        "AI/P8_P16_EXECUTION_ROADMAP.md",
         "AI/API_INDEX.md",
         "AI/ARCHITECTURE_INDEX.md",
         "docs/CTOA_CLI.md",
@@ -173,7 +176,9 @@ def fence_for(path: Path) -> str:
     return "text"
 
 
-def append_file_section(lines: list[str], rel_path: str, *, max_chars: int) -> dict[str, Any]:
+def append_file_section(
+    lines: list[str], rel_path: str, *, max_chars: int
+) -> dict[str, Any]:
     path = ROOT / rel_path
     section: dict[str, Any] = {
         "path": rel_path,
@@ -246,7 +251,9 @@ def build_pack(
 
     sections: list[dict[str, Any]] = []
     for rel_path in files:
-        sections.append(append_file_section(lines, rel_path, max_chars=max_chars_per_file))
+        sections.append(
+            append_file_section(lines, rel_path, max_chars=max_chars_per_file)
+        )
 
     pack_path.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
     manifest: dict[str, Any] = {
@@ -266,11 +273,17 @@ def build_pack(
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Build CTOAi Engine Brain markdown pack")
+    parser = argparse.ArgumentParser(
+        description="Build CTOAi Engine Brain markdown pack"
+    )
     parser.add_argument("--pack-path", type=Path, default=DEFAULT_PACK_PATH)
     parser.add_argument("--manifest-path", type=Path, default=DEFAULT_MANIFEST_PATH)
     parser.add_argument("--profile", choices=sorted(PROFILE_FILES), default="all")
-    parser.add_argument("--no-generated", action="store_true", help="Skip generated FILE_TREE/SYMBOL_MAP sections")
+    parser.add_argument(
+        "--no-generated",
+        action="store_true",
+        help="Skip generated FILE_TREE/SYMBOL_MAP sections",
+    )
     parser.add_argument("--max-chars-per-file", type=int, default=45000)
     args = parser.parse_args()
 

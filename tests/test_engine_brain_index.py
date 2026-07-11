@@ -16,6 +16,90 @@ requires_engine_brain_plugin = pytest.mark.skipif(
 )
 
 
+def _write_roadmap_generation_docs(root):
+    for config in engine_brain_index.ROADMAP_GENERATION_DOCS.values():
+        path = root / str(config["path"])
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("\n".join(config["needles"]) + "\n", encoding="utf-8")
+
+
+def _roadmap_doc_sync_payload(
+    *, overall_status="passed", plan3_status="passed", p8_p16_status="passed"
+):
+    return {
+        "status": overall_status,
+        "checks": [
+            {"name": "roadmap_plan3", "status": plan3_status},
+            {"name": "roadmap_p8_p16", "status": p8_p16_status},
+        ],
+    }
+
+
+@pytest.mark.parametrize(
+    ("overall_status", "plan3_status", "p8_p16_status", "expected_blocker"),
+    [
+        ("blocked", "passed", "passed", "doc_sync_status"),
+        ("passed", "blocked", "passed", "doc_sync:roadmap_plan3"),
+        ("passed", "passed", "blocked", "doc_sync:roadmap_p8_p16"),
+    ],
+)
+def test_roadmap_generation_requires_all_doc_sync_gates(
+    tmp_path,
+    monkeypatch,
+    overall_status,
+    plan3_status,
+    p8_p16_status,
+    expected_blocker,
+):
+    _write_roadmap_generation_docs(tmp_path)
+    monkeypatch.setattr(engine_brain_index, "ROOT", tmp_path)
+
+    payload = engine_brain_index.build_roadmap_generation_payload(
+        "2099-01-01T00:00:00+00:00",
+        _roadmap_doc_sync_payload(
+            overall_status=overall_status,
+            plan3_status=plan3_status,
+            p8_p16_status=p8_p16_status,
+        ),
+    )
+
+    assert payload["status"] == "blocked"
+    assert expected_blocker in payload["hard_blockers"]
+    assert payload["doc_sync_status"] == overall_status
+    assert payload["doc_sync_roadmap_plan3_status"] == plan3_status
+    assert payload["doc_sync_roadmap_p8_p16_status"] == p8_p16_status
+
+
+def test_roadmap_generation_blocks_p8_contract_marker_drift(tmp_path, monkeypatch):
+    _write_roadmap_generation_docs(tmp_path)
+    monkeypatch.setattr(engine_brain_index, "ROOT", tmp_path)
+    roadmap_path = tmp_path / "AI" / "P8_P16_EXECUTION_ROADMAP.md"
+    required_marker = (
+        "the `v2.3.0` staged-source lane and does not auto-promote that version."
+    )
+    roadmap_path.write_text(
+        roadmap_path.read_text(encoding="utf-8").replace(
+            required_marker, "the staged-source lane remains under review."
+        ),
+        encoding="utf-8",
+    )
+
+    payload = engine_brain_index.build_roadmap_generation_payload(
+        "2099-01-01T00:00:00+00:00", _roadmap_doc_sync_payload()
+    )
+
+    assert payload["status"] == "blocked"
+    assert (
+        f"missing_marker:AI/P8_P16_EXECUTION_ROADMAP.md:{required_marker}"
+        in payload["hard_blockers"]
+    )
+    p8_doc = next(
+        item for item in payload["docs"] if item["name"] == "p8_p16_execution_roadmap"
+    )
+    assert p8_doc["status"] == "blocked"
+    assert required_marker in p8_doc["missing_markers"]
+
+
 def test_release_evidence_summary_exposes_helper_sandbox_queue(tmp_path):
     release_root = tmp_path / "releases" / "evidence"
     sprint_dir = release_root / "sprint-999"
@@ -51,7 +135,9 @@ def test_release_evidence_summary_exposes_helper_sandbox_queue(tmp_path):
         encoding="utf-8",
     )
 
-    summary = engine_brain_index.read_release_evidence_summary(release_root, latest_path)
+    summary = engine_brain_index.read_release_evidence_summary(
+        release_root, latest_path
+    )
 
     assert summary["status"] == "ready"
     assert summary["file_count"] == 1
@@ -179,11 +265,17 @@ def test_engine_brain_index_writes_secret_safe_outputs(tmp_path):
         "ctoai_engine_brain_refresh",
         "ctoai_p7_cockpit_smoke_refresh",
     ]
-    assert "repo-hygiene, API-cost, evidence-pack, Engine Brain, and P7 cockpit-smoke" in p6_payload["policy"]
+    assert (
+        "repo-hygiene, API-cost, evidence-pack, Engine Brain, and P7 cockpit-smoke"
+        in p6_payload["policy"]
+    )
     if "Fix blocked readiness checks" in p6_payload["recommended_next"]:
         assert "Fix blocked readiness checks" in p6_payload["recommended_next"]
     else:
-        assert "repo-hygiene, API-cost, evidence-pack, Engine Brain, and P7 cockpit-smoke" in p6_payload["recommended_next"]
+        assert (
+            "repo-hygiene, API-cost, evidence-pack, Engine Brain, and P7 cockpit-smoke"
+            in p6_payload["recommended_next"]
+        )
     assert [tool["risk_class"] for tool in workflow_payload["allowed_mcp_tools"]] == [
         "read_only",
         "read_only",
@@ -274,10 +366,16 @@ def test_engine_brain_index_writes_secret_safe_outputs(tmp_path):
         in " ".join(safe_write_design_payload["implementation_contract"]).lower()
     )
     brief_payload = json.loads(p7_operator_brief_json.read_text(encoding="utf-8"))
-    assert "repo-hygiene, API-cost, evidence-pack, Engine Brain, and P7 cockpit-smoke" in brief_payload["policy"]
+    assert (
+        "repo-hygiene, API-cost, evidence-pack, Engine Brain, and P7 cockpit-smoke"
+        in brief_payload["policy"]
+    )
     next_safe_mode = brief_payload["action_readiness"].get("next_safe_mode")
     if next_safe_mode == "review_confirmed_safe_write_evidence":
-        assert "Review confirmed evidence-pack-refresh audit" in brief_payload["next_safe_command"]
+        assert (
+            "Review confirmed evidence-pack-refresh audit"
+            in brief_payload["next_safe_command"]
+        )
         assert "runtime/evidence/latest.json" in brief_payload["next_safe_command"]
     elif next_safe_mode == "design_next_p7_plugin_action":
         assert "Design the next P7 plugin action" in brief_payload["next_safe_command"]
@@ -302,7 +400,14 @@ def test_engine_brain_index_writes_secret_safe_outputs(tmp_path):
         == action_readiness_payload["status"]
     )
     assert brief_payload["action_readiness"]["candidate_count"] == 5
-    assert brief_payload["action_readiness"]["mcp_write_tool_count"] in {0, 1, 2, 3, 4, 5}
+    assert brief_payload["action_readiness"]["mcp_write_tool_count"] in {
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+    }
     assert (
         brief_payload["safe_write_tool_design"]["status"]
         == safe_write_design_payload["status"]
@@ -348,13 +453,17 @@ def test_engine_brain_index_writes_secret_safe_outputs(tmp_path):
     ]
     assert brief_payload["roadmap_generation"]["status"] == "ready"
     assert brief_payload["roadmap_generation"]["doc_sync_status"] == "passed"
-    assert brief_payload["roadmap_generation"]["ready_doc_count"] == 3
-    assert brief_payload["roadmap_generation"]["doc_count"] == 3
-    assert brief_payload["roadmap_generation"]["hard_blockers"] == []
     assert (
-        "risk model coverage"
-        in brief_payload["roadmap_generation"]["blocked_until"]
+        brief_payload["roadmap_generation"]["doc_sync_roadmap_plan3_status"] == "passed"
     )
+    assert (
+        brief_payload["roadmap_generation"]["doc_sync_roadmap_p8_p16_status"]
+        == "passed"
+    )
+    assert brief_payload["roadmap_generation"]["ready_doc_count"] == 4
+    assert brief_payload["roadmap_generation"]["doc_count"] == 4
+    assert brief_payload["roadmap_generation"]["hard_blockers"] == []
+    assert "risk model coverage" in brief_payload["roadmap_generation"]["blocked_until"]
 
     manifest_payload = json.loads(manifest.read_text(encoding="utf-8"))
     assert manifest_payload["schema_version"] == 1
@@ -657,15 +766,12 @@ def test_p7_operator_brief_reports_next_safe_step():
     assert payload["cockpit_handoff"]["p7_cockpit_smoke"]["passed"] == 14
     assert payload["cockpit_handoff"]["p7_cockpit_smoke"]["checks"] == 14
     assert (
-        payload["cockpit_handoff"]["p7_safe_write_dry_run_smoke"]["status"]
-        == "ready"
+        payload["cockpit_handoff"]["p7_safe_write_dry_run_smoke"]["status"] == "ready"
     )
     assert payload["cockpit_handoff"]["p7_safe_write_dry_run_smoke"]["passed"] == 12
     assert payload["cockpit_handoff"]["p7_safe_write_dry_run_smoke"]["checks"] == 12
     assert (
-        payload["cockpit_handoff"]["p7_safe_write_dry_run_smoke"][
-            "dry_run_ready_count"
-        ]
+        payload["cockpit_handoff"]["p7_safe_write_dry_run_smoke"]["dry_run_ready_count"]
         == 5
     )
     assert (
@@ -700,14 +806,85 @@ def test_p7_operator_brief_reports_next_safe_step():
     ]
     assert payload["roadmap_generation"]["status"] == "ready"
     assert payload["roadmap_generation"]["doc_sync_status"] == "passed"
-    assert payload["roadmap_generation"]["ready_doc_count"] == 3
-    assert payload["roadmap_generation"]["doc_count"] == 3
+    assert payload["roadmap_generation"]["ready_doc_count"] == 4
+    assert payload["roadmap_generation"]["doc_count"] == 4
     assert "risk model coverage" in payload["roadmap_generation"]["blocked_until"]
     assert (
         "Review confirmed evidence-pack-refresh audit" in payload["next_safe_command"]
         or "Design the next P7 plugin action" in payload["next_safe_command"]
     )
     assert "deploy/live actions" in payload["policy"]
+
+
+def _write_plugin_roadmap_workspace(root, *, p8_p16_status="passed"):
+    roadmap_paths = [
+        "AI/FEATURE_ROADMAP.md",
+        "AI/ENGINE_BRAIN_STATUS.md",
+        "AI/P8_P16_EXECUTION_ROADMAP.md",
+        "docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md",
+    ]
+    for rel_path in roadmap_paths:
+        source = engine_brain_index.ROOT / rel_path
+        destination = root / rel_path
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
+    doc_sync_path = root / "AI" / "generated" / "DOC_SYNC.json"
+    doc_sync_path.parent.mkdir(parents=True, exist_ok=True)
+    doc_sync_path.write_text(
+        json.dumps(_roadmap_doc_sync_payload(p8_p16_status=p8_p16_status)),
+        encoding="utf-8",
+    )
+
+
+def _run_plugin_cockpit(workspace):
+    script = PLUGIN_ROOT / "scripts" / "ctoai_control_center_cockpit.py"
+    completed = subprocess.run(
+        [sys.executable, str(script), "--workspace", str(workspace)],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return json.loads(completed.stdout)
+
+
+@requires_engine_brain_plugin
+def test_p6_plugin_cockpit_blocks_p8_contract_marker_drift(tmp_path):
+    _write_plugin_roadmap_workspace(tmp_path)
+    roadmap_path = tmp_path / "AI" / "P8_P16_EXECUTION_ROADMAP.md"
+    required_marker = (
+        "the `v2.3.0` staged-source lane and does not auto-promote that version."
+    )
+    roadmap_path.write_text(
+        roadmap_path.read_text(encoding="utf-8").replace(
+            required_marker, "the staged-source lane remains under review."
+        ),
+        encoding="utf-8",
+    )
+
+    payload = _run_plugin_cockpit(tmp_path)["roadmap_generation"]
+
+    assert payload["status"] == "needs_attention"
+    assert "p8_p16_execution_roadmap_not_ready" in payload["hard_blockers"]
+    assert payload["doc_sync_status"] == "passed"
+    assert payload["doc_sync_roadmap_plan3_status"] == "passed"
+    assert payload["doc_sync_roadmap_p8_p16_status"] == "passed"
+    p8_doc = next(
+        item for item in payload["docs"] if item["name"] == "p8_p16_execution_roadmap"
+    )
+    assert required_marker in p8_doc["missing_markers"]
+
+
+@requires_engine_brain_plugin
+def test_p6_plugin_cockpit_requires_p8_doc_sync_status(tmp_path):
+    _write_plugin_roadmap_workspace(tmp_path, p8_p16_status="blocked")
+
+    payload = _run_plugin_cockpit(tmp_path)["roadmap_generation"]
+
+    assert payload["status"] == "needs_attention"
+    assert "doc_sync:roadmap_p8_p16" in payload["hard_blockers"]
+    assert payload["doc_sync_status"] == "passed"
+    assert payload["doc_sync_roadmap_plan3_status"] == "passed"
+    assert payload["doc_sync_roadmap_p8_p16_status"] == "blocked"
 
 
 @requires_engine_brain_plugin
@@ -740,13 +917,16 @@ def test_p6_control_center_cockpit_script_reports_read_only_status():
     assert payload["operator_next"]["status"] == "ready"
     assert payload["operator_next"]["lane"] == "p7-safe-write"
     assert payload["operator_next"]["risk_class"] == "safe_write"
-    assert payload["operator_next"]["source_path"] == "AI/generated/P7_OPERATOR_BRIEF.json"
+    assert (
+        payload["operator_next"]["source_path"] == "AI/generated/P7_OPERATOR_BRIEF.json"
+    )
     assert payload["operator_next"]["title"] in {
         "Review confirmed P7 evidence",
         "Design next P7 plugin action",
     }
     assert (
-        "Review confirmed evidence-pack-refresh audit" in payload["operator_next"]["command"]
+        "Review confirmed evidence-pack-refresh audit"
+        in payload["operator_next"]["command"]
         or "Design the next P7 plugin action" in payload["operator_next"]["command"]
     )
     assert "PromoteLiveCtoa" not in payload["operator_next"]["command"]
@@ -778,15 +958,18 @@ def test_p6_control_center_cockpit_script_reports_read_only_status():
     assert payload["release_evidence"]["drilldown"]["recent_files"]
     assert payload["roadmap_generation"]["status"] == "ready"
     assert payload["roadmap_generation"]["doc_sync_status"] == "passed"
-    assert payload["roadmap_generation"]["ready_doc_count"] == 3
-    assert payload["roadmap_generation"]["doc_count"] == 3
+    assert payload["roadmap_generation"]["doc_sync_roadmap_plan3_status"] == "passed"
+    assert payload["roadmap_generation"]["doc_sync_roadmap_p8_p16_status"] == "passed"
+    assert payload["roadmap_generation"]["ready_doc_count"] == 4
+    assert payload["roadmap_generation"]["doc_count"] == 4
     assert payload["roadmap_generation"]["hard_blockers"] == []
     assert "risk model coverage" in payload["roadmap_generation"]["blocked_until"]
     assert payload["action_audit_drilldown"]["status"] == "ready"
     assert payload["action_audit_drilldown"]["record_count"] >= 3
-    assert payload["action_audit_drilldown"]["source_bytes"] >= payload[
-        "action_audit_drilldown"
-    ]["sampled_bytes"]
+    assert (
+        payload["action_audit_drilldown"]["source_bytes"]
+        >= payload["action_audit_drilldown"]["sampled_bytes"]
+    )
     assert "safe_write" in payload["action_audit_drilldown"]["risk_counts"]
     assert "deploy" in payload["policy"]
     assert "live-client" in payload["policy"]
@@ -917,9 +1100,7 @@ def write_cockpit_preflight_fixture(root):
         "\n".join(json.dumps(record) for record in records) + "\n",
         encoding="utf-8",
     )
-    p6_smoke_path = (
-        root / "runtime" / "control-center" / "p6-plugin-handoff-smoke.json"
-    )
+    p6_smoke_path = root / "runtime" / "control-center" / "p6-plugin-handoff-smoke.json"
     p6_smoke_path.write_text(
         json.dumps(
             {
@@ -1277,9 +1458,7 @@ def test_p6_plugin_mcp_server_exposes_expected_tools_and_audited_safe_write(tmp_
         cwd=plugin_root,
     )
     responses = [json.loads(line) for line in completed.stdout.splitlines()]
-    tools_by_name = {
-        tool["name"]: tool for tool in responses[1]["result"]["tools"]
-    }
+    tools_by_name = {tool["name"]: tool for tool in responses[1]["result"]["tools"]}
     tools = set(tools_by_name)
     payload = json.loads(responses[2]["result"]["content"][0]["text"])
     cockpit_payload = json.loads(responses[3]["result"]["content"][0]["text"])
@@ -1353,14 +1532,19 @@ def test_p6_plugin_mcp_server_exposes_expected_tools_and_audited_safe_write(tmp_
     assert cockpit_payload["operator_next"]["status"] == "ready"
     assert cockpit_payload["operator_next"]["lane"] == "p7-safe-write"
     assert cockpit_payload["operator_next"]["risk_class"] == "safe_write"
-    assert cockpit_payload["operator_next"]["source_path"] == "AI/generated/P7_OPERATOR_BRIEF.json"
+    assert (
+        cockpit_payload["operator_next"]["source_path"]
+        == "AI/generated/P7_OPERATOR_BRIEF.json"
+    )
     assert cockpit_payload["operator_next"]["title"] in {
         "Review confirmed P7 evidence",
         "Design next P7 plugin action",
     }
     assert (
-        "Review confirmed evidence-pack-refresh audit" in cockpit_payload["operator_next"]["command"]
-        or "Design the next P7 plugin action" in cockpit_payload["operator_next"]["command"]
+        "Review confirmed evidence-pack-refresh audit"
+        in cockpit_payload["operator_next"]["command"]
+        or "Design the next P7 plugin action"
+        in cockpit_payload["operator_next"]["command"]
     )
     assert "PromoteLiveCtoa" not in cockpit_payload["operator_next"]["command"]
     assert "ApproveLiveDeploy" not in cockpit_payload["operator_next"]["command"]
@@ -1370,12 +1554,8 @@ def test_p6_plugin_mcp_server_exposes_expected_tools_and_audited_safe_write(tmp_
     assert cockpit_payload["p7_safe_write_dry_run_smoke"]["status"] == "ready"
     assert cockpit_payload["p7_safe_write_dry_run_smoke"]["passed_count"] == 12
     assert cockpit_payload["p7_safe_write_dry_run_smoke"]["blocked_count"] == 0
-    assert (
-        cockpit_payload["p7_safe_write_dry_run_smoke"]["dry_run_ready_count"] == 5
-    )
-    assert (
-        cockpit_payload["p7_safe_write_dry_run_smoke"]["preflight_ready_count"] == 5
-    )
+    assert cockpit_payload["p7_safe_write_dry_run_smoke"]["dry_run_ready_count"] == 5
+    assert cockpit_payload["p7_safe_write_dry_run_smoke"]["preflight_ready_count"] == 5
     assert (
         cockpit_payload["p7_safe_write_dry_run_smoke"]["bootstrap_allowed_count"] == 0
     )
@@ -1393,8 +1573,16 @@ def test_p6_plugin_mcp_server_exposes_expected_tools_and_audited_safe_write(tmp_
     assert cockpit_payload["release_evidence"]["drilldown"]["recent_files"]
     assert cockpit_payload["roadmap_generation"]["status"] == "ready"
     assert cockpit_payload["roadmap_generation"]["doc_sync_status"] == "passed"
-    assert cockpit_payload["roadmap_generation"]["ready_doc_count"] == 3
-    assert cockpit_payload["roadmap_generation"]["doc_count"] == 3
+    assert (
+        cockpit_payload["roadmap_generation"]["doc_sync_roadmap_plan3_status"]
+        == "passed"
+    )
+    assert (
+        cockpit_payload["roadmap_generation"]["doc_sync_roadmap_p8_p16_status"]
+        == "passed"
+    )
+    assert cockpit_payload["roadmap_generation"]["ready_doc_count"] == 4
+    assert cockpit_payload["roadmap_generation"]["doc_count"] == 4
     assert cockpit_payload["action_audit_drilldown"]["status"] == "ready"
     assert cockpit_payload["action_audit_drilldown"]["record_count"] >= 5
     assert cockpit_payload["action_audit_drilldown"]["truncated"] is False
@@ -1404,9 +1592,7 @@ def test_p6_plugin_mcp_server_exposes_expected_tools_and_audited_safe_write(tmp_
         ]
         >= 1
     )
-    assert (
-        cockpit_payload["action_audit_drilldown"]["risk_counts"]["safe_write"] >= 5
-    )
+    assert cockpit_payload["action_audit_drilldown"]["risk_counts"]["safe_write"] >= 5
     assert "recent_records" in cockpit_payload["action_audit_drilldown"]
     assert cockpit_payload["policy"].startswith("Read-only Control Center cockpit")
     assert hygiene_refresh_payload["status"] == "dry_run"
@@ -1424,7 +1610,9 @@ def test_p6_plugin_mcp_server_exposes_expected_tools_and_audited_safe_write(tmp_
     )
     assert hygiene_refresh_payload["preflight"]["p7_cockpit"]["ready_audit_count"] == 5
     assert hygiene_refresh_payload["preflight"]["operator_next"]["status"] == "ready"
-    assert hygiene_refresh_payload["preflight"]["operator_next"]["lane"] == "p7-safe-write"
+    assert (
+        hygiene_refresh_payload["preflight"]["operator_next"]["lane"] == "p7-safe-write"
+    )
     assert (
         hygiene_refresh_payload["preflight"]["operator_next"]["risk_class"]
         == "safe_write"
@@ -1519,28 +1707,20 @@ def test_p6_plugin_mcp_server_exposes_expected_tools_and_audited_safe_write(tmp_
     assert brain_confirmed_payload["preflight"]["ok"] is True
     assert brain_confirmed_payload["preflight"]["p7_cockpit_smoke"]["status"] == "ready"
     assert (
-        brain_confirmed_payload["preflight"]["p7_safe_write_dry_run_smoke"][
-            "status"
-        ]
+        brain_confirmed_payload["preflight"]["p7_safe_write_dry_run_smoke"]["status"]
         == "ready"
     )
     assert brain_confirmed_payload["audit_id"] != brain_refresh_payload["audit_id"]
     assert p7_cockpit_smoke_refresh_payload["status"] == "dry_run"
     assert p7_cockpit_smoke_refresh_payload["action"] == "p7-cockpit-smoke-refresh"
-    assert (
-        p7_cockpit_smoke_refresh_payload["tool"]
-        == "ctoai_p7_cockpit_smoke_refresh"
-    )
+    assert p7_cockpit_smoke_refresh_payload["tool"] == "ctoai_p7_cockpit_smoke_refresh"
     assert p7_cockpit_smoke_refresh_payload["risk_class"] == "safe_write"
     assert p7_cockpit_smoke_refresh_payload["dry_run"] is True
     assert p7_cockpit_smoke_refresh_payload["ok"] is True
     assert p7_cockpit_smoke_refresh_payload["preflight"]["ok"] is True
     assert "DRY RUN ONLY" in p7_cockpit_smoke_refresh_payload["output"]
     assert p7_cockpit_smoke_confirmed_payload["status"] == "completed"
-    assert (
-        p7_cockpit_smoke_confirmed_payload["action"]
-        == "p7-cockpit-smoke-refresh"
-    )
+    assert p7_cockpit_smoke_confirmed_payload["action"] == "p7-cockpit-smoke-refresh"
     assert p7_cockpit_smoke_confirmed_payload["dry_run"] is False
     assert p7_cockpit_smoke_confirmed_payload["ok"] is True
     assert p7_cockpit_smoke_confirmed_payload["preflight"]["ok"] is True

@@ -67,10 +67,9 @@ def test_ctoa_cli_up_binds_mobile_console_to_loopback() -> None:
 
 
 def test_mobile_console_operator_docs_do_not_recommend_public_dev_bind() -> None:
-    combined = (
-        MOBILE_CONSOLE_DOC.read_text(encoding="utf-8")
-        + DESKTOP_CONSOLE_APP.read_text(encoding="utf-8")
-    )
+    combined = MOBILE_CONSOLE_DOC.read_text(
+        encoding="utf-8"
+    ) + DESKTOP_CONSOLE_APP.read_text(encoding="utf-8")
 
     assert "mobile_console.app:app --host 127.0.0.1 --port 8787" in combined
     assert "mobile_console.app:app --host 0.0.0.0 --port 8787" not in combined
@@ -93,7 +92,10 @@ def test_ctoa_cli_uses_official_wrapper_for_helper_operations() -> None:
     assert '"PromoteLiveCtoa"' in script
     assert '"-ApproveLiveDeploy"' in script
     assert '"ValidateDev"' in script
+    assert '"BackgroundStatus"' in script
+    assert '"BackgroundNoScreen"' in script
     assert '"otdeploy" { Invoke-OtHelperDeploy -Approval $Arg1; break }' in script
+    assert '"otbg" { Invoke-OtBackgroundStatus; break }' in script
     assert 'Copy-Item -Path (Join-Path $source "*.lua")' not in script
     assert 'Copy-Item -Path (Join-Path $source "*.otmod")' not in script
 

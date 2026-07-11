@@ -9,7 +9,7 @@ if type(existingHelper) == "table" and existingHelper.window then
     return existingHelper
 end
 
-local HELPER_VERSION = "v2.2.1"
+local HELPER_VERSION = "v2.3.0"
 local HELPER_CONFIG = {
     schema_version = "ctoa-helper-profile-v1",
     enabled = true,
@@ -663,6 +663,8 @@ local function reportClientCapabilities(now, force, active)
         online = online,
         active = active ~= false,
         protocol_ready = false,
+        runtime_session_armed = Helper.runtime_session_armed == true,
+        runtime_enabled = HELPER_CONFIG.enabled == true,
         runtime_core = externalRuntimeCore,
     })
     if type(snapshot) ~= "table" then

@@ -1,6 +1,6 @@
 # Engine Brain Ownership Map
 
-Generated at: `2026-07-11T15:38:22+00:00`
+Generated at: `2026-07-11T17:21:42+00:00`
 Source audit: `runtime\audits\ctoai-full-workspace-audit.json`
 Status: `ready`
 
@@ -11,7 +11,7 @@ Status: `ready`
 | `.dockerignore` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `.env.example` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `.foundry` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
-| `.git` | Local/uncategorized | `manual review` | 1150 | git_internal:1150 |
+| `.git` | Local/uncategorized | `manual review` | 1274 | git_internal:1274 |
 | `.gitattributes` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `.github` | Local/uncategorized | `manual review` | 41 | tracked_source:41 |
 | `.gitignore` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
@@ -24,7 +24,7 @@ Status: `ready`
 | `.venv` | Local/uncategorized | `manual review` | 4543 | vendor_or_cache:4543 |
 | `.vscode` | Local/uncategorized | `manual review` | 4 | tracked_source:4 |
 | `AGENTS.md` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
-| `AI` | Engine Brain | `brain refresh; brain pack` | 45 | tracked_source:45 |
+| `AI` | Engine Brain | `brain refresh; brain pack` | 46 | tracked_source:46 |
 | `CHANGELOG.md` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `Dockerfile` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `Dockerfile.api` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
@@ -53,7 +53,7 @@ Status: `ready`
 | `docs` | Documentation | `doc sync guard` | 315 | tracked_source:309, untracked_source_candidate:6 |
 | `evals` | Local/uncategorized | `manual review` | 6 | tracked_source:6 |
 | `logs` | Local/uncategorized | `manual review` | 3 | runtime_or_local_state:3 |
-| `metrics` | Local/uncategorized | `manual review` | 15 | runtime_or_local_state:15 |
+| `metrics` | Local/uncategorized | `manual review` | 18 | runtime_or_local_state:18 |
 | `mobile_console` | Mobile console | `pytest tests/ --ignore=tests/e2e` | 20 | tracked_source:9, untracked_source_candidate:11 |
 | `node_modules` | Local/uncategorized | `manual review` | 1 | vendor_or_cache:1 |
 | `policies` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
@@ -64,13 +64,13 @@ Status: `ready`
 | `requirements-dev.txt` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `requirements.txt` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `runner` | Runner runtime | `pytest tests/ --ignore=tests/e2e` | 154 | tracked_source:57, untracked_source_candidate:97 |
-| `runtime` | Local/uncategorized | `manual review` | 2423 | runtime_or_local_state:2423 |
+| `runtime` | Local/uncategorized | `manual review` | 2481 | runtime_or_local_state:2481 |
 | `runtime_context.py` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `schemas` | Contracts | `schema consumers and pytest` | 6 | tracked_source:6 |
 | `scoring` | Local/uncategorized | `manual review` | 5 | tracked_source:3, untracked_source_candidate:2 |
-| `scripts` | Operator automation | `pytest targeted script tests` | 443 | tracked_source:266, untracked_source_candidate:177 |
+| `scripts` | Operator automation | `pytest targeted script tests` | 447 | tracked_source:268, untracked_source_candidate:179 |
 | `src` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
-| `tests` | Regression suite | `pytest tests/ --ignore=tests/e2e` | 517 | local_secret_or_sensitive:2, tracked_source:187, untracked_source_candidate:328 |
+| `tests` | Regression suite | `pytest tests/ --ignore=tests/e2e` | 519 | local_secret_or_sensitive:2, tracked_source:188, untracked_source_candidate:329 |
 | `training` | Local/uncategorized | `manual review` | 8 | tracked_source:5, untracked_source_candidate:3 |
 | `up` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `web` | Control Center | `cd web; npm run lint; npm test` | 32304 | local_secret_or_sensitive:2, tracked_source:98, untracked_source_candidate:5419, vendor_or_cache:26785 |

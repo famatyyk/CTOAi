@@ -21,8 +21,12 @@ DEFAULT_VALIDATION_PATH = (
     ROOT / "runtime" / "audits" / "ctoai-full-workspace-validation.json"
 )
 DEFAULT_ACTION_AUDIT_PATH = ROOT / "runtime" / "control-center" / "action-audit.jsonl"
-DEFAULT_P7_COCKPIT_SMOKE_PATH = ROOT / "runtime" / "control-center" / "p7-cockpit-smoke.json"
-DEFAULT_P7_EVIDENCE_REVIEW_PATH = ROOT / "runtime" / "control-center" / "p7-evidence-review.json"
+DEFAULT_P7_COCKPIT_SMOKE_PATH = (
+    ROOT / "runtime" / "control-center" / "p7-cockpit-smoke.json"
+)
+DEFAULT_P7_EVIDENCE_REVIEW_PATH = (
+    ROOT / "runtime" / "control-center" / "p7-evidence-review.json"
+)
 DEFAULT_RELEASE_EVIDENCE_DIR = ROOT / "releases" / "evidence"
 DEFAULT_RELEASE_EVIDENCE_LATEST_PATH = ROOT / "runtime" / "evidence" / "latest.json"
 ROADMAP_MAX_BYTES = 256 * 1024
@@ -33,6 +37,10 @@ ROADMAP_GENERATION_DOCS = {
             "P6: Codex Integration",
             "P7_OPERATOR_BRIEF.json",
             "Expand the CTOAi plugin beyond these five safe-write MCP tools only after",
+            "P8 `BackgroundNoScreen` is the active implementation lane.",
+            "The next staged source version is `v2.3.0`; live stays",
+            "on `v2.2.1` until a later explicit release cycle.",
+            "the observer cannot create its own live manifest",
         ],
     },
     "engine_brain_status": {
@@ -41,6 +49,24 @@ ROADMAP_GENERATION_DOCS = {
             "P6 Codex Integration",
             "P7 operator brief",
             "plugin-style operator surface",
+            "P8 `BackgroundNoScreen` is the active lane.",
+            "The staged source version is `v2.3.0`; the",
+            "protected live client remains `v2.2.1`",
+            "only a manifest with `official_live_promotion`",
+            "The observer cannot create that pin.",
+        ],
+    },
+    "p8_p16_execution_roadmap": {
+        "path": "AI/P8_P16_EXECUTION_ROADMAP.md",
+        "needles": [
+            "P8 — BackgroundNoScreen Foundation",
+            "P9 — Conditions Shadow Observation And Replay",
+            "P15 — Combat Design-Only Digital Twin",
+            "P16 — CaveBot Design-Only Digital Twin",
+            "Helper `v2.2.1` live promotion. P8 is",
+            "the `v2.3.0` staged-source lane and does not auto-promote that version.",
+            "manifest pinned by an official promotion record",
+            "the observer never creates or",
         ],
     },
     "plan3_roadmap": {
@@ -137,6 +163,7 @@ DOC_SYNC_CHECKS = [
             '"command": "otprofile"',
             '"command": "otdeploy"',
             '"command": "otest"',
+            '"command": "otbg"',
         ],
     },
     {
@@ -150,6 +177,15 @@ DOC_SYNC_CHECKS = [
         "needles": [
             "Plan 3: Engine Brain And CTOAi Platform",
             "secret-safe planning/context layer",
+        ],
+    },
+    {
+        "name": "roadmap_p8_p16",
+        "path": "AI/P8_P16_EXECUTION_ROADMAP.md",
+        "needles": [
+            "BackgroundNoScreen",
+            "P12 — Execute-Once Sandbox Acceptance",
+            "P14 — Independent Runner And Release Automation",
         ],
     },
 ]
@@ -1513,8 +1549,17 @@ def build_roadmap_generation_payload(
         ),
         {},
     )
+    p8_p16_sync = next(
+        (
+            check
+            for check in doc_sync_checks
+            if isinstance(check, dict) and check.get("name") == "roadmap_p8_p16"
+        ),
+        {},
+    )
     doc_sync_status = str(doc_sync.get("status") or "missing")
     plan3_sync_status = str(plan3_sync.get("status") or "missing")
+    p8_p16_sync_status = str(p8_p16_sync.get("status") or "missing")
 
     docs: list[dict[str, Any]] = []
     hard_blockers: list[str] = []
@@ -1546,6 +1591,8 @@ def build_roadmap_generation_payload(
         hard_blockers.append("doc_sync_status")
     if plan3_sync_status != "passed":
         hard_blockers.append("doc_sync:roadmap_plan3")
+    if p8_p16_sync_status != "passed":
+        hard_blockers.append("doc_sync:roadmap_p8_p16")
 
     ready_doc_count = sum(1 for doc in docs if doc["status"] == "passed")
     ready = not hard_blockers and ready_doc_count == len(docs)
@@ -1556,6 +1603,7 @@ def build_roadmap_generation_payload(
         "hard_blockers": hard_blockers,
         "doc_sync_status": doc_sync_status,
         "doc_sync_roadmap_plan3_status": plan3_sync_status,
+        "doc_sync_roadmap_p8_p16_status": p8_p16_sync_status,
         "doc_count": len(docs),
         "ready_doc_count": ready_doc_count,
         "docs": docs,
@@ -1612,6 +1660,9 @@ def read_release_evidence_summary(
     module_contract = helper.get("module_contract")
     if not isinstance(module_contract, dict):
         module_contract = {}
+    background_status = helper.get("background_status")
+    if not isinstance(background_status, dict):
+        background_status = {}
     next_steps = queue.get("next_steps")
     if not isinstance(next_steps, list):
         next_steps = []
@@ -1621,9 +1672,13 @@ def read_release_evidence_summary(
         "file_count": file_count,
         "sprint_count": len(sprint_dirs),
         "latest_path": latest_markdown_path,
-        "release_evidence_generated_at": str(latest_payload.get("generated_at_utc") or ""),
+        "release_evidence_generated_at": str(
+            latest_payload.get("generated_at_utc") or ""
+        ),
         "otclient_helper_status": str(helper.get("status") or ""),
-        "otclient_helper_release_gate_status": str(helper.get("release_gate_status") or ""),
+        "otclient_helper_release_gate_status": str(
+            helper.get("release_gate_status") or ""
+        ),
         "otclient_helper_next_action": str(helper.get("next_action") or ""),
         "otclient_helper_module_contract": {
             "status": str(module_contract.get("status") or ""),
@@ -1631,13 +1686,34 @@ def read_release_evidence_summary(
             "check_count": int(module_contract.get("check_count") or 0),
             "forbidden_count": int(module_contract.get("forbidden_count") or 0),
         },
+        "otclient_helper_background_status": {
+            "status": str(background_status.get("status") or "missing"),
+            "integrity_status": str(
+                background_status.get("integrity_status") or "missing"
+            ),
+            "capability_status": str(
+                background_status.get("capability_status") or "missing"
+            ),
+            "runtime_state": str(background_status.get("runtime_state") or "unknown"),
+            "safe_to_run_while_playing": background_status.get(
+                "safe_to_run_while_playing"
+            )
+            is True,
+        },
         "sandbox_smoke_queue": {
             "status": str(queue.get("status") or ""),
             "runtime_status": str(queue.get("runtime_status") or ""),
             "next_action": str(queue.get("next_action") or ""),
             "required_count": int(queue.get("required_count") or 0),
             "queued_count": int(queue.get("queued_count") or 0),
-            "first_step": str((next_steps[0] if next_steps and isinstance(next_steps[0], dict) else {}).get("step_id") or ""),
+            "first_step": str(
+                (
+                    next_steps[0]
+                    if next_steps and isinstance(next_steps[0], dict)
+                    else {}
+                ).get("step_id")
+                or ""
+            ),
         },
     }
 
@@ -1648,9 +1724,13 @@ def read_p7_cockpit_smoke_summary(
     payload = read_json_object(smoke_path)
     summary = payload.get("summary") if isinstance(payload.get("summary"), dict) else {}
     hard_blockers = (
-        payload.get("hard_blockers") if isinstance(payload.get("hard_blockers"), list) else []
+        payload.get("hard_blockers")
+        if isinstance(payload.get("hard_blockers"), list)
+        else []
     )
-    warnings = payload.get("warnings") if isinstance(payload.get("warnings"), list) else []
+    warnings = (
+        payload.get("warnings") if isinstance(payload.get("warnings"), list) else []
+    )
     return {
         "status": str(payload.get("status") or "missing"),
         "checks": int(summary.get("checks") or 0),
@@ -1669,9 +1749,13 @@ def read_p7_evidence_review_summary(
     payload = read_json_object(review_path)
     summary = payload.get("summary") if isinstance(payload.get("summary"), dict) else {}
     hard_blockers = (
-        payload.get("hard_blockers") if isinstance(payload.get("hard_blockers"), list) else []
+        payload.get("hard_blockers")
+        if isinstance(payload.get("hard_blockers"), list)
+        else []
     )
-    warnings = payload.get("warnings") if isinstance(payload.get("warnings"), list) else []
+    warnings = (
+        payload.get("warnings") if isinstance(payload.get("warnings"), list) else []
+    )
     return {
         "status": str(payload.get("status") or "missing"),
         "outcome": str(payload.get("outcome") or ""),
@@ -1755,7 +1839,9 @@ def build_p7_cockpit_handoff_payload(
             "enabled_safe_write_tool_count": enabled_tool_count,
             "ready_audit_count": ready_audit_count,
             "audit_count": enabled_tool_count,
-            "mcp_write_tool_count": int(action_readiness.get("mcp_write_tool_count") or 0),
+            "mcp_write_tool_count": int(
+                action_readiness.get("mcp_write_tool_count") or 0
+            ),
         },
         "p7_cockpit_smoke": smoke,
         "release_evidence": release,
@@ -1958,7 +2044,8 @@ def build_p7_action_readiness_payload(
     selected_evidence_review_ready = (
         evidence_review.get("status") == "ready"
         and evidence_review.get("outcome") == "ready_to_design_next_p7_plugin_action"
-        and evidence_review.get("selected_action_id") == P7_SELECTED_SAFE_WRITE_ACTION_ID
+        and evidence_review.get("selected_action_id")
+        == P7_SELECTED_SAFE_WRITE_ACTION_ID
         and evidence_review.get("selected_mcp_tool") == P7_SELECTED_SAFE_WRITE_MCP_TOOL
     )
     selected_confirmed_command = (
@@ -2316,6 +2403,7 @@ def build_p7_operator_brief_payload(
         "hard_blockers": ["roadmap_generation_missing"],
         "doc_sync_status": "missing",
         "doc_sync_roadmap_plan3_status": "missing",
+        "doc_sync_roadmap_p8_p16_status": "missing",
         "doc_count": 0,
         "ready_doc_count": 0,
         "docs": [],
@@ -2424,6 +2512,9 @@ def build_p7_operator_brief_payload(
             "doc_sync_roadmap_plan3_status": str(
                 roadmap_generation.get("doc_sync_roadmap_plan3_status") or "missing"
             ),
+            "doc_sync_roadmap_p8_p16_status": str(
+                roadmap_generation.get("doc_sync_roadmap_p8_p16_status") or "missing"
+            ),
             "doc_count": int(roadmap_generation.get("doc_count") or 0),
             "ready_doc_count": int(roadmap_generation.get("ready_doc_count") or 0),
             "hard_blockers": [
@@ -2452,9 +2543,7 @@ def build_p7_operator_brief_payload(
             str(roadmap_generation.get("next_action") or "")
             if not ready and roadmap_generation.get("status") != "ready"
             else action_next_safe_command
-            if ready
-            and enabled_safe_write_tool_count > 1
-            and action_next_safe_command
+            if ready and enabled_safe_write_tool_count > 1 and action_next_safe_command
             else design_next_safe_command
             if ready and design_ready
             else "Design bounded safe_write MCP tools behind Control Center audit replay; keep live/deploy actions blocked."
@@ -2662,6 +2751,11 @@ def render_p7_operator_brief(payload: dict[str, Any]) -> str:
         if isinstance(release_evidence.get("otclient_helper_module_contract"), dict)
         else {}
     )
+    background_status = (
+        release_evidence.get("otclient_helper_background_status")
+        if isinstance(release_evidence.get("otclient_helper_background_status"), dict)
+        else {}
+    )
     action_audit = (
         cockpit_handoff.get("action_audit")
         if isinstance(cockpit_handoff.get("action_audit"), dict)
@@ -2714,9 +2808,17 @@ def render_p7_operator_brief(payload: dict[str, Any]) -> str:
             f"first step `{sandbox_queue.get('first_step', 'n/a')}`."
         ),
         (
+            f"- BackgroundNoScreen: `{background_status.get('status', 'missing')}`; "
+            f"integrity `{background_status.get('integrity_status', 'missing')}`; "
+            f"capability `{background_status.get('capability_status', 'missing')}`; "
+            f"runtime `{background_status.get('runtime_state', 'unknown')}`."
+        ),
+        (
             f"- Roadmap generation: `{roadmap_generation.get('status', 'missing')}`; "
             f"docs `{roadmap_generation.get('ready_doc_count', 0)}/{roadmap_generation.get('doc_count', 0)}`; "
-            f"doc sync `{roadmap_generation.get('doc_sync_status', 'missing')}`."
+            f"doc sync `{roadmap_generation.get('doc_sync_status', 'missing')}`; "
+            f"Plan 3 `{roadmap_generation.get('doc_sync_roadmap_plan3_status', 'missing')}`; "
+            f"P8-P16 `{roadmap_generation.get('doc_sync_roadmap_p8_p16_status', 'missing')}`."
         ),
         f"- Validation evidence: `{validation['count']}` commands from `{validation['generated_at_utc']}`.",
         f"- Hard blockers: {blockers}.",

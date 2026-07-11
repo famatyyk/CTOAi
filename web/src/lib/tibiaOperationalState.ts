@@ -57,6 +57,15 @@ export type ClientCapabilities = {
     status: "online" | "offline" | "missing"
     last_seen_at: string | null
   }
+  game_online: boolean | null
+  runtime: {
+    state: "armed" | "disarmed" | "unknown"
+    session_armed: boolean | null
+    enabled: boolean | null
+    actions: boolean
+    core_status: string
+    core_mode: string
+  }
   safe_fallback: boolean
   evidence_status: "fresh" | "stale_snapshot" | "parser_broken"
   report_error: "missing" | "invalid_schema" | "stale" | null
@@ -99,6 +108,16 @@ type ClientReport = {
   observed_at: string | null
   observed_at_unix_ms: number
   heartbeat_status: "online" | "offline"
+  online: boolean
+  runtime_session_armed?: boolean
+  runtime_state?: "armed" | "disarmed"
+  runtime_enabled?: boolean
+  runtime_actions: boolean
+  runtime_core: {
+    status?: string
+    mode?: string
+    runtime_actions: boolean
+  }
 }
 
 type TibiaSourcePayload = {
@@ -285,7 +304,23 @@ export async function getClients(): Promise<{ generated_at: string; clients: Cli
   if (report.kind === "valid") {
     const ageMs = Date.now() - report.value.observed_at_unix_ms
     const stale = ageMs > CLIENT_REPORT_STALE_MS
-    const safeFallback = report.value.safe_fallback || stale || report.value.status === "unknown_build"
+    const runtimeCore = report.value.runtime_core
+    const unsafeRuntimeClaim = report.value.runtime_actions === true || runtimeCore.runtime_actions === true
+    const runtimeSafetyContract =
+      report.value.heartbeat_status === "online" &&
+      report.value.online === true &&
+      report.value.runtime_actions === false &&
+      runtimeCore.runtime_actions === false
+    const safeFallback =
+      report.value.safe_fallback ||
+      stale ||
+      report.value.status === "unknown_build" ||
+      report.value.protocol_status !== "ready" ||
+      unsafeRuntimeClaim ||
+      !runtimeSafetyContract
+    const runtimeState = report.value.runtime_state === "armed" || report.value.runtime_state === "disarmed"
+      ? report.value.runtime_state
+      : "unknown"
     return {
       generated_at: generatedAt,
       clients: [
@@ -300,6 +335,15 @@ export async function getClients(): Promise<{ generated_at: string; clients: Cli
           heartbeat: {
             status: stale ? "offline" : report.value.heartbeat_status,
             last_seen_at: report.value.observed_at,
+          },
+          game_online: typeof report.value.online === "boolean" ? report.value.online : null,
+          runtime: {
+            state: runtimeState,
+            session_armed: typeof report.value.runtime_session_armed === "boolean" ? report.value.runtime_session_armed : null,
+            enabled: typeof report.value.runtime_enabled === "boolean" ? report.value.runtime_enabled : null,
+            actions: unsafeRuntimeClaim,
+            core_status: typeof runtimeCore.status === "string" ? runtimeCore.status.slice(0, 64) : "unknown",
+            core_mode: typeof runtimeCore.mode === "string" ? runtimeCore.mode.slice(0, 64) : "unknown",
           },
           safe_fallback: safeFallback,
           evidence_status: stale ? "stale_snapshot" : "fresh",
@@ -329,6 +373,15 @@ export async function getClients(): Promise<{ generated_at: string; clients: Cli
         heartbeat: {
           status: "missing",
           last_seen_at: null,
+        },
+        game_online: null,
+        runtime: {
+          state: "unknown",
+          session_armed: null,
+          enabled: null,
+          actions: false,
+          core_status: "unknown",
+          core_mode: "unknown",
         },
         safe_fallback: true,
         evidence_status: invalid ? "parser_broken" : "stale_snapshot",
@@ -360,6 +413,11 @@ export async function getTelemetryEvents(): Promise<{ generated_at: string; even
           status: client.status,
           protocol_status: client.protocol_status,
           heartbeat_status: client.heartbeat.status,
+          game_online: client.game_online,
+          runtime_state: client.runtime.state,
+          runtime_session_armed: client.runtime.session_armed,
+          runtime_enabled: client.runtime.enabled,
+          runtime_actions: client.runtime.actions,
           evidence_status: client.evidence_status,
           report_error: client.report_error,
           safe_fallback: client.safe_fallback,
@@ -383,7 +441,14 @@ function clientReportPath(): string {
   if (configured) return path.isAbsolute(configured) ? configured : path.join(/*turbopackIgnore: true*/ repoRoot(), configured)
   const localAppData = process.env.LOCALAPPDATA?.trim()
   if (localAppData) {
-    return path.join(/*turbopackIgnore: true*/ localAppData, "ctoa_helper_client_ui_preview", "ctoa_client_capabilities.json")
+    return path.join(
+      /*turbopackIgnore: true*/ localAppData,
+      "Solteria",
+      "client",
+      "mods",
+      "ctoa_otclient",
+      "ctoa_client_capabilities.json",
+    )
   }
   return path.join(/*turbopackIgnore: true*/ repoRoot(), "runtime", "solteria_helper_dev", "client_capabilities.json")
 }
@@ -520,7 +585,18 @@ function isClientReport(value: unknown): value is ClientReport {
     Number.isFinite(observedAtMs) &&
     observedAtMs >= 0 &&
     observedAtMs <= now + 60_000 &&
-    (value.heartbeat_status === "online" || value.heartbeat_status === "offline")
+    (value.heartbeat_status === "online" || value.heartbeat_status === "offline") &&
+    typeof value.online === "boolean" &&
+    (value.runtime_session_armed === undefined || typeof value.runtime_session_armed === "boolean") &&
+    (value.runtime_state === undefined || value.runtime_state === "armed" || value.runtime_state === "disarmed") &&
+    (value.runtime_enabled === undefined || typeof value.runtime_enabled === "boolean") &&
+    typeof value.runtime_actions === "boolean" &&
+    (
+      isRecord(value.runtime_core) &&
+      (value.runtime_core.status === undefined || isBoundedString(value.runtime_core.status, 64)) &&
+      (value.runtime_core.mode === undefined || isBoundedString(value.runtime_core.mode, 64)) &&
+      typeof value.runtime_core.runtime_actions === "boolean"
+    )
   )
 }
 

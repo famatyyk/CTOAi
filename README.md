@@ -60,6 +60,12 @@ Primary governance sources:
 - CTOA Release Governance:
   [workflows](workflows) + [policies](policies) +
   [runtime/experiments](runtime/experiments)
+- Solteria/OTClient Helper:
+  [scripts/lua/otclient](scripts/lua/otclient) +
+  [P8-P16 execution roadmap](AI/P8_P16_EXECUTION_ROADMAP.md). Routine evidence
+  collection uses `.\ctoa.ps1 otbg` in `BackgroundNoScreen` mode, requires an
+  official promotion-bound manifest pin, and never takes over the user's game
+  window.
 
 Product map and ownership list:
 

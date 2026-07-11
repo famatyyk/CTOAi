@@ -127,6 +127,31 @@ export type ControlCenterEvidence = {
     packagePath: string
     packageSha256: string
     blockers: string[]
+    backgroundStatus: {
+      status: string
+      reportedStatus: string
+      mode: string
+      generatedAt: string
+      maxAgeSeconds: number
+      ageSeconds: number | null
+      fresh: boolean
+      contractValid: boolean
+      contractErrors: string[]
+      advisoryOnly: boolean
+      safeToRunWhilePlaying: boolean
+      promotionAllowed: boolean
+      dispatchAllowed: boolean
+      runtimeActions: boolean
+      processState: string
+      integrityStatus: string
+      matchedFileCount: number
+      manifestFileCount: number
+      mutableDriftCount: number
+      capabilityStatus: string
+      capabilityFresh: boolean
+      runtimeState: string
+      blockers: string[]
+    }
     nextAction: string
     nextCommand: string
     sourcePaths: {
@@ -139,6 +164,7 @@ export type ControlCenterEvidence = {
       smokePreflight: string
       smokeStatus: string
       livePromotion: string
+      backgroundStatus: string
     }
   }
   engineBrain: {
@@ -408,6 +434,49 @@ const CONTROL_CENTER_EVIDENCE_JSON_MAX_BYTES = 1024 * 1024
 const CONTROL_CENTER_MARKDOWN_TITLE_MAX_BYTES = 64 * 1024
 export const CONTROL_CENTER_ACTION_AUDIT_MAX_BYTES = 1024 * 1024
 const ACTION_AUDIT_MAX_LINE_LENGTH = 20 * 1024
+const BACKGROUND_STATUS_SCHEMA = "ctoa.otclient-headless-status.v1"
+const BACKGROUND_STATUS_MODE = "background_no_screen"
+const BACKGROUND_STATUS_MAX_AGE_MS = 30_000
+const BACKGROUND_STATUS_VALUES = new Set([
+  "ready",
+  "blocked",
+  "idle",
+  "waiting_for_passive_heartbeat",
+  "observation_pending",
+])
+const BACKGROUND_INTEGRITY_STATUS_VALUES = new Set(["passed", "failed", "untrusted_pin"])
+const BACKGROUND_CAPABILITY_STATUS_VALUES = new Set([
+  "fresh",
+  "stale",
+  "missing",
+  "unsafe_runtime_claim",
+  "schema_mismatch",
+  "invalid_contract",
+  "version_mismatch",
+  "invalid_heartbeat",
+  "heartbeat_before_process",
+  "heartbeat_offline",
+  "game_offline",
+  "malformed",
+  "oversize",
+  "symlink_rejected",
+  "not_regular",
+  "not_object",
+  "changed_during_open",
+  "unreadable",
+  "explicit_path_mismatch",
+])
+const BACKGROUND_BLOCKER_VALUES = new Set([
+  "live_manifest_pin_untrusted",
+  "live_manifest_parity_failed",
+  "live_files_changed_or_unverifiable",
+  "active_client_process_count_invalid",
+  "active_client_process_start_invalid",
+  "current_session_lua_exception",
+  "client_process_changed_during_observation",
+  "screenshot_count_changed_during_observation",
+  ...Array.from(BACKGROUND_CAPABILITY_STATUS_VALUES, (status) => `capability_${status}`),
+])
 
 export async function collectControlCenterEvidence(): Promise<ControlCenterEvidence> {
   const config = getControlCenterEvidenceConfig()
@@ -1330,6 +1399,151 @@ async function collectArtifactHealth(
   }
 }
 
+function safeNonnegativeInteger(value: unknown): { value: number; valid: boolean } {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0
+    ? { value, valid: true }
+    : { value: 0, valid: false }
+}
+
+function summarizeBackgroundStatus(
+  payload: Record<string, unknown> | null,
+  artifactPresent: boolean,
+  nowMs = Date.now(),
+): ControlCenterEvidence["otclientHelper"]["backgroundStatus"] {
+  const data = payload ?? {}
+  const integrity = isRecord(data.integrity) ? data.integrity : {}
+  const capability = isRecord(data.capability) ? data.capability : {}
+  const log = isRecord(data.log) ? data.log : {}
+
+  const rawBlockers = data.blockers
+  const blockersValid =
+    Array.isArray(rawBlockers) &&
+    rawBlockers.length <= 16 &&
+    rawBlockers.every((item) => typeof item === "string" && BACKGROUND_BLOCKER_VALUES.has(item))
+  const blockers = blockersValid
+    ? rawBlockers.map((item) => sanitizeText(item, 160)).filter(Boolean).slice(0, 8)
+    : []
+
+  const matchedFileCount = safeNonnegativeInteger(integrity.matched_file_count)
+  const manifestFileCount = safeNonnegativeInteger(integrity.manifest_file_count)
+  const mutableDriftCount = safeNonnegativeInteger(integrity.mutable_drift_count)
+  const generatedAtValue = data.generated_at_utc
+  const generatedAt =
+    typeof generatedAtValue === "string" &&
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?(?:Z|[+-]\d{2}:\d{2})$/.test(generatedAtValue)
+      ? generatedAtValue
+      : ""
+  const generatedAtMs = generatedAt ? Date.parse(generatedAt) : Number.NaN
+  const ageMs = Number.isFinite(generatedAtMs) ? nowMs - generatedAtMs : null
+  const timestampFresh = ageMs !== null && ageMs >= 0 && ageMs <= BACKGROUND_STATUS_MAX_AGE_MS
+
+  const reportedStatusValue = data.status
+  const reportedStatus =
+    typeof reportedStatusValue === "string" && BACKGROUND_STATUS_VALUES.has(reportedStatusValue)
+      ? reportedStatusValue
+      : artifactPresent
+        ? "invalid"
+        : "missing"
+  const modeValue = data.mode
+  const mode = modeValue === BACKGROUND_STATUS_MODE ? modeValue : artifactPresent ? "invalid" : BACKGROUND_STATUS_MODE
+  const processStateValue = data.process_state
+  const runtimeStateValue = capability.runtime_state || log.runtime_state
+  const integrityStatusValue = integrity.status
+  const capabilityStatusValue = capability.status
+
+  const checks: Array<[string, boolean]> = [
+    ["schema_version", data.schema_version === BACKGROUND_STATUS_SCHEMA],
+    ["mode", modeValue === BACKGROUND_STATUS_MODE],
+    ["status", typeof reportedStatusValue === "string" && BACKGROUND_STATUS_VALUES.has(reportedStatusValue)],
+    ["advisory_only", data.advisory_only === true],
+    ["safe_to_run_while_playing", data.safe_to_run_while_playing === true],
+    ["promotion_allowed", data.promotion_allowed === false],
+    ["dispatch_allowed", data.dispatch_allowed === false],
+    ["runtime_actions", data.runtime_actions === false],
+    ["blockers", blockersValid],
+    ["integrity", isRecord(data.integrity)],
+    ["capability", isRecord(data.capability)],
+    ["process_state", processStateValue === "running" || processStateValue === "not_running" || processStateValue === "ambiguous"],
+    ["runtime_state", runtimeStateValue === "armed" || runtimeStateValue === "disarmed" || runtimeStateValue === "unknown"],
+    [
+      "integrity_status",
+      typeof integrityStatusValue === "string" && BACKGROUND_INTEGRITY_STATUS_VALUES.has(integrityStatusValue),
+    ],
+    [
+      "capability_status",
+      typeof capabilityStatusValue === "string" && BACKGROUND_CAPABILITY_STATUS_VALUES.has(capabilityStatusValue),
+    ],
+    ["capability_fresh", typeof capability.fresh === "boolean"],
+    ["capability_runtime_actions", capability.runtime_actions === false],
+    ["capability_runtime_core_actions", capability.runtime_core_actions === false],
+    ["matched_file_count", matchedFileCount.valid],
+    ["manifest_file_count", manifestFileCount.valid],
+    ["mutable_drift_count", mutableDriftCount.valid],
+    ["generated_at_utc", Number.isFinite(generatedAtMs)],
+  ]
+  const contractErrors = checks.filter(([, passed]) => !passed).map(([name]) => name)
+  const contractValid = payload !== null && contractErrors.length === 0
+  const fresh = contractValid && timestampFresh
+  const integrityStatus =
+    typeof integrityStatusValue === "string" && BACKGROUND_INTEGRITY_STATUS_VALUES.has(integrityStatusValue)
+      ? integrityStatusValue
+      : "invalid"
+  const capabilityStatus =
+    typeof capabilityStatusValue === "string" && BACKGROUND_CAPABILITY_STATUS_VALUES.has(capabilityStatusValue)
+      ? capabilityStatusValue
+      : "invalid"
+  const capabilityFresh = capability.fresh === true
+  const ready =
+    contractValid &&
+    fresh &&
+    reportedStatus === "ready" &&
+    integrityStatus === "passed" &&
+    capabilityStatus === "fresh" &&
+    capabilityFresh &&
+    blockers.length === 0
+
+  const status = !artifactPresent
+    ? "missing"
+    : !contractValid
+      ? "blocked"
+      : !fresh
+        ? "stale"
+        : ready
+          ? "ready"
+          : reportedStatus === "ready"
+            ? "blocked"
+            : reportedStatus
+
+  return {
+    status,
+    reportedStatus,
+    mode,
+    generatedAt,
+    maxAgeSeconds: BACKGROUND_STATUS_MAX_AGE_MS / 1000,
+    ageSeconds: ageMs === null ? null : Math.round(ageMs) / 1000,
+    fresh,
+    contractValid,
+    contractErrors,
+    advisoryOnly: data.advisory_only === true,
+    safeToRunWhilePlaying: data.safe_to_run_while_playing === true,
+    promotionAllowed: data.promotion_allowed === true,
+    dispatchAllowed: data.dispatch_allowed === true,
+    runtimeActions: data.runtime_actions === true,
+    processState:
+      processStateValue === "running" || processStateValue === "not_running" || processStateValue === "ambiguous"
+        ? processStateValue
+        : "unknown",
+    integrityStatus,
+    matchedFileCount: matchedFileCount.value,
+    manifestFileCount: manifestFileCount.value,
+    mutableDriftCount: mutableDriftCount.value,
+    capabilityStatus,
+    capabilityFresh,
+    runtimeState: runtimeStateValue === "armed" || runtimeStateValue === "disarmed" ? runtimeStateValue : "unknown",
+    blockers,
+  }
+}
+
 async function collectOtclientHelperStatus(
   config: ControlCenterEvidenceConfig,
 ): Promise<ControlCenterEvidence["otclientHelper"]> {
@@ -1341,6 +1555,8 @@ async function collectOtclientHelperStatus(
   const smokePreflight = await readJsonIfExists(config.helperSmokePreflightPath)
   const smokeStatus = await readJsonIfExists(config.helperSmokeStatusPath)
   const livePromotion = await readJsonIfExists(config.helperLivePromotionPath)
+  const backgroundStatus = await readJsonIfExists(config.helperBackgroundStatusPath)
+  const backgroundStatusArtifact = await statIfExists(config.helperBackgroundStatusPath)
 
   const releaseGateStatus = String(releaseGate?.status || "missing")
   const validationStatus = String(validation?.status || "missing")
@@ -1377,6 +1593,7 @@ async function collectOtclientHelperStatus(
 
   const files = Array.isArray(manifest?.files) ? manifest.files : []
   const readinessZip = isRecord(readiness?.zip) ? readiness.zip : {}
+  const backgroundSummary = summarizeBackgroundStatus(backgroundStatus, backgroundStatusArtifact !== null)
   const releasableToLive = releaseGateReleasableToLive && blockers.length === 0
   let status = "missing"
   if (manifest) {
@@ -1406,6 +1623,7 @@ async function collectOtclientHelperStatus(
     packagePath: toControlCenterDisplayPath(String(readinessZip.path || "")),
     packageSha256: String(readinessZip.sha256 || ""),
     blockers: blockers.length ? blockers : Array.isArray(goalStatus?.blockers) ? goalStatus.blockers.map(String) : [],
+    backgroundStatus: backgroundSummary,
     nextAction: String(releaseGate?.next_action || goalStatus?.next_action || smokeStatus?.next_action || "Run ValidateDev."),
     nextCommand,
     sourcePaths: {
@@ -1418,6 +1636,7 @@ async function collectOtclientHelperStatus(
       smokePreflight: toControlCenterDisplayPath(config.helperSmokePreflightPath),
       smokeStatus: toControlCenterDisplayPath(config.helperSmokeStatusPath),
       livePromotion: toControlCenterDisplayPath(config.helperLivePromotionPath),
+      backgroundStatus: toControlCenterDisplayPath(config.helperBackgroundStatusPath),
     },
   }
 }

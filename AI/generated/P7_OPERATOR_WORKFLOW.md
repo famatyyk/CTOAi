@@ -1,6 +1,6 @@
 # P7 Operator Workflow
 
-Generated at: `2026-07-11T15:38:22+00:00`
+Generated at: `2026-07-11T17:21:42+00:00`
 Status: `safe_write_ready`
 Decision: `allow_bounded_safe_write_tools`
 
