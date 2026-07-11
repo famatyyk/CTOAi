@@ -91,6 +91,11 @@
       "command": "dash",
       "aliases": [],
       "description": "Dashboard helpers: dash snap"
+    },
+    {
+      "command": "brain",
+      "aliases": [],
+      "description": "Engine Brain helpers: refresh|doctor|pack [all|helper|control-center|infra|security]"
     }
   ]
 }

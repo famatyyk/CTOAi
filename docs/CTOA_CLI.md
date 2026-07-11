@@ -31,6 +31,9 @@ Run from repository root:
 - `logs <runner|health|agents|report|mobile>` - logs shortcuts
 - `dash snap` - VPS dashboard snapshot
 - `report now` - publish report via service environment
+- `brain refresh` - regenerate secret-safe Engine Brain file tree and symbol map
+- `brain doctor` - run secret-safe Engine Brain environment audit
+- `brain pack [all|helper|control-center|infra|security]` - build a portable secret-safe Engine Brain markdown pack
 
 ## Practical examples
 
@@ -66,6 +69,9 @@ Run from repository root:
 .\ctoa.ps1 vps ValidateServices
 .\ctoa.ps1 dash snap
 .\ctoa.ps1 report now
+.\ctoa.ps1 brain refresh
+.\ctoa.ps1 brain doctor
+.\ctoa.ps1 brain pack helper
 ```
 
 ## Rule for adding aliases

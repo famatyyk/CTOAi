@@ -141,6 +141,7 @@ Usage:
     .\\ctoa.ps1 logs <runner|health|agents|report|mobile>
   .\\ctoa.ps1 dash snap
     .\\ctoa.ps1 report now
+    .\\ctoa.ps1 brain <refresh|doctor|pack>
 
 Short aliases:
   h = help
@@ -174,6 +175,9 @@ Examples:
   .\\ctoa.ps1 vps ValidateServices
   .\\ctoa.ps1 dash snap
   .\\ctoa.ps1 report now
+  .\\ctoa.ps1 brain refresh
+  .\\ctoa.ps1 brain doctor
+  .\\ctoa.ps1 brain pack
 "@ | Write-Host
 
         Write-Host ("Shared dictionary: version={0}, commands={1}" -f $dict.version, $dictCount) -ForegroundColor DarkGray
@@ -214,7 +218,7 @@ function Get-WorktreeSummary {
     try {
         $lines = @(& $git status --short 2>$null)
         if ($LASTEXITCODE -ne 0) {
-            return "git status failed; run scripts/ops/ctoa_env_doctor.py before sync/push work."
+            return "git status failed; run .\\ctoa.ps1 brain doctor before sync/push work."
         }
         if (@($lines).Count -eq 0) {
             return "clean"
@@ -639,6 +643,37 @@ function Invoke-ReportNow {
     Invoke-VpsAction -Action "ReportViaServiceEnv"
 }
 
+function Invoke-EngineBrain {
+    param(
+        [string]$Subcommand,
+        [string]$Profile
+    )
+
+    $mode = (Get-ValueOrDefault -Value $Subcommand -Fallback "refresh").ToLowerInvariant()
+    switch ($mode) {
+        "refresh" {
+            $python = Get-PythonExe
+            Invoke-FromRoot -FilePath $python -Arguments @("scripts/ops/engine_brain_index.py")
+            break
+        }
+        "doctor" {
+            $python = Get-PythonExe
+            Invoke-FromRoot -FilePath $python -Arguments @("scripts/ops/engine_brain_doctor.py")
+            break
+        }
+        "pack" {
+            $python = Get-PythonExe
+            $args = @("scripts/ops/engine_brain_pack.py")
+            if (-not [string]::IsNullOrWhiteSpace($Profile)) {
+                $args += @("--profile", $Profile)
+            }
+            Invoke-FromRoot -FilePath $python -Arguments $args
+            break
+        }
+        default { throw "Unknown brain subcommand '$Subcommand'. Use refresh|doctor|pack [all|helper|control-center|infra|security]" }
+    }
+}
+
 function Get-ValueOrDefault {
     param(
         [string]$Value,
@@ -753,6 +788,8 @@ switch ($Command.ToLowerInvariant()) {
         }
         throw "Unknown dash action '$Arg1'. Use: .\\ctoa.ps1 dash snap"
     }
+
+    "brain" { Invoke-EngineBrain -Subcommand $Arg1 -Profile $Arg2; break }
 
     default {
         throw "Unknown command '$Command'. Run: .\\ctoa.ps1 help"
