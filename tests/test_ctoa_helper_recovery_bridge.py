@@ -36,6 +36,8 @@ def test_recovery_bridge_is_packaged_and_safe_by_default():
     assert '"ctoaRecoveryBridgeArm"' in ui
     assert '"ctoaRecoveryBridgeDryRun"' in ui
     assert '"ctoaRecoveryBridgeKill"' in ui
+    assert "create_widget = createWidget" in helper
+    assert "add_to_section = addToSection" in helper
     assert "recovery_bridge_arm = true" in modal
     for forbidden in ["g_game.", "g_map.", "castSpell(", "sendActionbarSlot(", "useWith("]:
         assert forbidden not in source

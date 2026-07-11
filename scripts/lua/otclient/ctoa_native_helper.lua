@@ -3965,6 +3965,8 @@ buildUi = function()
     local panel_renderer_base = {
         window = window, config = HELPER_CONFIG, helper = Helper, widgets = Helper.widgets, layout = UI_LAYOUT,
         panel_x = panel_x, panel_w = panel_w, body_y = body_y, body_h = body_h,
+        create_widget = createWidget, style_action_button = function(widget, role, enabled) styleUi("styleActionButton", widget, role, enabled, UI_STYLE) end,
+        add_to_section = addToSection,
         add_section_scaffold = addSectionScaffold,
         add_subtab_buttons = function(parent, provider, section, panelX, bodyY, panelW)
             local tabs = styleUi(provider, panelX, bodyY, panelW) or {}
