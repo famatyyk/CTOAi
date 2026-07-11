@@ -1,6 +1,6 @@
 # CTOAi Three Development Plans
 
-Basis: full workspace audit with `69245` inventoried files and `1124` git-tracked files.
+Basis: full workspace audit with `41791` inventoried files and `1392` git-tracked files.
 
 ## Plan 1: Helper-First Productization
 
@@ -18,9 +18,6 @@ Goal: turn the OTClient/Solteria Helper into a safe, repeatable product lane bef
 - Split `ctoa_native_helper.lua` only along stable boundaries: config/schema, profile persistence, UI, runtime loops, diagnostics.
 - Preserve `ctoa_native_helper.lua` as the public loader entrypoint.
 - Add stable diagnostics export coverage for HP/MP, movement, combat, magic, container/loot, UI/resources.
-- Deliver CTOAi Runtime 2 incrementally: passive registry/event bus/scheduler,
-  combat and recovery observers, telemetry integration, then cavebot, loot, and
-  equipment observers. Keep every task disabled until sandbox evidence exists.
 
 ### 61-90 Days
 

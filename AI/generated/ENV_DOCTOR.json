@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-11T04:22:04+00:00",
+  "generated_at": "2026-07-11T04:36:23+00:00",
   "root": "C:\\Users\\zycie\\CTOAi",
   "overall_status": "warn",
   "status_counts": {
@@ -15,8 +15,8 @@
       "status": "ok",
       "root": "C:/Users/zycie/CTOAi",
       "branch": "codex/control-center-guarded-actions",
-      "head": "9d25953975278a3d74fa9cb01deb11434bbf473a",
-      "dirty_count": 141,
+      "head": "d9efb26e5b0777c70e7dcb60026347cd722fd514",
+      "dirty_count": 22,
       "dirty_sample": [
         "M AI/generated/DOC_SYNC.json",
         "M AI/generated/DOC_SYNC.md",
@@ -37,12 +37,9 @@
         "M AI/generated/SECRET_GUARDRAIL.md",
         "M AI/generated/SYMBOL_MAP.md",
         "M AI/generated/manifest.json",
-        "M ctoa.ps1",
         "M data/bot.db",
-        "M docs/CTOA_CLI.md",
-        "M schemas/ctoa-command-dictionary.json",
-        "M scripts/analyze_pdf.py",
-        "M scripts/calibrate_colors.py"
+        "M docs/audits/CTOAI_FULL_WORKSPACE_AUDIT_2026-07-06.md",
+        "M docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md"
       ],
       "remotes": [
         "origin\thttps://github.com/famatyyk/CTOAi.git (fetch)",

@@ -1,6 +1,6 @@
 # P6 Codex Integration Readiness
 
-Generated at: `2026-07-11T04:21:39+00:00`
+Generated at: `2026-07-11T04:36:01+00:00`
 Status: `ready_for_plugin_design`
 
 P6 allows only four read-only status/cockpit tools plus audited repo-hygiene, API-cost, evidence-pack, Engine Brain, and P7 cockpit-smoke safe-write refreshes. Do not add deploy/live shortcuts or bypass Control Center evidence gates.

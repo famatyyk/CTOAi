@@ -1,12 +1,12 @@
 # CTOAi Full Workspace Audit
 
-- Generated at UTC: `2026-07-11T03:27:03+00:00`
+- Generated at UTC: `2026-07-11T04:35:59+00:00`
 - Root: `C:\Users\zycie\CTOAi`
 - Coverage: `All files under workspace root, including .git internals.`
-- Files inventoried: `41380`
-- Non-regular entries skipped: `3727`
-- Git tracked files: `1228`
-- Dirty status entries: `367`
+- Files inventoried: `41791`
+- Non-regular entries skipped: `3919`
+- Git tracked files: `1392`
+- Dirty status entries: `1`
 - Runtime JSON inventory: `runtime/audits/ctoai-full-workspace-audit.json`
 
 ## Coverage Note
@@ -17,24 +17,24 @@ The JSON inventory lists every file found under the workspace root, including `.
 
 | Category | Files | Size |
 | --- | ---: | ---: |
-| `git_internal` | 324 | 3415.20 MB |
-| `local_secret_or_sensitive` | 11 | 0.09 MB |
-| `runtime_or_local_state` | 2157 | 758.72 MB |
-| `tracked_source` | 1222 | 10.00 MB |
-| `untracked_local` | 18 | 0.07 MB |
-| `untracked_source_candidate` | 6310 | 669.66 MB |
+| `git_internal` | 730 | 3417.35 MB |
+| `local_secret_or_sensitive` | 7 | 0.08 MB |
+| `runtime_or_local_state` | 2157 | 750.32 MB |
+| `tracked_source` | 1386 | 11.57 MB |
+| `untracked_local` | 21 | 0.07 MB |
+| `untracked_source_candidate` | 6152 | 667.87 MB |
 | `vendor_or_cache` | 31338 | 594.63 MB |
 
 ## Largest Top-Level Areas
 
 | Path | Files | Size |
 | --- | ---: | ---: |
-| `web` | 32304 | 1135.00 MB |
+| `web` | 32304 | 1134.88 MB |
 | `.venv` | 4543 | 116.28 MB |
-| `runtime` | 1922 | 747.52 MB |
-| `tests` | 494 | 7.82 MB |
+| `runtime` | 1922 | 739.10 MB |
+| `.git` | 730 | 3417.35 MB |
+| `tests` | 496 | 7.84 MB |
 | `scripts` | 429 | 5.30 MB |
-| `.git` | 324 | 3415.20 MB |
 | `docs` | 314 | 4.23 MB |
 | `runner` | 154 | 1.55 MB |
 | `bot` | 144 | 0.72 MB |
@@ -42,14 +42,14 @@ The JSON inventory lists every file found under the workspace root, including `.
 | `.tmp` | 105 | 1.59 MB |
 | `workflows` | 89 | 0.18 MB |
 | `tools` | 76 | 0.25 MB |
-| `AI` | 45 | 1.03 MB |
+| `AI` | 45 | 0.89 MB |
 | `deploy` | 43 | 0.04 MB |
 | `.github` | 40 | 0.13 MB |
 | `releases` | 36 | 0.02 MB |
 | `agents` | 32 | 0.08 MB |
 | `mobile_console` | 20 | 0.64 MB |
+| `.ruff_cache` | 17 | 0.01 MB |
 | `desktop_console` | 16 | 0.42 MB |
-| `.ruff_cache` | 14 | 0.01 MB |
 | `.ctoa-local` | 9 | 0.04 MB |
 | `api` | 9 | 0.25 MB |
 | `training` | 8 | 0.07 MB |
@@ -62,11 +62,11 @@ The JSON inventory lists every file found under the workspace root, including `.
 
 | Check | Status | Evidence |
 | --- | --- | --- |
-| `regular_file_inventory` | `passed` | 41380 regular files inventoried. |
-| `non_regular_accounting` | `passed` | 3727 non-regular entries skipped ({'directory': 3727}). |
-| `bounded_hashing` | `passed` | 9556 files hashed with max size 2000000 bytes. |
-| `sensitive_content_omitted` | `passed` | 11 sensitive-name files inventoried; 0 hashed. |
-| `git_status_captured` | `passed` | 367 git status entries captured. |
+| `regular_file_inventory` | `passed` | 41791 regular files inventoried. |
+| `non_regular_accounting` | `passed` | 3919 non-regular entries skipped ({'directory': 3919}). |
+| `bounded_hashing` | `passed` | 9565 files hashed with max size 2000000 bytes. |
+| `sensitive_content_omitted` | `passed` | 7 sensitive-name files inventoried; 0 hashed. |
+| `git_status_captured` | `passed` | 1 git status entries captured. |
 
 ## Validation Evidence Gate
 
@@ -98,13 +98,13 @@ The JSON inventory lists every file found under the workspace root, including `.
 
 ### HIGH: workspace-state
 
-- Finding: Worktree is dirty with 367 status entries.
+- Finding: Worktree is dirty with 1 status entries.
 - Evidence: git status --short; see runtime audit JSON dirty_entries.
 - Action: Package current Helper/Control Center changes into one reviewable change set before opening another lane.
 
 ### HIGH: local-sensitive-state
 
-- Finding: 11 sensitive-name files are present in the workspace inventory.
+- Finding: 7 sensitive-name files are present in the workspace inventory.
 - Evidence: .env-style files are inventoried but content was not copied into docs.
 - Action: Keep these ignored/local; never copy values into AI packs, docs, issues, or release evidence.
 

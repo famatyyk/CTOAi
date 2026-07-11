@@ -1,6 +1,6 @@
 # Engine Brain Symbol Map
 
-Generated at: `2026-07-11T04:21:39+00:00`
+Generated at: `2026-07-11T04:36:01+00:00`
 
 This is a lightweight map for navigation, not a full source dump.
 
@@ -483,10 +483,10 @@ This is a lightweight map for navigation, not a full source dump.
 - L717: function Invoke-OtHelperPreview
 - L727: function Invoke-OtHelperMockup
 - L737: function Invoke-OtHelperDeploy
-- L751: function Invoke-OtTestLoop
-- L756: function Invoke-EngineBrain
-- L787: function Get-ValueOrDefault
-- L799: function Show-Menu
+- L758: function Invoke-OtTestLoop
+- L773: function Invoke-EngineBrain
+- L804: function Get-ValueOrDefault
+- L816: function Show-Menu
 
 ## `ctoa_ui_prefs.lua`
 
@@ -5690,11 +5690,12 @@ This is a lightweight map for navigation, not a full source dump.
 - L54: def test_ctoa_cli_up_binds_mobile_console_to_loopback()
 - L65: def test_mobile_console_operator_docs_do_not_recommend_public_dev_bind()
 - L75: def test_ctoa_cli_uses_explicit_file_path_for_generated_helper_html()
-- L84: def test_control_center_opener_rejects_traversal_urls_at_runtime()
-- L108: def test_control_center_opener_rejects_backslash_urls_at_runtime()
-- L132: def test_ctoa_cli_rejects_control_center_traversal_env_url_before_probe()
-- L155: def test_kamil_launcher_restricts_client_path_and_profile_override()
-- L168: def test_kamil_launcher_keeps_macro_studio_on_repo_local_python()
+- L84: def test_ctoa_cli_uses_official_wrapper_for_helper_operations()
+- L97: def test_control_center_opener_rejects_traversal_urls_at_runtime()
+- L121: def test_control_center_opener_rejects_backslash_urls_at_runtime()
+- L145: def test_ctoa_cli_rejects_control_center_traversal_env_url_before_probe()
+- L168: def test_kamil_launcher_restricts_client_path_and_profile_override()
+- L181: def test_kamil_launcher_keeps_macro_studio_on_repo_local_python()
 
 ## `tests/test_process_safety.py`
 
