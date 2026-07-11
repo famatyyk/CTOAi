@@ -3,9 +3,14 @@
 from __future__ import annotations
 
 import argparse
-import subprocess
 import sys
 from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from runner import process_safety  # noqa: E402
 
 
 def main() -> int:
@@ -32,8 +37,8 @@ def main() -> int:
         print("[validator_preflight] Use active sprint validators (027+) or restore the missing validator script.")
         return 2
 
-    cmd = [sys.executable, str(validator_path), *args.validator_args]
-    result = subprocess.run(cmd)
+    cmd = [process_safety.resolve_python(), str(validator_path), *args.validator_args]
+    result = process_safety.run_trusted(cmd)
     return result.returncode
 
 

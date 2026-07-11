@@ -40,7 +40,7 @@ def scan() -> dict[str, list[str]]:
             continue
         try:
             text = file_path.read_text(encoding="utf-8")
-        except Exception:
+        except (OSError, UnicodeDecodeError):
             continue
         rel = file_path.relative_to(ROOT).as_posix()
 

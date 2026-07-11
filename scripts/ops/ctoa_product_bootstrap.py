@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sqlite3
+import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -42,6 +44,31 @@ class BootstrapArtifacts:
 
 def _load_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _atomic_json_temp_path(path: Path) -> Path:
+    return path.with_name(f".{path.name}.{os.getpid()}.{uuid.uuid4().hex}.tmp")
+
+
+def _remove_temp_path(path: Path) -> None:
+    try:
+        path.unlink()
+    except FileNotFoundError:
+        pass
+
+
+def _atomic_write_json(path: Path, payload: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = _atomic_json_temp_path(path)
+    try:
+        with tmp.open("w", encoding="utf-8") as handle:
+            json.dump(payload, handle, indent=2)
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        tmp.replace(path)
+    finally:
+        _remove_temp_path(tmp)
 
 
 def _prompt_value(label: str, default: str) -> str:
@@ -117,7 +144,7 @@ def bootstrap(
         "features": _tier_features(normalized_tier),
         "configured_at": configured_at,
     }
-    files.user_config_path.write_text(json.dumps(user_config, indent=2), encoding="utf-8")
+    _atomic_write_json(files.user_config_path, user_config)
 
     bootstrap_state = {
         "product": manifest["product"],
@@ -132,7 +159,7 @@ def bootstrap(
         "deployment_mode": deployment_mode,
         "update_channel": update_channel,
     }
-    files.bootstrap_state_path.write_text(json.dumps(bootstrap_state, indent=2), encoding="utf-8")
+    _atomic_write_json(files.bootstrap_state_path, bootstrap_state)
 
     conn = sqlite3.connect(files.sqlite_path)
     try:
