@@ -33,6 +33,7 @@ local SUPPORT_MODULES = {
     {name = "ctoa_helper_planner", file = "ctoa_helper_planner.lua", phase = "coordinate", depends_on = {}},
     {name = "ctoa_helper_runtime_policy", file = "ctoa_helper_runtime_policy.lua", phase = "guard", depends_on = {}},
     {name = "ctoa_helper_dispatch_guard", file = "ctoa_helper_dispatch_guard.lua", phase = "guard", depends_on = {"ctoa_helper_runtime_policy"}},
+    {name = "ctoa_helper_runtime_module_gate", file = "ctoa_helper_runtime_module_gate.lua", phase = "guard", depends_on = {"ctoa_helper_runtime_policy", "ctoa_helper_dispatch_guard"}},
     {name = "ctoa_helper_recovery_bridge", file = "ctoa_helper_recovery_bridge.lua", phase = "guard", depends_on = {"ctoa_helper_recovery_runtime", "ctoa_helper_runtime_policy", "ctoa_helper_dispatch_guard"}},
     {name = "ctoa_helper_plan_queue", file = "ctoa_helper_plan_queue.lua", phase = "guard", depends_on = {"ctoa_helper_dispatch_guard"}},
     {name = "ctoa_helper_runtime_readiness", file = "ctoa_helper_runtime_readiness.lua", phase = "evidence", depends_on = {"ctoa_helper_plan_queue"}},
@@ -47,6 +48,9 @@ local SUPPORT_MODULES = {
     {name = "ctoa_helper_equipment", file = "ctoa_helper_equipment.lua", phase = "feature", depends_on = {"ctoa_helper_equipment_observer"}},
     {name = "ctoa_helper_scripting", file = "ctoa_helper_scripting.lua", phase = "feature", depends_on = {"ctoa_helper_runtime_policy"}},
     {name = "ctoa_helper_heal_friend", file = "ctoa_helper_heal_friend.lua", phase = "feature", depends_on = {"ctoa_helper_recovery_observer"}},
+    {name = "ctoa_helper_conditions_runtime_gate", file = "ctoa_helper_conditions_runtime_gate.lua", phase = "guard", depends_on = {"ctoa_helper_runtime_module_gate", "ctoa_helper_conditions", "ctoa_helper_recovery_bridge"}},
+    {name = "ctoa_helper_equipment_runtime_gate", file = "ctoa_helper_equipment_runtime_gate.lua", phase = "guard", depends_on = {"ctoa_helper_runtime_module_gate", "ctoa_helper_equipment", "ctoa_helper_conditions_runtime_gate"}},
+    {name = "ctoa_helper_heal_friend_runtime_gate", file = "ctoa_helper_heal_friend_runtime_gate.lua", phase = "guard", depends_on = {"ctoa_helper_runtime_module_gate", "ctoa_helper_heal_friend", "ctoa_helper_equipment_runtime_gate"}},
 }
 
 local MODULE_LANES = {
@@ -91,20 +95,12 @@ local MODULE_LANES = {
         gate = "Static contract plus sandbox log evidence for one timer tick"
     },
     {
-        id = "heal_friend",
-        label = "Heal Friend",
-        profile_key = "heal_friend",
-        stage = "prototype",
-        mode = "planner",
-        gate = "No runtime sio cast until whitelist sandbox smoke passes"
-    },
-    {
         id = "conditions",
         label = "Conditions",
         profile_key = "conditions",
         stage = "prototype",
         mode = "read_only_observer",
-        gate = "No recovery action until condition observer sandbox smoke passes"
+        gate = "ConditionsRuntimeGate after Recovery acceptance; sandbox dry-run only"
     },
     {
         id = "equipment",
@@ -112,7 +108,15 @@ local MODULE_LANES = {
         profile_key = "equipment",
         stage = "prototype",
         mode = "read_only_observer",
-        gate = "No runtime swap until inventory API probe and sandbox smoke pass"
+        gate = "EquipmentRuntimeGate after Conditions; ring-only rollback-ready dry-run"
+    },
+    {
+        id = "heal_friend",
+        label = "Heal Friend",
+        profile_key = "heal_friend",
+        stage = "prototype",
+        mode = "planner",
+        gate = "HealFriendRuntimeGate after Conditions and Equipment; exact whitelist target"
     },
     {
         id = "scripting",

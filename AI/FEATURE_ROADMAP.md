@@ -11,30 +11,35 @@
 
 ## Now
 
-1. **Helper Runtime Bridge v1** — owner: Helper Runtime; status: `sandbox`;
-   risk: `runtime_recovery`. Deliver one `plan_heal` execution boundary with
-   dry-run default, session arming, cooldown, retry budget, kill switch, and
-   decision/guard/action/result trace. Definition of done: repo tests, packaged
-   boot graph, sandbox attach, and in-world evidence all pass. Contract:
-   `docs/otclient/HELPER_RUNTIME_BRIDGE_V1.md`.
-2. **Capability freshness and drift** — owner: Control Center; status: `gated`;
-   expose stale Helper/evidence timestamps without adding a write action.
-3. **Roadmap state refresh** — owner: Engine Brain; status: `design_only`;
-   exactly one next P7 action is selected as `roadmap-state-refresh`, with the
-   proposed `ctoai_roadmap_state_refresh` tool still disabled. Its risk model,
-   dry-run, audit, Control Center gate, confirmation, and MCP test contract are
-   defined in `docs/P7_ROADMAP_STATE_REFRESH_DESIGN.md`. Deploy/live actions
-   remain excluded and the active safe-write tool count stays five.
+1. **Conditions runtime safety gate** — owner: Helper Runtime; status:
+   `static_contract_accepted`; risk: `runtime_recovery`. It follows the accepted
+   Recovery Bridge and allowlists only a paralyze-recovery dry-run. Runtime
+   dispatch remains false until fresh condition and sandbox evidence exists.
+2. **Equipment runtime safety gate** — owner: Helper Runtime; status:
+   `static_contract_accepted`; risk: `runtime_equipment`. It is ordered after
+   Conditions and allowlists only a ring-swap dry-run with exact item IDs,
+   rollback snapshot, zero retry, and no live promotion.
+3. **Heal Friend runtime safety gate** — owner: Helper Runtime; status:
+   `static_contract_accepted`; risk: `runtime_cast`. It is ordered after both
+   Conditions and Equipment and requires exact persisted whitelist plus stable
+   party target identity. Contract:
+   `docs/otclient/HELPER_RUNTIME_MODULE_GATES_V1.md`.
 
 ## Next
 
-- Add operator session arming and a visible kill switch after the bridge sandbox
-  contract passes.
+- Capture fresh package/static/in-world evidence for Conditions, then design its
+  sandbox execute-once bridge without enabling live dispatch.
+- Repeat the independent acceptance sequence for rollback-ready Equipment and
+  only then for exact-whitelist Heal Friend.
 - Add decision-trace replay and bounded runtime evidence export.
 - Add sandbox-to-live promotion visibility without implicit promotion.
 - Index a supplied TFS fork and protocol sources; do not infer missing server
   behavior.
 - Generate roadmap status from manifests and evidence to reduce manual drift.
+- **Roadmap state refresh** remains `design_only`; retain its audited P7
+  contract without enabling another safe-write tool; the active safe-write tool count stays five.
+- Keep Combat and CaveBot explicitly `deferred_high_risk` until all three safer
+  lanes have independent acceptance evidence and a new review opens them.
 
 ## Guardrails And Maintenance
 

@@ -3,21 +3,21 @@
 ## Current Decision
 
 - Status: `ready`
-- Helper lines: `4350`
-- Helper functions: `159`
+- Helper lines: `4395`
+- Helper functions: `158`
 - Helper line budget: `4500`
 - Helper function budget: `130`
 - Helper budget status: `over_budget`
 - Helper shell target: UI composition, profile persistence, and guarded dispatch only; registry/domain logic belongs in helper modules/adapters.
 - Modularization pressure: `medium`
 - Placeholder modules: `0`
-- Implemented modules: `31`
-- Prototype modules: `0`
+- Implemented modules: `30`
+- Prototype modules: `1`
 - Registry coverage: `9` / `9`
 - Next extraction: `none`
 - Next supplemental split: `none`
 - Next phase: P6-module-lane: keep the main helper as UI composition shell; move runtime adapters behind static contracts and sandbox gates.
-- Next module action: `` - Keep module gates current before adding new runtime actions.
+- Next module action: `combat` - Extract shared target scoring/guards into a reusable helper runtime domain before adding more attacks.
 
 ## Operating Rule
 
@@ -30,13 +30,13 @@ The helper Overview must expose module readiness from `ctoa_helper_modules.lua` 
 | Module | Status | Target | Next step | Gate |
 |---|---:|---|---|---|
 | `healing` / Healing and recovery | `static_gated` | `ctoa_native_heal.lua` | Keep runtime logic mirrored in standalone passive recovery module and add sandbox HP/MP log smoke. | ValidateDev plus in-world HP/MP sandbox log evidence. |
-| `combat` / Targeting and magic shooter | `static_gated` | `ctoa_native_combat.lua` | Extract shared target scoring/guards into a reusable helper runtime domain before adding more attacks. | PZ/NPC regression log plus SmokeAttachAll hunting and hunting_magic views. |
+| `combat` / Targeting and magic shooter | `prototype` | `ctoa_native_combat.lua` | Extract shared target scoring/guards into a reusable helper runtime domain before adding more attacks. | PZ/NPC regression log plus SmokeAttachAll hunting and hunting_magic views. |
 | `cavebot` / CaveBot route and movement | `static_gated` | `ctoa_native_helper.lua` | Split route editing from movement execution into separate domain blocks before adding waypoint actions. | Route editor static tests plus sandbox autoWalk retry-budget evidence. |
 | `loot` / Loot scanner | `static_gated` | `ctoa_native_loot.lua` | Promote loot from experimental flag only after in-world container scan evidence exists. | ValidateDev plus bounded ctoa_local.log loot scan evidence in sandbox. |
 | `timer` / Timer action | `static_gated` | `ctoa_native_helper.lua` | Keep timer as a small bounded action; do not add arbitrary scripting through timer message. | Static contract and sandbox log evidence for one timer tick. |
-| `heal_friend` / Heal Friend | `static_gated` | `ctoa_helper_heal_friend.lua` | Run HealFriendNoTargetSmoke, then capture grouped in-world SmokeAttachModules evidence before any sio cast path. | No runtime sio cast until whitelist UI, profile persistence, HealFriendNoTargetSmoke, ModuleStaticGates, and ModuleAttachSmoke evidence exist. |
-| `conditions` / Conditions | `static_gated` | `ctoa_helper_conditions.lua` | Run ConditionsObserverSmoke, then capture grouped in-world SmokeAttachModules state evidence before any recovery action. | No condition recovery action until API probe evidence, passive plan contract, ConditionsObserverSmoke, ModuleStaticGates, and ModuleAttachSmoke pass. |
-| `equipment` / Equipment | `static_gated` | `ctoa_helper_equipment.lua` | Run EquipmentObserverSmoke, then capture grouped in-world SmokeAttachModules inventory evidence before any swap path. | No runtime swap before inventory API probe output, passive plan contract, profile persistence, EquipmentObserverSmoke, ModuleStaticGates, and ModuleAttachSmoke. |
+| `conditions` / Conditions | `static_gated` | `ctoa_helper_conditions.lua` | Pass ConditionsRuntimeGate after fresh observer and attach evidence; only paralyze recovery dry-run is in scope. | ConditionsRuntimeGate requires Recovery acceptance, fresh ConditionsObserverSmoke, current attach evidence, operator confirmation, dry-run, and Combat/CaveBot disabled. |
+| `equipment` / Equipment | `static_gated` | `ctoa_helper_equipment.lua` | Pass EquipmentRuntimeGate after Conditions; keep the first plan ring-only, dry-run, exact-ID, and rollback-ready. | EquipmentRuntimeGate requires accepted Conditions gate, fresh inventory evidence, exact item IDs, rollback snapshot, zero retry, and Combat/CaveBot disabled. |
+| `heal_friend` / Heal Friend | `static_gated` | `ctoa_helper_heal_friend.lua` | Pass HealFriendRuntimeGate only after Conditions and Equipment; require persisted exact whitelist and stable party target identity. | HealFriendRuntimeGate requires accepted Conditions/Equipment gates, no-target smoke, exact whitelist identity, fresh target evidence, cooldown, and Combat/CaveBot disabled. |
 | `scripting` / Scripting | `static_gated` | `ctoa_helper_scripting.lua` | Run ScriptingPolicySmoke, then capture grouped in-world SmokeAttachModules policy shell evidence; keep eval and user snippets blocked. | No user snippet execution until passive plan contract, security review, denylist tests, audit logging, ScriptingPolicySmoke, ModuleStaticGates, and ModuleAttachSmoke pass. |
 
 ## Extraction Map
@@ -45,9 +45,9 @@ The helper Overview must expose module readiness from `ctoa_helper_modules.lua` 
 |---:|---|---|---:|---|
 | 1 | `module_registry` / MODULE_LANES, module lane lookup, readiness text | `ctoa_helper_modules.lua` | `extracted` | Registry parity test plus Overview readiness smoke. |
 | 2 | `diagnostics` / log helpers, API probes, status snapshots, module evidence formatting | `ctoa_helper_diagnostics.lua` | `extracted` | ValidateDev, UI preview, and no secret/runtime path leakage in generated evidence. |
-| 3 | `heal_friend` / heal friend profile defaults, whitelist matching, observer sampling, UI summary | `ctoa_helper_heal_friend.lua` | `extracted` | HealFriendNoTargetSmoke, ModuleStaticGates, and ModuleAttachSmoke before any sio runtime arm. |
-| 4 | `conditions` / condition state API probes, read-only observer rows, passive recovery planner, profile defaults | `ctoa_helper_conditions.lua` | `extracted` | ConditionsObserverSmoke, passive plan contract, ModuleStaticGates, and ModuleAttachSmoke before any recovery action. |
-| 5 | `equipment` / inventory slot probes, passive ring/amulet swap planner, read-only UI summary | `ctoa_helper_equipment.lua` | `extracted` | EquipmentObserverSmoke, passive plan contract, ModuleStaticGates, and ModuleAttachSmoke before any use/move action. |
+| 3 | `conditions` / condition state API probes, read-only observer rows, passive recovery planner, profile defaults | `ctoa_helper_conditions.lua` | `extracted` | ConditionsRuntimeGate after Recovery acceptance; paralyze-only dry-run before any recovery action. |
+| 4 | `equipment` / inventory slot probes, passive ring/amulet swap planner, read-only UI summary | `ctoa_helper_equipment.lua` | `extracted` | EquipmentRuntimeGate after Conditions; ring-only exact-ID dry-run with rollback snapshot. |
+| 5 | `heal_friend` / heal friend profile defaults, whitelist matching, observer sampling, UI summary | `ctoa_helper_heal_friend.lua` | `extracted` | HealFriendRuntimeGate only after Conditions and Equipment; exact whitelist target dry-run before any sio runtime arm. |
 | 6 | `scripting` / policy shell, deny-all snippet planner, audit metadata | `ctoa_helper_scripting.lua` | `extracted` | ScriptingPolicySmoke, passive plan contract, ModuleStaticGates, and ModuleAttachSmoke; eval remains blocked. |
 
 ## Supplemental Refactor Plan
@@ -78,7 +78,7 @@ This is the next wave after the passive helper modules are contracted. It exists
 1. Freeze the current helper UI contract with `ValidateDev`, `ctoa_helper_ui_preview.py`, and `SmokePreflight`.
 2. Extract domains in the `Extraction Map` order and keep the main helper as the UI composition shell.
 3. Execute the `Supplemental Refactor Plan` one adapter at a time; adapter files may plan or dispatch guarded actions only after static contracts exist.
-4. Convert prototype modules in order: Heal Friend observation, Conditions diagnostics, Equipment safe swaps, Scripting policy shell.
+4. Convert prototype modules in order: Conditions diagnostics and paralyze-only gate, Equipment ring-only rollback gate, Heal Friend exact-whitelist gate, then Scripting policy shell.
 5. For each module, add profile schema keys, safe boot defaults, tests, README/docs, `ModuleStaticGates`, and `SmokeAttachModules` before runtime enablement.
 6. Keep live promotion separate and require `PromoteLiveCtoa -ApproveLiveDeploy` after in-world `SmokeAttachAll` evidence.
 

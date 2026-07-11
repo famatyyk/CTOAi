@@ -189,27 +189,27 @@ SUPPLEMENTAL_EXECUTION = [
     ),
     SupplementalExecution(
         order=3,
-        workstream="heal_friend_observer",
-        status="in_progress_static_gated",
-        current_slice="ctoa_helper_heal_friend.lua owns whitelist matching, visible-player scan, observer updates, runtime plan, status text, decision text, and summary text; helper shell now only passes OTClient context and renders module output.",
-        next_slice="Refresh sandbox no-target evidence, add whitelist persistence review, and keep sio execution unavailable until ModuleAttachSmoke, SmokeAttachAll, and live approval are current.",
-        gate="HealFriendNoTargetSmoke, ModuleStaticGates, current LocalReady, then SmokeAttach heal_friend tab in sandbox before any sio runtime bridge.",
+        workstream="conditions_runtime_gate",
+        status="static_contract_accepted",
+        current_slice="ctoa_helper_conditions_runtime_gate.lua owns a default-closed paralyze-only dry-run gate after accepted Recovery evidence; it cannot dispatch.",
+        next_slice="Refresh observer/package/attach evidence and capture a real condition dry-run before any execute-once bridge review.",
+        gate="ConditionsRuntimeGateStaticSmoke, fresh ConditionsObserverSmoke, ModuleStaticGates, current attach evidence, Combat/CaveBot disabled, and no live promotion.",
     ),
     SupplementalExecution(
         order=4,
-        workstream="conditions_observer",
-        status="in_progress_static_gated",
-        current_slice="ctoa_helper_conditions.lua owns condition flag text, state snapshots, API probe text, observer sampling, passive recovery plan, and summary text; helper shell now only passes OTClient context and renders module output.",
-        next_slice="Add sandbox state evidence and keep condition recovery actions unavailable until API probe output, ModuleAttachSmoke, SmokeAttachAll, and live approval are current.",
-        gate="ConditionsObserverSmoke, ModuleStaticGates, current LocalReady, then SmokeAttach conditions tab in sandbox before any condition recovery runtime bridge.",
+        workstream="equipment_runtime_gate",
+        status="static_contract_accepted",
+        current_slice="ctoa_helper_equipment_runtime_gate.lua owns a default-closed ring-only, exact-ID, rollback-ready, zero-retry dry-run gate after Conditions; it cannot move or use items.",
+        next_slice="After Conditions acceptance, refresh inventory evidence and prove an unambiguous rollback-ready dry-run before any execute-once bridge review.",
+        gate="EquipmentRuntimeGateStaticSmoke, accepted Conditions gate, fresh EquipmentObserverSmoke, exact item/rollback evidence, Combat/CaveBot disabled, and no live promotion.",
     ),
     SupplementalExecution(
         order=5,
-        workstream="equipment_observer",
-        status="in_progress_static_gated",
-        current_slice="ctoa_helper_equipment.lua owns slot text, equipment snapshots, inventory API probe text, observer sampling, passive swap plan, and summary text; helper shell now only passes OTClient context and renders module output.",
-        next_slice="Add sandbox inventory slot evidence and keep ring/amulet swap actions unavailable until inventory API output, ModuleAttachSmoke, SmokeAttachAll, and live approval are current.",
-        gate="EquipmentObserverSmoke, ModuleStaticGates, current LocalReady, then SmokeAttach equipment tab in sandbox before any equipment swap runtime bridge.",
+        workstream="heal_friend_runtime_gate",
+        status="static_contract_accepted",
+        current_slice="ctoa_helper_heal_friend_runtime_gate.lua owns a default-closed exact-whitelist and stable-party-target dry-run gate after Conditions and Equipment; it cannot cast.",
+        next_slice="After both predecessor gates pass, refresh no-target/whitelist evidence and prove a stable exact target dry-run before any execute-once bridge review.",
+        gate="HealFriendRuntimeGateStaticSmoke, accepted Conditions/Equipment gates, persisted exact whitelist, fresh target evidence, Combat/CaveBot disabled, and no live promotion.",
     ),
     SupplementalExecution(
         order=6,
@@ -246,10 +246,10 @@ SUPPLEMENTAL_EXECUTION = [
     SupplementalExecution(
         order=10,
         workstream="runtime_bridge_review",
-        status="blocked_by_sandbox_evidence",
-        current_slice="Runtime policy, dispatch guard, queue, readiness, action catalog, decision trace, sandbox handoff, and feature flags are static-gated only.",
-        next_slice="After sandbox SmokeAttachModules and SmokeAttachAll, review whether any plan can move from passive decision text to guarded runtime dispatcher wiring.",
-        gate="No runtime bridge until ModuleAttachSmoke, SmokeAttachAll, and explicit PromoteLiveCtoa -ApproveLiveDeploy path stay green.",
+        status="sequenced_static_gates",
+        current_slice="Recovery is sandbox-action accepted; Conditions, Equipment, and Heal Friend now have separate ordered static gates while Combat/CaveBot are deferred_high_risk.",
+        next_slice="Capture fresh Conditions evidence first, then Equipment, then Heal Friend; review one execute-once bridge at a time without live promotion.",
+        gate="Action-specific gate plus fresh ModuleStaticGates/ModuleAttachSmoke/SmokeAttachAll evidence; Combat and CaveBot remain deferred regardless of generic gate state.",
     ),
 ]
 
@@ -260,20 +260,31 @@ def current_budget_priority() -> dict:
         return {
             "status": "missing",
             "source": source,
-            "next_extraction_domains": [],
-            "top_non_shell_domain": "unavailable",
-            "next_action": "Run otclient_helper_shell_budget_plan.py before choosing the next extraction.",
+            "raw_next_extraction_domains": [],
+            "next_extraction_domains": [
+                "conditions_runtime_gate",
+                "equipment_runtime_gate",
+                "heal_friend_runtime_gate",
+            ],
+            "top_non_shell_domain": "conditions_runtime_gate",
+            "next_action": "Keep the functional sequence Conditions -> Equipment -> Heal Friend; treat shell-budget Combat/CaveBot findings as refactor-only signals.",
         }
     payload = json.loads(SHELL_BUDGET_JSON.read_text(encoding="utf-8"))
-    domains = payload.get("next_extraction_domains") or []
+    raw_domains = payload.get("next_extraction_domains") or []
+    functional_domains = [
+        "conditions_runtime_gate",
+        "equipment_runtime_gate",
+        "heal_friend_runtime_gate",
+    ]
     return {
         "status": payload.get("status", "unknown"),
         "source": source,
         "helper_line_count": payload.get("helper_line_count"),
         "helper_function_count": payload.get("helper_function_count"),
-        "next_extraction_domains": domains,
-        "top_non_shell_domain": domains[0] if domains else "unavailable",
-        "next_action": payload.get("next_action", ""),
+        "raw_next_extraction_domains": raw_domains,
+        "next_extraction_domains": functional_domains,
+        "top_non_shell_domain": functional_domains[0],
+        "next_action": "Keep Conditions -> Equipment -> Heal Friend as the functional priority; Combat/CaveBot remain deferred_high_risk and may only receive passive refactor work.",
     }
 
 
@@ -316,9 +327,9 @@ def build_payload() -> dict:
         elif item.module_id == "target_scorer" and "TargetingStaticSmoke" in smoke_source:
             data["status"] = "static_gated"
         elif item.module_id == "combat_runtime" and "CombatRuntimeStaticSmoke" in smoke_source:
-            data["status"] = "static_gated"
+            data["status"] = "deferred_high_risk_refactor_only"
         elif item.module_id == "cavebot_runtime" and "CavebotRuntimeStaticSmoke" in smoke_source:
-            data["status"] = "static_gated"
+            data["status"] = "deferred_high_risk_refactor_only"
         elif item.module_id == "loot_runtime" and "LootRuntimeStaticSmoke" in smoke_source:
             data["status"] = "static_gated"
         elif item.module_id == "timer_runtime" and "TimerRuntimeStaticSmoke" in smoke_source:
@@ -359,6 +370,7 @@ def build_payload() -> dict:
             "rule": "Use external bots as capability checklists and naming references only; no direct copy without provenance review; keep CTOAi safe boot, gates, and tests.",
         },
         "prerequisites": [
+            "Follow ConditionsRuntimeGate, then EquipmentRuntimeGate, then HealFriendRuntimeGate; do not reorder the phases.",
             "Run SmokeAttachModules after sandbox character is in-world.",
             "Run SmokeAttachAll for the current dev manifest before enabling runtime actions.",
             "Keep PromoteLiveCtoa behind -ApproveLiveDeploy.",
@@ -379,7 +391,9 @@ def render_markdown(payload: dict) -> str:
         f"- Budget priority source: `{payload['current_budget_priority']['source']}`.",
         f"- Budget top non-shell domain: `{payload['current_budget_priority']['top_non_shell_domain']}`.",
         f"- Budget next extraction domains: `{', '.join(payload['current_budget_priority']['next_extraction_domains'])}`.",
-        "- Runtime blocker: in-world `SmokeAttachModules` and fresh `SmokeAttachAll` are still required before runtime enablement.",
+        f"- Raw shell-budget signals (refactor-only): `{', '.join(payload['current_budget_priority']['raw_next_extraction_domains'])}`.",
+        "- Runtime sequence: `Conditions -> Equipment -> Heal Friend`; each has a separate action-specific dry-run gate.",
+        "- Runtime blocker: in-world `SmokeAttachModules` and fresh `SmokeAttachAll` are still required before any execute-once bridge review.",
         "- External vBot source: `source_required`; do not claim vBot-derived implementation until source/provenance is present.",
         "",
         "## Source Policy",
@@ -426,16 +440,16 @@ def render_markdown(payload: dict) -> str:
             "",
             "## Operator Sequence",
             "",
-            "1. Finish sandbox attach evidence for the current package.",
-            "2. Keep the new module as passive/read-only unless its gate explicitly allows runtime action.",
-            "3. Add profile keys, safe boot defaults, module registry entry, package copy, README note, static smoke, and release-gate evidence for every new module.",
-            "4. Promote a module from `contracted` to `static_gated` only after its dedicated static smoke is included in `ModuleStaticGates`.",
-            "5. Maintain the supplemental status-board lane (`ctoa_helper_module_status.lua`) so module readiness, blockers, and static-only modules remain visible before any runtime bridge work.",
-            "6. Maintain the supplemental action-catalog lane (`ctoa_helper_action_catalog.lua`) so future features declare action names, risk class, and required gates before any dispatcher can consume them.",
-            "7. Maintain the supplemental decision-trace lane (`ctoa_helper_decision_trace.lua`) so runtime policy and dispatch guard reasons are visible before any queued plan is reviewed.",
-            "8. Maintain the supplemental sandbox-handoff lane (`ctoa_helper_sandbox_handoff.lua`) so Launch, ReadyCheck, SmokeAttachModules, SmokeAttachAll, and PromoteLiveCtoa approval remain one explicit operator sequence.",
-            "9. Maintain the supplemental feature-flag lane (`ctoa_helper_feature_flags.lua`) so every future feature declares default disabled state, domain, and required gate before runtime code can consume it.",
-            "10. Only then consider runtime enablement, and only in sandbox first.",
+            "1. Keep Engine Brain current, then finish Conditions gate evidence for the current package.",
+            "2. Review Equipment only after Conditions acceptance; review Heal Friend only after both predecessor gates.",
+            "3. Keep every new module passive/read-only unless its action-specific gate and a separately reviewed bridge explicitly allow one sandbox action.",
+            "4. Add profile keys, safe boot defaults, module registry entry, package copy, README note, static smoke, and release-gate evidence for every new module.",
+            "5. Promote a module from `contracted` to `static_gated` only after its dedicated static smoke is included in `ModuleStaticGates`.",
+            "6. Maintain the supplemental status-board lane (`ctoa_helper_module_status.lua`) so module readiness, blockers, and static-only modules remain visible before any runtime bridge work.",
+            "7. Maintain the supplemental action-catalog lane (`ctoa_helper_action_catalog.lua`) so future features declare action names, risk class, and required gates before any dispatcher can consume them.",
+            "8. Maintain the supplemental decision-trace lane (`ctoa_helper_decision_trace.lua`) so runtime policy and dispatch guard reasons are visible before any queued plan is reviewed.",
+            "9. Maintain `ctoa_helper_sandbox_handoff.lua` and `ctoa_helper_feature_flags.lua` so evidence, default-false state, and explicit live approval stay mandatory.",
+            "10. Keep Combat and CaveBot deferred_high_risk until a later review explicitly reopens them.",
         ]
     )
     return "\n".join(lines) + "\n"

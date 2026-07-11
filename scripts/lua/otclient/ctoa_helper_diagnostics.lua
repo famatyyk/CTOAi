@@ -218,7 +218,17 @@ function Diagnostics.featureFlagsText(flags)
 end
 
 function Diagnostics.appendLog(msg, prefix)
-    local f = io.open("ctoa_local.log", "a")
+    local f = nil
+    if g_resources and g_resources.getWorkDir then
+        local ok, workDir = pcall(function()
+            return g_resources.getWorkDir()
+        end)
+        if ok and workDir and workDir ~= "" then
+            local last = string.sub(workDir, -1)
+            local separator = (last == "/" or last == "\\") and "" or "/"
+            f = io.open(workDir .. separator .. "ctoa_local.log", "a")
+        end
+    end
     if not f and g_resources and g_resources.getUserDir then
         local ok, userDir = pcall(function()
             return g_resources.getUserDir()
@@ -226,6 +236,9 @@ function Diagnostics.appendLog(msg, prefix)
         if ok and userDir and userDir ~= "" then
             f = io.open(userDir .. "/ctoa_local.log", "a")
         end
+    end
+    if not f then
+        f = io.open("ctoa_local.log", "a")
     end
     if f then
         f:write(os.date("%Y-%m-%d %H:%M:%S") .. " [" .. tostring(prefix or "CTOA-OTC-HELPER") .. "] " .. tostring(msg or "") .. "\n")
@@ -494,6 +507,7 @@ function Diagnostics.contract()
         owns_probe_deferred_plan = true,
         owns_magic_api_probe_text = true,
         owns_feature_flags_text = true,
+        owns_workdir_log_path = true,
         owns_buffer_text = true,
         owns_movement_text = true,
         owns_magic_loot_text = true,

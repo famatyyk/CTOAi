@@ -197,8 +197,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_hel
 - Extract or isolate shared domains before extending runtime behavior:
   recovery/vitals, target guards, actionbar actions, diagnostics, and module
   registry.
-- Convert placeholders in order: Heal Friend, Conditions diagnostics,
-  Equipment safe swaps, then Scripting policy shell.
+- Convert functional placeholders in order: Conditions paralyze-only gate,
+  Equipment ring-only rollback gate, Heal Friend exact-whitelist gate, then
+  Scripting policy shell. Combat and CaveBot stay refactor-only and
+  `deferred_high_risk`.
 - Do not implement arbitrary scripting or live-client actions until the risk
   model, audit logging, Control Center evidence, and targeted tests exist.
   Status: this remains a planning lane; runtime enablement is blocked until the

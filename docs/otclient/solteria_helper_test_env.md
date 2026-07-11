@@ -303,9 +303,14 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_hel
 ```
 
 `SmokeAttachModules` is the focused in-world gate for the prototype module tabs:
-`heal_friend`, `conditions`, `equipment`, and `scripting`. It writes
+`conditions`, `equipment`, `heal_friend`, and `scripting`. The required runtime
+predecessor sequence is `conditions -> equipment -> heal_friend`. It writes
 `runtime/solteria_helper_dev/module_attach_smoke.json` and routes to
 `SmokeAttachAll` only when all four module tabs capture successfully.
+
+After both attach commands, run `RuntimeModuleGatesSandboxSmoke`. Its passing
+state proves action-bound dry-run and fail-closed behavior only; it does not
+accept a domain action and does not promote the live client.
 
 Use a stable run id when you want repeatable artifact names:
 

@@ -41,6 +41,10 @@ Advanced Tibia automation modules designed specifically for **OTClient** using n
 | **ctoa_helper_plan_queue.lua** | Passive guarded decision queue | `_G.CTOA_HELPER_PLAN_QUEUE`, normalize/enqueue/trim/summary/contract |
 | **ctoa_helper_runtime_readiness.lua** | Passive runtime bridge readiness | `_G.CTOA_HELPER_RUNTIME_READINESS`, components/gates/snapshot/decision |
 | **ctoa_helper_recovery_bridge.lua** | Sandbox-only Healing/Recovery bridge v1 | `_G.CTOA_HELPER_RECOVERY_BRIDGE`, dry-run/session arm/kill switch/dispatch trace |
+| **ctoa_helper_runtime_module_gate.lua** | Shared passive action-specific gate evaluator | `_G.CTOA_HELPER_RUNTIME_MODULE_GATE`, default-closed dry-run traces |
+| **ctoa_helper_conditions_runtime_gate.lua** | Conditions safety gate | `_G.CTOA_HELPER_CONDITIONS_RUNTIME_GATE`, paralyze-only gate after Recovery |
+| **ctoa_helper_equipment_runtime_gate.lua** | Equipment safety gate | `_G.CTOA_HELPER_EQUIPMENT_RUNTIME_GATE`, ring-only rollback-ready gate after Conditions |
+| **ctoa_helper_heal_friend_runtime_gate.lua** | Heal Friend safety gate | `_G.CTOA_HELPER_HEAL_FRIEND_RUNTIME_GATE`, exact-whitelist gate after Equipment/Conditions |
 | **ctoa_helper_module_status.lua** | Passive module status board | `_G.CTOA_HELPER_MODULE_STATUS`, order/normalize/snapshot/summary/contract |
 | **ctoa_helper_action_catalog.lua** | Passive action/risk catalog | `_G.CTOA_HELPER_ACTION_CATALOG`, action domains, risk classes, gates |
 | **ctoa_helper_decision_trace.lua** | Passive decision trace formatter | `_G.CTOA_HELPER_DECISION_TRACE`, policy/guard reasons, missing gates |
@@ -261,7 +265,7 @@ Current helper logic includes:
 - cavebot route loop: waypoint editor, guarded `LocalPlayer:autoWalk`, PZ guard, path probe, retry budget, and automatic movement disable on repeated failure;
 - timer action: bounded say/cast loop driven by `timer_interval_ms` and `timer_message`;
 - loot scanner: passive valuable-item scoring, corpse/open-container scans, capacity guard, bounded item moves, and `experimental_loot` feature flag gating;
-- prototype lanes: Heal Friend party/whitelist observer, Conditions state observer, Equipment slot observer, and Scripting policy shell persist profile settings and show read-only runtime evidence while their action paths stay gated behind sandbox smoke.
+- prototype lanes: Conditions state observer, Equipment slot observer, Heal Friend party/whitelist observer, and Scripting policy shell persist profile settings and show read-only runtime evidence. Conditions, Equipment, and Heal Friend now have separate ordered dry-run safety gates, but no new executor is enabled.
 
 Standalone modules (`ctoa_native_heal.lua`, `ctoa_native_combat.lua`, `ctoa_native_loot.lua`) read `_G.CTOA_Helper.config` when the helper is loaded. If they are loaded manually without the helper, their built-in defaults stay passive.
 

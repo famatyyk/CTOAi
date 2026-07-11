@@ -1,5 +1,5 @@
 param(
-    [ValidateSet("PrepareDev", "ValidateDev", "Setup", "SmokePreflight", "SmokeStatus", "SmokeQueue", "GoalStatus", "LocalReady", "Launch", "Smoke", "SmokeAll", "SmokeAttach", "SmokeAttachModules", "SmokeAttachAll", "ThemeSnapshotMatrix", "HealingVitalsSmoke", "CombatSafetySmoke", "CavebotSafetySmoke", "TimerSafetySmoke", "LootSafetySmoke", "HealFriendNoTargetSmoke", "ConditionsObserverSmoke", "EquipmentObserverSmoke", "ScriptingPolicySmoke", "PlannerStaticSmoke", "RuntimePolicyStaticSmoke", "DispatchGuardStaticSmoke", "PlanQueueStaticSmoke", "RuntimeReadinessStaticSmoke", "ModuleStatusStaticSmoke", "ActionCatalogStaticSmoke", "DecisionTraceStaticSmoke", "DecisionPipelineStaticSmoke", "SandboxHandoffStaticSmoke", "FeatureFlagsStaticSmoke", "HudStaticSmoke", "HotkeysStaticSmoke", "ModalStaticSmoke", "InputContractsStaticSmoke", "RouteStaticSmoke", "TargetingStaticSmoke", "CombatRuntimeStaticSmoke", "CavebotRuntimeStaticSmoke", "LootRuntimeStaticSmoke", "TimerRuntimeStaticSmoke", "RecoveryRuntimeStaticSmoke", "RecoveryBridgeStaticSmoke", "RecoveryBridgeSandboxSmoke", "RecoveryBridgeActionSmoke", "ProfileSchemaStaticSmoke", "OperatorSummaryStaticSmoke", "ExternalBotImportGateStaticSmoke", "HelperShellBudgetStaticSmoke", "HelperShellBudgetPlanStaticSmoke", "ModuleContract", "ModuleAudit", "ModuleStaticGates", "Snapshot", "ReadyCheck", "BackupLiveCtoa", "PromoteLiveCtoa", "EmergencyRepairLiveCtoa", "DisableLiveCtoa", "EnableLiveCtoa", "EnableLiveCtoaUiOnly", "Stop")]
+    [ValidateSet("PrepareDev", "ValidateDev", "Setup", "SmokePreflight", "SmokeStatus", "SmokeQueue", "GoalStatus", "LocalReady", "Launch", "Smoke", "SmokeAll", "SmokeAttach", "SmokeAttachModules", "SmokeAttachAll", "ThemeSnapshotMatrix", "HealingVitalsSmoke", "CombatSafetySmoke", "CavebotSafetySmoke", "TimerSafetySmoke", "LootSafetySmoke", "HealFriendNoTargetSmoke", "ConditionsObserverSmoke", "EquipmentObserverSmoke", "ScriptingPolicySmoke", "PlannerStaticSmoke", "RuntimePolicyStaticSmoke", "DispatchGuardStaticSmoke", "PlanQueueStaticSmoke", "RuntimeReadinessStaticSmoke", "ModuleStatusStaticSmoke", "ActionCatalogStaticSmoke", "DecisionTraceStaticSmoke", "DecisionPipelineStaticSmoke", "SandboxHandoffStaticSmoke", "FeatureFlagsStaticSmoke", "HudStaticSmoke", "HotkeysStaticSmoke", "ModalStaticSmoke", "InputContractsStaticSmoke", "RouteStaticSmoke", "TargetingStaticSmoke", "CombatRuntimeStaticSmoke", "CavebotRuntimeStaticSmoke", "LootRuntimeStaticSmoke", "TimerRuntimeStaticSmoke", "RecoveryRuntimeStaticSmoke", "RecoveryBridgeStaticSmoke", "ConditionsRuntimeGateStaticSmoke", "EquipmentRuntimeGateStaticSmoke", "HealFriendRuntimeGateStaticSmoke", "RuntimeModuleGatesSandboxSmoke", "RecoveryBridgeSandboxSmoke", "RecoveryBridgeActionSmoke", "ProfileSchemaStaticSmoke", "OperatorSummaryStaticSmoke", "ExternalBotImportGateStaticSmoke", "HelperShellBudgetStaticSmoke", "HelperShellBudgetPlanStaticSmoke", "ModuleContract", "ModuleAudit", "ModuleStaticGates", "Snapshot", "ReadyCheck", "BackupLiveCtoa", "PromoteLiveCtoa", "EmergencyRepairLiveCtoa", "DisableLiveCtoa", "EnableLiveCtoa", "EnableLiveCtoaUiOnly", "Stop")]
     [string]$Action = "Smoke",
     [ValidateSet("overview", "healing", "heal_friend", "conditions", "hunting", "hunting_magic", "cavebot", "equipment", "tools", "tools_pvp", "tools_hud", "tools_timer", "tools_diag", "profile", "ui", "scripting")]
     [string]$Tab = "overview",
@@ -296,6 +296,10 @@ function Sync-CtoaRuntimeFiles {
         "ctoa_helper_timer_runtime.lua",
         "ctoa_helper_recovery_runtime.lua",
         "ctoa_helper_recovery_bridge.lua",
+        "ctoa_helper_runtime_module_gate.lua",
+        "ctoa_helper_conditions_runtime_gate.lua",
+        "ctoa_helper_equipment_runtime_gate.lua",
+        "ctoa_helper_heal_friend_runtime_gate.lua",
        "ctoa_helper_profile_schema.lua",
         "ctoa_helper_vocation_profiles.lua",
        "ctoa_helper_profile_persistence.lua",
@@ -532,6 +536,10 @@ function Get-DevPackageFiles {
         "mods/ctoa_otclient/ctoa_helper_timer_runtime.lua",
         "mods/ctoa_otclient/ctoa_helper_recovery_runtime.lua",
         "mods/ctoa_otclient/ctoa_helper_recovery_bridge.lua",
+        "mods/ctoa_otclient/ctoa_helper_runtime_module_gate.lua",
+        "mods/ctoa_otclient/ctoa_helper_conditions_runtime_gate.lua",
+        "mods/ctoa_otclient/ctoa_helper_equipment_runtime_gate.lua",
+        "mods/ctoa_otclient/ctoa_helper_heal_friend_runtime_gate.lua",
         "mods/ctoa_otclient/ctoa_helper_profile_schema.lua",
         "mods/ctoa_otclient/ctoa_helper_vocation_profiles.lua",
         "mods/ctoa_otclient/ctoa_helper_profile_persistence.lua",
@@ -741,6 +749,10 @@ function New-DevPackage {
         "ctoa_helper_timer_runtime.lua",
         "ctoa_helper_recovery_runtime.lua",
         "ctoa_helper_recovery_bridge.lua",
+        "ctoa_helper_runtime_module_gate.lua",
+        "ctoa_helper_conditions_runtime_gate.lua",
+        "ctoa_helper_equipment_runtime_gate.lua",
+        "ctoa_helper_heal_friend_runtime_gate.lua",
        "ctoa_helper_profile_schema.lua",
         "ctoa_helper_vocation_profiles.lua",
        "ctoa_helper_profile_persistence.lua",
@@ -1143,6 +1155,10 @@ function Set-LiveCtoaEnabled {
         "ctoa_helper_timer_runtime.lua",
         "ctoa_helper_recovery_runtime.lua",
         "ctoa_helper_recovery_bridge.lua",
+        "ctoa_helper_runtime_module_gate.lua",
+        "ctoa_helper_conditions_runtime_gate.lua",
+        "ctoa_helper_equipment_runtime_gate.lua",
+        "ctoa_helper_heal_friend_runtime_gate.lua",
        "ctoa_helper_profile_schema.lua",
         "ctoa_helper_vocation_profiles.lua",
        "ctoa_helper_profile_persistence.lua",
@@ -1248,6 +1264,10 @@ function Set-LiveCtoaUiOnly {
         "ctoa_helper_timer_runtime.lua",
         "ctoa_helper_recovery_runtime.lua",
         "ctoa_helper_recovery_bridge.lua",
+        "ctoa_helper_runtime_module_gate.lua",
+        "ctoa_helper_conditions_runtime_gate.lua",
+        "ctoa_helper_equipment_runtime_gate.lua",
+        "ctoa_helper_heal_friend_runtime_gate.lua",
        "ctoa_helper_profile_schema.lua",
         "ctoa_helper_vocation_profiles.lua",
        "ctoa_helper_profile_persistence.lua",
@@ -2056,6 +2076,8 @@ function Invoke-RuntimePolicyStaticSmoke {
         [pscustomobject]@{ name = "global_contract"; status = if ($policy.Contains('rawget(_G, "CTOA_HELPER_RUNTIME_POLICY")') -and $policy.Contains("_G.CTOA_HELPER_RUNTIME_POLICY = RuntimePolicy") -and $policy.Contains("return RuntimePolicy")) { "passed" } else { "failed" }; evidence = "runtime policy keeps a guarded global and returns module table" },
         [pscustomobject]@{ name = "policy_functions"; status = if ($policy.Contains("function RuntimePolicy.requiredGates") -and $policy.Contains("function RuntimePolicy.snapshot") -and $policy.Contains("function RuntimePolicy.decision") -and $policy.Contains("function RuntimePolicy.summary") -and $policy.Contains("function RuntimePolicy.contract")) { "passed" } else { "failed" }; evidence = "runtime policy exposes required gates, snapshot, decision, summary, and contract" },
         [pscustomobject]@{ name = "required_gates"; status = if ($policy.Contains('"manifest_current"') -and $policy.Contains('"module_static_gates"') -and $policy.Contains('"module_attach_smoke"') -and $policy.Contains('"smoke_attach_all"') -and $policy.Contains('"live_approval"')) { "passed" } else { "failed" }; evidence = "policy requires manifest, static, attach, full smoke, and live approval gates" },
+        [pscustomobject]@{ name = "action_bound_runtime_classification"; status = if ($policy.Contains("function actionGateAccepted") -and $policy.Contains("runtime_action_classified_by_policy = true") -and $policy.Contains('append(reasons, "unknown_action")') -and $policy.Contains('append(reasons, "action_not_approved_v1")')) { "passed" } else { "failed" }; evidence = "policy classifies actions internally, binds accepted traces to the exact action, and blocks unknown or out-of-scope actions" },
+        [pscustomobject]@{ name = "v1_exact_allowlist"; status = if ($policy.Contains('plan_paralyze_recovery = "conditions_runtime_gate"') -and $policy.Contains('plan_ring_swap = "equipment_runtime_gate"') -and $policy.Contains('plan_sio = "heal_friend_runtime_gate"') -and -not $policy.Contains('plan_poison_recovery = "conditions_runtime_gate"') -and -not $policy.Contains('plan_amulet_swap = "equipment_runtime_gate"')) { "passed" } else { "failed" }; evidence = "v1 module gates cover only paralyze, ring, and sio" },
         [pscustomobject]@{ name = "passive_contract"; status = if ($policy.Contains('mode = "passive"') -and $policy.Contains("runtime_actions = false") -and $policy.Contains("executes_plans = false") -and $policy.Contains("casts = false") -and $policy.Contains("talks = false") -and $policy.Contains("uses_items = false") -and $policy.Contains("walks = false")) { "passed" } else { "failed" }; evidence = "contract declares passive policy and no execution" },
         [pscustomobject]@{ name = "helper_uses_runtime_policy_bridge"; status = if ($helper.Contains('moduleValue(externalRuntimePolicy, "resolvedProtectionZonePolicy")') -and $helper.Contains('if type(policy) ~= "table" then') -and $helper.Contains('moduleValue(externalRuntimePolicy, "protectionZoneDecision", observation)') -and -not $helper.Contains("local function runtimePolicyProtectionZonePolicy()") -and -not $helper.Contains("local function runtimePolicyProtectionZoneDecision(observation)") -and -not $helper.Contains("player_methods = {`"isInPz`"")) { "passed" } else { "failed" }; evidence = "native helper observes OTClient state locally, delegates PZ policy resolution/decision through the shared guarded runtime policy bridge, and blocks conservatively if policy is unavailable" },
         [pscustomobject]@{ name = "no_otclient_globals"; status = if (-not $policy.Contains("g_game") -and -not $policy.Contains("g_map") -and -not $policy.Contains("g_ui") -and -not $policy.Contains("g_keyboard") -and -not $policy.Contains("g_resources")) { "passed" } else { "failed" }; evidence = "runtime policy does not call native OTClient globals" },
@@ -2312,6 +2334,7 @@ function Invoke-ActionCatalogStaticSmoke {
         [pscustomobject]@{ name = "catalog_functions"; status = if ($catalog.Contains("function ActionCatalog.requiredGates") -and $catalog.Contains("function ActionCatalog.all") -and $catalog.Contains("function ActionCatalog.domains") -and $catalog.Contains("function ActionCatalog.byAction") -and $catalog.Contains("function ActionCatalog.classify") -and $catalog.Contains("function ActionCatalog.summary") -and $catalog.Contains("function ActionCatalog.contract")) { "passed" } else { "failed" }; evidence = "action catalog exposes gates, catalog, lookup, classifier, summary, and contract" },
         [pscustomobject]@{ name = "action_coverage"; status = if ($catalog.Contains('"plan_attack"') -and $catalog.Contains('"plan_walk"') -and $catalog.Contains('"plan_loot"') -and $catalog.Contains('"plan_sio"') -and $catalog.Contains('"plan_ring_swap"') -and $catalog.Contains('"audit_only"')) { "passed" } else { "failed" }; evidence = "action catalog covers combat, cavebot, loot, heal friend, equipment, and passive scripting actions" },
         [pscustomobject]@{ name = "gate_parity"; status = if ($catalog.Contains('"manifest_current"') -and $catalog.Contains('"module_static_gates"') -and $catalog.Contains('"module_attach_smoke"') -and $catalog.Contains('"smoke_attach_all"') -and $catalog.Contains('"live_approval"') -and $policy.Contains('"manifest_current"') -and $policy.Contains('"smoke_attach_all"') -and $policy.Contains('"live_approval"')) { "passed" } else { "failed" }; evidence = "action catalog required gates match runtime policy gate vocabulary" },
+        [pscustomobject]@{ name = "v1_exact_action_gates"; status = if ($catalog.Contains('plan_paralyze_recovery = "conditions_runtime_gate"') -and $catalog.Contains('plan_ring_swap = "equipment_runtime_gate"') -and $catalog.Contains('plan_sio = "heal_friend_runtime_gate"') -and -not $catalog.Contains('plan_poison_recovery = "conditions_runtime_gate"') -and -not $catalog.Contains('plan_amulet_swap = "equipment_runtime_gate"') -and $catalog.Contains('DEFERRED_MODULE_SCOPE')) { "passed" } else { "failed" }; evidence = "catalog binds v1 gates to exact actions and marks other module actions deferred" },
         [pscustomobject]@{ name = "passive_contract"; status = if ($catalog.Contains('mode = "passive"') -and $catalog.Contains("runtime_actions = false") -and $catalog.Contains("executes_plans = false") -and $catalog.Contains("dispatch_allowed = false") -and $catalog.Contains("casts = false") -and $catalog.Contains("talks = false") -and $catalog.Contains("uses_items = false") -and $catalog.Contains("walks = false") -and $catalog.Contains("attacks = false")) { "passed" } else { "failed" }; evidence = "contract declares passive action catalog and no execution" },
         [pscustomobject]@{ name = "risk_contract"; status = if ($catalog.Contains("catalogs_action_risk = true") -and $catalog.Contains('"runtime_combat"') -and $catalog.Contains('"runtime_movement"') -and $catalog.Contains('"runtime_equipment"') -and $catalog.Contains('"passive_policy"')) { "passed" } else { "failed" }; evidence = "action catalog assigns risk classes to runtime and passive actions" },
         [pscustomobject]@{ name = "no_otclient_globals"; status = if (-not $catalog.Contains("g_game") -and -not $catalog.Contains("g_map") -and -not $catalog.Contains("g_ui") -and -not $catalog.Contains("g_keyboard") -and -not $catalog.Contains("g_resources")) { "passed" } else { "failed" }; evidence = "action catalog does not call native OTClient globals" },
@@ -2827,7 +2850,7 @@ function Invoke-CombatRuntimeStaticSmoke {
         [pscustomobject]@{ name = "blocked_reasons"; status = if ($combat.Contains('return "runtime_disabled"') -and $combat.Contains('return "protection_zone"') -and $combat.Contains('return "offline"') -and $combat.Contains('return "target_required"')) { "passed" } else { "failed" }; evidence = "combat runtime planner owns disabled/PZ/offline/target-required decisions" },
         [pscustomobject]@{ name = "plan_actions"; status = if ($combat.Contains('action = "target"') -and $combat.Contains('action = "plan_spell"') -and $combat.Contains('action = "plan_rune"') -and $combat.Contains('next_action = "hold"')) { "passed" } else { "failed" }; evidence = "combat runtime returns target, canonical spell/rune, or hold plans without executing them" },
         [pscustomobject]@{ name = "passive_contract"; status = if ($combat.Contains('mode = "passive"') -and $combat.Contains("owns_runtime_plan = true") -and $combat.Contains("owns_adapter_summary = true") -and $combat.Contains("owns_magic_summary = true") -and $combat.Contains("owns_magic_summary_text = true") -and $combat.Contains("owns_cooldown_text = true") -and $combat.Contains("owns_rotation_spell_rows = true") -and $combat.Contains("owns_rotation_spell_selection = true") -and $combat.Contains("owns_action_status_text = true") -and $combat.Contains("owns_targeting_status_text = true") -and $combat.Contains("owns_next_action_text = true") -and $combat.Contains("owns_wait_reason_text = true") -and $combat.Contains("owns_decision_state_text = true") -and $combat.Contains("owns_decision_state_summary = true") -and $combat.Contains("runtime_actions = false") -and $combat.Contains("scans_creatures = false") -and $combat.Contains("attacks = false") -and $combat.Contains("casts = false") -and $combat.Contains("uses_items = false") -and $combat.Contains("requires_target_scorer = true")) { "passed" } else { "failed" }; evidence = "combat runtime contract declares passive planning/adapter-summary/cooldown/rotation row normalization/rotation selection/action-status/targeting-status/next-action/wait/decision text/decision summary and no attack/cast/item execution" },
-        [pscustomobject]@{ name = "helper_uses_combat_runtime_adapter"; status = if ($helper.Contains('rawget(_G, "CTOA_HELPER_COMBAT_RUNTIME")') -and $helper.Contains("local function moduleValue(module, functionName, ...)") -and -not $helper.Contains("local function combatRuntimeAdapterSummary") -and $helper.Contains('moduleValue(externalCombatRuntime, "decisionStateSummary", tools') -and $helper.Contains("OPERATOR_SUMMARY_BRIDGES.magic") -and $helper.Contains('magic = moduleValue(externalOperatorSummary, "bridgeText", "magic", OPERATOR_SUMMARY_BRIDGES)') -and $helper.Contains("magic_summary_text = operatorSummaries.magic") -and $helper.Contains("combatRuntime = externalCombatRuntime") -and -not $helper.Contains("local function msLeftText") -and -not $helper.Contains("local function monsterCountForSpell") -and $helper.Contains('moduleValue(externalCombatRuntime, "runeReady", tools') -and $helper.Contains('moduleValue(externalCombatRuntime, "rotationSpellRows", tools.rotation_spells') -and $helper.Contains('moduleValue(externalCombatRuntime, "spellReadiness", spells') -and $helper.Contains('moduleValue(externalCombatRuntime, "rotationSpell", spells') -and $helper.Contains('moduleValue(externalCombatRuntime, "offensiveAction", tools') -and $helper.Contains("local function combatRuntimeText(functionName, eventOrAction, data, fallback)") -and $helper.Contains("moduleValue(externalCombatRuntime, functionName, eventOrAction, data or {})") -and -not $helper.Contains("local function combatActionStatusText") -and -not $helper.Contains("local function combatTargetingStatusText") -and $helper.Contains('combatRuntimeText("targetingStatusText", "friendly_summon"') -and $helper.Contains('combatRuntimeText("actionStatusText", action') -and $helper.Contains('moduleValue(externalCombatRuntime, "nextActionText", action, fallback)') -and $helper.Contains('moduleValue(externalCombatRuntime, "waitReason", {') -and -not $helper.Contains('moduleValue(externalCombatRuntime, "decisionState", {') -and -not $helper.Contains("adapter_text = adapterText") -and -not $helper.Contains('"Auto exeta: " .. action.spell') -and -not $helper.Contains('"Rotation: " .. action.spell.words') -and -not $helper.Contains('"Rune: " .. (tools.rune_name or "rune")') -and -not $helper.Contains('"Next: rune/AoE"')) { "passed" } else { "failed" }; evidence = "helper shell consumes combat runtime decision-state summary, magic summary, cooldown, rune readiness, rotation spell row normalization, spell readiness, rotation selection, action selection, action/targeting status, next action, and wait reason through shared guarded invokers; runtime execution stays shell-owned" },
+        [pscustomobject]@{ name = "helper_uses_combat_runtime_adapter"; status = if ($helper.Contains('rawget(_G, "CTOA_HELPER_COMBAT_RUNTIME")') -and $helper.Contains("local function moduleValue(module, functionName, ...)") -and -not $helper.Contains("local function combatRuntimeAdapterSummary") -and $helper.Contains('moduleValue(externalCombatRuntime, "decisionStateSummary", tools') -and $helper.Contains("OPERATOR_SUMMARY_BRIDGES.magic") -and $helper.Contains('magic = moduleValue(externalOperatorSummary, "bridgeText", "magic", OPERATOR_SUMMARY_BRIDGES)') -and $helper.Contains("magic_summary_text = operatorSummaries.magic") -and $helper.Contains("combatRuntime = externalCombatRuntime") -and -not $helper.Contains("local function msLeftText") -and -not $helper.Contains("local function monsterCountForSpell") -and $helper.Contains('moduleValue(externalCombatRuntime, "runeReady", tools') -and $helper.Contains('moduleValue(externalCombatRuntime, "rotationSpellRows", tools.rotation_spells') -and $helper.Contains('moduleValue(externalCombatRuntime, "spellReadiness", spells') -and $helper.Contains('moduleValue(externalCombatRuntime, "rotationSpell", spells') -and $helper.Contains('moduleValue(externalCombatRuntime, "offensiveAction", tools') -and $helper.Contains("local combatRuntimeText") -and $helper.Contains("combatRuntimeText = function(functionName, eventOrAction, data, fallback)") -and $helper.IndexOf("local combatRuntimeText") -lt $helper.IndexOf("local function retargetSafeMonster") -and $helper.Contains("moduleValue(externalCombatRuntime, functionName, eventOrAction, data or {})") -and -not $helper.Contains("local function combatActionStatusText") -and -not $helper.Contains("local function combatTargetingStatusText") -and $helper.Contains('combatRuntimeText("targetingStatusText", "friendly_summon"') -and $helper.Contains('combatRuntimeText("actionStatusText", action') -and $helper.Contains('moduleValue(externalCombatRuntime, "nextActionText", action, fallback)') -and $helper.Contains('moduleValue(externalCombatRuntime, "waitReason", {') -and -not $helper.Contains('moduleValue(externalCombatRuntime, "decisionState", {') -and -not $helper.Contains("adapter_text = adapterText") -and -not $helper.Contains('"Auto exeta: " .. action.spell') -and -not $helper.Contains('"Rotation: " .. action.spell.words') -and -not $helper.Contains('"Rune: " .. (tools.rune_name or "rune")') -and -not $helper.Contains('"Next: rune/AoE"')) { "passed" } else { "failed" }; evidence = "helper shell consumes combat runtime decision-state summary, magic summary, cooldown, rune readiness, rotation selection, and status adapters through a forward-declared local binding; runtime execution stays shell-owned and deferred" },
         [pscustomobject]@{ name = "runtime_execution_stays_in_helper"; status = if ($helper.Contains("local function executeOffensiveAction") -and $helper.Contains("castSpell(action.spell.words)") -and $helper.Contains("sendActionbarSlot(tools.rune_actionbar_slot, tools.rune_hotkey)") -and -not $combat.Contains("castSpell") -and -not $combat.Contains("sendActionbarSlot") -and -not $combat.Contains("g_game.attack")) { "passed" } else { "failed" }; evidence = "combat runtime plans only; guarded attack/cast/rune execution remains in helper runtime" },
         [pscustomobject]@{ name = "no_otclient_globals"; status = if (-not $combat.Contains("g_game") -and -not $combat.Contains("g_map") -and -not $combat.Contains("g_ui") -and -not $combat.Contains("g_keyboard") -and -not $combat.Contains("g_resources")) { "passed" } else { "failed" }; evidence = "combat runtime module does not call native OTClient globals" },
         [pscustomobject]@{ name = "no_runtime_actions"; status = if (-not $combat.Contains("castSpell") -and -not $combat.Contains("sendActionbarSlot") -and -not $combat.Contains("useInventoryItem") -and -not $combat.Contains("autoWalk") -and -not $combat.Contains("findPath") -and -not $combat.Contains("createWidget")) { "passed" } else { "failed" }; evidence = "combat runtime module does not cast, use items, walk, pathfind, or create widgets" },
@@ -3129,6 +3152,76 @@ function Invoke-RecoveryBridgeStaticSmoke {
     Write-Output "[solteria-helper-test-env] Recovery bridge static smoke: $path"
     Write-Output "[solteria-helper-test-env] Recovery bridge static status: $($report.status)"
     if ($failed.Count -gt 0) { throw "Recovery bridge static smoke failed" }
+}
+
+function Invoke-RuntimeModuleGateStaticSmoke {
+    param(
+        [Parameter(Mandatory = $true)][string]$ModuleId,
+        [Parameter(Mandatory = $true)][string]$ModuleFile,
+        [Parameter(Mandatory = $true)][string]$GateId,
+        [Parameter(Mandatory = $true)][string]$Phase,
+        [Parameter(Mandatory = $true)][string]$AllowedAction,
+        [Parameter(Mandatory = $true)][string]$ReportFile
+    )
+    $repo = Get-RepoRoot
+    $outRoot = Join-Path $repo $DevDir
+    New-Item -ItemType Directory -Force -Path $outRoot | Out-Null
+    $enginePath = Join-Path $repo "scripts\lua\otclient\ctoa_helper_runtime_module_gate.lua"
+    $gatePath = Join-Path $repo ("scripts\lua\otclient\" + $ModuleFile)
+    $testPath = Join-Path $repo "tests\test_ctoa_helper_runtime_module_gates.py"
+    $engine = if (Test-Path -LiteralPath $enginePath) { Get-Content -LiteralPath $enginePath -Raw } else { "" }
+    $gate = if (Test-Path -LiteralPath $gatePath) { Get-Content -LiteralPath $gatePath -Raw } else { "" }
+    $loader = Get-CtoaHelperBootGraphSource -RepoRoot $repo
+    $script = Get-Content -LiteralPath $PSCommandPath -Raw
+    & (Join-Path $repo ".venv\Scripts\python.exe") -m pytest $testPath -q
+    $pytestExitCode = $LASTEXITCODE
+    $checks = @(
+        [pscustomobject]@{ name = "gate_engine_exists"; status = if (Test-Path -LiteralPath $enginePath) { "passed" } else { "failed" }; evidence = "shared runtime module gate exists" },
+        [pscustomobject]@{ name = "module_exists"; status = if (Test-Path -LiteralPath $gatePath) { "passed" } else { "failed" }; evidence = "$ModuleFile exists" },
+        [pscustomobject]@{ name = "separate_gate_identity"; status = if ($gate.Contains(('gate_id = "' + $GateId + '"')) -and $gate.Contains(('phase = "' + $Phase + '"'))) { "passed" } else { "failed" }; evidence = "$GateId owns phase $Phase" },
+        [pscustomobject]@{ name = "bounded_action"; status = if ($gate.Contains(('allowed_actions = {"' + $AllowedAction + '"}'))) { "passed" } else { "failed" }; evidence = "gate allowlists only $AllowedAction" },
+        [pscustomobject]@{ name = "safe_contract"; status = if ($gate.Contains('mode = "sandbox_dry_run_gate"') -and $gate.Contains("default_closed = true") -and $gate.Contains("dispatch_allowed = false") -and $gate.Contains("runtime_actions = false") -and $gate.Contains("live_promotion = false") -and $gate.Contains("combat_deferred = true") -and $gate.Contains("cavebot_deferred = true")) { "passed" } else { "failed" }; evidence = "gate is default-closed dry-run and keeps high-risk lanes deferred" },
+        [pscustomobject]@{ name = "no_direct_otclient_calls"; status = if (-not $gate.Contains("g_game.") -and -not $gate.Contains("g_map.") -and -not $gate.Contains("castSpell(") -and -not $gate.Contains("sendActionbarSlot(") -and -not $gate.Contains("autoWalk(")) { "passed" } else { "failed" }; evidence = "gate cannot execute OTClient actions" },
+        [pscustomobject]@{ name = "loader_present"; status = if ((Test-CtoaHelperBootGraphModule -Source $loader -Name $ModuleId -File $ModuleFile)) { "passed" } else { "failed" }; evidence = "boot graph stages the action-specific gate" },
+        [pscustomobject]@{ name = "packaged"; status = if ($script.Contains($ModuleFile) -and $script.Contains(("mods/ctoa_otclient/" + $ModuleFile))) { "passed" } else { "failed" }; evidence = "dev package copies the action-specific gate" },
+        [pscustomobject]@{ name = "real_lua_tests"; status = if ($pytestExitCode -eq 0) { "passed" } else { "failed" }; evidence = "gate matrix and runtime policy tests pass in real Lua" }
+    )
+    $failed = @($checks | Where-Object { $_.status -ne "passed" })
+    $report = [pscustomobject]@{
+        schema_version = "ctoa.runtime-module-safety-gate-report.v1"
+        created_at = (Get-Date).ToString("o")
+        status = if ($failed.Count -eq 0) { "passed" } else { "failed" }
+        module = $ModuleId
+        gate_id = $GateId
+        phase = $Phase
+        mode = "sandbox_dry_run_gate_static_acceptance"
+        check_count = $checks.Count
+        passed_count = @($checks | Where-Object { $_.status -eq "passed" }).Count
+        failed_count = $failed.Count
+        checks = $checks
+        dispatch_allowed = $false
+        runtime_actions = $false
+        live_promotion = $false
+        next_action = if ($failed.Count -eq 0) { "Refresh package and sandbox evidence; do not enable execution through this gate." } else { "Fix failed action-specific runtime gate checks." }
+        live_safety = "This static gate reads repo sources and runs local tests only; it does not launch, attach, execute, promote, or overwrite a live client."
+    }
+    $path = Join-Path $outRoot $ReportFile
+    Write-JsonAtomic -InputObject $report -Path $path -Depth 8
+    Write-Output "[solteria-helper-test-env] Runtime module gate: $path"
+    Write-Output "[solteria-helper-test-env] Runtime module gate status: $($report.status) ($($report.passed_count)/$($report.check_count))"
+    if ($failed.Count -gt 0) { throw "$GateId static smoke failed" }
+}
+
+function Invoke-ConditionsRuntimeGateStaticSmoke {
+    Invoke-RuntimeModuleGateStaticSmoke -ModuleId "ctoa_helper_conditions_runtime_gate" -ModuleFile "ctoa_helper_conditions_runtime_gate.lua" -GateId "conditions_runtime_gate" -Phase "conditions_first" -AllowedAction "plan_paralyze_recovery" -ReportFile "conditions_runtime_gate_static_smoke.json"
+}
+
+function Invoke-EquipmentRuntimeGateStaticSmoke {
+    Invoke-RuntimeModuleGateStaticSmoke -ModuleId "ctoa_helper_equipment_runtime_gate" -ModuleFile "ctoa_helper_equipment_runtime_gate.lua" -GateId "equipment_runtime_gate" -Phase "equipment_after_conditions" -AllowedAction "plan_ring_swap" -ReportFile "equipment_runtime_gate_static_smoke.json"
+}
+
+function Invoke-HealFriendRuntimeGateStaticSmoke {
+    Invoke-RuntimeModuleGateStaticSmoke -ModuleId "ctoa_helper_heal_friend_runtime_gate" -ModuleFile "ctoa_helper_heal_friend_runtime_gate.lua" -GateId "heal_friend_runtime_gate" -Phase "heal_friend_after_equipment_conditions" -AllowedAction "plan_sio" -ReportFile "heal_friend_runtime_gate_static_smoke.json"
 }
 
 function Invoke-RecoveryBridgeActionSmoke {
@@ -3870,9 +3963,9 @@ function Invoke-ModuleStaticGates {
     New-Item -ItemType Directory -Force -Path $outRoot | Out-Null
     $steps = @(
         [pscustomobject]@{ module = "module_contract"; action = "ModuleContract"; report = "module_contract.json"; attach_command = "" },
-        [pscustomobject]@{ module = "heal_friend"; action = "HealFriendNoTargetSmoke"; report = "heal_friend_no_target_smoke.json"; attach_command = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttach -Tab heal_friend" },
         [pscustomobject]@{ module = "conditions"; action = "ConditionsObserverSmoke"; report = "conditions_observer_smoke.json"; attach_command = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttach -Tab conditions" },
         [pscustomobject]@{ module = "equipment"; action = "EquipmentObserverSmoke"; report = "equipment_observer_smoke.json"; attach_command = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttach -Tab equipment" },
+        [pscustomobject]@{ module = "heal_friend"; action = "HealFriendNoTargetSmoke"; report = "heal_friend_no_target_smoke.json"; attach_command = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttach -Tab heal_friend" },
         [pscustomobject]@{ module = "scripting"; action = "ScriptingPolicySmoke"; report = "scripting_policy_smoke.json"; attach_command = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttach -Tab scripting" },
         [pscustomobject]@{ module = "planner"; action = "PlannerStaticSmoke"; report = "planner_static_smoke.json"; attach_command = "" },
         [pscustomobject]@{ module = "runtime_policy"; action = "RuntimePolicyStaticSmoke"; report = "runtime_policy_static_smoke.json"; attach_command = "" },
@@ -3897,6 +3990,9 @@ function Invoke-ModuleStaticGates {
         [pscustomobject]@{ module = "timer_runtime"; action = "TimerRuntimeStaticSmoke"; report = "timer_runtime_static_smoke.json"; attach_command = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttach -Tab tools_timer" },
         [pscustomobject]@{ module = "recovery_runtime"; action = "RecoveryRuntimeStaticSmoke"; report = "recovery_runtime_static_smoke.json"; attach_command = "" },
         [pscustomobject]@{ module = "recovery_bridge"; action = "RecoveryBridgeStaticSmoke"; report = "recovery_bridge_static_smoke.json"; attach_command = "" },
+        [pscustomobject]@{ module = "conditions_runtime_gate"; action = "ConditionsRuntimeGateStaticSmoke"; report = "conditions_runtime_gate_static_smoke.json"; attach_command = "" },
+        [pscustomobject]@{ module = "equipment_runtime_gate"; action = "EquipmentRuntimeGateStaticSmoke"; report = "equipment_runtime_gate_static_smoke.json"; attach_command = "" },
+        [pscustomobject]@{ module = "heal_friend_runtime_gate"; action = "HealFriendRuntimeGateStaticSmoke"; report = "heal_friend_runtime_gate_static_smoke.json"; attach_command = "" },
         [pscustomobject]@{ module = "profile_schema"; action = "ProfileSchemaStaticSmoke"; report = "profile_schema_static_smoke.json"; attach_command = "" },
         [pscustomobject]@{ module = "operator_summary"; action = "OperatorSummaryStaticSmoke"; report = "operator_summary_static_smoke.json"; attach_command = "" },
         [pscustomobject]@{ module = "external_bot_import_gate"; action = "ExternalBotImportGateStaticSmoke"; report = "external_bot_import_gate_static_smoke.json"; attach_command = "" },
@@ -3908,9 +4004,9 @@ function Invoke-ModuleStaticGates {
         try {
             switch ([string]$step.action) {
                 "ModuleContract" { Invoke-ModuleContract }
-                "HealFriendNoTargetSmoke" { Invoke-HealFriendNoTargetSmoke }
                 "ConditionsObserverSmoke" { Invoke-ConditionsObserverSmoke }
                 "EquipmentObserverSmoke" { Invoke-EquipmentObserverSmoke }
+                "HealFriendNoTargetSmoke" { Invoke-HealFriendNoTargetSmoke }
                 "ScriptingPolicySmoke" { Invoke-ScriptingPolicySmoke }
                 "PlannerStaticSmoke" { Invoke-PlannerStaticSmoke }
                 "RuntimePolicyStaticSmoke" { Invoke-RuntimePolicyStaticSmoke }
@@ -3935,6 +4031,9 @@ function Invoke-ModuleStaticGates {
                 "TimerRuntimeStaticSmoke" { Invoke-TimerRuntimeStaticSmoke }
                 "RecoveryRuntimeStaticSmoke" { Invoke-RecoveryRuntimeStaticSmoke }
                 "RecoveryBridgeStaticSmoke" { Invoke-RecoveryBridgeStaticSmoke }
+                "ConditionsRuntimeGateStaticSmoke" { Invoke-ConditionsRuntimeGateStaticSmoke }
+                "EquipmentRuntimeGateStaticSmoke" { Invoke-EquipmentRuntimeGateStaticSmoke }
+                "HealFriendRuntimeGateStaticSmoke" { Invoke-HealFriendRuntimeGateStaticSmoke }
                 "ProfileSchemaStaticSmoke" { Invoke-ProfileSchemaStaticSmoke }
                 "OperatorSummaryStaticSmoke" { Invoke-OperatorSummaryStaticSmoke }
                 "ExternalBotImportGateStaticSmoke" { Invoke-ExternalBotImportGateStaticSmoke }
@@ -4276,72 +4375,58 @@ function Read-ModuleAuditSummary {
         $moduleEvidencePath = ""
         $moduleEvidenceStatus = ""
         $nextModuleCommand = ""
-        if ($nextModuleId -eq "heal_friend") {
-            $healFriendSmokePath = Join-Path $DevRoot "heal_friend_no_target_smoke.json"
-            if (Test-Path -LiteralPath $healFriendSmokePath) {
+        $runtimeGateRoutes = @{
+            conditions = [pscustomobject]@{
+                report = "conditions_observer_smoke.json"
+                static_action = "ConditionsObserverSmoke"
+                accepted_action = "Review the action-bound paralyze-only dry-run trace; Equipment remains blocked until this gate is accepted."
+            }
+            equipment = [pscustomobject]@{
+                report = "equipment_observer_smoke.json"
+                static_action = "EquipmentObserverSmoke"
+                accepted_action = "Review the ring-only rollback trace; Heal Friend remains blocked until Conditions and Equipment are accepted."
+            }
+            heal_friend = [pscustomobject]@{
+                report = "heal_friend_no_target_smoke.json"
+                static_action = "HealFriendNoTargetSmoke"
+                accepted_action = "Review the exact-whitelist Heal Friend dry-run; Combat and CaveBot remain deferred_high_risk."
+            }
+        }
+        if ($runtimeGateRoutes.ContainsKey($nextModuleId)) {
+            $route = $runtimeGateRoutes[$nextModuleId]
+            $evidencePath = Join-Path $DevRoot ([string]$route.report)
+            if (Test-Path -LiteralPath $evidencePath) {
                 try {
-                    $healFriendSmoke = Get-Content -LiteralPath $healFriendSmokePath -Raw | ConvertFrom-Json
-                    $moduleEvidencePath = [System.IO.Path]::GetFullPath($healFriendSmokePath)
-                    $moduleEvidenceStatus = [string]$healFriendSmoke.status
-                    if ($moduleEvidenceStatus -eq "passed") {
-                        $nextModuleAction = "Capture in-world SmokeAttachModules evidence for prototype module tabs before any sio cast path."
-                    }
+                    $evidence = Get-Content -LiteralPath $evidencePath -Raw | ConvertFrom-Json
+                    $moduleEvidencePath = [System.IO.Path]::GetFullPath($evidencePath)
+                    $moduleEvidenceStatus = [string]$evidence.status
                 } catch {
-                    $moduleEvidencePath = [System.IO.Path]::GetFullPath($healFriendSmokePath)
+                    $moduleEvidencePath = [System.IO.Path]::GetFullPath($evidencePath)
                     $moduleEvidenceStatus = "invalid"
                 }
             }
             if ($moduleEvidenceStatus -ne "passed") {
-                $nextModuleCommand = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action HealFriendNoTargetSmoke"
+                $nextModuleCommand = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action $([string]$route.static_action)"
             } else {
-                $nextModuleAction = "Capture in-world SmokeAttachModules evidence for prototype module tabs before any sio cast path."
-                $smokeStatusPath = Join-Path $DevRoot "smoke_status.json"
-                $readyCheckPath = Join-Path $DevRoot "ready_check.json"
-                $smokeStatusValue = ""
-                $smokeNextCommand = ""
-                $readyCheckStatus = ""
-                if (Test-Path -LiteralPath $smokeStatusPath) {
+                $runtimeGateEvidencePath = Join-Path $DevRoot "runtime_module_gates_sandbox_smoke.json"
+                $runtimeGateEvidenceStatus = ""
+                if (Test-Path -LiteralPath $runtimeGateEvidencePath) {
                     try {
-                        $smokeStatus = Get-Content -LiteralPath $smokeStatusPath -Raw | ConvertFrom-Json
-                        $smokeStatusValue = [string]$smokeStatus.status
-                        $smokeNextCommand = [string]$smokeStatus.next_command
+                        $runtimeGateEvidence = Get-Content -LiteralPath $runtimeGateEvidencePath -Raw | ConvertFrom-Json
+                        $runtimeGateEvidenceStatus = [string]$runtimeGateEvidence.status
                     } catch {
-                        $smokeStatusValue = "invalid"
+                        $runtimeGateEvidenceStatus = "invalid"
                     }
                 }
-                if (Test-Path -LiteralPath $readyCheckPath) {
-                    try {
-                        $readyCheck = Get-Content -LiteralPath $readyCheckPath -Raw | ConvertFrom-Json
-                        $readyCheckStatus = [string]$readyCheck.status
-                    } catch {
-                        $readyCheckStatus = "invalid"
-                    }
-                }
-                $blockingSmokeStatuses = @("not_running", "running_without_window", "character_modal", "helper_log_missing", "invalid")
-                if ($blockingSmokeStatuses -contains $smokeStatusValue) {
-                    if (-not [string]::IsNullOrWhiteSpace($smokeNextCommand)) {
-                        $nextModuleCommand = $smokeNextCommand
-                    } elseif ($smokeStatusValue -eq "not_running") {
-                        $nextModuleCommand = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action Launch"
-                    } else {
-                        $nextModuleCommand = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action ReadyCheck"
-                    }
-                } elseif ($readyCheckStatus -eq "ready") {
-                    $nextModuleCommand = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttachModules"
-                } elseif (-not [string]::IsNullOrWhiteSpace($smokeNextCommand)) {
-                    $nextModuleCommand = $smokeNextCommand
+                if ($runtimeGateEvidenceStatus -eq "passed") {
+                    $nextModuleAction = [string]$route.accepted_action
                 } else {
-                    $nextModuleCommand = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action ReadyCheck"
+                    $nextModuleAction = "Capture ordered Conditions -> Equipment -> Heal Friend fail-closed sandbox evidence before reviewing this lane."
+                    $nextModuleCommand = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action RuntimeModuleGatesSandboxSmoke"
                 }
             }
         }
         $staticGateSpecs = @(
-            [pscustomobject]@{
-                module = "heal_friend"
-                report = "heal_friend_no_target_smoke.json"
-                static_command = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action HealFriendNoTargetSmoke"
-                attach_command = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttach -Tab heal_friend"
-            },
             [pscustomobject]@{
                 module = "conditions"
                 report = "conditions_observer_smoke.json"
@@ -4353,6 +4438,12 @@ function Read-ModuleAuditSummary {
                 report = "equipment_observer_smoke.json"
                 static_command = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action EquipmentObserverSmoke"
                 attach_command = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttach -Tab equipment"
+            },
+            [pscustomobject]@{
+                module = "heal_friend"
+                report = "heal_friend_no_target_smoke.json"
+                static_command = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action HealFriendNoTargetSmoke"
+                attach_command = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttach -Tab heal_friend"
             },
             [pscustomobject]@{
                 module = "scripting"
@@ -4981,7 +5072,7 @@ function Invoke-SmokeAttachModules {
     New-Item -ItemType Directory -Force -Path $outRoot | Out-Null
     Write-Output "[solteria-helper-test-env] Module attach run id: $attachRunId"
 
-    $moduleTabs = @("heal_friend", "conditions", "equipment", "scripting")
+    $moduleTabs = @("conditions", "equipment", "heal_friend", "scripting")
     $modules = New-Object System.Collections.Generic.List[object]
     foreach ($tabName in $moduleTabs) {
         Write-Output "[solteria-helper-test-env] Module attach smoke tab: $tabName"
@@ -5026,6 +5117,7 @@ function Invoke-SmokeAttachModules {
         passed_count = @($moduleArray | Where-Object { $_.status -eq "passed" }).Count
         failed_count = $failed.Count
         modules = $moduleArray
+        required_sequence = @("conditions", "equipment", "heal_friend")
         next_action = if ($failed.Count -eq 0) { "Run SmokeAttachAll for final in-world visual acceptance." } else { "Enter the sandbox test character, run ReadyCheck, then rerun SmokeAttachModules." }
         next_command = if ($failed.Count -eq 0) { "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttachAll" } else { "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action ReadyCheck" }
         live_safety = "SmokeAttachModules attaches only to an already-running sandbox client and switches prototype module tabs; it does not launch, stop, promote, overwrite live files, cast, talk, or enable runtime automation."
@@ -5360,6 +5452,19 @@ switch ($Action) {
     }
     "RecoveryBridgeStaticSmoke" {
         Invoke-RecoveryBridgeStaticSmoke
+    }
+    "ConditionsRuntimeGateStaticSmoke" {
+        Invoke-ConditionsRuntimeGateStaticSmoke
+    }
+    "EquipmentRuntimeGateStaticSmoke" {
+        Invoke-EquipmentRuntimeGateStaticSmoke
+    }
+    "HealFriendRuntimeGateStaticSmoke" {
+        Invoke-HealFriendRuntimeGateStaticSmoke
+    }
+    "RuntimeModuleGatesSandboxSmoke" {
+        & (Join-Path (Get-RepoRoot) ".venv\Scripts\python.exe") (Join-Path (Get-RepoRoot) "scripts\ops\otclient_runtime_module_gates_sandbox_smoke.py")
+        if ($LASTEXITCODE -ne 0) { throw "Runtime module gates sandbox smoke failed" }
     }
     "RecoveryBridgeSandboxSmoke" {
         & (Join-Path (Get-RepoRoot) ".venv\Scripts\python.exe") (Join-Path (Get-RepoRoot) "scripts\ops\otclient_recovery_bridge_sandbox_smoke.py")

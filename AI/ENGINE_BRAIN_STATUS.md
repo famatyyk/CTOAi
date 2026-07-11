@@ -1,6 +1,6 @@
 # Engine Brain Status
 
-Snapshot date: 2026-07-07 Europe/Warsaw
+Snapshot date: 2026-07-11 Europe/Warsaw
 
 ## Completed In This Brain
 
@@ -42,6 +42,19 @@ Snapshot date: 2026-07-07 Europe/Warsaw
   container capability sample. Every report has newer in-world tab evidence and
   runtime remains disarmed. The next functional step is a separately reviewed
   runtime bridge after the completed v2.1.1a stabilization.
+- Post-Recovery sequencing is now enforced by three independent passive safety
+  gates rather than a generic module gate. Conditions comes first and
+  allowlists only paralyze-recovery dry-run; Equipment follows with ring-only,
+  exact-ID, rollback-ready, zero-retry dry-run; Heal Friend follows both and
+  requires exact persisted whitelist plus stable party target identity. Runtime
+  Policy classifies actions itself and requires a schema/evidence/action-bound
+  accepted trace, so caller booleans or `runtime_action=false` cannot bypass the
+  gate. Poison/burn/energy/bleed and amulet actions remain outside v1; Combat and
+  CaveBot remain `deferred_high_risk`. Current evidence passes ValidateDev
+  121/121, ModuleStaticGates 36/36, each domain static gate 9/9, ordered module
+  attach 4/4, full attach 16/16, and RuntimeModuleGatesSandboxSmoke 19/19.
+  Runtime is disarmed; dispatch and live promotion remain false, and the only
+  release blocker is the intentionally absent approval for the new live package.
 - CTOAi Runtime 2 execution has started from the reviewed vBot architecture:
   `ctoa_helper_runtime_core.lua` now provides a passive runtime registry,
   failure-isolated event bus, and 4 ms budgeted cooperative scheduler with

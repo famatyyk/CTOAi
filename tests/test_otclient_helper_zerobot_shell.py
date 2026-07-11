@@ -570,6 +570,10 @@ def test_helper_diagnostics_domain_is_passive_and_wired():
     assert 'rawget(_G, "CTOA_HELPER_DIAGNOSTICS")' in source
     assert "_G.CTOA_HELPER_DIAGNOSTICS = Diagnostics" in diagnostics
     assert "function Diagnostics.appendLog" in diagnostics
+    assert "g_resources.getWorkDir()" in diagnostics
+    assert '"ctoa_local.log"' in diagnostics
+    assert diagnostics.index("g_resources.getWorkDir()") < diagnostics.index("g_resources.getUserDir()")
+    assert "owns_workdir_log_path = true" in diagnostics
     assert "function Diagnostics.exportPath" in diagnostics
     assert "function Diagnostics.boolText" in diagnostics
     assert "function Diagnostics.posText" in diagnostics
@@ -2143,7 +2147,7 @@ def test_smokeall_lists_every_zerobot_shell_view():
     assert '"TimerSafetySmoke"' in script
     assert '"LootSafetySmoke"' in script
 
-    for action in ["PrepareDev", "ValidateDev", "Setup", "SmokePreflight", "SmokeStatus", "SmokeQueue", "GoalStatus", "LocalReady", "Launch", "Smoke", "SmokeAll", "SmokeAttach", "SmokeAttachModules", "SmokeAttachAll", "HealFriendNoTargetSmoke", "ConditionsObserverSmoke", "EquipmentObserverSmoke", "ScriptingPolicySmoke", "PlannerStaticSmoke", "RuntimePolicyStaticSmoke", "DispatchGuardStaticSmoke", "PlanQueueStaticSmoke", "RuntimeReadinessStaticSmoke", "ModuleStatusStaticSmoke", "ActionCatalogStaticSmoke", "DecisionTraceStaticSmoke", "SandboxHandoffStaticSmoke", "FeatureFlagsStaticSmoke", "HudStaticSmoke", "HotkeysStaticSmoke", "ModalStaticSmoke", "InputContractsStaticSmoke", "RouteStaticSmoke", "TargetingStaticSmoke", "CombatRuntimeStaticSmoke", "CavebotRuntimeStaticSmoke", "LootRuntimeStaticSmoke", "TimerRuntimeStaticSmoke", "ProfileSchemaStaticSmoke", "OperatorSummaryStaticSmoke", "ExternalBotImportGateStaticSmoke", "HelperShellBudgetStaticSmoke", "HelperShellBudgetPlanStaticSmoke", "ModuleContract", "ModuleAudit", "ModuleStaticGates", "Snapshot", "ReadyCheck", "BackupLiveCtoa", "PromoteLiveCtoa", "EmergencyRepairLiveCtoa", "DisableLiveCtoa", "EnableLiveCtoa", "EnableLiveCtoaUiOnly", "Stop"]:
+    for action in ["PrepareDev", "ValidateDev", "Setup", "SmokePreflight", "SmokeStatus", "SmokeQueue", "GoalStatus", "LocalReady", "Launch", "Smoke", "SmokeAll", "SmokeAttach", "SmokeAttachModules", "SmokeAttachAll", "HealFriendNoTargetSmoke", "ConditionsObserverSmoke", "EquipmentObserverSmoke", "ScriptingPolicySmoke", "PlannerStaticSmoke", "RuntimePolicyStaticSmoke", "DispatchGuardStaticSmoke", "PlanQueueStaticSmoke", "RuntimeReadinessStaticSmoke", "ModuleStatusStaticSmoke", "ActionCatalogStaticSmoke", "DecisionTraceStaticSmoke", "DecisionPipelineStaticSmoke", "SandboxHandoffStaticSmoke", "FeatureFlagsStaticSmoke", "HudStaticSmoke", "HotkeysStaticSmoke", "ModalStaticSmoke", "InputContractsStaticSmoke", "RouteStaticSmoke", "TargetingStaticSmoke", "CombatRuntimeStaticSmoke", "CavebotRuntimeStaticSmoke", "LootRuntimeStaticSmoke", "TimerRuntimeStaticSmoke", "RecoveryRuntimeStaticSmoke", "RecoveryBridgeStaticSmoke", "ConditionsRuntimeGateStaticSmoke", "EquipmentRuntimeGateStaticSmoke", "HealFriendRuntimeGateStaticSmoke", "RuntimeModuleGatesSandboxSmoke", "ProfileSchemaStaticSmoke", "OperatorSummaryStaticSmoke", "ExternalBotImportGateStaticSmoke", "HelperShellBudgetStaticSmoke", "HelperShellBudgetPlanStaticSmoke", "ModuleContract", "ModuleAudit", "ModuleStaticGates", "Snapshot", "ReadyCheck", "BackupLiveCtoa", "PromoteLiveCtoa", "EmergencyRepairLiveCtoa", "DisableLiveCtoa", "EnableLiveCtoa", "EnableLiveCtoaUiOnly", "Stop"]:
         assert f'"{action}"' in script
     for tab in SMOKE_ALL_TABS:
         assert f'"{tab}"' in script
@@ -2192,6 +2196,10 @@ def test_solteria_dev_lane_packages_without_touching_live_client():
     assert "ctoa_helper_planner.lua" in script
     assert "ctoa_helper_runtime_policy.lua" in script
     assert "ctoa_helper_dispatch_guard.lua" in script
+    assert "ctoa_helper_runtime_module_gate.lua" in script
+    assert "ctoa_helper_conditions_runtime_gate.lua" in script
+    assert "ctoa_helper_equipment_runtime_gate.lua" in script
+    assert "ctoa_helper_heal_friend_runtime_gate.lua" in script
     assert "ctoa_helper_plan_queue.lua" in script
     assert "ctoa_helper_runtime_readiness.lua" in script
     assert "ctoa_helper_hud.lua" in script
@@ -2215,6 +2223,10 @@ def test_solteria_dev_lane_packages_without_touching_live_client():
     assert 'mods/ctoa_otclient/ctoa_helper_planner.lua' in script
     assert 'mods/ctoa_otclient/ctoa_helper_runtime_policy.lua' in script
     assert 'mods/ctoa_otclient/ctoa_helper_dispatch_guard.lua' in script
+    assert 'mods/ctoa_otclient/ctoa_helper_runtime_module_gate.lua' in script
+    assert 'mods/ctoa_otclient/ctoa_helper_conditions_runtime_gate.lua' in script
+    assert 'mods/ctoa_otclient/ctoa_helper_equipment_runtime_gate.lua' in script
+    assert 'mods/ctoa_otclient/ctoa_helper_heal_friend_runtime_gate.lua' in script
     assert 'mods/ctoa_otclient/ctoa_helper_plan_queue.lua' in script
     assert 'mods/ctoa_otclient/ctoa_helper_runtime_readiness.lua' in script
     assert 'mods/ctoa_otclient/ctoa_helper_hud.lua' in script
@@ -2350,6 +2362,8 @@ def test_solteria_dev_lane_packages_without_touching_live_client():
     assert "-Action LootRuntimeStaticSmoke" in script
     assert "-Action SmokeAttach -Tab tools_diag" in script
     assert "function Invoke-SmokeAttachModules" in script
+    assert '$moduleTabs = @("conditions", "equipment", "heal_friend", "scripting")' in script
+    assert 'required_sequence = @("conditions", "equipment", "heal_friend")' in script
     assert "module_attach_smoke.json" in script
     assert "solteria-helper-module-attach-smoke" in script
     assert "SmokeAttachModules attaches only to an already-running sandbox client" in script
@@ -2381,6 +2395,16 @@ def test_solteria_dev_lane_packages_without_touching_live_client():
     assert '"DispatchGuardStaticSmoke" {' in script
     assert '"PlanQueueStaticSmoke" {' in script
     assert '"RuntimeReadinessStaticSmoke" {' in script
+    assert "function Invoke-RuntimeModuleGateStaticSmoke" in script
+    assert "function Invoke-ConditionsRuntimeGateStaticSmoke" in script
+    assert "function Invoke-EquipmentRuntimeGateStaticSmoke" in script
+    assert "function Invoke-HealFriendRuntimeGateStaticSmoke" in script
+    assert "conditions_runtime_gate_static_smoke.json" in script
+    assert "equipment_runtime_gate_static_smoke.json" in script
+    assert "heal_friend_runtime_gate_static_smoke.json" in script
+    assert '"ConditionsRuntimeGateStaticSmoke" {' in script
+    assert '"EquipmentRuntimeGateStaticSmoke" {' in script
+    assert '"HealFriendRuntimeGateStaticSmoke" {' in script
     assert '"HudStaticSmoke" {' in script
     assert '"HotkeysStaticSmoke" {' in script
     assert '"ModalStaticSmoke" {' in script
@@ -2469,7 +2493,7 @@ def test_solteria_dev_lane_packages_without_touching_live_client():
     assert "dispatch_guard_static_smoke.json" in script
     assert "plan_queue_static_smoke.json" in script
     assert "runtime_readiness_static_smoke.json" in script
-    assert "Capture in-world SmokeAttachModules evidence for prototype module tabs" in script
+    assert "Capture ordered Conditions -> Equipment -> Heal Friend fail-closed sandbox evidence" in script
     assert "-Action HealFriendNoTargetSmoke" in script
     assert "-Action SmokeAttach -Tab heal_friend" in script
     assert "-Action ConditionsObserverSmoke" in script

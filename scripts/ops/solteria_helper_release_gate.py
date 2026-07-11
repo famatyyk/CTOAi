@@ -53,6 +53,10 @@ MODULE_STATIC_GATES_COMMAND = (
     "powershell -NoProfile -ExecutionPolicy Bypass -File "
     "scripts\\windows\\solteria_helper_test_env.ps1 -Action ModuleStaticGates"
 )
+RUNTIME_MODULE_GATES_SANDBOX_COMMAND = (
+    "powershell -NoProfile -ExecutionPolicy Bypass -File "
+    "scripts\\windows\\solteria_helper_test_env.ps1 -Action RuntimeModuleGatesSandboxSmoke"
+)
 LIVE_FORBIDDEN_ROOT_FALLBACKS = ("ctoa_native_helper.lua",)
 
 
@@ -328,13 +332,65 @@ def _module_attach_smoke_gate(gates_path: Path, manifest_path: Path) -> Gate:
     module_count = int(data.get("module_count") or 0)
     passed_count = int(data.get("passed_count") or 0)
     failed_count = int(data.get("failed_count") or 0)
-    if data.get("status") == "passed" and module_count == 4 and passed_count == module_count and failed_count == 0:
+    required_sequence = data.get("required_sequence")
+    if (
+        data.get("status") == "passed"
+        and module_count == 4
+        and passed_count == module_count
+        and failed_count == 0
+        and required_sequence == ["conditions", "equipment", "heal_friend"]
+    ):
         return Gate(name="ModuleAttachSmoke", status="passed", evidence=str(gates_path))
     return Gate(
         name="ModuleAttachSmoke",
         status="blocked",
         evidence=str(gates_path),
-        reason="ModuleAttachSmoke did not pass all prototype module attach tabs.",
+        reason="ModuleAttachSmoke did not pass the required Conditions -> Equipment -> Heal Friend sequence.",
+    )
+
+
+def _runtime_module_gates_sandbox_gate(gates_path: Path, manifest_path: Path) -> Gate:
+    data = _load_json(gates_path)
+    if not data:
+        return Gate(
+            name="RuntimeModuleGatesSandboxSmoke",
+            status="pending",
+            evidence=str(gates_path),
+            reason="Run RuntimeModuleGatesSandboxSmoke after current module and full attach evidence.",
+        )
+    if manifest_path.is_file() and gates_path.stat().st_mtime < manifest_path.stat().st_mtime:
+        return Gate(
+            name="RuntimeModuleGatesSandboxSmoke",
+            status="blocked",
+            evidence=str(gates_path),
+            reason="RuntimeModuleGatesSandboxSmoke is stale for the current dev manifest; rerun it in sandbox.",
+        )
+    checks = data.get("checks") if isinstance(data.get("checks"), dict) else {}
+    required_checks = {
+        "synthetic_action_bound_acceptance",
+        "outside_pz_fail_closed_enforced",
+        "actual_environment_gate_behavior",
+        "high_risk_and_out_of_scope_deferred",
+    }
+    lane_results = data.get("lane_results") if isinstance(data.get("lane_results"), dict) else {}
+    safe_contract = (
+        data.get("status") == "passed"
+        and data.get("mode") == "in_world_fail_closed_dry_run"
+        and data.get("sequence") == ["conditions", "equipment", "heal_friend"]
+        and all(checks.get(name) is True for name in required_checks)
+        and lane_results.get("combat") == "deferred_high_risk"
+        and lane_results.get("cavebot") == "deferred_high_risk"
+        and data.get("dispatch_allowed") is False
+        and data.get("runtime_actions") is False
+        and data.get("live_promotion") is False
+    )
+    if safe_contract:
+        return Gate(name="RuntimeModuleGatesSandboxSmoke", status="passed", evidence=str(gates_path))
+    return Gate(
+        name="RuntimeModuleGatesSandboxSmoke",
+        status="blocked",
+        evidence=str(gates_path),
+        reason="RuntimeModuleGatesSandboxSmoke did not prove action-bound dry-run and fail-closed behavior.",
     )
 
 
@@ -463,6 +519,8 @@ def _command_for_next_gate(gates: list[Gate], approved: bool, dev_dir: Path) -> 
         return _command_for_module_attach_gate(dev_dir)
     if blocked.name == "SmokeAttachAll":
         return _command_for_smokeattach_gate(dev_dir)
+    if blocked.name == "RuntimeModuleGatesSandboxSmoke":
+        return RUNTIME_MODULE_GATES_SANDBOX_COMMAND
     if blocked.name == "live_approval" and not approved:
         return promote_command
     return (
@@ -479,6 +537,7 @@ def build_report(dev_dir: Path, smoke_report: Path | None = None, *, approved: b
     smoke_preflight_path = dev_dir / "smoke_preflight.json"
     module_static_gates_path = dev_dir / "module_static_gates.json"
     module_attach_smoke_path = dev_dir / "module_attach_smoke.json"
+    runtime_module_gates_sandbox_path = dev_dir / "runtime_module_gates_sandbox_smoke.json"
 
     manifest = _load_json(manifest_path)
     validation = _load_json(validation_path)
@@ -498,6 +557,7 @@ def build_report(dev_dir: Path, smoke_report: Path | None = None, *, approved: b
         _module_static_gates_gate(module_static_gates_path, manifest_path),
         _module_attach_smoke_gate(module_attach_smoke_path, manifest_path),
         _smoke_gate(smoke_report, manifest_path),
+        _runtime_module_gates_sandbox_gate(runtime_module_gates_sandbox_path, manifest_path),
         _live_approval_gate(dev_dir, manifest_path, manifest, approved),
     ]
     releasable = all(gate.status == "passed" for gate in gates)

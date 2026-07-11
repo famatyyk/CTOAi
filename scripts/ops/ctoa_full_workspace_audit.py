@@ -618,6 +618,7 @@ def render_plans_markdown(inventory: dict[str, Any]) -> str:
         "- Require `PrepareDev`, `ValidateDev`, `SmokePreflight`, in-world `SmokeAttachAll`, and explicit live approval.",
         "- Expand `otclient_helper_profile_audit.py` from text checks toward schema-backed migration validation.",
         "- Keep Control Center Helper status read-only and backed by runtime artifacts.",
+        "- Keep the post-Recovery runtime sequence fixed: Conditions paralyze-only gate, then Equipment ring-only rollback gate, then Heal Friend exact-whitelist gate. Require action-bound predecessor traces and current `RuntimeModuleGatesSandboxSmoke` evidence; Combat and CaveBot remain `deferred_high_risk` and may receive passive refactor work only.",
         "",
         "### 31-60 Days",
         "",

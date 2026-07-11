@@ -40,6 +40,9 @@ def test_three_development_plans_render_expected_plan_names():
     assert "runtime smoke base URLs" in markdown
     assert "LAB003 base URLs stay on loopback HTTP(S)" in markdown
     assert "GS reset API URLs/timing values are validated" in markdown
+    assert "Conditions paralyze-only gate" in markdown
+    assert "RuntimeModuleGatesSandboxSmoke" in markdown
+    assert "Combat and CaveBot remain `deferred_high_risk`" in markdown
 
 
 def test_full_workspace_audit_markdown_reports_integrity_gate_without_stale_pass_claims():

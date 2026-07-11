@@ -11,6 +11,27 @@ local REQUIRED_RUNTIME_GATES = {
     "live_approval",
 }
 
+local ACTION_SAFETY_GATES = {
+    plan_paralyze_recovery = "conditions_runtime_gate",
+    plan_ring_swap = "equipment_runtime_gate",
+    plan_sio = "heal_friend_runtime_gate",
+}
+
+local DEFERRED_MODULE_SCOPE = {
+    plan_poison_recovery = true,
+    plan_burn_recovery = true,
+    plan_energy_recovery = true,
+    plan_bleed_recovery = true,
+    plan_amulet_swap = true,
+}
+
+local DEFERRED_HIGH_RISK = {
+    plan_attack = true,
+    plan_spell = true,
+    plan_rune = true,
+    plan_walk = true,
+}
+
 local ACTIONS = {
     {
         action = "plan_heal",
@@ -59,13 +80,6 @@ local ACTIONS = {
         domain = "timer",
         risk = "runtime_talk_or_cast",
         requires_target = false,
-        runtime_action = true,
-    },
-    {
-        action = "plan_sio",
-        domain = "heal_friend",
-        risk = "runtime_cast",
-        requires_target = true,
         runtime_action = true,
     },
     {
@@ -118,6 +132,13 @@ local ACTIONS = {
         runtime_action = true,
     },
     {
+        action = "plan_sio",
+        domain = "heal_friend",
+        risk = "runtime_cast",
+        requires_target = true,
+        runtime_action = true,
+    },
+    {
         action = "audit_only",
         domain = "scripting",
         risk = "passive_audit",
@@ -150,13 +171,23 @@ end
 
 local function copyAction(action)
     local item = action or {}
+    local actionName = tostring(item.action or "hold")
+    local requiredGates = copyList(REQUIRED_RUNTIME_GATES)
+    local moduleSafetyGate = ACTION_SAFETY_GATES[actionName]
+    if moduleSafetyGate then requiredGates[#requiredGates + 1] = moduleSafetyGate end
     return {
-        action = tostring(item.action or "hold"),
+        action = actionName,
         domain = tostring(item.domain or "unknown"),
         risk = tostring(item.risk or "unknown"),
         requires_target = item.requires_target == true,
         runtime_action = item.runtime_action == true,
-        required_gates = copyList(REQUIRED_RUNTIME_GATES),
+        required_gates = requiredGates,
+        module_safety_gate = moduleSafetyGate or "none",
+        phase = DEFERRED_HIGH_RISK[actionName] and "deferred_high_risk" or
+            (DEFERRED_MODULE_SCOPE[actionName] and "deferred_module_scope" or
+            (moduleSafetyGate and "sequenced_runtime_gate" or "current")),
+        blocked_reason = DEFERRED_HIGH_RISK[actionName] and "high_risk_deferred" or
+            (DEFERRED_MODULE_SCOPE[actionName] and "action_not_approved_v1" or "none"),
         dispatch_allowed = false,
         executes_plan = false,
     }
@@ -198,8 +229,11 @@ function ActionCatalog.byAction(actionName)
         domain = "unknown",
         risk = "unknown",
         requires_target = false,
-        runtime_action = false,
+        runtime_action = true,
         required_gates = copyList(REQUIRED_RUNTIME_GATES),
+        module_safety_gate = ACTION_SAFETY_GATES[name] or "none",
+        phase = DEFERRED_HIGH_RISK[name] and "deferred_high_risk" or "unknown_blocked",
+        blocked_reason = DEFERRED_HIGH_RISK[name] and "high_risk_deferred" or "unknown_action",
         dispatch_allowed = false,
         executes_plan = false,
     }
@@ -233,6 +267,11 @@ function ActionCatalog.contract()
         walks = false,
         attacks = false,
         catalogs_action_risk = true,
+        catalogs_action_specific_safety_gates = true,
+        binds_v1_gates_to_exact_actions = true,
+        defers_out_of_scope_module_actions = true,
+        unknown_actions_default_to_blocked_runtime = true,
+        defers_combat_and_cavebot = true,
         requires_manifest_current = true,
         requires_module_static_gates = true,
         requires_module_attach_smoke = true,

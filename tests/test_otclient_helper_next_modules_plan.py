@@ -12,14 +12,19 @@ def test_next_modules_plan_is_safe_and_ordered():
     assert payload["status"] == "ready_for_sandbox_then_next_module_design"
     assert payload["current_budget_priority"]["source"] == "runtime/solteria_helper_dev/helper_shell_budget_plan.json"
     expected_domains = payload["current_budget_priority"]["next_extraction_domains"]
+    assert expected_domains == [
+        "conditions_runtime_gate",
+        "equipment_runtime_gate",
+        "heal_friend_runtime_gate",
+    ]
+    assert payload["current_budget_priority"]["top_non_shell_domain"] == "conditions_runtime_gate"
     if plan.SHELL_BUDGET_JSON.exists():
         budget = json.loads(plan.SHELL_BUDGET_JSON.read_text(encoding="utf-8"))
-        assert expected_domains == budget["next_extraction_domains"]
-        assert payload["current_budget_priority"]["top_non_shell_domain"] == expected_domains[0]
-        assert {"diagnostics_smoke", "runtime_cavebot", "runtime_combat"}.issubset(expected_domains)
+        raw_domains = payload["current_budget_priority"]["raw_next_extraction_domains"]
+        assert raw_domains == budget["next_extraction_domains"]
+        assert {"diagnostics_smoke", "runtime_cavebot", "runtime_combat"}.issubset(raw_domains)
     else:
-        assert expected_domains == []
-        assert payload["current_budget_priority"]["top_non_shell_domain"] == "unavailable"
+        assert payload["current_budget_priority"]["raw_next_extraction_domains"] == []
     assert payload["source_policy"]["vbot"] == "source_required"
     assert payload["source_policy"]["external_bot_intake"] == "scripts/ops/otclient_external_bot_intake.py"
     assert "runtime_import_allowed must remain false" in payload["source_policy"]["external_bot_import_gate"]
@@ -51,9 +56,9 @@ def test_next_modules_plan_is_safe_and_ordered():
     assert "no movement at loader init" in modules[4]["gate"]
     assert modules[5]["status"] == "static_gated"
     assert "Monster-only regression tests" in modules[5]["gate"]
-    assert modules[6]["status"] == "static_gated"
+    assert modules[6]["status"] == "deferred_high_risk_refactor_only"
     assert "no loader-time combat actions" in modules[6]["gate"]
-    assert modules[7]["status"] == "static_gated"
+    assert modules[7]["status"] == "deferred_high_risk_refactor_only"
     assert "no loader-time movement" in modules[7]["gate"]
     assert modules[8]["status"] == "static_gated"
     assert "no loader-time loot actions" in modules[8]["gate"]
@@ -66,9 +71,9 @@ def test_next_modules_plan_is_safe_and_ordered():
         "ui_primitives",
         "target_scorer",
         "route_engine",
-        "heal_friend_observer",
-        "conditions_observer",
-        "equipment_observer",
+        "conditions_runtime_gate",
+        "equipment_runtime_gate",
+        "heal_friend_runtime_gate",
         "scripting_policy",
         "operator_summary_bridge",
         "input_contracts",
@@ -92,7 +97,8 @@ def test_next_modules_plan_is_safe_and_ordered():
     assert "HotkeysStaticSmoke" in supplemental[8]["gate"]
     assert "ModalStaticSmoke" in supplemental[8]["gate"]
     assert "otclient_input_contract_fixtures.py" in supplemental[8]["current_slice"]
-    assert "blocked_by_sandbox_evidence" == supplemental[-1]["status"]
+    assert "sequenced_static_gates" == supplemental[-1]["status"]
+    assert "deferred_high_risk" in supplemental[-1]["current_slice"]
     assert all(
         "SmokeAttach" in item["gate"] or item["module_id"] in {"ui_primitives", "hotkeys", "modal_confirm", "profile_schema", "vbot_import"}
         for item in modules
@@ -140,16 +146,15 @@ def test_next_modules_plan_markdown_calls_out_runtime_blockers():
     assert "`modal_confirm` / Confirmation modal domain | `static_gated`" in markdown
     assert "`route_engine` / Cavebot route engine split | `static_gated`" in markdown
     assert "`target_scorer` / Combat target scorer split | `static_gated`" in markdown
-    assert "`heal_friend_observer`" in markdown
-    assert "ctoa_helper_heal_friend.lua owns whitelist matching" in markdown
-    assert "status text, decision text" in markdown
-    assert "HealFriendNoTargetSmoke" in markdown
-    assert "`conditions_observer`" in markdown
-    assert "ctoa_helper_conditions.lua owns condition flag text" in markdown
-    assert "ConditionsObserverSmoke" in markdown
-    assert "`equipment_observer`" in markdown
-    assert "ctoa_helper_equipment.lua owns slot text" in markdown
-    assert "EquipmentObserverSmoke" in markdown
+    assert "`conditions_runtime_gate`" in markdown
+    assert "ctoa_helper_conditions_runtime_gate.lua owns" in markdown
+    assert "ConditionsRuntimeGateStaticSmoke" in markdown
+    assert "`equipment_runtime_gate`" in markdown
+    assert "ctoa_helper_equipment_runtime_gate.lua owns" in markdown
+    assert "EquipmentRuntimeGateStaticSmoke" in markdown
+    assert "`heal_friend_runtime_gate`" in markdown
+    assert "ctoa_helper_heal_friend_runtime_gate.lua owns" in markdown
+    assert "HealFriendRuntimeGateStaticSmoke" in markdown
     assert "`scripting_policy`" in markdown
     assert "ctoa_helper_scripting.lua owns policy snapshots" in markdown
     assert "ScriptingPolicySmoke" in markdown
@@ -159,8 +164,9 @@ def test_next_modules_plan_markdown_calls_out_runtime_blockers():
     assert "`input_contracts`" in markdown
     assert "ctoa_helper_hotkeys.lua owns passive binding decisions" in markdown
     assert "InputContractsStaticSmoke" in markdown
-    assert "`combat_runtime` / Combat runtime planner split | `static_gated`" in markdown
-    assert "`cavebot_runtime` / Cavebot runtime planner split | `static_gated`" in markdown
+    assert "`combat_runtime` / Combat runtime planner split | `deferred_high_risk_refactor_only`" in markdown
+    assert "`cavebot_runtime` / Cavebot runtime planner split | `deferred_high_risk_refactor_only`" in markdown
+    assert "Raw shell-budget signals (refactor-only)" in markdown
     assert "active target advancement" in markdown
     assert "movement blocked-reason/status/trace/path result text" in markdown
     assert "movement API probe summary text" in markdown
@@ -174,7 +180,8 @@ def test_next_modules_plan_markdown_calls_out_runtime_blockers():
     assert "Targeting owns bestCandidate ranking" in markdown
     assert "`profile_persistence` | `in_progress_static_gated`" in markdown
     assert "ctoa_helper_profile_persistence.lua now owns passive load candidates" in markdown
-    assert "`runtime_bridge_review` | `blocked_by_sandbox_evidence`" in markdown
+    assert "`runtime_bridge_review` | `sequenced_static_gates`" in markdown
+    assert "Conditions -> Equipment -> Heal Friend" in markdown
     assert "`ctoa_helper_hud.lua`" in markdown
     assert "`ctoa_helper_route.lua`" in markdown
     assert "`docs/otclient/vbot_import_review.md`" in markdown
@@ -205,9 +212,9 @@ def test_next_modules_plan_writes_atomic_json_and_markdown(tmp_path: Path):
     assert saved["candidate_modules"][5]["module_id"] == "target_scorer"
     assert saved["candidate_modules"][5]["status"] == "static_gated"
     assert saved["candidate_modules"][6]["module_id"] == "combat_runtime"
-    assert saved["candidate_modules"][6]["status"] == "static_gated"
+    assert saved["candidate_modules"][6]["status"] == "deferred_high_risk_refactor_only"
     assert saved["candidate_modules"][7]["module_id"] == "cavebot_runtime"
-    assert saved["candidate_modules"][7]["status"] == "static_gated"
+    assert saved["candidate_modules"][7]["status"] == "deferred_high_risk_refactor_only"
     assert saved["candidate_modules"][8]["module_id"] == "loot_runtime"
     assert saved["candidate_modules"][8]["status"] == "static_gated"
     assert saved["candidate_modules"][9]["module_id"] == "timer_runtime"

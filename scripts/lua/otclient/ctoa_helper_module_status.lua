@@ -19,6 +19,7 @@ local DEFAULT_ORDER = {
     "planner",
     "runtime_policy",
     "dispatch_guard",
+    "runtime_module_gate",
     "plan_queue",
     "runtime_readiness",
     "action_catalog",
@@ -27,9 +28,12 @@ local DEFAULT_ORDER = {
     "feature_flags",
     "hud",
     "conditions",
+    "conditions_runtime_gate",
     "equipment",
-    "scripting",
+    "equipment_runtime_gate",
     "heal_friend",
+    "heal_friend_runtime_gate",
+    "scripting",
 }
 
 local function copyList(source)
