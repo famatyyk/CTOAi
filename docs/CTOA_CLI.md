@@ -71,6 +71,7 @@ Run from repository root:
 .\ctoa.ps1 report now
 .\ctoa.ps1 brain refresh
 .\ctoa.ps1 brain doctor
+.\ctoa.ps1 brain pack
 .\ctoa.ps1 brain pack helper
 ```
 
