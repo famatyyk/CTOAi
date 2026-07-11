@@ -54,6 +54,7 @@ def test_engine_brain_pack_supports_helper_profile(tmp_path):
     manifest_path = tmp_path / "helper-pack.json"
 
     manifest = build_pack(pack_path, manifest_path, profile="helper", include_generated=False, max_chars_per_file=4000)
+    assert any(section["path"] == "docs/otclient/HELPER_RUNTIME_BRIDGE_V1.md" for section in manifest["sections"])
 
     assert manifest["profile"] == "helper"
     text = pack_path.read_text(encoding="utf-8")

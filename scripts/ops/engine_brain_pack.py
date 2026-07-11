@@ -87,6 +87,7 @@ PROFILE_FILES = {
         "AI/OTCLIENT_INDEX.md",
         "docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md",
         "docs/otclient/solteria_helper_development_plan.md",
+        "docs/otclient/HELPER_RUNTIME_BRIDGE_V1.md",
         "docs/otclient/solteria_helper_test_env.md",
         "docs/otclient/solteria_helper_module_workplan.md",
         "docs/otclient/solteria_helper_module_contract.md",
