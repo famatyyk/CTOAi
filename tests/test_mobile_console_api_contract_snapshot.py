@@ -95,7 +95,7 @@ def test_mobile_console_critical_endpoints_keep_security_regressions(monkeypatch
         module = _load_app_module(monkeypatch, Path(tmp), package_tier="pro", mobile_console_enabled=True)
         client = TestClient(module.app)
 
-        login = client.post("/api/auth/login", json={"username": "CTO", "password": "ownerpass123"})
+        login = client.post("/api/auth/login", json={"username": "CTO", "password": "test-owner-pass"})
         assert login.status_code == 200
         token = login.json()["token"]
 

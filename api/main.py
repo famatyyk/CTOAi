@@ -130,6 +130,28 @@ if _is_weak_secret(JWT_SECRET):
         file=sys.stderr,
     )
 
+
+def _api_self_register_enabled() -> bool:
+    return _env_bool("CTOA_API_SELF_REGISTER_ENABLED", not _is_production_env())
+
+
+def _api_self_register_code() -> str:
+    return os.getenv("CTOA_API_SELF_REGISTER_CODE", "").strip()
+
+
+def _validate_api_security_config() -> None:
+    if (
+        _is_production_env()
+        and _api_self_register_enabled()
+        and not _api_self_register_code()
+    ):
+        raise RuntimeError(
+            "CTOA_API_SELF_REGISTER_CODE must be set when API self registration is enabled in production"
+        )
+
+
+_validate_api_security_config()
+
 CTOA_RATE_LIMIT_ENABLED = _env_bool("CTOA_RATE_LIMIT_ENABLED", True)
 CTOA_TRUST_PROXY_HEADERS = _env_bool("CTOA_TRUST_PROXY_HEADERS", False)
 CTOA_CHAT_RATE_LIMIT_PER_MIN = max(1, _env_int("CTOA_CHAT_RATE_LIMIT_PER_MIN", 24))

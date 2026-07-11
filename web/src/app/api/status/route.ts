@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { getServerApiUrl } from "@/lib/config"
 
-const API_URL = process.env.VPS_API_URL ?? "http://127.0.0.1:8011";
+const API_URL = getServerApiUrl()
 
 export async function GET() {
   try {

@@ -32,7 +32,7 @@ def validate_early_security_config() -> None:
     secret = os.getenv("CTOA_JWT_SECRET", "").strip()
     if not secret or secret == DEFAULT_DEV_JWT_PLACEHOLDER:
         raise RuntimeError(
-            "CTOA_JWT_SECRET must be set to a non-default value in production"
+            "Refusing to start in production with missing or weak CTOA_JWT_SECRET."
         )
 
     if (
