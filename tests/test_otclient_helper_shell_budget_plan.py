@@ -10,9 +10,12 @@ def test_shell_budget_plan_measures_current_helper_pressure():
     assert budget.name == "otclient-helper-shell-budget-plan"
     assert budget.status == "needs_extraction"
     assert budget.helper_line_count <= budget.helper_line_budget
-    assert budget.helper_line_count <= 4350
+    # Recovery Runtime Bridge v1 intentionally adds the bounded sandbox
+    # executor and operator controls while remaining below the 4500-line
+    # product budget. Keep this ratchet at the accepted post-bridge size.
+    assert budget.helper_line_count <= 4484
     assert budget.helper_function_count > budget.helper_function_budget
-    assert budget.helper_function_count <= 159
+    assert budget.helper_function_count <= 163
     assert budget.over_line_budget_by == 0
     assert budget.over_function_budget_by == budget.helper_function_count - budget.helper_function_budget
     assert budget.under_hard_ceiling is True
