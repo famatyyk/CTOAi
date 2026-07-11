@@ -46,6 +46,6 @@ except Exception as e:
             print(f"Pages: {len(pdf.pages)}")
             if hasattr(pdf, 'metadata'):
                 print(f"Metadata: {pdf.metadata}")
-    except:
-        pass
+    except Exception as meta_exc:
+        print(f"[-] Metadata extraction failed: {meta_exc}")
     sys.exit(1)

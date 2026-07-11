@@ -75,7 +75,7 @@ for inp in INPS:
         for method, wbits in [('zlib', None), ('zlib_raw', -15), ('zlib_gzip', 31)]:
             try:
                 dec = zlib.decompress(payload) if wbits is None else zlib.decompress(payload, wbits=wbits)
-            except Exception:
+            except zlib.error:
                 continue
             if not dec:
                 continue

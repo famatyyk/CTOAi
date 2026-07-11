@@ -34,6 +34,13 @@ HOT_ALLOC_SHAPES = int(os.getenv("CTOA_RUNTIME_HOT_ALLOC_SHAPES", "1"))
 REGION_DIFF_CHECKS = int(os.getenv("CTOA_RUNTIME_REGION_DIFF_CHECKS", "1"))
 MOVE_EXEC_HISTORY = int(os.getenv("CTOA_RUNTIME_MOVE_EXEC_HISTORY", "24"))
 PAGE = 0x1000
+diagnostics = []
+
+
+def record_error(stage, error, **meta):
+    item = {"stage": stage, "error": str(error)[:240]}
+    item.update(meta)
+    diagnostics.append(item)
 
 
 # Single-instance guard: avoid breakpoint races from duplicate runners.
@@ -65,8 +72,8 @@ if LOCK.exists():
     if isinstance(existing_pid, int) and not _pid_alive(existing_pid):
         try:
             LOCK.unlink()
-        except Exception:
-            pass
+        except OSError as exc:
+            record_error("stale_lock_unlink_failed", exc, lock=str(LOCK).replace("\\", "/"), owner_pid=existing_pid)
 
 try:
     fd = os.open(str(LOCK), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
@@ -83,8 +90,8 @@ def _release_lock():
             owner = _read_lock_pid()
             if owner == _lock_owner_pid:
                 LOCK.unlink()
-    except Exception:
-        pass
+    except OSError as exc:
+        record_error("release_lock_failed", exc, lock=str(LOCK).replace("\\", "/"), owner_pid=_lock_owner_pid)
 
 
 atexit.register(_release_lock)
@@ -191,6 +198,10 @@ def headers(data: bytes):
     return out
 
 
+def sha1_fingerprint(data: bytes) -> str:
+    return hashlib.sha1(data, usedforsecurity=False).hexdigest()
+
+
 def rd32(c, addr):
     try:
         return int(c.read_dword(int(addr)))
@@ -213,8 +224,8 @@ def resolve_symbol(c, names):
             v = c.eval_sync(n)[0]
             if isinstance(v, int) and v > 0:
                 return n, v
-        except Exception:
-            continue
+        except Exception as exc:
+            record_error("resolve_symbol_failed", exc, symbol=n)
     return None, None
 
 
@@ -231,7 +242,7 @@ report = {
     },
     "events": [],
     "dumps": [],
-    "errors": [],
+    "errors": diagnostics,
 }
 
 
@@ -255,7 +266,7 @@ def dump_blob(kind, blob: bytes, meta=None):
         return None
 
     sig_len = min(len(blob), max(128, DEDUP_PREFIX))
-    sig = hashlib.sha1(blob[:sig_len]).hexdigest() + f":{len(blob)}"
+    sig = sha1_fingerprint(blob[:sig_len]) + f":{len(blob)}"
     if sig in seen_dump_fingerprints:
         return None
 
@@ -383,8 +394,8 @@ def track_alloc_region(base, size, prot, source, alloc_type=None):
         "source": source,
         "alloc_type": alloc_type,
         "shape_key": shape,
-        "initial_sha1": hashlib.sha1(prefix).hexdigest() if prefix else None,
-        "last_sha1": hashlib.sha1(prefix).hexdigest() if prefix else None,
+        "initial_sha1": sha1_fingerprint(prefix) if prefix else None,
+        "last_sha1": sha1_fingerprint(prefix) if prefix else None,
         "first_touch_dumped": False,
         "bp_addrs": [],
         "diff_checks": 0,
@@ -399,8 +410,8 @@ def track_alloc_region(base, size, prot, source, alloc_type=None):
             c.set_memory_breakpoint(int(addr), MemoryBreakpointType.a, True)
             alloc_touch_bp[addr] = base
             alloc_regions[base]["bp_addrs"].append(addr)
-        except Exception:
-            continue
+        except Exception as exc:
+            record_error("alloc_touch_breakpoint_failed", exc, addr=addr, base=base)
 
 
 def clear_alloc_breakpoints(base):
@@ -410,8 +421,8 @@ def clear_alloc_breakpoints(base):
     for addr in region.get("bp_addrs", []):
         try:
             c.clear_memory_breakpoint(int(addr))
-        except Exception:
-            pass
+        except Exception as exc:
+            record_error("clear_alloc_breakpoint_failed", exc, addr=addr, base=base)
         alloc_touch_bp.pop(addr, None)
     region["bp_addrs"] = []
 
@@ -431,8 +442,8 @@ def refresh_hot_alloc_watchers():
         try:
             c.set_memory_breakpoint(addr, MemoryBreakpointType.a, False)
             hot_alloc_watch[addr] = base
-        except Exception:
-            continue
+        except Exception as exc:
+            record_error("hot_alloc_watch_failed", exc, addr=addr, base=base)
 
 
 def maybe_dump_first_touch(base, reason, trigger=None):
@@ -440,7 +451,7 @@ def maybe_dump_first_touch(base, reason, trigger=None):
     if not isinstance(region, dict) or region.get("first_touch_dumped"):
         return None
     prefix = sample_prefix(c, region["base"], region["size"])
-    sha1 = hashlib.sha1(prefix).hexdigest() if prefix else None
+    sha1 = sha1_fingerprint(prefix) if prefix else None
     if region.get("last_sha1") and sha1 == region.get("last_sha1") and reason != "memory_breakpoint":
         return None
     region["last_sha1"] = sha1
@@ -449,7 +460,7 @@ def maybe_dump_first_touch(base, reason, trigger=None):
     region["first_touch_dumped"] = True
     clear_alloc_breakpoints(base)
     if isinstance(region.get("prot"), int) and has_exec(region.get("prot")):
-        arm_exec_watch(region["base"], region["size"], f"{region.get("source")}:first_touch")
+        arm_exec_watch(region["base"], region["size"], f"{region.get('source')}:first_touch")
     return d
 
 
@@ -461,7 +472,7 @@ def poll_alloc_region_diffs(trigger_eip=None):
         if region["diff_checks"] < REGION_DIFF_CHECKS:
             continue
         prefix = sample_prefix(c, region.get("base"), region.get("size"))
-        sha1 = hashlib.sha1(prefix).hexdigest() if prefix else None
+        sha1 = sha1_fingerprint(prefix) if prefix else None
         if not sha1 or sha1 == region.get("last_sha1"):
             continue
         report["events"].append({"type": "alloc_region_diff", "base": region.get("base"), "size": region.get("size"), "shape_key": region.get("shape_key"), "trigger": trigger_eip})
@@ -557,8 +568,8 @@ def arm_exec_watch(base, size, source):
                 "page_write_hits": hits,
                 "page_sources": sources,
             }
-        except Exception:
-            continue
+        except Exception as exc:
+            record_error("exec_watch_breakpoint_failed", exc, addr=addr, base=base, source=source)
 
 
 def wait_return_and_regs(ret_addr):
@@ -604,8 +615,8 @@ try:
                 m["triggered"] = True
             try:
                 c.clear_breakpoint(int(eip))
-            except Exception:
-                pass
+            except Exception as exc:
+                record_error("clear_exec_watch_breakpoint_failed", exc, eip=eip)
             exec_watch_bp.pop(eip, None)
             flush("running")
             continue
@@ -880,8 +891,8 @@ try:
         finally:
             try:
                 c.clear_breakpoint(int(ret))
-            except Exception:
-                pass
+            except Exception as clear_exc:
+                record_error("clear_return_breakpoint_failed", clear_exc, hook=hit, ret=ret)
             flush("running")
 
 except Exception as ex:
@@ -890,8 +901,8 @@ finally:
     for n in hooks.keys():
         try:
             c.clear_breakpoint(n)
-        except Exception:
-            pass
+        except Exception as clear_exc:
+            record_error("clear_hook_breakpoint_failed", clear_exc, hook=n)
 
 top_candidates = sorted(report.get("dumps", []), key=lambda d: float(d.get("score", 0.0)), reverse=True)[:12]
 report["top_candidates"] = top_candidates

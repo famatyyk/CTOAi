@@ -415,8 +415,8 @@ else:
                     finally:
                         try:
                             c.clear_breakpoint(int(ret_addr))
-                        except Exception:
-                            pass
+                        except Exception as clear_exc:
+                            sample["return"]["clear_breakpoint_error"] = str(clear_exc)
 
                 out["ntreadfile_samples"].append(sample)
 

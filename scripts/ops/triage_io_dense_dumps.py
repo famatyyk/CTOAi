@@ -42,7 +42,7 @@ def decomp_hints(data: bytes):
         try:
             d = zlib.decompress(data) if w is None else zlib.decompress(data,wbits=w)
             res.append({'method':m,'ok':True,'out_len':len(d),'out_magic':magics(d[:65536])})
-        except Exception:
+        except zlib.error:
             pass
     return res
 

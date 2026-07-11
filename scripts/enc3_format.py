@@ -12,7 +12,7 @@ for root, dirs, files in os.walk(base):
                 b = f.read()
             if b[:4] == b"ENC3":
                 samples.append((os.path.relpath(path, base), len(b), b[:32]))
-        except:
+        except OSError:
             pass
     if len(samples) >= 20:
         break

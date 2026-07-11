@@ -78,6 +78,7 @@ report = {
     },
     "events": [],
     "dumps": [],
+    "errors": [],
 }
 
 sessions = X64DbgClient.list_sessions()
@@ -96,6 +97,15 @@ else:
     report["hooks"] = hooks
 
     exec_bp_meta = {}
+
+    def record_error(context, exc):
+        report["errors"].append({"context": str(context), "error": str(exc)})
+
+    def clear_breakpoint(addr, context):
+        try:
+            c.clear_breakpoint(int(addr))
+        except Exception as exc:
+            record_error(context, exc)
 
     def write_dump(kind, base, size, trigger_addr=None, extra=None):
         if not isinstance(base, int) or base <= 0 or not isinstance(size, int) or size <= 0:
@@ -142,8 +152,8 @@ else:
                     "protect": protect,
                     "offset": i * PAGE,
                 }
-            except Exception:
-                continue
+            except Exception as exc:
+                record_error(f"arm_exec_breakpoints:{addr}", exc)
 
     start = time.time()
     ev_count = 0
@@ -162,10 +172,7 @@ else:
                 meta = exec_bp_meta.get(eip, {})
                 d = write_dump("exec_hit", meta.get("base"), meta.get("size"), trigger_addr=eip, extra={"source": meta.get("source"), "protect": meta.get("protect")})
                 report["events"].append({"type": "exec_hit", "eip": eip, "meta": meta, "dump": d.get("file") if d else None})
-                try:
-                    c.clear_breakpoint(int(eip))
-                except Exception:
-                    pass
+                clear_breakpoint(eip, "exec_hit")
                 exec_bp_meta.pop(eip, None)
                 continue
 
@@ -184,10 +191,7 @@ else:
                         arm_exec_breakpoints(base, sz, "VirtualAlloc", prot)
                         report["events"].append({"type": "VirtualAlloc", "base": base, "size": sz, "protect": prot})
                     finally:
-                        try:
-                            c.clear_breakpoint(int(ret))
-                        except Exception:
-                            pass
+                        clear_breakpoint(ret, "VirtualAlloc:return")
                 continue
 
             if eip == int(hooks["VirtualAllocEx"]):
@@ -205,10 +209,7 @@ else:
                         arm_exec_breakpoints(base, sz, "VirtualAllocEx", prot)
                         report["events"].append({"type": "VirtualAllocEx", "base": base, "size": sz, "protect": prot})
                     finally:
-                        try:
-                            c.clear_breakpoint(int(ret))
-                        except Exception:
-                            pass
+                        clear_breakpoint(ret, "VirtualAllocEx:return")
                 continue
 
             if eip == int(hooks["VirtualProtect"]):
@@ -227,10 +228,7 @@ else:
                             arm_exec_breakpoints(base, sz, "VirtualProtect", prot)
                         report["events"].append({"type": "VirtualProtect", "base": base, "size": sz, "protect": prot, "ok": ok})
                     finally:
-                        try:
-                            c.clear_breakpoint(int(ret))
-                        except Exception:
-                            pass
+                        clear_breakpoint(ret, "VirtualProtect:return")
                 continue
 
             if eip == int(hooks["NtProtectVirtualMemory"]):
@@ -251,10 +249,7 @@ else:
                             arm_exec_breakpoints(base, sz, "NtProtectVirtualMemory", prot)
                         report["events"].append({"type": "NtProtectVirtualMemory", "base": base, "size": sz, "protect": prot, "status": status})
                     finally:
-                        try:
-                            c.clear_breakpoint(int(ret))
-                        except Exception:
-                            pass
+                        clear_breakpoint(ret, "NtProtectVirtualMemory:return")
                 continue
 
             if eip == int(hooks["LdrLoadDll"]):
@@ -274,10 +269,7 @@ else:
                             dumped = d.get("file") if d else None
                         report["events"].append({"type": "LdrLoadDll", "status": status, "module_base": hmod, "dump": dumped})
                     finally:
-                        try:
-                            c.clear_breakpoint(int(ret))
-                        except Exception:
-                            pass
+                        clear_breakpoint(ret, "LdrLoadDll:return")
                 continue
 
     except Exception as e:

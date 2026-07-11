@@ -73,7 +73,7 @@ def dedup_chunks(chunks):
     seen = set()
     out = []
     for ch in chunks:
-        h = hashlib.sha1(ch).hexdigest()
+        h = hashlib.sha1(ch, usedforsecurity=False).hexdigest()
         if h in seen:
             continue
         seen.add(h)
@@ -88,7 +88,7 @@ def dedup_blocks(stream: bytes, block=BLOCK):
         part = stream[i:i+block]
         if not part:
             continue
-        h = hashlib.sha1(part).hexdigest()
+        h = hashlib.sha1(part, usedforsecurity=False).hexdigest()
         if h in seen:
             continue
         seen.add(h)

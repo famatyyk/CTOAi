@@ -271,8 +271,8 @@ def main():
     render_markdown(results, out_md)
 
     print(json.dumps(summary, indent=2))
-    print(f"json={str(out_json).replace('\\', '/')}")
-    print(f"md={str(out_md).replace('\\', '/')}")
+    print(f"json={out_json.as_posix()}")
+    print(f"md={out_md.as_posix()}")
 
 
 if __name__ == "__main__":

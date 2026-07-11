@@ -67,12 +67,13 @@ def rb(c, addr, size):
 
 def resolve_symbol(c, names):
     for n in names:
+        v = None
         try:
             v = c.eval_sync(n)[0]
-            if isinstance(v, int) and v > 0:
-                return n, v
-        except Exception:
-            continue
+        except Exception as exc:
+            print(f"[capture_io_dense_live] resolve_symbol failed for {n}: {exc}")
+        if isinstance(v, int) and v > 0:
+            return n, v
     return None, None
 
 
@@ -90,6 +91,7 @@ report = {
     },
     "events": [],
     "dumps": [],
+    "errors": [],
 }
 
 
@@ -99,6 +101,17 @@ def flush(status=None, summary=None):
     if summary is not None:
         report["summary"] = summary
     REPORT.write_text(json.dumps(report, indent=2), encoding="utf-8")
+
+
+def record_error(context, exc):
+    report["errors"].append({"context": str(context), "error": str(exc)})
+
+
+def clear_breakpoint(addr, context):
+    try:
+        c.clear_breakpoint(int(addr))
+    except Exception as exc:
+        record_error(context, exc)
 
 
 def add_dump(item):
@@ -184,8 +197,8 @@ def arm_exec_watch(base, size, source):
         try:
             c.set_breakpoint(int(addr))
             exec_watch_bp[addr] = {"base": base, "size": size, "source": source, "triggered": False}
-        except Exception:
-            continue
+        except Exception as exc:
+            record_error(f"arm_exec_watch:{addr}", exc)
 
 
 start = time.time()
@@ -207,10 +220,7 @@ try:
                 d = dump_region(c, "exec_outside", m["base"], m["size"], {"trigger": eip, "source": m.get("source")})
                 report["events"].append({"type": "exec_outside_hit", "eip": eip, "source": m.get("source"), "dump": d.get("file") if d else None})
                 m["triggered"] = True
-            try:
-                c.clear_breakpoint(int(eip))
-            except Exception:
-                pass
+            clear_breakpoint(eip, "exec_watch")
             exec_watch_bp.pop(eip, None)
             flush("running")
             continue
@@ -227,8 +237,7 @@ try:
                     ok = (h is not None and h not in (0, 0xFFFFFFFF))
                     report["events"].append({"type": "CreateFileW", "handle": h, "ok": bool(ok)})
                 finally:
-                    try: c.clear_breakpoint(int(ret))
-                    except Exception: pass
+                    clear_breakpoint(ret, "CreateFileW:return")
                 flush("running")
             continue
 
@@ -253,8 +262,7 @@ try:
                     if blob and len(blob) >= 1024:
                         arm_exec_watch(buf, max(got, PAGE), "ReadFileBuffer")
                 finally:
-                    try: c.clear_breakpoint(int(ret))
-                    except Exception: pass
+                    clear_breakpoint(ret, "ReadFile:return")
                 flush("running")
             continue
 
@@ -279,8 +287,7 @@ try:
                     if blob and len(blob) >= 1024:
                         arm_exec_watch(buf, max(got, PAGE), "NtReadFileBuffer")
                 finally:
-                    try: c.clear_breakpoint(int(ret))
-                    except Exception: pass
+                    clear_breakpoint(ret, "NtReadFile:return")
                 flush("running")
             continue
 
@@ -303,8 +310,7 @@ try:
                     if st == 0 and isinstance(base, int) and isinstance(view, int) and view > 0:
                         arm_exec_watch(base, view, map_hook_name)
                 finally:
-                    try: c.clear_breakpoint(int(ret))
-                    except Exception: pass
+                    clear_breakpoint(ret, f"{map_hook_name}:return")
                 flush("running")
             continue
 
