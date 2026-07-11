@@ -1,6 +1,6 @@
 # Engine Brain File Tree
 
-Generated at: `2026-07-11T03:56:45+00:00`
+Generated at: `2026-07-11T04:16:27+00:00`
 
 Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 `node_modules`, `runtime`, `logs`, `data`, `.tmp`, build outputs.
@@ -103,7 +103,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `AI/generated/DOC_SYNC.md` | 609 |
 | `AI/generated/ENGINE_BRAIN_PACK.json` | 5322 |
 | `AI/generated/ENGINE_BRAIN_PACK.md` | 264309 |
-| `AI/generated/ENV_DOCTOR.json` | 7874 |
+| `AI/generated/ENV_DOCTOR.json` | 8040 |
 | `AI/generated/ENV_DOCTOR.md` | 1369 |
 | `AI/generated/FILE_TREE.md` | 70215 |
 | `AI/generated/manifest.json` | 2062 |
@@ -865,7 +865,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `tests/e2e/test_bot_live.py` | 3380 |
 | `tests/e2e/test_browser_smoke.py` | 12736 |
 | `tests/integration/bot/test_bot_loop.py` | 9419 |
-| `tests/integration/bot/test_stress.py` | 8371 |
+| `tests/integration/bot/test_stress.py` | 8366 |
 | `tests/js/dashboard_helpers.test.js` | 702 |
 | `tests/legacy/test_agents_all.py` | 2591 |
 | `tests/legacy/test_local.py` | 10945 |
@@ -1025,7 +1025,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `tests/unit/bot/test_humanizer.py` | 2067 |
 | `tests/unit/bot/test_hunt_strategy.py` | 2751 |
 | `tests/unit/bot/test_input_backend.py` | 2486 |
-| `tests/unit/bot/test_ml_model.py` | 2717 |
+| `tests/unit/bot/test_ml_model.py` | 2704 |
 | `tests/unit/bot/test_movement_follow.py` | 3708 |
 | `tests/unit/bot/test_perception.py` | 4359 |
 | `tests/unit/bot/test_runtime_profile_security.py` | 1899 |

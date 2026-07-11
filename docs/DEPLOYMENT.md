@@ -4,7 +4,7 @@ Complete guide for packaging and deploying the CTOA Hybrid Bot locally, on VPS, 
 
 ## Table of Contents
 1. [Local Deployment](#local-deployment)
-2. [VPS Deployment](#vps-deployment)  
+2. [VPS Deployment](#vps-deployment)
 3. [Docker Container Deployment](#docker-deployment)
 4. [Performance Requirements](#requirements)
 

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-11T03:57:01+00:00",
+  "generated_at": "2026-07-11T04:16:48+00:00",
   "root": "C:\\Users\\zycie\\CTOAi",
   "overall_status": "warn",
   "status_counts": {
@@ -15,10 +15,9 @@
       "status": "ok",
       "root": "C:/Users/zycie/CTOAi",
       "branch": "codex/control-center-guarded-actions",
-      "head": "e30dd487737181c9252e3d3787ca44837b1c1437",
-      "dirty_count": 274,
+      "head": "b48254bb2b47631cb997f33dec75fdc55b1de35a",
+      "dirty_count": 156,
       "dirty_sample": [
-        "M .env.example",
         "M .gitignore",
         "M .pre-commit-config.yaml",
         "M .vscode/launch.json",
@@ -42,7 +41,8 @@
         "M AI/generated/SECRET_GUARDRAIL.md",
         "M AI/generated/SYMBOL_MAP.md",
         "M AI/generated/manifest.json",
-        "M bot/action/movement.py"
+        "M ctoa.ps1",
+        "M data/bot.db"
       ],
       "remotes": [
         "origin\thttps://github.com/famatyyk/CTOAi.git (fetch)",

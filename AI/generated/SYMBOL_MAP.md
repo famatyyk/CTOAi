@@ -1,6 +1,6 @@
 # Engine Brain Symbol Map
 
-Generated at: `2026-07-11T03:56:45+00:00`
+Generated at: `2026-07-11T04:16:27+00:00`
 
 This is a lightweight map for navigation, not a full source dump.
 
@@ -6255,17 +6255,17 @@ This is a lightweight map for navigation, not a full source dump.
 
 ## `tests/unit/bot/test_ml_model.py`
 
-- L10: def make_state()
-- L17: def test_predict_returns_valid_action()
-- L23: def test_state_key_format()
-- L31: def test_update_q_changes_value()
-- L47: def test_compute_reward_kill()
-- L54: def test_compute_reward_hp_loss()
-- L61: def test_compute_reward_potion_waste()
-- L68: def test_compute_reward_loot_dead_target()
-- L74: def test_compute_reward_loot_without_target_is_penalized()
-- L80: def test_brain_uses_ml(monkeypatch)
-- L84: def fake_predict(state)
+- L12: def make_state()
+- L19: def test_predict_returns_valid_action()
+- L25: def test_state_key_format()
+- L33: def test_update_q_changes_value()
+- L49: def test_compute_reward_kill()
+- L56: def test_compute_reward_hp_loss()
+- L63: def test_compute_reward_potion_waste()
+- L70: def test_compute_reward_loot_dead_target()
+- L76: def test_compute_reward_loot_without_target_is_penalized()
+- L82: def test_brain_uses_ml(monkeypatch)
+- L86: def fake_predict(state)
 
 ## `tests/unit/bot/test_movement_follow.py`
 
