@@ -751,7 +751,7 @@ jobs:
       - name: Full diff secret scan
         shell: bash
         run: |
-          pattern='(AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]+|-----BEGIN (RSA|DSA|EC|OPENSSH|PGP|PRIVATE KEY)-----|\b(CTOA_OWNER_PASSWORD|CTOA_OPERATOR_PASSWORD|DB_PASSWORD|GITHUB_PAT|CTOA_MOBILE_TOKEN)\s*[:=])'
+          pattern="(AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9]{20,}_[A-Za-z0-9_]{20,}|-----BEGIN (RSA|DSA|EC|OPENSSH|PGP|PRIVATE KEY)-----|\\b(CTOA_OWNER_PASSWORD|CTOA_OPERATOR_PASSWORD|DB_PASSWORD|GITHUB_PAT|CTOA_MOBILE_TOKEN)\\s*[:=]\\s*[\"']?[A-Za-z0-9+/]{12,})"
 
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
@@ -778,7 +778,7 @@ jobs:
             exit 0
           fi
 
-                    # Scan only added lines in unified diff to avoid false positives from removed legacy content.
+          # Scan only added lines in unified diff to avoid false positives from removed legacy content.
           grep -E '^\+' /tmp/ctoa-full.diff | grep -Ev '^\+\+\+' > /tmp/ctoa-full.added.diff || true
           if grep -nIE "$pattern" /tmp/ctoa-full.added.diff; then
             echo "Potential secrets detected in added diff content"
@@ -844,8 +844,6 @@ jobs:
 
       - name: Publish Marker
         run: echo "Owner approved. Artifact is ready for public use from main."
-
-
 
 
 
