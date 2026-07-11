@@ -4,6 +4,8 @@ import { SAFETY_SYSTEM_MESSAGE } from "@/lib/chatPolicy"
 import { getServerApiUrl } from "@/lib/config"
 import { createIpRateLimiter, getClientIp } from "@/lib/rateLimit"
 import { assessControlCenterChatQuality } from "@/lib/chatQuality"
+import { validateSameOriginRequest } from "@/lib/requestOriginGuard"
+import { CTOA_TOKEN_COOKIE_NAME } from "@/lib/authCookies"
 
 export const maxDuration = 60
 export const dynamic = "force-dynamic"
@@ -13,6 +15,7 @@ const CHAT_MAX_MESSAGES = 40
 const CHAT_MAX_MESSAGE_CHARS = 4000
 const CHAT_RATE_LIMIT_PER_MIN = 24
 const CHAT_RATE_WINDOW_MS = 60_000
+const ALLOWED_MODEL_MODES = new Set(["auto", "small", "large"])
 
 const consumeChatRateWindow = createIpRateLimiter(CHAT_RATE_LIMIT_PER_MIN, CHAT_RATE_WINDOW_MS)
 
@@ -87,7 +90,40 @@ function prependSafetySystemMessage(messages: ChatMessage[]): ChatMessage[] {
   return [{ role: "system", content: SAFETY_SYSTEM_MESSAGE }, ...messages]
 }
 
+export function buildBackendChatPayload(body: unknown) {
+  const source = typeof body === "object" && body !== null ? (body as Record<string, unknown>) : {}
+  const payload: {
+    messages: ChatMessage[]
+    model?: string
+    route_mode?: string
+    temperature?: number
+  } = {
+    messages: prependSafetySystemMessage(normalizeMessages(source.messages)),
+  }
+
+  if (typeof source.model === "string" && ALLOWED_MODEL_MODES.has(source.model)) {
+    payload.model = source.model
+  }
+  if (typeof source.route_mode === "string" && ALLOWED_MODEL_MODES.has(source.route_mode)) {
+    payload.route_mode = source.route_mode
+  }
+  if (typeof source.temperature === "number" && Number.isFinite(source.temperature) && source.temperature >= 0 && source.temperature <= 1) {
+    payload.temperature = source.temperature
+  }
+
+  return payload
+}
+
+export function validateChatRequestOrigin(request: Request) {
+  return validateSameOriginRequest(request, { requestLabel: "chat" })
+}
+
 export async function POST(req: NextRequest) {
+  const originGate = validateChatRequestOrigin(req)
+  if (!originGate.ok) {
+    return NextResponse.json({ detail: originGate.error, code: "CROSS_SITE_REQUEST" }, { status: 403 })
+  }
+
   const ip = getClientIp(req)
   const gate = consumeChatRateWindow(ip)
   if (!gate.allowed) {
@@ -101,12 +137,9 @@ export async function POST(req: NextRequest) {
     )
   }
   const body = await req.json().catch(() => ({}))
-  const payload = {
-    ...(typeof body === "object" && body !== null ? body : {}),
-    messages: prependSafetySystemMessage(normalizeMessages((body as { messages?: unknown })?.messages)),
-  }
+  const payload = buildBackendChatPayload(body)
 
-  const token = (await cookies()).get("ctoa_token")?.value
+  const token = (await cookies()).get(CTOA_TOKEN_COOKIE_NAME)?.value
   const ctrl = new AbortController()
   let timeoutTriggered = false
   const timer = setTimeout(() => {

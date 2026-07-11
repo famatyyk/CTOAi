@@ -149,7 +149,7 @@ def main():
                 for method, wbits in methods:
                     try:
                         dec = zlib.decompress(payload) if wbits is None else zlib.decompress(payload, wbits=wbits)
-                    except Exception:
+                    except zlib.error:
                         continue
                     if not dec:
                         continue

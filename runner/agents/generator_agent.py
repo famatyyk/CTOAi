@@ -9,6 +9,7 @@ For each QUEUED module:
 
 Run: python3 -m runner.agents.generator_agent
 """
+
 from __future__ import annotations
 
 import json
@@ -16,7 +17,7 @@ import logging
 import os
 import re
 from datetime import datetime, timezone
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 from runner.agents import db
@@ -29,10 +30,47 @@ log = logging.getLogger("generator")
 
 OUTPUT_BASE = Path(os.environ.get("CTOA_GENERATED_DIR", "/opt/ctoa/generated"))
 MAX_RETRIES = 3
+_WINDOWS_UNSAFE_FILENAME_CHARS = set('<>:"|?*')
 
 
 def _now_iso() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+
+
+def _safe_output_path(base_dir: Path, output_file: str) -> Path:
+    raw = str(output_file or "").strip()
+    if not raw or "\\" in raw:
+        raise ValueError("Unsafe generated output path")
+
+    rel_path = PurePosixPath(raw)
+    if rel_path.is_absolute() or not rel_path.parts:
+        raise ValueError("Unsafe generated output path")
+    for part in rel_path.parts:
+        if (
+            part in {"", ".", ".."}
+            or any(ord(char) < 32 for char in part)
+            or any(char in _WINDOWS_UNSAFE_FILENAME_CHARS for char in part)
+        ):
+            raise ValueError("Unsafe generated output path")
+
+    if base_dir.exists() and base_dir.is_symlink():
+        raise ValueError("Generated output base must not be a symlink")
+
+    base_resolved = base_dir.resolve()
+    out_path = base_resolved.joinpath(*rel_path.parts)
+    resolved = out_path.resolve()
+    if resolved != base_resolved and base_resolved not in resolved.parents:
+        raise ValueError("Generated output path escapes output directory")
+    if out_path.exists() and out_path.is_symlink():
+        raise ValueError("Generated output path must not be a symlink")
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    return out_path
+
+
+def _safe_output_dir(base_dir: Path, relative_dir: str) -> Path:
+    path = _safe_output_path(base_dir, f"{relative_dir}/.ctoa-dir")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    return path.parent
 
 
 def _write_run_manifest(
@@ -41,9 +79,11 @@ def _write_run_manifest(
     failed: list[dict[str, Any]],
 ) -> None:
     run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    manifests_dir = OUTPUT_BASE / "manifests"
-    run_dir = manifests_dir / run_id
-    run_dir.mkdir(parents=True, exist_ok=True)
+    manifest_path = _safe_output_path(
+        OUTPUT_BASE,
+        f"manifests/{run_id}/manifest.json",
+    )
+    latest_path = _safe_output_path(OUTPUT_BASE, "manifests/latest.json")
 
     payload = {
         "schema_version": 1,
@@ -57,8 +97,9 @@ def _write_run_manifest(
         "failed": failed,
     }
 
-    manifest_path = run_dir / "manifest.json"
-    manifest_path.write_text(json.dumps(payload, ensure_ascii=True, indent=2), encoding="utf-8")
+    manifest_path.write_text(
+        json.dumps(payload, ensure_ascii=True, indent=2), encoding="utf-8"
+    )
 
     latest = {
         "run_id": run_id,
@@ -67,21 +108,28 @@ def _write_run_manifest(
         "failed_count": len(failed),
         "run_finished_at": payload["run_finished_at"],
     }
-    (manifests_dir / "latest.json").write_text(json.dumps(latest, ensure_ascii=True, indent=2), encoding="utf-8")
+    latest_path.write_text(
+        json.dumps(latest, ensure_ascii=True, indent=2), encoding="utf-8"
+    )
     log.info("Generator manifest written: %s", manifest_path)
 
 
 def _server_ctx(server_id: int) -> dict[str, Any]:
     """Build template context from game_data and server row."""
-    srv = db.query_one("SELECT url, name, game_type FROM servers WHERE id=%s", (server_id,)) or {}
+    srv = (
+        db.query_one(
+            "SELECT url, name, game_type FROM servers WHERE id=%s", (server_id,)
+        )
+        or {}
+    )
     ctx: dict[str, Any] = {
-        "server_url":  srv.get("url", ""),
+        "server_url": srv.get("url", ""),
         "server_name": srv.get("name", "Server"),
-        "game_type":   srv.get("game_type", "tibia-ot"),
-        "monsters":    [],
-        "items":       [],
-        "players":     [],
-        "highscores":  [],
+        "game_type": srv.get("game_type", "tibia-ot"),
+        "monsters": [],
+        "items": [],
+        "players": [],
+        "highscores": [],
         "server_info": {},
     }
     rows = db.query_all(
@@ -115,6 +163,7 @@ def _render(template_id: str, ctx: dict) -> str:
 
 
 # ─── Template functions ───────────────────────────────────────────────────────
+
 
 def _tpl_auto_heal(ctx: dict) -> str:
     return """-- auto_heal.lua  [CTOA Generated]
@@ -167,10 +216,15 @@ def _tpl_loot_filter(ctx: dict) -> str:
     items = ctx.get("items", [])
     item_names = [_safe_lua_string(i["name"]) for i in items[:20] if i.get("name")]
     if not item_names:
-        item_names = ["Gold Coin", "Platinum Coin", "Crystal Coin",
-                      "Dragon Scale Mail", "Demon Helmet"]
+        item_names = [
+            "Gold Coin",
+            "Platinum Coin",
+            "Crystal Coin",
+            "Dragon Scale Mail",
+            "Demon Helmet",
+        ]
     whitelist_lua = "\n".join(f'    "{n}",' for n in item_names)
-    return f"""-- loot_filter.lua  [CTOA Generated – server: {_safe_lua_string(ctx['server_name'])}]
+    return f"""-- loot_filter.lua  [CTOA Generated – server: {_safe_lua_string(ctx["server_name"])}]
 -- Picks up only whitelisted items.
 
 local WHITELIST = {{
@@ -384,7 +438,7 @@ def _tpl_target_blacklist(ctx: dict) -> str:
     if not blacklist:
         blacklist = ["Rat", "Cave Rat", "Bug"]
     entries = "\n".join(f'    ["{_safe_lua_string(n)}"] = true,' for n in blacklist)
-    return f"""-- target_blacklist.lua  [CTOA Generated – server: {_safe_lua_string(ctx['server_name'])}]
+    return f"""-- target_blacklist.lua  [CTOA Generated – server: {_safe_lua_string(ctx["server_name"])}]
 -- Skip monsters on the blacklist.
 
 local BLACKLIST = {{
@@ -435,12 +489,15 @@ register("onWalkFinished", onWalkFinished)
 def _tpl_server_blacklist(ctx: dict) -> str:
     monsters = ctx.get("monsters", [])
     # Blacklist weakest mobs (hp < 100) to save time
-    weak = sorted([m for m in monsters if isinstance(m.get("hp"), int) and m["hp"] < 100], key=lambda m: m["hp"])
+    weak = sorted(
+        [m for m in monsters if isinstance(m.get("hp"), int) and m["hp"] < 100],
+        key=lambda m: m["hp"],
+    )
     names = [m["name"] for m in weak[:15]]
     if not names:
         names = ["Rat", "Bug", "Rotworm"]
     entries = "\n".join(f'    ["{_safe_lua_string(n)}"] = true,' for n in names)
-    return f"""-- server_blacklist.lua  [CTOA Generated – {_safe_lua_string(ctx['server_name'])}]
+    return f"""-- server_blacklist.lua  [CTOA Generated – {_safe_lua_string(ctx["server_name"])}]
 -- Skips low-value monsters discovered from server API.
 
 local SKIP = {{
@@ -459,10 +516,12 @@ register("onTarget", onTarget)
 def _tpl_server_loot_map(ctx: dict) -> str:
     items = ctx.get("items", [])
     top = sorted(items, key=lambda i: i.get("weight", 0), reverse=True)[:20]
-    entries = "\n".join(f'    "{_safe_lua_string(i["name"])}",' for i in top if i.get("name"))
+    entries = "\n".join(
+        f'    "{_safe_lua_string(i["name"])}",' for i in top if i.get("name")
+    )
     if not entries:
         entries = '    "Gold Coin",'
-    return f"""-- server_loot_map.lua  [CTOA Generated – {_safe_lua_string(ctx['server_name'])}]
+    return f"""-- server_loot_map.lua  [CTOA Generated – {_safe_lua_string(ctx["server_name"])}]
 -- High-value item list from server API.
 
 local LOOT_LIST = {{
@@ -483,8 +542,8 @@ register("onItemFound", onItemFound)
 
 def _tpl_highscore_scout(ctx: dict) -> str:
     hs = ctx.get("highscores", [])[:5]
-    lines = "\n".join(f'    -- #{h["rank"]} {h["name"]} lv{h["level"]}' for h in hs)
-    return f"""-- highscore_scout.lua  [CTOA Generated – {_safe_lua_string(ctx['server_name'])}]
+    lines = "\n".join(f"    -- #{h['rank']} {h['name']} lv{h['level']}" for h in hs)
+    return f"""-- highscore_scout.lua  [CTOA Generated – {_safe_lua_string(ctx["server_name"])}]
 -- Tracks top players from server highscores.
 -- Snapshot at generation time:
 {lines or "    -- (no highscore data)"}
@@ -508,15 +567,15 @@ register("onSeeCreature", onSeeCreature)
 
 def _tpl_server_stats(ctx: dict) -> str:
     si = ctx.get("server_info", {})
-    return f"""-- server_stats.lua  [CTOA Generated – {_safe_lua_string(ctx['server_name'])}]
+    return f"""-- server_stats.lua  [CTOA Generated – {_safe_lua_string(ctx["server_name"])}]
 -- Shows server stats in console on login.
 
 local SERVER = {{
-    name    = "{_safe_lua_string(str(si.get('name', ctx['server_name'])))}",
-    pvpType = "{_safe_lua_string(str(si.get('pvp_type', 'unknown')))}",
-    expRate = {float(si.get('rate_exp', 1))},
-    maxLvl  = {int(si.get('max_level', 0))},
-    online  = {int(si.get('online', 0))},
+    name    = "{_safe_lua_string(str(si.get("name", ctx["server_name"])))}",
+    pvpType = "{_safe_lua_string(str(si.get("pvp_type", "unknown")))}",
+    expRate = {float(si.get("rate_exp", 1))},
+    maxLvl  = {int(si.get("max_level", 0))},
+    online  = {int(si.get("online", 0))},
 }}
 
 local function onLogin()
@@ -532,11 +591,11 @@ def _tpl_player_tracker(ctx: dict) -> str:
     players = ctx.get("players", [])[:10]
     names = [p["name"] for p in players if p.get("name")]
     entries = "\n".join(f'    "{_safe_lua_string(n)}",' for n in names)
-    return f"""-- player_tracker.lua  [CTOA Generated – {_safe_lua_string(ctx['server_name'])}]
+    return f"""-- player_tracker.lua  [CTOA Generated – {_safe_lua_string(ctx["server_name"])}]
 -- Alert when tracked players come online.
 
 local WATCH = {{
-{entries or '    -- no players loaded'}
+{entries or "    -- no players loaded"}
 }}
 
 local KNOWN_ONLINE = {{}}
@@ -1020,7 +1079,7 @@ def _tpl_respawn_optimizer(ctx: dict) -> str:
         f'    {{name="{_safe_lua_string(m["name"])}", exp={m.get("exp", 0)}, hp={m.get("hp", 0)}}},'
         for m in top_exp
     )
-    return f"""-- respawn_optimizer.lua  [CTOA Generated – {_safe_lua_string(ctx['server_name'])}]
+    return f"""-- respawn_optimizer.lua  [CTOA Generated – {_safe_lua_string(ctx["server_name"])}]
 -- Ranks available respawns by exp/hp ratio.
 
 local RESPAWNS = {{
@@ -1050,42 +1109,45 @@ register("onLogin", onLogin)
 
 # ─── Template dispatch table ──────────────────────────────────────────────────
 _TEMPLATES: dict[str, Any] = {
-    "auto_heal":         _tpl_auto_heal,
-    "auto_reconnect":    _tpl_auto_reconnect,
-    "loot_filter":       _tpl_loot_filter,
-    "cavebot_pathing":   _tpl_cavebot_pathing,
-    "target_selector":   _tpl_target_selector,
-    "anti_stuck":        _tpl_anti_stuck,
-    "alarmy":            _tpl_alarmy,
-    "healer_profiles":   _tpl_healer_profiles,
-    "flee_logic":        _tpl_flee_logic,
-    "target_blacklist":  _tpl_target_blacklist,
-    "auto_resupply":     _tpl_auto_resupply,
-    "server_blacklist":  _tpl_server_blacklist,
-    "server_loot_map":   _tpl_server_loot_map,
-    "highscore_scout":   _tpl_highscore_scout,
-    "server_stats_lua":  _tpl_server_stats,
-    "player_tracker":    _tpl_player_tracker,
+    "auto_heal": _tpl_auto_heal,
+    "auto_reconnect": _tpl_auto_reconnect,
+    "loot_filter": _tpl_loot_filter,
+    "cavebot_pathing": _tpl_cavebot_pathing,
+    "target_selector": _tpl_target_selector,
+    "anti_stuck": _tpl_anti_stuck,
+    "alarmy": _tpl_alarmy,
+    "healer_profiles": _tpl_healer_profiles,
+    "flee_logic": _tpl_flee_logic,
+    "target_blacklist": _tpl_target_blacklist,
+    "auto_resupply": _tpl_auto_resupply,
+    "server_blacklist": _tpl_server_blacklist,
+    "server_loot_map": _tpl_server_loot_map,
+    "highscore_scout": _tpl_highscore_scout,
+    "server_stats_lua": _tpl_server_stats,
+    "player_tracker": _tpl_player_tracker,
     "hunt_orchestrator": _tpl_hunt_orchestrator,
-    "economy_bot":       _tpl_economy_bot,
-    "pvp_guard":         _tpl_pvp_guard,
-    "depot_manager":     _tpl_depot_manager,
-    "gold_tracker":      _tpl_gold_tracker,
-    "bank_automation":   _tpl_bank_automation,
-    "human_delay":       _tpl_human_delay,
-    "break_scheduler":   _tpl_break_scheduler,
-    "login_randomizer":  _tpl_login_randomizer,
-    "rune_maker":        _tpl_rune_maker,
-    "combo_spells":      _tpl_combo_spells,
-    "area_spell_ctrl":   _tpl_area_spell_ctrl,
-    "exp_tracker":       _tpl_exp_tracker,
-    "session_log":       _tpl_session_log,
+    "economy_bot": _tpl_economy_bot,
+    "pvp_guard": _tpl_pvp_guard,
+    "depot_manager": _tpl_depot_manager,
+    "gold_tracker": _tpl_gold_tracker,
+    "bank_automation": _tpl_bank_automation,
+    "human_delay": _tpl_human_delay,
+    "break_scheduler": _tpl_break_scheduler,
+    "login_randomizer": _tpl_login_randomizer,
+    "rune_maker": _tpl_rune_maker,
+    "combo_spells": _tpl_combo_spells,
+    "area_spell_ctrl": _tpl_area_spell_ctrl,
+    "exp_tracker": _tpl_exp_tracker,
+    "session_log": _tpl_session_log,
     "respawn_optimizer": _tpl_respawn_optimizer,
 }
 
 
 def _slug(url: str) -> str:
-    return re.sub(r"[^a-z0-9]+", "_", url.lower().split("//")[-1])[:40]
+    return (
+        re.sub(r"[^a-z0-9]+", "_", url.lower().split("//")[-1]).strip("_")[:40]
+        or "server"
+    )
 
 
 def generate_module(mod: dict) -> dict[str, Any]:
@@ -1095,16 +1157,29 @@ def generate_module(mod: dict) -> dict[str, Any]:
     output_file = mod["output_file"] or f"{template}.lua"
     queued_at = str(mod.get("queued_at") or "")
 
-    srv = db.query_one("SELECT url FROM servers WHERE id=%s", (server_id,)) if server_id else None
+    srv = (
+        db.query_one("SELECT url FROM servers WHERE id=%s", (server_id,))
+        if server_id
+        else None
+    )
     slug = _slug(srv["url"]) if srv else "generic"
-    out_dir = OUTPUT_BASE / slug
-    out_dir.mkdir(parents=True, exist_ok=True)
-    out_path = out_dir / output_file
+    out_dir = _safe_output_dir(OUTPUT_BASE, slug)
+    out_path = _safe_output_path(out_dir, output_file)
 
-    ctx = _server_ctx(server_id) if server_id else {
-        "server_url": "", "server_name": "Generic", "game_type": "tibia-ot",
-        "monsters": [], "items": [], "players": [], "highscores": [], "server_info": {},
-    }
+    ctx = (
+        _server_ctx(server_id)
+        if server_id
+        else {
+            "server_url": "",
+            "server_name": "Generic",
+            "game_type": "tibia-ot",
+            "monsters": [],
+            "items": [],
+            "players": [],
+            "highscores": [],
+            "server_info": {},
+        }
+    )
 
     code = _render(template, ctx)
     out_path.write_text(code, encoding="utf-8")
@@ -1180,7 +1255,11 @@ def run_once() -> None:
                 (str(exc)[:2000], mod["task_id"]),
             )
 
-    _write_run_manifest(run_started_at=run_started_at, generated=generated_records, failed=failed_records)
+    _write_run_manifest(
+        run_started_at=run_started_at,
+        generated=generated_records,
+        failed=failed_records,
+    )
     db.log_run("generator_agent", "ok", f"generated {ok}, failed {err}")
 
 

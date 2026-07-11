@@ -111,7 +111,7 @@ for off in offsets:
                     dec = zlib.decompress(payload)
                 else:
                     dec = zlib.decompress(payload, wbits=wbits)
-            except Exception:
+            except zlib.error:
                 continue
             if not dec:
                 continue

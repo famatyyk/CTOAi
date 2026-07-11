@@ -2,12 +2,18 @@ from __future__ import annotations
 
 import argparse
 import json
-import subprocess
+import os
+import sys
 import time
 from pathlib import Path
 
-from x64dbg_automate import X64DbgClient
-from x64dbg_automate.events import EventType
+REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from runner import process_safety  # noqa: E402
+from x64dbg_automate import X64DbgClient  # noqa: E402
+from x64dbg_automate.events import EventType  # noqa: E402
 
 
 BREAKPOINTS = {
@@ -40,6 +46,25 @@ def _safe_read(client: X64DbgClient, address: int, size: int) -> str:
         return _hexdump(data)
     except Exception:
         return ""
+
+
+def _terminate_pid(pid: int) -> None:
+    taskkill = process_safety.resolve_executable(
+        "taskkill.exe",
+        env_var="CTOA_TASKKILL_BIN",
+        fallback_paths=(Path(os.environ.get("WINDIR", r"C:\Windows")) / "System32" / "taskkill.exe",),
+    )
+    process_safety.run_trusted(
+        [
+            taskkill,
+            "/PID",
+            str(pid),
+            "/F",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
 
 
 def _render_markdown(
@@ -152,32 +177,35 @@ def main() -> int:
     launched_pid: int | None = None
     launched_target_pid: int | None = None
 
-    client = X64DbgClient(args.x64dbg_path)
+    x64dbg_path = process_safety.resolve_executable(args.x64dbg_path)
+    binary_path = process_safety.resolve_executable(args.binary)
+
+    client = X64DbgClient(x64dbg_path)
     try:
         loaded = False
         try:
             # Preferred path: let the plugin issue `init` directly.
-            client.start_session(args.binary, current_dir=args.current_dir)
+            client.start_session(binary_path, current_dir=args.current_dir)
             loaded = True
         except Exception as exc:
             errors.append(f"primary load path failed: {exc}")
             # Fallback path: launch x64dbg with target file as CLI arg, then attach.
             # This avoids plugin-side init failures seen on some targets/builds.
-            proc = subprocess.Popen(
-                [args.x64dbg_path, args.binary],
+            proc = process_safety.start_trusted(
+                [x64dbg_path, binary_path],
                 cwd=args.current_dir,
             )
             launched_pid = proc.pid
             client.attach_session(launched_pid)
             if not client.wait_until_debugging(20):
                 # Fallback #2: start target normally and attach debugger by PID.
-                target_proc = subprocess.Popen(
-                    [args.binary],
+                target_proc = process_safety.start_trusted(
+                    [binary_path],
                     cwd=args.current_dir,
                 )
                 launched_target_pid = target_proc.pid
                 client.terminate_session()
-                client = X64DbgClient(args.x64dbg_path)
+                client = X64DbgClient(x64dbg_path)
                 client.start_session_attach(launched_target_pid)
             loaded = True
 
@@ -235,42 +263,22 @@ def main() -> int:
         try:
             if client.is_debugging():
                 client.unload_executable()
-        except Exception:
-            pass
+        except Exception as exc:
+            errors.append(f"cleanup unload failed: {exc}")
         try:
             client.terminate_session()
-        except Exception:
-            pass
+        except Exception as exc:
+            errors.append(f"cleanup terminate failed: {exc}")
         if launched_pid is not None:
             try:
-                subprocess.run(
-                    [
-                        "taskkill",
-                        "/PID",
-                        str(launched_pid),
-                        "/F",
-                    ],
-                    check=False,
-                    capture_output=True,
-                    text=True,
-                )
-            except Exception:
-                pass
+                _terminate_pid(launched_pid)
+            except Exception as exc:
+                errors.append(f"cleanup taskkill debugger pid {launched_pid} failed: {exc}")
         if launched_target_pid is not None:
             try:
-                subprocess.run(
-                    [
-                        "taskkill",
-                        "/PID",
-                        str(launched_target_pid),
-                        "/F",
-                    ],
-                    check=False,
-                    capture_output=True,
-                    text=True,
-                )
-            except Exception:
-                pass
+                _terminate_pid(launched_target_pid)
+            except Exception as exc:
+                errors.append(f"cleanup taskkill target pid {launched_target_pid} failed: {exc}")
 
     out_json.write_text(
         json.dumps(

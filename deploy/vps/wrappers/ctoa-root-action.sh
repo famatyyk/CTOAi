@@ -7,6 +7,30 @@ if [[ -z "$action" ]]; then
   exit 64
 fi
 
+cleanup_files=()
+cleanup() {
+  if (( ${#cleanup_files[@]} > 0 )); then
+    rm -f "${cleanup_files[@]}"
+  fi
+}
+trap cleanup EXIT
+
+PrintDashboardHealth() {
+  local health_out
+  local http_code
+
+  health_out="$(mktemp "${TMPDIR:-/tmp}/ctoa-health.XXXXXX")"
+  cleanup_files+=("$health_out")
+  http_code=$(curl -sS -o "$health_out" -w "%{http_code}" http://127.0.0.1:8787/api/health || true)
+  if [[ "$http_code" = "200" ]]; then
+    cat "$health_out"
+  elif [[ "$http_code" = "401" || "$http_code" = "403" ]]; then
+    echo "dashboard-health-auth-required"
+  else
+    echo "dashboard-health-unavailable (http=$http_code)"
+  fi
+}
+
 case "$action" in
   validate-services)
     systemctl start ctoa-runner.service
@@ -47,14 +71,7 @@ case "$action" in
     systemctl status ctoa-mobile-console.service --no-pager -l | sed -n '1,20p' || true
     echo
     echo "=== Dashboard health ==="
-    http_code=$(curl -sS -o /tmp/ctoa-health.out -w "%{http_code}" http://127.0.0.1:8787/api/health || true)
-    if [[ "$http_code" = "200" ]]; then
-      cat /tmp/ctoa-health.out
-    elif [[ "$http_code" = "401" || "$http_code" = "403" ]]; then
-      echo "dashboard-health-auth-required"
-    else
-      echo "dashboard-health-unavailable (http=$http_code)"
-    fi
+    PrintDashboardHealth
 
     echo
     echo "=== InspectReportEnv ==="
@@ -80,14 +97,7 @@ case "$action" in
     systemctl status ctoa-mobile-console.service --no-pager -l | sed -n '1,20p' || true
     echo
     echo "=== Dashboard health ==="
-    http_code=$(curl -sS -o /tmp/ctoa-health.out -w "%{http_code}" http://127.0.0.1:8787/api/health || true)
-    if [[ "$http_code" = "200" ]]; then
-      cat /tmp/ctoa-health.out
-    elif [[ "$http_code" = "401" || "$http_code" = "403" ]]; then
-      echo "dashboard-health-auth-required"
-    else
-      echo "dashboard-health-unavailable (http=$http_code)"
-    fi
+    PrintDashboardHealth
     ;;
 
   *)

@@ -1,7 +1,9 @@
+import json
 import importlib
 import tempfile
 from pathlib import Path
 
+import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from fastapi.testclient import TestClient
 
@@ -9,9 +11,9 @@ from fastapi.testclient import TestClient
 def _load_app_module(monkeypatch: MonkeyPatch, tmp_path: Path):
     monkeypatch.setenv("CTOA_MOBILE_TOKEN", "test-mobile-token")
     monkeypatch.setenv("CTOA_OWNER_USER", "CTO")
-    monkeypatch.setenv("CTOA_OWNER_PASSWORD", "ownerpass123")
+    monkeypatch.setenv("CTOA_OWNER_PASSWORD", "test-owner-pass")
     monkeypatch.setenv("CTOA_OPERATOR_USER", "ctoa-bot")
-    monkeypatch.setenv("CTOA_OPERATOR_PASSWORD", "jakpod22")
+    monkeypatch.setenv("CTOA_OPERATOR_PASSWORD", "test-operator-pass")
     monkeypatch.setenv("CTOA_ADMIN_SETTINGS_FILE", str(tmp_path / "admin-settings.json"))
     monkeypatch.setenv("CTOA_IDEA_PARKING_FILE", str(tmp_path / "idea-parking.json"))
     monkeypatch.setenv("CTOA_PRODUCT_STATE_DIR", str(tmp_path / ".ctoa-local"))
@@ -48,7 +50,7 @@ def test_ideas_crud_for_operator(monkeypatch: MonkeyPatch):
         module = _load_app_module(monkeypatch, Path(tmp))
         client = TestClient(module.app)
 
-        operator_token = _login_token(client, "ctoa-bot", "jakpod22")
+        operator_token = _login_token(client, "ctoa-bot", "test-operator-pass")
         headers = {"Authorization": f"Bearer {operator_token}"}
 
         create = client.post("/api/ideas", headers=headers, json={"text": "Nowy pomysl"})
@@ -82,3 +84,77 @@ def test_ideas_crud_for_operator(monkeypatch: MonkeyPatch):
         assert empty_listing.status_code == 200
         assert empty_listing.json()["count"] == 0
 
+
+def _make_file_symlink(link_path: Path, target_path: Path) -> None:
+    try:
+        link_path.symlink_to(target_path)
+    except (NotImplementedError, OSError) as exc:
+        pytest.skip(f"file symlinks unavailable: {exc}")
+
+
+def test_admin_settings_and_idea_parking_writes_are_atomic(monkeypatch: MonkeyPatch):
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+        tmp_path = Path(tmp)
+        module = _load_app_module(monkeypatch, tmp_path)
+
+        settings = module._write_admin_settings({"heroNote": "operator note"})
+        ideas = module._write_idea_parking([{"text": "persist me", "author": "cto"}])
+
+        settings_payload = json.loads(module.ADMIN_SETTINGS_FILE.read_text(encoding="utf-8"))
+        ideas_payload = json.loads(module.IDEA_PARKING_FILE.read_text(encoding="utf-8"))
+
+        assert settings["heroNote"] == "operator note"
+        assert settings_payload["heroNote"] == "operator note"
+        assert ideas[0]["text"] == "persist me"
+        assert ideas_payload[0]["text"] == "persist me"
+        assert not list(tmp_path.glob("*.tmp"))
+        assert not list(tmp_path.glob(".*.tmp"))
+
+
+def test_admin_settings_write_replaces_symlink_without_touching_target(
+    monkeypatch: MonkeyPatch,
+):
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+        tmp_path = Path(tmp)
+        module = _load_app_module(monkeypatch, tmp_path)
+        outside = tmp_path / "outside-admin-settings.json"
+        outside.write_text('{"heroNote": "outside"}\n', encoding="utf-8")
+        _make_file_symlink(module.ADMIN_SETTINGS_FILE, outside)
+
+        module._write_admin_settings({"heroNote": "operator note"})
+
+        assert json.loads(outside.read_text(encoding="utf-8"))["heroNote"] == "outside"
+        assert not module.ADMIN_SETTINGS_FILE.is_symlink()
+        assert (
+            json.loads(module.ADMIN_SETTINGS_FILE.read_text(encoding="utf-8"))["heroNote"]
+            == "operator note"
+        )
+
+
+def test_local_mobile_state_reads_are_bounded(monkeypatch: MonkeyPatch):
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+        tmp_path = Path(tmp)
+        module = _load_app_module(monkeypatch, tmp_path)
+        module.ADMIN_SETTINGS_FILE.write_text(
+            '{"heroNote":"' + ("x" * (module.ADMIN_SETTINGS_MAX_BYTES + 1)) + '"}',
+            encoding="utf-8",
+        )
+        module.IDEA_PARKING_FILE.write_text(
+            '[{"text":"' + ("x" * (module.IDEA_PARKING_MAX_BYTES + 1)) + '"}]',
+            encoding="utf-8",
+        )
+
+        assert module._read_admin_settings() == module._default_admin_settings()
+        assert module._read_idea_parking() == []
+
+
+def test_mobile_local_state_source_uses_atomic_bounded_json_helpers() -> None:
+    source = (Path(__file__).resolve().parents[1] / "mobile_console" / "app.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert "ADMIN_SETTINGS_FILE.write_text" not in source
+    assert "IDEA_PARKING_FILE.write_text" not in source
+    assert "_read_local_json_bounded" in source
+    assert "uuid.uuid4().hex" in source
+    assert "os.fsync(handle.fileno())" in source

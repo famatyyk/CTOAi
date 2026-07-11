@@ -4,7 +4,8 @@ param(
     [string]$Action,
     [string]$EnvFile = '.ctoa-local/azure-alerts.env',
     [int]$PollSeconds = 60,
-    [string]$SourceFile = 'runtime/ingest/azure-activity-log.json'
+    [string]$SourceFile = 'runtime/ingest/azure-activity-log.json',
+    [string]$ListenerHost = '127.0.0.1'
 )
 
 Set-StrictMode -Version Latest
@@ -51,6 +52,32 @@ function Resolve-PythonExecutable {
     throw 'Python executable not found. Install Python or create .venv/Scripts/python.exe'
 }
 
+function Test-LoopbackHost {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$HostName
+    )
+
+    $normalized = $HostName.Trim().ToLowerInvariant()
+    return ($normalized -in @('localhost', '127.0.0.1', '::1', '[::1]'))
+}
+
+function Assert-AzureListenerExposure {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$HostName
+    )
+
+    if ([string]::IsNullOrWhiteSpace($HostName)) {
+        throw 'ListenerHost is required.'
+    }
+
+    $ingestSecret = [Environment]::GetEnvironmentVariable('CTOA_AZURE_INGEST_SECRET', 'Process')
+    if (-not (Test-LoopbackHost -HostName $HostName) -and [string]::IsNullOrWhiteSpace($ingestSecret)) {
+        throw 'Refusing to expose Azure alert listener on a non-loopback host without CTOA_AZURE_INGEST_SECRET.'
+    }
+}
+
 function Invoke-AzureAlertsPipeline {
     param(
         [Parameter(Mandatory = $true)]
@@ -87,9 +114,10 @@ try {
             )
         }
         'listener' {
+            Assert-AzureListenerExposure -HostName $ListenerHost
             $python = Resolve-PythonExecutable
             & $python 'scripts/ops/azure_activity_webhook_listener.py' `
-                '--host' '0.0.0.0' `
+                '--host' $ListenerHost `
                 '--port' '8791' `
                 '--path' '/azure/activity' `
                 '--routes' 'console,jsonl,discord_webhook' `

@@ -65,7 +65,7 @@ for off in offsets:
         for method,w in [('zlib',None),('zlib_raw',-15),('zlib_gzip',31)]:
             try:
                 dec = zlib.decompress(payload) if w is None else zlib.decompress(payload,wbits=w)
-            except Exception:
+            except zlib.error:
                 continue
             if not dec:
                 continue

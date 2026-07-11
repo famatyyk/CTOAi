@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 from .clock import utc_now
+from .file_safety import resolve_output_dir, safe_child_path
 
 log = logging.getLogger("hybrid_bot.metrics")
 
@@ -102,8 +103,7 @@ class MetricsCollector:
             snapshot_interval_seconds: How often to snapshot metrics
             disable_file_output: If True, only collect in-memory (no file writes)
         """
-        self.output_dir = Path(output_dir)
-        self.output_dir.mkdir(parents=True, exist_ok=True)
+        self.output_dir = resolve_output_dir(output_dir)
         self.snapshot_interval = snapshot_interval_seconds
         self.disable_file_output = disable_file_output
 
@@ -111,10 +111,20 @@ class MetricsCollector:
         self.session_id = utc_now().strftime("%Y%m%d_%H%M%S")
         self.metrics_file: Optional[Path] = None
         if not disable_file_output:
-            self.metrics_file = self.output_dir / f"metrics_{self.session_id}.jsonl"
+            self.metrics_file = safe_child_path(
+                self.output_dir,
+                f"metrics_{self.session_id}.jsonl",
+                allowed_suffixes={".jsonl"},
+                create_parent=True,
+            )
         self.events_file: Optional[Path] = None
         if not disable_file_output:
-            self.events_file = self.output_dir / f"events_{self.session_id}.jsonl"
+            self.events_file = safe_child_path(
+                self.output_dir,
+                f"events_{self.session_id}.jsonl",
+                allowed_suffixes={".jsonl"},
+                create_parent=True,
+            )
 
         # In-memory snapshots
         self.snapshots: list[MetricsSnapshot] = []
@@ -185,7 +195,7 @@ class MetricsCollector:
     def _append_snapshot_to_file(self, snapshot: MetricsSnapshot) -> None:
         """Append snapshot as JSON line to metrics file."""
         try:
-            with open(self.metrics_file, "a") as f:
+            with self.metrics_file.open("a", encoding="utf-8") as f:
                 json.dump(asdict(snapshot), f)
                 f.write("\n")
         except IOError as e:
@@ -195,7 +205,7 @@ class MetricsCollector:
         if not self.events_file or self.disable_file_output:
             return
         try:
-            with open(self.events_file, "a", encoding="utf-8") as f:
+            with self.events_file.open("a", encoding="utf-8") as f:
                 json.dump(event, f, ensure_ascii=True, sort_keys=True)
                 f.write("\n")
         except IOError as e:
@@ -204,15 +214,19 @@ class MetricsCollector:
     def load_snapshots_from_file(self, filepath: Path | str) -> list[MetricsSnapshot]:
         """Load metrics snapshots from JSONL file."""
         snapshots = []
-        filepath = Path(filepath)
-
         try:
-            with open(filepath, "r") as f:
+            input_file = safe_child_path(
+                self.output_dir,
+                filepath,
+                allowed_suffixes={".jsonl"},
+                must_exist=True,
+            )
+            with input_file.open("r", encoding="utf-8") as f:
                 for line in f:
                     if line.strip():
                         data = json.loads(line)
                         snapshots.append(MetricsSnapshot(**data))
-        except (IOError, json.JSONDecodeError) as e:
+        except (OSError, ValueError, json.JSONDecodeError) as e:
             log.error(f"Failed to load metrics: {e}")
 
         return snapshots
@@ -237,7 +251,6 @@ class MetricsCollector:
         self.events.append(event)
         self._append_event_to_file(event)
         return event
-
     # ─── Analysis Functions ────────────────────────────────────────────────
 
     def get_session_summary(self) -> SessionMetrics:
@@ -327,9 +340,9 @@ class MetricsCollector:
 ║ PROFIT BALANCE
 ║   Total: {summary.total_balance_gold:.0f} gold
 ║   Rate: {summary.average_balance_per_hour:.0f} gold/hour
-║   Status: {'✅ PROFITABLE' if summary.total_balance_gold > 0 else '❌ LOSS'}
+║   Status: {"✅ PROFITABLE" if summary.total_balance_gold > 0 else "❌ LOSS"}
 ╠════════════════════════════════════════════════════════════╣
-║ LOCATIONS VISITED: {', '.join(summary.locations_visited)}
+║ LOCATIONS VISITED: {", ".join(summary.locations_visited)}
 ╚════════════════════════════════════════════════════════════╝
 """
         return report
@@ -338,9 +351,14 @@ class MetricsCollector:
         """Export snapshots as CSV for spreadsheet analysis."""
         import csv
 
-        output_file = Path(output_file)
         try:
-            with open(output_file, "w", newline="") as f:
+            output_path = safe_child_path(
+                self.output_dir,
+                output_file,
+                allowed_suffixes={".csv"},
+                create_parent=True,
+            )
+            with output_path.open("w", newline="", encoding="utf-8") as f:
                 if self.snapshots:
                     writer = csv.DictWriter(
                         f, fieldnames=asdict(self.snapshots[0]).keys()
@@ -348,8 +366,8 @@ class MetricsCollector:
                     writer.writeheader()
                     for snapshot in self.snapshots:
                         writer.writerow(asdict(snapshot))
-                    log.info(f"Exported metrics to {output_file}")
-        except IOError as e:
+                    log.info(f"Exported metrics to {output_path}")
+        except (OSError, ValueError) as e:
             log.warning(f"Failed to export CSV: {e}")
 
 
@@ -389,6 +407,8 @@ def compare_with_manual_metrics(
         "status": (
             "✅ EXCEEDS MANUAL"
             if xp_ratio >= 1.0
-            else "⚠️ BELOW MANUAL" if xp_ratio < 0.9 else "🟡 COMPARABLE"
+            else "⚠️ BELOW MANUAL"
+            if xp_ratio < 0.9
+            else "🟡 COMPARABLE"
         ),
     }

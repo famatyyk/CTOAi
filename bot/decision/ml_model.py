@@ -9,28 +9,37 @@ Action space: 10 actions
 Hyperparameters: α=0.10, γ=0.90, ε=0.15 (decays to 0.05 over 50k steps)
 Persistence: runtime state saved to runtime/state/qtable_a.json + runtime/state/qtable_b.json
 """
+
 from __future__ import annotations
 
 import json
 import logging
 import os
-import random
 from pathlib import Path
 
 from ..perception.state import GameState
+from ..safety import nonsecurity_random as random
 
 logger = logging.getLogger(__name__)
 
 ACTIONS = [
-    "attack", "flee_to_depot", "use_hp_potion", "use_mp_potion",
-    "loot", "select_target", "follow_route", "go_to_depot", "idle", "use_strong_hp_potion",
+    "attack",
+    "flee_to_depot",
+    "use_hp_potion",
+    "use_mp_potion",
+    "loot",
+    "select_target",
+    "follow_route",
+    "go_to_depot",
+    "idle",
+    "use_strong_hp_potion",
 ]
 
 # Hyperparameters
-ALPHA        = 0.10    # learning rate
-GAMMA        = 0.90    # discount factor
-EPSILON_MAX  = 0.15    # initial exploration rate
-EPSILON_MIN  = 0.05    # minimum exploration rate (after decay)
+ALPHA = 0.10  # learning rate
+GAMMA = 0.90  # discount factor
+EPSILON_MAX = 0.15  # initial exploration rate
+EPSILON_MIN = 0.05  # minimum exploration rate (after decay)
 EPSILON_DECAY_STEPS = 50_000
 
 _ROOT = Path(__file__).resolve().parents[2]
@@ -79,7 +88,12 @@ def _load() -> None:
             try:
                 with open(source, encoding="utf-8") as f:
                     table.update(json.load(f))
-                logger.info("DQL table %s loaded from %s: %d states", primary.name, source, len(table))
+                logger.info(
+                    "DQL table %s loaded from %s: %d states",
+                    primary.name,
+                    source,
+                    len(table),
+                )
             except Exception as e:
                 logger.warning("DQL table load failed (%s): %s", source.name, e)
 
@@ -87,8 +101,10 @@ def _load() -> None:
     if steps_source.exists():
         try:
             _step_count = json.loads(steps_source.read_text()).get("steps", 0)
-        except Exception:
-            pass
+        except (OSError, json.JSONDecodeError, TypeError, ValueError) as exc:
+            logger.warning(
+                "DQL step counter load failed (%s): %s", steps_source.name, exc
+            )
 
 
 def save_qtable() -> None:
@@ -99,8 +115,12 @@ def save_qtable() -> None:
             with open(path, "w", encoding="utf-8") as f:
                 json.dump(table, f)
         _STEPS_FILE.write_text(json.dumps({"steps": _step_count}))
-        logger.debug("DQL tables saved: A=%d B=%d states, step=%d",
-                     len(_Q_A), len(_Q_B), _step_count)
+        logger.debug(
+            "DQL tables saved: A=%d B=%d states, step=%d",
+            len(_Q_A),
+            len(_Q_B),
+            _step_count,
+        )
     except Exception as e:
         logger.warning("DQL save failed: %s", e)
 
@@ -112,10 +132,10 @@ def _epsilon() -> float:
 
 
 def _state_key(state: GameState) -> str:
-    hp_bucket  = min(4, int(state.hp_pct // 20))
-    mp_bucket  = min(4, int(state.mp_pct // 20))
+    hp_bucket = min(4, int(state.hp_pct // 20))
+    mp_bucket = min(4, int(state.mp_pct // 20))
     has_target = 1 if state.target_id else 0
-    bag_full   = 1 if state.bag_full else 0
+    bag_full = 1 if state.bag_full else 0
     level_tier = min(4, (state.level - 1) // 10)
     has_nearby = 1 if state.nearby_monsters else 0
     return f"{hp_bucket}_{mp_bucket}_{has_target}_{bag_full}_{level_tier}_{has_nearby}"
@@ -137,7 +157,7 @@ def predict_action(state: GameState) -> str:
     try:
         _step_count += 1
         if random.random() < _epsilon():
-            return random.choice(ACTIONS)   # explore
+            return random.choice(ACTIONS)  # explore
         key = _state_key(state)
         row_a = _row(_Q_A, key)
         row_b = _row(_Q_B, key)
@@ -149,8 +169,9 @@ def predict_action(state: GameState) -> str:
         return "idle"
 
 
-def update_q(state: GameState, action: str, reward: float,
-             next_state: GameState) -> None:
+def update_q(
+    state: GameState, action: str, reward: float, next_state: GameState
+) -> None:
     """Double Q-learning update — alternates which table updates each step.
 
     With prob 0.5:
@@ -160,12 +181,12 @@ def update_q(state: GameState, action: str, reward: float,
     """
     _load()
     try:
-        key      = _state_key(state)
+        key = _state_key(state)
         next_key = _state_key(next_state)
 
         if random.random() < 0.5:
             # Update A, evaluate with B
-            row_a      = _row(_Q_A, key)
+            row_a = _row(_Q_A, key)
             next_row_a = _row(_Q_A, next_key)
             next_row_b = _row(_Q_B, next_key)
             best_action_a = max(next_row_a, key=lambda a: next_row_a[a])
@@ -173,7 +194,7 @@ def update_q(state: GameState, action: str, reward: float,
             row_a[action] += ALPHA * (target - row_a.get(action, 0.0))
         else:
             # Update B, evaluate with A
-            row_b      = _row(_Q_B, key)
+            row_b = _row(_Q_B, key)
             next_row_b = _row(_Q_B, next_key)
             next_row_a = _row(_Q_A, next_key)
             best_action_b = max(next_row_b, key=lambda a: next_row_b[a])
@@ -188,8 +209,9 @@ def update_q(state: GameState, action: str, reward: float,
         logger.warning("DQL update_q failed: %s", e)
 
 
-def compute_reward(prev_state: GameState, action: str, result: str,
-                   curr_state: GameState) -> float:
+def compute_reward(
+    prev_state: GameState, action: str, result: str, curr_state: GameState
+) -> float:
     """Shape reward signal from state transition (unchanged from Sprint 5)."""
     reward = 0.0
 
@@ -197,12 +219,18 @@ def compute_reward(prev_state: GameState, action: str, result: str,
     if hp_delta < 0:
         reward += hp_delta * 0.5
 
-    if (prev_state.target_id is not None and prev_state.target_hp_pct > 0
-            and curr_state.target_hp_pct == 0):
+    if (
+        prev_state.target_id is not None
+        and prev_state.target_hp_pct > 0
+        and curr_state.target_hp_pct == 0
+    ):
         reward += 15.0
 
     if action == "loot" and result == "ok":
-        reward += 5.0
+        if prev_state.target_id is not None and prev_state.target_hp_pct == 0:
+            reward += 5.0
+        else:
+            reward -= 1.0
 
     if action in ("use_hp_potion", "use_strong_hp_potion") and prev_state.hp_pct > 70:
         reward -= 3.0
@@ -214,6 +242,3 @@ def compute_reward(prev_state: GameState, action: str, result: str,
         reward -= 0.5
 
     return reward
-
-
-

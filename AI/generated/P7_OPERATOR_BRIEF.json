@@ -1,0 +1,188 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-07-11T07:37:34+00:00",
+  "decision": "ready_for_p7_operator_workflow",
+  "status": "ready",
+  "hard_blockers": [],
+  "warnings": [
+    "brain_doctor",
+    "diff_check"
+  ],
+  "p6_readiness": {
+    "status": "ready_for_plugin_design",
+    "checks": 55,
+    "blocked_checks": []
+  },
+  "validation": {
+    "generated_at_utc": "2026-07-07T04:15:56+00:00",
+    "count": 16,
+    "failed": [],
+    "warn": [
+      "brain_doctor",
+      "diff_check"
+    ]
+  },
+  "operator_workflow": {
+    "status": "safe_write_ready",
+    "allowed_tool_count": 9,
+    "safe_write_tool_count": 5,
+    "blocked_action_classes": [
+      {
+        "risk_class": "guarded_write",
+        "blocked_until": "Risk metadata, confirmation modal, operator/owner role gate, and audit evidence exist."
+      },
+      {
+        "risk_class": "dangerous",
+        "blocked_until": "Owner-only typed confirmation, dry-run path, rollback evidence, and audit review exist."
+      },
+      {
+        "risk_class": "forbidden_ui",
+        "blocked_until": "Never expose through plugin or Control Center UI."
+      }
+    ],
+    "risk_model": "docs/CTOAI_COMMAND_RISK_MODEL.md"
+  },
+  "action_readiness": {
+    "status": "safe_write_tools_enabled",
+    "decision": "monitor_enabled_safe_write_tools",
+    "candidate_count": 5,
+    "audited_candidate_count": 5,
+    "enabled_dry_run_ready_count": 5,
+    "next_safe_mode": "design_next_p7_plugin_action",
+    "mcp_write_tool_count": 5,
+    "enabled_safe_write_tools": [
+      {
+        "action_id": "repo-hygiene-refresh",
+        "mcp_tool": "ctoai_repo_hygiene_refresh",
+        "risk_class": "safe_write"
+      },
+      {
+        "action_id": "api-cost-refresh",
+        "mcp_tool": "ctoai_api_cost_refresh",
+        "risk_class": "safe_write"
+      },
+      {
+        "action_id": "evidence-pack-refresh",
+        "mcp_tool": "ctoai_evidence_pack_refresh",
+        "risk_class": "safe_write"
+      },
+      {
+        "action_id": "engine-brain-refresh",
+        "mcp_tool": "ctoai_engine_brain_refresh",
+        "risk_class": "safe_write"
+      },
+      {
+        "action_id": "p7-cockpit-smoke-refresh",
+        "mcp_tool": "ctoai_p7_cockpit_smoke_refresh",
+        "risk_class": "safe_write"
+      }
+    ],
+    "next_safe_command": "Design the next P7 plugin action only after risk model coverage, audit logging, Control Center gates, and targeted MCP tests exist; keep deploy/live actions outside the plugin surface."
+  },
+  "safe_write_tool_design": {
+    "status": "implemented",
+    "decision": "ready_for_dry_run_operation",
+    "selected_action_id": "evidence-pack-refresh",
+    "proposed_mcp_tool": "ctoai_evidence_pack_refresh",
+    "risk_class": "safe_write",
+    "mode": "dry_run_first",
+    "mcp_enabled": true,
+    "next_safe_command": "Run ctoai_evidence_pack_refresh with dry_run=true and verify runtime/control-center/action-audit.jsonl before confirmed execution."
+  },
+  "cockpit_handoff": {
+    "status": "ready",
+    "ready": true,
+    "hard_blockers": [],
+    "warnings": [],
+    "p7_cockpit": {
+      "status": "safe_write_tools_enabled",
+      "enabled_safe_write_tool_count": 5,
+      "ready_audit_count": 5,
+      "audit_count": 5,
+      "mcp_write_tool_count": 5
+    },
+    "p7_cockpit_smoke": {
+      "status": "ready",
+      "checks": 14,
+      "passed": 14,
+      "blocked": 0,
+      "action_audit_line_count": 122,
+      "hard_blockers": [],
+      "warnings": [
+        "release_evidence_operator_brief_timestamp_mismatch"
+      ],
+      "source_path": "runtime\\control-center\\p7-cockpit-smoke.json"
+    },
+    "release_evidence": {
+      "status": "ready",
+      "file_count": 35,
+      "sprint_count": 7,
+      "latest_path": "releases\\evidence\\sprint-056\\CTOA-299.md",
+      "release_evidence_generated_at": "2026-07-10T23:35:40+00:00",
+      "otclient_helper_status": "promoted",
+      "otclient_helper_release_gate_status": "passed",
+      "otclient_helper_next_action": "Live promotion is complete for the current staged package.",
+      "otclient_helper_module_contract": {
+        "status": "passed",
+        "passed_count": 30,
+        "check_count": 30,
+        "forbidden_count": 0
+      },
+      "sandbox_smoke_queue": {
+        "status": "passed",
+        "runtime_status": "ready_for_readycheck",
+        "next_action": "Refresh local package and static gates",
+        "required_count": 3,
+        "queued_count": 0,
+        "first_step": "local_ready"
+      }
+    },
+    "action_audit": {
+      "status": "ready",
+      "record_count": 122,
+      "latest_at": "2026-07-08T00:12:34.350356Z",
+      "invalid_record_count": 0,
+      "risk_counts": {
+        "read_only": 2,
+        "safe_write": 120
+      }
+    },
+    "recommended_tool_order": [
+      "ctoai_engine_brain_brief",
+      "ctoai_control_center_cockpit",
+      "design next P7 plugin action"
+    ]
+  },
+  "roadmap_generation": {
+    "status": "ready",
+    "doc_sync_status": "passed",
+    "doc_sync_roadmap_plan3_status": "passed",
+    "doc_count": 3,
+    "ready_doc_count": 3,
+    "hard_blockers": [],
+    "docs": [
+      {
+        "name": "feature_roadmap",
+        "path": "AI/FEATURE_ROADMAP.md",
+        "status": "passed",
+        "missing_markers": []
+      },
+      {
+        "name": "engine_brain_status",
+        "path": "AI/ENGINE_BRAIN_STATUS.md",
+        "status": "passed",
+        "missing_markers": []
+      },
+      {
+        "name": "plan3_roadmap",
+        "path": "docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md",
+        "status": "passed",
+        "missing_markers": []
+      }
+    ],
+    "next_action": "Keep roadmap generation read-only in Control Center Evidence and plugin cockpit before adding any new MCP action.",
+    "blocked_until": "risk model coverage, audit replay evidence, Control Center gates, and tests exist before adding any new MCP write tool."
+  },
+  "next_safe_command": "Design the next P7 plugin action only after risk model coverage, audit logging, Control Center gates, and targeted MCP tests exist; keep deploy/live actions outside the plugin surface.",
+  "policy": "Generated operator brief. Only audited repo-hygiene, API-cost, evidence-pack, Engine Brain, and P7 cockpit-smoke safe_write tools are allowed; deploy/live actions remain blocked."
+}

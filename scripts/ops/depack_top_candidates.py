@@ -352,8 +352,8 @@ def main():
     render_md(summary, md_path)
 
     print(json.dumps(summary["summary"], indent=2))
-    print(f"json={str(json_path).replace('\\', '/')}")
-    print(f"md={str(md_path).replace('\\', '/')}")
+    print(f"json={json_path.as_posix()}")
+    print(f"md={md_path.as_posix()}")
 
 
 if __name__ == "__main__":

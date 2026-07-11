@@ -83,31 +83,212 @@ function Get-OptionalEnv([string]$Name, [string]$DefaultValue) {
     return $value
 }
 
+function Assert-VpsUser([string]$Value) {
+    if ([string]::IsNullOrWhiteSpace($Value)) {
+        throw 'CTOA_VPS_USER must not be empty.'
+    }
+    $user = $Value.Trim()
+    if ($user -ne $Value) {
+        throw 'CTOA_VPS_USER must not contain leading or trailing whitespace.'
+    }
+    if ($user -cnotmatch '^[a-z_][a-z0-9_-]{0,31}$') {
+        throw 'CTOA_VPS_USER contains unsupported characters.'
+    }
+    return $user
+}
+
+function Assert-VpsHost([string]$Value) {
+    if ([string]::IsNullOrWhiteSpace($Value)) {
+        throw 'CTOA_VPS_HOST must not be empty.'
+    }
+    $hostName = $Value.Trim()
+    if ($hostName -ne $Value) {
+        throw 'CTOA_VPS_HOST must not contain leading or trailing whitespace.'
+    }
+    if ($hostName.Length -gt 253) {
+        throw 'CTOA_VPS_HOST is too long.'
+    }
+    if ($hostName -match '[@/\s;`''"$|&<>(){}\\]') {
+        throw 'CTOA_VPS_HOST contains unsupported characters.'
+    }
+
+    if ($hostName.StartsWith('[') -or $hostName.EndsWith(']')) {
+        if (-not ($hostName.StartsWith('[') -and $hostName.EndsWith(']'))) {
+            throw 'CTOA_VPS_HOST must use bracketed IPv6 syntax.'
+        }
+        $innerHost = $hostName.Substring(1, $hostName.Length - 2)
+        $ipv6Address = $null
+        if (
+            (-not [System.Net.IPAddress]::TryParse($innerHost, [ref]$ipv6Address)) -or
+            ($ipv6Address.AddressFamily -ne [System.Net.Sockets.AddressFamily]::InterNetworkV6)
+        ) {
+            throw 'CTOA_VPS_HOST must use bracketed IPv6 syntax.'
+        }
+        return $hostName
+    }
+
+    if ($hostName -match '[:\[\]]') {
+        throw 'CTOA_VPS_HOST must be a hostname, IPv4 address, or bracketed IPv6 address.'
+    }
+
+    $ipAddress = $null
+    if ([System.Net.IPAddress]::TryParse($hostName, [ref]$ipAddress)) {
+        if ($ipAddress.AddressFamily -ne [System.Net.Sockets.AddressFamily]::InterNetwork) {
+            throw 'CTOA_VPS_HOST must be a hostname, IPv4 address, or bracketed IPv6 address.'
+        }
+        return $hostName
+    }
+
+    $labels = $hostName.Split('.')
+    foreach ($label in $labels) {
+        if ([string]::IsNullOrWhiteSpace($label) -or $label.Length -gt 63) {
+            throw 'CTOA_VPS_HOST contains an invalid DNS label.'
+        }
+        if ($label -notmatch '^[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?$') {
+            throw 'CTOA_VPS_HOST contains an invalid DNS label.'
+        }
+    }
+    return $hostName
+}
+
 function Resolve-ServerUrl([string]$Candidate, [string]$Fallback) {
     $u = $Candidate
     if (-not [string]::IsNullOrWhiteSpace($u)) {
-        $u = $u.Trim().Trim('"').Trim("'")
-        $parsed = $null
-        if ([Uri]::TryCreate($u, [UriKind]::Absolute, [ref]$parsed) -and ($parsed.Scheme -in @('http', 'https'))) {
-            return $u
+        try {
+            return Assert-CtoaServerUrl $u 'server URL'
+        }
+        catch {
+            Write-Warning 'Invalid server URL ignored; using fallback.'
         }
     }
-    return $Fallback
+    return (Assert-CtoaServerUrl $Fallback 'fallback server URL')
+}
+
+function Assert-RemoteScriptText([string]$Name, [string]$Value) {
+    if ([string]::IsNullOrWhiteSpace($Value)) {
+        throw "$Name must not be empty."
+    }
+    $safeValue = $Value.Trim()
+    if ($safeValue -ne $Value) {
+        throw "$Name must not contain leading or trailing whitespace."
+    }
+    if ($safeValue.Length -gt 2048) {
+        throw "$Name is too long."
+    }
+    if ($safeValue -match '[\r\n"''`$\\]') {
+        throw "$Name contains unsupported remote-script characters."
+    }
+    return $safeValue
+}
+
+function ConvertTo-RemoteSqlLiteral([string]$Name, [string]$Value) {
+    $safeValue = Assert-RemoteScriptText $Name $Value
+    return "'{0}'" -f ($safeValue -replace "'", "''")
+}
+
+function Assert-CtoaServerUrl([string]$Value, [string]$Name) {
+    $url = Assert-RemoteScriptText $Name $Value
+    if ($url -match '\s') {
+        throw "$Name must not contain whitespace."
+    }
+    $parsed = $null
+    if (-not [Uri]::TryCreate($url, [UriKind]::Absolute, [ref]$parsed)) {
+        throw "$Name must be an absolute HTTP(S) URL."
+    }
+    if ($parsed.Scheme -notin @('http', 'https')) {
+        throw "$Name must use http or https."
+    }
+    if (-not [string]::IsNullOrWhiteSpace($parsed.UserInfo)) {
+        throw "$Name must not include credentials."
+    }
+    if (-not [string]::IsNullOrWhiteSpace($parsed.Fragment)) {
+        throw "$Name must not include a fragment."
+    }
+    return $url
+}
+
+function Resolve-CtoaServerUrlList([string]$RawValue, [string]$Name) {
+    if ([string]::IsNullOrWhiteSpace($RawValue)) {
+        throw "$Name must contain at least one URL."
+    }
+    $urls = @($RawValue -split ',' | ForEach-Object { $_.Trim() } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+    if ($urls.Count -eq 0) {
+        throw "$Name must contain at least one URL."
+    }
+    return @($urls | ForEach-Object { Assert-CtoaServerUrl $_ $Name })
+}
+
+function Assert-CtoaServerStatus([string]$Value, [string]$Name) {
+    $status = (Assert-RemoteScriptText $Name $Value).ToUpperInvariant()
+    if ($status -notmatch '^[A-Z_]{2,32}$') {
+        throw "$Name contains unsupported status characters."
+    }
+    return $status
+}
+
+function Assert-CtoaServiceName([string]$Value) {
+    $service = Assert-RemoteScriptText 'ServiceName' $Value
+    if ($service -notmatch '^[A-Za-z0-9_.@-]+\.service$') {
+        throw 'ServiceName must be a safe systemd .service unit name.'
+    }
+    return $service
+}
+
+function Assert-CtoaGitRef([string]$Value, [switch]$AllowEmpty) {
+    if ([string]::IsNullOrWhiteSpace($Value)) {
+        if ($AllowEmpty) { return '' }
+        throw 'CTOA_GS_SOURCE_REF must not be empty.'
+    }
+    $ref = Assert-RemoteScriptText 'CTOA_GS_SOURCE_REF' $Value
+    if (
+        ($ref.StartsWith('-')) -or
+        ($ref.StartsWith('/')) -or
+        ($ref.EndsWith('/')) -or
+        ($ref.Contains('..')) -or
+        ($ref.Contains('@{')) -or
+        ($ref.Contains('//')) -or
+        ($ref.EndsWith('.lock')) -or
+        ($ref -notmatch '^[A-Za-z0-9._/-]{1,128}$')
+    ) {
+        throw 'CTOA_GS_SOURCE_REF contains unsupported ref syntax.'
+    }
+    return $ref
+}
+
+function Assert-CtoaIntegerRange([string]$Name, [string]$Value, [int]$Min, [int]$Max) {
+    $parsed = 0
+    if (-not [int]::TryParse($Value, [ref]$parsed)) {
+        throw "$Name must be an integer."
+    }
+    if (($parsed -lt $Min) -or ($parsed -gt $Max)) {
+        throw "$Name must be between $Min and $Max."
+    }
+    return [string]$parsed
+}
+
+function Assert-CtoaUtcTime([string]$Value) {
+    $timeValue = Assert-RemoteScriptText 'CTOA_RESEED_C_DAILY_UTC' $Value
+    if ($timeValue -notmatch '^([01][0-9]|2[0-3]):[0-5][0-9]$') {
+        throw 'CTOA_RESEED_C_DAILY_UTC must use HH:mm UTC format.'
+    }
+    return $timeValue
 }
 
 function Get-RemoteTarget() {
     $h = [Environment]::GetEnvironmentVariable('CTOA_VPS_HOST')
     if ([string]::IsNullOrWhiteSpace($h)) { $h = '116.202.96.250' }
+    $h = Assert-VpsHost $h
     $u = [Environment]::GetEnvironmentVariable('CTOA_VPS_USER')
     if ([string]::IsNullOrWhiteSpace($u)) { $u = 'ctoa-admin' }
+    $u = Assert-VpsUser $u
     return "$u@$h"
 }
 
 function Get-KeyPath() {
     $k = [Environment]::GetEnvironmentVariable('CTOA_VPS_KEY_PATH')
     if ([string]::IsNullOrWhiteSpace($k)) { $k = Join-Path $env:USERPROFILE '.ssh\ctoa_vps_auto_ed25519' }
-    if (-not (Test-Path $k)) { throw "SSH key not found: $k" }
-    return $k
+    if (-not (Test-Path -LiteralPath $k -PathType Leaf)) { throw "SSH key not found: $k" }
+    return (Resolve-Path -LiteralPath $k).Path
 }
 
 function Get-LocalRootWrapperScript() {
@@ -123,14 +304,14 @@ function Invoke-RemoteRootWrapper() {
     $t = Get-RemoteTarget
     $k = Get-KeyPath
     $localWrapper = Get-LocalRootWrapperScript
-    $remoteTmp = '/tmp/ctoa-root-action.sh'
+    $remoteTmp = "/tmp/ctoa-root-action-$([Guid]::NewGuid().ToString('N')).sh"
     $remoteDst = '/opt/ctoa/scripts/ops/ctoa-root-action.sh'
 
     Invoke-WithSshRetry -Label 'CopyRootWrapper' -Operation {
         & scp -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new -i $k $localWrapper "${t}:${remoteTmp}"
     }
 
-    $installCmd = "sudo -n /usr/bin/install -m 750 $remoteTmp $remoteDst; sudo -n /usr/bin/chown root:root $remoteDst; sudo -n /usr/bin/sed -i 's/\r$//' $remoteDst"
+    $installCmd = "set -e; trap 'rm -f $remoteTmp' EXIT; sudo -n /usr/bin/install -m 750 $remoteTmp $remoteDst; sudo -n /usr/bin/chown root:root $remoteDst; sudo -n /usr/bin/sed -i 's/\r$//' $remoteDst"
     Invoke-WithSshRetry -Label 'InstallRootWrapper' -Operation {
         & ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new -i $k $t $installCmd
     }
@@ -189,6 +370,177 @@ function Invoke-SshScript([string]$Script) {
 
     Invoke-WithSshRetry -Label 'Invoke-SshScript' -Operation {
         & ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new -i $k $t $remoteCmd
+    }
+}
+
+function Assert-GithubPatValue([string]$Value) {
+    if ([string]::IsNullOrWhiteSpace($Value)) {
+        throw 'CTOA_GITHUB_PAT must not be empty.'
+    }
+    if ($Value -match "[`r`n]") {
+        throw 'CTOA_GITHUB_PAT must not contain newlines.'
+    }
+    if ($Value -notmatch '^[A-Za-z0-9_]{20,512}$') {
+        throw 'CTOA_GITHUB_PAT contains unsupported characters.'
+    }
+    return $Value
+}
+
+function Assert-EnvSecretValue([string]$Name, [string]$Value) {
+    if ([string]::IsNullOrWhiteSpace($Value)) {
+        throw "$Name must not be empty."
+    }
+    if ($Value -match "[`r`n]") {
+        throw "$Name must not contain newlines."
+    }
+    if ($Value -match '[\s"''`$\\]') {
+        throw "$Name contains unsupported characters for .env transfer."
+    }
+    if ($Value.Length -gt 4096) {
+        throw "$Name is too long."
+    }
+    return $Value
+}
+
+function Write-RemoteGithubPat([string]$Pat) {
+    $safePat = Assert-GithubPatValue $Pat
+    $t = Get-RemoteTarget
+    $k = Get-KeyPath
+    $localTmp = Join-Path ([System.IO.Path]::GetTempPath()) ("ctoa-github-pat-{0}.env" -f ([Guid]::NewGuid().ToString('N')))
+    $remoteTmp = "/tmp/ctoa-github-pat-$([Guid]::NewGuid().ToString('N')).env"
+
+    try {
+        Set-Content -LiteralPath $localTmp -Value ("GITHUB_PAT={0}" -f $safePat) -Encoding ASCII
+        Invoke-WithSshRetry -Label 'CopyGithubPat' -Operation {
+            & scp -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new -i $k $localTmp "${t}:${remoteTmp}"
+        }
+
+        $remoteScript = @"
+set -euo pipefail
+remote_pat_file='$remoteTmp'
+if [ ! -s "`$remote_pat_file" ]; then
+  echo 'PAT file missing'
+  exit 1
+fi
+tmp="`$(mktemp)"
+touch /opt/ctoa/.env
+grep -v '^GITHUB_PAT=' /opt/ctoa/.env > "`$tmp" || true
+cat "`$remote_pat_file" >> "`$tmp"
+install -m 600 "`$tmp" /opt/ctoa/.env
+rm -f "`$tmp" "`$remote_pat_file"
+echo PAT-written
+"@
+        Invoke-SshCommand $remoteScript
+    }
+    catch {
+        try {
+            Invoke-SshCommand "rm -f '$remoteTmp'"
+        }
+        catch {
+            Write-Warning "Failed to remove remote PAT temp file: $remoteTmp"
+        }
+        throw
+    }
+    finally {
+        if (Test-Path -LiteralPath $localTmp) {
+            Remove-Item -LiteralPath $localTmp -Force
+        }
+    }
+}
+
+function Write-RemoteGsEnvKeys([string]$OpenAiKey, [string]$GithubPat) {
+    $safeOpenAi = Assert-EnvSecretValue 'CTOA_OPENAI_API_KEY' $OpenAiKey
+    $lines = @("OPENAI_API_KEY={0}" -f $safeOpenAi)
+    if (-not [string]::IsNullOrWhiteSpace($GithubPat)) {
+        $lines += ("GITHUB_PAT={0}" -f (Assert-GithubPatValue $GithubPat))
+    }
+
+    $t = Get-RemoteTarget
+    $k = Get-KeyPath
+    $localTmp = Join-Path ([System.IO.Path]::GetTempPath()) ("ctoa-gs-env-{0}.env" -f ([Guid]::NewGuid().ToString('N')))
+    $remoteTmp = "/tmp/ctoa-gs-env-$([Guid]::NewGuid().ToString('N')).env"
+
+    try {
+        Set-Content -LiteralPath $localTmp -Value $lines -Encoding ASCII
+        Invoke-WithSshRetry -Label 'CopyGsEnvKeys' -Operation {
+            & scp -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new -i $k $localTmp "${t}:${remoteTmp}"
+        }
+
+        $remoteScript = @"
+set -euo pipefail
+ENV_FILE="/opt/ctoa/.env"
+remote_env_file='$remoteTmp'
+
+if [ ! -s "`$remote_env_file" ]; then
+  echo '[EnsureGsEnvKeys] env temp file missing'
+  exit 1
+fi
+
+mkdir -p /opt/ctoa
+touch "`$ENV_FILE"
+chmod 600 "`$ENV_FILE" 2>/dev/null || true
+
+upsert_if_missing_or_empty() {
+    local key="`$1"
+    local value="`$2"
+    local tmp
+
+    case "`$key" in
+      OPENAI_API_KEY|GITHUB_PAT) ;;
+      *)
+        echo "[EnsureGsEnvKeys] unsupported key: `$key"
+        return 1
+        ;;
+    esac
+
+    if grep -q "^`$key=" "`$ENV_FILE"; then
+        current="`$(grep "^`$key=" "`$ENV_FILE" | head -n 1 | cut -d'=' -f2-)"
+        if [ -n "`$current" ]; then
+            echo "[EnsureGsEnvKeys] `$key already set."
+            return 0
+        fi
+
+        tmp="`$(mktemp)"
+        awk -v key="`$key" -v value="`$value" '
+            BEGIN { done = 0 }
+            index(`$0, key "=") == 1 { print key "=" value; done = 1; next }
+            { print }
+            END { if (!done) print key "=" value }
+        ' "`$ENV_FILE" > "`$tmp"
+        install -m 600 "`$tmp" "`$ENV_FILE"
+        rm -f "`$tmp"
+        echo "[EnsureGsEnvKeys] `$key updated from empty value."
+        return 0
+    fi
+
+    printf '%s=%s\n' "`$key" "`$value" >> "`$ENV_FILE"
+    chmod 600 "`$ENV_FILE" 2>/dev/null || true
+    echo "[EnsureGsEnvKeys] `$key added."
+}
+
+while IFS='=' read -r key value; do
+    [ -n "`$key" ] || continue
+    upsert_if_missing_or_empty "`$key" "`$value"
+done < "`$remote_env_file"
+
+rm -f "`$remote_env_file"
+echo "[EnsureGsEnvKeys] Completed key setup."
+"@
+        Invoke-SshCommand $remoteScript
+    }
+    catch {
+        try {
+            Invoke-SshCommand "rm -f '$remoteTmp'"
+        }
+        catch {
+            Write-Warning "Failed to remove remote GS env temp file: $remoteTmp"
+        }
+        throw
+    }
+    finally {
+        if (Test-Path -LiteralPath $localTmp) {
+            Remove-Item -LiteralPath $localTmp -Force
+        }
     }
 }
 
@@ -399,13 +751,13 @@ sudo -u postgres psql -d ctoa -c "SELECT id, url, status, COALESCE(game_type,'')
         $whereParts = @()
 
         if (-not [string]::IsNullOrWhiteSpace($filterUrl)) {
-            $safeFilterUrl = $filterUrl -replace "'", "''"
-            $whereParts += "s.url = '$safeFilterUrl'"
+            $safeFilterUrl = ConvertTo-RemoteSqlLiteral 'CTOA_FILTER_URL' (Assert-CtoaServerUrl $filterUrl 'CTOA_FILTER_URL')
+            $whereParts += "s.url = $safeFilterUrl"
         }
 
         if (-not [string]::IsNullOrWhiteSpace($filterStatus)) {
-            $safeFilterStatus = $filterStatus.ToUpperInvariant() -replace "'", "''"
-            $whereParts += "s.status = '$safeFilterStatus'"
+            $safeFilterStatus = ConvertTo-RemoteSqlLiteral 'CTOA_FILTER_STATUS' (Assert-CtoaServerStatus $filterStatus 'CTOA_FILTER_STATUS')
+            $whereParts += "s.status = $safeFilterStatus"
         }
 
         if ($whereParts.Count -gt 0) {
@@ -708,7 +1060,7 @@ done
         if (-not $svc.EndsWith('.service')) {
             $svc = "$svc.service"
         }
-        $svc = $svc -replace "'", "''"
+        $svc = Assert-CtoaServiceName $svc
 
         Invoke-SshScript @"
 set -e
@@ -721,9 +1073,9 @@ sleep 2
     systemctl status "`$SVC" --no-pager -l | sed -n '1,40p' || true
     journalctl -u "`$SVC" -n 30 --no-pager || true
 "@
-    }
+        }
         'WatchScoutingUntilSettled' {
-                $watchUrl = Get-RequiredEnv 'CTOA_WATCH_URL'
+                $watchUrl = Assert-CtoaServerUrl (Get-RequiredEnv 'CTOA_WATCH_URL') 'CTOA_WATCH_URL'
                 $intervalSeconds = [int](Get-OptionalEnv 'CTOA_WATCH_INTERVAL_SECONDS' '180')
                 $maxChecks = [int](Get-OptionalEnv 'CTOA_WATCH_MAX_CHECKS' '12')
 
@@ -734,7 +1086,7 @@ sleep 2
                         throw 'CTOA_WATCH_MAX_CHECKS must be >= 1'
                 }
 
-                $safeUrl = $watchUrl -replace "'", "''"
+                $safeUrl = ConvertTo-RemoteSqlLiteral 'CTOA_WATCH_URL' $watchUrl
                 Write-Host "[WatchScoutingUntilSettled] url=$watchUrl interval=${intervalSeconds}s max_checks=$maxChecks"
 
                 for ($i = 1; $i -le $maxChecks; $i++) {
@@ -748,7 +1100,7 @@ systemctl start ctoa-report.service || true
                         Write-Host "[WatchScoutingUntilSettled] checking status for $watchUrl"
                         $status = Invoke-SshScript @"
 set -e
-sudo -u postgres psql -d ctoa -At -c "SELECT status FROM servers WHERE url='$safeUrl' ORDER BY updated_at DESC LIMIT 1;"
+sudo -u postgres psql -d ctoa -At -c "SELECT status FROM servers WHERE url=$safeUrl ORDER BY updated_at DESC LIMIT 1;"
 "@
 
                         $status = ($status | Out-String).Trim().ToUpperInvariant()
@@ -761,7 +1113,7 @@ sudo -u postgres psql -d ctoa -At -c "SELECT status FROM servers WHERE url='$saf
                                 Write-Host "[WatchScoutingUntilSettled] settled with status=$status"
                                 Invoke-SshScript @"
 set -e
-sudo -u postgres psql -d ctoa -c "SELECT id, url, status, COALESCE(game_type,'') AS game_type, LEFT(COALESCE(scout_error,''), 160) AS scout_error, to_char(updated_at, 'YYYY-MM-DD HH24:MI:SS') AS updated_at FROM servers WHERE url='$safeUrl' ORDER BY updated_at DESC LIMIT 1;"
+sudo -u postgres psql -d ctoa -c "SELECT id, url, status, COALESCE(game_type,'') AS game_type, LEFT(COALESCE(scout_error,''), 160) AS scout_error, to_char(updated_at, 'YYYY-MM-DD HH24:MI:SS') AS updated_at FROM servers WHERE url=$safeUrl ORDER BY updated_at DESC LIMIT 1;"
 "@
                                 return
                         }
@@ -774,7 +1126,7 @@ sudo -u postgres psql -d ctoa -c "SELECT id, url, status, COALESCE(game_type,'')
                 Write-Host "[WatchScoutingUntilSettled] timeout reached, still SCOUTING after $maxChecks checks"
                 Invoke-SshScript @"
 set -e
-sudo -u postgres psql -d ctoa -c "SELECT id, url, status, COALESCE(game_type,'') AS game_type, LEFT(COALESCE(scout_error,''), 160) AS scout_error, to_char(updated_at, 'YYYY-MM-DD HH24:MI:SS') AS updated_at FROM servers WHERE url='$safeUrl' ORDER BY updated_at DESC LIMIT 1;"
+sudo -u postgres psql -d ctoa -c "SELECT id, url, status, COALESCE(game_type,'') AS game_type, LEFT(COALESCE(scout_error,''), 160) AS scout_error, to_char(updated_at, 'YYYY-MM-DD HH24:MI:SS') AS updated_at FROM servers WHERE url=$safeUrl ORDER BY updated_at DESC LIMIT 1;"
 "@
         }
         'ApplyScoutingTimeoutPolicy' {
@@ -810,14 +1162,10 @@ fi
 "@
         }
         'InstallTieredReseedTimers' {
-                $tierAbUrls = Get-OptionalEnv 'CTOA_RESEED_TIER_AB_URLS' 'https://tibiantis.online,https://tibia.com'
-                $tierCUrls = Get-OptionalEnv 'CTOA_RESEED_TIER_C_URLS' 'https://mythibia.online,https://otland.net'
-                $abIntervalMinutes = [int](Get-OptionalEnv 'CTOA_RESEED_AB_INTERVAL_MINUTES' '120')
-                $cDailyTimeUtc = Get-OptionalEnv 'CTOA_RESEED_C_DAILY_UTC' '03:15'
-
-                if ($abIntervalMinutes -lt 10) {
-                        throw 'CTOA_RESEED_AB_INTERVAL_MINUTES must be >= 10'
-                }
+                $tierAbUrls = (Resolve-CtoaServerUrlList (Get-OptionalEnv 'CTOA_RESEED_TIER_AB_URLS' 'https://tibiantis.online,https://tibia.com') 'CTOA_RESEED_TIER_AB_URLS') -join ','
+                $tierCUrls = (Resolve-CtoaServerUrlList (Get-OptionalEnv 'CTOA_RESEED_TIER_C_URLS' 'https://mythibia.online,https://otland.net') 'CTOA_RESEED_TIER_C_URLS') -join ','
+                $abIntervalMinutes = [int](Assert-CtoaIntegerRange 'CTOA_RESEED_AB_INTERVAL_MINUTES' (Get-OptionalEnv 'CTOA_RESEED_AB_INTERVAL_MINUTES' '120') 10 10080)
+                $cDailyTimeUtc = Assert-CtoaUtcTime (Get-OptionalEnv 'CTOA_RESEED_C_DAILY_UTC' '03:15')
 
                 Write-Host "[InstallTieredReseedTimers] TierAB=$tierAbUrls"
                 Write-Host "[InstallTieredReseedTimers] TierC=$tierCUrls"
@@ -845,6 +1193,32 @@ if [ -f /opt/ctoa/.env ]; then
   set -a; . /opt/ctoa/.env; set +a
 fi
 
+is_safe_reseed_url() {
+  local candidate="$1"
+  case "$candidate" in
+    http://*|https://*) ;;
+    *) return 1 ;;
+  esac
+  [ "${#candidate}" -le 2048 ] || return 1
+  [[ "$candidate" != *"'"* ]] || return 1
+  [[ "$candidate" != *'"'* ]] || return 1
+  [[ "$candidate" != *'$'* ]] || return 1
+  [[ "$candidate" != *'`'* ]] || return 1
+  [[ "$candidate" != *\\* ]] || return 1
+  [[ "$candidate" != *[[:space:]]* ]] || return 1
+}
+
+is_safe_reseed_hours() {
+  local value="$1"
+  [[ "$value" =~ ^[0-9]+$ ]] || return 1
+  [ "$value" -ge 1 ] && [ "$value" -le 720 ]
+}
+
+sql_literal() {
+  local value="$1"
+  printf "'%s'" "$value"
+}
+
 case "${TIER^^}" in
   AB)
     URLS="${CTOA_RESEED_TIER_AB_URLS:-https://tibiantis.online,https://tibia.com}"
@@ -860,12 +1234,23 @@ case "${TIER^^}" in
     ;;
 esac
 
+if ! is_safe_reseed_hours "$ERROR_MIN_AGE_HOURS"; then
+  echo "[reseed-tier][$TIER] invalid ERROR_MIN_AGE_HOURS: $ERROR_MIN_AGE_HOURS"
+  exit 1
+fi
+
 IFS=',' read -r -a arr <<< "$URLS"
 for raw in "${arr[@]}"; do
   url="$(echo "$raw" | xargs)"
   [ -n "$url" ] || continue
 
-    row="$(sudo -u postgres psql -d ctoa -At -F '|' -c "SELECT status, EXTRACT(EPOCH FROM (now() - updated_at))/3600.0 AS age_hours FROM servers WHERE url='$url' ORDER BY updated_at DESC LIMIT 1;")"
+    if ! is_safe_reseed_url "$url"; then
+        echo "[reseed-tier][$TIER] skip unsafe url: $url"
+        continue
+    fi
+
+    url_literal="$(sql_literal "$url")"
+    row="$(sudo -u postgres psql -d ctoa -At -F '|' -c "SELECT status, EXTRACT(EPOCH FROM (now() - updated_at))/3600.0 AS age_hours FROM servers WHERE url=${url_literal} ORDER BY updated_at DESC LIMIT 1;")"
 
     if [ -z "$row" ]; then
         echo "[reseed-tier][$TIER] skip (not-found): $url"
@@ -886,7 +1271,7 @@ for raw in "${arr[@]}"; do
         continue
     fi
 
-    sudo -u postgres psql -d ctoa -c "UPDATE servers SET status='NEW', updated_at=now(), scout_error=trim(both ' ' from concat_ws(' | ', nullif(COALESCE(scout_error,''),''), '[tier-reseed ${TIER}] auto retry after stale ERROR (${ERROR_MIN_AGE_HOURS}h+)')) WHERE url='$url';" >/dev/null
+    sudo -u postgres psql -d ctoa -c "UPDATE servers SET status='NEW', updated_at=now(), scout_error=trim(both ' ' from concat_ws(' | ', nullif(COALESCE(scout_error,''),''), '[tier-reseed ${TIER}] auto retry after stale ERROR (${ERROR_MIN_AGE_HOURS}h+)')) WHERE url=${url_literal};" >/dev/null
     echo "[reseed-tier][$TIER] queued stale ERROR: $url (age=${age_hours}h)"
 done
 
@@ -895,25 +1280,25 @@ SH
 
 chmod +x /opt/ctoa/scripts/ops/reseed-tier.sh
 
-grep -v '^CTOA_RESEED_TIER_AB_URLS=' /opt/ctoa/.env > /opt/ctoa/.env.tmp || true
-mv /opt/ctoa/.env.tmp /opt/ctoa/.env
-echo "CTOA_RESEED_TIER_AB_URLS=__TIER_AB_URLS__" >> /opt/ctoa/.env
+update_env_key() {
+    local key="$1"
+    local value="$2"
+    local tmp
 
-grep -v '^CTOA_RESEED_TIER_C_URLS=' /opt/ctoa/.env > /opt/ctoa/.env.tmp || true
-mv /opt/ctoa/.env.tmp /opt/ctoa/.env
-echo "CTOA_RESEED_TIER_C_URLS=__TIER_C_URLS__" >> /opt/ctoa/.env
+    touch /opt/ctoa/.env
+    chmod 600 /opt/ctoa/.env 2>/dev/null || true
+    tmp="$(mktemp /opt/ctoa/.env.XXXXXX)"
+    grep -v "^${key}=" /opt/ctoa/.env > "$tmp" || true
+    printf '%s=%s\n' "$key" "$value" >> "$tmp"
+    install -m 600 "$tmp" /opt/ctoa/.env
+    rm -f "$tmp"
+}
 
-grep -v '^CTOA_RESEED_ERROR_MIN_AGE_HOURS_AB=' /opt/ctoa/.env > /opt/ctoa/.env.tmp || true
-mv /opt/ctoa/.env.tmp /opt/ctoa/.env
-echo "CTOA_RESEED_ERROR_MIN_AGE_HOURS_AB=__ERROR_MIN_AGE_HOURS_AB__" >> /opt/ctoa/.env
-
-grep -v '^CTOA_RESEED_ERROR_MIN_AGE_HOURS_C=' /opt/ctoa/.env > /opt/ctoa/.env.tmp || true
-mv /opt/ctoa/.env.tmp /opt/ctoa/.env
-echo "CTOA_RESEED_ERROR_MIN_AGE_HOURS_C=__ERROR_MIN_AGE_HOURS_C__" >> /opt/ctoa/.env
-
-grep -v '^CTOA_RESEED_ERROR_MIN_AGE_HOURS=' /opt/ctoa/.env > /opt/ctoa/.env.tmp || true
-mv /opt/ctoa/.env.tmp /opt/ctoa/.env
-echo "CTOA_RESEED_ERROR_MIN_AGE_HOURS=__ERROR_MIN_AGE_HOURS__" >> /opt/ctoa/.env
+update_env_key 'CTOA_RESEED_TIER_AB_URLS' '__TIER_AB_URLS__'
+update_env_key 'CTOA_RESEED_TIER_C_URLS' '__TIER_C_URLS__'
+update_env_key 'CTOA_RESEED_ERROR_MIN_AGE_HOURS_AB' '__ERROR_MIN_AGE_HOURS_AB__'
+update_env_key 'CTOA_RESEED_ERROR_MIN_AGE_HOURS_C' '__ERROR_MIN_AGE_HOURS_C__'
+update_env_key 'CTOA_RESEED_ERROR_MIN_AGE_HOURS' '__ERROR_MIN_AGE_HOURS__'
 
 cat > /etc/systemd/system/ctoa-reseed-tier-ab.service <<'UNIT'
 [Unit]
@@ -981,9 +1366,9 @@ grep -E '^CTOA_RESEED_(TIER_(AB|C)_URLS|ERROR_MIN_AGE_HOURS(_(AB|C))?)=' /opt/ct
 
                 $remoteScript = $remoteScript.Replace('__TIER_AB_URLS__', $tierAbUrls)
                 $remoteScript = $remoteScript.Replace('__TIER_C_URLS__', $tierCUrls)
-                $remoteScript = $remoteScript.Replace('__ERROR_MIN_AGE_HOURS_AB__', (Get-OptionalEnv 'CTOA_RESEED_ERROR_MIN_AGE_HOURS_AB' '6'))
-                $remoteScript = $remoteScript.Replace('__ERROR_MIN_AGE_HOURS_C__', (Get-OptionalEnv 'CTOA_RESEED_ERROR_MIN_AGE_HOURS_C' '24'))
-                $remoteScript = $remoteScript.Replace('__ERROR_MIN_AGE_HOURS__', (Get-OptionalEnv 'CTOA_RESEED_ERROR_MIN_AGE_HOURS' '6'))
+                $remoteScript = $remoteScript.Replace('__ERROR_MIN_AGE_HOURS_AB__', (Assert-CtoaIntegerRange 'CTOA_RESEED_ERROR_MIN_AGE_HOURS_AB' (Get-OptionalEnv 'CTOA_RESEED_ERROR_MIN_AGE_HOURS_AB' '6') 1 720))
+                $remoteScript = $remoteScript.Replace('__ERROR_MIN_AGE_HOURS_C__', (Assert-CtoaIntegerRange 'CTOA_RESEED_ERROR_MIN_AGE_HOURS_C' (Get-OptionalEnv 'CTOA_RESEED_ERROR_MIN_AGE_HOURS_C' '24') 1 720))
+                $remoteScript = $remoteScript.Replace('__ERROR_MIN_AGE_HOURS__', (Assert-CtoaIntegerRange 'CTOA_RESEED_ERROR_MIN_AGE_HOURS' (Get-OptionalEnv 'CTOA_RESEED_ERROR_MIN_AGE_HOURS' '6') 1 720))
                 $remoteScript = $remoteScript.Replace('__AB_INTERVAL_MINUTES__', [string]$abIntervalMinutes)
                 $remoteScript = $remoteScript.Replace('__C_DAILY_UTC__', $cDailyTimeUtc)
                 Invoke-SshScript $remoteScript
@@ -1033,14 +1418,14 @@ journalctl -u ctoa-agents-orchestrator.service -n 80 --no-pager
 '@
         }
         'RegisterServer' {
-                $serverUrl = Get-RequiredEnv 'CTOA_SERVER_URL'
-                $serverName = Get-OptionalEnv 'CTOA_SERVER_NAME' 'External-Server'
-                $safeUrl = $serverUrl -replace "'", "''"
-                $safeName = $serverName -replace "'", "''"
+                $serverUrl = Assert-CtoaServerUrl (Get-RequiredEnv 'CTOA_SERVER_URL') 'CTOA_SERVER_URL'
+                $serverName = Assert-RemoteScriptText 'CTOA_SERVER_NAME' (Get-OptionalEnv 'CTOA_SERVER_NAME' 'External-Server')
+                $safeUrl = ConvertTo-RemoteSqlLiteral 'CTOA_SERVER_URL' $serverUrl
+                $safeName = ConvertTo-RemoteSqlLiteral 'CTOA_SERVER_NAME' $serverName
 
                 Invoke-SshScript @"
 set -e
-sudo -u postgres psql -d ctoa -c "INSERT INTO servers(url,name,status) VALUES ('$safeUrl','$safeName','NEW') ON CONFLICT (url) DO UPDATE SET name=EXCLUDED.name, status='NEW', updated_at=now();"
+sudo -u postgres psql -d ctoa -c "INSERT INTO servers(url,name,status) VALUES ($safeUrl,$safeName,'NEW') ON CONFLICT (url) DO UPDATE SET name=EXCLUDED.name, status='NEW', updated_at=now();"
 systemctl start ctoa-agents-orchestrator.service
 echo "[RegisterServer] submitted: $serverUrl"
 "@
@@ -1054,17 +1439,14 @@ echo "[RegisterServer] submitted: $serverUrl"
             throw 'RegisterServerList requires -ServerUrls "url1,url2" (or env CTOA_SERVER_URLS)'
         }
 
-        $urls = @($serverUrlsRaw -split ',' | ForEach-Object { $_.Trim() } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
-        if ($urls.Count -eq 0) {
-            throw 'RegisterServerList did not receive any valid URLs'
-        }
+        $urls = Resolve-CtoaServerUrlList $serverUrlsRaw 'CTOA_SERVER_URLS'
 
         foreach ($url in $urls) {
-            $safeUrl = $url -replace "'", "''"
+            $safeUrl = ConvertTo-RemoteSqlLiteral 'CTOA_SERVER_URLS' $url
             Invoke-SshScript @"
 set -e
 cd /opt/ctoa
-sudo -u postgres psql -d ctoa -c "INSERT INTO servers(url,name,status) VALUES ('$safeUrl','External-Server','NEW') ON CONFLICT (url) DO UPDATE SET name=EXCLUDED.name, status='NEW', updated_at=now();"
+sudo -u postgres psql -d ctoa -c "INSERT INTO servers(url,name,status) VALUES ($safeUrl,'External-Server','NEW') ON CONFLICT (url) DO UPDATE SET name=EXCLUDED.name, status='NEW', updated_at=now();"
 echo "[RegisterServerList] submitted: $url"
 "@
         }
@@ -1105,12 +1487,12 @@ sudo -u postgres psql -d ctoa -c "SELECT id, agent, status, to_char(started_at,'
                 $targetUrl = ($ServerUrls -split ',')[0].Trim()
             }
             $targetUrl = Resolve-ServerUrl $targetUrl 'https://mythibia.online'
-                $safeUrl = $targetUrl -replace "'", "''"
+                $safeUrl = ConvertTo-RemoteSqlLiteral 'CTOA_MYTHIBIA_URL' $targetUrl
 
                 Invoke-SshScript @"
 set -e
 cd /opt/ctoa
-URL='$safeUrl'
+URL=$safeUrl
 
 echo "=== MythibiaBurst target: `$URL ==="
 
@@ -1424,7 +1806,7 @@ echo '[FixDbPerms] grants applied'
     'PublishWithSourcedEnv' { Invoke-SshCommand 'cd /opt/ctoa; set -a; . /opt/ctoa/.env; set +a; /opt/ctoa/.venv/bin/python3 runner/runner.py report --publish' }
     'WriteGithubPat' {
         $pat = Get-RequiredEnv 'CTOA_GITHUB_PAT'
-        Invoke-SshCommand "sed -i '/^GITHUB_PAT/d' /opt/ctoa/.env; echo GITHUB_PAT=$pat >> /opt/ctoa/.env; echo PAT-written"
+        Write-RemoteGithubPat $pat
     }
     'StabilizeReportService' {
         Invoke-SshScript @'
@@ -1588,7 +1970,7 @@ ctoa_preupdate_gate() {
         # Install ctoa-gs-reset.service + timer and all GS scripts on VPS.
         # Auto-fallback: if main does not have GS files, try CTOA_GS_SOURCE_REF.
         $sourceRef = Get-OptionalEnv 'CTOA_GS_SOURCE_REF' ''
-        $safeRef = $sourceRef -replace "'", "''"
+        $safeRef = Assert-CtoaGitRef $sourceRef -AllowEmpty
 
         $remoteScript = @'
 set -e
@@ -1694,7 +2076,7 @@ echo [InstallGsReset] GS reset timer armed and active
             throw 'InstallGsResetFromBranch requires source ref.'
         }
 
-        $safeRef = $sourceRef -replace "'", "''"
+        $safeRef = Assert-CtoaGitRef $sourceRef
 
         $remoteScript = @'
 set -e
@@ -1788,49 +2170,7 @@ echo "[InstallGsResetFromBranch] GS reset timer armed from ref __SOURCE_REF__"
         }
 
         $githubPat = Get-OptionalEnv 'CTOA_GITHUB_PAT' ''
-
-        $safeOpenAi = $openAiKey -replace "'", "'\''"
-        $safeGithubPat = $githubPat -replace "'", "'\''"
-
-        $remoteScript = @'
-set -e
-ENV_FILE="/opt/ctoa/.env"
-
-mkdir -p /opt/ctoa
-touch "$ENV_FILE"
-chmod 600 "$ENV_FILE" 2>/dev/null || true
-
-upsert_if_missing_or_empty() {
-    local key="$1"
-    local value="$2"
-
-    if grep -q "^${key}=" "$ENV_FILE"; then
-        current="$(grep "^${key}=" "$ENV_FILE" | head -n 1 | cut -d'=' -f2-)"
-        if [ -n "$current" ]; then
-            echo "[EnsureGsEnvKeys] ${key} already set."
-            return 0
-        fi
-        sed -i "s|^${key}=.*|${key}=${value}|" "$ENV_FILE"
-        echo "[EnsureGsEnvKeys] ${key} updated from empty value."
-        return 0
-    fi
-
-    echo "${key}=${value}" >> "$ENV_FILE"
-    echo "[EnsureGsEnvKeys] ${key} added."
-}
-
-upsert_if_missing_or_empty OPENAI_API_KEY '__OPENAI_KEY__'
-
-if [ -n '__GITHUB_PAT__' ]; then
-    upsert_if_missing_or_empty GITHUB_PAT '__GITHUB_PAT__'
-fi
-
-echo "[EnsureGsEnvKeys] Completed key setup."
-'@
-
-        $remoteScript = $remoteScript.Replace('__OPENAI_KEY__', $safeOpenAi)
-        $remoteScript = $remoteScript.Replace('__GITHUB_PAT__', $safeGithubPat)
-        Invoke-SshScript $remoteScript
+        Write-RemoteGsEnvKeys $openAiKey $githubPat
     }
 
     'TriggerGsResetNow' {

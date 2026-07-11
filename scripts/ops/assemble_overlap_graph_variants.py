@@ -51,7 +51,7 @@ def headers(data: bytes):
 
 
 def sha1(data: bytes) -> str:
-    return hashlib.sha1(data).hexdigest()
+    return hashlib.sha1(data, usedforsecurity=False).hexdigest()
 
 
 def find_best_overlap(a: bytes, b: bytes, min_ov=MIN_OVERLAP, max_ov=MAX_OVERLAP) -> int:

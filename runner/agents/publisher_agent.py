@@ -19,12 +19,11 @@ from __future__ import annotations
 
 import logging
 import os
-import shutil
-import subprocess
 import zipfile
 from datetime import date, datetime, timezone
 from pathlib import Path
 
+from runner import process_safety
 from runner.agents import db
 
 logging.basicConfig(
@@ -113,33 +112,36 @@ def _write_manifest(today_str: str, mods: list[dict], zip_path: Path) -> Path:
 
 def _git_commit_release(manifest_path: Path, tag: str) -> bool:
     try:
-        subprocess.run(["git", "-C", str(REPO_DIR), "add", str(manifest_path)], check=True, timeout=30)
-        subprocess.run(
-            ["git", "-C", str(REPO_DIR), "commit", "-m", f"release: launcher-day {tag}"],
+        git = process_safety.resolve_git()
+        process_safety.run_trusted([git, "-C", str(REPO_DIR), "add", str(manifest_path)], check=True, timeout=30)
+        process_safety.run_trusted(
+            [git, "-C", str(REPO_DIR), "commit", "-m", f"release: launcher-day {tag}"],
             check=True, timeout=30,
         )
-        subprocess.run(
-            ["git", "-C", str(REPO_DIR), "tag", tag],
+        process_safety.run_trusted(
+            [git, "-C", str(REPO_DIR), "tag", tag],
             check=True, timeout=10,
         )
-        subprocess.run(
-            ["git", "-C", str(REPO_DIR), "push", "origin", "main", "--tags"],
+        process_safety.run_trusted(
+            [git, "-C", str(REPO_DIR), "push", "origin", "main", "--tags"],
             check=True, timeout=60,
         )
         return True
-    except subprocess.SubprocessError as exc:
+    except (process_safety.ExecutableUnavailableError, process_safety.ProcessExecutionError) as exc:
         log.warning("git commit/push skipped: %s", exc)
         return False
 
 
 def _gh_release(tag: str, zip_path: Path, manifest_path: Path) -> bool:
-    if not shutil.which("gh"):
+    try:
+        gh = process_safety.resolve_executable("gh", env_var="CTOA_GH_BIN")
+    except process_safety.ExecutableUnavailableError:
         log.info("gh CLI not found – skipping GitHub release")
         return False
     try:
-        subprocess.run(
+        process_safety.run_trusted(
             [
-                "gh", "release", "create", tag,
+                gh, "release", "create", tag,
                 str(zip_path),
                 "--title", f"CTOA Launcher Day {tag}",
                 "--notes-file", str(manifest_path),
@@ -149,7 +151,7 @@ def _gh_release(tag: str, zip_path: Path, manifest_path: Path) -> bool:
         )
         log.info("GitHub release %s created", tag)
         return True
-    except subprocess.SubprocessError as exc:
+    except process_safety.ProcessExecutionError as exc:
         log.warning("gh release failed: %s", exc)
         return False
 

@@ -8,7 +8,6 @@ import json
 import os
 import re
 import shlex
-import subprocess
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -17,6 +16,12 @@ from urllib import error as urlerror
 from urllib import request as urlrequest
 
 ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from runner import process_safety  # noqa: E402
+from runner.http_safety import require_notify_webhook_url  # noqa: E402
+
 DEFAULT_EVIDENCE_DIR = ROOT / "docs" / "evidence" / "vps-worktree-hygiene"
 DEFAULT_REMOTE_DIR = "/opt/ctoa/runtime/evidence/worktree-hygiene/phase5-drycheck"
 DEFAULT_CHECKLIST_SCRIPT = ROOT / "scripts" / "ops" / "phase5_nightly_checklist.py"
@@ -77,8 +82,11 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def _run(cmd: list[str], check: bool = True) -> subprocess.CompletedProcess[str]:
-    result = subprocess.run(cmd, capture_output=True, text=True)
+def _run(cmd: list[str], check: bool = True) -> Any:
+    if not cmd:
+        raise ValueError("command must not be empty")
+    executable = process_safety.resolve_executable(cmd[0])
+    result = process_safety.run_trusted([executable, *cmd[1:]], capture_output=True, text=True)
     if check and result.returncode != 0:
         stdout = (result.stdout or "").strip()
         stderr = (result.stderr or "").strip()
@@ -352,12 +360,17 @@ def render_morning_brief_status(path: Path, brief: dict[str, Any]) -> str:
 def _post_json(url: str, payload: dict[str, Any], timeout_sec: int = 12) -> tuple[bool, str]:
     if not url.strip():
         return False, "missing_url"
+    try:
+        safe_url = require_notify_webhook_url(url)
+    except ValueError:
+        return False, "invalid_webhook_url"
 
     data = json.dumps(payload).encode("utf-8")
-    request = urlrequest.Request(url, data=data, headers={"Content-Type": "application/json"})
+    request = urlrequest.Request(safe_url, data=data, headers={"Content-Type": "application/json"})
 
     try:
-        with urlrequest.urlopen(request, timeout=timeout_sec) as response:
+        # require_notify_webhook_url allowlists Slack/Discord destinations before the request.
+        with urlrequest.urlopen(request, timeout=timeout_sec) as response:  # nosec B310
             status_code = int(getattr(response, "status", 200))
         if 200 <= status_code < 300:
             return True, f"http_{status_code}"
@@ -667,4 +680,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

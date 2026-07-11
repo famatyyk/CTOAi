@@ -1,10 +1,13 @@
 import { execFile } from "node:child_process"
+import { lstatSync, realpathSync, statSync } from "node:fs"
 import { appendFile, mkdir } from "node:fs/promises"
 import path from "node:path"
 import { promisify } from "node:util"
 import { getControlCenterEvidenceConfig } from "@/lib/controlCenterEvidenceConfig"
+import { sanitizeControlCenterMarkdownReport } from "@/lib/controlCenterMarkdownReport"
 import type { ControlCenterRole, ControlCenterRiskClass } from "@/lib/controlCenterPolicy"
 import { canRunControlCenterAction, minimumRoleForRiskClass } from "@/lib/controlCenterPolicy"
+import { redactControlCenterAuditText as redactAuditText } from "@/lib/controlCenterRedaction"
 
 const execFileAsync = promisify(execFile)
 
@@ -74,19 +77,114 @@ export class ControlCenterAuthorizationError extends Error {
   }
 }
 
+export function redactControlCenterAuditText(value: string, maxLength = 1200): string {
+  return redactAuditText(value, maxLength)
+}
+
+export function sanitizeControlCenterActionOutput(value: string, maxLength = 4000): string {
+  const sanitized = sanitizeControlCenterMarkdownReport(value).trim()
+  if (sanitized.length <= maxLength) {
+    return sanitized
+  }
+  return `${sanitized.slice(0, Math.max(0, maxLength - 12)).trimEnd()}\n[truncated]`
+}
+
 function getWorkspaceRoot(): string {
   const configured = process.env.CTOA_WORKSPACE_ROOT?.trim()
   if (configured) {
+    if (!path.isAbsolute(configured)) {
+      throw new Error("CTOA_WORKSPACE_ROOT must be an absolute path for Control Center action execution.")
+    }
+    const resolved = path.resolve(configured)
+    if (!isExistingDirectory(resolved)) {
+      throw new Error(`CTOA_WORKSPACE_ROOT is not an existing directory: ${configured}`)
+    }
+    return realpathSync(resolved)
+  }
+  const cwd = process.cwd()
+  const root = path.basename(cwd) === "web" ? path.dirname(cwd) : cwd
+  return realpathSync(root)
+}
+
+function isExistingFile(filePath: string): boolean {
+  try {
+    return statSync(filePath).isFile()
+  } catch {
+    return false
+  }
+}
+
+function isExistingDirectory(filePath: string): boolean {
+  try {
+    return statSync(filePath).isDirectory()
+  } catch {
+    return false
+  }
+}
+
+export function resolveControlCenterWorkspaceRoot(): string {
+  return getWorkspaceRoot()
+}
+
+export function resolveControlCenterWorkspaceFile(root: string, relativePath: string): string {
+  if (path.isAbsolute(relativePath)) {
+    throw new Error("Control Center action scripts must be repo-relative paths.")
+  }
+
+  const resolvedRoot = realpathSync(path.resolve(root))
+  const resolvedPath = path.resolve(resolvedRoot, relativePath)
+  const relative = path.relative(resolvedRoot, resolvedPath)
+  if (relative.startsWith("..") || path.isAbsolute(relative)) {
+    throw new Error(`Control Center action script escapes the workspace root: ${relativePath}`)
+  }
+  if (!isExistingFile(resolvedPath)) {
+    throw new Error(`Control Center action script not found: ${relativePath}`)
+  }
+  if (lstatSync(resolvedPath).isSymbolicLink()) {
+    throw new Error(`Control Center action script must not be a symlink: ${relativePath}`)
+  }
+
+  const realPath = realpathSync(resolvedPath)
+  const realRelative = path.relative(resolvedRoot, realPath)
+  if (realRelative.startsWith("..") || path.isAbsolute(realRelative)) {
+    throw new Error(`Control Center action script resolves outside the workspace root: ${relativePath}`)
+  }
+  return realPath
+}
+
+export function resolveControlCenterPython(root: string): string {
+  const configured = process.env.CTOA_PYTHON_BIN?.trim()
+  if (configured) {
+    if (!path.isAbsolute(configured)) {
+      throw new Error("CTOA_PYTHON_BIN must be an absolute path for Control Center action execution.")
+    }
+    if (!isExistingFile(configured)) {
+      throw new Error(`CTOA_PYTHON_BIN is not an existing file: ${configured}`)
+    }
     return configured
   }
-  return path.resolve(process.cwd(), "..")
+
+  const localPython =
+    process.platform === "win32"
+      ? path.join(root, ".venv", "Scripts", "python.exe")
+      : path.join(root, ".venv", "bin", "python")
+
+  if (isExistingFile(localPython)) {
+    return localPython
+  }
+
+  throw new Error(
+    `Trusted Python executable not found for Control Center action execution. Set CTOA_PYTHON_BIN to an absolute Python path or create ${localPython}.`,
+  )
 }
 
 function pythonCommand(scriptRelativePath: string, args: string[], timeout = 120000): CommandSpec {
-  const root = getWorkspaceRoot()
+  const root = resolveControlCenterWorkspaceRoot()
+  const python = resolveControlCenterPython(root)
+  const scriptPath = resolveControlCenterWorkspaceFile(root, scriptRelativePath)
   return {
-    file: process.platform === "win32" ? "python" : "python3",
-    args: [path.join(root, scriptRelativePath), ...args],
+    file: python,
+    args: [scriptPath, ...args],
     cwd: root,
     timeout,
   }
@@ -146,6 +244,32 @@ function actionCatalog(): ActionDefinition[] {
           180000,
         ),
     },
+    {
+      id: "engine-brain-refresh",
+      label: "Refresh Engine Brain context",
+      description: "Regenerate the local Engine Brain context files under AI/generated.",
+      target: "local",
+      riskClass: "safe_write",
+      minimumRole: minimumRoleForRiskClass("safe_write"),
+      requiresReason: false,
+      dryRunAvailable: true,
+      enabled: true,
+      commandSummary: "python scripts/ops/engine_brain_index.py",
+      command: () => pythonCommand("scripts/ops/engine_brain_index.py", [], 180000),
+    },
+    {
+      id: "p7-cockpit-smoke-refresh",
+      label: "Refresh P7 cockpit smoke",
+      description: "Regenerate the local P7 cockpit smoke evidence from Engine Brain, release evidence, and action audit state.",
+      target: "local",
+      riskClass: "safe_write",
+      minimumRole: minimumRoleForRiskClass("safe_write"),
+      requiresReason: false,
+      dryRunAvailable: true,
+      enabled: true,
+      commandSummary: "python scripts/ops/control_center_p7_cockpit_smoke.py",
+      command: () => pythonCommand("scripts/ops/control_center_p7_cockpit_smoke.py", [], 180000),
+    },
   ]
 }
 
@@ -196,8 +320,8 @@ export async function runControlCenterAction(input: {
       dry_run: dryRun,
       authorized: false,
       ok: false,
-      reason: input.reason || "",
-      output_preview: output.slice(0, 1200),
+      reason: redactControlCenterAuditText(input.reason || ""),
+      output_preview: redactControlCenterAuditText(output),
     })
     throw new ControlCenterAuthorizationError(output, actor ? 403 : 401)
   }
@@ -230,6 +354,8 @@ export async function runControlCenterAction(input: {
     }
   }
 
+  output = sanitizeControlCenterActionOutput(output)
+
   const { command, ...action } = definition
   void command
   const result = { action, dryRun, ok, output, auditId, completedAt }
@@ -245,8 +371,8 @@ export async function runControlCenterAction(input: {
     dry_run: result.dryRun,
     authorized: true,
     ok: result.ok,
-    reason: input.reason || "",
-    output_preview: result.output.slice(0, 1200),
+    reason: redactControlCenterAuditText(input.reason || ""),
+    output_preview: redactControlCenterAuditText(result.output),
   })
   return result
 }

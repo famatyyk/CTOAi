@@ -11,7 +11,7 @@ Enable end-to-end automation for Azure Activity Log alerts:
 Create .ctoa-local/azure-alerts.env (copy from .ctoa-local/azure-alerts.env.example) and set:
 - CTOA_AZURE_ALERT_WEBHOOK_URL (generic webhook route)
 - CTOA_AZURE_DISCORD_WEBHOOK_URL (Discord-native route)
-- CTOA_AZURE_INGEST_SECRET (optional)
+- CTOA_AZURE_INGEST_SECRET (required before any non-loopback webhook listener bind)
 
 ## Task Entry Points
 Use VS Code tasks:
@@ -28,8 +28,10 @@ Use VS Code tasks:
 2. Webhook route:
 - Start CTOA: Azure Alerts Webhook Listener
 - Configure Azure Monitor Action Group webhook URL to:
-  http://<host>:8791/azure/activity
-- If secret is set, include X-Webhook-Secret header in sender path/proxy.
+  http://127.0.0.1:8791/azure/activity
+- The listener binds to 127.0.0.1 by default. If you intentionally expose it
+  through a proxy, tunnel, or non-loopback host, set CTOA_AZURE_INGEST_SECRET
+  first and require the sender path/proxy to include X-Webhook-Secret.
 
 ## Routing Modes
 - webhook: sends full alert JSON payload to CTOA_AZURE_ALERT_WEBHOOK_URL
@@ -40,6 +42,7 @@ Use VS Code tasks:
 
 ## Safety Notes
 - Keep secrets outside git-tracked files.
+- Do not run the webhook listener on 0.0.0.0 without CTOA_AZURE_INGEST_SECRET.
 - Use min-severity warning or critical in production to reduce noise.
 
 ## Automatic Env Loading

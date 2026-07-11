@@ -9,7 +9,7 @@ Windows desktop client for CTOAi operations without using a browser.
 - Production-style live dashboard with summary metrics, auto-refresh, and raw diagnostics
 - Agent operations panel in dashboard
 - Admin console available only for owner role
-- Update checker against latest GitHub release with one-click update package download
+- Update checker against latest GitHub release with guarded update package download
 - Control Center launcher shortcut for the modern web cockpit
 
 ## Control Center
@@ -31,17 +31,31 @@ powershell -ExecutionPolicy Bypass -File scripts/windows/open-control-center.ps1
 ## Credentials and roles
 Desktop authentication uses backend accounts from `mobile_console/app.py`:
 - Owner username: `CTOA_OWNER_USER` (default: `CTO`)
-- Owner password: `CTOA_OWNER_PASSWORD` (required; no hardcoded default)
+- Owner password: `CTOA_OWNER_PASSWORD` (required in production; no hardcoded default)
 - Optional operator username: `CTOA_OPERATOR_USER` (default: `ctoa-bot`)
 - Optional operator password: `CTOA_OPERATOR_PASSWORD` (empty by default, account disabled until set)
 
 Self-register (`/api/auth/register`) creates `member` accounts in DB.
+In production, self-register is disabled by default. If explicitly enabled, set
+`CTOA_SELF_REGISTER_CODE` to a non-empty invite code.
 
 ## API Base URL (local vs VPS)
 - Local backend example: `http://127.0.0.1:8787`
-- VPS backend example: `http://<vps-ip-or-domain>:8787` (or HTTPS behind reverse proxy)
+- VPS/backend-over-network example: `https://<vps-domain>`
 
 If you use `127.0.0.1` from your Windows desktop, desktop app expects backend to run on that same machine.
+Remote API URLs must use HTTPS and must not include embedded credentials,
+query strings, or fragments.
+
+## Update Safety
+- Update repository identifiers must stay in `owner/repo` form.
+- Windows update assets must be plain `.exe` filenames without path separators.
+- Download URLs and final redirects must stay on trusted GitHub HTTPS hosts.
+- The desktop app downloads the update package only; it does not auto-run the
+  downloaded executable.
+- Update downloads use a bounded maximum size, write to a temporary
+  `.download` file, clean up partial files on failure, and replace the final
+  executable only after a complete stream.
 
 ## Endpoint profiles
 Desktop stores profile URLs in local settings file and lets you switch active endpoint:
@@ -65,9 +79,13 @@ Desktop app uses mobile console API:
 - owner one-click execution: `POST /api/agents/execution/run`
 - owner command execution: `POST /api/command`
 
+Owner agent launch and one-click execution are guarded writes. The desktop UI
+prompts for confirmation and an audit reason, then sends `confirm=true` plus
+`reason` before the backend touches DB, orchestrator, or client sync.
+
 Optional backend env variables:
-- `CTOA_SELF_REGISTER_ENABLED=false` (recommended default)
-- `CTOA_SELF_REGISTER_CODE=<required when self-register is enabled>`
+- `CTOA_SELF_REGISTER_ENABLED=false`
+- `CTOA_SELF_REGISTER_CODE=<required invite code when self-register is enabled>`
 
 ## Run from source
 1. Install dependencies:

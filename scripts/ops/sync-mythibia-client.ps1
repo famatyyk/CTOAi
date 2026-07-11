@@ -70,6 +70,37 @@ function Write-OpsLogLine {
     Add-Content -Path $opsLogPath -Value $line -Encoding UTF8
 }
 
+function Test-EnvEnabled {
+    param([string]$Name)
+
+    $value = [string](Get-Item -Path "env:$Name" -ErrorAction SilentlyContinue).Value
+    return $value.Trim().ToLowerInvariant() -in @('1', 'true', 'yes', 'on')
+}
+
+function Assert-UnsafeRuntimeBootstrapApproved {
+    if (-not (Test-EnvEnabled -Name 'CTOA_ALLOW_UNSAFE_RUNTIME_BOOTSTRAP')) {
+        throw "UnsafeRuntimeBootstrap requires CTOA_ALLOW_UNSAFE_RUNTIME_BOOTSTRAP=true"
+    }
+}
+
+function Resolve-ClientChildPath {
+    param(
+        [string]$ClientRoot,
+        [string]$RelativePath
+    )
+
+    $rootFull = [System.IO.Path]::GetFullPath($ClientRoot)
+    $candidate = [System.IO.Path]::GetFullPath((Join-Path $rootFull $RelativePath))
+    $trimChars = @([System.IO.Path]::DirectorySeparatorChar, [System.IO.Path]::AltDirectorySeparatorChar)
+    $rootPrefix = $rootFull.TrimEnd($trimChars) + [System.IO.Path]::DirectorySeparatorChar
+
+    if (($candidate -ne $rootFull) -and (-not $candidate.StartsWith($rootPrefix, [System.StringComparison]::OrdinalIgnoreCase))) {
+        throw "Resolved client path escapes ClientRoot: $RelativePath"
+    }
+
+    return $candidate
+}
+
 function Ensure-CriticalScripts {
     param(
         [string]$TargetDir,
@@ -402,9 +433,11 @@ function Ensure-UnsafeRuntimeBootstrap {
         [string]$ProbeName
     )
 
+    Assert-UnsafeRuntimeBootstrapApproved
+
     $targets = @(
-        (Join-Path $ClientRoot 'modules\ctoa_bootstrap'),
-        (Join-Path $ClientRoot '_tmp_unpack\modules\ctoa_bootstrap')
+        (Resolve-ClientChildPath -ClientRoot $ClientRoot -RelativePath 'modules\ctoa_bootstrap'),
+        (Resolve-ClientChildPath -ClientRoot $ClientRoot -RelativePath '_tmp_unpack\modules\ctoa_bootstrap')
     )
 
     $otmodContent = @"
@@ -467,7 +500,7 @@ end
         }
     }
 
-    $reportPath = Join-Path $ClientRoot 'unsafe_runtime_bootstrap_report.txt'
+    $reportPath = Resolve-ClientChildPath -ClientRoot $ClientRoot -RelativePath 'unsafe_runtime_bootstrap_report.txt'
     $report = New-Object System.Collections.Generic.List[string]
     $report.Add('Unsafe Runtime Bootstrap Report')
     $report.Add('GeneratedAt: ' + (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'))
@@ -494,15 +527,15 @@ function Remove-UnsafeRuntimeBootstrapArtifacts {
     param([string]$ClientRoot)
 
     $targets = @(
-        (Join-Path $ClientRoot 'modules\ctoa_bootstrap'),
-        (Join-Path $ClientRoot '_tmp_unpack\modules\ctoa_bootstrap')
+        (Resolve-ClientChildPath -ClientRoot $ClientRoot -RelativePath 'modules\ctoa_bootstrap'),
+        (Resolve-ClientChildPath -ClientRoot $ClientRoot -RelativePath '_tmp_unpack\modules\ctoa_bootstrap')
     )
 
     $removed = @()
     foreach ($target in $targets) {
-        if (Test-Path $target) {
+        if (Test-Path -LiteralPath $target) {
             try {
-                Remove-Item -Path $target -Recurse -Force
+                Remove-Item -LiteralPath $target -Recurse -Force
                 $removed += $target
             }
             catch {

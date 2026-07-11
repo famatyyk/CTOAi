@@ -15,6 +15,11 @@ from urllib import request as urlrequest
 
 
 ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from runner.http_safety import require_discord_webhook_url, require_http_url  # noqa: E402
+
 DEFAULT_OUTPUT_JSONL = ROOT / "runtime" / "alerts" / "azure-activity-alerts.jsonl"
 
 SEVERITY_ORDER = {
@@ -305,13 +310,36 @@ def build_discord_payload(alert: dict[str, Any]) -> dict[str, Any]:
 
 
 def post_json(url: str, payload: dict[str, Any], timeout_s: int = 8) -> tuple[bool, str]:
+    if not url.strip():
+        return False, "missing_url"
+    try:
+        safe_url = require_http_url(url)
+    except ValueError:
+        return False, "invalid_url"
+
+    return _post_validated_json(safe_url, payload, timeout_s)
+
+
+def post_discord_json(url: str, payload: dict[str, Any], timeout_s: int = 8) -> tuple[bool, str]:
+    if not url.strip():
+        return False, "missing_url"
+    try:
+        safe_url = require_discord_webhook_url(url)
+    except ValueError:
+        return False, "invalid_discord_webhook_url"
+
+    return _post_validated_json(safe_url, payload, timeout_s)
+
+
+def _post_validated_json(safe_url: str, payload: dict[str, Any], timeout_s: int) -> tuple[bool, str]:
     req = urlrequest.Request(
-        url,
+        safe_url,
         data=json.dumps(payload, ensure_ascii=True).encode("utf-8"),
         headers={"Content-Type": "application/json", "User-Agent": "CTOA-AzureAlerts/1.0"},
         method="POST",
     )
     try:
+        # URL-specific guards validate webhook destinations before this network call.
         with urlrequest.urlopen(req, timeout=timeout_s) as resp:  # nosec B310
             code = getattr(resp, "status", 200)
             return 200 <= int(code) < 300, f"http_{code}"
@@ -329,6 +357,7 @@ def route_alert(
     discord_webhook_url: str,
     dry_run: bool,
     post_json_fn: Callable[[str, dict[str, Any]], tuple[bool, str]] = post_json,
+    post_discord_json_fn: Callable[[str, dict[str, Any]], tuple[bool, str]] = post_discord_json,
 ) -> dict[str, Any]:
     result: dict[str, Any] = {}
 
@@ -360,7 +389,7 @@ def route_alert(
             result["discord_webhook"] = "skipped_dry_run"
         else:
             payload = build_discord_payload(alert)
-            ok, detail = post_json_fn(target_url, payload)
+            ok, detail = post_discord_json_fn(target_url, payload)
             result["discord_webhook"] = "sent" if ok else f"failed:{detail}"
 
     return result
@@ -424,4 +453,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

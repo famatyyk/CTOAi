@@ -32,6 +32,9 @@ export default function ControlCenterOpsGrid() {
     async function loadOps() {
       try {
         const response = await fetchWithTimeout("/api/control-center/ops", { cache: "no-store" }, 5000)
+        if (!response.ok) {
+          throw new Error(`Ops probe failed with HTTP ${response.status}.`)
+        }
         const data = (await response.json()) as ControlCenterOps
         if (!cancelled) {
           setOps({ state: "ready", ops: data, error: null })

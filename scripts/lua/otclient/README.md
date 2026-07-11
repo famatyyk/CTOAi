@@ -13,9 +13,44 @@ Advanced Tibia automation modules designed specifically for **OTClient** using n
 
 | Module | Purpose | OTClient API Used |
 |----|----|----|
-| **ctoa_native_heal.lua** | Smart healing system | `LocalPlayer.onHealthChanged`, `LocalPlayer.onManaChanged` |
-| **ctoa_native_combat.lua** | Intelligent targeting | `g_game.attack()`, `g_map.getCreaturesInRange()` |
-| **ctoa_native_loot.lua** | Advanced looting | `Container.onOpen`, `Map.onItemAppear` |
+| **ctoa_native_heal.lua** | Passive profile-fed recovery | `LocalPlayer.onHealthChanged`, `LocalPlayer.onManaChanged`, `cycleEvent()` |
+| **ctoa_native_combat.lua** | Guarded monster targeting | `g_game.attack()`, `g_game.setChaseMode()`, `g_map.getCreaturesInRange()` |
+| **ctoa_native_loot.lua** | Passive loot scanner | `Container.onOpen`, `Map.onItemAppear`, `g_game.getContainers()` |
+| **ctoa_helper_modules.lua** | Passive module lane registry | `_G.CTOA_HELPER_MODULES`, `getModuleLanes()`, `getShortLabels()` |
+| **ctoa_helper_runtime_core.lua** | Passive runtime registry, event bus, and budgeted scheduler | `_G.CTOA_HELPER_RUNTIME_CORE`, disabled-by-default tasks, bounded ticks, failure backoff |
+| **ctoa_helper_combat_observer.lua** | Passive normalized combat/targeting observations | `_G.CTOA_HELPER_COMBAT_OBSERVER`, `ctoa.combat-observation.v1`, `combat.observed` |
+| **ctoa_helper_recovery_observer.lua** | Passive normalized HP/MP/recovery observations | `_G.CTOA_HELPER_RECOVERY_OBSERVER`, `ctoa.recovery-observation.v1`, `recovery.observed` |
+| **ctoa_helper_cavebot_observer.lua** | Passive position/path capability observations | `_G.CTOA_HELPER_CAVEBOT_OBSERVER`, `ctoa.cavebot-observation.v1`, `cavebot.observed` |
+| **ctoa_helper_loot_observer.lua** | Passive container/capacity observations | `_G.CTOA_HELPER_LOOT_OBSERVER`, `ctoa.loot-observation.v1`, `loot.observed` |
+| **ctoa_helper_equipment_observer.lua** | Passive equipment-slot observations | `_G.CTOA_HELPER_EQUIPMENT_OBSERVER`, `ctoa.equipment-observation.v1`, `equipment.observed` |
+| **ctoa_helper_otclient_observation_adapter.lua** | Guarded read-only OTClient snapshot provider | `_G.CTOA_HELPER_OTCLIENT_OBSERVATION_ADAPTER`, target/spectator/PZ/cooldown/latency reads |
+| **ctoa_helper_diagnostics.lua** | Passive log and diagnostics export helpers | `_G.CTOA_HELPER_DIAGNOSTICS`, `ctoa_local.log`, `ctoa_diag_export.lua` |
+| **ctoa_helper_hotkeys.lua** | Passive hotkey parser, formatter, and binding-decision helpers | `_G.CTOA_HELPER_HOTKEYS`, normalize/display/bindingDecision helpers |
+| **ctoa_helper_modal.lua** | Passive confirmation lifecycle and decision-text helpers | `_G.CTOA_HELPER_MODAL`, request/status/decisionText helpers |
+| **ctoa_helper_route.lua** | Passive cavebot route engine helpers | `_G.CTOA_HELPER_ROUTE`, waypoint labels, mutations, stats, contract |
+| **ctoa_helper_targeting.lua** | Passive target scoring helpers | `_G.CTOA_HELPER_TARGETING`, ignored names, score rules, decision, contract |
+| **ctoa_helper_combat_runtime.lua** | Passive combat runtime adapter plan and operator decision text | `_G.CTOA_HELPER_COMBAT_RUNTIME`, plan/summary/actionStatusText/waitReason/decisionState/contract |
+| **ctoa_helper_cavebot_runtime.lua** | Passive cavebot runtime adapter plan, movement status, trace, path result, and probe text | `_G.CTOA_HELPER_CAVEBOT_RUNTIME`, plan/summary/decisionText/probeSummary/pathText/statusText/traceText/contract |
+| **ctoa_helper_loot_runtime.lua** | Passive loot runtime adapter plan | `_G.CTOA_HELPER_LOOT_RUNTIME`, plan/summary/contract |
+| **ctoa_helper_timer_runtime.lua** | Passive timer runtime adapter plan | `_G.CTOA_HELPER_TIMER_RUNTIME`, plan/summary/contract |
+| **ctoa_helper_profile_schema.lua** | Passive profile schema metadata | `_G.CTOA_HELPER_PROFILE_SCHEMA`, required sections, safe false keys, migration plan |
+| **ctoa_helper_profile_persistence.lua** | Passive profile persistence policy | `_G.CTOA_HELPER_PROFILE_PERSISTENCE`, load candidates, save headers, autosave metadata |
+| **ctoa_helper_planner.lua** | Passive planner coordinator | `_G.CTOA_HELPER_PLANNER`, collect/best/summary/contract |
+| **ctoa_helper_runtime_policy.lua** | Passive runtime gate policy | `_G.CTOA_HELPER_RUNTIME_POLICY`, manifest/smoke/live approval gates |
+| **ctoa_helper_dispatch_guard.lua** | Passive dispatch allow/deny guard | `_G.CTOA_HELPER_DISPATCH_GUARD`, classify/decision/summary/contract |
+| **ctoa_helper_plan_queue.lua** | Passive guarded decision queue | `_G.CTOA_HELPER_PLAN_QUEUE`, normalize/enqueue/trim/summary/contract |
+| **ctoa_helper_runtime_readiness.lua** | Passive runtime bridge readiness | `_G.CTOA_HELPER_RUNTIME_READINESS`, components/gates/snapshot/decision |
+| **ctoa_helper_module_status.lua** | Passive module status board | `_G.CTOA_HELPER_MODULE_STATUS`, order/normalize/snapshot/summary/contract |
+| **ctoa_helper_action_catalog.lua** | Passive action/risk catalog | `_G.CTOA_HELPER_ACTION_CATALOG`, action domains, risk classes, gates |
+| **ctoa_helper_decision_trace.lua** | Passive decision trace formatter | `_G.CTOA_HELPER_DECISION_TRACE`, policy/guard reasons, missing gates |
+| **ctoa_helper_sandbox_handoff.lua** | Passive sandbox smoke handoff | `_G.CTOA_HELPER_SANDBOX_HANDOFF`, launch/ready/attach/smoke/promote sequence |
+| **ctoa_helper_feature_flags.lua** | Passive feature flag matrix | `_G.CTOA_HELPER_FEATURE_FLAGS`, safe defaults, domains, required gates |
+| **ctoa_helper_hud.lua** | Passive HUD text and position helpers | `_G.CTOA_HELPER_HUD`, start/disarmed/runtime text |
+| **ctoa_helper_conditions.lua** | Read-only condition state observer | `_G.CTOA_HELPER_CONDITIONS`, state snapshots, API probe text |
+| **ctoa_helper_equipment.lua** | Read-only equipment slot observer | `_G.CTOA_HELPER_EQUIPMENT`, inventory slot snapshots, API probe text |
+| **ctoa_helper_scripting.lua** | Policy-only scripting shell | `_G.CTOA_HELPER_SCRIPTING`, deny-all status, passive policy plan, summary text |
+| **ctoa_helper_heal_friend.lua** | Read-only Heal Friend observer/planner | `_G.CTOA_HELPER_HEAL_FRIEND`, whitelist scan, summary text |
+| **ctoa_native_helper.lua** | In-client operator panel | `g_ui`, `cycleEvent`, `g_game.talk()`, `g_keyboard.pressKey()` |
 | **ctoa_otclient_loader.lua** | Module management | Core loading system |
 
 ## 🔧 Installation
@@ -62,7 +97,171 @@ If your client uses a custom `user_dir`, place files there and keep the same fol
 dofile("user_dir/ctoa_otclient/ctoa_native_heal.lua")
 dofile("user_dir/ctoa_otclient/ctoa_native_combat.lua")  
 dofile("user_dir/ctoa_otclient/ctoa_native_loot.lua")
+dofile("user_dir/ctoa_otclient/ctoa_helper_modules.lua")
+dofile("user_dir/ctoa_otclient/ctoa_helper_diagnostics.lua")
+dofile("user_dir/ctoa_otclient/ctoa_helper_hotkeys.lua")
+dofile("user_dir/ctoa_otclient/ctoa_helper_modal.lua")
+dofile("user_dir/ctoa_otclient/ctoa_helper_route.lua")
+dofile("user_dir/ctoa_otclient/ctoa_helper_targeting.lua")
+dofile("user_dir/ctoa_otclient/ctoa_helper_combat_runtime.lua")
+dofile("user_dir/ctoa_otclient/ctoa_helper_cavebot_runtime.lua")
+dofile("user_dir/ctoa_otclient/ctoa_helper_loot_runtime.lua")
+dofile("user_dir/ctoa_otclient/ctoa_helper_timer_runtime.lua")
+dofile("user_dir/ctoa_otclient/ctoa_helper_profile_schema.lua")
+dofile("user_dir/ctoa_otclient/ctoa_helper_profile_persistence.lua")
+dofile("user_dir/ctoa_otclient/ctoa_helper_planner.lua")
+dofile("user_dir/ctoa_otclient/ctoa_helper_runtime_policy.lua")
+dofile("user_dir/ctoa_otclient/ctoa_helper_dispatch_guard.lua")
+dofile("user_dir/ctoa_otclient/ctoa_helper_plan_queue.lua")
+dofile("user_dir/ctoa_otclient/ctoa_helper_runtime_readiness.lua")
+dofile("user_dir/ctoa_otclient/ctoa_helper_module_status.lua")
+dofile("user_dir/ctoa_otclient/ctoa_helper_action_catalog.lua")
+dofile("user_dir/ctoa_otclient/ctoa_helper_decision_trace.lua")
+dofile("user_dir/ctoa_otclient/ctoa_helper_sandbox_handoff.lua")
+dofile("user_dir/ctoa_otclient/ctoa_helper_feature_flags.lua")
+dofile("user_dir/ctoa_otclient/ctoa_helper_hud.lua")
+dofile("user_dir/ctoa_otclient/ctoa_helper_conditions.lua")
+dofile("user_dir/ctoa_otclient/ctoa_helper_equipment.lua")
+dofile("user_dir/ctoa_otclient/ctoa_helper_scripting.lua")
+dofile("user_dir/ctoa_otclient/ctoa_helper_heal_friend.lua")
+dofile("user_dir/ctoa_otclient/ctoa_native_helper.lua")
 ```
+
+The helper panel can be toggled with `Ctrl+H` after `ctoa_native_helper.lua` is loaded.
+
+## Runtime Logic
+
+The loader starts in **helper-ui-only** mode and does not auto-load combat, heal, or loot modules. This keeps boot safe while still letting an operator arm runtime modules from the helper UI.
+
+Current helper logic includes:
+- module registry: `ctoa_helper_modules.lua` exports every implemented/prototype
+  lane, profile key, operating mode, and gate so UI, audits, and docs stay
+  aligned; `ctoa_helper_runtime_core.lua` separately owns runtime instances,
+  passive event delivery, and cooperative task scheduling with a fixed tick
+  budget. New runtime-core tasks are disabled by default and cannot execute
+  game actions;
+  aligned; `ctoa_native_helper.lua` keeps a fallback registry for manual loads;
+- diagnostics domain: `ctoa_helper_diagnostics.lua` owns log append, diagnostics
+  export paths, sample buffers, and export file writing while API probes and UI
+  rendering stay in the helper shell;
+- Hotkeys domain: `ctoa_helper_hotkeys.lua` owns passive hotkey normalization,
+  allowed-choice checks, binding-decision fixtures, and display text while key
+  binding stays in the helper shell;
+- Modal domain: `ctoa_helper_modal.lua` owns passive confirmation request,
+  expiry, status, decision-text, and button text helpers while widget creation
+  and command execution stay in the helper shell;
+- Route domain: `ctoa_helper_route.lua` owns passive cavebot waypoint labels,
+  index selection, add/delete/reorder mutations, active target advancement,
+  route stats, retry status text, and its static contract while pathfinding and
+  `LocalPlayer:autoWalk` stay in the helper shell;
+- Targeting domain: `ctoa_helper_targeting.lua` owns passive ignored-name,
+  priority-rank, target-score rules, target decision summaries, and its static
+  contract while creature scanning and `g_game.attack` stay in the helper
+  shell;
+- Combat runtime adapter: `ctoa_helper_combat_runtime.lua` owns passive combat
+  plan summaries, wait-reason text, decision-state text, cooldown text, action
+  status text, and static contract metadata; it never scans, attacks, casts,
+  uses items, or touches OTClient globals, and guarded execution stays in the
+  helper shell until sandbox `SmokeAttachAll` evidence exists;
+- Cavebot runtime adapter: `ctoa_helper_cavebot_runtime.lua` owns passive
+  movement plan summaries, movement decision text, movement API probe summary
+  text, movement blocked-reason text, movement status text, movement trace
+  text, retry-budget guard metadata, and static contract metadata; it never
+  walks, pathfinds, or touches OTClient globals, and guarded
+  `LocalPlayer:autoWalk` execution stays in the helper shell until sandbox
+  `SmokeAttachAll` evidence exists;
+- Loot runtime adapter: `ctoa_helper_loot_runtime.lua` owns passive container
+  plan summaries, capacity guard metadata, and static contract metadata; it
+  never scans containers, opens containers, moves items, uses items, or touches
+  OTClient globals, and guarded loot execution stays behind `experimental_loot`
+  plus sandbox evidence;
+- Timer runtime adapter: `ctoa_helper_timer_runtime.lua` owns passive timer
+  plan summaries, interval guard metadata, and static contract metadata; it
+  never talks, casts, evaluates snippets, or loads files, and timer execution
+  stays in the helper shell until sandbox evidence exists;
+- Profile schema adapter: `ctoa_helper_profile_schema.lua` owns passive schema
+  metadata, required section order, safe-false keys, and migration plan text; it
+  never loads, saves, or migrates files, and profile writes remain behind the
+  helper profile audit and sandbox evidence;
+- Profile persistence policy: `ctoa_helper_profile_persistence.lua` owns
+  passive load candidate lists, save path fallback policy, generated file
+  headers, save status text, and autosave metadata; the helper shell still owns
+  every `dofile`, `io.open`, and profile write operation;
+- Planner coordinator: `ctoa_helper_planner.lua` owns passive plan collection,
+    ranking, best-plan selection, summary text, and a static contract; it never
+    executes plans, casts, talks, uses items, walks, or touches OTClient globals;
+- Runtime policy guard: `ctoa_helper_runtime_policy.lua` owns passive gate
+    evaluation for manifest freshness, ModuleStaticGates, ModuleAttachSmoke,
+    SmokeAttachAll, and explicit live approval; it never executes plans and is
+    the contract future dispatchers must pass before any runtime action path;
+- Dispatch guard: `ctoa_helper_dispatch_guard.lua` owns passive ranked-plan
+    classification, runtime policy handoff, sandbox attach requirements, and
+    allow/deny reason text; it never executes, casts, talks, attacks, walks, or
+    uses items, and its `dispatch_allowed` contract remains false until a
+    future bridge has sandbox and live approval evidence;
+- Plan queue: `ctoa_helper_plan_queue.lua` owns passive normalization,
+    bounded retention, trimming, and summaries for guarded decisions; it stores
+    review state only, never dispatches queued plans, and requires planner plus
+    dispatch guard evidence before any future bridge can consume entries;
+- Runtime readiness: `ctoa_helper_runtime_readiness.lua` owns passive
+    component/gate coverage, queued-plan review status, and no-execution bridge
+    summaries; it requires planner, runtime policy, dispatch guard, plan queue,
+    ModuleAttachSmoke, SmokeAttachAll, and live approval before reporting a
+    future runtime bridge as review-ready;
+- Module status board: `ctoa_helper_module_status.lua` owns passive module
+    ordering, readiness-row normalization, blocker counts, and summary text for
+    evidence/UI review; it requires module contract plus ModuleStaticGates and
+    never executes, dispatches, casts, talks, uses items, walks, or attacks;
+- Action catalog: `ctoa_helper_action_catalog.lua` owns passive runtime action
+    names, domain mapping, risk classes, and required gate metadata for future
+    dispatchers; it models `plan_attack`, `plan_walk`, `plan_sio`, condition
+    recovery, equipment swaps, passive scripting reviews, and hold actions
+    without executing any of them;
+- Decision trace: `ctoa_helper_decision_trace.lua` owns passive formatting of
+    plan, runtime policy, dispatch guard, action catalog, and queue review
+    records; it exposes reasons and missing gates for operator evidence without
+    writing logs or executing queued plans;
+- Sandbox handoff: `ctoa_helper_sandbox_handoff.lua` owns the passive operator
+    sequence for sandbox runtime smoke: Launch, ReadyCheck, SmokeAttachModules,
+    SmokeAttachAll, and explicit PromoteLiveCtoa approval; it never launches,
+    attaches, promotes, or executes actions itself;
+- Feature flags: `ctoa_helper_feature_flags.lua` owns the passive safe-default
+    matrix for runtime and experimental flags, including auto haste, exeta,
+    runes, cavebot movement, experimental loot, Heal Friend, Conditions,
+    Equipment, and Scripting eval/snippet gates; it audits flag metadata without
+    toggling profile values;
+- HUD domain: `ctoa_helper_hud.lua` owns passive HUD text and position
+  formatting while widget creation and visibility stay in the helper shell;
+- UI domain: `ctoa_helper_ui.lua` owns passive CaveBot action metadata,
+  CaveBot delay/reach choice metadata, and panel renderers while callback
+  execution stays in the helper shell;
+- Conditions domain: `ctoa_helper_conditions.lua` owns read-only condition state
+  snapshots, API probe status text, observer sampling, passive recovery
+  planning, tab summary text, and a static contract; it never triggers recovery
+  actions and remains gated by `ModuleAttachSmoke`;
+- Equipment domain: `ctoa_helper_equipment.lua` owns read-only inventory slot
+  snapshots, equipment API probe status text, observer sampling, passive
+  ring/amulet swap planning, tab summary text, and a static contract; it never
+  swaps, moves, or uses items and remains gated by `ModuleAttachSmoke`;
+- Scripting domain: `ctoa_helper_scripting.lua` owns deny-all policy status,
+  passive policy planning, summary text, and a static contract; it never
+  evaluates snippets, loads files, talks, or casts and remains gated by security
+  review plus `ModuleAttachSmoke`;
+- Heal Friend domain: `ctoa_helper_heal_friend.lua` owns whitelist matching,
+  visible-player scan, observer status, and summary text; it never casts or
+  sends chat and remains gated by `ModuleAttachSmoke`;
+- Overview readiness matrix: implemented lanes show `ARMED`, `IDLE`, or
+  `FLAG`, while prototype lanes show `OBSERVE` or `GATED` from the same
+  registry without enabling new runtime actions;
+- safe boot guard: runtime, healing, targeting, haste, exeta, runes, timer, and cavebot movement are disabled after profile load unless the operator arms them;
+- recovery engine: HP spell rotation, HP actionbar potion, MP actionbar potion, shared recovery gap, and real local-player vitals before percent fallback;
+- combat engine: monster-only targeting, ignored NPC names, NPC icon blocking, priority target scoring, chase mode, PZ guard, action locks, exeta/rune/rotation planning, and debug decision text;
+- cavebot route loop: waypoint editor, guarded `LocalPlayer:autoWalk`, PZ guard, path probe, retry budget, and automatic movement disable on repeated failure;
+- timer action: bounded say/cast loop driven by `timer_interval_ms` and `timer_message`;
+- loot scanner: passive valuable-item scoring, corpse/open-container scans, capacity guard, bounded item moves, and `experimental_loot` feature flag gating;
+- prototype lanes: Heal Friend party/whitelist observer, Conditions state observer, Equipment slot observer, and Scripting policy shell persist profile settings and show read-only runtime evidence while their action paths stay gated behind sandbox smoke.
+
+Standalone modules (`ctoa_native_heal.lua`, `ctoa_native_combat.lua`, `ctoa_native_loot.lua`) read `_G.CTOA_Helper.config` when the helper is loaded. If they are loaded manually without the helper, their built-in defaults stay passive.
 
 ## ✅ Smoke Test (3 minutes)
 
@@ -76,38 +275,88 @@ Expected result: modules load without errors and log lines are appended on start
 
 ### Healing Module
 ```lua
--- Edit ctoa_native_heal.lua
-local HEAL_SETTINGS = {
-    hp_critical = 30,    -- Cast strong heal at 30% HP
-    hp_low = 65,         -- Cast normal heal at 65% HP  
-    mana_low = 40,       -- Cast mana spell at 40% MP
-    heal_spell = "exura",
-    heal_critical_spell = "exura gran",
-    mana_spell = "utani hur"
+-- Preferred: edit ctoa_ek_profile.lua or use the helper UI.
+healing = {
+    spell_enabled = false,
+    potion_enabled = false,
+    mana_potion_enabled = true,
+    spell_threshold = 80,
+    potion_threshold = 62,
+    mana_potion_threshold = 45,
+    spell = "exura ico",
+    critical_spell = "exura med ico",
+    potion_actionbar_slot = "F1",
+    mana_potion_actionbar_slot = "F2",
 }
 ```
 
 ### Combat Module
 ```lua
--- Edit ctoa_native_combat.lua priority targets
-local PRIORITY_TARGETS = {
-    "demon",       -- Highest priority
-    "dragon lord", 
-    "dragon",
-    "cyclops",
-    "dwarf"        -- Lowest priority
+-- Edit profile priority targets, not runtime code.
+tools = {
+    auto_attack = false,
+    chase = true,
+    pause_in_pz = true,
+    attack_range = 7,
+    priority_names = {"demon", "dragon lord", "dragon"},
+    ignored_names = {"hireling", "postman", "npc"},
 }
 ```
 
+### Prototype Module Lanes
+```lua
+-- These profiles are intentionally read-only until sandbox evidence exists.
+heal_friend = { enabled = false, runtime_enabled = false }
+conditions = { enabled = false, observe_states = true, api_probe_enabled = true, runtime_enabled = false }
+equipment = { enabled = false, observe_slots = true, runtime_enabled = false }
+scripting = { enabled = false, policy_mode = "deny_all", allow_user_snippets = false, allow_runtime_eval = false }
+```
+
+The module workplan in `docs/otclient/solteria_helper_module_workplan.md`
+tracks the exact gate for each lane. `heal_friend` may read visible player
+names/HP and match the whitelist, but it must not cast `exura sio` until
+whitelist persistence and no-target sandbox smoke pass. `conditions` may read
+`hasState`, `getStates`, and condition constants, and may produce passive
+recovery plans, but it must not trigger recovery actions until sandbox state
+evidence exists. `equipment` may read ring, amulet, and hand slots plus API
+availability (`getInventoryItem` and slot constants), and may produce passive
+ring/amulet swap plans, but it must not swap, move, or use inventory items until
+the inventory API probe output and non-combat sandbox smoke pass.
+`scripting` is a policy surface only: it can record intended settings and
+produce passive `audit_only` / `policy_review` plans, but it must not call
+`loadstring`, `dofile`, runtime eval, or user-provided snippets until a
+security review, denylist tests, audit logging, and sandbox smoke exist.
+New helper behavior must add or update a `MODULE_LANES` entry before UI or
+runtime code is promoted.
+
 ### Loot Module
 ```lua
--- Edit ctoa_native_loot.lua valuable items
-local VALUABLE_LOOT = {
-    [3031] = true,  -- gold coin
-    [3043] = true,  -- crystal coin
-    [3155] = true,  -- sudden death rune
-    -- Add more item IDs...
+-- Loot stays gated behind runtime + experimental_loot.
+tools = {
+    auto_open_corpses = false,
+    auto_loot_containers = false,
+    loot_range = 2,
+    loot_capacity_threshold = 50,
+    loot_max_items_per_scan = 8,
+    feature_flags = {
+        experimental_loot = false,
+    },
 }
+```
+
+## Repo Validation
+
+Use the repo-local checks before promoting helper files into a live client:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest tests\test_otclient_helper_zerobot_shell.py tests\test_otclient_helper_profile_audit.py tests\test_ctoa_helper_smoke_report.py -q
+.\.venv\Scripts\python.exe scripts\ops\otclient_helper_module_contract.py
+```
+
+For sandbox packaging and live-client safety checks:
+
+```powershell
+.\scripts\windows\solteria_helper_test_env.ps1 -Action SmokePreflight
 ```
 
 ## 🔍 Monitoring & Logs

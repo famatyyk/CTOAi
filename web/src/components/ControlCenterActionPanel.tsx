@@ -83,7 +83,7 @@ export default function ControlCenterActionPanel({ target }: { target?: ControlC
   const authReady = viewer !== null
   const authStatus = loadState.state === "error" ? "unavailable" : loadState.authStatus
   const visibleActions = useMemo(() => {
-    if (!viewerRole) return actions
+    if (!viewerRole) return []
     return actions.filter((action) => canRunControlCenterAction(action, viewerRole).allowed)
   }, [actions, viewerRole])
   const hiddenActionCount = actions.length - visibleActions.length
@@ -224,7 +224,7 @@ export default function ControlCenterActionPanel({ target }: { target?: ControlC
           <>
             {authStatus === "unavailable"
               ? "Auth status unavailable."
-              : "Sign in to enable Control Center actions. Open Codex Chat first if you need the local seed auto-login."}
+              : "Sign in to enable Control Center actions. Local seed-login requires explicit development-only env configuration."}
           </>
         )}
       </div>

@@ -32,9 +32,9 @@ def test_phase5_scheduler_scripts_exist_and_reference_strict_sync_flow():
     assert "schtasks /Delete" in remover_content
 
 
-def test_vscode_tasks_include_phase5_scheduler_install_remove_entries():
-    tasks = Path(__file__).resolve().parents[1] / ".vscode" / "tasks.json"
-    content = tasks.read_text(encoding="utf-8")
+def test_phase5_scheduler_install_remove_commands_are_documented():
+    readme = Path(__file__).resolve().parents[1] / "docs" / "evidence" / "vps-worktree-hygiene" / "README.md"
+    content = readme.read_text(encoding="utf-8")
 
-    assert '"label": "CTOA: Install Phase-5 Morning Sync Task"' in content
-    assert '"label": "CTOA: Remove Phase-5 Morning Sync Task"' in content
+    assert "scripts/ops/install-phase5-morning-sync-task.ps1" in content
+    assert "scripts/ops/remove-phase5-morning-sync-task.ps1" in content

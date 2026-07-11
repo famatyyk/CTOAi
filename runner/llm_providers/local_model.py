@@ -6,6 +6,7 @@ import os
 
 import httpx
 
+from runner import http_safety
 from runner.llm_providers import LLMProvider
 
 __all__ = ["LocalModelProvider"]
@@ -15,7 +16,14 @@ class LocalModelProvider(LLMProvider):
     """Connects to local Ollama via OpenAI-compatible endpoint."""
 
     def __init__(self) -> None:
-        self.base_url = os.getenv("CTOA_LOCAL_MODEL_URL", "http://localhost:11434/v1").rstrip("/")
+        raw_base_url = os.getenv("CTOA_LOCAL_MODEL_URL", "http://localhost:11434/v1")
+        allow_remote = http_safety.env_enabled(
+            "CTOA_ALLOW_REMOTE_LOCAL_MODEL"
+        ) or http_safety.env_enabled("CTOA_ALLOW_REMOTE_MODEL_BACKENDS")
+        self.base_url = http_safety.require_model_backend_url(
+            raw_base_url,
+            allow_remote=allow_remote,
+        )
         self.model_name = os.getenv("CTOA_LOCAL_MODEL_NAME", "qwen2.5-coder:1.5b")
         self.timeout = float(os.getenv("CTOA_LOCAL_MODEL_TIMEOUT_SECS", "120"))
 

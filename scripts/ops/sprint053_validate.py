@@ -4,12 +4,17 @@ from __future__ import annotations
 
 import argparse
 import json
-import subprocess
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
 import yaml
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from runner import process_safety  # noqa: E402
 
 REQUIRED_FILES = [
     'workflows/backlog-sprint-053.yaml',
@@ -45,7 +50,8 @@ def _safe_yaml_load(path: Path):
 
 
 def _run(cmd: list[str], cwd: Path) -> tuple[int, str]:
-    result = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True)
+    executable = process_safety.resolve_executable(cmd[0])
+    result = process_safety.run_trusted([executable, *cmd[1:]], cwd=cwd, capture_output=True, text=True)
     return result.returncode, result.stdout + result.stderr
 
 

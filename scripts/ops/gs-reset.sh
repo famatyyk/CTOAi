@@ -32,6 +32,34 @@ log() { echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] [GS-RESET] $*" | tee -a "$LOG";
 log_section() { log ""; log "==== $* ===="; }
 die() { log "FATAL: $*"; exit "${2:-1}"; }
 
+is_local_api_health_url() {
+  local value="$1"
+  [[ "$value" =~ ^https?://(127\.0\.0\.1|localhost|\[::1\])(:[0-9]{1,5})?(/[A-Za-z0-9._~/%-]*)?$ ]]
+}
+
+is_local_api_base_url() {
+  local value="$1"
+  [[ "$value" =~ ^https?://(127\.0\.0\.1|localhost|\[::1\])(:[0-9]{1,5})?/?$ ]]
+}
+
+is_positive_int() {
+  local value="$1"
+  [[ "$value" =~ ^[1-9][0-9]*$ ]]
+}
+
+if ! is_local_api_health_url "$API_HEALTH_URL"; then
+  die "API_HEALTH_URL must be a local HTTP(S) URL without credentials, query, or fragment." 64
+fi
+if ! is_local_api_base_url "$API_BASE_URL"; then
+  die "API_BASE_URL must be a local HTTP(S) origin without credentials, path, query, or fragment." 64
+fi
+if ! is_positive_int "$API_CHECK_RETRIES"; then
+  die "API_CHECK_RETRIES must be a positive integer." 64
+fi
+if ! is_positive_int "$GS_TIMEOUT_WAIT"; then
+  die "GS_TIMEOUT_WAIT must be a positive integer number of seconds." 64
+fi
+
 # ---------------------------------------------------------------------------
 # PHASE 1 â€” SHUTDOWN  (reverse dependency order)
 # ---------------------------------------------------------------------------
@@ -175,4 +203,3 @@ fi
 log ""
 log "===== GS RESET CYCLE COMPLETE â€” $(date -u '+%Y-%m-%dT%H:%M:%SZ') ====="
 exit 0
-

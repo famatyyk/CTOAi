@@ -14,7 +14,14 @@ import os
 import sys
 import urllib.request
 from dataclasses import dataclass
-from typing import Dict, List
+from pathlib import Path
+from typing import Dict
+
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from runner.http_safety import require_github_api_url, require_github_repository  # noqa: E402
 
 
 WEIGHTS: Dict[str, int] = {
@@ -40,6 +47,7 @@ class WorkflowMetric:
 
 
 def _fetch_json(url: str, token: str | None) -> dict:
+    safe_url = require_github_api_url(url)
     headers = {
         "User-Agent": "CTOA-CI-Executive-Report",
         "Accept": "application/vnd.github+json",
@@ -47,12 +55,15 @@ def _fetch_json(url: str, token: str | None) -> dict:
     if token:
         headers["Authorization"] = f"Bearer {token}"
 
-    req = urllib.request.Request(url, headers=headers)
-    with urllib.request.urlopen(req, timeout=30) as response:
+    req = urllib.request.Request(safe_url, headers=headers)
+    # require_github_api_url pins token-bearing requests to the GitHub API host.
+    with urllib.request.urlopen(req, timeout=30) as response:  # nosec B310
         return json.loads(response.read().decode("utf-8"))
 
 
-def fetch_runs(owner: str, repo: str, token: str | None, min_cutoff: dt.datetime) -> list[dict]:
+def fetch_runs(
+    owner: str, repo: str, token: str | None, min_cutoff: dt.datetime
+) -> list[dict]:
     runs: list[dict] = []
     page = 1
     max_pages = 50
@@ -65,7 +76,9 @@ def fetch_runs(owner: str, repo: str, token: str | None, min_cutoff: dt.datetime
             break
 
         runs.extend(batch)
-        oldest = dt.datetime.fromisoformat(batch[-1]["created_at"].replace("Z", "+00:00"))
+        oldest = dt.datetime.fromisoformat(
+            batch[-1]["created_at"].replace("Z", "+00:00")
+        )
         if oldest < min_cutoff:
             break
         page += 1
@@ -134,7 +147,9 @@ def weighted_score(metrics: list[WorkflowMetric]) -> float:
     return round(weighted_sum / weight_total, 1) if weight_total else 0.0
 
 
-def identify_risks(metrics_7d: list[WorkflowMetric], score_7d: float, score_30d: float) -> list[str]:
+def identify_risks(
+    metrics_7d: list[WorkflowMetric], score_7d: float, score_30d: float
+) -> list[str]:
     by_name = {m.workflow: m for m in metrics_7d}
     risks: list[str] = []
 
@@ -156,7 +171,9 @@ def identify_risks(metrics_7d: list[WorkflowMetric], score_7d: float, score_30d:
         )
 
     if len(risks) < 3:
-        risks.append("Approval-gated runs can remain in waiting state and delay release throughput if review SLA is not enforced.")
+        risks.append(
+            "Approval-gated runs can remain in waiting state and delay release throughput if review SLA is not enforced."
+        )
 
     return risks[:3]
 
@@ -195,7 +212,9 @@ def render_markdown(
     lines.append("# CTOA CI Executive Report")
     lines.append("")
     lines.append(f"- Repository: `{owner_repo}`")
-    lines.append(f"- Generated at (UTC): `{generated_at.isoformat(timespec='seconds')}`")
+    lines.append(
+        f"- Generated at (UTC): `{generated_at.isoformat(timespec='seconds')}`"
+    )
     lines.append("")
     lines.append("## CI Health Score")
     lines.append("")
@@ -206,17 +225,27 @@ def render_markdown(
     for window in windows:
         lines.append(f"## Workflow Metrics ({window}d)")
         lines.append("")
-        lines.append("| Workflow | Completed | Success | Failed | Skipped | Success % (all completed) | Success % (pass/fail only) |")
+        lines.append(
+            "| Workflow | Completed | Success | Failed | Skipped | Success % (all completed) | Success % (pass/fail only) |"
+        )
         lines.append("|---|---:|---:|---:|---:|---:|---:|")
         for m in sorted(by_window[window], key=lambda x: x.workflow.lower()):
-            rate_all = "n/a" if m.success_rate_all is None else f"{m.success_rate_all:.1f}%"
-            rate_pf = "n/a" if m.success_rate_pass_fail is None else f"{m.success_rate_pass_fail:.1f}%"
+            rate_all = (
+                "n/a" if m.success_rate_all is None else f"{m.success_rate_all:.1f}%"
+            )
+            rate_pf = (
+                "n/a"
+                if m.success_rate_pass_fail is None
+                else f"{m.success_rate_pass_fail:.1f}%"
+            )
             lines.append(
                 f"| {m.workflow} | {m.completed} | {m.success} | {m.failed} | {m.skipped} | {rate_all} | {rate_pf} |"
             )
         lines.append("")
 
-    risks = identify_risks(by_window[windows[0]], scores[windows[0]], scores[windows[-1]])
+    risks = identify_risks(
+        by_window[windows[0]], scores[windows[0]], scores[windows[-1]]
+    )
     actions = remediation_actions(by_window[windows[0]])
 
     lines.append("## Top 3 Risks")
@@ -234,17 +263,33 @@ def render_markdown(
     lines.append("## Notes")
     lines.append("")
     lines.append("- Scores are weighted by workflow criticality.")
-    lines.append("- Pass/fail-only rate excludes skipped runs to reduce false pessimism on gate workflows.")
-    lines.append("- This report is intended for executive trend tracking and weekly remediation planning.")
+    lines.append(
+        "- Pass/fail-only rate excludes skipped runs to reduce false pessimism on gate workflows."
+    )
+    lines.append(
+        "- This report is intended for executive trend tracking and weekly remediation planning."
+    )
     lines.append("")
 
     return "\n".join(lines)
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Generate CTOA CI executive weekly report")
-    parser.add_argument("--output", default="artifacts/ci-executive-weekly.md", help="Output markdown path")
-    parser.add_argument("--window-days", nargs="+", type=int, default=[7, 30], help="Window sizes in days")
+    parser = argparse.ArgumentParser(
+        description="Generate CTOA CI executive weekly report"
+    )
+    parser.add_argument(
+        "--output",
+        default="artifacts/ci-executive-weekly.md",
+        help="Output markdown path",
+    )
+    parser.add_argument(
+        "--window-days",
+        nargs="+",
+        type=int,
+        default=[7, 30],
+        help="Window sizes in days",
+    )
     return parser.parse_args()
 
 
@@ -256,7 +301,9 @@ def main() -> int:
         return 2
 
     repo = os.getenv("GITHUB_REPOSITORY", "famatyyk/CTOAi")
-    if "/" not in repo:
+    try:
+        repo = require_github_repository(repo)
+    except ValueError:
         print("Invalid GITHUB_REPOSITORY format.", file=sys.stderr)
         return 2
     owner, name = repo.split("/", 1)
@@ -273,7 +320,9 @@ def main() -> int:
     for window in windows:
         cutoff = now - dt.timedelta(days=window)
         sliced = slice_window(runs, cutoff)
-        metrics = [metric_for_workflow(sliced, workflow_name) for workflow_name in WEIGHTS]
+        metrics = [
+            metric_for_workflow(sliced, workflow_name) for workflow_name in WEIGHTS
+        ]
         by_window[window] = metrics
         scores[window] = weighted_score(metrics)
 

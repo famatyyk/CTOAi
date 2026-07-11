@@ -9,9 +9,9 @@ from fastapi.testclient import TestClient
 def _load_app_module(monkeypatch: MonkeyPatch, tmp_path: Path, *, package_tier: str = "studio", mobile_console_enabled: bool | None = None):
     monkeypatch.setenv("CTOA_MOBILE_TOKEN", "test-mobile-token")
     monkeypatch.setenv("CTOA_OWNER_USER", "CTO")
-    monkeypatch.setenv("CTOA_OWNER_PASSWORD", "ownerpass123")
+    monkeypatch.setenv("CTOA_OWNER_PASSWORD", "test-owner-pass")
     monkeypatch.setenv("CTOA_OPERATOR_USER", "ctoa-bot")
-    monkeypatch.setenv("CTOA_OPERATOR_PASSWORD", "jakpod22")
+    monkeypatch.setenv("CTOA_OPERATOR_PASSWORD", "test-operator-pass")
     monkeypatch.setenv("CTOA_ADMIN_SETTINGS_FILE", str(tmp_path / "admin-settings.json"))
     monkeypatch.setenv("CTOA_IDEA_PARKING_FILE", str(tmp_path / "idea-parking.json"))
     monkeypatch.setenv("CTOA_GENERATED_DIR", str(tmp_path / "generated"))
@@ -29,7 +29,7 @@ def test_mobile_console_api_blocked_for_core_tier(monkeypatch: MonkeyPatch):
         module = _load_app_module(monkeypatch, Path(tmp), package_tier="core")
         client = TestClient(module.app)
 
-        response = client.post("/api/auth/login", json={"username": "CTO", "password": "ownerpass123"})
+        response = client.post("/api/auth/login", json={"username": "CTO", "password": "test-owner-pass"})
         assert response.status_code == 403
         assert response.json()["detail"] == "mobile_console capability requires Pro or Studio package"
 
@@ -48,6 +48,6 @@ def test_mobile_console_api_allowed_for_pro_tier(monkeypatch: MonkeyPatch):
         module = _load_app_module(monkeypatch, Path(tmp), package_tier="pro")
         client = TestClient(module.app)
 
-        response = client.post("/api/auth/login", json={"username": "CTO", "password": "ownerpass123"})
+        response = client.post("/api/auth/login", json={"username": "CTO", "password": "test-owner-pass"})
         assert response.status_code == 200
         assert response.json()["ok"] is True

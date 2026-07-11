@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-07-11T07:37:34+00:00",
+  "status": "implemented",
+  "decision": "ready_for_dry_run_operation",
+  "mode": "dry_run_first",
+  "mcp_enabled": true,
+  "selected_action_id": "evidence-pack-refresh",
+  "selected_action_label": "Rebuild evidence pack",
+  "proposed_mcp_tool": "ctoai_evidence_pack_refresh",
+  "risk_class": "safe_write",
+  "control_center_source": "web/src/lib/controlCenterActions.ts",
+  "risk_model": "docs/CTOAI_COMMAND_RISK_MODEL.md",
+  "audit_sink": "runtime/control-center/action-audit.jsonl",
+  "selected_candidate": {
+    "id": "evidence-pack-refresh",
+    "risk_class": "safe_write",
+    "control_center_label": "Rebuild evidence pack",
+    "control_center_enabled": true,
+    "risk_model_present": true,
+    "audit_seen": true,
+    "audit_record_count": 59,
+    "audit_dry_run_count": 35,
+    "audit_confirmed_count": 24,
+    "expected_mcp_tool": "ctoai_evidence_pack_refresh",
+    "plugin_mcp_allowed": true,
+    "missing_gates": []
+  },
+  "implementation_contract": [
+    "Reuse Control Center action semantics for evidence-pack-refresh or an equivalent audited runner.",
+    "Default to dry-run before any write and expose the dry-run result in the MCP response.",
+    "Append a sanitized action audit record before returning.",
+    "Accept no arbitrary command, path, shell, live-deploy, or Solteria Helper promotion arguments.",
+    "Do not read .env, logs, databases, runtime client state, or private client data into AI/generated context.",
+    "Keep live, deploy, guarded_write, dangerous, and forbidden_ui actions out of this tool.",
+    "Keep MCP tool listing read-only until implementation tests and audit parity pass in a later turn."
+  ],
+  "required_tests": [
+    "MCP tools/list still exposes only read-only tools while this design artifact is design-only.",
+    "Dry-run call returns planned evidence-pack refresh output without mutating release artifacts.",
+    "Real execution requires explicit safe_write intent and appends a sanitized action audit record.",
+    "Denied or malformed arguments return blocked status without running a command.",
+    "Release evidence and Control Center panels show the tool status without secret leakage."
+  ],
+  "blocked_reasons": [],
+  "blocked_until": "",
+  "next_safe_command": "Run ctoai_evidence_pack_refresh with dry_run=true and verify runtime/control-center/action-audit.jsonl before confirmed execution.",
+  "policy": "Primary safe-write MCP design remains evidence-pack refresh; repo hygiene, API cost, and Engine Brain refreshes are allowed as additional bounded evidence/context tools. Deploy/live actions remain blocked."
+}

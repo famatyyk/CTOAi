@@ -9,6 +9,8 @@ Measures:
   - No crashes or unhandled exceptions over 1000 ticks
 """
 from __future__ import annotations
+import copy
+import random
 import statistics
 import time
 import unittest
@@ -24,8 +26,29 @@ class TestStressTickLoop(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         from bot.perception.parser import parse_game_state
+        from bot.decision import brain, ml_model
         from bot.decision.brain import decide_action
         from bot.action import execute_action
+
+        cls._random_state = random.getstate()
+        cls._brain_prev_state = brain._prev_state
+        cls._brain_prev_action = brain._prev_action
+        cls._ml_snapshot = (
+            copy.deepcopy(ml_model._Q_A),
+            copy.deepcopy(ml_model._Q_B),
+            ml_model._step_count,
+            ml_model._loaded,
+            ml_model.save_qtable,
+        )
+
+        random.seed(7)
+        brain._prev_state = None
+        brain._prev_action = "idle"
+        ml_model._Q_A.clear()
+        ml_model._Q_B.clear()
+        ml_model._step_count = 0
+        ml_model._loaded = True
+        ml_model.save_qtable = lambda: None
 
         latencies   = []
         actions     = []
@@ -41,7 +64,7 @@ class TestStressTickLoop(unittest.TestCase):
                 with patch("time.sleep"):
                     execute_action(action)
                 actions.append(action)
-            except Exception as e:
+            except Exception:
                 errors += 1
 
             latencies.append((time.perf_counter() - tick_start) * 1000)
@@ -69,6 +92,22 @@ class TestStressTickLoop(unittest.TestCase):
         print(f"  Errors:       {cls.errors}")
         print(f"  Action dist:  {dict(cls.action_dist.most_common(5))}")
         print(f"{'='*55}")
+
+    @classmethod
+    def tearDownClass(cls):
+        from bot.decision import brain, ml_model
+
+        random.setstate(cls._random_state)
+        brain._prev_state = cls._brain_prev_state
+        brain._prev_action = cls._brain_prev_action
+        q_a, q_b, step_count, loaded, save_qtable = cls._ml_snapshot
+        ml_model._Q_A.clear()
+        ml_model._Q_A.update(q_a)
+        ml_model._Q_B.clear()
+        ml_model._Q_B.update(q_b)
+        ml_model._step_count = step_count
+        ml_model._loaded = loaded
+        ml_model.save_qtable = save_qtable
 
     # ── Correctness ───────────────────────────────────────────────────────────
 

@@ -122,9 +122,10 @@ def test_sprint066_quality_check_reports_pytest_failure(monkeypatch: pytest.Monk
     spec.loader.exec_module(module)
 
     monkeypatch.setattr(module.Path, 'exists', lambda self: True)
+    monkeypatch.setattr(module.process_safety, 'resolve_python', lambda: '/trusted/python')
     monkeypatch.setattr(
-        module.subprocess,
-        'run',
+        module.process_safety,
+        'run_trusted',
         lambda *args, **kwargs: SimpleNamespace(returncode=1, stdout='failed output\n', stderr='boom\n'),
     )
 

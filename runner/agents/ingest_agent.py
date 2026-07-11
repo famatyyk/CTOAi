@@ -15,10 +15,10 @@ from __future__ import annotations
 
 import json
 import logging
-import ssl
 import urllib.request
 from typing import Any
 
+from runner import http_safety
 from runner.agents import db
 
 logging.basicConfig(
@@ -30,21 +30,28 @@ log = logging.getLogger("ingest")
 REQUEST_TIMEOUT = 10
 MAX_BODY_BYTES = 512 * 1024  # 512 KB per endpoint
 
-_SSL_CTX = ssl.create_default_context()
-_SSL_CTX.check_hostname = False
-_SSL_CTX.verify_mode = ssl.CERT_NONE
+_SSL_CTX = http_safety.discovery_ssl_context("CTOA_INGEST_ALLOW_INSECURE_SSL")
 
 
 def _fetch_json(url: str) -> Any | None:
+    try:
+        safe_url = http_safety.require_public_discovery_url(
+            url,
+            label="Ingest endpoint",
+        )
+    except ValueError:
+        return None
+
     req = urllib.request.Request(
-        url,
+        safe_url,
         headers={
             "User-Agent": "CTOAIngest/1.0",
             "Accept": "application/json",
         },
     )
     try:
-        with urllib.request.urlopen(req, timeout=REQUEST_TIMEOUT, context=_SSL_CTX) as r:
+        # require_public_discovery_url keeps endpoint fetches on public http(s) URLs.
+        with urllib.request.urlopen(req, timeout=REQUEST_TIMEOUT, context=_SSL_CTX) as r:  # nosec B310
             raw = r.read(MAX_BODY_BYTES).decode("utf-8", errors="replace")
             return json.loads(raw)
     except Exception as exc:

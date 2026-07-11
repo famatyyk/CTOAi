@@ -11,8 +11,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import shutil
-import subprocess
 import sys
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -20,6 +18,11 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from runner import process_safety  # noqa: E402
+
 PRESETS_PATH = ROOT / "config" / "rosetta-presets.json"
 OUTPUT_DIR = ROOT / "runtime" / "rosetta-bundles"
 DEFAULT_IGNORES = ["runtime/**", "logs/**", "backups/**", "archived/**"]
@@ -121,28 +124,28 @@ def _resolve_assembler(executable_name: str) -> list[str] | None:
     if executable_name.lower().endswith(".py"):
         script_path = Path(executable_name)
         if script_path.exists():
-            return [sys.executable, str(script_path)]
+            return [process_safety.resolve_python(), str(script_path)]
 
     script_path = Path(executable_name)
     if script_path.exists() and script_path.suffix.lower() == ".py":
-        return [sys.executable, str(script_path)]
-
-    found = shutil.which(executable_name)
-    if found is not None:
-        return [found]
+        return [process_safety.resolve_python(), str(script_path)]
 
     python_dir = Path(sys.executable).resolve().parent
     scripts_dir = python_dir / "Scripts"
-    candidate = scripts_dir / executable_name
-    if candidate.exists():
-        return [str(candidate)]
-
-    windows_candidate = scripts_dir / f"{executable_name}.exe"
-    if windows_candidate.exists():
-        return [str(windows_candidate)]
+    fallback_paths = (scripts_dir / executable_name, scripts_dir / f"{executable_name}.exe")
+    try:
+        return [
+            process_safety.resolve_executable(
+                executable_name,
+                env_var="CTOA_ROSETTA_ASSEMBLER_BIN",
+                fallback_paths=fallback_paths,
+            )
+        ]
+    except process_safety.ExecutableUnavailableError:
+        pass
 
     if LOCAL_ROSETTA_MAIN.exists():
-        return [sys.executable, str(LOCAL_ROSETTA_MAIN)]
+        return [process_safety.resolve_python(), str(LOCAL_ROSETTA_MAIN)]
 
     return None
 
@@ -195,7 +198,7 @@ def main() -> int:
         return 1
 
     command = [*assembler, *command[1:]]
-    completed = subprocess.run(command, cwd=ROOT)
+    completed = process_safety.run_trusted(command, cwd=ROOT)
     if completed.returncode != 0:
         return completed.returncode
 

@@ -1,0 +1,318 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-07-11T07:37:34+00:00",
+  "status": "ready_for_plugin_design",
+  "policy": "P6 allows only four read-only status/cockpit tools plus audited repo-hygiene, API-cost, evidence-pack, Engine Brain, and P7 cockpit-smoke safe-write refreshes. Do not add deploy/live shortcuts or bypass Control Center evidence gates.",
+  "recommended_next": "Operate the plugin as four read-only status/cockpit tools plus audited repo-hygiene, API-cost, evidence-pack, Engine Brain, and P7 cockpit-smoke safe-write refreshes.",
+  "checks": [
+    {
+      "name": "ai_agents_instruction",
+      "status": "passed",
+      "evidence": "AI/AGENTS.md"
+    },
+    {
+      "name": "lua_agents_instruction",
+      "status": "passed",
+      "evidence": "scripts/lua/AGENTS.md"
+    },
+    {
+      "name": "engine_brain_skill_source",
+      "status": "passed",
+      "evidence": "codex_home/skills/ctoa-engine-brain/SKILL.md"
+    },
+    {
+      "name": "ctoai_plugin_manifest",
+      "status": "passed",
+      "evidence": "home/plugins/ctoai-engine-brain/.codex-plugin/plugin.json"
+    },
+    {
+      "name": "ctoai_plugin_brief_script",
+      "status": "passed",
+      "evidence": "home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_brief.py"
+    },
+    {
+      "name": "ctoai_plugin_mcp_config",
+      "status": "passed",
+      "evidence": "home/plugins/ctoai-engine-brain/.mcp.json"
+    },
+    {
+      "name": "ctoai_plugin_mcp_absolute_script",
+      "status": "passed",
+      "evidence": "absolute MCP script path is runnable"
+    },
+    {
+      "name": "ctoai_plugin_mcp_server",
+      "status": "passed",
+      "evidence": "home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_mcp.py"
+    },
+    {
+      "name": "ctoai_plugin_operator_skill",
+      "status": "passed",
+      "evidence": "home/plugins/ctoai-engine-brain/skills/ctoai-engine-brain-operator/SKILL.md"
+    },
+    {
+      "name": "ctoai_plugin_status_script",
+      "status": "passed",
+      "evidence": "home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_status.py"
+    },
+    {
+      "name": "ctoai_plugin_control_center_cockpit_script",
+      "status": "passed",
+      "evidence": "home/plugins/ctoai-engine-brain/scripts/ctoai_control_center_cockpit.py"
+    },
+    {
+      "name": "ctoai_plugin_self_check_script",
+      "status": "passed",
+      "evidence": "home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_self_check.py"
+    },
+    {
+      "name": "ctoai_plugin_p7_workflow_status_contract",
+      "status": "passed",
+      "evidence": "home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_status.py",
+      "missing": []
+    },
+    {
+      "name": "ctoai_plugin_p7_workflow_brief_contract",
+      "status": "passed",
+      "evidence": "home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_brief.py",
+      "missing": []
+    },
+    {
+      "name": "ctoai_plugin_operator_brief_cockpit_handoff_contract",
+      "status": "passed",
+      "evidence": "home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_brief.py",
+      "missing": []
+    },
+    {
+      "name": "ctoai_plugin_control_center_cockpit_mcp_contract",
+      "status": "passed",
+      "evidence": "home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_mcp.py",
+      "missing": []
+    },
+    {
+      "name": "ctoai_plugin_control_center_cockpit_drilldown_contract",
+      "status": "passed",
+      "evidence": "home/plugins/ctoai-engine-brain/scripts/ctoai_control_center_cockpit.py",
+      "missing": []
+    },
+    {
+      "name": "ctoai_plugin_control_center_cockpit_self_check_contract",
+      "status": "passed",
+      "evidence": "home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_self_check.py",
+      "missing": []
+    },
+    {
+      "name": "ctoai_plugin_p7_action_readiness_status_contract",
+      "status": "passed",
+      "evidence": "home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_status.py",
+      "missing": []
+    },
+    {
+      "name": "ctoai_plugin_p7_action_readiness_brief_contract",
+      "status": "passed",
+      "evidence": "home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_brief.py",
+      "missing": []
+    },
+    {
+      "name": "ctoai_plugin_p7_safe_write_design_status_contract",
+      "status": "passed",
+      "evidence": "home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_status.py",
+      "missing": []
+    },
+    {
+      "name": "ctoai_plugin_p7_safe_write_design_brief_contract",
+      "status": "passed",
+      "evidence": "home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_brief.py",
+      "missing": []
+    },
+    {
+      "name": "ctoai_plugin_repo_hygiene_refresh_mcp_contract",
+      "status": "passed",
+      "evidence": "home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_mcp.py",
+      "missing": []
+    },
+    {
+      "name": "ctoai_plugin_evidence_pack_refresh_mcp_contract",
+      "status": "passed",
+      "evidence": "home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_mcp.py",
+      "missing": []
+    },
+    {
+      "name": "ctoai_plugin_api_cost_refresh_mcp_contract",
+      "status": "passed",
+      "evidence": "home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_mcp.py",
+      "missing": []
+    },
+    {
+      "name": "ctoai_plugin_engine_brain_refresh_mcp_contract",
+      "status": "passed",
+      "evidence": "home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_mcp.py",
+      "missing": []
+    },
+    {
+      "name": "ctoai_plugin_p7_cockpit_smoke_refresh_mcp_contract",
+      "status": "passed",
+      "evidence": "home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_mcp.py",
+      "missing": []
+    },
+    {
+      "name": "ctoai_plugin_p6_handoff_smoke_status_contract",
+      "status": "passed",
+      "evidence": "home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_status.py",
+      "missing": []
+    },
+    {
+      "name": "ctoai_plugin_p6_handoff_smoke_cockpit_contract",
+      "status": "passed",
+      "evidence": "home/plugins/ctoai-engine-brain/scripts/ctoai_control_center_cockpit.py",
+      "missing": []
+    },
+    {
+      "name": "ctoai_plugin_p6_handoff_smoke_brief_contract",
+      "status": "passed",
+      "evidence": "home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_brief.py",
+      "missing": []
+    },
+    {
+      "name": "ctoai_plugin_p6_handoff_smoke_self_check_contract",
+      "status": "passed",
+      "evidence": "home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_self_check.py",
+      "missing": []
+    },
+    {
+      "name": "ctoai_plugin_bounded_write_policy_contract",
+      "status": "passed",
+      "evidence": "home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_self_check.py",
+      "missing": []
+    },
+    {
+      "name": "ctoai_plugin_p7_cockpit_smoke_contract_tests",
+      "status": "passed",
+      "evidence": "tests/test_engine_brain_index.py",
+      "missing": []
+    },
+    {
+      "name": "ctoai_plugin_marketplace_entry",
+      "status": "passed",
+      "evidence": "personal marketplace entry"
+    },
+    {
+      "name": "ctoai_plugin_installed_cache",
+      "status": "passed",
+      "evidence": "installed personal cache version 0.1.0+codex.20260708000418"
+    },
+    {
+      "name": "control_center_evidence_contract",
+      "status": "passed",
+      "evidence": "web/src/lib/controlCenterEvidence.ts"
+    },
+    {
+      "name": "control_center_evidence_tests",
+      "status": "passed",
+      "evidence": "web/src/lib/__tests__/controlCenterEvidence.test.ts"
+    },
+    {
+      "name": "control_center_p7_cockpit_smoke_script",
+      "status": "passed",
+      "evidence": "scripts/ops/control_center_p7_cockpit_smoke.py"
+    },
+    {
+      "name": "control_center_p7_cockpit_smoke_tests",
+      "status": "passed",
+      "evidence": "tests/test_control_center_p7_cockpit_smoke.py",
+      "missing": []
+    },
+    {
+      "name": "control_center_p7_safe_write_dry_run_smoke_script",
+      "status": "passed",
+      "evidence": "scripts/ops/control_center_p7_safe_write_dry_run_smoke.py"
+    },
+    {
+      "name": "control_center_p7_safe_write_dry_run_smoke_tests",
+      "status": "passed",
+      "evidence": "tests/test_control_center_p7_safe_write_dry_run_smoke.py",
+      "missing": []
+    },
+    {
+      "name": "control_center_p7_evidence_review_script",
+      "status": "passed",
+      "evidence": "scripts/ops/control_center_p7_evidence_review.py"
+    },
+    {
+      "name": "control_center_p7_evidence_review_tests",
+      "status": "passed",
+      "evidence": "tests/test_control_center_p7_evidence_review.py",
+      "missing": []
+    },
+    {
+      "name": "control_center_p6_plugin_handoff_smoke_script",
+      "status": "passed",
+      "evidence": "scripts/ops/control_center_p6_plugin_handoff_smoke.py"
+    },
+    {
+      "name": "control_center_p6_plugin_handoff_smoke_tests",
+      "status": "passed",
+      "evidence": "tests/test_control_center_p6_plugin_handoff_smoke.py",
+      "missing": []
+    },
+    {
+      "name": "control_center_safe_write_action_catalog",
+      "status": "passed",
+      "evidence": "web/src/lib/controlCenterActions.ts",
+      "missing": []
+    },
+    {
+      "name": "control_center_p7_operator_brief_config",
+      "status": "passed",
+      "evidence": "web/src/lib/controlCenterEvidenceConfig.ts",
+      "missing": []
+    },
+    {
+      "name": "control_center_p7_operator_brief_payload",
+      "status": "passed",
+      "evidence": "web/src/lib/controlCenterEvidence.ts",
+      "missing": []
+    },
+    {
+      "name": "control_center_p7_operator_brief_ops",
+      "status": "passed",
+      "evidence": "web/src/lib/controlCenterOps.ts",
+      "missing": []
+    },
+    {
+      "name": "control_center_p7_operator_brief_ui",
+      "status": "passed",
+      "evidence": "web/src/components/ControlCenterEvidencePanel.tsx",
+      "missing": []
+    },
+    {
+      "name": "control_center_p7_operator_brief_detail_ui",
+      "status": "passed",
+      "evidence": "web/src/components/ControlCenterDetailPanels.tsx",
+      "missing": []
+    },
+    {
+      "name": "release_evidence_pack",
+      "status": "passed",
+      "evidence": "scripts/ops/release_evidence_pack.py"
+    },
+    {
+      "name": "release_evidence_p7_operator_brief",
+      "status": "passed",
+      "evidence": "scripts/ops/release_evidence_pack.py",
+      "missing": []
+    },
+    {
+      "name": "full_workspace_validation_evidence",
+      "status": "passed",
+      "evidence": "runtime\\audits\\ctoai-full-workspace-validation.json",
+      "missing": [],
+      "failed": []
+    },
+    {
+      "name": "engine_brain_generated_context",
+      "status": "passed",
+      "evidence": "doc_sync_status=passed; secret_guardrail_status=passed"
+    }
+  ]
+}

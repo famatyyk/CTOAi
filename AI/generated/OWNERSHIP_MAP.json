@@ -1,0 +1,706 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-07-11T07:37:34+00:00",
+  "source": "runtime\\audits\\ctoai-full-workspace-audit.json",
+  "status": "ready",
+  "areas": [
+    {
+      "path": ".ctoa-local",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 9,
+      "bytes": 45939,
+      "categories": {
+        "runtime_or_local_state": 9
+      }
+    },
+    {
+      "path": ".devcontainer",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 2,
+      "bytes": 2791,
+      "categories": {
+        "tracked_source": 2
+      }
+    },
+    {
+      "path": ".dockerignore",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 1,
+      "bytes": 474,
+      "categories": {
+        "tracked_source": 1
+      }
+    },
+    {
+      "path": ".env.example",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 1,
+      "bytes": 6609,
+      "categories": {
+        "tracked_source": 1
+      }
+    },
+    {
+      "path": ".foundry",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 1,
+      "bytes": 114,
+      "categories": {
+        "tracked_source": 1
+      }
+    },
+    {
+      "path": ".git",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 730,
+      "bytes": 3583347623,
+      "categories": {
+        "git_internal": 730
+      }
+    },
+    {
+      "path": ".gitattributes",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 1,
+      "bytes": 812,
+      "categories": {
+        "tracked_source": 1
+      }
+    },
+    {
+      "path": ".github",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 40,
+      "bytes": 140142,
+      "categories": {
+        "tracked_source": 40
+      }
+    },
+    {
+      "path": ".gitignore",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 1,
+      "bytes": 894,
+      "categories": {
+        "tracked_source": 1
+      }
+    },
+    {
+      "path": ".gitmodules",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 1,
+      "bytes": 125,
+      "categories": {
+        "tracked_source": 1
+      }
+    },
+    {
+      "path": ".luarc.json",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 1,
+      "bytes": 268,
+      "categories": {
+        "tracked_source": 1
+      }
+    },
+    {
+      "path": ".pre-commit-config.yaml",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 1,
+      "bytes": 784,
+      "categories": {
+        "tracked_source": 1
+      }
+    },
+    {
+      "path": ".pytest_cache",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 5,
+      "bytes": 131315,
+      "categories": {
+        "vendor_or_cache": 5
+      }
+    },
+    {
+      "path": ".ruff_cache",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 17,
+      "bytes": 14907,
+      "categories": {
+        "untracked_local": 17
+      }
+    },
+    {
+      "path": ".tmp",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 105,
+      "bytes": 1669280,
+      "categories": {
+        "runtime_or_local_state": 105
+      }
+    },
+    {
+      "path": ".venv",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 4543,
+      "bytes": 121932997,
+      "categories": {
+        "vendor_or_cache": 4543
+      }
+    },
+    {
+      "path": ".vscode",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 4,
+      "bytes": 78552,
+      "categories": {
+        "tracked_source": 4
+      }
+    },
+    {
+      "path": "AGENTS.md",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 1,
+      "bytes": 2819,
+      "categories": {
+        "tracked_source": 1
+      }
+    },
+    {
+      "path": "AI",
+      "owner": "Engine Brain",
+      "validation_gate": "brain refresh; brain pack",
+      "files": 45,
+      "bytes": 931507,
+      "categories": {
+        "tracked_source": 45
+      }
+    },
+    {
+      "path": "CHANGELOG.md",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 1,
+      "bytes": 14835,
+      "categories": {
+        "tracked_source": 1
+      }
+    },
+    {
+      "path": "Dockerfile",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 1,
+      "bytes": 1219,
+      "categories": {
+        "tracked_source": 1
+      }
+    },
+    {
+      "path": "Dockerfile.api",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 1,
+      "bytes": 224,
+      "categories": {
+        "tracked_source": 1
+      }
+    },
+    {
+      "path": "Dockerfile.bot",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 1,
+      "bytes": 306,
+      "categories": {
+        "tracked_source": 1
+      }
+    },
+    {
+      "path": "README.md",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 1,
+      "bytes": 2605,
+      "categories": {
+        "tracked_source": 1
+      }
+    },
+    {
+      "path": "__pycache__",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 4,
+      "bytes": 11335,
+      "categories": {
+        "vendor_or_cache": 4
+      }
+    },
+    {
+      "path": "_local_archive",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 111,
+      "bytes": 1593799,
+      "categories": {
+        "runtime_or_local_state": 111
+      }
+    },
+    {
+      "path": "agent.yaml",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 1,
+      "bytes": 80,
+      "categories": {
+        "tracked_source": 1
+      }
+    },
+    {
+      "path": "agents",
+      "owner": "Agent governance",
+      "validation_gate": "pytest tests/ --ignore=tests/e2e",
+      "files": 32,
+      "bytes": 86768,
+      "categories": {
+        "tracked_source": 30,
+        "untracked_source_candidate": 2
+      }
+    },
+    {
+      "path": "alembic",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 6,
+      "bytes": 6780,
+      "categories": {
+        "tracked_source": 4,
+        "untracked_local": 2
+      }
+    },
+    {
+      "path": "alembic.ini",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 1,
+      "bytes": 552,
+      "categories": {
+        "tracked_source": 1
+      }
+    },
+    {
+      "path": "api",
+      "owner": "API runtime",
+      "validation_gate": "pytest tests/ --ignore=tests/e2e",
+      "files": 9,
+      "bytes": 261535,
+      "categories": {
+        "tracked_source": 3,
+        "untracked_source_candidate": 6
+      }
+    },
+    {
+      "path": "bot",
+      "owner": "Bot runtime",
+      "validation_gate": "pytest tests/ --ignore=tests/e2e",
+      "files": 144,
+      "bytes": 757084,
+      "categories": {
+        "tracked_source": 43,
+        "untracked_source_candidate": 101
+      }
+    },
+    {
+      "path": "config",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 6,
+      "bytes": 27895,
+      "categories": {
+        "local_secret_or_sensitive": 1,
+        "tracked_source": 5
+      }
+    },
+    {
+      "path": "conftest.py",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 1,
+      "bytes": 121,
+      "categories": {
+        "tracked_source": 1
+      }
+    },
+    {
+      "path": "core",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 3,
+      "bytes": 1214,
+      "categories": {
+        "tracked_source": 3
+      }
+    },
+    {
+      "path": "ctoa-vps.ps1",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 1,
+      "bytes": 547,
+      "categories": {
+        "tracked_source": 1
+      }
+    },
+    {
+      "path": "ctoa.ps1",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 1,
+      "bytes": 28804,
+      "categories": {
+        "tracked_source": 1
+      }
+    },
+    {
+      "path": "ctoa_local.log",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 1,
+      "bytes": 57383,
+      "categories": {
+        "untracked_local": 1
+      }
+    },
+    {
+      "path": "ctoa_ui_prefs.lua",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 1,
+      "bytes": 397,
+      "categories": {
+        "untracked_local": 1
+      }
+    },
+    {
+      "path": "data",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 5,
+      "bytes": 6524067,
+      "categories": {
+        "runtime_or_local_state": 5
+      }
+    },
+    {
+      "path": "deploy",
+      "owner": "VPS/deploy",
+      "validation_gate": "engine_brain_doctor; deployment smoke",
+      "files": 43,
+      "bytes": 39169,
+      "categories": {
+        "tracked_source": 43
+      }
+    },
+    {
+      "path": "desktop_console",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 16,
+      "bytes": 444171,
+      "categories": {
+        "tracked_source": 6,
+        "untracked_source_candidate": 10
+      }
+    },
+    {
+      "path": "docker",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 1,
+      "bytes": 167,
+      "categories": {
+        "tracked_source": 1
+      }
+    },
+    {
+      "path": "docker-compose.yml",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 1,
+      "bytes": 1781,
+      "categories": {
+        "tracked_source": 1
+      }
+    },
+    {
+      "path": "docs",
+      "owner": "Documentation",
+      "validation_gate": "doc sync guard",
+      "files": 314,
+      "bytes": 4433289,
+      "categories": {
+        "tracked_source": 308,
+        "untracked_source_candidate": 6
+      }
+    },
+    {
+      "path": "evals",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 6,
+      "bytes": 7025,
+      "categories": {
+        "tracked_source": 6
+      }
+    },
+    {
+      "path": "logs",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 3,
+      "bytes": 1936553,
+      "categories": {
+        "runtime_or_local_state": 3
+      }
+    },
+    {
+      "path": "metrics",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 2,
+      "bytes": 1504,
+      "categories": {
+        "runtime_or_local_state": 2
+      }
+    },
+    {
+      "path": "mobile_console",
+      "owner": "Mobile console",
+      "validation_gate": "pytest tests/ --ignore=tests/e2e",
+      "files": 20,
+      "bytes": 668132,
+      "categories": {
+        "tracked_source": 9,
+        "untracked_source_candidate": 11
+      }
+    },
+    {
+      "path": "node_modules",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 1,
+      "bytes": 198,
+      "categories": {
+        "vendor_or_cache": 1
+      }
+    },
+    {
+      "path": "policies",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 1,
+      "bytes": 566,
+      "categories": {
+        "tracked_source": 1
+      }
+    },
+    {
+      "path": "product",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 4,
+      "bytes": 1821,
+      "categories": {
+        "tracked_source": 4
+      }
+    },
+    {
+      "path": "prompts",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 6,
+      "bytes": 23328,
+      "categories": {
+        "tracked_source": 4,
+        "untracked_source_candidate": 2
+      }
+    },
+    {
+      "path": "releases",
+      "owner": "Release evidence",
+      "validation_gate": "release_evidence_pack.py",
+      "files": 36,
+      "bytes": 25060,
+      "categories": {
+        "tracked_source": 36
+      }
+    },
+    {
+      "path": "requirements-bot.txt",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 1,
+      "bytes": 525,
+      "categories": {
+        "tracked_source": 1
+      }
+    },
+    {
+      "path": "requirements-dev.txt",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 1,
+      "bytes": 126,
+      "categories": {
+        "tracked_source": 1
+      }
+    },
+    {
+      "path": "requirements.txt",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 1,
+      "bytes": 550,
+      "categories": {
+        "tracked_source": 1
+      }
+    },
+    {
+      "path": "runner",
+      "owner": "Runner runtime",
+      "validation_gate": "pytest tests/ --ignore=tests/e2e",
+      "files": 154,
+      "bytes": 1621503,
+      "categories": {
+        "tracked_source": 57,
+        "untracked_source_candidate": 97
+      }
+    },
+    {
+      "path": "runtime",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 1922,
+      "bytes": 774998119,
+      "categories": {
+        "runtime_or_local_state": 1922
+      }
+    },
+    {
+      "path": "schemas",
+      "owner": "Contracts",
+      "validation_gate": "schema consumers and pytest",
+      "files": 6,
+      "bytes": 19855,
+      "categories": {
+        "tracked_source": 6
+      }
+    },
+    {
+      "path": "scoring",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 6,
+      "bytes": 16874,
+      "categories": {
+        "tracked_source": 4,
+        "untracked_source_candidate": 2
+      }
+    },
+    {
+      "path": "scripts",
+      "owner": "Operator automation",
+      "validation_gate": "pytest targeted script tests",
+      "files": 429,
+      "bytes": 5557440,
+      "categories": {
+        "tracked_source": 253,
+        "untracked_source_candidate": 176
+      }
+    },
+    {
+      "path": "tests",
+      "owner": "Regression suite",
+      "validation_gate": "pytest tests/ --ignore=tests/e2e",
+      "files": 496,
+      "bytes": 8220932,
+      "categories": {
+        "local_secret_or_sensitive": 2,
+        "tracked_source": 177,
+        "untracked_source_candidate": 317
+      }
+    },
+    {
+      "path": "tools",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 76,
+      "bytes": 261059,
+      "categories": {
+        "tracked_source": 76
+      }
+    },
+    {
+      "path": "training",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 8,
+      "bytes": 74077,
+      "categories": {
+        "tracked_source": 5,
+        "untracked_source_candidate": 3
+      }
+    },
+    {
+      "path": "up",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 1,
+      "bytes": 0,
+      "categories": {
+        "tracked_source": 1
+      }
+    },
+    {
+      "path": "web",
+      "owner": "Control Center",
+      "validation_gate": "cd web; npm run lint; npm test",
+      "files": 32304,
+      "bytes": 1190012783,
+      "categories": {
+        "local_secret_or_sensitive": 2,
+        "tracked_source": 98,
+        "untracked_source_candidate": 5419,
+        "vendor_or_cache": 26785
+      }
+    },
+    {
+      "path": "workflows",
+      "owner": "Sprint workflows",
+      "validation_gate": "sprint validators",
+      "files": 89,
+      "bytes": 186711,
+      "categories": {
+        "tracked_source": 89
+      }
+    }
+  ]
+}

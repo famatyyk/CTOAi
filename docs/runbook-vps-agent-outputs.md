@@ -48,7 +48,7 @@ echo "=== runner log tail ==="
 tail -n 120 /opt/ctoa/logs/runner.log
 
 echo "=== latest agent runs (db) ==="
-psql "postgresql://ctoa:${DB_PASSWORD}@127.0.0.1:5432/ctoa" \
+PGPASSWORD="${DB_PASSWORD}" psql -h 127.0.0.1 -p 5432 -U ctoa -d ctoa \
   -c "SELECT agent, status, finished_at FROM agent_runs ORDER BY id DESC LIMIT 20;"
 ```
 
@@ -56,15 +56,15 @@ psql "postgresql://ctoa:${DB_PASSWORD}@127.0.0.1:5432/ctoa" \
 
 ```bash
 # Latest generated module rows
-psql "postgresql://ctoa:${DB_PASSWORD}@127.0.0.1:5432/ctoa" \
+PGPASSWORD="${DB_PASSWORD}" psql -h 127.0.0.1 -p 5432 -U ctoa -d ctoa \
   -c "SELECT task_id, output_file, quality_score, status, validated_at FROM modules ORDER BY validated_at DESC NULLS LAST LIMIT 30;"
 
 # Daily quality snapshot
-psql "postgresql://ctoa:${DB_PASSWORD}@127.0.0.1:5432/ctoa" \
+PGPASSWORD="${DB_PASSWORD}" psql -h 127.0.0.1 -p 5432 -U ctoa -d ctoa \
   -c "SELECT dt, modules_generated, programs_generated, avg_quality, launcher_day FROM daily_stats ORDER BY dt DESC LIMIT 7;"
 
 # Server intake state
-psql "postgresql://ctoa:${DB_PASSWORD}@127.0.0.1:5432/ctoa" \
+PGPASSWORD="${DB_PASSWORD}" psql -h 127.0.0.1 -p 5432 -U ctoa -d ctoa \
   -c "SELECT id, url, status, updated_at FROM servers ORDER BY id DESC LIMIT 20;"
 ```
 
@@ -144,7 +144,9 @@ If mobile console is running, use token-authenticated endpoints:
 - `GET /api/agents/intel/report` -> recent runs, quality, failed modules, trainer actions
 - `GET /api/dashboard` -> servers/modules/stats/top snapshot
 - `GET /api/agents/auto-trainer/latest` -> latest training reports
-- `POST /api/agents/intel/run` -> triggers orchestrator and returns generated files list
+- `POST /api/agents/intel/run` -> owner-only guarded write; requires
+  `{"confirm": true, "reason": "<audit reason>"}` before it triggers the
+  orchestrator and returns the generated files list
 - `GET /api/logs?target=agent_orchestrator&lines=120` -> orchestrator tail
 
 Example:
@@ -180,5 +182,3 @@ ls -ld /opt/ctoa/generated /opt/ctoa/logs
 - `deploy/vps/systemd/ctoa-agents-orchestrator.service`
 - `mobile_console/app.py`
 - `runner/agents/db.py`
-
-

@@ -47,7 +47,7 @@ def get_offset(ev):
                 if v.lower().startswith('0x'):
                     return int(v, 16)
                 return int(v)
-            except Exception:
+            except ValueError:
                 pass
     return None
 

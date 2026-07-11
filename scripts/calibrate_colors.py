@@ -43,7 +43,7 @@ def _load_config() -> dict:
     if _CALIB_FILE.exists():
         try:
             return json.loads(_CALIB_FILE.read_text(encoding="utf-8"))
-        except Exception:
+        except (OSError, json.JSONDecodeError):
             pass
     return {}
 

@@ -341,7 +341,7 @@
           </table>
           <details style="margin-top:16px">
             <summary style="cursor:pointer;color:var(--muted);font-size:13px">&#43; Nowe konto</summary>
-            <form id="registerForm" class="form-row" onsubmit="handleRegister(event)">
+            <form id="registerForm" class="form-row">
               <input id="regUsername" type="text" placeholder="login" style="width:130px" />
               <input id="regPassword" type="password" placeholder="haslo" style="width:130px" />
               <select id="regRole">
@@ -361,32 +361,59 @@
         return String(value || "").trim().replace(/\/$/, "");
       }
 
-      function isLoopbackHost(hostname) {
-        const host = String(hostname || "").toLowerCase();
-        return host === "127.0.0.1" || host === "localhost";
+      function isPrivateIpv4Host(hostname) {
+        const parts = String(hostname || "").split(".");
+        if (parts.length !== 4) {
+          return false;
+        }
+        const octets = parts.map((part) => Number(part));
+        if (octets.some((octet) => !Number.isInteger(octet) || octet < 0 || octet > 255)) {
+          return false;
+        }
+        const [a, b] = octets;
+        return a === 10 || a === 127 || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168);
+      }
+
+      function isLocalDevHost(hostname) {
+        const host = String(hostname || "").toLowerCase().replace(/^\[|\]$/g, "");
+        return host === "localhost" || host.endsWith(".localhost") || host === "::1" || isPrivateIpv4Host(host);
       }
 
       function normalizeApiBase(value) {
-        const normalized = stripTrailingSlash(value);
-        if (!normalized) return "";
+        const raw = stripTrailingSlash(value);
+        if (!raw) return "";
 
         let parsed;
         try {
-          parsed = new URL(normalized);
+          parsed = new URL(raw);
         } catch (_err) {
-          return normalized;
+          return "";
+        }
+
+        if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+          return "";
+        }
+        if (parsed.username || parsed.password || parsed.search || parsed.hash) {
+          return "";
+        }
+        if (parsed.pathname && parsed.pathname !== "/") {
+          return "";
         }
 
         try {
           const pageUrl = new URL(window.location.href);
-          if (isLoopbackHost(parsed.hostname) && !isLoopbackHost(pageUrl.hostname)) {
+          if (isLocalDevHost(parsed.hostname) && !isLocalDevHost(pageUrl.hostname)) {
             return stripTrailingSlash(pageUrl.origin);
           }
         } catch (_err) {
           // Keep user-provided value when page URL is unavailable.
         }
 
-        return normalized;
+        if (parsed.protocol === "http:" && !isLocalDevHost(parsed.hostname)) {
+          return "";
+        }
+
+        return parsed.origin.replace(/\/$/, "");
       }
 
       const inferredApiBase = (() => {
@@ -432,6 +459,7 @@
         serversTable: document.getElementById("serversTable"),
         accountsMgmt: document.getElementById("accountsMgmt"),
         accountsTableBody: document.getElementById("accountsTableBody"),
+        registerForm: document.getElementById("registerForm"),
         regUsername: document.getElementById("regUsername"),
         regPassword: document.getElementById("regPassword"),
         regRole: document.getElementById("regRole"),
@@ -473,14 +501,42 @@
         el.accountsMgmt.style.display = state.role === "owner" ? "" : "none";
       }
 
-      function esc(s) {
-        return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      function clearNode(node) {
+        if (node) {
+          node.replaceChildren();
+        }
+      }
+
+      function createTextNodeElement(tagName, text, className = "") {
+        const node = document.createElement(tagName);
+        if (className) {
+          node.className = className;
+        }
+        node.textContent = String(text ?? "");
+        return node;
+      }
+
+      function appendTextCell(row, text, className = "") {
+        row.appendChild(createTextNodeElement("td", text, className));
+      }
+
+      function appendTableMessage(tbody, colSpan, message) {
+        const row = document.createElement("tr");
+        const cell = createTextNodeElement("td", message, "muted");
+        cell.colSpan = colSpan;
+        row.appendChild(cell);
+        tbody.appendChild(row);
+      }
+
+      function safeCssKey(value, fallback = "warn") {
+        const key = String(value || fallback).toLowerCase().replace(/[^a-z0-9_-]/g, "");
+        return key || fallback;
       }
 
       function renderAccounts(accounts) {
-        el.accountsTableBody.innerHTML = "";
+        clearNode(el.accountsTableBody);
         if (!accounts || !accounts.length) {
-          el.accountsTableBody.innerHTML = '<tr><td colspan="5" class="muted">Brak kont.</td></tr>';
+          appendTableMessage(el.accountsTableBody, 5, "Brak kont.");
           return;
         }
         for (const acc of accounts) {
@@ -488,14 +544,32 @@
           const isEnv = acc.source === "env";
           const isSelf = acc.username === state.username;
           const altRole = acc.role === "owner" ? "operator" : "owner";
-          const safeUser = esc(acc.username);
-          const actionsHtml = isEnv
-            ? `<span class="muted" style="font-size:11px">env (tylko odczyt)</span>`
-            : `<div class="acc-actions">
-                <button class="btn-sm" onclick="handleRoleChange('${safeUser}', '${altRole}')">&rarr; ${altRole}</button>
-                ${!isSelf ? `<button class="btn-sm btn-danger" onclick="handleDeactivate('${safeUser}')">Dezaktywuj</button>` : ""}
-               </div>`;
-          tr.innerHTML = `<td>${safeUser}</td><td>${esc(acc.role)}</td><td>${esc(acc.source || "db")}</td><td>${acc.active ? "tak" : "nie"}</td><td>${actionsHtml}</td>`;
+
+          appendTextCell(tr, acc.username || "");
+          appendTextCell(tr, acc.role || "");
+          appendTextCell(tr, acc.source || "db");
+          appendTextCell(tr, acc.active ? "tak" : "nie");
+
+          const actionsCell = document.createElement("td");
+          if (isEnv) {
+            actionsCell.appendChild(createTextNodeElement("span", "env (tylko odczyt)", "muted"));
+            actionsCell.firstElementChild.style.fontSize = "11px";
+          } else {
+            const actions = document.createElement("div");
+            actions.className = "acc-actions";
+            const roleButton = createTextNodeElement("button", `\u2192 ${altRole}`, "btn-sm");
+            roleButton.type = "button";
+            roleButton.addEventListener("click", () => handleRoleChange(acc.username, altRole));
+            actions.appendChild(roleButton);
+            if (!isSelf) {
+              const deactivateButton = createTextNodeElement("button", "Dezaktywuj", "btn-sm btn-danger");
+              deactivateButton.type = "button";
+              deactivateButton.addEventListener("click", () => handleDeactivate(acc.username));
+              actions.appendChild(deactivateButton);
+            }
+            actionsCell.appendChild(actions);
+          }
+          tr.appendChild(actionsCell);
           el.accountsTableBody.appendChild(tr);
         }
       }
@@ -505,7 +579,8 @@
           const payload = await api("/api/users");
           renderAccounts(payload.accounts || []);
         } catch (err) {
-          el.accountsTableBody.innerHTML = `<tr><td colspan="5" class="muted">Blad: ${esc(String(err))}</td></tr>`;
+          clearNode(el.accountsTableBody);
+          appendTableMessage(el.accountsTableBody, 5, `Blad: ${String(err)}`);
         }
       }
 
@@ -525,12 +600,12 @@
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ username, password, role }),
           });
-          el.regStatus.textContent = `Konto ${esc(username)} utworzone.`;
+          el.regStatus.textContent = `Konto ${username} utworzone.`;
           el.regUsername.value = "";
           el.regPassword.value = "";
           await loadAccounts();
         } catch (err) {
-          el.regStatus.textContent = `Blad: ${esc(String(err))}`;
+          el.regStatus.textContent = `Blad: ${String(err)}`;
         }
       }
 
@@ -725,9 +800,9 @@
       function renderStatusBars(moduleRows) {
         const rows = moduleRows.map(r => ({ status: String(r[0] || "UNKNOWN"), n: Number(r[1] || 0) }));
         const total = rows.reduce((a, b) => a + b.n, 0);
-        el.statusRows.innerHTML = "";
+        clearNode(el.statusRows);
         if (!rows.length || total <= 0) {
-          el.statusRows.innerHTML = '<div class="muted">Brak danych o modulach.</div>';
+          el.statusRows.appendChild(createTextNodeElement("div", "Brak danych o modulach.", "muted"));
           return { total: 0, done: 0 };
         }
 
@@ -736,7 +811,15 @@
           const line = document.createElement("div");
           line.className = "row";
           const color = /VALIDATED|RELEASED/.test(row.status) ? "ok" : /FAILED/.test(row.status) ? "bad" : "warn";
-          line.innerHTML = `<div>${row.status}</div><div class="mini"><span class="${color}" style="width:${p.toFixed(1)}%"></span></div><div>${row.n}</div>`;
+          line.appendChild(createTextNodeElement("div", row.status));
+          const mini = document.createElement("div");
+          mini.className = "mini";
+          const bar = document.createElement("span");
+          bar.className = safeCssKey(color, "warn");
+          bar.style.width = `${pct(p).toFixed(1)}%`;
+          mini.appendChild(bar);
+          line.appendChild(mini);
+          line.appendChild(createTextNodeElement("div", row.n));
           el.statusRows.appendChild(line);
         }
 
@@ -776,56 +859,62 @@
         const sevClass = severityClass(severity);
         const severityLabel = String(severity).toUpperCase();
 
-        el.statusHeadline.innerHTML =
-          `<span class="status-dot ${sevClass}"></span>` +
-          `<span>${esc(message)}</span>` +
-          `<span class="status-pill ${sevClass}">${esc(severityLabel)}</span>`;
+        clearNode(el.statusHeadline);
+        el.statusHeadline.appendChild(createTextNodeElement("span", "", `status-dot ${sevClass}`));
+        el.statusHeadline.appendChild(createTextNodeElement("span", message));
+        el.statusHeadline.appendChild(createTextNodeElement("span", severityLabel, `status-pill ${sevClass}`));
 
         el.statusDetail.textContent = detail || "Brak dodatkowego opisu.";
 
+        clearNode(el.statusImpacted);
         if (impactedSections.length) {
-          el.statusImpacted.innerHTML = impactedSections
-            .map((name) => {
-              const chipClass = criticalSections.includes(name) ? "chip-critical" : "chip-warning";
-              return `<span class="status-chip ${chipClass}">${esc(name)}</span>`;
-            })
-            .join("");
+          const criticalNames = criticalSections.map((name) => String(name));
+          impactedSections.forEach((name) => {
+            const chipClass = criticalNames.includes(String(name)) ? "chip-critical" : "chip-warning";
+            el.statusImpacted.appendChild(createTextNodeElement("span", name, `status-chip ${chipClass}`));
+          });
         } else {
-          el.statusImpacted.innerHTML = '<span class="muted">Brak sekcji dotknietych problemem.</span>';
+          el.statusImpacted.appendChild(createTextNodeElement("span", "Brak sekcji dotknietych problemem.", "muted"));
         }
 
+        clearNode(el.statusActions);
         if (actions.length) {
-          el.statusActions.innerHTML = actions
-            .slice(0, 5)
-            .map((action) => `<li>${esc(action)}</li>`)
-            .join("");
+          actions.slice(0, 5).forEach((action) => {
+            el.statusActions.appendChild(createTextNodeElement("li", action));
+          });
         } else {
-          el.statusActions.innerHTML = '<li class="muted">Brak rekomendowanych akcji.</li>';
+          el.statusActions.appendChild(createTextNodeElement("li", "Brak rekomendowanych akcji.", "muted"));
         }
       }
 
       function renderLatest(items) {
-        el.latestTable.innerHTML = "";
+        clearNode(el.latestTable);
         if (!items.length) {
-          el.latestTable.innerHTML = '<tr><td colspan="4" class="muted">Brak rekordow.</td></tr>';
+          appendTableMessage(el.latestTable, 4, "Brak rekordow.");
           return;
         }
         for (const it of items.slice(0, 20)) {
           const tr = document.createElement("tr");
-          tr.innerHTML = `<td>${it.task_id || "-"}</td><td>${it.template || "-"}</td><td>${it.output_file || "-"}</td><td>${it.generated_at || "-"}</td>`;
+          appendTextCell(tr, it.task_id || "-");
+          appendTextCell(tr, it.template || "-");
+          appendTextCell(tr, it.output_file || "-");
+          appendTextCell(tr, it.generated_at || "-");
           el.latestTable.appendChild(tr);
         }
       }
 
       function renderServers(rows) {
-        el.serversTable.innerHTML = "";
+        clearNode(el.serversTable);
         if (!rows.length) {
-          el.serversTable.innerHTML = '<tr><td colspan="4" class="muted">Brak serwerow.</td></tr>';
+          appendTableMessage(el.serversTable, 4, "Brak serwerow.");
           return;
         }
         for (const r of rows.slice(0, 20)) {
           const tr = document.createElement("tr");
-          tr.innerHTML = `<td>${r[0] || "-"}</td><td>${r[1] || "-"}</td><td>${r[2] || "-"}</td><td>${r[3] || "-"}</td>`;
+          appendTextCell(tr, r[0] || "-");
+          appendTextCell(tr, r[1] || "-");
+          appendTextCell(tr, r[2] || "-");
+          appendTextCell(tr, r[3] || "-");
           el.serversTable.appendChild(tr);
         }
       }
@@ -910,6 +999,8 @@
         }
       });
 
+      el.registerForm?.addEventListener("submit", handleRegister);
+
       [el.apiBase, el.username, el.password].forEach((inputEl) => {
         inputEl.addEventListener("keydown", async (ev) => {
           if (ev.key !== "Enter") return;
@@ -966,8 +1057,3 @@
     </script>
   </body>
 </html>
-
-
-
-
-

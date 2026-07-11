@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import os
 import sys as _sys
+import uuid
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -38,12 +39,18 @@ def _load_yaml(path: Path) -> dict[str, Any]:
 
 def _save_yaml_atomic(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    with tmp.open("w", encoding="utf-8") as fh:
-        yaml.safe_dump(payload, fh, sort_keys=False, allow_unicode=False)
-        fh.flush()
-        os.fsync(fh.fileno())
-    tmp.replace(path)
+    tmp = path.with_name(f".{path.name}.{os.getpid()}.{uuid.uuid4().hex}.tmp")
+    try:
+        with tmp.open("w", encoding="utf-8") as fh:
+            yaml.safe_dump(payload, fh, sort_keys=False, allow_unicode=False)
+            fh.flush()
+            os.fsync(fh.fileno())
+        tmp.replace(path)
+    finally:
+        try:
+            tmp.unlink()
+        except FileNotFoundError:
+            pass
 
 
 def _init_state_from_backlog(backlog: dict[str, Any]) -> dict[str, Any]:

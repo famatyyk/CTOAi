@@ -73,12 +73,13 @@ def rb(c, addr, size):
 
 def resolve_symbol(c, names):
     for n in names:
+        v = None
         try:
             v = c.eval_sync(n)[0]
-            if isinstance(v, int) and v > 0:
-                return n, v
-        except Exception:
-            continue
+        except Exception as exc:
+            print(f"[capture_runtime_crypto] resolve_symbol failed for {n}: {exc}")
+        if isinstance(v, int) and v > 0:
+            return n, v
     return None, None
 
 
@@ -94,6 +95,7 @@ report = {
     },
     "events": [],
     "dumps": [],
+    "errors": [],
 }
 
 
@@ -103,6 +105,17 @@ def flush(status=None, summary=None):
     if summary is not None:
         report["summary"] = summary
     REPORT.write_text(json.dumps(report, indent=2), encoding="utf-8")
+
+
+def record_error(context, exc):
+    report["errors"].append({"context": str(context), "error": str(exc)})
+
+
+def clear_breakpoint(addr, context):
+    try:
+        c.clear_breakpoint(int(addr))
+    except Exception as exc:
+        record_error(context, exc)
 
 
 def dump_blob(kind, blob: bytes, meta=None):
@@ -177,10 +190,7 @@ def capture_return_for_rtl(c, esp):
     except Exception as ex:
         report["events"].append({"type": "RtlDecompressBuffer_error", "error": str(ex)})
     finally:
-        try:
-            c.clear_breakpoint(int(ret))
-        except Exception:
-            pass
+        clear_breakpoint(ret, "RtlDecompressBuffer:return")
 
 
 def capture_return_for_bcrypt(c, esp):
@@ -241,10 +251,7 @@ def capture_return_for_bcrypt(c, esp):
     except Exception as ex:
         report["events"].append({"type": "BCryptDecrypt_error", "error": str(ex)})
     finally:
-        try:
-            c.clear_breakpoint(int(ret))
-        except Exception:
-            pass
+        clear_breakpoint(ret, "BCryptDecrypt:return")
 
 
 def capture_return_for_crypt(c, esp):
@@ -293,10 +300,7 @@ def capture_return_for_crypt(c, esp):
     except Exception as ex:
         report["events"].append({"type": "CryptDecrypt_error", "error": str(ex)})
     finally:
-        try:
-            c.clear_breakpoint(int(ret))
-        except Exception:
-            pass
+        clear_breakpoint(ret, "CryptDecrypt:return")
 
 
 def capture_return_for_ncrypt(c, esp):
@@ -351,10 +355,7 @@ def capture_return_for_ncrypt(c, esp):
     except Exception as ex:
         report["events"].append({"type": "NCryptDecrypt_error", "error": str(ex)})
     finally:
-        try:
-            c.clear_breakpoint(int(ret))
-        except Exception:
-            pass
+        clear_breakpoint(ret, "NCryptDecrypt:return")
 
 
 flush("starting")
@@ -450,10 +451,7 @@ except Exception as ex:
     report["error"] = str(ex)
 finally:
     for n in hooks.keys():
-        try:
-            c.clear_breakpoint(n)
-        except Exception:
-            pass
+        clear_breakpoint(n, f"hook:{n}")
 
 summary = {
     "events_seen": seen,

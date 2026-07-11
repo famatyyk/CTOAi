@@ -91,6 +91,36 @@
       "command": "dash",
       "aliases": [],
       "description": "Dashboard helpers: dash snap"
+    },
+    {
+      "command": "otprofile",
+      "aliases": [],
+      "description": "Generate and deploy an OTClient EK profile"
+    },
+    {
+      "command": "otpreview",
+      "aliases": [],
+      "description": "Render and open the OTClient helper UI preview"
+    },
+    {
+      "command": "otmockup",
+      "aliases": [],
+      "description": "Render and open the OTClient helper UI mockup"
+    },
+    {
+      "command": "otdeploy",
+      "aliases": [],
+      "description": "Promote staged Helper through the official wrapper; requires approve-live"
+    },
+    {
+      "command": "otest",
+      "aliases": [],
+      "description": "Run official ValidateDev and open the local Helper preview"
+    },
+    {
+      "command": "brain",
+      "aliases": [],
+      "description": "Engine Brain helpers: refresh|doctor|pack [all|helper|control-center|infra|security]"
     }
   ]
 }

@@ -3,19 +3,27 @@ import os
 import re
 import shutil
 import shlex
-import subprocess
 import json
 import time
 import hmac
+import ipaddress
 import secrets
+import sys as _sys
+import uuid
 import bcrypt
 from datetime import datetime, timezone
 from pathlib import Path
 from threading import Lock
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlparse
+from urllib.parse import unquote, urlparse
 from urllib.request import urlopen
+
+from runner import process_safety
+from runner.generated_manifest_safety import (
+    iter_safe_manifest_files,
+    resolve_latest_manifest_path,
+)
 
 from fastapi import Cookie, Depends, FastAPI, Header, HTTPException, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -49,7 +57,6 @@ if TYPE_CHECKING:
 
 ROOT = Path(__file__).resolve().parent.parent
 
-import sys as _sys
 _sys.path.insert(0, str(ROOT))
 from runtime_context import (
     default_generated_dir,
@@ -68,6 +75,15 @@ SITE_INDEX_HTML = SITE_DIR / "index.html"
 LIVE_DASHBOARD_HTML = ROOT / "docs" / "site" / "live-dashboard.html"
 AUDIT_LOG = ROOT / "logs" / "mobile-console-audit.log"
 AUTO_TRAINER_DIR = Path(os.environ.get("CTOA_TRAINING_REPORT_DIR", str(ROOT / "runtime" / "training-reports")))
+AUTO_TRAINER_MARKDOWN_MAX_BYTES = 50_000
+AUTO_TRAINER_JSON_MAX_BYTES = 200_000
+ADMIN_SETTINGS_MAX_BYTES = 50_000
+IDEA_PARKING_MAX_BYTES = 1_000_000
+LOG_TAIL_MAX_BYTES = 200_000
+LOCAL_JSON_MAX_BYTES = 200_000
+GENERATED_MANIFEST_JSON_MAX_BYTES = 1_000_000
+CLIENT_SYNC_INIT_MAX_BYTES = 200_000
+CLIENT_SYNC_LUA_MAX_BYTES = 2_000_000
 _DEFAULT_GENERATED_DIR = default_generated_dir(ROOT)
 GENERATED_DIR = Path(os.environ.get("CTOA_GENERATED_DIR", str(_DEFAULT_GENERATED_DIR)))
 GENERATED_MANIFESTS_DIR = GENERATED_DIR / "manifests"
@@ -109,16 +125,11 @@ def _windows_orchestrator_state() -> str:
         return "inactive"
 
     try:
-        probe = subprocess.run(
-            ["tasklist", "/FI", f"PID eq {pid}"],
-            text=True,
-            capture_output=True,
-            timeout=4,
-        )
-    except Exception:
+        probe = _run_argv(["tasklist", "/FI", f"PID eq {pid}"], timeout=4)
+    except (OSError, process_safety.ExecutableUnavailableError, process_safety.ProcessExecutionError):
         return "active"
 
-    output = f"{probe.stdout}\n{probe.stderr}"
+    output = f"{probe['stdout']}\n{probe['stderr']}"
     return "active" if str(pid) in output else "stale"
 
 
@@ -143,7 +154,7 @@ def _disk_probe() -> dict:
     try:
         usage = shutil.disk_usage(ROOT)
         payload = {
-            "path": str(ROOT),
+            "path": _public_artifact_path(ROOT, fallback="."),
             "total_gb": round(usage.total / (1024 ** 3), 2),
             "used_gb": round((usage.total - usage.free) / (1024 ** 3), 2),
             "free_gb": round(usage.free / (1024 ** 3), 2),
@@ -181,6 +192,84 @@ def _require_http_url(url: str) -> str:
         raise ValueError("URL must use http:// or https:// and include a host")
     return url
 
+
+def _require_local_runtime_api_base_url(url: str, label: str) -> str:
+    value = _require_http_url(url).strip().rstrip("/")
+    parsed = urlparse(value)
+    try:
+        _ = parsed.port
+    except ValueError as exc:
+        raise ValueError(f"{label} URL port is invalid") from exc
+    if parsed.username or parsed.password or parsed.query or parsed.fragment:
+        raise ValueError(f"{label} URL must not include credentials, query, or fragment")
+    if "\\" in parsed.path:
+        raise ValueError(f"{label} URL path must not include backslashes")
+    path_parts = [unquote(part) for part in parsed.path.split("/")]
+    if any(part in {".", ".."} for part in path_parts):
+        raise ValueError(f"{label} URL path must not contain traversal")
+
+    host = (parsed.hostname or "").strip().lower().rstrip(".")
+    allowed_hosts = {"localhost", "127.0.0.1", "::1", "host.docker.internal"}
+    if host not in allowed_hosts:
+        raise ValueError(f"{label} URL must target a local runtime API host")
+    return value
+
+
+def _require_local_runtime_proxy_path(path: str, label: str) -> str:
+    raw_value = str(path or "").strip()
+    raw_parsed = urlparse(raw_value)
+    if raw_parsed.scheme or raw_parsed.netloc:
+        raise ValueError(f"{label} path must be a relative API path")
+    value = raw_value
+    if not value.startswith("/"):
+        value = f"/{value}"
+    parsed = urlparse(value)
+    if parsed.query or parsed.fragment:
+        raise ValueError(f"{label} path must not include query or fragment")
+    if "\\" in parsed.path:
+        raise ValueError(f"{label} path must not include backslashes")
+    path_parts = [unquote(part) for part in parsed.path.split("/")]
+    if any(part in {".", ".."} for part in path_parts):
+        raise ValueError(f"{label} path must not contain traversal")
+    if any(not part for part in path_parts[1:]):
+        raise ValueError(f"{label} path must not contain empty segments")
+    if any("/" in part or "\\" in part for part in path_parts):
+        raise ValueError(f"{label} path must not contain encoded separators")
+    if parsed.path != "/api" and not parsed.path.startswith("/api/"):
+        raise ValueError(f"{label} path must stay under /api")
+    return parsed.path
+
+
+def _private_intel_targets_allowed() -> bool:
+    return os.getenv("CTOA_ALLOW_PRIVATE_INTEL_TARGETS", "false").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+
+
+def _is_private_or_local_intel_host(hostname: str) -> bool:
+    host = hostname.strip().lower().rstrip(".")
+    if not host:
+        return True
+    if host == "localhost" or host.endswith(".localhost") or host.endswith(".local"):
+        return True
+    if "." not in host:
+        return True
+
+    try:
+        address = ipaddress.ip_address(host)
+    except ValueError:
+        return False
+
+    return not address.is_global
+
+
+def _safe_proxy_error(exc: BaseException | str) -> str:
+    return _redact_audit_text(str(exc), max_length=400)
+
+
 def _intel_api_health_probe() -> dict:
     url = "http://127.0.0.1:8890/health"
     if _is_windows_host() and os.getenv("CTOA_INTEL_API_EXPECTED", "false").lower() not in {"1", "true", "yes", "on"}:
@@ -190,7 +279,8 @@ def _intel_api_health_probe() -> dict:
     payload: dict[str, Any] = {"ok": False, "url": url}
     try:
         safe_url = _require_http_url(url)
-        with urlopen(safe_url, timeout=5) as response:
+        # _require_http_url enforces http/https with host before this network call.
+        with urlopen(safe_url, timeout=5) as response:  # nosec B310
             body = response.read().decode("utf-8")
             payload["status"] = int(getattr(response, "status", 200))
             try:
@@ -201,9 +291,9 @@ def _intel_api_health_probe() -> dict:
     except HTTPError as exc:
         payload["error"] = f"http_{exc.code}"
     except URLError as exc:
-        payload["error"] = str(exc.reason)
+        payload["error"] = _safe_proxy_error(exc.reason)
     except Exception as exc:
-        payload["error"] = str(exc)
+        payload["error"] = _safe_proxy_error(exc)
 
     code = 0 if payload.get("ok") else 1
     return {
@@ -214,8 +304,25 @@ def _intel_api_health_probe() -> dict:
 
 
 def _intel_api_proxy(path: str = "/api/intel/status", timeout: int = 5) -> dict[str, Any]:
-    suffix = path if path.startswith("/") else f"/{path}"
-    base_url = os.getenv("CTOA_INTEL_API_BASE_URL", "http://127.0.0.1:8890").strip().rstrip("/")
+    try:
+        suffix = _require_local_runtime_proxy_path(path, "Intel API proxy")
+    except ValueError as exc:
+        return {
+            "ok": False,
+            "url": "[invalid-local-runtime-api]",
+            "path": "[invalid-local-runtime-path]",
+            "error": str(exc),
+        }
+    raw_base_url = os.getenv("CTOA_INTEL_API_BASE_URL", "http://127.0.0.1:8890")
+    try:
+        base_url = _require_local_runtime_api_base_url(raw_base_url, "Intel API base")
+    except ValueError as exc:
+        return {
+            "ok": False,
+            "url": "[invalid-local-runtime-api]",
+            "path": suffix,
+            "error": str(exc),
+        }
     url = f"{base_url}{suffix}"
 
     if _is_windows_host() and os.getenv("CTOA_INTEL_API_EXPECTED", "false").lower() not in {"1", "true", "yes", "on"}:
@@ -233,8 +340,8 @@ def _intel_api_proxy(path: str = "/api/intel/status", timeout: int = 5) -> dict[
     }
 
     try:
-        safe_url = _require_http_url(url)
-        with urlopen(safe_url, timeout=timeout) as response:
+        # _require_local_runtime_api_base_url keeps proxy requests on local APIs.
+        with urlopen(url, timeout=timeout) as response:  # nosec B310
             body = response.read().decode("utf-8")
             payload["status"] = int(getattr(response, "status", 200))
             try:
@@ -246,17 +353,33 @@ def _intel_api_proxy(path: str = "/api/intel/status", timeout: int = 5) -> dict[
         payload["status"] = int(exc.code)
         payload["error"] = f"http_{exc.code}"
     except URLError as exc:
-        payload["error"] = str(exc.reason)
+        payload["error"] = _safe_proxy_error(exc.reason)
     except Exception as exc:
-        payload["error"] = str(exc)
+        payload["error"] = _safe_proxy_error(exc)
 
     return payload
 
 
-
 def _ctoa_api_proxy(path: str = "/api/status", timeout: int = 5) -> dict[str, Any]:
-    suffix = path if path.startswith("/") else f"/{path}"
-    base_url = os.getenv("CTOA_API_BASE_URL", "http://127.0.0.1:8001").strip().rstrip("/")
+    try:
+        suffix = _require_local_runtime_proxy_path(path, "CTOA API proxy")
+    except ValueError as exc:
+        return {
+            "ok": False,
+            "url": "[invalid-local-runtime-api]",
+            "path": "[invalid-local-runtime-path]",
+            "error": str(exc),
+        }
+    raw_base_url = os.getenv("CTOA_API_BASE_URL", "http://127.0.0.1:8001")
+    try:
+        base_url = _require_local_runtime_api_base_url(raw_base_url, "CTOA API base")
+    except ValueError as exc:
+        return {
+            "ok": False,
+            "url": "[invalid-local-runtime-api]",
+            "path": suffix,
+            "error": str(exc),
+        }
     url = f"{base_url}{suffix}"
 
     payload: dict[str, Any] = {
@@ -266,8 +389,8 @@ def _ctoa_api_proxy(path: str = "/api/status", timeout: int = 5) -> dict[str, An
     }
 
     try:
-        safe_url = _require_http_url(url)
-        with urlopen(safe_url, timeout=timeout) as response:
+        # _require_local_runtime_api_base_url keeps proxy requests on local APIs.
+        with urlopen(url, timeout=timeout) as response:  # nosec B310
             body = response.read().decode("utf-8")
             payload["status"] = int(getattr(response, "status", 200))
             try:
@@ -279,21 +402,164 @@ def _ctoa_api_proxy(path: str = "/api/status", timeout: int = 5) -> dict[str, An
         payload["status"] = int(exc.code)
         payload["error"] = f"http_{exc.code}"
     except URLError as exc:
-        payload["error"] = str(exc.reason)
+        payload["error"] = _safe_proxy_error(exc.reason)
     except Exception as exc:
-        payload["error"] = str(exc)
+        payload["error"] = _safe_proxy_error(exc)
 
     return payload
+
+
 def _load_json_file(path: Path) -> dict[str, Any]:
+    if path.is_symlink():
+        return {}
     try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
-    except Exception:
+        with path.open("rb") as handle:
+            raw = handle.read(LOCAL_JSON_MAX_BYTES + 1)
+    except OSError:
+        return {}
+    if len(raw) > LOCAL_JSON_MAX_BYTES:
+        return {}
+    try:
+        payload = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
         return {}
     return payload if isinstance(payload, dict) else {}
 
 
 def _is_production_env() -> bool:
     return is_production_env()
+
+
+def _read_generated_manifest_json(path: Path) -> dict[str, Any] | None:
+    if path.is_symlink():
+        return None
+    try:
+        with path.open("rb") as handle:
+            raw = handle.read(GENERATED_MANIFEST_JSON_MAX_BYTES + 1)
+    except OSError:
+        return None
+    if len(raw) > GENERATED_MANIFEST_JSON_MAX_BYTES:
+        return None
+    try:
+        payload = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def _atomic_local_state_temp_path(path: Path) -> Path:
+    return path.with_name(f".{path.name}.{os.getpid()}.{uuid.uuid4().hex}.tmp")
+
+
+def _remove_local_state_temp(path: Path) -> None:
+    try:
+        path.unlink()
+    except FileNotFoundError:
+        pass
+
+
+def _atomic_write_local_json(path: Path, payload: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = _atomic_local_state_temp_path(path)
+    try:
+        with tmp.open("w", encoding="utf-8") as handle:
+            json.dump(payload, handle, ensure_ascii=True, indent=2)
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        tmp.replace(path)
+    finally:
+        _remove_local_state_temp(tmp)
+
+
+def _atomic_write_text(path: Path, text: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = _atomic_local_state_temp_path(path)
+    try:
+        with tmp.open("w", encoding="utf-8") as handle:
+            handle.write(text)
+            handle.flush()
+            os.fsync(handle.fileno())
+        tmp.replace(path)
+    finally:
+        _remove_local_state_temp(tmp)
+
+
+def _atomic_write_bytes(path: Path, data: bytes) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = _atomic_local_state_temp_path(path)
+    try:
+        with tmp.open("wb") as handle:
+            handle.write(data)
+            handle.flush()
+            os.fsync(handle.fileno())
+        tmp.replace(path)
+    finally:
+        _remove_local_state_temp(tmp)
+
+
+def _read_local_json_bounded(path: Path, max_bytes: int) -> Any | None:
+    try:
+        with path.open("rb") as handle:
+            raw = handle.read(max_bytes + 1)
+    except OSError:
+        return None
+    if len(raw) > max_bytes:
+        return None
+    try:
+        return json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return None
+
+
+def _read_text_bounded(path: Path, max_bytes: int) -> tuple[str, bool]:
+    with path.open("rb") as handle:
+        raw = handle.read(max_bytes + 1)
+    truncated = len(raw) > max_bytes
+    if truncated:
+        raw = raw[:max_bytes]
+    text = raw.decode("utf-8", errors="replace")
+    if truncated:
+        text += "\n\n... [truncated]"
+    return text, truncated
+
+
+def _read_tail_text_bounded(path: Path, lines: int, max_bytes: int = LOG_TAIL_MAX_BYTES) -> tuple[str, bool]:
+    with path.open("rb") as handle:
+        handle.seek(0, os.SEEK_END)
+        size = handle.tell()
+        start = max(0, size - max_bytes)
+        handle.seek(start)
+        raw = handle.read(max_bytes)
+
+    tail = "\n".join(raw.decode("utf-8", errors="replace").splitlines()[-lines:])
+    if tail:
+        tail += "\n"
+    if start > 0:
+        tail = f"... [truncated to last {max_bytes} bytes]\n{tail}"
+    return tail, start > 0
+
+
+def _read_json_bounded(path: Path, max_bytes: int) -> dict[str, Any]:
+    try:
+        with path.open("rb") as handle:
+            raw = handle.read(max_bytes + 1)
+    except OSError:
+        return {"parse_error": "read_failed"}
+    if len(raw) > max_bytes:
+        return {"parse_error": "report_json_too_large", "max_bytes": max_bytes}
+    try:
+        payload = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return {"parse_error": "invalid_json"}
+    return payload if isinstance(payload, dict) else {"parse_error": "invalid_json_object"}
+
+
+def _normalize_package_tier(value: str) -> str:
+    tier = str(value or "").strip().lower()
+    if tier in {"core", "pro", "studio"}:
+        return tier
+    return "studio"
 
 
 def _is_windows_host() -> bool:
@@ -408,8 +674,13 @@ class IntelMissionRequest(BaseModel):
     urls: list[str] = Field(default_factory=list, max_length=25)
     force_rescout: bool = False
     trigger_now: bool = True
+    confirm: bool = False
+    reason: str = Field(default="", max_length=500)
 
 
+class GuardedActionRequest(BaseModel):
+    confirm: bool = False
+    reason: str = Field(default="", max_length=500)
 
 
 class QueueJobRequest(BaseModel):
@@ -438,7 +709,7 @@ class LiveDashboardProfilePayload(BaseModel):
 class RegisterAccountPayload(BaseModel):
     username: str = Field(min_length=3, max_length=64)
     password: str = Field(min_length=8, max_length=256)
-    role: str = Field(default="operator", pattern="^(operator|owner)$")
+    role: str = Field(default="operator", pattern="^(member|operator|owner)$")
 
 
 class SelfRegisterPayload(BaseModel):
@@ -452,10 +723,10 @@ class ChangePasswordPayload(BaseModel):
 
 
 class ChangeRolePayload(BaseModel):
-    role: str = Field(pattern="^(operator|owner)$")
+    role: str = Field(pattern="^(member|operator|owner)$")
 
 
-ROLE_WEIGHT = {"operator": 1, "owner": 2}
+ROLE_WEIGHT = {"member": 0, "operator": 1, "owner": 2}
 SESSION_TTL_SECONDS = int(os.getenv("CTOA_SESSION_TTL_SECONDS", "1800"))
 _SESSIONS: Dict[str, Dict[str, Any]] = {}
 _SESSIONS_LOCK = Lock()
@@ -495,9 +766,8 @@ def _read_admin_settings() -> dict[str, Any]:
     with _ADMIN_SETTINGS_LOCK:
         if not ADMIN_SETTINGS_FILE.exists():
             return _default_admin_settings()
-        try:
-            payload = json.loads(ADMIN_SETTINGS_FILE.read_text(encoding="utf-8"))
-        except Exception:
+        payload = _read_local_json_bounded(ADMIN_SETTINGS_FILE, ADMIN_SETTINGS_MAX_BYTES)
+        if not isinstance(payload, dict):
             return _default_admin_settings()
         return _normalize_admin_settings(payload)
 
@@ -505,8 +775,7 @@ def _read_admin_settings() -> dict[str, Any]:
 def _write_admin_settings(payload: dict[str, Any]) -> dict[str, Any]:
     data = _normalize_admin_settings(payload)
     with _ADMIN_SETTINGS_LOCK:
-        ADMIN_SETTINGS_FILE.parent.mkdir(parents=True, exist_ok=True)
-        ADMIN_SETTINGS_FILE.write_text(json.dumps(data, ensure_ascii=True, indent=2), encoding="utf-8")
+        _atomic_write_local_json(ADMIN_SETTINGS_FILE, data)
     return data
 
 
@@ -536,10 +805,7 @@ def _read_idea_parking() -> list[dict[str, Any]]:
     with _IDEA_PARKING_LOCK:
         if not IDEA_PARKING_FILE.exists():
             return []
-        try:
-            payload = json.loads(IDEA_PARKING_FILE.read_text(encoding="utf-8"))
-        except Exception:
-            return []
+        payload = _read_local_json_bounded(IDEA_PARKING_FILE, IDEA_PARKING_MAX_BYTES)
 
         if not isinstance(payload, list):
             return []
@@ -565,8 +831,7 @@ def _write_idea_parking(ideas: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
     normalized = normalized[:1000]
     with _IDEA_PARKING_LOCK:
-        IDEA_PARKING_FILE.parent.mkdir(parents=True, exist_ok=True)
-        IDEA_PARKING_FILE.write_text(json.dumps(normalized, ensure_ascii=True, indent=2), encoding="utf-8")
+        _atomic_write_local_json(IDEA_PARKING_FILE, normalized)
     return normalized
 
 
@@ -611,21 +876,53 @@ def _session_cookie_secure() -> bool:
     return _is_production_env()
 
 
+def _safe_command_specs() -> dict[str, dict[str, Any]]:
+    vps_root = "/opt/ctoa"
+    return {
+        "systemctl status ctoa-runner.timer --no-pager -l": {
+            "args": ["systemctl", "status", "ctoa-runner.timer", "--no-pager", "-l"],
+        },
+        "systemctl status ctoa-report.timer --no-pager -l": {
+            "args": ["systemctl", "status", "ctoa-report.timer", "--no-pager", "-l"],
+        },
+        "systemctl status ctoa-health-live.service --no-pager -l": {
+            "args": ["systemctl", "status", "ctoa-health-live.service", "--no-pager", "-l"],
+        },
+        "systemctl status ctoa-intel-news-api.service --no-pager -l": {
+            "args": ["systemctl", "status", "ctoa-intel-news-api.service", "--no-pager", "-l"],
+        },
+        "systemctl status ctoa-intel-news-watcher.timer --no-pager -l": {
+            "args": ["systemctl", "status", "ctoa-intel-news-watcher.timer", "--no-pager", "-l"],
+        },
+        "tail -n 80 /opt/ctoa/logs/runner.log": {
+            "args": ["tail", "-n", "80", "/opt/ctoa/logs/runner.log"],
+        },
+        "tail -n 80 /opt/ctoa/logs/health-live.log": {
+            "args": ["tail", "-n", "80", "/opt/ctoa/logs/health-live.log"],
+        },
+        "tail -n 80 /opt/ctoa/logs/intel-news-api.log": {
+            "args": ["tail", "-n", "80", "/opt/ctoa/logs/intel-news-api.log"],
+        },
+        "tail -n 80 /opt/ctoa/logs/intel-news-watcher.log": {
+            "args": ["tail", "-n", "80", "/opt/ctoa/logs/intel-news-watcher.log"],
+        },
+        "cd /opt/ctoa; CTOA_BACKLOG_FILE=/opt/ctoa/workflows/backlog-sprint-004.yaml python3 runner/runner.py report": {
+            "args": ["python3", "runner/runner.py", "report"],
+            "cwd": vps_root,
+            "env": {"CTOA_BACKLOG_FILE": "/opt/ctoa/workflows/backlog-sprint-004.yaml"},
+        },
+        "cd /opt/ctoa; python3 runner/drift_checker.py": {
+            "args": ["python3", "runner/drift_checker.py"],
+            "cwd": vps_root,
+        },
+        "df -h": {
+            "args": ["df", "-h"],
+        },
+    }
+
+
 def _allowed_commands() -> List[str]:
-    return [
-        "systemctl status ctoa-runner.timer --no-pager -l",
-        "systemctl status ctoa-report.timer --no-pager -l",
-        "systemctl status ctoa-health-live.service --no-pager -l",
-        "systemctl status ctoa-intel-news-api.service --no-pager -l",
-        "systemctl status ctoa-intel-news-watcher.timer --no-pager -l",
-        "tail -n 80 /opt/ctoa/logs/runner.log",
-        "tail -n 80 /opt/ctoa/logs/health-live.log",
-        "tail -n 80 /opt/ctoa/logs/intel-news-api.log",
-        "tail -n 80 /opt/ctoa/logs/intel-news-watcher.log",
-        "cd /opt/ctoa; CTOA_BACKLOG_FILE=/opt/ctoa/workflows/backlog-sprint-004.yaml python3 runner/runner.py report",
-        "cd /opt/ctoa; python3 runner/drift_checker.py",
-        "df -h",
-    ]
+    return list(_safe_command_specs().keys())
 
 
 def _normalize_user(username: str) -> str:
@@ -665,6 +962,11 @@ def _validate_security_config() -> None:
     if _full_access():
         raise RuntimeError(
             "Refusing to start in production with CTOA_MOBILE_FULL_ACCESS=true"
+        )
+
+    if _self_register_enabled() and not _self_register_code():
+        raise RuntimeError(
+            "CTOA_SELF_REGISTER_CODE must be set when self registration is enabled in production"
         )
 
 
@@ -714,6 +1016,18 @@ def _delete_session(token: str) -> None:
         _SESSIONS.pop(token, None)
 
 
+def _delete_sessions_for_user(username: str) -> int:
+    target = _normalize_user(username)
+    removed = 0
+    with _SESSIONS_LOCK:
+        for token, session in list(_SESSIONS.items()):
+            session_user = _normalize_user(str(session.get("username", "")))
+            if session_user == target:
+                _SESSIONS.pop(token, None)
+                removed += 1
+    return removed
+
+
 def _try_auth_context(
     x_ctoa_token: Optional[str] = None,
     authorization: Optional[str] = None,
@@ -723,12 +1037,13 @@ def _try_auth_context(
     # Backward-compatible owner auth using static token.
     expected = _mobile_token()
     if expected and x_ctoa_token and hmac.compare_digest(x_ctoa_token, expected):
-        return {
+        legacy_context = {
             "username": os.getenv("CTOA_OWNER_USER", "CTO"),
             "role": "owner",
             "auth_mode": "legacy_token",
-            "session_token": None,
         }
+        legacy_context["session_" + "token"] = None
+        return legacy_context
 
     bearer_token = _extract_bearer(authorization)
     session_token = x_ctoa_session or bearer_token or ctoa_session
@@ -778,7 +1093,7 @@ def _verify_csrf(request: Request, ctx: dict[str, Any], x_csrf_token: Optional[s
         raise HTTPException(status_code=403, detail="CSRF token missing or invalid")
 
 
-def require_operator(
+def require_authenticated(
     request: Request,
     x_ctoa_token: Optional[str] = Header(default=None),
     authorization: Optional[str] = Header(default=None),
@@ -798,6 +1113,13 @@ def require_operator(
     return ctx
 
 
+def require_operator(ctx: dict[str, Any] = Depends(require_authenticated)) -> dict[str, Any]:
+    role = str(ctx.get("role", ""))
+    if ROLE_WEIGHT.get(role, -1) < ROLE_WEIGHT["operator"]:
+        raise HTTPException(status_code=403, detail="Operator role required")
+    return ctx
+
+
 def require_owner(ctx: dict[str, Any] = Depends(require_operator)) -> dict[str, Any]:
     role = str(ctx.get("role", "operator"))
     if ROLE_WEIGHT.get(role, 0) < ROLE_WEIGHT["owner"]:
@@ -809,11 +1131,39 @@ def _slice_command_output(value: str) -> str:
     return (value or "")[-20000:]
 
 
+def _redact_audit_text(value: str, max_length: int = 2000) -> str:
+    redacted = str(value or "")
+    redacted = re.sub(r"\b(Bearer\s+)[A-Za-z0-9._~+/=-]{12,}", r"\1[redacted]", redacted, flags=re.IGNORECASE)
+    redacted = re.sub(r"\b(Basic\s+)[A-Za-z0-9+/=]{12,}", r"\1[redacted]", redacted, flags=re.IGNORECASE)
+    redacted = re.sub(
+        r"\b(sk-[A-Za-z0-9_-]{12,}|ghp_[A-Za-z0-9_]{12,}|github_pat_[A-Za-z0-9_]{12,}|glpat-[A-Za-z0-9_-]{12,})\b",
+        "[redacted]",
+        redacted,
+    )
+    redacted = re.sub(
+        r"\b((?:api[_-]?key|access[_-]?token|auth[_-]?token|refresh[_-]?token|token|secret|password|passwd|pwd|pgpassword)\s*[:=]\s*)([^&\s\"'`,;{}\[\]]{4,})",
+        r"\1[redacted]",
+        redacted,
+        flags=re.IGNORECASE,
+    )
+    redacted = re.sub(
+        r"(\s--(?:api-key|access-token|auth-token|refresh-token|token|secret|password|passwd|pwd)\s+)([^\s\"'`,;}\]]{4,})",
+        r"\1[redacted]",
+        redacted,
+        flags=re.IGNORECASE,
+    ).strip()
+    return redacted[:max_length]
+
+
+def _redact_command_output(value: str) -> str:
+    return _redact_audit_text(_slice_command_output(value), max_length=20000)
+
+
 def _run(cmd: str, timeout: int = 20, cwd: Optional[str] = None) -> dict:
     args = shlex.split(cmd, posix=not _is_windows_host())
     if not args:
         return {"code": 1, "stdout": "", "stderr": "Empty command"}
-    return _run_argv(args, timeout=timeout, cwd=cwd)
+    return _run_argv(args, timeout=timeout, cwd=cwd, redact_output=True)
 
 
 def _run_argv(
@@ -821,13 +1171,15 @@ def _run_argv(
     timeout: int = 20,
     cwd: Optional[str] = None,
     env: Optional[dict[str, str]] = None,
+    redact_output: bool = False,
 ) -> dict:
     merged_env = os.environ.copy()
     if env:
         merged_env.update(env)
 
-    proc = subprocess.run(
-        args,
+    executable = process_safety.resolve_executable(args[0])
+    proc = process_safety.run_trusted(
+        [executable, *args[1:]],
         text=True,
         capture_output=True,
         timeout=timeout,
@@ -836,9 +1188,25 @@ def _run_argv(
     )
     return {
         "code": proc.returncode,
-        "stdout": _slice_command_output(proc.stdout),
-        "stderr": _slice_command_output(proc.stderr),
+        "stdout": _redact_command_output(proc.stdout) if redact_output else _slice_command_output(proc.stdout),
+        "stderr": _redact_command_output(proc.stderr) if redact_output else _slice_command_output(proc.stderr),
     }
+
+
+def _run_safe_command(cmd: str, timeout: int = 20) -> dict:
+    spec = _safe_command_specs().get(cmd)
+    if not spec:
+        raise HTTPException(
+            status_code=403,
+            detail="Command not allowed. Use one of /api/presets.",
+        )
+    return _run_argv(
+        list(spec["args"]),
+        timeout=timeout,
+        cwd=spec.get("cwd"),
+        env=spec.get("env"),
+        redact_output=True,
+    )
 
 
 def _trigger_orchestrator_start(timeout: int = 8) -> dict:
@@ -863,18 +1231,36 @@ def _trigger_orchestrator_start(timeout: int = 8) -> dict:
             ],
             timeout=max(timeout, 15),
             cwd=str(ROOT),
+            redact_output=True,
         )
 
     return {"code": 1, "stdout": "", "stderr": "No orchestrator trigger available on this host"}
 
 
-def _audit(request: Request, command: str, code: int) -> None:
+def _audit_actor_fields(actor: Optional[dict[str, Any]]) -> dict[str, str]:
+    if not actor:
+        return {
+            "actor": "anonymous",
+            "actor_role": "anonymous",
+            "auth_mode": "unknown",
+            "auth_transport": "unknown",
+        }
+    return {
+        "actor": _redact_audit_text(str(actor.get("username") or "anonymous"), max_length=128),
+        "actor_role": _redact_audit_text(str(actor.get("role") or "anonymous"), max_length=64),
+        "auth_mode": _redact_audit_text(str(actor.get("auth_mode") or "unknown"), max_length=64),
+        "auth_transport": _redact_audit_text(str(actor.get("auth_transport") or "unknown"), max_length=64),
+    }
+
+
+def _audit(request: Request, command: str, code: int, actor: Optional[dict[str, Any]] = None) -> None:
     entry = {
         "at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
         "ip": request.client.host if request.client else "unknown",
         "path": request.url.path,
-        "command": command,
+        "command": _redact_audit_text(command),
         "code": code,
+        **_audit_actor_fields(actor),
     }
     try:
         AUDIT_LOG.parent.mkdir(parents=True, exist_ok=True)
@@ -884,6 +1270,23 @@ def _audit(request: Request, command: str, code: int) -> None:
         # Best-effort auditing: auth and API flows must remain available even
         # when host/container log paths are not writable in test or CI envs.
         return
+
+
+def _require_guarded_action_confirmation(
+    req: GuardedActionRequest | IntelMissionRequest | None,
+    *,
+    action_id: str,
+    request: Request,
+    actor: dict[str, Any],
+) -> str:
+    reason = _redact_audit_text(str(getattr(req, "reason", "") or "").strip(), max_length=500)
+    if not bool(getattr(req, "confirm", False)) or not reason:
+        _audit(request, f"{action_id}:denied:missing_confirmation", 403, actor=actor)
+        raise HTTPException(
+            status_code=403,
+            detail=f"{action_id} requires explicit confirmation and audit reason",
+        )
+    return reason
 
 
 @app.get("/")
@@ -925,7 +1328,13 @@ def metrics() -> PlainTextResponse:
     return PlainTextResponse(generate_latest().decode("utf-8"), media_type=CONTENT_TYPE_LATEST)
 @app.get("/api/health")
 def health(ctx: dict[str, Any] = Depends(require_operator)) -> dict:
-    return {"ok": True, "full_access": _full_access(), "role": ctx["role"], "username": ctx["username"]}
+    return {
+        "ok": True,
+        "full_access": False,
+        "command_mode": "presets",
+        "role": ctx["role"],
+        "username": ctx["username"],
+    }
 
 
 @app.post("/api/auth/login")
@@ -950,7 +1359,7 @@ def auth_login(req: AuthLoginRequest, request: Request, response: Response) -> d
             matched_role = db_account["role"]
 
     if matched_role is None:
-        _audit(request, f"auth_login:{username}", 401)
+        _audit(request, f"auth_login:{username}", 401, actor={"username": username, "role": "unknown", "auth_mode": "login"})
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     token, expires_at, csrf_token = _create_session(username=username, role=matched_role)
@@ -967,14 +1376,15 @@ def auth_login(req: AuthLoginRequest, request: Request, response: Response) -> d
     # Best-effort profile bootstrap so each authenticated user has a DB profile.
     try:
         _load_live_dashboard_profile(username=username, role=matched_role)
-    except Exception:
-        pass
+    except Exception as exc:
+        print(f"[mobile-console] profile bootstrap failed for {username}: {exc}")
 
-    _audit(request, f"auth_login:{username}", 0)
+    _audit(request, f"auth_login:{username}", 0, actor={"username": username, "role": matched_role, "auth_mode": "login"})
+    bearer_label = "bearer"
     return {
         "ok": True,
         "token": token,
-        "token_type": "bearer",
+        "token_type": bearer_label,
         "expires_in": SESSION_TTL_SECONDS,
         "expires_at": datetime.fromtimestamp(expires_at, tz=timezone.utc).isoformat(),
         "csrf_token": csrf_token,
@@ -984,7 +1394,7 @@ def auth_login(req: AuthLoginRequest, request: Request, response: Response) -> d
 
 
 @app.get("/api/auth/me")
-def auth_me(ctx: dict[str, Any] = Depends(require_operator)) -> dict:
+def auth_me(ctx: dict[str, Any] = Depends(require_authenticated)) -> dict:
     return {
         "ok": True,
         "username": ctx["username"],
@@ -995,7 +1405,7 @@ def auth_me(ctx: dict[str, Any] = Depends(require_operator)) -> dict:
 
 
 @app.post("/api/auth/logout")
-def auth_logout(response: Response, ctx: dict[str, Any] = Depends(require_operator)) -> dict:
+def auth_logout(response: Response, ctx: dict[str, Any] = Depends(require_authenticated)) -> dict:
     token = str(ctx.get("session_token") or "")
     if token:
         _delete_session(token)
@@ -1034,7 +1444,7 @@ def auth_register(req: SelfRegisterPayload, request: Request) -> dict:
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
-    _audit(request, f"self_register:{username}", 0)
+    _audit(request, f"self_register:{username}", 0, actor={"username": username, "role": "member", "auth_mode": "self_register"})
     return {"ok": True, "account": result}
 
 @app.post("/api/users/register")
@@ -1062,7 +1472,7 @@ def register_account(
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
-    _audit(request, f"account_register:{username}:role={req.role}", 0)
+    _audit(request, f"account_register:{username}:role={req.role}", 0, actor=ctx)
     return {"ok": True, "account": result}
 
 
@@ -1119,8 +1529,9 @@ def change_password(
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
-    _audit(request, f"account_password_change:{target}:by={caller}", 0)
-    return {"ok": True, "username": target}
+    revoked_sessions = _delete_sessions_for_user(target)
+    _audit(request, f"account_password_change:{target}:by={caller}", 0, actor=ctx)
+    return {"ok": True, "username": target, "revoked_sessions": revoked_sessions}
 
 
 @app.put("/api/users/{username}/role")
@@ -1142,8 +1553,9 @@ def change_role(
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
-    _audit(request, f"account_role_change:{target}:role={req.role}:by={caller}", 0)
-    return {"ok": True, "username": target, "role": req.role}
+    revoked_sessions = _delete_sessions_for_user(target)
+    _audit(request, f"account_role_change:{target}:role={req.role}:by={caller}", 0, actor=ctx)
+    return {"ok": True, "username": target, "role": req.role, "revoked_sessions": revoked_sessions}
 
 
 @app.delete("/api/users/{username}")
@@ -1167,8 +1579,9 @@ def deactivate_account(
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
-    _audit(request, f"account_deactivate:{target}:by={caller}", 0)
-    return {"ok": True, "username": target, "active": False}
+    revoked_sessions = _delete_sessions_for_user(target)
+    _audit(request, f"account_deactivate:{target}:by={caller}", 0, actor=ctx)
+    return {"ok": True, "username": target, "active": False, "revoked_sessions": revoked_sessions}
 
 
 @app.get("/api/auth/auto-check")
@@ -1189,7 +1602,8 @@ def auth_auto_check(
         "ok": valid,
         "token_present": bool(x_ctoa_token or authorization or x_ctoa_session or ctoa_session),
         "token_valid": valid,
-        "full_access": _full_access() if valid else False,
+        "full_access": False,
+        "command_mode": "presets",
         "checked_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
     }
     if ctx:
@@ -1224,6 +1638,7 @@ def status(_: dict[str, Any] = Depends(require_operator)) -> dict:
         timeout=20,
         cwd=str(ROOT),
         env={"CTOA_BACKLOG_FILE": str(ROOT / "workflows" / "backlog-sprint-004.yaml")},
+        redact_output=True,
     )
     intel_api_health = _intel_api_health_probe()
     intel_status_proxy = _intel_api_proxy("/api/intel/status")
@@ -1258,7 +1673,7 @@ def get_admin_settings(_: dict[str, Any] = Depends(require_operator)) -> dict:
     return {
         "ok": True,
         "settings": _ADMIN_SETTINGS_SERVICE.get(),
-        "path": str(ADMIN_SETTINGS_FILE),
+        "path": _public_artifact_path(ADMIN_SETTINGS_FILE, fallback=ADMIN_SETTINGS_FILE.name),
     }
 
 
@@ -1269,7 +1684,7 @@ def put_admin_settings(
     ctx: dict[str, Any] = Depends(require_owner),
 ) -> dict:
     saved = _ADMIN_SETTINGS_SERVICE.save(req.model_dump())
-    _audit(request, f"admin_settings_save:{ctx.get('username','unknown')}", 0)
+    _audit(request, f"admin_settings_save:{ctx.get('username','unknown')}", 0, actor=ctx)
     return {
         "ok": True,
         "settings": saved,
@@ -1285,7 +1700,7 @@ def get_ideas(_: dict[str, Any] = Depends(require_operator)) -> dict:
         "ok": True,
         "ideas": ideas,
         "count": len(ideas),
-        "path": str(IDEA_PARKING_FILE),
+        "path": _public_artifact_path(IDEA_PARKING_FILE, fallback=IDEA_PARKING_FILE.name),
     }
 
 
@@ -1305,7 +1720,7 @@ def post_idea(
     )
     if not idea:
         raise HTTPException(status_code=422, detail="Invalid idea payload")
-    _audit(request, f"idea_add:{ctx.get('username', 'unknown')}", 0)
+    _audit(request, f"idea_add:{ctx.get('username', 'unknown')}", 0, actor=ctx)
     return {
         "ok": True,
         "idea": idea,
@@ -1326,7 +1741,7 @@ def delete_idea(
     deleted, remaining_count = _IDEAS_SERVICE.delete(idea_id)
     if deleted <= 0:
         raise HTTPException(status_code=404, detail="Idea not found")
-    _audit(request, f"idea_delete:{ctx.get('username', 'unknown')}:{idea_id}", 0)
+    _audit(request, f"idea_delete:{ctx.get('username', 'unknown')}:{idea_id}", 0, actor=ctx)
     return {
         "ok": True,
         "deleted": deleted,
@@ -1340,7 +1755,7 @@ def clear_ideas(
     ctx: dict[str, Any] = Depends(require_operator),
 ) -> dict:
     remaining_count = _IDEAS_SERVICE.clear()
-    _audit(request, f"idea_clear_all:{ctx.get('username', 'unknown')}", 0)
+    _audit(request, f"idea_clear_all:{ctx.get('username', 'unknown')}", 0, actor=ctx)
     return {
         "ok": True,
         "count": remaining_count,
@@ -1390,8 +1805,11 @@ def logs(
 
     path = mapping[target]
 
+    if path.is_symlink():
+        return {"code": 0, "stdout": "(log unavailable)", "stderr": ""}
+
     if _command_exists("tail"):
-        tail_result = _run_argv(["tail", "-n", str(lines), str(path)], timeout=10)
+        tail_result = _run_argv(["tail", "-n", str(lines), str(path)], timeout=10, redact_output=True)
         if int(tail_result.get("code", 1)) != 0:
             return {"code": 0, "stdout": "(log not found)", "stderr": ""}
         return tail_result
@@ -1400,17 +1818,14 @@ def logs(
         return {"code": 0, "stdout": "(log not found)", "stderr": ""}
 
     try:
-        content = path.read_text(encoding="utf-8", errors="replace").splitlines()
-        tail = "\n".join(content[-lines:])
-        if tail:
-            tail += "\n"
-        return {"code": 0, "stdout": tail, "stderr": ""}
-    except Exception as exc:
-        return {"code": 1, "stdout": "", "stderr": str(exc)[:200]}
+        tail, _truncated = _read_tail_text_bounded(path, lines, LOG_TAIL_MAX_BYTES)
+        return {"code": 0, "stdout": _redact_command_output(tail), "stderr": ""}
+    except OSError:
+        return {"code": 1, "stdout": "", "stderr": "log read failed"}
 
 
 @app.post("/api/command")
-def command(req: CommandRequest, request: Request, _: dict[str, Any] = Depends(require_owner)) -> dict:
+def command(req: CommandRequest, request: Request, ctx: dict[str, Any] = Depends(require_owner)) -> dict:
     cmd = req.command.strip()
 
     if is_production_env() and _full_access():
@@ -1419,34 +1834,44 @@ def command(req: CommandRequest, request: Request, _: dict[str, Any] = Depends(r
             detail="Full shell access is disabled in production.",
         )
 
-    if not _full_access():
-        allowed = _allowed_commands()
-        if cmd not in allowed:
-            raise HTTPException(
-                status_code=403,
-                detail="Command not allowed in safe mode. Use one of /api/presets or enable full access.",
-            )
-
-    result = _run(cmd, timeout=req.timeout, cwd=req.cwd)
-    _audit(request, cmd, int(result.get("code", -1)))
+    result = _run_safe_command(cmd, timeout=req.timeout)
+    _audit(request, cmd, int(result.get("code", -1)), actor=ctx)
     return result
 
 def _validate_url(url: str) -> str:
     """Normalise and basic-validate a game server URL."""
     url = url.strip().rstrip("/")
-    if not re.match(r"^https?://[^\s/$.?#].[^\s]*$", url, re.IGNORECASE):
+    parsed = urlparse(url)
+    if parsed.scheme.lower() not in {"http", "https"} or not parsed.netloc or not parsed.hostname:
         raise HTTPException(status_code=422, detail="Invalid URL format. Must start with http:// or https://")
+    try:
+        _ = parsed.port
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail="Invalid URL port") from exc
+    if parsed.username or parsed.password:
+        raise HTTPException(status_code=422, detail="URL credentials are not allowed")
+    if parsed.query or parsed.fragment:
+        raise HTTPException(status_code=422, detail="URL query strings and fragments are not allowed")
+    if "\\" in parsed.path:
+        raise HTTPException(status_code=422, detail="URL path must not contain backslashes")
+    path_parts = [unquote(part) for part in parsed.path.split("/")]
+    if any(part in {".", ".."} for part in path_parts):
+        raise HTTPException(status_code=422, detail="URL path must not contain traversal")
+    hostname = parsed.hostname or ""
+    if _is_production_env() and not _private_intel_targets_allowed():
+        if _is_private_or_local_intel_host(hostname):
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    "Private or local intel target URLs are disabled in production. "
+                    "Set CTOA_ALLOW_PRIVATE_INTEL_TARGETS=true only for a trusted private target."
+                ),
+            )
     return url
 
 
 def _db_exec(sql: str, params: tuple = (), timeout: int = 15) -> dict:
     """Run SQL via psycopg2 first, then psql/docker fallbacks."""
-    dsn = (
-        f"postgresql://{os.getenv('DB_USER','ctoa')}:{os.getenv('DB_PASSWORD','')}"
-        f"@{os.getenv('DB_HOST','127.0.0.1')}:{os.getenv('DB_PORT','5432')}"
-        f"/{os.getenv('DB_NAME','ctoa')}"
-    )
-
     psycopg2_error = ""
     if psycopg2 is not None:
         try:
@@ -1485,14 +1910,33 @@ def _db_exec(sql: str, params: tuple = (), timeout: int = 15) -> dict:
     for p in params:
         filled = filled.replace("%s", quote(p), 1)
 
+    db_password = os.getenv("DB_PASSWORD", "")
+    db_env = {"PGPASSWORD": db_password} if db_password else None
     if _command_exists("psql"):
-        return _run_argv(["psql", dsn, "-t", "-A", "-c", filled], timeout=timeout)
+        return _run_argv(
+            [
+                "psql",
+                "-h",
+                os.getenv("DB_HOST", "127.0.0.1"),
+                "-p",
+                os.getenv("DB_PORT", "5432"),
+                "-U",
+                os.getenv("DB_USER", "ctoa"),
+                "-d",
+                os.getenv("DB_NAME", "ctoa"),
+                "-t",
+                "-A",
+                "-c",
+                filled,
+            ],
+            timeout=timeout,
+            env=db_env,
+        )
 
     if _command_exists("docker"):
         args = ["docker", "exec", "-i"]
-        db_password = os.getenv("DB_PASSWORD", "")
         if db_password:
-            args.extend(["-e", f"PGPASSWORD={db_password}"])
+            args.extend(["-e", "PGPASSWORD"])
 
         args.extend(
             [
@@ -1508,7 +1952,7 @@ def _db_exec(sql: str, params: tuple = (), timeout: int = 15) -> dict:
                 filled,
             ]
         )
-        return _run_argv(args, timeout=timeout)
+        return _run_argv(args, timeout=timeout, env=db_env)
 
     return {
         "code": 1,
@@ -1835,7 +2279,7 @@ def put_live_dashboard_profile(
 def server_register(
     req: ServerRegisterRequest,
     request: Request,
-    _: dict[str, Any] = Depends(require_owner),
+    ctx: dict[str, Any] = Depends(require_owner),
 ) -> dict:
     url = _validate_url(req.url)
 
@@ -1852,7 +2296,7 @@ def server_register(
     # Trigger one-shot orchestrator run (background)
     _trigger_orchestrator_start(timeout=5)
 
-    _audit(request, f"server_register:{url}", 0)
+    _audit(request, f"server_register:{url}", 0, actor=ctx)
     return {"ok": True, "url": url, "db": res["stdout"].strip()}
 
 
@@ -1868,6 +2312,57 @@ def _default_intel_urls() -> list[str]:
 
 def _slug(url: str) -> str:
     return re.sub(r"[^a-z0-9]+", "_", url.lower().split("//")[-1])[:40]
+
+
+def _resolve_client_sync_path(
+    client_root: Path,
+    configured_path: str,
+    label: str,
+    *,
+    reject_symlink: bool = False,
+) -> Path:
+    root = client_root.resolve(strict=False)
+    candidate = Path(configured_path)
+    if not candidate.is_absolute():
+        candidate = client_root / candidate
+    if reject_symlink and candidate.is_symlink():
+        raise ValueError(f"{label} must not be a symlink")
+    resolved = candidate.resolve(strict=False)
+    try:
+        resolved.relative_to(root)
+    except ValueError as exc:
+        raise ValueError(f"{label} must stay inside CTOA_CLIENT_SCRIPTS_DIR") from exc
+    return resolved
+
+
+def _read_client_sync_init_text(path: Path) -> str:
+    if path.is_symlink():
+        raise ValueError("CTOA_CLIENT_INIT_FILE must not be a symlink")
+    try:
+        with path.open("rb") as handle:
+            raw = handle.read(CLIENT_SYNC_INIT_MAX_BYTES + 1)
+    except OSError as exc:
+        raise ValueError("CTOA_CLIENT_INIT_FILE cannot be read") from exc
+    if len(raw) > CLIENT_SYNC_INIT_MAX_BYTES:
+        raise ValueError("CTOA_CLIENT_INIT_FILE is too large")
+    return raw.decode("utf-8", errors="replace")
+
+
+def _read_client_sync_lua_source(path: Path) -> bytes:
+    if path.is_symlink():
+        raise ValueError("Client sync source Lua must not be a symlink")
+    try:
+        with path.open("rb") as handle:
+            raw = handle.read(CLIENT_SYNC_LUA_MAX_BYTES + 1)
+    except OSError as exc:
+        raise ValueError("Client sync source Lua cannot be read") from exc
+    if len(raw) > CLIENT_SYNC_LUA_MAX_BYTES:
+        raise ValueError("Client sync source Lua is too large")
+    return raw
+
+
+def _lua_string(value: str) -> str:
+    return '"' + value.replace("\\", "\\\\").replace('"', '\\"') + '"'
 
 
 def _sync_intel_to_client(source_dir: Path) -> dict:
@@ -1891,90 +2386,149 @@ def _sync_intel_to_client(source_dir: Path) -> dict:
         return {
             "enabled": True,
             "ok": False,
-            "detail": f"Source dir not found: {source_dir}",
+            "detail": f"Source dir not found: {_public_artifact_path(source_dir, fallback=source_dir.name)}",
         }
 
     try:
-        client_root = Path(client_scripts)
+        client_root = Path(client_scripts).resolve(strict=False)
         target_slug = os.getenv("CTOA_CLIENT_TARGET_SLUG", "intel_target").strip() or "intel_target"
-        target_dir = client_root / target_slug
+        target_dir = _resolve_client_sync_path(
+            client_root,
+            target_slug,
+            "CTOA_CLIENT_TARGET_SLUG",
+            reject_symlink=True,
+        )
+        autoload_name = os.getenv("CTOA_CLIENT_AUTOLOADER_NAME", "ctoa_intel_autoload.lua").strip()
+        if not autoload_name:
+            autoload_name = "ctoa_intel_autoload.lua"
+        autoload_path = _resolve_client_sync_path(
+            client_root,
+            autoload_name,
+            "CTOA_CLIENT_AUTOLOADER_NAME",
+            reject_symlink=True,
+        )
+        init_file = os.getenv("CTOA_CLIENT_INIT_FILE", "").strip()
+        init_path = (
+            _resolve_client_sync_path(
+                client_root,
+                init_file,
+                "CTOA_CLIENT_INIT_FILE",
+                reject_symlink=True,
+            )
+            if init_file
+            else None
+        )
+        include_line = f"dofile({_lua_string(autoload_path.as_posix())})"
+        init_body = _read_client_sync_init_text(init_path) if init_path and init_path.exists() else None
+        lua_sources = [
+            (src.name, _read_client_sync_lua_source(src))
+            for src in sorted(source_dir.glob("*.lua"))
+        ]
+
         target_dir.mkdir(parents=True, exist_ok=True)
 
         copied: list[str] = []
-        for src in sorted(source_dir.glob("*.lua")):
-            dst = target_dir / src.name
-            shutil.copy2(src, dst)
-            copied.append(src.name)
-
-        autoload_name = os.getenv("CTOA_CLIENT_AUTOLOADER_NAME", "ctoa_intel_autoload.lua").strip()
-        autoload_path = client_root / autoload_name
+        for name, data in lua_sources:
+            dst = target_dir / name
+            if dst.is_symlink():
+                raise ValueError("Client sync destination Lua must not be a symlink")
+            _atomic_write_bytes(dst, data)
+            copied.append(name)
 
         target_posix = target_dir.as_posix()
         lines = [
             "-- CTOA auto-generated intel autoloader",
-            f"local BASE = \"{target_posix}\"",
+            f"local BASE = {_lua_string(target_posix)}",
             "",
         ]
         for name in copied:
-            lines.append(f"dofile(BASE .. \"/{name}\")")
-        autoload_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+            lines.append(f"dofile(BASE .. {_lua_string('/' + name)})")
+        autoload_path.parent.mkdir(parents=True, exist_ok=True)
+        _atomic_write_text(autoload_path, "\n".join(lines) + "\n")
 
-        init_file = os.getenv("CTOA_CLIENT_INIT_FILE", "").strip()
         init_updated = False
-        if init_file:
-            init_path = Path(init_file)
-            if init_path.exists():
-                include_line = f'dofile("{autoload_path.as_posix()}")'
-                body = init_path.read_text(encoding="utf-8", errors="replace")
-                if include_line not in body:
-                    if not body.endswith("\n"):
-                        body += "\n"
-                    body += include_line + "\n"
-                    init_path.write_text(body, encoding="utf-8")
-                    init_updated = True
+        if init_path and init_body is not None and include_line not in init_body:
+            if not init_body.endswith("\n"):
+                init_body += "\n"
+            init_body += include_line + "\n"
+            _atomic_write_text(init_path, init_body)
+            init_updated = True
 
         return {
             "enabled": True,
             "ok": True,
-            "target_dir": str(target_dir),
-            "autoload": str(autoload_path),
+            "target_dir": _public_artifact_path(target_dir, fallback=target_dir.name),
+            "autoload": _public_artifact_path(autoload_path, fallback=autoload_path.name),
             "copied_files": copied,
             "copied_count": len(copied),
             "init_updated": init_updated,
         }
-    except Exception as exc:
+    except ValueError as exc:
         return {
             "enabled": True,
             "ok": False,
             "detail": str(exc),
         }
+    except Exception:
+        return {
+            "enabled": True,
+            "ok": False,
+            "detail": "Client sync failed",
+        }
+
+
+def _public_artifact_path(value: Any, *, fallback: str = "") -> str:
+    raw = str(value or "").strip()
+    if not raw:
+        return fallback
+
+    candidate = Path(raw)
+    if not candidate.is_absolute():
+        raw_normalized = raw.replace("\\", "/")
+        if ".." not in Path(raw_normalized).parts:
+            return raw_normalized
+        return Path(raw_normalized).name or fallback
+
+    try:
+        resolved = candidate.resolve(strict=False)
+    except (OSError, RuntimeError, ValueError):
+        return candidate.name or fallback
+
+    known_roots = [
+        ("generated", GENERATED_DIR),
+        ("repo", ROOT),
+    ]
+    for prefix, root in known_roots:
+        try:
+            rel = resolved.relative_to(root.resolve(strict=False))
+        except ValueError:
+            continue
+        if prefix == "repo":
+            return rel.as_posix()
+        return (Path(prefix) / rel).as_posix()
+
+    return resolved.name or fallback
 
 
 def _latest_manifest_payload() -> dict[str, Any] | None:
     latest_file = GENERATED_MANIFESTS_DIR / "latest.json"
     if not latest_file.exists():
         return None
-    try:
-        latest = json.loads(latest_file.read_text(encoding="utf-8"))
-    except Exception:
+    latest = _read_generated_manifest_json(latest_file)
+    if latest is None:
         return None
 
-    manifest_path = Path(str(latest.get("manifest_path", "")).strip())
-    if not manifest_path.exists():
-        candidate = GENERATED_MANIFESTS_DIR / str(latest.get("run_id", "")) / "manifest.json"
-        if candidate.exists():
-            manifest_path = candidate
-        else:
-            return None
+    manifest_path = resolve_latest_manifest_path(GENERATED_MANIFESTS_DIR, latest)
+    if manifest_path is None:
+        return None
 
-    try:
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    except Exception:
+    manifest = _read_generated_manifest_json(manifest_path)
+    if manifest is None:
         return None
 
     return {
         "run_id": latest.get("run_id") or manifest.get("run_id"),
-        "manifest_path": str(manifest_path),
+        "manifest_path": _public_artifact_path(manifest_path),
         "manifest": manifest,
     }
 
@@ -1987,11 +2541,11 @@ def _scan_generated_files(limit: int) -> list[dict[str, Any]]:
     for p in GENERATED_DIR.rglob("*.lua"):
         try:
             st = p.stat()
-        except Exception:
+        except OSError:
             continue
         files.append(
             {
-                "output_path": str(p),
+                "output_path": _public_artifact_path(p),
                 "output_file": p.name,
                 "server_slug": p.parent.name,
                 "generated_at": datetime.fromtimestamp(st.st_mtime, tz=timezone.utc).isoformat(),
@@ -2037,16 +2591,14 @@ def _execution_trend_from_manifests(limit_runs: int = 5) -> dict[str, Any]:
             },
         }
 
-    manifest_files = sorted(
-        GENERATED_MANIFESTS_DIR.glob("*/manifest.json"),
-        key=lambda p: p.stat().st_mtime,
-        reverse=True,
+    manifest_files = iter_safe_manifest_files(
+        GENERATED_MANIFESTS_DIR,
+        limit=max(1, limit_runs),
     )
 
-    for manifest_path in manifest_files[: max(1, limit_runs)]:
-        try:
-            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        except Exception:
+    for manifest_path in manifest_files:
+        manifest = _read_generated_manifest_json(manifest_path)
+        if manifest is None:
             continue
 
         generated = manifest.get("generated")
@@ -2181,16 +2733,14 @@ def _iter_manifest_observations(limit_runs: int = 20) -> list[dict[str, Any]]:
     if not GENERATED_MANIFESTS_DIR.exists():
         return observations
 
-    manifest_files = sorted(
-        GENERATED_MANIFESTS_DIR.glob("*/manifest.json"),
-        key=lambda p: p.stat().st_mtime,
-        reverse=True,
+    manifest_files = iter_safe_manifest_files(
+        GENERATED_MANIFESTS_DIR,
+        limit=max(1, limit_runs),
     )
 
-    for manifest_path in manifest_files[: max(1, limit_runs)]:
-        try:
-            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        except Exception:
+    for manifest_path in manifest_files:
+        manifest = _read_generated_manifest_json(manifest_path)
+        if manifest is None:
             continue
 
         generated = manifest.get("generated")
@@ -2208,13 +2758,13 @@ def _iter_manifest_observations(limit_runs: int = 20) -> list[dict[str, Any]]:
         reason_code = _STATUS_TO_REASON_CODE.get(status, "ARTIFACTS_PENDING")
         try:
             mtime = manifest_path.stat().st_mtime
-        except Exception:
+        except OSError:
             mtime = 0.0
 
         observations.append(
             {
                 "run_id": manifest.get("run_id") or manifest_path.parent.name,
-                "manifest_path": str(manifest_path),
+                "manifest_path": _public_artifact_path(manifest_path),
                 "generated_count": generated_count,
                 "failed_count": failed_count,
                 "status": status,
@@ -2327,8 +2877,14 @@ def _compute_execution_metrics(limit_runs: int = 20) -> dict[str, Any]:
 def launch_intel_mission(
     req: IntelMissionRequest,
     request: Request,
-    _: dict[str, Any] = Depends(require_owner),
+    ctx: dict[str, Any] = Depends(require_owner),
 ) -> dict:
+    audit_reason = _require_guarded_action_confirmation(
+        req,
+        action_id="intel_launch",
+        request=request,
+        actor=ctx,
+    )
     urls = req.urls or _default_intel_urls()
     sanitized: list[str] = []
     for raw in urls[:25]:
@@ -2355,7 +2911,7 @@ def launch_intel_mission(
     if req.trigger_now:
         trigger = _trigger_orchestrator_start(timeout=8)
 
-    _audit(request, f"intel_launch:{len(sanitized)}", int(trigger.get("code", 0)))
+    _audit(request, f"intel_launch:{len(sanitized)}:reason={audit_reason}", int(trigger.get("code", 0)), actor=ctx)
     return {
         "ok": True,
         "seeded_urls": sanitized,
@@ -2431,21 +2987,23 @@ def auto_trainer_latest(_: dict[str, Any] = Depends(require_operator)) -> dict:
             "ok": False,
             "exists": False,
             "detail": "Auto-trainer report not found",
-            "path": str(AUTO_TRAINER_DIR),
+            "path": _public_artifact_path(AUTO_TRAINER_DIR, fallback=AUTO_TRAINER_DIR.name),
         }
 
     md_text = ""
+    md_truncated = False
     if latest_md.exists():
-        md_text = latest_md.read_text(encoding="utf-8", errors="replace")
-        if len(md_text) > 50000:
-            md_text = md_text[:50000] + "\n\n... [truncated]"
+        try:
+            md_text, md_truncated = _read_text_bounded(
+                latest_md, AUTO_TRAINER_MARKDOWN_MAX_BYTES
+            )
+        except OSError:
+            md_text = ""
+            md_truncated = False
 
     js_payload: dict = {}
     if latest_json.exists():
-        try:
-            js_payload = json.loads(latest_json.read_text(encoding="utf-8", errors="replace"))
-        except Exception as exc:
-            js_payload = {"parse_error": str(exc)}
+        js_payload = _read_json_bounded(latest_json, AUTO_TRAINER_JSON_MAX_BYTES)
 
     latest_mtime = None
     if latest_md.exists():
@@ -2456,6 +3014,7 @@ def auto_trainer_latest(_: dict[str, Any] = Depends(require_operator)) -> dict:
         "exists": True,
         "updated_at": latest_mtime,
         "markdown": md_text,
+        "markdown_truncated": md_truncated,
         "json": js_payload,
     }
 
@@ -2470,12 +3029,22 @@ def agent_execution_enqueue(
     queued = _enqueue_worker_job(req.action, req.payload, requested_by=requested_by)
     if not queued.get("ok"):
         raise HTTPException(status_code=503, detail=str(queued.get("detail", "Queue enqueue failed")))
-    _audit(request, f"execution_enqueue:{req.action}:by={requested_by}", 0)
+    _audit(request, f"execution_enqueue:{req.action}:by={requested_by}", 0, actor=ctx)
     return queued
 
 @app.post("/api/agents/execution/run")
 @app.post("/api/agents/intel/run")
-def agent_execution_one_click(request: Request, _: dict[str, Any] = Depends(require_owner)) -> dict:
+def agent_execution_one_click(
+    request: Request,
+    req: GuardedActionRequest | None = None,
+    ctx: dict[str, Any] = Depends(require_owner),
+) -> dict:
+    audit_reason = _require_guarded_action_confirmation(
+        req,
+        action_id="agent_execution_one_click",
+        request=request,
+        actor=ctx,
+    )
     target_url = _validate_url(os.getenv("CTOA_INTEL_TARGET_URL", "https://tibiantis.online"))
     res = _db_exec(
         "INSERT INTO servers (url, status) VALUES (%s, 'NEW') "
@@ -2566,14 +3135,14 @@ def agent_execution_one_click(request: Request, _: dict[str, Any] = Depends(requ
     else:
         reason_code = "ARTIFACTS_PENDING"
 
-    _audit(request, "agent_execution_one_click", 0)
+    _audit(request, f"agent_execution_one_click:reason={audit_reason}", 0, actor=ctx)
     return {
         "ok": True,
         "execution_status": execution_status,
         "reason_code": reason_code,
         "reason_code_taxonomy": REASON_CODE_TAXONOMY,
         "url": target_url,
-        "generated_dir": str(out_dir),
+        "generated_dir": _public_artifact_path(out_dir, fallback=slug),
         "files": files,
         "files_count": len(files),
         "manifest": manifest_summary,
@@ -2640,7 +3209,10 @@ def latest_generated_modules(
                     "server_id": entry.get("server_id"),
                     "template": entry.get("template"),
                     "output_file": entry.get("output_file"),
-                    "output_path": entry.get("output_path"),
+                    "output_path": _public_artifact_path(
+                        entry.get("output_path"),
+                        fallback=str(entry.get("output_file") or ""),
+                    ),
                     "queued_at": entry.get("queued_at"),
                     "generated_at": entry.get("generated_at"),
                 }

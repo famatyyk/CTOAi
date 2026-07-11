@@ -34,9 +34,9 @@ def test_browser_smoke_login_settings_ideas():
             {
                 "CTOA_MOBILE_TOKEN": "test-mobile-token",
                 "CTOA_OWNER_USER": "CTO",
-                "CTOA_OWNER_PASSWORD": "ownerpass123",
+                "CTOA_OWNER_PASSWORD": "test-owner-pass",
                 "CTOA_OPERATOR_USER": "ctoa-bot",
-                "CTOA_OPERATOR_PASSWORD": "jakpod22",
+                "CTOA_OPERATOR_PASSWORD": "test-operator-pass",
                 "CTOA_ADMIN_SETTINGS_FILE": str(tmp_path / "admin-settings.json"),
                 "CTOA_IDEA_PARKING_FILE": str(tmp_path / "idea-parking.json"),
                 "CTOA_CORS_ORIGINS": frontend_url,
@@ -79,7 +79,7 @@ def test_browser_smoke_login_settings_ideas():
                 page.click("#open-auth")
                 page.fill("#auth-api-base", backend_url)
                 page.fill("#auth-user", "cto")
-                page.fill("#auth-pass", "ownerpass123")
+                page.fill("#auth-pass", "test-owner-pass")
                 page.click("#auth-submit")
 
                 expect(page.locator("#auth-modal")).to_have_attribute("aria-hidden", "true")
@@ -126,9 +126,9 @@ def test_browser_smoke_operator_owner_only_block():
             {
                 "CTOA_MOBILE_TOKEN": "test-mobile-token",
                 "CTOA_OWNER_USER": "CTO",
-                "CTOA_OWNER_PASSWORD": "ownerpass123",
+                "CTOA_OWNER_PASSWORD": "test-owner-pass",
                 "CTOA_OPERATOR_USER": "ctoa-bot",
-                "CTOA_OPERATOR_PASSWORD": "jakpod22",
+                "CTOA_OPERATOR_PASSWORD": "test-operator-pass",
                 "CTOA_ADMIN_SETTINGS_FILE": str(tmp_path / "admin-settings.json"),
                 "CTOA_IDEA_PARKING_FILE": str(tmp_path / "idea-parking.json"),
                 "CTOA_CORS_ORIGINS": frontend_url,
@@ -171,7 +171,7 @@ def test_browser_smoke_operator_owner_only_block():
                 page.click("#open-auth")
                 page.fill("#auth-api-base", backend_url)
                 page.fill("#auth-user", "ctoa-bot")
-                page.fill("#auth-pass", "jakpod22")
+                page.fill("#auth-pass", "test-operator-pass")
                 page.click("#auth-submit")
 
                 expect(page.locator("#auth-modal")).to_have_attribute("aria-hidden", "true")
@@ -219,9 +219,9 @@ def test_browser_smoke_operator_ideas_allowed_settings_denied():
             {
                 "CTOA_MOBILE_TOKEN": "test-mobile-token",
                 "CTOA_OWNER_USER": "CTO",
-                "CTOA_OWNER_PASSWORD": "ownerpass123",
+                "CTOA_OWNER_PASSWORD": "test-owner-pass",
                 "CTOA_OPERATOR_USER": "ctoa-bot",
-                "CTOA_OPERATOR_PASSWORD": "jakpod22",
+                "CTOA_OPERATOR_PASSWORD": "test-operator-pass",
                 "CTOA_ADMIN_SETTINGS_FILE": str(tmp_path / "admin-settings.json"),
                 "CTOA_IDEA_PARKING_FILE": str(tmp_path / "idea-parking.json"),
                 "CTOA_CORS_ORIGINS": frontend_url,
@@ -264,7 +264,7 @@ def test_browser_smoke_operator_ideas_allowed_settings_denied():
                 page.click("#open-auth")
                 page.fill("#auth-api-base", backend_url)
                 page.fill("#auth-user", "ctoa-bot")
-                page.fill("#auth-pass", "jakpod22")
+                page.fill("#auth-pass", "test-operator-pass")
                 page.click("#auth-submit")
 
                 expect(page.locator("#auth-modal")).to_have_attribute("aria-hidden", "true")
@@ -344,4 +344,3 @@ def _stop_process(proc: subprocess.Popen) -> None:
     except subprocess.TimeoutExpired:
         proc.kill()
         proc.wait(timeout=5)
-

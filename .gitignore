@@ -17,6 +17,7 @@ runtime/
 logs/
 metrics/
 web/.next/
+*.tsbuildinfo
 
 # Reverse-engineering and large local artifacts
 artifacts/enc3/
@@ -38,6 +39,11 @@ releases/loader/*.zip
 **/unsafe_runtime_bootstrap_report.txt
 **/watchdog_alert.state
 **/watchdog_alert.log
+/ctoa_ek_profile.lua
+/ctoa_ui_prefs.lua
+/ctoa_diag_export.lua
+/ctoa_smoke_command.lua
+scripts/lua/otclient.zip
 
 # Secrets and env
 .env

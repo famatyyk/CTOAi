@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-07-11T07:37:34+00:00",
+  "status": "passed",
+  "checks": [
+    {
+      "name": "brain_cli_docs",
+      "path": "docs/CTOA_CLI.md",
+      "status": "passed",
+      "missing": []
+    },
+    {
+      "name": "otclient_cli_docs",
+      "path": "docs/CTOA_CLI.md",
+      "status": "passed",
+      "missing": []
+    },
+    {
+      "name": "command_dictionary_brain",
+      "path": "schemas/ctoa-command-dictionary.json",
+      "status": "passed",
+      "missing": []
+    },
+    {
+      "name": "command_dictionary_otclient",
+      "path": "schemas/ctoa-command-dictionary.json",
+      "status": "passed",
+      "missing": []
+    },
+    {
+      "name": "docs_index_plan3_artifacts",
+      "path": "docs/INDEX.md",
+      "status": "passed",
+      "missing": []
+    },
+    {
+      "name": "roadmap_plan3",
+      "path": "docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md",
+      "status": "passed",
+      "missing": []
+    }
+  ]
+}

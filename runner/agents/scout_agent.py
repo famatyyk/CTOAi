@@ -16,12 +16,12 @@ import logging
 import time
 import os
 import re
-import ssl
 import urllib.error
 import urllib.parse
 import urllib.request
 from typing import Any
 
+from runner import http_safety
 from runner.agents import db
 
 logging.basicConfig(
@@ -151,23 +151,29 @@ REQUEST_TIMEOUT = 8
 MAX_RETRIES = 3
 SCOUT_SERVER_TIMEOUT_SECONDS = int(os.environ.get("CTOA_SCOUT_SERVER_TIMEOUT_SECONDS", "120"))
 
-# Insecure SSL context only used to discover that an endpoint exists
-_SSL_CTX = ssl.create_default_context()
-_SSL_CTX.check_hostname = False
-_SSL_CTX.verify_mode = ssl.CERT_NONE
+_SSL_CTX = http_safety.discovery_ssl_context("CTOA_SCOUT_ALLOW_INSECURE_SSL")
 
 
 def _fetch(url: str) -> tuple[int, dict[str, Any] | None]:
     """Return (http_status, json_sample_or_None)."""
+    try:
+        safe_url = http_safety.require_public_discovery_url(
+            url,
+            label="Scout probe",
+        )
+    except ValueError:
+        return 0, None
+
     req = urllib.request.Request(
-        url,
+        safe_url,
         headers={
             "User-Agent": "CTOAScout/1.0 (+https://github.com/famatyyk/CTOAi)",
             "Accept": "application/json, text/html;q=0.9, */*;q=0.8",
         },
     )
     try:
-        with urllib.request.urlopen(req, timeout=REQUEST_TIMEOUT, context=_SSL_CTX) as r:
+        # require_public_discovery_url keeps probes on public http(s) URLs.
+        with urllib.request.urlopen(req, timeout=REQUEST_TIMEOUT, context=_SSL_CTX) as r:  # nosec B310
             status = r.status
             raw = r.read(MAX_BODY_BYTES).decode("utf-8", errors="replace")
             ct = r.headers.get("Content-Type", "")

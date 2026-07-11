@@ -73,6 +73,7 @@ report = {
     "config": {"TIMEBOX_SEC": TIMEBOX_SEC, "WAIT_BP_SEC": WAIT_BP_SEC, "MAX_EVENTS": MAX_EVENTS, "MAX_DUMP": MAX_DUMP},
     "events": [],
     "dumps": [],
+    "errors": [],
 }
 
 
@@ -107,6 +108,17 @@ report["hooks"] = hooks
 flush_report("running")
 
 armed_exec = {}
+
+
+def record_error(context, exc):
+    report["errors"].append({"context": str(context), "error": str(exc)})
+
+
+def clear_breakpoint(addr, context):
+    try:
+        c.clear_breakpoint(int(addr))
+    except Exception as exc:
+        record_error(context, exc)
 
 
 def dump_region(kind, base, size, extra=None):
@@ -144,8 +156,8 @@ def arm_exec(base, size, source, protect):
         try:
             c.set_breakpoint(int(addr))
             armed_exec[addr] = {"base": base, "size": size, "source": source, "protect": protect}
-        except Exception:
-            pass
+        except Exception as exc:
+            record_error(f"arm_exec:{addr}", exc)
 
 
 start = time.time()
@@ -164,10 +176,7 @@ try:
             m = armed_exec[eip]
             d = dump_region("exec_hit", m["base"], m["size"], {"source": m["source"], "protect": m["protect"], "trigger": eip})
             report["events"].append({"type": "exec_hit", "eip": eip, "dump": d.get("file") if d else None})
-            try:
-                c.clear_breakpoint(int(eip))
-            except Exception:
-                pass
+            clear_breakpoint(eip, "exec_hit")
             armed_exec.pop(eip, None)
             flush_report("running")
             continue
@@ -183,8 +192,7 @@ try:
                 d = dump_region("va_ret", base, sz or PAGE, {"protect": prot})
                 arm_exec(base, sz or PAGE, "VirtualAlloc", prot)
                 report["events"].append({"type": "VirtualAlloc", "base": base, "size": sz, "protect": prot, "dump": d.get("file") if d else None})
-                try: c.clear_breakpoint(int(ret))
-                except Exception: pass
+                clear_breakpoint(ret, "VirtualAlloc:return")
                 flush_report("running")
             continue
 
@@ -199,8 +207,7 @@ try:
                 d = dump_region("vax_ret", base, sz or PAGE, {"protect": prot})
                 arm_exec(base, sz or PAGE, "VirtualAllocEx", prot)
                 report["events"].append({"type": "VirtualAllocEx", "base": base, "size": sz, "protect": prot, "dump": d.get("file") if d else None})
-                try: c.clear_breakpoint(int(ret))
-                except Exception: pass
+                clear_breakpoint(ret, "VirtualAllocEx:return")
                 flush_report("running")
             continue
 
@@ -216,8 +223,7 @@ try:
                 d = dump_region("vp_ret", base, sz or PAGE, {"protect": prot, "ok": ok}) if ok else None
                 if ok: arm_exec(base, sz or PAGE, "VirtualProtect", prot)
                 report["events"].append({"type": "VirtualProtect", "base": base, "size": sz, "protect": prot, "ok": ok, "dump": d.get("file") if d else None})
-                try: c.clear_breakpoint(int(ret))
-                except Exception: pass
+                clear_breakpoint(ret, "VirtualProtect:return")
                 flush_report("running")
             continue
 
@@ -235,8 +241,7 @@ try:
                 d = dump_region("ntp_ret", base, sz or PAGE, {"protect": prot, "status": st}) if st == 0 else None
                 if st == 0: arm_exec(base, sz or PAGE, "NtProtectVirtualMemory", prot)
                 report["events"].append({"type": "NtProtectVirtualMemory", "base": base, "size": sz, "protect": prot, "status": st, "dump": d.get("file") if d else None})
-                try: c.clear_breakpoint(int(ret))
-                except Exception: pass
+                clear_breakpoint(ret, "NtProtectVirtualMemory:return")
                 flush_report("running")
             continue
 
@@ -250,8 +255,7 @@ try:
                 base = rd32(c, modp) if modp else None
                 d = dump_region("ldr_mod", base, MAX_DUMP, {"status": st}) if st == 0 else None
                 report["events"].append({"type": "LdrLoadDll", "status": st, "base": base, "dump": d.get("file") if d else None})
-                try: c.clear_breakpoint(int(ret))
-                except Exception: pass
+                clear_breakpoint(ret, "LdrLoadDll:return")
                 flush_report("running")
             continue
 

@@ -145,7 +145,7 @@ async function checkAuthAuto() {
     if (data.token_valid) {
       csrfToken = data.csrf_token || csrfToken;
       const authMode = data.auth_mode || (getToken() ? 'legacy-token-memory' : (getSessionToken() ? 'session' : 'cookie'));
-      authState.textContent = `Auth OK (${authMode}) | full_access=${data.full_access} | orchestrator_timer=${data.orchestrator_timer || 'unknown'}`;
+      authState.textContent = `Auth OK (${authMode}) | command_mode=${data.command_mode || 'presets'} | orchestrator_timer=${data.orchestrator_timer || 'unknown'}`;
       authState.style.color = '#7fff7f';
       applyRoleState(data.role || 'guest');
       await refreshOwnerUi();
@@ -230,7 +230,7 @@ document.getElementById('intelWatcherLog').onclick = async () => {
 document.getElementById('loadPresets').onclick = async () => {
   try {
     const data = await api('/api/presets');
-    presetSelect.innerHTML = '';
+    clearElement(presetSelect);
     data.commands.forEach((cmd) => {
       const opt = document.createElement('option');
       opt.textContent = cmd;
@@ -256,19 +256,12 @@ document.getElementById('runPreset').onclick = async () => {
   }
 };
 
-document.getElementById('runCmd').onclick = async () => {
-  const cmd = document.getElementById('cmd').value.trim();
-  if (!cmd) return;
-  try {
-    const data = await api('/api/command', {
-      method: 'POST',
-      body: JSON.stringify({ command: cmd, timeout: 60 }),
-    });
-    cmdOut.textContent = (data.stdout || '') + (data.stderr || '');
-  } catch (e) {
-    cmdOut.textContent = String(e);
-  }
-};
+const runCmd = document.getElementById('runCmd');
+if (runCmd) {
+  runCmd.onclick = () => {
+    cmdOut.textContent = 'Dowolne komendy sa zablokowane. Wybierz preset z allowlisty.';
+  };
+}
 
 // Tab navigation ------------------------------------------------------------
 document.querySelectorAll('.tab-btn').forEach((btn) => {
@@ -305,10 +298,26 @@ document.getElementById('launchIntel').onclick = async () => {
     .map((s) => s.trim())
     .filter(Boolean);
   const out = document.getElementById('agentStatusOut');
+  const reason = window.prompt('Powod audytu dla misji zwiadowczej:', 'manual intel launch');
+  if (!reason || !reason.trim()) {
+    out.textContent = 'Intel launch cancelled: missing audit reason.';
+    return;
+  }
+  const confirmed = window.confirm('Uruchomic misje zwiadowcza teraz?');
+  if (!confirmed) {
+    out.textContent = 'Intel launch cancelled.';
+    return;
+  }
   try {
     const data = await api('/api/agents/intel/launch', {
       method: 'POST',
-      body: JSON.stringify({ urls, force_rescout: true, trigger_now: true }),
+      body: JSON.stringify({
+        urls,
+        force_rescout: true,
+        trigger_now: true,
+        confirm: true,
+        reason: reason.trim(),
+      }),
     });
     out.textContent = JSON.stringify(data, null, 2);
   } catch (e) {
@@ -318,10 +327,20 @@ document.getElementById('launchIntel').onclick = async () => {
 
 document.getElementById('intelOneClick').onclick = async () => {
   const out = document.getElementById('agentStatusOut');
+  const reason = window.prompt('Powod audytu dla one-click run:', 'manual one-click intel run');
+  if (!reason || !reason.trim()) {
+    out.textContent = 'Intel one-click cancelled: missing audit reason.';
+    return;
+  }
+  const confirmed = window.confirm('Uruchomic one-click Intel Run teraz?');
+  if (!confirmed) {
+    out.textContent = 'Intel one-click cancelled.';
+    return;
+  }
   try {
     const data = await api('/api/agents/execution/run', {
       method: 'POST',
-      body: JSON.stringify({}),
+      body: JSON.stringify({ confirm: true, reason: reason.trim() }),
     });
     const names = (data.files || []).map((f) => f.name);
     out.textContent = JSON.stringify({
@@ -375,51 +394,100 @@ document.getElementById('autoTrainerLatest').onclick = async () => {
 };
 
 // Dashboard -----------------------------------------------------------------
-function renderReasonGroup(title, items) {
-  if (!Array.isArray(items) || items.length === 0) {
-    return `<div class="trend-empty">Brak sygnalow dla grupy ${escapeHtml(title)}</div>`;
+function clearElement(node) {
+  if (node) {
+    node.replaceChildren();
   }
-  return items.map((item) => {
-    const code = escapeHtml(item.code || 'UNKNOWN');
+}
+
+function createTextElement(tagName, className, text) {
+  const node = document.createElement(tagName);
+  if (className) {
+    node.className = className;
+  }
+  node.textContent = String(text ?? '');
+  return node;
+}
+
+function appendText(parent, text) {
+  parent.appendChild(document.createTextNode(String(text ?? '')));
+}
+
+function safeStatusKey(value, fallback = 'warning') {
+  const key = String(value || fallback).toLowerCase().replace(/[^a-z0-9_-]/g, '');
+  return key || fallback;
+}
+
+function createStatusBadge(statusValue) {
+  const normalized = String(statusValue || '').trim().toUpperCase();
+  const statusMap = {
+    VALIDATED: 'ok',
+    GENERATED: 'ok',
+    READY: 'ok',
+    INGESTED: 'waiting',
+    SCOUTING: 'waiting',
+    FAILED: 'error',
+    ERROR: 'error',
+    QUEUED: 'queued',
+    RELEASED: 'ok',
+    NEW: 'queued',
+  };
+  const node = document.createElement('span');
+  node.className = `badge badge-${statusMap[normalized] || 'queued'}`;
+  node.textContent = normalized || 'UNKNOWN';
+  return node;
+}
+
+function createEmptyTrend(text) {
+  return createTextElement('div', 'trend-empty', text);
+}
+
+function renderReasonGroup(title, items) {
+  const fragment = document.createDocumentFragment();
+  if (!Array.isArray(items) || items.length === 0) {
+    fragment.appendChild(createEmptyTrend(`Brak sygnalow dla grupy ${title}`));
+    return fragment;
+  }
+  items.forEach((item) => {
     const count = Number(item.count || 0);
-    const severity = escapeHtml(item.severity || 'warning');
-    return `
-      <div class="trend-chip trend-${severity}">
-        <span>${code}</span>
-        <strong>${count}</strong>
-      </div>
-    `;
-  }).join('');
+    const severity = safeStatusKey(item.severity, 'warning');
+    const chip = document.createElement('div');
+    chip.className = `trend-chip trend-${severity}`;
+    chip.appendChild(createTextElement('span', '', item.code || 'UNKNOWN'));
+    chip.appendChild(createTextElement('strong', '', Number.isFinite(count) ? count : 0));
+    fragment.appendChild(chip);
+  });
+  return fragment;
 }
 
 function renderTimeline(items) {
+  const fragment = document.createDocumentFragment();
   if (!Array.isArray(items) || items.length === 0) {
-    return '<div class="trend-empty">Brak zdarzen 24h</div>';
+    fragment.appendChild(createEmptyTrend('Brak zdarzen 24h'));
+    return fragment;
   }
   const maxVisible = 8;
   const visible = items.slice(0, maxVisible);
   const hiddenCount = Math.max(0, items.length - visible.length);
-  const rows = visible.map((item) => {
-    const severity = escapeHtml(item.severity || 'warning');
-    const eventName = escapeHtml(item.event || 'pending');
-    const reasonCode = escapeHtml(item.reason_code || 'UNKNOWN');
-    const timestamp = escapeHtml(item.timestamp || '');
-    return `
-      <div class="timeline-item timeline-${severity}">
-        <div class="timeline-dot"></div>
-        <div>
-          <div class="timeline-main">${reasonCode} - ${eventName}</div>
-          <div class="timeline-meta">${timestamp}</div>
-        </div>
-      </div>
-    `;
-  }).join('');
+  visible.forEach((item) => {
+    const severity = safeStatusKey(item.severity, 'warning');
+    const row = document.createElement('div');
+    row.className = `timeline-item timeline-${severity}`;
+    row.appendChild(createTextElement('div', 'timeline-dot', ''));
+    const body = document.createElement('div');
+    body.appendChild(
+      createTextElement('div', 'timeline-main', `${item.reason_code || 'UNKNOWN'} - ${item.event || 'pending'}`)
+    );
+    body.appendChild(createTextElement('div', 'timeline-meta', item.timestamp || ''));
+    row.appendChild(body);
+    fragment.appendChild(row);
+  });
 
-  const overflow = hiddenCount > 0
-    ? `<div class="trend-empty">+${hiddenCount} kolejnych zdarzen w oknie 24h</div>`
-    : '';
+  if (hiddenCount > 0) {
+    fragment.appendChild(createEmptyTrend(`+${hiddenCount} kolejnych zdarzen w oknie 24h`));
+  }
 
-  return rows + overflow;
+  return fragment;
 }
 
 function bindTrendToggles(root) {
@@ -440,6 +508,127 @@ function statusClassFromSeverity(severity) {
   if (key === 'critical' || key === 'error') return 'status-critical';
   if (key === 'warning' || key === 'degraded') return 'status-warning';
   return 'status-info';
+}
+
+function appendEmptyTableRow(tbody, colSpan, text) {
+  const row = document.createElement('tr');
+  const cell = document.createElement('td');
+  cell.colSpan = colSpan;
+  cell.style.color = '#555';
+  cell.textContent = text;
+  row.appendChild(cell);
+  tbody.appendChild(row);
+}
+
+function renderTrendBars(parent, topReasons) {
+  const visible = topReasons.slice(0, 3);
+  if (visible.length === 0) {
+    parent.appendChild(createEmptyTrend('Brak top reason codes'));
+    return;
+  }
+
+  visible.forEach((item) => {
+    const count = Number(item.count || 0);
+    const width = Math.max(8, Math.min(100, count * 20));
+    const row = document.createElement('div');
+    row.style.margin = '4px 0';
+
+    const label = document.createElement('span');
+    label.style.display = 'inline-block';
+    label.style.minWidth = '165px';
+    label.textContent = `${item.code || 'UNKNOWN'} (${Number.isFinite(count) ? count : 0})`;
+
+    const bar = document.createElement('span');
+    bar.style.display = 'inline-block';
+    bar.style.height = '6px';
+    bar.style.background = '#2f80ed';
+    bar.style.borderRadius = '999px';
+    bar.style.width = `${width}px`;
+
+    row.appendChild(label);
+    row.appendChild(bar);
+    parent.appendChild(row);
+  });
+}
+
+function createTrendToggle(targetId, label) {
+  const button = document.createElement('button');
+  button.className = 'trend-toggle';
+  button.type = 'button';
+  button.setAttribute('data-toggle-target', targetId);
+  button.setAttribute('aria-expanded', 'true');
+  button.textContent = label;
+  return button;
+}
+
+function appendReasonGroup(parent, title, items) {
+  const group = document.createElement('div');
+  group.className = 'trend-group';
+  group.appendChild(createTextElement('div', 'trend-group-title', title));
+  group.appendChild(renderReasonGroup(title.toLowerCase(), items));
+  parent.appendChild(group);
+}
+
+function renderTrendSummary(root, topReasons, dominant, slo, groups, sloTimeline) {
+  clearElement(root);
+
+  const shell = document.createElement('div');
+  shell.className = 'trend-shell';
+
+  const head = document.createElement('div');
+  head.className = 'trend-head';
+
+  const dominantLine = document.createElement('div');
+  dominantLine.appendChild(createTextElement('b', '', 'Dominujacy reason_code:'));
+  appendText(
+    dominantLine,
+    dominant ? ` ${dominant.code || 'UNKNOWN'} (${Number(dominant.count || 0)})` : ' brak danych reason_code'
+  );
+
+  const successRate = Number(slo.success_rate_24h ?? 1);
+  const successTarget = Number(slo.success_rate_target ?? 1);
+  const budgetLeft = Number(slo.error_budget_remaining ?? 0);
+  const alertActive = Boolean(slo.alert_active);
+  const successMet = Boolean(slo.success_rate_met);
+  const sloLine = createTextElement(
+    'div',
+    `trend-slo ${successMet ? 'trend-ready' : 'trend-critical'}`,
+    `SLO 24h: ${(successRate * 100).toFixed(1)}% / target ${(successTarget * 100).toFixed(1)}% | budget_left=${budgetLeft} | alert=${alertActive ? 'ON' : 'OFF'}`
+  );
+
+  head.appendChild(dominantLine);
+  head.appendChild(sloLine);
+  shell.appendChild(head);
+
+  const bars = document.createElement('div');
+  bars.className = 'trend-bars';
+  renderTrendBars(bars, topReasons);
+  shell.appendChild(bars);
+
+  const groupsSection = document.createElement('div');
+  groupsSection.className = 'trend-section';
+  groupsSection.appendChild(createTrendToggle('trend-groups', 'Reason code groups'));
+  const groupsPanel = document.createElement('div');
+  groupsPanel.id = 'trend-groups';
+  groupsPanel.className = 'trend-panel';
+  appendReasonGroup(groupsPanel, 'Critical', groups.critical);
+  appendReasonGroup(groupsPanel, 'Warning', groups.warning);
+  appendReasonGroup(groupsPanel, 'Ready', groups.ready);
+  groupsSection.appendChild(groupsPanel);
+  shell.appendChild(groupsSection);
+
+  const timelineSection = document.createElement('div');
+  timelineSection.className = 'trend-section';
+  timelineSection.appendChild(createTrendToggle('trend-timeline', 'SLO timeline 24h'));
+  const timelinePanel = document.createElement('div');
+  timelinePanel.id = 'trend-timeline';
+  timelinePanel.className = 'trend-panel';
+  timelinePanel.appendChild(renderTimeline(sloTimeline));
+  timelineSection.appendChild(timelinePanel);
+  shell.appendChild(timelineSection);
+
+  root.appendChild(shell);
+  bindTrendToggles(root);
 }
 
 function renderDashboardStatusContext(payload) {
@@ -473,27 +662,26 @@ function renderDashboardStatusContext(payload) {
   messageEl.textContent = message;
   detailEl.textContent = detail;
 
+  clearElement(impactedEl);
   if (impacted.length > 0) {
-    impactedEl.innerHTML = impacted
-      .slice(0, 8)
-      .map((name) => {
-        const chipClass = criticalSections.includes(name)
-          ? 'dash-impact-chip-critical'
-          : 'dash-impact-chip-warning';
-        return `<span class="dash-impact-chip ${chipClass}">${escapeHtml(name)}</span>`;
-      })
-      .join('');
+    const criticalNames = criticalSections.map((name) => String(name));
+    impacted.slice(0, 8).forEach((name) => {
+      const chipClass = criticalNames.includes(String(name))
+        ? 'dash-impact-chip-critical'
+        : 'dash-impact-chip-warning';
+      impactedEl.appendChild(createTextElement('span', `dash-impact-chip ${chipClass}`, name));
+    });
   } else {
     impactedEl.textContent = 'Brak sekcji.';
   }
 
+  clearElement(actionsEl);
   if (actions.length > 0) {
-    actionsEl.innerHTML = actions
-      .slice(0, 5)
-      .map((action) => `<li>${escapeHtml(action)}</li>`)
-      .join('');
+    actions.slice(0, 5).forEach((action) => {
+      actionsEl.appendChild(createTextElement('li', '', action));
+    });
   } else {
-    actionsEl.innerHTML = '<li>Brak akcji.</li>';
+    actionsEl.appendChild(createTextElement('li', '', 'Brak akcji.'));
   }
 }
 
@@ -521,26 +709,49 @@ document.getElementById('refreshDash').onclick = async () => {
 
     // servers table: [id, url, status, created_at]
     const srvBody = document.querySelector('#dashServers tbody');
-    if (d.servers && d.servers.length > 0) {
-      srvBody.innerHTML = d.servers.map(r => {
-        const id = escapeHtml(r[0] || '');
-        const url = escapeHtml(r[1] || '');
-        const status = badgeStatus(r[2]);
-        return `<tr><td>${id}</td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis">${url}</td><td>${status}</td></tr>`;
-      }).join('');
+    if (srvBody) {
+      clearElement(srvBody);
+      if (d.servers && d.servers.length > 0) {
+        d.servers.forEach((r) => {
+          const row = document.createElement('tr');
+          row.appendChild(createTextElement('td', '', r[0] || ''));
+          const urlCell = createTextElement('td', '', r[1] || '');
+          urlCell.style.maxWidth = '160px';
+          urlCell.style.overflow = 'hidden';
+          urlCell.style.textOverflow = 'ellipsis';
+          row.appendChild(urlCell);
+          const statusCell = document.createElement('td');
+          statusCell.appendChild(createStatusBadge(r[2]));
+          row.appendChild(statusCell);
+          srvBody.appendChild(row);
+        });
+      } else {
+        appendEmptyTableRow(srvBody, 3, 'brak danych');
+      }
     }
 
     // top modules: [task_id, output_file, quality_score, status]
     const topBody = document.querySelector('#dashTop tbody');
-    if (d.top && d.top.length > 0) {
-      topBody.innerHTML = d.top.map(r => {
-        const taskId = escapeHtml(r[0] || '');
-        const outputFile = escapeHtml(r[1] || '');
-        const quality = Number(r[2]);
-        const safeQuality = Number.isFinite(quality) ? quality : '?';
-        const status = badgeStatus(r[3]);
-        return `<tr><td>${taskId}</td><td>${outputFile}</td><td><b>${safeQuality}%</b></td><td>${status}</td></tr>`;
-      }).join('');
+    if (topBody) {
+      clearElement(topBody);
+      if (d.top && d.top.length > 0) {
+        d.top.forEach((r) => {
+          const quality = Number(r[2]);
+          const safeQuality = Number.isFinite(quality) ? quality : '?';
+          const row = document.createElement('tr');
+          row.appendChild(createTextElement('td', '', r[0] || ''));
+          row.appendChild(createTextElement('td', '', r[1] || ''));
+          const qualityCell = document.createElement('td');
+          qualityCell.appendChild(createTextElement('b', '', `${safeQuality}%`));
+          row.appendChild(qualityCell);
+          const statusCell = document.createElement('td');
+          statusCell.appendChild(createStatusBadge(r[3]));
+          row.appendChild(statusCell);
+          topBody.appendChild(row);
+        });
+      } else {
+        appendEmptyTableRow(topBody, 4, 'brak danych');
+      }
     }
 
     const topReasons = Array.isArray(d.top_reason_codes) ? d.top_reason_codes : [];
@@ -549,42 +760,7 @@ document.getElementById('refreshDash').onclick = async () => {
     const groups = d.reason_code_groups || {};
     const sloTimeline = Array.isArray(d.slo_timeline) ? d.slo_timeline : [];
     if (trendSummary) {
-      const bars = topReasons.slice(0, 3).map((item) => {
-          const c = Number(item.count || 0);
-          const w = Math.max(8, Math.min(100, c * 20));
-          const code = escapeHtml(item.code || 'UNKNOWN');
-          return `<div style="margin:4px 0"><span style="display:inline-block;min-width:165px">${code} (${c})</span><span style="display:inline-block;height:6px;background:#2f80ed;border-radius:999px;width:${w}px"></span></div>`;
-        }).join('');
-      const successRate = Number(slo.success_rate_24h ?? 1);
-      const successTarget = Number(slo.success_rate_target ?? 1);
-      const budgetLeft = Number(slo.error_budget_remaining ?? 0);
-      const alertActive = Boolean(slo.alert_active);
-      const successMet = Boolean(slo.success_rate_met);
-      const dominantLabel = dominant
-        ? `${escapeHtml(dominant.code)} (${dominant.count})`
-        : 'brak danych reason_code';
-
-      trendSummary.innerHTML =
-        `<div class="trend-shell">` +
-          `<div class="trend-head">` +
-            `<div><b>Dominujacy reason_code:</b> ${dominantLabel}</div>` +
-            `<div class="trend-slo ${successMet ? 'trend-ready' : 'trend-critical'}">SLO 24h: ${(successRate * 100).toFixed(1)}% / target ${(successTarget * 100).toFixed(1)}% | budget_left=${budgetLeft} | alert=${alertActive ? 'ON' : 'OFF'}</div>` +
-          `</div>` +
-          `<div class="trend-bars">${bars || '<div class="trend-empty">Brak top reason codes</div>'}</div>` +
-          `<div class="trend-section">` +
-            `<button class="trend-toggle" type="button" data-toggle-target="trend-groups" aria-expanded="true">Reason code groups</button>` +
-            `<div id="trend-groups" class="trend-panel">` +
-              `<div class="trend-group"><div class="trend-group-title">Critical</div>${renderReasonGroup('critical', groups.critical)}</div>` +
-              `<div class="trend-group"><div class="trend-group-title">Warning</div>${renderReasonGroup('warning', groups.warning)}</div>` +
-              `<div class="trend-group"><div class="trend-group-title">Ready</div>${renderReasonGroup('ready', groups.ready)}</div>` +
-            `</div>` +
-          `</div>` +
-          `<div class="trend-section">` +
-            `<button class="trend-toggle" type="button" data-toggle-target="trend-timeline" aria-expanded="true">SLO timeline 24h</button>` +
-            `<div id="trend-timeline" class="trend-panel">${renderTimeline(sloTimeline)}</div>` +
-          `</div>` +
-        `</div>`;
-      bindTrendToggles(trendSummary);
+      renderTrendSummary(trendSummary, topReasons, dominant, slo, groups, sloTimeline);
     }
 
     renderDashboardStatusContext(d);
@@ -688,7 +864,3 @@ async function fetchAgentLog(target) {
 tokenInput.value = '';
 setRoleBadge('guest');
 void checkAuthAuto();
-
-
-
-

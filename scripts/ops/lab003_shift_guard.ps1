@@ -19,15 +19,102 @@ if ($IntervalMinutes -lt 1) {
     throw "IntervalMinutes must be >= 1"
 }
 
+function Test-CtoaLoopbackHost {
+    param([string]$HostName)
+
+    return $HostName -in @("localhost", "127.0.0.1", "::1")
+}
+
+function Assert-LocalApiBaseUrl {
+    param(
+        [string]$Value,
+        [string]$Name
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Value)) {
+        throw "$Name must not be empty."
+    }
+
+    $candidate = $Value.Trim()
+    [Uri]$uri = $null
+    if (-not [Uri]::TryCreate($candidate, [UriKind]::Absolute, [ref]$uri)) {
+        throw "$Name must be an absolute local HTTP(S) URL."
+    }
+    if ($uri.Scheme -notin @("http", "https")) {
+        throw "$Name must use http:// or https://."
+    }
+    if ($uri.UserInfo) {
+        throw "$Name must not include credentials."
+    }
+    if ($uri.Query -or $uri.Fragment) {
+        throw "$Name must not include query strings or fragments."
+    }
+    if ($uri.AbsolutePath -and $uri.AbsolutePath -ne "/") {
+        throw "$Name must not include a path."
+    }
+    if (-not (Test-CtoaLoopbackHost $uri.Host)) {
+        throw "$Name must use localhost, 127.0.0.1, or [::1]."
+    }
+
+    return $uri.GetLeftPart([UriPartial]::Authority).TrimEnd("/")
+}
+
+function Assert-AlertWebhookUrl {
+    param(
+        [string]$Value,
+        [string]$Name
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Value)) {
+        return ""
+    }
+
+    $candidate = $Value.Trim()
+    if ($candidate -match "[\r\n\t ]") {
+        throw "$Name must not contain whitespace."
+    }
+
+    [Uri]$uri = $null
+    if (-not [Uri]::TryCreate($candidate, [UriKind]::Absolute, [ref]$uri)) {
+        throw "$Name must be an absolute HTTP(S) URL."
+    }
+    if ($uri.Scheme -notin @("http", "https")) {
+        throw "$Name must use http:// or https://."
+    }
+    if ($uri.Scheme -eq "http" -and -not (Test-CtoaLoopbackHost $uri.Host)) {
+        throw "$Name must use https:// for non-local webhook hosts."
+    }
+    if ($uri.UserInfo) {
+        throw "$Name must not include credentials."
+    }
+    if ($uri.Fragment) {
+        throw "$Name must not include fragments."
+    }
+
+    return $candidate
+}
+
+function Get-CurrentPowerShellPath {
+    $exeName = if ($PSVersionTable.PSEdition -eq "Core") { "pwsh.exe" } else { "powershell.exe" }
+    $candidate = Join-Path $PSHOME $exeName
+    if (-not (Test-Path -LiteralPath $candidate -PathType Leaf)) {
+        throw "Current PowerShell executable was not found."
+    }
+    return $candidate
+}
+
+$BaseUrl = Assert-LocalApiBaseUrl -Value $BaseUrl -Name "BaseUrl"
+$powerShell = Get-CurrentPowerShellPath
+
 $repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $validateScript = Join-Path $PSScriptRoot "lab003_validate_bundle.ps1"
 
-if (-not (Test-Path $validateScript)) {
+if (-not (Test-Path -LiteralPath $validateScript -PathType Leaf)) {
     throw "Validation script not found: $validateScript"
 }
 
 $logDir = Split-Path -Parent $LogPath
-if (-not [string]::IsNullOrWhiteSpace($logDir) -and -not (Test-Path $logDir)) {
+if (-not [string]::IsNullOrWhiteSpace($logDir) -and -not (Test-Path -LiteralPath $logDir)) {
     New-Item -ItemType Directory -Path $logDir -Force | Out-Null
 }
 
@@ -64,7 +151,7 @@ function Write-Log {
     }
 
     $ts = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
-    Add-Content -Path $LogPath -Value "[$ts] $Message" -Encoding UTF8
+    Add-Content -LiteralPath $LogPath -Value "[$ts] $Message" -Encoding UTF8
 }
 
 function Send-AlertWebhook {
@@ -80,6 +167,7 @@ function Send-AlertWebhook {
     if ([string]::IsNullOrWhiteSpace($WebhookUrl)) {
         return
     }
+    $safeWebhookUrl = Assert-AlertWebhookUrl -Value $WebhookUrl -Name "WebhookUrl"
 
     $payload = [ordered]@{
         project = "CTOAi"
@@ -95,7 +183,7 @@ function Send-AlertWebhook {
     }
 
     try {
-        Invoke-RestMethod -Method Post -Uri $WebhookUrl -ContentType "application/json" -Body ($payload | ConvertTo-Json -Depth 8) | Out-Null
+        Invoke-RestMethod -Method Post -Uri $safeWebhookUrl -ContentType "application/json" -Body ($payload | ConvertTo-Json -Depth 8) | Out-Null
         Write-Log "alert_webhook=sent iteration=$Iteration result=$ResultType"
     }
     catch {
@@ -104,6 +192,7 @@ function Send-AlertWebhook {
 }
 
 $resolvedWebhookUrl = Resolve-OptionalValue -Current $AlertWebhookUrl -EnvName "CTOA_LAB003_ALERT_WEBHOOK_URL"
+$resolvedWebhookUrl = Assert-AlertWebhookUrl -Value $resolvedWebhookUrl -Name "AlertWebhookUrl"
 $alertMode = if ($AlertOnEveryFailure.IsPresent) { "every_failure" } else { "first_failure" }
 $alertSent = $false
 
@@ -128,7 +217,7 @@ for ($iteration = 1; $iteration -le $totalIterations; $iteration++) {
     }
 
     try {
-        & powershell @args
+        & $powerShell @args
         $exitCode = $LASTEXITCODE
         $durationMs = [int]((Get-Date) - $startedAt).TotalMilliseconds
 

@@ -1,15 +1,13 @@
 """Regression tests for agent response guardrails."""
 
 from pathlib import Path
-import sys
 
 import yaml
 
 
 PROJECT_ROOT = Path(__file__).parent.parent
-sys.path.insert(0, str(PROJECT_ROOT / "runner"))
 
-from response_guardrails import (
+from runner.response_guardrails import (
     is_response_compliant,
     validate_response,
     is_operational_structure_compliant,

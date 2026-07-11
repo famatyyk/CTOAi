@@ -7,19 +7,19 @@ from datetime import datetime
 import json
 import os
 from pathlib import Path
-import re
 import threading
 import tkinter as tk
 from tkinter import messagebox, simpledialog, ttk
 from tkinter.scrolledtext import ScrolledText
+import uuid
 import webbrowser
 
 try:
-    from desktop_console.api_client import ApiError, AuthContext, CtoaApiClient
+    from desktop_console.api_client import ApiError, AuthContext, CtoaApiClient, normalize_base_url
     from desktop_console.update_client import GitHubReleaseUpdater, UpdateInfo
     from desktop_console.version import APP_NAME, APP_VERSION
 except ImportError:
-    from api_client import ApiError, AuthContext, CtoaApiClient
+    from api_client import ApiError, AuthContext, CtoaApiClient, normalize_base_url
     from update_client import GitHubReleaseUpdater, UpdateInfo
     from version import APP_NAME, APP_VERSION
 
@@ -27,6 +27,7 @@ except ImportError:
 DEFAULT_API_BASE = "http://127.0.0.1:8787"
 DEFAULT_CONTROL_CENTER_URL = "http://127.0.0.1:3000/control-center"
 SETTINGS_FILE = Path(os.getenv("APPDATA", str(Path.home()))) / "CTOA" / "desktop-settings.json"
+SETTINGS_MAX_BYTES = 50_000
 UPDATE_DOWNLOAD_DIR = Path(os.getenv("LOCALAPPDATA", str(Path.home()))) / "CTOA" / "updates"
 PROFILE_CHOICES = ("local", "stage", "prod")
 THEME_CHOICES = ("arcane_night", "steel_ops", "classic_parchment")
@@ -146,7 +147,8 @@ def _theme_from_choice(value: object) -> str:
     return "arcane_night"
 
 
-def _default_profile_urls() -> dict[str, str]:    return {
+def _default_profile_urls() -> dict[str, str]:
+    return {
         "local": DEFAULT_API_BASE,
         "stage": str(os.getenv("CTOA_STAGE_API_BASE", "")).strip(),
         "prod": str(os.getenv("CTOA_PROD_API_BASE", "")).strip(),
@@ -171,22 +173,36 @@ def _safe_normalize_url(raw_url: object) -> str:
     value = str(raw_url or "").strip()
     if not value:
         return ""
-    if not re.match(r"^https?://", value, re.IGNORECASE):
-        value = f"http://{value}"
-    return value.rstrip("/")
+    try:
+        return normalize_base_url(value)
+    except ApiError:
+        return ""
+
+
+def _read_settings_payload(path: Path) -> dict[str, object] | None:
+    if path.is_symlink():
+        return None
+    try:
+        with path.open("rb") as handle:
+            raw = handle.read(SETTINGS_MAX_BYTES + 1)
+    except OSError:
+        return None
+    if len(raw) > SETTINGS_MAX_BYTES:
+        return None
+    try:
+        payload = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return None
+    return payload if isinstance(payload, dict) else None
 
 
 def _load_settings() -> DesktopSettings:
     defaults = _default_profile_urls()
-    if not SETTINGS_FILE.exists():
+    payload = _read_settings_payload(SETTINGS_FILE)
+    if payload is None:
         return DesktopSettings(profile_urls=defaults)
 
-    try:
-        payload = json.loads(SETTINGS_FILE.read_text(encoding="utf-8"))
-    except Exception:
-        return DesktopSettings(profile_urls=defaults)
-
-    loaded_profiles = payload.get("profile_urls") if isinstance(payload, dict) else {}
+    loaded_profiles = payload.get("profile_urls")
     profile_urls = dict(defaults)
     if isinstance(loaded_profiles, dict):
         for key in PROFILE_CHOICES:
@@ -220,9 +236,33 @@ def _load_settings() -> DesktopSettings:
     )
 
 
+def _atomic_settings_temp_path(path: Path) -> Path:
+    return path.with_name(f".{path.name}.{os.getpid()}.{uuid.uuid4().hex}.tmp")
+
+
+def _remove_settings_temp(path: Path) -> None:
+    try:
+        path.unlink()
+    except FileNotFoundError:
+        pass
+
+
+def _atomic_write_settings_json(path: Path, payload: dict[str, object]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = _atomic_settings_temp_path(path)
+    try:
+        with tmp.open("w", encoding="utf-8") as handle:
+            json.dump(payload, handle, indent=2, ensure_ascii=True)
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        tmp.replace(path)
+    finally:
+        _remove_settings_temp(tmp)
+
+
 def _save_settings(settings: DesktopSettings) -> None:
-    SETTINGS_FILE.parent.mkdir(parents=True, exist_ok=True)
-    SETTINGS_FILE.write_text(json.dumps(asdict(settings), indent=2, ensure_ascii=True), encoding="utf-8")
+    _atomic_write_settings_json(SETTINGS_FILE, asdict(settings))
 
 
 def _normalize_refresh_seconds(value: object) -> int:
@@ -259,7 +299,7 @@ def _friendly_api_error(exc: Exception, base_url: str) -> str:
             "Cannot connect to API.\n\n"
             f"Current API Base URL: {base_url}\n\n"
             "If backend runs locally, start it with:\n"
-            "python -m uvicorn mobile_console.app:app --host 0.0.0.0 --port 8787\n\n"
+            "python -m uvicorn mobile_console.app:app --host 127.0.0.1 --port 8787\n\n"
             "If backend runs on VPS, use your VPS domain/IP URL instead of 127.0.0.1."
         )
 
@@ -309,8 +349,9 @@ class CtoaDesktopApp(tk.Tk):
         style = ttk.Style(self)
         try:
             style.theme_use("clam")
-        except Exception:
-            pass
+        except tk.TclError:
+            if hasattr(self, "status_var"):
+                self.set_status("Theme engine fallback active")
 
         selected_theme = _theme_from_choice(theme_name or self.settings.theme_name)
         palette = dict(THEME_PALETTES.get(selected_theme, THEME_PALETTES["arcane_night"]))
@@ -571,8 +612,8 @@ class CtoaDesktopApp(tk.Tk):
         try:
             if callable(callback):
                 callback()
-        except Exception:
-            pass
+        except (ApiError, tk.TclError, RuntimeError, ValueError) as exc:
+            self.set_status(f"Shortcut failed: {exc}")
         return "break"
 
     def _active_dashboard(self) -> object | None:
@@ -742,8 +783,8 @@ class CtoaDesktopApp(tk.Tk):
     def logout(self) -> None:
         try:
             self.api.logout()
-        except Exception:
-            pass
+        except ApiError as exc:
+            self.set_status(f"Logout API call failed locally: {exc}")
         self.auth = None
         self.set_status("Logged out")
         self.show_login(preset_url=self.settings.base_url)
@@ -857,17 +898,13 @@ class CtoaDesktopApp(tk.Tk):
             return
 
         self.set_status(f"Update downloaded: {path}")
-        if messagebox.askyesno(
+        messagebox.showinfo(
             "Update ready",
             (
                 f"Update package downloaded to:\n{path}\n\n"
-                "Run downloaded executable now?"
+                "Verify the package and run it from Windows when ready."
             ),
-        ):
-            try:
-                os.startfile(str(path))
-            except OSError as exc:
-                messagebox.showerror("Launch failed", str(exc))
+        )
 
     def _mount(self, frame: ttk.Frame) -> None:
         if self._frame is not None:
@@ -1515,8 +1552,8 @@ class DashboardFrame(ttk.Frame):
         if self._refresh_job is not None:
             try:
                 self.after_cancel(self._refresh_job)
-            except Exception:
-                pass
+            except tk.TclError:
+                self.app.set_status("Auto-refresh cancellation skipped")
             self._refresh_job = None
         super().destroy()
 
@@ -1547,8 +1584,8 @@ class DashboardFrame(ttk.Frame):
                 api_base=self.app.api.base_url,
                 refresh_seconds=self.refresh_seconds.get(),
             )
-        except ApiError:
-            pass
+        except ApiError as exc:
+            self.app.set_status(f"Remote profile save skipped: {exc}")
 
         self._schedule_next_refresh()
 
@@ -1569,8 +1606,8 @@ class DashboardFrame(ttk.Frame):
         if self._refresh_job is not None:
             try:
                 self.after_cancel(self._refresh_job)
-            except Exception:
-                pass
+            except tk.TclError:
+                self.app.set_status("Auto-refresh cancellation skipped")
             self._refresh_job = None
 
         if not self.auto_refresh.get():
@@ -1745,8 +1782,24 @@ class DashboardFrame(ttk.Frame):
 
         self._schedule_next_refresh()
     def _run_one_click_agent(self) -> None:
+        reason = simpledialog.askstring(
+            "Confirm One-click Agent Run",
+            "Audit reason for one-click run:",
+            parent=self,
+        )
+        if not reason or not reason.strip():
+            self.app.set_status("One-click agent run cancelled")
+            return
+        if not messagebox.askyesno(
+            "Confirm One-click Agent Run",
+            "Run one-click agent execution now?",
+            parent=self,
+        ):
+            self.app.set_status("One-click agent run cancelled")
+            return
+
         try:
-            payload = self.app.api.run_agents_one_click()
+            payload = self.app.api.run_agents_one_click(reason=reason.strip(), confirm=True)
         except Exception as exc:
             messagebox.showerror("Agent run failed", _friendly_api_error(exc, self.app.api.base_url))
             return
@@ -1762,9 +1815,30 @@ class DashboardFrame(ttk.Frame):
             parent=self,
         )
         urls = [raw_url.strip()] if raw_url and raw_url.strip() else []
+        reason = simpledialog.askstring(
+            "Confirm Intel Mission",
+            "Audit reason for Intel mission:",
+            parent=self,
+        )
+        if not reason or not reason.strip():
+            self.app.set_status("Intel mission cancelled")
+            return
+        if not messagebox.askyesno(
+            "Confirm Intel Mission",
+            "Launch Intel mission now?",
+            parent=self,
+        ):
+            self.app.set_status("Intel mission cancelled")
+            return
 
         try:
-            payload = self.app.api.launch_intel_mission(urls=urls, force_rescout=False, trigger_now=True)
+            payload = self.app.api.launch_intel_mission(
+                urls=urls,
+                force_rescout=False,
+                trigger_now=True,
+                reason=reason.strip(),
+                confirm=True,
+            )
         except Exception as exc:
             messagebox.showerror("Intel launch failed", _friendly_api_error(exc, self.app.api.base_url))
             return
@@ -1913,16 +1987,17 @@ class AdminConsoleFrame(ttk.Frame):
         ttk.Label(header, text="Admin Console", style="SectionTitle.TLabel").pack(anchor="w")
         ttk.Label(
             header,
-            text="Owner account only. Executes /api/command under backend guardrails.",
+            text="Owner account only. Executes allowed /api/command presets under backend guardrails.",
             style="Subhead.TLabel",
         ).pack(anchor="w", pady=(2, 10))
 
         self.command_var = tk.StringVar(value="")
+        self.allowed_presets: set[str] = set()
 
         row = ttk.Frame(header, style="Surface.TFrame")
         row.pack(fill="x", pady=(0, 8))
-        ttk.Label(row, text="Command", style="Field.TLabel").pack(side="left")
-        ttk.Entry(row, textvariable=self.command_var, width=90).pack(side="left", fill="x", expand=True, padx=(8, 8))
+        ttk.Label(row, text="Preset", style="Field.TLabel").pack(side="left")
+        ttk.Entry(row, textvariable=self.command_var, width=90, state="readonly").pack(side="left", fill="x", expand=True, padx=(8, 8))
         ttk.Button(row, text="Run", style="Primary.TButton", command=self.run_command).pack(side="left")
 
         actions = ttk.Frame(header, style="Surface.TFrame")
@@ -1984,6 +2059,7 @@ class AdminConsoleFrame(ttk.Frame):
             return
 
         self.preset_list.delete(0, tk.END)
+        self.allowed_presets = set(presets)
         for cmd in presets:
             self.preset_list.insert(tk.END, cmd)
 
@@ -1995,12 +2071,16 @@ class AdminConsoleFrame(ttk.Frame):
         self.command_var.set(value)
 
     def run_command(self) -> None:
-        if not self.command_var.get().strip():
-            messagebox.showwarning("No command", "Pick or type a command first.")
+        command = self.command_var.get().strip()
+        if not command:
+            messagebox.showwarning("No preset", "Pick an allowed preset first.")
+            return
+        if command not in self.allowed_presets:
+            messagebox.showwarning("Preset required", "This console only runs presets loaded from /api/presets.")
             return
 
         try:
-            result = self.app.api.run_command(self.command_var.get().strip())
+            result = self.app.api.run_command(command)
         except Exception as exc:
             messagebox.showerror("Command failed", _friendly_api_error(exc, self.app.api.base_url))
             return
@@ -2119,15 +2199,6 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
-
-
-
-
 
 
 

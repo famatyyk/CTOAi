@@ -162,8 +162,8 @@ else:
             finally:
                 try:
                     c.clear_breakpoint(int(ret_addr))
-                except Exception:
-                    pass
+                except Exception as clear_exc:
+                    ev["clear_breakpoint_error"] = str(clear_exc)
 
             report["events"].append(ev)
     except Exception as ex:

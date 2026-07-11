@@ -1,0 +1,242 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-07-11T07:10:44+00:00",
+  "root": "C:\\Users\\zycie\\CTOAi",
+  "overall_status": "warn",
+  "status_counts": {
+    "ok": 5,
+    "warn": 2,
+    "fail": 0
+  },
+  "checks": {
+    "git": {
+      "plain_git_on_path": true,
+      "git_path": "C:\\Program Files\\Git\\cmd\\git.EXE",
+      "status": "ok",
+      "root": "C:/Users/zycie/CTOAi",
+      "branch": "codex/control-center-guarded-actions",
+      "head": "098f3b4b9c2be835bab53f1698118691a8e4bea7",
+      "dirty_count": 44,
+      "dirty_sample": [
+        "M AI/generated/DOC_SYNC.json",
+        "M AI/generated/DOC_SYNC.md",
+        "M AI/generated/ENGINE_BRAIN_PACK.json",
+        "M AI/generated/ENGINE_BRAIN_PACK.md",
+        "M AI/generated/ENV_DOCTOR.json",
+        "M AI/generated/ENV_DOCTOR.md",
+        "M AI/generated/FILE_TREE.md",
+        "M AI/generated/OWNERSHIP_MAP.json",
+        "M AI/generated/OWNERSHIP_MAP.md",
+        "M AI/generated/P6_CODEX_INTEGRATION_READINESS.json",
+        "M AI/generated/P6_CODEX_INTEGRATION_READINESS.md",
+        "M AI/generated/P7_ACTION_READINESS.json",
+        "M AI/generated/P7_ACTION_READINESS.md",
+        "M AI/generated/P7_OPERATOR_BRIEF.json",
+        "M AI/generated/P7_OPERATOR_BRIEF.md",
+        "M AI/generated/P7_OPERATOR_WORKFLOW.json",
+        "M AI/generated/P7_OPERATOR_WORKFLOW.md",
+        "M AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.json",
+        "M AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.md",
+        "M AI/generated/SECRET_GUARDRAIL.json",
+        "M AI/generated/SECRET_GUARDRAIL.md",
+        "M AI/generated/SYMBOL_MAP.md",
+        "M AI/generated/manifest.json",
+        "M data/bot.db",
+        "M docs/otclient/solteria_helper_module_workplan.md"
+      ],
+      "remotes": [
+        "origin\thttps://github.com/famatyyk/CTOAi.git (fetch)",
+        "origin\thttps://github.com/famatyyk/CTOAi.git (push)",
+        "upstream\tgit@github.com:famatyyk/CTOAi.git (fetch)",
+        "upstream\tgit@github.com:famatyyk/CTOAi.git (push)"
+      ]
+    },
+    "docker": {
+      "status": "ok",
+      "docker_on_path": true,
+      "version_ok": true,
+      "daemon_ok": true,
+      "compose": "Docker Compose version v5.1.3",
+      "container_count": 2,
+      "containers": [
+        {
+          "name": "ctoa-api",
+          "status": "Up 35 hours",
+          "ports": "127.0.0.1:8001->8000/tcp"
+        },
+        {
+          "name": "ctoa-postgres",
+          "status": "Up 35 hours (healthy)",
+          "ports": "5432/tcp"
+        }
+      ],
+      "broad_binds": [],
+      "configured_broad_binds": []
+    },
+    "vpn": {
+      "status": "ok",
+      "warp_cli": "C:\\Program Files\\Cloudflare\\Cloudflare WARP\\warp-cli.exe",
+      "warp_connected": true,
+      "warp_status": [
+        "Status update: Connected",
+        "Network: healthy"
+      ],
+      "adapters": [
+        {
+          "Name": "vEthernet (WSL (Hyper-V firewall))",
+          "InterfaceDescription": "Hyper-V Virtual Ethernet Adapter",
+          "Status": "Up"
+        },
+        {
+          "Name": "Wi-Fi",
+          "InterfaceDescription": "Killer(R) Wi-Fi 6 AX1650x 160MHz Wireless Network Adapter (200NGW)",
+          "Status": "Up"
+        },
+        {
+          "Name": "CloudflareWARP",
+          "InterfaceDescription": "Cloudflare WARP Interface Tunnel",
+          "Status": "Up"
+        }
+      ]
+    },
+    "vercel": {
+      "status": "ok",
+      "vercel_on_path": true,
+      "version": "54.10.3",
+      "account": "famatyyk-5221",
+      "project": {
+        "project_name": "ctoa-web",
+        "framework": "nextjs",
+        "node_version": "24.x",
+        "has_project_id": true,
+        "has_org_id": true
+      }
+    },
+    "vscode": {
+      "status": "warn",
+      "code_on_path": true,
+      "active_openai_extensions": [
+        "openai.chatgpt@26.623.141536"
+      ],
+      "openai_extension_dirs": [
+        "openai.chatgpt-26.623.141536-win32-x64",
+        "openai.chatgpt-26.707.31123-win32-x64"
+      ],
+      "relevant_extensions": [
+        "docker.docker@0.18.0",
+        "github.codespaces@1.18.15",
+        "github.remotehub@0.64.0",
+        "github.vscode-github-actions@0.32.1",
+        "github.vscode-pull-request-github@0.154.0",
+        "martinortiz.codex-stats@1.0.3",
+        "ms-azuretools.vscode-azure-github-copilot@1.0.209",
+        "ms-python.debugpy@2026.7.11831010",
+        "ms-python.python@2026.4.0",
+        "ms-python.vscode-pylance@2026.2.107",
+        "ms-python.vscode-python-envs@1.36.0",
+        "ms-toolsai.vscode-ai-remote@1.4.8",
+        "ms-vscode-remote.remote-containers@0.464.0",
+        "ms-vscode-remote.remote-ssh@0.124.0",
+        "ms-vscode-remote.remote-ssh-edit@0.87.0",
+        "ms-vscode-remote.remote-wsl@0.104.3",
+        "ms-vscode-remote.vscode-remote-extensionpack@0.26.0",
+        "ms-vscode.remote-explorer@0.5.0",
+        "ms-vscode.remote-repositories@0.42.0",
+        "ms-vscode.remote-server@1.5.3",
+        "openai.chatgpt@26.623.141536",
+        "vinirossa.vscode-gitandgithub-pack@2.0.1",
+        "ziyasal.vscode-open-in-github@1.3.6"
+      ],
+      "python_interpreter": "python",
+      "recommendations": [
+        "ms-vscode.powershell"
+      ]
+    },
+    "github": {
+      "status": "warn",
+      "gh_on_path": true,
+      "auth_ok": true,
+      "repo": {
+        "defaultBranchRef": {
+          "name": "main"
+        },
+        "nameWithOwner": "famatyyk/CTOAi",
+        "pushedAt": "2026-07-11T06:07:51Z",
+        "updatedAt": "2026-07-05T01:47:56Z",
+        "url": "https://github.com/famatyyk/CTOAi",
+        "visibility": "PUBLIC"
+      },
+      "open_pr_count": 7,
+      "dirty_prs": [
+        {
+          "isDraft": false,
+          "mergeStateStatus": "DIRTY",
+          "number": 184,
+          "reviewDecision": "",
+          "title": "[WIP] Fix CTOA VPS Global Save Cycle failure",
+          "url": "https://github.com/famatyyk/CTOAi/pull/184"
+        },
+        {
+          "isDraft": false,
+          "mergeStateStatus": "DIRTY",
+          "number": 183,
+          "reviewDecision": "REVIEW_REQUIRED",
+          "title": "[WIP] Fix CTOA VPS Global Save Cycle failure",
+          "url": "https://github.com/famatyyk/CTOAi/pull/183"
+        },
+        {
+          "isDraft": false,
+          "mergeStateStatus": "DIRTY",
+          "number": 160,
+          "reviewDecision": "REVIEW_REQUIRED",
+          "title": "test(copilot-instructions): expand conformance coverage to all seven sections",
+          "url": "https://github.com/famatyyk/CTOAi/pull/160"
+        },
+        {
+          "isDraft": true,
+          "mergeStateStatus": "DIRTY",
+          "number": 157,
+          "reviewDecision": "REVIEW_REQUIRED",
+          "title": "feat: add /analyze-prompt Copilot slash command",
+          "url": "https://github.com/famatyyk/CTOAi/pull/157"
+        },
+        {
+          "isDraft": false,
+          "mergeStateStatus": "DIRTY",
+          "number": 153,
+          "reviewDecision": "REVIEW_REQUIRED",
+          "title": "docs: add alternative LLM model recommendations to copilot instructions and .env.example",
+          "url": "https://github.com/famatyyk/CTOAi/pull/153"
+        },
+        {
+          "isDraft": false,
+          "mergeStateStatus": "DIRTY",
+          "number": 152,
+          "reviewDecision": "REVIEW_REQUIRED",
+          "title": "Enable workspace-level Python trace logging in VS Code",
+          "url": "https://github.com/famatyyk/CTOAi/pull/152"
+        }
+      ],
+      "recent_run_count": 15,
+      "failed_recent_runs": [
+        {
+          "conclusion": "skipped",
+          "createdAt": "2026-07-11T06:08:20Z",
+          "status": "completed",
+          "url": "https://github.com/famatyyk/CTOAi/actions/runs/29142334465",
+          "workflowName": "CTOA Close On Gate"
+        }
+      ]
+    },
+    "update_gate": {
+      "status": "ok",
+      "returncode": 0,
+      "ok": true,
+      "product": "CTOA Toolkit",
+      "version": "1.1.1",
+      "channel": "stable",
+      "package_tier": "studio",
+      "message": "Update gate passed. Launch allowed."
+    }
+  }
+}

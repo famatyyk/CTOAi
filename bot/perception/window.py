@@ -3,12 +3,13 @@
 Uses Win32 API (ctypes) on Windows; falls back to full-screen mss capture on
 other platforms so the rest of the bot can run headless in CI.
 """
+
 from __future__ import annotations
 import ctypes
 import ctypes.wintypes as wt
 import logging
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional
 
 from ..config.runtime_profile import get_float, get_int, get_list, get_str
@@ -19,7 +20,17 @@ _WINDOW_TITLES_DEFAULT = ["Tibia", "TibiaClient", "The Forgotten Server", "Kings
 _WINDOW_LOG_INTERVAL_SEC = get_float("BOT_WINDOW_LOG_INTERVAL_SEC", 30.0)
 _WINDOW_MIN_WIDTH = get_int("BOT_WINDOW_MIN_WIDTH", 640)
 _WINDOW_MIN_HEIGHT = get_int("BOT_WINDOW_MIN_HEIGHT", 480)
-_WINDOW_TITLE_EXCLUDES = ["opera", "chrome", "edge", "firefox", "brave", "search", "google", "bing", "youtube"]
+_WINDOW_TITLE_EXCLUDES = [
+    "opera",
+    "chrome",
+    "edge",
+    "firefox",
+    "brave",
+    "search",
+    "google",
+    "bing",
+    "youtube",
+]
 _last_window_log_ts = 0.0
 _last_window_log_hwnd = 0
 _last_window_miss_log_ts = 0.0
@@ -33,6 +44,7 @@ def _window_title_patterns() -> list[str]:
 
 def _active_window_title_hint() -> str:
     return get_str("BOT_WINDOW_TITLE_ACTIVE", "").strip().lower()
+
 
 # ── Win32 helpers ────────────────────────────────────────────────────────────
 try:
@@ -116,7 +128,10 @@ def find_tibia_window() -> Optional[WindowHandle]:
                     title=title,
                     rect=(rect.left, rect.top, rect.right, rect.bottom),
                 )
-                if handle.width < _WINDOW_MIN_WIDTH or handle.height < _WINDOW_MIN_HEIGHT:
+                if (
+                    handle.width < _WINDOW_MIN_WIDTH
+                    or handle.height < _WINDOW_MIN_HEIGHT
+                ):
                     break
                 score = handle.width * handle.height
                 if active_hint and active_hint in title_lower:
@@ -137,8 +152,13 @@ def find_tibia_window() -> Optional[WindowHandle]:
             or (now - _last_window_log_ts) >= _WINDOW_LOG_INTERVAL_SEC
         )
         if should_log:
-            log.info("Tibia window found: %s  hwnd=%d  %dx%d",
-                     handle.title, handle.hwnd, handle.width, handle.height)
+            log.info(
+                "Tibia window found: %s  hwnd=%d  %dx%d",
+                handle.title,
+                handle.hwnd,
+                handle.width,
+                handle.height,
+            )
             _last_window_log_hwnd = int(handle.hwnd)
             _last_window_log_ts = now
         _last_good_handle = handle
@@ -155,10 +175,13 @@ def find_tibia_window() -> Optional[WindowHandle]:
                     title=_last_good_handle.title,
                     rect=(rect.left, rect.top, rect.right, rect.bottom),
                 )
-                if refreshed.width >= _WINDOW_MIN_WIDTH and refreshed.height >= _WINDOW_MIN_HEIGHT:
+                if (
+                    refreshed.width >= _WINDOW_MIN_WIDTH
+                    and refreshed.height >= _WINDOW_MIN_HEIGHT
+                ):
                     return refreshed
-        except Exception:
-            pass
+        except Exception as exc:
+            log.debug("cached Tibia window refresh failed: %s", exc)
 
     now = time.monotonic()
     if (now - _last_window_miss_log_ts) >= _WINDOW_LOG_INTERVAL_SEC:
@@ -204,9 +227,13 @@ def capture_window(handle: Optional[WindowHandle] = None):
                         bmi.bmiHeader.biCompression = 0
                         bmi.bmiHeader.biSizeImage = width * height * 4
                         buffer = (ctypes.c_ubyte * (width * height * 4))()
-                        got_bits = _gdi32.GetDIBits(mem_dc, bitmap, 0, height, buffer, ctypes.byref(bmi), 0)
+                        got_bits = _gdi32.GetDIBits(
+                            mem_dc, bitmap, 0, height, buffer, ctypes.byref(bmi), 0
+                        )
                         if got_bits:
-                            frame = np.frombuffer(buffer, dtype=np.uint8).reshape((height, width, 4))
+                            frame = np.frombuffer(buffer, dtype=np.uint8).reshape(
+                                (height, width, 4)
+                            )
                             if frame.mean() > 1.0:
                                 return cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
                 finally:
@@ -214,8 +241,8 @@ def capture_window(handle: Optional[WindowHandle] = None):
                     _gdi32.DeleteObject(bitmap)
                     _gdi32.DeleteDC(mem_dc)
                     _user32.ReleaseDC(handle.hwnd, hwnd_dc)
-        except Exception:
-            pass
+        except Exception as exc:
+            log.debug("PrintWindow capture failed: %s", exc)
 
     with mss.mss() as sct:
         if handle is not None:
@@ -232,8 +259,8 @@ def capture_window(handle: Optional[WindowHandle] = None):
                 client_top = int(client_point.y)
                 client_right = client_left + int(client_rect.right - client_rect.left)
                 client_bottom = client_top + int(client_rect.bottom - client_rect.top)
-            except Exception:
-                pass
+            except Exception as exc:
+                log.debug("client rect fallback failed: %s", exc)
             region = {
                 "left": client_left,
                 "top": client_top,
@@ -246,6 +273,7 @@ def capture_window(handle: Optional[WindowHandle] = None):
         shot = sct.grab(region)
         try:
             import cv2
+
             frame = np.array(shot)
             return cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
         except ImportError:

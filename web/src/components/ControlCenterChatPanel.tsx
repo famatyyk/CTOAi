@@ -10,6 +10,7 @@ import {
   buildControlCenterChatMarkdownFileName,
   buildControlCenterChatTranscript,
   buildControlCenterChatTranscriptFileName,
+  redactControlCenterChatMessages,
 } from "@/lib/chatTranscript"
 
 const STORAGE_KEY = "ctoa_control_center_chat"
@@ -64,7 +65,7 @@ function loadMessages(): StoredMessage[] {
 
 function saveMessages(messages: StoredMessage[]) {
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(messages.slice(-80)))
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(redactControlCenterChatMessages(messages).slice(-80)))
   } catch {
     // Chat persistence is helpful, not critical.
   }
@@ -390,7 +391,7 @@ export default function ControlCenterChatPanel() {
                     <p className="text-sm font-black text-white">Zaloguj się do czatu</p>
                     <p className="mt-2 max-w-xl text-sm leading-6 text-slate-400">
                       Czat Control Center potrzebuje aktywnej sesji, żeby wysyłać wiadomości bez błędu 401.
-                      Na localhost możesz wejść jednym kliknięciem przez lokalny seed account bez trzymania hasła w kliencie.
+                      Lokalny seed-login działa tylko po jawnym włączeniu w env i skonfigurowaniu lokalnych haseł poza repo.
                     </p>
                   </div>
                   <button
@@ -473,7 +474,7 @@ export default function ControlCenterChatPanel() {
                     disabled={authLoading}
                     className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-xs font-bold text-cyan-100 transition hover:bg-cyan-300/20 disabled:opacity-50"
                   >
-                    Auto-login local seed
+                    Try local seed login
                   </button>
                 </div>
 

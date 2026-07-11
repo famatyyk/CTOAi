@@ -1,31 +1,54 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getServerApiUrl } from "@/lib/config"
 import { fetchWithTimeout } from "@/lib/fetchWithTimeout"
+import { validateSameOriginRequest } from "@/lib/requestOriginGuard"
+import { CTOA_TOKEN_COOKIE_NAME, ctoaTokenCookieOptions } from "@/lib/authCookies"
+import { authProxyCookieToken, sanitizeAuthProxyPayload } from "@/lib/authProxySanitizer"
 
 const API_URL = getServerApiUrl()
 
-const LOCAL_SEED_PASSWORDS: Record<string, string> = {
-  famatyyk: "ctoa-owner",
-  strategos: "ctoa-ops",
-  recruit: "ctoa-community",
+const LOCAL_SEED_PASSWORD_ENV: Record<string, string> = {
+  famatyyk: "CTOA_SEED_FAMATYYK_PASSWORD",
+  strategos: "CTOA_SEED_STRATEGOS_PASSWORD",
+  recruit: "CTOA_SEED_RECRUIT_PASSWORD",
 }
 
-function isLocalHost(req: NextRequest): boolean {
+function isLocalSeedLoginAllowed(req: NextRequest): boolean {
   const host = req.nextUrl.hostname
-  return process.env.NODE_ENV === "development" && (host === "localhost" || host === "127.0.0.1" || host === "::1")
+  const localHost = host === "localhost" || host === "127.0.0.1" || host === "::1"
+  const enabled = process.env.CTOA_ENABLE_LOCAL_SEED_LOGIN === "true"
+  const nonProduction = process.env.NODE_ENV !== "production"
+  return enabled && nonProduction && localHost
+}
+
+function localSeedPassword(username: string): string {
+  const envName = LOCAL_SEED_PASSWORD_ENV[username]
+  return envName ? process.env[envName]?.trim() || "" : ""
+}
+
+export function validateSeedLoginRequestOrigin(request: Request) {
+  return validateSameOriginRequest(request, { requestLabel: "local seed-login" })
 }
 
 export async function POST(req: NextRequest) {
-  if (!isLocalHost(req)) {
-    return NextResponse.json({ error: "Seed login is only available on localhost." }, { status: 403 })
+  const originGate = validateSeedLoginRequestOrigin(req)
+  if (!originGate.ok) {
+    return NextResponse.json({ error: originGate.error }, { status: 403 })
+  }
+
+  if (!isLocalSeedLoginAllowed(req)) {
+    return NextResponse.json(
+      { error: "Local seed login is disabled. Enable it only for local development with CTOA_ENABLE_LOCAL_SEED_LOGIN=true." },
+      { status: 403 },
+    )
   }
 
   const body = (await req.json().catch(() => ({}))) as { username?: string }
   const username = body.username?.trim().toLowerCase()
-  const password = username ? LOCAL_SEED_PASSWORDS[username] : undefined
+  const password = username ? localSeedPassword(username) : ""
 
   if (!username || !password) {
-    return NextResponse.json({ error: "Unknown seed account." }, { status: 400 })
+    return NextResponse.json({ error: "Unknown or unconfigured local seed account." }, { status: 400 })
   }
 
   const response = await fetchWithTimeout(
@@ -38,11 +61,11 @@ export async function POST(req: NextRequest) {
     5000,
   )
   const data = await response.json().catch(() => ({}))
-  const { token: _token, ...safeData } = data as { token?: string; [key: string]: unknown }
-  const result = NextResponse.json(safeData, { status: response.status })
+  const cookieToken = authProxyCookieToken(data)
+  const result = NextResponse.json(sanitizeAuthProxyPayload(data), { status: response.status })
 
-  if (response.ok && _token) {
-    result.cookies.set("ctoa_token", _token, { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 })
+  if (response.ok && cookieToken) {
+    result.cookies.set(CTOA_TOKEN_COOKIE_NAME, cookieToken, ctoaTokenCookieOptions())
   }
 
   return result

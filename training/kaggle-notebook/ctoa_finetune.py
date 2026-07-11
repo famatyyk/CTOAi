@@ -1,19 +1,71 @@
 # CTOAi Fine-Tune v26 — stability + OOM-safe load
-import subprocess, os, json, math
-from pathlib import Path
+import json
+import math
+import os
+import random
+import re
+
+# Controlled Kaggle dependency bootstrap only.
+import subprocess  # nosec B404
+import sys
+
 
 def run(cmd):
-    r = subprocess.run(cmd, shell=True, text=True, capture_output=True)
-    print(("OK" if r.returncode==0 else "ERR") + " | " + cmd[:60])
-    if r.returncode != 0: print((r.stdout+r.stderr)[-300:])
+    # cmd is a fixed argv list from this notebook, not user-provided shell text.
+    r = subprocess.run(cmd, text=True, capture_output=True)  # nosec B603
+    display = " ".join(cmd)
+    print(("OK" if r.returncode == 0 else "ERR") + " | " + display[:60])
+    if r.returncode != 0:
+        print((r.stdout + r.stderr)[-300:])
 
-run("pip install -q trl==0.8.6 peft==0.10.0 transformers==4.40.0 accelerate bitsandbytes")
 
-import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM, TrainingArguments, TrainerCallback, BitsAndBytesConfig
-from peft import LoraConfig, get_peft_model, TaskType
-from trl import SFTTrainer
-from datasets import Dataset
+PINNED_REVISION_RE = re.compile(r"^[0-9a-f]{40}$")
+
+
+def require_pinned_model_revision() -> str:
+    revision = os.environ.get("CTOA_TRAINING_MODEL_REVISION", "").strip().lower()
+    if not PINNED_REVISION_RE.fullmatch(revision):
+        raise RuntimeError(
+            "CTOA_TRAINING_MODEL_REVISION must be set to an immutable "
+            "40-character Hugging Face git commit SHA before model download."
+        )
+    return revision
+
+
+def trust_remote_code_enabled() -> bool:
+    return os.environ.get("CTOA_TRAINING_TRUST_REMOTE_CODE", "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+    }
+
+
+run(
+    [
+        sys.executable,
+        "-m",
+        "pip",
+        "install",
+        "-q",
+        "trl==0.8.6",
+        "peft==0.10.0",
+        "transformers==4.40.0",
+        "accelerate",
+        "bitsandbytes",
+    ]
+)
+
+import torch  # noqa: E402
+from datasets import Dataset  # noqa: E402
+from peft import LoraConfig, TaskType, get_peft_model  # noqa: E402
+from transformers import (  # noqa: E402
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    BitsAndBytesConfig,
+    TrainerCallback,
+    TrainingArguments,
+)
+from trl import SFTTrainer  # noqa: E402
 
 # GPU check - force CPU if P100
 if torch.cuda.is_available():
@@ -37,14 +89,22 @@ for root, dirs, files in os.walk("/kaggle/input"):
         if f.endswith(".jsonl"):
             DATASET_PATH = os.path.join(root, f)
             break
-    if DATASET_PATH: break
+    if DATASET_PATH:
+        break
 print("Dataset:", DATASET_PATH)
-assert DATASET_PATH
+if DATASET_PATH is None:
+    raise RuntimeError("No .jsonl dataset found under /kaggle/input.")
 
 MODEL_ID = "Qwen/Qwen2.5-Coder-1.5B-Instruct"
+MODEL_REVISION = require_pinned_model_revision()
+TRUST_REMOTE_CODE = trust_remote_code_enabled()
 
 print("=== Tokenizer ===")
-tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, trust_remote_code=True)
+tokenizer = AutoTokenizer.from_pretrained(
+    MODEL_ID,
+    revision=MODEL_REVISION,
+    trust_remote_code=TRUST_REMOTE_CODE,
+)
 tokenizer.pad_token = tokenizer.eos_token
 print("OK")
 
@@ -59,35 +119,44 @@ if USE_GPU:
     )
     model = AutoModelForCausalLM.from_pretrained(
         MODEL_ID,
+        revision=MODEL_REVISION,
         quantization_config=bnb_config,
         device_map="auto",
-        trust_remote_code=True,
+        trust_remote_code=TRUST_REMOTE_CODE,
         low_cpu_mem_usage=True,
     )
 else:
     # CPU: use float32, no quantization
     model = AutoModelForCausalLM.from_pretrained(
-        MODEL_ID, torch_dtype=torch.float32, device_map=None, trust_remote_code=True,
-        low_cpu_mem_usage=True
+        MODEL_ID,
+        revision=MODEL_REVISION,
+        torch_dtype=torch.float32,
+        device_map=None,
+        trust_remote_code=TRUST_REMOTE_CODE,
+        low_cpu_mem_usage=True,
     )
     model = model.to("cpu")
 print("Model OK")
 
 print("=== LoRA ===")
 lora = LoraConfig(
-    r=4, lora_alpha=8,
-    target_modules=["q_proj","v_proj"],  # fewer modules for speed
-    lora_dropout=0.05, bias="none",
+    r=4,
+    lora_alpha=8,
+    target_modules=["q_proj", "v_proj"],  # fewer modules for speed
+    lora_dropout=0.05,
+    bias="none",
     task_type=TaskType.CAUSAL_LM,
-    inference_mode=False
+    inference_mode=False,
 )
 model = get_peft_model(model, lora)
 model.print_trainable_parameters()
 # Disable cache for training stability/perf and memory behavior.
 model.config.use_cache = False
 
+
 class FiniteGuardCallback(TrainerCallback):
     """Stop immediately when loss or LoRA params become non-finite."""
+
     def on_log(self, args, state, control, logs=None, model=None, **kwargs):
         if logs and "loss" in logs:
             loss = float(logs["loss"])
@@ -103,6 +172,7 @@ class FiniteGuardCallback(TrainerCallback):
             if not torch.isfinite(param).all():
                 raise RuntimeError(f"Non-finite trainable parameter detected: {name}")
 
+
 # Use bf16 training instead of fp16 to prevent NaN
 
 print("=== Dataset ===")
@@ -110,7 +180,8 @@ rows = []
 with open(DATASET_PATH) as fh:
     for line in fh:
         line = line.strip()
-        if not line: continue
+        if not line:
+            continue
         obj = json.loads(line)
         # Support both formats: messages (role/content) and conversations (from/value)
         msgs = obj.get("messages") or obj.get("conversations") or []
@@ -128,7 +199,6 @@ with open(DATASET_PATH) as fh:
             rows.append({"text": text})
 
 # Use only 200 examples for CPU training (time limit ~9h on Kaggle)
-import random
 random.seed(42)
 random.shuffle(rows)
 rows = rows[:200]
@@ -173,8 +243,3 @@ trainer.train()
 print("=== DONE ===")
 trainer.save_model("/kaggle/working/ctoa-lora")
 print("Saved to /kaggle/working/ctoa-lora")
-
-
-
-
-

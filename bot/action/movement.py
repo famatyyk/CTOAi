@@ -1,9 +1,15 @@
 """AGENT 7: Movement actions."""
+
 from __future__ import annotations
+
+import logging
 import time
 
 from ..config.runtime_profile import get_int, get_str
+from ..safety import nonsecurity_random as random
 from .input_backend import click, is_available, press
+
+logger = logging.getLogger(__name__)
 
 _last_follow_press_ts = 0.0
 _last_follow_position: tuple[int, int, int] | None = None
@@ -32,7 +38,7 @@ def walk_to(x: int, y: int) -> None:
         return
     # Convert world coords → minimap screen coords (Agent 6 supplies offsets)
     screen_x = 1215 + (x // 4)
-    screen_y = 170  + (y // 4)
+    screen_y = 170 + (y // 4)
     click(screen_x, screen_y)
     time.sleep(0.05)
 
@@ -41,7 +47,7 @@ def idle_move() -> None:
     """Small random movement to appear human while searching."""
     if not is_available():
         return
-    import random
+
     dx, dy = random.randint(-2, 2), random.randint(-2, 2)
     walk_to(dx, dy)
 
@@ -58,7 +64,8 @@ def _state_position_tuple(state) -> tuple[int, int, int] | None:
         if x == 0 and y == 0 and z == 7:
             return None
         return (x, y, z)
-    except Exception:
+    except (TypeError, ValueError, AttributeError) as exc:
+        logger.debug("state position unavailable: %s", exc)
         return None
 
 
@@ -85,7 +92,9 @@ def auto_follow(state=None) -> None:
 
         since_move = now - _last_follow_move_ts
         if _last_follow_press_ts > 0.0:
-            if since_move < (_auto_follow_stuck_ms() / 1000.0) and since_last_press < (_auto_follow_refresh_ms() / 1000.0):
+            if since_move < (_auto_follow_stuck_ms() / 1000.0) and since_last_press < (
+                _auto_follow_refresh_ms() / 1000.0
+            ):
                 return
 
         press(_auto_follow_key())

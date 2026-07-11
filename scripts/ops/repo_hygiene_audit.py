@@ -30,6 +30,7 @@ TOP_LEVEL_ALLOWLIST = {
     ".gitmodules",
     ".dockerignore",
     ".pre-commit-config.yaml",
+    "AI",
     "AGENTS.md",
     "agents",
     "bot",
@@ -112,7 +113,10 @@ LOCAL_ONLY_CANDIDATES = {
     ".env",
     ".env.dev",
     ".env.kingsvale",
+    ".ruff_cache",
+    ".tmp",
     "Althea.log",
+    "ctoa_local.log",
     "MythibiaV2.log",
     "_local_archive",
     "build",
@@ -124,6 +128,7 @@ LOCAL_ONLY_CANDIDATES = {
 CORE_PUBLIC_PATHS = {
     ".github",
     ".vscode",
+    "AI",
     "agents",
     "config",
     "core",
@@ -177,7 +182,9 @@ STUDIO_ONLY_PATHS = {
 def classify_distribution(path: str) -> dict[str, str]:
     name = path.split("/", 1)[0]
 
-    if name in STUDIO_ONLY_PATHS or any(name.startswith(prefix) for prefix in FLAGGED_TOP_LEVEL_PREFIXES):
+    if name in STUDIO_ONLY_PATHS or any(
+        name.startswith(prefix) for prefix in FLAGGED_TOP_LEVEL_PREFIXES
+    ):
         return {
             "visibility": "private",
             "package_tier": "Studio",
@@ -278,9 +285,15 @@ def _scan_top_level() -> dict[str, Any]:
         "findings": findings,
         "finding_count": len(findings),
         "summary": {
-            "private_count": sum(1 for item in findings if item.get("visibility") == "private"),
-            "public_count": sum(1 for item in findings if item.get("visibility") == "public"),
-            "review_count": sum(1 for item in findings if item.get("visibility") == "review"),
+            "private_count": sum(
+                1 for item in findings if item.get("visibility") == "private"
+            ),
+            "public_count": sum(
+                1 for item in findings if item.get("visibility") == "public"
+            ),
+            "review_count": sum(
+                1 for item in findings if item.get("visibility") == "review"
+            ),
         },
         "status": "PASS" if not findings else "REVIEW_REQUIRED",
     }
@@ -288,7 +301,9 @@ def _scan_top_level() -> dict[str, Any]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Audit CTOA repo hygiene.")
-    parser.add_argument("--json-out", default="", help="Optional path to save JSON report.")
+    parser.add_argument(
+        "--json-out", default="", help="Optional path to save JSON report."
+    )
     parser.add_argument(
         "--fail-on-findings",
         action="store_true",
@@ -298,7 +313,9 @@ def main() -> int:
 
     report = _scan_top_level()
 
-    print(f"[repo-hygiene] status={report['status']} findings={report['finding_count']}")
+    print(
+        f"[repo-hygiene] status={report['status']} findings={report['finding_count']}"
+    )
     for item in report["findings"]:
         print(f"- {item['path']}: {item['reason']}")
 

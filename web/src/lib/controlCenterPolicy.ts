@@ -7,6 +7,10 @@ const ROLE_ORDER: Record<ControlCenterRole, number> = {
   owner: 3,
 }
 
+export function controlCenterRoleMeets(role: ControlCenterRole, minimumRole: ControlCenterRole): boolean {
+  return ROLE_ORDER[role] >= ROLE_ORDER[minimumRole]
+}
+
 export function minimumRoleForRiskClass(riskClass: ControlCenterRiskClass): ControlCenterRole {
   if (riskClass === "read_only") return "member"
   if (riskClass === "safe_write") return "operator"
@@ -25,7 +29,7 @@ export function canRunControlCenterAction(
     }
   }
 
-  const allowed = ROLE_ORDER[role] >= ROLE_ORDER[action.minimumRole]
+  const allowed = controlCenterRoleMeets(role, action.minimumRole)
   return {
     allowed,
     requiredRole: action.minimumRole,

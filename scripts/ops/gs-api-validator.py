@@ -17,7 +17,15 @@ import time
 import logging
 import urllib.request
 import urllib.error
+import urllib.parse
 from datetime import datetime, timezone
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from runner.http_safety import require_loopback_http_url  # noqa: E402
 
 logging.basicConfig(
     level=logging.INFO,
@@ -48,16 +56,24 @@ MODULE_NAMES = [
 
 def fetch_json(url: str, noisy: bool = True) -> dict | None:
     try:
-        with urllib.request.urlopen(url, timeout=TIMEOUT_SEC) as resp:
+        safe_url = require_loopback_http_url(url)
+    except ValueError:
+        if noisy:
+            log.warning("Rejected unsafe local API URL.")
+        return None
+
+    try:
+        # require_loopback_http_url keeps GS validator probes on the local API only.
+        with urllib.request.urlopen(safe_url, timeout=TIMEOUT_SEC) as resp:  # nosec B310
             if resp.status != 200:
                 if noisy:
-                    log.warning("HTTP %s for %s", resp.status, url)
+                    log.warning("HTTP %s for %s", resp.status, safe_url)
                 return None
             raw = resp.read()
             return json.loads(raw)
     except (urllib.error.URLError, json.JSONDecodeError, OSError) as exc:
         if noisy:
-            log.warning("Request failed for %s: %s", url, exc)
+            log.warning("Request failed for %s: %s", safe_url, exc.__class__.__name__)
         return None
 
 
@@ -70,7 +86,11 @@ def check_schema(data: dict, required_keys: list[str], path: str) -> bool:
 
 
 def normalize_base(base: str) -> str:
-    return base.rstrip("/")
+    value = require_loopback_http_url(base).rstrip("/")
+    parsed = urllib.parse.urlparse(value)
+    if parsed.path not in {"", "/"}:
+        raise ValueError("API_BASE_URL must be a local HTTP(S) origin without a path")
+    return value
 
 
 def join_url(base: str, path: str) -> str:
@@ -78,11 +98,16 @@ def join_url(base: str, path: str) -> str:
 
 
 def health_candidates() -> list[str]:
-    candidates = [
-        API_HEALTH_URL,
-        join_url(API_BASE_URL, "/health"),
-        join_url(API_BASE_URL, "/api/health"),
-    ]
+    candidates = [API_HEALTH_URL]
+    try:
+        candidates.extend(
+            [
+                join_url(API_BASE_URL, "/health"),
+                join_url(API_BASE_URL, "/api/health"),
+            ]
+        )
+    except ValueError:
+        log.error("API_BASE_URL must be a local HTTP(S) origin without credentials, path, query, or fragment.")
     deduped: list[str] = []
     for c in candidates:
         if c not in deduped:
@@ -91,12 +116,18 @@ def health_candidates() -> list[str]:
 
 
 def detect_module_root() -> str | None:
+    try:
+        api_base = normalize_base(API_BASE_URL)
+    except ValueError:
+        log.error("API_BASE_URL must be a local HTTP(S) origin without credentials, path, query, or fragment.")
+        return None
+
     roots = []
     if API_VERSION:
-        roots.append(join_url(API_BASE_URL, f"/{API_VERSION}/modules"))
+        roots.append(join_url(api_base, f"/{API_VERSION}/modules"))
     roots.extend([
-        join_url(API_BASE_URL, "/modules"),
-        join_url(API_BASE_URL, "/api/modules"),
+        join_url(api_base, "/modules"),
+        join_url(api_base, "/api/modules"),
     ])
 
     for root in roots:

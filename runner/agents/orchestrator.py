@@ -20,7 +20,6 @@ Crash safety:
 from __future__ import annotations
 
 import logging
-import sys
 import time
 from datetime import datetime, timezone
 
@@ -64,8 +63,8 @@ def run_pipeline() -> None:
             try:
                 from runner.agents import db
                 db.log_run(name, "error", str(exc)[:2000])
-            except Exception:
-                pass
+            except Exception as db_exc:
+                log.warning("failed to record %s error in agent_runs: %s", name, db_exc)
 
     total = (datetime.now(timezone.utc) - start).total_seconds()
     summary = " | ".join(f"{k}={v}" for k, v in results.items())

@@ -8,13 +8,13 @@ and used by operators to quickly:
 - open a specific target directory,
 - export a target manifest to JSON.
 """
+
 from __future__ import annotations
 
 import argparse
 import json
 import os
 import re
-import subprocess
 import sys
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
@@ -23,9 +23,19 @@ from typing import Any
 from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parents[2]
-LIVE_SOURCE = Path(os.environ.get("CTOA_LIVE_TARGETS_DIR", str(ROOT / "runtime" / "live-targets")))
-LIVE_TARGET = Path(os.environ.get("CTOA_BOT_LIVE_ROOT", str(ROOT / "runtime" / "bot-live")))
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from runner import process_safety  # noqa: E402
+
+LIVE_SOURCE = Path(
+    os.environ.get("CTOA_LIVE_TARGETS_DIR", str(ROOT / "runtime" / "live-targets"))
+)
+LIVE_TARGET = Path(
+    os.environ.get("CTOA_BOT_LIVE_ROOT", str(ROOT / "runtime" / "bot-live"))
+)
 SYNC_SCRIPT = ROOT / "scripts" / "ops" / "sync-live-targets.py"
+SAFE_TARGET_PART = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$")
 
 
 def _slugify(value: str) -> str:
@@ -63,16 +73,91 @@ def _target_candidates(name: str) -> list[str]:
     return candidates
 
 
+def _is_relative_to(path: Path, root: Path) -> bool:
+    try:
+        path.relative_to(root)
+        return True
+    except ValueError:
+        return False
+
+
+def _safe_target_candidate(candidate: str) -> Path | None:
+    normalized = candidate.replace("\\", "/").strip("/")
+    parts = normalized.split("/")
+    if (
+        not normalized
+        or any(
+            part in {"", ".", ".."} or not SAFE_TARGET_PART.fullmatch(part)
+            for part in parts
+        )
+        or any(any(ord(char) < 32 for char in part) for part in parts)
+    ):
+        return None
+    candidate_path = Path(*parts)
+    if candidate_path.is_absolute() or candidate_path.drive:
+        return None
+    return candidate_path
+
+
+def _resolve_target_root(root: Path) -> Path | None:
+    try:
+        resolved = Path(root).expanduser().resolve()
+    except OSError:
+        return None
+    return resolved if resolved.exists() and resolved.is_dir() else None
+
+
+def _target_child(root: Path, candidate: str) -> Path | None:
+    safe_candidate = _safe_target_candidate(candidate)
+    if safe_candidate is None:
+        return None
+    probe = root / safe_candidate
+    if probe.is_symlink() or not probe.exists() or not probe.is_dir():
+        return None
+    try:
+        resolved_probe = probe.resolve()
+    except OSError:
+        return None
+    if resolved_probe == root or not _is_relative_to(resolved_probe, root):
+        return None
+    return probe
+
+
+def _target_child_file(root: Path, candidate: Path) -> Path | None:
+    try:
+        resolved_root = root.resolve()
+        resolved_candidate = candidate.resolve()
+    except OSError:
+        return None
+    if (
+        candidate.is_symlink()
+        or not candidate.exists()
+        or not candidate.is_file()
+        or not _is_relative_to(resolved_candidate, resolved_root)
+    ):
+        return None
+    return candidate
+
+
 def _resolve_target_dir(root: Path, name: str) -> Path | None:
-    root = Path(root)
+    root = _resolve_target_root(root)
+    if root is None:
+        return None
     for candidate in _target_candidates(name):
-        probe = root / candidate
-        if probe.exists() and probe.is_dir():
+        probe = _target_child(root, candidate)
+        if probe is not None:
             return probe
 
     host_like = _slugify((name or "").replace("\\", "/").split("/")[0])
     if host_like and root.exists():
-        matches = [d for d in root.iterdir() if d.is_dir() and host_like in d.name.lower()]
+        matches = [
+            d
+            for d in root.iterdir()
+            if d.is_dir()
+            and not d.is_symlink()
+            and _target_child(root, d.name) is not None
+            and host_like in d.name.lower()
+        ]
         if len(matches) == 1:
             return matches[0]
 
@@ -81,23 +166,30 @@ def _resolve_target_dir(root: Path, name: str) -> Path | None:
 
 def _list_targets(root: Path) -> list[dict[str, Any]]:
     items: list[dict[str, Any]] = []
-    if not root.exists():
+    resolved_root = _resolve_target_root(root)
+    if resolved_root is None:
         return items
-    for d in sorted(root.iterdir()):
-        if not d.is_dir():
+    for d in sorted(resolved_root.iterdir()):
+        if (
+            not d.is_dir()
+            or d.is_symlink()
+            or _target_child(resolved_root, d.name) is None
+        ):
             continue
-        manifest = d / "live-manifest.json"
+        manifest = _target_child_file(d, d / "live-manifest.json")
         data: dict[str, Any] = {}
-        if manifest.exists():
+        if manifest is not None:
             try:
-                data = json.loads(manifest.read_text(encoding="utf-8", errors="replace"))
+                data = json.loads(
+                    manifest.read_text(encoding="utf-8", errors="replace")
+                )
             except Exception:
                 data = {}
         items.append(
             {
                 "name": d.name,
                 "path": str(d),
-                "has_manifest": manifest.exists(),
+                "has_manifest": manifest is not None,
                 "url": data.get("url", ""),
                 "status": data.get("status", ""),
             }
@@ -107,18 +199,23 @@ def _list_targets(root: Path) -> list[dict[str, Any]]:
 
 def _sync_with_output(source: Path, target: Path) -> tuple[int, str, str]:
     if not SYNC_SCRIPT.exists():
-        err = json.dumps({"ok": False, "error": f"missing sync script: {SYNC_SCRIPT}"}, ensure_ascii=True)
+        err = json.dumps(
+            {"ok": False, "error": f"missing sync script: {SYNC_SCRIPT}"},
+            ensure_ascii=True,
+        )
         return 2, "", err
 
     cmd = [
-        sys.executable,
+        process_safety.resolve_python(),
         str(SYNC_SCRIPT),
         "--source",
         str(source),
         "--target",
         str(target),
     ]
-    proc = subprocess.run(cmd, capture_output=True, text=True, errors="replace", check=False)
+    proc = process_safety.run_trusted(
+        cmd, capture_output=True, text=True, errors="replace", check=False
+    )
     return proc.returncode, (proc.stdout or "").strip(), (proc.stderr or "").strip()
 
 
@@ -133,8 +230,12 @@ def _sync(source: Path, target: Path) -> int:
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="CTOA loader helper")
-    parser.add_argument("--source", default=str(LIVE_SOURCE), help="Live source directory")
-    parser.add_argument("--target", default=str(LIVE_TARGET), help="Live target directory")
+    parser.add_argument(
+        "--source", default=str(LIVE_SOURCE), help="Live source directory"
+    )
+    parser.add_argument(
+        "--target", default=str(LIVE_TARGET), help="Live target directory"
+    )
 
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("list", help="List targets")
@@ -156,7 +257,12 @@ def _run_cli(argv: list[str]) -> int:
     target = Path(args.target)
 
     if args.command == "list":
-        data = {"ok": True, "source": str(source), "target": str(target), "items": _list_targets(target)}
+        data = {
+            "ok": True,
+            "source": str(source),
+            "target": str(target),
+            "items": _list_targets(target),
+        }
         print(json.dumps(data, ensure_ascii=True, indent=2))
         return 0
 
@@ -180,7 +286,9 @@ def _launch_gui() -> int:
     source_var = tk.StringVar(value=str(LIVE_SOURCE))
     target_var = tk.StringVar(value=str(LIVE_TARGET))
     name_var = tk.StringVar()
-    out_var = tk.StringVar(value=str(ROOT / "runtime" / "exports" / "live-manifest.json"))
+    out_var = tk.StringVar(
+        value=str(ROOT / "runtime" / "exports" / "live-manifest.json")
+    )
 
     frame = ttk.Frame(root, padding=12)
     frame.pack(fill="both", expand=True)
@@ -194,7 +302,9 @@ def _launch_gui() -> int:
         command=lambda: source_var.set(filedialog.askdirectory() or source_var.get()),
     ).grid(row=1, column=1, sticky="ew")
 
-    ttk.Label(frame, text="Target directory:").grid(row=2, column=0, sticky="w", pady=(8, 0))
+    ttk.Label(frame, text="Target directory:").grid(
+        row=2, column=0, sticky="w", pady=(8, 0)
+    )
     target_entry = ttk.Entry(frame, textvariable=target_var, width=90)
     target_entry.grid(row=3, column=0, sticky="ew", padx=(0, 8))
     ttk.Button(
@@ -203,11 +313,17 @@ def _launch_gui() -> int:
         command=lambda: target_var.set(filedialog.askdirectory() or target_var.get()),
     ).grid(row=3, column=1, sticky="ew")
 
-    ttk.Label(frame, text="Target name (for Open/Export):").grid(row=4, column=0, sticky="w", pady=(8, 0))
+    ttk.Label(frame, text="Target name (for Open/Export):").grid(
+        row=4, column=0, sticky="w", pady=(8, 0)
+    )
     ttk.Entry(frame, textvariable=name_var, width=50).grid(row=5, column=0, sticky="w")
 
-    ttk.Label(frame, text="Export file path:").grid(row=6, column=0, sticky="w", pady=(8, 0))
-    ttk.Entry(frame, textvariable=out_var, width=90).grid(row=7, column=0, sticky="ew", padx=(0, 8))
+    ttk.Label(frame, text="Export file path:").grid(
+        row=6, column=0, sticky="w", pady=(8, 0)
+    )
+    ttk.Entry(frame, textvariable=out_var, width=90).grid(
+        row=7, column=0, sticky="ew", padx=(0, 8)
+    )
     ttk.Button(
         frame,
         text="Save as",
@@ -229,7 +345,12 @@ def _launch_gui() -> int:
 
     def list_targets() -> None:
         target = Path(target_var.get())
-        data = {"ok": True, "source": source_var.get(), "target": target_var.get(), "items": _list_targets(target)}
+        data = {
+            "ok": True,
+            "source": source_var.get(),
+            "target": target_var.get(),
+            "items": _list_targets(target),
+        }
         write_output(json.dumps(data, ensure_ascii=True, indent=2))
 
     def sync_targets() -> None:
@@ -257,7 +378,7 @@ def _launch_gui() -> int:
         if target is None:
             messagebox.showerror("CTOA Loader", f"Target not found: {name}")
             return
-        os.startfile(str(target))  # type: ignore[attr-defined]
+        _open_path(target)
         write_output(json.dumps({"ok": True, "opened": str(target)}, ensure_ascii=True))
 
     def export_manifest() -> None:
@@ -269,19 +390,37 @@ def _launch_gui() -> int:
         out_path = Path(out_var.get())
         code = _export_manifest(target, name, out_path)
         if code == 0:
-            write_output(json.dumps({"ok": True, "target": name, "export": str(out_path)}, ensure_ascii=True))
+            write_output(
+                json.dumps(
+                    {"ok": True, "target": name, "export": str(out_path)},
+                    ensure_ascii=True,
+                )
+            )
             messagebox.showinfo("CTOA Loader", f"Manifest exported to:\n{out_path}")
         else:
-            write_output(json.dumps({"ok": False, "target": name, "export": str(out_path)}, ensure_ascii=True))
+            write_output(
+                json.dumps(
+                    {"ok": False, "target": name, "export": str(out_path)},
+                    ensure_ascii=True,
+                )
+            )
             messagebox.showerror("CTOA Loader", "Export failed. Check output log.")
 
     buttons = ttk.Frame(frame)
     buttons.grid(row=8, column=0, columnspan=2, sticky="ew", pady=(10, 0))
-    ttk.Button(buttons, text="List", command=list_targets).pack(side="left", padx=(0, 8))
-    ttk.Button(buttons, text="Sync", command=sync_targets).pack(side="left", padx=(0, 8))
+    ttk.Button(buttons, text="List", command=list_targets).pack(
+        side="left", padx=(0, 8)
+    )
+    ttk.Button(buttons, text="Sync", command=sync_targets).pack(
+        side="left", padx=(0, 8)
+    )
     ttk.Button(buttons, text="Open", command=open_target).pack(side="left", padx=(0, 8))
-    ttk.Button(buttons, text="Export", command=export_manifest).pack(side="left", padx=(0, 8))
-    ttk.Button(buttons, text="Clear Log", command=lambda: output.delete("1.0", "end")).pack(side="left")
+    ttk.Button(buttons, text="Export", command=export_manifest).pack(
+        side="left", padx=(0, 8)
+    )
+    ttk.Button(
+        buttons, text="Clear Log", command=lambda: output.delete("1.0", "end")
+    ).pack(side="left")
 
     frame.columnconfigure(0, weight=1)
     frame.rowconfigure(9, weight=1)
@@ -293,15 +432,39 @@ def _launch_gui() -> int:
 def _open_target_dir(root: Path, name: str) -> int:
     target = _resolve_target_dir(root, name)
     if target is None:
-        print(json.dumps({"ok": False, "error": f"target not found: {name}"}, ensure_ascii=True))
+        print(
+            json.dumps(
+                {"ok": False, "error": f"target not found: {name}"}, ensure_ascii=True
+            )
+        )
         return 1
     try:
-        os.startfile(str(target))  # type: ignore[attr-defined]
+        _open_path(target)
         print(json.dumps({"ok": True, "opened": str(target)}, ensure_ascii=True))
         return 0
     except Exception as exc:
         print(json.dumps({"ok": False, "error": str(exc)}, ensure_ascii=True))
         return 1
+
+
+def _open_path(path: Path) -> None:
+    if os.name == "nt":
+        launcher = process_safety.resolve_executable(
+            "explorer.exe",
+            env_var="CTOA_FILE_OPENER_BIN",
+            fallback_paths=(
+                Path(os.environ.get("WINDIR", r"C:\Windows")) / "explorer.exe",
+            ),
+        )
+    elif sys.platform == "darwin":
+        launcher = process_safety.resolve_executable(
+            "open", env_var="CTOA_FILE_OPENER_BIN"
+        )
+    else:
+        launcher = process_safety.resolve_executable(
+            "xdg-open", env_var="CTOA_FILE_OPENER_BIN"
+        )
+    process_safety.run_trusted([launcher, str(path)], check=False, timeout=10)
 
 
 def _export_manifest(root: Path, name: str, out_path: Path) -> int:
@@ -319,15 +482,36 @@ def _export_manifest(root: Path, name: str, out_path: Path) -> int:
         )
         return 1
 
-    manifest = target / "live-manifest.json"
-    if not manifest.exists():
-        print(json.dumps({"ok": False, "error": f"manifest not found: {manifest}"}, ensure_ascii=True))
+    manifest = _target_child_file(target, target / "live-manifest.json")
+    if manifest is None:
+        print(
+            json.dumps(
+                {
+                    "ok": False,
+                    "error": f"manifest not found or unsafe: {target / 'live-manifest.json'}",
+                },
+                ensure_ascii=True,
+            )
+        )
+        return 1
+
+    if out_path.exists() and out_path.is_symlink():
+        print(
+            json.dumps(
+                {"ok": False, "error": f"export path is unsafe: {out_path}"},
+                ensure_ascii=True,
+            )
+        )
         return 1
 
     payload = manifest.read_text(encoding="utf-8", errors="replace")
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(payload, encoding="utf-8")
-    print(json.dumps({"ok": True, "target": name, "export": str(out_path)}, ensure_ascii=True))
+    print(
+        json.dumps(
+            {"ok": True, "target": name, "export": str(out_path)}, ensure_ascii=True
+        )
+    )
     return 0
 
 

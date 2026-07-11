@@ -17,9 +17,9 @@ from fastapi.testclient import TestClient
 def _load_app_module(monkeypatch: MonkeyPatch, tmp_path: Path):
     monkeypatch.setenv("CTOA_MOBILE_TOKEN", "test-mobile-token")
     monkeypatch.setenv("CTOA_OWNER_USER", "CTO")
-    monkeypatch.setenv("CTOA_OWNER_PASSWORD", "ownerpass123")
+    monkeypatch.setenv("CTOA_OWNER_PASSWORD", "test-owner-pass")
     monkeypatch.setenv("CTOA_OPERATOR_USER", "ctoa-bot")
-    monkeypatch.setenv("CTOA_OPERATOR_PASSWORD", "jakpod22")
+    monkeypatch.setenv("CTOA_OPERATOR_PASSWORD", "test-operator-pass")
     monkeypatch.setenv("CTOA_ADMIN_SETTINGS_FILE", str(tmp_path / "admin-settings.json"))
     monkeypatch.setenv("CTOA_IDEA_PARKING_FILE", str(tmp_path / "idea-parking.json"))
     monkeypatch.setenv("CTOA_GENERATED_DIR", str(tmp_path / "generated"))
@@ -54,7 +54,7 @@ def test_dashboard_healthy_returns_status_context(monkeypatch: MonkeyPatch):
 
         monkeypatch.setattr(module, "_db_exec", fake_db_exec)
 
-        token = _login_token(client, "ctoa-bot", "jakpod22")
+        token = _login_token(client, "ctoa-bot", "test-operator-pass")
         resp = client.get("/api/dashboard", headers={"Authorization": f"Bearer {token}"})
         assert resp.status_code == 200
 
@@ -88,7 +88,7 @@ def test_dashboard_degraded_status_context_points_to_impacted_sections(monkeypat
 
         monkeypatch.setattr(module, "_db_exec", fake_db_exec)
 
-        token = _login_token(client, "ctoa-bot", "jakpod22")
+        token = _login_token(client, "ctoa-bot", "test-operator-pass")
         resp = client.get("/api/dashboard", headers={"Authorization": f"Bearer {token}"})
         assert resp.status_code == 200
 
@@ -121,7 +121,7 @@ def test_dashboard_error_status_context_highlights_critical_sections(monkeypatch
 
         monkeypatch.setattr(module, "_db_exec", fake_db_exec)
 
-        token = _login_token(client, "ctoa-bot", "jakpod22")
+        token = _login_token(client, "ctoa-bot", "test-operator-pass")
         resp = client.get("/api/dashboard", headers={"Authorization": f"Bearer {token}"})
         assert resp.status_code == 200
 
@@ -133,4 +133,3 @@ def test_dashboard_error_status_context_highlights_critical_sections(monkeypatch
         assert context.get("severity") == "critical"
         assert "servers" in context.get("critical_sections", [])
         assert "servers" in str(context.get("detail", "")).lower()
-

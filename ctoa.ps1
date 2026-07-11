@@ -36,6 +36,58 @@ function Get-PythonExe {
     throw "Missing repo-local Python at $venvPython. Create the virtual environment with: python -m venv .venv"
 }
 
+function Resolve-ControlCenterUrl {
+    param([Parameter(Mandatory = $true)][string]$Candidate)
+
+    if ([string]::IsNullOrWhiteSpace($Candidate)) {
+        throw "Control Center URL must not be empty."
+    }
+
+    if ($Candidate -match "\\") {
+        throw "Control Center URL path must not include backslashes."
+    }
+
+    $decodedCandidate = [System.Uri]::UnescapeDataString($Candidate)
+    $rawTraversalSegments = @($decodedCandidate -split "/" | Where-Object { $_ -eq "." -or $_ -eq ".." })
+    if ($rawTraversalSegments.Count -gt 0) {
+        throw "Control Center URL path must not contain traversal."
+    }
+
+    $uri = $null
+    if (-not [System.Uri]::TryCreate($Candidate, [System.UriKind]::Absolute, [ref]$uri)) {
+        throw "Control Center URL must be absolute."
+    }
+
+    if ($uri.Scheme -notin @("http", "https")) {
+        throw "Control Center URL must use http:// or https://."
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($uri.UserInfo)) {
+        throw "Control Center URL must not include credentials."
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($uri.Query) -or -not [string]::IsNullOrWhiteSpace($uri.Fragment)) {
+        throw "Control Center URL must not include query strings or fragments."
+    }
+
+    $decodedPath = [System.Uri]::UnescapeDataString($uri.AbsolutePath)
+    if ($decodedPath -match "\\") {
+        throw "Control Center URL path must not include backslashes."
+    }
+    $traversalSegments = @($decodedPath -split "/" | Where-Object { $_ -eq "." -or $_ -eq ".." })
+    if ($traversalSegments.Count -gt 0) {
+        throw "Control Center URL path must not contain traversal."
+    }
+
+    $hostName = $uri.Host.ToLowerInvariant()
+    $isLocalHost = $hostName -in @("localhost", "127.0.0.1", "::1")
+    if ($uri.Scheme -eq "http" -and -not $isLocalHost) {
+        throw "Non-local Control Center URLs must use https://."
+    }
+
+    return $uri.AbsoluteUri
+}
+
 function Invoke-FromRoot {
     param(
         [Parameter(Mandatory = $true)]
@@ -141,6 +193,12 @@ Usage:
     .\\ctoa.ps1 logs <runner|health|agents|report|mobile>
   .\\ctoa.ps1 dash snap
     .\\ctoa.ps1 report now
+    .\\ctoa.ps1 otprofile "<opis profilu EK>"
+    .\\ctoa.ps1 otpreview
+    .\\ctoa.ps1 otmockup
+    .\\ctoa.ps1 otdeploy approve-live
+    .\\ctoa.ps1 otest
+    .\\ctoa.ps1 brain <refresh|doctor|pack>
 
 Short aliases:
   h = help
@@ -173,7 +231,15 @@ Examples:
     .\\ctoa.ps1 mobile logs
   .\\ctoa.ps1 vps ValidateServices
   .\\ctoa.ps1 dash snap
-  .\\ctoa.ps1 report now
+    .\\ctoa.ps1 report now
+  .\\ctoa.ps1 otprofile "EK monk, bez aoe na 1, exeta od 2 visible, potion F1 heal 80"
+  .\\ctoa.ps1 otpreview
+  .\\ctoa.ps1 otmockup
+  .\\ctoa.ps1 otdeploy approve-live
+  .\\ctoa.ps1 otest
+  .\\ctoa.ps1 brain refresh
+  .\\ctoa.ps1 brain doctor
+  .\\ctoa.ps1 brain pack
 "@ | Write-Host
 
         Write-Host ("Shared dictionary: version={0}, commands={1}" -f $dict.version, $dictCount) -ForegroundColor DarkGray
@@ -214,7 +280,7 @@ function Get-WorktreeSummary {
     try {
         $lines = @(& $git status --short 2>$null)
         if ($LASTEXITCODE -ne 0) {
-            return "git status failed; run scripts/ops/ctoa_env_doctor.py before sync/push work."
+            return "git status failed; run .\\ctoa.ps1 brain doctor before sync/push work."
         }
         if (@($lines).Count -eq 0) {
             return "clean"
@@ -257,6 +323,7 @@ function Open-ControlCenter {
     if ([string]::IsNullOrWhiteSpace($url)) {
         $url = "http://127.0.0.1:3000/control-center"
     }
+    $url = Resolve-ControlCenterUrl -Candidate $url
 
     $responding = $false
     try {
@@ -300,7 +367,7 @@ function Open-ControlCenter {
         return
     }
 
-    Start-Process $url
+    Start-Process -FilePath $url
 }
 
 function Resolve-Sprint {
@@ -361,7 +428,7 @@ function Invoke-Up {
         "uvicorn",
         "mobile_console.app:app",
         "--host",
-        "0.0.0.0",
+        "127.0.0.1",
         "--port",
         "8787",
         "--reload"
@@ -639,6 +706,107 @@ function Invoke-ReportNow {
     Invoke-VpsAction -Action "ReportViaServiceEnv"
 }
 
+function Invoke-OtProfileBuilder {
+    param(
+        [string]$Request
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Request)) {
+        throw "Missing profile request. Example: .\\ctoa.ps1 otprofile `"EK monk, bez aoe na 1, exeta od 2 visible, potion F1 heal 80`""
+    }
+
+    $python = Get-PythonExe
+    $script = Join-Path $Root "scripts/ops/ctoa_otprofile_builder.py"
+    Invoke-FromRoot -FilePath $python -Arguments @($script, "--request", $Request)
+}
+
+function Invoke-OtHelperPreview {
+    $python = Get-PythonExe
+    $script = Join-Path $Root "scripts/ops/ctoa_helper_ui_preview.py"
+    Invoke-FromRoot -FilePath $python -Arguments @($script)
+    $preview = Join-Path $Root "runtime/otclient_ui_preview/ctoa_helper_preview.html"
+    if (Test-Path $preview) {
+        Start-Process -FilePath $preview
+    }
+}
+
+function Invoke-OtHelperMockup {
+    $python = Get-PythonExe
+    $script = Join-Path $Root "scripts/ops/ctoa_helper_ui_mockup_v4.py"
+    Invoke-FromRoot -FilePath $python -Arguments @($script)
+    $mockup = Join-Path $Root "runtime/otclient_ui_preview/ctoa_helper_mockup_v4.html"
+    if (Test-Path $mockup) {
+        Start-Process -FilePath $mockup
+    }
+}
+
+function Invoke-OtHelperDeploy {
+    param([string]$Approval)
+
+    if ($Approval -cne "approve-live") {
+        throw "Live Helper promotion requires: .\ctoa.ps1 otdeploy approve-live"
+    }
+
+    $powershell = (Get-Command powershell -ErrorAction Stop).Source
+    $wrapper = Join-Path $Root "scripts/windows/solteria_helper_test_env.ps1"
+    Invoke-FromRoot -FilePath $powershell -Arguments @(
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        $wrapper,
+        "-Action",
+        "PromoteLiveCtoa",
+        "-ApproveLiveDeploy"
+    )
+}
+
+function Invoke-OtTestLoop {
+    $powershell = (Get-Command powershell -ErrorAction Stop).Source
+    $wrapper = Join-Path $Root "scripts/windows/solteria_helper_test_env.ps1"
+    Invoke-FromRoot -FilePath $powershell -Arguments @(
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        $wrapper,
+        "-Action",
+        "ValidateDev"
+    )
+    Invoke-OtHelperPreview
+}
+
+function Invoke-EngineBrain {
+    param(
+        [string]$Subcommand,
+        [string]$Profile
+    )
+
+    $mode = (Get-ValueOrDefault -Value $Subcommand -Fallback "refresh").ToLowerInvariant()
+    switch ($mode) {
+        "refresh" {
+            $python = Get-PythonExe
+            Invoke-FromRoot -FilePath $python -Arguments @("scripts/ops/engine_brain_index.py")
+            break
+        }
+        "doctor" {
+            $python = Get-PythonExe
+            Invoke-FromRoot -FilePath $python -Arguments @("scripts/ops/engine_brain_doctor.py")
+            break
+        }
+        "pack" {
+            $python = Get-PythonExe
+            $args = @("scripts/ops/engine_brain_pack.py")
+            if (-not [string]::IsNullOrWhiteSpace($Profile)) {
+                $args += @("--profile", $Profile)
+            }
+            Invoke-FromRoot -FilePath $python -Arguments $args
+            break
+        }
+        default { throw "Unknown brain subcommand '$Subcommand'. Use refresh|doctor|pack [all|helper|control-center|infra|security]" }
+    }
+}
+
 function Get-ValueOrDefault {
     param(
         [string]$Value,
@@ -753,6 +921,13 @@ switch ($Command.ToLowerInvariant()) {
         }
         throw "Unknown dash action '$Arg1'. Use: .\\ctoa.ps1 dash snap"
     }
+
+    "otprofile" { Invoke-OtProfileBuilder -Request $Arg1; break }
+    "otpreview" { Invoke-OtHelperPreview; break }
+    "otmockup" { Invoke-OtHelperMockup; break }
+    "otdeploy" { Invoke-OtHelperDeploy -Approval $Arg1; break }
+    "otest" { Invoke-OtTestLoop; break }
+    "brain" { Invoke-EngineBrain -Subcommand $Arg1 -Profile $Arg2; break }
 
     default {
         throw "Unknown command '$Command'. Run: .\\ctoa.ps1 help"

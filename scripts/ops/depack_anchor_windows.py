@@ -178,7 +178,7 @@ def try_depack(payload: bytes, wbits):
         dec = zlib.decompress(payload) if wbits is None else zlib.decompress(payload, wbits=wbits)
         if dec:
             results.append(('single', dec))
-    except Exception:
+    except zlib.error:
         pass
 
     try:
@@ -187,7 +187,7 @@ def try_depack(payload: bytes, wbits):
         dec += obj.flush()
         if dec:
             results.append(('stream', dec))
-    except Exception:
+    except zlib.error:
         pass
 
     staged = []
@@ -197,7 +197,7 @@ def try_depack(payload: bytes, wbits):
                 d2 = zlib.decompress(d1) if w2 is None else zlib.decompress(d1, wbits=w2)
                 if d2:
                     staged.append((f'{mode}_then_{m2}', d2))
-            except Exception:
+            except zlib.error:
                 continue
     results.extend(staged)
     return results

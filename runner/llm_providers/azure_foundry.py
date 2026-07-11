@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-import json
 import os
-from typing import Any
 
+from runner import http_safety
 from runner.llm_providers import LLMProvider
 
 try:
@@ -21,7 +20,10 @@ class AzureFoundryProvider(LLMProvider):
     """Azure OpenAI Foundry provider — maintains existing integration."""
 
     def __init__(self) -> None:
-        self.endpoint = os.getenv("FOUNDRY_ENDPOINT", "")
+        raw_endpoint = os.getenv("FOUNDRY_ENDPOINT", "").strip()
+        self.endpoint = (
+            http_safety.require_azure_service_url(raw_endpoint) if raw_endpoint else ""
+        )
         self.api_key = os.getenv("FOUNDRY_API_KEY", "")
         self.api_version = os.getenv("FOUNDRY_API_VERSION", "2024-10-21")
         self.model_name = os.getenv("MODEL_MAIN_DEPLOYMENT", "gpt-4o")

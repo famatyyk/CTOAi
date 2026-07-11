@@ -24,6 +24,15 @@ def _reload_api_module(
     monkeypatch.setenv("CTOA_AUTH_STORE_FILE", str(tmp_path / "auth_store.json"))
     monkeypatch.setenv("CTOA_ALLOW_SEED_ACCOUNTS", "true" if allow_seed_accounts else "false")
     monkeypatch.setenv("CTOA_CORS_ORIGINS", cors_origins)
+    if allow_seed_accounts:
+        monkeypatch.setenv("CTOA_SEED_FAMATYYK_PASSWORD", "ctoa-owner")
+        monkeypatch.setenv("CTOA_SEED_STRATEGOS_PASSWORD", "ctoa-operator")
+        monkeypatch.setenv("CTOA_SEED_RECRUIT_PASSWORD", "ctoa-member")
+    else:
+        (tmp_path / "auth_store.json").write_text(
+            json.dumps({"users": {}, "invites": [], "activity": []}),
+            encoding="utf-8",
+        )
 
     if bootstrap_code is None:
         monkeypatch.delenv("CTOA_AUTH_BOOTSTRAP_CODE", raising=False)
@@ -102,7 +111,7 @@ def test_seed_accounts_disabled_by_default(monkeypatch: pytest.MonkeyPatch, tmp_
 
     stored = json.loads((tmp_path / "auth_store.json").read_text(encoding="utf-8"))
     assert stored["users"] == {}
-    assert stored["activity"][0]["meta"]["seeded_users"] == 0
+    assert stored["activity"] == []
 
 
 def test_seed_accounts_can_be_explicitly_enabled(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):

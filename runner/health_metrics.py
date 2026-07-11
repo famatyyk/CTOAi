@@ -6,14 +6,16 @@ import json
 import os
 import shutil
 import socket
-import subprocess
 import sys
 import time
+import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import requests
+
+from runner import http_safety, process_safety
 
 # Configuration
 ROOT = Path(__file__).resolve().parent.parent
@@ -30,6 +32,31 @@ HEALTH_ISSUE_ID = int(os.environ.get("CTOA_HEALTH_ISSUE_ID", "2"))
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+
+
+def _atomic_temp_path(path: Path) -> Path:
+    return path.with_name(f".{path.name}.{os.getpid()}.{uuid.uuid4().hex}.tmp")
+
+
+def _remove_temp_path(path: Path) -> None:
+    try:
+        path.unlink()
+    except FileNotFoundError:
+        pass
+
+
+def _atomic_write_json(path: Path, payload: Dict[str, object]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = _atomic_temp_path(path)
+    try:
+        with tmp.open("w", encoding="utf-8") as handle:
+            json.dump(payload, handle, indent=2, sort_keys=True)
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        tmp.replace(path)
+    finally:
+        _remove_temp_path(tmp)
 
 
 def _read_proc_stat_totals() -> Optional[Tuple[int, int]]:
@@ -59,22 +86,26 @@ def read_cpu_percent(sample_seconds: float = 0.2) -> Optional[float]:
         return round((busy / total_delta) * 100.0, 2)
 
     if os.name == "nt":
-        cmd = [
+        out = _run_tool(
             "powershell",
-            "-NoProfile",
-            "-Command",
-            "(Get-Counter '\\Processor(_Total)\\% Processor Time').CounterSamples[0].CookedValue",
-        ]
-        out = subprocess.run(cmd, capture_output=True, text=True, timeout=8)
-        if out.returncode == 0:
+            [
+                "-NoProfile",
+                "-Command",
+                "(Get-Counter '\\Processor(_Total)\\% Processor Time').CounterSamples[0].CookedValue",
+            ],
+            timeout=8,
+        )
+        if out and out.returncode == 0:
             raw = out.stdout.strip().replace(",", ".")
             try:
                 return round(float(raw), 2)
             except ValueError:
                 pass
 
-        fallback = subprocess.run(["wmic", "cpu", "get", "loadpercentage", "/value"], capture_output=True, text=True, timeout=5)
-        if fallback.returncode == 0:
+        fallback = _run_tool(
+            "wmic", ["cpu", "get", "loadpercentage", "/value"], timeout=5
+        )
+        if fallback and fallback.returncode == 0:
             for line in fallback.stdout.splitlines():
                 if line.lower().startswith("loadpercentage="):
                     raw = line.split("=", 1)[1].strip()
@@ -87,14 +118,16 @@ def read_memory_percent() -> Tuple[Optional[float], Optional[int], Optional[int]
     meminfo = Path("/proc/meminfo")
     if not meminfo.exists():
         if os.name == "nt":
-            cmd = [
+            out = _run_tool(
                 "powershell",
-                "-NoProfile",
-                "-Command",
-                "$os=Get-CimInstance Win32_OperatingSystem; @{total=[double]$os.TotalVisibleMemorySize;free=[double]$os.FreePhysicalMemory} | ConvertTo-Json -Compress",
-            ]
-            out = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
-            if out.returncode != 0:
+                [
+                    "-NoProfile",
+                    "-Command",
+                    "$os=Get-CimInstance Win32_OperatingSystem; @{total=[double]$os.TotalVisibleMemorySize;free=[double]$os.FreePhysicalMemory} | ConvertTo-Json -Compress",
+                ],
+                timeout=5,
+            )
+            if not out or out.returncode != 0:
                 return None, None, None
 
             try:
@@ -150,8 +183,8 @@ def read_uptime_human() -> str:
         parts.append(f"{minutes}m")
         return " ".join(parts)
 
-    result = subprocess.run(["uptime", "-p"], capture_output=True, text=True, timeout=5)
-    if result.returncode == 0:
+    result = _run_tool("uptime", ["-p"], timeout=5)
+    if result and result.returncode == 0:
         return result.stdout.strip()
     return "unknown"
 
@@ -166,19 +199,23 @@ def read_load_average() -> Optional[Tuple[float, float, float]]:
 def check_processes(processes_to_check: List[str]) -> Dict[str, str]:
     result: Dict[str, str] = {}
     if os.name == "nt":
-        ps = subprocess.run(["tasklist"], capture_output=True, text=True, timeout=5)
-        if ps.returncode != 0:
+        ps = _run_tool("tasklist", [], timeout=5)
+        if not ps or ps.returncode != 0:
             for p in processes_to_check:
                 result[p] = "unknown"
             return result
         output = ps.stdout.lower()
         for proc in processes_to_check:
             proc_base = proc.lower().replace(".exe", "")
-            result[proc] = "running" if (f"{proc_base}.exe" in output or proc_base in output) else "not_found"
+            result[proc] = (
+                "running"
+                if (f"{proc_base}.exe" in output or proc_base in output)
+                else "not_found"
+            )
         return result
 
-    ps = subprocess.run(["ps", "-eo", "comm"], capture_output=True, text=True, timeout=5)
-    if ps.returncode != 0:
+    ps = _run_tool("ps", ["-eo", "comm"], timeout=5)
+    if not ps or ps.returncode != 0:
         for p in processes_to_check:
             result[p] = "unknown"
         return result
@@ -187,6 +224,28 @@ def check_processes(processes_to_check: List[str]) -> Dict[str, str]:
     for proc in processes_to_check:
         result[proc] = "running" if proc in running else "not_found"
     return result
+
+
+def _run_tool(
+    name: str,
+    args: list[str],
+    *,
+    timeout: int,
+) -> Any | None:
+    try:
+        executable = process_safety.resolve_executable(name)
+        return process_safety.run_trusted(
+            [executable, *args],
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+        )
+    except (
+        OSError,
+        process_safety.ExecutableUnavailableError,
+        process_safety.ProcessExecutionError,
+    ):
+        return None
 
 
 def collect_metrics() -> Dict[str, object]:
@@ -222,7 +281,9 @@ def collect_metrics() -> Dict[str, object]:
         errors.append(f"memory: {ex}")
 
     try:
-        disk_root = "/" if os.name != "nt" else (os.environ.get("SystemDrive", "C:") + "\\")
+        disk_root = (
+            "/" if os.name != "nt" else (os.environ.get("SystemDrive", "C:") + "\\")
+        )
         disk_pct, disk_used_gb, disk_total_gb = read_disk_percent(disk_root)
         metrics["disk_used_pct"] = disk_pct
         metrics["disk_used_gb"] = disk_used_gb
@@ -236,7 +297,11 @@ def collect_metrics() -> Dict[str, object]:
         errors.append(f"loadavg: {ex}")
 
     try:
-        default_processes = ["python3", "sshd", "systemd"] if os.name != "nt" else ["python", "powershell"]
+        default_processes = (
+            ["python3", "sshd", "systemd"]
+            if os.name != "nt"
+            else ["python", "powershell"]
+        )
         metrics["processes"] = check_processes(default_processes)
     except Exception as ex:  # pragma: no cover - defensive fallback
         errors.append(f"processes: {ex}")
@@ -332,7 +397,10 @@ def publish_to_github(dashboard_md: str) -> bool:
         print("[health] GITHUB_PAT/CTOA_GITHUB_PAT not set, skipping publish")
         return False
 
-    api_url = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/issues/{HEALTH_ISSUE_ID}/comments"
+    repo = http_safety.require_github_repository(f"{REPO_OWNER}/{REPO_NAME}")
+    api_url = http_safety.require_github_api_url(
+        f"https://api.github.com/repos/{repo}/issues/{HEALTH_ISSUE_ID}/comments"
+    )
     headers = {
         "Authorization": f"Bearer {GITHUB_PAT}",
         "Accept": "application/vnd.github+json",
@@ -356,7 +424,7 @@ def publish_to_github(dashboard_md: str) -> bool:
 def persist_snapshot(metrics: Dict[str, object], alerts: List[str]) -> None:
     RUNTIME_DIR.mkdir(parents=True, exist_ok=True)
     payload = {"metrics": metrics, "alerts": alerts}
-    HEALTH_LATEST_FILE.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    _atomic_write_json(HEALTH_LATEST_FILE, payload)
     with HEALTH_HISTORY_FILE.open("a", encoding="utf-8") as f:
         f.write(json.dumps(payload, ensure_ascii=True) + "\n")
 
@@ -393,11 +461,15 @@ def maybe_run_disk_cleanup(
         return last_run_ts, None
     if last_run_ts > 0 and (now_ts - last_run_ts) < cooldown_seconds:
         left = int(cooldown_seconds - (now_ts - last_run_ts))
-        return last_run_ts, f"[disk-action] cooldown active ({left}s left), skip cleanup"
+        return (
+            last_run_ts,
+            f"[disk-action] cooldown active ({left}s left), skip cleanup",
+        )
 
     try:
-        result = subprocess.run(
-            ["bash", "-lc", command],
+        bash = process_safety.resolve_executable("bash", env_var="CTOA_BASH_BIN")
+        result = process_safety.run_trusted(
+            [bash, "-lc", command],
             capture_output=True,
             text=True,
             timeout=120,
@@ -412,8 +484,15 @@ def maybe_run_disk_cleanup(
 
         err = (result.stderr or "").strip()
         tail = err.splitlines()[-1][:180] if err else "no stderr"
-        return last_run_ts, f"[disk-action] cleanup FAILED rc={result.returncode} | {tail}"
-    except Exception as ex:  # pragma: no cover - defensive fallback
+        return (
+            last_run_ts,
+            f"[disk-action] cleanup FAILED rc={result.returncode} | {tail}",
+        )
+    except (
+        OSError,
+        process_safety.ExecutableUnavailableError,
+        process_safety.ProcessExecutionError,
+    ) as ex:
         return last_run_ts, f"[disk-action] cleanup EXCEPTION: {ex}"
 
 
@@ -490,8 +569,12 @@ def run_watch(
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="CTOA health monitor")
     parser.add_argument("--watch", action="store_true", help="Run in live watch mode")
-    parser.add_argument("--interval", type=int, default=10, help="Watch interval in seconds")
-    parser.add_argument("--samples", type=int, default=0, help="Stop after N samples (0 = infinite)")
+    parser.add_argument(
+        "--interval", type=int, default=10, help="Watch interval in seconds"
+    )
+    parser.add_argument(
+        "--samples", type=int, default=0, help="Stop after N samples (0 = infinite)"
+    )
     parser.add_argument(
         "--cpu-sustain-samples",
         type=int,
@@ -521,8 +604,15 @@ def build_parser() -> argparse.ArgumentParser:
         default="/opt/ctoa/deploy/vps/cleanup-retention.sh",
         help="Shell command executed when disk threshold is breached",
     )
-    parser.add_argument("--publish", dest="publish", action="store_true", help="Publish to GitHub Issue")
-    parser.add_argument("--no-publish", dest="publish", action="store_false", help="Do not publish to GitHub")
+    parser.add_argument(
+        "--publish", dest="publish", action="store_true", help="Publish to GitHub Issue"
+    )
+    parser.add_argument(
+        "--no-publish",
+        dest="publish",
+        action="store_false",
+        help="Do not publish to GitHub",
+    )
     parser.set_defaults(publish=True)
     return parser
 

@@ -32,9 +32,10 @@ def test_default_key_path_prefers_env_then_userprofile(monkeypatch: pytest.Monke
 
 def test_run_raises_runtime_error_for_failed_checked_command(monkeypatch: pytest.MonkeyPatch):
     module = _load_module()
+    monkeypatch.setattr(module.process_safety, 'resolve_executable', lambda name: '/trusted/fake')
     monkeypatch.setattr(
-        module.subprocess,
-        'run',
+        module.process_safety,
+        'run_trusted',
         lambda *args, **kwargs: SimpleNamespace(returncode=2, stdout='bad stdout', stderr='bad stderr'),
     )
 
@@ -49,11 +50,72 @@ def test_post_json_handles_missing_url_and_http_error(monkeypatch: pytest.Monkey
     assert (ok, detail) == (False, 'missing_url')
 
     def raise_http(*args, **kwargs):
-        raise urlerror.HTTPError('https://example.test', 503, 'down', None, None)
+        raise urlerror.HTTPError('https://hooks.slack.com/services/T/B/C', 503, 'down', None, None)
 
     monkeypatch.setattr(module.urlrequest, 'urlopen', raise_http)
-    ok, detail = module._post_json('https://example.test', {'x': 1})
+    ok, detail = module._post_json('https://hooks.slack.com/services/T/B/C', {'x': 1})
     assert (ok, detail) == (False, 'http_503')
+
+
+@pytest.mark.parametrize(
+    'url',
+    [
+        'http://hooks.slack.com/services/T/B/C',
+        'https://evil.example.test/webhook',
+        'https://user:secret@hooks.slack.com/services/T/B/C',
+        'https://hooks.slack.com/services/T/B/C?token=secret',
+        'https://hooks.slack.com/services/T/B/../C',
+        'https://discord.com/api/webhooks/123/token#frag',
+        'https://discord.com/api\\webhooks\\123\\token',
+    ],
+)
+def test_post_json_rejects_unsafe_webhook_urls_before_urlopen(url: str, monkeypatch: pytest.MonkeyPatch):
+    module = _load_module()
+
+    def fail_urlopen(*args, **kwargs):
+        raise AssertionError('urlopen must not run for unsafe webhook URLs')
+
+    monkeypatch.setattr(module.urlrequest, 'urlopen', fail_urlopen)
+
+    ok, detail = module._post_json(url, {'x': 1})
+
+    assert ok is False
+    assert detail == 'invalid_webhook_url'
+    assert 'secret' not in detail
+    assert url not in detail
+
+
+@pytest.mark.parametrize(
+    'url',
+    [
+        'https://hooks.slack.com/services/T/B/C',
+        'https://discord.com/api/webhooks/123/token',
+    ],
+)
+def test_post_json_allows_slack_and_discord_webhooks(url: str, monkeypatch: pytest.MonkeyPatch):
+    module = _load_module()
+
+    class FakeResponse:
+        status = 204
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+    calls = []
+
+    def fake_urlopen(request, timeout):
+        calls.append((request.full_url, timeout))
+        return FakeResponse()
+
+    monkeypatch.setattr(module.urlrequest, 'urlopen', fake_urlopen)
+
+    ok, detail = module._post_json(url, {'x': 1})
+
+    assert (ok, detail) == (True, 'http_204')
+    assert calls == [(url, 12)]
 
 
 def test_update_step9_closure_in_readme_appends_and_updates_timestamp(tmp_path: Path):

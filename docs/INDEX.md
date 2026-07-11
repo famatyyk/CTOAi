@@ -18,6 +18,9 @@ the system changes:
 - [Sprint Governance](SPRINT_GOVERNANCE.md): sprint lifecycle, gates, and approval flow.
 - [Validation Checklist](VALIDATION_CHECKLIST.md): deployment and runtime validation checklist.
 - [README Inventory](README_INVENTORY.md): README cleanup guardrail and classification map.
+- [Full Workspace Audit](audits/CTOAI_FULL_WORKSPACE_AUDIT_2026-07-06.md): complete file inventory summary and current risk findings.
+- [Security Hardening Note](audits/CTOAI_SECURITY_HARDENING_2026-07-06.md): auth, CORS, self-registration, and release-evidence hardening record.
+- [Three Development Plans](roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md): Helper, Control Center/evidence, and Engine Brain roadmap options.
 
 ## Active Working Docs
 
