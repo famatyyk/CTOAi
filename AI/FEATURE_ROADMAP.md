@@ -16,10 +16,16 @@
   promotion-bound trusted pin, a fresh capability heartbeat newer than the one
   canonical client process, and full producer/consumer parity for the no-action
   contract. The observer cannot create its own live manifest or trust anchor.
+  Current evidence classifies the historical pair as
+  `legacy_or_unbound_attestation`; read-only diagnostic parity is stable at
+  57/58 with one executable-profile drift and can never authorize acceptance.
 - P9 Conditions is `offline_implementation_complete` and
   `operational_acceptance_blocked`. Its strict data-only replay and 44-case
   fixture pack are implemented without dispatch, execute-once, promotion, or
-  client interaction. Fixture success is never reported as runtime readiness.
+  client interaction. A strict data-only acceptance preflight now recomputes
+  canonical inputs and requires exact operator confirmation before it can write
+  a receipt. Current evidence remains blocked and no receipt exists.
+  Fixture success is never reported as runtime readiness.
 - P6 is ready for plugin design and the five bounded P7 safe-write refresh tools
   are enabled with audit coverage.
 
@@ -32,7 +38,8 @@
    is `BackgroundStatus`; it cannot launch, stop, focus, capture, send input, or
    write inside a client. Acceptance stays blocked until the promotion-bound
    trusted pin, fresh capability heartbeat, and full no-action consumer parity
-   are proven together.
+   are proven together. Pin Doctor may expose allowlisted provenance errors and
+   diagnostic parity, but `acceptance_allowed` remains false for an untrusted pin.
 2. **Conditions data-only shadow replay (P9)** — owner: Helper Runtime +
    Evidence; implementation status: `offline_implementation_complete`;
    operational status: `operational_acceptance_blocked`; risk:
@@ -40,7 +47,10 @@
    `background_status.json` and then writes
    `runtime/solteria_helper_dev/conditions_shadow_replay.json`. Acceptance
    still requires trusted/fresh P8, a real current guarded observation, and an
-   accepted hash-bound Recovery trace.
+   accepted hash-bound Recovery trace. The separate
+   `otclient_conditions_shadow_acceptance.py --no-write` preflight validates
+   freshness, recomputation, no-action invariants, canonical paths, and fixture
+   separation without creating permission for P10.
 3. **Conditions runtime safety gate** — owner: Helper Runtime; status:
    `static_contract_accepted`; risk: `runtime_recovery`. It remains separate
    from P9 and cannot dispatch until P9 operational acceptance is reviewed.
@@ -62,7 +72,8 @@
   touching the game window.
 - Close P9 operational acceptance only after `ctoa.ps1 otp9` produces a fresh,
   real `shadow_plan_ready_for_operator_review` trace under accepted P8 and
-  Recovery proofs. The offline fixture pack may stay green while this is blocked.
+  Recovery proofs, then pass the independently reviewed data-only acceptance
+  boundary. The offline fixture pack may stay green while this is blocked.
 - P10 remains blocked until that real P9 trace is explicitly reviewed; it then
   repeats the independent shadow/replay sequence for rollback-ready Equipment.
   P11 does the same for exact-whitelist Heal Friend.

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-11T19:36:35+00:00",
+  "generated_at": "2026-07-11T20:20:50+00:00",
   "decision": "ready_for_p7_operator_workflow",
   "status": "ready",
   "hard_blockers": [],
@@ -118,7 +118,7 @@
       "file_count": 35,
       "sprint_count": 7,
       "latest_path": "releases\\evidence\\sprint-056\\CTOA-299.md",
-      "release_evidence_generated_at": "2026-07-11T19:30:50+00:00",
+      "release_evidence_generated_at": "2026-07-11T20:20:39+00:00",
       "otclient_helper_status": "blocked",
       "otclient_helper_release_gate_status": "blocked",
       "otclient_helper_next_action": "ModuleAttachSmoke is stale for the current dev manifest; rerun SmokeAttachModules after sandbox character is in-world.",
@@ -154,12 +154,12 @@
     },
     "action_audit": {
       "status": "ready",
-      "record_count": 129,
-      "latest_at": "2026-07-11T17:19:15.095382Z",
+      "record_count": 135,
+      "latest_at": "2026-07-11T20:20:38.990730Z",
       "invalid_record_count": 0,
       "risk_counts": {
         "read_only": 2,
-        "safe_write": 127
+        "safe_write": 133
       }
     },
     "recommended_tool_order": [

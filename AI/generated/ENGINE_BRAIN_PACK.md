@@ -1,6 +1,6 @@
 # CTOAi Engine Brain Pack
 
-Generated at: `2026-07-11T19:36:55+00:00`
+Generated at: `2026-07-11T20:21:08+00:00`
 Repo root: `C:\Users\zycie\CTOAi`
 Profile: `all`
 
@@ -57,6 +57,9 @@ needed for a task instead of relying on one long prompt.
   evidence gates through design-only Combat/CaveBot work.
 - `../docs/otclient/P9_CONDITIONS_SHADOW_REPLAY_DESIGN.md`: review-ready P9
   data-only observation/replay contract, still blocked by P8 operational acceptance.
+- `../docs/otclient/P9_CONDITIONS_SHADOW_ACCEPTANCE.md`: strict current-evidence
+  recomputation and explicit data-only operator receipt boundary; it does not
+  unlock P10 or runtime actions.
 - `KNOWN_BUGS.md`: known risks and suspected defects.
 - `TECH_DEBT.md`: cleanup backlog.
 - `SPECIALIZED_PROMPTS.md`: project-aware task personas.
@@ -832,6 +835,11 @@ Snapshot date: 2026-07-11 Europe/Warsaw
   `live_promotion.json`, an explicit fresh online capability heartbeat newer than
   exactly one canonical client process, and full producer/consumer parity for the
   no-action contract. The observer cannot create that trusted pin.
+- The current historical P8 artifacts are classified
+  `legacy_or_unbound_attestation`. Read-only diagnostic parity safely inspects
+  all 58 entries and reports stable 57/58 parity with one executable-profile
+  drift, while `acceptance_allowed=false`. Release Evidence and Control Center
+  consume only allowlisted remediation and diagnostic fields.
 - P9 Conditions is `offline_implementation_complete` and
   `operational_acceptance_blocked`. The existing heartbeat now carries an
   optional strict Conditions observation; the bounded sanitizer keeps missing
@@ -842,6 +850,12 @@ Snapshot date: 2026-07-11 Europe/Warsaw
   readiness. P10 stays blocked until a fresh real P9 trace is reviewed under
   accepted P8 and Recovery proofs. Canonical contract:
   `docs/otclient/P9_CONDITIONS_SHADOW_REPLAY_DESIGN.md`.
+- P9 also has a separate data-only operator acceptance boundary. It strictly
+  recomputes the current report and hashes, rejects fixtures/reparse paths and
+  stale or changing evidence, requires exact confirmation for persistence, and
+  keeps all action flags false. The current preflight is blocked and no
+  `conditions_shadow_acceptance.json` receipt exists. Contract:
+  `docs/otclient/P9_CONDITIONS_SHADOW_ACCEPTANCE.md`.
 - Vocation-profile drift is visible as its own count but cannot satisfy parity:
   the current profile is executable Lua. A later schema-validated data-only
   persistence format is required before normal profile changes can be trusted as
@@ -1411,18 +1425,7 @@ Snapshot date: 2026-07-11 Europe/Warsaw
 - Mobile console safe-mode presets now execute through backend-owned
   `argv/cwd/env` specs instead of raw pseudo-shell snippets. Legacy preset
   strings remain visible through `/api/presets`, but allowlisted execution no
-  longer depends on interpreting `cd ...; ENV=... command` text.
-- Mobile console `/api/command` no longer executes arbitrary command text when
-  legacy `CTOA_MOBILE_FULL_ACCESS=true` is set. The endpoint always routes
-  through backend-owned presets and rejects non-preset command text.
-- Mobile console health/auto-check status now reports `command_mode=presets`
-  and never reports `full_access=true`; the legacy mobile UI no longer renders
-  a full-command box, and the desktop admin console uses a readonly
-  preset-selected command field.
-- Legacy mobile and desktop Intel guarded writes now require owner auth,
-  `confirm=true`, and a non-empty audit reason before DB writes, orchestrator
-  triggers, or client sync can run. Denied attempts are audited, and audit
-  reasons reuse
+  longer dep
 
 [truncated]
 ```
@@ -2035,10 +2038,16 @@ Pending source. Expected classes to index after TFS source is available:
   promotion-bound trusted pin, a fresh capability heartbeat newer than the one
   canonical client process, and full producer/consumer parity for the no-action
   contract. The observer cannot create its own live manifest or trust anchor.
+  Current evidence classifies the historical pair as
+  `legacy_or_unbound_attestation`; read-only diagnostic parity is stable at
+  57/58 with one executable-profile drift and can never authorize acceptance.
 - P9 Conditions is `offline_implementation_complete` and
   `operational_acceptance_blocked`. Its strict data-only replay and 44-case
   fixture pack are implemented without dispatch, execute-once, promotion, or
-  client interaction. Fixture success is never reported as runtime readiness.
+  client interaction. A strict data-only acceptance preflight now recomputes
+  canonical inputs and requires exact operator confirmation before it can write
+  a receipt. Current evidence remains blocked and no receipt exists.
+  Fixture success is never reported as runtime readiness.
 - P6 is ready for plugin design and the five bounded P7 safe-write refresh tools
   are enabled with audit coverage.
 
@@ -2051,7 +2060,8 @@ Pending source. Expected classes to index after TFS source is available:
    is `BackgroundStatus`; it cannot launch, stop, focus, capture, send input, or
    write inside a client. Acceptance stays blocked until the promotion-bound
    trusted pin, fresh capability heartbeat, and full no-action consumer parity
-   are proven together.
+   are proven together. Pin Doctor may expose allowlisted provenance errors and
+   diagnostic parity, but `acceptance_allowed` remains false for an untrusted pin.
 2. **Conditions data-only shadow replay (P9)** — owner: Helper Runtime +
    Evidence; implementation status: `offline_implementation_complete`;
    operational status: `operational_acceptance_blocked`; risk:
@@ -2059,7 +2069,10 @@ Pending source. Expected classes to index after TFS source is available:
    `background_status.json` and then writes
    `runtime/solteria_helper_dev/conditions_shadow_replay.json`. Acceptance
    still requires trusted/fresh P8, a real current guarded observation, and an
-   accepted hash-bound Recovery trace.
+   accepted hash-bound Recovery trace. The separate
+   `otclient_conditions_shadow_acceptance.py --no-write` preflight validates
+   freshness, recomputation, no-action invariants, canonical paths, and fixture
+   separation without creating permission for P10.
 3. **Conditions runtime safety gate** — owner: Helper Runtime; status:
    `static_contract_accepted`; risk: `runtime_recovery`. It remains separate
    from P9 and cannot dispatch until P9 operational acceptance is reviewed.
@@ -2081,7 +2094,8 @@ Pending source. Expected classes to index after TFS source is available:
   touching the game window.
 - Close P9 operational acceptance only after `ctoa.ps1 otp9` produces a fresh,
   real `shadow_plan_ready_for_operator_review` trace under accepted P8 and
-  Recovery proofs. The offline fixture pack may stay green while this is blocked.
+  Recovery proofs, then pass the independently reviewed data-only acceptance
+  boundary. The offline fixture pack may stay green while this is blocked.
 - P10 remains blocked until that real P9 trace is explicitly reviewed; it then
   repeats the independent shadow/replay sequence for rollback-ready Equipment.
   P11 does the same for exact-whitelist Heal Friend.
@@ -2695,18 +2709,6 @@ Once available:
   before `open`, and reject oversized configured files without full-file
   `readFile`.
 - Keep Control Center configured JSON evidence reads physically size-bounded
-  too. Repo hygiene, API cost, Helper, Engine Brain, and runtime evidence JSON
-  should reject symlinked or oversized configured files and fail closed to
-  missing/default status without exposing target contents.
-- Keep backend `/api/release-evidence` on the same browser-safe evidence
-  contract: read configured JSON with a size bound, return display-safe
-  `evidence_path`, recursively redact token/password/API-key fields and local
-  absolute paths from the evidence payload, reject symlinked configured
-  evidence before `stat/open`, and reject oversized evidence without echoing
-  file contents or exception text.
-- Keep FastAPI HTTP audit logs secret-safe too. `CTOA_AUDIT_LOG_FILE` records
-  should redact token/password/API-key/Bearer forms and collapse local absolute
-  paths in `actor`, `ip`, `ua`, request path, and nested `meta` be
 
 [truncated]
 ```
@@ -2722,7 +2724,9 @@ Status: P8 is `implementation_complete` and
 promotion. Its implementation is the `v2.3.0` staged-source lane and does not
 auto-promote that version. P9 is `offline_implementation_complete` while its
 operational acceptance remains blocked by the same P8 proof gate and a missing
-accepted Recovery predecessor trace.
+accepted Recovery predecessor trace. The data-only P9 acceptance boundary is
+implemented, but current evidence cannot create an accepted receipt and P10
+remains blocked.
 
 ## Operating Contract
 
@@ -2758,6 +2762,8 @@ Deliverables:
 - sanitized `background_status.json`, release-evidence summary, and read-only
   Control Center tile;
 - mutable profile drift separated from immutable package-code parity.
+- strict pin provenance classification plus read-only diagnostic parity that
+  cannot create, repair, rebind, or accept a trust anchor.
 
 Done gates:
 
@@ -2777,6 +2783,12 @@ Done gates:
   `dispatch_allowed=false`, and an empty intrusive-action ledger;
 - Python, Lua, PowerShell, web, release-evidence, doc-sync, and secret-guardrail
   tests pass.
+
+Current evidence is `legacy_or_unbound_attestation`: all 58 manifest entries are
+safe to inspect, 57 match, one executable profile drifts, and the observation is
+stable. This is diagnostic evidence only; acceptance remains false until a new
+official promotion-bound pin is produced after current gates and explicit live
+approval.
 
 ### P9 — Conditions Shadow Observation And Replay
 
@@ -2802,17 +2814,25 @@ profile persistence must gain a non-executable, schema-validated representation.
 Implemented evidence: strict profile/observation/P8/Recovery/trace/report schemas,
 the existing-heartbeat passive producer, bounded sanitizer, 44-case deterministic
 fixture pack, `ctoa.ps1 otp9`, atomic runtime report, Release Evidence summary,
-and read-only Control Center tile. All action, dispatch, execute-once, promotion,
-and intrusive-action fields remain disabled or empty.
+read-only Control Center tile, and a separate strict data-only operator acceptance
+schema/preflight. Its writer revalidates fresh canonical evidence, hashes,
+no-action invariants, reparse safety, and exact confirmation before an atomic
+receipt write. Current evidence is blocked and writes no receipt. All action,
+dispatch, execute-once, promotion, and intrusive-action fields remain disabled
+or empty.
 
 Done gates: stale/offline/dead/PZ/wrong-condition/wrong-spell/cooldown/retry cases
-fail closed; replay parity is deterministic; runtime and dispatch remain false.
+fail closed; replay parity is deterministic; runtime and dispatch remain false;
+an accepted receipt requires a fresh real trace, canonical raw P8 and Recovery
+inputs, exact `accept P9 conditions shadow` confirmation, and separate downstream
+review.
 
 ### P10 — Equipment Ring-Only Shadow And Rollback Replay
 
 Objective: validate one ring-swap plan and its rollback without touching inventory.
 
-Dependencies: accepted action-bound P9 trace.
+Dependencies: explicitly reviewed action-bound P9 trace plus its validated
+data-only acceptance receipt. Neither artifact authorizes runtime dispatch.
 
 Deliverables: exact item/slot/container/revision snapshot, zero-retry plan, rollback
 simulation, tamper detection, and negative scenario pack.
@@ -2991,7 +3011,7 @@ enable `ctoai_roadmap_state_refresh`.
 ```markdown
 # CTOAi Three Development Plans
 
-Basis: full workspace audit with `41858` inventoried files and `1347` git-tracked files.
+Basis: full workspace audit with `41951` inventoried files and `1364` git-tracked files.
 
 ## Plan 1: Helper-First Productization
 
@@ -3003,7 +3023,7 @@ Goal: turn the OTClient/Solteria Helper into a safe, repeatable product lane bef
 - Require `PrepareDev`, `ValidateDev`, `SmokePreflight`, in-world `SmokeAttachAll`, and explicit live approval.
 - Expand `otclient_helper_profile_audit.py` from text checks toward schema-backed migration validation.
 - Keep Control Center Helper status read-only and backed by runtime artifacts.
-- Treat P8 `BackgroundNoScreen` as `implementation_complete` but `operational_acceptance_blocked`: keep it the default routine Helper evidence lane with no mouse/keyboard input, focus, screenshots, client launch/stop, or live-client writes; accept it only after an official promotion-bound trusted pin, a fresh capability heartbeat, and full no-action producer/consumer parity pass together. P9 Conditions is offline/staging-complete, but its operational acceptance and P10 remain blocked until accepted P8, real Conditions, and hash-bound Recovery proofs pass together.
+- Treat P8 `BackgroundNoScreen` as `implementation_complete` but `operational_acceptance_blocked`: keep it the default routine Helper evidence lane with no mouse/keyboard input, focus, screenshots, client launch/stop, or live-client writes; accept it only after an official promotion-bound trusted pin, a fresh capability heartbeat, and full no-action producer/consumer parity pass together. The current historical pin is `legacy_or_unbound_attestation`; its stable 57/58 diagnostic parity and one executable-profile drift are informational only and cannot be rebound into trust. P9 Conditions is offline/staging-complete and now has a strict separately confirmed data-only acceptance boundary, but current operational evidence writes no receipt and P10 remains blocked until accepted P8, real Conditions, and hash-bound Recovery proofs pass together.
 - Keep the post-Recovery runtime sequence fixed: Conditions paralyze-only gate, then Equipment ring-only rollback gate, then Heal Friend exact-whitelist gate. Require action-bound predecessor traces and current `RuntimeModuleGatesSandboxSmoke` evidence; Combat and CaveBot remain `deferred_high_risk` and may receive passive refactor work only.
 
 ### 31-60 Days
@@ -3119,6 +3139,7 @@ guarded OTClient adapter
   -> deterministic replay with a data-only JSON profile
   -> conditions_shadow_replay.json
   -> read-only Release Evidence and Control Center summaries
+  -> separate data-only operator acceptance preflight
 ```
 
 The existing 5-second heartbeat remains the only client-side producer loop. A
@@ -3223,6 +3244,8 @@ remain false in every result.
 6. Read-only Release Evidence and Control Center consumers with full mutation
    tests.
 7. Documentation, Engine Brain refresh, and separate P9 review commit.
+8. Strict acceptance schema/preflight with canonical recomputation, exact
+   confirmation, repeated evidence fingerprints, and atomic repo-local receipt.
 
 The first six slices are implemented in staging. `ctoa.ps1 otp9` first refreshes
 the bounded P8 artifact through the existing `BackgroundStatus` allowlist and
@@ -3237,8 +3260,82 @@ P9 may be marked accepted only when a real, current observation produces an
 action-bound trace under an accepted P8 proof set and accepted Recovery trace;
 the entire positive/negative pack is deterministic; consumers fail closed; and
 all execution, dispatch, promotion, and intrusive-action fields remain false.
+The separate acceptance boundary in
+`docs/otclient/P9_CONDITIONS_SHADOW_ACCEPTANCE.md` must then validate the current
+canonical inputs; fixture success or a schema-only check is insufficient.
 
 P10 remains blocked until that trace is reviewed and explicitly accepted.
+```
+
+
+## `docs/otclient/P9_CONDITIONS_SHADOW_ACCEPTANCE.md`
+
+```markdown
+# P9 Conditions Shadow Operator Acceptance
+
+Status: data-only acceptance boundary implemented; current operational acceptance
+remains dependent on a fresh trusted P8 proof, a real guarded Conditions
+observation, and current hash-bound Recovery evidence.
+
+## Boundary
+
+`scripts/ops/otclient_conditions_shadow_acceptance.py` closes the evidence-type
+gap between the P9 shadow report and any later predecessor review. It does not
+start P10, create an Equipment plan, dispatch an action, write to OTClient, or
+claim runtime readiness.
+
+The tool rereads the P9 report and all source documents, rebuilds the report at
+its recorded timestamp, verifies canonical hash parity, enforces a 30-second
+freshness window, rejects fixture operational inputs, and validates the full
+no-action scenario pack. Its default invocation is a read-only preflight:
+
+```powershell
+python scripts/ops/otclient_conditions_shadow_acceptance.py
+```
+
+A preflight prints either `blocked` or `ready_for_operator_review` and never
+writes an accepted receipt. Even with the confirmation present, `--no-write`
+cannot produce `accepted`:
+
+```powershell
+python scripts/ops/otclient_conditions_shadow_acceptance.py `
+  --confirm "accept P9 conditions shadow" `
+  --no-write
+```
+
+Only a fully operational, fresh, exactly recomputed report plus this exact
+case-sensitive confirmation may atomically write
+`runtime/solteria_helper_dev/conditions_shadow_acceptance.json`:
+
+```powershell
+python scripts/ops/otclient_conditions_shadow_acceptance.py `
+  --confirm "accept P9 conditions shadow"
+```
+
+Immediately before writing, the tool rereads every physical input and rejects
+any fingerprint change. The writer boundary performs this current-evidence
+revalidation itself; it cannot persist a caller-supplied receipt dictionary.
+Persistence also requires the canonical repo profile,
+scenario pack, runtime P9 report, raw `background_status.json`, and runtime
+Recovery paths; alternate fixture or explicit-observation paths cannot be used
+to create an accepted receipt. The persisted receipt remains data-only:
+`runtime_readiness_claimed=false`; dispatch, runtime, execution, execute-once,
+and promotion flags are false; the intrusive-action ledger is empty. Its
+`downstream_use_requires_separate_review=true` field prevents the receipt from
+being treated as automatic permission for P10 or any runtime bridge.
+
+## Fail-Closed Cases
+
+- missing, malformed, duplicate-key, oversized, symlinked, or non-object report;
+- report/source recomputation mismatch or input change before write;
+- future or older-than-30-seconds report;
+- blocked operational trace, failed scenario pack, or unsafe action field;
+- fixture observation, P8 proof, Recovery trace, or Recovery proof;
+- absent confirmation for persistence or any non-exact confirmation value.
+
+The schema is `schemas/conditions-shadow-acceptance.schema.json`. P10 stays
+blocked until the real P9 evidence is independently reviewed; this receipt does
+not alter Lua, Helper runtime policy, Equipment, Control Center, or live files.
 ```
 
 
@@ -3619,9 +3716,9 @@ fresh `ctoa_local.log` lines plus safe boot state.
 ```json
 {
   "schema_version": 1,
-  "generated_at": "2026-07-11T19:36:35+00:00",
+  "generated_at": "2026-07-11T20:20:50+00:00",
   "root": "C:\\Users\\zycie\\CTOAi",
-  "file_count": 1271,
+  "file_count": 1276,
   "outputs": {
     "file_tree": "AI\\generated\\FILE_TREE.md",
     "symbol_map": "AI\\generated\\SYMBOL_MAP.md",
@@ -3682,12 +3779,12 @@ fresh `ctoa_local.log` lines plus safe boot state.
 ```markdown
 # Engine Brain Environment Doctor
 
-Generated at: `2026-07-11T19:36:50+00:00`
+Generated at: `2026-07-11T20:21:05+00:00`
 Overall status: `warn`
 
 | Check | Status | Key evidence |
 |---|---|---|
-| `git` | `ok` | branch=codex/p8-background-noscreen; dirty=71; path=C:\Program Files\Git\cmd\git.EXE |
+| `git` | `ok` | branch=codex/p8-background-noscreen; dirty=48; path=C:\Program Files\Git\cmd\git.EXE |
 | `docker` | `ok` | containers=2; running_broad=0; configured_broad=0 |
 | `vpn` | `warn` | warp_connected=False |
 | `vercel` | `ok` | version=54.10.3; project=ctoa-web |
@@ -3710,7 +3807,7 @@ Overall status: `warn`
 ```markdown
 # Engine Brain Ownership Map
 
-Generated at: `2026-07-11T19:36:35+00:00`
+Generated at: `2026-07-11T20:20:50+00:00`
 Source audit: `runtime\audits\ctoai-full-workspace-audit.json`
 Status: `ready`
 
@@ -3721,7 +3818,7 @@ Status: `ready`
 | `.dockerignore` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `.env.example` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `.foundry` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
-| `.git` | Local/uncategorized | `manual review` | 227 | git_internal:227 |
+| `.git` | Local/uncategorized | `manual review` | 290 | git_internal:290 |
 | `.gitattributes` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `.github` | Local/uncategorized | `manual review` | 41 | tracked_source:41 |
 | `.gitignore` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
@@ -3729,7 +3826,7 @@ Status: `ready`
 | `.luarc.json` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `.pre-commit-config.yaml` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `.pytest_cache` | Local/uncategorized | `manual review` | 5 | vendor_or_cache:5 |
-| `.ruff_cache` | Local/uncategorized | `manual review` | 17 | untracked_local:17 |
+| `.ruff_cache` | Local/uncategorized | `manual review` | 39 | untracked_local:39 |
 | `.tmp` | Local/uncategorized | `manual review` | 105 | runtime_or_local_state:105 |
 | `.venv` | Local/uncategorized | `manual review` | 4543 | vendor_or_cache:4543 |
 | `.vscode` | Local/uncategorized | `manual review` | 4 | tracked_source:4 |
@@ -3748,7 +3845,7 @@ Status: `ready`
 | `alembic.ini` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `api` | API runtime | `pytest tests/ --ignore=tests/e2e` | 9 | tracked_source:3, untracked_source_candidate:6 |
 | `bot` | Bot runtime | `pytest tests/ --ignore=tests/e2e` | 144 | tracked_source:43, untracked_source_candidate:101 |
-| `config` | Local/uncategorized | `manual review` | 7 | local_secret_or_sensitive:1, tracked_source:5, untracked_source_candidate:1 |
+| `config` | Local/uncategorized | `manual review` | 7 | local_secret_or_sensitive:1, tracked_source:6 |
 | `conftest.py` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `core` | Local/uncategorized | `manual review` | 3 | tracked_source:3 |
 | `ctoa-vps.ps1` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
@@ -3760,10 +3857,10 @@ Status: `ready`
 | `desktop_console` | Local/uncategorized | `manual review` | 16 | tracked_source:6, untracked_source_candidate:10 |
 | `docker` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `docker-compose.yml` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
-| `docs` | Documentation | `doc sync guard` | 316 | tracked_source:310, untracked_source_candidate:6 |
+| `docs` | Documentation | `doc sync guard` | 317 | tracked_source:310, untracked_source_candidate:7 |
 | `evals` | Local/uncategorized | `manual review` | 6 | tracked_source:6 |
 | `logs` | Local/uncategorized | `manual review` | 3 | runtime_or_local_state:3 |
-| `metrics` | Local/uncategorized | `manual review` | 21 | runtime_or_local_state:21 |
+| `metrics` | Local/uncategorized | `manual review` | 22 | runtime_or_local_state:22 |
 | `mobile_console` | Mobile console | `pytest tests/ --ignore=tests/e2e` | 20 | tracked_source:9, untracked_source_candidate:11 |
 | `node_modules` | Local/uncategorized | `manual review` | 1 | vendor_or_cache:1 |
 | `policies` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
@@ -3776,11 +3873,11 @@ Status: `ready`
 | `runner` | Runner runtime | `pytest tests/ --ignore=tests/e2e` | 154 | tracked_source:57, untracked_source_candidate:97 |
 | `runtime` | Local/uncategorized | `manual review` | 2482 | runtime_or_local_state:2482 |
 | `runtime_context.py` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
-| `schemas` | Contracts | `schema consumers and pytest` | 14 | tracked_source:6, untracked_source_candidate:8 |
+| `schemas` | Contracts | `schema consumers and pytest` | 15 | tracked_source:14, untracked_source_candidate:1 |
 | `scoring` | Local/uncategorized | `manual review` | 5 | tracked_source:3, untracked_source_candidate:2 |
-| `scripts` | Operator automation | `pytest targeted script tests` | 449 | tracked_source:268, untracked_source_candidate:181 |
+| `scripts` | Operator automation | `pytest targeted script tests` | 451 | tracked_source:269, untracked_source_candidate:182 |
 | `src` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
-| `tests` | Regression suite | `pytest tests/ --ignore=tests/e2e` | 529 | local_secret_or_sensitive:2, tracked_source:188, untracked_source_candidate:339 |
+| `tests` | Regression suite | `pytest tests/ --ignore=tests/e2e` | 532 | local_secret_or_sensitive:2, tracked_source:195, untracked_source_candidate:335 |
 | `training` | Local/uncategorized | `manual review` | 8 | tracked_source:5, untracked_source_candidate:3 |
 | `up` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `web` | Control Center | `cd web; npm run lint; npm test` | 32304 | local_secret_or_sensitive:2, tracked_source:98, untracked_source_candidate:5419, vendor_or_cache:26785 |
@@ -3793,7 +3890,7 @@ Status: `ready`
 ```markdown
 # Engine Brain Doc Sync
 
-Generated at: `2026-07-11T19:36:35+00:00`
+Generated at: `2026-07-11T20:20:50+00:00`
 Status: `passed`
 
 | Check | Path | Status | Missing |
@@ -3813,7 +3910,7 @@ Status: `passed`
 ```markdown
 # Engine Brain Secret Guardrail
 
-Generated at: `2026-07-11T19:36:35+00:00`
+Generated at: `2026-07-11T20:20:50+00:00`
 Status: `passed`
 Sensitive/local env path count in audit: `7`
 
@@ -3835,7 +3932,7 @@ Generated Engine Brain context must not include exact local sensitive/env paths 
 ```markdown
 # P6 Codex Integration Readiness
 
-Generated at: `2026-07-11T19:36:35+00:00`
+Generated at: `2026-07-11T20:20:50+00:00`
 Status: `ready_for_plugin_design`
 
 P6 allows only four read-only status/cockpit tools plus audited repo-hygiene, API-cost, evidence-pack, Engine Brain, and P7 cockpit-smoke safe-write refreshes. Do not add deploy/live shortcuts or bypass Control Center evidence gates.
@@ -3907,7 +4004,7 @@ Recommended next: Operate the plugin as four read-only status/cockpit tools plus
 ```markdown
 # P7 Operator Workflow
 
-Generated at: `2026-07-11T19:36:35+00:00`
+Generated at: `2026-07-11T20:20:50+00:00`
 Status: `safe_write_ready`
 Decision: `allow_bounded_safe_write_tools`
 
@@ -3955,14 +4052,14 @@ Next safe command: Use ctoai_repo_hygiene_refresh, ctoai_api_cost_refresh, ctoai
 ```markdown
 # P7 Action Readiness
 
-Generated at: `2026-07-11T19:36:35+00:00`
+Generated at: `2026-07-11T20:20:50+00:00`
 Status: `safe_write_tools_enabled`
 Decision: `monitor_enabled_safe_write_tools`
 
 P7 action readiness is evidence-only. MCP write tools stay disabled until every candidate has audit evidence and explicit enablement.
 
 Risk model: `docs/CTOAI_COMMAND_RISK_MODEL.md`
-Action audit: `runtime\control-center\action-audit.jsonl` with `129` records.
+Action audit: `runtime\control-center\action-audit.jsonl` with `135` records.
 MCP write tools: `5`
 Next safe command: Design the next P7 plugin action only after risk model coverage, audit logging, Control Center gates, and targeted MCP tests exist; keep deploy/live actions outside the plugin surface.
 
@@ -3983,7 +4080,7 @@ Next safe command: Design the next P7 plugin action only after risk model covera
 ```markdown
 # P7 Safe Write Tool Design
 
-Generated at: `2026-07-11T19:36:35+00:00`
+Generated at: `2026-07-11T20:20:50+00:00`
 Status: `implemented`
 Decision: `ready_for_dry_run_operation`
 
@@ -4025,7 +4122,7 @@ Next safe command: Run ctoai_evidence_pack_refresh with dry_run=true and verify 
 ```markdown
 # P7 Operator Brief
 
-Generated at: `2026-07-11T19:36:35+00:00`
+Generated at: `2026-07-11T20:20:50+00:00`
 Decision: `ready_for_p7_operator_workflow`
 Status: `ready`
 
@@ -4039,7 +4136,7 @@ Next safe command: Design the next P7 plugin action only after risk model covera
 - P7 workflow: `safe_write_ready` with `9` MCP tools and `5` safe-write tools.
 - P7 action readiness: `safe_write_tools_enabled` with `5/5` audited candidates and `5` MCP write tools.
 - P7 safe-write design: `implemented` for `ctoai_evidence_pack_refresh` with MCP enabled `True`.
-- P7 cockpit handoff: `ready`; smoke `14/14`; safe-write audits `5/5`; release files `35`; action audit records `129`.
+- P7 cockpit handoff: `ready`; smoke `14/14`; safe-write audits `5/5`; release files `35`; action audit records `135`.
 - OTClient helper: `blocked`; release gate `blocked`; module contract `passed` (32/32); sandbox queue `passed`; runtime `ready_for_readycheck`; first step `local_ready`.
 - BackgroundNoScreen: `blocked`; integrity `untrusted_pin`; capability `missing`; runtime `unknown`.
 - P9 Conditions shadow: `operational_acceptance_blocked`; contract `True`; fresh `True`; fixtures `passed`; runtime readiness `False`.
@@ -4055,7 +4152,7 @@ Next safe command: Design the next P7 plugin action only after risk model covera
 ```markdown
 # Engine Brain File Tree
 
-Generated at: `2026-07-11T19:36:35+00:00`
+Generated at: `2026-07-11T20:20:50+00:00`
 
 Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 `node_modules`, `runtime`, `logs`, `data`, `.tmp`, build outputs.
@@ -4152,38 +4249,38 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `AI/CHECKPOINT_2026-07-08.md` | 10285 |
 | `AI/CLASS_INDEX.md` | 1815 |
 | `AI/CODEX_CAPABILITY_MAP.md` | 5237 |
-| `AI/ENGINE_BRAIN_STATUS.md` | 135297 |
+| `AI/ENGINE_BRAIN_STATUS.md` | 136072 |
 | `AI/ENGINE_MEMORY.md` | 2971 |
-| `AI/FEATURE_ROADMAP.md` | 61461 |
+| `AI/FEATURE_ROADMAP.md` | 62304 |
 | `AI/generated/DOC_SYNC.json` | 1164 |
 | `AI/generated/DOC_SYNC.md` | 681 |
-| `AI/generated/ENGINE_BRAIN_PACK.json` | 6186 |
-| `AI/generated/ENGINE_BRAIN_PACK.md` | 296148 |
-| `AI/generated/ENV_DOCTOR.json` | 7418 |
+| `AI/generated/ENGINE_BRAIN_PACK.json` | 6363 |
+| `AI/generated/ENGINE_BRAIN_PACK.md` | 301310 |
+| `AI/generated/ENV_DOCTOR.json` | 7400 |
 | `AI/generated/ENV_DOCTOR.md` | 1263 |
-| `AI/generated/FILE_TREE.md` | 70869 |
+| `AI/generated/FILE_TREE.md` | 71212 |
 | `AI/generated/manifest.json` | 2062 |
-| `AI/generated/OWNERSHIP_MAP.json` | 17019 |
-| `AI/generated/OWNERSHIP_MAP.md` | 6640 |
+| `AI/generated/OWNERSHIP_MAP.json` | 16978 |
+| `AI/generated/OWNERSHIP_MAP.md` | 6611 |
 | `AI/generated/P6_CODEX_INTEGRATION_READINESS.json` | 11010 |
 | `AI/generated/P6_CODEX_INTEGRATION_READINESS.md` | 6915 |
 | `AI/generated/P7_ACTION_READINESS.json` | 4870 |
 | `AI/generated/P7_ACTION_READINESS.md` | 1142 |
-| `AI/generated/P7_OPERATOR_BRIEF.json` | 7308 |
-| `AI/generated/P7_OPERATOR_BRIEF.md` | 1645 |
+| `AI/generated/P7_OPERATOR_BRIEF.json` | 7282 |
+| `AI/generated/P7_OPERATOR_BRIEF.md` | 1619 |
 | `AI/generated/P7_OPERATOR_WORKFLOW.json` | 4690 |
 | `AI/generated/P7_OPERATOR_WORKFLOW.md` | 3015 |
 | `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.json` | 2705 |
 | `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.md` | 2024 |
-| `AI/generated/SYMBOL_MAP.md` | 280166 |
+| `AI/generated/SYMBOL_MAP.md` | 283566 |
 | `AI/KNOWN_BUGS.md` | 1384 |
 | `AI/LUA_INDEX.md` | 2874 |
 | `AI/OPERATIONS_AUDIT.md` | 5139 |
 | `AI/OTCLIENT_INDEX.md` | 3675 |
-| `AI/P8_P16_EXECUTION_ROADMAP.md` | 9015 |
+| `AI/P8_P16_EXECUTION_ROADMAP.md` | 10156 |
 | `AI/PACKET_INDEX.md` | 1405 |
 | `AI/PROJECT_CONTEXT.md` | 3648 |
-| `AI/README.md` | 2735 |
+| `AI/README.md` | 2927 |
 | `AI/RULEBOOK.md` | 4666 |
 | `AI/SPECIALIZED_PROMPTS.md` | 2904 |
 | `AI/SYSTEM_PROMPT.md` | 2486 |
@@ -4489,7 +4586,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `docs/history/sprints/SPRINT-069.md` | 1316 |
 | `docs/history/sprints/SPRINT_007_AGENT_EXECUTION_REPORT.md` | 4393 |
 | `docs/HYBRID_BOT_IMPLEMENTATION.md` | 12154 |
-| `docs/INDEX.md` | 3807 |
+| `docs/INDEX.md` | 4000 |
 | `docs/INFRASTRUCTURE_CANONICAL.md` | 2069 |
 | `docs/INFRASTRUCTURE_DECISION_LOG.md` | 2450 |
 | `docs/ISSUE_TRIAGE.md` | 1784 |
@@ -4503,12 +4600,13 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `docs/otclient/helper_redesign.md` | 7979 |
 | `docs/otclient/HELPER_RUNTIME_BRIDGE_V1.md` | 2578 |
 | `docs/otclient/HELPER_RUNTIME_MODULE_GATES_V1.md` | 4319 |
-| `docs/otclient/P9_CONDITIONS_SHADOW_REPLAY_DESIGN.md` | 5990 |
+| `docs/otclient/P9_CONDITIONS_SHADOW_ACCEPTANCE.md` | 3034 |
+| `docs/otclient/P9_CONDITIONS_SHADOW_REPLAY_DESIGN.md` | 6390 |
 | `docs/otclient/solteria_helper_development_plan.md` | 10485 |
 | `docs/otclient/solteria_helper_input_contracts.md` | 4430 |
 | `docs/otclient/solteria_helper_module_contract.md` | 4360 |
 | `docs/otclient/solteria_helper_module_workplan.md` | 12889 |
-| `docs/otclient/solteria_helper_next_modules_plan.md` | 18274 |
+| `docs/otclient/solteria_helper_next_modules_plan.md` | 18454 |
 | `docs/otclient/solteria_helper_sandbox_smoke_queue.md` | 10222 |
 | `docs/otclient/solteria_helper_shell_budget_plan.md` | 4261 |
 | `docs/otclient/solteria_helper_supplemental_refactor_plan.md` | 27770 |
@@ -4538,7 +4636,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `docs/REPO_HYGIENE_POLICY.md` | 4830 |
 | `docs/REPO_SCHEMA.md` | 10994 |
 | `docs/ROADMAP_V0.2.0_TO_V1.0.0.md` | 878 |
-| `docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md` | 8022 |
+| `docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md` | 8303 |
 | `docs/runbook-althea-enc3-reverseeng.md` | 3502 |
 | `docs/runbook-azure-activity-log-interpretation.md` | 2855 |
 | `docs/runbook-disk-emergency.md` | 2223 |
@@ -4676,6 +4774,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `schemas/conditions-p8-proof.schema.json` | 2493 |
 | `schemas/conditions-recovery-proof.schema.json` | 1759 |
 | `schemas/conditions-recovery-trace.schema.json` | 1619 |
+| `schemas/conditions-shadow-acceptance.schema.json` | 8029 |
 | `schemas/conditions-shadow-profile.schema.json` | 1312 |
 | `schemas/conditions-shadow-replay-report.schema.json` | 4775 |
 | `schemas/conditions-shadow-scenario-pack.schema.json` | 1353 |
@@ -4804,7 +4903,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/ops/core_guard.py` | 3960 |
 | `scripts/ops/ctoa-vps.ps1` | 92112 |
 | `scripts/ops/ctoa_env_doctor.py` | 6218 |
-| `scripts/ops/ctoa_full_workspace_audit.py` | 32136 |
+| `scripts/ops/ctoa_full_workspace_audit.py` | 32417 |
 | `scripts/ops/ctoa_helper_smoke_report.py` | 10065 |
 | `scripts/ops/ctoa_helper_ui_mockup_v4.py` | 6281 |
 | `scripts/ops/ctoa_helper_ui_preview.py` | 58270 |
@@ -4821,7 +4920,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/ops/depack_window_aware_focused.py` | 8002 |
 | `scripts/ops/engine_brain_doctor.py` | 19184 |
 | `scripts/ops/engine_brain_index.py` | 118790 |
-| `scripts/ops/engine_brain_pack.py` | 9614 |
+| `scripts/ops/engine_brain_pack.py` | 9730 |
 | `scripts/ops/evidence_retention.py` | 2057 |
 | `scripts/ops/git_exec.py` | 2142 |
 | `scripts/ops/gs-api-validator.py` | 6610 |
@@ -4844,19 +4943,17 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/ops/nightly_stability.py` | 11554 |
 | `scripts/ops/orchestrator-loop-worker.ps1` | 2613 |
 | `scripts/ops/orchestrator-loop.ps1` | 6161 |
+| `scripts/ops/otclient_conditions_shadow_acceptance.py` | 33276 |
 | `scripts/ops/otclient_conditions_shadow_replay.py` | 58656 |
 | `scripts/ops/otclient_external_bot_intake.py` | 14940 |
-| `scripts/ops/otclient_headless_evidence.py` | 20596 |
-| `scripts/ops/otclient_headless_status.py` | 27138 |
+| `scripts/ops/otclient_headless_evidence.py` | 20797 |
+| `scripts/ops/otclient_headless_status.py` | 31346 |
 | `scripts/ops/otclient_helper_module_audit.py` | 32239 |
 | `scripts/ops/otclient_helper_module_contract.py` | 27457 |
 | `scripts/ops/otclient_helper_next_modules_plan.py` | 30438 |
 | `scripts/ops/otclient_helper_profile_audit.py` | 5236 |
 | `scripts/ops/otclient_helper_shell_budget_plan.py` | 12627 |
-| `scripts/ops/otclient_input_contract_fixtures.py` | 13415 |
-| `scripts/ops/otclient_recovery_bridge_sandbox_smoke.py` | 5749 |
-| `scripts/ops/otclient_runtime_module_gates_sandbox_smoke.py` | 15367 |
-| `scripts/ops/phase5_nightly_che
+| `scripts/ops/otclient_input_contract_fixt
 
 [truncated]
 ```
@@ -4867,7 +4964,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 ```markdown
 # Engine Brain Symbol Map
 
-Generated at: `2026-07-11T19:36:35+00:00`
+Generated at: `2026-07-11T20:20:50+00:00`
 
 This is a lightweight map for navigation, not a full source dump.
 

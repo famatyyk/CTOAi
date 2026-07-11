@@ -1,6 +1,6 @@
 # CTOAi Three Development Plans
 
-Basis: full workspace audit with `41858` inventoried files and `1347` git-tracked files.
+Basis: full workspace audit with `41951` inventoried files and `1364` git-tracked files.
 
 ## Plan 1: Helper-First Productization
 
@@ -12,7 +12,7 @@ Goal: turn the OTClient/Solteria Helper into a safe, repeatable product lane bef
 - Require `PrepareDev`, `ValidateDev`, `SmokePreflight`, in-world `SmokeAttachAll`, and explicit live approval.
 - Expand `otclient_helper_profile_audit.py` from text checks toward schema-backed migration validation.
 - Keep Control Center Helper status read-only and backed by runtime artifacts.
-- Treat P8 `BackgroundNoScreen` as `implementation_complete` but `operational_acceptance_blocked`: keep it the default routine Helper evidence lane with no mouse/keyboard input, focus, screenshots, client launch/stop, or live-client writes; accept it only after an official promotion-bound trusted pin, a fresh capability heartbeat, and full no-action producer/consumer parity pass together. P9 Conditions is offline/staging-complete, but its operational acceptance and P10 remain blocked until accepted P8, real Conditions, and hash-bound Recovery proofs pass together.
+- Treat P8 `BackgroundNoScreen` as `implementation_complete` but `operational_acceptance_blocked`: keep it the default routine Helper evidence lane with no mouse/keyboard input, focus, screenshots, client launch/stop, or live-client writes; accept it only after an official promotion-bound trusted pin, a fresh capability heartbeat, and full no-action producer/consumer parity pass together. The current historical pin is `legacy_or_unbound_attestation`; its stable 57/58 diagnostic parity and one executable-profile drift are informational only and cannot be rebound into trust. P9 Conditions is offline/staging-complete and now has a strict separately confirmed data-only acceptance boundary, but current operational evidence writes no receipt and P10 remains blocked until accepted P8, real Conditions, and hash-bound Recovery proofs pass together.
 - Keep the post-Recovery runtime sequence fixed: Conditions paralyze-only gate, then Equipment ring-only rollback gate, then Heal Friend exact-whitelist gate. Require action-bound predecessor traces and current `RuntimeModuleGatesSandboxSmoke` evidence; Combat and CaveBot remain `deferred_high_risk` and may receive passive refactor work only.
 
 ### 31-60 Days

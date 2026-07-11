@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-11T19:36:35+00:00",
+  "generated_at": "2026-07-11T20:20:50+00:00",
   "status": "implemented",
   "decision": "ready_for_dry_run_operation",
   "mode": "dry_run_first",
@@ -19,9 +19,9 @@
     "control_center_enabled": true,
     "risk_model_present": true,
     "audit_seen": true,
-    "audit_record_count": 66,
-    "audit_dry_run_count": 38,
-    "audit_confirmed_count": 28,
+    "audit_record_count": 69,
+    "audit_dry_run_count": 39,
+    "audit_confirmed_count": 30,
     "expected_mcp_tool": "ctoai_evidence_pack_refresh",
     "plugin_mcp_allowed": true,
     "missing_gates": []

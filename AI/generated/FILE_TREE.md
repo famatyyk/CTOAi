@@ -1,6 +1,6 @@
 # Engine Brain File Tree
 
-Generated at: `2026-07-11T19:36:35+00:00`
+Generated at: `2026-07-11T20:20:50+00:00`
 
 Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 `node_modules`, `runtime`, `logs`, `data`, `.tmp`, build outputs.
@@ -97,38 +97,38 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `AI/CHECKPOINT_2026-07-08.md` | 10285 |
 | `AI/CLASS_INDEX.md` | 1815 |
 | `AI/CODEX_CAPABILITY_MAP.md` | 5237 |
-| `AI/ENGINE_BRAIN_STATUS.md` | 135297 |
+| `AI/ENGINE_BRAIN_STATUS.md` | 136072 |
 | `AI/ENGINE_MEMORY.md` | 2971 |
-| `AI/FEATURE_ROADMAP.md` | 61461 |
+| `AI/FEATURE_ROADMAP.md` | 62304 |
 | `AI/generated/DOC_SYNC.json` | 1164 |
 | `AI/generated/DOC_SYNC.md` | 681 |
-| `AI/generated/ENGINE_BRAIN_PACK.json` | 6186 |
-| `AI/generated/ENGINE_BRAIN_PACK.md` | 296148 |
-| `AI/generated/ENV_DOCTOR.json` | 7418 |
+| `AI/generated/ENGINE_BRAIN_PACK.json` | 6363 |
+| `AI/generated/ENGINE_BRAIN_PACK.md` | 301310 |
+| `AI/generated/ENV_DOCTOR.json` | 7400 |
 | `AI/generated/ENV_DOCTOR.md` | 1263 |
-| `AI/generated/FILE_TREE.md` | 70869 |
+| `AI/generated/FILE_TREE.md` | 71212 |
 | `AI/generated/manifest.json` | 2062 |
-| `AI/generated/OWNERSHIP_MAP.json` | 17019 |
-| `AI/generated/OWNERSHIP_MAP.md` | 6640 |
+| `AI/generated/OWNERSHIP_MAP.json` | 16978 |
+| `AI/generated/OWNERSHIP_MAP.md` | 6611 |
 | `AI/generated/P6_CODEX_INTEGRATION_READINESS.json` | 11010 |
 | `AI/generated/P6_CODEX_INTEGRATION_READINESS.md` | 6915 |
 | `AI/generated/P7_ACTION_READINESS.json` | 4870 |
 | `AI/generated/P7_ACTION_READINESS.md` | 1142 |
-| `AI/generated/P7_OPERATOR_BRIEF.json` | 7308 |
-| `AI/generated/P7_OPERATOR_BRIEF.md` | 1645 |
+| `AI/generated/P7_OPERATOR_BRIEF.json` | 7282 |
+| `AI/generated/P7_OPERATOR_BRIEF.md` | 1619 |
 | `AI/generated/P7_OPERATOR_WORKFLOW.json` | 4690 |
 | `AI/generated/P7_OPERATOR_WORKFLOW.md` | 3015 |
 | `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.json` | 2705 |
 | `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.md` | 2024 |
-| `AI/generated/SYMBOL_MAP.md` | 280166 |
+| `AI/generated/SYMBOL_MAP.md` | 283566 |
 | `AI/KNOWN_BUGS.md` | 1384 |
 | `AI/LUA_INDEX.md` | 2874 |
 | `AI/OPERATIONS_AUDIT.md` | 5139 |
 | `AI/OTCLIENT_INDEX.md` | 3675 |
-| `AI/P8_P16_EXECUTION_ROADMAP.md` | 9015 |
+| `AI/P8_P16_EXECUTION_ROADMAP.md` | 10156 |
 | `AI/PACKET_INDEX.md` | 1405 |
 | `AI/PROJECT_CONTEXT.md` | 3648 |
-| `AI/README.md` | 2735 |
+| `AI/README.md` | 2927 |
 | `AI/RULEBOOK.md` | 4666 |
 | `AI/SPECIALIZED_PROMPTS.md` | 2904 |
 | `AI/SYSTEM_PROMPT.md` | 2486 |
@@ -434,7 +434,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `docs/history/sprints/SPRINT-069.md` | 1316 |
 | `docs/history/sprints/SPRINT_007_AGENT_EXECUTION_REPORT.md` | 4393 |
 | `docs/HYBRID_BOT_IMPLEMENTATION.md` | 12154 |
-| `docs/INDEX.md` | 3807 |
+| `docs/INDEX.md` | 4000 |
 | `docs/INFRASTRUCTURE_CANONICAL.md` | 2069 |
 | `docs/INFRASTRUCTURE_DECISION_LOG.md` | 2450 |
 | `docs/ISSUE_TRIAGE.md` | 1784 |
@@ -448,12 +448,13 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `docs/otclient/helper_redesign.md` | 7979 |
 | `docs/otclient/HELPER_RUNTIME_BRIDGE_V1.md` | 2578 |
 | `docs/otclient/HELPER_RUNTIME_MODULE_GATES_V1.md` | 4319 |
-| `docs/otclient/P9_CONDITIONS_SHADOW_REPLAY_DESIGN.md` | 5990 |
+| `docs/otclient/P9_CONDITIONS_SHADOW_ACCEPTANCE.md` | 3034 |
+| `docs/otclient/P9_CONDITIONS_SHADOW_REPLAY_DESIGN.md` | 6390 |
 | `docs/otclient/solteria_helper_development_plan.md` | 10485 |
 | `docs/otclient/solteria_helper_input_contracts.md` | 4430 |
 | `docs/otclient/solteria_helper_module_contract.md` | 4360 |
 | `docs/otclient/solteria_helper_module_workplan.md` | 12889 |
-| `docs/otclient/solteria_helper_next_modules_plan.md` | 18274 |
+| `docs/otclient/solteria_helper_next_modules_plan.md` | 18454 |
 | `docs/otclient/solteria_helper_sandbox_smoke_queue.md` | 10222 |
 | `docs/otclient/solteria_helper_shell_budget_plan.md` | 4261 |
 | `docs/otclient/solteria_helper_supplemental_refactor_plan.md` | 27770 |
@@ -483,7 +484,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `docs/REPO_HYGIENE_POLICY.md` | 4830 |
 | `docs/REPO_SCHEMA.md` | 10994 |
 | `docs/ROADMAP_V0.2.0_TO_V1.0.0.md` | 878 |
-| `docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md` | 8022 |
+| `docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md` | 8303 |
 | `docs/runbook-althea-enc3-reverseeng.md` | 3502 |
 | `docs/runbook-azure-activity-log-interpretation.md` | 2855 |
 | `docs/runbook-disk-emergency.md` | 2223 |
@@ -621,6 +622,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `schemas/conditions-p8-proof.schema.json` | 2493 |
 | `schemas/conditions-recovery-proof.schema.json` | 1759 |
 | `schemas/conditions-recovery-trace.schema.json` | 1619 |
+| `schemas/conditions-shadow-acceptance.schema.json` | 8029 |
 | `schemas/conditions-shadow-profile.schema.json` | 1312 |
 | `schemas/conditions-shadow-replay-report.schema.json` | 4775 |
 | `schemas/conditions-shadow-scenario-pack.schema.json` | 1353 |
@@ -749,7 +751,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/ops/core_guard.py` | 3960 |
 | `scripts/ops/ctoa-vps.ps1` | 92112 |
 | `scripts/ops/ctoa_env_doctor.py` | 6218 |
-| `scripts/ops/ctoa_full_workspace_audit.py` | 32136 |
+| `scripts/ops/ctoa_full_workspace_audit.py` | 32417 |
 | `scripts/ops/ctoa_helper_smoke_report.py` | 10065 |
 | `scripts/ops/ctoa_helper_ui_mockup_v4.py` | 6281 |
 | `scripts/ops/ctoa_helper_ui_preview.py` | 58270 |
@@ -766,7 +768,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/ops/depack_window_aware_focused.py` | 8002 |
 | `scripts/ops/engine_brain_doctor.py` | 19184 |
 | `scripts/ops/engine_brain_index.py` | 118790 |
-| `scripts/ops/engine_brain_pack.py` | 9614 |
+| `scripts/ops/engine_brain_pack.py` | 9730 |
 | `scripts/ops/evidence_retention.py` | 2057 |
 | `scripts/ops/git_exec.py` | 2142 |
 | `scripts/ops/gs-api-validator.py` | 6610 |
@@ -789,10 +791,11 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/ops/nightly_stability.py` | 11554 |
 | `scripts/ops/orchestrator-loop-worker.ps1` | 2613 |
 | `scripts/ops/orchestrator-loop.ps1` | 6161 |
+| `scripts/ops/otclient_conditions_shadow_acceptance.py` | 33276 |
 | `scripts/ops/otclient_conditions_shadow_replay.py` | 58656 |
 | `scripts/ops/otclient_external_bot_intake.py` | 14940 |
-| `scripts/ops/otclient_headless_evidence.py` | 20596 |
-| `scripts/ops/otclient_headless_status.py` | 27138 |
+| `scripts/ops/otclient_headless_evidence.py` | 20797 |
+| `scripts/ops/otclient_headless_status.py` | 31346 |
 | `scripts/ops/otclient_helper_module_audit.py` | 32239 |
 | `scripts/ops/otclient_helper_module_contract.py` | 27457 |
 | `scripts/ops/otclient_helper_next_modules_plan.py` | 30438 |
@@ -805,7 +808,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/ops/phase5_nightly_sync.py` | 24770 |
 | `scripts/ops/project_progress_diagram.py` | 6516 |
 | `scripts/ops/queue_enqueue_job.py` | 1142 |
-| `scripts/ops/release_evidence_pack.py` | 82823 |
+| `scripts/ops/release_evidence_pack.py` | 89973 |
 | `scripts/ops/remove-mythibia-autosync-task.ps1` | 460 |
 | `scripts/ops/remove-mythibia-watcher-task.ps1` | 819 |
 | `scripts/ops/remove-phase5-morning-sync-task.ps1` | 415 |
@@ -894,6 +897,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `tests/e2e/__init__.py` | 0 |
 | `tests/e2e/test_bot_live.py` | 3380 |
 | `tests/e2e/test_browser_smoke.py` | 12736 |
+| `tests/fixtures/otclient_conditions_shadow_acceptance/scenarios.json` | 870 |
 | `tests/fixtures/otclient_conditions_shadow_replay/positive-observation.json` | 572 |
 | `tests/fixtures/otclient_conditions_shadow_replay/positive-p8-proof.json` | 1049 |
 | `tests/fixtures/otclient_conditions_shadow_replay/positive-recovery-proof.json` | 816 |
@@ -957,7 +961,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `tests/test_docs_site_security.py` | 3701 |
 | `tests/test_engine_brain_doctor.py` | 2989 |
 | `tests/test_engine_brain_index.py` | 77046 |
-| `tests/test_engine_brain_pack.py` | 4278 |
+| `tests/test_engine_brain_pack.py` | 4418 |
 | `tests/test_evidence_retention_policy.py` | 994 |
 | `tests/test_executor_deliverable_security.py` | 1736 |
 | `tests/test_generated_manifest_safety.py` | 4892 |
@@ -997,10 +1001,11 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `tests/test_nightly_stability_artifact.py` | 3420 |
 | `tests/test_ops_process_safety.py` | 9140 |
 | `tests/test_orchestrator_loop_security.py` | 2126 |
+| `tests/test_otclient_conditions_shadow_acceptance.py` | 22148 |
 | `tests/test_otclient_conditions_shadow_consumers.py` | 15537 |
 | `tests/test_otclient_conditions_shadow_replay.py` | 30384 |
 | `tests/test_otclient_external_bot_intake.py` | 4551 |
-| `tests/test_otclient_headless_status.py` | 35398 |
+| `tests/test_otclient_headless_status.py` | 40241 |
 | `tests/test_otclient_helper_module_audit.py` | 21111 |
 | `tests/test_otclient_helper_module_contract.py` | 39127 |
 | `tests/test_otclient_helper_next_modules_plan.py` | 14101 |
@@ -1020,7 +1025,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `tests/test_process_safety.py` | 1328 |
 | `tests/test_project_progress_diagram.py` | 3190 |
 | `tests/test_queue_worker_security.py` | 1250 |
-| `tests/test_release_evidence_pack.py` | 36322 |
+| `tests/test_release_evidence_pack.py` | 39800 |
 | `tests/test_repo_hygiene_audit.py` | 3484 |
 | `tests/test_repo_hygiene_distribution.py` | 1353 |
 | `tests/test_repo_hygiene_migration_plan.py` | 2735 |
@@ -1137,7 +1142,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `web/src/components/ControlCenterActionPanel.tsx` | 13328 |
 | `web/src/components/ControlCenterChatPanel.tsx` | 21064 |
 | `web/src/components/ControlCenterDetailPanels.tsx` | 23438 |
-| `web/src/components/ControlCenterEvidencePanel.tsx` | 65997 |
+| `web/src/components/ControlCenterEvidencePanel.tsx` | 66400 |
 | `web/src/components/ControlCenterLegacyPanels.tsx` | 8451 |
 | `web/src/components/ControlCenterLiveProbe.tsx` | 2689 |
 | `web/src/components/ControlCenterOpsGrid.tsx` | 4824 |
@@ -1153,7 +1158,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `web/src/lib/__tests__/controlCenterActions.test.ts` | 15561 |
 | `web/src/lib/__tests__/controlCenterAuth.test.ts` | 1448 |
 | `web/src/lib/__tests__/controlCenterDisplayPath.test.ts` | 1875 |
-| `web/src/lib/__tests__/controlCenterEvidence.test.ts` | 85762 |
+| `web/src/lib/__tests__/controlCenterEvidence.test.ts` | 88461 |
 | `web/src/lib/__tests__/controlCenterEvidenceAccess.test.ts` | 1734 |
 | `web/src/lib/__tests__/controlCenterMarkdownReport.test.ts` | 3850 |
 | `web/src/lib/__tests__/controlCenterOps.test.ts` | 23342 |
@@ -1172,7 +1177,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `web/src/lib/controlCenterActions.ts` | 13042 |
 | `web/src/lib/controlCenterAuth.ts` | 1559 |
 | `web/src/lib/controlCenterDisplayPath.ts` | 1492 |
-| `web/src/lib/controlCenterEvidence.ts` | 119639 |
+| `web/src/lib/controlCenterEvidence.ts` | 125938 |
 | `web/src/lib/controlCenterEvidenceAccess.ts` | 1708 |
 | `web/src/lib/controlCenterEvidenceConfig.ts` | 5842 |
 | `web/src/lib/controlCenterMarkdownReport.ts` | 1446 |

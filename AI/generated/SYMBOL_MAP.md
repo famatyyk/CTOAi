@@ -1,6 +1,6 @@
 # Engine Brain Symbol Map
 
-Generated at: `2026-07-11T19:36:35+00:00`
+Generated at: `2026-07-11T20:20:50+00:00`
 
 This is a lightweight map for navigation, not a full source dump.
 
@@ -3375,12 +3375,12 @@ This is a lightweight map for navigation, not a full source dump.
 
 ## `scripts/ops/engine_brain_pack.py`
 
-- L147: def is_secretish_path(path)
-- L160: def read_text(path)
-- L164: def fence_for(path)
-- L181: def append_file_section(lines, rel_path)
-- L220: def build_pack(pack_path, manifest_path)
-- L277: def main()
+- L149: def is_secretish_path(path)
+- L162: def read_text(path)
+- L166: def fence_for(path)
+- L183: def append_file_section(lines, rel_path)
+- L222: def build_pack(pack_path, manifest_path)
+- L279: def main()
 
 ## `scripts/ops/evidence_retention.py`
 
@@ -3510,6 +3510,34 @@ This is a lightweight map for navigation, not a full source dump.
 - L163: function Show-Status
 - L175: function Get-LogTail
 
+## `scripts/ops/otclient_conditions_shadow_acceptance.py`
+
+- L143: class EvidencePaths
+- L154: class EvidenceBundle
+- L167: def _now_unix_ms()
+- L171: def _is_int(value)
+- L175: def _is_sha256(value)
+- L183: def _false_flags(payload)
+- L187: def _empty_ledger(payload)
+- L191: def _ordered_blockers(values)
+- L199: def _same_path(left, right)
+- L205: def _is_within(path, root)
+- L213: def _path_has_reparse_component(path, boundary)
+- L238: def _validate_output_path(path)
+- L254: def read_evidence(paths)
+- L282: def evidence_fingerprint(bundle)
+- L296: def _report_no_action_contract(payload)
+- L328: def _operational_inputs_fixture(bundle)
+- L342: def _canonical_operational_paths(paths)
+- L361: def _current_inputs_loaded(bundle)
+- L374: def _safe_input_hashes(trace)
+- L384: def _acceptance_basis(payload)
+- L401: def _receipt_contract_valid(payload)
+- L525: def evaluate_acceptance(paths)
+- L714: def write_accepted_receipt(path)
+- L815: def parse_args(argv)
+- L840: def main(argv)
+
 ## `scripts/ops/otclient_conditions_shadow_replay.py`
 
 - L263: class DuplicateKeyError
@@ -3585,41 +3613,44 @@ This is a lightweight map for navigation, not a full source dump.
 - L83: def read_bytes_bounded(path, max_bytes)
 - L108: def bounded_tail_text(path, max_bytes)
 - L135: def load_json_bounded(path, max_bytes)
-- L161: def _json_object_without_duplicates(pairs)
-- L172: def _reject_json_non_finite(value)
-- L176: def _json_finite_float(value)
-- L183: def _json_shape_within_bounds(value)
-- L200: def current_session(log_text)
-- L207: def latest_api_probe(session_text)
-- L216: def latest_runtime_state(session_text)
-- L221: def _line_age_ms(line, now)
-- L238: def parse_api_probe(line, now)
-- L265: def summarize_log(path, now)
-- L284: def _normalized_conditions_observation(status, errors)
-- L317: def summarize_conditions_observation(value)
-- L433: def summarize_capability(payload, load_status, now_unix_ms)
+- L146: def parse_json_object_bytes(raw)
+- L167: def _json_object_without_duplicates(pairs)
+- L178: def _reject_json_non_finite(value)
+- L182: def _json_finite_float(value)
+- L189: def _json_shape_within_bounds(value)
+- L206: def current_session(log_text)
+- L213: def latest_api_probe(session_text)
+- L222: def latest_runtime_state(session_text)
+- L227: def _line_age_ms(line, now)
+- L244: def parse_api_probe(line, now)
+- L271: def summarize_log(path, now)
+- L290: def _normalized_conditions_observation(status, errors)
+- L323: def summarize_conditions_observation(value)
+- L439: def summarize_capability(payload, load_status, now_unix_ms)
 
 ## `scripts/ops/otclient_headless_status.py`
 
-- L66: def _utc_now()
-- L70: def _canonical_text(path)
-- L74: def _same_canonical_path(left, right)
-- L78: def _is_within(path, root)
-- L86: def _require_within(path, root, label)
-- L93: def _require_exact(path, expected, label)
-- L100: def _manifest_relative_path(value)
-- L125: def _same_file_identity(left, right)
-- L129: def _file_fingerprint(path, max_bytes)
-- L174: def _validated_manifest_entries(manifest)
-- L232: def validate_live_pin(live_manifest_path, live_promotion_path, client_root)
-- L341: def inspect_live_manifest(entries, pin, client_root)
-- L430: def _deterministic_capability_report(client_root, explicit)
-- L441: def _select_log(client_root)
-- L460: def _fingerprints_unchanged(before, client_root)
-- L479: def build_status()
-- L654: def write_json_atomic(path, payload)
-- L670: def parse_args(argv)
-- L703: def main(argv)
+- L79: def _utc_now()
+- L83: def _canonical_text(path)
+- L87: def _same_canonical_path(left, right)
+- L91: def _is_within(path, root)
+- L99: def _require_within(path, root, label)
+- L106: def _require_exact(path, expected, label)
+- L113: def _manifest_relative_path(value)
+- L138: def _same_file_identity(left, right)
+- L142: def _file_fingerprint(path, max_bytes)
+- L187: def _validated_manifest_entries(manifest)
+- L245: def validate_live_pin(live_manifest_path, live_promotion_path, client_root)
+- L361: def _pin_remediation(errors)
+- L397: def inspect_live_manifest(entries, pin, client_root)
+- L455: def _inspect_manifest_entries(entries, client_root)
+- L522: def _deterministic_capability_report(client_root, explicit)
+- L533: def _select_log(client_root)
+- L552: def _fingerprints_unchanged(before, client_root)
+- L571: def build_status()
+- L758: def write_json_atomic(path, payload)
+- L774: def parse_args(argv)
+- L807: def main(argv)
 
 ## `scripts/ops/otclient_helper_module_audit.py`
 
@@ -3782,48 +3813,51 @@ This is a lightweight map for navigation, not a full source dump.
 
 ## `scripts/ops/release_evidence_pack.py`
 
-- L324: def _now_iso()
-- L333: def _safe_filename(value)
-- L341: def build_release_evidence_pack()
-- L377: def write_release_evidence_pack(output_dir, pack)
-- L418: def _configured_path(env_name, fallback)
-- L423: def _safe_file_stat(path)
-- L433: def _safe_dir_stat(path)
-- L443: def _read_text_bounded(path, max_bytes)
-- L459: def _read_json(path)
-- L466: def _read_json_or_none(path)
-- L481: class _DuplicateJsonKeyError
-- L485: def _reject_duplicate_json_pairs(pairs)
-- L494: def _reject_json_constant(value)
-- L498: def _parse_finite_json_float(value)
-- L505: def _json_shape_within_bounds(value)
-- L522: def _read_json_strict_or_none(path)
-- L547: def _conditions_shadow_is_int(value)
-- L551: def _conditions_shadow_is_sha256(value)
-- L559: def _conditions_shadow_is_allowed(value, allowed)
-- L563: def _conditions_shadow_canonical_sha256(value)
-- L574: def _conditions_shadow_false_flags(payload)
-- L578: def _conditions_shadow_empty_ledger(payload)
-- L582: def _conditions_shadow_blockers_valid(value)
-- L593: def _conditions_shadow_unique_errors(errors)
-- L597: def _conditions_shadow_trace_errors(trace, generated_at_unix_ms)
-- L722: def _conditions_shadow_scenario_errors(pack)
-- L875: def _conditions_shadow_contract_errors(payload)
-- L937: def _conditions_shadow_summary(payload, path)
-- L1041: def _safe_nonnegative_int(value)
-- L1047: def _matches_exact_contract(value, expected)
-- L1058: def _parse_utc_timestamp(value)
-- L1070: def _background_status_summary(payload, path)
-- L1347: def _count_jsonl_records(path)
-- L1372: def _find_latest_markdown(releases_dir)
-- L1394: def _count_markdown_files(releases_dir)
-- L1402: def _helper_status(helper_dev_dir)
-- L1625: def _p7_operator_brief_status(operator_brief_path)
-- L1758: def _list_release_sprints(releases_dir)
-- L1800: def build_evidence_pack(releases_dir, quality_path, cost_report_path, action_audit_path, helper_dev_dir, operator_brief_path)
-- L1930: def render_markdown(pack)
-- L2072: def _build_parser()
-- L2130: def main()
+- L340: def _now_iso()
+- L349: def _safe_filename(value)
+- L357: def build_release_evidence_pack()
+- L393: def write_release_evidence_pack(output_dir, pack)
+- L434: def _configured_path(env_name, fallback)
+- L439: def _safe_file_stat(path)
+- L449: def _safe_dir_stat(path)
+- L459: def _read_text_bounded(path, max_bytes)
+- L475: def _read_json(path)
+- L482: def _read_json_or_none(path)
+- L497: class _DuplicateJsonKeyError
+- L501: def _reject_duplicate_json_pairs(pairs)
+- L510: def _reject_json_constant(value)
+- L514: def _parse_finite_json_float(value)
+- L521: def _json_shape_within_bounds(value)
+- L538: def _read_json_strict_or_none(path)
+- L563: def _conditions_shadow_is_int(value)
+- L567: def _conditions_shadow_is_sha256(value)
+- L575: def _conditions_shadow_is_allowed(value, allowed)
+- L579: def _conditions_shadow_canonical_sha256(value)
+- L590: def _conditions_shadow_false_flags(payload)
+- L594: def _conditions_shadow_empty_ledger(payload)
+- L598: def _conditions_shadow_blockers_valid(value)
+- L609: def _conditions_shadow_unique_errors(errors)
+- L613: def _conditions_shadow_trace_errors(trace, generated_at_unix_ms)
+- L738: def _conditions_shadow_scenario_errors(pack)
+- L891: def _conditions_shadow_contract_errors(payload)
+- L953: def _conditions_shadow_summary(payload, path)
+- L1057: def _safe_nonnegative_int(value)
+- L1063: def _matches_exact_contract(value, expected)
+- L1074: def _background_pin_error_valid(value)
+- L1111: def _background_pin_remediation_valid(value)
+- L1141: def _background_diagnostic_parity_valid(value)
+- L1204: def _parse_utc_timestamp(value)
+- L1216: def _background_status_summary(payload, path)
+- L1540: def _count_jsonl_records(path)
+- L1565: def _find_latest_markdown(releases_dir)
+- L1587: def _count_markdown_files(releases_dir)
+- L1595: def _helper_status(helper_dev_dir)
+- L1818: def _p7_operator_brief_status(operator_brief_path)
+- L1951: def _list_release_sprints(releases_dir)
+- L1993: def build_evidence_pack(releases_dir, quality_path, cost_report_path, action_audit_path, helper_dev_dir, operator_brief_path)
+- L2123: def render_markdown(pack)
+- L2265: def _build_parser()
+- L2323: def main()
 
 ## `scripts/ops/repo_hygiene_audit.py`
 
@@ -5415,8 +5449,8 @@ This is a lightweight map for navigation, not a full source dump.
 ## `tests/test_engine_brain_pack.py`
 
 - L9: def test_engine_brain_pack_writes_manifest_and_markdown(tmp_path)
-- L48: def test_engine_brain_pack_can_include_generated_sections(tmp_path)
-- L61: def test_engine_brain_pack_supports_helper_profile(tmp_path)
+- L49: def test_engine_brain_pack_can_include_generated_sections(tmp_path)
+- L62: def test_engine_brain_pack_supports_helper_profile(tmp_path)
 
 ## `tests/test_evidence_retention_policy.py`
 
@@ -5901,6 +5935,30 @@ This is a lightweight map for navigation, not a full source dump.
 - L31: def test_orchestrator_loop_launcher_verifies_pid_owner_before_stop()
 - L44: def test_orchestrator_loop_worker_uses_literal_paths_and_inherited_env()
 
+## `tests/test_otclient_conditions_shadow_acceptance.py`
+
+- L23: def _read_json(path)
+- L29: def _write_json(path, payload)
+- L34: def _ready_workspace(tmp_path, evaluated_at)
+- L162: def _allow_test_paths(monkeypatch)
+- L166: def _assert_no_action(receipt)
+- L173: def test_acceptance_schema_and_scenario_fixture_are_strict_and_closed()
+- L197: def test_ready_report_confirmation_matrix_is_fail_closed(tmp_path, monkeypatch, case)
+- L222: def test_noncanonical_paths_cannot_create_an_accepted_receipt(tmp_path)
+- L247: def test_report_mutations_never_accept(tmp_path, monkeypatch, mutation, expected_blocker)
+- L294: def test_future_or_stale_report_cannot_accept(tmp_path, monkeypatch, now_ms, expected_blocker)
+- L316: def test_duplicate_safe_or_unsafe_report_key_is_rejected(tmp_path, monkeypatch, duplicate_value)
+- L341: def test_fixture_operational_inputs_can_never_accept(tmp_path, monkeypatch)
+- L382: def test_changed_current_input_breaks_report_recomputation(tmp_path, monkeypatch)
+- L403: def test_only_contract_valid_accepted_receipt_can_be_written(tmp_path, monkeypatch)
+- L435: def test_forged_or_stale_receipt_cannot_cross_the_writer_boundary(tmp_path, monkeypatch)
+- L470: def test_accepted_receipt_rejects_resealed_basis_id_and_zero_hash_mutations(tmp_path, monkeypatch)
+- L500: def test_writer_rechecks_evidence_immediately_before_write(tmp_path, monkeypatch)
+- L512: def evaluate_with_late_change()
+- L534: def test_cli_writes_only_after_exact_confirmation(tmp_path, monkeypatch)
+- L577: def test_output_path_is_runtime_only_and_rejects_symlink(tmp_path, monkeypatch)
+- L598: def test_output_path_rejects_reparse_ancestor(tmp_path, monkeypatch)
+
 ## `tests/test_otclient_conditions_shadow_consumers.py`
 
 - L18: def _load_module(name, path)
@@ -5978,31 +6036,34 @@ This is a lightweight map for navigation, not a full source dump.
 - L187: def _set_conditions_observation(client, value)
 - L194: def test_bounded_tail_and_session_parser_ignore_old_errors(tmp_path)
 - L212: def test_background_status_is_ready_only_from_trusted_live_evidence(tmp_path)
-- L242: def test_valid_conditions_observation_is_strictly_normalized_without_changing_p8(tmp_path)
-- L297: def test_conditions_observation_mutations_are_classified_by_p8_safety(tmp_path, mutation, expected_error, p8_unsafe)
-- L355: def test_conditions_observation_timestamp_bounds(timestamp, expected_status)
-- L367: def test_conditions_observation_id_rejects_dot()
-- L377: def test_conditions_observation_json_schema_matches_sanitizer_bounds()
-- L389: def test_present_observation_is_unbound_when_parent_timestamp_is_invalid(tmp_path)
-- L422: def test_bounded_json_rejects_duplicate_keys_and_non_finite_numbers(tmp_path, mutation)
-- L485: def test_heartbeat_contract_fails_closed(tmp_path, mutation, expected_status)
-- L498: def test_heartbeat_must_be_newer_than_process_and_no_more_than_15_seconds_old(tmp_path)
-- L525: def test_ready_requires_one_active_process_with_positive_start_time(tmp_path, process_count, process_start_unix_ms)
-- L544: def test_missing_or_untrusted_pin_blocks_and_observer_never_creates_one(tmp_path)
-- L578: def test_live_promotion_cross_check_is_strict(tmp_path, field, value, expected_error)
-- L594: def test_live_manifest_requires_official_origin_and_schema(tmp_path)
-- L613: def test_manifest_scope_and_size_limits_fail_before_live_reads(tmp_path, invalid_kind)
-- L651: def test_live_file_hashing_stops_at_two_mib(tmp_path)
-- L663: def test_case_insensitive_manifest_alias_is_rejected(tmp_path)
-- L680: def test_executable_profile_drift_never_passes_parity(tmp_path)
-- L706: def test_actual_hashing_stops_at_remaining_aggregate_budget(tmp_path, monkeypatch)
-- L751: def test_only_deterministic_capability_path_is_accepted(tmp_path)
-- L769: def test_bounded_json_reader_rejects_oversize_and_symlink(tmp_path)
-- L784: def test_main_no_write_does_not_create_a_missing_pin(tmp_path, monkeypatch, capsys)
-- L817: def test_main_rejects_a_non_live_localappdata_root(tmp_path, monkeypatch)
-- L849: def test_main_requires_exact_repo_runtime_output(tmp_path, monkeypatch, invalid_target)
-- L890: def test_background_wrapper_has_positive_allowlist_and_guarded_primitives()
-- L958: def test_background_wrapper_publishes_only_after_external_invariants()
+- L250: def test_valid_conditions_observation_is_strictly_normalized_without_changing_p8(tmp_path)
+- L305: def test_conditions_observation_mutations_are_classified_by_p8_safety(tmp_path, mutation, expected_error, p8_unsafe)
+- L363: def test_conditions_observation_timestamp_bounds(timestamp, expected_status)
+- L375: def test_conditions_observation_id_rejects_dot()
+- L385: def test_conditions_observation_json_schema_matches_sanitizer_bounds()
+- L397: def test_present_observation_is_unbound_when_parent_timestamp_is_invalid(tmp_path)
+- L430: def test_bounded_json_rejects_duplicate_keys_and_non_finite_numbers(tmp_path, mutation)
+- L493: def test_heartbeat_contract_fails_closed(tmp_path, mutation, expected_status)
+- L506: def test_heartbeat_must_be_newer_than_process_and_no_more_than_15_seconds_old(tmp_path)
+- L533: def test_ready_requires_one_active_process_with_positive_start_time(tmp_path, process_count, process_start_unix_ms)
+- L552: def test_missing_or_untrusted_pin_blocks_and_observer_never_creates_one(tmp_path)
+- L591: def test_live_promotion_cross_check_is_strict(tmp_path, field, value, expected_error)
+- L607: def test_live_manifest_requires_official_origin_and_schema(tmp_path)
+- L623: def test_legacy_unbound_promotion_is_diagnosed_without_rebinding(tmp_path)
+- L670: def test_live_manifest_strict_parser_fails_closed(mutation, tmp_path)
+- L696: def test_untrusted_diagnostic_parity_exposes_profile_drift_without_acceptance(tmp_path)
+- L733: def test_manifest_scope_and_size_limits_fail_before_live_reads(tmp_path, invalid_kind)
+- L771: def test_live_file_hashing_stops_at_two_mib(tmp_path)
+- L783: def test_case_insensitive_manifest_alias_is_rejected(tmp_path)
+- L800: def test_executable_profile_drift_never_passes_parity(tmp_path)
+- L826: def test_actual_hashing_stops_at_remaining_aggregate_budget(tmp_path, monkeypatch)
+- L871: def test_only_deterministic_capability_path_is_accepted(tmp_path)
+- L889: def test_bounded_json_reader_rejects_oversize_and_symlink(tmp_path)
+- L904: def test_main_no_write_does_not_create_a_missing_pin(tmp_path, monkeypatch, capsys)
+- L937: def test_main_rejects_a_non_live_localappdata_root(tmp_path, monkeypatch)
+- L969: def test_main_requires_exact_repo_runtime_output(tmp_path, monkeypatch, invalid_target)
+- L1010: def test_background_wrapper_has_positive_allowlist_and_guarded_primitives()
+- L1078: def test_background_wrapper_publishes_only_after_external_invariants()
 
 ## `tests/test_otclient_helper_module_audit.py`
 
@@ -6242,16 +6303,16 @@ This is a lightweight map for navigation, not a full source dump.
 - L77: def test_build_evidence_pack_handles_missing_artifacts(tmp_path)
 - L107: def test_background_status_expires_without_affecting_live_promotion(tmp_path)
 - L132: def test_background_status_accepts_consistent_untrusted_pin_as_blocked_evidence(tmp_path)
-- L162: def test_background_status_invalid_contract_and_counts_fail_closed(tmp_path)
-- L211: def test_background_status_full_no_action_contract_mutations_fail_closed(tmp_path, mutation, expected_error)
-- L266: def test_build_evidence_pack_reads_current_artifacts(tmp_path)
-- L621: def test_build_evidence_pack_uses_configured_defaults(tmp_path, monkeypatch)
-- L688: def test_build_evidence_pack_rejects_symlinked_configured_json_and_audit(tmp_path)
-- L730: def test_build_evidence_pack_ignores_symlinked_release_markdown(tmp_path)
-- L763: def test_build_evidence_pack_rejects_symlinked_p7_operator_brief(tmp_path)
-- L803: def test_helper_status_rejects_symlinked_helper_dev_dir(tmp_path)
-- L825: def test_helper_status_blocks_inconsistent_releasable_gate_with_pending_blocker(tmp_path)
-- L861: def test_helper_status_promoted_requires_durable_live_promotion_evidence(tmp_path)
+- L203: def test_background_status_invalid_contract_and_counts_fail_closed(tmp_path)
+- L255: def test_background_status_full_no_action_contract_mutations_fail_closed(tmp_path, mutation, expected_error)
+- L337: def test_build_evidence_pack_reads_current_artifacts(tmp_path)
+- L702: def test_build_evidence_pack_uses_configured_defaults(tmp_path, monkeypatch)
+- L769: def test_build_evidence_pack_rejects_symlinked_configured_json_and_audit(tmp_path)
+- L811: def test_build_evidence_pack_ignores_symlinked_release_markdown(tmp_path)
+- L844: def test_build_evidence_pack_rejects_symlinked_p7_operator_brief(tmp_path)
+- L884: def test_helper_status_rejects_symlinked_helper_dev_dir(tmp_path)
+- L906: def test_helper_status_blocks_inconsistent_releasable_gate_with_pending_blocker(tmp_path)
+- L942: def test_helper_status_promoted_requires_durable_live_promotion_evidence(tmp_path)
 
 ## `tests/test_repo_hygiene_audit.py`
 
@@ -7101,18 +7162,18 @@ This is a lightweight map for navigation, not a full source dump.
 
 - L7: symbol EvidenceState
 - L47: symbol loadEvidence
-- L983: symbol MetricCard
-- L993: symbol placeholderSprints
-- L1000: symbol placeholderReleaseEvidenceFiles
-- L1006: symbol placeholderActionAuditRecords
-- L1023: symbol placeholderRecommendations
-- L1031: symbol placeholderArtifactChecks
-- L1041: symbol formatCheckName
-- L1045: symbol renderCountPills
-- L1065: symbol formatTimestamp
-- L1071: symbol formatBytes
-- L1078: symbol renderCostDrivers
-- L1122: symbol EvidenceLink
+- L985: symbol MetricCard
+- L995: symbol placeholderSprints
+- L1002: symbol placeholderReleaseEvidenceFiles
+- L1008: symbol placeholderActionAuditRecords
+- L1025: symbol placeholderRecommendations
+- L1033: symbol placeholderArtifactChecks
+- L1043: symbol formatCheckName
+- L1047: symbol renderCountPills
+- L1067: symbol formatTimestamp
+- L1073: symbol formatBytes
+- L1080: symbol renderCostDrivers
+- L1124: symbol EvidenceLink
 
 ## `web/src/components/ControlCenterLegacyPanels.tsx`
 
@@ -7287,56 +7348,59 @@ This is a lightweight map for navigation, not a full source dump.
 ## `web/src/lib/controlCenterEvidence.ts`
 
 - L8: symbol ControlCenterEvidence
-- L443: symbol ApiCostReportArtifact
-- L453: symbol ReleaseEvidenceFile
-- L673: symbol collectControlCenterEvidence
-- L787: symbol collectOperatorBriefCard
-- L876: symbol buildOperatorNextRecommendation
-- L1051: symbol isGuardedLiveCommand
-- L1055: symbol jsonHasDuplicateObjectKeys
-- L1150: symbol readStrictJsonIfExists
-- L1161: symbol readJsonIfExists
-- L1174: symbol readBoundedTextFileIfExists
-- L1202: symbol collectReleaseEvidenceDrilldown
-- L1263: symbol readMarkdownTitle
-- L1279: symbol collectReleaseComparison
-- L1337: symbol collectActionAuditDrilldown
-- L1439: symbol readBoundedControlCenterActionAuditLines
-- L1488: symbol countBy
-- L1497: symbol auditSummary
-- L1505: symbol sanitizeText
-- L1509: symbol collectArtifactHealth
-- L1700: symbol safeNonnegativeInteger
-- L1706: symbol matchesExactRecord
-- L1714: symbol summarizeBackgroundStatus
-- L1919: symbol hasExactKeys
-- L1925: symbol hasConditionsShadowNoActionContract
-- L1933: symbol isConditionsShadowSha
-- L1937: symbol conditionsShadowCanonicalValue
-- L1947: symbol conditionsShadowCanonicalSha
-- L1952: symbol isConditionsShadowIdentifier
-- L1956: symbol isConditionsShadowAge
-- L1960: symbol conditionsShadowBlockers
-- L1974: symbol stringArraysEqual
-- L1978: symbol validateConditionsShadowTrace
-- L2042: symbol validateConditionsShadowScenarioPack
-- L2120: symbol summarizeConditionsShadowReplay
-- L2202: symbol collectOtclientHelperStatus
-- L2307: symbol collectP6PluginHandoff
-- L2372: symbol collectEngineBrainStatus
-- L2532: symbol collectP7CockpitSmokeStatus
-- L2575: symbol collectP7SafeWriteDryRunSmokeStatus
-- L2640: symbol collectLatestAuditRecordForAction
-- L2740: symbol isRecord
-- L2744: symbol sanitizeCountMap
-- L2756: symbol findGate
-- L2762: symbol sha256IfExists
-- L2775: symbol fileAgeMinutes
-- L2787: symbol statIfExists
-- L2796: symbol resolveEvidencePath
-- L2807: symbol findLatestReleaseEvidence
-- L2843: symbol countMarkdownFiles
-- L2861: symbol listReleaseSprints
+- L453: symbol ApiCostReportArtifact
+- L463: symbol ReleaseEvidenceFile
+- L712: symbol collectControlCenterEvidence
+- L826: symbol collectOperatorBriefCard
+- L915: symbol buildOperatorNextRecommendation
+- L1090: symbol isGuardedLiveCommand
+- L1094: symbol jsonHasDuplicateObjectKeys
+- L1189: symbol readStrictJsonIfExists
+- L1200: symbol readJsonIfExists
+- L1213: symbol readBoundedTextFileIfExists
+- L1241: symbol collectReleaseEvidenceDrilldown
+- L1302: symbol readMarkdownTitle
+- L1318: symbol collectReleaseComparison
+- L1376: symbol collectActionAuditDrilldown
+- L1478: symbol readBoundedControlCenterActionAuditLines
+- L1527: symbol countBy
+- L1536: symbol auditSummary
+- L1544: symbol sanitizeText
+- L1548: symbol collectArtifactHealth
+- L1739: symbol safeNonnegativeInteger
+- L1745: symbol matchesExactRecord
+- L1753: symbol isBackgroundPinError
+- L1766: symbol isBackgroundPinRemediation
+- L1794: symbol isBackgroundDiagnosticParity
+- L1838: symbol summarizeBackgroundStatus
+- L2072: symbol hasExactKeys
+- L2078: symbol hasConditionsShadowNoActionContract
+- L2086: symbol isConditionsShadowSha
+- L2090: symbol conditionsShadowCanonicalValue
+- L2100: symbol conditionsShadowCanonicalSha
+- L2105: symbol isConditionsShadowIdentifier
+- L2109: symbol isConditionsShadowAge
+- L2113: symbol conditionsShadowBlockers
+- L2127: symbol stringArraysEqual
+- L2131: symbol validateConditionsShadowTrace
+- L2195: symbol validateConditionsShadowScenarioPack
+- L2273: symbol summarizeConditionsShadowReplay
+- L2355: symbol collectOtclientHelperStatus
+- L2460: symbol collectP6PluginHandoff
+- L2525: symbol collectEngineBrainStatus
+- L2685: symbol collectP7CockpitSmokeStatus
+- L2728: symbol collectP7SafeWriteDryRunSmokeStatus
+- L2793: symbol collectLatestAuditRecordForAction
+- L2893: symbol isRecord
+- L2897: symbol sanitizeCountMap
+- L2909: symbol findGate
+- L2915: symbol sha256IfExists
+- L2928: symbol fileAgeMinutes
+- L2940: symbol statIfExists
+- L2949: symbol resolveEvidencePath
+- L2960: symbol findLatestReleaseEvidence
+- L2996: symbol countMarkdownFiles
+- L3014: symbol listReleaseSprints
 
 ## `web/src/lib/controlCenterEvidenceAccess.ts`
 

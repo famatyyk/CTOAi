@@ -40,6 +40,9 @@ needed for a task instead of relying on one long prompt.
   evidence gates through design-only Combat/CaveBot work.
 - `../docs/otclient/P9_CONDITIONS_SHADOW_REPLAY_DESIGN.md`: review-ready P9
   data-only observation/replay contract, still blocked by P8 operational acceptance.
+- `../docs/otclient/P9_CONDITIONS_SHADOW_ACCEPTANCE.md`: strict current-evidence
+  recomputation and explicit data-only operator receipt boundary; it does not
+  unlock P10 or runtime actions.
 - `KNOWN_BUGS.md`: known risks and suspected defects.
 - `TECH_DEBT.md`: cleanup backlog.
 - `SPECIALIZED_PROMPTS.md`: project-aware task personas.

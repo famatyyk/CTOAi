@@ -69,6 +69,11 @@ Snapshot date: 2026-07-11 Europe/Warsaw
   `live_promotion.json`, an explicit fresh online capability heartbeat newer than
   exactly one canonical client process, and full producer/consumer parity for the
   no-action contract. The observer cannot create that trusted pin.
+- The current historical P8 artifacts are classified
+  `legacy_or_unbound_attestation`. Read-only diagnostic parity safely inspects
+  all 58 entries and reports stable 57/58 parity with one executable-profile
+  drift, while `acceptance_allowed=false`. Release Evidence and Control Center
+  consume only allowlisted remediation and diagnostic fields.
 - P9 Conditions is `offline_implementation_complete` and
   `operational_acceptance_blocked`. The existing heartbeat now carries an
   optional strict Conditions observation; the bounded sanitizer keeps missing
@@ -79,6 +84,12 @@ Snapshot date: 2026-07-11 Europe/Warsaw
   readiness. P10 stays blocked until a fresh real P9 trace is reviewed under
   accepted P8 and Recovery proofs. Canonical contract:
   `docs/otclient/P9_CONDITIONS_SHADOW_REPLAY_DESIGN.md`.
+- P9 also has a separate data-only operator acceptance boundary. It strictly
+  recomputes the current report and hashes, rejects fixtures/reparse paths and
+  stale or changing evidence, requires exact confirmation for persistence, and
+  keeps all action flags false. The current preflight is blocked and no
+  `conditions_shadow_acceptance.json` receipt exists. Contract:
+  `docs/otclient/P9_CONDITIONS_SHADOW_ACCEPTANCE.md`.
 - Vocation-profile drift is visible as its own count but cannot satisfy parity:
   the current profile is executable Lua. A later schema-validated data-only
   persistence format is required before normal profile changes can be trusted as

@@ -5,7 +5,9 @@ Status: P8 is `implementation_complete` and
 promotion. Its implementation is the `v2.3.0` staged-source lane and does not
 auto-promote that version. P9 is `offline_implementation_complete` while its
 operational acceptance remains blocked by the same P8 proof gate and a missing
-accepted Recovery predecessor trace.
+accepted Recovery predecessor trace. The data-only P9 acceptance boundary is
+implemented, but current evidence cannot create an accepted receipt and P10
+remains blocked.
 
 ## Operating Contract
 
@@ -41,6 +43,8 @@ Deliverables:
 - sanitized `background_status.json`, release-evidence summary, and read-only
   Control Center tile;
 - mutable profile drift separated from immutable package-code parity.
+- strict pin provenance classification plus read-only diagnostic parity that
+  cannot create, repair, rebind, or accept a trust anchor.
 
 Done gates:
 
@@ -60,6 +64,12 @@ Done gates:
   `dispatch_allowed=false`, and an empty intrusive-action ledger;
 - Python, Lua, PowerShell, web, release-evidence, doc-sync, and secret-guardrail
   tests pass.
+
+Current evidence is `legacy_or_unbound_attestation`: all 58 manifest entries are
+safe to inspect, 57 match, one executable profile drifts, and the observation is
+stable. This is diagnostic evidence only; acceptance remains false until a new
+official promotion-bound pin is produced after current gates and explicit live
+approval.
 
 ### P9 — Conditions Shadow Observation And Replay
 
@@ -85,17 +95,25 @@ profile persistence must gain a non-executable, schema-validated representation.
 Implemented evidence: strict profile/observation/P8/Recovery/trace/report schemas,
 the existing-heartbeat passive producer, bounded sanitizer, 44-case deterministic
 fixture pack, `ctoa.ps1 otp9`, atomic runtime report, Release Evidence summary,
-and read-only Control Center tile. All action, dispatch, execute-once, promotion,
-and intrusive-action fields remain disabled or empty.
+read-only Control Center tile, and a separate strict data-only operator acceptance
+schema/preflight. Its writer revalidates fresh canonical evidence, hashes,
+no-action invariants, reparse safety, and exact confirmation before an atomic
+receipt write. Current evidence is blocked and writes no receipt. All action,
+dispatch, execute-once, promotion, and intrusive-action fields remain disabled
+or empty.
 
 Done gates: stale/offline/dead/PZ/wrong-condition/wrong-spell/cooldown/retry cases
-fail closed; replay parity is deterministic; runtime and dispatch remain false.
+fail closed; replay parity is deterministic; runtime and dispatch remain false;
+an accepted receipt requires a fresh real trace, canonical raw P8 and Recovery
+inputs, exact `accept P9 conditions shadow` confirmation, and separate downstream
+review.
 
 ### P10 — Equipment Ring-Only Shadow And Rollback Replay
 
 Objective: validate one ring-swap plan and its rollback without touching inventory.
 
-Dependencies: accepted action-bound P9 trace.
+Dependencies: explicitly reviewed action-bound P9 trace plus its validated
+data-only acceptance receipt. Neither artifact authorizes runtime dispatch.
 
 Deliverables: exact item/slot/container/revision snapshot, zero-retry plan, rollback
 simulation, tamper detection, and negative scenario pack.

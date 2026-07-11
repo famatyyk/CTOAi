@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-11T19:36:55+00:00",
+  "generated_at": "2026-07-11T20:21:08+00:00",
   "root": "C:\\Users\\zycie\\CTOAi",
   "pack_path": "AI\\generated\\ENGINE_BRAIN_PACK.md",
   "profile": "all",
@@ -10,7 +10,7 @@
     {
       "path": "AI/README.md",
       "included": true,
-      "bytes": 2735,
+      "bytes": 2927,
       "truncated": false,
       "reason": ""
     },
@@ -59,7 +59,7 @@
     {
       "path": "AI/ENGINE_BRAIN_STATUS.md",
       "included": true,
-      "bytes": 135297,
+      "bytes": 136072,
       "truncated": true,
       "reason": ""
     },
@@ -108,14 +108,14 @@
     {
       "path": "AI/FEATURE_ROADMAP.md",
       "included": true,
-      "bytes": 61461,
+      "bytes": 62304,
       "truncated": true,
       "reason": ""
     },
     {
       "path": "AI/P8_P16_EXECUTION_ROADMAP.md",
       "included": true,
-      "bytes": 9015,
+      "bytes": 10156,
       "truncated": false,
       "reason": ""
     },
@@ -129,14 +129,21 @@
     {
       "path": "docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md",
       "included": true,
-      "bytes": 7931,
+      "bytes": 8212,
       "truncated": false,
       "reason": ""
     },
     {
       "path": "docs/otclient/P9_CONDITIONS_SHADOW_REPLAY_DESIGN.md",
       "included": true,
-      "bytes": 5990,
+      "bytes": 6390,
+      "truncated": false,
+      "reason": ""
+    },
+    {
+      "path": "docs/otclient/P9_CONDITIONS_SHADOW_ACCEPTANCE.md",
+      "included": true,
+      "bytes": 3034,
       "truncated": false,
       "reason": ""
     },
@@ -206,7 +213,7 @@
     {
       "path": "AI/generated/OWNERSHIP_MAP.md",
       "included": true,
-      "bytes": 6563,
+      "bytes": 6534,
       "truncated": false,
       "reason": ""
     },
@@ -262,18 +269,18 @@
     {
       "path": "AI/generated/FILE_TREE.md",
       "included": true,
-      "bytes": 69589,
+      "bytes": 69927,
       "truncated": true,
       "reason": ""
     },
     {
       "path": "AI/generated/SYMBOL_MAP.md",
       "included": true,
-      "bytes": 272699,
+      "bytes": 276035,
       "truncated": true,
       "reason": ""
     }
   ],
-  "included_count": 38,
+  "included_count": 39,
   "truncated_count": 4
 }
