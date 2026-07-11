@@ -33,8 +33,47 @@ function nowTs() {
   return Date.now();
 }
 
+function isPrivateIpv4Host(hostname) {
+  const parts = String(hostname || "").split(".");
+  if (parts.length !== 4) {
+    return false;
+  }
+  const octets = parts.map((part) => Number(part));
+  if (octets.some((octet) => !Number.isInteger(octet) || octet < 0 || octet > 255)) {
+    return false;
+  }
+  const [a, b] = octets;
+  return a === 10 || a === 127 || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168);
+}
+
+function isLocalDevHost(hostname) {
+  const host = String(hostname || "").toLowerCase().replace(/^\[|\]$/g, "");
+  return host === "localhost" || host.endsWith(".localhost") || host === "::1" || isPrivateIpv4Host(host);
+}
+
 function normalizeApiBase(value) {
-  return (value || "").trim().replace(/\/$/, "");
+  const raw = (value || "").trim();
+  if (!raw) {
+    return "";
+  }
+  try {
+    const url = new URL(raw);
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      return "";
+    }
+    if (url.username || url.password || url.search || url.hash) {
+      return "";
+    }
+    if (url.pathname && url.pathname !== "/") {
+      return "";
+    }
+    if (url.protocol === "http:" && !isLocalDevHost(url.hostname)) {
+      return "";
+    }
+    return url.origin.replace(/\/$/, "");
+  } catch (_error) {
+    return "";
+  }
 }
 
 function inferSameOriginApiBase() {
@@ -292,12 +331,14 @@ function renderIdeas() {
   }
 
   const ideas = loadIdeas();
-  list.innerHTML = "";
+  list.replaceChildren();
 
   if (!ideas.length) {
     const empty = document.createElement("li");
     empty.className = "idea-item";
-    empty.innerHTML = "<p>Brak zaparkowanych pomyslow. Dodaj pierwszy wpis.</p>";
+    const message = document.createElement("p");
+    message.textContent = "Brak zaparkowanych pomyslow. Dodaj pierwszy wpis.";
+    empty.appendChild(message);
     list.appendChild(empty);
     updateIdeaCount();
     return;
@@ -431,12 +472,14 @@ function getAdminUsers() {
     acc[username] = { role: ADMIN_ACCOUNTS[username].role, pass: "" };
     return acc;
   }, {});
-  const users = loadJson(ADMIN_USERS_KEY, fallback);
+  localStorage.removeItem(ADMIN_USERS_KEY);
+  const users = loadSessionJson(ADMIN_USERS_KEY, fallback);
   return { ...fallback, ...users };
 }
 
 function saveAdminUsers(users) {
-  saveJson(ADMIN_USERS_KEY, users);
+  localStorage.removeItem(ADMIN_USERS_KEY);
+  saveSessionJson(ADMIN_USERS_KEY, users);
 }
 
 function getUserRecord(username) {
@@ -504,6 +547,12 @@ function setAdminLoggedIn(session) {
   } else {
     sessionStorage.removeItem(ADMIN_SESSION_KEY);
   }
+}
+
+function clearAdminSessionState() {
+  setApiSession("", "", "");
+  setAdminLoggedIn(null);
+  sessionStorage.removeItem(ADMIN_USERS_KEY);
 }
 
 function applyAdminState(state) {
@@ -880,7 +929,7 @@ function setupAdminAuth() {
     }
 
     localStorage.clear();
-    setAdminLoggedIn(null);
+    clearAdminSessionState();
     saveAdminState(getDefaultAdminState());
     saveIdeas([]);
     renderIdeas();
