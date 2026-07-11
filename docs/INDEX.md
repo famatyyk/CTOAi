@@ -23,6 +23,7 @@ the system changes:
 - [Three Development Plans](roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md): Helper, Control Center/evidence, and Engine Brain roadmap options.
 - [P8-P16 Execution Roadmap](../AI/P8_P16_EXECUTION_ROADMAP.md): BackgroundNoScreen foundation, independent low-risk replay lanes, separate-runner release automation, and deferred Combat/CaveBot twins.
 - [P9 Conditions Shadow Replay Design](otclient/P9_CONDITIONS_SHADOW_REPLAY_DESIGN.md): data-only profile, sanitized observation, deterministic replay, and the P8 acceptance boundary.
+- [P9 Conditions Shadow Acceptance](otclient/P9_CONDITIONS_SHADOW_ACCEPTANCE.md): strict recomputation, explicit operator confirmation, and a no-action acceptance receipt without starting P10.
 
 ## Active Working Docs
 

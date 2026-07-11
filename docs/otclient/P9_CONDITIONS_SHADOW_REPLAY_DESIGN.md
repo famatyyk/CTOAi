@@ -31,6 +31,7 @@ guarded OTClient adapter
   -> deterministic replay with a data-only JSON profile
   -> conditions_shadow_replay.json
   -> read-only Release Evidence and Control Center summaries
+  -> separate data-only operator acceptance preflight
 ```
 
 The existing 5-second heartbeat remains the only client-side producer loop. A
@@ -135,6 +136,8 @@ remain false in every result.
 6. Read-only Release Evidence and Control Center consumers with full mutation
    tests.
 7. Documentation, Engine Brain refresh, and separate P9 review commit.
+8. Strict acceptance schema/preflight with canonical recomputation, exact
+   confirmation, repeated evidence fingerprints, and atomic repo-local receipt.
 
 The first six slices are implemented in staging. `ctoa.ps1 otp9` first refreshes
 the bounded P8 artifact through the existing `BackgroundStatus` allowlist and
@@ -149,5 +152,8 @@ P9 may be marked accepted only when a real, current observation produces an
 action-bound trace under an accepted P8 proof set and accepted Recovery trace;
 the entire positive/negative pack is deterministic; consumers fail closed; and
 all execution, dispatch, promotion, and intrusive-action fields remain false.
+The separate acceptance boundary in
+`docs/otclient/P9_CONDITIONS_SHADOW_ACCEPTANCE.md` must then validate the current
+canonical inputs; fixture success or a schema-only check is insufficient.
 
 P10 remains blocked until that trace is reviewed and explicitly accepted.
