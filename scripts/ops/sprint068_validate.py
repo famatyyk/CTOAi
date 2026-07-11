@@ -4,12 +4,17 @@ from __future__ import annotations
 
 import argparse
 import json
-import subprocess
 import sys
 from pathlib import Path
 from typing import Any
 
 import yaml
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from runner import process_safety  # noqa: E402
 
 REQUIRED_FILES = [
     'workflows/backlog-sprint-068.yaml',
@@ -141,7 +146,11 @@ def _check_quality(run_tests: bool) -> dict[str, Any]:
     if not run_tests:
         return {'id': 'quality_regression_tests', 'ok': test_path.exists(), 'hint': '' if test_path.exists() else 'missing tests/test_response_guardrails.py'}
 
-    proc = subprocess.run([sys.executable, '-m', 'pytest', 'tests/test_response_guardrails.py', '-q'], capture_output=True, text=True)
+    proc = process_safety.run_trusted(
+        [process_safety.resolve_python(), '-m', 'pytest', 'tests/test_response_guardrails.py', '-q'],
+        capture_output=True,
+        text=True,
+    )
     if proc.stdout:
         print(proc.stdout, end='')
     if proc.stderr:
@@ -207,4 +216,3 @@ def main() -> int:
 
 if __name__ == '__main__':
     raise SystemExit(main())
-

@@ -100,6 +100,16 @@ def test_synchronize_state_initializes_and_releases_all_tasks(tmp_path: Path, mo
     assert payload['history'][-1]['reason'] == 'wave1 complete'
     assert [task['status'] for task in payload['tasks']] == ['RELEASED', 'RELEASED']
     assert payload['tasks'][0]['notes'][-1]['status'] == 'RELEASED'
+    assert list((tmp_path / 'runtime').glob('.*.tmp')) == []
+
+
+def test_sprint_state_sync_atomic_writer_uses_unique_temp_and_fsync():
+    module = _load_module()
+    source = Path(module.__file__).read_text(encoding='utf-8')
+
+    assert 'path.with_suffix(path.suffix + ".tmp")' not in source
+    assert 'uuid.uuid4().hex' in source
+    assert 'os.fsync(fh.fileno())' in source
 
     evidence_json = evidence_dir / 'sprint-067-release-evidence-pack.json'
     evidence_md = evidence_dir / 'sprint-067-release-evidence-pack.md'

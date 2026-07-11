@@ -3,9 +3,14 @@
 from __future__ import annotations
 
 import argparse
-import subprocess
 import sys
 from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from runner import process_safety  # noqa: E402
 
 try:
     from scripts.ops.sprint_validator_engine import (
@@ -40,7 +45,8 @@ FOCUSED_REGRESSION_TEST_FILES = [
 
 
 def _run(cmd: list[str], cwd: Path) -> tuple[int, str]:
-    result = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True)
+    executable = process_safety.resolve_executable(cmd[0])
+    result = process_safety.run_trusted([executable, *cmd[1:]], cwd=cwd, capture_output=True, text=True)
     return result.returncode, result.stdout + result.stderr
 
 
@@ -48,7 +54,7 @@ def _quality_check(root: Path, run_tests: bool) -> dict[str, object] | None:
     if not run_tests:
         return None
 
-    cmd = [sys.executable, '-m', 'pytest', *FOCUSED_REGRESSION_TEST_FILES, '-q']
+    cmd = [process_safety.resolve_python(), '-m', 'pytest', *FOCUSED_REGRESSION_TEST_FILES, '-q']
     code, output = _run(cmd, cwd=root)
     output_tail = '\n'.join(output.splitlines()[-20:])
 
