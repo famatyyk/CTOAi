@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
-"""
-Convert raw OTClient/Tibia source files into instruction-following JSONL pairs
-for fine-tuning qwen2.5-coder with LoRA/Unsloth.
+"""Build instruction-following JSONL pairs from raw OTClient/Tibia source files."""
 
-Usage: python build_dataset.py --raw ../data/raw/ --output ../data/dataset.jsonl
-"""
-import json, re, argparse, random
+import argparse
+import json
+import random
 from pathlib import Path
 
 # System prompt embedded in every training example
@@ -17,14 +15,22 @@ SYSTEM = (
 
 # Templates for generating instruction pairs from raw code files
 CODE_TEMPLATES = [
-    ("Wyjasnij co robi ten kod {ext}:\n\n```{lang}\n{code}\n```",
-     "Ten kod {purpose}. {explanation}"),
-    ("Jak poprawic ten fragment {ext}?\n\n```{lang}\n{code}\n```",
-     "Mozna poprawic przez: {improvements}"),
-    ("Napisz dokumentacje dla tego modulu:\n\n```{lang}\n{code}\n```",
-     "## Dokumentacja\n\n{doc}"),
-    ("Czy widzisz bledy w tym kodzie?\n\n```{lang}\n{code}\n```",
-     "Analiza kodu: {analysis}"),
+    (
+        "Wyjasnij co robi ten kod {ext}:\n\n```{lang}\n{code}\n```",
+        "Ten kod {purpose}. {explanation}",
+    ),
+    (
+        "Jak poprawic ten fragment {ext}?\n\n```{lang}\n{code}\n```",
+        "Mozna poprawic przez: {improvements}",
+    ),
+    (
+        "Napisz dokumentacje dla tego modulu:\n\n```{lang}\n{code}\n```",
+        "## Dokumentacja\n\n{doc}",
+    ),
+    (
+        "Czy widzisz bledy w tym kodzie?\n\n```{lang}\n{code}\n```",
+        "Analiza kodu: {analysis}",
+    ),
 ]
 
 LUA_SNIPPETS_TEMPLATES = [
@@ -51,7 +57,7 @@ end
 local lootTimer = cycleEvent(autoLoot, 500)
 ```
 
-Dodaj `lootTimer` do cleanup listy w `onLogout`."""
+Dodaj `lootTimer` do cleanup listy w `onLogout`.""",
     },
     {
         "instruction": "Jak wykryc czy postac jest w walce w OTClient Lua?",
@@ -68,7 +74,7 @@ local function isInCombatByIcon()
 end
 ```
 
-`CONDITION_INFIGHT` jest bardziej niezawodne - aktywne przez 60s po ostatnim ataku."""
+`CONDITION_INFIGHT` jest bardziej niezawodne - aktywne przez 60s po ostatnim ataku.""",
     },
     {
         "instruction": "Jak zrobic pathfinding do konkretnej pozycji w OTClient?",
@@ -101,7 +107,7 @@ end
 walkTo({x=1000, y=1000, z=7})
 ```
 
-Odstep 400ms odzwierciedla typowa szybkosc chodzenia postaci."""
+Odstep 400ms odzwierciedla typowa szybkosc chodzenia postaci.""",
     },
     {
         "instruction": "Jak zbudowac system spell-casting w OTClient z cooldownem?",
@@ -130,13 +136,19 @@ local healTimer = cycleEvent(function()
         castSpell("heal")
     end
 end, 200)
-```"""
+```""",
     },
 ]
 
 
 def ext_to_lang(ext: str) -> str:
-    return {"lua": "lua", "cpp": "cpp", "h": "cpp", "py": "python", "md": "markdown"}.get(ext, ext)
+    return {
+        "lua": "lua",
+        "cpp": "cpp",
+        "h": "cpp",
+        "py": "python",
+        "md": "markdown",
+    }.get(ext, ext)
 
 
 def chunk_code(content: str, max_chars: int = 1200) -> list[str]:
@@ -154,18 +166,20 @@ def chunk_code(content: str, max_chars: int = 1200) -> list[str]:
     return chunks
 
 
-def make_code_example(file_path: Path, content: str) -> dict | None:
+def make_code_example(file_path: Path, content: str, rng: random.Random) -> dict | None:
     ext = file_path.suffix.lstrip(".")
     lang = ext_to_lang(ext)
     chunks = chunk_code(content)
     if not chunks:
         return None
-    chunk = random.choice(chunks[:3])  # bias toward beginning of file
+    chunk = rng.choice(chunks[:3])  # bias toward beginning of file
     if len(chunk) < 80:
         return None
 
     fname = file_path.name
-    instruction = f"Wyjasnij ten fragment kodu z pliku `{fname}`:\n\n```{lang}\n{chunk}\n```"
+    instruction = (
+        f"Wyjasnij ten fragment kodu z pliku `{fname}`:\n\n```{lang}\n{chunk}\n```"
+    )
     response = f"To jest fragment kodu {lang.upper()} z projektu OTClient/Tibia.\n\nAnalizujac strukture: kod implementuje logike zwiazana z `{fname}`. Kluczowe elementy to patterny typowe dla silnika OTClient."
 
     return {
@@ -180,43 +194,56 @@ def make_code_example(file_path: Path, content: str) -> dict | None:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--raw", default=str(Path(__file__).parent.parent / "data" / "raw"))
-    ap.add_argument("--output", default=str(Path(__file__).parent.parent / "data" / "dataset.jsonl"))
+    ap.add_argument(
+        "--output", default=str(Path(__file__).parent.parent / "data" / "dataset.jsonl")
+    )
     ap.add_argument("--max", type=int, default=5000, help="Max examples to generate")
+    ap.add_argument(
+        "--seed", type=int, default=42, help="Deterministic dataset sampling seed"
+    )
     args = ap.parse_args()
 
     raw_dir = Path(args.raw)
     out_path = Path(args.output)
     out_path.parent.mkdir(parents=True, exist_ok=True)
+    # This seed is for reproducible dataset sampling, not security decisions.
+    rng = random.Random(args.seed)  # nosec B311
 
     examples = []
 
     # 1. Hardcoded Lua/vBot expert snippets (high quality)
     for snip in LUA_SNIPPETS_TEMPLATES:
-        examples.append({
-            "messages": [
-                {"role": "system", "content": SYSTEM},
-                {"role": "user", "content": snip["instruction"]},
-                {"role": "assistant", "content": snip["response"]},
-            ]
-        })
+        examples.append(
+            {
+                "messages": [
+                    {"role": "system", "content": SYSTEM},
+                    {"role": "user", "content": snip["instruction"]},
+                    {"role": "assistant", "content": snip["response"]},
+                ]
+            }
+        )
 
     # 2. Auto-generated from raw source files
     if raw_dir.exists():
         all_files = list(raw_dir.rglob("*"))
-        code_files = [f for f in all_files if f.is_file() and f.suffix.lstrip(".") in {"lua", "cpp", "h", "py"}]
-        random.shuffle(code_files)
+        code_files = [
+            f
+            for f in all_files
+            if f.is_file() and f.suffix.lstrip(".") in {"lua", "cpp", "h", "py"}
+        ]
+        rng.shuffle(code_files)
         print(f"Found {len(code_files)} source files in {raw_dir}")
 
-        for fpath in code_files[:args.max]:
+        for fpath in code_files[: args.max]:
             try:
                 content = fpath.read_text(encoding="utf-8", errors="replace")
-                ex = make_code_example(fpath, content)
+                ex = make_code_example(fpath, content, rng)
                 if ex:
                     examples.append(ex)
-            except Exception:
-                pass
+            except (OSError, ValueError) as exc:
+                print(f"Skipping {fpath}: {exc}")
 
-    random.shuffle(examples)
+    rng.shuffle(examples)
     print(f"Total examples: {len(examples)}")
 
     with open(out_path, "w", encoding="utf-8") as f:
@@ -224,8 +251,8 @@ def main():
             f.write(json.dumps(ex, ensure_ascii=False) + "\n")
 
     print(f"Dataset written to: {out_path}")
-    print(f"Format: ShareGPT messages (system/user/assistant)")
-    print(f"Ready for Unsloth fine-tuning on Google Colab T4")
+    print("Format: ShareGPT messages (system/user/assistant)")
+    print("Ready for Unsloth fine-tuning on Google Colab T4")
 
 
 if __name__ == "__main__":
