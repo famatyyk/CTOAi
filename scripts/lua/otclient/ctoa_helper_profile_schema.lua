@@ -74,8 +74,8 @@ local ROTATION_PRESETS = {
         label = "Smart EK",
         spells = {
             {words = "exori gran", min_nearby = 3, cooldown_ms = 6000},
+            {words = "exori min", min_nearby = 2, cooldown_ms = 4000, directional = true},
             {words = "exori", min_nearby = 2, cooldown_ms = 4000},
-            {words = "exori min", min_nearby = 2, cooldown_ms = 4000},
             {words = "exori gran ico", min_nearby = 1, max_nearby = 2, cooldown_ms = 6000},
             {words = "exori ico", min_nearby = 1, max_nearby = 2, cooldown_ms = 2000},
             {words = "exori hur", min_nearby = 1, cooldown_ms = 2000, max_nearby = 1},
@@ -86,8 +86,8 @@ local ROTATION_PRESETS = {
         label = "Single safe",
         spells = {
             {words = "exori gran", min_nearby = 4, cooldown_ms = 6000},
+            {words = "exori min", min_nearby = 3, cooldown_ms = 4000, directional = true},
             {words = "exori", min_nearby = 3, cooldown_ms = 4000},
-            {words = "exori min", min_nearby = 3, cooldown_ms = 4000},
             {words = "exori gran ico", min_nearby = 1, max_nearby = 2, cooldown_ms = 6000},
             {words = "exori ico", min_nearby = 1, max_nearby = 2, cooldown_ms = 2000},
             {words = "exori hur", min_nearby = 1, cooldown_ms = 2000, max_nearby = 1},
@@ -98,8 +98,8 @@ local ROTATION_PRESETS = {
         label = "Aggressive",
         spells = {
             {words = "exori gran", min_nearby = 2, cooldown_ms = 6000},
+            {words = "exori min", min_nearby = 1, cooldown_ms = 4000, directional = true},
             {words = "exori", min_nearby = 2, cooldown_ms = 4000},
-            {words = "exori min", min_nearby = 1, cooldown_ms = 4000},
             {words = "exori gran ico", min_nearby = 1, max_nearby = 2, cooldown_ms = 6000},
             {words = "exori ico", min_nearby = 1, max_nearby = 2, cooldown_ms = 2000},
             {words = "exori hur", min_nearby = 1, cooldown_ms = 2000, max_nearby = 1},

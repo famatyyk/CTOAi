@@ -4962,7 +4962,7 @@ function Invoke-ThemeSnapshotMatrix {
             $lineCount = Get-SmokeLogLineCount
             Write-SmokeCommand -ClientDir $sandboxRoot -ActiveTab $resolved.Active -SmokeSubtab $resolved.Subtab -CommandAction "theme_set" -Theme $theme
             Wait-ForSmokeTab -ActiveTab $resolved.Active -SmokeSubtab $resolved.Subtab -Required -AfterLineCount $lineCount | Out-Null
-            $name = "solteria-helper-v2.2.0-theme-$theme-$tabName.png"
+            $name = "solteria-helper-v2.2.1-theme-$theme-$tabName.png"
             $path = Capture-Screenshot -Name $name -WindowHandle $proc.MainWindowHandle
             $shots.Add([pscustomobject]@{ theme = $theme; tab = $tabName; path = $path })
             Write-Output "[solteria-helper-test-env] Theme snapshot: $theme/$tabName -> $path"
@@ -4975,7 +4975,7 @@ function Invoke-ThemeSnapshotMatrix {
     $report = [pscustomobject]@{
         name = "solteria-helper-theme-snapshot-matrix"
         created_at = (Get-Date).ToString("s")
-        helper_version = "v2.2.0"
+        helper_version = "v2.2.1"
         status = if ($shots.Count -eq 20) { "passed" } else { "failed" }
         screenshot_count = $shots.Count
         expected_count = 20

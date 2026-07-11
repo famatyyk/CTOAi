@@ -9,7 +9,7 @@ if type(existingHelper) == "table" and existingHelper.window then
     return existingHelper
 end
 
-local HELPER_VERSION = "v2.2.0"
+local HELPER_VERSION = "v2.2.1"
 local HELPER_CONFIG = {
     schema_version = "ctoa-helper-profile-v1",
     enabled = true,
@@ -120,8 +120,8 @@ local HELPER_CONFIG = {
         last_spell_casts = {},
         rotation_spells = {
             {words = "exori gran", min_nearby = 3, cooldown_ms = 6000},
+            {words = "exori min", min_nearby = 2, cooldown_ms = 4000, directional = true},
             {words = "exori", min_nearby = 2, cooldown_ms = 4000},
-            {words = "exori min", min_nearby = 2, cooldown_ms = 4000},
             {words = "exori gran ico", min_nearby = 1, max_nearby = 2, cooldown_ms = 6000},
             {words = "exori ico", min_nearby = 1, max_nearby = 2, cooldown_ms = 2000},
             {words = "exori hur", min_nearby = 1, cooldown_ms = 2000, max_nearby = 1}
@@ -1598,18 +1598,22 @@ local function scanCombatArea(tools)
         close = 0,
         target_range = 0,
         visible = 0,
-        by_range = {}
+        by_range = {},
+        directional_hits = {[0] = 0, [1] = 0, [2] = 0, [3] = 0},
+        facing_direction = nil
     }
     if not localPlayer or not playerPos then
         return scan
     end
-
+    if localPlayer.getDirection then local ok, value = pcall(function() return localPlayer:getDirection() end); if ok then scan.facing_direction = tonumber(value) end end
     for _, creature in ipairs(getSpectatorsInRange(playerPos, scanRange)) do
         if isMonsterCreature(creature, localPlayer) then
             local distance = distanceChebyshev(playerPos, getThingPosition(creature))
             if distance then
+                local creaturePos = getThingPosition(creature)
                 if distance <= 1 then
                     scan.adjacent = scan.adjacent + 1
+                    moduleValue(externalCombatRuntime, "recordDirectionalHit", scan, creaturePos and creaturePos.x - playerPos.x or 0, creaturePos and creaturePos.y - playerPos.y or 0)
                 end
                 if distance <= 2 then
                     scan.close = scan.close + 1
@@ -1628,7 +1632,6 @@ local function scanCombatArea(tools)
     end
     return scan
 end
-
 local function targetReachable(target, playerPos, maxRange)
     local targetPos = getThingPosition(target)
     local distance = distanceChebyshev(playerPos, targetPos)
@@ -2036,24 +2039,12 @@ local function combatRuntimeText(functionName, eventOrAction, data, fallback)
     local text = moduleValue(externalCombatRuntime, functionName, eventOrAction, data or {})
     return type(text) == "string" and text ~= "" and text or fallback or tostring(eventOrAction or "targeting")
 end
-
 local function executeOffensiveAction(tools, action, nearby, visible, now)
-    if not action then
-        return false
-    end
+    if not action then return false end
     local blocked = combatBlockedReason(tools)
-    if blocked then
-        status(combatRuntimeText("actionStatusText", {kind = "blocked", reason = blocked}, {reason = blocked}, "Combat action status unavailable"))
-        return false
-    end
-    if now < (tools.attack_action_lock_until_ms or 0) then
-        status(combatRuntimeText("actionStatusText", {kind = "action_lock"}, {now_ms = now}, "Combat action status unavailable"))
-        return false
-    end
-    if recoveryActionGap(now).active then
-        status(combatRuntimeText("actionStatusText", {kind = "recovery_gap"}, {now_ms = now}, "Combat action status unavailable"))
-        return false
-    end
+    if blocked then status(combatRuntimeText("actionStatusText", {kind = "blocked", reason = blocked}, {reason = blocked}, "Combat action status unavailable")); return false end
+    if now < (tools.attack_action_lock_until_ms or 0) then status(combatRuntimeText("actionStatusText", {kind = "action_lock"}, {now_ms = now}, "Combat action status unavailable")); return false end
+    if recoveryActionGap(now).active then status(combatRuntimeText("actionStatusText", {kind = "recovery_gap"}, {now_ms = now}, "Combat action status unavailable")); return false end
     if action.kind == "stance" and action.spell then
         local mode = nil
         if action.fight_mode == "offensive" then
@@ -2079,6 +2070,16 @@ local function executeOffensiveAction(tools, action, nearby, visible, now)
         status(combatRuntimeText("actionStatusText", action, {visible = visible}, "Combat action status unavailable"))
         return true
     end
+    if action.kind == "rotation" and action.spell and action.spell.turn_direction ~= nil then
+        local player = getLocalPlayer()
+        local currentDirection = player and player.getDirection and player:getDirection() or nil
+        local desiredDirection = tonumber(action.spell.turn_direction)
+        if desiredDirection ~= nil and currentDirection ~= desiredDirection then
+            if not g_game or type(g_game.turn) ~= "function" then status("Rotation blocked: turn API unavailable for " .. tostring(action.spell.words)); return false end
+            local turned = pcall(function() g_game.turn(desiredDirection) end)
+            if not turned then status("Rotation blocked: could not face " .. tostring(action.spell.words)); return false end
+        end
+    end
     if action.kind == "rotation" and action.spell and castSpell(action.spell.words) then
         tools.last_rotation_ms = now
         tools.last_spell_casts[action.spell.words] = now
@@ -2098,7 +2099,6 @@ local function executeOffensiveAction(tools, action, nearby, visible, now)
     end
     return false
 end
-
 local function planNextCombatAction(target, scan, now)
     local tools = HELPER_CONFIG.tools
     local action = buildOffensiveAction(tools, target, scan, now)
@@ -3479,7 +3479,8 @@ function applyRotationPreset(presetId)
                     words = spell.words,
                     min_nearby = spell.min_nearby,
                     cooldown_ms = spell.cooldown_ms,
-                    max_nearby = spell.max_nearby
+                    max_nearby = spell.max_nearby,
+                    directional = spell.directional == true
                 }
             end
             HELPER_CONFIG.tools.rotation_preset = presetId

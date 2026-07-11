@@ -2,7 +2,7 @@
 -- Safe loader for CTOA OTClient helper UI.
 
 local CTOA_OTCLIENT = rawget(_G, "CTOA_OTCLIENT") or {
-    version = "2.2.0",
+    version = "2.2.1",
     mode = "helper-ui-only",
     modules = {},
     loaded = false,

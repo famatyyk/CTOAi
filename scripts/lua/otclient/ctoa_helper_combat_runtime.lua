@@ -134,6 +134,37 @@ local function monsterCountForRange(scan, range)
     return tonumber((snapshot.by_range or {})[value]) or 0
 end
 
+local function directionalSpell(words, spell)
+    if spell and spell.directional == true then return true end
+    return string.lower(tostring(words or "")) == "exori min"
+end
+
+function CombatRuntime.bestDirectionalFacing(scan)
+    local snapshot = scan or {}
+    local hits = snapshot.directional_hits or {}
+    local current = tonumber(snapshot.facing_direction)
+    local bestDirection = current or 0
+    local bestCount = tonumber(hits[bestDirection]) or 0
+    for direction = 0, 3 do
+        local count = tonumber(hits[direction]) or 0
+        if count > bestCount then
+            bestDirection = direction
+            bestCount = count
+        end
+    end
+    return bestDirection, bestCount
+end
+
+function CombatRuntime.recordDirectionalHit(scan, dx, dy)
+    local hits = (scan or {}).directional_hits
+    if type(hits) ~= "table" then return scan end
+    if dy == -1 then hits[0] = (tonumber(hits[0]) or 0) + 1 end
+    if dx == 1 then hits[1] = (tonumber(hits[1]) or 0) + 1 end
+    if dy == 1 then hits[2] = (tonumber(hits[2]) or 0) + 1 end
+    if dx == -1 then hits[3] = (tonumber(hits[3]) or 0) + 1 end
+    return scan
+end
+
 function CombatRuntime.rotationSpellRows(spells, state)
     local rows = {}
     local env = state or {}
@@ -141,13 +172,20 @@ function CombatRuntime.rotationSpellRows(spells, state)
     local lastCasts = env.last_spell_casts or {}
     for _, spell in ipairs(spells or {}) do
         local range = spell.scan_range or env.rotation_scan_range or 1
+        local mobCount = monsterCountForRange(scan, range)
+        local turnDirection = nil
+        if directionalSpell(spell.words, spell) then
+            turnDirection, mobCount = CombatRuntime.bestDirectionalFacing(scan)
+        end
         rows[#rows + 1] = {
             words = spell.words,
-            mob_count = monsterCountForRange(scan, range),
+            mob_count = mobCount,
             min_nearby = tonumber(spell.min_nearby) or 1,
             max_nearby = tonumber(spell.max_nearby) or 99,
             last_cast_ms = tonumber(lastCasts[spell.words]) or 0,
             cooldown_ms = spell.cooldown_ms,
+            directional = directionalSpell(spell.words, spell),
+            turn_direction = turnDirection,
         }
     end
     return rows
@@ -167,6 +205,8 @@ function CombatRuntime.spellReadiness(spells, state)
             max_nearby = tonumber(spell.max_nearby) or 99,
             ready = now - last >= cd,
             cooldown_until_ms = last + cd,
+            directional = spell.directional == true,
+            turn_direction = spell.turn_direction,
         }
     end
     return rows
@@ -185,15 +225,20 @@ function CombatRuntime.rotationSpell(spells, state)
         now_ms = now,
         default_cooldown_ms = env.rotation_interval_ms or 1050,
     })
+    local selected = nil
     for _, spell in ipairs(rows) do
         local mobCount = tonumber(spell.mob_count) or 0
         local minNearby = tonumber(spell.min_nearby) or 1
         local maxNearby = tonumber(spell.max_nearby) or 99
         if mobCount >= minNearby and mobCount <= maxNearby and spell.ready == true then
-            return spell
+            if not selected then
+                selected = spell
+            elseif spell.directional == true and string.lower(tostring(selected.words or "")) == "exori" then
+                selected = spell
+            end
         end
     end
-    return nil
+    return selected
 end
 
 function CombatRuntime.stanceAction(tools, state)

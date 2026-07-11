@@ -186,12 +186,13 @@ return {
                 cooldown_ms = 6000,
             },
             {
-                words = "exori",
+                words = "exori min",
                 min_nearby = 2,
                 cooldown_ms = 4000,
+                directional = true,
             },
             {
-                words = "exori min",
+                words = "exori",
                 min_nearby = 2,
                 cooldown_ms = 4000,
             },
