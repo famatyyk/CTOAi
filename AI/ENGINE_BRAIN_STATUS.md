@@ -53,18 +53,21 @@ Snapshot date: 2026-07-11 Europe/Warsaw
   attach 4/4, full attach 16/16, and RuntimeModuleGatesSandboxSmoke 19/19.
   These gates remain dry-run/no-dispatch even though the package itself is now
   live-promoted; runtime acceptance and package promotion are separate states.
-- P8 `BackgroundNoScreen` is the active lane. It adds bounded passive heartbeat
-  and log readers, immutable live/manifest parity, an advisory-only
+- P8 `BackgroundNoScreen` is `implementation_complete` and
+  `operational_acceptance_blocked`. It adds bounded passive heartbeat and log
+  readers, immutable live/manifest parity, an advisory-only
   `background_status.json`, a positive wrapper allowlist, primitive GUI/input/
   screenshot/start-stop/live-write guards, `ctoa.ps1 otbg`, and a read-only
   Control Center status tile. It records process/screenshot stability and never
   authorizes dispatch or promotion. The staged source version is `v2.3.0`; the
-  protected live client remains `v2.2.1` during this development cycle. Canonical sequence:
-  `AI/P8_P16_EXECUTION_ROADMAP.md`.
-- P8 trust is fail-closed: only a manifest with `official_live_promotion`
-  provenance and a matching SHA256 in `live_promotion.json` can anchor parity.
-  The observer cannot create that pin. Fresh readiness also requires exactly one
-  canonical client process and an explicit online heartbeat newer than it.
+  protected live client remains `v2.2.1` during this development cycle. Canonical
+  sequence: `AI/P8_P16_EXECUTION_ROADMAP.md`.
+- P8 operational acceptance is fail-closed and requires all three proofs: a
+  manifest with `official_live_promotion` provenance and matching SHA256 in
+  `live_promotion.json`, an explicit fresh online capability heartbeat newer than
+  exactly one canonical client process, and full producer/consumer parity for the
+  no-action contract. The observer cannot create that trusted pin. P9 Conditions
+  remains queued until P8 operational acceptance is explicitly accepted.
 - Vocation-profile drift is visible as its own count but cannot satisfy parity:
   the current profile is executable Lua. A later schema-validated data-only
   persistence format is required before normal profile changes can be trusted as

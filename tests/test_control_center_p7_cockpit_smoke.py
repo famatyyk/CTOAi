@@ -7,6 +7,32 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT_PATH = ROOT / "scripts" / "ops" / "control_center_p7_cockpit_smoke.py"
+ROADMAP_DOCS = [
+    {
+        "name": "feature_roadmap",
+        "path": "AI/FEATURE_ROADMAP.md",
+        "status": "passed",
+        "missing_markers": [],
+    },
+    {
+        "name": "engine_brain_status",
+        "path": "AI/ENGINE_BRAIN_STATUS.md",
+        "status": "passed",
+        "missing_markers": [],
+    },
+    {
+        "name": "p8_p16_execution_roadmap",
+        "path": "AI/P8_P16_EXECUTION_ROADMAP.md",
+        "status": "passed",
+        "missing_markers": [],
+    },
+    {
+        "name": "plan3_roadmap",
+        "path": "docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md",
+        "status": "passed",
+        "missing_markers": [],
+    },
+]
 
 
 def load_module():
@@ -112,9 +138,10 @@ def write_ready_fixture(root: Path):
             "roadmap_generation": {
                 "status": "ready",
                 "doc_sync_status": "passed",
-                "doc_count": 3,
-                "ready_doc_count": 3,
+                "doc_count": len(ROADMAP_DOCS),
+                "ready_doc_count": len(ROADMAP_DOCS),
                 "hard_blockers": [],
+                "docs": ROADMAP_DOCS,
             },
         },
     )
@@ -129,8 +156,8 @@ def write_ready_fixture(root: Path):
                 "roadmap_generation": {
                     "status": "ready",
                     "doc_sync_status": "passed",
-                    "doc_count": 3,
-                    "ready_doc_count": 3,
+                    "doc_count": len(ROADMAP_DOCS),
+                    "ready_doc_count": len(ROADMAP_DOCS),
                     "hard_blockers": [],
                 },
             },
@@ -209,6 +236,34 @@ def test_p7_cockpit_smoke_blocks_forbidden_plugin_tool(tmp_path: Path):
 
     assert report["status"] == "blocked"
     assert "workflow_tool_policy_mismatch" in report["hard_blockers"]
+
+
+def test_p7_cockpit_smoke_rejects_legacy_three_of_three_roadmap(tmp_path: Path):
+    module = load_module()
+    write_ready_fixture(tmp_path)
+    operator_brief_path = (
+        tmp_path / "AI" / "generated" / "P7_OPERATOR_BRIEF.json"
+    )
+    operator_brief = json.loads(operator_brief_path.read_text(encoding="utf-8"))
+    roadmap_generation = operator_brief["roadmap_generation"]
+    roadmap_generation["docs"] = ROADMAP_DOCS[:-1]
+    roadmap_generation["doc_count"] = len(ROADMAP_DOCS) - 1
+    roadmap_generation["ready_doc_count"] = len(ROADMAP_DOCS) - 1
+    operator_brief_path.write_text(json.dumps(operator_brief), encoding="utf-8")
+    release_evidence_path = tmp_path / "runtime" / "evidence" / "latest.json"
+    release_evidence = json.loads(release_evidence_path.read_text(encoding="utf-8"))
+    release_roadmap = release_evidence["p7_operator_brief"]["roadmap_generation"]
+    release_roadmap["doc_count"] = len(ROADMAP_DOCS) - 1
+    release_roadmap["ready_doc_count"] = len(ROADMAP_DOCS) - 1
+    release_evidence_path.write_text(json.dumps(release_evidence), encoding="utf-8")
+
+    report = module.build_report(tmp_path)
+
+    assert report["status"] == "blocked"
+    assert (
+        "operator_brief_roadmap_generation_not_ready" in report["hard_blockers"]
+    )
+    assert "release_evidence_not_p7_ready" in report["hard_blockers"]
 
 
 def test_p7_cockpit_smoke_rejects_symlinked_operator_brief(tmp_path: Path):

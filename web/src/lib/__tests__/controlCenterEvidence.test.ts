@@ -86,6 +86,62 @@ function isolateEvidenceEnv(root: string) {
   process.env.CTOA_PROMPT_VARIANTS_DIR = path.join(root, "evals", "prompt-variants")
 }
 
+function backgroundNoScreenPayload(generatedAt: string) {
+  return {
+    schema_version: "ctoa.otclient-headless-status.v1",
+    status: "ready",
+    mode: "background_no_screen",
+    generated_at_utc: generatedAt,
+    advisory_only: true,
+    safe_to_run_while_playing: true,
+    promotion_allowed: false,
+    dispatch_allowed: false,
+    runtime_actions: false,
+    process_state: "running",
+    interaction_contract: {
+      gui_automation: false,
+      mouse_keyboard_input: false,
+      window_focus: false,
+      screenshot_capture: false,
+      client_launch: false,
+      client_stop: false,
+      live_file_writes: false,
+      passive_reads_only: true,
+      evidence_write_scope: "runtime/solteria_helper_dev",
+    },
+    checks: {
+      no_screen_contract: true,
+      client_process_stable_during_wrapper: true,
+      screenshot_count_stable_during_wrapper: true,
+    },
+    wrapper_invariants: {
+      client_process_stable: true,
+      screenshot_count_stable: true,
+    },
+    intrusive_actions_performed: [],
+    integrity: {
+      status: "passed",
+      matched_file_count: 58,
+      manifest_file_count: 58,
+      mutable_drift_count: 0,
+      profile_drift_count: 0,
+      mismatch_count: 0,
+      missing_count: 0,
+      invalid_path_count: 0,
+      oversize_count: 0,
+      live_files_unchanged_during_observation: true,
+    },
+    capability: {
+      status: "fresh",
+      fresh: true,
+      runtime_state: "disarmed",
+      runtime_actions: false,
+      runtime_core_actions: false,
+    },
+    blockers: [],
+  }
+}
+
 describe("Control Center evidence config", () => {
   it("resolves default relative evidence paths from the repository root", () => {
     for (const key of Object.keys(originalEnv)) {
@@ -285,32 +341,7 @@ describe("Control Center evidence config", () => {
     )
     await writeFile(
       helperBackgroundStatusPath,
-      JSON.stringify({
-        schema_version: "ctoa.otclient-headless-status.v1",
-        status: "ready",
-        mode: "background_no_screen",
-        generated_at_utc: new Date().toISOString(),
-        advisory_only: true,
-        safe_to_run_while_playing: true,
-        promotion_allowed: false,
-        dispatch_allowed: false,
-        runtime_actions: false,
-        process_state: "running",
-        integrity: {
-          status: "passed",
-          matched_file_count: 58,
-          manifest_file_count: 58,
-          mutable_drift_count: 1,
-        },
-        capability: {
-          status: "fresh",
-          fresh: true,
-          runtime_state: "disarmed",
-          runtime_actions: false,
-          runtime_core_actions: false,
-        },
-        blockers: [],
-      }),
+      JSON.stringify(backgroundNoScreenPayload(new Date().toISOString())),
       "utf-8",
     )
     await writeFile(
@@ -679,7 +710,7 @@ describe("Control Center evidence config", () => {
       integrityStatus: "passed",
       matchedFileCount: 58,
       manifestFileCount: 58,
-      mutableDriftCount: 1,
+      mutableDriftCount: 0,
       capabilityStatus: "fresh",
       capabilityFresh: true,
       runtimeState: "disarmed",
@@ -1044,32 +1075,7 @@ describe("Control Center evidence config", () => {
     isolateEvidenceEnv(root)
     const helperDevDir = path.join(root, "runtime", "solteria_helper_dev")
     const backgroundStatusPath = path.join(helperDevDir, "background_status.json")
-    const validPayload = {
-      schema_version: "ctoa.otclient-headless-status.v1",
-      status: "ready",
-      mode: "background_no_screen",
-      generated_at_utc: new Date(Date.now() - 31_000).toISOString(),
-      advisory_only: true,
-      safe_to_run_while_playing: true,
-      promotion_allowed: false,
-      dispatch_allowed: false,
-      runtime_actions: false,
-      process_state: "running",
-      integrity: {
-        status: "passed",
-        matched_file_count: 58,
-        manifest_file_count: 58,
-        mutable_drift_count: 1,
-      },
-      capability: {
-        status: "fresh",
-        fresh: true,
-        runtime_state: "disarmed",
-        runtime_actions: false,
-        runtime_core_actions: false,
-      },
-      blockers: [],
-    }
+    const validPayload = backgroundNoScreenPayload(new Date(Date.now() - 31_000).toISOString())
     await mkdir(helperDevDir, { recursive: true })
     await writeFile(backgroundStatusPath, JSON.stringify(validPayload), "utf-8")
 
@@ -1086,6 +1092,32 @@ describe("Control Center evidence config", () => {
     })
     expect(staleEvidence.otclientHelper.livePromoted).toBe(false)
     expect(staleEvidence.otclientHelper.releasableToLive).toBe(false)
+
+    const untrustedPayload = structuredClone(backgroundNoScreenPayload(new Date().toISOString())) as Record<
+      string,
+      unknown
+    >
+    const untrustedIntegrity = untrustedPayload.integrity as Record<string, unknown>
+    const untrustedCapability = untrustedPayload.capability as Record<string, unknown>
+    untrustedPayload.status = "blocked"
+    untrustedPayload.blockers = ["live_manifest_pin_untrusted"]
+    untrustedIntegrity.status = "untrusted_pin"
+    untrustedIntegrity.matched_file_count = 0
+    untrustedIntegrity.live_files_unchanged_during_observation = false
+    untrustedCapability.status = "missing"
+    untrustedCapability.fresh = false
+    await writeFile(backgroundStatusPath, JSON.stringify(untrustedPayload), "utf-8")
+
+    const untrustedEvidence = await collectControlCenterEvidence()
+
+    expect(untrustedEvidence.otclientHelper.backgroundStatus).toMatchObject({
+      status: "blocked",
+      reportedStatus: "blocked",
+      fresh: true,
+      contractValid: true,
+      integrityStatus: "untrusted_pin",
+      blockers: ["live_manifest_pin_untrusted"],
+    })
 
     await writeFile(
       backgroundStatusPath,
@@ -1114,6 +1146,73 @@ describe("Control Center evidence config", () => {
     expect(JSON.stringify(invalidEvidence)).not.toContain("background-secret-value")
     expect(invalidEvidence.otclientHelper.livePromoted).toBe(false)
     expect(invalidEvidence.otclientHelper.releasableToLive).toBe(false)
+  })
+
+  it("fails closed for every full BackgroundNoScreen no-action contract mutation", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "ctoa-background-contract-"))
+    isolateEvidenceEnv(root)
+    const helperDevDir = path.join(root, "runtime", "solteria_helper_dev")
+    const backgroundStatusPath = path.join(helperDevDir, "background_status.json")
+    await mkdir(helperDevDir, { recursive: true })
+
+    const mutations = [
+      ["interaction_input", "interaction_contract"],
+      ["interaction_numeric", "interaction_contract"],
+      ["interaction_extra", "interaction_contract"],
+      ["wrapper_process", "wrapper_invariants"],
+      ["no_screen_check", "checks_no_screen_contract"],
+      ["wrapper_process_check", "checks_client_process_stable_during_wrapper"],
+      ["wrapper_screenshot_check", "checks_screenshot_count_stable_during_wrapper"],
+      ["intrusive_action", "intrusive_actions_performed"],
+      ["status_type", "status"],
+      ["count_overflow", "integrity_count_consistency"],
+      ["drift_alias", "integrity_drift_consistency"],
+      ["passed_with_mismatch", "integrity_status_consistency"],
+    ] as const
+
+    for (const [mutation, expectedError] of mutations) {
+      const payload = structuredClone(backgroundNoScreenPayload(new Date().toISOString())) as Record<string, unknown>
+      const interaction = payload.interaction_contract as Record<string, unknown>
+      const wrapper = payload.wrapper_invariants as Record<string, unknown>
+      const statusChecks = payload.checks as Record<string, unknown>
+      const integrity = payload.integrity as Record<string, unknown>
+
+      if (mutation === "interaction_input") {
+        interaction.mouse_keyboard_input = true
+      } else if (mutation === "interaction_numeric") {
+        interaction.mouse_keyboard_input = 0
+      } else if (mutation === "interaction_extra") {
+        interaction.unvalidated_action = false
+      } else if (mutation === "wrapper_process") {
+        wrapper.client_process_stable = false
+      } else if (mutation === "no_screen_check") {
+        statusChecks.no_screen_contract = false
+      } else if (mutation === "wrapper_process_check") {
+        statusChecks.client_process_stable_during_wrapper = false
+      } else if (mutation === "wrapper_screenshot_check") {
+        statusChecks.screenshot_count_stable_during_wrapper = false
+      } else if (mutation === "intrusive_action") {
+        payload.intrusive_actions_performed = ["screenshot_capture"]
+      } else if (mutation === "status_type") {
+        payload.status = []
+      } else if (mutation === "count_overflow") {
+        integrity.mismatch_count = 1
+      } else if (mutation === "drift_alias") {
+        integrity.profile_drift_count = 1
+      } else {
+        integrity.matched_file_count = 57
+        integrity.mismatch_count = 1
+      }
+
+      await writeFile(backgroundStatusPath, JSON.stringify(payload), "utf-8")
+      const evidence = await collectControlCenterEvidence()
+      const background = evidence.otclientHelper.backgroundStatus
+
+      expect(background.status, mutation).toBe("blocked")
+      expect(background.contractValid, mutation).toBe(false)
+      expect(background.fresh, mutation).toBe(false)
+      expect(background.contractErrors, mutation).toContain(expectedError)
+    }
   })
 
   it("bounds oversized action audit drilldown to a redacted tail sample", async () => {

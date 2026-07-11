@@ -623,7 +623,7 @@ def render_plans_markdown(inventory: dict[str, Any]) -> str:
         "- Require `PrepareDev`, `ValidateDev`, `SmokePreflight`, in-world `SmokeAttachAll`, and explicit live approval.",
         "- Expand `otclient_helper_profile_audit.py` from text checks toward schema-backed migration validation.",
         "- Keep Control Center Helper status read-only and backed by runtime artifacts.",
-        "- Make `BackgroundNoScreen` the default routine Helper evidence lane: no mouse/keyboard input, focus, screenshots, client launch/stop, or live-client writes; use bounded passive heartbeat/log/process/hash reads, require an official promotion-bound pin, treat executable-profile drift as blocking, and write only repo-local runtime evidence.",
+        "- Treat P8 `BackgroundNoScreen` as `implementation_complete` but `operational_acceptance_blocked`: keep it the default routine Helper evidence lane with no mouse/keyboard input, focus, screenshots, client launch/stop, or live-client writes; accept it only after an official promotion-bound trusted pin, a fresh capability heartbeat, and full no-action producer/consumer parity pass together. Keep P9 Conditions queued until that acceptance.",
         "- Keep the post-Recovery runtime sequence fixed: Conditions paralyze-only gate, then Equipment ring-only rollback gate, then Heal Friend exact-whitelist gate. Require action-bound predecessor traces and current `RuntimeModuleGatesSandboxSmoke` evidence; Combat and CaveBot remain `deferred_high_risk` and may receive passive refactor work only.",
         "",
         "### 31-60 Days",

@@ -477,6 +477,21 @@ const BACKGROUND_BLOCKER_VALUES = new Set([
   "screenshot_count_changed_during_observation",
   ...Array.from(BACKGROUND_CAPABILITY_STATUS_VALUES, (status) => `capability_${status}`),
 ])
+const BACKGROUND_INTERACTION_CONTRACT: Record<string, unknown> = {
+  gui_automation: false,
+  mouse_keyboard_input: false,
+  window_focus: false,
+  screenshot_capture: false,
+  client_launch: false,
+  client_stop: false,
+  live_file_writes: false,
+  passive_reads_only: true,
+  evidence_write_scope: "runtime/solteria_helper_dev",
+}
+const BACKGROUND_WRAPPER_INVARIANTS: Record<string, unknown> = {
+  client_process_stable: true,
+  screenshot_count_stable: true,
+}
 
 export async function collectControlCenterEvidence(): Promise<ControlCenterEvidence> {
   const config = getControlCenterEvidenceConfig()
@@ -1405,6 +1420,14 @@ function safeNonnegativeInteger(value: unknown): { value: number; valid: boolean
     : { value: 0, valid: false }
 }
 
+function matchesExactRecord(value: unknown, expected: Record<string, unknown>): boolean {
+  if (!isRecord(value)) {
+    return false
+  }
+  const expectedEntries = Object.entries(expected)
+  return Object.keys(value).length === expectedEntries.length && expectedEntries.every(([key, item]) => value[key] === item)
+}
+
 function summarizeBackgroundStatus(
   payload: Record<string, unknown> | null,
   artifactPresent: boolean,
@@ -1427,6 +1450,36 @@ function summarizeBackgroundStatus(
   const matchedFileCount = safeNonnegativeInteger(integrity.matched_file_count)
   const manifestFileCount = safeNonnegativeInteger(integrity.manifest_file_count)
   const mutableDriftCount = safeNonnegativeInteger(integrity.mutable_drift_count)
+  const profileDriftCount = safeNonnegativeInteger(integrity.profile_drift_count)
+  const mismatchCount = safeNonnegativeInteger(integrity.mismatch_count)
+  const missingCount = safeNonnegativeInteger(integrity.missing_count)
+  const invalidPathCount = safeNonnegativeInteger(integrity.invalid_path_count)
+  const oversizeCount = safeNonnegativeInteger(integrity.oversize_count)
+  const countFieldsValid = [
+    matchedFileCount,
+    manifestFileCount,
+    mutableDriftCount,
+    profileDriftCount,
+    mismatchCount,
+    missingCount,
+    invalidPathCount,
+    oversizeCount,
+  ].every((item) => item.valid)
+  const observedFileCount =
+    matchedFileCount.value +
+    mismatchCount.value +
+    mutableDriftCount.value +
+    missingCount.value +
+    invalidPathCount.value +
+    oversizeCount.value
+  const integrityCountConsistent = countFieldsValid && observedFileCount <= manifestFileCount.value
+  const integrityDriftConsistent =
+    mutableDriftCount.valid && profileDriftCount.valid && mutableDriftCount.value === profileDriftCount.value
+  const liveFilesUnchanged = integrity.live_files_unchanged_during_observation
+  const statusChecks = isRecord(data.checks) ? data.checks : {}
+  const interactionContractValid = matchesExactRecord(data.interaction_contract, BACKGROUND_INTERACTION_CONTRACT)
+  const wrapperInvariantsValid = matchesExactRecord(data.wrapper_invariants, BACKGROUND_WRAPPER_INVARIANTS)
+  const intrusiveActionsValid = Array.isArray(data.intrusive_actions_performed) && data.intrusive_actions_performed.length === 0
   const generatedAtValue = data.generated_at_utc
   const generatedAt =
     typeof generatedAtValue === "string" &&
@@ -1450,6 +1503,27 @@ function summarizeBackgroundStatus(
   const runtimeStateValue = capability.runtime_state || log.runtime_state
   const integrityStatusValue = integrity.status
   const capabilityStatusValue = capability.status
+  let integrityStatusConsistent = false
+  if (countFieldsValid && integrityCountConsistent && integrityDriftConsistent) {
+    const adverseCounts = [
+      mismatchCount.value,
+      mutableDriftCount.value,
+      missingCount.value,
+      invalidPathCount.value,
+      oversizeCount.value,
+    ]
+    if (integrityStatusValue === "passed") {
+      integrityStatusConsistent =
+        matchedFileCount.value === manifestFileCount.value &&
+        adverseCounts.every((count) => count === 0) &&
+        liveFilesUnchanged === true
+    } else if (integrityStatusValue === "failed") {
+      integrityStatusConsistent =
+        matchedFileCount.value !== manifestFileCount.value || adverseCounts.some((count) => count > 0)
+    } else if (integrityStatusValue === "untrusted_pin") {
+      integrityStatusConsistent = matchedFileCount.value === 0 && adverseCounts.every((count) => count === 0)
+    }
+  }
 
   const checks: Array<[string, boolean]> = [
     ["schema_version", data.schema_version === BACKGROUND_STATUS_SCHEMA],
@@ -1460,6 +1534,12 @@ function summarizeBackgroundStatus(
     ["promotion_allowed", data.promotion_allowed === false],
     ["dispatch_allowed", data.dispatch_allowed === false],
     ["runtime_actions", data.runtime_actions === false],
+    ["interaction_contract", interactionContractValid],
+    ["wrapper_invariants", wrapperInvariantsValid],
+    ["checks_no_screen_contract", statusChecks.no_screen_contract === true],
+    ["checks_client_process_stable_during_wrapper", statusChecks.client_process_stable_during_wrapper === true],
+    ["checks_screenshot_count_stable_during_wrapper", statusChecks.screenshot_count_stable_during_wrapper === true],
+    ["intrusive_actions_performed", intrusiveActionsValid],
     ["blockers", blockersValid],
     ["integrity", isRecord(data.integrity)],
     ["capability", isRecord(data.capability)],
@@ -1479,6 +1559,15 @@ function summarizeBackgroundStatus(
     ["matched_file_count", matchedFileCount.valid],
     ["manifest_file_count", manifestFileCount.valid],
     ["mutable_drift_count", mutableDriftCount.valid],
+    ["profile_drift_count", profileDriftCount.valid],
+    ["mismatch_count", mismatchCount.valid],
+    ["missing_count", missingCount.valid],
+    ["invalid_path_count", invalidPathCount.valid],
+    ["oversize_count", oversizeCount.valid],
+    ["live_files_unchanged_during_observation", typeof liveFilesUnchanged === "boolean"],
+    ["integrity_count_consistency", integrityCountConsistent],
+    ["integrity_drift_consistency", integrityDriftConsistent],
+    ["integrity_status_consistency", integrityStatusConsistent],
     ["generated_at_utc", Number.isFinite(generatedAtMs)],
   ]
   const contractErrors = checks.filter(([, passed]) => !passed).map(([name]) => name)

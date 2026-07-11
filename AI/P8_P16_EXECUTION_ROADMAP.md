@@ -1,7 +1,10 @@
 # CTOAi P8-P16 Execution Roadmap
 
-Status: active after P6/P7 readiness and Helper `v2.2.1` live promotion. P8 is
-the `v2.3.0` staged-source lane and does not auto-promote that version.
+Status: P8 is `implementation_complete` and
+`operational_acceptance_blocked` after P6/P7 readiness and Helper `v2.2.1` live
+promotion. Its implementation is the `v2.3.0` staged-source lane and does not
+auto-promote that version. P9 is queued and cannot start until P8 operational
+acceptance is explicitly accepted.
 
 ## Operating Contract
 
@@ -20,6 +23,10 @@ separate, explicit wrapper action and never follows from background evidence.
 ### P8 — BackgroundNoScreen Foundation
 
 Objective: make routine Helper validation non-intrusive while the user plays.
+
+State: `implementation_complete`; `operational_acceptance_blocked`. Acceptance
+requires an official promotion-bound trusted pin, a fresh capability heartbeat,
+and full producer/consumer parity for the no-action contract to pass together.
 
 Deliverables:
 
@@ -58,7 +65,9 @@ Done gates:
 Objective: validate only `plan_paralyze_recovery` from passive observations before
 any execute-once design.
 
-Dependencies: P8 current heartbeat and immutable parity; accepted Recovery trace.
+Dependencies: explicitly accepted P8 operational acceptance, including its trusted
+promotion pin, fresh heartbeat, and full consumer-parity proofs; accepted Recovery
+trace. P9 must not start while P8 remains `operational_acceptance_blocked`.
 
 Deliverables: sanitized Conditions observation schema, freshness/PZ tri-state,
 action-bound trace replay, deterministic positive and negative scenario pack, and
@@ -154,7 +163,9 @@ operator-authorization models have their own evidence-backed phase.
 
 ## Commit And Release Boundaries
 
-1. P8 ships as one reviewable background-observability bundle.
+1. P8 implementation ships as one reviewable background-observability bundle;
+   operational acceptance remains separate and fail-closed until its three
+   required proofs pass together.
 2. P9, P10, and P11 remain separate commits/PRs and cannot share acceptance evidence.
 3. P12 uses one bridge commit and one acceptance record per lane.
 4. P13/P14 are platform work and do not smuggle runtime executors into evidence code.

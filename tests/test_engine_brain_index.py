@@ -74,12 +74,10 @@ def test_roadmap_generation_blocks_p8_contract_marker_drift(tmp_path, monkeypatc
     _write_roadmap_generation_docs(tmp_path)
     monkeypatch.setattr(engine_brain_index, "ROOT", tmp_path)
     roadmap_path = tmp_path / "AI" / "P8_P16_EXECUTION_ROADMAP.md"
-    required_marker = (
-        "the `v2.3.0` staged-source lane and does not auto-promote that version."
-    )
+    required_marker = "`operational_acceptance_blocked` after P6/P7 readiness"
     roadmap_path.write_text(
         roadmap_path.read_text(encoding="utf-8").replace(
-            required_marker, "the staged-source lane remains under review."
+            required_marker, "operational acceptance remains under review"
         ),
         encoding="utf-8",
     )
@@ -851,12 +849,10 @@ def _run_plugin_cockpit(workspace):
 def test_p6_plugin_cockpit_blocks_p8_contract_marker_drift(tmp_path):
     _write_plugin_roadmap_workspace(tmp_path)
     roadmap_path = tmp_path / "AI" / "P8_P16_EXECUTION_ROADMAP.md"
-    required_marker = (
-        "the `v2.3.0` staged-source lane and does not auto-promote that version."
-    )
+    required_marker = "`operational_acceptance_blocked` after P6/P7 readiness"
     roadmap_path.write_text(
         roadmap_path.read_text(encoding="utf-8").replace(
-            required_marker, "the staged-source lane remains under review."
+            required_marker, "operational acceptance remains under review"
         ),
         encoding="utf-8",
     )

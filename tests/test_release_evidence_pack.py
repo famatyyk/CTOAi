@@ -30,11 +30,38 @@ def _background_payload(generated_at: str) -> dict[str, object]:
         "dispatch_allowed": False,
         "runtime_actions": False,
         "process_state": "running",
+        "interaction_contract": {
+            "gui_automation": False,
+            "mouse_keyboard_input": False,
+            "window_focus": False,
+            "screenshot_capture": False,
+            "client_launch": False,
+            "client_stop": False,
+            "live_file_writes": False,
+            "passive_reads_only": True,
+            "evidence_write_scope": "runtime/solteria_helper_dev",
+        },
+        "checks": {
+            "no_screen_contract": True,
+            "client_process_stable_during_wrapper": True,
+            "screenshot_count_stable_during_wrapper": True,
+        },
+        "wrapper_invariants": {
+            "client_process_stable": True,
+            "screenshot_count_stable": True,
+        },
+        "intrusive_actions_performed": [],
         "integrity": {
             "status": "passed",
             "matched_file_count": 58,
             "manifest_file_count": 58,
-            "mutable_drift_count": 1,
+            "mutable_drift_count": 0,
+            "profile_drift_count": 0,
+            "mismatch_count": 0,
+            "missing_count": 0,
+            "invalid_path_count": 0,
+            "oversize_count": 0,
+            "live_files_unchanged_during_observation": True,
         },
         "capability": {
             "status": "fresh",
@@ -102,6 +129,36 @@ def test_background_status_expires_without_affecting_live_promotion(tmp_path: Pa
     assert helper["releasable_to_live"] is False
 
 
+def test_background_status_accepts_consistent_untrusted_pin_as_blocked_evidence(
+    tmp_path: Path,
+):
+    module = _load_module()
+    payload = _background_payload(dt.datetime.now(dt.UTC).isoformat())
+    payload["status"] = "blocked"
+    payload["blockers"] = ["live_manifest_pin_untrusted"]
+    integrity = payload["integrity"]
+    capability = payload["capability"]
+    assert isinstance(integrity, dict)
+    assert isinstance(capability, dict)
+    integrity["status"] = "untrusted_pin"
+    integrity["matched_file_count"] = 0
+    integrity["live_files_unchanged_during_observation"] = False
+    capability["status"] = "missing"
+    capability["fresh"] = False
+
+    summary = module._background_status_summary(
+        payload,
+        tmp_path / "background_status.json",
+        artifact_present=True,
+    )
+
+    assert summary["status"] == "blocked"
+    assert summary["contract_valid"] is True
+    assert summary["fresh"] is True
+    assert summary["integrity_status"] == "untrusted_pin"
+    assert summary["blockers"] == ["live_manifest_pin_untrusted"]
+
+
 def test_background_status_invalid_contract_and_counts_fail_closed(tmp_path: Path):
     module = _load_module()
     helper_dev_dir = tmp_path / "runtime" / "solteria_helper_dev"
@@ -126,6 +183,84 @@ def test_background_status_invalid_contract_and_counts_fail_closed(tmp_path: Pat
     assert {"promotion_allowed", "blockers", "matched_file_count"}.issubset(
         background["contract_errors"]
     )
+
+
+@pytest.mark.parametrize(
+    ("mutation", "expected_error"),
+    [
+        ("interaction_input", "interaction_contract"),
+        ("interaction_numeric", "interaction_contract"),
+        ("interaction_extra", "interaction_contract"),
+        ("wrapper_process", "wrapper_invariants"),
+        ("no_screen_check", "checks_no_screen_contract"),
+        (
+            "wrapper_process_check",
+            "checks_client_process_stable_during_wrapper",
+        ),
+        (
+            "wrapper_screenshot_check",
+            "checks_screenshot_count_stable_during_wrapper",
+        ),
+        ("intrusive_action", "intrusive_actions_performed"),
+        ("status_type", "status"),
+        ("count_overflow", "integrity_count_consistency"),
+        ("drift_alias", "integrity_drift_consistency"),
+        ("passed_with_mismatch", "integrity_status_consistency"),
+    ],
+)
+def test_background_status_full_no_action_contract_mutations_fail_closed(
+    tmp_path: Path, mutation: str, expected_error: str
+):
+    module = _load_module()
+    payload = _background_payload(dt.datetime.now(dt.UTC).isoformat())
+
+    interaction = payload["interaction_contract"]
+    wrapper = payload["wrapper_invariants"]
+    status_checks = payload["checks"]
+    integrity = payload["integrity"]
+    assert isinstance(interaction, dict)
+    assert isinstance(wrapper, dict)
+    assert isinstance(status_checks, dict)
+    assert isinstance(integrity, dict)
+
+    if mutation == "interaction_input":
+        interaction["mouse_keyboard_input"] = True
+    elif mutation == "interaction_numeric":
+        interaction["mouse_keyboard_input"] = 0
+    elif mutation == "interaction_extra":
+        interaction["unvalidated_action"] = False
+    elif mutation == "wrapper_process":
+        wrapper["client_process_stable"] = False
+    elif mutation == "no_screen_check":
+        status_checks["no_screen_contract"] = False
+    elif mutation == "wrapper_process_check":
+        status_checks["client_process_stable_during_wrapper"] = False
+    elif mutation == "wrapper_screenshot_check":
+        status_checks["screenshot_count_stable_during_wrapper"] = False
+    elif mutation == "intrusive_action":
+        payload["intrusive_actions_performed"] = ["screenshot_capture"]
+    elif mutation == "status_type":
+        payload["status"] = []
+    elif mutation == "count_overflow":
+        integrity["mismatch_count"] = 1
+    elif mutation == "drift_alias":
+        integrity["profile_drift_count"] = 1
+    elif mutation == "passed_with_mismatch":
+        integrity["matched_file_count"] = 57
+        integrity["mismatch_count"] = 1
+    else:  # pragma: no cover - the parametrization is exhaustive
+        raise AssertionError(f"unsupported mutation: {mutation}")
+
+    summary = module._background_status_summary(
+        payload,
+        tmp_path / "background_status.json",
+        artifact_present=True,
+    )
+
+    assert summary["status"] == "blocked"
+    assert summary["contract_valid"] is False
+    assert summary["fresh"] is False
+    assert expected_error in summary["contract_errors"]
 
 
 def test_build_evidence_pack_reads_current_artifacts(tmp_path: Path):
@@ -242,34 +377,7 @@ def test_build_evidence_pack_reads_current_artifacts(tmp_path: Path):
         json.dumps({"status": "not_running"}), encoding="utf-8"
     )
     (helper_dev_dir / "background_status.json").write_text(
-        json.dumps(
-            {
-                "schema_version": "ctoa.otclient-headless-status.v1",
-                "status": "ready",
-                "mode": "background_no_screen",
-                "generated_at_utc": background_generated_at,
-                "advisory_only": True,
-                "safe_to_run_while_playing": True,
-                "promotion_allowed": False,
-                "dispatch_allowed": False,
-                "runtime_actions": False,
-                "process_state": "running",
-                "integrity": {
-                    "status": "passed",
-                    "matched_file_count": 58,
-                    "manifest_file_count": 58,
-                    "mutable_drift_count": 1,
-                },
-                "capability": {
-                    "status": "fresh",
-                    "fresh": True,
-                    "runtime_state": "disarmed",
-                    "runtime_actions": False,
-                    "runtime_core_actions": False,
-                },
-                "blockers": [],
-            }
-        ),
+        json.dumps(_background_payload(background_generated_at)),
         encoding="utf-8",
     )
     (helper_dev_dir / "goal_status.json").write_text(
@@ -440,7 +548,7 @@ def test_build_evidence_pack_reads_current_artifacts(tmp_path: Path):
         "integrity_status": "passed",
         "matched_file_count": 58,
         "manifest_file_count": 58,
-        "mutable_drift_count": 1,
+        "mutable_drift_count": 0,
         "capability_status": "fresh",
         "capability_fresh": True,
         "runtime_state": "disarmed",

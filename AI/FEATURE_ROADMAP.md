@@ -7,23 +7,28 @@
 - Helper `v2.2.1` is live-promoted with 58-file manifest parity at promotion.
   Vocation-profile drift after play is tracked separately, but remains blocking
   because the current Lua profile is executable rather than data-only.
-- P8 `BackgroundNoScreen` is the active implementation lane. It replaces routine
-  mouse/focus/screenshot testing with bounded passive evidence and never implies
-  another live promotion. The next staged source version is `v2.3.0`; live stays
-  on `v2.2.1` until a later explicit release cycle.
-- P8 trust is promotion-bound: the observer cannot create its own live manifest,
-  and readiness requires one canonical process plus an explicit online heartbeat
-  newer than that process.
+- P8 `BackgroundNoScreen` is `implementation_complete` and
+  `operational_acceptance_blocked`. It replaces routine mouse/focus/screenshot
+  testing with bounded passive evidence and never implies another live promotion.
+  The staged source version is `v2.3.0`; live stays on `v2.2.1` until a later
+  explicit release cycle.
+- P8 operational acceptance requires all three proofs: an official
+  promotion-bound trusted pin, a fresh capability heartbeat newer than the one
+  canonical client process, and full producer/consumer parity for the no-action
+  contract. The observer cannot create its own live manifest or trust anchor.
 - P6 is ready for plugin design and the five bounded P7 safe-write refresh tools
   are enabled with audit coverage.
 
 ## Now
 
 1. **BackgroundNoScreen foundation (P8)** — owner: Helper Runtime + Evidence;
-   status: `implementation_active`; risk: `read_only_observability`. Contract:
+   implementation status: `implementation_complete`; operational status:
+   `operational_acceptance_blocked`; risk: `read_only_observability`. Contract:
    `AI/P8_P16_EXECUTION_ROADMAP.md`. The only allowed wrapper action in this mode
    is `BackgroundStatus`; it cannot launch, stop, focus, capture, send input, or
-   write inside a client.
+   write inside a client. Acceptance stays blocked until the promotion-bound
+   trusted pin, fresh capability heartbeat, and full no-action consumer parity
+   are proven together.
 2. **Conditions runtime safety gate** — owner: Helper Runtime; status:
    `static_contract_accepted`; risk: `runtime_recovery`. It follows the accepted
    Recovery Bridge and allowlists only a paralyze-recovery dry-run. Runtime
@@ -40,9 +45,13 @@
 
 ## Next
 
-- Complete P8 producer/consumer parity so a fresh capability heartbeat is visible
-  through `ctoa.ps1 otbg` and Control Center without touching the game window.
-- P9 captures and replays Conditions evidence before any execute-once bridge.
+- Close P8 operational acceptance only after an official promotion-bound trusted
+  pin, a fresh capability heartbeat, and full producer/consumer parity are proven
+  together through `ctoa.ps1 otbg`, release evidence, and Control Center without
+  touching the game window.
+- P9 remains queued and must not start until P8 operational acceptance is
+  explicitly accepted; it then captures and replays Conditions evidence before
+  any execute-once bridge.
 - P10 repeats the independent shadow/replay sequence for rollback-ready Equipment;
   P11 does the same for exact-whitelist Heal Friend.
 - P12 is the first possible execute-once sandbox phase, still with no live dispatch.

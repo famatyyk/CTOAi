@@ -67,6 +67,21 @@ BACKGROUND_BLOCKER_VALUES = {
     "screenshot_count_changed_during_observation",
     *(f"capability_{status}" for status in BACKGROUND_CAPABILITY_STATUS_VALUES),
 }
+BACKGROUND_INTERACTION_CONTRACT = {
+    "gui_automation": False,
+    "mouse_keyboard_input": False,
+    "window_focus": False,
+    "screenshot_capture": False,
+    "client_launch": False,
+    "client_stop": False,
+    "live_file_writes": False,
+    "passive_reads_only": True,
+    "evidence_write_scope": "runtime/solteria_helper_dev",
+}
+BACKGROUND_WRAPPER_INVARIANTS = {
+    "client_process_stable": True,
+    "screenshot_count_stable": True,
+}
 
 
 def _now_iso() -> str:
@@ -226,6 +241,17 @@ def _safe_nonnegative_int(value: Any) -> tuple[int, bool]:
     return 0, False
 
 
+def _matches_exact_contract(value: Any, expected: dict[str, Any]) -> bool:
+    return (
+        isinstance(value, dict)
+        and value.keys() == expected.keys()
+        and all(
+            type(value[key]) is type(expected_value) and value[key] == expected_value
+            for key, expected_value in expected.items()
+        )
+    )
+
+
 def _parse_utc_timestamp(value: Any) -> dt.datetime | None:
     if not isinstance(value, str) or not value or len(value) > 64:
         return None
@@ -258,7 +284,10 @@ def _background_status_summary(
     blockers_valid = (
         isinstance(raw_blockers, list)
         and len(raw_blockers) <= 16
-        and all(item in BACKGROUND_BLOCKER_VALUES for item in raw_blockers)
+        and all(
+            isinstance(item, str) and item in BACKGROUND_BLOCKER_VALUES
+            for item in raw_blockers
+        )
     )
     blockers = list(raw_blockers[:8]) if blockers_valid else []
 
@@ -271,6 +300,63 @@ def _background_status_summary(
     mutable_drift_count, mutable_valid = _safe_nonnegative_int(
         integrity.get("mutable_drift_count")
     )
+    profile_drift_count, profile_drift_valid = _safe_nonnegative_int(
+        integrity.get("profile_drift_count")
+    )
+    mismatch_count, mismatch_valid = _safe_nonnegative_int(
+        integrity.get("mismatch_count")
+    )
+    missing_count, missing_valid = _safe_nonnegative_int(integrity.get("missing_count"))
+    invalid_path_count, invalid_path_valid = _safe_nonnegative_int(
+        integrity.get("invalid_path_count")
+    )
+    oversize_count, oversize_valid = _safe_nonnegative_int(
+        integrity.get("oversize_count")
+    )
+
+    interaction_contract_valid = _matches_exact_contract(
+        data.get("interaction_contract"), BACKGROUND_INTERACTION_CONTRACT
+    )
+    wrapper_invariants_valid = _matches_exact_contract(
+        data.get("wrapper_invariants"), BACKGROUND_WRAPPER_INVARIANTS
+    )
+    status_checks = data.get("checks") if isinstance(data.get("checks"), dict) else {}
+    intrusive_actions_valid = (
+        isinstance(data.get("intrusive_actions_performed"), list)
+        and not data["intrusive_actions_performed"]
+    )
+
+    count_fields_valid = all(
+        (
+            matched_valid,
+            manifest_valid,
+            mutable_valid,
+            profile_drift_valid,
+            mismatch_valid,
+            missing_valid,
+            invalid_path_valid,
+            oversize_valid,
+        )
+    )
+    observed_file_count = sum(
+        (
+            matched_file_count,
+            mismatch_count,
+            mutable_drift_count,
+            missing_count,
+            invalid_path_count,
+            oversize_count,
+        )
+    )
+    integrity_count_consistent = (
+        count_fields_valid and observed_file_count <= manifest_file_count
+    )
+    integrity_drift_consistent = (
+        mutable_valid
+        and profile_drift_valid
+        and mutable_drift_count == profile_drift_count
+    )
+    live_files_unchanged = integrity.get("live_files_unchanged_during_observation")
 
     generated_at_raw = data.get("generated_at_utc")
     generated_at = _parse_utc_timestamp(generated_at_raw)
@@ -290,11 +376,49 @@ def _background_status_summary(
     runtime_state_value = capability.get("runtime_state") or log.get("runtime_state")
     integrity_status_value = integrity.get("status")
     capability_status_value = capability.get("status")
+    reported_status_valid = (
+        isinstance(reported_status, str) and reported_status in BACKGROUND_STATUS_VALUES
+    )
+    process_state_valid = isinstance(
+        process_state_value, str
+    ) and process_state_value in {"running", "not_running", "ambiguous"}
+    runtime_state_valid = isinstance(
+        runtime_state_value, str
+    ) and runtime_state_value in {"armed", "disarmed", "unknown"}
+    integrity_status_valid = (
+        isinstance(integrity_status_value, str)
+        and integrity_status_value in BACKGROUND_INTEGRITY_STATUS_VALUES
+    )
+    capability_status_valid = (
+        isinstance(capability_status_value, str)
+        and capability_status_value in BACKGROUND_CAPABILITY_STATUS_VALUES
+    )
+    integrity_status_consistent = False
+    if count_fields_valid and integrity_count_consistent and integrity_drift_consistent:
+        adverse_counts = (
+            mismatch_count,
+            mutable_drift_count,
+            missing_count,
+            invalid_path_count,
+            oversize_count,
+        )
+        if integrity_status_value == "passed":
+            integrity_status_consistent = (
+                matched_file_count == manifest_file_count
+                and not any(adverse_counts)
+                and live_files_unchanged is True
+            )
+        elif integrity_status_value == "failed":
+            integrity_status_consistent = (
+                matched_file_count != manifest_file_count or any(adverse_counts)
+            )
+        elif integrity_status_value == "untrusted_pin":
+            integrity_status_consistent = not any((matched_file_count, *adverse_counts))
     contract_errors: list[str] = []
     checks = (
         ("schema_version", data.get("schema_version") == BACKGROUND_STATUS_SCHEMA),
         ("mode", mode == BACKGROUND_STATUS_MODE),
-        ("status", reported_status in BACKGROUND_STATUS_VALUES),
+        ("status", reported_status_valid),
         ("advisory_only", data.get("advisory_only") is True),
         (
             "safe_to_run_while_playing",
@@ -303,25 +427,28 @@ def _background_status_summary(
         ("promotion_allowed", data.get("promotion_allowed") is False),
         ("dispatch_allowed", data.get("dispatch_allowed") is False),
         ("runtime_actions", data.get("runtime_actions") is False),
+        ("interaction_contract", interaction_contract_valid),
+        ("wrapper_invariants", wrapper_invariants_valid),
+        (
+            "checks_no_screen_contract",
+            status_checks.get("no_screen_contract") is True,
+        ),
+        (
+            "checks_client_process_stable_during_wrapper",
+            status_checks.get("client_process_stable_during_wrapper") is True,
+        ),
+        (
+            "checks_screenshot_count_stable_during_wrapper",
+            status_checks.get("screenshot_count_stable_during_wrapper") is True,
+        ),
+        ("intrusive_actions_performed", intrusive_actions_valid),
         ("blockers", blockers_valid),
         ("integrity", isinstance(data.get("integrity"), dict)),
         ("capability", isinstance(data.get("capability"), dict)),
-        (
-            "process_state",
-            process_state_value in {"running", "not_running", "ambiguous"},
-        ),
-        (
-            "runtime_state",
-            runtime_state_value in {"armed", "disarmed", "unknown"},
-        ),
-        (
-            "integrity_status",
-            integrity_status_value in BACKGROUND_INTEGRITY_STATUS_VALUES,
-        ),
-        (
-            "capability_status",
-            capability_status_value in BACKGROUND_CAPABILITY_STATUS_VALUES,
-        ),
+        ("process_state", process_state_valid),
+        ("runtime_state", runtime_state_valid),
+        ("integrity_status", integrity_status_valid),
+        ("capability_status", capability_status_valid),
         ("capability_fresh", isinstance(capability.get("fresh"), bool)),
         ("capability_runtime_actions", capability.get("runtime_actions") is False),
         (
@@ -331,21 +458,27 @@ def _background_status_summary(
         ("matched_file_count", matched_valid),
         ("manifest_file_count", manifest_valid),
         ("mutable_drift_count", mutable_valid),
+        ("profile_drift_count", profile_drift_valid),
+        ("mismatch_count", mismatch_valid),
+        ("missing_count", missing_valid),
+        ("invalid_path_count", invalid_path_valid),
+        ("oversize_count", oversize_valid),
+        (
+            "live_files_unchanged_during_observation",
+            isinstance(live_files_unchanged, bool),
+        ),
+        ("integrity_count_consistency", integrity_count_consistent),
+        ("integrity_drift_consistency", integrity_drift_consistent),
+        ("integrity_status_consistency", integrity_status_consistent),
         ("generated_at_utc", generated_at is not None),
     )
     contract_errors.extend(name for name, passed in checks if not passed)
     contract_valid = payload is not None and not contract_errors
     fresh = contract_valid and timestamp_fresh
     capability_fresh = capability.get("fresh") is True
-    integrity_status = (
-        integrity_status_value
-        if integrity_status_value in BACKGROUND_INTEGRITY_STATUS_VALUES
-        else "invalid"
-    )
+    integrity_status = integrity_status_value if integrity_status_valid else "invalid"
     capability_status = (
-        capability_status_value
-        if capability_status_value in BACKGROUND_CAPABILITY_STATUS_VALUES
-        else "invalid"
+        capability_status_value if capability_status_valid else "invalid"
     )
     ready = bool(
         contract_valid
@@ -372,22 +505,15 @@ def _background_status_summary(
 
     runtime_state = (
         runtime_state_value
-        if runtime_state_value in {"armed", "disarmed"}
+        if isinstance(runtime_state_value, str)
+        and runtime_state_value in {"armed", "disarmed"}
         else "unknown"
     )
-    process_state = (
-        process_state_value
-        if process_state_value in {"running", "not_running", "ambiguous"}
-        else "unknown"
-    )
+    process_state = process_state_value if process_state_valid else "unknown"
 
     return {
         "status": effective_status,
-        "reported_status": (
-            reported_status
-            if reported_status in BACKGROUND_STATUS_VALUES
-            else "invalid"
-        ),
+        "reported_status": reported_status if reported_status_valid else "invalid",
         "mode": mode if mode == BACKGROUND_STATUS_MODE else "invalid",
         "generated_at_utc": (
             generated_at.isoformat(timespec="seconds") if generated_at else ""
