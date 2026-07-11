@@ -1,6 +1,6 @@
 # CTOAi Engine Brain Pack
 
-Generated at: `2026-07-11T17:22:01+00:00`
+Generated at: `2026-07-11T18:13:32+00:00`
 Repo root: `C:\Users\zycie\CTOAi`
 Profile: `all`
 
@@ -55,6 +55,8 @@ needed for a task instead of relying on one long prompt.
 - `FEATURE_ROADMAP.md`: next implementation lanes.
 - `P8_P16_EXECUTION_ROADMAP.md`: background-first post-P7 phase sequence and
   evidence gates through design-only Combat/CaveBot work.
+- `../docs/otclient/P9_CONDITIONS_SHADOW_REPLAY_DESIGN.md`: review-ready P9
+  data-only observation/replay contract, still blocked by P8 operational acceptance.
 - `KNOWN_BUGS.md`: known risks and suspected defects.
 - `TECH_DEBT.md`: cleanup backlog.
 - `SPECIALIZED_PROMPTS.md`: project-aware task personas.
@@ -814,18 +816,23 @@ Snapshot date: 2026-07-11 Europe/Warsaw
   attach 4/4, full attach 16/16, and RuntimeModuleGatesSandboxSmoke 19/19.
   These gates remain dry-run/no-dispatch even though the package itself is now
   live-promoted; runtime acceptance and package promotion are separate states.
-- P8 `BackgroundNoScreen` is the active lane. It adds bounded passive heartbeat
-  and log readers, immutable live/manifest parity, an advisory-only
+- P8 `BackgroundNoScreen` is `implementation_complete` and
+  `operational_acceptance_blocked`. It adds bounded passive heartbeat and log
+  readers, immutable live/manifest parity, an advisory-only
   `background_status.json`, a positive wrapper allowlist, primitive GUI/input/
   screenshot/start-stop/live-write guards, `ctoa.ps1 otbg`, and a read-only
   Control Center status tile. It records process/screenshot stability and never
   authorizes dispatch or promotion. The staged source version is `v2.3.0`; the
-  protected live client remains `v2.2.1` during this development cycle. Canonical sequence:
-  `AI/P8_P16_EXECUTION_ROADMAP.md`.
-- P8 trust is fail-closed: only a manifest with `official_live_promotion`
-  provenance and a matching SHA256 in `live_promotion.json` can anchor parity.
-  The observer cannot create that pin. Fresh readiness also requires exactly one
-  canonical client process and an explicit online heartbeat newer than it.
+  protected live client remains `v2.2.1` during this development cycle. Canonical
+  sequence: `AI/P8_P16_EXECUTION_ROADMAP.md`.
+- P8 operational acceptance is fail-closed and requires all three proofs: a
+  manifest with `official_live_promotion` provenance and matching SHA256 in
+  `live_promotion.json`, an explicit fresh online capability heartbeat newer than
+  exactly one canonical client process, and full producer/consumer parity for the
+  no-action contract. The observer cannot create that trusted pin. P9 Conditions
+  remains queued until P8 operational acceptance is explicitly accepted. Its
+  data-only shadow/replay contract is review-ready in
+  `docs/otclient/P9_CONDITIONS_SHADOW_REPLAY_DESIGN.md`.
 - Vocation-profile drift is visible as its own count but cannot satisfy parity:
   the current profile is executable Lua. A later schema-validated data-only
   persistence format is required before normal profile changes can be trusted as
@@ -1415,11 +1422,7 @@ Snapshot date: 2026-07-11 Europe/Warsaw
   before URLs are written to DB rows, audits, or dashboard responses.
 - Mobile console local runtime API proxy bases now fail closed. `CTOA_API_BASE_URL`
   and `CTOA_INTEL_API_BASE_URL` must target `localhost`, `127.0.0.1`, `[::1]`,
-  or `host.docker.internal`, and must not include credentials, query strings,
-  fragments, backslashes, or decoded traversal before `/api/intel/*` or
-  `/api/dashboard/release-evidence` can call `urlopen`. Invalid values return a
-  generic `[invalid-local-runtime-api]` marker instead of echoing the raw env
-  URL. Runtime proxy `URL
+  or `ho
 
 [truncated]
 ```
@@ -2023,23 +2026,28 @@ Pending source. Expected classes to index after TFS source is available:
 - Helper `v2.2.1` is live-promoted with 58-file manifest parity at promotion.
   Vocation-profile drift after play is tracked separately, but remains blocking
   because the current Lua profile is executable rather than data-only.
-- P8 `BackgroundNoScreen` is the active implementation lane. It replaces routine
-  mouse/focus/screenshot testing with bounded passive evidence and never implies
-  another live promotion. The next staged source version is `v2.3.0`; live stays
-  on `v2.2.1` until a later explicit release cycle.
-- P8 trust is promotion-bound: the observer cannot create its own live manifest,
-  and readiness requires one canonical process plus an explicit online heartbeat
-  newer than that process.
+- P8 `BackgroundNoScreen` is `implementation_complete` and
+  `operational_acceptance_blocked`. It replaces routine mouse/focus/screenshot
+  testing with bounded passive evidence and never implies another live promotion.
+  The staged source version is `v2.3.0`; live stays on `v2.2.1` until a later
+  explicit release cycle.
+- P8 operational acceptance requires all three proofs: an official
+  promotion-bound trusted pin, a fresh capability heartbeat newer than the one
+  canonical client process, and full producer/consumer parity for the no-action
+  contract. The observer cannot create its own live manifest or trust anchor.
 - P6 is ready for plugin design and the five bounded P7 safe-write refresh tools
   are enabled with audit coverage.
 
 ## Now
 
 1. **BackgroundNoScreen foundation (P8)** — owner: Helper Runtime + Evidence;
-   status: `implementation_active`; risk: `read_only_observability`. Contract:
+   implementation status: `implementation_complete`; operational status:
+   `operational_acceptance_blocked`; risk: `read_only_observability`. Contract:
    `AI/P8_P16_EXECUTION_ROADMAP.md`. The only allowed wrapper action in this mode
    is `BackgroundStatus`; it cannot launch, stop, focus, capture, send input, or
-   write inside a client.
+   write inside a client. Acceptance stays blocked until the promotion-bound
+   trusted pin, fresh capability heartbeat, and full no-action consumer parity
+   are proven together.
 2. **Conditions runtime safety gate** — owner: Helper Runtime; status:
    `static_contract_accepted`; risk: `runtime_recovery`. It follows the accepted
    Recovery Bridge and allowlists only a paralyze-recovery dry-run. Runtime
@@ -2056,9 +2064,15 @@ Pending source. Expected classes to index after TFS source is available:
 
 ## Next
 
-- Complete P8 producer/consumer parity so a fresh capability heartbeat is visible
-  through `ctoa.ps1 otbg` and Control Center without touching the game window.
-- P9 captures and replays Conditions evidence before any execute-once bridge.
+- Close P8 operational acceptance only after an official promotion-bound trusted
+  pin, a fresh capability heartbeat, and full producer/consumer parity are proven
+  together through `ctoa.ps1 otbg`, release evidence, and Control Center without
+  touching the game window.
+- P9 remains queued and must not start until P8 operational acceptance is
+  explicitly accepted. Its design is `design_ready` in
+  `docs/otclient/P9_CONDITIONS_SHADOW_REPLAY_DESIGN.md`; it then captures and
+  replays Conditions evidence through a strict data-only JSON profile before any
+  execute-once bridge.
 - P10 repeats the independent shadow/replay sequence for rollback-ready Equipment;
   P11 does the same for exact-whitelist Heal Friend.
 - P12 is the first possible execute-once sandbox phase, still with no live dispatch.
@@ -2693,18 +2707,7 @@ Once available:
   Windows or POSIX absolute local paths before the UI or audit preview can
   display them.
 - Keep `/api/control-center/actions` route-level error JSON on the same
-  sanitizer too. Unknown-action, authorization, malformed, or internal action
-  errors must not echo token-like input or local host paths back to the browser.
-- Keep `/api/control-center` and `/api/control-center/legacy` fallback status
-  payloads on that same browser-visible sanitizer. Backend probe/fetch failures
-  must not expose token/password forms or Windows/POSIX local paths in JSON
-  summaries/details.
-- Keep Control Center action-audit persistence secret-safe too: action `reason`
-  and `output_preview` fields must be redacted before writing
-  `runtime/control-center/action-audit.jsonl`, not only when rendered back
-  through the evidence drilldown.
-- Keep Control Center action-audit read paths on the same shared redaction
-  helper as persistence. Evidence and ops dril
+  sanitizer too. Unknown-action, authorization, malformed, or internal
 
 [truncated]
 ```
@@ -2715,8 +2718,11 @@ Once available:
 ```markdown
 # CTOAi P8-P16 Execution Roadmap
 
-Status: active after P6/P7 readiness and Helper `v2.2.1` live promotion. P8 is
-the `v2.3.0` staged-source lane and does not auto-promote that version.
+Status: P8 is `implementation_complete` and
+`operational_acceptance_blocked` after P6/P7 readiness and Helper `v2.2.1` live
+promotion. Its implementation is the `v2.3.0` staged-source lane and does not
+auto-promote that version. P9 is queued and cannot start until P8 operational
+acceptance is explicitly accepted.
 
 ## Operating Contract
 
@@ -2735,6 +2741,10 @@ separate, explicit wrapper action and never follows from background evidence.
 ### P8 — BackgroundNoScreen Foundation
 
 Objective: make routine Helper validation non-intrusive while the user plays.
+
+State: `implementation_complete`; `operational_acceptance_blocked`. Acceptance
+requires an official promotion-bound trusted pin, a fresh capability heartbeat,
+and full producer/consumer parity for the no-action contract to pass together.
 
 Deliverables:
 
@@ -2773,7 +2783,13 @@ Done gates:
 Objective: validate only `plan_paralyze_recovery` from passive observations before
 any execute-once design.
 
-Dependencies: P8 current heartbeat and immutable parity; accepted Recovery trace.
+Design state: `design_ready`; implementation and operational acceptance remain
+`blocked_by_p8_operational_acceptance`. Canonical design:
+`docs/otclient/P9_CONDITIONS_SHADOW_REPLAY_DESIGN.md`.
+
+Dependencies: explicitly accepted P8 operational acceptance, including its trusted
+promotion pin, fresh heartbeat, and full consumer-parity proofs; accepted Recovery
+trace. P9 must not start while P8 remains `operational_acceptance_blocked`.
 
 Deliverables: sanitized Conditions observation schema, freshness/PZ tri-state,
 action-bound trace replay, deterministic positive and negative scenario pack, and
@@ -2869,7 +2885,9 @@ operator-authorization models have their own evidence-backed phase.
 
 ## Commit And Release Boundaries
 
-1. P8 ships as one reviewable background-observability bundle.
+1. P8 implementation ships as one reviewable background-observability bundle;
+   operational acceptance remains separate and fail-closed until its three
+   required proofs pass together.
 2. P9, P10, and P11 remain separate commits/PRs and cannot share acceptance evidence.
 3. P12 uses one bridge commit and one acceptance record per lane.
 4. P13/P14 are platform work and do not smuggle runtime executors into evidence code.
@@ -2964,7 +2982,7 @@ enable `ctoai_roadmap_state_refresh`.
 ```markdown
 # CTOAi Three Development Plans
 
-Basis: full workspace audit with `42879` inventoried files and `1346` git-tracked files.
+Basis: full workspace audit with `42967` inventoried files and `1347` git-tracked files.
 
 ## Plan 1: Helper-First Productization
 
@@ -2976,7 +2994,7 @@ Goal: turn the OTClient/Solteria Helper into a safe, repeatable product lane bef
 - Require `PrepareDev`, `ValidateDev`, `SmokePreflight`, in-world `SmokeAttachAll`, and explicit live approval.
 - Expand `otclient_helper_profile_audit.py` from text checks toward schema-backed migration validation.
 - Keep Control Center Helper status read-only and backed by runtime artifacts.
-- Make `BackgroundNoScreen` the default routine Helper evidence lane: no mouse/keyboard input, focus, screenshots, client launch/stop, or live-client writes; use bounded passive heartbeat/log/process/hash reads, require an official promotion-bound pin, treat executable-profile drift as blocking, and write only repo-local runtime evidence.
+- Treat P8 `BackgroundNoScreen` as `implementation_complete` but `operational_acceptance_blocked`: keep it the default routine Helper evidence lane with no mouse/keyboard input, focus, screenshots, client launch/stop, or live-client writes; accept it only after an official promotion-bound trusted pin, a fresh capability heartbeat, and full no-action producer/consumer parity pass together. Keep P9 Conditions queued until that acceptance.
 - Keep the post-Recovery runtime sequence fixed: Conditions paralyze-only gate, then Equipment ring-only rollback gate, then Heal Friend exact-whitelist gate. Require action-bound predecessor traces and current `RuntimeModuleGatesSandboxSmoke` evidence; Combat and CaveBot remain `deferred_high_risk` and may receive passive refactor work only.
 
 ### 31-60 Days
@@ -3053,6 +3071,157 @@ Goal: make `AI/` the local, secret-safe planning/context layer and evolve it int
 - Keep deploy/live actions out of the plugin MCP surface; only dry-run-first evidence/reporting refreshes may write, and they must append Control Center action-audit evidence.
 - Prepare a plugin-style operator surface for audit, release evidence, and roadmap generation.
 - Keep `AI/P8_P16_EXECUTION_ROADMAP.md` as the post-P7 execution contract: P8 background observability, P9-P11 independent low-risk shadow/replay lanes, P12 execute-once sandbox review, P13 evidence/roadmap state, P14 independent runner, and P15-P16 design-only Combat/CaveBot twins.
+```
+
+
+## `docs/otclient/P9_CONDITIONS_SHADOW_REPLAY_DESIGN.md`
+
+```markdown
+# P9 Conditions Shadow Observation And Replay
+
+Status: `design_ready`; implementation and operational acceptance remain
+`blocked_by_p8_operational_acceptance`.
+
+## Purpose
+
+P9 validates only `plan_paralyze_recovery` from passive, sanitized evidence. It
+does not cast, dispatch, arm runtime, execute once, promote a package, or touch a
+client window. The product is a deterministic offline replay lane fed by the
+existing P8 heartbeat.
+
+P9 implementation may begin only after P8 has one jointly accepted proof set:
+
+1. an official promotion-bound trusted manifest pin;
+2. one canonical process with a fresh online capability heartbeat newer than
+   that process;
+3. full producer/consumer parity for the BackgroundNoScreen no-action contract.
+
+Until then, this document is a design contract and must not be represented as
+P9 runtime readiness.
+
+## Data Flow
+
+```text
+guarded OTClient adapter
+  -> optional Conditions observation in the P8 heartbeat
+  -> bounded headless validation and sanitization
+  -> deterministic replay with a data-only JSON profile
+  -> conditions_shadow_replay.json
+  -> read-only Release Evidence and Control Center summaries
+```
+
+The existing 5-second heartbeat remains the only client-side producer loop. A
+missing Conditions observation blocks P9 only and remains compatible with the
+currently protected `v2.2.1` live client.
+
+## Data-Only Profile
+
+Canonical path after P8 acceptance:
+`config/otclient/conditions-shadow-profile.json`.
+
+Canonical schema: `ctoa.conditions-shadow-profile.v1`, JSON Schema draft
+2020-12, with `additionalProperties=false` at every object boundary.
+
+Required fixed safety values:
+
+```json
+{
+  "schema_version": "ctoa.conditions-shadow-profile.v1",
+  "mode": "shadow_only",
+  "action": "plan_paralyze_recovery",
+  "condition": "paralyze",
+  "spell": "exura",
+  "max_observation_age_ms": 6000,
+  "cooldown_required": "ready",
+  "retry_budget": 0,
+  "requires_p8_ready": true,
+  "requires_recovery_trace": true,
+  "dispatch_allowed": false,
+  "runtime_actions": false,
+  "executes_plan": false,
+  "execute_once_allowed": false,
+  "promotion_allowed": false
+}
+```
+
+This profile is consumed only by the offline P9 replay tool. Lua, `dofile`, the
+client UI, autosave, and runtime dispatch must never load it. It does not migrate
+the existing vocation profiles; their executable-Lua drift remains blocking.
+
+## Sanitized Observation
+
+Schema `ctoa.conditions-observation.v1` contains only:
+
+- observation timestamp and bounded observation ID;
+- `online|offline|unknown`;
+- `alive|dead|unknown`;
+- protection-zone tri-state `outside|inside|unknown` plus an allowlisted source;
+- fixed condition ID `paralyze` and state `present|absent|unknown`;
+- cooldown `ready|active|unknown` plus an allowlisted source;
+- producer source `otclient_guarded_adapter|fixture`;
+- explicit false action, dispatch, execute-once, and promotion flags.
+
+Names, creature IDs, coordinates, raw state bitmasks, log lines, local paths, and
+arbitrary strings are forbidden.
+
+## Deterministic Replay Trace
+
+Schema `ctoa.conditions-shadow-trace.v1` binds:
+
+- the exact action, condition, and spell;
+- SHA-256 of the profile, observation, accepted P8 status, and Recovery trace;
+- evaluation timestamp and derived observation age;
+- stable, allowlisted blockers in canonical order;
+- canonical input and decision SHA-256 values;
+- `operator_review_required=true`;
+- `dispatch_allowed=false`, `runtime_actions=false`,
+  `execute_once_allowed=false`, and `promotion_allowed=false`;
+- an empty intrusive-action ledger.
+
+Two replays of identical canonical inputs must produce the same decision hash.
+A normal observation without paralyze is a valid blocked decision, not a tool
+failure.
+
+## Scenario Pack
+
+The deterministic pack must include one positive shadow decision and negative
+cases for:
+
+- missing, blocked, or stale P8 evidence;
+- missing, malformed, or hash-mismatched Recovery evidence;
+- stale or future observation;
+- offline, dead, or unknown player state;
+- protection zone `inside` and `unknown`;
+- condition absent, unknown, or wrong;
+- action or spell mismatch;
+- cooldown active or unknown;
+- non-zero retry budget;
+- malformed, future-version, oversized, symlinked, or extra-field profile.
+
+Every case runs twice and asserts trace parity. Runtime and dispatch flags must
+remain false in every result.
+
+## Implementation Slices After P8 Acceptance
+
+1. Strict profile, observation, trace, and report schemas plus fixtures.
+2. Passive Conditions observation added to the existing heartbeat through a
+   guarded adapter; no new loop and no action API.
+3. Bounded P8 sanitizer support for the optional observation.
+4. Recovery predecessor trace with version and hash binding.
+5. Offline replay tool with path confinement, size limits, symlink rejection,
+   atomic repo-local evidence writes, and deterministic hashes.
+6. Read-only Release Evidence and Control Center consumers with full mutation
+   tests.
+7. Documentation, Engine Brain refresh, and separate P9 review commit.
+
+## P9 Done Gate
+
+P9 may be marked accepted only when a real, current observation produces an
+action-bound trace under an accepted P8 proof set and accepted Recovery trace;
+the entire positive/negative pack is deterministic; consumers fail closed; and
+all execution, dispatch, promotion, and intrusive-action fields remain false.
+
+P10 remains blocked until that trace is reviewed and explicitly accepted.
 ```
 
 
@@ -3433,9 +3602,9 @@ fresh `ctoa_local.log` lines plus safe boot state.
 ```json
 {
   "schema_version": 1,
-  "generated_at": "2026-07-11T17:21:42+00:00",
+  "generated_at": "2026-07-11T18:13:30+00:00",
   "root": "C:\\Users\\zycie\\CTOAi",
-  "file_count": 1253,
+  "file_count": 1254,
   "outputs": {
     "file_tree": "AI\\generated\\FILE_TREE.md",
     "symbol_map": "AI\\generated\\SYMBOL_MAP.md",
@@ -3496,12 +3665,12 @@ fresh `ctoa_local.log` lines plus safe boot state.
 ```markdown
 # Engine Brain Environment Doctor
 
-Generated at: `2026-07-11T17:22:01+00:00`
+Generated at: `2026-07-11T18:08:07+00:00`
 Overall status: `warn`
 
 | Check | Status | Key evidence |
 |---|---|---|
-| `git` | `ok` | branch=codex/p8-background-noscreen; dirty=63; path=C:\Program Files\Git\cmd\git.EXE |
+| `git` | `ok` | branch=codex/p8-background-noscreen; dirty=21; path=C:\Program Files\Git\cmd\git.EXE |
 | `docker` | `ok` | containers=2; running_broad=0; configured_broad=0 |
 | `vpn` | `warn` | warp_connected=False |
 | `vercel` | `ok` | version=54.10.3; project=ctoa-web |
@@ -3524,7 +3693,7 @@ Overall status: `warn`
 ```markdown
 # Engine Brain Ownership Map
 
-Generated at: `2026-07-11T17:21:42+00:00`
+Generated at: `2026-07-11T18:13:30+00:00`
 Source audit: `runtime\audits\ctoai-full-workspace-audit.json`
 Status: `ready`
 
@@ -3535,7 +3704,7 @@ Status: `ready`
 | `.dockerignore` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `.env.example` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `.foundry` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
-| `.git` | Local/uncategorized | `manual review` | 1274 | git_internal:1274 |
+| `.git` | Local/uncategorized | `manual review` | 1360 | git_internal:1360 |
 | `.gitattributes` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `.github` | Local/uncategorized | `manual review` | 41 | tracked_source:41 |
 | `.gitignore` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
@@ -3574,10 +3743,10 @@ Status: `ready`
 | `desktop_console` | Local/uncategorized | `manual review` | 16 | tracked_source:6, untracked_source_candidate:10 |
 | `docker` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `docker-compose.yml` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
-| `docs` | Documentation | `doc sync guard` | 315 | tracked_source:309, untracked_source_candidate:6 |
+| `docs` | Documentation | `doc sync guard` | 316 | tracked_source:310, untracked_source_candidate:6 |
 | `evals` | Local/uncategorized | `manual review` | 6 | tracked_source:6 |
 | `logs` | Local/uncategorized | `manual review` | 3 | runtime_or_local_state:3 |
-| `metrics` | Local/uncategorized | `manual review` | 18 | runtime_or_local_state:18 |
+| `metrics` | Local/uncategorized | `manual review` | 19 | runtime_or_local_state:19 |
 | `mobile_console` | Mobile console | `pytest tests/ --ignore=tests/e2e` | 20 | tracked_source:9, untracked_source_candidate:11 |
 | `node_modules` | Local/uncategorized | `manual review` | 1 | vendor_or_cache:1 |
 | `policies` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
@@ -3607,7 +3776,7 @@ Status: `ready`
 ```markdown
 # Engine Brain Doc Sync
 
-Generated at: `2026-07-11T17:21:42+00:00`
+Generated at: `2026-07-11T18:13:30+00:00`
 Status: `passed`
 
 | Check | Path | Status | Missing |
@@ -3627,7 +3796,7 @@ Status: `passed`
 ```markdown
 # Engine Brain Secret Guardrail
 
-Generated at: `2026-07-11T17:21:42+00:00`
+Generated at: `2026-07-11T18:13:30+00:00`
 Status: `passed`
 Sensitive/local env path count in audit: `7`
 
@@ -3649,7 +3818,7 @@ Generated Engine Brain context must not include exact local sensitive/env paths 
 ```markdown
 # P6 Codex Integration Readiness
 
-Generated at: `2026-07-11T17:21:42+00:00`
+Generated at: `2026-07-11T18:13:30+00:00`
 Status: `ready_for_plugin_design`
 
 P6 allows only four read-only status/cockpit tools plus audited repo-hygiene, API-cost, evidence-pack, Engine Brain, and P7 cockpit-smoke safe-write refreshes. Do not add deploy/live shortcuts or bypass Control Center evidence gates.
@@ -3692,7 +3861,7 @@ Recommended next: Operate the plugin as four read-only status/cockpit tools plus
 | `ctoai_plugin_bounded_write_policy_contract` | `passed` | home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_self_check.py |
 | `ctoai_plugin_p7_cockpit_smoke_contract_tests` | `passed` | tests/test_engine_brain_index.py |
 | `ctoai_plugin_marketplace_entry` | `passed` | personal marketplace entry |
-| `ctoai_plugin_installed_cache` | `passed` | installed personal cache version 0.1.0+codex.20260711170706 |
+| `ctoai_plugin_installed_cache` | `passed` | installed personal cache version 0.1.0+codex.20260711180837 |
 | `control_center_evidence_contract` | `passed` | web/src/lib/controlCenterEvidence.ts |
 | `control_center_evidence_tests` | `passed` | web/src/lib/__tests__/controlCenterEvidence.test.ts |
 | `control_center_p7_cockpit_smoke_script` | `passed` | scripts/ops/control_center_p7_cockpit_smoke.py |
@@ -3721,7 +3890,7 @@ Recommended next: Operate the plugin as four read-only status/cockpit tools plus
 ```markdown
 # P7 Operator Workflow
 
-Generated at: `2026-07-11T17:21:42+00:00`
+Generated at: `2026-07-11T18:13:30+00:00`
 Status: `safe_write_ready`
 Decision: `allow_bounded_safe_write_tools`
 
@@ -3769,7 +3938,7 @@ Next safe command: Use ctoai_repo_hygiene_refresh, ctoai_api_cost_refresh, ctoai
 ```markdown
 # P7 Action Readiness
 
-Generated at: `2026-07-11T17:21:42+00:00`
+Generated at: `2026-07-11T18:13:30+00:00`
 Status: `safe_write_tools_enabled`
 Decision: `monitor_enabled_safe_write_tools`
 
@@ -3797,7 +3966,7 @@ Next safe command: Design the next P7 plugin action only after risk model covera
 ```markdown
 # P7 Safe Write Tool Design
 
-Generated at: `2026-07-11T17:21:42+00:00`
+Generated at: `2026-07-11T18:13:30+00:00`
 Status: `implemented`
 Decision: `ready_for_dry_run_operation`
 
@@ -3839,7 +4008,7 @@ Next safe command: Run ctoai_evidence_pack_refresh with dry_run=true and verify 
 ```markdown
 # P7 Operator Brief
 
-Generated at: `2026-07-11T17:21:42+00:00`
+Generated at: `2026-07-11T18:13:30+00:00`
 Decision: `ready_for_p7_operator_workflow`
 Status: `ready`
 
@@ -3868,7 +4037,7 @@ Next safe command: Design the next P7 plugin action only after risk model covera
 ```markdown
 # Engine Brain File Tree
 
-Generated at: `2026-07-11T17:21:42+00:00`
+Generated at: `2026-07-11T18:13:30+00:00`
 
 Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 `node_modules`, `runtime`, `logs`, `data`, `.tmp`, build outputs.
@@ -3965,19 +4134,19 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `AI/CHECKPOINT_2026-07-08.md` | 10285 |
 | `AI/CLASS_INDEX.md` | 1815 |
 | `AI/CODEX_CAPABILITY_MAP.md` | 5237 |
-| `AI/ENGINE_BRAIN_STATUS.md` | 134323 |
+| `AI/ENGINE_BRAIN_STATUS.md` | 134648 |
 | `AI/ENGINE_MEMORY.md` | 2971 |
-| `AI/FEATURE_ROADMAP.md` | 60028 |
+| `AI/FEATURE_ROADMAP.md` | 60744 |
 | `AI/generated/DOC_SYNC.json` | 1164 |
 | `AI/generated/DOC_SYNC.md` | 681 |
-| `AI/generated/ENGINE_BRAIN_PACK.json` | 6007 |
-| `AI/generated/ENGINE_BRAIN_PACK.md` | 287823 |
-| `AI/generated/ENV_DOCTOR.json` | 7386 |
+| `AI/generated/ENGINE_BRAIN_PACK.json` | 6186 |
+| `AI/generated/ENGINE_BRAIN_PACK.md` | 294589 |
+| `AI/generated/ENV_DOCTOR.json` | 7295 |
 | `AI/generated/ENV_DOCTOR.md` | 1263 |
-| `AI/generated/FILE_TREE.md` | 69631 |
+| `AI/generated/FILE_TREE.md` | 69698 |
 | `AI/generated/manifest.json` | 2062 |
-| `AI/generated/OWNERSHIP_MAP.json` | 16977 |
-| `AI/generated/OWNERSHIP_MAP.md` | 6611 |
+| `AI/generated/OWNERSHIP_MAP.json` | 16935 |
+| `AI/generated/OWNERSHIP_MAP.md` | 6581 |
 | `AI/generated/P6_CODEX_INTEGRATION_READINESS.json` | 11010 |
 | `AI/generated/P6_CODEX_INTEGRATION_READINESS.md` | 6915 |
 | `AI/generated/P7_ACTION_READINESS.json` | 4870 |
@@ -3988,15 +4157,15 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `AI/generated/P7_OPERATOR_WORKFLOW.md` | 3015 |
 | `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.json` | 2705 |
 | `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.md` | 2024 |
-| `AI/generated/SYMBOL_MAP.md` | 270361 |
+| `AI/generated/SYMBOL_MAP.md` | 270878 |
 | `AI/KNOWN_BUGS.md` | 1384 |
 | `AI/LUA_INDEX.md` | 2874 |
 | `AI/OPERATIONS_AUDIT.md` | 5139 |
 | `AI/OTCLIENT_INDEX.md` | 3675 |
-| `AI/P8_P16_EXECUTION_ROADMAP.md` | 7499 |
+| `AI/P8_P16_EXECUTION_ROADMAP.md` | 8379 |
 | `AI/PACKET_INDEX.md` | 1405 |
 | `AI/PROJECT_CONTEXT.md` | 3648 |
-| `AI/README.md` | 2574 |
+| `AI/README.md` | 2735 |
 | `AI/RULEBOOK.md` | 4666 |
 | `AI/SPECIALIZED_PROMPTS.md` | 2904 |
 | `AI/SYSTEM_PROMPT.md` | 2486 |
@@ -4301,7 +4470,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `docs/history/sprints/SPRINT-069.md` | 1316 |
 | `docs/history/sprints/SPRINT_007_AGENT_EXECUTION_REPORT.md` | 4393 |
 | `docs/HYBRID_BOT_IMPLEMENTATION.md` | 12154 |
-| `docs/INDEX.md` | 3623 |
+| `docs/INDEX.md` | 3807 |
 | `docs/INFRASTRUCTURE_CANONICAL.md` | 2069 |
 | `docs/INFRASTRUCTURE_DECISION_LOG.md` | 2450 |
 | `docs/ISSUE_TRIAGE.md` | 1784 |
@@ -4315,6 +4484,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `docs/otclient/helper_redesign.md` | 7979 |
 | `docs/otclient/HELPER_RUNTIME_BRIDGE_V1.md` | 2578 |
 | `docs/otclient/HELPER_RUNTIME_MODULE_GATES_V1.md` | 4319 |
+| `docs/otclient/P9_CONDITIONS_SHADOW_REPLAY_DESIGN.md` | 5410 |
 | `docs/otclient/solteria_helper_development_plan.md` | 10485 |
 | `docs/otclient/solteria_helper_input_contracts.md` | 4430 |
 | `docs/otclient/solteria_helper_module_contract.md` | 4360 |
@@ -4349,7 +4519,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `docs/REPO_HYGIENE_POLICY.md` | 4830 |
 | `docs/REPO_SCHEMA.md` | 10994 |
 | `docs/ROADMAP_V0.2.0_TO_V1.0.0.md` | 878 |
-| `docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md` | 7792 |
+| `docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md` | 7892 |
 | `docs/runbook-althea-enc3-reverseeng.md` | 3502 |
 | `docs/runbook-azure-activity-log-interpretation.md` | 2855 |
 | `docs/runbook-disk-emergency.md` | 2223 |
@@ -4601,13 +4771,13 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/ops/client_profile_router.py` | 885 |
 | `scripts/ops/compare_eval_summaries.py` | 3647 |
 | `scripts/ops/control_center_p6_plugin_handoff_smoke.py` | 21273 |
-| `scripts/ops/control_center_p7_cockpit_smoke.py` | 19947 |
+| `scripts/ops/control_center_p7_cockpit_smoke.py` | 21156 |
 | `scripts/ops/control_center_p7_evidence_review.py` | 15745 |
 | `scripts/ops/control_center_p7_safe_write_dry_run_smoke.py` | 17838 |
 | `scripts/ops/core_guard.py` | 3960 |
 | `scripts/ops/ctoa-vps.ps1` | 92112 |
 | `scripts/ops/ctoa_env_doctor.py` | 6218 |
-| `scripts/ops/ctoa_full_workspace_audit.py` | 31906 |
+| `scripts/ops/ctoa_full_workspace_audit.py` | 32006 |
 | `scripts/ops/ctoa_helper_smoke_report.py` | 10065 |
 | `scripts/ops/ctoa_helper_ui_mockup_v4.py` | 6281 |
 | `scripts/ops/ctoa_helper_ui_preview.py` | 58270 |
@@ -4623,8 +4793,8 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/ops/depack_top_candidates.py` | 10352 |
 | `scripts/ops/depack_window_aware_focused.py` | 8002 |
 | `scripts/ops/engine_brain_doctor.py` | 19184 |
-| `scripts/ops/engine_brain_index.py` | 116790 |
-| `scripts/ops/engine_brain_pack.py` | 9492 |
+| `scripts/ops/engine_brain_index.py` | 117081 |
+| `scripts/ops/engine_brain_pack.py` | 9614 |
 | `scripts/ops/evidence_retention.py` | 2057 |
 | `scripts/ops/git_exec.py` | 2142 |
 | `scripts/ops/gs-api-validator.py` | 6610 |
@@ -4662,7 +4832,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/ops/phase5_nightly_sync.py` | 24770 |
 | `scripts/ops/project_progress_diagram.py` | 6516 |
 | `scripts/ops/queue_enqueue_job.py` | 1142 |
-| `scripts/ops/release_evidence_pack.py` | 47135 |
+| `scripts/ops/release_evidence_pack.py` | 52203 |
 | `scripts/ops/remove-mythibia-autosync-task.ps1` | 460 |
 | `scripts/ops/remove-mythibia-watcher-task.ps1` | 819 |
 | `scripts/ops/remove-phase5-morning-sync-task.ps1` | 415 |
@@ -4670,8 +4840,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/ops/repo_hygiene_migration_plan.py` | 7540 |
 | `scripts/ops/rosetta_bundle.py` | 7981 |
 | `scripts/ops/run-ghidra-enc3-analysis.ps1` | 1142 |
-| `scripts/ops/run-ghidra-enc3-context.ps1` | 1184 |
-| `scripts/op
+|
 
 [truncated]
 ```
@@ -4682,7 +4851,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 ```markdown
 # Engine Brain Symbol Map
 
-Generated at: `2026-07-11T17:21:42+00:00`
+Generated at: `2026-07-11T18:13:30+00:00`
 
 This is a lightweight map for navigation, not a full source dump.
 

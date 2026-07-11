@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-11T17:21:42+00:00",
+  "generated_at": "2026-07-11T18:13:30+00:00",
   "decision": "ready_for_p7_operator_workflow",
   "status": "ready",
   "hard_blockers": [],
@@ -106,7 +106,7 @@
       "checks": 14,
       "passed": 14,
       "blocked": 0,
-      "action_audit_line_count": 122,
+      "action_audit_line_count": 129,
       "hard_blockers": [],
       "warnings": [
         "release_evidence_operator_brief_timestamp_mismatch"

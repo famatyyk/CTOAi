@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-11T17:22:01+00:00",
+  "generated_at": "2026-07-11T18:13:32+00:00",
   "root": "C:\\Users\\zycie\\CTOAi",
   "pack_path": "AI\\generated\\ENGINE_BRAIN_PACK.md",
   "profile": "all",
@@ -10,7 +10,7 @@
     {
       "path": "AI/README.md",
       "included": true,
-      "bytes": 2574,
+      "bytes": 2735,
       "truncated": false,
       "reason": ""
     },
@@ -59,7 +59,7 @@
     {
       "path": "AI/ENGINE_BRAIN_STATUS.md",
       "included": true,
-      "bytes": 134323,
+      "bytes": 134648,
       "truncated": true,
       "reason": ""
     },
@@ -108,14 +108,14 @@
     {
       "path": "AI/FEATURE_ROADMAP.md",
       "included": true,
-      "bytes": 60028,
+      "bytes": 60744,
       "truncated": true,
       "reason": ""
     },
     {
       "path": "AI/P8_P16_EXECUTION_ROADMAP.md",
       "included": true,
-      "bytes": 7499,
+      "bytes": 8379,
       "truncated": false,
       "reason": ""
     },
@@ -129,7 +129,14 @@
     {
       "path": "docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md",
       "included": true,
-      "bytes": 7701,
+      "bytes": 7801,
+      "truncated": false,
+      "reason": ""
+    },
+    {
+      "path": "docs/otclient/P9_CONDITIONS_SHADOW_REPLAY_DESIGN.md",
+      "included": true,
+      "bytes": 5410,
       "truncated": false,
       "reason": ""
     },
@@ -255,18 +262,18 @@
     {
       "path": "AI/generated/FILE_TREE.md",
       "included": true,
-      "bytes": 68369,
+      "bytes": 68435,
       "truncated": true,
       "reason": ""
     },
     {
       "path": "AI/generated/SYMBOL_MAP.md",
       "included": true,
-      "bytes": 263070,
+      "bytes": 263579,
       "truncated": true,
       "reason": ""
     }
   ],
-  "included_count": 37,
+  "included_count": 38,
   "truncated_count": 4
 }

@@ -1,6 +1,6 @@
 # Engine Brain Symbol Map
 
-Generated at: `2026-07-11T17:21:42+00:00`
+Generated at: `2026-07-11T18:13:30+00:00`
 
 This is a lightweight map for navigation, not a full source dump.
 
@@ -2964,23 +2964,25 @@ This is a lightweight map for navigation, not a full source dump.
 
 ## `scripts/ops/control_center_p7_cockpit_smoke.py`
 
-- L51: def display_path(path, root)
-- L58: def workspace_path(root, value)
-- L62: def assert_inside_workspace(root, path)
-- L69: def safe_file_stat(path)
-- L79: def read_text_bounded(path, max_bytes)
-- L95: def read_json_object(path)
-- L102: def read_jsonl_tail(path)
-- L141: def add_check(checks, name, ok, evidence, blocker)
-- L158: def tool_names(items)
-- L168: def enabled_safe_write_tools(payload)
-- L179: def action_id_for_record(record)
-- L183: def mcp_tool_for_action(action_id)
-- L187: def audit_records_by_action(records)
-- L217: def build_report(root)
-- L449: def render_markdown(report)
-- L488: def write_outputs(root, report, json_out, md_out)
-- L499: def main()
+- L57: def display_path(path, root)
+- L64: def workspace_path(root, value)
+- L68: def assert_inside_workspace(root, path)
+- L75: def safe_file_stat(path)
+- L85: def read_text_bounded(path, max_bytes)
+- L101: def read_json_object(path)
+- L108: def read_jsonl_tail(path)
+- L147: def add_check(checks, name, ok, evidence, blocker)
+- L164: def tool_names(items)
+- L174: def enabled_safe_write_tools(payload)
+- L185: def roadmap_docs(payload)
+- L196: def roadmap_generation_ready(payload)
+- L219: def action_id_for_record(record)
+- L223: def mcp_tool_for_action(action_id)
+- L227: def audit_records_by_action(records)
+- L257: def build_report(root)
+- L487: def render_markdown(report)
+- L526: def write_outputs(root, report, json_out, md_out)
+- L537: def main()
 
 ## `scripts/ops/control_center_p7_evidence_review.py`
 
@@ -3307,67 +3309,67 @@ This is a lightweight map for navigation, not a full source dump.
 
 ## `scripts/ops/engine_brain_index.py`
 
-- L258: class FileEntry
-- L263: def rel(self)
-- L267: def _is_excluded(path)
-- L277: def iter_files()
-- L301: def python_symbols(path)
-- L327: def regex_symbols(path, pattern, label)
-- L343: def symbols_for(path)
-- L356: def render_file_tree(files, generated_at)
-- L374: def render_symbol_map(files, generated_at)
-- L401: def read_audit_inventory(audit_path)
-- L411: def top_level_owner(path_name)
-- L415: def build_ownership_payload(audit, generated_at)
-- L461: def render_ownership_map(payload)
-- L483: def build_doc_sync_payload(generated_at)
-- L510: def render_doc_sync(payload)
-- L529: def build_secret_guardrail_payload(generated_at, audit, generated_paths)
-- L565: def exact_path_appears(text, path_value)
-- L571: def render_secret_guardrail(payload)
-- L596: def read_validation_evidence(validation_path)
-- L608: def _path_check(name, path)
-- L617: def _source_needles_check(name, path, needles)
-- L638: def _local_codex_skill_check()
-- L650: def _local_plugin_file_check(name, relative_path)
-- L664: def _local_plugin_source_needles_check(name, relative_path, needles)
-- L690: def _read_local_plugin_manifest()
-- L701: def _installed_plugin_cache_check()
-- L757: def _plugin_mcp_absolute_script_check()
-- L808: def _personal_marketplace_plugin_check()
-- L850: def _validation_evidence_check(validation)
-- L880: def build_p6_readiness_payload(generated_at, manifest_payload, validation)
-- L1396: def render_p6_readiness(payload)
-- L1418: def _validation_statuses(validation)
-- L1434: def read_action_audit_summary(action_audit_path)
-- L1515: def read_json_object(path)
-- L1525: def read_roadmap_text(path)
-- L1536: def build_roadmap_generation_payload(generated_at, doc_sync_payload)
-- L1621: def read_release_evidence_summary(release_root, latest_path)
-- L1721: def read_p7_cockpit_smoke_summary(smoke_path)
-- L1746: def read_p7_evidence_review_summary(review_path)
-- L1778: def build_p7_cockpit_handoff_payload(action_readiness_payload, action_audit)
-- L1868: def _source_has_needles(relative_path, needles)
-- L1877: def build_p7_action_readiness_payload(generated_at, workflow_payload, action_audit, p7_evidence_review)
-- L2132: def render_p7_action_readiness(payload)
-- L2169: def build_p7_safe_write_tool_design_payload(generated_at, action_readiness_payload)
-- L2298: def render_p7_safe_write_tool_design(payload)
-- L2334: def build_p7_operator_brief_payload(generated_at, p6_payload, validation, workflow_payload, action_readiness_payload, safe_write_tool_design_payload, action_audit, roadmap_generation_payload)
-- L2561: def build_p7_operator_workflow_payload(generated_at, p6_payload)
-- L2681: def render_p7_operator_workflow(payload)
-- L2721: def render_p7_operator_brief(payload)
-- L2831: def display_path(path)
-- L2838: def build_indexes(out_dir)
-- L2986: def main()
+- L263: class FileEntry
+- L268: def rel(self)
+- L272: def _is_excluded(path)
+- L282: def iter_files()
+- L306: def python_symbols(path)
+- L332: def regex_symbols(path, pattern, label)
+- L348: def symbols_for(path)
+- L361: def render_file_tree(files, generated_at)
+- L379: def render_symbol_map(files, generated_at)
+- L406: def read_audit_inventory(audit_path)
+- L416: def top_level_owner(path_name)
+- L420: def build_ownership_payload(audit, generated_at)
+- L466: def render_ownership_map(payload)
+- L488: def build_doc_sync_payload(generated_at)
+- L515: def render_doc_sync(payload)
+- L534: def build_secret_guardrail_payload(generated_at, audit, generated_paths)
+- L570: def exact_path_appears(text, path_value)
+- L576: def render_secret_guardrail(payload)
+- L601: def read_validation_evidence(validation_path)
+- L613: def _path_check(name, path)
+- L622: def _source_needles_check(name, path, needles)
+- L643: def _local_codex_skill_check()
+- L655: def _local_plugin_file_check(name, relative_path)
+- L669: def _local_plugin_source_needles_check(name, relative_path, needles)
+- L695: def _read_local_plugin_manifest()
+- L706: def _installed_plugin_cache_check()
+- L762: def _plugin_mcp_absolute_script_check()
+- L813: def _personal_marketplace_plugin_check()
+- L855: def _validation_evidence_check(validation)
+- L885: def build_p6_readiness_payload(generated_at, manifest_payload, validation)
+- L1401: def render_p6_readiness(payload)
+- L1423: def _validation_statuses(validation)
+- L1439: def read_action_audit_summary(action_audit_path)
+- L1520: def read_json_object(path)
+- L1530: def read_roadmap_text(path)
+- L1541: def build_roadmap_generation_payload(generated_at, doc_sync_payload)
+- L1626: def read_release_evidence_summary(release_root, latest_path)
+- L1726: def read_p7_cockpit_smoke_summary(smoke_path)
+- L1751: def read_p7_evidence_review_summary(review_path)
+- L1783: def build_p7_cockpit_handoff_payload(action_readiness_payload, action_audit)
+- L1873: def _source_has_needles(relative_path, needles)
+- L1882: def build_p7_action_readiness_payload(generated_at, workflow_payload, action_audit, p7_evidence_review)
+- L2137: def render_p7_action_readiness(payload)
+- L2174: def build_p7_safe_write_tool_design_payload(generated_at, action_readiness_payload)
+- L2303: def render_p7_safe_write_tool_design(payload)
+- L2339: def build_p7_operator_brief_payload(generated_at, p6_payload, validation, workflow_payload, action_readiness_payload, safe_write_tool_design_payload, action_audit, roadmap_generation_payload)
+- L2566: def build_p7_operator_workflow_payload(generated_at, p6_payload)
+- L2686: def render_p7_operator_workflow(payload)
+- L2726: def render_p7_operator_brief(payload)
+- L2836: def display_path(path)
+- L2843: def build_indexes(out_dir)
+- L2991: def main()
 
 ## `scripts/ops/engine_brain_pack.py`
 
-- L145: def is_secretish_path(path)
-- L158: def read_text(path)
-- L162: def fence_for(path)
-- L179: def append_file_section(lines, rel_path)
-- L218: def build_pack(pack_path, manifest_path)
-- L275: def main()
+- L147: def is_secretish_path(path)
+- L160: def read_text(path)
+- L164: def fence_for(path)
+- L181: def append_file_section(lines, rel_path)
+- L220: def build_pack(pack_path, manifest_path)
+- L277: def main()
 
 ## `scripts/ops/evidence_retention.py`
 
@@ -3715,29 +3717,30 @@ This is a lightweight map for navigation, not a full source dump.
 
 ## `scripts/ops/release_evidence_pack.py`
 
-- L72: def _now_iso()
-- L81: def _safe_filename(value)
-- L89: def build_release_evidence_pack()
-- L125: def write_release_evidence_pack(output_dir, pack)
-- L166: def _configured_path(env_name, fallback)
-- L171: def _safe_file_stat(path)
-- L181: def _safe_dir_stat(path)
-- L191: def _read_text_bounded(path, max_bytes)
-- L207: def _read_json(path)
-- L214: def _read_json_or_none(path)
-- L223: def _safe_nonnegative_int(value)
-- L229: def _parse_utc_timestamp(value)
-- L241: def _background_status_summary(payload, path)
-- L418: def _count_jsonl_records(path)
-- L443: def _find_latest_markdown(releases_dir)
-- L465: def _count_markdown_files(releases_dir)
-- L473: def _helper_status(helper_dev_dir)
-- L685: def _p7_operator_brief_status(operator_brief_path)
-- L818: def _list_release_sprints(releases_dir)
-- L860: def build_evidence_pack(releases_dir, quality_path, cost_report_path, action_audit_path, helper_dev_dir, operator_brief_path)
-- L990: def render_markdown(pack)
-- L1125: def _build_parser()
-- L1183: def main()
+- L87: def _now_iso()
+- L96: def _safe_filename(value)
+- L104: def build_release_evidence_pack()
+- L140: def write_release_evidence_pack(output_dir, pack)
+- L181: def _configured_path(env_name, fallback)
+- L186: def _safe_file_stat(path)
+- L196: def _safe_dir_stat(path)
+- L206: def _read_text_bounded(path, max_bytes)
+- L222: def _read_json(path)
+- L229: def _read_json_or_none(path)
+- L238: def _safe_nonnegative_int(value)
+- L244: def _matches_exact_contract(value, expected)
+- L255: def _parse_utc_timestamp(value)
+- L267: def _background_status_summary(payload, path)
+- L544: def _count_jsonl_records(path)
+- L569: def _find_latest_markdown(releases_dir)
+- L591: def _count_markdown_files(releases_dir)
+- L599: def _helper_status(helper_dev_dir)
+- L811: def _p7_operator_brief_status(operator_brief_path)
+- L944: def _list_release_sprints(releases_dir)
+- L986: def build_evidence_pack(releases_dir, quality_path, cost_report_path, action_audit_path, helper_dev_dir, operator_brief_path)
+- L1116: def render_markdown(pack)
+- L1251: def _build_parser()
+- L1309: def main()
 
 ## `scripts/ops/repo_hygiene_audit.py`
 
@@ -5011,13 +5014,14 @@ This is a lightweight map for navigation, not a full source dump.
 
 ## `tests/test_control_center_p7_cockpit_smoke.py`
 
-- L12: def load_module()
-- L20: def write_json(path, payload)
-- L25: def write_ready_fixture(root)
-- L162: def test_p7_cockpit_smoke_reports_ready(tmp_path)
-- L180: def test_p7_cockpit_smoke_blocks_missing_safe_write_audit(tmp_path)
-- L200: def test_p7_cockpit_smoke_blocks_forbidden_plugin_tool(tmp_path)
-- L214: def test_p7_cockpit_smoke_rejects_symlinked_operator_brief(tmp_path)
+- L38: def load_module()
+- L46: def write_json(path, payload)
+- L51: def write_ready_fixture(root)
+- L189: def test_p7_cockpit_smoke_reports_ready(tmp_path)
+- L207: def test_p7_cockpit_smoke_blocks_missing_safe_write_audit(tmp_path)
+- L227: def test_p7_cockpit_smoke_blocks_forbidden_plugin_tool(tmp_path)
+- L241: def test_p7_cockpit_smoke_rejects_legacy_three_of_three_roadmap(tmp_path)
+- L269: def test_p7_cockpit_smoke_rejects_symlinked_operator_brief(tmp_path)
 
 ## `tests/test_control_center_p7_evidence_review.py`
 
@@ -5306,29 +5310,29 @@ This is a lightweight map for navigation, not a full source dump.
 - L26: def _roadmap_doc_sync_payload()
 - L46: def test_roadmap_generation_requires_all_doc_sync_gates(tmp_path, monkeypatch, overall_status, plan3_status, p8_p16_status, expected_blocker)
 - L73: def test_roadmap_generation_blocks_p8_contract_marker_drift(tmp_path, monkeypatch)
-- L103: def test_release_evidence_summary_exposes_helper_sandbox_queue(tmp_path)
-- L154: def test_engine_brain_index_writes_secret_safe_outputs(tmp_path)
-- L498: def test_source_needles_check_blocks_missing_contract_markers(tmp_path, monkeypatch)
-- L514: def test_p6_installed_plugin_cache_check_matches_local_manifest(tmp_path, monkeypatch)
-- L556: def test_p6_plugin_mcp_absolute_script_check_requires_runnable_absolute_arg(tmp_path, monkeypatch)
-- L596: def test_p6_plugin_status_script_reports_ready_for_current_workspace()
-- L638: def test_p6_plugin_self_check_reports_ready_for_current_workspace()
-- L700: def test_p7_operator_brief_reports_next_safe_step()
-- L819: def _write_plugin_roadmap_workspace(root)
-- L839: def _run_plugin_cockpit(workspace)
-- L851: def test_p6_plugin_cockpit_blocks_p8_contract_marker_drift(tmp_path)
-- L878: def test_p6_plugin_cockpit_requires_p8_doc_sync_status(tmp_path)
-- L891: def test_p6_control_center_cockpit_script_reports_read_only_status()
-- L978: def write_cockpit_preflight_fixture(root)
-- L1202: def test_p6_plugin_cockpit_blocks_bootstrap_only_dry_run_smoke(tmp_path)
-- L1237: def test_p6_plugin_mcp_server_exposes_expected_tools_and_audited_safe_write(tmp_path)
-- L1798: def test_p6_plugin_safe_write_blocks_without_cockpit_preflight(tmp_path)
+- L101: def test_release_evidence_summary_exposes_helper_sandbox_queue(tmp_path)
+- L152: def test_engine_brain_index_writes_secret_safe_outputs(tmp_path)
+- L496: def test_source_needles_check_blocks_missing_contract_markers(tmp_path, monkeypatch)
+- L512: def test_p6_installed_plugin_cache_check_matches_local_manifest(tmp_path, monkeypatch)
+- L554: def test_p6_plugin_mcp_absolute_script_check_requires_runnable_absolute_arg(tmp_path, monkeypatch)
+- L594: def test_p6_plugin_status_script_reports_ready_for_current_workspace()
+- L636: def test_p6_plugin_self_check_reports_ready_for_current_workspace()
+- L698: def test_p7_operator_brief_reports_next_safe_step()
+- L817: def _write_plugin_roadmap_workspace(root)
+- L837: def _run_plugin_cockpit(workspace)
+- L849: def test_p6_plugin_cockpit_blocks_p8_contract_marker_drift(tmp_path)
+- L874: def test_p6_plugin_cockpit_requires_p8_doc_sync_status(tmp_path)
+- L887: def test_p6_control_center_cockpit_script_reports_read_only_status()
+- L974: def write_cockpit_preflight_fixture(root)
+- L1198: def test_p6_plugin_cockpit_blocks_bootstrap_only_dry_run_smoke(tmp_path)
+- L1233: def test_p6_plugin_mcp_server_exposes_expected_tools_and_audited_safe_write(tmp_path)
+- L1794: def test_p6_plugin_safe_write_blocks_without_cockpit_preflight(tmp_path)
 
 ## `tests/test_engine_brain_pack.py`
 
 - L9: def test_engine_brain_pack_writes_manifest_and_markdown(tmp_path)
-- L47: def test_engine_brain_pack_can_include_generated_sections(tmp_path)
-- L60: def test_engine_brain_pack_supports_helper_profile(tmp_path)
+- L48: def test_engine_brain_pack_can_include_generated_sections(tmp_path)
+- L61: def test_engine_brain_pack_supports_helper_profile(tmp_path)
 
 ## `tests/test_evidence_retention_policy.py`
 
@@ -6084,17 +6088,19 @@ This is a lightweight map for navigation, not a full source dump.
 
 - L13: def _load_module()
 - L21: def _background_payload(generated_at)
-- L50: def test_build_evidence_pack_handles_missing_artifacts(tmp_path)
-- L80: def test_background_status_expires_without_affecting_live_promotion(tmp_path)
-- L105: def test_background_status_invalid_contract_and_counts_fail_closed(tmp_path)
-- L131: def test_build_evidence_pack_reads_current_artifacts(tmp_path)
-- L513: def test_build_evidence_pack_uses_configured_defaults(tmp_path, monkeypatch)
-- L580: def test_build_evidence_pack_rejects_symlinked_configured_json_and_audit(tmp_path)
-- L622: def test_build_evidence_pack_ignores_symlinked_release_markdown(tmp_path)
-- L655: def test_build_evidence_pack_rejects_symlinked_p7_operator_brief(tmp_path)
-- L695: def test_helper_status_rejects_symlinked_helper_dev_dir(tmp_path)
-- L717: def test_helper_status_blocks_inconsistent_releasable_gate_with_pending_blocker(tmp_path)
-- L753: def test_helper_status_promoted_requires_durable_live_promotion_evidence(tmp_path)
+- L77: def test_build_evidence_pack_handles_missing_artifacts(tmp_path)
+- L107: def test_background_status_expires_without_affecting_live_promotion(tmp_path)
+- L132: def test_background_status_accepts_consistent_untrusted_pin_as_blocked_evidence(tmp_path)
+- L162: def test_background_status_invalid_contract_and_counts_fail_closed(tmp_path)
+- L211: def test_background_status_full_no_action_contract_mutations_fail_closed(tmp_path, mutation, expected_error)
+- L266: def test_build_evidence_pack_reads_current_artifacts(tmp_path)
+- L621: def test_build_evidence_pack_uses_configured_defaults(tmp_path, monkeypatch)
+- L688: def test_build_evidence_pack_rejects_symlinked_configured_json_and_audit(tmp_path)
+- L730: def test_build_evidence_pack_ignores_symlinked_release_markdown(tmp_path)
+- L763: def test_build_evidence_pack_rejects_symlinked_p7_operator_brief(tmp_path)
+- L803: def test_helper_status_rejects_symlinked_helper_dev_dir(tmp_path)
+- L825: def test_helper_status_blocks_inconsistent_releasable_gate_with_pending_blocker(tmp_path)
+- L861: def test_helper_status_promoted_requires_durable_live_promotion_evidence(tmp_path)
 
 ## `tests/test_repo_hygiene_audit.py`
 
@@ -7028,6 +7034,7 @@ This is a lightweight map for navigation, not a full source dump.
 ## `web/src/lib/__tests__/controlCenterEvidence.test.ts`
 
 - L52: symbol isolateEvidenceEnv
+- L89: symbol backgroundNoScreenPayload
 
 ## `web/src/lib/__tests__/requestOriginGuard.test.ts`
 
@@ -7128,39 +7135,40 @@ This is a lightweight map for navigation, not a full source dump.
 - L8: symbol ControlCenterEvidence
 - L417: symbol ApiCostReportArtifact
 - L427: symbol ReleaseEvidenceFile
-- L481: symbol collectControlCenterEvidence
-- L595: symbol collectOperatorBriefCard
-- L684: symbol buildOperatorNextRecommendation
-- L859: symbol isGuardedLiveCommand
-- L863: symbol readJsonIfExists
-- L876: symbol readBoundedTextFileIfExists
-- L904: symbol collectReleaseEvidenceDrilldown
-- L965: symbol readMarkdownTitle
-- L981: symbol collectReleaseComparison
-- L1039: symbol collectActionAuditDrilldown
-- L1141: symbol readBoundedControlCenterActionAuditLines
-- L1190: symbol countBy
-- L1199: symbol auditSummary
-- L1207: symbol sanitizeText
-- L1211: symbol collectArtifactHealth
-- L1402: symbol safeNonnegativeInteger
-- L1408: symbol summarizeBackgroundStatus
-- L1547: symbol collectOtclientHelperStatus
-- L1644: symbol collectP6PluginHandoff
-- L1709: symbol collectEngineBrainStatus
-- L1869: symbol collectP7CockpitSmokeStatus
-- L1912: symbol collectP7SafeWriteDryRunSmokeStatus
-- L1977: symbol collectLatestAuditRecordForAction
-- L2077: symbol isRecord
-- L2081: symbol sanitizeCountMap
-- L2093: symbol findGate
-- L2099: symbol sha256IfExists
-- L2112: symbol fileAgeMinutes
-- L2124: symbol statIfExists
-- L2133: symbol resolveEvidencePath
-- L2144: symbol findLatestReleaseEvidence
-- L2180: symbol countMarkdownFiles
-- L2198: symbol listReleaseSprints
+- L496: symbol collectControlCenterEvidence
+- L610: symbol collectOperatorBriefCard
+- L699: symbol buildOperatorNextRecommendation
+- L874: symbol isGuardedLiveCommand
+- L878: symbol readJsonIfExists
+- L891: symbol readBoundedTextFileIfExists
+- L919: symbol collectReleaseEvidenceDrilldown
+- L980: symbol readMarkdownTitle
+- L996: symbol collectReleaseComparison
+- L1054: symbol collectActionAuditDrilldown
+- L1156: symbol readBoundedControlCenterActionAuditLines
+- L1205: symbol countBy
+- L1214: symbol auditSummary
+- L1222: symbol sanitizeText
+- L1226: symbol collectArtifactHealth
+- L1417: symbol safeNonnegativeInteger
+- L1423: symbol matchesExactRecord
+- L1431: symbol summarizeBackgroundStatus
+- L1636: symbol collectOtclientHelperStatus
+- L1733: symbol collectP6PluginHandoff
+- L1798: symbol collectEngineBrainStatus
+- L1958: symbol collectP7CockpitSmokeStatus
+- L2001: symbol collectP7SafeWriteDryRunSmokeStatus
+- L2066: symbol collectLatestAuditRecordForAction
+- L2166: symbol isRecord
+- L2170: symbol sanitizeCountMap
+- L2182: symbol findGate
+- L2188: symbol sha256IfExists
+- L2201: symbol fileAgeMinutes
+- L2213: symbol statIfExists
+- L2222: symbol resolveEvidencePath
+- L2233: symbol findLatestReleaseEvidence
+- L2269: symbol countMarkdownFiles
+- L2287: symbol listReleaseSprints
 
 ## `web/src/lib/controlCenterEvidenceAccess.ts`
 
