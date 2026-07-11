@@ -1,5 +1,10 @@
 # Helper Runtime Bridge v1
 
+Status: `sandbox_accepted` on 2026-07-11. Evidence: ModuleStaticGates 33/33,
+ModuleAttachSmoke 4/4, SmokeAttachAll 16/16, and
+`recovery_bridge_sandbox_smoke.json` 9/9. Runtime remained disarmed and the
+dry-run trace did not invoke its injected executor.
+
 ## Outcome
 
 Enable one bounded Healing/Recovery action in the sandbox without changing the
