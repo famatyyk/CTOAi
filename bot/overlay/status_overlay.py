@@ -3,28 +3,30 @@
 Run:
   python -m bot.overlay.status_overlay
 """
+
 from __future__ import annotations
 
 import json
+import logging
 import os
-import subprocess
-import sys
 import time
 import tkinter as tk
-from tkinter import messagebox
 from pathlib import Path
+from tkinter import messagebox
 
 from bot.config.runtime_profile import (
     active_profile_name,
     config_path,
     get_bool,
     get_int,
-    get_list,
     get_str,
     reload_config,
     save_profile_values,
 )
 from bot.runtime.live_state import get_live_state_path
+from runner import process_safety
+
+logger = logging.getLogger(__name__)
 
 _BG = "#111827"
 _FG = "#E5E7EB"
@@ -39,7 +41,15 @@ _STALE_AFTER_SEC = 2.5
 class RailSwitch(tk.Canvas):
     """Compact red/green rail switch with moving knob."""
 
-    def __init__(self, master: tk.Widget, *, initial: bool, command, width: int = 58, height: int = 24):
+    def __init__(
+        self,
+        master: tk.Widget,
+        *,
+        initial: bool,
+        command,
+        width: int = 58,
+        height: int = 24,
+    ):
         super().__init__(
             master,
             width=width,
@@ -78,9 +88,20 @@ class RailSwitch(tk.Canvas):
         rail_color = "#16A34A" if self._state else "#B91C1C"
         rail_active = "#15803D" if self._state else "#991B1B"
 
-        self.create_oval(left, top, left + 2 * radius, bottom, fill=rail_color, outline=rail_active)
-        self.create_rectangle(left + radius, top, right - radius, bottom, fill=rail_color, outline=rail_active)
-        self.create_oval(right - 2 * radius, top, right, bottom, fill=rail_color, outline=rail_active)
+        self.create_oval(
+            left, top, left + 2 * radius, bottom, fill=rail_color, outline=rail_active
+        )
+        self.create_rectangle(
+            left + radius,
+            top,
+            right - radius,
+            bottom,
+            fill=rail_color,
+            outline=rail_active,
+        )
+        self.create_oval(
+            right - 2 * radius, top, right, bottom, fill=rail_color, outline=rail_active
+        )
 
         knob_d = h - 4
         knob_y = top + 2
@@ -88,7 +109,14 @@ class RailSwitch(tk.Canvas):
             knob_x = right - knob_d - 2
         else:
             knob_x = left + 2
-        self.create_oval(knob_x, knob_y, knob_x + knob_d, knob_y + knob_d, fill="#F9FAFB", outline="#D1D5DB")
+        self.create_oval(
+            knob_x,
+            knob_y,
+            knob_x + knob_d,
+            knob_y + knob_d,
+            fill="#F9FAFB",
+            outline="#D1D5DB",
+        )
 
 
 class OverlayApp:
@@ -99,7 +127,7 @@ class OverlayApp:
         self._drag_offset_x = 0
         self._drag_offset_y = 0
         self._update_ms = get_int("BOT_OVERLAY_REFRESH_MS", 250)
-        self._bot_proc: subprocess.Popen | None = None
+        self._bot_proc: process_safety.TrustedProcess | None = None
         self._last_state_ts = 0.0
         self._module_switches: dict[str, RailSwitch] = {}
 
@@ -163,51 +191,125 @@ class OverlayApp:
         self.action = tk.StringVar(value="Action: --")
         self.tick = tk.StringVar(value="Tick: -- ms")
 
-        tk.Label(frame, textvariable=self.hp, fg=_ACCENT_HP, bg=_BG, font=("Consolas", 13, "bold")).pack(anchor="w")
-        tk.Label(frame, textvariable=self.mp, fg=_ACCENT_MP, bg=_BG, font=("Consolas", 13, "bold")).pack(anchor="w")
-        tk.Label(frame, textvariable=self.target, fg=_ACCENT_TARGET, bg=_BG, font=("Consolas", 13, "bold")).pack(anchor="w")
-        tk.Label(frame, textvariable=self.action, fg=_FG, bg=_BG, font=("Consolas", 11)).pack(anchor="w", pady=(8, 0))
-        tk.Label(frame, textvariable=self.tick, fg="#9CA3AF", bg=_BG, font=("Consolas", 10)).pack(anchor="w")
+        tk.Label(
+            frame,
+            textvariable=self.hp,
+            fg=_ACCENT_HP,
+            bg=_BG,
+            font=("Consolas", 13, "bold"),
+        ).pack(anchor="w")
+        tk.Label(
+            frame,
+            textvariable=self.mp,
+            fg=_ACCENT_MP,
+            bg=_BG,
+            font=("Consolas", 13, "bold"),
+        ).pack(anchor="w")
+        tk.Label(
+            frame,
+            textvariable=self.target,
+            fg=_ACCENT_TARGET,
+            bg=_BG,
+            font=("Consolas", 13, "bold"),
+        ).pack(anchor="w")
+        tk.Label(
+            frame, textvariable=self.action, fg=_FG, bg=_BG, font=("Consolas", 11)
+        ).pack(anchor="w", pady=(8, 0))
+        tk.Label(
+            frame, textvariable=self.tick, fg="#9CA3AF", bg=_BG, font=("Consolas", 10)
+        ).pack(anchor="w")
 
         controls = tk.Frame(frame, bg=_BG)
         controls.pack(fill="x", pady=(10, 0))
 
         self.bot_status = tk.StringVar(value="Bot: STOPPED")
-        tk.Label(controls, textvariable=self.bot_status, fg="#9CA3AF", bg=_BG, font=("Consolas", 10)).pack(anchor="w")
+        tk.Label(
+            controls,
+            textvariable=self.bot_status,
+            fg="#9CA3AF",
+            bg=_BG,
+            font=("Consolas", 10),
+        ).pack(anchor="w")
 
         control_row = tk.Frame(controls, bg=_BG)
         control_row.pack(fill="x", pady=(6, 0))
-        tk.Button(control_row, text="Start Bot", command=self._start_bot, width=12).pack(side="left")
-        tk.Button(control_row, text="Stop Bot", command=self._stop_bot, width=12).pack(side="left", padx=(8, 0))
-        tk.Button(control_row, text="Reload Config", command=self._reload_config, width=12).pack(side="left", padx=(8, 0))
-        tk.Button(control_row, text="Macro Pad", command=self._open_macro_pad, width=12).pack(side="left", padx=(8, 0))
+        tk.Button(
+            control_row, text="Start Bot", command=self._start_bot, width=12
+        ).pack(side="left")
+        tk.Button(control_row, text="Stop Bot", command=self._stop_bot, width=12).pack(
+            side="left", padx=(8, 0)
+        )
+        tk.Button(
+            control_row, text="Reload Config", command=self._reload_config, width=12
+        ).pack(side="left", padx=(8, 0))
+        tk.Button(
+            control_row, text="Macro Pad", command=self._open_macro_pad, width=12
+        ).pack(side="left", padx=(8, 0))
 
         modules = tk.LabelFrame(frame, text="Modules", bg=_BG, fg=_FG, padx=8, pady=5)
         modules.pack(fill="x", pady=(10, 0))
 
-        self._render_module_row(modules, "Auto Follow", "BOT_AUTO_FOLLOW", self._module_auto_follow())
-        self._render_module_row(modules, "Spell Rotation", "BOT_SPELL_ROTATION_ENABLED", self._module_spell_rotation())
-        self._render_module_row(modules, "Input Focus Guard", "BOT_INPUT_ONLY_WHEN_TIBIA_ACTIVE", self._module_focus_guard())
+        self._render_module_row(
+            modules, "Auto Follow", "BOT_AUTO_FOLLOW", self._module_auto_follow()
+        )
+        self._render_module_row(
+            modules,
+            "Spell Rotation",
+            "BOT_SPELL_ROTATION_ENABLED",
+            self._module_spell_rotation(),
+        )
+        self._render_module_row(
+            modules,
+            "Input Focus Guard",
+            "BOT_INPUT_ONLY_WHEN_TIBIA_ACTIVE",
+            self._module_focus_guard(),
+        )
 
         quick = tk.Frame(modules, bg=_BG)
         quick.pack(fill="x", pady=(6, 0))
-        tk.Label(quick, text="Follow Key", fg=_FG, bg=_BG, font=("Consolas", 9)).pack(side="left")
+        tk.Label(quick, text="Follow Key", fg=_FG, bg=_BG, font=("Consolas", 9)).pack(
+            side="left"
+        )
         self.var_follow_key = tk.StringVar(value=get_str("BOT_FOLLOW_KEY", "f12"))
-        tk.Entry(quick, textvariable=self.var_follow_key, width=8).pack(side="left", padx=(6, 0))
-        tk.Button(quick, text="Save Key", command=self._save_follow_key, width=10).pack(side="left", padx=(8, 0))
+        tk.Entry(quick, textvariable=self.var_follow_key, width=8).pack(
+            side="left", padx=(6, 0)
+        )
+        tk.Button(quick, text="Save Key", command=self._save_follow_key, width=10).pack(
+            side="left", padx=(8, 0)
+        )
 
         timings = tk.Frame(modules, bg=_BG)
         timings.pack(fill="x", pady=(5, 0))
-        self.var_follow_interval = tk.StringVar(value=str(get_int("BOT_AUTO_FOLLOW_INTERVAL_MS", 1200)))
-        self.var_follow_stuck = tk.StringVar(value=str(get_int("BOT_AUTO_FOLLOW_STUCK_MS", 900)))
-        self.var_follow_refresh = tk.StringVar(value=str(get_int("BOT_AUTO_FOLLOW_REFRESH_MS", 5000)))
-        tk.Label(timings, text="I", fg=_FG, bg=_BG, font=("Consolas", 9)).pack(side="left")
-        tk.Entry(timings, textvariable=self.var_follow_interval, width=6).pack(side="left", padx=(3, 8))
-        tk.Label(timings, text="S", fg=_FG, bg=_BG, font=("Consolas", 9)).pack(side="left")
-        tk.Entry(timings, textvariable=self.var_follow_stuck, width=6).pack(side="left", padx=(3, 8))
-        tk.Label(timings, text="R", fg=_FG, bg=_BG, font=("Consolas", 9)).pack(side="left")
-        tk.Entry(timings, textvariable=self.var_follow_refresh, width=6).pack(side="left", padx=(3, 8))
-        tk.Button(timings, text="Save Timings", command=self._save_follow_timing, width=12).pack(side="left")
+        self.var_follow_interval = tk.StringVar(
+            value=str(get_int("BOT_AUTO_FOLLOW_INTERVAL_MS", 1200))
+        )
+        self.var_follow_stuck = tk.StringVar(
+            value=str(get_int("BOT_AUTO_FOLLOW_STUCK_MS", 900))
+        )
+        self.var_follow_refresh = tk.StringVar(
+            value=str(get_int("BOT_AUTO_FOLLOW_REFRESH_MS", 5000))
+        )
+        tk.Label(timings, text="I", fg=_FG, bg=_BG, font=("Consolas", 9)).pack(
+            side="left"
+        )
+        tk.Entry(timings, textvariable=self.var_follow_interval, width=6).pack(
+            side="left", padx=(3, 8)
+        )
+        tk.Label(timings, text="S", fg=_FG, bg=_BG, font=("Consolas", 9)).pack(
+            side="left"
+        )
+        tk.Entry(timings, textvariable=self.var_follow_stuck, width=6).pack(
+            side="left", padx=(3, 8)
+        )
+        tk.Label(timings, text="R", fg=_FG, bg=_BG, font=("Consolas", 9)).pack(
+            side="left"
+        )
+        tk.Entry(timings, textvariable=self.var_follow_refresh, width=6).pack(
+            side="left", padx=(3, 8)
+        )
+        tk.Button(
+            timings, text="Save Timings", command=self._save_follow_timing, width=12
+        ).pack(side="left")
 
         diag = tk.LabelFrame(frame, text="Diagnostics", bg=_BG, fg=_FG, padx=8, pady=6)
         diag.pack(fill="x", pady=(10, 0))
@@ -218,15 +320,47 @@ class OverlayApp:
         self.diag_mode = tk.StringVar(value="Mode: --")
         self.diag_process = tk.StringVar(value="Process: --")
 
-        tk.Label(diag, textvariable=self.diag_profile, fg="#9CA3AF", bg=_BG, font=("Consolas", 9)).pack(anchor="w")
-        tk.Label(diag, textvariable=self.diag_config, fg="#9CA3AF", bg=_BG, font=("Consolas", 9)).pack(anchor="w")
-        tk.Label(diag, textvariable=self.diag_freshness, fg="#9CA3AF", bg=_BG, font=("Consolas", 9)).pack(anchor="w")
-        tk.Label(diag, textvariable=self.diag_mode, fg="#9CA3AF", bg=_BG, font=("Consolas", 9)).pack(anchor="w")
-        tk.Label(diag, textvariable=self.diag_process, fg="#9CA3AF", bg=_BG, font=("Consolas", 9)).pack(anchor="w")
+        tk.Label(
+            diag,
+            textvariable=self.diag_profile,
+            fg="#9CA3AF",
+            bg=_BG,
+            font=("Consolas", 9),
+        ).pack(anchor="w")
+        tk.Label(
+            diag,
+            textvariable=self.diag_config,
+            fg="#9CA3AF",
+            bg=_BG,
+            font=("Consolas", 9),
+        ).pack(anchor="w")
+        tk.Label(
+            diag,
+            textvariable=self.diag_freshness,
+            fg="#9CA3AF",
+            bg=_BG,
+            font=("Consolas", 9),
+        ).pack(anchor="w")
+        tk.Label(
+            diag,
+            textvariable=self.diag_mode,
+            fg="#9CA3AF",
+            bg=_BG,
+            font=("Consolas", 9),
+        ).pack(anchor="w")
+        tk.Label(
+            diag,
+            textvariable=self.diag_process,
+            fg="#9CA3AF",
+            bg=_BG,
+            font=("Consolas", 9),
+        ).pack(anchor="w")
 
         alpha_row = tk.Frame(frame, bg=_BG)
         alpha_row.pack(fill="x", pady=(8, 0))
-        tk.Label(alpha_row, text="Opacity", fg="#9CA3AF", bg=_BG, font=("Consolas", 9)).pack(side="left")
+        tk.Label(
+            alpha_row, text="Opacity", fg="#9CA3AF", bg=_BG, font=("Consolas", 9)
+        ).pack(side="left")
         alpha_scale = tk.Scale(
             alpha_row,
             from_=45,
@@ -303,11 +437,19 @@ class OverlayApp:
         self._sync_module_buttons()
         self._refresh_diagnostics()
 
-    def _render_module_row(self, parent: tk.Widget, label: str, key: str, enabled: bool) -> None:
+    def _render_module_row(
+        self, parent: tk.Widget, label: str, key: str, enabled: bool
+    ) -> None:
         row = tk.Frame(parent, bg=_BG)
         row.pack(fill="x", pady=1)
-        tk.Label(row, text=label, fg=_FG, bg=_BG, font=("Consolas", 10, "bold")).pack(side="left")
-        sw = RailSwitch(row, initial=enabled, command=lambda state, k=key: self._toggle_module(k, state))
+        tk.Label(row, text=label, fg=_FG, bg=_BG, font=("Consolas", 10, "bold")).pack(
+            side="left"
+        )
+        sw = RailSwitch(
+            row,
+            initial=enabled,
+            command=lambda state, k=key: self._toggle_module(k, state),
+        )
         sw.pack(side="right")
         self._module_switches[key] = sw
         self._paint_module_switch(key, enabled)
@@ -329,8 +471,12 @@ class OverlayApp:
 
     def _sync_module_buttons(self) -> None:
         self._paint_module_switch("BOT_AUTO_FOLLOW", self._module_auto_follow())
-        self._paint_module_switch("BOT_SPELL_ROTATION_ENABLED", self._module_spell_rotation())
-        self._paint_module_switch("BOT_INPUT_ONLY_WHEN_TIBIA_ACTIVE", self._module_focus_guard())
+        self._paint_module_switch(
+            "BOT_SPELL_ROTATION_ENABLED", self._module_spell_rotation()
+        )
+        self._paint_module_switch(
+            "BOT_INPUT_ONLY_WHEN_TIBIA_ACTIVE", self._module_focus_guard()
+        )
 
     def _toggle_module(self, key: str, desired_state: bool) -> None:
         profile = active_profile_name()
@@ -359,9 +505,13 @@ class OverlayApp:
         profile = active_profile_name()
         try:
             updates = {
-                "BOT_AUTO_FOLLOW_INTERVAL_MS": int(self.var_follow_interval.get().strip()),
+                "BOT_AUTO_FOLLOW_INTERVAL_MS": int(
+                    self.var_follow_interval.get().strip()
+                ),
                 "BOT_AUTO_FOLLOW_STUCK_MS": int(self.var_follow_stuck.get().strip()),
-                "BOT_AUTO_FOLLOW_REFRESH_MS": int(self.var_follow_refresh.get().strip()),
+                "BOT_AUTO_FOLLOW_REFRESH_MS": int(
+                    self.var_follow_refresh.get().strip()
+                ),
             }
         except ValueError:
             messagebox.showerror("Invalid Settings", "I/S/R values must be integers.")
@@ -379,17 +529,25 @@ class OverlayApp:
             self.bot_status.set(f"Bot: RUNNING (pid={self._bot_proc.pid})")
             return
 
-        creation_flags = 0
-        if os.name == "nt":
-            creation_flags = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
-
-        self._bot_proc = subprocess.Popen(
-            [sys.executable, "-m", "bot.main"],
-            cwd=str(self._project_root),
-            env=os.environ.copy(),
-            creationflags=creation_flags,
-        )
-        self.bot_status.set(f"Bot: RUNNING (pid={self._bot_proc.pid})")
+        try:
+            creation_flags = (
+                process_safety.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0
+            )
+            python_bin = process_safety.resolve_python()
+            self._bot_proc = process_safety.start_trusted(
+                [python_bin, "-m", "bot.main"],
+                cwd=str(self._project_root),
+                env=os.environ.copy(),
+                creationflags=creation_flags,
+            )
+            self.bot_status.set(f"Bot: RUNNING (pid={self._bot_proc.pid})")
+        except (
+            OSError,
+            process_safety.ExecutableUnavailableError,
+            process_safety.ProcessExecutionError,
+        ) as exc:
+            self.bot_status.set("Bot: START FAILED")
+            messagebox.showerror("Start Bot", str(exc))
 
     def _stop_bot(self) -> None:
         if self._bot_proc is None or self._bot_proc.poll() is not None:
@@ -399,27 +557,33 @@ class OverlayApp:
         try:
             self._bot_proc.terminate()
             self._bot_proc.wait(timeout=3)
-        except Exception:
+        except process_safety.ProcessTimeoutExpired:
             try:
                 self._bot_proc.kill()
-            except Exception:
-                pass
+            except OSError as exc:
+                logger.warning("bot process kill failed: %s", exc)
+        except (OSError, process_safety.ProcessExecutionError) as exc:
+            logger.warning("bot process stop failed: %s", exc)
         self.bot_status.set("Bot: STOPPED")
 
     def _open_macro_pad(self) -> None:
-        creation_flags = 0
-        if os.name == "nt":
-            creation_flags = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+        creation_flags = (
+            process_safety.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0
+        )
 
         try:
-            subprocess.Popen(
-                [sys.executable, "-m", "bot.overlay.macro_overlay"],
+            process_safety.start_trusted(
+                [process_safety.resolve_python(), "-m", "bot.overlay.macro_overlay"],
                 cwd=str(self._project_root),
                 env=os.environ.copy(),
                 creationflags=creation_flags,
             )
             self.bot_status.set("Bot: macro pad opened")
-        except Exception as exc:
+        except (
+            OSError,
+            process_safety.ExecutableUnavailableError,
+            process_safety.ProcessExecutionError,
+        ) as exc:
             messagebox.showerror("Macro Pad", str(exc))
 
     def _refresh_diagnostics(self) -> None:
@@ -451,7 +615,8 @@ class OverlayApp:
             if not self.state_path.exists():
                 return None
             return json.loads(self.state_path.read_text(encoding="utf-8"))
-        except Exception:
+        except (OSError, json.JSONDecodeError, TypeError) as exc:
+            logger.debug("overlay live-state read failed: %s", exc)
             return None
 
 

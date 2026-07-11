@@ -16,14 +16,16 @@ Config via environment variables or constructor kwargs:
   BOT_BREAK_MIN=15      (minutes, default 15)
   BOT_BREAK_MAX=45      (minutes, default 45)
 """
+
 from __future__ import annotations
 
 import logging
 import os
-import random
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Optional
+
+from . import nonsecurity_random as random
 
 logger = logging.getLogger(__name__)
 
@@ -41,23 +43,23 @@ class SessionScheduler:
     def __init__(
         self,
         active_start: int = _env_int("BOT_ACTIVE_START", 9),
-        active_end:   int = _env_int("BOT_ACTIVE_END",   23),
+        active_end: int = _env_int("BOT_ACTIVE_END", 23),
         session_min_h: float = _env_int("BOT_SESSION_MIN", 4),
         session_max_h: float = _env_int("BOT_SESSION_MAX", 8),
-        break_min_m:  int = _env_int("BOT_BREAK_MIN", 15),
-        break_max_m:  int = _env_int("BOT_BREAK_MAX", 45),
+        break_min_m: int = _env_int("BOT_BREAK_MIN", 15),
+        break_max_m: int = _env_int("BOT_BREAK_MAX", 45),
     ):
-        self.active_start  = active_start
-        self.active_end    = active_end
+        self.active_start = active_start
+        self.active_end = active_end
         self.session_min_h = session_min_h
         self.session_max_h = session_max_h
-        self.break_min_m   = break_min_m
-        self.break_max_m   = break_max_m
+        self.break_min_m = break_min_m
+        self.break_max_m = break_max_m
 
         self._session_start: Optional[float] = None
-        self._session_end:   Optional[float] = None
-        self._on_break:      bool = False
-        self._break_until:   Optional[float] = None
+        self._session_end: Optional[float] = None
+        self._on_break: bool = False
+        self._break_until: Optional[float] = None
 
         self._plan_session()
 
@@ -66,12 +68,15 @@ class SessionScheduler:
     def should_run(self) -> bool:
         """Return True if bot should be actively running right now."""
         now = time.time()
-        dt  = datetime.fromtimestamp(now)
+        dt = datetime.fromtimestamp(now)
 
         # Hard night-time stop
         if not self._in_active_window(dt):
-            logger.debug("Scheduler: outside active window (%02d:00–%02d:00)",
-                         self.active_start, self.active_end)
+            logger.debug(
+                "Scheduler: outside active window (%02d:00–%02d:00)",
+                self.active_start,
+                self.active_end,
+            )
             return False
 
         # On break?
@@ -107,16 +112,21 @@ class SessionScheduler:
 
     def status(self) -> dict:
         """Return human-readable scheduler state."""
-        now = time.time()
         return {
-            "should_run":        self.should_run(),
-            "on_break":          self._on_break,
-            "break_until":       datetime.fromtimestamp(self._break_until).strftime("%H:%M:%S")
-                                 if self._break_until else None,
+            "should_run": self.should_run(),
+            "on_break": self._on_break,
+            "break_until": datetime.fromtimestamp(self._break_until).strftime(
+                "%H:%M:%S"
+            )
+            if self._break_until
+            else None,
             "session_elapsed_m": round(self.session_elapsed_s() / 60, 1),
-            "session_ends_at":   datetime.fromtimestamp(self._session_end).strftime("%H:%M:%S")
-                                 if self._session_end else None,
-            "active_window":     f"{self.active_start:02d}:00–{self.active_end:02d}:00",
+            "session_ends_at": datetime.fromtimestamp(self._session_end).strftime(
+                "%H:%M:%S"
+            )
+            if self._session_end
+            else None,
+            "active_window": f"{self.active_start:02d}:00–{self.active_end:02d}:00",
         }
 
     # ── Private helpers ───────────────────────────────────────────────────────
@@ -133,19 +143,19 @@ class SessionScheduler:
 
     def _plan_session(self) -> None:
         """Randomise session length with slight weekend variation."""
-        dt       = datetime.now()
+        dt = datetime.now()
         is_weekend = dt.weekday() >= 5  # Saturday=5, Sunday=6
-        jitter   = random.uniform(-0.5, 0.5)   # ±30 min
-        base_h   = random.uniform(self.session_min_h, self.session_max_h)
+        jitter = random.uniform(-0.5, 0.5)  # ±30 min
+        base_h = random.uniform(self.session_min_h, self.session_max_h)
         # Weekends: slightly shorter (more realistic)
         if is_weekend:
             base_h *= random.uniform(0.75, 0.95)
         duration_s = (base_h + jitter) * 3600
-        duration_s = max(3600, duration_s)   # never less than 1h
+        duration_s = max(3600, duration_s)  # never less than 1h
 
         self._session_start = time.time()
-        self._session_end   = self._session_start + duration_s
-        self._on_break      = False
+        self._session_end = self._session_start + duration_s
+        self._on_break = False
 
         logger.info(
             "Scheduler: new session planned — %.1fh until %s",
@@ -158,10 +168,10 @@ class SessionScheduler:
         break_s = random.randint(self.break_min_m, self.break_max_m) * 60
         # Randomise ±10%
         break_s = int(break_s * random.uniform(0.9, 1.1))
-        self._on_break    = True
+        self._on_break = True
         self._break_until = time.time() + break_s
         self._session_start = None
-        self._session_end   = None
+        self._session_end = None
         logger.info(
             "Scheduler: break started — %.0f min until %s",
             break_s / 60,

@@ -18,6 +18,7 @@ Usage:
         pos = reader.read_position()   # (x, y, z) or None
         hp  = reader.read_hp()         # (current, max) or None
 """
+
 from __future__ import annotations
 import logging
 import struct
@@ -33,15 +34,15 @@ TIBIA_PROCESS_NAME = "Tibia.exe"
 # Direct offsets (base + offset relative to client base address or fixed)
 # For OTClient-based servers (e.g. Nekiro 7.4 downgrade), addresses differ.
 # Placeholder values — replace with Cheat Engine findings for your client.
-OFFSET_POS_X   = 0x00532B94   # int32 — player X
-OFFSET_POS_Y   = 0x00532B98   # int32 — player Y
-OFFSET_POS_Z   = 0x00532B9C   # int32 — player Z (floor)
-OFFSET_HP      = 0x00532BA0   # int32 — current HP
-OFFSET_HP_MAX  = 0x00532BA4   # int32 — max HP
-OFFSET_MP      = 0x00532BA8   # int32 — current MP
-OFFSET_MP_MAX  = 0x00532BAC   # int32 — max MP
-OFFSET_EXP     = 0x00532BB4   # int64 — total experience
-OFFSET_LEVEL   = 0x00532BB0   # int32 — player level
+OFFSET_POS_X = 0x00532B94  # int32 — player X
+OFFSET_POS_Y = 0x00532B98  # int32 — player Y
+OFFSET_POS_Z = 0x00532B9C  # int32 — player Z (floor)
+OFFSET_HP = 0x00532BA0  # int32 — current HP
+OFFSET_HP_MAX = 0x00532BA4  # int32 — max HP
+OFFSET_MP = 0x00532BA8  # int32 — current MP
+OFFSET_MP_MAX = 0x00532BAC  # int32 — max MP
+OFFSET_EXP = 0x00532BB4  # int64 — total experience
+OFFSET_LEVEL = 0x00532BB0  # int32 — player level
 
 # ── Platform check ────────────────────────────────────────────────────────────
 _WINDOWS = sys.platform == "win32"
@@ -49,14 +50,14 @@ _WINDOWS = sys.platform == "win32"
 if _WINDOWS:
     try:
         import ctypes
-        import ctypes.wintypes as wt
+
         _CTYPES_OK = True
     except ImportError:
         _CTYPES_OK = False
 else:
     _CTYPES_OK = False
 
-PROCESS_VM_READ    = 0x0010
+PROCESS_VM_READ = 0x0010
 PROCESS_QUERY_INFO = 0x0400
 TH32CS_SNAPPROCESS = 0x00000002
 
@@ -64,16 +65,16 @@ TH32CS_SNAPPROCESS = 0x00000002
 class _PROCESSENTRY32(ctypes.Structure if _CTYPES_OK else object):
     if _CTYPES_OK:
         _fields_ = [
-            ("dwSize",              ctypes.wintypes.DWORD),
-            ("cntUsage",            ctypes.wintypes.DWORD),
-            ("th32ProcessID",       ctypes.wintypes.DWORD),
-            ("th32DefaultHeapID",   ctypes.POINTER(ctypes.c_ulong)),
-            ("th32ModuleID",        ctypes.wintypes.DWORD),
-            ("cntThreads",          ctypes.wintypes.DWORD),
+            ("dwSize", ctypes.wintypes.DWORD),
+            ("cntUsage", ctypes.wintypes.DWORD),
+            ("th32ProcessID", ctypes.wintypes.DWORD),
+            ("th32DefaultHeapID", ctypes.POINTER(ctypes.c_ulong)),
+            ("th32ModuleID", ctypes.wintypes.DWORD),
+            ("cntThreads", ctypes.wintypes.DWORD),
             ("th32ParentProcessID", ctypes.wintypes.DWORD),
-            ("pcPriClassBase",      ctypes.c_long),
-            ("dwFlags",             ctypes.wintypes.DWORD),
-            ("szExeFile",           ctypes.c_char * 260),
+            ("pcPriClassBase", ctypes.c_long),
+            ("dwFlags", ctypes.wintypes.DWORD),
+            ("szExeFile", ctypes.c_char * 260),
         ]
 
 
@@ -82,7 +83,7 @@ class TibiaMemoryReader:
 
     def __init__(self, process_name: str = TIBIA_PROCESS_NAME):
         self.process_name = process_name
-        self._pid:    Optional[int] = None
+        self._pid: Optional[int] = None
         self._handle: Optional[int] = None
 
     # ── Public API ────────────────────────────────────────────────────────────
@@ -98,12 +99,11 @@ class TibiaMemoryReader:
             return False
         try:
             k32 = ctypes.windll.kernel32
-            handle = k32.OpenProcess(
-                PROCESS_VM_READ | PROCESS_QUERY_INFO, False, pid)
+            handle = k32.OpenProcess(PROCESS_VM_READ | PROCESS_QUERY_INFO, False, pid)
             if not handle:
                 logger.warning("OpenProcess failed for PID %d", pid)
                 return False
-            self._pid    = pid
+            self._pid = pid
             self._handle = handle
             logger.info("Attached to Tibia PID %d", pid)
             return True
@@ -116,10 +116,10 @@ class TibiaMemoryReader:
         if self._handle and _CTYPES_OK:
             try:
                 ctypes.windll.kernel32.CloseHandle(self._handle)
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.debug("CloseHandle failed: %s", exc)
         self._handle = None
-        self._pid    = None
+        self._pid = None
 
     def read_position(self) -> Optional[tuple[int, int, int]]:
         """Return (x, y, z) or None."""
@@ -132,7 +132,7 @@ class TibiaMemoryReader:
 
     def read_hp(self) -> Optional[tuple[int, int]]:
         """Return (current_hp, max_hp) or None."""
-        hp     = self._read_int32(OFFSET_HP)
+        hp = self._read_int32(OFFSET_HP)
         hp_max = self._read_int32(OFFSET_HP_MAX)
         if None in (hp, hp_max):
             return None
@@ -140,7 +140,7 @@ class TibiaMemoryReader:
 
     def read_mp(self) -> Optional[tuple[int, int]]:
         """Return (current_mp, max_mp) or None."""
-        mp     = self._read_int32(OFFSET_MP)
+        mp = self._read_int32(OFFSET_MP)
         mp_max = self._read_int32(OFFSET_MP_MAX)
         if None in (mp, mp_max):
             return None
@@ -156,10 +156,10 @@ class TibiaMemoryReader:
         """Return dict with all available fields (None where unreadable)."""
         return {
             "position": self.read_position(),
-            "hp":       self.read_hp(),
-            "mp":       self.read_mp(),
-            "level":    self.read_level(),
-            "exp":      self.read_exp(),
+            "hp": self.read_hp(),
+            "mp": self.read_mp(),
+            "level": self.read_level(),
+            "exp": self.read_exp(),
         }
 
     # ── Private helpers ───────────────────────────────────────────────────────
@@ -196,11 +196,11 @@ class TibiaMemoryReader:
         if not self._handle or not _CTYPES_OK:
             return None
         try:
-            buf   = ctypes.create_string_buffer(size)
-            read  = ctypes.c_size_t(0)
-            ok    = ctypes.windll.kernel32.ReadProcessMemory(
-                self._handle, ctypes.c_void_p(address),
-                buf, size, ctypes.byref(read))
+            buf = ctypes.create_string_buffer(size)
+            read = ctypes.c_size_t(0)
+            ok = ctypes.windll.kernel32.ReadProcessMemory(
+                self._handle, ctypes.c_void_p(address), buf, size, ctypes.byref(read)
+            )
             if ok and read.value == size:
                 return bytes(buf)
             return None

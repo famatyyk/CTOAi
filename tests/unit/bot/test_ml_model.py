@@ -1,9 +1,11 @@
 """Tests for Agent 4 Double Q-learning model (Sprint 6)."""
-import pytest
 from bot.perception.state import GameState
 from bot.decision.ml_model import (
-    predict_action, update_q, compute_reward,
-    _state_key, _Q_A, _Q_B, ACTIONS
+    ACTIONS,
+    _state_key,
+    compute_reward,
+    predict_action,
+    update_q,
 )
 
 
@@ -65,10 +67,16 @@ def test_compute_reward_potion_waste():
     assert r < 0
 
 
-def test_compute_reward_loot():
-    s = make_state()
+def test_compute_reward_loot_dead_target():
+    s = make_state(target_id=1, target_hp_pct=0)
     r = compute_reward(s, "loot", "ok", s)
     assert r > 0
+
+
+def test_compute_reward_loot_without_target_is_penalized():
+    s = make_state(target_id=None, target_hp_pct=0)
+    r = compute_reward(s, "loot", "ok", s)
+    assert r < 0
 
 
 def test_brain_uses_ml(monkeypatch):

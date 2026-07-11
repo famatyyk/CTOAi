@@ -8,24 +8,30 @@ Endpoints:
 
 Run: uvicorn bot.dashboard.app:app --host 0.0.0.0 --port 8000
 """
+
 from __future__ import annotations
+
+import logging
 import time
-from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 try:
     from fastapi import FastAPI
     from fastapi.responses import HTMLResponse, PlainTextResponse
+
     _FASTAPI_AVAILABLE = True
 except ImportError:
     _FASTAPI_AVAILABLE = False
 
-from bot.data.telemetry import get_stats
+from bot.data.telemetry import get_stats  # noqa: E402
+
 try:
-    from bot.safety.scheduler import get_scheduler as _get_scheduler
+    from bot.safety.scheduler import get_scheduler as _get_scheduler  # noqa: E402
+
     _SCHEDULER_AVAILABLE = True
 except Exception:
     _SCHEDULER_AVAILABLE = False
-from bot.data.db import get_session_stats, get_connection
 
 _START_TIME = time.time()
 
@@ -51,14 +57,14 @@ if _FASTAPI_AVAILABLE:
         """Return live session stats as JSON."""
         s = get_stats()
         return {
-            "gold_hr":       s.get("gold_hr", 0),
-            "exp_hr":        s.get("exp_hr", 0),
-            "kills":         s.get("kills", 0),
+            "gold_hr": s.get("gold_hr", 0),
+            "exp_hr": s.get("exp_hr", 0),
+            "kills": s.get("kills", 0),
             "session_hours": s.get("session_hours", 0),
-            "incidents":     s.get("incidents", 0),
-            "crashes":       s.get("crashes", 0),
-            "recoveries":    s.get("recoveries", 0),
-            "uptime_s":      int(time.time() - _START_TIME),
+            "incidents": s.get("incidents", 0),
+            "crashes": s.get("crashes", 0),
+            "recoveries": s.get("recoveries", 0),
+            "uptime_s": int(time.time() - _START_TIME),
         }
 
     @app.get("/metrics", response_class=PlainTextResponse)
@@ -68,28 +74,28 @@ if _FASTAPI_AVAILABLE:
         lines = [
             "# HELP bot_gold_per_hour Estimated gold earned per hour",
             "# TYPE bot_gold_per_hour gauge",
-            f'bot_gold_per_hour {s.get("gold_hr", 0)}',
+            f"bot_gold_per_hour {s.get('gold_hr', 0)}",
             "# HELP bot_exp_per_hour Estimated experience per hour",
             "# TYPE bot_exp_per_hour gauge",
-            f'bot_exp_per_hour {s.get("exp_hr", 0)}',
+            f"bot_exp_per_hour {s.get('exp_hr', 0)}",
             "# HELP bot_kills_total Total kills this session",
             "# TYPE bot_kills_total gauge",
-            f'bot_kills_total {s.get("kills", 0)}',
+            f"bot_kills_total {s.get('kills', 0)}",
             "# HELP bot_session_hours Session duration in hours",
             "# TYPE bot_session_hours gauge",
-            f'bot_session_hours {s.get("session_hours", 0)}',
+            f"bot_session_hours {s.get('session_hours', 0)}",
             "# HELP bot_incidents_total Total tracked incidents this session",
             "# TYPE bot_incidents_total gauge",
-            f'bot_incidents_total {s.get("incidents", 0)}',
+            f"bot_incidents_total {s.get('incidents', 0)}",
             "# HELP bot_crashes_total Total crash incidents this session",
             "# TYPE bot_crashes_total gauge",
-            f'bot_crashes_total {s.get("crashes", 0)}',
+            f"bot_crashes_total {s.get('crashes', 0)}",
             "# HELP bot_recoveries_total Total recovery actions this session",
             "# TYPE bot_recoveries_total gauge",
-            f'bot_recoveries_total {s.get("recoveries", 0)}',
+            f"bot_recoveries_total {s.get('recoveries', 0)}",
             "# HELP bot_uptime_seconds Bot process uptime in seconds",
             "# TYPE bot_uptime_seconds gauge",
-            f'bot_uptime_seconds {int(time.time() - _START_TIME)}',
+            f"bot_uptime_seconds {int(time.time() - _START_TIME)}",
         ]
         return "\n".join(lines) + "\n"
 
@@ -102,8 +108,10 @@ if _FASTAPI_AVAILABLE:
         if _SCHEDULER_AVAILABLE:
             try:
                 _sched_running = _get_scheduler().should_run()
-            except Exception:
-                pass
+            except (AttributeError, RuntimeError, TypeError, ValueError) as exc:
+                logger.debug(
+                    "scheduler status unavailable for dashboard index: %s", exc
+                )
         html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -129,12 +137,12 @@ if _FASTAPI_AVAILABLE:
     <a href="http://127.0.0.1:3000/control-center">CTOAi Control Center</a>. Keep this page for dev/reference until parity is complete.</div>
   <p style="color:#888">Auto-refreshes every 10s | <a href="/stats" style="color:#ffd700">/stats JSON</a> | <a href="/metrics" style="color:#ffd700">/metrics Prometheus</a></p>
   <div class="grid">
-    <div class="card"><div class="val">{s.get('gold_hr', 0):,}</div><div class="lbl">Gold / hour</div></div>
-    <div class="card"><div class="val">{s.get('exp_hr', 0):,}</div><div class="lbl">Exp / hour</div></div>
-    <div class="card"><div class="val">{s.get('kills', 0)}</div><div class="lbl">Kills this session</div></div>
-    <div class="card"><div class="val">{s.get('session_hours', 0):.2f}h</div><div class="lbl">Session time</div></div>
-    <div class="card"><div class="val">{s.get('crashes', 0)}</div><div class="lbl">Crashes logged</div></div>
-    <div class="card"><div class="val">{s.get('recoveries', 0)}</div><div class="lbl">Recoveries logged</div></div>
+    <div class="card"><div class="val">{s.get("gold_hr", 0):,}</div><div class="lbl">Gold / hour</div></div>
+    <div class="card"><div class="val">{s.get("exp_hr", 0):,}</div><div class="lbl">Exp / hour</div></div>
+    <div class="card"><div class="val">{s.get("kills", 0)}</div><div class="lbl">Kills this session</div></div>
+    <div class="card"><div class="val">{s.get("session_hours", 0):.2f}h</div><div class="lbl">Session time</div></div>
+    <div class="card"><div class="val">{s.get("crashes", 0)}</div><div class="lbl">Crashes logged</div></div>
+    <div class="card"><div class="val">{s.get("recoveries", 0)}</div><div class="lbl">Recoveries logged</div></div>
     <div class="card"><div class="val">{uptime_h:.2f}h</div><div class="lbl">Dashboard uptime</div></div>
     <div class="card"><div class="val">{"ON" if _sched_running else "BREAK"}</div><div class="lbl">Scheduler state</div></div>
   </div>

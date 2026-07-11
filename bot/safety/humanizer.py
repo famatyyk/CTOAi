@@ -6,11 +6,13 @@ Sprint 4 additions:
 - misclick_jitter(): occasional mouse position jitter (1-3% chance)
 - think_pause(): longer pause simulating decision hesitation (300-1500ms, rare)
 """
+
 from __future__ import annotations
-import random
-import time
-import math
+
 import logging
+import time
+
+from . import nonsecurity_random as random
 
 logger = logging.getLogger(__name__)
 
@@ -19,9 +21,10 @@ logger = logging.getLogger(__name__)
 # Basic delays
 # ---------------------------------------------------------------------------
 
+
 def human_delay(min_ms: int = 50, max_ms: int = 200) -> None:
     """Sleep for a normally-distributed random duration."""
-    mean  = (min_ms + max_ms) / 2
+    mean = (min_ms + max_ms) / 2
     sigma = (max_ms - min_ms) / 6
     delay_ms = max(min_ms, min(max_ms, random.gauss(mean, sigma)))
     time.sleep(delay_ms / 1000)
@@ -72,16 +75,18 @@ def potion_delay() -> None:
 # Mouse movement
 # ---------------------------------------------------------------------------
 
-def bezier_path(start: tuple[int, int], end: tuple[int, int],
-                steps: int = 20) -> list[tuple[int, int]]:
+
+def bezier_path(
+    start: tuple[int, int], end: tuple[int, int], steps: int = 20
+) -> list[tuple[int, int]]:
     """Generate a quadratic bezier curve between two screen points."""
     cx = (start[0] + end[0]) // 2 + random.randint(-40, 40)
     cy = (start[1] + end[1]) // 2 + random.randint(-40, 40)
     path = []
     for i in range(steps + 1):
         t = i / steps
-        x = int((1-t)**2 * start[0] + 2*(1-t)*t * cx + t**2 * end[0])
-        y = int((1-t)**2 * start[1] + 2*(1-t)*t * cy + t**2 * end[1])
+        x = int((1 - t) ** 2 * start[0] + 2 * (1 - t) * t * cx + t**2 * end[0])
+        y = int((1 - t) ** 2 * start[1] + 2 * (1 - t) * t * cy + t**2 * end[1])
         path.append((x, y))
     return path
 
@@ -95,28 +100,31 @@ def move_mouse_human(start: tuple[int, int], end: tuple[int, int]) -> None:
     """Move mouse along bezier curve with optional misclick jitter."""
     try:
         import pyautogui
+
         target = misclick_jitter(*end)
         path = bezier_path(start, target)
         for px, py in path:
             pyautogui.moveTo(px, py, duration=0)
             time.sleep(random.uniform(0.004, 0.012))
         think_pause()
-    except Exception:
-        pass
+    except (ImportError, OSError, RuntimeError, ValueError) as exc:
+        logger.debug("Humanizer mouse movement skipped: %s", exc)
 
 
 # ---------------------------------------------------------------------------
 # Session-level randomness
 # ---------------------------------------------------------------------------
 
+
 def random_afk_twitch() -> None:
     """Occasionally move mouse slightly to simulate idle human presence (0.5% chance)."""
     if random.random() < 0.005:
         try:
             import pyautogui
+
             x, y = pyautogui.position()
             dx = random.randint(-15, 15)
             dy = random.randint(-15, 15)
             move_mouse_human((x, y), (x + dx, y + dy))
-        except Exception:
-            pass
+        except (ImportError, OSError, RuntimeError, ValueError) as exc:
+            logger.debug("Humanizer AFK twitch skipped: %s", exc)

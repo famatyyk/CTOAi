@@ -2,9 +2,13 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
+import uuid
 from pathlib import Path
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 _ROOT = Path(__file__).resolve().parents[2]
 _cfg_raw = Path(os.environ.get("BOT_CLIENT_CONFIG_FILE", "config/client_profiles.json"))
@@ -14,19 +18,43 @@ _CONFIG_PATH = _cfg_raw
 
 _CACHE: dict[str, Any] | None = None
 _CACHE_MTIME: float = -1.0
+_CONFIG_ERROR: str = ""
 
 
 TRUE_VALUES = {"1", "true", "yes", "on"}
 FALSE_VALUES = {"0", "false", "no", "off"}
 
 
+def _set_config_error(code: str, message: str, exc: BaseException | None = None) -> None:
+    global _CONFIG_ERROR
+    _CONFIG_ERROR = code
+    if exc is None:
+        logger.warning("%s", message)
+    else:
+        logger.warning("%s: %s", message, exc.__class__.__name__)
+
+
+def last_config_error() -> str:
+    return _CONFIG_ERROR
+
+
 def _load_config() -> dict[str, Any]:
-    global _CACHE, _CACHE_MTIME
+    global _CACHE, _CACHE_MTIME, _CONFIG_ERROR
     try:
         mtime = _CONFIG_PATH.stat().st_mtime
-    except Exception:
+    except FileNotFoundError:
         _CACHE = {}
         _CACHE_MTIME = -1.0
+        _CONFIG_ERROR = ""
+        return _CACHE
+    except OSError as exc:
+        _CACHE = {}
+        _CACHE_MTIME = -1.0
+        _set_config_error(
+            "unreadable_config",
+            "Bot client profile config cannot be inspected; using defaults",
+            exc,
+        )
         return _CACHE
 
     if _CACHE is not None and mtime == _CACHE_MTIME:
@@ -34,9 +62,30 @@ def _load_config() -> dict[str, Any]:
 
     try:
         data = json.loads(_CONFIG_PATH.read_text(encoding="utf-8"))
-        _CACHE = data if isinstance(data, dict) else {}
-    except Exception:
+    except json.JSONDecodeError as exc:
         _CACHE = {}
+        _set_config_error(
+            "invalid_json",
+            "Bot client profile config is invalid JSON; using defaults",
+            exc,
+        )
+    except OSError as exc:
+        _CACHE = {}
+        _set_config_error(
+            "unreadable_config",
+            "Bot client profile config cannot be read; using defaults",
+            exc,
+        )
+    else:
+        if isinstance(data, dict):
+            _CACHE = data
+            _CONFIG_ERROR = ""
+        else:
+            _CACHE = {}
+            _set_config_error(
+                "invalid_shape",
+                "Bot client profile config root must be a JSON object; using defaults",
+            )
     _CACHE_MTIME = mtime
     return _CACHE
 
@@ -84,7 +133,7 @@ def get_int(key: str, default: int = 0) -> int:
     raw = _raw_value(key, default)
     try:
         return int(raw)
-    except Exception:
+    except (TypeError, ValueError):
         return default
 
 
@@ -92,7 +141,7 @@ def get_float(key: str, default: float = 0.0) -> float:
     raw = _raw_value(key, default)
     try:
         return float(raw)
-    except Exception:
+    except (TypeError, ValueError):
         return default
 
 
@@ -128,9 +177,27 @@ def config_path() -> Path:
 
 
 def reload_config() -> None:
-    global _CACHE, _CACHE_MTIME
+    global _CACHE, _CACHE_MTIME, _CONFIG_ERROR
     _CACHE = None
     _CACHE_MTIME = -1.0
+    _CONFIG_ERROR = ""
+
+
+def _write_json_atomic(path: Path, payload: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(f".{path.name}.{os.getpid()}.{uuid.uuid4().hex}.tmp")
+    try:
+        with tmp.open("w", encoding="utf-8") as handle:
+            json.dump(payload, handle, ensure_ascii=True, indent=2)
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        tmp.replace(path)
+    finally:
+        try:
+            tmp.unlink()
+        except FileNotFoundError:
+            pass
 
 
 def save_profile_values(profile: str, updates: dict[str, Any]) -> None:
@@ -153,6 +220,5 @@ def save_profile_values(profile: str, updates: dict[str, Any]) -> None:
 
     profile_data.update(updates)
 
-    _CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
-    _CONFIG_PATH.write_text(json.dumps(cfg, ensure_ascii=True, indent=2) + "\n", encoding="utf-8")
+    _write_json_atomic(_CONFIG_PATH, cfg)
     reload_config()
