@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-11T13:49:16+00:00",
+  "generated_at": "2026-07-11T13:49:41+00:00",
   "source": "runtime\\audits\\ctoai-full-workspace-audit.json",
   "status": "ready",
   "areas": [
@@ -189,7 +189,7 @@
       "owner": "Engine Brain",
       "validation_gate": "brain refresh; brain pack",
       "files": 45,
-      "bytes": 940820,
+      "bytes": 941007,
       "categories": {
         "tracked_source": 45
       }
@@ -455,7 +455,7 @@
       "owner": "Documentation",
       "validation_gate": "doc sync guard",
       "files": 314,
-      "bytes": 4437424,
+      "bytes": 4437426,
       "categories": {
         "tracked_source": 308,
         "untracked_source_candidate": 6
@@ -476,7 +476,7 @@
       "owner": "Local/uncategorized",
       "validation_gate": "manual review",
       "files": 3,
-      "bytes": 2109915,
+      "bytes": 2116206,
       "categories": {
         "runtime_or_local_state": 3
       }
@@ -599,7 +599,7 @@
       "owner": "Local/uncategorized",
       "validation_gate": "manual review",
       "files": 2336,
-      "bytes": 864804354,
+      "bytes": 864815360,
       "categories": {
         "runtime_or_local_state": 2336
       }

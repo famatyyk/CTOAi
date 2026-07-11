@@ -1,6 +1,6 @@
 # CTOAi Engine Brain Pack
 
-Generated at: `2026-07-11T13:48:43+00:00`
+Generated at: `2026-07-11T13:49:44+00:00`
 Repo root: `C:\Users\zycie\CTOAi`
 Profile: `all`
 
@@ -3083,7 +3083,7 @@ fresh `ctoa_local.log` lines plus safe boot state.
 ```json
 {
   "schema_version": 1,
-  "generated_at": "2026-07-11T13:48:18+00:00",
+  "generated_at": "2026-07-11T13:49:41+00:00",
   "root": "C:\\Users\\zycie\\CTOAi",
   "file_count": 1240,
   "outputs": {
@@ -3174,7 +3174,7 @@ Overall status: `warn`
 ```markdown
 # Engine Brain Ownership Map
 
-Generated at: `2026-07-11T13:48:18+00:00`
+Generated at: `2026-07-11T13:49:41+00:00`
 Source audit: `runtime\audits\ctoai-full-workspace-audit.json`
 Status: `ready`
 
@@ -3257,7 +3257,7 @@ Status: `ready`
 ```markdown
 # Engine Brain Doc Sync
 
-Generated at: `2026-07-11T13:48:18+00:00`
+Generated at: `2026-07-11T13:49:41+00:00`
 Status: `passed`
 
 | Check | Path | Status | Missing |
@@ -3276,7 +3276,7 @@ Status: `passed`
 ```markdown
 # Engine Brain Secret Guardrail
 
-Generated at: `2026-07-11T13:48:18+00:00`
+Generated at: `2026-07-11T13:49:41+00:00`
 Status: `passed`
 Sensitive/local env path count in audit: `7`
 
@@ -3298,7 +3298,7 @@ Generated Engine Brain context must not include exact local sensitive/env paths 
 ```markdown
 # P6 Codex Integration Readiness
 
-Generated at: `2026-07-11T13:48:18+00:00`
+Generated at: `2026-07-11T13:49:41+00:00`
 Status: `ready_for_plugin_design`
 
 P6 allows only four read-only status/cockpit tools plus audited repo-hygiene, API-cost, evidence-pack, Engine Brain, and P7 cockpit-smoke safe-write refreshes. Do not add deploy/live shortcuts or bypass Control Center evidence gates.
@@ -3370,7 +3370,7 @@ Recommended next: Operate the plugin as four read-only status/cockpit tools plus
 ```markdown
 # P7 Operator Workflow
 
-Generated at: `2026-07-11T13:48:18+00:00`
+Generated at: `2026-07-11T13:49:41+00:00`
 Status: `safe_write_ready`
 Decision: `allow_bounded_safe_write_tools`
 
@@ -3418,7 +3418,7 @@ Next safe command: Use ctoai_repo_hygiene_refresh, ctoai_api_cost_refresh, ctoai
 ```markdown
 # P7 Action Readiness
 
-Generated at: `2026-07-11T13:48:18+00:00`
+Generated at: `2026-07-11T13:49:41+00:00`
 Status: `safe_write_tools_enabled`
 Decision: `monitor_enabled_safe_write_tools`
 
@@ -3446,7 +3446,7 @@ Next safe command: Design the next P7 plugin action only after risk model covera
 ```markdown
 # P7 Safe Write Tool Design
 
-Generated at: `2026-07-11T13:48:18+00:00`
+Generated at: `2026-07-11T13:49:41+00:00`
 Status: `implemented`
 Decision: `ready_for_dry_run_operation`
 
@@ -3488,7 +3488,7 @@ Next safe command: Run ctoai_evidence_pack_refresh with dry_run=true and verify 
 ```markdown
 # P7 Operator Brief
 
-Generated at: `2026-07-11T13:48:18+00:00`
+Generated at: `2026-07-11T13:49:41+00:00`
 Decision: `ready_for_p7_operator_workflow`
 Status: `ready`
 
@@ -3516,7 +3516,7 @@ Next safe command: Design the next P7 plugin action only after risk model covera
 ```markdown
 # Engine Brain File Tree
 
-Generated at: `2026-07-11T13:48:18+00:00`
+Generated at: `2026-07-11T13:49:41+00:00`
 
 Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 `node_modules`, `runtime`, `logs`, `data`, `.tmp`, build outputs.
@@ -3619,13 +3619,13 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `AI/generated/DOC_SYNC.json` | 1019 |
 | `AI/generated/DOC_SYNC.md` | 609 |
 | `AI/generated/ENGINE_BRAIN_PACK.json` | 5489 |
-| `AI/generated/ENGINE_BRAIN_PACK.md` | 267372 |
-| `AI/generated/ENV_DOCTOR.json` | 7444 |
+| `AI/generated/ENGINE_BRAIN_PACK.md` | 267374 |
+| `AI/generated/ENV_DOCTOR.json` | 7626 |
 | `AI/generated/ENV_DOCTOR.md` | 1266 |
 | `AI/generated/FILE_TREE.md` | 68791 |
 | `AI/generated/manifest.json` | 2062 |
-| `AI/generated/OWNERSHIP_MAP.json` | 16931 |
-| `AI/generated/OWNERSHIP_MAP.md` | 6577 |
+| `AI/generated/OWNERSHIP_MAP.json` | 16932 |
+| `AI/generated/OWNERSHIP_MAP.md` | 6579 |
 | `AI/generated/P6_CODEX_INTEGRATION_READINESS.json` | 11010 |
 | `AI/generated/P6_CODEX_INTEGRATION_READINESS.md` | 6915 |
 | `AI/generated/P7_ACTION_READINESS.json` | 4870 |
@@ -4332,7 +4332,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 ```markdown
 # Engine Brain Symbol Map
 
-Generated at: `2026-07-11T13:48:18+00:00`
+Generated at: `2026-07-11T13:49:41+00:00`
 
 This is a lightweight map for navigation, not a full source dump.
 

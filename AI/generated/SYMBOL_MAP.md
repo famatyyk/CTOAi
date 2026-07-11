@@ -1,6 +1,6 @@
 # Engine Brain Symbol Map
 
-Generated at: `2026-07-11T13:49:16+00:00`
+Generated at: `2026-07-11T13:49:41+00:00`
 
 This is a lightweight map for navigation, not a full source dump.
 
