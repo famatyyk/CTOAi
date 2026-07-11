@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server"
+import { isIP } from "node:net"
 
 type RateWindow = {
   count: number
@@ -6,14 +7,28 @@ type RateWindow = {
 }
 
 export function getClientIp(req: NextRequest): string {
+  if (!trustProxyHeaders()) {
+    return "unknown"
+  }
+
   const forwarded = req.headers.get("x-forwarded-for")
   if (forwarded) {
-    const first = forwarded.split(",")[0]?.trim()
+    const first = normalizeIp(forwarded.split(",")[0])
     if (first) return first
   }
 
-  const real = req.headers.get("x-real-ip")?.trim()
+  const real = normalizeIp(req.headers.get("x-real-ip"))
   return real || "unknown"
+}
+
+export function trustProxyHeaders(): boolean {
+  const value = (process.env.CTOA_TRUST_PROXY_HEADERS || "").trim().toLowerCase()
+  return value === "1" || value === "true" || value === "yes" || value === "on"
+}
+
+function normalizeIp(value: string | null | undefined): string {
+  const candidate = (value || "").trim()
+  return isIP(candidate) ? candidate : ""
 }
 
 export function createIpRateLimiter(limit: number, windowMs: number) {

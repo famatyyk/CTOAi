@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 import base64
 import hashlib
 import hmac
+import ipaddress
 import json
 import os
 import re
@@ -11,7 +12,9 @@ import secrets
 import sys
 import threading
 import time
+import uuid
 
+from api import startup_guard as _startup_guard  # noqa: F401
 import bcrypt
 import httpx
 from fastapi import FastAPI, HTTPException, Header, Request
@@ -19,8 +22,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+from runner import http_safety
+
 
 app = FastAPI(title="CTOAi API", version="1.3.0")
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def _env_bool(name: str, default: bool) -> bool:
@@ -98,8 +104,14 @@ ROUTER_LOG = _env_bool("CTOA_ROUTER_LOG", True)
 RELEASE_EVIDENCE_FILE = Path(
     os.getenv("CTOA_RELEASE_EVIDENCE_FILE", "runtime/release/latest-approval.json")
 )
+RELEASE_EVIDENCE_MAX_BYTES = max(
+    1024, _env_int("CTOA_RELEASE_EVIDENCE_MAX_BYTES", 1024 * 1024)
+)
 
-AUTH_STORE_FILE = Path(os.getenv("CTOA_AUTH_STORE_FILE", "runtime/state/auth_store.json"))
+AUTH_STORE_FILE = Path(
+    os.getenv("CTOA_AUTH_STORE_FILE", "runtime/state/auth_store.json")
+)
+AUTH_STORE_MAX_BYTES = max(4096, _env_int("CTOA_AUTH_STORE_MAX_BYTES", 1024 * 1024))
 AUTH_REQUIRED = _env_bool("CTOA_AUTH_REQUIRED", True)
 ALLOW_SEED_ACCOUNTS = _env_bool("CTOA_ALLOW_SEED_ACCOUNTS", False)
 AUTH_BOOTSTRAP_CODE = os.getenv("CTOA_AUTH_BOOTSTRAP_CODE", "").strip()
@@ -119,10 +131,13 @@ if _is_weak_secret(JWT_SECRET):
     )
 
 CTOA_RATE_LIMIT_ENABLED = _env_bool("CTOA_RATE_LIMIT_ENABLED", True)
+CTOA_TRUST_PROXY_HEADERS = _env_bool("CTOA_TRUST_PROXY_HEADERS", False)
 CTOA_CHAT_RATE_LIMIT_PER_MIN = max(1, _env_int("CTOA_CHAT_RATE_LIMIT_PER_MIN", 24))
 CTOA_AUTH_RATE_LIMIT_PER_MIN = max(1, _env_int("CTOA_AUTH_RATE_LIMIT_PER_MIN", 20))
 CTOA_READ_RATE_LIMIT_PER_MIN = max(1, _env_int("CTOA_READ_RATE_LIMIT_PER_MIN", 120))
-CTOA_AUDIT_LOG_FILE = Path(os.getenv("CTOA_AUDIT_LOG_FILE", "runtime/state/http_audit.log"))
+CTOA_AUDIT_LOG_FILE = Path(
+    os.getenv("CTOA_AUDIT_LOG_FILE", "runtime/state/http_audit.log")
+)
 
 COMPLEXITY_KEYWORDS = {
     "architecture",
@@ -167,7 +182,10 @@ _SAFE_DISCLAIMER = (
 )
 
 _SAFETY_STARTUP_TIME: str = datetime.now(timezone.utc).isoformat()
-SAFETY_METRICS: Dict[str, int] = {"sanitizer_interventions": 0, "model_errors_masked": 0}
+SAFETY_METRICS: Dict[str, int] = {
+    "sanitizer_interventions": 0,
+    "model_errors_masked": 0,
+}
 _METRICS_LOCK = threading.Lock()
 
 
@@ -198,7 +216,13 @@ def _sanitize_assistant_content(content: str) -> str:
         with _METRICS_LOCK:
             SAFETY_METRICS["sanitizer_interventions"] += 1
         print(
-            json.dumps({"event": "safety_intervention", "timestamp": datetime.now(timezone.utc).isoformat(), "reason": "admin_fabrication"}),
+            json.dumps(
+                {
+                    "event": "safety_intervention",
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "reason": "admin_fabrication",
+                }
+            ),
             file=sys.stderr,
         )
         return _SAFE_DISCLAIMER
@@ -212,9 +236,15 @@ def _friendly_model_error(exc: Exception) -> "tuple[int, str]":
         sc = exc.response.status_code
         _http_status = sc
         if sc == 429:
-            _sc, _msg = 503, "Service temporarily unavailable: model capacity exceeded. Please retry shortly."
+            _sc, _msg = (
+                503,
+                "Service temporarily unavailable: model capacity exceeded. Please retry shortly.",
+            )
         elif sc >= 500:
-            _sc, _msg = 503, "Model backend is temporarily unavailable. Please retry shortly."
+            _sc, _msg = (
+                503,
+                "Model backend is temporarily unavailable. Please retry shortly.",
+            )
         else:
             _sc, _msg = 502, "Model backend returned an unexpected response."
     elif isinstance(exc, (httpx.TimeoutException, httpx.ConnectError)):
@@ -224,11 +254,16 @@ def _friendly_model_error(exc: Exception) -> "tuple[int, str]":
     with _METRICS_LOCK:
         SAFETY_METRICS["model_errors_masked"] += 1
     print(
-        json.dumps({"event": "model_error_masked", "timestamp": datetime.now(timezone.utc).isoformat(), "http_status": _http_status}),
+        json.dumps(
+            {
+                "event": "model_error_masked",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "http_status": _http_status,
+            }
+        ),
         file=sys.stderr,
     )
     return _sc, _msg
-
 
 
 class Message(BaseModel):
@@ -261,6 +296,7 @@ class RegisterRequest(BaseModel):
     password: str
     display_name: Optional[str] = None
     role: Optional[Literal["owner", "operator", "member"]] = None
+    registration_code: Optional[str] = None
 
 
 class LoginRequest(BaseModel):
@@ -314,9 +350,117 @@ def _utc_now_iso() -> str:
 
 def _atomic_write_json(path: Path, payload: Dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    tmp.write_text(json.dumps(payload, indent=2, ensure_ascii=True), encoding="utf-8")
-    tmp.replace(path)
+    tmp = path.with_name(f".{path.name}.{os.getpid()}.{uuid.uuid4().hex}.tmp")
+    try:
+        with tmp.open("w", encoding="utf-8") as f:
+            json.dump(payload, f, indent=2, ensure_ascii=True)
+            f.write("\n")
+            f.flush()
+            os.fsync(f.fileno())
+        tmp.replace(path)
+    finally:
+        try:
+            tmp.unlink()
+        except FileNotFoundError:
+            pass
+
+
+_SECRET_FIELD_RE = re.compile(
+    r"(?i)(access[_-]?token|refresh[_-]?token|id[_-]?token|token|password|secret|api[_-]?key|apikey|client[_-]?secret)"
+)
+_SECRET_ASSIGNMENT_RE = re.compile(
+    r"(?i)\b(access[_-]?token|refresh[_-]?token|id[_-]?token|token|password|secret|api[_-]?key|apikey|client[_-]?secret)\s*=\s*([^\s,;}\]]+)"
+)
+_JSON_SECRET_RE = re.compile(
+    r'(?i)("?(?:access[_-]?token|refresh[_-]?token|id[_-]?token|token|password|secret|api[_-]?key|apikey|client[_-]?secret)"?\s*:\s*")([^"]+)(")'
+)
+_AUTH_HEADER_RE = re.compile(
+    r"\b((?:Bearer|Basic)\s+)[A-Za-z0-9._~+/=-]{12,}", re.IGNORECASE
+)
+_WINDOWS_ABSOLUTE_PATH_RE = re.compile(r"(?:\\\\\?\\)?[A-Za-z]:\\[^\s\"'<>|]+")
+_POSIX_LOCAL_PATH_RE = re.compile(
+    r"(?<![\w])/(?:home|Users|tmp|opt|var|mnt|workspace|root)/[^\s\"'<>]+"
+)
+
+
+def _display_path(path_value: Path | str) -> str:
+    raw = str(path_value or "").strip().replace("\\\\?\\", "")
+    if not raw:
+        return ""
+    path_obj = Path(raw)
+    if not path_obj.is_absolute():
+        return raw.replace("\\", "/").lstrip("./")
+
+    try:
+        resolved = path_obj.resolve(strict=False)
+        relative = resolved.relative_to(ROOT.resolve())
+        return relative.as_posix()
+    except (OSError, ValueError):
+        return f"[external]/{path_obj.name or 'path'}"
+
+
+def _redact_release_evidence_text(value: str) -> str:
+    redacted = str(value or "")
+    redacted = _AUTH_HEADER_RE.sub(r"\1[redacted]", redacted)
+    redacted = _JSON_SECRET_RE.sub(r"\1[redacted]\3", redacted)
+    redacted = _SECRET_ASSIGNMENT_RE.sub(r"\1=[redacted]", redacted)
+    redacted = _WINDOWS_ABSOLUTE_PATH_RE.sub(
+        lambda match: _display_path(match.group(0)), redacted
+    )
+    redacted = _POSIX_LOCAL_PATH_RE.sub(
+        lambda match: _display_path(match.group(0)), redacted
+    )
+    return redacted[:4000]
+
+
+def _public_release_evidence_value(value: Any, key: str = "") -> Any:
+    if isinstance(value, dict):
+        return {
+            _redact_release_evidence_text(str(item_key)): _public_release_evidence_value(
+                item_value, str(item_key)
+            )
+            for item_key, item_value in value.items()
+        }
+    if isinstance(value, list):
+        return [_public_release_evidence_value(item, key) for item in value]
+    if isinstance(value, str):
+        if _SECRET_FIELD_RE.search(key):
+            return "[redacted]"
+        return _redact_release_evidence_text(value)
+    return value
+
+
+def _public_audit_value(value: Any, key: str = "") -> Any:
+    if isinstance(value, dict):
+        return {
+            _redact_release_evidence_text(str(item_key)): _public_audit_value(
+                item_value, str(item_key)
+            )
+            for item_key, item_value in value.items()
+        }
+    if isinstance(value, list):
+        return [_public_audit_value(item, key) for item in value[:20]]
+    if isinstance(value, str):
+        if _SECRET_FIELD_RE.search(key):
+            return "[redacted]"
+        return _redact_release_evidence_text(value)[:1000]
+    return value
+
+
+def _read_release_evidence_payload(path: Path) -> Dict[str, Any]:
+    if path.is_symlink():
+        raise ValueError("unsafe_symlink")
+    file_size = path.stat().st_size
+    if file_size > RELEASE_EVIDENCE_MAX_BYTES:
+        raise ValueError("too_large")
+    with path.open("rb") as handle:
+        raw = handle.read(RELEASE_EVIDENCE_MAX_BYTES + 1)
+    if len(raw) > RELEASE_EVIDENCE_MAX_BYTES:
+        raise ValueError("too_large")
+    payload = json.loads(raw.decode("utf-8"))
+    if not isinstance(payload, dict):
+        raise TypeError("not_object")
+    return payload
 
 
 def _hash_password(password: str) -> str:
@@ -331,10 +475,19 @@ def _verify_password(password: str, hashed: str) -> bool:
 
 
 def _sanitize_username(username: str) -> str:
-    clean = "".join(ch for ch in username.strip().lower() if ch.isalnum() or ch in {"_", "-", "."})
+    clean = "".join(
+        ch for ch in username.strip().lower() if ch.isalnum() or ch in {"_", "-", "."}
+    )
     if not clean:
         raise HTTPException(status_code=400, detail="Invalid username")
     return clean
+
+
+def _seed_password(env_name: str) -> str:
+    password = os.getenv(env_name, "").strip()
+    if not password:
+        raise RuntimeError(f"{env_name} must be set when CTOA_ALLOW_SEED_ACCOUNTS=true")
+    return password
 
 
 def _seed_accounts() -> Dict[str, Dict[str, Any]]:
@@ -344,37 +497,67 @@ def _seed_accounts() -> Dict[str, Dict[str, Any]]:
             "username": "famatyyk",
             "display_name": "Famatyyk",
             "role": "owner",
-            "password_hash": _hash_password("ctoa-owner"),
+            "password_hash": _hash_password(
+                _seed_password("CTOA_SEED_FAMATYYK_PASSWORD")
+            ),
             "created_at": now,
         },
         "strategos": {
             "username": "strategos",
             "display_name": "Strategos",
             "role": "operator",
-            "password_hash": _hash_password("ctoa-ops"),
+            "password_hash": _hash_password(
+                _seed_password("CTOA_SEED_STRATEGOS_PASSWORD")
+            ),
             "created_at": now,
         },
         "recruit": {
             "username": "recruit",
             "display_name": "Community Recruit",
             "role": "member",
-            "password_hash": _hash_password("ctoa-community"),
+            "password_hash": _hash_password(
+                _seed_password("CTOA_SEED_RECRUIT_PASSWORD")
+            ),
             "created_at": now,
         },
     }
 
 
+def _default_account_seed_blocked() -> bool:
+    return _is_production_env() or not _env_bool("CTOA_ALLOW_SEED_ACCOUNTS", False)
+
+
+def _read_auth_store_payload(path: Path) -> Dict[str, Any]:
+    if path.is_symlink():
+        raise RuntimeError("Invalid CTOA_AUTH_STORE_FILE; refusing to load auth store")
+    try:
+        with path.open("rb") as handle:
+            raw = handle.read(AUTH_STORE_MAX_BYTES + 1)
+    except OSError as exc:
+        raise RuntimeError("Invalid CTOA_AUTH_STORE_FILE; refusing to load auth store") from exc
+    if len(raw) > AUTH_STORE_MAX_BYTES:
+        raise RuntimeError("Invalid CTOA_AUTH_STORE_FILE; refusing to load auth store")
+    try:
+        payload = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise RuntimeError("Invalid CTOA_AUTH_STORE_FILE; refusing to load auth store") from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError("Invalid CTOA_AUTH_STORE_FILE; refusing to load auth store")
+    return payload
+
+
 def _load_auth_store() -> Dict[str, Any]:
-    if AUTH_STORE_FILE.exists():
-        try:
-            payload = json.loads(AUTH_STORE_FILE.read_text(encoding="utf-8"))
-            if isinstance(payload, dict):
-                payload.setdefault("users", {})
-                payload.setdefault("invites", [])
-                payload.setdefault("activity", [])
-                return payload
-        except (OSError, json.JSONDecodeError):
-            pass
+    if AUTH_STORE_FILE.exists() or AUTH_STORE_FILE.is_symlink():
+        payload = _read_auth_store_payload(AUTH_STORE_FILE)
+        payload.setdefault("users", {})
+        payload.setdefault("invites", [])
+        payload.setdefault("activity", [])
+        return payload
+
+    if _default_account_seed_blocked():
+        raise RuntimeError(
+            "Refusing to seed default auth accounts; provision CTOA_AUTH_STORE_FILE before startup"
+        )
 
     seeded_users: Dict[str, Dict[str, Any]] = {}
     if ALLOW_SEED_ACCOUNTS:
@@ -409,7 +592,14 @@ def _save_auth_store(store: Dict[str, Any]) -> None:
     _atomic_write_json(AUTH_STORE_FILE, store)
 
 
-def _append_activity(store: Dict[str, Any], *, event_type: str, actor: str, target: str, meta: Optional[Dict[str, Any]] = None) -> None:
+def _append_activity(
+    store: Dict[str, Any],
+    *,
+    event_type: str,
+    actor: str,
+    target: str,
+    meta: Optional[Dict[str, Any]] = None,
+) -> None:
     activity = store.setdefault("activity", [])
     activity.insert(
         0,
@@ -439,7 +629,9 @@ def _jwt_encode(payload: Dict[str, Any]) -> str:
     head = _b64url_encode(json.dumps(header, separators=(",", ":")).encode("utf-8"))
     body = _b64url_encode(json.dumps(payload, separators=(",", ":")).encode("utf-8"))
     signing_input = f"{head}.{body}".encode("ascii")
-    signature = hmac.new(JWT_SECRET.encode("utf-8"), signing_input, hashlib.sha256).digest()
+    signature = hmac.new(
+        JWT_SECRET.encode("utf-8"), signing_input, hashlib.sha256
+    ).digest()
     return f"{head}.{body}.{_b64url_encode(signature)}"
 
 
@@ -449,7 +641,9 @@ def _jwt_decode(token: str) -> Dict[str, Any]:
         raise HTTPException(status_code=401, detail="Invalid token format")
 
     signing_input = f"{parts[0]}.{parts[1]}".encode("ascii")
-    expected = hmac.new(JWT_SECRET.encode("utf-8"), signing_input, hashlib.sha256).digest()
+    expected = hmac.new(
+        JWT_SECRET.encode("utf-8"), signing_input, hashlib.sha256
+    ).digest()
     provided = _b64url_decode(parts[2])
     if not hmac.compare_digest(expected, provided):
         raise HTTPException(status_code=401, detail="Invalid token signature")
@@ -485,16 +679,26 @@ def _extract_bearer(authorization: Optional[str]) -> Optional[str]:
     return authorization.split(" ", 1)[1].strip()
 
 
-
 _RATE_LIMIT_LOCK = threading.Lock()
 _AUDIT_LOCK = threading.Lock()
 _RATE_LIMIT_BUCKETS: Dict[str, Dict[str, int]] = {}
 
 
+def _first_forwarded_ip(value: str) -> str:
+    first = str(value or "").split(",", 1)[0].strip()
+    if not first:
+        return ""
+    try:
+        return ipaddress.ip_address(first).compressed
+    except ValueError:
+        return ""
+
+
 def _client_ip_from_request(request: Request) -> str:
-    forwarded = request.headers.get("x-forwarded-for", "").strip()
-    if forwarded:
-        return forwarded.split(",", 1)[0].strip() or "unknown"
+    if CTOA_TRUST_PROXY_HEADERS:
+        forwarded = _first_forwarded_ip(request.headers.get("x-forwarded-for", ""))
+        if forwarded:
+            return forwarded
     if request.client and request.client.host:
         return request.client.host
     return "unknown"
@@ -518,7 +722,9 @@ def _rate_limit_for_group(group: str) -> int:
     return CTOA_READ_RATE_LIMIT_PER_MIN
 
 
-def _consume_rate_limit(ip: str, group: str, now_ts: Optional[float] = None) -> Dict[str, int]:
+def _consume_rate_limit(
+    ip: str, group: str, now_ts: Optional[float] = None
+) -> Dict[str, int]:
     now = now_ts if now_ts is not None else time.time()
     bucket = int(now // 60)
     retry_after = max(1, 60 - int(now % 60))
@@ -533,14 +739,23 @@ def _consume_rate_limit(ip: str, group: str, now_ts: Optional[float] = None) -> 
         count = int(record.get("count", 0))
         if count >= limit:
             _RATE_LIMIT_BUCKETS[key] = record
-            return {"allowed": 0, "retry_after": retry_after, "limit": limit, "remaining": 0}
+            return {
+                "allowed": 0,
+                "retry_after": retry_after,
+                "limit": limit,
+                "remaining": 0,
+            }
 
         count += 1
         record["count"] = count
         _RATE_LIMIT_BUCKETS[key] = record
 
         if len(_RATE_LIMIT_BUCKETS) > 5000:
-            stale = [k for k, v in _RATE_LIMIT_BUCKETS.items() if int(v.get("bucket", -1)) != bucket]
+            stale = [
+                k
+                for k, v in _RATE_LIMIT_BUCKETS.items()
+                if int(v.get("bucket", -1)) != bucket
+            ]
             for stale_key in stale[:2000]:
                 _RATE_LIMIT_BUCKETS.pop(stale_key, None)
 
@@ -566,16 +781,20 @@ def _audit_actor_from_request(request: Request) -> str:
     return actor or "anonymous"
 
 
-def _append_audit_http(request: Request, status: int, actor: str, meta: Optional[Dict[str, Any]] = None) -> None:
+def _append_audit_http(
+    request: Request, status: int, actor: str, meta: Optional[Dict[str, Any]] = None
+) -> None:
     entry = {
         "at": datetime.now(timezone.utc).isoformat(),
-        "method": request.method,
-        "path": request.url.path,
+        "method": _redact_release_evidence_text(request.method)[:20],
+        "path": _redact_release_evidence_text(request.url.path)[:500],
         "status": int(status),
-        "actor": actor,
-        "ip": _client_ip_from_request(request),
-        "ua": request.headers.get("user-agent", ""),
-        "meta": meta or {},
+        "actor": _redact_release_evidence_text(actor)[:128],
+        "ip": _redact_release_evidence_text(_client_ip_from_request(request))[:128],
+        "ua": _redact_release_evidence_text(
+            request.headers.get("user-agent", "")
+        )[:500],
+        "meta": _public_audit_value(meta or {}),
     }
     try:
         CTOA_AUDIT_LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
@@ -628,7 +847,11 @@ async def security_middleware(request: Request, call_next):
     finally:
         if is_api_request:
             _append_audit_http(request, status_code, actor, meta)
-def _current_user(authorization: Optional[str], *, required: bool = True) -> Optional[Dict[str, Any]]:
+
+
+def _current_user(
+    authorization: Optional[str], *, required: bool = True
+) -> Optional[Dict[str, Any]]:
     token = _extract_bearer(authorization)
     if not token:
         if required:
@@ -735,6 +958,10 @@ async def _call_model(
     temperature: Optional[float],
     max_tokens: Optional[int],
 ) -> Dict[str, Any]:
+    safe_backend_url = http_safety.require_model_backend_url(
+        backend_url,
+        allow_remote=http_safety.env_enabled("CTOA_ALLOW_REMOTE_MODEL_BACKENDS"),
+    )
     payload: Dict[str, Any] = {
         "model": model_name,
         "messages": messages,
@@ -750,14 +977,18 @@ async def _call_model(
         headers["Authorization"] = f"Bearer {backend_key}"
 
     async with httpx.AsyncClient(timeout=180, headers=headers) as client:
-        response = await client.post(f"{backend_url}/chat/completions", json=payload)
+        response = await client.post(
+            f"{safe_backend_url}/chat/completions", json=payload
+        )
         response.raise_for_status()
         return response.json()
 
 
 async def _execute_chat(req: ChatRequest) -> Dict[str, Any]:
     route = _select_models(req)
-    quality_retry = req.quality_retry if req.quality_retry is not None else QUALITY_RETRY_DEFAULT
+    quality_retry = (
+        req.quality_retry if req.quality_retry is not None else QUALITY_RETRY_DEFAULT
+    )
 
     messages = [{"role": "system", "content": SYSTEM_PROMPT}]
     messages += [{"role": m.role, "content": m.content} for m in req.messages]
@@ -812,7 +1043,9 @@ async def _execute_chat(req: ChatRequest) -> Dict[str, Any]:
                 req.temperature,
                 req.max_tokens,
             )
-            content = _sanitize_assistant_content(retry_data["choices"][0]["message"]["content"])
+            content = _sanitize_assistant_content(
+                retry_data["choices"][0]["message"]["content"]
+            )
             route["reason"].append("fallback_quality")
             route["primary"] = route["secondary"]
             route["backend_url"] = route["secondary_backend_url"]
@@ -834,9 +1067,34 @@ async def _execute_chat(req: ChatRequest) -> Dict[str, Any]:
     }
 
     if ROUTER_LOG:
-        print(f"[router] {route_info}")
+        print(f"[router] {_safe_chat_route_info(route_info)}")
 
     return {"content": content, "route": route_info}
+
+
+def _safe_chat_route_info(route_info: Dict[str, Any]) -> Dict[str, Any]:
+    """Return chat routing evidence without internal backend URLs or keys."""
+    allowed = {
+        "requested_mode",
+        "mode",
+        "model",
+        "backend_kind",
+        "fallback_model",
+        "reason",
+        "fallback_used",
+        "quality_retry_used",
+        "latency_ms",
+    }
+    return {key: value for key, value in route_info.items() if key in allowed}
+
+
+def _require_chat_debug_route_user(user: Optional[Dict[str, Any]]) -> None:
+    if not user:
+        raise HTTPException(
+            status_code=403,
+            detail="Operator role required for chat route debug metadata",
+        )
+    _require_roles(user, ["owner", "operator"])
 
 
 @app.get("/health")
@@ -914,11 +1172,33 @@ def bootstrap(req: BootstrapRequest) -> Dict[str, Any]:
 
 
 @app.post("/api/auth/register")
-def register(req: RegisterRequest, authorization: Optional[str] = Header(default=None)) -> Dict[str, Any]:
+def register(
+    req: RegisterRequest, authorization: Optional[str] = Header(default=None)
+) -> Dict[str, Any]:
     username = _sanitize_username(req.username)
     password = req.password.strip()
     if len(password) < 8:
-        raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
+        raise HTTPException(
+            status_code=400, detail="Password must be at least 8 characters"
+        )
+
+    requested_role = req.role or "member"
+    if requested_role != "member":
+        current = _current_user(authorization, required=True)
+        _require_roles(current, ["owner"])
+    elif not _api_self_register_enabled():
+        raise HTTPException(
+            status_code=403, detail="Public self-registration is disabled"
+        )
+    elif _is_production_env():
+        expected_code = _api_self_register_code()
+        provided_code = (req.registration_code or "").strip()
+        if (
+            not expected_code
+            or not provided_code
+            or not hmac.compare_digest(provided_code, expected_code)
+        ):
+            raise HTTPException(status_code=403, detail="Invalid registration code")
 
     store = _load_auth_store()
     users = store.setdefault("users", {})
@@ -929,7 +1209,6 @@ def register(req: RegisterRequest, authorization: Optional[str] = Header(default
     if requested_role != "member":
         current = _current_user(authorization, required=True)
         _require_roles(current, ["owner"])
-
     users[username] = {
         "username": username,
         "display_name": (req.display_name or username).strip() or username,
@@ -937,7 +1216,13 @@ def register(req: RegisterRequest, authorization: Optional[str] = Header(default
         "password_hash": _hash_password(password),
         "created_at": _utc_now_iso(),
     }
-    _append_activity(store, event_type="register", actor=username, target="account", meta={"role": requested_role})
+    _append_activity(
+        store,
+        event_type="register",
+        actor=username,
+        target="account",
+        meta={"role": requested_role},
+    )
     _save_auth_store(store)
 
     token = _issue_token(users[username])
@@ -983,7 +1268,9 @@ def me(authorization: Optional[str] = Header(default=None)) -> Dict[str, Any]:
 
 
 @app.post("/api/community/invite")
-def create_invite(req: InviteRequest, authorization: Optional[str] = Header(default=None)) -> Dict[str, Any]:
+def create_invite(
+    req: InviteRequest, authorization: Optional[str] = Header(default=None)
+) -> Dict[str, Any]:
     actor = _current_user(authorization, required=True)
     _require_roles(actor, ["owner", "operator"])
 
@@ -1018,18 +1305,27 @@ def create_invite(req: InviteRequest, authorization: Optional[str] = Header(defa
 
 
 @app.post("/api/community/invite/accept")
-def accept_invite(req: AcceptInviteRequest, authorization: Optional[str] = Header(default=None)) -> Dict[str, Any]:
+def accept_invite(
+    req: AcceptInviteRequest, authorization: Optional[str] = Header(default=None)
+) -> Dict[str, Any]:
     actor = _current_user(authorization, required=True)
     store = _load_auth_store()
     invites = store.setdefault("invites", [])
     users = store.setdefault("users", {})
 
-    invite = next((i for i in invites if i.get("code") == req.code and not i.get("accepted_at")), None)
+    invite = next(
+        (i for i in invites if i.get("code") == req.code and not i.get("accepted_at")),
+        None,
+    )
     if not invite:
-        raise HTTPException(status_code=404, detail="Invite not found or already accepted")
+        raise HTTPException(
+            status_code=404, detail="Invite not found or already accepted"
+        )
 
     if invite.get("username") != actor["username"]:
-        raise HTTPException(status_code=403, detail="Invite does not belong to this account")
+        raise HTTPException(
+            status_code=403, detail="Invite does not belong to this account"
+        )
 
     users[actor["username"]]["role"] = invite["role"]
     invite["accepted_at"] = _utc_now_iso()
@@ -1057,7 +1353,9 @@ def accept_invite(req: AcceptInviteRequest, authorization: Optional[str] = Heade
 
 
 @app.get("/api/community/members")
-def community_members(authorization: Optional[str] = Header(default=None)) -> Dict[str, Any]:
+def community_members(
+    authorization: Optional[str] = Header(default=None),
+) -> Dict[str, Any]:
     _current_user(authorization, required=True)
     store = _load_auth_store()
     users = store.setdefault("users", {})
@@ -1075,7 +1373,11 @@ def community_members(authorization: Optional[str] = Header(default=None)) -> Di
 
 
 @app.post("/api/community/members/{username}/role")
-def set_member_role(username: str, req: RoleUpdateRequest, authorization: Optional[str] = Header(default=None)) -> Dict[str, Any]:
+def set_member_role(
+    username: str,
+    req: RoleUpdateRequest,
+    authorization: Optional[str] = Header(default=None),
+) -> Dict[str, Any]:
     actor = _current_user(authorization, required=True)
     _require_roles(actor, ["owner"])
 
@@ -1112,14 +1414,18 @@ def set_member_role(username: str, req: RoleUpdateRequest, authorization: Option
 
 
 @app.get("/api/community/feed")
-def community_feed(authorization: Optional[str] = Header(default=None)) -> Dict[str, Any]:
+def community_feed(
+    authorization: Optional[str] = Header(default=None),
+) -> Dict[str, Any]:
     _current_user(authorization, required=True)
     store = _load_auth_store()
     return {"events": store.setdefault("activity", [])[:100]}
 
 
 @app.get("/api/community/invites")
-def community_invites(authorization: Optional[str] = Header(default=None)) -> Dict[str, Any]:
+def community_invites(
+    authorization: Optional[str] = Header(default=None),
+) -> Dict[str, Any]:
     user = _current_user(authorization, required=True)
     _require_roles(user, ["owner", "operator"])
     store = _load_auth_store()
@@ -1130,31 +1436,71 @@ def community_invites(authorization: Optional[str] = Header(default=None)) -> Di
 @app.get("/api/release-evidence")
 def release_evidence() -> Dict[str, Any]:
     now_iso = datetime.now(timezone.utc).isoformat()
+    evidence_path = _display_path(RELEASE_EVIDENCE_FILE)
     if not RELEASE_EVIDENCE_FILE.exists():
         return {
             "ok": False,
             "state": "NO_EVIDENCE",
-            "evidence_path": str(RELEASE_EVIDENCE_FILE),
+            "evidence_path": evidence_path,
             "updated_at": now_iso,
             "message": "No release evidence file found.",
         }
 
     try:
-        payload = json.loads(RELEASE_EVIDENCE_FILE.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
+        payload = _read_release_evidence_payload(RELEASE_EVIDENCE_FILE)
+    except json.JSONDecodeError:
         return {
             "ok": False,
             "state": "ERROR",
-            "evidence_path": str(RELEASE_EVIDENCE_FILE),
+            "evidence_path": evidence_path,
             "updated_at": now_iso,
-            "message": f"Failed to read release evidence: {exc}",
+            "message": "Release evidence payload is invalid JSON.",
         }
-
-    if not isinstance(payload, dict):
+    except ValueError as exc:
+        if str(exc) == "too_large":
+            return {
+                "ok": False,
+                "state": "TOO_LARGE",
+                "evidence_path": evidence_path,
+                "updated_at": now_iso,
+                "message": "Release evidence file is too large to display safely.",
+            }
+        if str(exc) == "unsafe_symlink":
+            return {
+                "ok": False,
+                "state": "ERROR",
+                "evidence_path": evidence_path,
+                "updated_at": now_iso,
+                "message": "Release evidence file could not be read safely.",
+            }
         return {
             "ok": False,
             "state": "ERROR",
-            "evidence_path": str(RELEASE_EVIDENCE_FILE),
+            "evidence_path": evidence_path,
+            "updated_at": now_iso,
+            "message": "Release evidence payload is invalid.",
+        }
+    except UnicodeDecodeError:
+        return {
+            "ok": False,
+            "state": "ERROR",
+            "evidence_path": evidence_path,
+            "updated_at": now_iso,
+            "message": "Release evidence payload is not valid UTF-8.",
+        }
+    except OSError:
+        return {
+            "ok": False,
+            "state": "ERROR",
+            "evidence_path": evidence_path,
+            "updated_at": now_iso,
+            "message": "Release evidence file could not be read.",
+        }
+    except TypeError:
+        return {
+            "ok": False,
+            "state": "ERROR",
+            "evidence_path": evidence_path,
             "updated_at": now_iso,
             "message": "Release evidence payload must be a JSON object.",
         }
@@ -1162,27 +1508,38 @@ def release_evidence() -> Dict[str, Any]:
     return {
         "ok": True,
         "state": str(payload.get("state", "UNKNOWN")),
-        "evidence_path": str(RELEASE_EVIDENCE_FILE),
+        "evidence_path": evidence_path,
         "updated_at": now_iso,
-        "evidence": payload,
+        "evidence": _public_release_evidence_value(payload),
     }
 
 
 @app.post("/api/chat")
-async def chat(req: ChatRequest, authorization: Optional[str] = Header(default=None)) -> Dict[str, Any]:
+async def chat(
+    req: ChatRequest, authorization: Optional[str] = Header(default=None)
+) -> Dict[str, Any]:
     user = _current_user(authorization, required=AUTH_REQUIRED)
+    if req.debug_route:
+        _require_chat_debug_route_user(user)
     result = await _execute_chat(req)
-    body: Dict[str, Any] = {"role": "assistant", "content": _sanitize_assistant_content(result["content"])}
+    body: Dict[str, Any] = {
+        "role": "assistant",
+        "content": _sanitize_assistant_content(result["content"]),
+    }
     if user:
         body["account"] = {"username": user["username"], "role": user["role"]}
     if req.debug_route:
-        body["route"] = result["route"]
+        body["route"] = _safe_chat_route_info(result["route"])
     return body
 
 
 @app.post("/v1/chat/completions")
-async def chat_completions(req: OpenAIChatRequest, authorization: Optional[str] = Header(default=None)) -> Dict[str, Any]:
-    _current_user(authorization, required=AUTH_REQUIRED)
+async def chat_completions(
+    req: OpenAIChatRequest, authorization: Optional[str] = Header(default=None)
+) -> Dict[str, Any]:
+    user = _current_user(authorization, required=AUTH_REQUIRED)
+    if req.debug_route:
+        _require_chat_debug_route_user(user)
 
     internal = ChatRequest(
         messages=req.messages,
@@ -1204,19 +1561,24 @@ async def chat_completions(req: OpenAIChatRequest, authorization: Optional[str] 
             {
                 "index": 0,
                 "finish_reason": "stop",
-                "message": {"role": "assistant", "content": _sanitize_assistant_content(result["content"])},
+                "message": {
+                    "role": "assistant",
+                    "content": _sanitize_assistant_content(result["content"]),
+                },
             }
         ],
     }
 
     if req.debug_route:
-        response["route"] = result["route"]
+        response["route"] = _safe_chat_route_info(result["route"])
 
     return response
 
 
 @app.get("/api/safety/metrics")
-async def safety_metrics(authorization: Optional[str] = Header(default=None)) -> Dict[str, Any]:
+async def safety_metrics(
+    authorization: Optional[str] = Header(default=None),
+) -> Dict[str, Any]:
     user = _current_user(authorization, required=True)
     _require_roles(user, ["owner", "operator"])
     snapshot = _safety_telemetry_snapshot()
@@ -1228,7 +1590,9 @@ async def safety_metrics(authorization: Optional[str] = Header(default=None)) ->
 
 
 @app.get("/api/safety/telemetry")
-async def safety_telemetry(authorization: Optional[str] = Header(default=None)) -> Dict[str, Any]:
+async def safety_telemetry(
+    authorization: Optional[str] = Header(default=None),
+) -> Dict[str, Any]:
     user = _current_user(authorization, required=True)
     _require_roles(user, ["owner", "operator"])
     return _safety_telemetry_snapshot()
@@ -1241,5 +1605,3 @@ async def safety_status() -> Dict[str, Any]:
     if interventions >= 10:
         return {"status": "elevated", "interventions": interventions}
     return {"status": "ok"}
-
-

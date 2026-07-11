@@ -1,22 +1,23 @@
 """Regression tests: backend anti-fabrication sanitization and friendly model errors."""
 
+import asyncio
 import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
-import pytest
 
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "api"))
 
-import main as api_main
+import main as api_main  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
 # _sanitize_assistant_content
 # ---------------------------------------------------------------------------
+
 
 class TestSanitizeAssistantContent:
     def test_clean_content_is_unchanged(self):
@@ -86,6 +87,7 @@ class TestSanitizeAssistantContent:
 # _friendly_model_error
 # ---------------------------------------------------------------------------
 
+
 class TestFriendlyModelError:
     def _http_status_error(self, status_code: int) -> httpx.HTTPStatusError:
         mock_resp = MagicMock()
@@ -140,6 +142,7 @@ class TestFriendlyModelError:
 # /api/chat endpoint - integration via TestClient (no live model needed)
 # ---------------------------------------------------------------------------
 
+
 def _make_chat_req(content: str = "hello"):
     return {"messages": [{"role": "user", "content": content}]}
 
@@ -162,14 +165,18 @@ def _mock_execute_chat(result_content: str):
                 "requested_mode": "auto",
             },
         }
+
     return _inner
 
 
 class TestChatEndpointSafetyIntegration:
     def test_chat_endpoint_sanitizes_fabricated_admin_action(self):
         from fastapi.testclient import TestClient
+
         fabricated = "Jasne. Wylaczam sie na Twoje zlecenie."
-        with patch.object(api_main, "_execute_chat", side_effect=_mock_execute_chat(fabricated)):
+        with patch.object(
+            api_main, "_execute_chat", side_effect=_mock_execute_chat(fabricated)
+        ):
             with patch.object(api_main, "AUTH_REQUIRED", False):
                 client = TestClient(api_main.app)
                 resp = client.post("/api/chat", json=_make_chat_req("stop"))
@@ -180,18 +187,134 @@ class TestChatEndpointSafetyIntegration:
 
     def test_chat_endpoint_passes_normal_content(self):
         from fastapi.testclient import TestClient
+
         safe = "To configure nginx, edit /etc/nginx/nginx.conf."
-        with patch.object(api_main, "_execute_chat", side_effect=_mock_execute_chat(safe)):
+        with patch.object(
+            api_main, "_execute_chat", side_effect=_mock_execute_chat(safe)
+        ):
             with patch.object(api_main, "AUTH_REQUIRED", False):
                 client = TestClient(api_main.app)
                 resp = client.post("/api/chat", json=_make_chat_req("how"))
         assert resp.status_code == 200
         assert resp.json()["content"] == safe
 
+    def test_chat_debug_route_requires_operator_identity(self):
+        from fastapi.testclient import TestClient
+
+        execute = AsyncMock(side_effect=_mock_execute_chat("debug"))
+        with patch.object(api_main, "_execute_chat", execute):
+            with patch.object(api_main, "AUTH_REQUIRED", False):
+                client = TestClient(api_main.app)
+                resp = client.post(
+                    "/api/chat", json={**_make_chat_req("debug"), "debug_route": True}
+                )
+
+        assert resp.status_code == 403
+        assert "Operator role required" in resp.json()["detail"]
+        execute.assert_not_awaited()
+
+    def test_chat_debug_route_rejects_member_role(self):
+        from fastapi.testclient import TestClient
+
+        execute = AsyncMock(side_effect=_mock_execute_chat("debug"))
+        with patch.object(api_main, "_execute_chat", execute):
+            with patch.object(
+                api_main,
+                "_current_user",
+                return_value={"username": "member", "role": "member"},
+            ):
+                client = TestClient(api_main.app)
+                resp = client.post(
+                    "/api/chat", json={**_make_chat_req("debug"), "debug_route": True}
+                )
+
+        assert resp.status_code == 403
+        execute.assert_not_awaited()
+
+    def test_chat_debug_route_returns_sanitized_route_for_operator(self):
+        from fastapi.testclient import TestClient
+
+        with patch.object(
+            api_main, "_execute_chat", side_effect=_mock_execute_chat("debug")
+        ):
+            with patch.object(
+                api_main,
+                "_current_user",
+                return_value={"username": "operator", "role": "operator"},
+            ):
+                client = TestClient(api_main.app)
+                resp = client.post(
+                    "/api/chat", json={**_make_chat_req("debug"), "debug_route": True}
+                )
+
+        assert resp.status_code == 200
+        route = resp.json()["route"]
+        assert route["model"] == "test-model"
+        assert route["backend_kind"] == "local"
+        assert "backend_url" not in route
+        assert "fallback_backend_url" not in route
+
+    def test_openai_chat_debug_route_returns_sanitized_route_for_operator(self):
+        from fastapi.testclient import TestClient
+
+        with patch.object(
+            api_main, "_execute_chat", side_effect=_mock_execute_chat("debug")
+        ):
+            with patch.object(
+                api_main,
+                "_current_user",
+                return_value={"username": "operator", "role": "operator"},
+            ):
+                client = TestClient(api_main.app)
+                resp = client.post(
+                    "/v1/chat/completions",
+                    json={**_make_chat_req("debug"), "debug_route": True},
+                )
+
+        assert resp.status_code == 200
+        route = resp.json()["route"]
+        assert route["model"] == "test-model"
+        assert "backend_url" not in route
+        assert "fallback_backend_url" not in route
+
+    def test_router_log_uses_sanitized_route_without_backend_urls(self, capsys):
+        async def _ok(_model, _url, _key, _msgs, _temp, _max):
+            return {"choices": [{"message": {"content": "stable model response"}}]}
+
+        req = api_main.ChatRequest(
+            messages=[api_main.Message(role="user", content="hello")],
+            quality_retry=False,
+        )
+
+        with patch.object(api_main, "_call_model", side_effect=_ok):
+            with patch.object(api_main, "ROUTER_LOG", True):
+                with patch.object(
+                    api_main,
+                    "SMALL_BACKEND_URL",
+                    "https://models.example.test/v1?token=secret-token",
+                ):
+                    with patch.object(
+                        api_main,
+                        "LARGE_BACKEND_URL",
+                        "https://fallback.example.test/v1?api_key=secret-key",
+                    ):
+                        asyncio.run(api_main._execute_chat(req))
+
+        output = capsys.readouterr().out
+        assert "[router]" in output
+        assert "backend_kind" in output
+        assert "backend_url" not in output
+        assert "fallback_backend_url" not in output
+        assert "models.example.test" not in output
+        assert "fallback.example.test" not in output
+        assert "secret-token" not in output
+        assert "secret-key" not in output
+
 
 # ---------------------------------------------------------------------------
 # Error handling: model errors must not leak raw details
 # ---------------------------------------------------------------------------
+
 
 class TestModelErrorNoLeak:
     def test_rate_limit_error_yields_503_no_raw_detail(self):
@@ -199,7 +322,11 @@ class TestModelErrorNoLeak:
 
         mock_resp = MagicMock()
         mock_resp.status_code = 429
-        exc = httpx.HTTPStatusError("429 Too Many Requests detail=secret", request=MagicMock(), response=mock_resp)
+        exc = httpx.HTTPStatusError(
+            "429 Too Many Requests detail=secret",
+            request=MagicMock(),
+            response=mock_resp,
+        )
 
         async def _fail(_model, _url, _key, _msgs, _temp, _max):
             raise exc
@@ -235,7 +362,11 @@ class TestModelErrorNoLeak:
 class TestSafetyTelemetryAndStatus:
     def test_snapshot_helper_alert_inactive_below_threshold(self):
         with patch.object(api_main, "SAFETY_ALERT_THRESHOLD", 3):
-            with patch.dict(api_main.SAFETY_METRICS, {"sanitizer_interventions": 2, "model_errors_masked": 1}, clear=True):
+            with patch.dict(
+                api_main.SAFETY_METRICS,
+                {"sanitizer_interventions": 2, "model_errors_masked": 1},
+                clear=True,
+            ):
                 snapshot = api_main._safety_telemetry_snapshot()
         assert snapshot["startup_time"] == api_main._SAFETY_STARTUP_TIME
         assert snapshot["sanitizer_interventions"] == 2
@@ -247,7 +378,11 @@ class TestSafetyTelemetryAndStatus:
 
     def test_snapshot_helper_alert_active_at_threshold(self):
         with patch.object(api_main, "SAFETY_ALERT_THRESHOLD", 2):
-            with patch.dict(api_main.SAFETY_METRICS, {"sanitizer_interventions": 2, "model_errors_masked": 4}, clear=True):
+            with patch.dict(
+                api_main.SAFETY_METRICS,
+                {"sanitizer_interventions": 2, "model_errors_masked": 4},
+                clear=True,
+            ):
                 snapshot = api_main._safety_telemetry_snapshot()
         assert snapshot["total_events"] == 6
         assert snapshot["alert_threshold"] == 2
@@ -256,7 +391,12 @@ class TestSafetyTelemetryAndStatus:
 
     def test_status_includes_safety_block(self):
         from fastapi.testclient import TestClient
-        with patch.dict(api_main.SAFETY_METRICS, {"sanitizer_interventions": 1, "model_errors_masked": 2}, clear=True):
+
+        with patch.dict(
+            api_main.SAFETY_METRICS,
+            {"sanitizer_interventions": 1, "model_errors_masked": 2},
+            clear=True,
+        ):
             client = TestClient(api_main.app)
             resp = client.get("/api/status")
         assert resp.status_code == 200

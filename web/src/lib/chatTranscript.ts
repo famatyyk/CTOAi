@@ -1,4 +1,5 @@
 import type { StoredMessage } from "@/lib/sessionStorage"
+import { redactControlCenterAuditText } from "@/lib/controlCenterRedaction"
 
 export type ChatTranscriptMetadata = {
   sessionId: string
@@ -8,19 +9,42 @@ export type ChatTranscriptMetadata = {
   generatedAt?: string
 }
 
+function redactChatText(value: string): string {
+  return redactControlCenterAuditText(value, Number.MAX_SAFE_INTEGER)
+}
+
+export function redactControlCenterChatMessage(message: StoredMessage): StoredMessage {
+  return {
+    ...message,
+    content: redactChatText(message.content),
+    quality: message.quality
+      ? {
+          ...message.quality,
+          issues: message.quality.issues.map(redactChatText),
+        }
+      : undefined,
+    publicationNote: message.publicationNote ? redactChatText(message.publicationNote) : undefined,
+  }
+}
+
+export function redactControlCenterChatMessages(messages: StoredMessage[]): StoredMessage[] {
+  return messages.map(redactControlCenterChatMessage)
+}
+
 function formatMessage(message: StoredMessage): string {
-  const lines = [`[${message.role.toUpperCase()}] ${message.content}`]
-  if (message.quality) {
-    lines.push(`  quality: ${message.quality.level} (${message.quality.score}/100)`)
-    if (message.quality.issues.length > 0) {
-      lines.push(`  issues: ${message.quality.issues.join(" | ")}`)
+  const safeMessage = redactControlCenterChatMessage(message)
+  const lines = [`[${safeMessage.role.toUpperCase()}] ${safeMessage.content}`]
+  if (safeMessage.quality) {
+    lines.push(`  quality: ${safeMessage.quality.level} (${safeMessage.quality.score}/100)`)
+    if (safeMessage.quality.issues.length > 0) {
+      lines.push(`  issues: ${safeMessage.quality.issues.join(" | ")}`)
     }
   }
-  if (message.publicationState) {
-    lines.push(`  publication: ${message.publicationState}`)
+  if (safeMessage.publicationState) {
+    lines.push(`  publication: ${safeMessage.publicationState}`)
   }
-  if (message.publicationNote) {
-    lines.push(`  note: ${message.publicationNote}`)
+  if (safeMessage.publicationNote) {
+    lines.push(`  note: ${safeMessage.publicationNote}`)
   }
   return lines.join("\n")
 }
@@ -61,7 +85,7 @@ export function buildControlCenterChatMarkdown(messages: StoredMessage[], metada
     "",
   ].filter(Boolean)
 
-  for (const message of messages) {
+  for (const message of redactControlCenterChatMessages(messages)) {
     const fence = buildFence(message.content)
     lines.push(`## ${message.role === "user" ? "User" : "Assistant"}`)
     lines.push("")
@@ -95,7 +119,7 @@ export function buildControlCenterChatLog(messages: StoredMessage[], metadata: C
     viewerName: metadata.viewerName || null,
     viewerRole: metadata.viewerRole || null,
     strictReviewMode: Boolean(metadata.strictReviewMode),
-    messages,
+    messages: redactControlCenterChatMessages(messages),
   }
 }
 

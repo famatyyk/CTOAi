@@ -3,6 +3,9 @@ import { cookies } from "next/headers"
 import { getServerApiUrl } from "@/lib/config"
 import { fetchWithTimeout } from "@/lib/fetchWithTimeout"
 import { createIpRateLimiter, getClientIp } from "@/lib/rateLimit"
+import { validateSameOriginRequest } from "@/lib/requestOriginGuard"
+import { CTOA_TOKEN_COOKIE_NAME, ctoaTokenCookieOptions } from "@/lib/authCookies"
+import { authProxyCookieToken, sanitizeAuthProxyPayload } from "@/lib/authProxySanitizer"
 
 const API_URL = getServerApiUrl()
 const AUTH_RATE_LIMIT_PER_MIN = 20
@@ -10,8 +13,12 @@ const AUTH_RATE_WINDOW_MS = 60_000
 
 const consumeAuthRateWindow = createIpRateLimiter(AUTH_RATE_LIMIT_PER_MIN, AUTH_RATE_WINDOW_MS)
 
+export function validateAuthRequestOrigin(request: Request) {
+  return validateSameOriginRequest(request, { requestLabel: "auth" })
+}
+
 async function backendFetch(path: string, init?: RequestInit) {
-  const token = (await cookies()).get("ctoa_token")?.value
+  const token = (await cookies()).get(CTOA_TOKEN_COOKIE_NAME)?.value
   return fetchWithTimeout(API_URL + path, {
     ...init,
     headers: {
@@ -37,13 +44,18 @@ export async function GET(req: NextRequest) {
   try {
     const r = await backendFetch(target)
     const data = await r.json()
-    return NextResponse.json(data, { status: r.status })
+    return NextResponse.json(sanitizeAuthProxyPayload(data), { status: r.status })
   } catch {
     return NextResponse.json({ error: "Backend unavailable" }, { status: 503 })
   }
 }
 
 export async function POST(req: NextRequest) {
+  const originGate = validateAuthRequestOrigin(req)
+  if (!originGate.ok) {
+    return NextResponse.json({ error: originGate.error }, { status: 403 })
+  }
+
   const ip = getClientIp(req)
   const gate = consumeAuthRateWindow(ip)
   if (!gate.allowed) {
@@ -67,9 +79,10 @@ export async function POST(req: NextRequest) {
         body: JSON.stringify(body.payload || {}),
       }, 5000)
       const data = await r.json()
-      const response = NextResponse.json(data, { status: r.status })
-      if (r.ok && data?.token) {
-        response.cookies.set("ctoa_token", data.token, { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 })
+      const response = NextResponse.json(sanitizeAuthProxyPayload(data), { status: r.status })
+      const cookieToken = authProxyCookieToken(data)
+      if (r.ok && cookieToken) {
+        response.cookies.set(CTOA_TOKEN_COOKIE_NAME, cookieToken, ctoaTokenCookieOptions())
       }
       return response
     }
@@ -81,16 +94,17 @@ export async function POST(req: NextRequest) {
         body: JSON.stringify(body.payload || {}),
       }, 5000)
       const data = await r.json()
-      const response = NextResponse.json(data, { status: r.status })
-      if (r.ok && data?.token) {
-        response.cookies.set("ctoa_token", data.token, { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 })
+      const response = NextResponse.json(sanitizeAuthProxyPayload(data), { status: r.status })
+      const cookieToken = authProxyCookieToken(data)
+      if (r.ok && cookieToken) {
+        response.cookies.set(CTOA_TOKEN_COOKIE_NAME, cookieToken, ctoaTokenCookieOptions())
       }
       return response
     }
 
     if (action === "logout") {
       const response = NextResponse.json({ ok: true })
-      response.cookies.set("ctoa_token", "", { httpOnly: true, sameSite: "lax", path: "/", maxAge: 0 })
+      response.cookies.set(CTOA_TOKEN_COOKIE_NAME, "", ctoaTokenCookieOptions(0))
       return response
     }
 
@@ -100,7 +114,7 @@ export async function POST(req: NextRequest) {
         body: JSON.stringify(body.payload || {}),
       })
       const data = await r.json()
-      return NextResponse.json(data, { status: r.status })
+      return NextResponse.json(sanitizeAuthProxyPayload(data), { status: r.status })
     }
 
     if (action === "acceptInvite") {
@@ -109,9 +123,10 @@ export async function POST(req: NextRequest) {
         body: JSON.stringify(body.payload || {}),
       })
       const data = await r.json()
-      const response = NextResponse.json(data, { status: r.status })
-      if (r.ok && data?.token) {
-        response.cookies.set("ctoa_token", data.token, { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 })
+      const response = NextResponse.json(sanitizeAuthProxyPayload(data), { status: r.status })
+      const cookieToken = authProxyCookieToken(data)
+      if (r.ok && cookieToken) {
+        response.cookies.set(CTOA_TOKEN_COOKIE_NAME, cookieToken, ctoaTokenCookieOptions())
       }
       return response
     }
@@ -125,7 +140,7 @@ export async function POST(req: NextRequest) {
         body: JSON.stringify({ role }),
       })
       const data = await r.json()
-      return NextResponse.json(data, { status: r.status })
+      return NextResponse.json(sanitizeAuthProxyPayload(data), { status: r.status })
     }
 
     return NextResponse.json({ error: "Unsupported action" }, { status: 400 })
