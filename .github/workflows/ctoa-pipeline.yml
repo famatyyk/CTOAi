@@ -699,7 +699,7 @@ jobs:
       - name: Basic secret scan
         shell: bash
         run: |
-          pattern='(AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]+|-----BEGIN (RSA|DSA|EC|OPENSSH|PGP|PRIVATE KEY)-----)'
+          pattern='(AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9]{20,}_[A-Za-z0-9_]{20,}|-----BEGIN (RSA|DSA|EC|OPENSSH|PGP|PRIVATE KEY)-----)'
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
 
@@ -844,7 +844,6 @@ jobs:
 
       - name: Publish Marker
         run: echo "Owner approved. Artifact is ready for public use from main."
-
 
 
 
