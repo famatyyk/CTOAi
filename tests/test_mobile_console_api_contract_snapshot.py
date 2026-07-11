@@ -16,9 +16,9 @@ def _load_app_module(
 ):
     monkeypatch.setenv("CTOA_MOBILE_TOKEN", "test-mobile-token")
     monkeypatch.setenv("CTOA_OWNER_USER", "CTO")
-    monkeypatch.setenv("CTOA_OWNER_PASSWORD", "ownerpass123")
+    monkeypatch.setenv("CTOA_OWNER_PASSWORD", "test-owner-pass")
     monkeypatch.setenv("CTOA_OPERATOR_USER", "ctoa-bot")
-    monkeypatch.setenv("CTOA_OPERATOR_PASSWORD", "jakpod22")
+    monkeypatch.setenv("CTOA_OPERATOR_PASSWORD", "test-operator-pass")
     monkeypatch.setenv("CTOA_ADMIN_SETTINGS_FILE", str(tmp_path / "admin-settings.json"))
     monkeypatch.setenv("CTOA_IDEA_PARKING_FILE", str(tmp_path / "idea-parking.json"))
     monkeypatch.setenv("CTOA_GENERATED_DIR", str(tmp_path / "generated"))

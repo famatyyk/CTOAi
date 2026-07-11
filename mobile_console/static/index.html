@@ -111,7 +111,7 @@
       <button class="tab-btn active" data-tab="tab-agent">Agenci</button>
       <button class="tab-btn" data-tab="tab-status">Status</button>
       <button class="tab-btn" data-tab="tab-logs">Logi</button>
-      <button class="tab-btn" data-tab="tab-cmd">Terminal</button>
+      <button class="tab-btn" data-tab="tab-cmd">Presety</button>
     </div>
 
     <!-- TAB: Agenci (glowny - rejestracja + dashboard) -->
@@ -241,23 +241,16 @@
       </section>
     </div>
 
-    <!-- TAB: Terminal -->
+    <!-- TAB: Presety -->
     <div id="tab-cmd" class="tab-panel">
       <section class="card">
         <h2>Preset Commands</h2>
+        <p style="color:#888;font-size:13px;">Endpoint /api/command akceptuje tylko backend-owned presety z allowlisty.</p>
         <div class="actions">
           <button id="loadPresets">Pobierz presety</button>
         </div>
         <select id="presetSelect" size="6"></select>
         <button id="runPreset">Uruchom preset</button>
-      </section>
-
-      <section class="card">
-        <h2>Full Command</h2>
-        <textarea id="cmd" rows="5" placeholder="np. systemctl status ctoa-runner.service --no-pager -l"></textarea>
-        <div class="actions">
-          <button id="runCmd">Uruchom komende</button>
-        </div>
         <pre id="cmdOut"></pre>
       </section>
     </div>
@@ -267,7 +260,6 @@
   <script src="/static/app.js?v=20260514c"></script>
 </body>
 </html>
-
 
 
 

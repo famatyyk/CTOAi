@@ -192,6 +192,30 @@ def test_login_with_db_account(monkeypatch: MonkeyPatch):
         assert me.json()["role"] == "operator"
 
 
+def test_self_register_creates_member_without_operator_access(monkeypatch: MonkeyPatch):
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+        module = _load_app_module(monkeypatch, Path(tmp))
+        store = _patch_db(monkeypatch, module)
+        client = TestClient(module.app)
+
+        r = client.post(
+            "/api/auth/register",
+            json={"username": "recruit", "password": "RecruitPass1!", "registration_code": ""},
+        )
+        assert r.status_code == 200
+        assert r.json()["account"]["role"] == "member"
+        assert store["recruit"]["role"] == "member"
+
+        member_token = _login(client, "recruit", "RecruitPass1!")
+        me = client.get("/api/auth/me", headers={"Authorization": f"Bearer {member_token}"})
+        assert me.status_code == 200
+        assert me.json()["role"] == "member"
+
+        presets = client.get("/api/presets", headers={"Authorization": f"Bearer {member_token}"})
+        assert presets.status_code == 403
+        assert presets.json()["detail"] == "Operator role required"
+
+
 # ── Listing ──────────────────────────────────────────────────────────────────
 
 def test_list_accounts_requires_owner(monkeypatch: MonkeyPatch):
@@ -253,6 +277,10 @@ def test_change_password_own_account(monkeypatch: MonkeyPatch):
             json={"password": "EveNew1!"},
         )
         assert r.status_code == 200
+        assert r.json()["revoked_sessions"] >= 1
+
+        stale_me = client.get("/api/auth/me", headers={"Authorization": f"Bearer {eve_token}"})
+        assert stale_me.status_code == 401
 
         # Old password must be rejected.
         old = client.post("/api/auth/login", json={"username": "eve", "password": "EvePass1!"})
@@ -347,6 +375,43 @@ def test_change_role_promotes_account(monkeypatch: MonkeyPatch):
         assert store["ivan"]["role"] == "owner"
 
 
+def test_role_change_revokes_existing_owner_session(monkeypatch: MonkeyPatch):
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+        module = _load_app_module(monkeypatch, Path(tmp))
+        store = _patch_db(monkeypatch, module)
+        store["lisa"] = {
+            "username": "lisa",
+            "password_hash": _make_hash("LisaPass1!"),
+            "role": "owner",
+            "active": True,
+            "created_by": "cto",
+            "created_at": None,
+            "updated_at": None,
+        }
+        client = TestClient(module.app)
+
+        lisa_token = _login(client, "lisa", "LisaPass1!")
+        owner_check = client.get("/api/users", headers={"Authorization": f"Bearer {lisa_token}"})
+        assert owner_check.status_code == 200
+
+        owner_token = _login(client, "cto", "ownerpass")
+        r = client.put(
+            "/api/users/lisa/role",
+            headers={"Authorization": f"Bearer {owner_token}"},
+            json={"role": "operator"},
+        )
+        assert r.status_code == 200
+        assert r.json()["revoked_sessions"] >= 1
+        assert store["lisa"]["role"] == "operator"
+
+        stale_owner_check = client.get("/api/users", headers={"Authorization": f"Bearer {lisa_token}"})
+        assert stale_owner_check.status_code == 401
+
+        new_lisa_token = _login(client, "lisa", "LisaPass1!")
+        new_owner_check = client.get("/api/users", headers={"Authorization": f"Bearer {new_lisa_token}"})
+        assert new_owner_check.status_code == 403
+
+
 # ── Deactivation ─────────────────────────────────────────────────────────────
 
 def test_deactivate_account(monkeypatch: MonkeyPatch):
@@ -364,13 +429,18 @@ def test_deactivate_account(monkeypatch: MonkeyPatch):
         }
         client = TestClient(module.app)
 
+        jane_token = _login(client, "jane", "JanePass1!")
         owner_token = _login(client, "cto", "ownerpass")
         r = client.delete(
             "/api/users/jane",
             headers={"Authorization": f"Bearer {owner_token}"},
         )
         assert r.status_code == 200
+        assert r.json()["revoked_sessions"] >= 1
         assert store["jane"]["active"] is False
+
+        stale_me = client.get("/api/auth/me", headers={"Authorization": f"Bearer {jane_token}"})
+        assert stale_me.status_code == 401
 
         # Login must fail after deactivation.
         login_r = client.post("/api/auth/login", json={"username": "jane", "password": "JanePass1!"})
