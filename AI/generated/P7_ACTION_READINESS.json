@@ -1,0 +1,139 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-07-11T03:56:45+00:00",
+  "status": "safe_write_tools_enabled",
+  "decision": "monitor_enabled_safe_write_tools",
+  "policy": "P7 action readiness is evidence-only. MCP write tools stay disabled until every candidate has audit evidence and explicit enablement.",
+  "risk_model": "docs/CTOAI_COMMAND_RISK_MODEL.md",
+  "action_audit_path": "runtime\\control-center\\action-audit.jsonl",
+  "action_audit_record_count": 122,
+  "candidate_count": 5,
+  "source_ready_count": 5,
+  "audited_candidate_count": 5,
+  "enabled_dry_run_ready_count": 5,
+  "p7_evidence_review": {
+    "status": "ready",
+    "outcome": "ready_to_design_next_p7_plugin_action",
+    "selected_action_id": "evidence-pack-refresh",
+    "selected_mcp_tool": "ctoai_evidence_pack_refresh",
+    "checks": 11,
+    "passed": 11,
+    "blocked": 0,
+    "confirmed_audit_id": "20260708001234350356-evidence-pack-refresh",
+    "confirmed_audit_at": "2026-07-08T00:12:34.350356Z",
+    "release_evidence_generated_at": "2026-07-08T00:12:34+00:00",
+    "hard_blockers": [],
+    "warnings": [],
+    "source_path": "runtime\\control-center\\p7-evidence-review.json"
+  },
+  "next_safe_mode": "design_next_p7_plugin_action",
+  "mcp_write_tool_count": 5,
+  "mcp_write_tools": [
+    "ctoai_repo_hygiene_refresh",
+    "ctoai_api_cost_refresh",
+    "ctoai_evidence_pack_refresh",
+    "ctoai_engine_brain_refresh",
+    "ctoai_p7_cockpit_smoke_refresh"
+  ],
+  "unexpected_mcp_write_tools": [],
+  "enabled_safe_write_tools": [
+    {
+      "action_id": "repo-hygiene-refresh",
+      "mcp_tool": "ctoai_repo_hygiene_refresh",
+      "risk_class": "safe_write"
+    },
+    {
+      "action_id": "api-cost-refresh",
+      "mcp_tool": "ctoai_api_cost_refresh",
+      "risk_class": "safe_write"
+    },
+    {
+      "action_id": "evidence-pack-refresh",
+      "mcp_tool": "ctoai_evidence_pack_refresh",
+      "risk_class": "safe_write"
+    },
+    {
+      "action_id": "engine-brain-refresh",
+      "mcp_tool": "ctoai_engine_brain_refresh",
+      "risk_class": "safe_write"
+    },
+    {
+      "action_id": "p7-cockpit-smoke-refresh",
+      "mcp_tool": "ctoai_p7_cockpit_smoke_refresh",
+      "risk_class": "safe_write"
+    }
+  ],
+  "safe_write_candidates": [
+    {
+      "id": "repo-hygiene-refresh",
+      "risk_class": "safe_write",
+      "control_center_label": "Refresh repo hygiene snapshot",
+      "control_center_enabled": true,
+      "risk_model_present": true,
+      "audit_seen": true,
+      "audit_record_count": 22,
+      "audit_dry_run_count": 20,
+      "audit_confirmed_count": 2,
+      "expected_mcp_tool": "ctoai_repo_hygiene_refresh",
+      "plugin_mcp_allowed": true,
+      "missing_gates": []
+    },
+    {
+      "id": "api-cost-refresh",
+      "risk_class": "safe_write",
+      "control_center_label": "Refresh API cost report",
+      "control_center_enabled": true,
+      "risk_model_present": true,
+      "audit_seen": true,
+      "audit_record_count": 21,
+      "audit_dry_run_count": 20,
+      "audit_confirmed_count": 1,
+      "expected_mcp_tool": "ctoai_api_cost_refresh",
+      "plugin_mcp_allowed": true,
+      "missing_gates": []
+    },
+    {
+      "id": "evidence-pack-refresh",
+      "risk_class": "safe_write",
+      "control_center_label": "Rebuild evidence pack",
+      "control_center_enabled": true,
+      "risk_model_present": true,
+      "audit_seen": true,
+      "audit_record_count": 59,
+      "audit_dry_run_count": 35,
+      "audit_confirmed_count": 24,
+      "expected_mcp_tool": "ctoai_evidence_pack_refresh",
+      "plugin_mcp_allowed": true,
+      "missing_gates": []
+    },
+    {
+      "id": "engine-brain-refresh",
+      "risk_class": "safe_write",
+      "control_center_label": "Refresh Engine Brain context",
+      "control_center_enabled": true,
+      "risk_model_present": true,
+      "audit_seen": true,
+      "audit_record_count": 13,
+      "audit_dry_run_count": 13,
+      "audit_confirmed_count": 0,
+      "expected_mcp_tool": "ctoai_engine_brain_refresh",
+      "plugin_mcp_allowed": true,
+      "missing_gates": []
+    },
+    {
+      "id": "p7-cockpit-smoke-refresh",
+      "risk_class": "safe_write",
+      "control_center_label": "Refresh P7 cockpit smoke",
+      "control_center_enabled": true,
+      "risk_model_present": true,
+      "audit_seen": true,
+      "audit_record_count": 5,
+      "audit_dry_run_count": 5,
+      "audit_confirmed_count": 0,
+      "expected_mcp_tool": "ctoai_p7_cockpit_smoke_refresh",
+      "plugin_mcp_allowed": true,
+      "missing_gates": []
+    }
+  ],
+  "next_safe_command": "Design the next P7 plugin action only after risk model coverage, audit logging, Control Center gates, and targeted MCP tests exist; keep deploy/live actions outside the plugin surface."
+}
