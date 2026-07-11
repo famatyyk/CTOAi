@@ -3,25 +3,21 @@ param(
     [int]$IntervalMinutes = 1
 )
 
+Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'windows-task-guard.ps1')
 
 if ($IntervalMinutes -lt 1) {
     throw 'IntervalMinutes must be >= 1'
 }
 
-$repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-$syncScript = Join-Path $repoRoot 'scripts\ops\sync-mythibia-client.ps1'
-$hiddenRunner = Join-Path $repoRoot 'scripts\ops\run-hidden.vbs'
+$TaskName = Assert-CtoaTaskName -TaskName $TaskName
 
-if (-not (Test-Path $syncScript)) {
-    throw "Sync script not found: $syncScript"
-}
+$repoRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..\..')).Path
+$syncScript = Resolve-RepoChildPath -RepoRoot $repoRoot -ChildPath (Join-Path $repoRoot 'scripts\ops\sync-mythibia-client.ps1') -Label 'SyncScript' -RequireExists
+$hiddenRunner = Resolve-RepoChildPath -RepoRoot $repoRoot -ChildPath (Join-Path $repoRoot 'scripts\ops\run-hidden.vbs') -Label 'HiddenRunner' -RequireExists
 
-if (-not (Test-Path $hiddenRunner)) {
-    throw "Hidden runner not found: $hiddenRunner"
-}
-
-$taskCommand = "wscript.exe //B //Nologo `"$hiddenRunner`" `"$syncScript`""
+$taskCommand = "wscript.exe //B //Nologo $(Format-CtoaCommandArgument -Value $hiddenRunner) $(Format-CtoaCommandArgument -Value $syncScript)"
 
 # Create or overwrite a per-minute task to keep local client scripts in sync after one-click runs.
 & schtasks /Create /F /TN $TaskName /SC MINUTE /MO $IntervalMinutes /TR $taskCommand | Out-Null

@@ -3,20 +3,17 @@ param(
     [string]$StartTime = '07:10'
 )
 
+Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'windows-task-guard.ps1')
 
-if ($StartTime -notmatch '^\d{2}:\d{2}$') {
-    throw 'StartTime must be HH:mm format, e.g. 07:10'
-}
+$TaskName = Assert-CtoaTaskName -TaskName $TaskName
+$StartTime = Assert-CtoaStartTime -StartTime $StartTime
 
-$repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-$runnerScript = Join-Path $repoRoot 'scripts\ops\run-phase5-morning-sync.ps1'
+$repoRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..\..')).Path
+$runnerScript = Resolve-RepoChildPath -RepoRoot $repoRoot -ChildPath (Join-Path $repoRoot 'scripts\ops\run-phase5-morning-sync.ps1') -Label 'RunnerScript' -RequireExists
 
-if (-not (Test-Path $runnerScript)) {
-    throw "Runner script not found: $runnerScript"
-}
-
-$taskCommand = "powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"$runnerScript`""
+$taskCommand = "powershell.exe -NoProfile -ExecutionPolicy Bypass -File $(Format-CtoaCommandArgument -Value $runnerScript)"
 
 & schtasks /Create /F /TN $TaskName /SC DAILY /ST $StartTime /TR $taskCommand | Out-Null
 if ($LASTEXITCODE -ne 0) {

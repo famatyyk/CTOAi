@@ -5,20 +5,22 @@ param(
     [string]$RunKeyName = 'CTOA-Mythibia-Watcher'
 )
 
+Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'windows-task-guard.ps1')
 
 if ($IntervalSeconds -lt 5) {
     throw 'IntervalSeconds must be >= 5'
 }
 
-$repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-$watcherScript = Join-Path $repoRoot 'scripts\ops\watch-mythibia-client-sync.ps1'
+$TaskName = Assert-CtoaTaskName -TaskName $TaskName
+$RunKeyName = Assert-CtoaRunKeyName -RunKeyName $RunKeyName
 
-if (-not (Test-Path $watcherScript)) {
-    throw "Watcher script not found: $watcherScript"
-}
+$repoRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..\..')).Path
+$watcherScript = Resolve-RepoChildPath -RepoRoot $repoRoot -ChildPath (Join-Path $repoRoot 'scripts\ops\watch-mythibia-client-sync.ps1') -Label 'WatcherScript' -RequireExists
+$LogPath = Resolve-CtoaLogPath -LogPath $LogPath
 
-$taskCommand = "powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$watcherScript`" -IntervalSeconds $IntervalSeconds -LogPath `"$LogPath`""
+$taskCommand = "powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File $(Format-CtoaCommandArgument -Value $watcherScript) -IntervalSeconds $IntervalSeconds -LogPath $(Format-CtoaCommandArgument -Value $LogPath)"
 
 # Start at user logon and keep a single watcher process running continuously.
 & schtasks /Create /F /TN $TaskName /SC ONLOGON /TR $taskCommand | Out-Null
@@ -28,7 +30,7 @@ $autostartMode = 'scheduled-task'
 if ($taskCreateExit -ne 0) {
     # Fallback for environments where ONLOGON scheduled task creation is restricted.
     $runKeyPath = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
-    Set-ItemProperty -Path $runKeyPath -Name $RunKeyName -Value $taskCommand
+    Set-ItemProperty -LiteralPath $runKeyPath -Name $RunKeyName -Value $taskCommand
     $autostartMode = 'hkcu-run'
 }
 
