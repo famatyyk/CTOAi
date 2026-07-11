@@ -150,3 +150,120 @@ def test_run_pipeline_routes_critical_alert_to_jsonl(tmp_path: Path):
     payload = json.loads(lines[0])
     assert payload["severity"] == "critical"
     assert payload["event"]["correlation_id"] == "corr-delete"
+
+
+def test_post_json_rejects_non_http_webhook_url(monkeypatch):
+    module = _load_module()
+    calls = []
+
+    def fake_urlopen(*args, **kwargs):
+        calls.append((args, kwargs))
+        raise AssertionError("urlopen must not run for invalid webhook URLs")
+
+    monkeypatch.setattr(module.urlrequest, "urlopen", fake_urlopen)
+
+    assert module.post_json("file:///tmp/hook", {"ok": True}) == (False, "invalid_url")
+    assert module.post_json("example.invalid/hook", {"ok": True}) == (False, "invalid_url")
+    assert calls == []
+
+
+def test_post_json_uses_validated_http_url(monkeypatch):
+    module = _load_module()
+    calls: dict[str, object] = {}
+
+    class Response:
+        status = 204
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+    def fake_urlopen(request, timeout: int):
+        calls["url"] = request.full_url
+        calls["method"] = request.get_method()
+        calls["timeout"] = timeout
+        return Response()
+
+    monkeypatch.setattr(module.urlrequest, "urlopen", fake_urlopen)
+
+    assert module.post_json("https://hooks.example/alerts", {"ok": True}, timeout_s=3) == (True, "http_204")
+    assert calls == {"url": "https://hooks.example/alerts", "method": "POST", "timeout": 3}
+
+
+def test_post_discord_json_rejects_non_discord_webhook_url(monkeypatch):
+    module = _load_module()
+    calls = []
+
+    def fake_urlopen(*args, **kwargs):
+        calls.append((args, kwargs))
+        raise AssertionError("urlopen must not run for invalid Discord webhook URLs")
+
+    monkeypatch.setattr(module.urlrequest, "urlopen", fake_urlopen)
+
+    blocked = [
+        "http://discord.com/api/webhooks/123/token",
+        "https://hooks.example/alerts",
+        "https://hooks.slack.com/services/T/B/C",
+        "https://user:secret@discord.com/api/webhooks/123/token",
+        "https://discord.com/api/webhooks/123/token?token=secret",
+        "https://discord.com/api/webhooks/123/token#fragment",
+        "https://discord.com/api/webhooks/123/../token",
+        "https://discord.com/api\\webhooks\\123\\token",
+    ]
+
+    for url in blocked:
+        ok, detail = module.post_discord_json(url, {"ok": True})
+        assert ok is False
+        assert detail == "invalid_discord_webhook_url"
+        assert url not in detail
+        assert "secret" not in detail
+
+    assert calls == []
+
+
+def test_post_discord_json_uses_discord_allowlisted_url(monkeypatch):
+    module = _load_module()
+    calls: dict[str, object] = {}
+
+    class Response:
+        status = 204
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+    def fake_urlopen(request, timeout: int):
+        calls["url"] = request.full_url
+        calls["method"] = request.get_method()
+        calls["timeout"] = timeout
+        return Response()
+
+    monkeypatch.setattr(module.urlrequest, "urlopen", fake_urlopen)
+
+    url = "https://discord.com/api/webhooks/123/token"
+    assert module.post_discord_json(url, {"ok": True}, timeout_s=3) == (True, "http_204")
+    assert calls == {"url": url, "method": "POST", "timeout": 3}
+
+
+def test_route_alert_discord_webhook_rejects_generic_fallback_url(tmp_path: Path, monkeypatch):
+    module = _load_module()
+
+    def fake_urlopen(*args, **kwargs):
+        raise AssertionError("urlopen must not run for invalid Discord webhook URLs")
+
+    monkeypatch.setattr(module.urlrequest, "urlopen", fake_urlopen)
+
+    result = module.route_alert(
+        {"summary": "alert", "severity": "critical", "event": {}, "reasons": []},
+        routes=["discord_webhook"],
+        output_jsonl=tmp_path / "alerts.jsonl",
+        webhook_url="https://hooks.example/alerts",
+        discord_webhook_url="",
+        dry_run=False,
+    )
+
+    assert result["discord_webhook"] == "failed:invalid_discord_webhook_url"

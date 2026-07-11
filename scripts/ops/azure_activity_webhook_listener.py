@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import ipaddress
 import json
 import os
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -14,14 +15,19 @@ import azure_activity_alerts as alerts
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Webhook listener for Azure Activity Log payloads")
+    parser = argparse.ArgumentParser(
+        description="Webhook listener for Azure Activity Log payloads"
+    )
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8791)
     parser.add_argument("--path", default="/azure/activity")
     parser.add_argument(
         "--webhook-secret",
         default=os.getenv("CTOA_AZURE_INGEST_SECRET", ""),
-        help="Optional shared secret expected in X-Webhook-Secret header.",
+        help=(
+            "Shared secret expected in X-Webhook-Secret header. Required for "
+            "non-loopback listener hosts."
+        ),
     )
     parser.add_argument("--routes", default="console,jsonl,discord_webhook")
     parser.add_argument(
@@ -38,9 +44,36 @@ def parse_args() -> argparse.Namespace:
         "--output-jsonl",
         default=str(Path("runtime") / "alerts" / "azure-activity-alerts.jsonl"),
     )
-    parser.add_argument("--min-severity", default="warning", choices=["info", "warning", "critical"])
+    parser.add_argument(
+        "--min-severity", default="warning", choices=["info", "warning", "critical"]
+    )
     parser.add_argument("--dry-run", action="store_true")
     return parser.parse_args()
+
+
+def _is_loopback_host(host: str) -> bool:
+    normalized = host.strip().lower()
+    if normalized == "localhost":
+        return True
+
+    if normalized.startswith("[") and normalized.endswith("]"):
+        normalized = normalized[1:-1]
+
+    try:
+        return ipaddress.ip_address(normalized).is_loopback
+    except ValueError:
+        return False
+
+
+def _assert_safe_listener_config(args: argparse.Namespace) -> None:
+    if not str(args.host).strip():
+        raise SystemExit("Azure alert listener host is required.")
+
+    if not _is_loopback_host(args.host) and not str(args.webhook_secret).strip():
+        raise SystemExit(
+            "Refusing to expose Azure alert listener on a non-loopback host "
+            "without CTOA_AZURE_INGEST_SECRET."
+        )
 
 
 class _Handler(BaseHTTPRequestHandler):
@@ -70,7 +103,9 @@ class _Handler(BaseHTTPRequestHandler):
             raw = self.rfile.read(length)
             payload = json.loads(raw.decode("utf-8"))
         except Exception as exc:
-            self._write_json(400, {"ok": False, "error": f"bad_payload:{exc.__class__.__name__}"})
+            self._write_json(
+                400, {"ok": False, "error": f"bad_payload:{exc.__class__.__name__}"}
+            )
             return
 
         records = alerts.parse_records_payload(payload)
@@ -82,7 +117,9 @@ class _Handler(BaseHTTPRequestHandler):
         for record in records:
             normalized = alerts.normalize_record(record)
             classified = alerts.classify_high_impact(normalized)
-            if not alerts._severity_meets(classified["severity"], self.args.min_severity):
+            if not alerts._severity_meets(
+                classified["severity"], self.args.min_severity
+            ):
                 filtered += 1
                 continue
             alert = alerts.build_alert(normalized, classified)
@@ -112,6 +149,7 @@ class _Handler(BaseHTTPRequestHandler):
 
 def main() -> int:
     args = parse_args()
+    _assert_safe_listener_config(args)
     _Handler.args = args
     server = ThreadingHTTPServer((args.host, args.port), _Handler)
     print(

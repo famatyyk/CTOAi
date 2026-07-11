@@ -33,6 +33,47 @@ function Resolve-InputValue {
     return $value
 }
 
+function Test-CtoaLoopbackHost {
+    param([string]$HostName)
+
+    return $HostName -in @("localhost", "127.0.0.1", "::1")
+}
+
+function Assert-LocalApiBaseUrl {
+    param(
+        [string]$Value,
+        [string]$Name
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Value)) {
+        throw "$Name must not be empty."
+    }
+
+    $candidate = $Value.Trim()
+    [Uri]$uri = $null
+    if (-not [Uri]::TryCreate($candidate, [UriKind]::Absolute, [ref]$uri)) {
+        throw "$Name must be an absolute local HTTP(S) URL."
+    }
+    if ($uri.Scheme -notin @("http", "https")) {
+        throw "$Name must use http:// or https://."
+    }
+    if ($uri.UserInfo) {
+        throw "$Name must not include credentials."
+    }
+    if ($uri.Query -or $uri.Fragment) {
+        throw "$Name must not include query strings or fragments."
+    }
+    if ($uri.AbsolutePath -and $uri.AbsolutePath -ne "/") {
+        throw "$Name must not include a path."
+    }
+    if (-not (Test-CtoaLoopbackHost $uri.Host)) {
+        throw "$Name must use localhost, 127.0.0.1, or [::1]."
+    }
+
+    return $uri.GetLeftPart([UriPartial]::Authority).TrimEnd("/")
+}
+
+$normalizedBaseUrl = Assert-LocalApiBaseUrl -Value $BaseUrl -Name "BaseUrl"
 $resolvedUser = Resolve-InputValue -Current $Username -EnvName "CTOA_OWNER_USER" -DefaultValue "CTO"
 $resolvedPassword = ""
 
@@ -49,7 +90,6 @@ else {
 if ([string]::IsNullOrWhiteSpace($resolvedPassword)) {
     throw "Missing password. Provide -Credential or set CTOA_OWNER_PASSWORD."
 }
-$normalizedBaseUrl = $BaseUrl.TrimEnd("/")
 
 $loginResponse = Invoke-RestMethod -Method Post -Uri "$normalizedBaseUrl/api/auth/login" -ContentType "application/json" -Body (@{
     username = $resolvedUser

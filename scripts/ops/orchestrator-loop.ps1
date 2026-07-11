@@ -9,6 +9,7 @@ param(
     [string]$DbUser = 'ctoa'
 )
 
+Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
@@ -19,17 +20,66 @@ $PidFile = Join-Path $RuntimeDir 'orchestrator-loop.pid'
 $LogFile = Join-Path $LogsDir 'orchestrator-loop.log'
 $NightReportScript = Join-Path $RepoRoot 'scripts\ops\night-report.py'
 $NightReportFile = Join-Path $RuntimeDir 'night-report.md'
+$LoopWorkerScript = Join-Path $RepoRoot 'scripts\ops\orchestrator-loop-worker.ps1'
 
 New-Item -ItemType Directory -Path $RuntimeDir -Force | Out-Null
 New-Item -ItemType Directory -Path $LogsDir -Force | Out-Null
 $EffectiveDbPassword = if ($env:DB_PASSWORD) { $env:DB_PASSWORD } else { 'ctoa_local_dev' }
 
+function Assert-ChildPath {
+    param(
+        [Parameter(Mandatory = $true)][string]$BasePath,
+        [Parameter(Mandatory = $true)][string]$ChildPath,
+        [Parameter(Mandatory = $true)][string]$Label
+    )
+
+    $resolvedBase = [System.IO.Path]::GetFullPath((Resolve-Path -LiteralPath $BasePath).Path).TrimEnd([char[]]@('\', '/'))
+    $resolvedChild = [System.IO.Path]::GetFullPath($ChildPath)
+    $baseWithSeparator = $resolvedBase + [System.IO.Path]::DirectorySeparatorChar
+
+    if (
+        -not $resolvedChild.Equals($resolvedBase, [System.StringComparison]::OrdinalIgnoreCase) -and
+        -not $resolvedChild.StartsWith($baseWithSeparator, [System.StringComparison]::OrdinalIgnoreCase)
+    ) {
+        throw "$Label must stay under $resolvedBase; got $resolvedChild"
+    }
+
+    return $resolvedChild
+}
+
+$PidFile = Assert-ChildPath -BasePath $RuntimeDir -ChildPath $PidFile -Label 'PidFile'
+$LogFile = Assert-ChildPath -BasePath $LogsDir -ChildPath $LogFile -Label 'LogFile'
+$NightReportFile = Assert-ChildPath -BasePath $RuntimeDir -ChildPath $NightReportFile -Label 'NightReportFile'
+$NightReportScript = Assert-ChildPath -BasePath $RepoRoot -ChildPath $NightReportScript -Label 'NightReportScript'
+$LoopWorkerScript = Assert-ChildPath -BasePath $RepoRoot -ChildPath $LoopWorkerScript -Label 'LoopWorkerScript'
+$PythonExe = Assert-ChildPath -BasePath $RepoRoot -ChildPath $PythonExe -Label 'PythonExe'
+
+function Test-LoopCommandLine {
+    param([Parameter(Mandatory = $true)][int]$ProcessId)
+
+    try {
+        $procInfo = Get-CimInstance Win32_Process -Filter "ProcessId = $ProcessId" -ErrorAction Stop
+    }
+    catch {
+        return $false
+    }
+
+    if ($null -eq $procInfo -or [string]::IsNullOrWhiteSpace($procInfo.CommandLine)) {
+        return $false
+    }
+
+    return (
+        $procInfo.CommandLine.IndexOf($LoopWorkerScript, [System.StringComparison]::OrdinalIgnoreCase) -ge 0 -or
+        $procInfo.CommandLine.IndexOf('orchestrator-loop-worker.ps1', [System.StringComparison]::OrdinalIgnoreCase) -ge 0
+    )
+}
+
 function Get-LoopProcess {
-    if (-not (Test-Path $PidFile)) {
+    if (-not (Test-Path -LiteralPath $PidFile)) {
         return $null
     }
 
-    $pidText = (Get-Content $PidFile -ErrorAction SilentlyContinue | Select-Object -First 1)
+    $pidText = (Get-Content -LiteralPath $PidFile -ErrorAction SilentlyContinue | Select-Object -First 1)
     if (-not $pidText) {
         return $null
     }
@@ -46,6 +96,10 @@ function Get-LoopProcess {
         return $null
     }
 
+    if (-not (Test-LoopCommandLine -ProcessId $pidNum)) {
+        return $null
+    }
+
     return $proc
 }
 
@@ -56,55 +110,34 @@ function Start-Loop {
         return
     }
 
-    if (-not (Test-Path $PythonExe)) {
+    if (-not (Test-Path -LiteralPath $PythonExe)) {
         throw "Python executable not found: $PythonExe"
     }
 
-    $loopScript = @"
-`$ErrorActionPreference = 'Continue'
-Set-Location '$RepoRoot'
-`$env:DB_HOST = '$DbHost'
-`$env:DB_PORT = '$DbPort'
-`$env:DB_NAME = '$DbName'
-`$env:DB_USER = '$DbUser'
-`$env:DB_PASSWORD = '$EffectiveDbPassword'
-
-while (`$true) {
-    `$ts = (Get-Date).ToString('yyyy-MM-ddTHH:mm:ssK')
-    Add-Content -Path '$LogFile' -Value "[`$ts] LOOP_TICK start"
-    `$runOutput = & '$PythonExe' -m runner.agents.orchestrator 2>&1
-    `$code = `$LASTEXITCODE
-    if (`$null -ne `$runOutput) {
-        `$runOutput | ForEach-Object { Add-Content -Path '$LogFile' -Value (`$_.ToString()) }
-    }
-    `$ts2 = (Get-Date).ToString('yyyy-MM-ddTHH:mm:ssK')
-    Add-Content -Path '$LogFile' -Value "[`$ts2] LOOP_TICK end exit=`$code sleep=${IntervalSeconds}s"
-
-    `$reportDue = -not (Test-Path '$NightReportFile')
-    if (-not `$reportDue) {
-        try {
-            `$reportAgeMinutes = ((Get-Date) - (Get-Item '$NightReportFile').LastWriteTime).TotalMinutes
-            `$reportDue = `$reportAgeMinutes -ge ${ReportIntervalMinutes}
-        }
-        catch {
-            `$reportDue = `$true
-        }
+    if (-not (Test-Path -LiteralPath $LoopWorkerScript)) {
+        throw "Loop worker script not found: $LoopWorkerScript"
     }
 
-    if (`$reportDue -and (Test-Path '$NightReportScript')) {
-        `$reportOutput = & '$PythonExe' '$NightReportScript' --log-file '$LogFile' --report-file '$NightReportFile' 2>&1
-        if (`$null -ne `$reportOutput) {
-            `$reportOutput | ForEach-Object { Add-Content -Path '$LogFile' -Value (`$_.ToString()) }
-        }
-    }
+    $env:DB_HOST = $DbHost
+    $env:DB_PORT = $DbPort
+    $env:DB_NAME = $DbName
+    $env:DB_USER = $DbUser
+    $env:DB_PASSWORD = $EffectiveDbPassword
 
-    Start-Sleep -Seconds $IntervalSeconds
-}
-"@
-
-    $encoded = [Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes($loopScript))
-    $proc = Start-Process -FilePath 'powershell.exe' -ArgumentList @('-NoProfile','-WindowStyle','Hidden','-EncodedCommand',$encoded) -PassThru
-    Set-Content -Path $PidFile -Value $proc.Id -Encoding ascii
+    $proc = Start-Process -FilePath 'powershell.exe' -ArgumentList @(
+        '-NoProfile',
+        '-ExecutionPolicy',
+        'Bypass',
+        '-WindowStyle',
+        'Hidden',
+        '-File',
+        $LoopWorkerScript,
+        '-IntervalSeconds',
+        $IntervalSeconds,
+        '-ReportIntervalMinutes',
+        $ReportIntervalMinutes
+    ) -PassThru
+    Set-Content -LiteralPath $PidFile -Value $proc.Id -Encoding ascii
 
     Write-Output "orchestrator-loop started (PID=$($proc.Id))"
     Write-Output "log: $LogFile"
@@ -113,16 +146,16 @@ while (`$true) {
 function Stop-Loop {
     $proc = Get-LoopProcess
     if ($null -eq $proc) {
-        if (Test-Path $PidFile) {
-            Remove-Item $PidFile -Force
+        if (Test-Path -LiteralPath $PidFile) {
+            Remove-Item -LiteralPath $PidFile -Force
         }
         Write-Output 'orchestrator-loop is not running'
         return
     }
 
     Stop-Process -Id $proc.Id -Force
-    if (Test-Path $PidFile) {
-        Remove-Item $PidFile -Force
+    if (Test-Path -LiteralPath $PidFile) {
+        Remove-Item -LiteralPath $PidFile -Force
     }
     Write-Output "orchestrator-loop stopped (PID=$($proc.Id))"
 }
@@ -140,11 +173,11 @@ function Show-Status {
 }
 
 function Get-LogTail {
-    if (-not (Test-Path $LogFile)) {
+    if (-not (Test-Path -LiteralPath $LogFile)) {
         Write-Output "log file not found: $LogFile"
         return
     }
-    Get-Content -Path $LogFile -Tail 80
+    Get-Content -LiteralPath $LogFile -Tail 80
 }
 
 switch ($Action) {

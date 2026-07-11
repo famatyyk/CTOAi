@@ -3,12 +3,22 @@ import argparse
 import json
 import os
 import re
+import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from runner.generated_manifest_safety import iter_safe_manifest_files  # noqa: E402
+
+
+DEFAULT_LOG_MAX_BYTES = 2_000_000
+MIN_LOG_MAX_BYTES = 4096
+MAX_LOG_MAX_BYTES = 20_000_000
 
 
 def parse_args() -> argparse.Namespace:
@@ -63,6 +73,47 @@ def resolve_manifest_dir(cli_value: str) -> Path | None:
     return candidates[0] if candidates else None
 
 
+def _night_report_log_max_bytes() -> int:
+    raw = os.getenv("CTOA_NIGHT_REPORT_LOG_MAX_BYTES", "").strip()
+    if not raw:
+        return DEFAULT_LOG_MAX_BYTES
+    try:
+        parsed = int(raw)
+    except ValueError:
+        return DEFAULT_LOG_MAX_BYTES
+    return max(MIN_LOG_MAX_BYTES, min(MAX_LOG_MAX_BYTES, parsed))
+
+
+def _tail_log_lines(path: Path, max_bytes: int) -> tuple[list[str], dict[str, Any]]:
+    stats: dict[str, Any] = {
+        "source_bytes": 0,
+        "sampled_bytes": 0,
+        "truncated": False,
+    }
+    try:
+        source_bytes = path.stat().st_size
+    except OSError:
+        return [], stats
+
+    read_bytes = min(source_bytes, max_bytes)
+    stats["source_bytes"] = int(source_bytes)
+    stats["sampled_bytes"] = int(read_bytes)
+    stats["truncated"] = source_bytes > read_bytes
+
+    try:
+        with path.open("rb") as handle:
+            if source_bytes > read_bytes:
+                handle.seek(source_bytes - read_bytes)
+            data = handle.read(read_bytes)
+    except OSError:
+        return [], stats
+
+    lines = data.decode("utf-8", errors="replace").splitlines()
+    if stats["truncated"] and lines:
+        lines = lines[1:]
+    return lines, stats
+
+
 def collect_manifest_stats(manifest_dir: Path | None, window_start: datetime) -> dict[str, Any]:
     stats = {
         "generated": 0,
@@ -73,7 +124,7 @@ def collect_manifest_stats(manifest_dir: Path | None, window_start: datetime) ->
     if manifest_dir is None or not manifest_dir.exists():
         return stats
 
-    for manifest_path in manifest_dir.glob("*/manifest.json"):
+    for manifest_path in iter_safe_manifest_files(manifest_dir):
         try:
             modified = datetime.fromtimestamp(manifest_path.stat().st_mtime, tz=timezone.utc).astimezone()
         except OSError:
@@ -82,7 +133,7 @@ def collect_manifest_stats(manifest_dir: Path | None, window_start: datetime) ->
             continue
         try:
             payload = json.loads(manifest_path.read_text(encoding="utf-8"))
-        except Exception:
+        except (OSError, json.JSONDecodeError):
             continue
         generated = payload.get("generated") if isinstance(payload, dict) else []
         failed = payload.get("failed") if isinstance(payload, dict) else []
@@ -104,9 +155,18 @@ def build_report(log_file: Path, manifest_dir: Path | None, window_hours: int) -
     validated_failed = 0
     last_errors: list[str] = []
     recent_lines = 0
+    log_stats: dict[str, Any] = {
+        "source_bytes": 0,
+        "sampled_bytes": 0,
+        "truncated": False,
+    }
 
     if log_file.exists():
-        for raw_line in log_file.read_text(encoding="utf-8", errors="replace").splitlines():
+        sampled_lines, log_stats = _tail_log_lines(
+            log_file,
+            max_bytes=_night_report_log_max_bytes(),
+        )
+        for raw_line in sampled_lines:
             ts = parse_ts(raw_line)
             if ts is not None and ts < window_start:
                 continue
@@ -141,6 +201,8 @@ def build_report(log_file: Path, manifest_dir: Path | None, window_hours: int) -
         f"- Generated at: {now.replace(microsecond=0).isoformat()}",
         f"- Window: last {window_hours}h",
         f"- Source log: {log_file}",
+        f"- Log sample: {log_stats['sampled_bytes']}/{log_stats['source_bytes']} bytes"
+        + (" (tail sample)" if log_stats["truncated"] else ""),
         f"- Manifest dir: {manifest_stats['manifest_dir'] or '-'}",
         "",
         "## Activity",

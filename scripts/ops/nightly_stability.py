@@ -6,10 +6,16 @@ import argparse
 import hashlib
 import json
 import os
-import subprocess
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from runner import process_safety  # noqa: E402
+from runner.generated_manifest_safety import iter_safe_manifest_files  # noqa: E402
 
 try:
     from scripts.ops.evidence_retention import apply_retention_policy, read_retention_policy_from_env
@@ -18,7 +24,8 @@ except ModuleNotFoundError:  # pragma: no cover - direct script execution path
 
 
 def _run(cmd: list[str], cwd: Path) -> tuple[int, str]:
-    result = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True)
+    executable = process_safety.resolve_executable(cmd[0])
+    result = process_safety.run_trusted([executable, *cmd[1:]], cwd=cwd, capture_output=True, text=True)
     return result.returncode, result.stdout + result.stderr
 
 
@@ -41,15 +48,15 @@ def _collect_manifest_entries(root: Path) -> list[dict]:
         return []
 
     entries: list[dict] = []
-    for manifest_path in sorted(manifests_dir.glob("*/manifest.json"), key=lambda path: path.stat().st_mtime, reverse=True):
+    for manifest_path in iter_safe_manifest_files(manifests_dir):
         try:
             manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        except Exception:
+        except (OSError, json.JSONDecodeError):
             continue
 
         try:
             mtime = manifest_path.stat().st_mtime
-        except Exception:
+        except OSError:
             mtime = 0.0
 
         entries.append(
@@ -216,7 +223,7 @@ def main() -> int:
 
     root = Path(args.root).resolve()
     sprint_id = str(args.sprint).zfill(3)
-    python = sys.executable
+    python = process_safety.resolve_python()
 
     print(f"[nightly_stability] Running pytest (sprint={sprint_id})...")
     test_code, test_out = _run(
