@@ -1,6 +1,6 @@
 # Engine Brain File Tree
 
-Generated at: `2026-07-11T09:26:31+00:00`
+Generated at: `2026-07-11T10:02:32+00:00`
 
 Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 `node_modules`, `runtime`, `logs`, `data`, `.tmp`, build outputs.
@@ -32,7 +32,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `.github/PULL_REQUEST_TEMPLATE/template.md` | 245 |
 | `.github/skills/ci-hotfix-workflow/SKILL.md` | 3039 |
 | `.github/workflows/browser-e2e-smoke.yml` | 1158 |
-| `.github/workflows/cd_bot.yml` | 4935 |
+| `.github/workflows/cd_bot.yml` | 7124 |
 | `.github/workflows/ctoa-approval-watchdog.yml` | 3519 |
 | `.github/workflows/ctoa-ci-executive-weekly.yml` | 1068 |
 | `.github/workflows/ctoa-close-on-gate.yml` | 887 |
@@ -104,9 +104,9 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `AI/generated/DOC_SYNC.md` | 609 |
 | `AI/generated/ENGINE_BRAIN_PACK.json` | 5583 |
 | `AI/generated/ENGINE_BRAIN_PACK.md` | 412233 |
-| `AI/generated/ENV_DOCTOR.json` | 8278 |
-| `AI/generated/ENV_DOCTOR.md` | 1368 |
-| `AI/generated/FILE_TREE.md` | 68251 |
+| `AI/generated/ENV_DOCTOR.json` | 7281 |
+| `AI/generated/ENV_DOCTOR.md` | 776 |
+| `AI/generated/FILE_TREE.md` | 68315 |
 | `AI/generated/manifest.json` | 2062 |
 | `AI/generated/OWNERSHIP_MAP.json` | 16701 |
 | `AI/generated/OWNERSHIP_MAP.md` | 6492 |
@@ -120,7 +120,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `AI/generated/P7_OPERATOR_WORKFLOW.md` | 3015 |
 | `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.json` | 2705 |
 | `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.md` | 2024 |
-| `AI/generated/SYMBOL_MAP.md` | 260709 |
+| `AI/generated/SYMBOL_MAP.md` | 261054 |
 | `AI/KNOWN_BUGS.md` | 1384 |
 | `AI/LUA_INDEX.md` | 2874 |
 | `AI/OPERATIONS_AUDIT.md` | 5139 |
@@ -156,7 +156,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `bot/decision/hunt_strategy.py` | 2683 |
 | `bot/decision/ml_model.py` | 7980 |
 | `bot/decision/rules.py` | 2199 |
-| `bot/infra/docker-compose.yml` | 865 |
+| `bot/infra/docker-compose.yml` | 848 |
 | `bot/infra/grafana/dashboards/tibia_bot.json` | 4684 |
 | `bot/infra/grafana/provisioning/dashboards/default.yaml` | 175 |
 | `bot/infra/grafana/provisioning/datasources/prometheus.yaml` | 159 |
@@ -206,7 +206,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `docs/AGENT_PROMPT_DEFINITIVE.md` | 4201 |
 | `docs/AGENT_TRAINING_MASTERPLAN.md` | 3605 |
 | `docs/ARCHITECTURE.md` | 21905 |
-| `docs/audits/CTOAI_FULL_WORKSPACE_AUDIT_2026-07-06.md` | 6889 |
+| `docs/audits/CTOAI_FULL_WORKSPACE_AUDIT_2026-07-06.md` | 7043 |
 | `docs/audits/CTOAI_SECURITY_HARDENING_2026-07-06.md` | 114540 |
 | `docs/audits/CTOAI_WORKTREE_EXECUTION_PLAN_2026-07-11.md` | 8548 |
 | `docs/audits/CTOAI_WORKTREE_TRIAGE_2026-07-09.md` | 6985 |
@@ -477,7 +477,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `docs/REPO_HYGIENE_POLICY.md` | 4830 |
 | `docs/REPO_SCHEMA.md` | 10994 |
 | `docs/ROADMAP_V0.2.0_TO_V1.0.0.md` | 878 |
-| `docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md` | 6491 |
+| `docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md` | 6578 |
 | `docs/runbook-althea-enc3-reverseeng.md` | 3502 |
 | `docs/runbook-azure-activity-log-interpretation.md` | 2855 |
 | `docs/runbook-disk-emergency.md` | 2223 |
@@ -892,6 +892,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `tests/test_atomic_state_writes_security.py` | 1660 |
 | `tests/test_azure_activity_alerts.py` | 8850 |
 | `tests/test_azure_activity_listener_security.py` | 3003 |
+| `tests/test_bot_cd_disk_recovery.py` | 1219 |
 | `tests/test_bot_vps_bootstrap_security.py` | 1851 |
 | `tests/test_bot_vps_deploy_security.py` | 1976 |
 | `tests/test_control_center_p6_plugin_handoff_smoke.py` | 9258 |

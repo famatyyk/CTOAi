@@ -1,6 +1,6 @@
 # Engine Brain Symbol Map
 
-Generated at: `2026-07-11T09:26:31+00:00`
+Generated at: `2026-07-11T10:02:32+00:00`
 
 This is a lightweight map for navigation, not a full source dump.
 
@@ -4848,6 +4848,11 @@ This is a lightweight map for navigation, not a full source dump.
 - L51: def test_azure_alerts_runner_defaults_listener_to_loopback_and_secret_gate()
 - L63: def test_azure_alerts_runner_rejects_public_listener_before_start(tmp_path)
 - L98: def test_azure_alerts_docs_do_not_recommend_public_listener_without_secret()
+
+## `tests/test_bot_cd_disk_recovery.py`
+
+- L11: def test_bot_cd_recovers_disk_without_deleting_named_volumes()
+- L26: def test_bot_and_dashboard_share_one_built_image()
 
 ## `tests/test_bot_vps_bootstrap_security.py`
 
