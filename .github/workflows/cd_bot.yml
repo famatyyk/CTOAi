@@ -111,12 +111,34 @@ jobs:
           # Pull latest images
           docker compose pull prometheus grafana 2>/dev/null || true
 
-          # Reclaim Docker build space on VPS
+          # Reclaim safe Docker build space on VPS. If disk pressure is high,
+          # stop this stack first so its old images can be removed. Named
+          # volumes are intentionally preserved.
           docker builder prune -af || true
           docker image prune -af || true
+          FREE_MB=$(df -Pm /var/lib/docker 2>/dev/null | awk 'NR==2 {print $4}')
+          if [ -z "$FREE_MB" ]; then
+            FREE_MB=$(df -Pm / | awk 'NR==2 {print $4}')
+          fi
+          echo "Docker filesystem free before build: ${FREE_MB} MB"
+          if [ "$FREE_MB" -lt 4096 ]; then
+            echo "Low disk space; stopping Bot stack and pruning unused Docker data."
+            docker compose down --remove-orphans || true
+            docker system prune -af || true
+            docker builder prune -af || true
+            FREE_MB=$(df -Pm /var/lib/docker 2>/dev/null | awk 'NR==2 {print $4}')
+            if [ -z "$FREE_MB" ]; then
+              FREE_MB=$(df -Pm / | awk 'NR==2 {print $4}')
+            fi
+            echo "Docker filesystem free after recovery: ${FREE_MB} MB"
+          fi
+          if [ "$FREE_MB" -lt 2048 ]; then
+            echo "Insufficient disk space for safe image build: ${FREE_MB} MB free."
+            exit 1
+          fi
 
-          # Build bot + dashboard images using cache to reduce VPS disk churn
-          docker compose build bot dashboard
+          # Bot and dashboard share one image, avoiding a duplicate build/export.
+          docker compose build bot
 
           # Restart stack with zero-downtime where possible
           docker compose up -d --remove-orphans || {
