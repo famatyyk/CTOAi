@@ -225,6 +225,14 @@ def test_background_status_is_ready_only_from_trusted_live_evidence(
     assert report["runtime_actions"] is False
     assert report["process_count"] == 1
     assert report["integrity"]["pin_status"] == "trusted"
+    assert report["integrity"]["pin_remediation"] == {
+        "classification": "trusted",
+        "required_action": "none",
+        "observer_can_write_trust_anchor": False,
+        "historical_rebinding_allowed": False,
+        "requires_current_release_gate": False,
+        "requires_explicit_live_approval": False,
+    }
     assert report["integrity"]["matched_file_count"] == 1
     assert report["integrity"]["baseline_recorded"] is False
     assert report["capability"]["fresh"] is True
@@ -555,6 +563,11 @@ def test_missing_or_untrusted_pin_blocks_and_observer_never_creates_one(
     assert "live_manifest_pin_untrusted" in report["blockers"]
     assert report["integrity"]["baseline"] == "live_manifest"
     assert report["integrity"]["baseline_recorded"] is False
+    assert (
+        report["integrity"]["pin_remediation"]["classification"]
+        == "missing_or_unreadable_attestation"
+    )
+    assert report["integrity"]["pin_remediation"]["historical_rebinding_allowed"] is False
     assert not live_manifest.exists()
 
 
@@ -605,6 +618,113 @@ def test_live_manifest_requires_official_origin_and_schema(tmp_path: Path):
     assert report["status"] == "blocked"
     assert "live_manifest_origin_invalid" in report["integrity"]["pin_errors"]
     assert "live_manifest_schema_invalid" in report["integrity"]["pin_errors"]
+
+
+def test_legacy_unbound_promotion_is_diagnosed_without_rebinding(tmp_path: Path):
+    _, client, dev = _fixture(tmp_path)
+    manifest_path = dev / "live_manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["origin"] = "background_verified_current_live"
+    _write_json(manifest_path, manifest)
+    promotion_path = dev / "live_promotion.json"
+    promotion = json.loads(promotion_path.read_text(encoding="utf-8"))
+    promotion.pop("live_manifest")
+    promotion.pop("live_manifest_sha256")
+    promotion["created_at"] = "2026-07-11T15:54:00+00:00"
+    _write_json(promotion_path, promotion)
+
+    report = _build(client, dev)
+    remediation = report["integrity"]["pin_remediation"]
+
+    assert report["status"] == "blocked"
+    assert remediation["classification"] == "legacy_or_unbound_attestation"
+    assert remediation["required_action"] == (
+        "refresh_official_live_promotion_after_current_gates"
+    )
+    assert remediation["observer_can_write_trust_anchor"] is False
+    assert remediation["historical_rebinding_allowed"] is False
+    assert remediation["requires_current_release_gate"] is True
+    assert remediation["requires_explicit_live_approval"] is True
+    assert "do not synthesize or rebind a trust anchor" in report["next_action"]
+    assert report["integrity"]["matched_file_count"] == 0
+    assert report["integrity"]["diagnostic_parity"] == {
+        "attempted": True,
+        "status": "passed",
+        "manifest_file_count": 1,
+        "matched_file_count": 1,
+        "mismatch_count": 0,
+        "mutable_drift_count": 0,
+        "profile_drift_count": 0,
+        "missing_count": 0,
+        "invalid_path_count": 0,
+        "oversize_count": 0,
+        "actual_total_bytes": (
+            client / "mods" / "ctoa_otclient" / "sample.lua"
+        ).stat().st_size,
+        "stable_during_observation": True,
+        "acceptance_allowed": False,
+    }
+
+
+@pytest.mark.parametrize("mutation", ["duplicate", "nonfinite", "deep"])
+def test_live_manifest_strict_parser_fails_closed(mutation: str, tmp_path: Path):
+    _, client, dev = _fixture(tmp_path)
+    manifest_path = dev / "live_manifest.json"
+    raw = manifest_path.read_text(encoding="utf-8")
+    if mutation == "duplicate":
+        raw = raw.replace(
+            '"origin": "official_live_promotion"',
+            '"origin": "official_live_promotion", "origin": "background_verified_current_live"',
+            1,
+        )
+    elif mutation == "nonfinite":
+        raw = raw[:-1] + ', "poison": NaN}'
+    else:
+        raw = raw[:-1] + ', "poison": ' + "[" * 80 + "0" + "]" * 80 + "}"
+    manifest_path.write_text(raw, encoding="utf-8")
+
+    report = _build(client, dev)
+
+    assert report["status"] == "blocked"
+    assert "live_manifest_malformed" in report["integrity"]["pin_errors"]
+    assert (
+        report["integrity"]["pin_remediation"]["classification"]
+        == "missing_or_unreadable_attestation"
+    )
+
+
+def test_untrusted_diagnostic_parity_exposes_profile_drift_without_acceptance(
+    tmp_path: Path,
+):
+    _, client, dev = _fixture(tmp_path)
+    profile = client / "mods" / "ctoa_otclient" / "ctoa_ek_profile.lua"
+    profile.write_text("return true\n", encoding="utf-8")
+    manifest_path = dev / "live_manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["origin"] = "background_verified_current_live"
+    manifest["files"] = [
+        {
+            "path": "mods/ctoa_otclient/ctoa_ek_profile.lua",
+            "sha256": _sha256(profile),
+            "bytes": profile.stat().st_size,
+        }
+    ]
+    _write_json(manifest_path, manifest)
+    _resign_promotion(dev, client)
+    profile.write_text("return false\n", encoding="utf-8")
+
+    report = _build(client, dev)
+    diagnostic = report["integrity"]["diagnostic_parity"]
+
+    assert report["status"] == "blocked"
+    assert report["integrity"]["status"] == "untrusted_pin"
+    assert report["integrity"]["profile_drift_count"] == 0
+    assert diagnostic["attempted"] is True
+    assert diagnostic["status"] == "failed"
+    assert diagnostic["profile_drift_count"] == 1
+    assert diagnostic["mutable_drift_count"] == 1
+    assert diagnostic["stable_during_observation"] is True
+    assert diagnostic["acceptance_allowed"] is False
 
 
 @pytest.mark.parametrize(

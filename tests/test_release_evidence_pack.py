@@ -143,6 +143,35 @@ def test_background_status_accepts_consistent_untrusted_pin_as_blocked_evidence(
     integrity["status"] = "untrusted_pin"
     integrity["matched_file_count"] = 0
     integrity["live_files_unchanged_during_observation"] = False
+    integrity["pin_errors"] = [
+        "live_manifest_origin_invalid",
+        "live_promotion_manifest_path_mismatch",
+        "live_promotion_manifest_sha256_mismatch",
+        "live_promotion_timestamp_mismatch",
+    ]
+    integrity["pin_remediation"] = {
+        "classification": "legacy_or_unbound_attestation",
+        "required_action": "refresh_official_live_promotion_after_current_gates",
+        "observer_can_write_trust_anchor": False,
+        "historical_rebinding_allowed": False,
+        "requires_current_release_gate": True,
+        "requires_explicit_live_approval": True,
+    }
+    integrity["diagnostic_parity"] = {
+        "attempted": True,
+        "status": "failed",
+        "manifest_file_count": 58,
+        "matched_file_count": 57,
+        "mismatch_count": 0,
+        "mutable_drift_count": 1,
+        "profile_drift_count": 1,
+        "missing_count": 0,
+        "invalid_path_count": 0,
+        "oversize_count": 0,
+        "actual_total_bytes": 1000,
+        "stable_during_observation": True,
+        "acceptance_allowed": False,
+    }
     capability["status"] = "missing"
     capability["fresh"] = False
 
@@ -157,6 +186,18 @@ def test_background_status_accepts_consistent_untrusted_pin_as_blocked_evidence(
     assert summary["fresh"] is True
     assert summary["integrity_status"] == "untrusted_pin"
     assert summary["blockers"] == ["live_manifest_pin_untrusted"]
+    assert summary["pin_errors"] == integrity["pin_errors"]
+    assert summary["pin_classification"] == "legacy_or_unbound_attestation"
+    assert summary["pin_required_action"] == (
+        "refresh_official_live_promotion_after_current_gates"
+    )
+    assert summary["pin_historical_rebinding_allowed"] is False
+    assert summary["pin_requires_explicit_live_approval"] is True
+    assert summary["diagnostic_parity_status"] == "failed"
+    assert summary["diagnostic_parity_attempted"] is True
+    assert summary["diagnostic_profile_drift_count"] == 1
+    assert summary["diagnostic_stable_during_observation"] is True
+    assert summary["diagnostic_acceptance_allowed"] is False
 
 
 def test_background_status_invalid_contract_and_counts_fail_closed(tmp_path: Path):
@@ -206,6 +247,9 @@ def test_background_status_invalid_contract_and_counts_fail_closed(tmp_path: Pat
         ("count_overflow", "integrity_count_consistency"),
         ("drift_alias", "integrity_drift_consistency"),
         ("passed_with_mismatch", "integrity_status_consistency"),
+        ("pin_errors_shape", "pin_errors"),
+        ("pin_rebinding", "pin_remediation"),
+        ("diagnostic_acceptance", "diagnostic_parity"),
     ],
 )
 def test_background_status_full_no_action_contract_mutations_fail_closed(
@@ -248,6 +292,33 @@ def test_background_status_full_no_action_contract_mutations_fail_closed(
     elif mutation == "passed_with_mismatch":
         integrity["matched_file_count"] = 57
         integrity["mismatch_count"] = 1
+    elif mutation == "pin_errors_shape":
+        integrity["pin_errors"] = [{"unexpected": "shape"}]
+    elif mutation == "pin_rebinding":
+        integrity["pin_remediation"] = {
+            "classification": "legacy_or_unbound_attestation",
+            "required_action": "refresh_official_live_promotion_after_current_gates",
+            "observer_can_write_trust_anchor": False,
+            "historical_rebinding_allowed": True,
+            "requires_current_release_gate": True,
+            "requires_explicit_live_approval": True,
+        }
+    elif mutation == "diagnostic_acceptance":
+        integrity["diagnostic_parity"] = {
+            "attempted": True,
+            "status": "passed",
+            "manifest_file_count": 58,
+            "matched_file_count": 58,
+            "mismatch_count": 0,
+            "mutable_drift_count": 0,
+            "profile_drift_count": 0,
+            "missing_count": 0,
+            "invalid_path_count": 0,
+            "oversize_count": 0,
+            "actual_total_bytes": 1000,
+            "stable_during_observation": True,
+            "acceptance_allowed": True,
+        }
     else:  # pragma: no cover - the parametrization is exhaustive
         raise AssertionError(f"unsupported mutation: {mutation}")
 
@@ -546,6 +617,16 @@ def test_build_evidence_pack_reads_current_artifacts(tmp_path: Path):
         "runtime_actions": False,
         "process_state": "running",
         "integrity_status": "passed",
+        "pin_errors": [],
+        "pin_classification": "unknown",
+        "pin_required_action": "none",
+        "pin_historical_rebinding_allowed": False,
+        "pin_requires_explicit_live_approval": False,
+        "diagnostic_parity_status": "unknown",
+        "diagnostic_parity_attempted": False,
+        "diagnostic_profile_drift_count": 0,
+        "diagnostic_stable_during_observation": False,
+        "diagnostic_acceptance_allowed": False,
         "matched_file_count": 58,
         "manifest_file_count": 58,
         "mutable_drift_count": 0,

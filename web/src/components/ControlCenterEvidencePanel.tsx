@@ -107,6 +107,8 @@ export default function ControlCenterEvidencePanel() {
         ? `Snapshot stale after ${helperBackgroundStatus.maxAgeSeconds}s; collect a new passive sample.`
         : helperBackgroundStatus.status === "ready"
           ? `${helperBackgroundStatus.integrityStatus} · ${helperBackgroundStatus.runtimeState} · advisory only; promotion and dispatch disabled.`
+          : helperBackgroundStatus.integrityStatus === "untrusted_pin"
+            ? `${helperBackgroundStatus.pinClassification} · diagnostic ${helperBackgroundStatus.diagnosticParityStatus}${helperBackgroundStatus.diagnosticParityAttempted ? ` / profile drift ${helperBackgroundStatus.diagnosticProfileDriftCount}` : ""} · current gated official promotion required; historical rebinding forbidden.`
           : helperBackgroundStatus.blockers[0]
             ? `Blocked: ${helperBackgroundStatus.blockers[0]}.`
             : `Passive evidence: ${helperBackgroundStatus.status}.`

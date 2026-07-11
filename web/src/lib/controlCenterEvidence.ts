@@ -144,6 +144,16 @@ export type ControlCenterEvidence = {
       runtimeActions: boolean
       processState: string
       integrityStatus: string
+      pinErrors: string[]
+      pinClassification: string
+      pinRequiredAction: string
+      pinHistoricalRebindingAllowed: boolean
+      pinRequiresExplicitLiveApproval: boolean
+      diagnosticParityStatus: string
+      diagnosticParityAttempted: boolean
+      diagnosticProfileDriftCount: number
+      diagnosticStableDuringObservation: boolean
+      diagnosticAcceptanceAllowed: boolean
       matchedFileCount: number
       manifestFileCount: number
       mutableDriftCount: number
@@ -471,6 +481,35 @@ const BACKGROUND_STATUS_VALUES = new Set([
   "observation_pending",
 ])
 const BACKGROUND_INTEGRITY_STATUS_VALUES = new Set(["passed", "failed", "untrusted_pin"])
+const BACKGROUND_PIN_CLASSIFICATION_VALUES = new Set([
+  "trusted",
+  "missing_or_unreadable_attestation",
+  "legacy_or_unbound_attestation",
+  "invalid_or_mismatched_attestation",
+])
+const BACKGROUND_PIN_REQUIRED_ACTION_VALUES = new Set([
+  "none",
+  "refresh_official_live_promotion_after_current_gates",
+])
+const BACKGROUND_DIAGNOSTIC_STATUS_VALUES = new Set(["not_required", "unavailable", "passed", "failed"])
+const BACKGROUND_PIN_ERROR_VALUES = new Set([
+  "live_manifest_schema_invalid",
+  "live_manifest_origin_invalid",
+  "live_manifest_timestamp_invalid",
+  "live_manifest_helper_version_invalid",
+  "manifest_files_missing",
+  "manifest_entry_limit_exceeded",
+  "manifest_total_bytes_exceeded",
+  "live_promotion_name_invalid",
+  "live_promotion_approval_invalid",
+  "live_promotion_verification_invalid",
+  "live_promotion_helper_version_mismatch",
+  "live_promotion_file_count_mismatch",
+  "live_promotion_manifest_path_mismatch",
+  "live_promotion_manifest_sha256_mismatch",
+  "live_promotion_client_path_mismatch",
+  "live_promotion_timestamp_mismatch",
+])
 const BACKGROUND_CAPABILITY_STATUS_VALUES = new Set([
   "fresh",
   "stale",
@@ -1711,6 +1750,91 @@ function matchesExactRecord(value: unknown, expected: Record<string, unknown>): 
   return Object.keys(value).length === expectedEntries.length && expectedEntries.every(([key, item]) => value[key] === item)
 }
 
+function isBackgroundPinError(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    value.length > 0 &&
+    value.length <= 96 &&
+    (BACKGROUND_PIN_ERROR_VALUES.has(value) ||
+      /^live_(?:manifest|promotion)_(?:missing|empty|malformed|oversize|symlink_rejected|not_regular|not_object|changed_during_open|unreadable)$/.test(
+        value,
+      ) ||
+      /^manifest_entry_[0-9]{1,3}_(?:invalid|path_invalid|duplicate|sha256_invalid|bytes_invalid)$/.test(value))
+  )
+}
+
+function isBackgroundPinRemediation(value: unknown): value is Record<string, unknown> {
+  if (
+    !isRecord(value) ||
+    !hasExactKeys(value, [
+      "classification",
+      "required_action",
+      "observer_can_write_trust_anchor",
+      "historical_rebinding_allowed",
+      "requires_current_release_gate",
+      "requires_explicit_live_approval",
+    ]) ||
+    typeof value.classification !== "string" ||
+    !BACKGROUND_PIN_CLASSIFICATION_VALUES.has(value.classification) ||
+    typeof value.required_action !== "string" ||
+    !BACKGROUND_PIN_REQUIRED_ACTION_VALUES.has(value.required_action) ||
+    value.observer_can_write_trust_anchor !== false ||
+    value.historical_rebinding_allowed !== false
+  ) {
+    return false
+  }
+  const trusted = value.classification === "trusted"
+  return (
+    value.required_action === (trusted ? "none" : "refresh_official_live_promotion_after_current_gates") &&
+    value.requires_current_release_gate === !trusted &&
+    value.requires_explicit_live_approval === !trusted
+  )
+}
+
+function isBackgroundDiagnosticParity(value: unknown): value is Record<string, unknown> {
+  const countKeys = [
+    "manifest_file_count",
+    "matched_file_count",
+    "mismatch_count",
+    "mutable_drift_count",
+    "profile_drift_count",
+    "missing_count",
+    "invalid_path_count",
+    "oversize_count",
+    "actual_total_bytes",
+  ] as const
+  if (
+    !isRecord(value) ||
+    !hasExactKeys(value, [
+      "attempted",
+      "status",
+      ...countKeys,
+      "stable_during_observation",
+      "acceptance_allowed",
+    ]) ||
+    typeof value.attempted !== "boolean" ||
+    typeof value.status !== "string" ||
+    !BACKGROUND_DIAGNOSTIC_STATUS_VALUES.has(value.status) ||
+    !countKeys.every((key) => safeNonnegativeInteger(value[key]).valid) ||
+    typeof value.stable_during_observation !== "boolean" ||
+    value.acceptance_allowed !== false ||
+    value.mutable_drift_count !== value.profile_drift_count
+  ) {
+    return false
+  }
+  if (!value.attempted) {
+    return value.status === "not_required" || value.status === "unavailable"
+  }
+  const observedFileCount =
+    Number(value.matched_file_count) +
+    Number(value.mismatch_count) +
+    Number(value.mutable_drift_count) +
+    Number(value.missing_count) +
+    Number(value.invalid_path_count) +
+    Number(value.oversize_count)
+  return (value.status === "passed" || value.status === "failed") && observedFileCount <= Number(value.manifest_file_count)
+}
+
 function summarizeBackgroundStatus(
   payload: Record<string, unknown> | null,
   artifactPresent: boolean,
@@ -1720,6 +1844,21 @@ function summarizeBackgroundStatus(
   const integrity = isRecord(data.integrity) ? data.integrity : {}
   const capability = isRecord(data.capability) ? data.capability : {}
   const log = isRecord(data.log) ? data.log : {}
+
+  const rawPinErrors = integrity.pin_errors
+  const pinErrorsPresent = Object.prototype.hasOwnProperty.call(integrity, "pin_errors")
+  const pinErrorsValid =
+    Array.isArray(rawPinErrors) &&
+    rawPinErrors.length <= 32 &&
+    rawPinErrors.every(isBackgroundPinError) &&
+    rawPinErrors.length === new Set(rawPinErrors).size
+  const pinErrors = pinErrorsValid ? rawPinErrors : []
+  const pinRemediation = integrity.pin_remediation
+  const pinRemediationPresent = Object.prototype.hasOwnProperty.call(integrity, "pin_remediation")
+  const pinRemediationValid = isBackgroundPinRemediation(pinRemediation)
+  const diagnosticParity = integrity.diagnostic_parity
+  const diagnosticParityPresent = Object.prototype.hasOwnProperty.call(integrity, "diagnostic_parity")
+  const diagnosticParityValid = isBackgroundDiagnosticParity(diagnosticParity)
 
   const rawBlockers = data.blockers
   const blockersValid =
@@ -1851,6 +1990,9 @@ function summarizeBackgroundStatus(
     ["integrity_count_consistency", integrityCountConsistent],
     ["integrity_drift_consistency", integrityDriftConsistent],
     ["integrity_status_consistency", integrityStatusConsistent],
+    ["pin_errors", !pinErrorsPresent || pinErrorsValid],
+    ["pin_remediation", !pinRemediationPresent || pinRemediationValid],
+    ["diagnostic_parity", !diagnosticParityPresent || diagnosticParityValid],
     ["generated_at_utc", Number.isFinite(generatedAtMs)],
   ]
   const contractErrors = checks.filter(([, passed]) => !passed).map(([name]) => name)
@@ -1906,6 +2048,17 @@ function summarizeBackgroundStatus(
         ? processStateValue
         : "unknown",
     integrityStatus,
+    pinErrors,
+    pinClassification: pinRemediationValid ? String(pinRemediation.classification) : "unknown",
+    pinRequiredAction: pinRemediationValid ? String(pinRemediation.required_action) : "none",
+    pinHistoricalRebindingAllowed: false,
+    pinRequiresExplicitLiveApproval: pinRemediationValid && pinRemediation.requires_explicit_live_approval === true,
+    diagnosticParityStatus: diagnosticParityValid ? String(diagnosticParity.status) : "unknown",
+    diagnosticParityAttempted: diagnosticParityValid && diagnosticParity.attempted === true,
+    diagnosticProfileDriftCount: diagnosticParityValid ? Number(diagnosticParity.profile_drift_count) : 0,
+    diagnosticStableDuringObservation:
+      diagnosticParityValid && diagnosticParity.stable_during_observation === true,
+    diagnosticAcceptanceAllowed: false,
     matchedFileCount: matchedFileCount.value,
     manifestFileCount: manifestFileCount.value,
     mutableDriftCount: mutableDriftCount.value,

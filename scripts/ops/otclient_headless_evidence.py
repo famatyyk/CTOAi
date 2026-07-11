@@ -140,6 +140,12 @@ def load_json_bounded(
     raw, load_status = read_bytes_bounded(path, max_bytes)
     if raw is None:
         return None, load_status
+    return parse_json_object_bytes(raw)
+
+
+def parse_json_object_bytes(raw: bytes) -> tuple[dict[str, Any] | None, str]:
+    """Strictly decode one already-bounded JSON object without rereading it."""
+
     try:
         if not raw:
             return None, "empty"

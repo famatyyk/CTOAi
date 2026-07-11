@@ -22,6 +22,7 @@ from typing import Any
 if __package__:
     from .otclient_headless_evidence import (
         load_json_bounded,
+        parse_json_object_bytes,
         read_bytes_bounded,
         summarize_capability,
         summarize_log,
@@ -29,6 +30,7 @@ if __package__:
 else:
     from otclient_headless_evidence import (
         load_json_bounded,
+        parse_json_object_bytes,
         read_bytes_bounded,
         summarize_capability,
         summarize_log,
@@ -48,6 +50,17 @@ MAX_MANIFEST_ENTRIES = 128
 MAX_LIVE_FILE_BYTES = 2 * 1024 * 1024
 MAX_LIVE_TOTAL_BYTES = 16 * 1024 * 1024
 SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
+PIN_LOAD_STATUSES = {
+    "missing",
+    "empty",
+    "malformed",
+    "oversize",
+    "symlink_rejected",
+    "not_regular",
+    "not_object",
+    "changed_during_open",
+    "unreadable",
+}
 ROOT_MANIFEST_FILES = {
     "ctoa_otclient_loader.lua",
     "ctoa_ek_profile.lua",
@@ -239,15 +252,7 @@ def validate_live_pin(
     )
     manifest: dict[str, Any] | None = None
     if manifest_raw is not None and manifest_load_status == "loaded":
-        try:
-            parsed_manifest = json.loads(manifest_raw.decode("utf-8"))
-        except (UnicodeError, ValueError):
-            manifest_load_status = "malformed"
-        else:
-            if isinstance(parsed_manifest, dict):
-                manifest = parsed_manifest
-            else:
-                manifest_load_status = "not_object"
+        manifest, manifest_load_status = parse_json_object_bytes(manifest_raw)
     promotion, promotion_load_status = load_json_bounded(
         live_promotion_path, MAX_PROMOTION_JSON_BYTES
     )
@@ -265,6 +270,7 @@ def validate_live_pin(
 
     helper_version = ""
     entries: list[dict[str, Any]] = []
+    entry_errors: list[str] = []
     declared_total = 0
     if isinstance(manifest, dict):
         if manifest.get("schema_version") != LIVE_MANIFEST_SCHEMA:
@@ -323,7 +329,19 @@ def validate_live_pin(
         if promotion.get("created_at") != (manifest or {}).get("generated_at_utc"):
             errors.append("live_promotion_timestamp_mismatch")
 
+    manifest_safe_for_diagnostics = bool(
+        isinstance(manifest, dict)
+        and manifest_load_status == "loaded"
+        and manifest.get("schema_version") == LIVE_MANIFEST_SCHEMA
+        and isinstance(manifest.get("generated_at_utc"), str)
+        and 0 < len(manifest["generated_at_utc"]) <= 64
+        and isinstance(manifest.get("helper_version"), str)
+        and 0 < len(manifest["helper_version"]) <= 32
+        and entries
+        and not entry_errors
+    )
     trusted = not errors
+    remediation = _pin_remediation(errors)
     summary = {
         "status": "trusted" if trusted else "untrusted",
         "trusted": trusted,
@@ -334,8 +352,46 @@ def validate_live_pin(
         "helper_version": helper_version or "unknown",
         "manifest_file_count": len(entries),
         "declared_total_bytes": declared_total,
+        "manifest_safe_for_diagnostics": manifest_safe_for_diagnostics,
+        "remediation": remediation,
     }
-    return (entries if trusted else []), summary
+    return (entries if trusted or manifest_safe_for_diagnostics else []), summary
+
+
+def _pin_remediation(errors: list[str]) -> dict[str, Any]:
+    error_set = set(errors)
+    if not error_set:
+        classification = "trusted"
+        required_action = "none"
+    elif any(
+        error == f"{prefix}_{status}"
+        for prefix in ("live_manifest", "live_promotion")
+        for status in PIN_LOAD_STATUSES
+        for error in error_set
+    ):
+        classification = "missing_or_unreadable_attestation"
+        required_action = "refresh_official_live_promotion_after_current_gates"
+    elif "live_manifest_origin_invalid" in error_set and error_set.intersection(
+        {
+            "live_promotion_manifest_path_mismatch",
+            "live_promotion_manifest_sha256_mismatch",
+            "live_promotion_timestamp_mismatch",
+        }
+    ):
+        classification = "legacy_or_unbound_attestation"
+        required_action = "refresh_official_live_promotion_after_current_gates"
+    else:
+        classification = "invalid_or_mismatched_attestation"
+        required_action = "refresh_official_live_promotion_after_current_gates"
+    blocked = classification != "trusted"
+    return {
+        "classification": classification,
+        "required_action": required_action,
+        "observer_can_write_trust_anchor": False,
+        "historical_rebinding_allowed": False,
+        "requires_current_release_gate": blocked,
+        "requires_explicit_live_approval": blocked,
+    }
 
 
 def inspect_live_manifest(
@@ -351,6 +407,22 @@ def inspect_live_manifest(
         "helper_version": str(pin.get("helper_version") or "unknown"),
         "manifest_file_count": int(pin.get("manifest_file_count") or 0),
         "declared_total_bytes": int(pin.get("declared_total_bytes") or 0),
+        "pin_remediation": dict(pin.get("remediation") or {}),
+        "diagnostic_parity": {
+            "attempted": False,
+            "status": "not_required" if pin.get("trusted") is True else "unavailable",
+            "manifest_file_count": int(pin.get("manifest_file_count") or 0),
+            "matched_file_count": 0,
+            "mismatch_count": 0,
+            "mutable_drift_count": 0,
+            "profile_drift_count": 0,
+            "missing_count": 0,
+            "invalid_path_count": 0,
+            "oversize_count": 0,
+            "actual_total_bytes": 0,
+            "stable_during_observation": False,
+            "acceptance_allowed": False,
+        },
         "matched_file_count": 0,
         "mismatch_count": 0,
         "mutable_drift_count": 0,
@@ -360,9 +432,29 @@ def inspect_live_manifest(
         "oversize_count": 0,
         "actual_total_bytes": 0,
     }
+    details, fingerprints = _inspect_manifest_entries(entries, client_root)
     if pin.get("trusted") is not True:
-        return {**base, "status": "untrusted_pin"}, {}
+        diagnostic_attempted = bool(
+            pin.get("manifest_safe_for_diagnostics") is True and entries
+        )
+        diagnostic = {
+            **base["diagnostic_parity"],
+            **(details if diagnostic_attempted else {}),
+            "attempted": diagnostic_attempted,
+            "status": details["status"] if diagnostic_attempted else "unavailable",
+            "acceptance_allowed": False,
+        }
+        return {
+            **base,
+            "status": "untrusted_pin",
+            "diagnostic_parity": diagnostic,
+        }, (fingerprints if diagnostic_attempted else {})
+    return {**base, **details}, fingerprints
 
+
+def _inspect_manifest_entries(
+    entries: list[dict[str, Any]], client_root: Path
+) -> tuple[dict[str, Any], dict[str, tuple[str, int, int]]]:
     matched = 0
     mismatch = 0
     profile_drift = 0
@@ -414,8 +506,8 @@ def inspect_live_manifest(
         and actual_total <= MAX_LIVE_TOTAL_BYTES
     )
     return {
-        **base,
         "status": "passed" if passed else "failed",
+        "manifest_file_count": total,
         "matched_file_count": matched,
         "mismatch_count": mismatch,
         "mutable_drift_count": profile_drift,
@@ -517,7 +609,13 @@ def build_status(
     log_summary = summarize_log(log_path, observed_at)
     log_summary["source"] = log_label
     unchanged = _fingerprints_unchanged(fingerprints, client_root)
-    integrity["live_files_unchanged_during_observation"] = unchanged
+    if pin.get("trusted") is True:
+        integrity["live_files_unchanged_during_observation"] = unchanged
+    else:
+        integrity["live_files_unchanged_during_observation"] = False
+        diagnostic_parity = integrity.get("diagnostic_parity")
+        if isinstance(diagnostic_parity, dict):
+            diagnostic_parity["stable_during_observation"] = unchanged
     integrity["baseline"] = "live_manifest"
     integrity["baseline_recorded"] = False
 
@@ -613,7 +711,13 @@ def build_status(
         "idle": "Wait for the user to start the client, then collect background status again.",
         "waiting_for_passive_heartbeat": "Keep the client untouched; wait for a fresh deterministic capability heartbeat.",
         "observation_pending": "Collect another passive sample without launching or focusing a client.",
-        "blocked": "Fix the reported evidence blocker offline; do not interact with the user's client.",
+        "blocked": (
+            "Keep the evidence blocked and do not synthesize or rebind a trust anchor. "
+            "A new pin requires current sandbox/release gates plus explicit operator approval "
+            "for the official live-promotion path."
+            if pin.get("trusted") is not True
+            else "Fix the reported evidence blocker offline; do not interact with the user's client."
+        ),
     }[status_value]
     return {
         "schema_version": SCHEMA_VERSION,

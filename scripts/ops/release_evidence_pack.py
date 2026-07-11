@@ -38,6 +38,22 @@ BACKGROUND_STATUS_VALUES = {
     "observation_pending",
 }
 BACKGROUND_INTEGRITY_STATUS_VALUES = {"passed", "failed", "untrusted_pin"}
+BACKGROUND_PIN_CLASSIFICATION_VALUES = {
+    "trusted",
+    "missing_or_unreadable_attestation",
+    "legacy_or_unbound_attestation",
+    "invalid_or_mismatched_attestation",
+}
+BACKGROUND_PIN_REQUIRED_ACTION_VALUES = {
+    "none",
+    "refresh_official_live_promotion_after_current_gates",
+}
+BACKGROUND_DIAGNOSTIC_STATUS_VALUES = {
+    "not_required",
+    "unavailable",
+    "passed",
+    "failed",
+}
 BACKGROUND_CAPABILITY_STATUS_VALUES = {
     "fresh",
     "stale",
@@ -1055,6 +1071,136 @@ def _matches_exact_contract(value: Any, expected: dict[str, Any]) -> bool:
     )
 
 
+def _background_pin_error_valid(value: Any) -> bool:
+    if not isinstance(value, str) or not 0 < len(value) <= 96:
+        return False
+    exact = {
+        "live_manifest_schema_invalid",
+        "live_manifest_origin_invalid",
+        "live_manifest_timestamp_invalid",
+        "live_manifest_helper_version_invalid",
+        "manifest_files_missing",
+        "manifest_entry_limit_exceeded",
+        "manifest_total_bytes_exceeded",
+        "live_promotion_name_invalid",
+        "live_promotion_approval_invalid",
+        "live_promotion_verification_invalid",
+        "live_promotion_helper_version_mismatch",
+        "live_promotion_file_count_mismatch",
+        "live_promotion_manifest_path_mismatch",
+        "live_promotion_manifest_sha256_mismatch",
+        "live_promotion_client_path_mismatch",
+        "live_promotion_timestamp_mismatch",
+    }
+    if value in exact:
+        return True
+    if re.fullmatch(
+        r"live_(?:manifest|promotion)_(?:missing|empty|malformed|oversize|symlink_rejected|not_regular|not_object|changed_during_open|unreadable)",
+        value,
+    ):
+        return True
+    return (
+        re.fullmatch(
+            r"manifest_entry_[0-9]{1,3}_(?:invalid|path_invalid|duplicate|sha256_invalid|bytes_invalid)",
+            value,
+        )
+        is not None
+    )
+
+
+def _background_pin_remediation_valid(value: Any) -> bool:
+    if not isinstance(value, dict) or set(value) != {
+        "classification",
+        "required_action",
+        "observer_can_write_trust_anchor",
+        "historical_rebinding_allowed",
+        "requires_current_release_gate",
+        "requires_explicit_live_approval",
+    }:
+        return False
+    classification = value.get("classification")
+    required_action = value.get("required_action")
+    if (
+        not isinstance(classification, str)
+        or classification not in BACKGROUND_PIN_CLASSIFICATION_VALUES
+        or not isinstance(required_action, str)
+        or required_action not in BACKGROUND_PIN_REQUIRED_ACTION_VALUES
+        or value.get("observer_can_write_trust_anchor") is not False
+        or value.get("historical_rebinding_allowed") is not False
+    ):
+        return False
+    trusted = classification == "trusted"
+    return bool(
+        required_action
+        == ("none" if trusted else "refresh_official_live_promotion_after_current_gates")
+        and value.get("requires_current_release_gate") is (not trusted)
+        and value.get("requires_explicit_live_approval") is (not trusted)
+    )
+
+
+def _background_diagnostic_parity_valid(value: Any) -> bool:
+    if not isinstance(value, dict) or set(value) != {
+        "attempted",
+        "status",
+        "manifest_file_count",
+        "matched_file_count",
+        "mismatch_count",
+        "mutable_drift_count",
+        "profile_drift_count",
+        "missing_count",
+        "invalid_path_count",
+        "oversize_count",
+        "actual_total_bytes",
+        "stable_during_observation",
+        "acceptance_allowed",
+    }:
+        return False
+    attempted = value.get("attempted")
+    status = value.get("status")
+    counts = [
+        value.get(key)
+        for key in (
+            "manifest_file_count",
+            "matched_file_count",
+            "mismatch_count",
+            "mutable_drift_count",
+            "profile_drift_count",
+            "missing_count",
+            "invalid_path_count",
+            "oversize_count",
+            "actual_total_bytes",
+        )
+    ]
+    if (
+        not isinstance(attempted, bool)
+        or not isinstance(status, str)
+        or status not in BACKGROUND_DIAGNOSTIC_STATUS_VALUES
+        or not all(_safe_nonnegative_int(item)[1] for item in counts)
+        or not isinstance(value.get("stable_during_observation"), bool)
+        or value.get("acceptance_allowed") is not False
+        or value.get("mutable_drift_count") != value.get("profile_drift_count")
+    ):
+        return False
+    if attempted:
+        observed = sum(
+            int(value.get(key) or 0)
+            for key in (
+                "matched_file_count",
+                "mismatch_count",
+                "mutable_drift_count",
+                "missing_count",
+                "invalid_path_count",
+                "oversize_count",
+            )
+        )
+        if status not in {"passed", "failed"} or observed > value["manifest_file_count"]:
+            return False
+    else:
+        if status not in {"not_required", "unavailable"}:
+            return False
+    return True
+
+
 def _parse_utc_timestamp(value: Any) -> dt.datetime | None:
     if not isinstance(value, str) or not value or len(value) > 64:
         return None
@@ -1082,6 +1228,22 @@ def _background_status_summary(
         data.get("capability") if isinstance(data.get("capability"), dict) else {}
     )
     log = data.get("log") if isinstance(data.get("log"), dict) else {}
+    raw_pin_errors = integrity.get("pin_errors")
+    pin_errors_present = "pin_errors" in integrity
+    pin_errors_valid = bool(
+        isinstance(raw_pin_errors, list)
+        and len(raw_pin_errors) <= 32
+        and all(isinstance(item, str) for item in raw_pin_errors)
+        and len(raw_pin_errors) == len(set(raw_pin_errors))
+        and all(_background_pin_error_valid(item) for item in raw_pin_errors)
+    )
+    pin_errors = list(raw_pin_errors) if pin_errors_valid else []
+    pin_remediation = integrity.get("pin_remediation")
+    pin_remediation_present = "pin_remediation" in integrity
+    pin_remediation_valid = _background_pin_remediation_valid(pin_remediation)
+    diagnostic_parity = integrity.get("diagnostic_parity")
+    diagnostic_parity_present = "diagnostic_parity" in integrity
+    diagnostic_parity_valid = _background_diagnostic_parity_valid(diagnostic_parity)
 
     raw_blockers = data.get("blockers")
     blockers_valid = (
@@ -1273,6 +1435,15 @@ def _background_status_summary(
         ("integrity_count_consistency", integrity_count_consistent),
         ("integrity_drift_consistency", integrity_drift_consistent),
         ("integrity_status_consistency", integrity_status_consistent),
+        ("pin_errors", not pin_errors_present or pin_errors_valid),
+        (
+            "pin_remediation",
+            not pin_remediation_present or pin_remediation_valid,
+        ),
+        (
+            "diagnostic_parity",
+            not diagnostic_parity_present or diagnostic_parity_valid,
+        ),
         ("generated_at_utc", generated_at is not None),
     )
     contract_errors.extend(name for name, passed in checks if not passed)
@@ -1313,6 +1484,8 @@ def _background_status_summary(
         else "unknown"
     )
     process_state = process_state_value if process_state_valid else "unknown"
+    safe_pin_remediation = pin_remediation if pin_remediation_valid else {}
+    safe_diagnostic = diagnostic_parity if diagnostic_parity_valid else {}
 
     return {
         "status": effective_status,
@@ -1333,6 +1506,26 @@ def _background_status_summary(
         "runtime_actions": data.get("runtime_actions") is True,
         "process_state": process_state,
         "integrity_status": integrity_status,
+        "pin_errors": pin_errors,
+        "pin_classification": str(
+            safe_pin_remediation.get("classification") or "unknown"
+        ),
+        "pin_required_action": str(
+            safe_pin_remediation.get("required_action") or "none"
+        ),
+        "pin_historical_rebinding_allowed": False,
+        "pin_requires_explicit_live_approval": (
+            safe_pin_remediation.get("requires_explicit_live_approval") is True
+        ),
+        "diagnostic_parity_status": str(safe_diagnostic.get("status") or "unknown"),
+        "diagnostic_parity_attempted": safe_diagnostic.get("attempted") is True,
+        "diagnostic_profile_drift_count": (
+            int(safe_diagnostic.get("profile_drift_count") or 0)
+        ),
+        "diagnostic_stable_during_observation": (
+            safe_diagnostic.get("stable_during_observation") is True
+        ),
+        "diagnostic_acceptance_allowed": False,
         "matched_file_count": matched_file_count,
         "manifest_file_count": manifest_file_count,
         "mutable_drift_count": mutable_drift_count,

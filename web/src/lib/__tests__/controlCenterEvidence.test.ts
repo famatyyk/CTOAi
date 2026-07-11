@@ -1229,6 +1229,35 @@ describe("Control Center evidence config", () => {
     untrustedIntegrity.status = "untrusted_pin"
     untrustedIntegrity.matched_file_count = 0
     untrustedIntegrity.live_files_unchanged_during_observation = false
+    untrustedIntegrity.pin_errors = [
+      "live_manifest_origin_invalid",
+      "live_promotion_manifest_path_mismatch",
+      "live_promotion_manifest_sha256_mismatch",
+      "live_promotion_timestamp_mismatch",
+    ]
+    untrustedIntegrity.pin_remediation = {
+      classification: "legacy_or_unbound_attestation",
+      required_action: "refresh_official_live_promotion_after_current_gates",
+      observer_can_write_trust_anchor: false,
+      historical_rebinding_allowed: false,
+      requires_current_release_gate: true,
+      requires_explicit_live_approval: true,
+    }
+    untrustedIntegrity.diagnostic_parity = {
+      attempted: true,
+      status: "failed",
+      manifest_file_count: 58,
+      matched_file_count: 57,
+      mismatch_count: 0,
+      mutable_drift_count: 1,
+      profile_drift_count: 1,
+      missing_count: 0,
+      invalid_path_count: 0,
+      oversize_count: 0,
+      actual_total_bytes: 1024,
+      stable_during_observation: true,
+      acceptance_allowed: false,
+    }
     untrustedCapability.status = "missing"
     untrustedCapability.fresh = false
     await writeFile(backgroundStatusPath, JSON.stringify(untrustedPayload), "utf-8")
@@ -1241,6 +1270,16 @@ describe("Control Center evidence config", () => {
       fresh: true,
       contractValid: true,
       integrityStatus: "untrusted_pin",
+      pinErrors: untrustedIntegrity.pin_errors,
+      pinClassification: "legacy_or_unbound_attestation",
+      pinRequiredAction: "refresh_official_live_promotion_after_current_gates",
+      pinHistoricalRebindingAllowed: false,
+      pinRequiresExplicitLiveApproval: true,
+      diagnosticParityStatus: "failed",
+      diagnosticParityAttempted: true,
+      diagnosticProfileDriftCount: 1,
+      diagnosticStableDuringObservation: true,
+      diagnosticAcceptanceAllowed: false,
       blockers: ["live_manifest_pin_untrusted"],
     })
 
@@ -1293,6 +1332,9 @@ describe("Control Center evidence config", () => {
       ["count_overflow", "integrity_count_consistency"],
       ["drift_alias", "integrity_drift_consistency"],
       ["passed_with_mismatch", "integrity_status_consistency"],
+      ["pin_errors_shape", "pin_errors"],
+      ["pin_rebinding", "pin_remediation"],
+      ["diagnostic_acceptance", "diagnostic_parity"],
     ] as const
 
     for (const [mutation, expectedError] of mutations) {
@@ -1324,6 +1366,33 @@ describe("Control Center evidence config", () => {
         integrity.mismatch_count = 1
       } else if (mutation === "drift_alias") {
         integrity.profile_drift_count = 1
+      } else if (mutation === "pin_errors_shape") {
+        integrity.pin_errors = [{ unexpected: "shape" }]
+      } else if (mutation === "pin_rebinding") {
+        integrity.pin_remediation = {
+          classification: "legacy_or_unbound_attestation",
+          required_action: "refresh_official_live_promotion_after_current_gates",
+          observer_can_write_trust_anchor: false,
+          historical_rebinding_allowed: true,
+          requires_current_release_gate: true,
+          requires_explicit_live_approval: true,
+        }
+      } else if (mutation === "diagnostic_acceptance") {
+        integrity.diagnostic_parity = {
+          attempted: true,
+          status: "passed",
+          manifest_file_count: 58,
+          matched_file_count: 58,
+          mismatch_count: 0,
+          mutable_drift_count: 0,
+          profile_drift_count: 0,
+          missing_count: 0,
+          invalid_path_count: 0,
+          oversize_count: 0,
+          actual_total_bytes: 1024,
+          stable_during_observation: true,
+          acceptance_allowed: true,
+        }
       } else {
         integrity.matched_file_count = 57
         integrity.mismatch_count = 1
