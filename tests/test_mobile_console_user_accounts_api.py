@@ -194,13 +194,15 @@ def test_login_with_db_account(monkeypatch: MonkeyPatch):
 
 def test_self_register_creates_member_without_operator_access(monkeypatch: MonkeyPatch):
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+        monkeypatch.setenv("CTOA_SELF_REGISTER_ENABLED", "true")
+        monkeypatch.setenv("CTOA_SELF_REGISTER_CODE", "test-registration-code")
         module = _load_app_module(monkeypatch, Path(tmp))
         store = _patch_db(monkeypatch, module)
         client = TestClient(module.app)
 
         r = client.post(
             "/api/auth/register",
-            json={"username": "recruit", "password": "RecruitPass1!", "registration_code": ""},
+            json={"username": "recruit", "password": "RecruitPass1!", "registration_code": "test-registration-code"},
         )
         assert r.status_code == 200
         assert r.json()["account"]["role"] == "member"

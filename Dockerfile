@@ -16,6 +16,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     CTOA_MOBILE_TOKEN=change-me \
     CTOA_MOBILE_FULL_ACCESS=false
 
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends tk \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN useradd --create-home --uid 1000 ctoa
 
 WORKDIR /opt/ctoa

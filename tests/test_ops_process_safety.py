@@ -135,8 +135,8 @@ def test_sprint_validator_run_resolves_executable_before_launch(
     assert calls["kwargs"]["text"] is True
 
 
-def test_late_sprint_validator_quality_check_uses_trusted_runner(monkeypatch):
-    module = _load_module("sprint070_validate", "scripts/ops/sprint070_validate.py")
+def test_latest_sprint_validator_quality_check_uses_trusted_runner(monkeypatch):
+    module = _load_module("sprint069_validate", "scripts/ops/sprint069_validate.py")
     calls: dict[str, object] = {}
 
     monkeypatch.setattr(
@@ -157,7 +157,7 @@ def test_late_sprint_validator_quality_check_uses_trusted_runner(monkeypatch):
         "/trusted/python",
         "-m",
         "pytest",
-        "tests/test_repo_cleanup_waves_contract.py",
+        "tests/test_response_guardrails.py",
         "-q",
     ]
     assert calls["kwargs"]["capture_output"] is True

@@ -26,6 +26,9 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Install smoke dependencies
+        run: python -m pip install --disable-pip-version-check 'PyYAML>=6.0'
+
       - name: Prepare CI env
         shell: bash
         run: |
@@ -34,6 +37,9 @@ jobs:
           CTOA_JWT_SECRET=ctoa-ci-jwt-secret
           CTOA_AUTH_REQUIRED=true
           CTOA_ALLOW_SEED_ACCOUNTS=true
+          CTOA_SEED_FAMATYYK_PASSWORD=ctoa-ci-owner-password
+          CTOA_SEED_STRATEGOS_PASSWORD=ctoa-ci-operator-password
+          CTOA_SEED_RECRUIT_PASSWORD=ctoa-ci-member-password
           EOF
 
       - name: Start compose stack
@@ -55,6 +61,9 @@ jobs:
 
       - name: Run runtime smoke script
         shell: bash
+        env:
+          CTOA_RUNTIME_SMOKE_USER: famatyyk
+          CTOA_RUNTIME_SMOKE_PASSWORD: ctoa-ci-owner-password
         run: |
           python scripts/ops/runtime_smoke_e2e_8001.py
 
