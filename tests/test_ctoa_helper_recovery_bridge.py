@@ -16,7 +16,6 @@ def test_recovery_bridge_is_packaged_and_safe_by_default():
     )
     helper = (LUA_DIR / "ctoa_native_helper.lua").read_text(encoding="utf-8")
     ui = (LUA_DIR / "ctoa_helper_ui.lua").read_text(encoding="utf-8")
-    modal = (LUA_DIR / "ctoa_helper_modal.lua").read_text(encoding="utf-8")
 
     assert 'name = "ctoa_helper_recovery_bridge"' in registry
     assert "ctoa_helper_recovery_bridge.lua" in wrapper
@@ -28,23 +27,21 @@ def test_recovery_bridge_is_packaged_and_safe_by_default():
     assert "default_dry_run = true" in source
     assert 'mode = "sandbox_only"' in source
     assert "injected_executor_required = true" in source
-    assert 'local marker = "/solteriacodextest/client"' in helper
-    assert 'return suffix == "" or suffix == "/"' in helper
+    assert 'local marker = "/solteriacodextest/client"' in source
+    assert 'return suffix == "" or suffix == "/"' in source
     assert "Helper.recoveryBridgeArm" in helper
     assert "Helper.recoveryBridgeDryRun" in helper
     assert "Helper.recoveryBridgeExecuteOnce" in helper
-    assert 'requestRuntimeSessionArm("recovery bridge sandbox confirmation")' in helper
-    assert 'moduleValue(externalRecoveryBridge, "resetKillSwitch")' in helper
+    assert 'call("request_runtime_arm", "recovery bridge sandbox confirmation")' in source
+    assert "RecoveryBridge.resetKillSwitch()" in source
     assert "Helper.recoveryBridgeKill" in helper
-    assert 'moduleValue(externalRecoveryBridge, "dispatch"' in helper
-    assert 'bridgeTrace.status == "executed"' in helper
-    assert "protection_zone = isLocalPlayerInProtectionZone()" in helper
+    assert 'moduleValue(externalRecoveryBridge, "dispatchHealing"' in helper
+    assert 'moduleValue(externalRecoveryBridge, "configure"' in helper
     assert '"ctoaRecoveryBridgeArm"' in ui
     assert '"ctoaRecoveryBridgeDryRun"' in ui
     assert '"ctoaRecoveryBridgeKill"' in ui
     assert "create_widget = createWidget" in helper
     assert "add_to_section = addToSection" in helper
-    assert "recovery_bridge_arm = true" in modal
     for forbidden in ["g_game.", "g_map.", "castSpell(", "sendActionbarSlot(", "useWith("]:
         assert forbidden not in source
 
@@ -151,6 +148,56 @@ assert(ready.dispatch_allowed == false and ready.executes_plan == false)
     )
     completed = subprocess.run(
         [lua, str(probe), str(policy), str(guard), str(catalog)],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+
+
+def test_recovery_bridge_controller_runs_one_confirmed_sandbox_action(tmp_path: Path):
+    lua = shutil.which("lua")
+    assert lua, "Lua interpreter is required for recovery-bridge validation"
+    probe = tmp_path / "recovery_bridge_controller_probe.lua"
+    probe.write_text(
+        """
+local bridge = dofile(arg[1])
+local now = 1000
+local casts = 0
+local runtimeArmed = false
+local runtimeKilled = false
+bridge.configure({
+  work_dir = function() return "C:/Users/test/AppData/Local/SolteriaCodexTest/client" end,
+  now_ms = function() return now end,
+  online = function() return true end,
+  player_ready = function() return true end,
+  in_protection_zone = function() return false end,
+  cooldown_ms = function() return 500 end,
+  read_vitals = function() return {hp = 400, hp_percent = 40} end,
+  select_spell = function() return "exura gran" end,
+  cast = function(spell) assert(spell == "exura gran"); casts = casts + 1; return true end,
+  request_runtime_arm = function() runtimeArmed = true; return true end,
+  arm_runtime = function() return runtimeArmed end,
+  enable_healing = function() end,
+  kill_runtime = function() runtimeKilled = true end,
+  status = function() end,
+})
+local dry = bridge.controlDryRun()
+assert(dry.status == "ready" and dry.result == "dry_run" and casts == 0)
+assert(bridge.controlArm() == false)
+now = 1600
+assert(bridge.controlArm() == true)
+assert(bridge.controlStatus() == "ARMED")
+now = 2200
+assert(bridge.controlExecuteOnce() == true and casts == 1)
+assert(bridge.controlKill() == true and runtimeKilled == true)
+assert(bridge.controlStatus() == "KILLED")
+""",
+        encoding="utf-8",
+    )
+    completed = subprocess.run(
+        [lua, str(probe), str(BRIDGE)],
         check=False,
         capture_output=True,
         text=True,

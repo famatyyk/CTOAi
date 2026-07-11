@@ -2189,127 +2189,6 @@ local function selectHealingSpell(healing, hp, now)
     return healing.spell
 end
 
-local function recoveryBridgeSandboxEnvironment()
-    if not g_resources or type(g_resources.getWorkDir) ~= "function" then
-        return false
-    end
-    local ok, workDir = pcall(function() return g_resources.getWorkDir() end)
-    local normalized = ok and tostring(workDir or ""):lower():gsub("\\", "/") or ""
-    local marker = "/solteriacodextest/client"
-    local start = normalized:find(marker, 1, true)
-    if not start then return false end
-    local suffix = normalized:sub(start + #marker, start + #marker)
-    return suffix == "" or suffix == "/"
-end
-
-local function recoveryBridgeObservation(vitals)
-    local player = getLocalPlayer()
-    return {
-        online = isGameOnline(),
-        hp = vitals and vitals.hp or (player and player.getHealth and player:getHealth()) or 0,
-        protection_zone = isLocalPlayerInProtectionZone(),
-    }
-end
-
-local function recoveryBridgeContext(now, dryRun)
-    local snapshot = moduleValue(externalRecoveryBridge, "snapshot") or {}
-    return {
-        now_ms = now,
-        cooldown_ms = HELPER_CONFIG.healing.cooldown_ms or 1000,
-        client_ready = isGameOnline() and getLocalPlayer() ~= nil,
-        sandbox = recoveryBridgeSandboxEnvironment(),
-        dry_run = dryRun ~= false,
-        session_id = snapshot.session_id,
-        retry_budget = 2,
-    }
-end
-
-local function recoveryBridgeDispatch(spell, vitals, now, dryRun)
-    if type(externalRecoveryBridge) ~= "table" then
-        return {status = "blocked", result = "bridge_missing", blockers = {"bridge_missing"}}
-    end
-    local executor = function(payload)
-        if type(payload) ~= "table" or payload.action ~= "cast_heal" then return false end
-        return castSpell(payload.spell)
-    end
-    return moduleValue(externalRecoveryBridge, "dispatch", {
-        next_action = "plan_heal", spell = spell,
-    }, recoveryBridgeObservation(vitals), recoveryBridgeContext(now, dryRun), executor)
-end
-
-Helper.recoveryBridgeStatus = function()
-    local snapshot = moduleValue(externalRecoveryBridge, "snapshot") or {}
-    if snapshot.killed == true then return "KILLED" end
-    if snapshot.armed == true then return "ARMED" end
-    return "DRY-RUN / DISARMED"
-end
-
-Helper.recoveryBridgeArm = function()
-    if not recoveryBridgeSandboxEnvironment() then
-        status("Recovery bridge blocked: sandbox required")
-        return false
-    end
-    local now = helperNowMs()
-    if not moduleValue(externalModal, "isPending", Helper.recovery_bridge_confirm, "recovery_bridge_arm", now) then
-        Helper.recovery_bridge_confirm = modalRequest("recovery_bridge_arm", "sandbox Healing only", 6000)
-        status("Recovery bridge: click ARM again to confirm sandbox session")
-        return false
-    end
-    if now - (tonumber(Helper.recovery_bridge_confirm.requested_at_ms) or now) < 500 then
-        return false
-    end
-    local confirmed = moduleValue(externalModal, "confirm", Helper.recovery_bridge_confirm, "recovery_bridge_arm", now)
-    Helper.recovery_bridge_confirm = nil
-    if confirmed ~= true then status("Recovery bridge confirmation expired"); return false end
-    moduleValue(externalRecoveryBridge, "resetKillSwitch")
-    requestRuntimeSessionArm("recovery bridge sandbox confirmation")
-    local sessionId = "sandbox-" .. tostring(now)
-    local armed, result = moduleValue(externalRecoveryBridge, "arm", {
-        session_id = sessionId,
-        sandbox = true,
-        operator_confirmed = true,
-        runtime_enabled = true,
-    })
-    if armed ~= true then status("Recovery bridge arm blocked: " .. tostring(result)); return false end
-    HELPER_CONFIG.healing.spell_enabled = true
-    if not armRuntime("recovery bridge sandbox") then
-        moduleValue(externalRecoveryBridge, "disarm", "runtime_arm_failed")
-        return false
-    end
-    status("Recovery bridge armed: sandbox Healing session")
-    return true
-end
-
-Helper.recoveryBridgeKill = function()
-    moduleValue(externalRecoveryBridge, "kill", "operator_kill_switch")
-    HELPER_CONFIG.enabled = false
-    HELPER_CONFIG.healing.spell_enabled = false
-    setWidgetChecked(Helper.widgets.enabled, false)
-    setWidgetText(Helper.widgets.enabled, "KILLED")
-    status("Recovery bridge KILL: runtime disarmed")
-    return true
-end
-
-Helper.recoveryBridgeDryRun = function()
-    local now = helperNowMs()
-    local vitals = readPlayerVitals()
-    local spell = selectHealingSpell(HELPER_CONFIG.healing, vitals.hp_percent, now)
-    local trace = recoveryBridgeDispatch(spell, vitals, now, true)
-    local blockers = type(trace.blockers) == "table" and table.concat(trace.blockers, ",") or ""
-    status("Recovery bridge dry-run: " .. tostring(trace.status) .. " / " .. tostring(trace.result) .. (blockers ~= "" and (" / " .. blockers) or ""))
-    return trace
-end
-
-Helper.recoveryBridgeExecuteOnce = function()
-    local now = helperNowMs()
-    local vitals = readPlayerVitals()
-    local spell = selectHealingSpell(HELPER_CONFIG.healing, vitals.hp_percent, now)
-    local trace = recoveryBridgeDispatch(spell, vitals, now, false)
-    local blockers = type(trace.blockers) == "table" and table.concat(trace.blockers, ",") or ""
-    status("Recovery bridge execute-once: " .. tostring(trace.status) .. " / " .. tostring(trace.result) .. (blockers ~= "" and (" / " .. blockers) or ""))
-    return trace.status == "executed"
-end
-
 local function maybeHeal(now, vitals)
     local healing = HELPER_CONFIG.healing
     if now - healing.last_cast_ms < healing.cooldown_ms then
@@ -2345,7 +2224,7 @@ local function maybeHeal(now, vitals)
 
     if healing.spell_enabled and hp <= spellThreshold then
         local spell = selectHealingSpell(healing, hp, nonce)
-        local bridgeTrace = recoveryBridgeDispatch(spell, vitals, now, false)
+        local bridgeTrace = moduleValue(externalRecoveryBridge, "dispatchHealing", spell, vitals, now, false)
         if bridgeTrace and bridgeTrace.status == "executed" then
             healing.last_cast_ms = now
             healing.last_recovery_action_ms = now
@@ -3322,6 +3201,37 @@ function armRuntime(reason)
     end
     return true
 end
+
+moduleValue(externalRecoveryBridge, "configure", {
+    work_dir = function()
+        if not g_resources or type(g_resources.getWorkDir) ~= "function" then return "" end
+        local ok, value = pcall(function() return g_resources.getWorkDir() end)
+        return ok and value or ""
+    end,
+    now_ms = helperNowMs,
+    online = isGameOnline,
+    player_ready = function() return getLocalPlayer() ~= nil end,
+    in_protection_zone = isLocalPlayerInProtectionZone,
+    cooldown_ms = function() return HELPER_CONFIG.healing.cooldown_ms or 1000 end,
+    read_vitals = readPlayerVitals,
+    select_spell = function(hp, now) return selectHealingSpell(HELPER_CONFIG.healing, hp, now) end,
+    cast = castSpell,
+    request_runtime_arm = requestRuntimeSessionArm,
+    arm_runtime = armRuntime,
+    enable_healing = function() HELPER_CONFIG.healing.spell_enabled = true end,
+    kill_runtime = function()
+        HELPER_CONFIG.enabled = false
+        HELPER_CONFIG.healing.spell_enabled = false
+        setWidgetChecked(Helper.widgets.enabled, false)
+        setWidgetText(Helper.widgets.enabled, "KILLED")
+    end,
+    status = status,
+})
+Helper.recoveryBridgeStatus = function() return moduleValue(externalRecoveryBridge, "controlStatus") or "BRIDGE MISSING" end
+Helper.recoveryBridgeArm = function() return moduleValue(externalRecoveryBridge, "controlArm") == true end
+Helper.recoveryBridgeKill = function() return moduleValue(externalRecoveryBridge, "controlKill") == true end
+Helper.recoveryBridgeDryRun = function() return moduleValue(externalRecoveryBridge, "controlDryRun") end
+Helper.recoveryBridgeExecuteOnce = function() return moduleValue(externalRecoveryBridge, "controlExecuteOnce") == true end
 
 function bindClick(widget, callback)
     if not widget then

@@ -12,6 +12,7 @@ local state = RecoveryBridge.state or {
     consecutive_failures = 0,
     kill_reason = nil,
 }
+local controller = RecoveryBridge.controller or {}
 
 local function text(value)
     return tostring(value or "")
@@ -146,6 +147,106 @@ function RecoveryBridge.snapshot()
     }
 end
 
+local function call(name, ...)
+    local fn = controller[name]
+    if type(fn) ~= "function" then return nil end
+    return fn(...)
+end
+
+local function sandboxWorkDir()
+    local normalized = text(call("work_dir")):lower():gsub("\\", "/")
+    local marker = "/solteriacodextest/client"
+    local start = normalized:find(marker, 1, true)
+    if not start then return false end
+    local suffix = normalized:sub(start + #marker, start + #marker)
+    return suffix == "" or suffix == "/"
+end
+
+function RecoveryBridge.configure(dependencies)
+    controller = type(dependencies) == "table" and dependencies or {}
+    RecoveryBridge.controller = controller
+    return true
+end
+
+function RecoveryBridge.dispatchHealing(spell, vitals, nowMs, dryRun)
+    local data = type(vitals) == "table" and vitals or {}
+    local snapshot = RecoveryBridge.snapshot()
+    return RecoveryBridge.dispatch({next_action = "plan_heal", spell = spell}, {
+        online = call("online") == true,
+        hp = number(data.hp, 0),
+        protection_zone = call("in_protection_zone") == true,
+    }, {
+        now_ms = number(nowMs, 0),
+        cooldown_ms = number(call("cooldown_ms"), 1000),
+        client_ready = call("player_ready") == true,
+        sandbox = sandboxWorkDir(),
+        dry_run = dryRun ~= false,
+        session_id = snapshot.session_id,
+        retry_budget = 2,
+    }, function(payload)
+        if type(payload) ~= "table" or payload.action ~= "cast_heal" then return false end
+        return call("cast", payload.spell) == true
+    end)
+end
+
+function RecoveryBridge.controlStatus()
+    if state.killed then return "KILLED" end
+    if state.armed then return "ARMED" end
+    return "DRY-RUN / DISARMED"
+end
+
+function RecoveryBridge.controlArm()
+    if not sandboxWorkDir() then call("status", "Recovery bridge blocked: sandbox required"); return false end
+    local now = number(call("now_ms"), 0)
+    local requested = number(state.arm_requested_at_ms, 0)
+    if requested == 0 or now > requested + 6000 then
+        state.arm_requested_at_ms = now
+        call("status", "Recovery bridge: click ARM again to confirm sandbox session")
+        return false
+    end
+    if now - requested < 500 then return false end
+    state.arm_requested_at_ms = 0
+    RecoveryBridge.resetKillSwitch()
+    call("request_runtime_arm", "recovery bridge sandbox confirmation")
+    local armed, result = RecoveryBridge.arm({
+        session_id = "sandbox-" .. tostring(now), sandbox = true,
+        operator_confirmed = true, runtime_enabled = true,
+    })
+    if not armed then call("status", "Recovery bridge arm blocked: " .. tostring(result)); return false end
+    call("enable_healing")
+    if call("arm_runtime", "recovery bridge sandbox") ~= true then
+        RecoveryBridge.disarm("runtime_arm_failed")
+        return false
+    end
+    call("status", "Recovery bridge armed: sandbox Healing session")
+    return true
+end
+
+function RecoveryBridge.controlKill()
+    RecoveryBridge.kill("operator_kill_switch")
+    call("kill_runtime")
+    call("status", "Recovery bridge KILL: runtime disarmed")
+    return true
+end
+
+local function controlDispatch(dryRun, label)
+    local now = number(call("now_ms"), 0)
+    local vitals = call("read_vitals") or {}
+    local spell = call("select_spell", vitals.hp_percent, now)
+    local trace = RecoveryBridge.dispatchHealing(spell, vitals, now, dryRun)
+    local blockers = type(trace.blockers) == "table" and table.concat(trace.blockers, ",") or ""
+    call("status", label .. ": " .. tostring(trace.status) .. " / " .. tostring(trace.result) .. (blockers ~= "" and (" / " .. blockers) or ""))
+    return trace
+end
+
+function RecoveryBridge.controlDryRun()
+    return controlDispatch(true, "Recovery bridge dry-run")
+end
+
+function RecoveryBridge.controlExecuteOnce()
+    return controlDispatch(false, "Recovery bridge execute-once").status == "executed"
+end
+
 function RecoveryBridge.contract()
     return {
         module = "ctoa_helper_recovery_bridge",
@@ -165,5 +266,6 @@ function RecoveryBridge.contract()
 end
 
 RecoveryBridge.state = state
+RecoveryBridge.controller = controller
 _G.CTOA_HELPER_RECOVERY_BRIDGE = RecoveryBridge
 return RecoveryBridge
