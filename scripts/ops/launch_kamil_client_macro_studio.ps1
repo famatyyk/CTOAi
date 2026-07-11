@@ -9,6 +9,36 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 
+function Assert-BotProfileName {
+    param([Parameter(Mandatory = $true)][string]$Profile)
+
+    if ([string]::IsNullOrWhiteSpace($Profile)) {
+        throw 'Bot profile name must not be empty.'
+    }
+    if ($Profile.Length -gt 64 -or $Profile -notmatch '^[A-Za-z0-9_.-]+$') {
+        throw "Bot profile name contains unsupported characters: $Profile"
+    }
+    return $Profile
+}
+
+function Resolve-ClientExecutablePath {
+    param([Parameter(Mandatory = $true)][string]$Path)
+
+    if ([string]::IsNullOrWhiteSpace($Path)) {
+        throw 'ClientPath must not be empty.'
+    }
+    if (-not [System.IO.Path]::IsPathRooted($Path)) {
+        throw "ClientPath must be an absolute .exe path: $Path"
+    }
+
+    $resolved = (Resolve-Path -LiteralPath $Path).Path
+    if ([System.IO.Path]::GetExtension($resolved) -ne '.exe') {
+        throw "ClientPath must point to an .exe file: $resolved"
+    }
+
+    return $resolved
+}
+
 function Get-PythonExe {
     $python = Join-Path $root '.venv\Scripts\python.exe'
     if (Test-Path -LiteralPath $python) {
@@ -21,26 +51,24 @@ function Resolve-ClientProfile {
     param([string]$Path, [string]$Override)
 
     if ($Override) {
-        return $Override
+        return Assert-BotProfileName -Profile $Override
     }
 
     $router = Join-Path $root 'scripts\ops\client_profile_router.py'
     $python = Get-PythonExe
     $profile = & $python $router --path $Path
     if (-not $profile) {
-        return 'default'
+        return Assert-BotProfileName -Profile 'default'
     }
-    return $profile.Trim()
+    return Assert-BotProfileName -Profile $profile.Trim()
 }
 
 function Start-KamilClient {
     param([string]$Path)
 
-    if (-not (Test-Path -LiteralPath $Path)) {
-        throw "Client executable not found: $Path"
-    }
+    $resolvedPath = Resolve-ClientExecutablePath -Path $Path
 
-    Start-Process -FilePath $Path -WorkingDirectory (Split-Path -Parent $Path)
+    Start-Process -FilePath $resolvedPath -WorkingDirectory (Split-Path -Parent $resolvedPath)
 }
 
 function Start-MacroStudio {
@@ -54,9 +82,9 @@ if ($SmokeTest) {
     $macroConfig = Join-Path $root 'config\bot_macro_pad.json'
 
     $resolvedProfile = if ($ProfileOverride) {
-        $ProfileOverride
+        Assert-BotProfileName -Profile $ProfileOverride
     } else {
-        (& $python $router --path $ClientPath).Trim()
+        Assert-BotProfileName -Profile ((& $python $router --path $ClientPath).Trim())
     }
 
     if ([string]::IsNullOrWhiteSpace($resolvedProfile)) {
