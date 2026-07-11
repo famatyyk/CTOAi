@@ -47,6 +47,7 @@ authenticated session.
 | Evidence pack refresh | `scripts/ops/release_evidence_pack.py` | `safe_write` | Implemented as `evidence-pack-refresh`. |
 | Engine Brain refresh | `scripts/ops/engine_brain_index.py` | `safe_write` | Implemented as `engine-brain-refresh`. |
 | P7 cockpit smoke refresh | `scripts/ops/control_center_p7_cockpit_smoke.py` | `safe_write` | Implemented as `p7-cockpit-smoke-refresh`. |
+| Roadmap state refresh | proposed fixed-input generator | `safe_write` | `design_only`; selected as the single next P7 action, not enabled. |
 | Logs preview | `/api/logs` | `read_only` | Migrated. |
 | Dashboard summary | `/api/dashboard` | `read_only` | Migrated. |
 | Agent status | `/api/agents/status` | `read_only` | Migrated. |

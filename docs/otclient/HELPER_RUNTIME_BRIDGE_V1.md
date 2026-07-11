@@ -1,9 +1,14 @@
 # Helper Runtime Bridge v1
 
-Status: `sandbox_accepted` on 2026-07-11. Evidence: ModuleStaticGates 33/33,
+Status: `sandbox_action_accepted` on 2026-07-11. Evidence: ModuleStaticGates 33/33,
 ModuleAttachSmoke 4/4, SmokeAttachAll 16/16, and
 `recovery_bridge_sandbox_smoke.json` 9/9. Runtime remained disarmed and the
 dry-run trace did not invoke its injected executor.
+
+The controlled native action acceptance also passed 5/5: dry-run, confirmation
+request, confirmed session arm, exactly one Healing execution, and the operator
+kill switch. The final state was `killed_and_disarmed`; live promotion remained
+false.
 
 Native sandbox execution is routed through the Helper's existing guarded
 `castSpell` adapter only after the bridge verifies the `SolteriaCodexTest`

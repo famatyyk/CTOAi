@@ -19,10 +19,12 @@
    `docs/otclient/HELPER_RUNTIME_BRIDGE_V1.md`.
 2. **Capability freshness and drift** — owner: Control Center; status: `gated`;
    expose stale Helper/evidence timestamps without adding a write action.
-3. **Next P7 action design** — owner: Engine Brain; status: `planned`; select
-   exactly one action only after risk model, audit logging, Control Center gate,
-   dry-run behavior, and targeted MCP tests exist. Deploy/live actions remain
-   excluded.
+3. **Roadmap state refresh** — owner: Engine Brain; status: `design_only`;
+   exactly one next P7 action is selected as `roadmap-state-refresh`, with the
+   proposed `ctoai_roadmap_state_refresh` tool still disabled. Its risk model,
+   dry-run, audit, Control Center gate, confirmation, and MCP test contract are
+   defined in `docs/P7_ROADMAP_STATE_REFRESH_DESIGN.md`. Deploy/live actions
+   remain excluded and the active safe-write tool count stays five.
 
 ## Next
 
