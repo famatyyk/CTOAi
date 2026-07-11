@@ -11,6 +11,9 @@ COMPOSE = ROOT / "bot" / "infra" / "docker-compose.yml"
 def test_bot_cd_recovers_disk_without_deleting_named_volumes() -> None:
     source = WORKFLOW.read_text(encoding="utf-8")
 
+    assert "Recover VPS disk before sync" in source
+    assert 'if [ "$FREE_MB" -lt 512 ]' in source
+    assert 'if [ "$FREE_MB" -lt 256 ]' in source
     assert 'if [ "$FREE_MB" -lt 4096 ]' in source
     assert "docker compose down --remove-orphans" in source
     assert "docker system prune -af" in source
