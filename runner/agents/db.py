@@ -12,15 +12,16 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 from contextlib import contextmanager
-from typing import Generator
+from typing import Generator, TypedDict
 
 log = logging.getLogger(__name__)
 
 try:
-    import psycopg2
     from psycopg2 import pool as pg_pool
     from psycopg2.extras import RealDictCursor
+
     _HAS_PSYCOPG2 = True
 except ImportError:
     _HAS_PSYCOPG2 = False
@@ -28,19 +29,44 @@ except ImportError:
 
 _pool: "pg_pool.SimpleConnectionPool | None" = None
 
+_SECRET_PATTERNS = [
+    re.compile(r"(?i)(password\s*[=:]\s*)([^\s;&]+)"),
+    re.compile(r"(?i)(PGPASSWORD\s*[=:]\s*)([^\s;&]+)"),
+    re.compile(r"(?i)(postgres(?:ql)?://[^:\s/@]+:)([^@\s]+)(@)"),
+]
 
-def _dsn() -> str:
+
+class DbConnectConfig(TypedDict):
+    host: str
+    port: str
+    dbname: str
+    user: str
+    password: str
+    connect_timeout: int
+
+
+def _connect_config() -> DbConnectConfig:
     pw = os.environ.get("DB_PASSWORD", "")
     if not pw:
         raise RuntimeError("DB_PASSWORD env var is required but not set")
-    return (
-        f"host={os.environ.get('DB_HOST', '127.0.0.1')} "
-        f"port={os.environ.get('DB_PORT', '5432')} "
-        f"dbname={os.environ.get('DB_NAME', 'ctoa')} "
-        f"user={os.environ.get('DB_USER', 'ctoa')} "
-        f"password={pw} "
-        f"connect_timeout=10"
-    )
+    return {
+        "host": os.environ.get("DB_HOST", "127.0.0.1"),
+        "port": os.environ.get("DB_PORT", "5432"),
+        "dbname": os.environ.get("DB_NAME", "ctoa"),
+        "user": os.environ.get("DB_USER", "ctoa"),
+        "password": pw,
+        "connect_timeout": 10,
+    }
+
+
+def _sanitize_db_error(exc: BaseException) -> str:
+    text = f"{exc.__class__.__name__}: {exc}"
+    for pattern in _SECRET_PATTERNS:
+        if pattern.groups == 3:
+            text = pattern.sub(r"\1[redacted]\3", text)
+        else:
+            text = pattern.sub(r"\1[redacted]", text)
+    return text[:1000]
 
 
 def get_pool() -> "pg_pool.SimpleConnectionPool":
@@ -48,7 +74,7 @@ def get_pool() -> "pg_pool.SimpleConnectionPool":
     if not _HAS_PSYCOPG2:
         raise RuntimeError("psycopg2 is not installed")
     if _pool is None or _pool.closed:
-        _pool = pg_pool.SimpleConnectionPool(1, 4, dsn=_dsn())
+        _pool = pg_pool.SimpleConnectionPool(1, 4, **_connect_config())
     return _pool
 
 
@@ -97,4 +123,4 @@ def log_run(agent: str, status: str, message: str = "") -> None:
             (agent, status, message[:4000] if message else ""),
         )
     except Exception as exc:
-        log.error("Failed to write agent_runs: %s", exc)
+        log.error("Failed to write agent_runs: %s", _sanitize_db_error(exc))

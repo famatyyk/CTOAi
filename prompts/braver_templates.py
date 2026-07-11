@@ -7,6 +7,12 @@ _COMPONENT_ALIASES = {
     "reasoning": "analysis",
 }
 
+
+class _SafeFormatDict(dict):
+    def __missing__(self, key):
+        return "[UNKNOWN]"
+
+
 BRAVER_TEMPLATES = {
     "task-execution": {
         "business": """
@@ -17,7 +23,6 @@ Assigned to agents: {agents}
 Deadline: {deadline}
 Success criteria: {success_criteria}
 """,
-
         "analysis": """
 ## Task Analysis
 Break down the task:
@@ -29,7 +34,6 @@ Break down the task:
 Decision inputs:
 {user_reasoning}
 """,
-
         "action": """
 ## Action Plan
 Step-by-step execution:
@@ -41,7 +45,6 @@ Tools to use:
 Fallback if tool fails:
 {fallback_plan}
 """,
-
         "value": """
 ## Expected Value & Impact
 - Immediate impact: {immediate_impact}
@@ -49,7 +52,6 @@ Fallback if tool fails:
 - Risk/benefit ratio: {risk_benefit}
 - Success probability: {success_probability}
 """,
-
         "evidence": """
 ## Supporting Evidence
 Facts and data:
@@ -61,7 +63,6 @@ Similar completed tasks:
 Tool reliability data:
 {tool_reliability}
 """,
-
         "reflection": """
 ## Reflection & Learning
 What went well:
@@ -74,9 +75,8 @@ Lessons for next time:
 {lessons}
 
 Confidence in outcome: {confidence_level}/10
-"""
+""",
     },
-
     "decision-making": {
         "business": """
 ## Business Decision
@@ -85,7 +85,6 @@ Stakeholders: {stakeholders}
 Impact scope: {impact_scope}
 Time sensitivity: {time_sensitivity}
 """,
-
         "analysis": """
 ## Decision Analysis
 Options considered:
@@ -97,7 +96,6 @@ Pros/cons analysis:
 Why this option wins:
 {why_chosen}
 """,
-
         "action": """
 ## Implementation
 First steps:
@@ -109,7 +107,6 @@ Communication plan:
 Rollback plan if needed:
 {rollback}
 """,
-
         "value": """
 ## Value Proposition
 Expected outcomes:
@@ -118,7 +115,6 @@ Expected outcomes:
 Measurable metrics:
 {metrics}
 """,
-
         "evidence": """
 ## Decision Data
 Historical precedent:
@@ -127,7 +123,6 @@ Historical precedent:
 Supporting analysis:
 {supporting_data}
 """,
-
         "reflection": """
 ## Post-Decision Review
 Was it the right call:
@@ -135,8 +130,8 @@ Was it the right call:
 
 How to improve decisions next time:
 {improvement_plan}
-"""
-    }
+""",
+    },
 }
 
 
@@ -154,7 +149,7 @@ def render_template(template_type, component, **variables):
     """Render a specific component with variables."""
     normalized = normalize_component_name(component)
     template = BRAVER_TEMPLATES.get(template_type, {}).get(normalized, "")
-    return template.format(**variables, missing_var="[UNKNOWN]")
+    return template.format_map(_SafeFormatDict(variables))
 
 
 def get_all_components():

@@ -13,6 +13,17 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+try:
+    from runner.generated_manifest_safety import (
+        public_manifest_path,
+        resolve_latest_manifest_path,
+    )
+except ModuleNotFoundError:
+    from generated_manifest_safety import (  # type: ignore[no-redef]
+        public_manifest_path,
+        resolve_latest_manifest_path,
+    )
+
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
@@ -27,13 +38,8 @@ def load_latest_manifest(manifests_dir: Path) -> dict[str, Any] | None:
     except Exception:
         return None
 
-    run_id = str(latest_payload.get("run_id", "")).strip()
-    manifest_path = Path(str(latest_payload.get("manifest_path", "")).strip())
-    if not manifest_path.exists() and run_id:
-        candidate = manifests_dir / run_id / "manifest.json"
-        if candidate.exists():
-            manifest_path = candidate
-    if not manifest_path.exists():
+    manifest_path = resolve_latest_manifest_path(manifests_dir, latest_payload)
+    if manifest_path is None:
         return None
 
     try:
@@ -42,8 +48,9 @@ def load_latest_manifest(manifests_dir: Path) -> dict[str, Any] | None:
         return None
 
     return {
-        "run_id": run_id or manifest_payload.get("run_id"),
-        "manifest_path": str(manifest_path),
+        "run_id": str(latest_payload.get("run_id", "")).strip()
+        or manifest_payload.get("run_id"),
+        "manifest_path": public_manifest_path(manifest_path, manifests_dir),
         "manifest": manifest_payload,
     }
 

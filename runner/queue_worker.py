@@ -4,14 +4,19 @@
 import json
 import logging
 import os
-import subprocess
 import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit, urlunsplit
 
-from redis import Redis
+try:
+    from redis import Redis
+except ImportError:
+    Redis = None  # type: ignore[assignment]
+
+from runner import process_safety
 
 ROOT = Path(__file__).resolve().parent.parent
 LOG_PATH = Path(os.getenv("CTOA_WORKER_LOG", str(ROOT / "logs" / "queue-worker.log")))
@@ -19,6 +24,42 @@ REDIS_URL = os.getenv("CTOA_REDIS_URL", "redis://127.0.0.1:6379/0")
 QUEUE_KEY = os.getenv("CTOA_REDIS_QUEUE", "ctoa:jobs")
 RESULTS_KEY = os.getenv("CTOA_REDIS_RESULTS", "ctoa:jobs:results")
 BLOCK_SECONDS = int(os.getenv("CTOA_WORKER_BLOCK_SECONDS", "5"))
+
+
+def _redis_url_for_log(raw_url: str) -> str:
+    try:
+        parsed = urlsplit(raw_url)
+        port = parsed.port
+    except ValueError:
+        return "[invalid-redis-url]"
+
+    host = parsed.hostname or ""
+    if ":" in host and not host.startswith("["):
+        host = f"[{host}]"
+    if port is not None:
+        host = f"{host}:{port}"
+
+    username = parsed.username or ""
+    if parsed.password is not None:
+        user_part = f"{username}:" if username else ":"
+        netloc = f"{user_part}[redacted]@{host}"
+    elif username:
+        netloc = f"{username}@{host}"
+    else:
+        netloc = host
+
+    query = "[redacted]" if parsed.query else ""
+    return urlunsplit((parsed.scheme, netloc, parsed.path, query, ""))
+
+
+def _parse_job_payload(payload_raw: str) -> dict[str, Any]:
+    try:
+        job = json.loads(payload_raw)
+    except json.JSONDecodeError:
+        return {"action": "unknown"}
+    if not isinstance(job, dict):
+        return {"action": "unknown"}
+    return job
 
 
 def _setup_logging() -> None:
@@ -41,7 +82,7 @@ def _run_action(action: str) -> dict[str, Any]:
     else:
         return {"ok": False, "detail": f"Unsupported action: {action}"}
 
-    proc = subprocess.run(
+    proc = process_safety.run_trusted(
         argv,
         cwd=str(ROOT),
         text=True,
@@ -58,8 +99,14 @@ def _run_action(action: str) -> dict[str, Any]:
 
 def main() -> int:
     _setup_logging()
+    if Redis is None:
+        raise RuntimeError("redis package is required for queue-worker")
     redis_cli = Redis.from_url(REDIS_URL, decode_responses=True)
-    logging.info("queue-worker started queue=%s redis=%s", QUEUE_KEY, REDIS_URL)
+    logging.info(
+        "queue-worker started queue=%s redis=%s",
+        QUEUE_KEY,
+        _redis_url_for_log(REDIS_URL),
+    )
 
     while True:
         item = redis_cli.brpop(QUEUE_KEY, timeout=BLOCK_SECONDS)
@@ -69,10 +116,7 @@ def main() -> int:
         _, payload_raw = item
         received_at = datetime.now(timezone.utc).isoformat()
 
-        try:
-            job = json.loads(payload_raw)
-        except Exception:
-            job = {"action": "unknown", "raw": payload_raw}
+        job = _parse_job_payload(payload_raw)
 
         job_id = str(job.get("id", f"job-{int(time.time())}"))
         action = str(job.get("action", "orchestrator.tick"))

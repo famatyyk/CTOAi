@@ -3,6 +3,7 @@ import argparse
 import json
 import os
 import sys as _sys
+import uuid
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
@@ -11,6 +12,11 @@ from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 import yaml
+
+try:
+    from runner.http_safety import require_github_api_url, require_github_repository
+except ModuleNotFoundError:
+    from http_safety import require_github_api_url, require_github_repository
 
 # Import AI agent executor via package-native path with script-context fallback.
 try:
@@ -66,6 +72,17 @@ def now_iso() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
 
+def _atomic_temp_path(path: Path) -> Path:
+    return path.with_name(f".{path.name}.{os.getpid()}.{uuid.uuid4().hex}.tmp")
+
+
+def _remove_temp_path(path: Path) -> None:
+    try:
+        path.unlink()
+    except FileNotFoundError:
+        pass
+
+
 def load_yaml(path: Path) -> Dict[str, Any]:
     with path.open("r", encoding="utf-8") as f:
         data = yaml.safe_load(f) or {}
@@ -76,24 +93,31 @@ def load_yaml(path: Path) -> Dict[str, Any]:
 
 def save_yaml(path: Path, payload: Dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    with tmp.open("w", encoding="utf-8") as f:
-        yaml.safe_dump(payload, f, sort_keys=False, allow_unicode=False)
-        f.flush()
-        os.fsync(f.fileno())
-    tmp.replace(path)
+    tmp = _atomic_temp_path(path)
+    try:
+        with tmp.open("w", encoding="utf-8") as f:
+            yaml.safe_dump(payload, f, sort_keys=False, allow_unicode=False)
+            f.flush()
+            os.fsync(f.fileno())
+        tmp.replace(path)
+    finally:
+        _remove_temp_path(tmp)
 
 
 def save_json(path: Path, payload: Dict[str, Any]) -> None:
     """Atomically persist JSON artifact for operator and CI consumption."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    with tmp.open("w", encoding="utf-8") as f:
-        json.dump(payload, f, indent=2, sort_keys=True)
-        f.write("\n")
-        f.flush()
-        os.fsync(f.fileno())
-    tmp.replace(path)
+    tmp = _atomic_temp_path(path)
+    try:
+        with tmp.open("w", encoding="utf-8") as f:
+            json.dump(payload, f, indent=2, sort_keys=True)
+            f.write("\n")
+            f.flush()
+            os.fsync(f.fileno())
+        tmp.replace(path)
+    finally:
+        _remove_temp_path(tmp)
+
 
 
 def load_backlog() -> Dict[str, Any]:
@@ -477,6 +501,7 @@ def build_report(backlog: Dict[str, Any], state: Dict[str, Any]) -> str:
 def github_api(
     method: str, url: str, token: str, payload: Optional[Dict[str, Any]] = None
 ) -> Dict[str, Any]:
+    safe_url = require_github_api_url(url)
     data = None
     headers = {
         "Accept": "application/vnd.github+json",
@@ -488,15 +513,16 @@ def github_api(
         data = json.dumps(payload).encode("utf-8")
         headers["Content-Type"] = "application/json"
 
-    req = Request(url=url, method=method, headers=headers, data=data)
-    with urlopen(req, timeout=30) as res:
+    req = Request(url=safe_url, method=method, headers=headers, data=data)
+    # require_github_api_url pins token-bearing requests to the GitHub API host.
+    with urlopen(req, timeout=30) as res:  # nosec B310
         body = res.read().decode("utf-8")
         return json.loads(body) if body else {}
 
 
 def upsert_live_issue(markdown: str) -> None:
     token = os.getenv("GITHUB_PAT")
-    repo = os.getenv("GITHUB_REPOSITORY", "famatyyk/CTOAi")
+    repo = require_github_repository(os.getenv("GITHUB_REPOSITORY", "famatyyk/CTOAi"))
     issue_title = os.getenv("CTOA_LIVE_ISSUE_TITLE", "CTOA Live Status")
 
     if not token:

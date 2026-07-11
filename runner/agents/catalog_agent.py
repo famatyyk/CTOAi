@@ -19,13 +19,13 @@ import json
 import logging
 import os
 import re
-import ssl
 import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone, timedelta
 from typing import Any
 
+from runner import http_safety
 from runner.agents import db
 
 logging.basicConfig(
@@ -39,9 +39,7 @@ MAX_HTML_BYTES = int(os.environ.get("CTOA_CATALOG_MAX_HTML_BYTES", "250000"))
 MAX_CANDIDATES_PER_SOURCE = int(os.environ.get("CTOA_CATALOG_MAX_CANDIDATES", "80"))
 AUTO_APPROVE_THRESHOLD = int(os.environ.get("CTOA_CATALOG_AUTO_APPROVE_THRESHOLD", "70"))
 
-_SSL_CTX = ssl.create_default_context()
-_SSL_CTX.check_hostname = False
-_SSL_CTX.verify_mode = ssl.CERT_NONE
+_SSL_CTX = http_safety.discovery_ssl_context("CTOA_CATALOG_ALLOW_INSECURE_SSL")
 
 URL_RE = re.compile(r"https?://[^\s\"'<>]+", re.IGNORECASE)
 
@@ -185,15 +183,24 @@ def _default_sources() -> list[str]:
 
 
 def _fetch_text(url: str) -> tuple[int, str]:
+    try:
+        safe_url = http_safety.require_public_discovery_url(
+            url,
+            label="Catalog source",
+        )
+    except ValueError:
+        return 0, ""
+
     req = urllib.request.Request(
-        url,
+        safe_url,
         headers={
             "User-Agent": "CTOACatalog/1.0 (+https://github.com/famatyyk/CTOAi)",
             "Accept": "text/html,application/json;q=0.9,*/*;q=0.8",
         },
     )
     try:
-        with urllib.request.urlopen(req, timeout=REQUEST_TIMEOUT, context=_SSL_CTX) as r:
+        # require_public_discovery_url keeps source fetches on public http(s) URLs.
+        with urllib.request.urlopen(req, timeout=REQUEST_TIMEOUT, context=_SSL_CTX) as r:  # nosec B310
             status = int(r.status)
             raw = r.read(MAX_HTML_BYTES).decode("utf-8", errors="replace")
             return status, raw

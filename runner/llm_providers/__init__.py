@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import os
 from abc import ABC, abstractmethod
-from typing import Any
 
 __all__ = ["LLMProvider", "get_provider"]
 
@@ -53,8 +52,10 @@ def get_provider() -> LLMProvider:
             provider = LocalModelProvider()
             if provider.health():
                 return provider
-        except Exception:
-            pass
+        except Exception as exc:
+            print(
+                f"[llm] Local provider auto-detect failed; falling back to Azure: {exc}"
+            )
 
         from runner.llm_providers.azure_foundry import AzureFoundryProvider
 

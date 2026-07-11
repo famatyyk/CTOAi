@@ -7,8 +7,27 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 from urllib.request import Request, urlopen
 
+try:
+    from runner.generated_manifest_safety import (
+        public_manifest_path,
+        resolve_latest_manifest_path,
+    )
+except ModuleNotFoundError:
+    from generated_manifest_safety import (  # type: ignore[no-redef]
+        public_manifest_path,
+        resolve_latest_manifest_path,
+    )
 
-def github_api(method: str, url: str, token: str, payload: Optional[Dict[str, Any]] = None) -> Any:
+try:
+    from runner.http_safety import require_github_api_url, require_github_repository
+except ModuleNotFoundError:
+    from http_safety import require_github_api_url, require_github_repository
+
+
+def github_api(
+    method: str, url: str, token: str, payload: Optional[Dict[str, Any]] = None
+) -> Any:
+    safe_url = require_github_api_url(url)
     data = None
     headers = {
         "Accept": "application/vnd.github+json",
@@ -20,8 +39,9 @@ def github_api(method: str, url: str, token: str, payload: Optional[Dict[str, An
         data = json.dumps(payload).encode("utf-8")
         headers["Content-Type"] = "application/json"
 
-    req = Request(url=url, method=method, headers=headers, data=data)
-    with urlopen(req, timeout=30) as res:
+    req = Request(url=safe_url, method=method, headers=headers, data=data)
+    # require_github_api_url pins token-bearing requests to the GitHub API host.
+    with urlopen(req, timeout=30) as res:  # nosec B310
         body = res.read().decode("utf-8")
         return json.loads(body) if body else {}
 
@@ -36,28 +56,26 @@ def parse_date(ts: str) -> datetime:
 
 
 def _read_latency_kpi() -> Dict[str, Any]:
-    manifests_dir = Path(os.getenv("CTOA_GENERATOR_MANIFEST_DIR", "/opt/ctoa/generated/manifests"))
+    manifests_dir = Path(
+        os.getenv("CTOA_GENERATOR_MANIFEST_DIR", "/opt/ctoa/generated/manifests")
+    )
     latest_file = manifests_dir / "latest.json"
     if not latest_file.exists():
         return {"available": False, "reason": "latest manifest not found"}
 
     try:
         latest = json.loads(latest_file.read_text(encoding="utf-8"))
-    except Exception as exc:
+    except (OSError, json.JSONDecodeError) as exc:
         return {"available": False, "reason": f"latest manifest parse error: {exc}"}
 
     run_id = str(latest.get("run_id", "")).strip()
-    manifest_path = Path(str(latest.get("manifest_path", "")).strip())
-    if not manifest_path.exists() and run_id:
-        candidate = manifests_dir / run_id / "manifest.json"
-        if candidate.exists():
-            manifest_path = candidate
-    if not manifest_path.exists():
+    manifest_path = resolve_latest_manifest_path(manifests_dir, latest)
+    if manifest_path is None:
         return {"available": False, "reason": "manifest.json not found"}
 
     try:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    except Exception as exc:
+    except (OSError, json.JSONDecodeError) as exc:
         return {"available": False, "reason": f"manifest parse error: {exc}"}
 
     rows = manifest.get("generated") if isinstance(manifest, dict) else []
@@ -75,7 +93,7 @@ def _read_latency_kpi() -> Dict[str, Any]:
         try:
             q_ts = parse_date(queued)
             g_ts = parse_date(generated)
-        except Exception:
+        except (TypeError, ValueError):
             continue
         delta = (g_ts - q_ts).total_seconds()
         if delta >= 0:
@@ -97,7 +115,7 @@ def _read_latency_kpi() -> Dict[str, Any]:
         "p50_seconds": p50,
         "p95_seconds": p95,
         "run_id": run_id,
-        "manifest_path": str(manifest_path),
+        "manifest_path": public_manifest_path(manifest_path, manifests_dir),
     }
 
 
@@ -111,7 +129,7 @@ def build_weekly_comment(repo: str, token: str) -> str:
 
     backlog_issues: List[Dict[str, Any]] = []
     for i in issues:
-        labels = [l.get("name", "") for l in i.get("labels", [])]
+        labels = [label.get("name", "") for label in i.get("labels", [])]
         if "ctoa-backlog" in labels:
             backlog_issues.append(i)
 
@@ -130,7 +148,9 @@ def build_weekly_comment(repo: str, token: str) -> str:
             if closed_dt >= since:
                 closed_7d += 1
 
-    runs = github_api("GET", f"{base}/actions/runs?per_page=100", token).get("workflow_runs", [])
+    runs = github_api("GET", f"{base}/actions/runs?per_page=100", token).get(
+        "workflow_runs", []
+    )
     pipeline_runs = [r for r in runs if r.get("name") == "CTOA Pipeline"]
 
     status_counter = Counter()
@@ -177,14 +197,16 @@ def build_weekly_comment(repo: str, token: str) -> str:
         lines.append(f"- Not available: {latency_kpi.get('reason', 'unknown reason')}")
     lines.append("")
     lines.append("### Executive Note")
-    lines.append("- Focus next week: move top-priority WAITING_APPROVAL tasks through release gate with minimal cycle time.")
+    lines.append(
+        "- Focus next week: move top-priority WAITING_APPROVAL tasks through release gate with minimal cycle time."
+    )
 
     return "\n".join(lines) + "\n"
 
 
 def main() -> None:
     token = os.getenv("GITHUB_TOKEN") or os.getenv("GITHUB_PAT")
-    repo = os.getenv("GITHUB_REPOSITORY", "famatyyk/CTOAi")
+    repo = require_github_repository(os.getenv("GITHUB_REPOSITORY", "famatyyk/CTOAi"))
     issue_number = int(os.getenv("CTOA_LIVE_ISSUE_NUMBER", "1"))
 
     if not token:
@@ -194,7 +216,9 @@ def main() -> None:
     marker = comment_body.splitlines()[0].strip()
 
     base = f"https://api.github.com/repos/{repo}"
-    comments = github_api("GET", f"{base}/issues/{issue_number}/comments?per_page=100", token)
+    comments = github_api(
+        "GET", f"{base}/issues/{issue_number}/comments?per_page=100", token
+    )
     for c in comments:
         if marker in str(c.get("body", "")):
             print(f"[weekly-report] comment already exists for {marker}")
@@ -206,7 +230,9 @@ def main() -> None:
         token,
         {"body": comment_body},
     )
-    print(f"[weekly-report] created comment #{created.get('id')} on issue #{issue_number}")
+    print(
+        f"[weekly-report] created comment #{created.get('id')} on issue #{issue_number}"
+    )
 
 
 if __name__ == "__main__":

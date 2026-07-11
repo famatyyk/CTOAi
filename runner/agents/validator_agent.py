@@ -28,11 +28,10 @@ from __future__ import annotations
 
 import logging
 import re
-import subprocess
-import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
+from runner import process_safety
 from runner.agents import db
 
 logging.basicConfig(
@@ -45,8 +44,9 @@ log = logging.getLogger("validator")
 def _luac_check(path: Path) -> tuple[bool, str]:
     """Return (ok, message). Tries `luac -p`."""
     try:
-        res = subprocess.run(
-            ["luac", "-p", str(path)],
+        luac = process_safety.resolve_executable("luac", env_var="CTOA_LUAC_BIN")
+        res = process_safety.run_trusted(
+            [luac, "-p", str(path)],
             capture_output=True,
             text=True,
             timeout=10,
@@ -54,7 +54,7 @@ def _luac_check(path: Path) -> tuple[bool, str]:
         if res.returncode == 0:
             return True, "luac ok"
         return False, res.stderr.strip()[:500]
-    except FileNotFoundError:
+    except process_safety.ExecutableUnavailableError:
         # luac not installed – do a basic bracket balance check instead
         return _bracket_balance(path.read_text(encoding="utf-8"))
     except Exception as exc:
@@ -75,8 +75,9 @@ def _bracket_balance(src: str) -> tuple[bool, str]:
 
 def _py_compile_check(path: Path) -> tuple[bool, str]:
     try:
-        res = subprocess.run(
-            ["python3", "-m", "py_compile", str(path)],
+        python = process_safety.resolve_python()
+        res = process_safety.run_trusted(
+            [python, "-m", "py_compile", str(path)],
             capture_output=True,
             text=True,
             timeout=10,

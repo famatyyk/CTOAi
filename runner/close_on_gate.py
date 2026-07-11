@@ -5,8 +5,16 @@ import re
 from typing import Any, Dict, List, Optional
 from urllib.request import Request, urlopen
 
+try:
+    from runner.http_safety import require_github_api_url, require_github_repository
+except ModuleNotFoundError:
+    from http_safety import require_github_api_url, require_github_repository
 
-def github_api(method: str, url: str, token: str, payload: Optional[Dict[str, Any]] = None) -> Any:
+
+def github_api(
+    method: str, url: str, token: str, payload: Optional[Dict[str, Any]] = None
+) -> Any:
+    safe_url = require_github_api_url(url)
     data = None
     headers = {
         "Accept": "application/vnd.github+json",
@@ -18,8 +26,9 @@ def github_api(method: str, url: str, token: str, payload: Optional[Dict[str, An
         data = json.dumps(payload).encode("utf-8")
         headers["Content-Type"] = "application/json"
 
-    req = Request(url=url, method=method, headers=headers, data=data)
-    with urlopen(req, timeout=30) as res:
+    req = Request(url=safe_url, method=method, headers=headers, data=data)
+    # require_github_api_url pins token-bearing requests to the GitHub API host.
+    with urlopen(req, timeout=30) as res:  # nosec B310
         body = res.read().decode("utf-8")
         return json.loads(body) if body else {}
 
@@ -30,7 +39,7 @@ def parse_waiting_task_ids(issue_body: str) -> List[str]:
     if start < 0:
         return []
 
-    section = issue_body[start + len(marker):]
+    section = issue_body[start + len(marker) :]
     next_header = section.find("\n## ")
     if next_header >= 0:
         section = section[:next_header]
@@ -48,7 +57,7 @@ def parse_waiting_task_ids(issue_body: str) -> List[str]:
 
 def main() -> None:
     token = os.getenv("GITHUB_TOKEN") or os.getenv("GITHUB_PAT")
-    repo = os.getenv("GITHUB_REPOSITORY", "famatyyk/CTOAi")
+    repo = require_github_repository(os.getenv("GITHUB_REPOSITORY", "famatyyk/CTOAi"))
     live_issue_number = int(os.getenv("CTOA_LIVE_ISSUE_NUMBER", "1"))
 
     if not token:

@@ -10,6 +10,11 @@ from urllib.request import Request, urlopen
 
 import yaml
 
+try:
+    from runner.http_safety import require_github_api_url, require_github_repository
+except ModuleNotFoundError:
+    from http_safety import require_github_api_url, require_github_repository
+
 ROOT = Path(__file__).resolve().parent.parent
 STATE_FILE = ROOT / "runtime" / "task-state.yaml"
 
@@ -43,7 +48,10 @@ def load_state() -> Dict[str, Any]:
     return payload
 
 
-def github_api(method: str, url: str, token: str, payload: Optional[Dict[str, Any]] = None) -> Any:
+def github_api(
+    method: str, url: str, token: str, payload: Optional[Dict[str, Any]] = None
+) -> Any:
+    safe_url = require_github_api_url(url)
     data = None
     headers = {
         "Accept": "application/vnd.github+json",
@@ -55,8 +63,9 @@ def github_api(method: str, url: str, token: str, payload: Optional[Dict[str, An
         data = json.dumps(payload).encode("utf-8")
         headers["Content-Type"] = "application/json"
 
-    req = Request(url=url, method=method, headers=headers, data=data)
-    with urlopen(req, timeout=30) as res:
+    req = Request(url=safe_url, method=method, headers=headers, data=data)
+    # require_github_api_url pins token-bearing requests to the GitHub API host.
+    with urlopen(req, timeout=30) as res:  # nosec B310
         body = res.read().decode("utf-8")
         return json.loads(body) if body else {}
 
@@ -107,7 +116,9 @@ def list_open_issues(base: str, token: str) -> List[Dict[str, Any]]:
     all_issues: List[Dict[str, Any]] = []
     page = 1
     while True:
-        issues_page = github_api("GET", f"{base}/issues?state=open&per_page=100&page={page}", token)
+        issues_page = github_api(
+            "GET", f"{base}/issues?state=open&per_page=100&page={page}", token
+        )
         if not isinstance(issues_page, list):
             raise RuntimeError("Invalid issues payload")
 
@@ -130,15 +141,20 @@ def normalize_alert_mode(value: str) -> str:
     return "live"
 
 
-def sync_status_labels(base: str, token: str, tasks: Dict[str, Dict[str, Any]], issues: Dict[str, Dict[str, Any]]) -> int:
+def sync_status_labels(
+    base: str,
+    token: str,
+    tasks: Dict[str, Dict[str, Any]],
+    issues: Dict[str, Dict[str, Any]],
+) -> int:
     updated = 0
     for task_id, issue in issues.items():
         task = tasks.get(task_id)
         if task is None:
             continue
 
-        labels = [str(l.get("name", "")) for l in issue.get("labels", [])]
-        non_status = [l for l in labels if not l.startswith("status/")]
+        labels = [str(label.get("name", "")) for label in issue.get("labels", [])]
+        non_status = [label for label in labels if not label.startswith("status/")]
         new_status = desired_status_label(task)
         desired = non_status + [new_status]
 
@@ -193,8 +209,18 @@ def build_sla_alert(
 
     overdue.sort(key=lambda x: (-x["age_hours"], x["task_id"]))
     marker_prefix = "ctoa-sla-alert-test" if alert_mode == "test" else "ctoa-sla-alert"
-    marker = "<!-- " + marker_prefix + ":" + "|".join([f"{o['task_id']}@{o['updated_at']}" for o in overdue]) + " -->"
-    title = "## SLA Alert [TEST]: Approval Pending >12h" if alert_mode == "test" else "## SLA Alert: Approval Pending >12h"
+    marker = (
+        "<!-- "
+        + marker_prefix
+        + ":"
+        + "|".join([f"{o['task_id']}@{o['updated_at']}" for o in overdue])
+        + " -->"
+    )
+    title = (
+        "## SLA Alert [TEST]: Approval Pending >12h"
+        if alert_mode == "test"
+        else "## SLA Alert: Approval Pending >12h"
+    )
 
     lines: List[str] = [marker, title, ""]
     if alert_mode == "test":
@@ -205,13 +231,16 @@ def build_sla_alert(
     lines.append("")
     for o in overdue:
         issue_ref = f"#{o['issue_number']}" if o["issue_number"] else "n/a"
-        lines.append(f"- {o['task_id']}: {o['title']} | age={o['age_hours']:.1f}h | issue={issue_ref}")
+        lines.append(
+            f"- {o['task_id']}: {o['title']} | age={o['age_hours']:.1f}h | issue={issue_ref}"
+        )
 
     return "\n".join(lines) + "\n"
 
 
-
-def update_live_issue_sla_section(base: str, token: str, live_issue_number: int, body: Optional[str]) -> bool:
+def update_live_issue_sla_section(
+    base: str, token: str, live_issue_number: int, body: Optional[str]
+) -> bool:
     start_marker = "<!-- ctoa-sla-section:start -->"
     end_marker = "<!-- ctoa-sla-section:end -->"
     section_pattern = re.compile(
@@ -246,7 +275,7 @@ def update_live_issue_sla_section(base: str, token: str, live_issue_number: int,
 
 def main() -> None:
     token = os.getenv("GITHUB_TOKEN") or os.getenv("GITHUB_PAT")
-    repo = os.getenv("GITHUB_REPOSITORY", "famatyyk/CTOAi")
+    repo = require_github_repository(os.getenv("GITHUB_REPOSITORY", "famatyyk/CTOAi"))
     live_issue_number = int(os.getenv("CTOA_LIVE_ISSUE_NUMBER", "1"))
     threshold_hours = int(os.getenv("CTOA_APPROVAL_SLA_HOURS", "12"))
     alert_mode = normalize_alert_mode(os.getenv("CTOA_SLA_ALERT_MODE", "live"))
@@ -269,9 +298,13 @@ def main() -> None:
     label_updates = sync_status_labels(base, token, tasks, issues)
 
     sla_body = build_sla_alert(tasks, issues, threshold_hours, alert_mode)
-    alert_updated = update_live_issue_sla_section(base, token, live_issue_number, sla_body)
+    alert_updated = update_live_issue_sla_section(
+        base, token, live_issue_number, sla_body
+    )
 
-    print(f"[status-sync] labels_updated={label_updates} sla_section_updated={alert_updated}")
+    print(
+        f"[status-sync] labels_updated={label_updates} sla_section_updated={alert_updated}"
+    )
 
 
 if __name__ == "__main__":

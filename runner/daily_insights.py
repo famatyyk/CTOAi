@@ -9,6 +9,11 @@ from urllib.request import Request, urlopen
 
 import yaml
 
+try:
+    from runner.http_safety import require_github_api_url, require_github_repository
+except ModuleNotFoundError:
+    from http_safety import require_github_api_url, require_github_repository
+
 ROOT = Path(__file__).resolve().parent.parent
 BACKLOG_FILE = ROOT / "workflows" / "backlog-sprint-001.yaml"
 STATE_FILE = ROOT / "runtime" / "task-state.yaml"
@@ -33,7 +38,10 @@ def load_yaml(path: Path) -> Dict[str, Any]:
     return data
 
 
-def github_api(method: str, url: str, token: str, payload: Optional[Dict[str, Any]] = None) -> Any:
+def github_api(
+    method: str, url: str, token: str, payload: Optional[Dict[str, Any]] = None
+) -> Any:
+    safe_url = require_github_api_url(url)
     data = None
     headers = {
         "Accept": "application/vnd.github+json",
@@ -45,8 +53,9 @@ def github_api(method: str, url: str, token: str, payload: Optional[Dict[str, An
         data = json.dumps(payload).encode("utf-8")
         headers["Content-Type"] = "application/json"
 
-    req = Request(url=url, method=method, headers=headers, data=data)
-    with urlopen(req, timeout=30) as res:
+    req = Request(url=safe_url, method=method, headers=headers, data=data)
+    # require_github_api_url pins token-bearing requests to the GitHub API host.
+    with urlopen(req, timeout=30) as res:  # nosec B310
         body = res.read().decode("utf-8")
         return json.loads(body) if body else {}
 
@@ -68,7 +77,9 @@ def build_daily_comment(backlog: Dict[str, Any], state: Dict[str, Any]) -> str:
         if at and at >= since:
             transitions_24h.append(h)
 
-    to_status_counter = Counter([str(t.get("to_status", "UNKNOWN")) for t in transitions_24h])
+    to_status_counter = Counter(
+        [str(t.get("to_status", "UNKNOWN")) for t in transitions_24h]
+    )
 
     blocked_24h = []
     for t in tasks:
@@ -106,7 +117,9 @@ def build_daily_comment(backlog: Dict[str, Any], state: Dict[str, Any]) -> str:
 
     lines.append("### Trend 24h")
     lines.append(f"- NEW -> IN_PROGRESS: {to_status_counter.get('IN_PROGRESS', 0)}")
-    lines.append(f"- -> WAITING_APPROVAL: {to_status_counter.get('WAITING_APPROVAL', 0)}")
+    lines.append(
+        f"- -> WAITING_APPROVAL: {to_status_counter.get('WAITING_APPROVAL', 0)}"
+    )
     lines.append(f"- -> RELEASED: {to_status_counter.get('RELEASED', 0)}")
     lines.append("")
 
@@ -134,14 +147,16 @@ def build_daily_comment(backlog: Dict[str, Any], state: Dict[str, Any]) -> str:
 
 def comment_daily_insight(comment_body: str) -> None:
     token = os.getenv("GITHUB_TOKEN") or os.getenv("GITHUB_PAT")
-    repo = os.getenv("GITHUB_REPOSITORY", "famatyyk/CTOAi")
+    repo = require_github_repository(os.getenv("GITHUB_REPOSITORY", "famatyyk/CTOAi"))
     issue_number = int(os.getenv("CTOA_LIVE_ISSUE_NUMBER", "1"))
     if not token:
         raise RuntimeError("Missing GITHUB_TOKEN or GITHUB_PAT")
 
     date_marker = comment_body.splitlines()[0].strip()
     base = f"https://api.github.com/repos/{repo}"
-    comments = github_api("GET", f"{base}/issues/{issue_number}/comments?per_page=100", token)
+    comments = github_api(
+        "GET", f"{base}/issues/{issue_number}/comments?per_page=100", token
+    )
 
     for c in comments:
         body = str(c.get("body", ""))
@@ -155,7 +170,9 @@ def comment_daily_insight(comment_body: str) -> None:
         token,
         {"body": comment_body},
     )
-    print(f"[daily-insight] created comment #{created.get('id')} on issue #{issue_number}")
+    print(
+        f"[daily-insight] created comment #{created.get('id')} on issue #{issue_number}"
+    )
 
 
 def main() -> None:

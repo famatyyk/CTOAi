@@ -8,11 +8,19 @@ from urllib.request import Request, urlopen
 
 import yaml
 
+try:
+    from runner.http_safety import require_github_api_url, require_github_repository
+except ModuleNotFoundError:
+    from http_safety import require_github_api_url, require_github_repository
+
 ROOT = Path(__file__).resolve().parent.parent
 BACKLOG_FILE = ROOT / "workflows" / "backlog-sprint-001.yaml"
 
 
-def github_api(method: str, url: str, token: str, payload: Optional[Dict[str, Any]] = None) -> Any:
+def github_api(
+    method: str, url: str, token: str, payload: Optional[Dict[str, Any]] = None
+) -> Any:
+    safe_url = require_github_api_url(url)
     data = None
     headers = {
         "Accept": "application/vnd.github+json",
@@ -24,8 +32,9 @@ def github_api(method: str, url: str, token: str, payload: Optional[Dict[str, An
         data = json.dumps(payload).encode("utf-8")
         headers["Content-Type"] = "application/json"
 
-    req = Request(url=url, method=method, data=data, headers=headers)
-    with urlopen(req, timeout=30) as res:
+    req = Request(url=safe_url, method=method, data=data, headers=headers)
+    # require_github_api_url pins token-bearing requests to the GitHub API host.
+    with urlopen(req, timeout=30) as res:  # nosec B310
         body = res.read().decode("utf-8")
         return json.loads(body) if body else {}
 
@@ -44,7 +53,9 @@ def make_issue_title(task: Dict[str, Any]) -> str:
 
 def make_issue_body(backlog_id: str, task: Dict[str, Any]) -> str:
     assignees = ", ".join(task.get("assignees", []))
-    deliverables = "\n".join([f"- {d}" for d in task.get("deliverables", [])]) or "- none"
+    deliverables = (
+        "\n".join([f"- {d}" for d in task.get("deliverables", [])]) or "- none"
+    )
     acceptance = "\n".join([f"- {a}" for a in task.get("acceptance", [])]) or "- none"
     domains = ", ".join(task.get("domain", []))
 
@@ -74,7 +85,9 @@ def list_open_issues(base: str, token: str) -> List[Dict[str, Any]]:
     all_issues: List[Dict[str, Any]] = []
     page = 1
     while True:
-        issues_page = github_api("GET", f"{base}/issues?state=open&per_page=100&page={page}", token)
+        issues_page = github_api(
+            "GET", f"{base}/issues?state=open&per_page=100&page={page}", token
+        )
         if not isinstance(issues_page, list):
             raise RuntimeError("Invalid issues payload")
 
@@ -85,7 +98,9 @@ def list_open_issues(base: str, token: str) -> List[Dict[str, Any]]:
     return all_issues
 
 
-def group_backlog_issues_by_task_id(open_issues: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
+def group_backlog_issues_by_task_id(
+    open_issues: List[Dict[str, Any]],
+) -> Dict[str, List[Dict[str, Any]]]:
     grouped: Dict[str, List[Dict[str, Any]]] = {}
     pattern = re.compile(r"^\[(CTOA-\d+)\]\s+")
     for issue in open_issues:
@@ -99,7 +114,7 @@ def group_backlog_issues_by_task_id(open_issues: List[Dict[str, Any]]) -> Dict[s
 
 
 def split_primary_and_duplicates(
-    issues_by_task_id: Dict[str, List[Dict[str, Any]]]
+    issues_by_task_id: Dict[str, List[Dict[str, Any]]],
 ) -> Tuple[Dict[str, Dict[str, Any]], List[Dict[str, Any]]]:
     primary_by_task_id: Dict[str, Dict[str, Any]] = {}
     duplicates: List[Dict[str, Any]] = []
@@ -117,7 +132,7 @@ def split_primary_and_duplicates(
 
 def main() -> None:
     token = os.getenv("GITHUB_TOKEN") or os.getenv("GITHUB_PAT")
-    repo = os.getenv("GITHUB_REPOSITORY", "famatyyk/CTOAi")
+    repo = require_github_repository(os.getenv("GITHUB_REPOSITORY", "famatyyk/CTOAi"))
     if not token:
         raise RuntimeError("Missing GITHUB_TOKEN or GITHUB_PAT")
 
@@ -163,7 +178,12 @@ def main() -> None:
                 {
                     "title": title,
                     "body": body,
-                    "labels": ["ctoa", "ctoa-backlog", backlog_id.lower(), task_id.lower()],
+                    "labels": [
+                        "ctoa",
+                        "ctoa-backlog",
+                        backlog_id.lower(),
+                        task_id.lower(),
+                    ],
                 },
             )
             created += 1
