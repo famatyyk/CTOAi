@@ -1,6 +1,6 @@
 # Engine Brain Ownership Map
 
-Generated at: `2026-07-11T10:02:32+00:00`
+Generated at: `2026-07-11T12:48:01+00:00`
 Source audit: `runtime\audits\ctoai-full-workspace-audit.json`
 Status: `ready`
 
@@ -11,7 +11,7 @@ Status: `ready`
 | `.dockerignore` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `.env.example` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `.foundry` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
-| `.git` | Local/uncategorized | `manual review` | 721 | git_internal:721 |
+| `.git` | Local/uncategorized | `manual review` | 741 | git_internal:741 |
 | `.gitattributes` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `.github` | Local/uncategorized | `manual review` | 41 | tracked_source:41 |
 | `.gitignore` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
@@ -70,7 +70,7 @@ Status: `ready`
 | `scoring` | Local/uncategorized | `manual review` | 5 | tracked_source:3, untracked_source_candidate:2 |
 | `scripts` | Operator automation | `pytest targeted script tests` | 435 | tracked_source:259, untracked_source_candidate:176 |
 | `src` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
-| `tests` | Regression suite | `pytest tests/ --ignore=tests/e2e` | 503 | local_secret_or_sensitive:2, tracked_source:180, untracked_source_candidate:321 |
+| `tests` | Regression suite | `pytest tests/ --ignore=tests/e2e` | 505 | local_secret_or_sensitive:2, tracked_source:181, untracked_source_candidate:322 |
 | `training` | Local/uncategorized | `manual review` | 8 | tracked_source:5, untracked_source_candidate:3 |
 | `up` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `web` | Control Center | `cd web; npm run lint; npm test` | 32304 | local_secret_or_sensitive:2, tracked_source:98, untracked_source_candidate:5419, vendor_or_cache:26785 |

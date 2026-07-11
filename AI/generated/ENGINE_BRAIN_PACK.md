@@ -1,8 +1,8 @@
 # CTOAi Engine Brain Pack
 
-Generated at: `2026-07-11T10:02:34+00:00`
+Generated at: `2026-07-11T12:47:48+00:00`
 Repo root: `C:\Users\zycie\CTOAi`
-Profile: `infra`
+Profile: `all`
 
 This pack is curated and secret-safe. It excludes `.env*`, auth stores,
 runtime data, logs, local databases, tokens, credentials, and generated
@@ -67,6 +67,690 @@ needed for a task instead of relying on one long prompt.
 - `generated/ENV_DOCTOR.json`: generated local operations audit data.
 - `generated/ENGINE_BRAIN_PACK.md`: generated portable secret-safe context pack.
 - `generated/ENGINE_BRAIN_PACK.json`: generated context pack manifest.
+```
+
+
+## `AI/SYSTEM_PROMPT.md`
+
+```markdown
+# CTOAi + OTClient System Prompt v2
+
+You are the dedicated engineering assistant for `C:/Users/zycie/CTOAi`, a
+Windows-first CTOAi toolkit with Python agents, FastAPI surfaces, local model
+routing, web Control Center tooling, Lua generator/validator flows, and OTClient
+native helper modules.
+
+## Mission
+
+Build and maintain CTOAi as an evidence-first engineering system for Tibia/OT
+automation research, local operator tooling, runtime validation, and OTClient Lua
+integration. Work from the actual repository structure and source files, not
+generic Open Tibia assumptions.
+
+## Ground Rules
+
+- Prefer concrete repo evidence over guesses.
+- When asked to implement, change files and validate the result.
+- Keep Windows PowerShell workflows usable.
+- Use repo-local Python when available: `.venv/Scripts/python.exe`.
+- Do not commit secrets from `.env`, `runtime/`, `logs/`, or local databases.
+- Preserve config key order in JSON/YAML/evidence files.
+- For Lua modules, keep runtime behavior deterministic, bounded, and guarded by
+  explicit enable flags.
+- For OTClient helper work, respect safe boot defaults and never silently enable
+  combat, movement, rune, timer, or cavebot behavior.
+- For Control Center and release surfaces, update evidence paths and tests
+  together.
+
+## Current Project Boundaries
+
+Known source is CTOAi plus the expanded OTClient source tree in
+`scripts/lua/otclient/`.
+Server-side TFS fork source is not present in this workspace snapshot. If a task
+mentions TFS internals, packet opcodes, C++ server classes, or protocol handlers,
+first request or locate the server source before making authoritative claims.
+
+## Response Style
+
+- Be concise and technical.
+- Answer in Polish when the user writes in Polish.
+- Include validation output or exact commands when work was performed.
+- If something is unverified, label it as unverified.
+- Do not fabricate runtime results, deployed status, PR status, or screenshots.
+
+## Default Validation Ladder
+
+Use the narrowest meaningful validation first, then broaden if the change affects
+shared behavior:
+
+1. Lua syntax or targeted smoke path for OTClient Lua changes.
+2. Targeted Python/TypeScript unit tests for changed modules.
+3. `python -m pytest tests/ --ignore=tests/e2e -q` for shared Python behavior.
+4. Sprint validator when touching sprint/release logic.
+5. Control Center tests when touching `web/src/lib/controlCenter*`.
+6. Manual OTClient smoke when UI, hotkeys, helper tabs, or runtime modules change.
+```
+
+
+## `AI/PROJECT_CONTEXT.md`
+
+```markdown
+# Project Context
+
+## Repository Shape
+
+Core Python code lives in:
+
+- `runner/`: scheduled agents, generation, validation, reporting, hybrid bot.
+- `agents/`: YAML/Markdown agent definitions.
+- `api/`: FastAPI app, auth, chat routing, safety telemetry, release evidence.
+- `bot/`: local perception/action/safety/overlay runtime.
+- `scoring/`: quality and scoring support.
+- `prompts/`: prompt packs and prompt infrastructure.
+
+Operational and platform code lives in:
+
+- `scripts/`: analysis utilities, Lua modules, local scripts.
+- `scripts/ops/`: product bootstrap, validators, release/evidence tooling.
+- `scripts/windows/`: Windows-specific helpers.
+- `scripts/lua/`: standalone Lua modules and OTClient package.
+
+Docs and evidence surfaces live in:
+
+- `docs/`, `workflows/`, `policies/`, `releases/`, `evals/`, `training/`.
+
+Tests live in:
+
+- `tests/`
+- `tests/unit/`
+- `web/src/lib/__tests__/`
+
+## CTOAi Runtime
+
+The main API is `api/main.py`:
+
+- FastAPI app title: `CTOAi API`
+- Version: `1.3.0`
+- Chat endpoints: `/api/chat`, `/v1/chat/completions`
+- Status/health: `/health`, `/api/status`
+- Auth/community: `/api/auth/*`, `/api/community/*`
+- Evidence: `/api/release-evidence`
+- Safety telemetry: `/api/safety/*`
+
+The model router uses environment-driven local/OpenAI-compatible endpoints:
+
+- `CTOA_LOCAL_MODEL_URL`
+- `CTOA_LOCAL_MODEL_NAME`
+- `CTOA_MODEL_SMALL`
+- `CTOA_MODEL_LARGE`
+- `CTOA_SMALL_MODEL_URL`
+- `CTOA_LARGE_MODEL_URL`
+- `CTOA_ROUTE_DEFAULT`
+
+## Generator/Validator Loop
+
+The generation lane is under `runner/agents/`:
+
+- `brain_v2.py`: plans module/program generation based on available server data.
+- `catalog_agent.py`: discovers and scores server candidates.
+- `ingest_agent.py`: ingests server/game data.
+- `generator_agent.py`: renders Lua/Python templates for queued modules.
+- `validator_agent.py`: validates generated modules and quality score.
+- `publisher_agent.py`: publishes validated output.
+- `executor.py`, `orchestrator.py`: execution and scheduling surfaces.
+
+Lua templates in `generator_agent.py` currently include auto heal, reconnect,
+loot filter, cavebot pathing, target selector, anti-stuck, alarms, healer
+profiles, flee logic, blacklists, loot maps, highscore/player trackers, hunt
+orchestrator, economy bot, PvP guard, depot/bank/gold automation, human delay,
+break scheduler, rune maker, combo spells, area spell control, exp tracker,
+session log, and respawn optimizer.
+
+## Hybrid Bot
+
+`runner/hybrid_bot/` is the Python-side gameplay stack:
+
+- `vision_layer.py`: screenshots and computer vision.
+- `template_library.py`: creature/minimap template loading and caching.
+- `gameplay_engine.py`: combat, movement, loot, spells, game mode logic.
+- `command_executor.py`: keyboard/mouse command execution.
+- `pathfinding.py`: path planning.
+- `state_manager.py`: state persistence.
+- `metrics.py`: runtime metrics.
+- `interactive_mode.py`: manual/hybrid operator mode.
+
+`bot/` is the local runtime stack:
+
+- `bot/perception/`: window capture, parsing, memory reader, state.
+- `bot/action/`: combat, movement, loot, spell rotation, input backend.
+- `bot/safety/`: session scheduling, humanizer, session guard.
+- `bot/overlay/`: macro/status overlay UI.
+
+## OTClient Package
+
+The OTClient source tree in `scripts/lua/otclient/` contains:
+
+- `ctoa_otclient.otmod`
+- `ctoa_otclient_loader.lua`
+- `ctoa_native_helper.lua`
+- `ctoa_native_combat.lua`
+- `ctoa_native_heal.lua`
+- `ctoa_native_loot.lua`
+- `ctoa_ek_profile.lua`
+- `README.md`
+
+The helper is the main integration point. Runtime modules are configured through
+`HELPER_CONFIG`, with safe boot disabling active automation unless explicitly
+enabled.
+```
+
+
+## `AI/ENGINE_MEMORY.md`
+
+```markdown
+# Engine Memory
+
+## Current Fork
+
+- Repo: `C:/Users/zycie/CTOAi`
+- Primary language stack: Python, TypeScript, Lua, PowerShell.
+- Platform assumption: Windows/PowerShell local operator environment, with VPS
+  deployment support under `deploy/vps/`.
+- TFS fork source: not present in this snapshot.
+- OTClient source tree: `scripts/lua/otclient/`.
+
+## Current Protocol
+
+- Server packet format and opcode map are not confirmed from source.
+- OTClient automation uses native Lua APIs where available: `g_game`, `g_map`,
+  `g_ui`, `g_keyboard`, `connect`, `cycleEvent`, and `scheduleEvent`.
+- Do not infer TFS protocol flow without server/client protocol source.
+
+## Current Lua API
+
+Standalone generated Lua modules in `scripts/lua/` use simple `register(...)`
+style hooks for generic runtimes.
+
+OTClient native modules use OTClient APIs directly:
+
+- Healing: `LocalPlayer.onHealthChanged`, `LocalPlayer.onManaChanged`,
+  `g_game.talk`.
+- Combat: `g_game.attack`, `g_game.follow`, `g_game.cancelAttack`,
+  `g_map.getSpectatorsInRange`, `g_map.getCreaturesInRange`, `Creature.onDeath`.
+- Loot: `Container.onOpen`, `Map.onItemAppear`, item/container scans.
+- UI/helper: `g_ui`, `g_keyboard`, `cycleEvent`, profile save/load, HUD and tab
+  rendering.
+
+## Current Scheduler
+
+- Python service scheduling lives in `deploy/vps/systemd/`.
+- Bot session timing is guarded by `bot/safety/scheduler.py` and
+  `bot/safety/session.py`.
+- OTClient helper uses `cycleEvent(onThink, HELPER_CONFIG.tick_ms)`.
+- Combat native module uses `cycleEvent(onThink, 100)`.
+- Loader delays helper load through `scheduleEvent(loadHelperOnly, 1500)` or
+  `addEvent(loadHelperOnly)` fallback.
+
+## Current Packet Format
+
+Pending source. No packet index can be considered authoritative until TFS and
+client protocol files are provided.
+
+## Known TODO
+
+- Create server-side TFS index once source is available.
+- Add real packet/opcode index from client/server protocol code.
+- Add a generated machine-readable inventory for Lua functions and config keys.
+- Decide whether OTClient package should be committed as source files, ZIP only,
+  or both.
+
+## Known Bugs
+
+See `KNOWN_BUGS.md`.
+
+## Known Technical Debt
+
+See `TECH_DEBT.md`.
+
+## Coding Standards
+
+- Python: 4 spaces, `snake_case`, type hints where local code uses them.
+- Classes: `PascalCase`.
+- Constants: `UPPER_SNAKE_CASE`.
+- PowerShell: `Set-StrictMode -Version Latest`, fail fast, PascalCase functions.
+- Config/evidence: preserve existing key order.
+- Tests: narrow, reproducible, contract/evidence-focused.
+
+## Architecture Decisions
+
+- Evidence-first delivery is a core product rule.
+- Generated artifacts must have validation records.
+- Runtime action should be gated, observable, and reversible.
+- Control Center evidence paths belong in shared config, not scattered literals.
+- OTClient helper must boot safely and keep runtime automation disabled by
+  default unless the profile explicitly opts in.
+
+## Roadmap
+
+See `FEATURE_ROADMAP.md`.
+```
+
+
+## `AI/RULEBOOK.md`
+
+```markdown
+# Project Rulebook
+
+## Global Rules
+
+- Never claim a deploy, smoke, game action, or evidence artifact exists unless it
+  has been checked in the current run or is clearly marked as historical.
+- Do not edit `.env`, `runtime/`, `logs/`, `data/`, or generated local state
+  unless the user explicitly asks for runtime repair.
+- Keep operator commands Windows-friendly.
+- Prefer repo-local `.venv/Scripts/python.exe` for Python execution.
+- When changing release, sprint, or evidence logic, update docs/tests/evidence
+  contracts together.
+- For Engine Brain work, write current operational findings to
+  `AI/OPERATIONS_AUDIT.md` and keep time-sensitive status separate from stable
+  rules.
+- Do not place Vercel env values, GitHub tokens, auth stores, local logs, or
+  database dumps into `AI/`.
+
+## CTOAi API Rules
+
+- Auth, rate limiting, audit logging, and safety telemetry are shared behavior in
+  `api/main.py`; changes must be tested with focused API tests.
+- Do not bypass `_current_user`, `_require_roles`, or rate-limit grouping for new
+  privileged endpoints.
+- Do not expose raw backend/model errors to users; preserve friendly masking.
+- Keep OpenAI-compatible `/v1/chat/completions` behavior aligned with `/api/chat`
+  unless intentionally diverging.
+
+## Infrastructure Rules
+
+- Local Docker services should bind to loopback unless there is an explicit
+  LAN/VPN requirement.
+- Cloudflare WARP being connected does not make broad `0.0.0.0` binds safe.
+- Use the explicit Git for Windows path when plain `git` is unavailable:
+  `C:\Program Files\Git\cmd\git.exe`.
+- For GitHub CLI work, ensure Git is on PATH or pass explicit `--repo` values.
+- Vercel audits may list project metadata and env names, but not env values.
+
+## Generator/Validator Rules
+
+- Generated Lua must include deterministic control flow and bounded retries.
+- Generated modules must have a clear header and validation path.
+- Validator quality scoring must not silently pass empty, missing, or unknown
+  output.
+- For Lua generation, prefer server context from `game_data`; do not hard-code
+  server-specific facts without evidence.
+- If `luac` is unavailable, basic fallback syntax checks are acceptable but must
+  be labeled as weaker validation.
+
+## OTClient Runtime Rules
+
+- Safe boot is the default. Do not auto-enable combat, cavebot movement, rune
+  casting, auto haste, exeta, timer, or healing during loader initialization.
+- Use `connect(...)` for real OTClient event hooks when the API supports it.
+- Use `cycleEvent` for bounded periodic helper loops and keep intervals explicit.
+- Use `scheduleEvent` for delayed boot work; `addEvent` is only a fallback where
+  the client lacks `scheduleEvent`.
+- Guard every native API call (`g_game`, `g_map`, `g_ui`, `g_keyboard`,
+  `g_resources`) because custom OTClient forks differ.
+- Do not assume a creature method exists. Probe with `pcall` or method checks.
+- Combat target switching must be rate-limited and must clear state in PZ,
+  offline, disabled, invalid target, or no target states.
+- UI preferences and profile saves must preserve key order from the helper.
+- Hotkey rebinding must unbind the old key before binding the new key.
+- Runtime modules should log to `ctoa_local.log` or the configured fallback.
+
+## Lua Module Rules
+
+- Standalone Lua modules in `scripts/lua/` use small tables/functions and should
+  remain deterministic.
+- Keep public functions named by module table, for example
+  `AutoHeal.nextAction`, `PathingHelper.nextWaypoint`.
+- Avoid global writes unless intentionally exposing a module table.
+- Do not introduce infinite `onThink` work; add cooldowns and early exits.
+- Use explicit thresholds and cooldowns for heal, combat, movement, and supply
+  logic.
+
+## UI Rules
+
+- OTClient helper UI is built by code in `ctoa_native_helper.lua`; extend existing
+  row builders, tab switching, section visibility, and theme helpers.
+- Keep fixed layout dimensions stable so widgets do not shift during updates.
+- Use existing tabs/subtabs before adding a new panel.
+- Smoke tabs should be addressable through `Helper.smoke_tab` and
+  `Helper.smoke_subtab`.
+
+## Packet/Protocol Rules
+
+- Do not invent packet names, opcodes, or packet flow.
+- Packet documentation must point to exact protocol source files.
+- If packet source is absent, mark the packet work as blocked on source.
+
+## TFS Rules
+
+- TFS fork rules are pending source.
+- Do not prescribe C++ class contracts until the TFS source tree is indexed.
+- Once source is available, index `Creature`, `Player`, `Combat`, `ProtocolGame`,
+  dispatcher/scheduler, Lua script interface, item/container classes, and custom
+  systems before editing engine logic.
+```
+
+
+## `AI/OPERATIONS_AUDIT.md`
+
+```markdown
+# CTOAi Operations Audit
+
+Snapshot date: 2026-07-06 Europe/Warsaw
+
+This file records current operational evidence gathered for Engine Brain
+planning. Refresh it before release, deploy, or infrastructure work.
+
+## Local Git
+
+- Repo root: `C:/Users/zycie/CTOAi`
+- Branch: `codex/control-center-guarded-actions`
+- HEAD: `43b76958e4efa1d59f974f1ae1effb482160b964`
+- Plain `git` is available through PATH in this PowerShell session and resolves
+  to Git for Windows at `C:\Program Files\Git\cmd\git.exe`.
+- Worktree is dirty and includes pre-existing OTClient/local changes plus
+  `AI/`.
+- Remote `origin`: `https://github.com/famatyyk/CTOAi.git`
+- Remote `upstream`: `git@github.com:famatyyk/CTOAi.git`
+
+Rule: if plain `git` disappears from PATH again, use the explicit Git for
+Windows path, and do not package unrelated dirty work without a scope decision.
+
+## GitHub
+
+- Auth: `gh` is logged in as `famatyyk`.
+- Repo: `famatyyk/CTOAi`
+- Visibility: public.
+- Default branch: `main`.
+- Repo URL: `https://github.com/famatyyk/CTOAi`
+- Open PRs found: 6.
+- High-attention PRs:
+  - `#184` `[WIP] Fix CTOA VPS Global Save Cycle failure`, merge state `DIRTY`.
+  - `#183` `[WIP] Fix CTOA VPS Global Save Cycle failure`, merge state `DIRTY`.
+  - `#160`, `#157`, `#153`, `#152` are older Copilot/review lanes.
+- Last 15 listed workflow runs were completed successfully.
+
+Rule: use `gh` with Git on PATH or pass explicit `--repo` values to avoid base
+repo detection failures.
+
+## Docker
+
+- Docker client/server: `29.4.1`.
+- Docker Desktop: `4.71.0`.
+- Docker context: `desktop-linux`.
+- Compose: `v5.1.3`.
+- Running CTOAi-related containers include `ctoa-api` and `ctoa-postgres`.
+- `docker compose up -d --remove-orphans api postgres` recreated the active
+  root compose runtime and removed stale orphan containers that had kept broad
+  host bindings.
+- `ctoa-api` is bound to loopback at `127.0.0.1:8001->8000/tcp`.
+- `ctoa-postgres` is reachable only inside Docker networking (`5432/tcp`).
+- Current root `docker-compose.yml` config resolves API to
+  `127.0.0.1:8001:8000` by default through `CTOA_BIND_HOST`.
+- Current `bot/infra/docker-compose.yml` config resolves dashboard and
+  Prometheus to `127.0.0.1` by default through
+  `CTOA_BOT_DASHBOARD_BIND_HOST` and `CTOA_MONITOR_BIND_HOST`.
+- The obsolete `version` field was removed from `bot/infra/docker-compose.yml`.
+- Engine Brain doctor reports `running_broad=0` and `configured_broad=0`.
+
+Rule: local development services should bind to loopback unless LAN/VPN access
+is explicitly required.
+
+## VPN
+
+- Cloudflare WARP adapter is present and up.
+- `warp-cli` path: `C:\Program Files\Cloudflare\Cloudflare WARP\warp-cli.exe`.
+- `warp-cli status`: connected, network healthy.
+- Wi-Fi and WSL virtual adapter are also up.
+- No Windows built-in VPN profile was listed by `Get-VpnConnection`.
+
+Rule: WARP is active network context; keep Docker services on loopback unless
+LAN/VPN exposure is explicitly required and reviewed.
+
+## Vercel
+
+- Vercel CLI: `54.10.3`.
+- Logged-in account shown by CLI: `famatyyk-5221`.
+- Linked project: `ctoa-web`.
+- Project framework: `nextjs`.
+- Project node version: `24.x`.
+- `web/package.json` uses Next `^16.2.9`, React `^19.0.0`, TypeScript `^5`,
+  and Vitest `^4.1.9`.
+
+Rule: list Vercel project metadata and env names only; do not print env values.
+
+## VS Code And Codex Extension
+
+- Active extension list includes `openai.chatgpt@26.623.101652`.
+- Older OpenAI extension directories still exist:
+  - `openai.chatgpt-26.623.70822-win32-x64`
+  - `openai.chatgpt-26.623.81905-win32-x64`
+  - `openai.chatgpt-26.623.101652-win32-x64`
+- Installed relevant extensions include GitHub PRs, GitHub Actions, Docker,
+  Remote SSH/Containers/WSL, Python, Pylance, Python envs, Codex stats, and
+  ChatGPT/Codex.
+- Workspace Python interpreter is pinned to
+  `C:\Users\zycie\CTOAi\.venv\Scripts\python.exe`.
+- `.vscode/extensions.json` recommends PowerShell, OTC doc hub, and OTUI
+  highlights extensions.
+
+Rule: if Codex extension commands disappear again, inspect stale extension dirs
+and workspace storage before blaming repo code.
+
+## Local CTOAi Gate
+
+Evidence command:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\ops\ctoa_update_gate.py
+```
+
+Current result:
+
+- `ok: true`
+- `status: launch_allowed`
+- Product: `CTOA Toolkit`
+- Version: `1.1.1`
+- Channel: `stable`
+- Package tier: `studio`
+
+Drift:
+
+- Historical memory referenced `scripts/ops/ctoa_env_doctor.py`, but that file
+  is absent in the current worktree.
+- Current preflight-like scripts include `scripts/ops/ctoa_update_gate.py` and
+  `scripts/ops/run_validator_with_preflight.py`.
+
+## Engine Brain Doctor
+
+Evidence command:
+
+```powershell
+.\ctoa.ps1 brain doctor
+```
+
+Current result:
+
+- Output JSON: `AI/generated/ENV_DOCTOR.json`
+- Output Markdown: `AI/generated/ENV_DOCTOR.md`
+- Overall status: `warn`
+- Failed checks: `0`
+- Docker check: `ok`, with `running_broad=0` and `configured_broad=0`.
+- Warnings are currently limited to GitHub PRs with `DIRTY` merge states.
+
+Rule:
+
+- Use `.\ctoa.ps1 brain doctor` as the current replacement for the removed
+  historical `scripts/ops/ctoa_env_doctor.py`.
+```
+
+
+## `AI/CODEX_CAPABILITY_MAP.md`
+
+```markdown
+# Codex Capability Map For CTOAi Engine Brain
+
+Snapshot date: 2026-07-06 Europe/Warsaw
+
+This file maps current Codex and external codebase-context capabilities into a
+practical CTOAi plan.
+
+## Official Codex Surfaces To Use
+
+The current Codex manual was refreshed locally through the official OpenAI docs
+route on 2026-07-06.
+
+### AGENTS.md
+
+Use `AGENTS.md` for durable repository rules, setup commands, validation
+commands, review expectations, and security constraints. Codex discovers
+guidance from global scope and then project scope, with closer nested files
+appearing later in the instruction chain.
+
+CTOAi action:
+
+- Keep root `AGENTS.md` concise.
+- Add nested `AGENTS.md` files only for areas with real different rules:
+  `scripts/lua/`, `AI/`, `web/`, `deploy/`, and future TFS source.
+
+### Skills
+
+Use skills for reusable workflows that Codex can invoke implicitly or explicitly.
+Skills are better than deprecated custom prompts for shared, task-specific
+procedures.
+
+CTOAi skill candidates:
+
+- `ctoai-engine-brain`: refresh indexes, run audits, update `AI/`.
+- `otclient-helper`: package, validate, smoke, and deploy OTClient helper.
+- `ctoa-ops-audit`: Docker/VPN/Vercel/GitHub/local gate audit.
+- `tfs-indexer`: once TFS source is present, index engine classes and packets.
+
+### MCP
+
+Use MCP when Codex needs live data or tools instead of static prompt context.
+Codex supports STDIO and streamable HTTP MCP servers, and the CLI and IDE
+extension share MCP configuration.
+
+CTOAi MCP candidates:
+
+- GitHub MCP or existing GitHub connector for PR/issues/checks.
+- Context7 for current library documentation.
+- Playwright or browser MCP for Control Center and Vercel UI smoke.
+- Chrome DevTools MCP for local web debugging.
+- OpenAI Docs MCP for Codex/OpenAI docs.
+- Future local CTOAi MCP exposing repo indexes, release evidence, and runbooks.
+
+### Hooks
+
+Use hooks for lifecycle checks around tool use, prompt submission, compaction,
+and turn stop. Hooks can be project-local when `.codex/` is trusted.
+
+CTOAi hook candidates:
+
+- Pre-tool secret scanner for `.env`, Vercel env, runtime auth store, and token
+  files.
+- Stop hook that reminds the agent to update `AI/OPERATIONS_AUDIT.md` after
+  Docker/Vercel/GitHub checks.
+- PreToolUse hook for dangerous PowerShell/git/docker commands.
+- PostToolUse hook that stores sanitized command evidence for Engine Brain.
+
+### Plugins
+
+Use plugins when a capability should bundle skills, MCP servers, hooks, assets,
+and marketplace metadata.
+
+CTOAi plugin candidate:
+
+- `ctoai-engine-brain` plugin:
+  - skill: engine brain refresh
+  - MCP server: repo index/query
+  - hooks: secret and evidence checks
+  - scripts: symbol inventory plus Docker/VPN/Vercel/GitHub/VS Code audit
+
+## External Context Tools Worth Tracking
+
+### Repomix
+
+Source: `https://github.com/yamadashy/repomix`
+
+- Packs a repository into AI-friendly output.
+- Supports MCP server mode for local or remote repo packaging.
+- CTOAi fit: full context packs, with strict ignore rules for secrets and
+  generated/runtime data.
+
+### Gitingest
+
+Source: `https://github.com/coderamp-labs/gitingest`
+
+- Converts Git repositories into prompt-friendly text.
+- Public shortcut can convert GitHub URLs into digests.
+- CTOAi fit: public remote snapshots; avoid secrets-heavy branches.
+
+### Aider Repo Map
+
+Source: `https://aider.chat/docs/repomap.html`
+
+- Builds a concise repo map with important classes, functions, types, and call
+  signatures.
+- CTOAi fit: emulate this locally with generated symbol maps instead of a single
+  giant markdown dump.
+
+### AGENTS.md Open Format
+
+Source: `https://agents.md/`
+
+- Predictable repository file for agent instructions.
+- CTOAi fit: keep root `AGENTS.md` compatible and store richer memory in `AI/`.
+
+## Recommended Engine Brain Architecture
+
+```mermaid
+flowchart TD
+  Repo["CTOAi worktree"] --> StaticDocs["AI/*.md"]
+  Repo --> Indexer["engine_brain_index.py"]
+  Indexer --> Generated["AI/generated/*.md"]
+  GitHub["GitHub gh/API"] --> OpsAudit["AI/OPERATIONS_AUDIT.md"]
+  Docker["Docker/Compose"] --> OpsAudit
+  Vercel["Vercel CLI"] --> OpsAudit
+  VPN["WARP/VPN status"] --> OpsAudit
+  CodexDocs["Codex manual/docs"] --> CapabilityMap["AI/CODEX_CAPABILITY_MAP.md"]
+  External["Repomix/Gitingest/Aider patterns"] --> CapabilityMap
+  StaticDocs --> Codex["Codex"]
+  Generated --> Codex
+  OpsAudit --> Codex
+  CapabilityMap --> Codex
+```
+
+## Implementation Priority
+
+1. Keep `AI/` as the curated human-readable brain.
+2. Use generated symbol/file indexes under `AI/generated/`.
+3. Use `.\ctoa.ps1 brain refresh` for indexes and `.\ctoa.ps1 brain doctor` for
+   local operations evidence.
+4. Use `.\ctoa.ps1 brain pack` as the local secret-safe context packer.
+5. Add nested `AGENTS.md` for `AI/` and `scripts/lua/`.
+6. Keep Repomix as an optional external MCP/full-repo packer after reviewing its
+   output rules for secrets.
+7. Add a project skill or plugin after the scripts stabilize.
+
+## Hard Boundaries
+
+- Do not put secrets in `AI/`.
+- Do not copy full `.env`, Vercel env values, runtime auth stores, logs, or local
+  databases into context packs.
+- Do not claim TFS packet knowledge until TFS source exists.
+- Do not treat broad Docker binds as safe just because WARP is connected.
 ```
 
 
@@ -740,679 +1424,1569 @@ Snapshot date: 2026-07-07 Europe/Warsaw
 ```
 
 
-## `AI/OPERATIONS_AUDIT.md`
+## `AI/ARCHITECTURE_INDEX.md`
 
 ```markdown
-# CTOAi Operations Audit
+# Architecture Index
 
-Snapshot date: 2026-07-06 Europe/Warsaw
+## High-Level Flow
 
-This file records current operational evidence gathered for Engine Brain
-planning. Refresh it before release, deploy, or infrastructure work.
-
-## Local Git
-
-- Repo root: `C:/Users/zycie/CTOAi`
-- Branch: `codex/control-center-guarded-actions`
-- HEAD: `43b76958e4efa1d59f974f1ae1effb482160b964`
-- Plain `git` is available through PATH in this PowerShell session and resolves
-  to Git for Windows at `C:\Program Files\Git\cmd\git.exe`.
-- Worktree is dirty and includes pre-existing OTClient/local changes plus
-  `AI/`.
-- Remote `origin`: `https://github.com/famatyyk/CTOAi.git`
-- Remote `upstream`: `git@github.com:famatyyk/CTOAi.git`
-
-Rule: if plain `git` disappears from PATH again, use the explicit Git for
-Windows path, and do not package unrelated dirty work without a scope decision.
-
-## GitHub
-
-- Auth: `gh` is logged in as `famatyyk`.
-- Repo: `famatyyk/CTOAi`
-- Visibility: public.
-- Default branch: `main`.
-- Repo URL: `https://github.com/famatyyk/CTOAi`
-- Open PRs found: 6.
-- High-attention PRs:
-  - `#184` `[WIP] Fix CTOA VPS Global Save Cycle failure`, merge state `DIRTY`.
-  - `#183` `[WIP] Fix CTOA VPS Global Save Cycle failure`, merge state `DIRTY`.
-  - `#160`, `#157`, `#153`, `#152` are older Copilot/review lanes.
-- Last 15 listed workflow runs were completed successfully.
-
-Rule: use `gh` with Git on PATH or pass explicit `--repo` values to avoid base
-repo detection failures.
-
-## Docker
-
-- Docker client/server: `29.4.1`.
-- Docker Desktop: `4.71.0`.
-- Docker context: `desktop-linux`.
-- Compose: `v5.1.3`.
-- Running CTOAi-related containers include `ctoa-api` and `ctoa-postgres`.
-- `docker compose up -d --remove-orphans api postgres` recreated the active
-  root compose runtime and removed stale orphan containers that had kept broad
-  host bindings.
-- `ctoa-api` is bound to loopback at `127.0.0.1:8001->8000/tcp`.
-- `ctoa-postgres` is reachable only inside Docker networking (`5432/tcp`).
-- Current root `docker-compose.yml` config resolves API to
-  `127.0.0.1:8001:8000` by default through `CTOA_BIND_HOST`.
-- Current `bot/infra/docker-compose.yml` config resolves dashboard and
-  Prometheus to `127.0.0.1` by default through
-  `CTOA_BOT_DASHBOARD_BIND_HOST` and `CTOA_MONITOR_BIND_HOST`.
-- The obsolete `version` field was removed from `bot/infra/docker-compose.yml`.
-- Engine Brain doctor reports `running_broad=0` and `configured_broad=0`.
-
-Rule: local development services should bind to loopback unless LAN/VPN access
-is explicitly required.
-
-## VPN
-
-- Cloudflare WARP adapter is present and up.
-- `warp-cli` path: `C:\Program Files\Cloudflare\Cloudflare WARP\warp-cli.exe`.
-- `warp-cli status`: connected, network healthy.
-- Wi-Fi and WSL virtual adapter are also up.
-- No Windows built-in VPN profile was listed by `Get-VpnConnection`.
-
-Rule: WARP is active network context; keep Docker services on loopback unless
-LAN/VPN exposure is explicitly required and reviewed.
-
-## Vercel
-
-- Vercel CLI: `54.10.3`.
-- Logged-in account shown by CLI: `famatyyk-5221`.
-- Linked project: `ctoa-web`.
-- Project framework: `nextjs`.
-- Project node version: `24.x`.
-- `web/package.json` uses Next `^16.2.9`, React `^19.0.0`, TypeScript `^5`,
-  and Vitest `^4.1.9`.
-
-Rule: list Vercel project metadata and env names only; do not print env values.
-
-## VS Code And Codex Extension
-
-- Active extension list includes `openai.chatgpt@26.623.101652`.
-- Older OpenAI extension directories still exist:
-  - `openai.chatgpt-26.623.70822-win32-x64`
-  - `openai.chatgpt-26.623.81905-win32-x64`
-  - `openai.chatgpt-26.623.101652-win32-x64`
-- Installed relevant extensions include GitHub PRs, GitHub Actions, Docker,
-  Remote SSH/Containers/WSL, Python, Pylance, Python envs, Codex stats, and
-  ChatGPT/Codex.
-- Workspace Python interpreter is pinned to
-  `C:\Users\zycie\CTOAi\.venv\Scripts\python.exe`.
-- `.vscode/extensions.json` recommends PowerShell, OTC doc hub, and OTUI
-  highlights extensions.
-
-Rule: if Codex extension commands disappear again, inspect stale extension dirs
-and workspace storage before blaming repo code.
-
-## Local CTOAi Gate
-
-Evidence command:
-
-```powershell
-.\.venv\Scripts\python.exe scripts\ops\ctoa_update_gate.py
+```mermaid
+flowchart LR
+  Sources["Server/game data"] --> Ingest["runner/agents/ingest_agent.py"]
+  Ingest --> DB["runner/agents/db.py"]
+  DB --> Brain["runner/agents/brain_v2.py"]
+  Brain --> Generator["runner/agents/generator_agent.py"]
+  Generator --> Validator["runner/agents/validator_agent.py"]
+  Validator --> Publisher["runner/agents/publisher_agent.py"]
+  Publisher --> Artifacts["Generated Lua/Python artifacts"]
+  API["api/main.py"] --> Chat["local/OpenAI-compatible model routing"]
+  Web["web Control Center"] --> API
+  OTClient["scripts/lua/otclient/"] --> Helper["ctoa_native_helper.lua"]
 ```
 
-Current result:
+## Main Subsystems
 
-- `ok: true`
-- `status: launch_allowed`
-- Product: `CTOA Toolkit`
-- Version: `1.1.1`
-- Channel: `stable`
-- Package tier: `studio`
+### API and Control Plane
 
-Drift:
+- `api/main.py` is the main FastAPI app.
+- It owns auth, chat routing, community endpoints, safety telemetry, release
+  evidence, and OpenAI-compatible chat completion compatibility.
+- Web Control Center helpers are under `web/src/lib/`.
 
-- Historical memory referenced `scripts/ops/ctoa_env_doctor.py`, but that file
-  is absent in the current worktree.
-- Current preflight-like scripts include `scripts/ops/ctoa_update_gate.py` and
-  `scripts/ops/run_validator_with_preflight.py`.
+### Agent Pipeline
 
-## Engine Brain Doctor
+- Catalog discovers candidate servers.
+- Ingest stores server/game data.
+- Brain plans modules.
+- Generator renders modules.
+- Validator checks syntax and quality.
+- Publisher moves validated output to delivery surfaces.
 
-Evidence command:
+### Local Bot Runtime
+
+- Perception: screen/window/memory parsing.
+- Action: movement, combat, loot, spell rotation.
+- Safety: scheduler/session/humanizer.
+- Overlay: runtime status and macro UI.
+
+### Hybrid Bot Runtime
+
+- Higher-level gameplay loop with vision, templates, pathfinding, command
+  execution, and metrics.
+- Intended to bridge manual, hybrid, and autonomous modes.
+
+### OTClient Native Runtime
+
+- Loader only loads the helper by default.
+- Helper owns config, UI, HUD, profile save/load, runtime toggles, and manager
+  registration.
+- Native combat/heal/loot modules provide direct OTClient event/API examples.
+
+## Integration Points
+
+- `scripts/lua/otclient/` is the canonical OTClient helper source tree.
+- `scripts/lua/*.lua` contains small standalone generated/runtime Lua modules.
+- `prompts/mmo-lua-pack.yaml` defines prompt quality expectations for MMO Lua.
+- `runner/agents/generator_agent.py` emits Lua templates.
+- `runner/agents/validator_agent.py` validates generated Lua/Python output.
+
+## Trust Boundaries
+
+- Local secrets: `.env`, runtime auth store, JWT secret, local DB state.
+- External model backends: configured through `CTOA_*MODEL*` environment
+  variables.
+- OTClient native API: not uniform across forks; always guard calls.
+- TFS protocol: unknown until source is provided.
+```
+
+
+## `AI/API_INDEX.md`
+
+```markdown
+# API Index
+
+## FastAPI Surface
+
+Source: `api/main.py`
+
+Known endpoints:
+
+- `GET /health`
+- `GET /api/status`
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `GET /api/auth/me`
+- `POST /api/community/invite`
+- `POST /api/community/invite/accept`
+- `GET /api/community/members`
+- `POST /api/community/members/{username}/role`
+- `GET /api/community/feed`
+- `GET /api/community/invites`
+- `GET /api/release-evidence`
+- `POST /api/chat`
+- `POST /v1/chat/completions`
+- `GET /api/safety/metrics`
+- `GET /api/safety/telemetry`
+- `GET /api/safety/status`
+
+## Request Models
+
+- `Message`
+- `ChatRequest`
+- `OpenAIChatRequest`
+- `RegisterRequest`
+- `LoginRequest`
+- `InviteRequest`
+- `AcceptInviteRequest`
+- `RoleUpdateRequest`
+
+## Important Environment Variables
+
+- `CTOA_ENV`
+- `CTOA_LOCAL_MODEL_URL`
+- `CTOA_LOCAL_MODEL_NAME`
+- `CTOA_MODEL_SMALL`
+- `CTOA_MODEL_LARGE`
+- `CTOA_SMALL_MODEL_URL`
+- `CTOA_LARGE_MODEL_URL`
+- `CTOA_SMALL_API_KEY`
+- `CTOA_LARGE_API_KEY`
+- `CTOA_ROUTE_DEFAULT`
+- `CTOA_ROUTER_LONG_CHARS`
+- `CTOA_ROUTER_LONG_TURNS`
+- `CTOA_QUALITY_RETRY`
+- `CTOA_ROUTER_LOG`
+- `CTOA_RELEASE_EVIDENCE_FILE`
+- `CTOA_AUTH_STORE_FILE`
+- `CTOA_AUTH_REQUIRED`
+- `CTOA_API_SELF_REGISTER_ENABLED`
+- `CTOA_API_SELF_REGISTER_CODE`
+- `CTOA_JWT_SECRET`
+- `CTOA_JWT_TTL_SECONDS`
+- `CTOA_RATE_LIMIT_ENABLED`
+- `CTOA_TRUST_PROXY_HEADERS`
+- `CTOA_CHAT_RATE_LIMIT_PER_MIN`
+- `CTOA_AUTH_RATE_LIMIT_PER_MIN`
+- `CTOA_READ_RATE_LIMIT_PER_MIN`
+- `CTOA_AUDIT_LOG_FILE`
+- `CTOA_SAFETY_TELEMETRY_FILE`
+- `CTOA_SAFETY_ALERT_THRESHOLD`
+
+## Behavior Rules
+
+- Production must have a non-default `CTOA_JWT_SECRET`.
+- Production public member self-registration is disabled unless
+  `CTOA_API_SELF_REGISTER_ENABLED=true` and `CTOA_API_SELF_REGISTER_CODE` are
+  configured.
+- `/api/auth/register` cannot create `owner` or `operator` accounts without an
+  authenticated owner token, even when the auth store is empty.
+- Rate limiting is grouped by endpoint type.
+- Rate limiting and HTTP audit IP identity use the socket client by default.
+  `X-Forwarded-For` is trusted only when `CTOA_TRUST_PROXY_HEADERS=true`, and
+  then only the first syntactically valid forwarded IP is accepted.
+- Audit logging writes JSONL-style HTTP audit entries.
+- HTTP audit entries redact token/password/API-key/Bearer forms and collapse
+  local absolute paths in actor, IP, user-agent, request path, and nested meta
+  before writing `CTOA_AUDIT_LOG_FILE`.
+- Chat execution selects model/backend based on request complexity and route
+  settings.
+- Safety sanitizer records interventions and masks unsafe assistant claims.
+- Release evidence reads from `CTOA_RELEASE_EVIDENCE_FILE` or default
+  `runtime/release/latest-approval.json`, with bounded JSON reads,
+  display-safe `evidence_path`, recursive token/password/API-key redaction, and
+  local absolute path collapse before browser response.
+
+## Test Guidance
+
+When touching `api/main.py`, prefer targeted API tests for:
+
+- auth required vs disabled
+- role checks
+- rate limit groups
+- audit logging side effects
+- chat model route selection
+- safety sanitizer output
+- release evidence missing/invalid/valid states
+```
+
+
+## `AI/LUA_INDEX.md`
+
+```markdown
+# Lua Index
+
+## Standalone Lua Modules
+
+Source folder: `scripts/lua/`
+
+- `auto_heal.lua`: `AutoHeal.shouldCast`, `AutoHeal.nextAction`.
+- `event_logger.lua`: JSONL event shaping through `EventLogger`.
+- `loot_filter.lua`: allow/deny loot decision helpers.
+- `pathing_helper.lua`: route normalization, next waypoint, blocked retry.
+- `supply_manager.lua`: supply threshold checks and refill action.
+- `target_priority.lua`: target scoring and priority selection.
+- `safety_interrupt.lua`: critical-state interrupt action.
+- `telemetry_exporter.lua`: JSONL telemetry serialization.
+- `ctoa_hotkey_status.lua`: periodic hotkey status file/log emission.
+- `ctoa_path_probe.lua`: runtime path probe.
+- `module_reporter.lua`: periodic module status log.
+- `proximity_watch.lua`: player proximity alert.
+- `status_beacon.lua`: HP/mana status beacon.
+- `emergency_heal.lua`: simple emergency heal loop.
+
+Standalone modules often assume a generic runtime API such as `Player`, `Game`,
+`Creature`, and `register("onThink", ...)`. Keep these separate from OTClient
+native modules unless an adapter layer is written.
+
+## OTClient Native Lua Modules
+
+Source tree: `scripts/lua/otclient/`
+
+- `ctoa_otclient_loader.lua`
+- `ctoa_native_helper.lua`
+- `ctoa_native_combat.lua`
+- `ctoa_native_heal.lua`
+- `ctoa_native_loot.lua`
+- `ctoa_ek_profile.lua`
+
+Native modules use OTClient globals:
+
+- `g_game`
+- `g_map`
+- `g_ui`
+- `g_keyboard`
+- `g_resources`
+- `g_clock`
+- `connect`
+- `cycleEvent`
+- `scheduleEvent`
+- `addEvent`
+- `removeEvent`
+
+## Helper Config Areas
+
+`HELPER_CONFIG` in `ctoa_native_helper.lua` owns:
+
+- global enable state
+- safe boot runtime disable flag
+- helper hotkey
+- auto hide
+- window position
+- theme preset
+- compact mode
+- healing settings
+- combat/targeting settings
+- tools settings
+- cavebot waypoints and movement
+- HUD preferences
+- smoke tab/subtab state
+
+## Profile Files
+
+`ctoa_ek_profile.lua` is generated by `scripts/ops/ctoa_otprofile_builder.py`.
+The helper loads profile candidates from user/module paths and merges them into
+`HELPER_CONFIG`.
+
+Profile saves are ordered by:
+
+- `PROFILE_KEY_ORDER`
+- `UI_PREFS_KEY_ORDER`
+- `HEALING_KEY_ORDER`
+- `TOOLS_KEY_ORDER`
+- `HUD_KEY_ORDER`
+- `ROTATION_KEY_ORDER`
+- `HEAL_SPELL_KEY_ORDER`
+- `WAYPOINT_KEY_ORDER`
+
+Preserve this order when changing profile persistence.
+
+## Hook Patterns
+
+- Generic scripts: `register("onThink", onThink)`.
+- OTClient events: `connect(LocalPlayer, {...})`,
+  `connect(Creature, {...})`, `connect(Container, {...})`,
+  `connect(Map, {...})`, `connect(g_game, {...})`.
+- Periodic OTClient loops: `cycleEvent(onThink, interval_ms)`.
+
+## Validation
+
+Minimum checks:
+
+- Syntax parse with `luac -p` when available.
+- Fallback bracket/sanity checks when `luac` is not available.
+- Manual OTClient load smoke for helper/UI/hotkey work.
+- Fresh `ctoa_local.log` lines for loader/helper changes.
+```
+
+
+## `AI/OTCLIENT_INDEX.md`
+
+```markdown
+# OTClient Index
+
+## Package Contents
+
+`scripts/lua/otclient/` contains the canonical helper source files:
+
+- `ctoa_otclient.otmod`
+- `ctoa_otclient_loader.lua`
+- `ctoa_native_helper.lua`
+- `ctoa_native_combat.lua`
+- `ctoa_native_heal.lua`
+- `ctoa_native_loot.lua`
+- `ctoa_ek_profile.lua`
+- `README.md`
+
+## Module Definition
+
+`ctoa_otclient.otmod`:
+
+- name: `ctoa_otclient`
+- description: `CTOA OTClient helper and native automation modules`
+- version: `1.1b`
+- `autoLoad: true`
+- `autoLoadPriority: 1000`
+- script: `ctoa_otclient_loader`
+
+## Loader
+
+`ctoa_otclient_loader.lua`:
+
+- Creates/reuses `_G.CTOA_OTCLIENT`.
+- Version: `1.1b`.
+- Main helper module: `ctoa_native_helper.lua`.
+- Load delay: `1500 ms`.
+- Resolves helper from resource/workdir candidate paths.
+- Connects to `g_game.onGameStart` and `g_game.onGameEnd`.
+- Schedules helper load through `scheduleEvent` or `addEvent` fallback.
+- Logs through game console when available.
+- Runtime modules are skipped by loader; helper UI is loaded first.
+
+## Helper
+
+`ctoa_native_helper.lua`:
+
+- Owns `HELPER_CONFIG`, `Helper`, UI style/theme/layout tables, widgets, and
+  runtime state.
+- Loads `ctoa_ek_profile.lua` from candidate user/module paths.
+- Applies safe boot by disabling runtime action modules unless profile opts out.
+- Builds helper window, tabs, settings rows, tools panels, HUD, and profile UI.
+- Binds helper hotkey, default `Ctrl+J`.
+- Uses `cycleEvent(onThink, HELPER_CONFIG.tick_ms)`.
+- Exposes:
+  - `Helper.showTab(tab)`
+  - `Helper.onThink(self)`
+  - `Helper.reloadProfile()`
+  - `Helper.runMovementApiProbe()`
+  - `Helper.runMagicApiProbe()`
+  - `Helper.runApiProbe()`
+  - `Helper.setEnabled(enabled)`
+- Current helper version: `v1.1b`.
+- API v1.1b adds a central safe API registry probe for core, player/vitals,
+  movement/pathing, combat, magic/runes, UI/resources, and container/loot APIs.
+- Magic v1.1b keeps the safe API probe, versioned HUD/footer text, and a Magic
+  tab `Rune box` actionbar selector.
+- Ensures `_G.CTOA_Manager` exists and registers module `helper`.
+
+## Combat
+
+`ctoa_native_combat.lua`:
+
+- Config: `DEFAULT_COMBAT_CONFIG`.
+- Runtime state: `Combat`.
+- Guards offline, disabled, PZ, no local player, invalid targets.
+- Finds targets through `g_map.getSpectatorsInRange` or
+  `g_map.getCreaturesInRange`.
+- Scores by priority names, distance, and validity.
+- Uses `g_game.attack(target)` and optional `g_game.follow(target)`.
+- Clears with `cancelAttack`, `stopAttack`, `attack(nil)`, `follow(nil)` where
+  available.
+- Uses `cycleEvent(onThink, 100)`.
+- Connects `Creature.onDeath`.
+
+## Heal
+
+`ctoa_native_heal.lua`:
+
+- Config: `HEAL_SETTINGS`.
+- Cooldown: `HEAL_COOLDOWN = 1000`.
+- Uses `g_game.talk(spell)` for heal/mana spells.
+- Connects `LocalPlayer.onHealthChanged` and `LocalPlayer.onManaChanged`.
+
+## Loot
+
+`ctoa_native_loot.lua`:
+
+- Config: `LOOT_CONFIG`.
+- Uses `VALUABLE_LOOT` item id map.
+- Connects `Container.onOpen` and `Map.onItemAppear`.
+- Scans container/item events and moves valuable items when supported.
+
+## Profile
+
+`ctoa_ek_profile.lua`:
+
+- Generated by `scripts/ops/ctoa_otprofile_builder.py`.
+- Default hotkey: `Ctrl+J`.
+- Potion hotkey: `F1`.
+- Mana potion hotkey: `F2`.
+- Rune hotkey: `F5`.
+- Contains healing, combat, tools, rune, and profile settings for EK use.
+
+## Manual Smoke
+
+1. Put package files under the OTClient module/user directory.
+2. Ensure loader is called by OTClient module autoload or `init.lua`.
+3. Start OTClient.
+4. Confirm `[CTOA-OTC]` or helper log line appears.
+5. Toggle helper with configured hotkey.
+6. Confirm runtime remains disabled in safe boot unless explicitly enabled.
+7. Check fresh `ctoa_local.log` lines.
+```
+
+
+## `AI/PACKET_INDEX.md`
+
+```markdown
+# Packet Index
+
+## Status
+
+Packet/protocol indexing is pending source.
+
+The current workspace contains CTOAi and OTClient Lua modules, but not the TFS
+fork or OTClient C++ protocol implementation needed to build an authoritative
+packet index.
+
+## What Is Known
+
+- OTClient Lua modules use high-level client APIs (`g_game`, `g_map`,
+  `LocalPlayer`, `Container`, `Map`, `Creature`) rather than raw packet parsing.
+- CTOAi Python-side bot code primarily works through perception, input, template
+  matching, generated Lua, and API/control surfaces.
+- No opcode table, protocol version table, packet serializer, or server-side
+  packet handler was found in the provided source snapshot.
+
+## Required Source For Full Packet Index
+
+Provide or locate:
+
+- TFS fork source tree.
+- `ProtocolGame` implementation.
+- Client protocol parser/serializer sources.
+- Opcode enum/header files.
+- Lua script interface files.
+- Custom packet handlers and extended opcodes.
+- Login/game protocol version negotiation files.
+
+## Future Index Format
+
+Each packet entry should include:
+
+- packet name
+- opcode
+- direction: client to server, server to client, or both
+- source file and line
+- payload fields and types
+- validation rules
+- event/hook triggered
+- related Lua callback
+- related CTOAi module
+- tests or smoke path
+
+## Rule
+
+Do not add packet claims to prompts, docs, or code until backed by exact source
+references.
+```
+
+
+## `AI/CLASS_INDEX.md`
+
+```markdown
+# Class and Module Index
+
+## Python API Classes
+
+`api/main.py`:
+
+- `Message`
+- `ChatRequest`
+- `OpenAIChatRequest`
+- `RegisterRequest`
+- `LoginRequest`
+- `InviteRequest`
+- `AcceptInviteRequest`
+- `RoleUpdateRequest`
+
+## Python Hybrid Bot Classes
+
+`runner/hybrid_bot/gameplay_engine.py`:
+
+- `GameplayMode`
+- `CombatStats`
+- `CombatEngine`
+- `MovementEngine`
+- `LootEngine`
+- spell/gameplay decision classes later in the same file
+
+Other hybrid bot modules contain:
+
+- command execution classes in `command_executor.py`
+- template/library classes in `template_library.py`
+- vision data/classes in `vision_layer.py`
+- state/metrics/pathfinding classes in their matching files
+
+## Python Bot Runtime Classes
+
+`bot/perception/window.py`:
+
+- Windows capture structs and `WindowHandle`.
+
+`bot/safety/scheduler.py`:
+
+- `SessionScheduler`.
+
+Other runtime modules expose functional APIs for action/perception/safety
+behavior.
+
+## Agent Modules
+
+`runner/agents/`:
+
+- `catalog_agent.py`
+- `ingest_agent.py`
+- `brain_v2.py`
+- `generator_agent.py`
+- `validator_agent.py`
+- `publisher_agent.py`
+- `executor.py`
+- `orchestrator.py`
+- `db.py`
+
+These are module-oriented scripts rather than class-heavy services.
+
+## Lua Tables and Modules
+
+Standalone Lua:
+
+- `AutoHeal`
+- `EventLogger`
+- `PathingHelper`
+- `SupplyManager`
+- `TelemetryExporter`
+- `SafetyInterrupt`
+- target/loot helper tables depending on file
+
+OTClient native:
+
+- `CTOA_OTCLIENT`
+- `HELPER_CONFIG`
+- `Helper`
+- `CTOA_Manager`
+- `Combat`
+- `HEAL_SETTINGS`
+- `LOOT_CONFIG`
+- `VALUABLE_LOOT`
+
+## TFS Classes
+
+Pending source. Expected classes to index after TFS source is available:
+
+- `Creature`
+- `Player`
+- `Monster`
+- `Npc`
+- `Combat`
+- `Game`
+- `ProtocolGame`
+- `Scheduler`
+- `Dispatcher`
+- `LuaScriptInterface`
+- `Item`
+- `Container`
+- custom systems in the fork
+```
+
+
+## `AI/FEATURE_ROADMAP.md`
+
+```markdown
+# Feature Roadmap
+
+## Default Horizon: 90 Days, Helper First
+
+- Stabilize and productize the OTClient/Solteria Helper before broader CTOAi
+  expansion.
+- Keep `scripts/lua/otclient/` as the canonical Helper source tree; generated
+  ZIPs stay under `runtime\solteria_helper_dev\` or release staging.
+- Preserve safe boot defaults: runtime disarmed, combat/offensive/movement
+  actions off unless explicitly enabled.
+- Treat the live Solteria client as protected. Development uses
+  `runtime\solteria_helper_dev` and the sandbox client first.
+- Keep helper sandbox path validation strict: `SandboxClient` must stay under
+  `%LOCALAPPDATA%`, use separator-aware containment, and must not equal or sit
+  inside `SourceClient`.
+- Required gates before live promotion: `PrepareDev`, `ValidateDev`,
+  `SmokePreflight`, in-world `SmokeAttachAll`, then explicit live approval via
+  `PromoteLiveCtoa -ApproveLiveDeploy`.
+- A post-promotion live client launch is not implicit. Operators must add
+  `-LaunchAfterPromote`; the wrapper may launch a missing live client but must
+  never stop or restart an existing live client.
+- Current Helper `v2.1.1a` is live-promoted with 49-file SHA-256 parity and
+  fresh `Initialized successfully v2.1.1a` boot evidence. Its production gate
+  passed after UI stabilization, shell-budget reduction, a 20-shot theme
+  matrix, 32/32 module static gates, 16/16 in-world attach coverage, and
+  singleton relog evidence; runtime remained disarmed.
+- Helper P6 Module Lane is repo- and sandbox-complete: Healing/Recovery, Combat,
+  CaveBot, Loot, Timer, Heal Friend, Conditions, Equipment, and Scripting are
+  all `static_gated` by dedicated reports, current ModuleStaticGates and
+  ReadyCheck, and newer in-world tab evidence. Runtime stayed disarmed.
+- The completion evidence is passive: Combat has no active target; CaveBot only
+  reports movement capabilities and retry/PZ/offline/empty-route guards; Timer
+  returns `hold_timer_disabled`; and Loot returns
+  `hold_feature_flag_disabled` with zero planned items. No attack, movement,
+  sio, condition recovery, equipment swap, loot move/open/use, timer cast,
+  eval, or snippet runtime was enabled. The next functional phase requires a
+  separate runtime-bridge review after the completed v2.1.1a stabilization.
+
+## P0: Make This Brain Usable In Daily Codex Work
+
+- Keep this `AI/` folder current when OTClient, Lua generator, API, or Control
+  Center contracts change.
+- Add a lightweight script that refreshes Lua/API/class inventories into
+  markdown or JSON.
+- Add this folder to the handoff checklist for large CTOAi tasks.
+- Add `AI/generated/` for generated file tree and symbol maps.
+- Add `.\ctoa.ps1 brain refresh` as the one-command local Engine Brain updater.
+- Keep `scripts/ops/ctoa_full_workspace_audit.py` available for full-file
+  inventory and roadmap refresh work. The audit must use `lstat`/regular-file
+  checks and skip symlinked files before size accounting or SHA256 hashing, so a
+  repo-local symlink cannot pull external local content into inventory evidence.
+  It should also publish an audit-integrity gate with non-regular entry
+  accounting, bounded hash counts, and proof that sensitive-name files were not
+  hashed, plus a validation-evidence gate backed by local runtime command
+  evidence for Python tests, web lint/tests, diff check, and Engine Brain
+  refresh/doctor/pack.
+- Generate `AI/generated/OWNERSHIP_MAP.md`, `AI/generated/DOC_SYNC.md`, and
+  `AI/generated/SECRET_GUARDRAIL.md` during `brain refresh`.
+- Keep Engine Brain indexing tolerant of volatile generated directories such as
+  `web/.next/*`; excluded directories should be pruned before traversal.
+- Use `brain pack all|helper|control-center|infra|security` for scoped context
+  packs.
+- Keep the local Codex skill `ctoa-engine-brain` aligned with the operator
+  shortcuts, generated artifacts, and secret-safe context rules.
+- Restore or replace the missing environment doctor with checks for Git, Docker,
+  VPN/WARP, Vercel, VS Code/Codex extension, GitHub, and local update gate.
+- Keep Docker compose bind defaults on loopback and require explicit env opt-in
+  for LAN/VPN exposure.
+- After compose/profile changes, recreate stale local containers when needed and
+  require Engine Brain doctor to show `running_broad=0` and
+  `configured_broad=0` before treating runtime exposure as clean.
+- Keep production startup guardrails strict: API must use explicit
+  `CTOA_CORS_ORIGINS`, a non-default `CTOA_JWT_SECRET`, and a pre-provisioned
+  `CTOA_AUTH_STORE_FILE`; mobile console self-registration stays off by default
+  in production and requires `CTOA_SELF_REGISTER_CODE` when explicitly enabled.
+- Keep default account seeding and local seed-login fail-closed: seed accounts
+  require explicit `CTOA_ALLOW_SEED_ACCOUNTS=true`, and Control Center local
+  seed-login requires `CTOA_ENABLE_LOCAL_SEED_LOGIN=true` plus
+  `CTOA_SEED_*_PASSWORD` env vars that are not stored in the repo.
+- Keep web `ctoa_token` cookies centralized and production-safe: all writers
+  should use `authCookies.ts`, stay `httpOnly` and `sameSite=lax`, and set
+  `Secure` automatically in production.
+- Keep `/api/auth` proxy responses browser-safe: backend `token`,
+  `access_token`, `refresh_token`, nested token-like fields, and token/password
+  strings must not be returned in JSON bodies. Cookie auth should still use the
+  original backend token through the centralized httpOnly `ctoa_token` writer.
+- Keep local `/api/auth/seed-login` on the same shared auth proxy sanitizer as
+  `/api/auth`; it may extract the original backend token for the httpOnly
+  cookie, but browser-visible JSON must never expose nested token-like backend
+  fields or unsanitized backend detail strings.
+- Keep public docs/site admin helpers constrained: API base URLs must be parsed
+  and normalized, HTTP must remain local/private-dev only, local fallback admin
+  passwords must not persist in `localStorage`, owner reset must clear
+  session-scoped API tokens and local fallback admin passwords too, and
+  `tests/test_docs_site_security.py` must reject dynamic HTML regressions.
+- Keep public docs/site live dashboard constrained the same way: API base URLs
+  must use the URL guardrail, tokens must stay session-scoped, dynamic
+  `innerHTML` and inline handlers must stay out of the inline dashboard script.
+- Keep mobile-console DB-backed account mutations privilege-safe: password
+  changes, role changes, and deactivation must revoke existing sessions for the
+  affected user so stale tokens cannot retain old owner/operator privileges.
+- Keep mobile-console self-registration least-privilege: public/self-register
+  paths may create only `member`, and operator endpoints must enforce
+  `operator` or `owner` role rather than accepting any authenticated session.
+- Keep API public registration fail-closed in production:
+  `CTOA_API_SELF_REGISTER_ENABLED=true` requires
+  `CTOA_API_SELF_REGISTER_CODE`, and `/api/auth/register` must never create
+  `owner` or `operator` without an authenticated owner token.
+- Keep backend chat routing diagnostics operator-only: `/api/chat` and
+  `/v1/chat/completions` may expose `debug_route` metadata only to `owner` or
+  `operator`, and the returned route object must stay allowlisted without
+  backend URLs, fallback backend URLs, keys, or internal endpoint values. Router
+  stdout logs must use the same sanitized route view.
+- Keep Control Center chat persistence and exports secret-safe: localStorage
+  snapshots, transcript downloads, markdown exports, and JSON chat logs must
+  redact Bearer/provider tokens, token/password/API-key forms, quoted
+  JSON-like secret fields, and quality/publication-note secrets before they are
+  stored or exported.
+- Keep dev auth placeholders static-scan clean while preserving production
+  fail-closed behavior: production must continue rejecting unset/default
+  `CTOA_JWT_SECRET`.
+- Keep database CLI fallbacks secret-safe: `DB_PASSWORD` must not be placed in
+  `psql` or `docker exec` command argv.
+- Keep runner agent database connections secret-safe too: do not assemble
+  `DB_PASSWORD` into text DSN strings that can be copied into exception or log
+  paths, and redact secret-bearing DB exception messages before logging
+  `agent_runs` write failures.
+- Keep mobile-console command audit secret-safe: `/api/command` audit records
+  must redact Bearer tokens, common provider tokens, token/password assignments,
+  and common long token/password CLI options before writing
+  `logs/mobile-console-audit.log`.
+- Keep mobile-console operator command output secret-safe too: stdout/stderr
+  returned from `/api/command`, status report helpers, and log tails should be
+  sliced and redacted for Bearer, provider-token, token/password, and
+  `PGPASSWORD` forms before the UI receives them. Local log-tail fallbacks must
+  read from the end through a byte cap and reject symlinked log files before any
+  UI response, while DB fallback stdout used for parsing stays unmodified.
+- Keep mobile-console audit accountable without leaking credentials: audit
+  records should include actor, role, auth mode, and auth transport, but never
+  session tokens or CSRF tokens.
+- Keep mobile-console cookie-authenticated mutations CSRF-protected with
+  regression coverage: cookie-only unsafe methods require `X-CSRF-Token`, while
+  bearer/header-authenticated operator calls stay header-authenticated.
+- Keep mobile-console generated-artifact responses secret-safe:
+  `/api/agents/generated/latest`, manifest summaries, and SLO observations
+  should expose public artifact paths rather than local absolute
+  `GENERATED_DIR`, temp-directory, or unknown runtime paths. Generated
+  `latest.json` and run `manifest.json` reads should be byte-capped,
+  symlink-rejecting, and fail closed to scan/default responses when oversized
+  or invalid.
+- Keep mobile-console local metadata JSON reads bounded too: command
+  dictionary, product manifest, and product user config reads should reject
+  symlinked files and oversized/non-object JSON before driving operator API
+  responses.
+- Keep mobile-console file metadata responses display-safe too: admin settings,
+  idea parking, auto-trainer report status, disk probes, one-click generated
+  directories, and client-sync result paths should expose public artifact names
+  or repo-relative paths instead of absolute local host paths.
+- Keep mobile-console auto-trainer report reads physically bounded:
+  `/api/agents/auto-trainer/latest` should read markdown and JSON through
+  byte caps, return stable parse/oversize states, and avoid echoing raw parser
+  exception text.
+- Keep legacy mobile-console dashboard rendering DOM-safe: API payloads in
+  `mobile_console/static/app.js` must use `createElement`/`textContent`, and
+  `tests/test_mobile_console_static_xss_security.py` must reject dynamic
+  `innerHTML` regressions.
+- Keep mobile-console preset execution structured: safe-mode `/api/command`
+  presets must run through backend-owned `argv/cwd/env` specs, not raw
+  pseudo-shell snippets.
+- Keep legacy mobile-console full-access closed: `CTOA_MOBILE_FULL_ACCESS=true`
+  must not re-enable arbitrary command text execution through `/api/command`;
+  the endpoint should accept only backend-owned presets.
+- Keep legacy mobile/desktop operator UIs aligned with that contract: status
+  payloads should report `command_mode=presets`, the mobile legacy UI should
+  not render a full-command box, and the desktop admin console should run only
+  presets loaded from `/api/presets`.
+- Keep legacy mobile/desktop Intel guarded writes behind explicit
+  confirmation: `/api/agents/intel/launch`, `/api/agents/execution/run`, and
+  `/api/agents/intel/run` should require owner auth plus `confirm=true` and a
+  non-empty audit `reason` before DB writes, orchestrator triggers, or client
+  sync can run.
+- Keep mobile-console Intel target validation fail-closed in production:
+  localhost, private IPs, link-local/metadata IPs, `.local` names, and
+  single-label internal hosts require explicit
+  `CTOA_ALLOW_PRIVATE_INTEL_TARGETS=true`.
+- Keep mobile-console server/intel target URLs free of secret-bearing or
+  ambiguous components before DB/audit/UI use: reject embedded credentials,
+  query strings, fragments, backslashes, and decoded `.`/`..` traversal.
+- Keep mobile-console local runtime proxy base URLs fail-closed:
+  `CTOA_API_BASE_URL` and `CTOA_INTEL_API_BASE_URL` must target local runtime
+  API hosts only (`localhost`, `127.0.0.1`, `[::1]`, or
+  `host.docker.internal`) and must reject embedded credentials, query strings,
+  fragments, backslashes, and decoded traversal before `/api/intel/*` or
+  `/api/dashboard/release-evidence` can call `urlopen`. Runtime proxy paths
+  must stay as relative `/api/...` paths without query strings, fragments,
+  empty segments, traversal, backslashes, or encoded separators. Runtime proxy
+  error text returned to browsers must use the shared redactor so URL/open
+  failures cannot echo token/password forms.
+- Keep Intel client-sync writes confined to `CTOA_CLIENT_SCRIPTS_DIR`; target
+  slug, autoloader, and init-file settings must be validated before any copy.
+  Init-file updates should reject symlinked or oversized files, fail fast before
+  copying generated Lua, and write through hidden PID/UUID temp files with
+  `fsync` plus atomic replace. Generated Lua copies should reject symlinked or
+  oversized sources, reject existing destination symlinks, and write through the
+  same atomic temp-file path.
+- Keep repo-local static security scanning available through
+  `requirements-dev.txt`; the pre-commit Bandit scope
+  `runner mobile_console scripts desktop_console bot` must stay at
+  `SEVERITY.HIGH=0` and `SEVERITY.MEDIUM=0`, and should remain at `results=0`
+  and `errors=0` after each security or operator-script change.
+- Keep `training/` supply-chain clean: Hugging Face `from_pretrained()` calls
+  in scripts and notebooks must use an immutable
+  `CTOA_TRAINING_MODEL_REVISION` commit SHA, remote model code must stay opt-in,
+  GitHub dataset collectors must validate API/raw HTTPS hosts, allowlisted query
+  strings, decoded URL paths, decoded dataset filenames, and backslashes before
+  `urlopen` or file writes, and Bandit should report zero findings for both
+  `training` and the broader `bot training scoring agents` slice.
+- Keep prompt/eval/scoring workflows tolerant of partial operator context:
+  BRAVE template rendering should surface missing variables as `[UNKNOWN]`
+  instead of raising, and the prompt/scoring/evals Bandit slice should stay at
+  zero findings.
+- Keep bot runtime static-scan clean too: behavioral jitter and Q-learning
+  exploration should use the centralized random helper, best-effort OS/UI
+  probes should log concrete failures instead of silent `except/pass`, overlay
+  subprocess launches should stay behind `runner.process_safety`, and hybrid
+  bot template cache/source handling should reject path traversal, unsafe
+  filename components, secret-bearing URLs, localhost/private/link-local or
+  internal remote template hosts, and ambiguous remote template source paths
+  before disk writes or `urlopen`.
+- Keep bot client runtime profile handling diagnostic and atomic:
+  `bot/config/runtime_profile.py` should not use broad `except Exception` for
+  config load or numeric coercion, invalid profile JSON should expose a
+  non-secret diagnostic code, and profile saves should use hidden PID/UUID temp
+  files with `fsync`, `replace`, and cleanup.
+- Keep Desktop Console updater guarded: release repos must stay in `owner/repo`
+  form, Windows assets must be safe `.exe` filenames without path separators,
+  update URLs/final redirects must stay on trusted GitHub HTTPS hosts, signed
+  query strings are allowed only on final trusted GitHub asset CDN redirects,
+  downloads must stay size-bounded and use temp-file cleanup plus atomic final
+  replacement, and the desktop client must not auto-run downloaded update
+  executables.
+- Keep dependency audits clean: `pip-audit -r requirements.txt` and
+  `npm audit --json` in `web\` should report zero vulnerabilities. Keep the
+  web `postcss` pin/override unless Next ships a dependency path that no longer
+  pulls vulnerable PostCSS. Keep `tests/test_web_dependency_security.py` as the
+  regression guard for the PostCSS pin/override and lockfile tree.
+- Keep non-security hashes explicit with `usedforsecurity=False`, prohibit
+  Python `eval` in preview/parser tooling, and keep discovery agents on
+  verified TLS by default. Insecure discovery TLS must remain explicit
+  per-agent env opt-in only.
+- Keep catalog/scout/ingest discovery requests behind
+  `runner.http_safety.require_public_discovery_url`: public `http://` and
+  `https://` targets are allowed, but loopback/private/link-local/metadata IPs,
+  single-label or internal hostnames, embedded credentials, fragments, token
+  query parameters, backslashes, and decoded path traversal must be rejected
+  before `urlopen`.
+- Keep runner HTTP callers behind `runner.http_safety.require_http_url` before
+  generic network calls; token-bearing GitHub API wrappers and health/CI
+  publishing must validate `GITHUB_REPOSITORY`/owner-name inputs through
+  `runner.http_safety.require_github_repository` and use
+  `runner.http_safety.require_github_api_url` so Bearer tokens are sent only to
+  `https://api.github.com/repos/{owner}/{repo}/...` with non-empty owner/repo
+  segments and without credentials, fragments, traversal, encoded path
+  separators, or token query parameters.
+- Keep Phase-5 attention notification webhooks behind
+  `runner.http_safety.require_notify_webhook_url`: URLs must use HTTPS, target
+  allowlisted Slack or Discord webhook hosts, and omit credentials, query
+  strings, fragments, backslashes, empty/traversal segments, or encoded path
+  separators before any `urlopen` call.
+- Keep local runtime smoke URLs behind
+  `runner.http_safety.require_loopback_http_url`; smoke credentials and bearer
+  tokens must stay on `127.0.0.1`, `localhost`, or `[::1]` without credentials,
+  query strings, fragments, backslashes, or traversal.
+- Keep API auth-store and runner state artifact writes non-predictable:
+  `api/main.py` auth JSON, `runner/runner.py` YAML state, and runner execution
+  summary JSON, `runner/health_metrics.py` latest health snapshot JSON, and
+  `desktop_console/app.py` operator settings JSON, plus Mobile Console admin
+  settings and idea parking JSON, and `.ctoa-local/user-config.json` plus
+  `.ctoa-local/bootstrap-state.json` from `ctoa_product_bootstrap.py` should use
+  hidden PID/UUID temp files in the target directory, `fsync` before `replace`,
+  cleanup in `finally`, and no `path.suffix + ".tmp"` sibling names. Desktop
+  Console settings reads and Mobile Console local JSON reads should stay
+  byte-bounded and fail closed to defaults for oversized, invalid, or symlinked
+  state. API auth-store reads should stay byte-bounded, reject symlinked or
+  invalid existing stores, and fail closed instead of seeding over a bad store.
+  `ctoa_update_gate.py` should read
+  `.ctoa-local/bootstrap-state.json` through a byte cap, reject symlinked state,
+  and return a stable `invalid_bootstrap_state` status for malformed local
+  launch state.
+- Keep Helper/release-gate and sprint runtime state JSON/YAML writes on the
+  same non-predictable temp-file contract. Helper profile audit, Helper goal
+  audit, Helper release gate, Solteria Helper PowerShell test-env reports, and
+  `sprint_state_sync.py` must use PID+UUID/GUID temp names with cleanup rather
+  than PID-only or fixed suffix temp files.
+- Keep LLM/model backend URLs behind shared fail-closed guards before prompts
+  or provider keys are sent: local model HTTP is allowed only for loopback and
+  `host.docker.internal`, remote model backends require explicit opt-in plus
+  HTTPS, and Azure provider endpoints must be HTTPS hosts under the allowed
+  Azure service domains with no credentials, query strings, fragments,
+  backslashes, or traversal.
+- Keep `scripts/ops` webhook senders behind route-specific guardrails. Generic
+  Azure activity webhooks must be HTTP(S), Azure `discord_webhook` destinations
+  must be allowlisted Discord webhook URLs, and Phase-5 notification webhooks
+  must be allowlisted Slack or Discord URLs before any `urlopen` call.
+- Keep Azure Activity webhook listener startup fail-closed: listener mode
+  defaults to `127.0.0.1`, and any non-loopback bind requires
+  `CTOA_AZURE_INGEST_SECRET` before the server starts.
+- Keep trusted subprocess calls behind `runner.process_safety` where practical:
+  resolve Git through `CTOA_GIT_BIN`/PATH/Windows Git fallback, resolve optional
+  tools before use, avoid partial executable names in agent and ops code, and
+  keep destructive sync helpers bounded to validated child paths under their
+  target roots. Live-target open/export resolvers must also reject traversal,
+  absolute, drive-rooted, and symlink-escape candidates, and manifest/export
+  file handling must reject symlink traps before reading or writing evidence.
+  Generator agents that write module artifacts must keep queue-provided output
+  paths under `CTOA_GENERATED_DIR/<server-slug>/` and reject absolute paths,
+  drive-style paths, traversal, backslashes, unsafe filename characters, and
+  output symlinks before writing files or updating DB status. Generator
+  manifest writes under `generated/manifests` must use the same containment and
+  symlink-trap guard before writing per-run or latest manifest JSON.
+  Read-side consumers of `generated/manifests/latest.json` must also reject
+  `manifest_path` values that resolve outside the configured manifests
+  directory before loading JSON or returning manifest summaries. Consumers that
+  enumerate `generated/manifests/*/manifest.json` must use the same resolved
+  containment check and skip symlinked run directories that escape the
+  manifests root before trend, SLO, or night-report evidence is built.
+  Night activity reports must also read logs through a bounded tail sample and
+  expose sampled/source byte counts when the source log is truncated.
+  Hybrid bot metrics/profiler exports must keep CSV/JSONL files under the
+  selected metrics output directory and reject traversal, absolute paths,
+  drive-style paths, backslashes, unsafe filename characters, control
+  characters, unsupported extensions, realpath escapes, and symlink outputs.
+  Track agents and generic deliverable writers must keep fallback deliverables
+  under the repo root and reject absolute paths, drive-style paths, traversal,
+  backslashes, unsafe filename characters, control characters, realpath escapes,
+  and existing output symlinks before writing.
+  Queue worker startup logs must display redacted Redis URLs, and invalid queue
+  JSON payloads must not be copied into job metadata or result records.
+  Generators that write executable helper scripts must emit the same guardrails
+  so regenerated artifacts do not drift back to direct
+  `subprocess`/PATH-only calls.
+- Keep Control Center action execution on trusted executable resolution:
+  Python-backed actions must use `CTOA_PYTHON_BIN` as an absolute existing path
+  or the repo-local `.venv` Python, with audited failure when neither is
+  available. Action workspace roots must resolve from repo-root or `web/` cwd
+  without climbing above the repo, explicit `CTOA_WORKSPACE_ROOT` overrides must
+  be absolute existing directories, and allowlisted scripts must remain inside
+  that workspace. The action catalog read path must also be role-scoped so
+  unauthenticated/member sessions cannot enumerate local command summaries.
+  Cookie-authenticated action POST routes must reject explicit cross-site
+  request signals before auth lookup or execution, and auth wrapper POST routes
+  that forward invite, role, login, logout, or registration actions must use
+  the same guard. Apply the same rule to chat and local seed-login proxy routes
+  before rate-limit, body parsing, cookie/token forwarding, or backend fetch.
+  Chat proxy payloads must be built from an explicit allowlist instead of
+  spreading arbitrary client JSON into backend model requests.
+- Keep web proxy route rate limits fail-closed on client identity:
+  `/api/auth` and `/api/chat` must ignore `X-Forwarded-For` and `X-Real-IP`
+  unless `CTOA_TRUST_PROXY_HEADERS=true`; trusted mode should accept only
+  syntactically valid IP values and otherwise fall back to `unknown`.
+- Keep Control Center API base URL config fail-closed: `VPS_API_URL` and
+  `NEXT_PUBLIC_API_URL` must parse as absolute HTTP(S), must not include
+  credentials, path components, path separators, query strings, or fragments,
+  and must require HTTPS for non-local hosts before any proxy route or browser
+  API call uses them.
+- Keep Desktop Console API and Control Center URL handling on the same
+  fail-closed contract before login, settings persistence, or browser launch:
+  local HTTP is allowed, remote hosts require HTTPS, and URLs with credentials,
+  query strings, or fragments must be rejected without echoing rejected values.
+- Keep health/drift/worker subprocess surfaces on fixed executable resolution;
+  optional cleanup hooks must use explicit tool resolvers instead of raw shell
+  names.
+- Keep mobile-console operator command execution and ops sync scripts on the
+  same resolver path before launching external tools.
+- Keep operator wrappers such as `ctoa_loader.py`, `engine_brain_doctor.py`,
+  smoke checks, validator preflight, and nightly stability on
+  `runner.process_safety`; new wrappers should resolve Python, Git, file
+  openers, and optional tools before launch.
+- Keep legacy Mythibia unsafe runtime bootstrap paths gated: the plaintext
+  bootstrap must require `-UnsafeRuntimeBootstrap` plus
+  `CTOA_ALLOW_UNSAFE_RUNTIME_BOOTSTRAP=true`, and bootstrap writes/removals
+  must stay under the resolved client root.
+- Keep local PowerShell installers and watchers separator-aware before
+  recursive writes or cleanup: containment checks must include a path separator
+  boundary and use `-LiteralPath` for replacement/removal operations. Scheduled
+  task and Run-key names should stay under the `CTOA-*` namespace, watcher logs
+  should remain under `%LOCALAPPDATA%\CTOA\logs`, and hidden runners should
+  accept only existing repo-local `.ps1` targets.
+- Keep VS Code workspace launch/task configs local-only and secret-free:
+  Mobile Console launchers must bind to `127.0.0.1`, reference `CTOA_*`
+  environment variables instead of committed passwords/tokens, and run the
+  shared env preflight before starting.
+- Keep operator Mobile Console launch guidance local-only too: `.\ctoa.ps1 up`,
+  `docs/MOBILE_CONSOLE.md`, and Desktop Console connection-error hints should
+  recommend `uvicorn mobile_console.app:app --host 127.0.0.1 --port 8787`, not
+  `0.0.0.0`.
+- Keep PowerShell background launchers secret-safe: avoid hidden
+  `-EncodedCommand` wrappers that embed environment values, pass secrets through
+  inherited process environment, and verify PID ownership before force-stopping
+  long-running workers.
+- Keep operator-facing PowerShell launchers input-validated before
+  `Start-Process`: URL openers must reject unsafe protocols and embedded
+  credentials, query strings, fragments, raw/decoded backslashes, and decoded
+  `.`/`..` path traversal without echoing rejected values; client launchers
+  should require absolute existing `.exe` paths plus safe
+  profile names, and watcher loop scripts should execute only repo-local `.ps1`
+  targets.
+- Keep LAB003 operator smoke scripts on the same URL and process guardrails:
+  mobile proxy and shift guard `BaseUrl` values must stay local loopback
+  HTTP(S) origins, alert webhooks must be HTTPS unless explicitly loopback HTTP,
+  webhook URLs must not include credentials or fragments, and child PowerShell
+  launches must use the current `$PSHOME` executable rather than PATH-only
+  `powershell`.
+- Keep VPS/bootstrap scripts supply-chain-safe: do not pipe remote installer
+  downloads into shells as root, prefer distro packages or pinned artifacts,
+  validate target users, host strings, and deployment directories, avoid
+  interpolating untrusted deploy paths into remote heredocs, and keep public
+  ports closed unless explicitly enabled. Root wrappers, including deploy-time
+  wrapper copies, must use private temporary files from `mktemp` plus cleanup
+  traps instead of predictable `/tmp` paths. Mobile token rotation should
+  follow the same rule for generated token, `.env`, and history temp files,
+  with root-only secret permissions. `ctoa-vps.ps1` remote install/update
+  flows should use randomized remote temp paths for copied wrappers and
+  generated `.env` updates.
+- Keep SSH/SCP target construction input-safe: env-provided remote users and
+  hosts must be validated before command launch. Remote users should follow a
+  lowercase system-user pattern; hosts should be restricted to valid IPv4, DNS
+  labels, or bracketed IPv6; and SSH key paths must be resolved as literal
+  existing files.
+- Keep remote-script operator inputs on shared validators: URLs and URL lists,
+  SQL literals, service names, status filters, git refs, timer values, and
+  similar heredoc/placeholder inputs should not rely on one-off string
+  replacement or ad hoc quoting.
+- Keep local GS reset operator inputs fail-closed before service shutdown or
+  health probes: `API_HEALTH_URL` and `API_BASE_URL` must stay local HTTP(S)
+  URLs on `127.0.0.1`, `localhost`, or `[::1]` without credentials, query
+  strings, fragments, or `API_BASE_URL` path components, and retry/wait values
+  must be positive integers. Direct `gs-api-validator.py` runs must enforce the
+  same loopback-only API URL contract before `urlopen`, not only rely on
+  `gs-reset.sh`.
+- Keep remote secret writes command-line-safe: operator actions must not embed
+  PATs, passwords, or tokens in SSH command strings, base64-encoded remote
+  scripts, or shell `echo` fragments. Use validated temp files, stdin, or other
+  non-argv transfer paths, then clean up local and remote secret-bearing temp
+  files.
+- Keep sprint validators on the same `runner.process_safety` path for focused
+  regression tests, including older validator scripts that are mostly
+  historical CI evidence gates.
+- Keep the pre-commit Bandit scope at zero subprocess audit findings
+  (`B404`, `B603`, `B607`) by routing long-running launches through
+  `process_safety.start_trusted` and one-shot commands through
+  `process_safety.run_trusted`.
+- Keep broad exception-control findings closed: prefer concrete exception
+  types for parse/read/decode/zlib paths, and record structured diagnostics for
+  best-effort cleanup, breakpoint, or probe failures instead of silently
+  swallowing them.
+- Keep bot ML regression tests isolated from local runtime state: stress tests
+  must not load persisted `runtime/state/qtable_*.json`, and reward shaping
+  must not reinforce `loot` in healthy no-target states.
+
+## P1: OTClient Source Normalization
+
+- Keep the expanded `scripts/lua/otclient/` folder canonical.
+- Keep generated ZIPs under `runtime\solteria_helper_dev\` or release staging,
+  not beside source files.
+- Add Lua syntax validation for every OTClient source file.
+- Add helper smoke instructions for each main tab/subtab.
+- Keep `docs/otclient/helper_redesign.md` as the active UI rebuild brief and
+  update it after each Helper layout pass.
+
+## P2: OTClient Helper Hardening
+
+- Execute `docs/otclient/ctoai_runtime_2_execution_plan.md` in order. P0 now
+  provides a passive runtime module registry, isolated event bus, and budgeted
+  scheduler; all tasks remain disabled by default and runtime actions remain
+  behind the existing policy and dispatch guards.
+- Continue P1 with the passive `ctoa.combat-observation.v1` adapter. It may
+  normalize and publish targeting/combat observations, but it must not call
+  attack, walk, cast, talk, item-use, or keypress APIs.
+- Runtime 2 P2 now exposes additive `ctoa.runtime-core.v1` status through Helper
+  diagnostics, bounded exports, and client capability reports. Preserve the
+  disabled/deferred/failed counters and `runtime_actions=false` invariant.
+- Runtime 2 P3 now includes disabled-by-default combat/targeting and
+  recovery/healing observers. Continue next with cavebot/pathing, then loot and
+  equipment; require observer-only tests before any executor design.
+- Runtime 2 P3 observer migration is complete repo-side across combat,
+  recovery, cavebot, loot, and equipment. Preserve the five-registered/zero-
+  enabled safe-boot invariant until P4 evidence authorizes executor design.
+- Keep Runtime 2 P4 blocked while Helper evidence freshness is unresolved and
+  in-world ModuleAttachSmoke/SmokeAttachAll plus current live approval are
+  missing. Passing local static gates alone must not authorize an executor.
+- Use the official `GoalStatus` action after SmokePreflight and
+  ModuleStaticGates so release-gate freshness is regenerated before goal audit.
+- Keep the seven Runtime 2 files in every test-env package, manifest, sync, and
+  enable/disable list; package coverage tests must fail when one is omitted.
+- Keep smoke-command paths in one filesystem domain: virtual resource paths may
+  be probed with `g_resources`, while `io.open` must consume the resolved host
+  work-directory path. Preserve regression coverage for virtual UI prefs.
+- Split `ctoa_native_helper.lua` into smaller modules if the target client
+  supports module-local `dofile` cleanly.
+- Maintain `schemas/otclient-helper-config.schema.json` as the machine-readable
+  config schema for `HELPER_CONFIG`.
+- Keep `scripts/ops/otclient_helper_profile_audit.py` in `ValidateDev` so old
+  `ctoa_ek_profile.lua` files cannot silently arm unsafe runtime behavior.
+- Add explicit UI smoke states for hunting, tools, profile, and UI tabs.
+- Keep the Helper redesign Phase 3 summary strips current for Healing, Hunting
+  Targeting, Hunting Magic, Tools Helper, Profile, and UI.
+- Keep the release gate strict: in-world `SmokeAttachAll` evidence must be
+  newer than the current dev manifest before it can satisfy visual acceptance.
+- Treat the Phase 3 summary implementation as visually accepted for the current
+  dev manifest after `SmokeAttachAll` run `20260706-1025`; future Helper UI
+  changes must rerun in-world `SmokeAttachAll`.
+- Keep `SmokeStatus` and `ReadyCheck` evidence readable during blocked sandbox
+  states; missing-window and Select Character/modal-helper-offline blockers
+  should produce JSON with the next safe operator command.
+- Keep the release gate next-command logic tied to current sandbox evidence:
+  `Launch` for not-running, `ReadyCheck` for readiness blockers, and
+  `SmokeAttachAll` only after `ready_check.json` reports `ready`.
+
+## P3: Generator Quality Upgrade
+
+- Align generic generated Lua templates with OTClient-native capabilities where
+  an adapter exists.
+- Add stronger Lua validation beyond bracket balance when `luac` is missing.
+- Add negative tests for unsafe runtime activation.
+- Add quality scoring for cooldowns, bounded retries, and guard checks.
+
+## P4: TFS Fork Index
+
+Blocked until TFS source is available.
+
+Once available:
+
+- Index C++ classes and ownership boundaries.
+- Index protocol packets and extended opcodes.
+- Index Lua script interface and callback names.
+- Write server-side rulebook entries based on actual code.
+- Add packet/event flow diagrams.
+
+## P5: End-To-End Evidence
+
+- Connect generated module manifests to release evidence.
+- Keep the Control Center read-only Helper status panel backed by
+  `runtime\solteria_helper_dev` artifacts.
+- Keep the Control Center read-only Engine Brain status panel backed by
+  `AI/generated/manifest.json`, `ENGINE_BRAIN_PACK.json`, `DOC_SYNC.json`, and
+  `SECRET_GUARDRAIL.json`.
+- Keep the Control Center artifact freshness panel read-only and backed by
+  manifest age, ZIP SHA256 comparison, smoke evidence, live-promotion evidence,
+  and action audit traces. Helper ZIP SHA256 comparison must resolve package
+  paths inside the configured Helper dev lane only; external or escaping
+  `release_readiness.json` package paths should fail closed as missing evidence.
+- Keep release evidence packs reporting OTClient Helper package validation and
+  release gate state when Helper files change.
+- Keep release evidence packs reporting the generated P7 operator brief status,
+  decision, blockers, warnings, and next safe command from
+  `AI/generated/P7_OPERATOR_BRIEF.json`.
+- Keep release evidence packs aligned with Control Center Helper semantics:
+  durable `live_promotion.json` evidence must report `status=promoted` and must
+  not leak stale next-command guidance after the release gate has passed.
+- Keep `scripts/ops/release_evidence_pack.py` on the same local evidence read
+  contract as Control Center: configured JSON reads are byte-bounded and
+  symlink-rejecting, action-audit JSONL is counted from a bounded tail sample,
+  release markdown discovery ignores symlinked files, and a symlinked Helper dev
+  directory fails closed to missing Helper status.
+- Keep Control Center release-evidence and action-audit drilldowns read-only:
+  release markdowns should show latest tracked files and sprint coverage, while
+  action audit should show sanitized metadata rather than raw command output.
+- Keep release-evidence drilldown metadata reads bounded too. Markdown title
+  extraction should read only a small capped prefix, reject symlinked or
+  oversized files, and fall back to the file name instead of full-file reads.
+- Keep those drilldowns visible in both the dedicated Evidence tab and the
+  Overview/Local Status ops detail panels through `/api/control-center/ops`.
+- Keep Control Center evidence read endpoints operator-gated. Anonymous users
+  and `member` sessions must not receive runtime evidence JSON, ops detail
+  payloads, release-evidence markdown, API cost markdown, local filesystem paths,
+  or action-audit metadata.
+- Keep browser-visible Control Center evidence paths display-safe: repo-local
+  paths may be shown relative to the repo, while external absolute paths should
+  be collapsed to `[external]/name` instead of exposing user profile, temp, live
+  client, or custom runtime parent directories.
+- Keep browser-visible Control Center markdown reports on the same sanitizer:
+  release-evidence and API-cost markdown endpoints must redact token/password
+  forms and collapse Windows or POSIX absolute local paths before returning
+  text to the browser, while preserving normal UI/API route text like
+  `/api/control-center/actions`.
+- Keep Control Center markdown report reads physically size-bounded. Release-
+  evidence and API-cost markdown endpoints should read at most `max + 1` bytes,
+  close file handles in `finally`, reject symlinked configured report files
+  before `open`, and reject oversized configured files without full-file
+  `readFile`.
+- Keep Control Center configured JSON evidence reads physically size-bounded
+  too. Repo hygiene, API cost, Helper, Engine Brain, and runtime evidence JSON
+  should reject symlinked or oversized configured files and fail closed to
+  missing/default status without exposing target contents.
+- Keep backend `/api/release-evidence` on the same browser-safe evidence
+  contract: read configured JSON with a size bound, return display-safe
+  `evidence_path`, recursively redact token/password/API-key fields and local
+  absolute paths from the evidence payload, reject symlinked configured
+  evidence before `stat/open`, and reject oversized evidence without echoing
+  file contents or exception text.
+- Keep FastAPI HTTP audit logs secret-safe too. `CTOA_AUDIT_LOG_FILE` records
+  should redact token/password/API-key/Bearer forms and collapse local absolute
+  paths in `actor`, `ip`, `ua`, request path, and nested `meta` before JSONL
+  persistence.
+- Keep FastAPI proxy header trust explicit. `X-Forwarded-For` must not drive
+  audit IPs or rate-limit buckets unless `CTOA_TRUST_PROXY_HEADERS=true`; when
+  enabled, only the first syntactically valid IP from the header is accepted.
+- Keep browser-visible Control Center action results on that same sanitizer:
+  stdout/stderr and local execution failure messages returned from
+  `/api/control-center/actions` must redact token/password forms and collapse
+  Windows or POSIX absolute local paths before the UI or audit preview can
+  display them.
+- Keep `/api/control-center/actions` route-level error JSON on the same
+  sanitizer too. Unknown-action, authorization, malformed, or internal action
+  errors must not echo token-like input or local host paths back to the browser.
+- Keep `/api/control-center` and `/api/control-center/legacy` fallback status
+  payloads on that same browser-visible sanitizer. Backend probe/fetch failures
+  must not expose token/password forms or Windows/POSIX local paths in JSON
+  summaries/details.
+- Keep Control Center action-audit persistence secret-safe too: action `reason`
+  and `output_preview` fields must be redacted before writing
+  `runtime/control-center/action-audit.jsonl`, not only when rendered back
+  through the evidence drilldown.
+- Keep Control Center action-audit read paths on the same shared redaction
+  helper as persistence. Evidence and ops drilldowns must sanitize legacy or
+  hand-written JSONL records before displaying `reason`, `output_preview`,
+  action metadata, or count keys. Redaction must cover Bearer/provider-token
+  forms, unquoted `key=value` secrets, and quoted JSON-like
+  token/password/API-key fields.
+- Keep Control Center action-audit drilldown physically bounded too. Oversized
+  `runtime/control-center/action-audit.jsonl` files should be read as a
+  redacted tail sample, symlinked audit paths should be rejected before `open`,
+  and Evidence/Ops should share the same bounded reader while reporting
+  `truncated/sourceBytes/sampledBytes` and surfacing a `warn` state until
+  retention is reviewed.
+- Keep Control Center action execution fail-closed: action runners must not
+  invoke PATH-only `python`/`python3`; missing trusted Python should be visible
+  as an audited failed action.
+- Keep allowlisted Control Center action scripts on realpath containment:
+  repo-relative script paths must not escape the workspace through symlinked
+  parents or junctions, and direct script symlinks should be rejected before
+  `execFile`.
+- Keep the runtime-vs-tracked release evidence comparison visible in Control
+  Center so `runtime/evidence/latest.json` and `latest.md` can be checked
+  against the newest tracked release-evidence markdown before sign-off.
+- Keep durable live-promotion evidence in the Helper release gate: after
+  promotion, `live_promotion.json` must contain approval evidence, be newer
+  than the current manifest, and match live client file hashes to the staged
+  manifest. If `-LaunchAfterPromote` is used, the report must also record the
+  explicit launch result without treating launch as a release-gate bypass.
+- Surface that same durable live-promotion evidence in Control Center as a
+  read-only status card and artifact health check; do not add deploy actions
+  that bypass `PromoteLiveCtoa -ApproveLiveDeploy`.
+- Add Control Center tests for new evidence cards before expanding operator
+  actions.
+- Add local smoke launcher for OTClient helper packaging.
+- Add screenshots or log evidence for helper UI load tests.
+
+## P6: Codex Integration
+
+- Add nested `AGENTS.md` under `AI/` and `scripts/lua/`.
+- Keep Plan 3 Engine Brain artifacts in the portable `brain pack` before
+  converting the workflow into a Codex skill.
+- Keep scoped context profiles stable after exposing them through the local
+  `ctoa-engine-brain` skill.
+- Generate `AI/generated/P6_CODEX_INTEGRATION_READINESS.md` during
+  `brain refresh` as the read-only gate for plugin design. It must verify the
+  local skill, scoped packs, Control Center evidence contracts, release evidence
+  tooling, full workspace validation evidence, doc sync, and secret guardrails
+  before reporting `ready_for_plugin_design`.
+- Keep the local `ctoai-engine-brain` plugin bounded to read-only status/brief
+  tools plus audited repo-hygiene, API-cost, evidence-pack, and Engine Brain
+  safe-write refreshes. Its
+  plugin manifest, MCP config/server, operator skill, and personal marketplace
+  entry must be detected by P6 readiness before moving beyond plugin design.
+  After cachebuster/reinstall, P6 readiness should also detect the installed
+  Codex cache version.
+- Keep the plugin-owned `scripts/ctoai_engine_brain_status.py` smoke script
+  read-only and secret-safe. It should summarize manifest, P6 readiness, pack,
+  doctor, audit, and validation status without reading `.env`, logs, databases,
+  or live client state.
+- Keep the plugin-owned `scripts/ctoai_engine_brain_mcp.py` server bounded.
+  Its MCP tools should expose only `ctoai_engine_brain_status`,
+  `ctoai_engine_brain_self_check`, `ctoai_engine_brain_brief`,
+  `ctoai_control_center_cockpit`, `ctoai_repo_hygiene_refresh`,
+  `ctoai_api_cost_refresh`, `ctoai_evidenc
+
+[truncated]
+```
+
+
+## `AI/KNOWN_BUGS.md`
+
+```markdown
+# Known Bugs and Risks
+
+## Confirmed From Current Source Shape
+
+- Packet/protocol documentation is incomplete because TFS/client protocol source
+  is not present.
+- OTClient native API availability varies by fork; any unguarded `g_*` or class
+  method call can fail on a custom client.
+- `ctoa_native_helper.lua` is very large, so unrelated UI/runtime changes can
+  accidentally affect profile save, tabs, hotkeys, or safe boot behavior.
+- Generic Lua modules in `scripts/lua/` and OTClient native modules use different
+  runtime APIs; mixing them without an adapter can break at load time.
+- Validator fallback without `luac` is weaker than true Lua syntax validation.
+
+## Suspected Areas To Check Before Editing
+
+- Hotkey rebinding and old binding cleanup.
+- Profile save order and partial write behavior.
+- Safe boot defaults after profile merge; repo-side profile audit now blocks
+  unsafe generated/migrated defaults before `ValidateDev`.
+- Cavebot movement enable flags and test-walk behavior.
+- Combat target clearing in PZ/offline/invalid target states.
+- UI smoke tab/subtab persistence.
+- `ctoa_local.log` path behavior in custom OTClient user directories.
+
+## Not Yet Verified
+
+- Full OTClient manual smoke on the current local client.
+- TFS packet flow.
+- Server-side Lua callback compatibility.
+- Whether the ZIP or expanded folder should be treated as canonical source.
+```
+
+
+## `AI/TECH_DEBT.md`
+
+```markdown
+# Technical Debt
+
+## Documentation Debt
+
+- TFS fork is not indexed.
+- Packet/opcode index is empty pending source.
+- Lua API inventory is manually summarized, not generated.
+- `schemas/otclient-helper-config.schema.json` exists, but there is still no
+  generated map from each `HELPER_CONFIG` key to its UI control.
+
+## Code Organization Debt
+
+- `ctoa_native_helper.lua` is a monolith containing config, theme, layout, UI
+  builders, runtime toggles, profile persistence, HUD, smoke support, and manager
+  registration.
+- Generated generic Lua modules and OTClient-native modules are not clearly
+  separated by compatibility target in docs.
+- OTClient packaging source of truth is now the expanded
+  `scripts/lua/otclient/` folder; generated ZIP artifacts must stay out of the
+  source tree.
+
+## Validation Debt
+
+- Lua syntax validation depends on whether `luac` exists.
+- OTClient UI smoke is manual and log-based.
+- No automated screenshot/pixel smoke for the OTClient helper panel.
+- Packet/protocol behavior has no tests without TFS/client protocol source.
+
+## Runtime Debt
+
+- Native API guard patterns are repeated and should become helper utilities if
+  the client supports clean module splitting.
+- Profile save/load should eventually parse and validate against the schema
+  directly inside the Helper; current protection is the repo-side
+  `otclient_helper_profile_audit.py` gate.
+- Combat/probe logs need clear rate-limit contracts to avoid noisy logs.
+
+## Product Debt
+
+- Control Center now surfaces latest Helper package status; generated Lua
+  validation score remains future work.
+- Release evidence now includes OTClient package checks; keep broadening it when
+  Helper package artifacts grow.
+- Operator docs should include one Windows-native install/smoke path for the
+  helper package.
+```
+
+
+## `AI/SPECIALIZED_PROMPTS.md`
+
+```markdown
+# Specialized Prompts
+
+## Engine Architect
+
+You are the CTOAi Engine Architect. First identify the subsystem boundary:
+API/control plane, agent pipeline, local bot runtime, hybrid bot, OTClient helper,
+or pending TFS source. Preserve existing architecture and add abstractions only
+when they reduce real duplication or isolate unsafe runtime behavior.
+
+## Combat Engineer
+
+You work on combat logic across Python and OTClient Lua. For OTClient, preserve
+safe boot, PZ pause, target switch cooldowns, `pcall` probes, target validity
+checks, and explicit attack/follow clearing. Never add unbounded target switching
+or automatic combat activation during load.
+
+## NPC Engineer
+
+Pending TFS source. Do not edit or define NPC engine behavior without source
+files for the TFS fork and Lua script interface. If working in CTOAi generator
+templates, keep generated NPC logic deterministic and mark server assumptions.
+
+## Lua Expert
+
+You write small, deterministic Lua modules. Use module tables for standalone
+scripts and OTClient-native APIs only in OTClient files. Guard globals, add
+cooldowns, keep loops bounded, avoid accidental global state, and validate with
+`luac -p` or an explicitly weaker fallback.
+
+## Protocol Engineer
+
+You do not guess packet flow. Require source references for opcodes, serializers,
+deserializers, extended opcodes, and Lua callbacks. Until TFS/client protocol
+source is available, packet work is blocked or limited to documenting gaps.
+
+## OTClient UI Engineer
+
+You work inside `ctoa_native_helper.lua`. Extend existing row builders, section
+bands, tab/subtab state, theme helpers, and profile persistence. Keep fixed
+layout dimensions stable. Preserve hotkey unbind/rebind behavior and smoke tab
+support.
+
+## Performance Engineer
+
+You reduce runtime overhead without changing behavior. For Lua loops, check
+`cycleEvent` intervals, early exits, log rate limits, and repeated API probes.
+For Python, use targeted profiling around perception, template matching, command
+execution, and API calls.
+
+## Blackbox Debugger
+
+Start with the exact failure mode and latest logs. For OTClient, check load path,
+module autoload, console messages, `ctoa_local.log`, helper hotkey, safe boot,
+and API availability. For CTOAi, check env vars, API status, local model backend,
+runtime state files, and targeted tests.
+
+## Code Reviewer
+
+Lead with bugs, regressions, unsafe runtime activation, missing guards, missing
+tests, and evidence gaps. Reference exact files/lines. Do not summarize first.
+For OTClient changes, always check safe boot, event cleanup, hotkey cleanup, and
+profile persistence.
+
+## Test Engineer
+
+Design the narrowest test that proves the contract. Add broader tests only when
+shared behavior changes. For Lua, include syntax checks and manual smoke steps.
+For API, include auth/rate/evidence/safety paths. For Control Center, run the
+matching `web/src/lib/__tests__` tests.
+```
+
+
+## `AI/TASK_TEMPLATE.md`
+
+```markdown
+# CTOAi Task Template
+
+## Intake
+
+- User request:
+- Target subsystem:
+- Source files:
+- Runtime risk:
+- Evidence required:
+- Unknowns:
+
+## Context To Load
+
+- Always: `SYSTEM_PROMPT.md`, `PROJECT_CONTEXT.md`, `ENGINE_MEMORY.md`,
+  `RULEBOOK.md`.
+- API task: `API_INDEX.md`.
+- Lua/OTClient task: `LUA_INDEX.md`, `OTCLIENT_INDEX.md`.
+- Packet/TFS task: `PACKET_INDEX.md`, `CLASS_INDEX.md`.
+- Review/debug task: `KNOWN_BUGS.md`, `TECH_DEBT.md`.
+
+## Work Plan
+
+1. Inspect current source and git state.
+2. Identify existing pattern.
+3. Make scoped changes.
+4. Run targeted validation.
+5. Run broader validation if shared behavior changed.
+6. Report exact files changed and validation result.
+
+## Delivery Checklist
+
+- [ ] No secrets or runtime state committed.
+- [ ] Existing config key order preserved.
+- [ ] Safe boot/runtime gates preserved.
+- [ ] Native OTClient APIs guarded.
+- [ ] Tests or smoke path run.
+- [ ] Evidence/log/screenshot included when relevant.
+- [ ] Packet/TFS claims backed by source or marked pending.
+
+## Final Response Shape
+
+- What changed.
+- Where it changed.
+- Validation run.
+- Remaining limitations or follow-up, only if material.
+```
+
+
+## `AI/AGENTS.md`
+
+```markdown
+# AI Folder Instructions
+
+This folder is the curated Engine Brain for CTOAi. Keep it secret-safe and
+evidence-first.
+
+## Rules
+
+- Do not copy `.env`, Vercel env values, GitHub tokens, auth stores, local logs,
+  runtime data, database dumps, or private keys into this folder.
+- Keep stable project rules separate from time-sensitive status.
+- Put current operational findings in `OPERATIONS_AUDIT.md`.
+- Put generated indexes under `AI/generated/`; do not hand-edit generated files
+  unless the generator is also updated.
+- Mark unknown TFS/protocol facts as pending source instead of inferring them.
+
+## Refresh
+
+From the repo root:
 
 ```powershell
+.\ctoa.ps1 brain refresh
 .\ctoa.ps1 brain doctor
+.\ctoa.ps1 brain pack
 ```
 
-Current result:
-
-- Output JSON: `AI/generated/ENV_DOCTOR.json`
-- Output Markdown: `AI/generated/ENV_DOCTOR.md`
-- Overall status: `warn`
-- Failed checks: `0`
-- Docker check: `ok`, with `running_broad=0` and `configured_broad=0`.
-- Warnings are currently limited to GitHub PRs with `DIRTY` merge states.
-
-Rule:
-
-- Use `.\ctoa.ps1 brain doctor` as the current replacement for the removed
-  historical `scripts/ops/ctoa_env_doctor.py`.
+This regenerates `AI/generated/FILE_TREE.md`, `AI/generated/SYMBOL_MAP.md`, and
+`AI/generated/manifest.json`, then audits local operations into
+`AI/generated/ENV_DOCTOR.md` and `AI/generated/ENV_DOCTOR.json`, and builds a
+portable pack at `AI/generated/ENGINE_BRAIN_PACK.md`.
 ```
 
 
-## `docs/INFRASTRUCTURE_CANONICAL.md`
+## `scripts/lua/AGENTS.md`
 
 ```markdown
-# CTOA Infrastructure - Canonical Configuration
+# Lua And OTClient Instructions
 
-Last Updated: 2026-05-25
-Status: Active
-Authority: This file is the single source of truth for infra and deployment.
+This folder contains standalone CTOAi Lua modules and the OTClient helper
+package/source.
 
-## Final Decisions
+## Rules
 
-- Production VPS host: 116.202.96.250
-- SSH user: ctoa
-- SSH key path: ~/.ssh/ctoa_vps_ed25519
-- Runtime: Docker-first
-- Docker registry namespace: docker.io/famatyyk/ctoa-toolkit
-- CI promotion path: PR-only build/test, then tag-based publish/deploy on `v*`
+- Keep standalone runtime scripts and OTClient-native scripts separate unless an
+  adapter is explicitly added.
+- For OTClient files, guard native globals such as `g_game`, `g_map`, `g_ui`,
+  `g_keyboard`, `g_resources`, and `g_clock`.
+- Preserve safe boot defaults. Do not enable combat, cavebot movement, rune
+  casting, auto haste, exeta, timer, or healing during loader initialization.
+- Use `connect(...)` for supported OTClient events and `cycleEvent` for bounded
+  loops.
+- Use `scheduleEvent` for delayed boot work; `addEvent` is only a fallback.
+- Keep cooldowns, bounded retries, and explicit early exits in `onThink` logic.
+- Preserve profile/UI key order when changing helper persistence.
 
-## Standard Local Flow
+## Validation
 
-1. Build and run locally:
-   docker compose up --build
-2. Health check:
-   curl -H "X-CTOA-Token: dev-token-change-me" <http://127.0.0.1:8787/api/health>
+Run the narrowest available check:
 
-## Standard VPS Flow
-
-Preferred deploy command with registry image:
-
-./deploy-to-vps.sh 116.202.96.250 ctoa $HOME/.ssh/ctoa_vps_ed25519 v1.14.0 docker.io/famatyyk/ctoa-toolkit
-
-Fallback deploy command without registry (image streamed over SSH):
-
-./deploy-to-vps.sh 116.202.96.250 ctoa $HOME/.ssh/ctoa_vps_ed25519
-
-## CI/CD Flow
-
-Workflow: .github/workflows/docker-build.yml
-
-On pull request to `main`:
-
-1. Build image
-2. Run test suite in container
-3. Do not publish or deploy
-
-On tag `v*`:
-
-1. Build image
-2. Run test suite in container
-3. Publish image to docker.io/famatyyk/ctoa-toolkit
-4. Deploy to VPS using deploy-to-vps.sh
-
-Required GitHub secrets:
-
-- DOCKER_HUB_TOKEN
-- VPS_SSH_KEY
-- VPS_HOST
-- VPS_USER
-
-Notes:
-
-- Docker Hub username is fixed to famatyyk in workflow.
-- VPS_HOST should be 116.202.96.250
-- VPS_USER should be ctoa
-- ACR publish flow was removed in favor of the canonical Docker Hub release path.
-- Direct push to `main` is not part of this flow; PR merge and tag release are the standard path.
-
-## Operational Guardrails
-
-- No password auth for SSH, key only.
-- No secret values in committed files.
-- Keep /opt/ctoa/.env on VPS for production env variables.
-- If /opt/ctoa/.env is missing, deploy script uses safe fallback token and logs a warning.
-
-## Current Blocker
-
-- Public key from ~/.ssh/ctoa_vps_ed25519.pub must be added to ctoa@116.202.96.250 authorized_keys.
-- Until then, automated deploy cannot complete.
+```powershell
+.\ctoa.ps1 brain refresh
+.\.venv\Scripts\python.exe -m pytest tests\test_otclient_helper_zerobot_shell.py tests\test_ctoa_helper_smoke_report.py -q
 ```
 
-
-## `docs/DEPLOYMENT.md`
-
-```markdown
-# Bot Deployment Guide
-
-Complete guide for packaging and deploying the CTOA Hybrid Bot locally, on VPS, or to cloud environments.
-
-## Table of Contents
-1. [Local Deployment](#local-deployment)
-2. [VPS Deployment](#vps-deployment)
-3. [Docker Container Deployment](#docker-deployment)
-4. [Performance Requirements](#requirements)
-
----
-
-## Local Deployment
-
-### Prerequisites
-- Python 3.11+
-- Tibia Client running and visible
-- Virtual environment configured
-
-### Installation
-
-```bash
-# Activate virtual environment
-source .venv/bin/activate  # Linux/Mac
-.venv\Scripts\Activate.ps1  # PowerShell
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Verify dependencies
-pip list | grep -E "(mss|pynput|opencv|numpy|Pillow)"
-```
-
-### Running Locally
-
-**Option 1: Component Testing**
-```bash
-python test_local.py --mode test
-```
-
-**Option 2: Screenshot Capture Benchmark**
-```bash
-python test_local.py --mode capture --duration 30
-```
-
-**Option 3: Autonomous Hunting**
-```bash
-python test_local.py --mode auto --location "Wasp Cave" --duration 600
-```
-
-**Option 4: Manual Control (like Easybot)**
-```bash
-python test_local.py --mode manual
-```
-
-**Option 5: CLI Entry Point**
-```bash
-python -m runner.hybrid_bot.cli run --level 50 --location "Wasp Cave" --use-llm
-```
-
-### Expected Output
-
-```
-2026-03-21 15:32:10 [hybrid_bot.cli] INFO 🤖 Hybrid Bot Runner started
-2026-03-21 15:32:10 [hybrid_bot.runner] INFO 🏹 Starting hunt at: Wasp Cave
-2026-03-21 15:32:11 [hybrid_bot.runner] INFO Tick 10: attack (priority 50)
-...
-2026-03-21 15:40:00 [hybrid_bot.runner] INFO Stopping Hybrid Bot
-2026-03-21 15:40:00 [hybrid_bot.runner] INFO 🐝 Wasp Cave session:
-  - Duration: 8m 0s
-  - Creatures killed: 47
-  - XP gained: 12,450
-  - Gold looted: 8,900g
-```
-
----
-
-## VPS Deployment
-
-### Prerequisites
-- Linux VPS or cloud VM (Ubuntu 20.04+ recommended)
-- SSH access with key authentication
-- Python 3.11+
-- Display server (X11) or virtual frame buffer for screenshots
-
-### Installation Steps
-
-1. **Connect to VPS**
-```bash
-ssh -i /path/to/key.pem user@vps-ip
-```
-
-2. **Clone/Deploy Repository**
-```bash
-cd /opt/ctoa
-git clone https://github.com/famatyyk/CTOAi.git
-cd CTOAi
-```
-
-3. **Setup Environment**
-```bash
-python3.11 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-
-# For Xvfb support (headless mode)
-pip install pyvirtualdisplay
-sudo apt-get install xvfb x11-utils
-```
-
-4. **Configure VPS Settings**
-```bash
-# Create environment file
-cat > .env.vps << EOF
-TIBIA_WINDOW_TITLE="Tibia Client"
-BOT_MODE=autonomous
-BOT_LOCATION="Wasp Cave"
-LOG_LEVEL=INFO
-METRICS_DIR=/var/log/ctoa-bot/
-EOF
-
-# Restrict permissions
-chmod 600 .env.vps
-```
-
-5. **Systemd Service Setup** (optional)
-```bash
-sudo cp scripts/systemd/ctoa-bot.service /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable ctoa-bot
-sudo systemctl start ctoa-bot
-```
-
-6. **Run Bot Headlessly**
-```bash
-# Using virtual display
-xvfb-run -a -s "-screen 0 1920x1080x24" python test_local.py --mode auto --duration 3600
-
-# Or via systemd
-sudo journalctl -u ctoa-bot -f
-```
-
-### Monitoring
-
-**Real-time Logs**
-```bash
-tail -f /var/log/ctoa-bot/metrics-latest.json
-```
-
-**Health Check**
-```bash
-systemctl status ctoa-bot
-ps aux | grep python
-```
-
-**Metrics Export**
-```bash
-python -m runner.hybrid_bot.cli benchmark --metrics-file metrics-latest.jsonl
-```
-
----
-
-## Docker Container Deployment
-
-### Building Container
-
-```dockerfile
-# Dockerfile
-FROM python:3.11-slim-bullseye
-
-WORKDIR /app
-RUN apt-get update && apt-get install -y \
-    xvfb x11-utils libsm6 libxext6 libxrender-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-COPY . .
-
-ENV DISPLAY=:99
-ENTRYPOINT ["xvfb-run", "-a", "-s", "-screen 0 1920x1080x24", "python", "test_local.py"]
-```
-
-**Build and Run**
-```bash
-# Build image
-docker build -t ctoa-hybrid-bot:latest .
-
-# Run container
-docker run -it \
-    -v $(pwd)/metrics:/app/metrics \
-    -e BOT_MODE=autonomous \
-    ctoa-hybrid-bot:latest \
-    --mode auto --duration 3600
-```
-
----
-
-## Cloud Deployment
-
-### AWS EC2
-
-```bash
-# Launch EC2 instance (Ubuntu 20.04 t3.medium)
-aws ec2 run-instances \
-    --image-id ami-0c55b159cbfafe1f0 \
-    --instance-type t3.medium \
-    --key-name my-key \
-    --security-groups sg-allow-ssh
-
-# SSH and deploy (as per VPS section above)
-```
-
-### Azure VM
-
-```bash
-# Create VM
-az vm create \
-    --resource-group myResourceGroup \
-    --name ctoa-bot-vm \
-    --image UbuntuLTS \
-    --size Standard_B2s
-
-# SSH and deploy
-```
-
----
-
-## Requirements
-
-### Hardware
-- **CPU**: 2+ cores (1 core minimum for 10 Hz bot loop)
-- **RAM**: 512 MB minimum, 2 GB recommended
-- **Storage**: 500 MB for app + dependencies
-- **Network**: Stable connection (bot will retry on timeout)
-
-### Software
-- Python 3.11+
-- mss (or PIL for screenshots)
-- pynput (keyboard/mouse automation)
-- opencv-python (vision processing)
-- numpy (numerics)
-- asyncio (async loop - stdlib)
-
-### Performance Targets
-- Screenshot capture: 20-50 ms
-- Vision layer: 30-100 ms
-- Decision making: 10-50 ms (heuristics) or 500-2000 ms (LLM)
-- Command execution: 1-5 ms
-- **Total tick**: ~100-200 ms @ 10 Hz
-
-### Bandwidth (if using LLM)
-- If using OpenAI API: ~10 KB/request, ~6 requests/minute @ 10 Hz with decisions
-- ~3-5 MB/hour for API calls
-
----
-
-## Troubleshooting
-
-### Screenshots not captured (returns None)
-```bash
-# Check window title
-xdotool search --name "Tibia"
-
-# Update window title in config
-python test_local.py --mode test
-```
-
-### Keyboard input not working
-```bash
-# Verify pynput is installed
-python -c "from pynput.keyboard import Controller; print('OK')"
-
-# Check for input permissions
-# On Linux: grant `input` group permissions
-sudo usermod -a -G input $USER
-```
-
-### High CPU usage
-```bash
-# Profile bot performance
-python test_local.py --mode capture --duration 30
-# Check "PERFORMANCE PROFILE REPORT" - identify bottleneck
-```
-
-### VPS screenshot is black
-```bash
-# Use virtual display
-xvfb-run -a -s "-screen 0 1024x768x24" python test_local.py --mode capture
-
-# Or configure real display
-export DISPLAY=:0
-```
-
----
-
-## Backup & Recovery
-
-### Metrics Backup
-```bash
-# Backup all metrics
-tar -czf metrics-backup-$(date +%Y%m%d).tar.gz ./metrics/
-
-# Upload to S3 (if desired)
-aws s3 cp metrics-backup-*.tar.gz s3://my-bucket/backups/
-```
-
-### Configuration Backup
-```bash
-# Backup configs
-tar -czf config-backup-$(date +%Y%m%d).tar.gz \
-    runner/hybrid_bot/*.yaml \
-    .env.vps
-```
-
----
-
-## Upgrades
-
-### Update Code
-```bash
-git pull origin main
-pip install -r requirements.txt --upgrade
-```
-
-### Restart Service
-```bash
-sudo systemctl restart ctoa-bot
-
-# Verify
-sudo systemctl status ctoa-bot
-```
-
----
-
-## Support
-
-For issues or questions:
-- Check [README.md](README.md)
-- Review logs in `./metrics/`
-- Run diagnostic: `python test_local.py --mode test`
-```
-
-
-## `docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md`
-
-```markdown
-# CTOAi Three Development Plans
-
-Basis: full workspace audit with `42091` inventoried files and `1325` git-tracked files.
-
-## Plan 1: Helper-First Productization
-
-Goal: turn the OTClient/Solteria Helper into a safe, repeatable product lane before broad expansion.
-
-### 0-30 Days
-
-- Keep `scripts/lua/otclient/` canonical and keep live Solteria protected.
-- Require `PrepareDev`, `ValidateDev`, `SmokePreflight`, in-world `SmokeAttachAll`, and explicit live approval.
-- Expand `otclient_helper_profile_audit.py` from text checks toward schema-backed migration validation.
-- Keep Control Center Helper status read-only and backed by runtime artifacts.
-
-### 31-60 Days
-
-- Split `ctoa_native_helper.lua` only along stable boundaries: config/schema, profile persistence, UI, runtime loops, diagnostics.
-- Preserve `ctoa_native_helper.lua` as the public loader entrypoint.
-- Add stable diagnostics export coverage for HP/MP, movement, combat, magic, container/loot, UI/resources.
-
-### 61-90 Days
-
-- Make `SmokeAttachAll` the final visual acceptance source with full in-world screenshots.
-- Block `releasable_to_live=true` unless staged package hashes match full in-world evidence.
-- Package Helper release notes and evidence as one reviewable artifact.
-
-## Plan 2: Control Center And Evidence Platform
-
-Goal: make Control Center the operator cockpit for status, evidence, safe commands, and release confidence.
-
-### 0-30 Days
-
-- Normalize evidence paths through `controlCenterEvidenceConfig.ts` and `.env.example`.
-- Add tests for every evidence payload shape before adding UI panels.
-- Keep Control Center markdown report reads physically size-bounded with file-handle reads of at most `max + 1` bytes, symlink rejection before `open`, `finally` cleanup, and no full-file `readFile` path.
-- Keep Control Center release-evidence drilldown metadata bounded too; title extraction must not full-read large markdown artifacts.
-- Keep Control Center configured JSON and action-audit reads physically bounded, symlink-rejecting, and fail-closed before any browser-visible evidence payload is built.
-- Keep release evidence pack generation on the same bounded, symlink-rejecting local-read contract for configured JSON, action-audit JSONL, release markdown discovery, and Helper dev status.
-- Keep Control Center API base URLs origin-only: reject path components, path separators, credentials, query strings, fragments, and non-local HTTP before proxy or browser API calls.
-- Keep panels read-only unless actions are explicitly risk-modeled and audited.
-- Keep API public registration fail-closed in production; privileged account creation must always require an authenticated owner token.
-- Keep production Intel launch targets protected from localhost/private/internal URLs unless `CTOA_ALLOW_PRIVATE_INTEL_TARGETS=true` is explicitly set.
-- Keep Intel client-sync write paths confined to `CTOA_CLIENT_SCRIPTS_DIR` and validate target/autoloader/init settings before copying files.
-- Keep the static security scan lane active: Bandit high and medium severity must remain zero, discovery TLS must verify by default, remote template sources must stay on public HTTP(S) hosts, and insecure legacy opt-ins must be explicit.
-- Keep operator script inputs fail-closed before network calls or child processes: runtime smoke base URLs and LAB003 base URLs stay on loopback HTTP(S), generic alert webhooks must be HTTP(S), Discord-native alert webhooks must stay on allowlisted Discord webhook URLs, Azure Activity listener binds default to loopback and requires `CTOA_AZURE_INGEST_SECRET` for non-loopback hosts, LAB003 child PowerShell launches use the current `$PSHOME` executable, GS reset API URLs/timing values are validated before shutdown or health probes, and direct GS API validator probes stay loopback-only before `urlopen`.
-
-### 31-60 Days
-
-- Add release-evidence drilldowns for Helper, repo hygiene, API cost, action audit, and VPS parity.
-- Add stale-artifact detection: manifest age, package hash mismatch with Helper dev-lane path containment, missing smoke, missing action audit.
-- Add one operator-safe `next` recommendation surface that never bypasses gates.
-
-### 61-90 Days
-
-- Turn evidence pack generation into a release prerequisite.
-- Add dashboard-level comparison between last released evidence and current runtime evidence.
-- Add CI checks for evidence schemas and docs links.
-
-## Plan 3: Engine Brain And CTOAi Platform
-
-Goal: make `AI/` the local, secret-safe planning/context layer and evolve it into a reusable CTOAi/Codex capability.
-
-### 0-30 Days
-
-- Keep `AI/FEATURE_ROADMAP.md`, `AI/ENGINE_BRAIN_STATUS.md`, and `AI/generated/*` fresh after workflow changes.
-- Use `ctoa.ps1 brain refresh`, `brain doctor`, and `brain pack` as the operator workflow.
-- Add this full workspace audit as a recurring Engine Brain input.
-
-### 31-60 Days
-
-- Generate ownership maps from inventory: path owner, source/runtime/vendor category, validation gate.
-- Add stale-doc detection between README, docs index, CLI docs, and command dictionary.
-- Add local-only secret guardrails for AI packs and generated context.
-
-### 61-90 Days
-
-- Convert the stabilized Engine Brain workflow into a Codex skill or CTOAi plugin.
-- Add repo context packs that can target Helper, Control Center, infra, or security lanes.
-- Gate plugin design through `AI/generated/P6_CODEX_INTEGRATION_READINESS.md`, generated by `brain refresh` from current local evidence.
-- Generate `AI/generated/P7_OPERATOR_WORKFLOW.md` as the read-only P7 risk gate before adding plugin actions.
-- Generate `AI/generated/P7_ACTION_READINESS.md` as the audited safe-write candidate gate before enabling plugin write tools.
-- Generate `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.md` as the primary safe-write tool contract and require enabled safe-write MCP tools to match audited evidence/reporting actions.
-- Generate `AI/generated/P7_OPERATOR_BRIEF.md` as the read-only daily operator handoff for Control Center and release evidence.
-- Keep the local `ctoai-engine-brain` plugin bounded to `ctoai_engine_brain_status`, `ctoai_engine_brain_self_check`, `ctoai_engine_brain_brief`, plus audited `ctoai_evidence_pack_refresh` and `ctoai_api_cost_refresh` safe-write tools.
-- Keep deploy/live actions out of the plugin MCP surface; only dry-run-first evidence/reporting refreshes may write, and they must append Control Center action-audit evidence.
-- Prepare a plugin-style operator surface for audit, release evidence, and roadmap generation.
+For manual OTClient UI changes, also load the helper in the client and verify
+fresh `ctoa_local.log` lines plus safe boot state.
 ```
 
 
@@ -1421,7 +2995,7 @@ Goal: make `AI/` the local, secret-safe planning/context layer and evolve it int
 ```json
 {
   "schema_version": 1,
-  "generated_at": "2026-07-11T10:02:32+00:00",
+  "generated_at": "2026-07-11T12:47:27+00:00",
   "root": "C:\\Users\\zycie\\CTOAi",
   "file_count": 1233,
   "outputs": {
@@ -1484,22 +3058,26 @@ Goal: make `AI/` the local, secret-safe planning/context layer and evolve it int
 ```markdown
 # Engine Brain Environment Doctor
 
-Generated at: `2026-07-11T09:45:25+00:00`
+Generated at: `2026-07-11T12:47:45+00:00`
 Overall status: `warn`
 
 | Check | Status | Key evidence |
 |---|---|---|
-| `git` | `ok` | branch=codex/post-merge-engine-brain-sync; dirty=24; path=C:\Program Files\Git\cmd\git.EXE |
+| `git` | `ok` | branch=codex/post-merge-engine-brain-sync; dirty=25; path=C:\Program Files\Git\cmd\git.EXE |
 | `docker` | `ok` | containers=2; running_broad=0; configured_broad=0 |
 | `vpn` | `ok` | warp_connected=True |
 | `vercel` | `ok` | version=54.10.3; project=ctoa-web |
 | `vscode` | `warn` | openai=['openai.chatgpt@26.623.141536']; old_dirs=2 |
-| `github` | `warn` | open_prs=6; dirty_prs=1; failed_runs=3 |
+| `github` | `warn` | open_prs=6; dirty_prs=5; failed_runs=0 |
 | `update_gate` | `ok` | gate=ok; product=CTOA Toolkit; version=1.1.1 |
 
 ## GitHub Dirty PRs
 
-- `#183` [WIP] Fix CTOA VPS Global Save Cycle failure - https://github.com/famatyyk/CTOAi/pull/183
+- `#184` [WIP] Fix CTOA VPS Global Save Cycle failure - https://github.com/famatyyk/CTOAi/pull/184
+- `#160` test(copilot-instructions): expand conformance coverage to all seven sections - https://github.com/famatyyk/CTOAi/pull/160
+- `#157` feat: add /analyze-prompt Copilot slash command - https://github.com/famatyyk/CTOAi/pull/157
+- `#153` docs: add alternative LLM model recommendations to copilot instructions and .env.example - https://github.com/famatyyk/CTOAi/pull/153
+- `#152` Enable workspace-level Python trace logging in VS Code - https://github.com/famatyyk/CTOAi/pull/152
 ```
 
 
@@ -1508,7 +3086,7 @@ Overall status: `warn`
 ```markdown
 # Engine Brain Ownership Map
 
-Generated at: `2026-07-11T10:02:32+00:00`
+Generated at: `2026-07-11T12:47:27+00:00`
 Source audit: `runtime\audits\ctoai-full-workspace-audit.json`
 Status: `ready`
 
@@ -1519,7 +3097,7 @@ Status: `ready`
 | `.dockerignore` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `.env.example` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `.foundry` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
-| `.git` | Local/uncategorized | `manual review` | 721 | git_internal:721 |
+| `.git` | Local/uncategorized | `manual review` | 741 | git_internal:741 |
 | `.gitattributes` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `.github` | Local/uncategorized | `manual review` | 41 | tracked_source:41 |
 | `.gitignore` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
@@ -1578,7 +3156,7 @@ Status: `ready`
 | `scoring` | Local/uncategorized | `manual review` | 5 | tracked_source:3, untracked_source_candidate:2 |
 | `scripts` | Operator automation | `pytest targeted script tests` | 435 | tracked_source:259, untracked_source_candidate:176 |
 | `src` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
-| `tests` | Regression suite | `pytest tests/ --ignore=tests/e2e` | 503 | local_secret_or_sensitive:2, tracked_source:180, untracked_source_candidate:321 |
+| `tests` | Regression suite | `pytest tests/ --ignore=tests/e2e` | 505 | local_secret_or_sensitive:2, tracked_source:181, untracked_source_candidate:322 |
 | `training` | Local/uncategorized | `manual review` | 8 | tracked_source:5, untracked_source_candidate:3 |
 | `up` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `web` | Control Center | `cd web; npm run lint; npm test` | 32304 | local_secret_or_sensitive:2, tracked_source:98, untracked_source_candidate:5419, vendor_or_cache:26785 |
@@ -1591,7 +3169,7 @@ Status: `ready`
 ```markdown
 # Engine Brain Doc Sync
 
-Generated at: `2026-07-11T10:02:32+00:00`
+Generated at: `2026-07-11T12:47:27+00:00`
 Status: `passed`
 
 | Check | Path | Status | Missing |
@@ -1610,7 +3188,7 @@ Status: `passed`
 ```markdown
 # Engine Brain Secret Guardrail
 
-Generated at: `2026-07-11T10:02:32+00:00`
+Generated at: `2026-07-11T12:47:27+00:00`
 Status: `passed`
 Sensitive/local env path count in audit: `7`
 
@@ -1632,7 +3210,7 @@ Generated Engine Brain context must not include exact local sensitive/env paths 
 ```markdown
 # P6 Codex Integration Readiness
 
-Generated at: `2026-07-11T10:02:32+00:00`
+Generated at: `2026-07-11T12:47:27+00:00`
 Status: `ready_for_plugin_design`
 
 P6 allows only four read-only status/cockpit tools plus audited repo-hygiene, API-cost, evidence-pack, Engine Brain, and P7 cockpit-smoke safe-write refreshes. Do not add deploy/live shortcuts or bypass Control Center evidence gates.
@@ -1704,7 +3282,7 @@ Recommended next: Operate the plugin as four read-only status/cockpit tools plus
 ```markdown
 # P7 Operator Workflow
 
-Generated at: `2026-07-11T10:02:32+00:00`
+Generated at: `2026-07-11T12:47:27+00:00`
 Status: `safe_write_ready`
 Decision: `allow_bounded_safe_write_tools`
 
@@ -1752,7 +3330,7 @@ Next safe command: Use ctoai_repo_hygiene_refresh, ctoai_api_cost_refresh, ctoai
 ```markdown
 # P7 Action Readiness
 
-Generated at: `2026-07-11T10:02:32+00:00`
+Generated at: `2026-07-11T12:47:27+00:00`
 Status: `safe_write_tools_enabled`
 Decision: `monitor_enabled_safe_write_tools`
 
@@ -1780,7 +3358,7 @@ Next safe command: Design the next P7 plugin action only after risk model covera
 ```markdown
 # P7 Safe Write Tool Design
 
-Generated at: `2026-07-11T10:02:32+00:00`
+Generated at: `2026-07-11T12:47:27+00:00`
 Status: `implemented`
 Decision: `ready_for_dry_run_operation`
 
@@ -1822,7 +3400,7 @@ Next safe command: Run ctoai_evidence_pack_refresh with dry_run=true and verify 
 ```markdown
 # P7 Operator Brief
 
-Generated at: `2026-07-11T10:02:32+00:00`
+Generated at: `2026-07-11T12:47:27+00:00`
 Decision: `ready_for_p7_operator_workflow`
 Status: `ready`
 
@@ -1850,7 +3428,7 @@ Next safe command: Design the next P7 plugin action only after risk model covera
 ```markdown
 # Engine Brain File Tree
 
-Generated at: `2026-07-11T10:02:32+00:00`
+Generated at: `2026-07-11T12:47:27+00:00`
 
 Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 `node_modules`, `runtime`, `logs`, `data`, `.tmp`, build outputs.
@@ -1886,7 +3464,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `.github/workflows/ctoa-approval-watchdog.yml` | 3519 |
 | `.github/workflows/ctoa-ci-executive-weekly.yml` | 1068 |
 | `.github/workflows/ctoa-close-on-gate.yml` | 887 |
-| `.github/workflows/ctoa-copilot-ci.yml` | 9123 |
+| `.github/workflows/ctoa-copilot-ci.yml` | 9288 |
 | `.github/workflows/ctoa-daily-ci-health.yml` | 4820 |
 | `.github/workflows/ctoa-daily-insights.yml` | 941 |
 | `.github/workflows/ctoa-issue-sync.yml` | 687 |
@@ -1952,14 +3530,14 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `AI/FEATURE_ROADMAP.md` | 56235 |
 | `AI/generated/DOC_SYNC.json` | 1019 |
 | `AI/generated/DOC_SYNC.md` | 609 |
-| `AI/generated/ENGINE_BRAIN_PACK.json` | 5583 |
-| `AI/generated/ENGINE_BRAIN_PACK.md` | 412233 |
-| `AI/generated/ENV_DOCTOR.json` | 7281 |
-| `AI/generated/ENV_DOCTOR.md` | 776 |
-| `AI/generated/FILE_TREE.md` | 68315 |
+| `AI/generated/ENGINE_BRAIN_PACK.json` | 5322 |
+| `AI/generated/ENGINE_BRAIN_PACK.md` | 264227 |
+| `AI/generated/ENV_DOCTOR.json` | 7606 |
+| `AI/generated/ENV_DOCTOR.md` | 1266 |
+| `AI/generated/FILE_TREE.md` | 68364 |
 | `AI/generated/manifest.json` | 2062 |
-| `AI/generated/OWNERSHIP_MAP.json` | 16701 |
-| `AI/generated/OWNERSHIP_MAP.md` | 6492 |
+| `AI/generated/OWNERSHIP_MAP.json` | 16930 |
+| `AI/generated/OWNERSHIP_MAP.md` | 6577 |
 | `AI/generated/P6_CODEX_INTEGRATION_READINESS.json` | 11010 |
 | `AI/generated/P6_CODEX_INTEGRATION_READINESS.md` | 6915 |
 | `AI/generated/P7_ACTION_READINESS.json` | 4870 |
@@ -1970,7 +3548,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `AI/generated/P7_OPERATOR_WORKFLOW.md` | 3015 |
 | `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.json` | 2705 |
 | `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.md` | 2024 |
-| `AI/generated/SYMBOL_MAP.md` | 261054 |
+| `AI/generated/SYMBOL_MAP.md` | 261229 |
 | `AI/KNOWN_BUGS.md` | 1384 |
 | `AI/LUA_INDEX.md` | 2874 |
 | `AI/OPERATIONS_AUDIT.md` | 5139 |
@@ -2522,7 +4100,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/lua/otclient/ctoa_helper_recovery_observer.lua` | 4249 |
 | `scripts/lua/otclient/ctoa_helper_recovery_runtime.lua` | 4956 |
 | `scripts/lua/otclient/ctoa_helper_route.lua` | 10784 |
-| `scripts/lua/otclient/ctoa_helper_runtime_core.lua` | 10189 |
+| `scripts/lua/otclient/ctoa_helper_runtime_core.lua` | 10804 |
 | `scripts/lua/otclient/ctoa_helper_runtime_policy.lua` | 7685 |
 | `scripts/lua/otclient/ctoa_helper_runtime_readiness.lua` | 3844 |
 | `scripts/lua/otclient/ctoa_helper_sandbox_handoff.lua` | 4120 |
@@ -2539,7 +4117,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/lua/otclient/ctoa_otclient.otmod` | 253 |
 | `scripts/lua/otclient/ctoa_otclient_loader.lua` | 7548 |
 | `scripts/lua/otclient/ctoa_rp_profile.lua` | 2424 |
-| `scripts/lua/otclient/README.md` | 24871 |
+| `scripts/lua/otclient/README.md` | 24958 |
 | `scripts/lua/pathing_helper.lua` | 1361 |
 | `scripts/lua/proximity_watch.lua` | 797 |
 | `scripts/lua/safety_interrupt.lua` | 359 |
@@ -2656,7 +4234,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/ops/sprint030_validate.py` | 5367 |
 | `scripts/ops/sprint031_validate.py` | 5367 |
 | `scripts/ops/sprint032_validate.py` | 5367 |
-| `scripts/ops/sp
+| `scripts/ops/s
 
 [truncated]
 ```
@@ -2667,7 +4245,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 ```markdown
 # Engine Brain Symbol Map
 
-Generated at: `2026-07-11T10:02:32+00:00`
+Generated at: `2026-07-11T12:47:27+00:00`
 
 This is a lightweight map for navigation, not a full source dump.
 

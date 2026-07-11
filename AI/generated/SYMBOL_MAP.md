@@ -1,6 +1,6 @@
 # Engine Brain Symbol Map
 
-Generated at: `2026-07-11T10:02:32+00:00`
+Generated at: `2026-07-11T12:48:01+00:00`
 
 This is a lightweight map for navigation, not a full source dump.
 
@@ -2130,22 +2130,22 @@ This is a lightweight map for navigation, not a full source dump.
 
 ## `scripts/lua/otclient/ctoa_helper_runtime_core.lua`
 
-- L25: lua numberValue
-- L36: lua copyTable
-- L47: lua safeNow
-- L63: lua sortedCopy
-- L74: lua RuntimeCore.registerModule
-- L96: lua RuntimeCore.moduleSnapshot
-- L105: lua RuntimeCore.moduleHealth
-- L124: lua RuntimeCore.subscribe
-- L137: lua RuntimeCore.publish
-- L157: lua RuntimeCore.registerTask
-- L184: lua RuntimeCore.setTaskEnabled
-- L193: lua RuntimeCore.taskSnapshot
-- L203: lua RuntimeCore.runDue
-- L244: lua RuntimeCore.metricsSnapshot
-- L248: lua RuntimeCore.statusSnapshot
-- L292: lua RuntimeCore.contract
+- L26: lua numberValue
+- L37: lua copyTable
+- L48: lua safeNow
+- L64: lua sortedCopy
+- L75: lua RuntimeCore.registerModule
+- L97: lua RuntimeCore.moduleSnapshot
+- L106: lua RuntimeCore.moduleHealth
+- L125: lua RuntimeCore.subscribe
+- L138: lua RuntimeCore.publish
+- L158: lua RuntimeCore.registerTask
+- L185: lua RuntimeCore.setTaskEnabled
+- L194: lua RuntimeCore.taskSnapshot
+- L204: lua RuntimeCore.runDue
+- L254: lua RuntimeCore.metricsSnapshot
+- L258: lua RuntimeCore.statusSnapshot
+- L303: lua RuntimeCore.contract
 
 ## `scripts/lua/otclient/ctoa_helper_runtime_policy.lua`
 
@@ -4984,9 +4984,9 @@ This is a lightweight map for navigation, not a full source dump.
 
 - L13: def test_runtime_core_is_loader_wired_and_documented()
 - L23: def test_runtime_core_exposes_registry_event_bus_and_budgeted_scheduler()
-- L49: def test_runtime_core_is_passive_and_safe_by_default()
-- L71: def test_runtime_core_is_failure_isolated_and_budget_bounded()
-- L82: def test_runtime_core_behavior_with_real_lua(tmp_path)
+- L50: def test_runtime_core_is_passive_and_safe_by_default()
+- L72: def test_runtime_core_is_failure_isolated_and_budget_bounded()
+- L83: def test_runtime_core_behavior_with_real_lua(tmp_path)
 
 ## `tests/test_ctoa_helper_smoke_report.py`
 

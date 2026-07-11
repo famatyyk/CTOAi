@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-11T09:45:25+00:00",
+  "generated_at": "2026-07-11T12:47:45+00:00",
   "root": "C:\\Users\\zycie\\CTOAi",
   "overall_status": "warn",
   "status_counts": {
@@ -15,13 +15,15 @@
       "status": "ok",
       "root": "C:/Users/zycie/CTOAi",
       "branch": "codex/post-merge-engine-brain-sync",
-      "head": "ee51a62a316a760cb6269d4ae8cb822f18c00185",
-      "dirty_count": 24,
+      "head": "cf6c332a91daa83327f0ee52d1497c281d7f4880",
+      "dirty_count": 25,
       "dirty_sample": [
         "M AI/generated/DOC_SYNC.json",
         "M AI/generated/DOC_SYNC.md",
         "M AI/generated/ENGINE_BRAIN_PACK.json",
         "M AI/generated/ENGINE_BRAIN_PACK.md",
+        "M AI/generated/ENV_DOCTOR.json",
+        "M AI/generated/ENV_DOCTOR.md",
         "M AI/generated/FILE_TREE.md",
         "M AI/generated/OWNERSHIP_MAP.json",
         "M AI/generated/OWNERSHIP_MAP.md",
@@ -40,14 +42,11 @@
         "M AI/generated/SYMBOL_MAP.md",
         "M AI/generated/manifest.json",
         "M docs/audits/CTOAI_FULL_WORKSPACE_AUDIT_2026-07-06.md",
-        "M docs/otclient/solteria_helper_shell_budget_plan.md",
         "M docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md"
       ],
       "remotes": [
         "origin\thttps://github.com/famatyyk/CTOAi.git (fetch)",
-        "origin\thttps://github.com/famatyyk/CTOAi.git (push)",
-        "upstream\tgit@github.com:famatyyk/CTOAi.git (fetch)",
-        "upstream\tgit@github.com:famatyyk/CTOAi.git (push)"
+        "origin\thttps://github.com/famatyyk/CTOAi.git (push)"
       ]
     },
     "docker": {
@@ -60,12 +59,12 @@
       "containers": [
         {
           "name": "ctoa-api",
-          "status": "Up 38 hours",
+          "status": "Up 41 hours",
           "ports": "127.0.0.1:8001->8000/tcp"
         },
         {
           "name": "ctoa-postgres",
-          "status": "Up 38 hours (healthy)",
+          "status": "Up 41 hours (healthy)",
           "ports": "5432/tcp"
         }
       ],
@@ -131,7 +130,7 @@
         "ms-azuretools.vscode-azure-github-copilot@1.0.209",
         "ms-python.debugpy@2026.7.11831010",
         "ms-python.python@2026.4.0",
-        "ms-python.vscode-pylance@2026.2.107",
+        "ms-python.vscode-pylance@2026.2.108",
         "ms-python.vscode-python-envs@1.36.0",
         "ms-toolsai.vscode-ai-remote@1.4.8",
         "ms-vscode-remote.remote-containers@0.464.0",
@@ -160,7 +159,7 @@
           "name": "main"
         },
         "nameWithOwner": "famatyyk/CTOAi",
-        "pushedAt": "2026-07-11T09:37:17Z",
+        "pushedAt": "2026-07-11T10:56:02Z",
         "updatedAt": "2026-07-11T09:37:24Z",
         "url": "https://github.com/famatyyk/CTOAi",
         "visibility": "PUBLIC"
@@ -170,36 +169,46 @@
         {
           "isDraft": false,
           "mergeStateStatus": "DIRTY",
-          "number": 183,
-          "reviewDecision": "REVIEW_REQUIRED",
+          "number": 184,
+          "reviewDecision": "",
           "title": "[WIP] Fix CTOA VPS Global Save Cycle failure",
-          "url": "https://github.com/famatyyk/CTOAi/pull/183"
+          "url": "https://github.com/famatyyk/CTOAi/pull/184"
+        },
+        {
+          "isDraft": false,
+          "mergeStateStatus": "DIRTY",
+          "number": 160,
+          "reviewDecision": "REVIEW_REQUIRED",
+          "title": "test(copilot-instructions): expand conformance coverage to all seven sections",
+          "url": "https://github.com/famatyyk/CTOAi/pull/160"
+        },
+        {
+          "isDraft": true,
+          "mergeStateStatus": "DIRTY",
+          "number": 157,
+          "reviewDecision": "REVIEW_REQUIRED",
+          "title": "feat: add /analyze-prompt Copilot slash command",
+          "url": "https://github.com/famatyyk/CTOAi/pull/157"
+        },
+        {
+          "isDraft": false,
+          "mergeStateStatus": "DIRTY",
+          "number": 153,
+          "reviewDecision": "REVIEW_REQUIRED",
+          "title": "docs: add alternative LLM model recommendations to copilot instructions and .env.example",
+          "url": "https://github.com/famatyyk/CTOAi/pull/153"
+        },
+        {
+          "isDraft": false,
+          "mergeStateStatus": "DIRTY",
+          "number": 152,
+          "reviewDecision": "REVIEW_REQUIRED",
+          "title": "Enable workspace-level Python trace logging in VS Code",
+          "url": "https://github.com/famatyyk/CTOAi/pull/152"
         }
       ],
       "recent_run_count": 15,
-      "failed_recent_runs": [
-        {
-          "conclusion": "skipped",
-          "createdAt": "2026-07-11T09:37:23Z",
-          "status": "completed",
-          "url": "https://github.com/famatyyk/CTOAi/actions/runs/29148027694",
-          "workflowName": "CTOA Close On Gate"
-        },
-        {
-          "conclusion": "failure",
-          "createdAt": "2026-07-11T09:37:20Z",
-          "status": "completed",
-          "url": "https://github.com/famatyyk/CTOAi/actions/runs/29148026384",
-          "workflowName": "Bot CD \u2014 Deploy to VPS"
-        },
-        {
-          "conclusion": "",
-          "createdAt": "2026-07-11T09:37:20Z",
-          "status": "waiting",
-          "url": "https://github.com/famatyyk/CTOAi/actions/runs/29148026350",
-          "workflowName": "CTOA Pipeline"
-        }
-      ]
+      "failed_recent_runs": []
     },
     "update_gate": {
       "status": "ok",

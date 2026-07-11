@@ -1,6 +1,6 @@
 # Engine Brain File Tree
 
-Generated at: `2026-07-11T10:02:32+00:00`
+Generated at: `2026-07-11T12:48:01+00:00`
 
 Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 `node_modules`, `runtime`, `logs`, `data`, `.tmp`, build outputs.
@@ -36,7 +36,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `.github/workflows/ctoa-approval-watchdog.yml` | 3519 |
 | `.github/workflows/ctoa-ci-executive-weekly.yml` | 1068 |
 | `.github/workflows/ctoa-close-on-gate.yml` | 887 |
-| `.github/workflows/ctoa-copilot-ci.yml` | 9123 |
+| `.github/workflows/ctoa-copilot-ci.yml` | 9288 |
 | `.github/workflows/ctoa-daily-ci-health.yml` | 4820 |
 | `.github/workflows/ctoa-daily-insights.yml` | 941 |
 | `.github/workflows/ctoa-issue-sync.yml` | 687 |
@@ -102,14 +102,14 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `AI/FEATURE_ROADMAP.md` | 56235 |
 | `AI/generated/DOC_SYNC.json` | 1019 |
 | `AI/generated/DOC_SYNC.md` | 609 |
-| `AI/generated/ENGINE_BRAIN_PACK.json` | 5583 |
-| `AI/generated/ENGINE_BRAIN_PACK.md` | 412233 |
-| `AI/generated/ENV_DOCTOR.json` | 7281 |
-| `AI/generated/ENV_DOCTOR.md` | 776 |
-| `AI/generated/FILE_TREE.md` | 68315 |
+| `AI/generated/ENGINE_BRAIN_PACK.json` | 5322 |
+| `AI/generated/ENGINE_BRAIN_PACK.md` | 264227 |
+| `AI/generated/ENV_DOCTOR.json` | 7626 |
+| `AI/generated/ENV_DOCTOR.md` | 1266 |
+| `AI/generated/FILE_TREE.md` | 68364 |
 | `AI/generated/manifest.json` | 2062 |
-| `AI/generated/OWNERSHIP_MAP.json` | 16701 |
-| `AI/generated/OWNERSHIP_MAP.md` | 6492 |
+| `AI/generated/OWNERSHIP_MAP.json` | 16930 |
+| `AI/generated/OWNERSHIP_MAP.md` | 6577 |
 | `AI/generated/P6_CODEX_INTEGRATION_READINESS.json` | 11010 |
 | `AI/generated/P6_CODEX_INTEGRATION_READINESS.md` | 6915 |
 | `AI/generated/P7_ACTION_READINESS.json` | 4870 |
@@ -120,7 +120,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `AI/generated/P7_OPERATOR_WORKFLOW.md` | 3015 |
 | `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.json` | 2705 |
 | `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.md` | 2024 |
-| `AI/generated/SYMBOL_MAP.md` | 261054 |
+| `AI/generated/SYMBOL_MAP.md` | 261229 |
 | `AI/KNOWN_BUGS.md` | 1384 |
 | `AI/LUA_INDEX.md` | 2874 |
 | `AI/OPERATIONS_AUDIT.md` | 5139 |
@@ -672,7 +672,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/lua/otclient/ctoa_helper_recovery_observer.lua` | 4249 |
 | `scripts/lua/otclient/ctoa_helper_recovery_runtime.lua` | 4956 |
 | `scripts/lua/otclient/ctoa_helper_route.lua` | 10784 |
-| `scripts/lua/otclient/ctoa_helper_runtime_core.lua` | 10189 |
+| `scripts/lua/otclient/ctoa_helper_runtime_core.lua` | 10804 |
 | `scripts/lua/otclient/ctoa_helper_runtime_policy.lua` | 7685 |
 | `scripts/lua/otclient/ctoa_helper_runtime_readiness.lua` | 3844 |
 | `scripts/lua/otclient/ctoa_helper_sandbox_handoff.lua` | 4120 |
@@ -689,7 +689,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/lua/otclient/ctoa_otclient.otmod` | 253 |
 | `scripts/lua/otclient/ctoa_otclient_loader.lua` | 7548 |
 | `scripts/lua/otclient/ctoa_rp_profile.lua` | 2424 |
-| `scripts/lua/otclient/README.md` | 24871 |
+| `scripts/lua/otclient/README.md` | 24958 |
 | `scripts/lua/pathing_helper.lua` | 1361 |
 | `scripts/lua/proximity_watch.lua` | 797 |
 | `scripts/lua/safety_interrupt.lua` | 359 |
@@ -910,7 +910,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `tests/test_ctoa_helper_profile_migration.py` | 3508 |
 | `tests/test_ctoa_helper_recovery_jitter.py` | 1480 |
 | `tests/test_ctoa_helper_recovery_observer.py` | 2775 |
-| `tests/test_ctoa_helper_runtime_core.py` | 5543 |
+| `tests/test_ctoa_helper_runtime_core.py` | 6056 |
 | `tests/test_ctoa_helper_smoke_report.py` | 4628 |
 | `tests/test_ctoa_helper_ui_preview_security.py` | 993 |
 | `tests/test_ctoa_helper_vocation_profiles.py` | 7062 |

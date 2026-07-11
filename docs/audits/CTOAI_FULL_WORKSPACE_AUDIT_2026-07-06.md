@@ -1,12 +1,12 @@
 # CTOAi Full Workspace Audit
 
-- Generated at UTC: `2026-07-11T09:43:15+00:00`
+- Generated at UTC: `2026-07-11T12:47:23+00:00`
 - Root: `C:\Users\zycie\CTOAi`
 - Coverage: `All files under workspace root, including .git internals.`
-- Files inventoried: `42091`
-- Non-regular entries skipped: `3914`
-- Git tracked files: `1325`
-- Dirty status entries: `22`
+- Files inventoried: `42113`
+- Non-regular entries skipped: `3889`
+- Git tracked files: `1326`
+- Dirty status entries: `25`
 - Runtime JSON inventory: `runtime/audits/ctoai-full-workspace-audit.json`
 
 ## Coverage Note
@@ -17,12 +17,12 @@ The JSON inventory lists every file found under the workspace root, including `.
 
 | Category | Files | Size |
 | --- | ---: | ---: |
-| `git_internal` | 721 | 3418.09 MB |
+| `git_internal` | 741 | 3418.54 MB |
 | `local_secret_or_sensitive` | 7 | 0.08 MB |
-| `runtime_or_local_state` | 2529 | 809.29 MB |
-| `tracked_source` | 1319 | 11.59 MB |
+| `runtime_or_local_state` | 2529 | 809.42 MB |
+| `tracked_source` | 1320 | 11.45 MB |
 | `untracked_local` | 21 | 0.07 MB |
-| `untracked_source_candidate` | 6156 | 667.99 MB |
+| `untracked_source_candidate` | 6157 | 668.00 MB |
 | `vendor_or_cache` | 31338 | 594.63 MB |
 
 ## Largest Top-Level Areas
@@ -31,9 +31,9 @@ The JSON inventory lists every file found under the workspace root, including `.
 | --- | ---: | ---: |
 | `web` | 32304 | 1134.91 MB |
 | `.venv` | 4543 | 116.28 MB |
-| `runtime` | 2292 | 797.99 MB |
-| `.git` | 721 | 3418.09 MB |
-| `tests` | 503 | 7.93 MB |
+| `runtime` | 2292 | 798.12 MB |
+| `.git` | 741 | 3418.54 MB |
+| `tests` | 505 | 7.95 MB |
 | `scripts` | 435 | 5.35 MB |
 | `docs` | 312 | 4.23 MB |
 | `runner` | 154 | 1.55 MB |
@@ -41,7 +41,7 @@ The JSON inventory lists every file found under the workspace root, including `.
 | `_local_archive` | 111 | 1.52 MB |
 | `.tmp` | 105 | 1.59 MB |
 | `workflows` | 89 | 0.18 MB |
-| `AI` | 45 | 1.03 MB |
+| `AI` | 45 | 0.89 MB |
 | `deploy` | 43 | 0.04 MB |
 | `.github` | 41 | 0.14 MB |
 | `releases` | 36 | 0.02 MB |
@@ -62,11 +62,11 @@ The JSON inventory lists every file found under the workspace root, including `.
 
 | Check | Status | Evidence |
 | --- | --- | --- |
-| `regular_file_inventory` | `passed` | 42091 regular files inventoried. |
-| `non_regular_accounting` | `passed` | 3914 non-regular entries skipped ({'directory': 3914}). |
-| `bounded_hashing` | `passed` | 9874 files hashed with max size 2000000 bytes. |
+| `regular_file_inventory` | `passed` | 42113 regular files inventoried. |
+| `non_regular_accounting` | `passed` | 3889 non-regular entries skipped ({'directory': 3889}). |
+| `bounded_hashing` | `passed` | 9876 files hashed with max size 2000000 bytes. |
 | `sensitive_content_omitted` | `passed` | 7 sensitive-name files inventoried; 0 hashed. |
-| `git_status_captured` | `passed` | 22 git status entries captured. |
+| `git_status_captured` | `passed` | 25 git status entries captured. |
 
 ## Validation Evidence Gate
 
@@ -98,7 +98,7 @@ The JSON inventory lists every file found under the workspace root, including `.
 
 ### HIGH: workspace-state
 
-- Finding: Worktree is dirty with 22 status entries.
+- Finding: Worktree is dirty with 25 status entries.
 - Evidence: git status --short; see runtime audit JSON dirty_entries.
 - Action: Package current Helper/Control Center changes into one reviewable change set before opening another lane.
 
