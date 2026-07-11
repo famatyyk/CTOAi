@@ -17,6 +17,8 @@ def test_recovery_bridge_is_packaged_and_safe_by_default():
 
     assert 'name = "ctoa_helper_recovery_bridge"' in registry
     assert "ctoa_helper_recovery_bridge.lua" in wrapper
+    assert '"RecoveryBridgeStaticSmoke"' in wrapper
+    assert 'module = "recovery_bridge"; action = "RecoveryBridgeStaticSmoke"' in wrapper
     assert "default_armed = false" in source
     assert "default_dry_run = true" in source
     assert 'mode = "sandbox_only"' in source

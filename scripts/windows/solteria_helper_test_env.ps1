@@ -1,5 +1,5 @@
 param(
-    [ValidateSet("PrepareDev", "ValidateDev", "Setup", "SmokePreflight", "SmokeStatus", "SmokeQueue", "GoalStatus", "LocalReady", "Launch", "Smoke", "SmokeAll", "SmokeAttach", "SmokeAttachModules", "SmokeAttachAll", "ThemeSnapshotMatrix", "HealingVitalsSmoke", "CombatSafetySmoke", "CavebotSafetySmoke", "TimerSafetySmoke", "LootSafetySmoke", "HealFriendNoTargetSmoke", "ConditionsObserverSmoke", "EquipmentObserverSmoke", "ScriptingPolicySmoke", "PlannerStaticSmoke", "RuntimePolicyStaticSmoke", "DispatchGuardStaticSmoke", "PlanQueueStaticSmoke", "RuntimeReadinessStaticSmoke", "ModuleStatusStaticSmoke", "ActionCatalogStaticSmoke", "DecisionTraceStaticSmoke", "DecisionPipelineStaticSmoke", "SandboxHandoffStaticSmoke", "FeatureFlagsStaticSmoke", "HudStaticSmoke", "HotkeysStaticSmoke", "ModalStaticSmoke", "InputContractsStaticSmoke", "RouteStaticSmoke", "TargetingStaticSmoke", "CombatRuntimeStaticSmoke", "CavebotRuntimeStaticSmoke", "LootRuntimeStaticSmoke", "TimerRuntimeStaticSmoke", "RecoveryRuntimeStaticSmoke", "ProfileSchemaStaticSmoke", "OperatorSummaryStaticSmoke", "ExternalBotImportGateStaticSmoke", "HelperShellBudgetStaticSmoke", "HelperShellBudgetPlanStaticSmoke", "ModuleContract", "ModuleAudit", "ModuleStaticGates", "Snapshot", "ReadyCheck", "BackupLiveCtoa", "PromoteLiveCtoa", "EmergencyRepairLiveCtoa", "DisableLiveCtoa", "EnableLiveCtoa", "EnableLiveCtoaUiOnly", "Stop")]
+    [ValidateSet("PrepareDev", "ValidateDev", "Setup", "SmokePreflight", "SmokeStatus", "SmokeQueue", "GoalStatus", "LocalReady", "Launch", "Smoke", "SmokeAll", "SmokeAttach", "SmokeAttachModules", "SmokeAttachAll", "ThemeSnapshotMatrix", "HealingVitalsSmoke", "CombatSafetySmoke", "CavebotSafetySmoke", "TimerSafetySmoke", "LootSafetySmoke", "HealFriendNoTargetSmoke", "ConditionsObserverSmoke", "EquipmentObserverSmoke", "ScriptingPolicySmoke", "PlannerStaticSmoke", "RuntimePolicyStaticSmoke", "DispatchGuardStaticSmoke", "PlanQueueStaticSmoke", "RuntimeReadinessStaticSmoke", "ModuleStatusStaticSmoke", "ActionCatalogStaticSmoke", "DecisionTraceStaticSmoke", "DecisionPipelineStaticSmoke", "SandboxHandoffStaticSmoke", "FeatureFlagsStaticSmoke", "HudStaticSmoke", "HotkeysStaticSmoke", "ModalStaticSmoke", "InputContractsStaticSmoke", "RouteStaticSmoke", "TargetingStaticSmoke", "CombatRuntimeStaticSmoke", "CavebotRuntimeStaticSmoke", "LootRuntimeStaticSmoke", "TimerRuntimeStaticSmoke", "RecoveryRuntimeStaticSmoke", "RecoveryBridgeStaticSmoke", "ProfileSchemaStaticSmoke", "OperatorSummaryStaticSmoke", "ExternalBotImportGateStaticSmoke", "HelperShellBudgetStaticSmoke", "HelperShellBudgetPlanStaticSmoke", "ModuleContract", "ModuleAudit", "ModuleStaticGates", "Snapshot", "ReadyCheck", "BackupLiveCtoa", "PromoteLiveCtoa", "EmergencyRepairLiveCtoa", "DisableLiveCtoa", "EnableLiveCtoa", "EnableLiveCtoaUiOnly", "Stop")]
     [string]$Action = "Smoke",
     [ValidateSet("overview", "healing", "heal_friend", "conditions", "hunting", "hunting_magic", "cavebot", "equipment", "tools", "tools_pvp", "tools_hud", "tools_timer", "tools_diag", "profile", "ui", "scripting")]
     [string]$Tab = "overview",
@@ -3085,6 +3085,50 @@ function Invoke-RecoveryRuntimeStaticSmoke {
     }
 }
 
+function Invoke-RecoveryBridgeStaticSmoke {
+    $repo = Get-RepoRoot
+    $outRoot = Join-Path $repo $DevDir
+    New-Item -ItemType Directory -Force -Path $outRoot | Out-Null
+    $bridgePath = Join-Path $repo "scripts\lua\otclient\ctoa_helper_recovery_bridge.lua"
+    $testPath = Join-Path $repo "tests\test_ctoa_helper_recovery_bridge.py"
+    $bridge = if (Test-Path -LiteralPath $bridgePath) { Get-Content -LiteralPath $bridgePath -Raw } else { "" }
+    $loader = Get-CtoaHelperBootGraphSource -RepoRoot $repo
+    $script = Get-Content -LiteralPath $PSCommandPath -Raw
+    & (Join-Path $repo ".venv\Scripts\python.exe") -m pytest $testPath -q
+    $pytestExitCode = $LASTEXITCODE
+    $checks = @(
+        [pscustomobject]@{ name = "module_exists"; status = if (Test-Path -LiteralPath $bridgePath) { "passed" } else { "failed" }; evidence = "ctoa_helper_recovery_bridge.lua exists" },
+        [pscustomobject]@{ name = "safe_defaults"; status = if ($bridge.Contains("default_armed = false") -and $bridge.Contains("default_dry_run = true") -and $bridge.Contains('mode = "sandbox_only"')) { "passed" } else { "failed" }; evidence = "bridge defaults to disarmed sandbox dry-run" },
+        [pscustomobject]@{ name = "bounded_controls"; status = if ($bridge.Contains("function RecoveryBridge.arm") -and $bridge.Contains("function RecoveryBridge.kill") -and $bridge.Contains("cooldown_active") -and $bridge.Contains("retry_budget_exhausted") -and $bridge.Contains("armed_session_mismatch")) { "passed" } else { "failed" }; evidence = "session arm, kill switch, cooldown, retry budget, and session match are present" },
+        [pscustomobject]@{ name = "trace_contract"; status = if ($bridge.Contains('ctoa.recovery-bridge-trace.v1') -and $bridge.Contains('result = "dry_run"')) { "passed" } else { "failed" }; evidence = "decision guard action result trace is explicit" },
+        [pscustomobject]@{ name = "no_direct_otclient_calls"; status = if (-not $bridge.Contains("g_game.") -and -not $bridge.Contains("g_map.") -and -not $bridge.Contains("castSpell(") -and -not $bridge.Contains("sendActionbarSlot(")) { "passed" } else { "failed" }; evidence = "bridge requires an injected executor and has no direct OTClient action calls" },
+        [pscustomobject]@{ name = "loader_present"; status = if ((Test-CtoaHelperBootGraphModule -Source $loader -Name "ctoa_helper_recovery_bridge" -File "ctoa_helper_recovery_bridge.lua")) { "passed" } else { "failed" }; evidence = "boot graph stages the bridge after its dependencies" },
+        [pscustomobject]@{ name = "packaged"; status = if ($script.Contains("ctoa_helper_recovery_bridge.lua") -and $script.Contains("mods/ctoa_otclient/ctoa_helper_recovery_bridge.lua")) { "passed" } else { "failed" }; evidence = "dev package copies the bridge" },
+        [pscustomobject]@{ name = "real_lua_tests"; status = if ($pytestExitCode -eq 0) { "passed" } else { "failed" }; evidence = "recovery bridge pytest and real-Lua probes pass" }
+    )
+    $failed = @($checks | Where-Object { $_.status -ne "passed" })
+    $report = [pscustomobject]@{
+        name = "solteria-helper-recovery-bridge-static-smoke"
+        created_at = (Get-Date).ToString("s")
+        status = if ($failed.Count -eq 0) { "passed" } else { "failed" }
+        module = "recovery_bridge"
+        mode = "sandbox_only_dry_run_first"
+        bridge_path = [System.IO.Path]::GetFullPath($bridgePath)
+        check_count = $checks.Count
+        passed_count = @($checks | Where-Object { $_.status -eq "passed" }).Count
+        failed_count = $failed.Count
+        checks = $checks
+        next_action = if ($failed.Count -eq 0) { "Run PrepareDev, ValidateDev, and SmokePreflight before sandbox attach." } else { "Fix failed Recovery Bridge contract checks." }
+        next_command = if ($failed.Count -eq 0) { "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action PrepareDev" } else { "" }
+        live_safety = "RecoveryBridgeStaticSmoke reads repo sources and runs local tests only; it does not launch, attach, cast, promote, or overwrite a live client."
+    }
+    $path = Join-Path $outRoot "recovery_bridge_static_smoke.json"
+    Write-JsonAtomic -InputObject $report -Path $path -Depth 8
+    Write-Output "[solteria-helper-test-env] Recovery bridge static smoke: $path"
+    Write-Output "[solteria-helper-test-env] Recovery bridge static status: $($report.status)"
+    if ($failed.Count -gt 0) { throw "Recovery bridge static smoke failed" }
+}
+
 function Invoke-HealingVitalsSmoke {
     $repo = Get-RepoRoot
     $outRoot = Join-Path $repo $DevDir
@@ -3800,6 +3844,7 @@ function Invoke-ModuleStaticGates {
         [pscustomobject]@{ module = "loot_runtime"; action = "LootRuntimeStaticSmoke"; report = "loot_runtime_static_smoke.json"; attach_command = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttach -Tab tools_diag" },
         [pscustomobject]@{ module = "timer_runtime"; action = "TimerRuntimeStaticSmoke"; report = "timer_runtime_static_smoke.json"; attach_command = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttach -Tab tools_timer" },
         [pscustomobject]@{ module = "recovery_runtime"; action = "RecoveryRuntimeStaticSmoke"; report = "recovery_runtime_static_smoke.json"; attach_command = "" },
+        [pscustomobject]@{ module = "recovery_bridge"; action = "RecoveryBridgeStaticSmoke"; report = "recovery_bridge_static_smoke.json"; attach_command = "" },
         [pscustomobject]@{ module = "profile_schema"; action = "ProfileSchemaStaticSmoke"; report = "profile_schema_static_smoke.json"; attach_command = "" },
         [pscustomobject]@{ module = "operator_summary"; action = "OperatorSummaryStaticSmoke"; report = "operator_summary_static_smoke.json"; attach_command = "" },
         [pscustomobject]@{ module = "external_bot_import_gate"; action = "ExternalBotImportGateStaticSmoke"; report = "external_bot_import_gate_static_smoke.json"; attach_command = "" },
@@ -3837,6 +3882,7 @@ function Invoke-ModuleStaticGates {
                 "LootRuntimeStaticSmoke" { Invoke-LootRuntimeStaticSmoke }
                 "TimerRuntimeStaticSmoke" { Invoke-TimerRuntimeStaticSmoke }
                 "RecoveryRuntimeStaticSmoke" { Invoke-RecoveryRuntimeStaticSmoke }
+                "RecoveryBridgeStaticSmoke" { Invoke-RecoveryBridgeStaticSmoke }
                 "ProfileSchemaStaticSmoke" { Invoke-ProfileSchemaStaticSmoke }
                 "OperatorSummaryStaticSmoke" { Invoke-OperatorSummaryStaticSmoke }
                 "ExternalBotImportGateStaticSmoke" { Invoke-ExternalBotImportGateStaticSmoke }
@@ -5259,6 +5305,9 @@ switch ($Action) {
     }
     "RecoveryRuntimeStaticSmoke" {
         Invoke-RecoveryRuntimeStaticSmoke
+    }
+    "RecoveryBridgeStaticSmoke" {
+        Invoke-RecoveryBridgeStaticSmoke
     }
     "ProfileSchemaStaticSmoke" {
         Invoke-ProfileSchemaStaticSmoke
