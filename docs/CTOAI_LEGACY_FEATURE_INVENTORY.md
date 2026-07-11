@@ -48,6 +48,11 @@ docs/site/live-dashboard.html
 | Ideas | `/api/ideas` | backend | Review | Product backlog or drop later |
 | Metrics endpoint | `/metrics` | backend | Keep | Observability backend |
 
+Note: legacy Intel mission launch and one-click execution now require owner
+auth, `confirm=true`, and a non-empty audit reason before runtime side effects.
+The migration target remains Control Center guarded-action UI with its own
+confirmation and audit lane.
+
 ## Desktop console capabilities
 
 Source surfaces:

@@ -37,12 +37,16 @@ Keep Intel LAB pipeline healthy for the next 10 hours with repeated end-to-end c
 
 ## Artifacts
 - scripts/ops/lab003_validate_bundle.ps1
+- scripts/ops/lab003_mobile_proxy_smoke.ps1
 - scripts/ops/lab003_shift_guard.ps1
 - .vscode/tasks.json tasks for bundle and 10h guard
 - %LOCALAPPDATA%\CTOA\logs\lab003-shift-guard.log
 
 ## Webhook Alert Setup
 - Optional webhook URL can be provided by environment variable CTOA_LAB003_ALERT_WEBHOOK_URL or by script parameter AlertWebhookUrl.
+- BaseUrl must be a local loopback HTTP(S) origin only: `127.0.0.1`, `localhost`, or `[::1]`; no credentials, path, query string, or fragment.
+- Alert webhook URLs must be HTTPS for non-local hosts. Loopback HTTP is allowed for local smoke listeners. Credentials and fragments are rejected.
+- Prefer the environment variable for webhook URLs so the webhook is not placed on a child process command line.
 - Default behavior sends alert only on the first failed iteration.
 - Use AlertOnEveryFailure switch to send webhook on each failed iteration.
 
