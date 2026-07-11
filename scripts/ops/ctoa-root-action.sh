@@ -47,9 +47,11 @@ case "$action" in
     systemctl status ctoa-mobile-console.service --no-pager -l | sed -n '1,20p' || true
     echo
     echo "=== Dashboard health ==="
-    http_code=$(curl -sS -o /tmp/ctoa-health.out -w "%{http_code}" http://127.0.0.1:8787/api/health || true)
+    health_out="$(mktemp "${TMPDIR:-/tmp}/ctoa-health.XXXXXX")"
+    trap 'rm -f "$health_out"' EXIT
+    http_code=$(curl -sS -o "$health_out" -w "%{http_code}" http://127.0.0.1:8787/api/health || true)
     if [[ "$http_code" = "200" ]]; then
-      cat /tmp/ctoa-health.out
+      cat "$health_out"
     elif [[ "$http_code" = "401" || "$http_code" = "403" ]]; then
       echo "dashboard-health-auth-required"
     else
