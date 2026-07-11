@@ -50,8 +50,10 @@
   together through `ctoa.ps1 otbg`, release evidence, and Control Center without
   touching the game window.
 - P9 remains queued and must not start until P8 operational acceptance is
-  explicitly accepted; it then captures and replays Conditions evidence before
-  any execute-once bridge.
+  explicitly accepted. Its design is `design_ready` in
+  `docs/otclient/P9_CONDITIONS_SHADOW_REPLAY_DESIGN.md`; it then captures and
+  replays Conditions evidence through a strict data-only JSON profile before any
+  execute-once bridge.
 - P10 repeats the independent shadow/replay sequence for rollback-ready Equipment;
   P11 does the same for exact-whitelist Heal Friend.
 - P12 is the first possible execute-once sandbox phase, still with no live dispatch.

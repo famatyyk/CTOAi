@@ -32,6 +32,7 @@ def test_engine_brain_pack_writes_manifest_and_markdown(tmp_path):
     assert "AI/generated/P7_OPERATOR_BRIEF.md" in text
     assert "docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md" in text
     assert "AI/P8_P16_EXECUTION_ROADMAP.md" in text
+    assert "docs/otclient/P9_CONDITIONS_SHADOW_REPLAY_DESIGN.md" in text
     assert "docs/otclient/HELPER_RUNTIME_MODULE_GATES_V1.md" in text
     assert "Conditions -> Equipment -> Heal Friend" in text
     assert "deferred_high_risk" in text
@@ -83,6 +84,7 @@ def test_engine_brain_pack_supports_helper_profile(tmp_path):
     assert "Profile: `helper`" in text
     assert "AI/OTCLIENT_INDEX.md" in text
     assert "AI/P8_P16_EXECUTION_ROADMAP.md" in text
+    assert "docs/otclient/P9_CONDITIONS_SHADOW_REPLAY_DESIGN.md" in text
     assert "docs/otclient/solteria_helper_test_env.md" in text
     assert "docs/otclient/HELPER_RUNTIME_MODULE_GATES_V1.md" in text
     assert "docs/otclient/solteria_helper_module_workplan.md" in text

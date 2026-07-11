@@ -65,6 +65,10 @@ Done gates:
 Objective: validate only `plan_paralyze_recovery` from passive observations before
 any execute-once design.
 
+Design state: `design_ready`; implementation and operational acceptance remain
+`blocked_by_p8_operational_acceptance`. Canonical design:
+`docs/otclient/P9_CONDITIONS_SHADOW_REPLAY_DESIGN.md`.
+
 Dependencies: explicitly accepted P8 operational acceptance, including its trusted
 promotion pin, fresh heartbeat, and full consumer-parity proofs; accepted Recovery
 trace. P9 must not start while P8 remains `operational_acceptance_blocked`.

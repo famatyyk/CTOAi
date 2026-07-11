@@ -67,7 +67,9 @@ Snapshot date: 2026-07-11 Europe/Warsaw
   `live_promotion.json`, an explicit fresh online capability heartbeat newer than
   exactly one canonical client process, and full producer/consumer parity for the
   no-action contract. The observer cannot create that trusted pin. P9 Conditions
-  remains queued until P8 operational acceptance is explicitly accepted.
+  remains queued until P8 operational acceptance is explicitly accepted. Its
+  data-only shadow/replay contract is review-ready in
+  `docs/otclient/P9_CONDITIONS_SHADOW_REPLAY_DESIGN.md`.
 - Vocation-profile drift is visible as its own count but cannot satisfy parity:
   the current profile is executable Lua. A later schema-validated data-only
   persistence format is required before normal profile changes can be trusted as
