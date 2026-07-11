@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-11T18:13:30+00:00",
+  "generated_at": "2026-07-11T19:36:35+00:00",
   "source": "runtime\\audits\\ctoai-full-workspace-audit.json",
   "status": "ready",
   "areas": [
@@ -58,10 +58,10 @@
       "path": ".git",
       "owner": "Local/uncategorized",
       "validation_gate": "manual review",
-      "files": 1360,
-      "bytes": 3589069301,
+      "files": 227,
+      "bytes": 3583962540,
       "categories": {
-        "git_internal": 1360
+        "git_internal": 227
       }
     },
     {
@@ -129,7 +129,7 @@
       "owner": "Local/uncategorized",
       "validation_gate": "manual review",
       "files": 5,
-      "bytes": 146920,
+      "bytes": 167980,
       "categories": {
         "vendor_or_cache": 5
       }
@@ -139,7 +139,7 @@
       "owner": "Local/uncategorized",
       "validation_gate": "manual review",
       "files": 17,
-      "bytes": 15661,
+      "bytes": 15914,
       "categories": {
         "untracked_local": 17
       }
@@ -189,7 +189,7 @@
       "owner": "Engine Brain",
       "validation_gate": "brain refresh; brain pack",
       "files": 46,
-      "bytes": 984964,
+      "bytes": 1004695,
       "categories": {
         "tracked_source": 46
       }
@@ -239,7 +239,7 @@
       "owner": "Local/uncategorized",
       "validation_gate": "manual review",
       "files": 1,
-      "bytes": 6033,
+      "bytes": 6173,
       "categories": {
         "tracked_source": 1
       }
@@ -332,11 +332,12 @@
       "path": "config",
       "owner": "Local/uncategorized",
       "validation_gate": "manual review",
-      "files": 6,
-      "bytes": 27895,
+      "files": 7,
+      "bytes": 28362,
       "categories": {
         "local_secret_or_sensitive": 1,
-        "tracked_source": 5
+        "tracked_source": 5,
+        "untracked_source_candidate": 1
       }
     },
     {
@@ -374,7 +375,7 @@
       "owner": "Local/uncategorized",
       "validation_gate": "manual review",
       "files": 1,
-      "bytes": 30553,
+      "bytes": 33025,
       "categories": {
         "tracked_source": 1
       }
@@ -455,7 +456,7 @@
       "owner": "Documentation",
       "validation_gate": "doc sync guard",
       "files": 316,
-      "bytes": 4452276,
+      "bytes": 4454243,
       "categories": {
         "tracked_source": 310,
         "untracked_source_candidate": 6
@@ -476,7 +477,7 @@
       "owner": "Local/uncategorized",
       "validation_gate": "manual review",
       "files": 3,
-      "bytes": 2242014,
+      "bytes": 2273466,
       "categories": {
         "runtime_or_local_state": 3
       }
@@ -485,10 +486,10 @@
       "path": "metrics",
       "owner": "Local/uncategorized",
       "validation_gate": "manual review",
-      "files": 19,
-      "bytes": 14288,
+      "files": 21,
+      "bytes": 15792,
       "categories": {
-        "runtime_or_local_state": 19
+        "runtime_or_local_state": 21
       }
     },
     {
@@ -598,10 +599,10 @@
       "path": "runtime",
       "owner": "Local/uncategorized",
       "validation_gate": "manual review",
-      "files": 2481,
-      "bytes": 909103648,
+      "files": 2482,
+      "bytes": 909225328,
       "categories": {
-        "runtime_or_local_state": 2481
+        "runtime_or_local_state": 2482
       }
     },
     {
@@ -618,10 +619,11 @@
       "path": "schemas",
       "owner": "Contracts",
       "validation_gate": "schema consumers and pytest",
-      "files": 6,
-      "bytes": 20015,
+      "files": 14,
+      "bytes": 38032,
       "categories": {
-        "tracked_source": 6
+        "tracked_source": 6,
+        "untracked_source_candidate": 8
       }
     },
     {
@@ -639,11 +641,11 @@
       "path": "scripts",
       "owner": "Operator automation",
       "validation_gate": "pytest targeted script tests",
-      "files": 447,
-      "bytes": 5876838,
+      "files": 449,
+      "bytes": 6095025,
       "categories": {
         "tracked_source": 268,
-        "untracked_source_candidate": 179
+        "untracked_source_candidate": 181
       }
     },
     {
@@ -660,12 +662,12 @@
       "path": "tests",
       "owner": "Regression suite",
       "validation_gate": "pytest tests/ --ignore=tests/e2e",
-      "files": 519,
-      "bytes": 8802616,
+      "files": 529,
+      "bytes": 9072583,
       "categories": {
         "local_secret_or_sensitive": 2,
         "tracked_source": 188,
-        "untracked_source_candidate": 329
+        "untracked_source_candidate": 339
       }
     },
     {
@@ -694,7 +696,7 @@
       "owner": "Control Center",
       "validation_gate": "cd web; npm run lint; npm test",
       "files": 32304,
-      "bytes": 1190071445,
+      "bytes": 1190174920,
       "categories": {
         "local_secret_or_sensitive": 2,
         "tracked_source": 98,

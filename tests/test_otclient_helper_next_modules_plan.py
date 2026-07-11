@@ -9,7 +9,8 @@ def test_next_modules_plan_is_safe_and_ordered():
     modules = payload["candidate_modules"]
     supplemental = payload["supplemental_execution"]
 
-    assert payload["status"] == "ready_for_sandbox_then_next_module_design"
+    assert payload["status"] == "offline_implementation_complete"
+    assert payload["operational_acceptance_status"] == "operational_acceptance_blocked"
     assert payload["current_budget_priority"]["source"] == "runtime/solteria_helper_dev/helper_shell_budget_plan.json"
     expected_domains = payload["current_budget_priority"]["next_extraction_domains"]
     assert expected_domains == [
@@ -147,8 +148,11 @@ def test_next_modules_plan_markdown_calls_out_runtime_blockers():
     assert "`route_engine` / Cavebot route engine split | `static_gated`" in markdown
     assert "`target_scorer` / Combat target scorer split | `static_gated`" in markdown
     assert "`conditions_runtime_gate`" in markdown
-    assert "ctoa_helper_conditions_runtime_gate.lua owns" in markdown
-    assert "ConditionsRuntimeGateStaticSmoke" in markdown
+    assert (
+        "`conditions_runtime_gate` | `offline_implementation_complete`" in markdown
+    )
+    assert "44-case fixture pack" in markdown
+    assert "ctoa.ps1 otp9" in markdown
     assert "`equipment_runtime_gate`" in markdown
     assert "ctoa_helper_equipment_runtime_gate.lua owns" in markdown
     assert "EquipmentRuntimeGateStaticSmoke" in markdown

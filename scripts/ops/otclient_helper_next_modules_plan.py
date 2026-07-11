@@ -190,10 +190,10 @@ SUPPLEMENTAL_EXECUTION = [
     SupplementalExecution(
         order=3,
         workstream="conditions_runtime_gate",
-        status="static_contract_accepted",
-        current_slice="ctoa_helper_conditions_runtime_gate.lua owns a default-closed paralyze-only dry-run gate after accepted Recovery evidence; it cannot dispatch.",
-        next_slice="Refresh observer/package/attach evidence and capture a real condition dry-run before any execute-once bridge review.",
-        gate="ConditionsRuntimeGateStaticSmoke, fresh ConditionsObserverSmoke, ModuleStaticGates, current attach evidence, Combat/CaveBot disabled, and no live promotion.",
+        status="offline_implementation_complete",
+        current_slice="The default-closed static gate remains, and P9 now adds a strict data-only profile, passive heartbeat observation, hash-bound deterministic replay, 44-case fixture pack, Release Evidence, and Control Center consumers; none can dispatch.",
+        next_slice="Run ctoa.ps1 otp9 only through BackgroundNoScreen and capture a fresh real trace after accepted P8 and Recovery proofs; do not start P10 or execute-once review while operational acceptance is blocked.",
+        gate="P9 fixture pack, strict consumers, accepted P8 proof, real guarded Conditions observation, accepted Recovery trace/proof, current attach evidence, Combat/CaveBot disabled, and no live promotion.",
     ),
     SupplementalExecution(
         order=4,
@@ -360,7 +360,8 @@ def build_payload() -> dict:
     return {
         "schema_version": 1,
         "generated_at": datetime.now().replace(microsecond=0).isoformat(),
-        "status": "ready_for_sandbox_then_next_module_design",
+        "status": "offline_implementation_complete",
+        "operational_acceptance_status": "operational_acceptance_blocked",
         "current_budget_priority": current_budget_priority(),
         "source_policy": {
             "zerobot_reference": "docs/otclient/zerobot_reference.md",
@@ -371,6 +372,7 @@ def build_payload() -> dict:
         },
         "prerequisites": [
             "Follow ConditionsRuntimeGate, then EquipmentRuntimeGate, then HealFriendRuntimeGate; do not reorder the phases.",
+            "Keep P10 blocked until ctoa.ps1 otp9 produces a reviewed real P9 trace under accepted P8 and Recovery proofs.",
             "Run SmokeAttachModules after sandbox character is in-world.",
             "Run SmokeAttachAll for the current dev manifest before enabling runtime actions.",
             "Keep PromoteLiveCtoa behind -ApproveLiveDeploy.",
@@ -386,7 +388,8 @@ def render_markdown(payload: dict) -> str:
         "",
         "## Decision",
         "",
-        f"- Status: `{payload['status']}`",
+        f"- Implementation status: `{payload['status']}`.",
+        f"- Operational acceptance: `{payload['operational_acceptance_status']}`.",
         "- Current extraction map: complete.",
         f"- Budget priority source: `{payload['current_budget_priority']['source']}`.",
         f"- Budget top non-shell domain: `{payload['current_budget_priority']['top_non_shell_domain']}`.",
@@ -440,7 +443,7 @@ def render_markdown(payload: dict) -> str:
             "",
             "## Operator Sequence",
             "",
-            "1. Keep Engine Brain current, then finish Conditions gate evidence for the current package.",
+            "1. Keep Engine Brain current, run `ctoa.ps1 otp9`, and finish the real Conditions acceptance trace without treating fixture success as runtime readiness.",
             "2. Review Equipment only after Conditions acceptance; review Heal Friend only after both predecessor gates.",
             "3. Keep every new module passive/read-only unless its action-specific gate and a separately reviewed bridge explicitly allow one sandbox action.",
             "4. Add profile keys, safe boot defaults, module registry entry, package copy, README note, static smoke, and release-gate evidence for every new module.",

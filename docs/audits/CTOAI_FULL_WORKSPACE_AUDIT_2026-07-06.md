@@ -1,12 +1,12 @@
 # CTOAi Full Workspace Audit
 
-- Generated at UTC: `2026-07-11T18:07:46+00:00`
+- Generated at UTC: `2026-07-11T19:07:21+00:00`
 - Root: `C:\Users\zycie\CTOAi`
 - Coverage: `All files under workspace root, including .git internals.`
-- Files inventoried: `42967`
-- Non-regular entries skipped: `3932`
+- Files inventoried: `41858`
+- Non-regular entries skipped: `3680`
 - Git tracked files: `1347`
-- Dirty status entries: `19`
+- Dirty status entries: `68`
 - Runtime JSON inventory: `runtime/audits/ctoai-full-workspace-audit.json`
 
 ## Coverage Note
@@ -17,43 +17,43 @@ The JSON inventory lists every file found under the workspace root, including `.
 
 | Category | Files | Size |
 | --- | ---: | ---: |
-| `git_internal` | 1360 | 3422.80 MB |
+| `git_internal` | 227 | 3417.93 MB |
 | `local_secret_or_sensitive` | 7 | 0.08 MB |
-| `runtime_or_local_state` | 2733 | 878.52 MB |
-| `tracked_source` | 1341 | 11.80 MB |
+| `runtime_or_local_state` | 2736 | 878.67 MB |
+| `tracked_source` | 1341 | 11.92 MB |
 | `untracked_local` | 21 | 0.07 MB |
-| `untracked_source_candidate` | 6167 | 668.45 MB |
-| `vendor_or_cache` | 31338 | 594.64 MB |
+| `untracked_source_candidate` | 6188 | 668.93 MB |
+| `vendor_or_cache` | 31338 | 594.66 MB |
 
 ## Largest Top-Level Areas
 
 | Path | Files | Size |
 | --- | ---: | ---: |
-| `web` | 32304 | 1134.94 MB |
+| `web` | 32304 | 1135.04 MB |
 | `.venv` | 4543 | 116.28 MB |
-| `runtime` | 2481 | 866.99 MB |
-| `.git` | 1360 | 3422.80 MB |
-| `tests` | 519 | 8.39 MB |
-| `scripts` | 447 | 5.60 MB |
+| `runtime` | 2482 | 867.10 MB |
+| `tests` | 529 | 8.65 MB |
+| `scripts` | 449 | 5.81 MB |
 | `docs` | 316 | 4.25 MB |
+| `.git` | 227 | 3417.93 MB |
 | `runner` | 154 | 1.55 MB |
 | `bot` | 144 | 0.73 MB |
 | `_local_archive` | 111 | 1.52 MB |
 | `.tmp` | 105 | 1.59 MB |
 | `workflows` | 89 | 0.18 MB |
-| `AI` | 46 | 0.94 MB |
+| `AI` | 46 | 0.96 MB |
 | `deploy` | 43 | 0.04 MB |
 | `.github` | 41 | 0.14 MB |
 | `releases` | 36 | 0.02 MB |
 | `agents` | 32 | 0.08 MB |
+| `metrics` | 21 | 0.02 MB |
 | `mobile_console` | 20 | 0.64 MB |
-| `metrics` | 19 | 0.01 MB |
-| `.ruff_cache` | 17 | 0.01 MB |
+| `.ruff_cache` | 17 | 0.02 MB |
 | `desktop_console` | 16 | 0.42 MB |
+| `schemas` | 14 | 0.04 MB |
 | `.ctoa-local` | 9 | 0.04 MB |
 | `api` | 9 | 0.26 MB |
 | `training` | 8 | 0.07 MB |
-| `alembic` | 6 | 0.01 MB |
 
 ## Audit Integrity Gate
 
@@ -62,35 +62,35 @@ The JSON inventory lists every file found under the workspace root, including `.
 
 | Check | Status | Evidence |
 | --- | --- | --- |
-| `regular_file_inventory` | `passed` | 42967 regular files inventoried. |
-| `non_regular_accounting` | `passed` | 3932 non-regular entries skipped ({'directory': 3932}). |
-| `bounded_hashing` | `passed` | 10109 files hashed with max size 2000000 bytes. |
+| `regular_file_inventory` | `passed` | 41858 regular files inventoried. |
+| `non_regular_accounting` | `passed` | 3680 non-regular entries skipped ({'directory': 3680}). |
+| `bounded_hashing` | `passed` | 10133 files hashed with max size 2000000 bytes. |
 | `sensitive_content_omitted` | `passed` | 7 sensitive-name files inventoried; 0 hashed. |
-| `git_status_captured` | `passed` | 19 git status entries captured. |
+| `git_status_captured` | `passed` | 68 git status entries captured. |
 
 ## Validation Evidence Gate
 
 - Status: `evidence_ready`
 - Missing command evidence: `<none>`
 - Failed command evidence: `<none>`
-- Evidence generated at UTC: `2026-07-07T04:15:56+00:00`
+- Evidence generated at UTC: `2026-07-11T19:04:23+00:00`
 
 | Command ID | Status | Duration | Summary |
 | --- | --- | ---: | --- |
-| `python_non_e2e` | `passed` | `152.56s` | 1040 passed, 32 skipped |
-| `web_lint` | `passed` | `17.4s` | eslint . completed successfully |
-| `web_tests` | `passed` | `4.07s` | 24 test files passed, 117 tests passed |
-| `diff_check` | `warn` | `1.1s` | No whitespace errors; CRLF/LF warnings only in existing working-copy files |
-| `brain_refresh` | `passed` | `2.8s` | doc_sync_status=passed; secret_guardrail_status=passed; p6_readiness_status=ready_for_plugin_design |
-| `brain_doctor` | `warn` | `16.3s` | overall_status=warn; fail=0; Docker broad binds empty |
-| `brain_pack_all` | `passed` | `1.7s` | profile=all; included_count=30; truncated_count=3 |
+| `python_non_e2e` | `passed` | `156.10s` | 1439 passed, 38 skipped |
+| `web_lint` | `passed` | `14.9s` | eslint . completed successfully |
+| `web_tests` | `passed` | `2.74s` | 28 test files passed, 144 tests passed |
+| `diff_check` | `warn` | `0.7s` | No whitespace errors; CRLF/LF warnings only in existing working-copy files |
+| `brain_refresh` | `passed` | `2.1s` | doc_sync_status=passed; secret_guardrail_status=passed; p6_readiness_status=ready_for_plugin_design |
+| `brain_doctor` | `warn` | `12.0s` | overall_status=warn; fail=0; Docker broad binds empty |
+| `brain_pack_all` | `passed` | `1.6s` | profile=all; included_count=38; truncated_count=4 |
 | `p6_bandit` | `passed` | `3.9s` | 0 findings |
 | `p6_targeted` | `passed` | `10.54s` | 13 passed, 1 skipped |
 | `p6_plugin_validate` | `passed` | `1.9s` | Plugin validation passed |
-| `p6_plugin_install` | `passed` | `1.1s` | ctoai-engine-brain@personal installed, enabled at 0.1.0+codex.20260707040636 |
+| `p6_plugin_install` | `passed` | `3.2s` | ctoai-engine-brain@personal installed, enabled at 0.1.0+codex.20260711185848 |
 | `p6_plugin_status` | `passed` | `2.1s` | status=ready; hard_blockers=0 |
 | `p6_plugin_self_check` | `passed` | `1.8s` | status=ready; hard_blockers=0; installed_cache=passed |
-| `p6_plugin_mcp` | `passed` | `3.1s` | initialize ok; tools=ctoai_engine_brain_status,ctoai_engine_brain_self_check,ctoai_engine_brain_brief; brief decision=ready_for_p7_operator_workflow |
+| `p6_plugin_mcp` | `passed` | `3.1s` | initialize ok; tools=9; brief decision=ready_for_p7_operator_workflow; P6 handoff=17/17 |
 | `p7_operator_brief` | `passed` | `2.7s` | decision=ready_for_p7_operator_workflow; status=ready; hard_blockers=0 |
 | `p7_generated_brief` | `passed` | `4.6s` | AI/generated/P7_OPERATOR_BRIEF.md and .json generated by brain refresh |
 
@@ -98,7 +98,7 @@ The JSON inventory lists every file found under the workspace root, including `.
 
 ### HIGH: workspace-state
 
-- Finding: Worktree is dirty with 19 status entries.
+- Finding: Worktree is dirty with 68 status entries.
 - Evidence: git status --short; see runtime audit JSON dirty_entries.
 - Action: Package current Helper/Control Center changes into one reviewable change set before opening another lane.
 
@@ -116,7 +116,7 @@ The JSON inventory lists every file found under the workspace root, including `.
 
 ### MEDIUM: runtime-state
 
-- Finding: Runtime/local state is large and active (2733 files).
+- Finding: Runtime/local state is large and active (2736 files).
 - Evidence: runtime/log/data/local dirs are visible in the file inventory.
 - Action: Continue writing release and Helper evidence to runtime, but keep canonical docs in docs/AI/release paths.
 

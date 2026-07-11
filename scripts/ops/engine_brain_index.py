@@ -42,7 +42,8 @@ ROADMAP_GENERATION_DOCS = {
             "The staged source version is `v2.3.0`; live stays on `v2.2.1`",
             "promotion-bound trusted pin",
             "full producer/consumer parity",
-            "P9 remains queued and must not start until P8 operational acceptance",
+            "P9 Conditions is `offline_implementation_complete` and",
+            "Fixture success is never reported as runtime readiness.",
         ],
     },
     "engine_brain_status": {
@@ -57,7 +58,8 @@ ROADMAP_GENERATION_DOCS = {
             "protected live client remains `v2.2.1`",
             "full producer/consumer parity for the",
             "The observer cannot create that trusted pin.",
-            "remains queued until P8 operational acceptance is explicitly accepted.",
+            "P9 Conditions is `offline_implementation_complete` and",
+            "P10 stays blocked until a fresh real P9 trace is reviewed",
         ],
     },
     "p8_p16_execution_roadmap": {
@@ -69,7 +71,8 @@ ROADMAP_GENERATION_DOCS = {
             "P16 — CaveBot Design-Only Digital Twin",
             "P8 is `implementation_complete` and",
             "`operational_acceptance_blocked` after P6/P7 readiness",
-            "P9 is queued and cannot start until P8 operational",
+            "P9 is `offline_implementation_complete` while its",
+            "operational acceptance remains blocked by the same P8 proof gate",
             "manifest pinned by an official promotion record",
             "the observer never creates or",
         ],
@@ -169,6 +172,7 @@ DOC_SYNC_CHECKS = [
             '"command": "otdeploy"',
             '"command": "otest"',
             '"command": "otbg"',
+            '"command": "otp9"',
         ],
     },
     {
@@ -1668,6 +1672,9 @@ def read_release_evidence_summary(
     background_status = helper.get("background_status")
     if not isinstance(background_status, dict):
         background_status = {}
+    conditions_shadow = helper.get("conditions_shadow")
+    if not isinstance(conditions_shadow, dict):
+        conditions_shadow = {}
     next_steps = queue.get("next_steps")
     if not isinstance(next_steps, list):
         next_steps = []
@@ -1702,6 +1709,22 @@ def read_release_evidence_summary(
             "runtime_state": str(background_status.get("runtime_state") or "unknown"),
             "safe_to_run_while_playing": background_status.get(
                 "safe_to_run_while_playing"
+            )
+            is True,
+        },
+        "otclient_helper_conditions_shadow": {
+            "status": str(conditions_shadow.get("status") or "missing"),
+            "contract_valid": conditions_shadow.get("contract_valid") is True,
+            "fresh": conditions_shadow.get("fresh") is True,
+            "fixture_validation_status": str(
+                conditions_shadow.get("fixture_validation_status") or "missing"
+            ),
+            "fixture_only_validation_passed": conditions_shadow.get(
+                "fixture_only_validation_passed"
+            )
+            is True,
+            "runtime_readiness_claimed": conditions_shadow.get(
+                "runtime_readiness_claimed"
             )
             is True,
         },
@@ -2761,6 +2784,11 @@ def render_p7_operator_brief(payload: dict[str, Any]) -> str:
         if isinstance(release_evidence.get("otclient_helper_background_status"), dict)
         else {}
     )
+    conditions_shadow = (
+        release_evidence.get("otclient_helper_conditions_shadow")
+        if isinstance(release_evidence.get("otclient_helper_conditions_shadow"), dict)
+        else {}
+    )
     action_audit = (
         cockpit_handoff.get("action_audit")
         if isinstance(cockpit_handoff.get("action_audit"), dict)
@@ -2817,6 +2845,13 @@ def render_p7_operator_brief(payload: dict[str, Any]) -> str:
             f"integrity `{background_status.get('integrity_status', 'missing')}`; "
             f"capability `{background_status.get('capability_status', 'missing')}`; "
             f"runtime `{background_status.get('runtime_state', 'unknown')}`."
+        ),
+        (
+            f"- P9 Conditions shadow: `{conditions_shadow.get('status', 'missing')}`; "
+            f"contract `{conditions_shadow.get('contract_valid', False)}`; "
+            f"fresh `{conditions_shadow.get('fresh', False)}`; "
+            f"fixtures `{conditions_shadow.get('fixture_validation_status', 'missing')}`; "
+            f"runtime readiness `{conditions_shadow.get('runtime_readiness_claimed', False)}`."
         ),
         (
             f"- Roadmap generation: `{roadmap_generation.get('status', 'missing')}`; "

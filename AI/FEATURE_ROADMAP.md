@@ -16,6 +16,10 @@
   promotion-bound trusted pin, a fresh capability heartbeat newer than the one
   canonical client process, and full producer/consumer parity for the no-action
   contract. The observer cannot create its own live manifest or trust anchor.
+- P9 Conditions is `offline_implementation_complete` and
+  `operational_acceptance_blocked`. Its strict data-only replay and 44-case
+  fixture pack are implemented without dispatch, execute-once, promotion, or
+  client interaction. Fixture success is never reported as runtime readiness.
 - P6 is ready for plugin design and the five bounded P7 safe-write refresh tools
   are enabled with audit coverage.
 
@@ -29,15 +33,22 @@
    write inside a client. Acceptance stays blocked until the promotion-bound
    trusted pin, fresh capability heartbeat, and full no-action consumer parity
    are proven together.
-2. **Conditions runtime safety gate** — owner: Helper Runtime; status:
-   `static_contract_accepted`; risk: `runtime_recovery`. It follows the accepted
-   Recovery Bridge and allowlists only a paralyze-recovery dry-run. Runtime
-   dispatch remains false until fresh condition and sandbox evidence exists.
-3. **Equipment runtime safety gate** — owner: Helper Runtime; status:
+2. **Conditions data-only shadow replay (P9)** — owner: Helper Runtime +
+   Evidence; implementation status: `offline_implementation_complete`;
+   operational status: `operational_acceptance_blocked`; risk:
+   `read_only_shadow`. `ctoa.ps1 otp9` refreshes the repo-local
+   `background_status.json` and then writes
+   `runtime/solteria_helper_dev/conditions_shadow_replay.json`. Acceptance
+   still requires trusted/fresh P8, a real current guarded observation, and an
+   accepted hash-bound Recovery trace.
+3. **Conditions runtime safety gate** — owner: Helper Runtime; status:
+   `static_contract_accepted`; risk: `runtime_recovery`. It remains separate
+   from P9 and cannot dispatch until P9 operational acceptance is reviewed.
+4. **Equipment runtime safety gate** — owner: Helper Runtime; status:
    `static_contract_accepted`; risk: `runtime_equipment`. It is ordered after
    Conditions and allowlists only a ring-swap dry-run with exact item IDs,
    rollback snapshot, zero retry, and no live promotion.
-4. **Heal Friend runtime safety gate** — owner: Helper Runtime; status:
+5. **Heal Friend runtime safety gate** — owner: Helper Runtime; status:
    `static_contract_accepted`; risk: `runtime_cast`. It is ordered after both
    Conditions and Equipment and requires exact persisted whitelist plus stable
    party target identity. Contract:
@@ -49,12 +60,11 @@
   pin, a fresh capability heartbeat, and full producer/consumer parity are proven
   together through `ctoa.ps1 otbg`, release evidence, and Control Center without
   touching the game window.
-- P9 remains queued and must not start until P8 operational acceptance is
-  explicitly accepted. Its design is `design_ready` in
-  `docs/otclient/P9_CONDITIONS_SHADOW_REPLAY_DESIGN.md`; it then captures and
-  replays Conditions evidence through a strict data-only JSON profile before any
-  execute-once bridge.
-- P10 repeats the independent shadow/replay sequence for rollback-ready Equipment;
+- Close P9 operational acceptance only after `ctoa.ps1 otp9` produces a fresh,
+  real `shadow_plan_ready_for_operator_review` trace under accepted P8 and
+  Recovery proofs. The offline fixture pack may stay green while this is blocked.
+- P10 remains blocked until that real P9 trace is explicitly reviewed; it then
+  repeats the independent shadow/replay sequence for rollback-ready Equipment.
   P11 does the same for exact-whitelist Heal Friend.
 - P12 is the first possible execute-once sandbox phase, still with no live dispatch.
 - P13 adds decision/result replay and machine-readable roadmap state; P14 moves

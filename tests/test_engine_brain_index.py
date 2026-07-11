@@ -119,6 +119,14 @@ def test_release_evidence_summary_exposes_helper_sandbox_queue(tmp_path):
                         "check_count": 16,
                         "forbidden_count": 0,
                     },
+                    "conditions_shadow": {
+                        "status": "operational_acceptance_blocked",
+                        "contract_valid": True,
+                        "fresh": True,
+                        "fixture_validation_status": "passed",
+                        "fixture_only_validation_passed": True,
+                        "runtime_readiness_claimed": False,
+                    },
                     "sandbox_smoke_queue": {
                         "status": "ready_for_operator",
                         "runtime_status": "not_running",
@@ -145,6 +153,14 @@ def test_release_evidence_summary_exposes_helper_sandbox_queue(tmp_path):
     assert summary["otclient_helper_module_contract"]["passed_count"] == 16
     assert summary["otclient_helper_module_contract"]["check_count"] == 16
     assert summary["otclient_helper_module_contract"]["forbidden_count"] == 0
+    assert summary["otclient_helper_conditions_shadow"] == {
+        "status": "operational_acceptance_blocked",
+        "contract_valid": True,
+        "fresh": True,
+        "fixture_validation_status": "passed",
+        "fixture_only_validation_passed": True,
+        "runtime_readiness_claimed": False,
+    }
     assert summary["sandbox_smoke_queue"]["status"] == "ready_for_operator"
     assert summary["sandbox_smoke_queue"]["first_step"] == "launch_sandbox"
 

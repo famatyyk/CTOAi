@@ -1,6 +1,6 @@
 # Engine Brain Ownership Map
 
-Generated at: `2026-07-11T18:13:30+00:00`
+Generated at: `2026-07-11T19:36:35+00:00`
 Source audit: `runtime\audits\ctoai-full-workspace-audit.json`
 Status: `ready`
 
@@ -11,7 +11,7 @@ Status: `ready`
 | `.dockerignore` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `.env.example` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `.foundry` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
-| `.git` | Local/uncategorized | `manual review` | 1360 | git_internal:1360 |
+| `.git` | Local/uncategorized | `manual review` | 227 | git_internal:227 |
 | `.gitattributes` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `.github` | Local/uncategorized | `manual review` | 41 | tracked_source:41 |
 | `.gitignore` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
@@ -38,7 +38,7 @@ Status: `ready`
 | `alembic.ini` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `api` | API runtime | `pytest tests/ --ignore=tests/e2e` | 9 | tracked_source:3, untracked_source_candidate:6 |
 | `bot` | Bot runtime | `pytest tests/ --ignore=tests/e2e` | 144 | tracked_source:43, untracked_source_candidate:101 |
-| `config` | Local/uncategorized | `manual review` | 6 | local_secret_or_sensitive:1, tracked_source:5 |
+| `config` | Local/uncategorized | `manual review` | 7 | local_secret_or_sensitive:1, tracked_source:5, untracked_source_candidate:1 |
 | `conftest.py` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `core` | Local/uncategorized | `manual review` | 3 | tracked_source:3 |
 | `ctoa-vps.ps1` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
@@ -53,7 +53,7 @@ Status: `ready`
 | `docs` | Documentation | `doc sync guard` | 316 | tracked_source:310, untracked_source_candidate:6 |
 | `evals` | Local/uncategorized | `manual review` | 6 | tracked_source:6 |
 | `logs` | Local/uncategorized | `manual review` | 3 | runtime_or_local_state:3 |
-| `metrics` | Local/uncategorized | `manual review` | 19 | runtime_or_local_state:19 |
+| `metrics` | Local/uncategorized | `manual review` | 21 | runtime_or_local_state:21 |
 | `mobile_console` | Mobile console | `pytest tests/ --ignore=tests/e2e` | 20 | tracked_source:9, untracked_source_candidate:11 |
 | `node_modules` | Local/uncategorized | `manual review` | 1 | vendor_or_cache:1 |
 | `policies` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
@@ -64,13 +64,13 @@ Status: `ready`
 | `requirements-dev.txt` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `requirements.txt` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `runner` | Runner runtime | `pytest tests/ --ignore=tests/e2e` | 154 | tracked_source:57, untracked_source_candidate:97 |
-| `runtime` | Local/uncategorized | `manual review` | 2481 | runtime_or_local_state:2481 |
+| `runtime` | Local/uncategorized | `manual review` | 2482 | runtime_or_local_state:2482 |
 | `runtime_context.py` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
-| `schemas` | Contracts | `schema consumers and pytest` | 6 | tracked_source:6 |
+| `schemas` | Contracts | `schema consumers and pytest` | 14 | tracked_source:6, untracked_source_candidate:8 |
 | `scoring` | Local/uncategorized | `manual review` | 5 | tracked_source:3, untracked_source_candidate:2 |
-| `scripts` | Operator automation | `pytest targeted script tests` | 447 | tracked_source:268, untracked_source_candidate:179 |
+| `scripts` | Operator automation | `pytest targeted script tests` | 449 | tracked_source:268, untracked_source_candidate:181 |
 | `src` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
-| `tests` | Regression suite | `pytest tests/ --ignore=tests/e2e` | 519 | local_secret_or_sensitive:2, tracked_source:188, untracked_source_candidate:329 |
+| `tests` | Regression suite | `pytest tests/ --ignore=tests/e2e` | 529 | local_secret_or_sensitive:2, tracked_source:188, untracked_source_candidate:339 |
 | `training` | Local/uncategorized | `manual review` | 8 | tracked_source:5, untracked_source_candidate:3 |
 | `up` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `web` | Control Center | `cd web; npm run lint; npm test` | 32304 | local_secret_or_sensitive:2, tracked_source:98, untracked_source_candidate:5419, vendor_or_cache:26785 |

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-11T18:08:07+00:00",
+  "generated_at": "2026-07-11T19:36:50+00:00",
   "root": "C:\\Users\\zycie\\CTOAi",
   "overall_status": "warn",
   "status_counts": {
@@ -15,11 +15,19 @@
       "status": "ok",
       "root": "C:/Users/zycie/CTOAi",
       "branch": "codex/p8-background-noscreen",
-      "head": "5dace523944391da55099210db7fff19422b3603",
-      "dirty_count": 21,
+      "head": "2b3be7e8a4d1a502955c41ca1cdaf551140c9b43",
+      "dirty_count": 71,
       "dirty_sample": [
+        "M .env.example",
+        "M AI/ENGINE_BRAIN_STATUS.md",
+        "M AI/FEATURE_ROADMAP.md",
+        "M AI/P8_P16_EXECUTION_ROADMAP.md",
         "M AI/generated/DOC_SYNC.json",
         "M AI/generated/DOC_SYNC.md",
+        "M AI/generated/ENGINE_BRAIN_PACK.json",
+        "M AI/generated/ENGINE_BRAIN_PACK.md",
+        "M AI/generated/ENV_DOCTOR.json",
+        "M AI/generated/ENV_DOCTOR.md",
         "M AI/generated/FILE_TREE.md",
         "M AI/generated/OWNERSHIP_MAP.json",
         "M AI/generated/OWNERSHIP_MAP.md",
@@ -34,11 +42,7 @@
         "M AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.json",
         "M AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.md",
         "M AI/generated/SECRET_GUARDRAIL.json",
-        "M AI/generated/SECRET_GUARDRAIL.md",
-        "M AI/generated/SYMBOL_MAP.md",
-        "M AI/generated/manifest.json",
-        "M docs/audits/CTOAI_FULL_WORKSPACE_AUDIT_2026-07-06.md",
-        "M docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md"
+        "M AI/generated/SECRET_GUARDRAIL.md"
       ],
       "remotes": [
         "origin\thttps://github.com/famatyyk/CTOAi.git (fetch)",
@@ -55,12 +59,12 @@
       "containers": [
         {
           "name": "ctoa-api",
-          "status": "Up 46 hours",
+          "status": "Up 2 days",
           "ports": "127.0.0.1:8001->8000/tcp"
         },
         {
           "name": "ctoa-postgres",
-          "status": "Up 46 hours (healthy)",
+          "status": "Up 2 days (healthy)",
           "ports": "5432/tcp"
         }
       ],
@@ -116,7 +120,7 @@
         "github.codespaces@1.18.15",
         "github.remotehub@0.64.0",
         "github.vscode-github-actions@0.32.1",
-        "github.vscode-pull-request-github@0.154.0",
+        "github.vscode-pull-request-github@0.156.0",
         "martinortiz.codex-stats@1.0.3",
         "ms-azuretools.vscode-azure-github-copilot@1.0.209",
         "ms-python.debugpy@2026.7.11831010",
@@ -124,7 +128,7 @@
         "ms-python.vscode-pylance@2026.2.108",
         "ms-python.vscode-python-envs@1.36.0",
         "ms-toolsai.vscode-ai-remote@1.4.8",
-        "ms-vscode-remote.remote-containers@0.464.0",
+        "ms-vscode-remote.remote-containers@0.465.0",
         "ms-vscode-remote.remote-ssh@0.124.0",
         "ms-vscode-remote.remote-ssh-edit@0.87.0",
         "ms-vscode-remote.remote-wsl@0.104.3",

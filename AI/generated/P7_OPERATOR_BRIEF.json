@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-11T18:13:30+00:00",
+  "generated_at": "2026-07-11T19:36:35+00:00",
   "decision": "ready_for_p7_operator_workflow",
   "status": "ready",
   "hard_blockers": [],
@@ -14,7 +14,7 @@
     "blocked_checks": []
   },
   "validation": {
-    "generated_at_utc": "2026-07-07T04:15:56+00:00",
+    "generated_at_utc": "2026-07-11T19:04:23+00:00",
     "count": 16,
     "failed": [],
     "warn": [
@@ -118,10 +118,10 @@
       "file_count": 35,
       "sprint_count": 7,
       "latest_path": "releases\\evidence\\sprint-056\\CTOA-299.md",
-      "release_evidence_generated_at": "2026-07-11T17:19:15+00:00",
+      "release_evidence_generated_at": "2026-07-11T19:30:50+00:00",
       "otclient_helper_status": "blocked",
       "otclient_helper_release_gate_status": "blocked",
-      "otclient_helper_next_action": "SmokePreflight is stale for the current dev manifest; rerun SmokePreflight.",
+      "otclient_helper_next_action": "ModuleAttachSmoke is stale for the current dev manifest; rerun SmokeAttachModules after sandbox character is in-world.",
       "otclient_helper_module_contract": {
         "status": "passed",
         "passed_count": 32,
@@ -132,8 +132,16 @@
         "status": "blocked",
         "integrity_status": "untrusted_pin",
         "capability_status": "missing",
-        "runtime_state": "armed",
+        "runtime_state": "unknown",
         "safe_to_run_while_playing": true
+      },
+      "otclient_helper_conditions_shadow": {
+        "status": "operational_acceptance_blocked",
+        "contract_valid": true,
+        "fresh": true,
+        "fixture_validation_status": "passed",
+        "fixture_only_validation_passed": true,
+        "runtime_readiness_claimed": false
       },
       "sandbox_smoke_queue": {
         "status": "passed",

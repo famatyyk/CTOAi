@@ -48,11 +48,13 @@ Snapshot date: 2026-07-11 Europe/Warsaw
   Policy classifies actions itself and requires a schema/evidence/action-bound
   accepted trace, so caller booleans or `runtime_action=false` cannot bypass the
   gate. Poison/burn/energy/bleed and amulet actions remain outside v1; Combat and
-  CaveBot remain `deferred_high_risk`. Current evidence passes ValidateDev
-  121/121, ModuleStaticGates 36/36, each domain static gate 9/9, ordered module
-  attach 4/4, full attach 16/16, and RuntimeModuleGatesSandboxSmoke 19/19.
-  These gates remain dry-run/no-dispatch even though the package itself is now
-  live-promoted; runtime acceptance and package promotion are separate states.
+  CaveBot remain `deferred_high_risk`. Current staged evidence passes ValidateDev
+  121/121, ModuleStaticGates 36/36, and each domain static gate 9/9. Earlier
+  attach evidence exists, but the current release gate is blocked because
+  ModuleAttachSmoke, SmokeAttachAll, and RuntimeModuleGatesSandboxSmoke are stale
+  and live approval predates the current dev manifest. Those gates remain
+  dry-run/no-dispatch; the current dev package was not promoted live, and runtime
+  acceptance remains separate from any earlier package promotion.
 - P8 `BackgroundNoScreen` is `implementation_complete` and
   `operational_acceptance_blocked`. It adds bounded passive heartbeat and log
   readers, immutable live/manifest parity, an advisory-only
@@ -66,9 +68,16 @@ Snapshot date: 2026-07-11 Europe/Warsaw
   manifest with `official_live_promotion` provenance and matching SHA256 in
   `live_promotion.json`, an explicit fresh online capability heartbeat newer than
   exactly one canonical client process, and full producer/consumer parity for the
-  no-action contract. The observer cannot create that trusted pin. P9 Conditions
-  remains queued until P8 operational acceptance is explicitly accepted. Its
-  data-only shadow/replay contract is review-ready in
+  no-action contract. The observer cannot create that trusted pin.
+- P9 Conditions is `offline_implementation_complete` and
+  `operational_acceptance_blocked`. The existing heartbeat now carries an
+  optional strict Conditions observation; the bounded sanitizer keeps missing
+  data compatible with P8 but rejects unsafe nested action claims. The data-only
+  replay has strict hash-bound P8/Recovery inputs, a 44-case deterministic
+  fixture pack, atomic runtime output, Release Evidence and Control Center
+  consumers, and `ctoa.ps1 otp9`. Fixture success does not claim runtime
+  readiness. P10 stays blocked until a fresh real P9 trace is reviewed under
+  accepted P8 and Recovery proofs. Canonical contract:
   `docs/otclient/P9_CONDITIONS_SHADOW_REPLAY_DESIGN.md`.
 - Vocation-profile drift is visible as its own count but cannot satisfy parity:
   the current profile is executable Lua. A later schema-validated data-only

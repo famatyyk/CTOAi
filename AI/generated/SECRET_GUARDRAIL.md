@@ -1,6 +1,6 @@
 # Engine Brain Secret Guardrail
 
-Generated at: `2026-07-11T18:13:30+00:00`
+Generated at: `2026-07-11T19:36:35+00:00`
 Status: `passed`
 Sensitive/local env path count in audit: `7`
 
