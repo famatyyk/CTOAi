@@ -198,7 +198,7 @@ It collects local file-backed status from:
 | API cost report | `runtime/api-cost/latest.json` |
 | Control Center audit | `runtime/control-center/action-audit.jsonl` |
 
-The route uses only fixed local reads and timeouts. It is intentionally read-only. If local paths are unavailable, the tile reports `unknown` instead of breaking the page.
+The route uses only fixed local reads and timeouts. It is intentionally read-only, but it is not public: local evidence reads require operator-or-owner access before files are collected. Browser-visible paths are display-safe: repo-local paths are relative, and external absolute paths collapse to `[external]/name`. Release-evidence and API-cost markdown responses apply the same redaction and display-path rules before returning text to the browser. If local paths are unavailable, the tile reports `unknown` instead of breaking the page.
 
 Configuration knobs:
 
@@ -238,12 +238,19 @@ UI component:
 web/src/components/ControlCenterDetailPanels.tsx
 ```
 
-The detail panels remain read-only. They are visible in Overview and focused tabs:
+The detail panels remain read-only and operator-gated. They are visible in Overview and focused tabs:
 
 | Tab | Details |
 | --- | --- |
 | Overview | All detail panels |
 | Local Status | All local status panels |
+
+The Release evidence panel now consumes the same drilldown payload as the
+Evidence tab: latest tracked markdown files, runtime-vs-tracked comparison and
+next review action. The Control Center audit panel now consumes sanitized JSONL
+metadata from the action-audit drilldown, including risk/action counts,
+dry-run, failed, denied and invalid-record counters. Raw command output previews
+are not required for either panel.
 
 ## Phase 7: embedded chat and surface consolidation
 

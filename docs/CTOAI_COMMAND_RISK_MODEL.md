@@ -8,6 +8,26 @@ The goal is simple: make dangerous actions visible, understandable and gated bef
 
 No write action enters Control Center without a risk class, owner intent and confirmation model.
 
+Production startup must also fail closed: API CORS must use explicit trusted
+origins, JWT secrets must be non-default, default auth-account seeding must not
+run in production, and mobile-console self-registration must stay disabled
+unless a registration code is configured.
+API public member self-registration must also stay disabled in production unless
+`CTOA_API_SELF_REGISTER_ENABLED=true` and `CTOA_API_SELF_REGISTER_CODE` are both
+configured. `/api/auth/register` must never create `owner` or `operator`
+accounts without an authenticated owner token, even when the auth store is
+empty.
+
+Default auth-account seeding is disabled unless `CTOA_ALLOW_SEED_ACCOUNTS=true`
+is explicitly set. Control Center local seed-login must stay development-only,
+localhost-only, and backed by `CTOA_SEED_*_PASSWORD` env vars outside the repo.
+Production Intel launch targets must reject local/private/internal URLs unless
+`CTOA_ALLOW_PRIVATE_INTEL_TARGETS=true` is explicitly set for a trusted private
+target.
+Mobile-console self-registration must create only `member` accounts, and
+operator endpoints must require `operator` or `owner`, not just any
+authenticated session.
+
 ## Risk classes
 
 | Risk class | Meaning | Examples | UI behavior |
@@ -25,14 +45,17 @@ No write action enters Control Center without a risk class, owner intent and con
 | Repo hygiene refresh | `scripts/ops/repo_hygiene_audit.py` | `safe_write` | Implemented as `repo-hygiene-refresh`. |
 | API cost refresh | `scripts/ops/api_cost_report.py` | `safe_write` | Implemented as `api-cost-refresh`. |
 | Evidence pack refresh | `scripts/ops/release_evidence_pack.py` | `safe_write` | Implemented as `evidence-pack-refresh`. |
+| Engine Brain refresh | `scripts/ops/engine_brain_index.py` | `safe_write` | Implemented as `engine-brain-refresh`. |
+| P7 cockpit smoke refresh | `scripts/ops/control_center_p7_cockpit_smoke.py` | `safe_write` | Implemented as `p7-cockpit-smoke-refresh`. |
 | Logs preview | `/api/logs` | `read_only` | Migrated. |
 | Dashboard summary | `/api/dashboard` | `read_only` | Migrated. |
 | Agent status | `/api/agents/status` | `read_only` | Migrated. |
 | Release evidence | `/api/dashboard/release-evidence` | `read_only` | Migrated. |
 | Command dictionary | `/api/commands/dictionary` | `read_only` | Migrated as preview only. |
 | Command execution | `/api/command` | `dangerous` by default | Do not expose until allowlist/risk metadata is enforced. |
-| One-click agent execution | `/api/agents/execution/run` | `guarded_write` | Needs confirmation and audit note. |
-| Intel mission launch | `/api/agents/intel/launch` | `guarded_write` | Needs confirmation and visible input payload. |
+| One-click agent execution | `/api/agents/execution/run` | `guarded_write` | Owner-only; requires `confirm=true` and audit `reason` before runtime side effects. |
+| Intel mission launch | `/api/agents/intel/launch` | `guarded_write` | Owner-only; requires `confirm=true`, audit `reason`, visible input payload, and production private-target guardrails. |
+| Intel client sync | `CTOA_CLIENT_SYNC_ENABLED` via `/api/agents/intel/run` | `guarded_write` | Must keep target, autoloader, and init-file writes inside `CTOA_CLIENT_SCRIPTS_DIR`. |
 | User role/password/delete | `/api/users/*` | `dangerous` | Owner-only admin panel with typed confirmation. |
 | Docker cleanup | VPS Docker commands | `dangerous` | Owner-only, typed confirmation, dry-run first. |
 | Bot restart | Docker/service restart | `guarded_write` | Confirmation and live status check before/after. |
@@ -65,6 +88,14 @@ Every `guarded_write` and `dangerous` action should record:
 Implemented audit sink:
 - `runtime/control-center/action-audit.jsonl`
 - includes read-only action runs too, and now also records actor role plus authorization outcome for gated actions.
+- redacts common secret forms from `reason` and `output_preview` before the
+  JSONL record is written; evidence drilldowns must remain sanitized as a
+  second read-side guard.
+- local Python-backed actions resolve executables through
+  `CTOA_PYTHON_BIN` as an absolute existing path or the repo-local `.venv`
+  Python. There is no PATH-only `python`/`python3` fallback; missing trusted
+  Python returns an audited failed action instead of launching an ambiguous
+  executable.
 
 ## Evidence flow
 
@@ -76,8 +107,42 @@ The evidence/reporting lane is part of the same control model:
 4. Surface the current state in `GET /api/control-center/evidence` and the `Evidence` tab in Control Center.
 
 These paths are configurable through `CTOA_*` env vars in the scripts, API routes and Control Center evidence reader, so self-hosted or VPS deployments can move the runtime/evidence locations without breaking the cockpit.
+The Control Center evidence endpoint also provides read-only drilldowns for
+tracked release-evidence markdown files and sanitized action-audit JSONL
+metadata. The action-audit drilldown intentionally avoids raw command output
+previews so the cockpit can review action shape, risk, authorization and result
+without copying command logs into the UI payload. Oversized action-audit JSONL
+is read as a bounded, redacted tail sample and reported as `warn` with sample
+metadata, rather than loading the whole runtime log into memory.
+`GET /api/control-center/ops` mirrors those drilldowns into the Overview and
+Local Status detail panels. Its legacy `recentActions` fallback must also
+redact common token forms before returning action metadata.
+It also compares the current runtime evidence pack with the latest tracked
+release-evidence markdown so stale sign-off state is visible without adding a
+write action.
+The Helper evidence surface includes `CTOA_HELPER_LIVE_PROMOTION_PATH`, which
+is read-only and points to `runtime/solteria_helper_dev/live_promotion.json`
+by default. Control Center may display that live-promotion evidence, but it
+must not run live deploy shortcuts or bypass `PromoteLiveCtoa -ApproveLiveDeploy`.
 
 This keeps evidence visible in the cockpit before any release or guarded action is treated as complete.
+
+Legacy mobile-console `/api/command` remains outside the Control Center write
+surface. Its command audit records must redact common secret forms before
+writing `logs/mobile-console-audit.log`, but this is a leak-reduction guard, not
+permission to expose arbitrary shell execution in Control Center.
+Those records should include actor, role, auth mode and auth transport, while
+never persisting session tokens or CSRF tokens.
+Safe-mode mobile-console presets execute through backend-owned `argv/cwd/env`
+specifications instead of raw shell snippets. This keeps allowlisted legacy
+commands deterministic. `CTOA_MOBILE_FULL_ACCESS=true` must not re-enable
+arbitrary command text execution through the HTTP endpoint; non-preset command
+text stays blocked.
+Health/auto-check payloads should report `command_mode=presets`, and legacy
+mobile or desktop UIs should not render arbitrary full-command entry points.
+Legacy mobile and desktop Intel guarded writes now require explicit confirmation
+and a non-empty audit reason before database writes, orchestrator triggers, or
+client sync can run. Denied attempts are audited as missing confirmation.
 
 ## UI staging plan
 
@@ -98,5 +163,5 @@ These stay blocked until this model is implemented in code:
 | Arbitrary `/api/command` text box | Too broad and too easy to misuse. |
 | Docker prune/cleanup | Can remove useful images/volumes. |
 | User delete/role change | Security-sensitive. |
-| One-click execution | Changes runtime state. |
-| Intel launch | External side effects and runtime load. |
+| One-click execution in Control Center | Changes runtime state; Control Center write UI is still disabled until its guarded-action modal/audit lane is enabled. |
+| Intel launch in Control Center | External side effects and runtime load; Control Center write UI is still disabled until its guarded-action modal/audit lane is enabled. |
