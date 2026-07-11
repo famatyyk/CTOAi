@@ -14,6 +14,9 @@ def test_recovery_bridge_is_packaged_and_safe_by_default():
     wrapper = (ROOT / "scripts" / "windows" / "solteria_helper_test_env.ps1").read_text(
         encoding="utf-8"
     )
+    helper = (LUA_DIR / "ctoa_native_helper.lua").read_text(encoding="utf-8")
+    ui = (LUA_DIR / "ctoa_helper_ui.lua").read_text(encoding="utf-8")
+    modal = (LUA_DIR / "ctoa_helper_modal.lua").read_text(encoding="utf-8")
 
     assert 'name = "ctoa_helper_recovery_bridge"' in registry
     assert "ctoa_helper_recovery_bridge.lua" in wrapper
@@ -23,6 +26,17 @@ def test_recovery_bridge_is_packaged_and_safe_by_default():
     assert "default_dry_run = true" in source
     assert 'mode = "sandbox_only"' in source
     assert "injected_executor_required = true" in source
+    assert 'normalized:find("/solteriacodextest/client/", 1, true)' in helper
+    assert "Helper.recoveryBridgeArm" in helper
+    assert "Helper.recoveryBridgeDryRun" in helper
+    assert "Helper.recoveryBridgeKill" in helper
+    assert 'moduleValue(externalRecoveryBridge, "dispatch"' in helper
+    assert 'bridgeTrace.status == "executed"' in helper
+    assert "protection_zone = isLocalPlayerInProtectionZone()" in helper
+    assert '"ctoaRecoveryBridgeArm"' in ui
+    assert '"ctoaRecoveryBridgeDryRun"' in ui
+    assert '"ctoaRecoveryBridgeKill"' in ui
+    assert "recovery_bridge_arm = true" in modal
     for forbidden in ["g_game.", "g_map.", "castSpell(", "sendActionbarSlot(", "useWith("]:
         assert forbidden not in source
 

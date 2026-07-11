@@ -1483,7 +1483,18 @@ function Ui.renderHealingPanel(ctx)
     ctx.add_toggle_setting_row(window, "ctoaManaPotionHeal", "MP potion", function() return healing.mana_potion_enabled end, function(value) helper.setRuntimeModuleEnabled({"healing", "mana_potion_enabled"}, value, "mana potion") end, panelX + 26, layout.row_7_y, panelW - 26, "healing")
     ctx.add_profile_step_row(window, "ctoaManaPotionThresholdHealing", "MP pot %", function() return healing.mana_potion_threshold end, function(value) healing.mana_potion_threshold = value end, 1, 1, 100, panelX + 26, layout.row_7_y + 26, panelW - 26, "healing", ctx.percent_text)
     ctx.add_profile_cycle_row(window, "ctoaManaPotionHotkeyHealing", "MP box", function() return healing.mana_potion_hotkey end, function(value) healing.mana_potion_hotkey = value; healing.mana_potion_actionbar_slot = value end, ctx.hotkey_choices, panelX + 26, layout.row_7_y + 52, panelW - 26, "healing", ctx.profile_number_text)
-    ctx.widgets.last_potion = ctx.add_footer_strip(window, "ctoaLastPotion", "Last potion: none", panelX, layout.footer_y, panelW, "healing")
+    local bridgeButtonW = math.floor((panelW - 8) / 3)
+    ctx.widgets.recovery_bridge_arm = ctx.create_widget("Button", window, "ctoaRecoveryBridgeArm", "ARM bridge", panelX, layout.footer_y, bridgeButtonW, 22)
+    ctx.widgets.recovery_bridge_dry_run = ctx.create_widget("Button", window, "ctoaRecoveryBridgeDryRun", "Dry run", panelX + bridgeButtonW + 4, layout.footer_y, bridgeButtonW, 22)
+    ctx.widgets.recovery_bridge_kill = ctx.create_widget("Button", window, "ctoaRecoveryBridgeKill", "KILL", panelX + (bridgeButtonW + 4) * 2, layout.footer_y, bridgeButtonW, 22)
+    for _, widget in ipairs({ctx.widgets.recovery_bridge_arm, ctx.widgets.recovery_bridge_dry_run, ctx.widgets.recovery_bridge_kill}) do
+        ctx.style_action_button(widget, widget == ctx.widgets.recovery_bridge_kill and "danger" or "primary", true)
+        ctx.add_to_section("healing", widget)
+    end
+    ctx.bind_click(ctx.widgets.recovery_bridge_arm, helper.recoveryBridgeArm)
+    ctx.bind_click(ctx.widgets.recovery_bridge_dry_run, helper.recoveryBridgeDryRun)
+    ctx.bind_click(ctx.widgets.recovery_bridge_kill, helper.recoveryBridgeKill)
+    ctx.widgets.last_potion = ctx.add_footer_strip(window, "ctoaLastPotion", "Bridge: " .. helper.recoveryBridgeStatus() .. " | Last potion: none", panelX, layout.footer_y + 24, panelW, "healing")
 end
 
 function Ui.renderHealFriendPanel(ctx)

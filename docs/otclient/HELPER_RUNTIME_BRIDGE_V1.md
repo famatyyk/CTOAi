@@ -5,6 +5,12 @@ ModuleAttachSmoke 4/4, SmokeAttachAll 16/16, and
 `recovery_bridge_sandbox_smoke.json` 9/9. Runtime remained disarmed and the
 dry-run trace did not invoke its injected executor.
 
+Native sandbox execution is routed through the Helper's existing guarded
+`castSpell` adapter only after the bridge verifies the `SolteriaCodexTest`
+work directory, a matching armed session, client readiness, PZ/cooldown guards,
+and the operator's second confirmation click. The Healing panel exposes
+`ARM bridge`, `Dry run`, and an immediate `KILL`; live paths fail closed.
+
 ## Outcome
 
 Enable one bounded Healing/Recovery action in the sandbox without changing the

@@ -10,6 +10,7 @@ local GUARDED_ACTIONS = {
     profile_reset = true,
     ui_reset = true,
     promote_live = true,
+    recovery_bridge_arm = true,
 }
 
 local function trim(value)
@@ -174,7 +175,7 @@ function Modal.contract()
         runtime_actions = false,
         owns_decision_text = true,
         default_ttl_ms = DEFAULT_TTL_MS,
-        guarded_actions = {"cavebot_delete", "cavebot_clear", "profile_reset", "ui_reset", "promote_live"},
+        guarded_actions = {"cavebot_delete", "cavebot_clear", "profile_reset", "ui_reset", "promote_live", "recovery_bridge_arm"},
         gate = "Static lifecycle tests, UI preview, no live promotion bypass, and explicit approval path retained."
     }
 end
