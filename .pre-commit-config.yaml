@@ -23,7 +23,7 @@ repos:
     rev: 1.7.9
     hooks:
       - id: bandit
-        args: ["-r", "runner", "mobile_console", "scripts"]
+        args: ["-r", "runner", "mobile_console", "scripts", "desktop_console", "bot"]
 
   - repo: https://github.com/pypa/pip-audit
     rev: v2.7.3
