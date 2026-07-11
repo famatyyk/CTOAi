@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-import re
+import ipaddress
 from typing import Any, Iterable
+from urllib.parse import urlsplit, urlunsplit
 
 import requests
 
@@ -28,7 +29,7 @@ class CtoaApiClient:
         self.set_base_url(base_url)
 
     def set_base_url(self, base_url: str) -> None:
-        self.base_url = _normalize_base_url(base_url)
+        self.base_url = normalize_base_url(base_url)
 
     def login(self, username: str, password: str) -> AuthContext:
         payload = self._request("POST", "/api/auth/login", json_body={
@@ -77,16 +78,24 @@ class CtoaApiClient:
         urls: Iterable[str] | None = None,
         force_rescout: bool = False,
         trigger_now: bool = True,
+        reason: str = "",
+        confirm: bool = True,
     ) -> dict[str, Any]:
         payload = {
             "urls": [str(url).strip() for url in (urls or []) if str(url).strip()],
             "force_rescout": bool(force_rescout),
             "trigger_now": bool(trigger_now),
+            "confirm": bool(confirm),
+            "reason": str(reason).strip(),
         }
         return self._request("POST", "/api/agents/intel/launch", json_body=payload)
 
-    def run_agents_one_click(self) -> dict[str, Any]:
-        return self._request("POST", "/api/agents/execution/run", json_body={})
+    def run_agents_one_click(self, reason: str = "", confirm: bool = True) -> dict[str, Any]:
+        return self._request(
+            "POST",
+            "/api/agents/execution/run",
+            json_body={"confirm": bool(confirm), "reason": str(reason).strip()},
+        )
 
     def live_profile(self) -> dict[str, Any]:
         return self._request("GET", "/api/live-dashboard/profile")
@@ -119,7 +128,7 @@ class CtoaApiClient:
         try:
             self._request("POST", "/api/auth/logout")
         finally:
-            self._token = ""
+            self._token = str()
             self.session.cookies.clear()
 
     def _request(self, method: str, path: str, json_body: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -156,11 +165,42 @@ class CtoaApiClient:
         return payload
 
 
-def _normalize_base_url(raw_url: str) -> str:
+def _is_local_http_host(hostname: str) -> bool:
+    host = hostname.strip().lower()
+    if host == "localhost" or host.endswith(".localhost"):
+        return True
+
+    try:
+        return ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return False
+
+
+def normalize_base_url(raw_url: str) -> str:
     value = str(raw_url or "").strip().rstrip("/")
     if not value:
         raise ApiError("API base URL is required")
-    if not re.match(r"^https?://", value, re.IGNORECASE):
-        value = f"http://{value}"
-    return value
 
+    if "://" not in value:
+        value = f"http://{value}"
+
+    parsed = urlsplit(value)
+    scheme = parsed.scheme.lower()
+    if scheme not in {"http", "https"} or not parsed.netloc or not parsed.hostname:
+        raise ApiError("API base URL must be an absolute HTTP(S) URL")
+
+    if parsed.username or parsed.password:
+        raise ApiError("API base URL must not include credentials")
+
+    if parsed.query or parsed.fragment:
+        raise ApiError("API base URL must not include query strings or fragments")
+
+    if scheme == "http" and not _is_local_http_host(parsed.hostname):
+        raise ApiError("API base URL must use https:// for non-local hosts")
+
+    normalized_path = parsed.path.rstrip("/")
+    return urlunsplit((scheme, parsed.netloc, normalized_path, "", ""))
+
+
+def _normalize_base_url(raw_url: str) -> str:
+    return normalize_base_url(raw_url)
