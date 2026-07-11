@@ -1,6 +1,6 @@
 # Engine Brain File Tree
 
-Generated at: `2026-07-11T04:16:27+00:00`
+Generated at: `2026-07-11T04:21:39+00:00`
 
 Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 `node_modules`, `runtime`, `logs`, `data`, `.tmp`, build outputs.
@@ -101,9 +101,9 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `AI/FEATURE_ROADMAP.md` | 56235 |
 | `AI/generated/DOC_SYNC.json` | 1019 |
 | `AI/generated/DOC_SYNC.md` | 609 |
-| `AI/generated/ENGINE_BRAIN_PACK.json` | 5322 |
-| `AI/generated/ENGINE_BRAIN_PACK.md` | 264309 |
-| `AI/generated/ENV_DOCTOR.json` | 8040 |
+| `AI/generated/ENGINE_BRAIN_PACK.json` | 3174 |
+| `AI/generated/ENGINE_BRAIN_PACK.md` | 188943 |
+| `AI/generated/ENV_DOCTOR.json` | 8025 |
 | `AI/generated/ENV_DOCTOR.md` | 1369 |
 | `AI/generated/FILE_TREE.md` | 70215 |
 | `AI/generated/manifest.json` | 2062 |
@@ -221,7 +221,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `docs/CTOAI_FOUNDATION_CLEANUP.md` | 7897 |
 | `docs/CTOAI_LEGACY_FEATURE_INVENTORY.md` | 8857 |
 | `docs/CTOAI_SURFACE_CONSOLIDATION.md` | 3282 |
-| `docs/DEPLOYMENT.md` | 6850 |
+| `docs/DEPLOYMENT.md` | 6848 |
 | `docs/evidence/azure-activity-log-manual-validation-2026-05-23.md` | 584 |
 | `docs/evidence/vps-worktree-hygiene/ctoa-237-20260515T135557Z/preupdate-gate-20260515T135557Z.txt` | 1132 |
 | `docs/evidence/vps-worktree-hygiene/ctoa-237-20260515T135557Z/preupdate-status-20260515T135557Z.txt` | 709 |

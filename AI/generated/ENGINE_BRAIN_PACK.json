@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-11T04:17:40+00:00",
+  "generated_at": "2026-07-11T04:22:19+00:00",
   "root": "C:\\Users\\zycie\\CTOAi",
   "pack_path": "AI\\generated\\ENGINE_BRAIN_PACK.md",
-  "profile": "infra",
+  "profile": "all",
   "include_generated": true,
   "max_chars_per_file": 45000,
   "sections": [
@@ -15,10 +15,31 @@
       "reason": ""
     },
     {
-      "path": "AI/ENGINE_BRAIN_STATUS.md",
+      "path": "AI/SYSTEM_PROMPT.md",
       "included": true,
-      "bytes": 132303,
-      "truncated": true,
+      "bytes": 2486,
+      "truncated": false,
+      "reason": ""
+    },
+    {
+      "path": "AI/PROJECT_CONTEXT.md",
+      "included": true,
+      "bytes": 3648,
+      "truncated": false,
+      "reason": ""
+    },
+    {
+      "path": "AI/ENGINE_MEMORY.md",
+      "included": true,
+      "bytes": 2971,
+      "truncated": false,
+      "reason": ""
+    },
+    {
+      "path": "AI/RULEBOOK.md",
+      "included": true,
+      "bytes": 4666,
+      "truncated": false,
       "reason": ""
     },
     {
@@ -29,23 +50,107 @@
       "reason": ""
     },
     {
-      "path": "docs/INFRASTRUCTURE_CANONICAL.md",
+      "path": "AI/CODEX_CAPABILITY_MAP.md",
       "included": true,
-      "bytes": 2069,
+      "bytes": 5237,
       "truncated": false,
       "reason": ""
     },
     {
-      "path": "docs/DEPLOYMENT.md",
+      "path": "AI/ENGINE_BRAIN_STATUS.md",
       "included": true,
-      "bytes": 6848,
+      "bytes": 132303,
+      "truncated": true,
+      "reason": ""
+    },
+    {
+      "path": "AI/ARCHITECTURE_INDEX.md",
+      "included": true,
+      "bytes": 2492,
       "truncated": false,
       "reason": ""
     },
     {
-      "path": "docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md",
+      "path": "AI/API_INDEX.md",
       "included": true,
-      "bytes": 6729,
+      "bytes": 3125,
+      "truncated": false,
+      "reason": ""
+    },
+    {
+      "path": "AI/LUA_INDEX.md",
+      "included": true,
+      "bytes": 2874,
+      "truncated": false,
+      "reason": ""
+    },
+    {
+      "path": "AI/OTCLIENT_INDEX.md",
+      "included": true,
+      "bytes": 3675,
+      "truncated": false,
+      "reason": ""
+    },
+    {
+      "path": "AI/PACKET_INDEX.md",
+      "included": true,
+      "bytes": 1405,
+      "truncated": false,
+      "reason": ""
+    },
+    {
+      "path": "AI/CLASS_INDEX.md",
+      "included": true,
+      "bytes": 1815,
+      "truncated": false,
+      "reason": ""
+    },
+    {
+      "path": "AI/FEATURE_ROADMAP.md",
+      "included": true,
+      "bytes": 56235,
+      "truncated": true,
+      "reason": ""
+    },
+    {
+      "path": "AI/KNOWN_BUGS.md",
+      "included": true,
+      "bytes": 1384,
+      "truncated": false,
+      "reason": ""
+    },
+    {
+      "path": "AI/TECH_DEBT.md",
+      "included": true,
+      "bytes": 1803,
+      "truncated": false,
+      "reason": ""
+    },
+    {
+      "path": "AI/SPECIALIZED_PROMPTS.md",
+      "included": true,
+      "bytes": 2904,
+      "truncated": false,
+      "reason": ""
+    },
+    {
+      "path": "AI/TASK_TEMPLATE.md",
+      "included": true,
+      "bytes": 1156,
+      "truncated": false,
+      "reason": ""
+    },
+    {
+      "path": "AI/AGENTS.md",
+      "included": true,
+      "bytes": 1000,
+      "truncated": false,
+      "reason": ""
+    },
+    {
+      "path": "scripts/lua/AGENTS.md",
+      "included": true,
+      "bytes": 1183,
       "truncated": false,
       "reason": ""
     },
@@ -134,6 +239,6 @@
       "reason": ""
     }
   ],
-  "included_count": 18,
-  "truncated_count": 3
+  "included_count": 33,
+  "truncated_count": 4
 }
