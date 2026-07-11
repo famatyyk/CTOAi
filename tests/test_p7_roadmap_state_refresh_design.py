@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from scripts.ops.engine_brain_pack import PROFILE_FILES
+
 
 ROOT = Path(__file__).resolve().parents[1]
 DESIGN = ROOT / "docs" / "P7_ROADMAP_STATE_REFRESH_DESIGN.md"
@@ -27,3 +29,5 @@ def test_next_p7_action_has_complete_design_but_is_not_enabled():
     assert "Roadmap state refresh" in risk and "design_only" in risk
     assert "**Roadmap state refresh**" in roadmap
     assert "active safe-write tool count stays five" in roadmap
+    assert "docs/P7_ROADMAP_STATE_REFRESH_DESIGN.md" in PROFILE_FILES["all"]
+    assert "docs/P7_ROADMAP_STATE_REFRESH_DESIGN.md" in PROFILE_FILES["control-center"]
