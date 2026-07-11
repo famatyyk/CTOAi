@@ -1,6 +1,6 @@
 # CTOAi Three Development Plans
 
-Basis: full workspace audit with `41791` inventoried files and `1392` git-tracked files.
+Basis: full workspace audit with `42091` inventoried files and `1325` git-tracked files.
 
 ## Plan 1: Helper-First Productization
 

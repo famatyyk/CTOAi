@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-11T07:10:44+00:00",
+  "generated_at": "2026-07-11T09:26:36+00:00",
   "root": "C:\\Users\\zycie\\CTOAi",
   "pack_path": "AI\\generated\\ENGINE_BRAIN_PACK.md",
   "profile": "helper",
@@ -220,14 +220,14 @@
     {
       "path": "AI/generated/FILE_TREE.md",
       "included": true,
-      "bytes": 66947,
+      "bytes": 67074,
       "truncated": true,
       "reason": ""
     },
     {
       "path": "AI/generated/SYMBOL_MAP.md",
       "included": true,
-      "bytes": 253545,
+      "bytes": 253975,
       "truncated": true,
       "reason": ""
     }

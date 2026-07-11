@@ -1,7 +1,7 @@
 # Solteria Helper Shell Budget Plan
 
 - Status: `needs_extraction`
-- Helper lines: `4349` / `4500`
+- Helper lines: `4350` / `4500`
 - Helper functions: `159` / `130`
 - Over line budget by: `0`
 - Over function budget by: `29`
@@ -17,7 +17,7 @@ Use this plan to choose the next extraction from measured shell pressure. Runtim
 | Domain | Functions | Lines | Next action |
 |---|---:|---:|---|
 | `shell_misc` | `55` | `889` | Keep this shell-only unless a named module owns the contract. |
-| `runtime_combat` | `27` | `436` | Keep execution guarded; move remaining decision text and readiness summaries into combat/runtime adapters. |
+| `runtime_combat` | `27` | `440` | Keep execution guarded; move remaining decision text and readiness summaries into combat/runtime adapters. |
 | `runtime_cavebot` | `19` | `406` | Keep autoWalk guarded; move remaining cavebot editor text and waypoint button state into route/cavebot adapters. |
 | `diagnostics_smoke` | `16` | `404` | Keep smoke commands in the shell, but move static evidence formatting into diagnostics helpers. |
 | `runtime_recovery` | `11` | `219` | Mirror remaining recovery decision labels in passive healing metadata before changing potion/spell runtime. |
@@ -30,16 +30,16 @@ Use this plan to choose the next extraction from measured shell pressure. Runtim
 
 | Domain | Function | Lines | Span |
 |---|---|---:|---|
-| `shell_misc` | `init` | `65` | `4142-4206` |
+| `shell_misc` | `init` | `65` | `4143-4207` |
 | `shell_misc` | `maybeUseTools` | `49` | `3051-3099` |
 | `shell_misc` | `reportClientCapabilities` | `43` | `639-681` |
-| `shell_misc` | `updateOverviewStats` | `43` | `1905-1947` |
+| `shell_misc` | `updateOverviewStats` | `43` | `1908-1950` |
 | `shell_misc` | `maybeRunTimer` | `41` | `3009-3049` |
-| `runtime_combat` | `executeOffensiveAction` | `61` | `2040-2100` |
-| `runtime_combat` | `retargetSafeMonster` | `43` | `1804-1846` |
-| `runtime_combat` | `scanCombatArea` | `40` | `1591-1630` |
-| `runtime_combat` | `findBestAttackTarget` | `34` | `1755-1788` |
-| `runtime_combat` | `rotationWaitReason` | `24` | `1966-1989` |
+| `runtime_combat` | `executeOffensiveAction` | `60` | `2042-2101` |
+| `runtime_combat` | `scanCombatArea` | `44` | `1591-1634` |
+| `runtime_combat` | `retargetSafeMonster` | `43` | `1807-1849` |
+| `runtime_combat` | `findBestAttackTarget` | `34` | `1758-1791` |
+| `runtime_combat` | `rotationWaitReason` | `24` | `1969-1992` |
 | `runtime_cavebot` | `maybeRunCavebot` | `92` | `2830-2921` |
 | `runtime_cavebot` | `autoWalkTo` | `57` | `2719-2775` |
 | `runtime_cavebot` | `testCavebotAutoWalk` | `52` | `2777-2828` |
@@ -53,11 +53,11 @@ Use this plan to choose the next extraction from measured shell pressure. Runtim
 | `runtime_recovery` | `maybeHeal` | `45` | `2182-2226` |
 | `runtime_recovery` | `readPlayerVitals` | `43` | `2129-2171` |
 | `runtime_recovery` | `maybeManaPotion` | `36` | `2923-2958` |
-| `runtime_recovery` | `maybeObserveHealFriend` | `30` | `1701-1730` |
-| `runtime_recovery` | `ensureCTOAManager` | `19` | `4318-4336` |
+| `runtime_recovery` | `maybeObserveHealFriend` | `30` | `1704-1733` |
+| `runtime_recovery` | `ensureCTOAManager` | `19` | `4319-4337` |
 | `profile_persistence` | `loadProfile` | `43` | `683-725` |
 | `profile_persistence` | `loadUiPrefs` | `41` | `774-814` |
-| `profile_persistence` | `applyHudPrefs` | `29` | `3721-3749` |
+| `profile_persistence` | `applyHudPrefs` | `29` | `3722-3750` |
 | `profile_persistence` | `markProfileDirty` | `23` | `1116-1138` |
 | `profile_persistence` | `exportProfile` | `12` | `877-888` |
 

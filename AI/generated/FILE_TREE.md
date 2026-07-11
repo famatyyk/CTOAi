@@ -1,6 +1,6 @@
 # Engine Brain File Tree
 
-Generated at: `2026-07-11T07:37:34+00:00`
+Generated at: `2026-07-11T09:26:31+00:00`
 
 Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 `node_modules`, `runtime`, `logs`, `data`, `.tmp`, build outputs.
@@ -41,7 +41,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `.github/workflows/ctoa-daily-insights.yml` | 941 |
 | `.github/workflows/ctoa-issue-sync.yml` | 687 |
 | `.github/workflows/ctoa-monitoring-alerts.yml` | 14232 |
-| `.github/workflows/ctoa-pipeline.yml` | 30243 |
+| `.github/workflows/ctoa-pipeline.yml` | 30466 |
 | `.github/workflows/ctoa-runtime-smoke-e2e-8001.yml` | 2546 |
 | `.github/workflows/ctoa-smoke-must-pass.yml` | 949 |
 | `.github/workflows/ctoa-status-sync.yml` | 980 |
@@ -136,7 +136,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `alembic/env.py` | 1412 |
 | `alembic/versions/20260521_0001_sprint0_baseline.py` | 445 |
 | `api/__init__.py` | 2 |
-| `api/main.py` | 54572 |
+| `api/main.py` | 54986 |
 | `api/startup_guard.py` | 1328 |
 | `bot/__init__.py` | 1 |
 | `bot/action/__init__.py` | 2631 |
@@ -186,7 +186,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `core/protected-files.txt` | 222 |
 | `core/runtime-freeze-policy.json` | 301 |
 | `ctoa-vps.ps1` | 547 |
-| `ctoa.ps1` | 29733 |
+| `ctoa.ps1` | 30025 |
 | `ctoa_ui_prefs.lua` | 397 |
 | `deploy/local/observability/grafana/provisioning/datasources/datasources.yml` | 224 |
 | `deploy/local/observability/loki-config.yml` | 539 |
@@ -639,13 +639,13 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/lua/loot_filter.lua` | 1538 |
 | `scripts/lua/module_reporter.lua` | 1112 |
 | `scripts/lua/otclient/ctoa_ed_profile.lua` | 2453 |
-| `scripts/lua/otclient/ctoa_ek_profile.lua` | 7667 |
+| `scripts/lua/otclient/ctoa_ek_profile.lua` | 7703 |
 | `scripts/lua/otclient/ctoa_helper_action_catalog.lua` | 6301 |
 | `scripts/lua/otclient/ctoa_helper_cavebot_observer.lua` | 3342 |
 | `scripts/lua/otclient/ctoa_helper_cavebot_runtime.lua` | 15629 |
 | `scripts/lua/otclient/ctoa_helper_client_reporter.lua` | 8294 |
 | `scripts/lua/otclient/ctoa_helper_combat_observer.lua` | 5193 |
-| `scripts/lua/otclient/ctoa_helper_combat_runtime.lua` | 16020 |
+| `scripts/lua/otclient/ctoa_helper_combat_runtime.lua` | 17810 |
 | `scripts/lua/otclient/ctoa_helper_conditions.lua` | 7172 |
 | `scripts/lua/otclient/ctoa_helper_decision_pipeline.lua` | 6154 |
 | `scripts/lua/otclient/ctoa_helper_decision_trace.lua` | 3937 |
@@ -668,7 +668,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/lua/otclient/ctoa_helper_plan_queue.lua` | 2684 |
 | `scripts/lua/otclient/ctoa_helper_planner.lua` | 5062 |
 | `scripts/lua/otclient/ctoa_helper_profile_persistence.lua` | 14272 |
-| `scripts/lua/otclient/ctoa_helper_profile_schema.lua` | 25357 |
+| `scripts/lua/otclient/ctoa_helper_profile_schema.lua` | 25417 |
 | `scripts/lua/otclient/ctoa_helper_recovery_observer.lua` | 4249 |
 | `scripts/lua/otclient/ctoa_helper_recovery_runtime.lua` | 4956 |
 | `scripts/lua/otclient/ctoa_helper_route.lua` | 10784 |
@@ -684,7 +684,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/lua/otclient/ctoa_ms_profile.lua` | 2412 |
 | `scripts/lua/otclient/ctoa_native_combat.lua` | 18058 |
 | `scripts/lua/otclient/ctoa_native_heal.lua` | 9644 |
-| `scripts/lua/otclient/ctoa_native_helper.lua` | 178789 |
+| `scripts/lua/otclient/ctoa_native_helper.lua` | 180090 |
 | `scripts/lua/otclient/ctoa_native_loot.lua` | 11632 |
 | `scripts/lua/otclient/ctoa_otclient.otmod` | 253 |
 | `scripts/lua/otclient/ctoa_otclient_loader.lua` | 7548 |
@@ -762,7 +762,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/ops/kv_smoke_min.py` | 434 |
 | `scripts/ops/lab003_mobile_proxy_smoke.ps1` | 4695 |
 | `scripts/ops/lab003_shift_guard.ps1` | 8887 |
-| `scripts/ops/lab003_shift_smoke_webhook.ps1` | 5320 |
+| `scripts/ops/lab003_shift_smoke_webhook.ps1` | 5375 |
 | `scripts/ops/lab003_validate_bundle.ps1` | 3687 |
 | `scripts/ops/launch_kamil_client_macro_studio.ps1` | 3766 |
 | `scripts/ops/link_check_docs.py` | 1438 |
@@ -773,7 +773,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/ops/otclient_external_bot_intake.py` | 14940 |
 | `scripts/ops/otclient_helper_module_audit.py` | 32156 |
 | `scripts/ops/otclient_helper_module_contract.py` | 27457 |
-| `scripts/ops/otclient_helper_next_modules_plan.py` | 29044 |
+| `scripts/ops/otclient_helper_next_modules_plan.py` | 29072 |
 | `scripts/ops/otclient_helper_profile_audit.py` | 5236 |
 | `scripts/ops/otclient_helper_shell_budget_plan.py` | 12627 |
 | `scripts/ops/otclient_input_contract_fixtures.py` | 13415 |
@@ -814,7 +814,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/ops/sprint038_validate.py` | 5367 |
 | `scripts/ops/sprint039_validate.py` | 2632 |
 | `scripts/ops/sprint040_validate.py` | 2632 |
-| `scripts/ops/sprint041_validate.py` | 4159 |
+| `scripts/ops/sprint041_validate.py` | 4358 |
 | `scripts/ops/sprint042_validate.py` | 7680 |
 | `scripts/ops/sprint043_validate.py` | 8240 |
 | `scripts/ops/sprint044_validate.py` | 8330 |
@@ -863,7 +863,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/test_local_model.py` | 3221 |
 | `scripts/windows/build-ctoa-desktop-exe.ps1` | 1210 |
 | `scripts/windows/install-ctoa-vscode-extensions.ps1` | 1852 |
-| `scripts/windows/open-control-center.ps1` | 2014 |
+| `scripts/windows/open-control-center.ps1` | 2306 |
 | `scripts/windows/solteria_helper_test_env.ps1` | 407503 |
 | `src/main.py` | 15 |
 | `tests/conftest.py` | 1341 |
@@ -904,6 +904,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `tests/test_ctoa_helper_combat_observer.py` | 3463 |
 | `tests/test_ctoa_helper_decision_pipeline.py` | 7053 |
 | `tests/test_ctoa_helper_domain_contract.py` | 6569 |
+| `tests/test_ctoa_helper_magic_shooter_direction.py` | 1997 |
 | `tests/test_ctoa_helper_otclient_observation_adapter.py` | 4485 |
 | `tests/test_ctoa_helper_profile_migration.py` | 3508 |
 | `tests/test_ctoa_helper_recovery_jitter.py` | 1480 |
@@ -922,12 +923,12 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `tests/test_docker_bind_defaults.py` | 1124 |
 | `tests/test_docs_site_security.py` | 3701 |
 | `tests/test_engine_brain_doctor.py` | 2989 |
-| `tests/test_engine_brain_index.py` | 69308 |
+| `tests/test_engine_brain_index.py` | 70052 |
 | `tests/test_engine_brain_pack.py` | 3356 |
 | `tests/test_evidence_retention_policy.py` | 994 |
 | `tests/test_executor_deliverable_security.py` | 1736 |
 | `tests/test_generated_manifest_safety.py` | 4892 |
-| `tests/test_generator_agent_output_security.py` | 5256 |
+| `tests/test_generator_agent_output_security.py` | 5281 |
 | `tests/test_git_exec.py` | 2245 |
 | `tests/test_git_unavailable_guards.py` | 925 |
 | `tests/test_gs_api_validator_security.py` | 2940 |
@@ -966,7 +967,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `tests/test_otclient_external_bot_intake.py` | 4551 |
 | `tests/test_otclient_helper_module_audit.py` | 21034 |
 | `tests/test_otclient_helper_module_contract.py` | 39127 |
-| `tests/test_otclient_helper_next_modules_plan.py` | 13371 |
+| `tests/test_otclient_helper_next_modules_plan.py` | 13483 |
 | `tests/test_otclient_helper_profile_audit.py` | 3639 |
 | `tests/test_otclient_helper_shell_budget_plan.py` | 3051 |
 | `tests/test_otclient_helper_zerobot_shell.py` | 183122 |
@@ -976,7 +977,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `tests/test_phase5_nightly_sync.py` | 8121 |
 | `tests/test_phase5_nightly_sync_more.py` | 6158 |
 | `tests/test_phase5_ops_acceleration.py` | 1721 |
-| `tests/test_powershell_launcher_security.py` | 7126 |
+| `tests/test_powershell_launcher_security.py` | 7465 |
 | `tests/test_process_safety.py` | 1328 |
 | `tests/test_project_progress_diagram.py` | 3190 |
 | `tests/test_queue_worker_security.py` | 1250 |
@@ -984,7 +985,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `tests/test_repo_hygiene_audit.py` | 3484 |
 | `tests/test_repo_hygiene_distribution.py` | 1353 |
 | `tests/test_repo_hygiene_migration_plan.py` | 2735 |
-| `tests/test_response_guardrails.py` | 2951 |
+| `tests/test_response_guardrails.py` | 2899 |
 | `tests/test_runner_agent_db_security.py` | 2569 |
 | `tests/test_runner_backlog_selection.py` | 1708 |
 | `tests/test_runner_execution_summary.py` | 3796 |

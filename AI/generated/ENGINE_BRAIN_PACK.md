@@ -1,6 +1,6 @@
 # CTOAi Engine Brain Pack
 
-Generated at: `2026-07-11T07:10:44+00:00`
+Generated at: `2026-07-11T09:26:36+00:00`
 Repo root: `C:\Users\zycie\CTOAi`
 Profile: `helper`
 
@@ -5283,9 +5283,9 @@ fresh `ctoa_local.log` lines plus safe boot state.
 ```json
 {
   "schema_version": 1,
-  "generated_at": "2026-07-11T07:10:18+00:00",
+  "generated_at": "2026-07-11T09:26:31+00:00",
   "root": "C:\\Users\\zycie\\CTOAi",
-  "file_count": 1230,
+  "file_count": 1232,
   "outputs": {
     "file_tree": "AI\\generated\\FILE_TREE.md",
     "symbol_map": "AI\\generated\\SYMBOL_MAP.md",
@@ -5375,7 +5375,7 @@ Overall status: `warn`
 ```markdown
 # Engine Brain Ownership Map
 
-Generated at: `2026-07-11T07:10:18+00:00`
+Generated at: `2026-07-11T09:26:31+00:00`
 Source audit: `runtime\audits\ctoai-full-workspace-audit.json`
 Status: `ready`
 
@@ -5457,7 +5457,7 @@ Status: `ready`
 ```markdown
 # Engine Brain Doc Sync
 
-Generated at: `2026-07-11T07:10:18+00:00`
+Generated at: `2026-07-11T09:26:31+00:00`
 Status: `passed`
 
 | Check | Path | Status | Missing |
@@ -5476,7 +5476,7 @@ Status: `passed`
 ```markdown
 # Engine Brain Secret Guardrail
 
-Generated at: `2026-07-11T07:10:18+00:00`
+Generated at: `2026-07-11T09:26:31+00:00`
 Status: `passed`
 Sensitive/local env path count in audit: `7`
 
@@ -5498,7 +5498,7 @@ Generated Engine Brain context must not include exact local sensitive/env paths 
 ```markdown
 # P6 Codex Integration Readiness
 
-Generated at: `2026-07-11T07:10:18+00:00`
+Generated at: `2026-07-11T09:26:31+00:00`
 Status: `ready_for_plugin_design`
 
 P6 allows only four read-only status/cockpit tools plus audited repo-hygiene, API-cost, evidence-pack, Engine Brain, and P7 cockpit-smoke safe-write refreshes. Do not add deploy/live shortcuts or bypass Control Center evidence gates.
@@ -5570,7 +5570,7 @@ Recommended next: Operate the plugin as four read-only status/cockpit tools plus
 ```markdown
 # P7 Operator Workflow
 
-Generated at: `2026-07-11T07:10:18+00:00`
+Generated at: `2026-07-11T09:26:31+00:00`
 Status: `safe_write_ready`
 Decision: `allow_bounded_safe_write_tools`
 
@@ -5618,7 +5618,7 @@ Next safe command: Use ctoai_repo_hygiene_refresh, ctoai_api_cost_refresh, ctoai
 ```markdown
 # P7 Action Readiness
 
-Generated at: `2026-07-11T07:10:18+00:00`
+Generated at: `2026-07-11T09:26:31+00:00`
 Status: `safe_write_tools_enabled`
 Decision: `monitor_enabled_safe_write_tools`
 
@@ -5646,7 +5646,7 @@ Next safe command: Design the next P7 plugin action only after risk model covera
 ```markdown
 # P7 Safe Write Tool Design
 
-Generated at: `2026-07-11T07:10:18+00:00`
+Generated at: `2026-07-11T09:26:31+00:00`
 Status: `implemented`
 Decision: `ready_for_dry_run_operation`
 
@@ -5688,7 +5688,7 @@ Next safe command: Run ctoai_evidence_pack_refresh with dry_run=true and verify 
 ```markdown
 # P7 Operator Brief
 
-Generated at: `2026-07-11T07:10:18+00:00`
+Generated at: `2026-07-11T09:26:31+00:00`
 Decision: `ready_for_p7_operator_workflow`
 Status: `ready`
 
@@ -5716,7 +5716,7 @@ Next safe command: Design the next P7 plugin action only after risk model covera
 ```markdown
 # Engine Brain File Tree
 
-Generated at: `2026-07-11T07:10:18+00:00`
+Generated at: `2026-07-11T09:26:31+00:00`
 
 Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 `node_modules`, `runtime`, `logs`, `data`, `.tmp`, build outputs.
@@ -5757,8 +5757,8 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `.github/workflows/ctoa-daily-insights.yml` | 941 |
 | `.github/workflows/ctoa-issue-sync.yml` | 687 |
 | `.github/workflows/ctoa-monitoring-alerts.yml` | 14232 |
-| `.github/workflows/ctoa-pipeline.yml` | 30243 |
-| `.github/workflows/ctoa-runtime-smoke-e2e-8001.yml` | 2121 |
+| `.github/workflows/ctoa-pipeline.yml` | 30466 |
+| `.github/workflows/ctoa-runtime-smoke-e2e-8001.yml` | 2546 |
 | `.github/workflows/ctoa-smoke-must-pass.yml` | 949 |
 | `.github/workflows/ctoa-status-sync.yml` | 980 |
 | `.github/workflows/ctoa-vps-hygiene-weekly.yml` | 3891 |
@@ -5820,9 +5820,9 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `AI/generated/DOC_SYNC.md` | 609 |
 | `AI/generated/ENGINE_BRAIN_PACK.json` | 5583 |
 | `AI/generated/ENGINE_BRAIN_PACK.md` | 412233 |
-| `AI/generated/ENV_DOCTOR.json` | 8345 |
+| `AI/generated/ENV_DOCTOR.json` | 8278 |
 | `AI/generated/ENV_DOCTOR.md` | 1368 |
-| `AI/generated/FILE_TREE.md` | 68186 |
+| `AI/generated/FILE_TREE.md` | 68251 |
 | `AI/generated/manifest.json` | 2062 |
 | `AI/generated/OWNERSHIP_MAP.json` | 16701 |
 | `AI/generated/OWNERSHIP_MAP.md` | 6492 |
@@ -5836,7 +5836,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `AI/generated/P7_OPERATOR_WORKFLOW.md` | 3015 |
 | `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.json` | 2705 |
 | `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.md` | 2024 |
-| `AI/generated/SYMBOL_MAP.md` | 260612 |
+| `AI/generated/SYMBOL_MAP.md` | 260709 |
 | `AI/KNOWN_BUGS.md` | 1384 |
 | `AI/LUA_INDEX.md` | 2874 |
 | `AI/OPERATIONS_AUDIT.md` | 5139 |
@@ -5852,7 +5852,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `alembic/env.py` | 1412 |
 | `alembic/versions/20260521_0001_sprint0_baseline.py` | 445 |
 | `api/__init__.py` | 2 |
-| `api/main.py` | 54572 |
+| `api/main.py` | 54986 |
 | `api/startup_guard.py` | 1328 |
 | `bot/__init__.py` | 1 |
 | `bot/action/__init__.py` | 2631 |
@@ -5902,7 +5902,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `core/protected-files.txt` | 222 |
 | `core/runtime-freeze-policy.json` | 301 |
 | `ctoa-vps.ps1` | 547 |
-| `ctoa.ps1` | 29733 |
+| `ctoa.ps1` | 30025 |
 | `ctoa_ui_prefs.lua` | 397 |
 | `deploy/local/observability/grafana/provisioning/datasources/datasources.yml` | 224 |
 | `deploy/local/observability/loki-config.yml` | 539 |
@@ -6355,13 +6355,13 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/lua/loot_filter.lua` | 1538 |
 | `scripts/lua/module_reporter.lua` | 1112 |
 | `scripts/lua/otclient/ctoa_ed_profile.lua` | 2453 |
-| `scripts/lua/otclient/ctoa_ek_profile.lua` | 7667 |
+| `scripts/lua/otclient/ctoa_ek_profile.lua` | 7703 |
 | `scripts/lua/otclient/ctoa_helper_action_catalog.lua` | 6301 |
 | `scripts/lua/otclient/ctoa_helper_cavebot_observer.lua` | 3342 |
 | `scripts/lua/otclient/ctoa_helper_cavebot_runtime.lua` | 15629 |
 | `scripts/lua/otclient/ctoa_helper_client_reporter.lua` | 8294 |
 | `scripts/lua/otclient/ctoa_helper_combat_observer.lua` | 5193 |
-| `scripts/lua/otclient/ctoa_helper_combat_runtime.lua` | 16020 |
+| `scripts/lua/otclient/ctoa_helper_combat_runtime.lua` | 17810 |
 | `scripts/lua/otclient/ctoa_helper_conditions.lua` | 7172 |
 | `scripts/lua/otclient/ctoa_helper_decision_pipeline.lua` | 6154 |
 | `scripts/lua/otclient/ctoa_helper_decision_trace.lua` | 3937 |
@@ -6384,7 +6384,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/lua/otclient/ctoa_helper_plan_queue.lua` | 2684 |
 | `scripts/lua/otclient/ctoa_helper_planner.lua` | 5062 |
 | `scripts/lua/otclient/ctoa_helper_profile_persistence.lua` | 14272 |
-| `scripts/lua/otclient/ctoa_helper_profile_schema.lua` | 25357 |
+| `scripts/lua/otclient/ctoa_helper_profile_schema.lua` | 25417 |
 | `scripts/lua/otclient/ctoa_helper_recovery_observer.lua` | 4249 |
 | `scripts/lua/otclient/ctoa_helper_recovery_runtime.lua` | 4956 |
 | `scripts/lua/otclient/ctoa_helper_route.lua` | 10784 |
@@ -6400,7 +6400,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/lua/otclient/ctoa_ms_profile.lua` | 2412 |
 | `scripts/lua/otclient/ctoa_native_combat.lua` | 18058 |
 | `scripts/lua/otclient/ctoa_native_heal.lua` | 9644 |
-| `scripts/lua/otclient/ctoa_native_helper.lua` | 178789 |
+| `scripts/lua/otclient/ctoa_native_helper.lua` | 180090 |
 | `scripts/lua/otclient/ctoa_native_loot.lua` | 11632 |
 | `scripts/lua/otclient/ctoa_otclient.otmod` | 253 |
 | `scripts/lua/otclient/ctoa_otclient_loader.lua` | 7548 |
@@ -6478,7 +6478,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/ops/kv_smoke_min.py` | 434 |
 | `scripts/ops/lab003_mobile_proxy_smoke.ps1` | 4695 |
 | `scripts/ops/lab003_shift_guard.ps1` | 8887 |
-| `scripts/ops/lab003_shift_smoke_webhook.ps1` | 5320 |
+| `scripts/ops/lab003_shift_smoke_webhook.ps1` | 5375 |
 | `scripts/ops/lab003_validate_bundle.ps1` | 3687 |
 | `scripts/ops/launch_kamil_client_macro_studio.ps1` | 3766 |
 | `scripts/ops/link_check_docs.py` | 1438 |
@@ -6489,7 +6489,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/ops/otclient_external_bot_intake.py` | 14940 |
 | `scripts/ops/otclient_helper_module_audit.py` | 32156 |
 | `scripts/ops/otclient_helper_module_contract.py` | 27457 |
-| `scripts/ops/otclient_helper_next_modules_plan.py` | 29044 |
+| `scripts/ops/otclient_helper_next_modules_plan.py` | 29072 |
 | `scripts/ops/otclient_helper_profile_audit.py` | 5236 |
 | `scripts/ops/otclient_helper_shell_budget_plan.py` | 12627 |
 | `scripts/ops/otclient_input_contract_fixtures.py` | 13415 |
@@ -6533,7 +6533,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 ```markdown
 # Engine Brain Symbol Map
 
-Generated at: `2026-07-11T07:10:18+00:00`
+Generated at: `2026-07-11T09:26:31+00:00`
 
 This is a lightweight map for navigation, not a full source dump.
 
@@ -6609,59 +6609,59 @@ This is a lightweight map for navigation, not a full source dump.
 - L369: def _utc_now_iso()
 - L373: def _atomic_write_json(path, payload)
 - L408: def _display_path(path_value)
-- L424: def _redact_release_evidence_text(value)
-- L438: def _public_release_evidence_value(value, key)
-- L455: def _public_audit_value(value, key)
-- L472: def _read_release_evidence_payload(path)
-- L488: def _hash_password(password)
-- L492: def _verify_password(password, hashed)
-- L499: def _sanitize_username(username)
-- L508: def _seed_password(env_name)
-- L515: def _seed_accounts()
-- L548: def _default_account_seed_blocked()
-- L552: def _read_auth_store_payload(path)
-- L571: def _load_auth_store()
-- L613: def _save_auth_store(store)
-- L617: def _append_activity(store)
-- L640: def _b64url_encode(data)
-- L644: def _b64url_decode(data)
-- L649: def _jwt_encode(payload)
-- L660: def _jwt_decode(token)
-- L685: def _issue_token(user)
-- L696: def _extract_bearer(authorization)
-- L709: def _first_forwarded_ip(value)
-- L719: def _client_ip_from_request(request)
-- L729: def _rate_limit_group(path)
-- L739: def _rate_limit_for_group(group)
-- L747: def _consume_rate_limit(ip, group, now_ts)
-- L792: def _audit_actor_from_request(request)
-- L806: def _append_audit_http(request, status, actor, meta)
-- L832: async def security_middleware(request, call_next)
-- L874: def _current_user(authorization)
-- L897: def _require_roles(user, allowed)
-- L902: def _select_models(req)
-- L975: async def _call_model(model_name, backend_url, backend_key, messages, temperature, max_tokens)
-- L1009: async def _execute_chat(req)
-- L1097: def _safe_chat_route_info(route_info)
-- L1113: def _require_chat_debug_route_user(user)
-- L1123: def health()
-- L1128: def status()
-- L1149: def bootstrap(req)
-- L1197: def register(req, authorization)
-- L1263: def login(req)
-- L1287: def me(authorization)
-- L1293: def create_invite(req, authorization)
-- L1330: def accept_invite(req, authorization)
-- L1378: def community_members(authorization)
-- L1398: def set_member_role(username, req, authorization)
-- L1439: def community_feed(authorization)
-- L1448: def community_invites(authorization)
-- L1459: def release_evidence()
-- L1540: async def chat(req, authorization)
-- L1559: async def chat_completions(req, authorization)
-- L1601: async def safety_metrics(authorization)
-- L1615: async def safety_telemetry(authorization)
-- L1624: async def safety_status()
+- L431: def _redact_release_evidence_text(value)
+- L445: def _public_release_evidence_value(value, key)
+- L462: def _public_audit_value(value, key)
+- L479: def _read_release_evidence_payload(path)
+- L495: def _hash_password(password)
+- L499: def _verify_password(password, hashed)
+- L506: def _sanitize_username(username)
+- L515: def _seed_password(env_name)
+- L522: def _seed_accounts()
+- L555: def _default_account_seed_blocked()
+- L559: def _read_auth_store_payload(path)
+- L578: def _load_auth_store()
+- L620: def _save_auth_store(store)
+- L624: def _append_activity(store)
+- L647: def _b64url_encode(data)
+- L651: def _b64url_decode(data)
+- L656: def _jwt_encode(payload)
+- L667: def _jwt_decode(token)
+- L692: def _issue_token(user)
+- L703: def _extract_bearer(authorization)
+- L716: def _first_forwarded_ip(value)
+- L726: def _client_ip_from_request(request)
+- L736: def _rate_limit_group(path)
+- L746: def _rate_limit_for_group(group)
+- L754: def _consume_rate_limit(ip, group, now_ts)
+- L799: def _audit_actor_from_request(request)
+- L813: def _append_audit_http(request, status, actor, meta)
+- L839: async def security_middleware(request, call_next)
+- L881: def _current_user(authorization)
+- L904: def _require_roles(user, allowed)
+- L909: def _select_models(req)
+- L982: async def _call_model(model_name, backend_url, backend_key, messages, temperature, max_tokens)
+- L1016: async def _execute_chat(req)
+- L1104: def _safe_chat_route_info(route_info)
+- L1120: def _require_chat_debug_route_user(user)
+- L1130: def health()
+- L1135: def status()
+- L1156: def bootstrap(req)
+- L1204: def register(req, authorization)
+- L1270: def login(req)
+- L1294: def me(authorization)
+- L1300: def create_invite(req, authorization)
+- L1337: def accept_invite(req, authorization)
+- L1385: def community_members(authorization)
+- L1405: def set_member_role(username, req, authorization)
+- L1446: def community_feed(authorization)
+- L1455: def community_invites(authorization)
+- L1466: def release_evidence()
+- L1547: async def chat(req, authorization)
+- L1566: async def chat_completions(req, authorization)
+- L1608: async def safety_metrics(authorization)
+- L1622: async def safety_telemetry(authorization)
+- L1631: async def safety_status()
 
 ## `api/startup_guard.py`
 
@@ -6987,41 +6987,41 @@ This is a lightweight map for navigation, not a full source dump.
 - L20: function Get-CliVpsHost
 - L31: function Get-PythonExe
 - L39: function Resolve-ControlCenterUrl
-- L85: function Invoke-FromRoot
-- L105: function Invoke-FromRootCapture
-- L135: function Get-CommandDictionary
-- L162: function Show-Help
-- L242: function Get-GitExe
-- L256: function Get-NpmExe
-- L267: function Get-WorktreeSummary
-- L289: function Show-Next
-- L312: function Open-ControlCenter
-- L367: function Resolve-Sprint
-- L381: function Invoke-ValidateSprint
-- L401: function Invoke-Nightly
-- L418: function Invoke-Up
-- L432: function Invoke-Test
-- L443: function Invoke-Doctor
-- L456: function Invoke-DevProfile
-- L461: function Invoke-OpsProfile
-- L466: function Invoke-ProdProfile
-- L476: function Invoke-VpsAction
-- L516: function Invoke-VpsActionCapture
-- L564: function Invoke-RunnerCommand
-- L576: function Invoke-ReportCommand
-- L589: function Invoke-MobileCommand
-- L601: function Invoke-LogsCommand
-- L615: function Invoke-StatusSnapshot
-- L695: function Invoke-DashboardSnapshot
-- L699: function Invoke-ReportNow
-- L703: function Invoke-OtProfileBuilder
-- L717: function Invoke-OtHelperPreview
-- L727: function Invoke-OtHelperMockup
-- L737: function Invoke-OtHelperDeploy
-- L758: function Invoke-OtTestLoop
-- L773: function Invoke-EngineBrain
-- L804: function Get-ValueOrDefault
-- L816: function Show-Menu
+- L91: function Invoke-FromRoot
+- L111: function Invoke-FromRootCapture
+- L141: function Get-CommandDictionary
+- L168: function Show-Help
+- L248: function Get-GitExe
+- L262: function Get-NpmExe
+- L273: function Get-WorktreeSummary
+- L295: function Show-Next
+- L318: function Open-ControlCenter
+- L373: function Resolve-Sprint
+- L387: function Invoke-ValidateSprint
+- L407: function Invoke-Nightly
+- L424: function Invoke-Up
+- L438: function Invoke-Test
+- L449: function Invoke-Doctor
+- L462: function Invoke-DevProfile
+- L467: function Invoke-OpsProfile
+- L472: function Invoke-ProdProfile
+- L482: function Invoke-VpsAction
+- L522: function Invoke-VpsActionCapture
+- L570: function Invoke-RunnerCommand
+- L582: function Invoke-ReportCommand
+- L595: function Invoke-MobileCommand
+- L607: function Invoke-LogsCommand
+- L621: function Invoke-StatusSnapshot
+- L701: function Invoke-DashboardSnapshot
+- L705: function Invoke-ReportNow
+- L709: function Invoke-OtProfileBuilder
+- L723: function Invoke-OtHelperPreview
+- L733: function Invoke-OtHelperMockup
+- L743: function Invoke-OtHelperDeploy
+- L764: function Invoke-OtTestLoop
+- L779: function Invoke-EngineBrain
+- L810: function Get-ValueOrDefault
+- L822: function Show-Menu
 
 ## `ctoa_ui_prefs.lua`
 
