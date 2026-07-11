@@ -4,6 +4,7 @@
 local DispatchGuard = rawget(_G, "CTOA_HELPER_DISPATCH_GUARD") or {}
 
 local ACTION_DOMAIN = {
+    plan_heal = "recovery",
     plan_attack = "combat",
     plan_spell = "combat",
     plan_rune = "combat",

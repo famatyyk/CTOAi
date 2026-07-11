@@ -13,6 +13,13 @@ local REQUIRED_RUNTIME_GATES = {
 
 local ACTIONS = {
     {
+        action = "plan_heal",
+        domain = "recovery",
+        risk = "runtime_recovery",
+        requires_target = false,
+        runtime_action = true,
+    },
+    {
         action = "plan_attack",
         domain = "combat",
         risk = "runtime_combat",

@@ -1,5 +1,45 @@
 # Feature Roadmap
 
+## Current State
+
+- Engine Brain Plan 3 is operational and maintained as the secret-safe context
+  foundation; roadmap work now consumes its generated evidence.
+- Helper `v2.1.1a` is live-promoted, while all new runtime bridge work remains
+  sandbox-first and does not imply another live promotion.
+- P6 is ready for plugin design and the five bounded P7 safe-write refresh tools
+  are enabled with audit coverage.
+
+## Now
+
+1. **Helper Runtime Bridge v1** — owner: Helper Runtime; status: `sandbox`;
+   risk: `runtime_recovery`. Deliver one `plan_heal` execution boundary with
+   dry-run default, session arming, cooldown, retry budget, kill switch, and
+   decision/guard/action/result trace. Definition of done: repo tests, packaged
+   boot graph, sandbox attach, and in-world evidence all pass. Contract:
+   `docs/otclient/HELPER_RUNTIME_BRIDGE_V1.md`.
+2. **Capability freshness and drift** — owner: Control Center; status: `gated`;
+   expose stale Helper/evidence timestamps without adding a write action.
+3. **Next P7 action design** — owner: Engine Brain; status: `planned`; select
+   exactly one action only after risk model, audit logging, Control Center gate,
+   dry-run behavior, and targeted MCP tests exist. Deploy/live actions remain
+   excluded.
+
+## Next
+
+- Add operator session arming and a visible kill switch after the bridge sandbox
+  contract passes.
+- Add decision-trace replay and bounded runtime evidence export.
+- Add sandbox-to-live promotion visibility without implicit promotion.
+- Index a supplied TFS fork and protocol sources; do not infer missing server
+  behavior.
+- Generate roadmap status from manifests and evidence to reduce manual drift.
+
+## Guardrails And Maintenance
+
+The priority sections below retain the complete durable security, evidence, and
+runtime maintenance contract. They are invariants, not simultaneous active
+feature work.
+
 ## Default Horizon: 90 Days, Helper First
 
 - Stabilize and productize the OTClient/Solteria Helper before broader CTOAi

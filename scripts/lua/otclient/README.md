@@ -40,6 +40,7 @@ Advanced Tibia automation modules designed specifically for **OTClient** using n
 | **ctoa_helper_dispatch_guard.lua** | Passive dispatch allow/deny guard | `_G.CTOA_HELPER_DISPATCH_GUARD`, classify/decision/summary/contract |
 | **ctoa_helper_plan_queue.lua** | Passive guarded decision queue | `_G.CTOA_HELPER_PLAN_QUEUE`, normalize/enqueue/trim/summary/contract |
 | **ctoa_helper_runtime_readiness.lua** | Passive runtime bridge readiness | `_G.CTOA_HELPER_RUNTIME_READINESS`, components/gates/snapshot/decision |
+| **ctoa_helper_recovery_bridge.lua** | Sandbox-only Healing/Recovery bridge v1 | `_G.CTOA_HELPER_RECOVERY_BRIDGE`, dry-run/session arm/kill switch/dispatch trace |
 | **ctoa_helper_module_status.lua** | Passive module status board | `_G.CTOA_HELPER_MODULE_STATUS`, order/normalize/snapshot/summary/contract |
 | **ctoa_helper_action_catalog.lua** | Passive action/risk catalog | `_G.CTOA_HELPER_ACTION_CATALOG`, action domains, risk classes, gates |
 | **ctoa_helper_decision_trace.lua** | Passive decision trace formatter | `_G.CTOA_HELPER_DECISION_TRACE`, policy/guard reasons, missing gates |

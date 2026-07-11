@@ -33,6 +33,7 @@ local SUPPORT_MODULES = {
     {name = "ctoa_helper_planner", file = "ctoa_helper_planner.lua", phase = "coordinate", depends_on = {}},
     {name = "ctoa_helper_runtime_policy", file = "ctoa_helper_runtime_policy.lua", phase = "guard", depends_on = {}},
     {name = "ctoa_helper_dispatch_guard", file = "ctoa_helper_dispatch_guard.lua", phase = "guard", depends_on = {"ctoa_helper_runtime_policy"}},
+    {name = "ctoa_helper_recovery_bridge", file = "ctoa_helper_recovery_bridge.lua", phase = "guard", depends_on = {"ctoa_helper_recovery_runtime", "ctoa_helper_runtime_policy", "ctoa_helper_dispatch_guard"}},
     {name = "ctoa_helper_plan_queue", file = "ctoa_helper_plan_queue.lua", phase = "guard", depends_on = {"ctoa_helper_dispatch_guard"}},
     {name = "ctoa_helper_runtime_readiness", file = "ctoa_helper_runtime_readiness.lua", phase = "evidence", depends_on = {"ctoa_helper_plan_queue"}},
     {name = "ctoa_helper_module_status", file = "ctoa_helper_module_status.lua", phase = "evidence", depends_on = {"ctoa_helper_runtime_readiness"}},
