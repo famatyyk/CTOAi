@@ -54,8 +54,13 @@ def _quality_check(root: Path, run_tests: bool) -> dict[str, object] | None:
     if not run_tests:
         return None
 
-    cmd = [process_safety.resolve_python(), '-m', 'pytest', *FOCUSED_REGRESSION_TEST_FILES, '-q']
-    code, output = _run(cmd, cwd=root)
+    commands = [
+        [process_safety.resolve_python(), '-m', 'pytest', test_file, '-q']
+        for test_file in FOCUSED_REGRESSION_TEST_FILES
+    ]
+    results = [_run(cmd, cwd=root) for cmd in commands]
+    code = max(result[0] for result in results)
+    output = '\n'.join(result[1] for result in results)
     output_tail = '\n'.join(output.splitlines()[-20:])
 
     return {
@@ -63,7 +68,7 @@ def _quality_check(root: Path, run_tests: bool) -> dict[str, object] | None:
         'ok': code == 0,
         'hint': 'Focused quality regression tests failed' if code != 0 else '',
         'details': {
-            'command': ' '.join(cmd),
+            'commands': [' '.join(cmd) for cmd in commands],
             'output_tail': output_tail,
         },
     }
