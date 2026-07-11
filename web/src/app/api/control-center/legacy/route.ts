@@ -1,6 +1,9 @@
 import { cookies } from "next/headers"
 import { NextResponse } from "next/server"
 import { getServerApiUrl } from "@/lib/config"
+import { fetchWithTimeout } from "@/lib/fetchWithTimeout"
+import { CTOA_TOKEN_COOKIE_NAME } from "@/lib/authCookies"
+import { sanitizeControlCenterMarkdownReport } from "@/lib/controlCenterMarkdownReport"
 
 export const runtime = "nodejs"
 
@@ -12,10 +15,14 @@ type LegacyFetchResult = {
 
 const API_URL = getServerApiUrl()
 
+function sanitizeLegacyBackendError(value: string): string {
+  return sanitizeControlCenterMarkdownReport(value).trim() || "Backend unavailable"
+}
+
 async function backendGet(path: string): Promise<LegacyFetchResult> {
-  const token = (await cookies()).get("ctoa_token")?.value
+  const token = (await cookies()).get(CTOA_TOKEN_COOKIE_NAME)?.value
   try {
-    const response = await fetch(`${API_URL}${path}`, {
+    const response = await fetchWithTimeout(`${API_URL}${path}`, {
       headers: {
         "Content-Type": "application/json",
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -28,7 +35,7 @@ async function backendGet(path: string): Promise<LegacyFetchResult> {
     return {
       ok: false,
       status: 503,
-      body: { detail: error instanceof Error ? error.message : "Backend unavailable" },
+      body: { detail: error instanceof Error ? sanitizeLegacyBackendError(error.message) : "Backend unavailable" },
     }
   }
 }

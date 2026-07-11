@@ -2,20 +2,40 @@ import { NextResponse } from "next/server"
 import { cookies } from "next/headers"
 import { getServerApiUrl } from "@/lib/config"
 import { resolveControlCenterViewer } from "@/lib/controlCenterAuth"
-import { listControlCenterActions, runControlCenterAction, ControlCenterAuthorizationError } from "@/lib/controlCenterActions"
+import {
+  listControlCenterActions,
+  runControlCenterAction,
+  ControlCenterAuthorizationError,
+  sanitizeControlCenterActionOutput,
+} from "@/lib/controlCenterActions"
+import { canRunControlCenterAction } from "@/lib/controlCenterPolicy"
+import { validateSameOriginRequest } from "@/lib/requestOriginGuard"
+import { CTOA_TOKEN_COOKIE_NAME } from "@/lib/authCookies"
 
 export const runtime = "nodejs"
 
+export function validateControlCenterActionRequestOrigin(request: Request): { ok: boolean; error?: string } {
+  return validateSameOriginRequest(request, { requestLabel: "Control Center action" })
+}
+
 async function loadViewer() {
-  const token = (await cookies()).get("ctoa_token")?.value
+  const token = (await cookies()).get(CTOA_TOKEN_COOKIE_NAME)?.value
   return resolveControlCenterViewer(token, getServerApiUrl())
+}
+
+function sanitizeControlCenterActionError(value: string): string {
+  return sanitizeControlCenterActionOutput(value, 1200) || "Control Center action failed."
 }
 
 export async function GET() {
   const viewer = await loadViewer()
+  const actions = viewer.viewer
+    ? listControlCenterActions().filter((action) => canRunControlCenterAction(action, viewer.viewer?.role).allowed)
+    : []
+
   return NextResponse.json({
     generatedAt: new Date().toISOString(),
-    actions: listControlCenterActions(),
+    actions,
     authStatus: viewer.authStatus,
     viewer: viewer.viewer,
   })
@@ -23,6 +43,11 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const originGate = validateControlCenterActionRequestOrigin(request)
+    if (!originGate.ok) {
+      return NextResponse.json({ ok: false, error: originGate.error }, { status: 403 })
+    }
+
     const viewer = await loadViewer()
     const body = (await request.json()) as {
       actionId?: string
@@ -46,12 +71,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: result.ok, result }, { status: result.ok ? 200 : 500 })
   } catch (error) {
     if (error instanceof ControlCenterAuthorizationError) {
-      return NextResponse.json({ ok: false, error: error.message }, { status: error.statusCode })
+      return NextResponse.json({ ok: false, error: sanitizeControlCenterActionError(error.message) }, { status: error.statusCode })
     }
     return NextResponse.json(
       {
         ok: false,
-        error: error instanceof Error ? error.message : "Control Center action failed.",
+        error: error instanceof Error ? sanitizeControlCenterActionError(error.message) : "Control Center action failed.",
       },
       { status: 400 },
     )

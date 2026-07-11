@@ -1,6 +1,9 @@
-import { readdir, readFile, stat } from "node:fs/promises"
+import { lstat, open, readdir, readFile, stat } from "node:fs/promises"
+import crypto from "node:crypto"
 import path from "node:path"
+import { toControlCenterDisplayConfig, toControlCenterDisplayPath } from "@/lib/controlCenterDisplayPath"
 import { getControlCenterEvidenceConfig, type ControlCenterEvidenceConfig } from "@/lib/controlCenterEvidenceConfig"
+import { sanitizeControlCenterDisplayText } from "@/lib/controlCenterRedaction"
 
 export type ControlCenterEvidence = {
   generatedAt: string
@@ -15,6 +18,37 @@ export type ControlCenterEvidence = {
     fileCount: number
     latestModifiedAt: string
   }>
+  releaseEvidenceDrilldown: {
+    status: string
+    root: string
+    fileCount: number
+    sprintCount: number
+    latestSprint: string
+    latestModifiedAt: string
+    recentFiles: Array<{
+      sprint: string
+      path: string
+      title: string
+      modifiedAt: string
+      bytes: number
+    }>
+    nextAction: string
+  }
+  releaseComparison: {
+    status: string
+    relation: string
+    currentJsonPath: string
+    currentMarkdownPath: string
+    currentGeneratedAt: string
+    currentModifiedAt: string
+    currentExists: boolean
+    trackedPath: string
+    trackedModifiedAt: string
+    trackedExists: boolean
+    minutesBetween: number | null
+    nextAction: string
+    nextCommand: string
+  }
   repoHygiene: {
     status: string
     findingCount: number
@@ -44,6 +78,313 @@ export type ControlCenterEvidence = {
     status: string
     recordCount: number
   }
+  actionAuditDrilldown: {
+    status: string
+    path: string
+    recordCount: number
+    invalidRecordCount: number
+    truncated: boolean
+    sourceBytes: number
+    sampledBytes: number
+    latestAt: string
+    actionCounts: Record<string, number>
+    riskCounts: Record<string, number>
+    authorizedCount: number
+    deniedCount: number
+    dryRunCount: number
+    failedCount: number
+    recentRecords: Array<{
+      at: string
+      auditId: string
+      action: string
+      target: string
+      riskClass: string
+      actorRole: string
+      authorized: string
+      ok: string
+      dryRun: boolean
+      summary: string
+    }>
+    nextAction: string
+    nextCommand: string
+  }
+  otclientHelper: {
+    status: string
+    helperVersion: string
+    manifestHash: string
+    validationStatus: string
+    releaseReadinessStatus: string
+    releaseGateStatus: string
+    releasableToLive: boolean
+    smokePreflightStatus: string
+    smokeStatus: string
+    livePromotionStatus: string
+    livePromoted: boolean
+    livePromotionCreatedAt: string
+    liveClient: string
+    liveBackupPath: string
+    stagedFileCount: number
+    packagePath: string
+    packageSha256: string
+    blockers: string[]
+    nextAction: string
+    nextCommand: string
+    sourcePaths: {
+      devDir: string
+      manifest: string
+      validation: string
+      releaseReadiness: string
+      releaseGate: string
+      goalStatus: string
+      smokePreflight: string
+      smokeStatus: string
+      livePromotion: string
+    }
+  }
+  engineBrain: {
+    status: string
+    generatedAt: string
+    fileCount: number
+    docSyncStatus: string
+    secretGuardrailStatus: string
+    p6ReadinessStatus: string
+    p6PluginHandoff: {
+      status: string
+      policy: string
+      recommendedNext: string
+      checkCount: number
+      passedCheckCount: number
+      marketplaceStatus: string
+      installedCacheStatus: string
+      installedCacheVersion: string
+      mcpContractCount: number
+      passedMcpContractCount: number
+      freshThreadRequired: boolean
+      smokeStatus: string
+      smokeGeneratedAt: string
+      smokeCheckCount: number
+      smokePassedCount: number
+      smokeBlockedCount: number
+      currentThreadToolDiscoveryStatus: string
+      freshThreadVerificationStatus: string
+      freshThreadRecommendedToolOrder: string[]
+      smokeNextAction: string
+      smokeSourcePath: string
+      nextAction: string
+      sourcePath: string
+    }
+    p7OperatorBriefStatus: string
+    p7Decision: string
+    p7GeneratedAt: string
+    p7HardBlockerCount: number
+    p7WarningCount: number
+    p7Warnings: string[]
+    p7NextSafeCommand: string
+    p7Policy: string
+    p7RoadmapGenerationStatus: string
+    p7RoadmapGenerationDocSyncStatus: string
+    p7RoadmapGenerationDocCount: number
+    p7RoadmapGenerationReadyDocCount: number
+    p7RoadmapGenerationHardBlockerCount: number
+    p7RoadmapGenerationNextAction: string
+    p7RoadmapGenerationBlockedUntil: string
+    p7ActionReadinessStatus: string
+    p7ActionReadinessDecision: string
+    p7ActionCandidateCount: number
+    p7ActionAuditedCandidateCount: number
+    p7McpWriteToolCount: number
+    p7EnabledSafeWriteToolCount: number
+    p7ReadySafeWriteAuditCount: number
+    p7SafeWriteAuditCount: number
+    p7OperatorCockpitSummary: string
+    p7EnabledSafeWriteTools: Array<{
+      actionId: string
+      mcpTool: string
+      riskClass: string
+      auditStatus: string
+    }>
+    p7ActionNextSafeMode: string
+    p7ActionNextSafeCommand: string
+    p7SafeWriteToolDesignStatus: string
+    p7SafeWriteToolDesignDecision: string
+    p7SafeWriteToolSelectedActionId: string
+    p7SafeWriteToolProposedMcpTool: string
+    p7SafeWriteToolRiskClass: string
+    p7SafeWriteToolMode: string
+    p7SafeWriteToolMcpEnabled: boolean
+    p7SafeWriteToolNextSafeCommand: string
+    p7SafeWriteAudit: {
+      status: string
+      expectedAction: string
+      proposedMcpTool: string
+      auditId: string
+      latestAt: string
+      riskClass: string
+      actorRole: string
+      authorized: string
+      ok: string
+      dryRun: boolean
+      summary: string
+      nextAction: string
+    }
+    p7SafeWriteAudits: Array<{
+      status: string
+      expectedAction: string
+      proposedMcpTool: string
+      auditId: string
+      latestAt: string
+      riskClass: string
+      actorRole: string
+      authorized: string
+      ok: string
+      dryRun: boolean
+      summary: string
+      nextAction: string
+    }>
+    p7CockpitSmoke: {
+      status: string
+      generatedAt: string
+      checkCount: number
+      passedCount: number
+      blockedCount: number
+      enabledSafeWriteToolCount: number
+      readySafeWriteAuditCount: number
+      expectedSafeWriteAuditCount: number
+      actionAuditLineCount: number
+      hardBlockers: string[]
+      warnings: string[]
+      nextAction: string
+      sourcePath: string
+    }
+    p7SafeWriteDryRunSmoke: {
+      status: string
+      generatedAt: string
+      checkCount: number
+      passedCount: number
+      blockedCount: number
+      safeWriteToolCount: number
+      dryRunReadyCount: number
+      preflightReadyCount: number
+      bootstrapAllowedCount: number
+      hardBlockers: string[]
+      warnings: string[]
+      results: Array<{
+        actionId: string
+        mcpTool: string
+        status: string
+        auditRecordReady: boolean
+        preflightOk: boolean
+        preflightBootstrapAllowed: boolean
+      }>
+      nextAction: string
+      sourcePath: string
+    }
+    packProfile: string
+    packIncludedCount: number
+    packTruncatedCount: number
+    packGeneratedAt: string
+    sourcePaths: {
+      manifest: string
+      p6Readiness: string
+      p6PluginHandoffSmoke: string
+      packManifest: string
+      ownershipMap: string
+      docSync: string
+      secretGuardrail: string
+      operatorBrief: string
+      p7CockpitSmoke: string
+      p7SafeWriteDryRunSmoke: string
+    }
+    nextAction: string
+    nextCommand: string
+  }
+  artifactHealth: {
+    status: string
+    staleCount: number
+    blockedCount: number
+    checks: Array<{
+      name: string
+      status: string
+      detail: string
+      artifactPath: string
+      ageMinutes: number | null
+    }>
+    nextAction: string
+    nextCommand: string
+  }
+  operatorBrief: {
+    status: string
+    decision: string
+    generatedAt: string
+    ready: boolean
+    hardBlockerCount: number
+    warningCount: number
+    policy: string
+    nextSafeCommand: string
+    sourcePath: string
+    roadmapGeneration: {
+      status: string
+      docSyncStatus: string
+      docCount: number
+      readyDocCount: number
+      hardBlockerCount: number
+      nextAction: string
+      blockedUntil: string
+    }
+    cockpitHandoff: {
+      status: string
+      ready: boolean
+      hardBlockerCount: number
+      warningCount: number
+      recommendedToolOrder: string[]
+      p7Cockpit: {
+        status: string
+        enabledSafeWriteToolCount: number
+        readyAuditCount: number
+        auditCount: number
+        mcpWriteToolCount: number
+      }
+      p7CockpitSmoke: {
+        status: string
+        checks: number
+        passed: number
+        blocked: number
+        actionAuditLineCount: number
+      }
+      p7SafeWriteDryRunSmoke: {
+        status: string
+        checks: number
+        passed: number
+        blocked: number
+        safeWriteToolCount: number
+        dryRunReadyCount: number
+        preflightReadyCount: number
+        bootstrapAllowedCount: number
+      }
+      releaseEvidence: {
+        status: string
+        fileCount: number
+        sprintCount: number
+        latestPath: string
+      }
+      actionAudit: {
+        status: string
+        recordCount: number
+        latestAt: string
+        invalidRecordCount: number
+        riskCounts: Record<string, number>
+      }
+    }
+  }
+  operatorNext: {
+    status: string
+    lane: string
+    riskClass: string
+    title: string
+    detail: string
+    command: string
+    sourcePath: string
+  }
   recommendations: string[]
 }
 
@@ -62,14 +403,26 @@ type ReleaseEvidenceFile = {
   modifiedAt: string
 }
 
+const FRESH_ARTIFACT_MAX_AGE_MINUTES = 24 * 60
+const CONTROL_CENTER_EVIDENCE_JSON_MAX_BYTES = 1024 * 1024
+const CONTROL_CENTER_MARKDOWN_TITLE_MAX_BYTES = 64 * 1024
+export const CONTROL_CENTER_ACTION_AUDIT_MAX_BYTES = 1024 * 1024
+const ACTION_AUDIT_MAX_LINE_LENGTH = 20 * 1024
+
 export async function collectControlCenterEvidence(): Promise<ControlCenterEvidence> {
   const config = getControlCenterEvidenceConfig()
   const latestReleaseEvidence = await findLatestReleaseEvidence(config.releasesDir)
   const releaseEvidenceFileCount = await countMarkdownFiles(config.releasesDir)
   const releaseSprints = await listReleaseSprints(config.releasesDir)
+  const releaseEvidenceDrilldown = await collectReleaseEvidenceDrilldown(config.releasesDir)
+  const releaseComparison = await collectReleaseComparison(config, latestReleaseEvidence)
   const repoHygiene = await readJsonIfExists(config.qualityPath)
   const apiCostReport = await readJsonIfExists(config.costReportPath)
-  const actionAuditRecordCount = await countJsonlRecords(config.actionAuditPath)
+  const actionAuditDrilldown = await collectActionAuditDrilldown(config.actionAuditPath)
+  const otclientHelper = await collectOtclientHelperStatus(config)
+  const engineBrain = await collectEngineBrainStatus(config)
+  const artifactHealth = await collectArtifactHealth(config, actionAuditDrilldown)
+  const operatorBrief = await collectOperatorBriefCard(config)
 
   const recommendations: string[] = []
   const repoStatus = String(repoHygiene?.status || "missing")
@@ -80,27 +433,59 @@ export async function collectControlCenterEvidence(): Promise<ControlCenterEvide
   }
 
   if (!apiCostReport) {
-    recommendations.push(`Generate ${config.costReportPath} with scripts/ops/api_cost_report.py.`)
+    recommendations.push(`Generate ${toControlCenterDisplayPath(config.costReportPath)} with scripts/ops/api_cost_report.py.`)
   } else if (Number(apiCostReport.records_seen || 0) === 0) {
     recommendations.push("Cost report exists but has no records; verify eval artifacts in evals/runs.")
   }
 
-  if (actionAuditRecordCount === 0) {
+  if (actionAuditDrilldown.recordCount === 0) {
     recommendations.push("Exercise at least one Control Center action so the audit trail is visible.")
+  }
+
+  if (otclientHelper.status === "missing") {
+    recommendations.push("Prepare the Solteria Helper dev package before release review.")
+  } else if (otclientHelper.status !== "releasable" && otclientHelper.status !== "promoted") {
+    recommendations.push(otclientHelper.nextAction || "Refresh Solteria Helper validation and release gate evidence.")
+  }
+
+  if (engineBrain.status === "missing") {
+    recommendations.push("Run .\\ctoa.ps1 brain refresh before treating Engine Brain context as current.")
+  } else if (engineBrain.status !== "ready") {
+    recommendations.push(engineBrain.nextAction)
+  }
+
+  if (artifactHealth.status !== "ready") {
+    recommendations.push(artifactHealth.nextAction)
   }
 
   if (recommendations.length === 0) {
     recommendations.push("Evidence pack is ready for review. Keep fresh traces attached to the release note.")
   }
+  const operatorNext = buildOperatorNextRecommendation({
+    repoStatus,
+    apiCostReport,
+    actionAuditDrilldown,
+    otclientHelper,
+    engineBrain,
+    artifactHealth,
+    config,
+  })
 
   const evalArtifacts = (apiCostReport?.eval_artifacts as ApiCostReportArtifact | undefined) || {}
 
   return {
     generatedAt: new Date().toISOString(),
-    config,
-    latestReleaseEvidence,
+    config: toControlCenterDisplayConfig(config),
+    latestReleaseEvidence: latestReleaseEvidence
+      ? {
+          ...latestReleaseEvidence,
+          path: toControlCenterDisplayPath(latestReleaseEvidence.path),
+        }
+      : null,
     releaseEvidenceFileCount,
     releaseSprints,
+    releaseEvidenceDrilldown,
+    releaseComparison,
     repoHygiene: {
       status: repoStatus,
       findingCount: Number(repoHygiene?.finding_count || 0),
@@ -113,42 +498,1428 @@ export async function collectControlCenterEvidence(): Promise<ControlCenterEvide
       totalCostUsd: Number(apiCostReport?.total_cost_usd || 0),
       anomalyCount: Array.isArray(apiCostReport?.anomalies) ? apiCostReport.anomalies.length : 0,
       evalArtifacts: {
-        datasetPath: String(evalArtifacts.dataset_path || "evals/azure-activity-agent-eval-dataset.template.jsonl"),
+        datasetPath: toControlCenterDisplayPath(
+          String(evalArtifacts.dataset_path || "evals/azure-activity-agent-eval-dataset.template.jsonl"),
+        ),
         datasetCases: Number(evalArtifacts.dataset_cases || 0),
         categoryCounts: evalArtifacts.category_counts || {},
         priorityCounts: evalArtifacts.priority_counts || {},
-        promptVariantsDir: String(evalArtifacts.prompt_variants_dir || "evals/prompt-variants"),
+        promptVariantsDir: toControlCenterDisplayPath(String(evalArtifacts.prompt_variants_dir || "evals/prompt-variants")),
         promptVariantCount: Number(evalArtifacts.prompt_variant_count || 0),
         promptVariants: evalArtifacts.prompt_variants || [],
       },
     },
     controlCenterAudit: {
-      status: actionAuditRecordCount ? "ready" : "missing",
-      recordCount: actionAuditRecordCount,
+      status: actionAuditDrilldown.recordCount ? "ready" : "missing",
+      recordCount: actionAuditDrilldown.recordCount,
     },
+    actionAuditDrilldown,
+    otclientHelper,
+    engineBrain,
+    artifactHealth,
+    operatorBrief,
+    operatorNext,
     recommendations,
   }
 }
 
+async function collectOperatorBriefCard(
+  config: ControlCenterEvidenceConfig,
+): Promise<ControlCenterEvidence["operatorBrief"]> {
+  const payload = await readJsonIfExists(config.engineBrainOperatorBriefPath)
+  const cockpitHandoff: Record<string, unknown> = isRecord(payload?.cockpit_handoff) ? payload.cockpit_handoff : {}
+  const p7Cockpit: Record<string, unknown> = isRecord(cockpitHandoff.p7_cockpit) ? cockpitHandoff.p7_cockpit : {}
+  const p7CockpitSmoke: Record<string, unknown> = isRecord(cockpitHandoff.p7_cockpit_smoke) ? cockpitHandoff.p7_cockpit_smoke : {}
+  const p7SafeWriteDryRunSmoke: Record<string, unknown> = isRecord(cockpitHandoff.p7_safe_write_dry_run_smoke)
+    ? cockpitHandoff.p7_safe_write_dry_run_smoke
+    : {}
+  const releaseEvidence: Record<string, unknown> = isRecord(cockpitHandoff.release_evidence) ? cockpitHandoff.release_evidence : {}
+  const actionAudit: Record<string, unknown> = isRecord(cockpitHandoff.action_audit) ? cockpitHandoff.action_audit : {}
+  const roadmapGeneration: Record<string, unknown> = isRecord(payload?.roadmap_generation) ? payload.roadmap_generation : {}
+  const hardBlockers = Array.isArray(payload?.hard_blockers) ? payload.hard_blockers : []
+  const warnings = Array.isArray(payload?.warnings) ? payload.warnings : []
+  const roadmapHardBlockers = Array.isArray(roadmapGeneration.hard_blockers) ? roadmapGeneration.hard_blockers : []
+  const handoffBlockers = Array.isArray(cockpitHandoff.hard_blockers) ? cockpitHandoff.hard_blockers : []
+  const handoffWarnings = Array.isArray(cockpitHandoff.warnings) ? cockpitHandoff.warnings : []
+  const recommendedToolOrder = Array.isArray(cockpitHandoff.recommended_tool_order)
+    ? cockpitHandoff.recommended_tool_order.map((item) => sanitizeText(String(item), 120)).filter(Boolean).slice(0, 6)
+    : []
+  const ready = payload !== null && String(payload.status || "missing") === "ready" && cockpitHandoff.ready === true
+
+  return {
+    status: payload ? sanitizeText(String(payload.status || "missing"), 80) : "missing",
+    decision: sanitizeText(String(payload?.decision || ""), 120),
+    generatedAt: String(payload?.generated_at || ""),
+    ready,
+    hardBlockerCount: hardBlockers.length,
+    warningCount: warnings.length,
+    policy: sanitizeText(String(payload?.policy || ""), 220),
+    nextSafeCommand: sanitizeText(String(payload?.next_safe_command || ""), 220),
+    sourcePath: toControlCenterDisplayPath(config.engineBrainOperatorBriefPath),
+    roadmapGeneration: {
+      status: sanitizeText(String(roadmapGeneration.status || "missing"), 80),
+      docSyncStatus: sanitizeText(String(roadmapGeneration.doc_sync_status || "missing"), 80),
+      docCount: Number(roadmapGeneration.doc_count || 0),
+      readyDocCount: Number(roadmapGeneration.ready_doc_count || 0),
+      hardBlockerCount: roadmapHardBlockers.length,
+      nextAction: sanitizeText(String(roadmapGeneration.next_action || ""), 180),
+      blockedUntil: sanitizeText(String(roadmapGeneration.blocked_until || ""), 180),
+    },
+    cockpitHandoff: {
+      status: sanitizeText(String(cockpitHandoff.status || "missing"), 80),
+      ready: cockpitHandoff.ready === true,
+      hardBlockerCount: handoffBlockers.length,
+      warningCount: handoffWarnings.length,
+      recommendedToolOrder,
+      p7Cockpit: {
+        status: sanitizeText(String(p7Cockpit.status || "missing"), 80),
+        enabledSafeWriteToolCount: Number(p7Cockpit.enabled_safe_write_tool_count || 0),
+        readyAuditCount: Number(p7Cockpit.ready_audit_count || 0),
+        auditCount: Number(p7Cockpit.audit_count || 0),
+        mcpWriteToolCount: Number(p7Cockpit.mcp_write_tool_count || 0),
+      },
+      p7CockpitSmoke: {
+        status: sanitizeText(String(p7CockpitSmoke.status || "missing"), 80),
+        checks: Number(p7CockpitSmoke.checks || 0),
+        passed: Number(p7CockpitSmoke.passed || 0),
+        blocked: Number(p7CockpitSmoke.blocked || 0),
+        actionAuditLineCount: Number(p7CockpitSmoke.action_audit_line_count || 0),
+      },
+      p7SafeWriteDryRunSmoke: {
+        status: sanitizeText(String(p7SafeWriteDryRunSmoke.status || "missing"), 80),
+        checks: Number(p7SafeWriteDryRunSmoke.checks || 0),
+        passed: Number(p7SafeWriteDryRunSmoke.passed || 0),
+        blocked: Number(p7SafeWriteDryRunSmoke.blocked || 0),
+        safeWriteToolCount: Number(p7SafeWriteDryRunSmoke.safe_write_tool_count || 0),
+        dryRunReadyCount: Number(p7SafeWriteDryRunSmoke.dry_run_ready_count || 0),
+        preflightReadyCount: Number(p7SafeWriteDryRunSmoke.preflight_ready_count || 0),
+        bootstrapAllowedCount: Number(p7SafeWriteDryRunSmoke.bootstrap_allowed_count || 0),
+      },
+      releaseEvidence: {
+        status: sanitizeText(String(releaseEvidence.status || "missing"), 80),
+        fileCount: Number(releaseEvidence.file_count || 0),
+        sprintCount: Number(releaseEvidence.sprint_count || 0),
+        latestPath: toControlCenterDisplayPath(String(releaseEvidence.latest_path || "")),
+      },
+      actionAudit: {
+        status: sanitizeText(String(actionAudit.status || "missing"), 80),
+        recordCount: Number(actionAudit.record_count || 0),
+        latestAt: String(actionAudit.latest_at || ""),
+        invalidRecordCount: Number(actionAudit.invalid_record_count || 0),
+        riskCounts: sanitizeCountMap(actionAudit.risk_counts),
+      },
+    },
+  }
+}
+
+function buildOperatorNextRecommendation({
+  repoStatus,
+  apiCostReport,
+  actionAuditDrilldown,
+  otclientHelper,
+  engineBrain,
+  artifactHealth,
+  config,
+}: {
+  repoStatus: string
+  apiCostReport: Record<string, unknown> | null
+  actionAuditDrilldown: ControlCenterEvidence["actionAuditDrilldown"]
+  otclientHelper: ControlCenterEvidence["otclientHelper"]
+  engineBrain: ControlCenterEvidence["engineBrain"]
+  artifactHealth: ControlCenterEvidence["artifactHealth"]
+  config: ControlCenterEvidenceConfig
+}): ControlCenterEvidence["operatorNext"] {
+  const safeCommand = (command: string) => (isGuardedLiveCommand(command) ? "" : sanitizeText(command, 220))
+  const artifactProblem = artifactHealth.checks.find((check) => check.status !== "passed")
+
+  if (engineBrain.status === "missing" || engineBrain.status === "blocked") {
+    return {
+      status: engineBrain.status === "blocked" ? "blocked" : "warn",
+      lane: "engine-brain",
+      riskClass: "read_only",
+      title: "Refresh Engine Brain context",
+      detail: sanitizeText(engineBrain.nextAction || "Regenerate Engine Brain evidence before operator work continues.", 220),
+      command: safeCommand(engineBrain.nextCommand || ".\\ctoa.ps1 brain refresh"),
+      sourcePath: engineBrain.sourcePaths.manifest,
+    }
+  }
+
+  if (engineBrain.p7CockpitSmoke.status !== "ready" || engineBrain.p7CockpitSmoke.blockedCount > 0) {
+    return {
+      status: "blocked",
+      lane: "p7-cockpit-smoke",
+      riskClass: "read_only",
+      title: "Refresh P7 cockpit smoke",
+      detail: sanitizeText(engineBrain.p7CockpitSmoke.nextAction, 220),
+      command: ".\\.venv\\Scripts\\python.exe scripts\\ops\\control_center_p7_cockpit_smoke.py",
+      sourcePath: engineBrain.p7CockpitSmoke.sourcePath,
+    }
+  }
+
+  if (
+    engineBrain.p7SafeWriteDryRunSmoke.status !== "ready" ||
+    engineBrain.p7SafeWriteDryRunSmoke.blockedCount > 0 ||
+    engineBrain.p7SafeWriteDryRunSmoke.safeWriteToolCount === 0 ||
+    engineBrain.p7SafeWriteDryRunSmoke.dryRunReadyCount !== engineBrain.p7SafeWriteDryRunSmoke.safeWriteToolCount ||
+    engineBrain.p7SafeWriteDryRunSmoke.preflightReadyCount !== engineBrain.p7SafeWriteDryRunSmoke.safeWriteToolCount ||
+    engineBrain.p7SafeWriteDryRunSmoke.bootstrapAllowedCount !== 0
+  ) {
+    return {
+      status: "blocked",
+      lane: "p7-safe-write-dry-run-smoke",
+      riskClass: "read_only",
+      title: "Refresh P7 safe-write dry-run smoke",
+      detail: sanitizeText(engineBrain.p7SafeWriteDryRunSmoke.nextAction, 220),
+      command: ".\\.venv\\Scripts\\python.exe scripts\\ops\\control_center_p7_safe_write_dry_run_smoke.py",
+      sourcePath: engineBrain.p7SafeWriteDryRunSmoke.sourcePath,
+    }
+  }
+
+  if (engineBrain.p7EnabledSafeWriteToolCount > 0 && engineBrain.p7ReadySafeWriteAuditCount < engineBrain.p7SafeWriteAuditCount) {
+    return {
+      status: "warn",
+      lane: "p7-action-audit",
+      riskClass: "safe_write",
+      title: "Collect P7 safe-write audit evidence",
+      detail: sanitizeText(engineBrain.p7SafeWriteAudit.nextAction, 220),
+      command: safeCommand(engineBrain.p7SafeWriteToolNextSafeCommand || engineBrain.p7ActionNextSafeCommand),
+      sourcePath: toControlCenterDisplayPath(config.actionAuditPath),
+    }
+  }
+
+  if (actionAuditDrilldown.recordCount === 0 || actionAuditDrilldown.truncated) {
+    return {
+      status: actionAuditDrilldown.recordCount === 0 ? "warn" : "blocked",
+      lane: "control-center-audit",
+      riskClass: "read_only",
+      title: "Refresh Control Center audit evidence",
+      detail: sanitizeText(actionAuditDrilldown.nextAction, 220),
+      command: safeCommand(actionAuditDrilldown.nextCommand),
+      sourcePath: actionAuditDrilldown.path,
+    }
+  }
+
+  if (engineBrain.p7ActionReadinessStatus === "safe_write_tools_enabled" && engineBrain.p7ActionNextSafeCommand) {
+    const designNext = engineBrain.p7ActionNextSafeMode === "design_next_p7_plugin_action"
+    const reviewConfirmed = engineBrain.p7ActionNextSafeMode === "review_confirmed_safe_write_evidence"
+    const confirmedSafeWrite = /\bdry_run=false\b/.test(engineBrain.p7ActionNextSafeCommand)
+    return {
+      status: "ready",
+      lane: "p7-safe-write",
+      riskClass: "safe_write",
+      title: designNext
+        ? "Design next P7 plugin action"
+        : reviewConfirmed
+        ? "Review confirmed P7 evidence"
+        : confirmedSafeWrite
+          ? "Confirmed P7 evidence refresh"
+          : "Dry-run audited P7 safe-write refreshes",
+      detail: designNext
+        ? "Confirmed P7 evidence review is ready. The next plugin action must start with risk model coverage, audit logging, Control Center gates, and targeted MCP tests."
+        : reviewConfirmed
+        ? "Confirmed evidence refresh is present. Review action-audit and runtime evidence before designing the next plugin action."
+        : confirmedSafeWrite
+          ? "P7 dry-run and preflight evidence are ready. Run only the selected safe-write refresh with exact confirmation."
+          : "P7 gates are ready. Run only dry-run safe-write refreshes before any confirmed evidence refresh.",
+      command: safeCommand(engineBrain.p7ActionNextSafeCommand),
+      sourcePath: engineBrain.sourcePaths.operatorBrief,
+    }
+  }
+
+  if (artifactHealth.status !== "ready" && artifactProblem) {
+    const guarded = isGuardedLiveCommand(artifactHealth.nextCommand)
+    return {
+      status: artifactHealth.status === "blocked" ? "blocked" : "warn",
+      lane: guarded ? "manual-live-gate" : "artifact-health",
+      riskClass: guarded ? "guarded_manual" : "read_only",
+      title: guarded ? "Review gated live promotion evidence" : "Refresh stale evidence artifact",
+      detail: sanitizeText(artifactHealth.nextAction, 220),
+      command: guarded ? "" : safeCommand(artifactHealth.nextCommand),
+      sourcePath: artifactProblem.artifactPath,
+    }
+  }
+
+  if (!apiCostReport || Number(apiCostReport.records_seen || 0) === 0) {
+    return {
+      status: "warn",
+      lane: "api-cost",
+      riskClass: "safe_write",
+      title: "Refresh API cost evidence",
+      detail: !apiCostReport ? "Generate the API cost report before release review." : "API cost report has no records; verify eval artifacts.",
+      command: ".\\.venv\\Scripts\\python.exe scripts\\ops\\api_cost_report.py --json-out runtime\\api-cost\\latest.json --md-out runtime\\api-cost\\latest.md",
+      sourcePath: toControlCenterDisplayPath(config.costReportPath),
+    }
+  }
+
+  if (repoStatus !== "PASS") {
+    return {
+      status: "warn",
+      lane: "repo-hygiene",
+      riskClass: "safe_write",
+      title: "Refresh repo hygiene evidence",
+      detail: "Repo hygiene is not PASS; refresh and review findings before sign-off.",
+      command: ".\\.venv\\Scripts\\python.exe scripts\\ops\\repo_hygiene_audit.py --json-out runtime\\repo-hygiene\\local-pr-quality.json",
+      sourcePath: toControlCenterDisplayPath(config.qualityPath),
+    }
+  }
+
+  if (otclientHelper.status !== "releasable" && otclientHelper.status !== "promoted" && otclientHelper.nextAction) {
+    const guarded = isGuardedLiveCommand(otclientHelper.nextCommand)
+    return {
+      status: otclientHelper.status === "blocked" ? "blocked" : "warn",
+      lane: guarded ? "manual-live-gate" : "helper",
+      riskClass: guarded ? "guarded_manual" : "read_only",
+      title: guarded ? "Review Helper live gate manually" : "Continue Helper validation gate",
+      detail: sanitizeText(otclientHelper.nextAction, 220),
+      command: guarded ? "" : safeCommand(otclientHelper.nextCommand),
+      sourcePath: otclientHelper.sourcePaths.releaseGate,
+    }
+  }
+
+  return {
+    status: "ready",
+    lane: "release-review",
+    riskClass: "read_only",
+    title: "Review current evidence pack",
+    detail: "All operator gates are ready for review. Keep traces fresh before release sign-off.",
+    command: "",
+    sourcePath: toControlCenterDisplayPath(config.evidenceJsonPath),
+  }
+}
+
+function isGuardedLiveCommand(command: string): boolean {
+  return /PromoteLiveCtoa|ApproveLiveDeploy|live[-_\s]?deploy/i.test(command)
+}
+
 async function readJsonIfExists(filePath: string): Promise<Record<string, unknown> | null> {
   try {
-    const text = await readFile(filePath, "utf-8")
-    return JSON.parse(text) as Record<string, unknown>
+    const text = await readBoundedTextFileIfExists(filePath, CONTROL_CENTER_EVIDENCE_JSON_MAX_BYTES)
+    if (text === null) {
+      return null
+    }
+    const parsed = JSON.parse(text)
+    return isRecord(parsed) ? parsed : null
   } catch {
     return null
   }
 }
 
-async function countJsonlRecords(filePath: string): Promise<number> {
+async function readBoundedTextFileIfExists(filePath: string, maxBytes: number): Promise<string | null> {
   try {
-    const text = await readFile(filePath, "utf-8")
-    return text
+    const pathInfo = await lstat(filePath)
+    if (pathInfo.isSymbolicLink() || !pathInfo.isFile()) {
+      return null
+    }
+
+    const handle = await open(filePath, "r")
+    try {
+      const fileInfo = await handle.stat()
+      if (!fileInfo.isFile()) {
+        return null
+      }
+
+      const buffer = Buffer.allocUnsafe(maxBytes + 1)
+      const { bytesRead } = await handle.read(buffer, 0, maxBytes + 1, 0)
+      if (bytesRead > maxBytes) {
+        return null
+      }
+      return buffer.subarray(0, bytesRead).toString("utf-8")
+    } finally {
+      await handle.close()
+    }
+  } catch {
+    return null
+  }
+}
+
+async function collectReleaseEvidenceDrilldown(dirPath: string): Promise<ControlCenterEvidence["releaseEvidenceDrilldown"]> {
+  try {
+    const entries = await readdir(dirPath, { withFileTypes: true })
+    const sprintDirs = entries.filter((entry) => entry.isDirectory() && entry.name.startsWith("sprint-"))
+    const recentFiles: ControlCenterEvidence["releaseEvidenceDrilldown"]["recentFiles"] = []
+    const sprintFileCounts = new Map<string, number>()
+    let latestModifiedMs = 0
+    let latestSprint = ""
+
+    for (const entry of sprintDirs) {
+      const sprintDir = path.join(dirPath, entry.name)
+      const files = await readdir(sprintDir, { withFileTypes: true })
+      let fileCount = 0
+      for (const file of files) {
+        if (!file.isFile() || !file.name.endsWith(".md")) {
+          continue
+        }
+        fileCount += 1
+        const fullPath = path.join(sprintDir, file.name)
+        const fileStat = await stat(fullPath)
+        if (fileStat.mtimeMs > latestModifiedMs) {
+          latestModifiedMs = fileStat.mtimeMs
+          latestSprint = entry.name
+        }
+        recentFiles.push({
+          sprint: entry.name,
+          path: toControlCenterDisplayPath(fullPath),
+          title: await readMarkdownTitle(fullPath),
+          modifiedAt: new Date(fileStat.mtimeMs).toISOString(),
+          bytes: fileStat.size,
+        })
+      }
+      sprintFileCounts.set(entry.name, fileCount)
+    }
+
+    recentFiles.sort((left, right) => Date.parse(right.modifiedAt) - Date.parse(left.modifiedAt) || right.path.localeCompare(left.path))
+    const fileCount = Array.from(sprintFileCounts.values()).reduce((total, count) => total + count, 0)
+    return {
+      status: fileCount > 0 ? "ready" : "missing",
+      root: toControlCenterDisplayPath(dirPath),
+      fileCount,
+      sprintCount: Array.from(sprintFileCounts.values()).filter((count) => count > 0).length,
+      latestSprint,
+      latestModifiedAt: latestModifiedMs ? new Date(latestModifiedMs).toISOString() : "",
+      recentFiles: recentFiles.slice(0, 6),
+      nextAction: fileCount > 0 ? "Review latest release evidence before sign-off." : "Generate tracked release evidence before sign-off.",
+    }
+  } catch {
+    return {
+      status: "missing",
+      root: toControlCenterDisplayPath(dirPath),
+      fileCount: 0,
+      sprintCount: 0,
+      latestSprint: "",
+      latestModifiedAt: "",
+      recentFiles: [],
+      nextAction: "Generate tracked release evidence before sign-off.",
+    }
+  }
+}
+
+async function readMarkdownTitle(filePath: string): Promise<string> {
+  try {
+    const text = await readBoundedTextFileIfExists(filePath, CONTROL_CENTER_MARKDOWN_TITLE_MAX_BYTES)
+    if (text === null) {
+      return path.basename(filePath)
+    }
+    const heading = text
       .split(/\r?\n/)
       .map((line) => line.trim())
-      .filter(Boolean).length
+      .find((line) => line.startsWith("#"))
+    return sanitizeText(heading ? heading.replace(/^#+\s*/, "") : path.basename(filePath), 120)
   } catch {
-    return 0
+    return path.basename(filePath)
   }
+}
+
+async function collectReleaseComparison(
+  config: ControlCenterEvidenceConfig,
+  latestReleaseEvidence: ReleaseEvidenceFile | null,
+): Promise<ControlCenterEvidence["releaseComparison"]> {
+  const runtimeJsonStat = await statIfExists(config.evidenceJsonPath)
+  const runtimeMarkdownStat = await statIfExists(config.evidenceMarkdownPath)
+  const runtimeEvidence = await readJsonIfExists(config.evidenceJsonPath)
+  const currentModifiedMs = Math.max(runtimeJsonStat?.mtimeMs || 0, runtimeMarkdownStat?.mtimeMs || 0)
+  const trackedModifiedMs = latestReleaseEvidence ? Date.parse(latestReleaseEvidence.modifiedAt) : 0
+  const currentExists = Boolean(runtimeJsonStat && runtimeMarkdownStat)
+  const trackedExists = latestReleaseEvidence !== null
+  let relation = "missing"
+  let status = "missing"
+  let nextAction = "Generate runtime evidence pack before release comparison."
+  let nextCommand = "python scripts\\ops\\release_evidence_pack.py"
+
+  if (currentExists && !trackedExists) {
+    relation = "tracked_missing"
+    status = "warn"
+    nextAction = "Publish tracked release evidence before sign-off."
+    nextCommand = ""
+  } else if (!currentExists && trackedExists) {
+    relation = "runtime_missing"
+  } else if (currentExists && trackedExists) {
+    relation =
+      Math.abs(currentModifiedMs - trackedModifiedMs) < 1000
+        ? "same_timestamp"
+        : currentModifiedMs >= trackedModifiedMs
+          ? "runtime_newer"
+          : "tracked_newer"
+    status = relation === "tracked_newer" ? "warn" : "ready"
+    nextAction =
+      relation === "tracked_newer"
+        ? "Refresh runtime evidence pack before sign-off."
+        : "Runtime evidence is current against latest tracked release evidence."
+    nextCommand = relation === "tracked_newer" ? "python scripts\\ops\\release_evidence_pack.py" : ""
+  }
+
+  return {
+    status,
+    relation,
+    currentJsonPath: toControlCenterDisplayPath(config.evidenceJsonPath),
+    currentMarkdownPath: toControlCenterDisplayPath(config.evidenceMarkdownPath),
+    currentGeneratedAt: String(runtimeEvidence?.generated_at_utc || runtimeEvidence?.generatedAt || ""),
+    currentModifiedAt: currentModifiedMs ? new Date(currentModifiedMs).toISOString() : "",
+    currentExists,
+    trackedPath: latestReleaseEvidence ? toControlCenterDisplayPath(latestReleaseEvidence.path) : "",
+    trackedModifiedAt: latestReleaseEvidence?.modifiedAt || "",
+    trackedExists,
+    minutesBetween:
+      currentModifiedMs && trackedModifiedMs
+        ? Math.round(Math.abs(currentModifiedMs - trackedModifiedMs) / 60000)
+        : null,
+    nextAction,
+    nextCommand,
+  }
+}
+
+async function collectActionAuditDrilldown(filePath: string): Promise<ControlCenterEvidence["actionAuditDrilldown"]> {
+  try {
+    const sample = await readBoundedControlCenterActionAuditLines(filePath)
+    const records: Record<string, unknown>[] = []
+    let invalidRecordCount = 0
+
+    for (const line of sample.lines) {
+      if (line.length > ACTION_AUDIT_MAX_LINE_LENGTH) {
+        invalidRecordCount += 1
+        continue
+      }
+      try {
+        const parsed = JSON.parse(line)
+        if (isRecord(parsed)) {
+          records.push(parsed)
+        } else {
+          invalidRecordCount += 1
+        }
+      } catch {
+        invalidRecordCount += 1
+      }
+    }
+
+    const recentRecords = records
+      .slice(-6)
+      .reverse()
+      .map((record) => ({
+        at: sanitizeText(String(record.at || record.created_at || ""), 80),
+        auditId: sanitizeText(String(record.audit_id || ""), 80),
+        action: sanitizeText(String(record.action || "unknown"), 80),
+        target: sanitizeText(String(record.target || "unknown"), 80),
+        riskClass: sanitizeText(String(record.risk_class || "unknown"), 80),
+        actorRole: sanitizeText(String(record.actor_role || record.actor || "unknown"), 80),
+        authorized: record.authorized === undefined ? "n/a" : record.authorized ? "yes" : "no",
+        ok: record.ok === undefined ? "n/a" : record.ok ? "yes" : "no",
+        dryRun: record.dry_run === true,
+        summary: auditSummary(record),
+      }))
+
+    const status =
+      records.length > 0
+        ? sample.truncated || invalidRecordCount > 0
+          ? "warn"
+          : "ready"
+        : sample.sourceBytes > 0
+          ? "warn"
+          : "missing"
+    const nextAction =
+      records.length === 0
+        ? "Exercise one read-only Control Center action to create audit evidence."
+        : sample.truncated
+          ? "Review or rotate the oversized Control Center action audit before sign-off; drilldown is tail-limited."
+          : "Review recent action audit records before enabling broader operator actions."
+    const nextCommand =
+      records.length === 0
+        ? "Open Control Center and run one audited read-only action before sign-off."
+        : sample.truncated
+          ? "Review runtime\\control-center\\action-audit.jsonl retention before sign-off."
+          : ""
+
+    return {
+      status,
+      path: toControlCenterDisplayPath(filePath),
+      recordCount: records.length,
+      invalidRecordCount,
+      truncated: sample.truncated,
+      sourceBytes: sample.sourceBytes,
+      sampledBytes: sample.sampledBytes,
+      latestAt: recentRecords[0]?.at || "",
+      actionCounts: countBy(records, "action"),
+      riskCounts: countBy(records, "risk_class"),
+      authorizedCount: records.filter((record) => record.authorized === true).length,
+      deniedCount: records.filter((record) => record.authorized === false).length,
+      dryRunCount: records.filter((record) => record.dry_run === true).length,
+      failedCount: records.filter((record) => record.ok === false).length,
+      recentRecords,
+      nextAction,
+      nextCommand,
+    }
+  } catch {
+    return {
+      status: "missing",
+      path: toControlCenterDisplayPath(filePath),
+      recordCount: 0,
+      invalidRecordCount: 0,
+      truncated: false,
+      sourceBytes: 0,
+      sampledBytes: 0,
+      latestAt: "",
+      actionCounts: {},
+      riskCounts: {},
+      authorizedCount: 0,
+      deniedCount: 0,
+      dryRunCount: 0,
+      failedCount: 0,
+      recentRecords: [],
+      nextAction: "Exercise one read-only Control Center action to create audit evidence.",
+      nextCommand: "Open Control Center and run one audited read-only action before sign-off.",
+    }
+  }
+}
+
+export async function readBoundedControlCenterActionAuditLines(filePath: string): Promise<{
+  lines: string[]
+  truncated: boolean
+  sourceBytes: number
+  sampledBytes: number
+}> {
+  const pathInfo = await lstat(filePath)
+  if (pathInfo.isSymbolicLink() || !pathInfo.isFile()) {
+    throw new Error("Control Center action audit path is not safe to read.")
+  }
+
+  const sourceBytes = pathInfo.size
+  if (sourceBytes <= 0) {
+    return { lines: [], truncated: false, sourceBytes: 0, sampledBytes: 0 }
+  }
+
+  const requestedBytes = Math.min(sourceBytes, CONTROL_CENTER_ACTION_AUDIT_MAX_BYTES)
+  const start = Math.max(0, sourceBytes - requestedBytes)
+  const handle = await open(filePath, "r")
+
+  try {
+    const fileStat = await handle.stat()
+    if (!fileStat.isFile()) {
+      throw new Error("Control Center action audit path is not a file.")
+    }
+
+    const buffer = Buffer.alloc(requestedBytes)
+    const { bytesRead } = await handle.read(buffer, 0, requestedBytes, start)
+    let text = buffer.subarray(0, bytesRead).toString("utf-8")
+    const truncated = start > 0
+    if (truncated) {
+      const firstNewline = text.indexOf("\n")
+      text = firstNewline >= 0 ? text.slice(firstNewline + 1) : ""
+    }
+
+    return {
+      lines: text
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean),
+      truncated,
+      sourceBytes,
+      sampledBytes: bytesRead,
+    }
+  } finally {
+    await handle.close()
+  }
+}
+
+function countBy(records: Record<string, unknown>[], key: string): Record<string, number> {
+  const counts: Record<string, number> = {}
+  for (const record of records) {
+    const value = sanitizeText(String(record[key] || "unknown"), 80)
+    counts[value] = (counts[value] || 0) + 1
+  }
+  return counts
+}
+
+function auditSummary(record: Record<string, unknown>): string {
+  const reason = sanitizeText(String(record.reason || ""), 120)
+  if (reason) return reason
+  const status = record.ok === undefined ? "status not reported" : record.ok ? "completed" : "failed"
+  const mode = record.dry_run === true ? "dry run" : "executed"
+  return `${mode}; ${status}`
+}
+
+function sanitizeText(value: string, maxLength: number): string {
+  return sanitizeControlCenterDisplayText(value, maxLength)
+}
+
+async function collectArtifactHealth(
+  config: ControlCenterEvidenceConfig,
+  actionAudit: ControlCenterEvidence["actionAuditDrilldown"],
+): Promise<ControlCenterEvidence["artifactHealth"]> {
+  const manifest = await readJsonIfExists(config.helperManifestPath)
+  const readiness = await readJsonIfExists(config.helperReleaseReadinessPath)
+  const releaseGate = await readJsonIfExists(config.helperReleaseGatePath)
+  const smokePreflight = await readJsonIfExists(config.helperSmokePreflightPath)
+  const smokeStatus = await readJsonIfExists(config.helperSmokeStatusPath)
+  const livePromotion = await readJsonIfExists(config.helperLivePromotionPath)
+  const p7CockpitSmoke = await readJsonIfExists(config.engineBrainP7CockpitSmokePath)
+  const p7SafeWriteDryRunSmoke = await readJsonIfExists(config.engineBrainP7SafeWriteDryRunSmokePath)
+
+  const checks: ControlCenterEvidence["artifactHealth"]["checks"] = []
+  const manifestAge = await fileAgeMinutes(config.helperManifestPath)
+  checks.push({
+    name: "helper_manifest_age",
+    status: manifestAge === null ? "missing" : manifestAge > FRESH_ARTIFACT_MAX_AGE_MINUTES ? "stale" : "passed",
+    detail:
+      manifestAge === null
+        ? "Helper manifest is missing."
+        : manifestAge > FRESH_ARTIFACT_MAX_AGE_MINUTES
+          ? "Helper manifest is older than 24 hours; rerun PrepareDev or ValidateDev before sign-off."
+          : "Helper manifest was refreshed within 24 hours.",
+    artifactPath: toControlCenterDisplayPath(config.helperManifestPath),
+    ageMinutes: manifestAge,
+  })
+
+  const zipInfo = isRecord(readiness?.zip) ? readiness.zip : {}
+  const zipPath = resolveEvidencePath(String(zipInfo.path || ""), config.helperDevDir)
+  const expectedZipSha = String(zipInfo.sha256 || "")
+  const actualZipSha = zipPath ? await sha256IfExists(zipPath) : ""
+  const packageHashStatus =
+    !zipPath || !expectedZipSha || !actualZipSha ? "missing" : actualZipSha.toLowerCase() === expectedZipSha.toLowerCase() ? "passed" : "mismatch"
+  checks.push({
+    name: "helper_package_hash",
+    status: packageHashStatus,
+    detail:
+      packageHashStatus === "passed"
+        ? "Versioned Helper ZIP matches release_readiness.json."
+        : packageHashStatus === "mismatch"
+          ? "Versioned Helper ZIP hash does not match release_readiness.json; rerun PrepareDev or ValidateDev."
+          : "Versioned Helper ZIP hash evidence is missing.",
+    artifactPath: toControlCenterDisplayPath(zipPath || String(zipInfo.path || "")),
+    ageMinutes: zipPath ? await fileAgeMinutes(zipPath) : null,
+  })
+
+  const manifestCreatedAt = String(manifest?.created_at || "")
+  const preflightManifest = isRecord(smokePreflight?.manifest) ? smokePreflight.manifest : {}
+  const preflightManifestCreatedAt = String(preflightManifest.created_at || "")
+  const smokeReady =
+    smokePreflight?.status === "passed" &&
+    (smokeStatus?.status === "ready_for_visual_review" || smokeStatus?.status === "passed")
+  const smokePreflightStale = Boolean(manifestCreatedAt && preflightManifestCreatedAt && manifestCreatedAt !== preflightManifestCreatedAt)
+  const smokeEvidenceStatus = smokeReady ? "passed" : smokePreflightStale ? "stale" : "missing"
+  checks.push({
+    name: "helper_smoke_evidence",
+    status: smokeEvidenceStatus,
+    detail:
+      smokeEvidenceStatus === "passed"
+        ? "Helper smoke evidence is present for the current staged package."
+        : smokeEvidenceStatus === "stale"
+          ? "SmokePreflight is stale for the current Helper manifest; rerun SmokePreflight."
+          : "Full in-world Helper smoke evidence is missing.",
+    artifactPath: toControlCenterDisplayPath(config.helperSmokeStatusPath),
+    ageMinutes: await fileAgeMinutes(config.helperSmokeStatusPath),
+  })
+
+  const releaseGatePassed = releaseGate?.status === "passed" && releaseGate?.releasable_to_live === true
+  const liveApprovalGate = findGate(releaseGate, "live_approval")
+  const liveApprovalEvidence = String(liveApprovalGate?.evidence || "")
+  if (releaseGatePassed || livePromotion) {
+    const livePromotionAge = await fileAgeMinutes(config.helperLivePromotionPath)
+    const livePromotionHasApproval = livePromotion?.approval_switch === "ApproveLiveDeploy"
+    const durablePromotion = Boolean(
+      releaseGatePassed &&
+        livePromotionHasApproval &&
+        liveApprovalGate?.status === "passed" &&
+        liveApprovalEvidence.includes("live_promotion.json"),
+    )
+    const livePromotionStatus = durablePromotion ? "passed" : livePromotion ? "mismatch" : "missing"
+    checks.push({
+      name: "helper_live_promotion",
+      status: livePromotionStatus,
+      detail:
+        livePromotionStatus === "passed"
+          ? "Live promotion evidence is durable for the current staged package."
+          : livePromotionStatus === "mismatch"
+            ? "Live promotion evidence exists, but the release gate does not accept it for the current manifest."
+            : "Release gate is passed, but durable live promotion evidence is missing.",
+      artifactPath: toControlCenterDisplayPath(config.helperLivePromotionPath),
+      ageMinutes: livePromotionAge,
+    })
+  }
+
+  checks.push({
+    name: "control_center_action_audit",
+    status: actionAudit.recordCount > 0 ? (actionAudit.truncated ? "stale" : "passed") : "missing",
+    detail:
+      actionAudit.recordCount > 0
+        ? actionAudit.truncated
+          ? `${actionAudit.recordCount} Control Center action audit records are visible from a bounded tail sample; rotate oversized audit evidence before sign-off.`
+          : `${actionAudit.recordCount} Control Center action audit records are present.`
+        : "Control Center action audit has no records.",
+    artifactPath: toControlCenterDisplayPath(config.actionAuditPath),
+    ageMinutes: await fileAgeMinutes(config.actionAuditPath),
+  })
+
+  const p7CockpitSmokeStatus = String(p7CockpitSmoke?.status || "missing")
+  const p7CockpitSmokeSummary = isRecord(p7CockpitSmoke?.summary) ? p7CockpitSmoke.summary : {}
+  const p7CockpitSmokeBlockedCount = Number(p7CockpitSmokeSummary.blocked || 0)
+  const p7CockpitSmokeReadyAuditCount = Number(p7CockpitSmokeSummary.ready_safe_write_audit_count || 0)
+  const p7CockpitSmokeExpectedAuditCount = Number(p7CockpitSmokeSummary.expected_safe_write_audit_count || 0)
+  const p7CockpitSmokeCheckCount = Number(p7CockpitSmokeSummary.checks || 0)
+  const p7CockpitSmokePassedCount = Number(p7CockpitSmokeSummary.passed || 0)
+  const p7CockpitSmokeHealth =
+    p7CockpitSmokeStatus === "ready" && p7CockpitSmokeBlockedCount === 0 ? "passed" : p7CockpitSmoke ? "mismatch" : "missing"
+  checks.push({
+    name: "p7_cockpit_smoke",
+    status: p7CockpitSmokeHealth,
+    detail:
+      p7CockpitSmokeHealth === "passed"
+        ? `P7 cockpit smoke is ready: ${p7CockpitSmokePassedCount}/${p7CockpitSmokeCheckCount} checks and ${p7CockpitSmokeReadyAuditCount}/${p7CockpitSmokeExpectedAuditCount} safe-write audits passed.`
+        : p7CockpitSmokeHealth === "mismatch"
+          ? "P7 cockpit smoke exists but is not ready; review runtime/control-center/p7-cockpit-smoke.json."
+          : "P7 cockpit smoke is missing; run scripts/ops/control_center_p7_cockpit_smoke.py.",
+    artifactPath: toControlCenterDisplayPath(config.engineBrainP7CockpitSmokePath),
+    ageMinutes: await fileAgeMinutes(config.engineBrainP7CockpitSmokePath),
+  })
+
+  const p7DryRunSmokeStatus = String(p7SafeWriteDryRunSmoke?.status || "missing")
+  const p7DryRunSmokeSummary = isRecord(p7SafeWriteDryRunSmoke?.summary) ? p7SafeWriteDryRunSmoke.summary : {}
+  const p7DryRunSmokeBlockedCount = Number(p7DryRunSmokeSummary.blocked || 0)
+  const p7DryRunSmokeCheckCount = Number(p7DryRunSmokeSummary.checks || 0)
+  const p7DryRunSmokePassedCount = Number(p7DryRunSmokeSummary.passed || 0)
+  const p7DryRunSmokeSafeWriteToolCount = Number(p7DryRunSmokeSummary.safe_write_tool_count || 0)
+  const p7DryRunSmokeReadyCount = Number(p7DryRunSmokeSummary.dry_run_ready_count || 0)
+  const p7DryRunSmokePreflightReadyCount = Number(p7DryRunSmokeSummary.preflight_ready_count || 0)
+  const p7DryRunSmokeBootstrapAllowedCount = Number(p7DryRunSmokeSummary.bootstrap_allowed_count || 0)
+  const p7DryRunSmokeHealth =
+    p7DryRunSmokeStatus === "ready" &&
+    p7DryRunSmokeBlockedCount === 0 &&
+    p7DryRunSmokeSafeWriteToolCount > 0 &&
+    p7DryRunSmokeReadyCount === p7DryRunSmokeSafeWriteToolCount &&
+    p7DryRunSmokePreflightReadyCount === p7DryRunSmokeSafeWriteToolCount &&
+    p7DryRunSmokeBootstrapAllowedCount === 0
+      ? "passed"
+      : p7SafeWriteDryRunSmoke
+        ? "mismatch"
+        : "missing"
+  checks.push({
+    name: "p7_safe_write_dry_run_smoke",
+    status: p7DryRunSmokeHealth,
+    detail:
+      p7DryRunSmokeHealth === "passed"
+        ? `P7 safe-write dry-run smoke is ready: ${p7DryRunSmokePassedCount}/${p7DryRunSmokeCheckCount} checks, ${p7DryRunSmokeReadyCount}/${p7DryRunSmokeSafeWriteToolCount} dry-run tools passed, ${p7DryRunSmokePreflightReadyCount}/${p7DryRunSmokeSafeWriteToolCount} preflight-ready, ${p7DryRunSmokeBootstrapAllowedCount} bootstrap.`
+        : p7DryRunSmokeHealth === "mismatch"
+          ? "P7 safe-write dry-run smoke exists but is not ready; review runtime/control-center/p7-safe-write-dry-run-smoke.json."
+          : "P7 safe-write dry-run smoke is missing; run scripts/ops/control_center_p7_safe_write_dry_run_smoke.py.",
+    artifactPath: toControlCenterDisplayPath(config.engineBrainP7SafeWriteDryRunSmokePath),
+    ageMinutes: await fileAgeMinutes(config.engineBrainP7SafeWriteDryRunSmokePath),
+  })
+
+  const staleCount = checks.filter((check) => check.status === "stale").length
+  const blockedCount = checks.filter((check) => check.status === "missing" || check.status === "mismatch").length
+  const status = blockedCount > 0 ? "blocked" : staleCount > 0 ? "warn" : "ready"
+  const firstProblem = checks.find((check) => check.status !== "passed")
+
+  return {
+    status,
+    staleCount,
+    blockedCount,
+    checks,
+    nextAction: firstProblem ? firstProblem.detail : "Evidence artifacts are fresh enough for review.",
+    nextCommand:
+      firstProblem?.name === "helper_smoke_evidence"
+        ? "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\\windows\\solteria_helper_test_env.ps1 -Action SmokePreflight"
+        : firstProblem?.name === "helper_live_promotion"
+          ? "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\\windows\\solteria_helper_test_env.ps1 -Action PromoteLiveCtoa -ApproveLiveDeploy"
+        : firstProblem?.name === "control_center_action_audit"
+          ? "Open Control Center and run one audited safe action before sign-off."
+        : firstProblem?.name === "p7_cockpit_smoke"
+          ? ".\\.venv\\Scripts\\python.exe scripts\\ops\\control_center_p7_cockpit_smoke.py"
+        : firstProblem?.name === "p7_safe_write_dry_run_smoke"
+          ? ".\\.venv\\Scripts\\python.exe scripts\\ops\\control_center_p7_safe_write_dry_run_smoke.py"
+          : firstProblem
+            ? "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\\windows\\solteria_helper_test_env.ps1 -Action ValidateDev"
+            : "",
+  }
+}
+
+async function collectOtclientHelperStatus(
+  config: ControlCenterEvidenceConfig,
+): Promise<ControlCenterEvidence["otclientHelper"]> {
+  const manifest = await readJsonIfExists(config.helperManifestPath)
+  const validation = await readJsonIfExists(config.helperValidationPath)
+  const readiness = await readJsonIfExists(config.helperReleaseReadinessPath)
+  const releaseGate = await readJsonIfExists(config.helperReleaseGatePath)
+  const goalStatus = await readJsonIfExists(config.helperGoalStatusPath)
+  const smokePreflight = await readJsonIfExists(config.helperSmokePreflightPath)
+  const smokeStatus = await readJsonIfExists(config.helperSmokeStatusPath)
+  const livePromotion = await readJsonIfExists(config.helperLivePromotionPath)
+
+  const releaseGateStatus = String(releaseGate?.status || "missing")
+  const validationStatus = String(validation?.status || "missing")
+  const readinessStatus = String(readiness?.status || "missing")
+  const releaseGateReleasableToLive = releaseGate?.releasable_to_live === true
+  const liveApprovalGate = findGate(releaseGate, "live_approval")
+  const liveApprovalEvidence = String(liveApprovalGate?.evidence || "")
+  const livePromotionHasApproval = livePromotion?.approval_switch === "ApproveLiveDeploy"
+  const livePromoted = Boolean(
+    releaseGateStatus === "passed" &&
+      releaseGateReleasableToLive &&
+      liveApprovalGate?.status === "passed" &&
+      liveApprovalEvidence.includes("live_promotion.json") &&
+      livePromotionHasApproval,
+  )
+  const livePromotionStatus = livePromoted
+    ? "promoted"
+    : livePromotion
+      ? "present"
+      : releaseGateReleasableToLive
+        ? "missing"
+        : "pending"
+
+  const gates = Array.isArray(releaseGate?.gates) ? releaseGate.gates : []
+  const blockers = gates
+    .filter((gate) => isRecord(gate) && gate.status !== "passed")
+    .map((gate) => {
+      if (!isRecord(gate)) return ""
+      const name = String(gate.name || "gate")
+      const reason = String(gate.reason || gate.status || "pending")
+      return `${name}: ${reason}`
+    })
+    .filter(Boolean)
+
+  const files = Array.isArray(manifest?.files) ? manifest.files : []
+  const readinessZip = isRecord(readiness?.zip) ? readiness.zip : {}
+  const releasableToLive = releaseGateReleasableToLive && blockers.length === 0
+  let status = "missing"
+  if (manifest) {
+    status = livePromoted ? "promoted" : releasableToLive ? "releasable" : releaseGateStatus === "blocked" || blockers.length > 0 ? "blocked" : "pending"
+  }
+  const nextCommand =
+    releaseGateStatus === "passed"
+      ? String(releaseGate?.next_command || "")
+      : String(releaseGate?.next_command || goalStatus?.next_command || smokeStatus?.next_command || "")
+
+  return {
+    status,
+    helperVersion: String(manifest?.helper_version || readiness?.helper_version || validation?.helper_version || "unknown"),
+    manifestHash: await sha256IfExists(config.helperManifestPath),
+    validationStatus,
+    releaseReadinessStatus: readinessStatus,
+    releaseGateStatus,
+    releasableToLive,
+    smokePreflightStatus: String(smokePreflight?.status || "missing"),
+    smokeStatus: String(smokeStatus?.status || "missing"),
+    livePromotionStatus,
+    livePromoted,
+    livePromotionCreatedAt: String(livePromotion?.created_at || ""),
+    liveClient: toControlCenterDisplayPath(String(livePromotion?.live_client || "")),
+    liveBackupPath: toControlCenterDisplayPath(String(livePromotion?.backup || "")),
+    stagedFileCount: files.length,
+    packagePath: toControlCenterDisplayPath(String(readinessZip.path || "")),
+    packageSha256: String(readinessZip.sha256 || ""),
+    blockers: blockers.length ? blockers : Array.isArray(goalStatus?.blockers) ? goalStatus.blockers.map(String) : [],
+    nextAction: String(releaseGate?.next_action || goalStatus?.next_action || smokeStatus?.next_action || "Run ValidateDev."),
+    nextCommand,
+    sourcePaths: {
+      devDir: toControlCenterDisplayPath(config.helperDevDir),
+      manifest: toControlCenterDisplayPath(config.helperManifestPath),
+      validation: toControlCenterDisplayPath(config.helperValidationPath),
+      releaseReadiness: toControlCenterDisplayPath(config.helperReleaseReadinessPath),
+      releaseGate: toControlCenterDisplayPath(config.helperReleaseGatePath),
+      goalStatus: toControlCenterDisplayPath(config.helperGoalStatusPath),
+      smokePreflight: toControlCenterDisplayPath(config.helperSmokePreflightPath),
+      smokeStatus: toControlCenterDisplayPath(config.helperSmokeStatusPath),
+      livePromotion: toControlCenterDisplayPath(config.helperLivePromotionPath),
+    },
+  }
+}
+
+function collectP6PluginHandoff(
+  config: ControlCenterEvidenceConfig,
+  payload: Record<string, unknown> | null,
+  fallbackStatus: string,
+  smokePayload: Record<string, unknown> | null,
+): ControlCenterEvidence["engineBrain"]["p6PluginHandoff"] {
+  const checks = Array.isArray(payload?.checks) ? payload.checks.filter(isRecord) : []
+  const checkByName = (name: string) => checks.find((check) => String(check.name || "") === name)
+  const marketplaceCheck = checkByName("ctoai_plugin_marketplace_entry")
+  const installedCacheCheck = checkByName("ctoai_plugin_installed_cache")
+  const mcpContractChecks = checks.filter((check) => String(check.name || "").includes("_mcp_contract"))
+  const passedMcpContractCount = mcpContractChecks.filter((check) => String(check.status || "") === "passed").length
+  const installedCacheEvidence = sanitizeText(String(installedCacheCheck?.evidence || ""), 160)
+  const versionMatch = installedCacheEvidence.match(/version\s+([A-Za-z0-9.+_-]+)/)
+  const p6Status = sanitizeText(String(payload?.status || fallbackStatus || "missing"), 80)
+  const installedCacheStatus = sanitizeText(String(installedCacheCheck?.status || "missing"), 80)
+  const marketplaceStatus = sanitizeText(String(marketplaceCheck?.status || "missing"), 80)
+  const smokeSummary = isRecord(smokePayload?.summary) ? smokePayload.summary : {}
+  const freshThreadVerification = isRecord(smokePayload?.fresh_thread_verification) ? smokePayload.fresh_thread_verification : {}
+  const freshThreadRecommendedToolOrder = Array.isArray(freshThreadVerification.recommended_tool_order)
+    ? freshThreadVerification.recommended_tool_order.map((item) => sanitizeText(String(item), 120)).filter(Boolean).slice(0, 8)
+    : []
+  const smokeStatus = sanitizeText(String(smokePayload?.status || "missing"), 80)
+  const smokeBlockedCount = Number(smokeSummary.blocked || 0)
+  const currentThreadToolDiscoveryStatus = sanitizeText(String(smokeSummary.current_thread_tool_discovery_status || "missing"), 120)
+  const smokeNextAction = sanitizeText(String(freshThreadVerification.next_action || ""), 260)
+  const ready =
+    p6Status === "ready_for_plugin_design" &&
+    installedCacheStatus === "passed" &&
+    marketplaceStatus === "passed" &&
+    mcpContractChecks.length > 0 &&
+    passedMcpContractCount === mcpContractChecks.length
+
+  return {
+    status: !payload ? "missing" : ready ? "ready" : "blocked",
+    policy: sanitizeText(String(payload?.policy || ""), 220),
+    recommendedNext: sanitizeText(String(payload?.recommended_next || ""), 220),
+    checkCount: checks.length,
+    passedCheckCount: checks.filter((check) => String(check.status || "") === "passed").length,
+    marketplaceStatus,
+    installedCacheStatus,
+    installedCacheVersion: versionMatch?.[1] || "",
+    mcpContractCount: mcpContractChecks.length,
+    passedMcpContractCount,
+    freshThreadRequired: installedCacheStatus === "passed",
+    smokeStatus,
+    smokeGeneratedAt: String(smokePayload?.generated_at || ""),
+    smokeCheckCount: Number(smokeSummary.checks || 0),
+    smokePassedCount: Number(smokeSummary.passed || 0),
+    smokeBlockedCount,
+    currentThreadToolDiscoveryStatus,
+    freshThreadVerificationStatus: sanitizeText(String(freshThreadVerification.status || "missing"), 120),
+    freshThreadRecommendedToolOrder,
+    smokeNextAction,
+    smokeSourcePath: toControlCenterDisplayPath(config.engineBrainP6PluginHandoffSmokePath),
+    nextAction: ready
+      ? smokeStatus === "ready" && smokeBlockedCount === 0
+        ? smokeNextAction ||
+          "Open a fresh Codex thread and run ctoai_engine_brain_brief, then ctoai_control_center_cockpit, to verify the installed plugin tool layer."
+        : "Run scripts/ops/control_center_p6_plugin_handoff_smoke.py before fresh-thread plugin verification."
+      : "Refresh Engine Brain and reinstall the local ctoai-engine-brain plugin before plugin handoff.",
+    sourcePath: toControlCenterDisplayPath(config.engineBrainP6ReadinessPath),
+  }
+}
+
+async function collectEngineBrainStatus(
+  config: ControlCenterEvidenceConfig,
+): Promise<ControlCenterEvidence["engineBrain"]> {
+  const manifest = await readJsonIfExists(config.engineBrainManifestPath)
+  const p6Readiness = await readJsonIfExists(config.engineBrainP6ReadinessPath)
+  const packManifest = await readJsonIfExists(config.engineBrainPackManifestPath)
+  const docSync = await readJsonIfExists(config.engineBrainDocSyncPath)
+  const secretGuardrail = await readJsonIfExists(config.engineBrainSecretGuardrailPath)
+  const operatorBrief = await readJsonIfExists(config.engineBrainOperatorBriefPath)
+  const p6PluginHandoffSmokePayload = await readJsonIfExists(config.engineBrainP6PluginHandoffSmokePath)
+  const p7CockpitSmokePayload = await readJsonIfExists(config.engineBrainP7CockpitSmokePath)
+  const p7SafeWriteDryRunSmokePayload = await readJsonIfExists(config.engineBrainP7SafeWriteDryRunSmokePath)
+
+  const docSyncStatus = String(manifest?.doc_sync_status || docSync?.status || "missing")
+  const secretGuardrailStatus = String(manifest?.secret_guardrail_status || secretGuardrail?.status || "missing")
+  const p6ReadinessStatus = String(manifest?.p6_readiness_status || "missing")
+  const p6PluginHandoff = collectP6PluginHandoff(config, p6Readiness, p6ReadinessStatus, p6PluginHandoffSmokePayload)
+  const manifestP7Status = String(manifest?.p7_operator_brief_status || "")
+  const p7OperatorBriefStatus = operatorBrief ? String(operatorBrief.status || "missing") : "missing"
+  const p7HardBlockers = Array.isArray(operatorBrief?.hard_blockers) ? operatorBrief.hard_blockers : []
+  const p7ActionReadiness = isRecord(operatorBrief?.action_readiness) ? operatorBrief.action_readiness : null
+  const p7SafeWriteToolDesign = isRecord(operatorBrief?.safe_write_tool_design) ? operatorBrief.safe_write_tool_design : null
+  const p7RoadmapGeneration = isRecord(operatorBrief?.roadmap_generation) ? operatorBrief.roadmap_generation : null
+  const p7RoadmapGenerationHardBlockers = Array.isArray(p7RoadmapGeneration?.hard_blockers)
+    ? p7RoadmapGeneration.hard_blockers
+    : []
+  const p7SafeWriteToolSelectedActionId = sanitizeText(String(p7SafeWriteToolDesign?.selected_action_id || ""), 120)
+  const enabledSafeWriteTools = Array.isArray(p7ActionReadiness?.enabled_safe_write_tools)
+    ? p7ActionReadiness.enabled_safe_write_tools.filter(isRecord)
+    : []
+  const p7SafeWriteAudits = await Promise.all(
+    enabledSafeWriteTools.length
+      ? enabledSafeWriteTools.map((tool) =>
+          collectLatestAuditRecordForAction(
+            config.actionAuditPath,
+            sanitizeText(String(tool.action_id || ""), 120),
+            sanitizeText(String(tool.mcp_tool || ""), 120),
+          ),
+        )
+      : [collectLatestAuditRecordForAction(config.actionAuditPath, p7SafeWriteToolSelectedActionId, sanitizeText(String(p7SafeWriteToolDesign?.proposed_mcp_tool || ""), 120))],
+  )
+  const p7SafeWriteAudit =
+    p7SafeWriteAudits.find((audit) => audit.expectedAction === p7SafeWriteToolSelectedActionId) ||
+    p7SafeWriteAudits[0] ||
+    (await collectLatestAuditRecordForAction(config.actionAuditPath, p7SafeWriteToolSelectedActionId, sanitizeText(String(p7SafeWriteToolDesign?.proposed_mcp_tool || ""), 120)))
+  const p7ActionCandidateCount = Number(p7ActionReadiness?.candidate_count || 0)
+  const p7ActionAuditedCandidateCount = Number(p7ActionReadiness?.audited_candidate_count || 0)
+  const p7McpWriteToolCount = Number(p7ActionReadiness?.mcp_write_tool_count || 0)
+  const p7EnabledSafeWriteToolCount = enabledSafeWriteTools.length
+  const p7SafeWriteAuditCount = p7EnabledSafeWriteToolCount ? p7SafeWriteAudits.length : 0
+  const p7ReadySafeWriteAuditCount = p7EnabledSafeWriteToolCount
+    ? p7SafeWriteAudits.filter((audit) => audit.status === "ready").length
+    : 0
+  const p7EnabledSafeWriteToolDetails = enabledSafeWriteTools.map((tool) => {
+    const actionId = sanitizeText(String(tool.action_id || ""), 120)
+    const matchingAudit = p7SafeWriteAudits.find((audit) => audit.expectedAction === actionId)
+    return {
+      actionId,
+      mcpTool: sanitizeText(String(tool.mcp_tool || ""), 120),
+      riskClass: sanitizeText(String(tool.risk_class || ""), 80),
+      auditStatus: matchingAudit?.status || "missing",
+    }
+  })
+  const p7OperatorCockpitSummary = p7EnabledSafeWriteToolCount
+    ? `${p7EnabledSafeWriteToolCount} enabled safe-write MCP tools; ${p7ReadySafeWriteAuditCount}/${p7SafeWriteAuditCount} audits ready; ${p7McpWriteToolCount} MCP write tools declared.`
+    : "No enabled safe-write MCP tools declared in the P7 operator brief."
+  const p7Warnings = Array.isArray(operatorBrief?.warnings)
+    ? operatorBrief.warnings.map((warning) => sanitizeText(String(warning), 80)).filter(Boolean).slice(0, 6)
+    : []
+  const p7CockpitSmoke = collectP7CockpitSmokeStatus(config, p7CockpitSmokePayload)
+  const p7SafeWriteDryRunSmoke = collectP7SafeWriteDryRunSmokeStatus(config, p7SafeWriteDryRunSmokePayload)
+  const requiresP7Brief = Boolean(manifestP7Status)
+  const p7BriefReady = !requiresP7Brief || (operatorBrief !== null && p7OperatorBriefStatus === "ready" && p7HardBlockers.length === 0)
+  const hasManifest = manifest !== null
+  const status = !hasManifest
+    ? "missing"
+    : docSyncStatus === "passed" && secretGuardrailStatus === "passed" && p7BriefReady
+      ? "ready"
+      : "blocked"
+  const nextAction =
+    status === "missing"
+      ? "Refresh Engine Brain generated context."
+      : !p7BriefReady
+        ? "Regenerate the P7 operator brief before expanding operator workflow."
+      : status === "blocked"
+        ? "Fix Engine Brain doc sync or secret guardrail findings, then refresh."
+        : "Use a scoped brain pack for the next implementation lane."
+  const nextCommand =
+    status === "ready"
+      ? ".\\ctoa.ps1 brain pack control-center"
+      : ".\\ctoa.ps1 brain refresh"
+
+  return {
+    status,
+    generatedAt: String(manifest?.generated_at || ""),
+    fileCount: Number(manifest?.file_count || 0),
+    docSyncStatus,
+    secretGuardrailStatus,
+    p6ReadinessStatus,
+    p6PluginHandoff,
+    p7OperatorBriefStatus,
+    p7Decision: sanitizeText(String(operatorBrief?.decision || ""), 120),
+    p7GeneratedAt: String(operatorBrief?.generated_at || ""),
+    p7HardBlockerCount: p7HardBlockers.length,
+    p7WarningCount: p7Warnings.length,
+    p7Warnings,
+    p7NextSafeCommand: sanitizeText(String(operatorBrief?.next_safe_command || ""), 180),
+    p7Policy: sanitizeText(String(operatorBrief?.policy || ""), 180),
+    p7RoadmapGenerationStatus: sanitizeText(String(p7RoadmapGeneration?.status || "missing"), 80),
+    p7RoadmapGenerationDocSyncStatus: sanitizeText(String(p7RoadmapGeneration?.doc_sync_status || "missing"), 80),
+    p7RoadmapGenerationDocCount: Number(p7RoadmapGeneration?.doc_count || 0),
+    p7RoadmapGenerationReadyDocCount: Number(p7RoadmapGeneration?.ready_doc_count || 0),
+    p7RoadmapGenerationHardBlockerCount: p7RoadmapGenerationHardBlockers.length,
+    p7RoadmapGenerationNextAction: sanitizeText(String(p7RoadmapGeneration?.next_action || ""), 180),
+    p7RoadmapGenerationBlockedUntil: sanitizeText(String(p7RoadmapGeneration?.blocked_until || ""), 180),
+    p7ActionReadinessStatus: sanitizeText(String(p7ActionReadiness?.status || "missing"), 80),
+    p7ActionReadinessDecision: sanitizeText(String(p7ActionReadiness?.decision || ""), 120),
+    p7ActionCandidateCount,
+    p7ActionAuditedCandidateCount,
+    p7McpWriteToolCount,
+    p7EnabledSafeWriteToolCount,
+    p7ReadySafeWriteAuditCount,
+    p7SafeWriteAuditCount,
+    p7OperatorCockpitSummary,
+    p7EnabledSafeWriteTools: p7EnabledSafeWriteToolDetails,
+    p7ActionNextSafeMode: sanitizeText(String(p7ActionReadiness?.next_safe_mode || ""), 120),
+    p7ActionNextSafeCommand: sanitizeText(String(p7ActionReadiness?.next_safe_command || ""), 180),
+    p7SafeWriteToolDesignStatus: sanitizeText(String(p7SafeWriteToolDesign?.status || "missing"), 80),
+    p7SafeWriteToolDesignDecision: sanitizeText(String(p7SafeWriteToolDesign?.decision || ""), 120),
+    p7SafeWriteToolSelectedActionId,
+    p7SafeWriteToolProposedMcpTool: sanitizeText(String(p7SafeWriteToolDesign?.proposed_mcp_tool || ""), 120),
+    p7SafeWriteToolRiskClass: sanitizeText(String(p7SafeWriteToolDesign?.risk_class || ""), 80),
+    p7SafeWriteToolMode: sanitizeText(String(p7SafeWriteToolDesign?.mode || ""), 80),
+    p7SafeWriteToolMcpEnabled: Boolean(p7SafeWriteToolDesign?.mcp_enabled),
+    p7SafeWriteToolNextSafeCommand: sanitizeText(String(p7SafeWriteToolDesign?.next_safe_command || ""), 180),
+    p7SafeWriteAudit,
+    p7SafeWriteAudits,
+    p7CockpitSmoke,
+    p7SafeWriteDryRunSmoke,
+    packProfile: String(packManifest?.profile || "missing"),
+    packIncludedCount: Number(packManifest?.included_count || 0),
+    packTruncatedCount: Number(packManifest?.truncated_count || 0),
+    packGeneratedAt: String(packManifest?.generated_at || ""),
+    sourcePaths: {
+      manifest: toControlCenterDisplayPath(config.engineBrainManifestPath),
+      p6Readiness: toControlCenterDisplayPath(config.engineBrainP6ReadinessPath),
+      p6PluginHandoffSmoke: toControlCenterDisplayPath(config.engineBrainP6PluginHandoffSmokePath),
+      packManifest: toControlCenterDisplayPath(config.engineBrainPackManifestPath),
+      ownershipMap: toControlCenterDisplayPath(config.engineBrainOwnershipMapPath),
+      docSync: toControlCenterDisplayPath(config.engineBrainDocSyncPath),
+      secretGuardrail: toControlCenterDisplayPath(config.engineBrainSecretGuardrailPath),
+      operatorBrief: toControlCenterDisplayPath(config.engineBrainOperatorBriefPath),
+      p7CockpitSmoke: toControlCenterDisplayPath(config.engineBrainP7CockpitSmokePath),
+      p7SafeWriteDryRunSmoke: toControlCenterDisplayPath(config.engineBrainP7SafeWriteDryRunSmokePath),
+    },
+    nextAction,
+    nextCommand,
+  }
+}
+
+function collectP7CockpitSmokeStatus(
+  config: ControlCenterEvidenceConfig,
+  payload: Record<string, unknown> | null,
+): ControlCenterEvidence["engineBrain"]["p7CockpitSmoke"] {
+  const summary = isRecord(payload?.summary) ? payload.summary : {}
+  const hardBlockers = Array.isArray(payload?.hard_blockers)
+    ? payload.hard_blockers.map((item) => sanitizeText(String(item), 120)).filter(Boolean).slice(0, 8)
+    : []
+  const warnings = Array.isArray(payload?.warnings)
+    ? payload.warnings.map((item) => sanitizeText(String(item), 120)).filter(Boolean).slice(0, 8)
+    : []
+  const status = sanitizeText(String(payload?.status || "missing"), 80)
+  const checkCount = Number(summary.checks || 0)
+  const passedCount = Number(summary.passed || 0)
+  const blockedCount = Number(summary.blocked || 0)
+  const readySafeWriteAuditCount = Number(summary.ready_safe_write_audit_count || 0)
+  const expectedSafeWriteAuditCount = Number(summary.expected_safe_write_audit_count || 0)
+  const nextAction =
+    status === "ready" && blockedCount === 0
+      ? "P7 cockpit smoke is ready for operator review."
+      : status === "missing"
+        ? "Run scripts/ops/control_center_p7_cockpit_smoke.py after brain refresh and evidence refresh."
+        : hardBlockers.length
+          ? `Fix P7 cockpit smoke blocker: ${hardBlockers[0]}.`
+          : "Review P7 cockpit smoke warnings before operator handoff."
+
+  return {
+    status,
+    generatedAt: String(payload?.generated_at || ""),
+    checkCount,
+    passedCount,
+    blockedCount,
+    enabledSafeWriteToolCount: Number(summary.enabled_safe_write_tool_count || 0),
+    readySafeWriteAuditCount,
+    expectedSafeWriteAuditCount,
+    actionAuditLineCount: Number(summary.action_audit_line_count || 0),
+    hardBlockers,
+    warnings,
+    nextAction,
+    sourcePath: toControlCenterDisplayPath(config.engineBrainP7CockpitSmokePath),
+  }
+}
+
+function collectP7SafeWriteDryRunSmokeStatus(
+  config: ControlCenterEvidenceConfig,
+  payload: Record<string, unknown> | null,
+): ControlCenterEvidence["engineBrain"]["p7SafeWriteDryRunSmoke"] {
+  const summary = isRecord(payload?.summary) ? payload.summary : {}
+  const hardBlockers = Array.isArray(payload?.hard_blockers)
+    ? payload.hard_blockers.map((item) => sanitizeText(String(item), 120)).filter(Boolean).slice(0, 8)
+    : []
+  const warnings = Array.isArray(payload?.warnings)
+    ? payload.warnings.map((item) => sanitizeText(String(item), 120)).filter(Boolean).slice(0, 8)
+    : []
+  const results = Array.isArray(payload?.safe_write_results)
+    ? payload.safe_write_results
+        .filter(isRecord)
+        .map((result) => ({
+          actionId: sanitizeText(String(result.action_id || ""), 120),
+          mcpTool: sanitizeText(String(result.mcp_tool || ""), 120),
+          status: sanitizeText(String(result.status || "missing"), 80),
+          auditRecordReady: result.audit_record_ready === true,
+          preflightOk: result.preflight_ok === true,
+          preflightBootstrapAllowed: result.preflight_bootstrap_allowed === true,
+        }))
+        .slice(0, 8)
+    : []
+  const status = sanitizeText(String(payload?.status || "missing"), 80)
+  const checkCount = Number(summary.checks || 0)
+  const passedCount = Number(summary.passed || 0)
+  const blockedCount = Number(summary.blocked || 0)
+  const safeWriteToolCount = Number(summary.safe_write_tool_count || 0)
+  const dryRunReadyCount = Number(summary.dry_run_ready_count || 0)
+  const preflightReadyCount = Number(summary.preflight_ready_count || 0)
+  const bootstrapAllowedCount = Number(summary.bootstrap_allowed_count || 0)
+  const ready =
+    status === "ready" &&
+    blockedCount === 0 &&
+    safeWriteToolCount > 0 &&
+    dryRunReadyCount === safeWriteToolCount &&
+    preflightReadyCount === safeWriteToolCount &&
+    bootstrapAllowedCount === 0
+  const nextAction = ready
+    ? "P7 safe-write dry-run smoke is ready for operator review."
+    : status === "missing"
+      ? "Run scripts/ops/control_center_p7_safe_write_dry_run_smoke.py after P7 cockpit smoke."
+      : hardBlockers.length
+        ? `Fix P7 safe-write dry-run smoke blocker: ${hardBlockers[0]}.`
+        : "Rerun P7 safe-write dry-run smoke until all tools are preflight-ready with zero bootstrap."
+
+  return {
+    status,
+    generatedAt: String(payload?.generated_at || ""),
+    checkCount,
+    passedCount,
+    blockedCount,
+    safeWriteToolCount,
+    dryRunReadyCount,
+    preflightReadyCount,
+    bootstrapAllowedCount,
+    hardBlockers,
+    warnings,
+    results,
+    nextAction,
+    sourcePath: toControlCenterDisplayPath(config.engineBrainP7SafeWriteDryRunSmokePath),
+  }
+}
+
+async function collectLatestAuditRecordForAction(
+  filePath: string,
+  expectedAction: string,
+  proposedMcpTool = "",
+): Promise<ControlCenterEvidence["engineBrain"]["p7SafeWriteAudit"]> {
+  if (!expectedAction) {
+    return {
+      status: "missing",
+      expectedAction: "",
+      proposedMcpTool,
+      auditId: "",
+      latestAt: "",
+      riskClass: "",
+      actorRole: "",
+      authorized: "n/a",
+      ok: "n/a",
+      dryRun: true,
+      summary: "",
+      nextAction: "Generate the P7 safe-write design before checking action audit evidence.",
+    }
+  }
+
+  try {
+    const sample = await readBoundedControlCenterActionAuditLines(filePath)
+    let latest: Record<string, unknown> | null = null
+
+    for (const line of sample.lines) {
+      if (line.length > ACTION_AUDIT_MAX_LINE_LENGTH) {
+        continue
+      }
+      try {
+        const parsed = JSON.parse(line)
+        if (isRecord(parsed) && String(parsed.action || "") === expectedAction) {
+          latest = parsed
+        }
+      } catch {
+        // Invalid audit lines are counted by the main drilldown; this summary only needs the latest matching record.
+      }
+    }
+
+    if (!latest) {
+      return {
+        status: sample.truncated ? "warn" : "missing",
+        expectedAction,
+        proposedMcpTool,
+        auditId: "",
+        latestAt: "",
+        riskClass: "",
+        actorRole: "",
+        authorized: "n/a",
+        ok: "n/a",
+        dryRun: true,
+        summary: "",
+        nextAction: `Run ctoai_evidence_pack_refresh with dry_run=true and verify ${expectedAction} audit evidence before broader actions.`,
+      }
+    }
+
+    const riskClass = sanitizeText(String(latest.risk_class || "unknown"), 80)
+    const authorized = latest.authorized === undefined ? "n/a" : latest.authorized ? "yes" : "no"
+    const ok = latest.ok === undefined ? "n/a" : latest.ok ? "yes" : "no"
+    const dryRun = latest.dry_run === true
+    const status = riskClass === "safe_write" && authorized === "yes" && ok === "yes" ? "ready" : "warn"
+
+    return {
+      status,
+      expectedAction,
+      proposedMcpTool,
+      auditId: sanitizeText(String(latest.audit_id || ""), 80),
+      latestAt: sanitizeText(String(latest.at || latest.created_at || ""), 80),
+      riskClass,
+      actorRole: sanitizeText(String(latest.actor_role || latest.actor || "unknown"), 80),
+      authorized,
+      ok,
+      dryRun,
+      summary: auditSummary(latest),
+      nextAction:
+        status !== "ready"
+          ? "Review mismatched safe-write audit metadata before enabling more operator actions."
+          : dryRun
+            ? "Dry-run safe-write evidence is present; confirmed execution remains optional and explicit."
+            : "Confirmed safe-write evidence is present; review runtime evidence before adding another write tool.",
+    }
+  } catch {
+    return {
+      status: "missing",
+      expectedAction,
+      proposedMcpTool,
+      auditId: "",
+      latestAt: "",
+      riskClass: "",
+      actorRole: "",
+      authorized: "n/a",
+      ok: "n/a",
+      dryRun: true,
+      summary: "",
+      nextAction: `Run ctoai_evidence_pack_refresh with dry_run=true and verify ${expectedAction} audit evidence before broader actions.`,
+    }
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+}
+
+function sanitizeCountMap(value: unknown): Record<string, number> {
+  if (!isRecord(value)) {
+    return {}
+  }
+  return Object.fromEntries(
+    Object.entries(value)
+      .map(([key, count]) => [sanitizeText(String(key), 80), Number(count || 0)] as const)
+      .filter(([key, count]) => Boolean(key) && Number.isFinite(count))
+      .slice(0, 16),
+  )
+}
+
+function findGate(report: Record<string, unknown> | null, name: string): Record<string, unknown> | null {
+  const gates = Array.isArray(report?.gates) ? report.gates : []
+  const gate = gates.find((item) => isRecord(item) && item.name === name)
+  return isRecord(gate) ? gate : null
+}
+
+async function sha256IfExists(filePath: string): Promise<string> {
+  try {
+    const pathInfo = await lstat(filePath)
+    if (pathInfo.isSymbolicLink() || !pathInfo.isFile()) {
+      return ""
+    }
+    const data = await readFile(filePath)
+    return crypto.createHash("sha256").update(data).digest("hex")
+  } catch {
+    return ""
+  }
+}
+
+async function fileAgeMinutes(filePath: string): Promise<number | null> {
+  try {
+    const fileStat = await lstat(filePath)
+    if (fileStat.isSymbolicLink() || !fileStat.isFile()) {
+      return null
+    }
+    return Math.max(0, Math.round((Date.now() - fileStat.mtimeMs) / 60000))
+  } catch {
+    return null
+  }
+}
+
+async function statIfExists(filePath: string) {
+  try {
+    const fileStat = await lstat(filePath)
+    return fileStat.isSymbolicLink() || !fileStat.isFile() ? null : fileStat
+  } catch {
+    return null
+  }
+}
+
+function resolveEvidencePath(value: string, helperDevDir: string): string {
+  if (!value) return ""
+  const candidate = path.resolve(helperDevDir, value)
+  const helperRoot = path.resolve(helperDevDir)
+  const relative = path.relative(helperRoot, candidate)
+  if (!relative || (!relative.startsWith("..") && !path.isAbsolute(relative))) {
+    return candidate
+  }
+  return ""
 }
 
 async function findLatestReleaseEvidence(dirPath: string): Promise<ReleaseEvidenceFile | null> {

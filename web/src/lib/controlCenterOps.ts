@@ -1,7 +1,12 @@
-import { readFile } from "node:fs/promises"
 import path from "node:path"
-import { collectControlCenterEvidence, type ControlCenterEvidence } from "@/lib/controlCenterEvidence"
+import {
+  collectControlCenterEvidence,
+  readBoundedControlCenterActionAuditLines,
+  type ControlCenterEvidence,
+} from "@/lib/controlCenterEvidence"
+import { toControlCenterDisplayPath } from "@/lib/controlCenterDisplayPath"
 import { getControlCenterEvidenceConfig } from "@/lib/controlCenterEvidenceConfig"
+import { sanitizeControlCenterDisplayText } from "@/lib/controlCenterRedaction"
 
 export type OpsStatus = "online" | "warning" | "offline" | "unknown"
 
@@ -48,6 +53,8 @@ export type ControlCenterOps = {
     latestReleaseEvidence: ControlCenterEvidence["latestReleaseEvidence"]
     releaseEvidenceFileCount: number
     releaseSprints: ControlCenterEvidence["releaseSprints"]
+    releaseEvidenceDrilldown: ControlCenterEvidence["releaseEvidenceDrilldown"]
+    releaseComparison: ControlCenterEvidence["releaseComparison"]
     apiCostReport: {
       status: string
       recordsSeen: number
@@ -63,6 +70,9 @@ export type ControlCenterOps = {
       sourcePath: string
       recentActions: LocalAuditAction[]
     }
+    engineBrain: ControlCenterEvidence["engineBrain"]
+    operatorNext: ControlCenterEvidence["operatorNext"]
+    actionAuditDrilldown: ControlCenterEvidence["actionAuditDrilldown"]
     recommendations: string[]
   }
 }
@@ -81,6 +91,10 @@ export async function collectControlCenterOps(): Promise<ControlCenterOps> {
         ? "warning"
         : "warning"
   const auditStatus = evidence.controlCenterAudit.recordCount > 0 ? "online" : "warning"
+  const engineBrainStatus =
+    evidence.engineBrain.status === "ready" ? "online" : evidence.engineBrain.status === "blocked" ? "offline" : "warning"
+  const operatorNextStatus =
+    evidence.operatorNext.status === "ready" ? "online" : evidence.operatorNext.status === "blocked" ? "offline" : "warning"
 
   return {
     generatedAt: evidence.generatedAt,
@@ -95,7 +109,7 @@ export async function collectControlCenterOps(): Promise<ControlCenterOps> {
         status: repoStatus,
         headline: evidence.repoHygiene.status,
         detail: summarizeRepoHygiene(evidence.repoHygiene.findingCount, evidence.repoHygiene.summary),
-        source: config.qualityPath,
+        source: toControlCenterDisplayPath(config.qualityPath),
         updatedAt: evidence.generatedAt,
       },
       {
@@ -104,9 +118,9 @@ export async function collectControlCenterOps(): Promise<ControlCenterOps> {
         status: releaseStatus,
         headline: evidence.latestReleaseEvidence ? path.basename(evidence.latestReleaseEvidence.path) : "Missing",
         detail: evidence.latestReleaseEvidence
-          ? `${evidence.releaseEvidenceFileCount} evidence files across ${evidence.releaseSprints.length} sprint folders.`
+          ? `${evidence.releaseEvidenceDrilldown.fileCount} evidence files across ${evidence.releaseEvidenceDrilldown.sprintCount} sprint folders.`
           : `No markdown evidence found under ${config.releasesDir}.`,
-        source: evidence.latestReleaseEvidence?.path || config.releasesDir,
+        source: evidence.latestReleaseEvidence?.path || toControlCenterDisplayPath(config.releasesDir),
         updatedAt: evidence.generatedAt,
       },
       {
@@ -115,7 +129,7 @@ export async function collectControlCenterOps(): Promise<ControlCenterOps> {
         status: costStatus,
         headline: `${evidence.apiCostReport.recordsSeen} rows`,
         detail: summarizeApiCostReport(evidence.apiCostReport.totalTokens, evidence.apiCostReport.totalCostUsd, evidence.apiCostReport.anomalyCount),
-        source: config.costReportPath,
+        source: toControlCenterDisplayPath(config.costReportPath),
         updatedAt: evidence.generatedAt,
       },
       {
@@ -124,7 +138,25 @@ export async function collectControlCenterOps(): Promise<ControlCenterOps> {
         status: auditStatus,
         headline: `${evidence.controlCenterAudit.recordCount} records`,
         detail: summarizeAuditTrail(evidence.controlCenterAudit.recordCount, recentActions),
-        source: config.actionAuditPath,
+        source: toControlCenterDisplayPath(config.actionAuditPath),
+        updatedAt: evidence.generatedAt,
+      },
+      {
+        id: "engine-brain",
+        label: "Engine Brain",
+        status: engineBrainStatus,
+        headline: evidence.engineBrain.p7Decision || evidence.engineBrain.status,
+        detail: summarizeEngineBrain(evidence.engineBrain),
+        source: evidence.engineBrain.sourcePaths.operatorBrief,
+        updatedAt: evidence.generatedAt,
+      },
+      {
+        id: "operator-next",
+        label: "Operator next",
+        status: operatorNextStatus,
+        headline: evidence.operatorNext.title,
+        detail: `${evidence.operatorNext.lane} · ${evidence.operatorNext.riskClass} · ${evidence.operatorNext.detail}`,
+        source: evidence.operatorNext.sourcePath,
         updatedAt: evidence.generatedAt,
       },
     ],
@@ -133,11 +165,13 @@ export async function collectControlCenterOps(): Promise<ControlCenterOps> {
         status: evidence.repoHygiene.status,
         findingCount: evidence.repoHygiene.findingCount,
         summary: evidence.repoHygiene.summary,
-        sourcePath: config.qualityPath,
+        sourcePath: toControlCenterDisplayPath(config.qualityPath),
       },
       latestReleaseEvidence: evidence.latestReleaseEvidence,
       releaseEvidenceFileCount: evidence.releaseEvidenceFileCount,
       releaseSprints: evidence.releaseSprints,
+      releaseEvidenceDrilldown: evidence.releaseEvidenceDrilldown,
+      releaseComparison: evidence.releaseComparison,
       apiCostReport: {
         status: evidence.apiCostReport.status,
         recordsSeen: evidence.apiCostReport.recordsSeen,
@@ -145,14 +179,17 @@ export async function collectControlCenterOps(): Promise<ControlCenterOps> {
         totalCostUsd: evidence.apiCostReport.totalCostUsd,
         anomalyCount: evidence.apiCostReport.anomalyCount,
         evalArtifacts: evidence.apiCostReport.evalArtifacts,
-        sourcePath: config.costReportPath,
+        sourcePath: toControlCenterDisplayPath(config.costReportPath),
       },
       controlCenterAudit: {
         status: evidence.controlCenterAudit.status,
         recordCount: evidence.controlCenterAudit.recordCount,
-        sourcePath: config.actionAuditPath,
+        sourcePath: toControlCenterDisplayPath(config.actionAuditPath),
         recentActions,
       },
+      engineBrain: evidence.engineBrain,
+      operatorNext: evidence.operatorNext,
+      actionAuditDrilldown: evidence.actionAuditDrilldown,
       recommendations: evidence.recommendations,
     },
   }
@@ -177,33 +214,41 @@ function summarizeAuditTrail(recordCount: number, recentActions: LocalAuditActio
   return `${recordCount} records · latest ${latest.action} (${latest.dryRun ? "dry run" : "live"})`
 }
 
+function summarizeEngineBrain(engineBrain: ControlCenterEvidence["engineBrain"]): string {
+  const safeAuditSummary = engineBrain.p7SafeWriteAuditCount
+    ? `${engineBrain.p7ReadySafeWriteAuditCount}/${engineBrain.p7SafeWriteAuditCount}`
+    : engineBrain.p7SafeWriteAudit.status
+  return `P6 ${engineBrain.p6ReadinessStatus} · plugin ${engineBrain.p6PluginHandoff.status} ${engineBrain.p6PluginHandoff.installedCacheVersion || "no-cache"} · P6 smoke ${engineBrain.p6PluginHandoff.smokeStatus} ${engineBrain.p6PluginHandoff.smokePassedCount}/${engineBrain.p6PluginHandoff.smokeCheckCount} · P7 ${engineBrain.p7OperatorBriefStatus} · MCP ${engineBrain.p7EnabledSafeWriteToolCount} enabled · ${engineBrain.p7OperatorCockpitSummary} · actions ${engineBrain.p7ActionAuditedCandidateCount}/${engineBrain.p7ActionCandidateCount} audited · design ${engineBrain.p7SafeWriteToolDesignStatus} · audits ${safeAuditSummary} · smoke ${engineBrain.p7CockpitSmoke.status} ${engineBrain.p7CockpitSmoke.passedCount}/${engineBrain.p7CockpitSmoke.checkCount} · dry-run ${engineBrain.p7SafeWriteDryRunSmoke.status} ${engineBrain.p7SafeWriteDryRunSmoke.dryRunReadyCount}/${engineBrain.p7SafeWriteDryRunSmoke.safeWriteToolCount}; preflight ${engineBrain.p7SafeWriteDryRunSmoke.preflightReadyCount}/${engineBrain.p7SafeWriteDryRunSmoke.safeWriteToolCount}; bootstrap ${engineBrain.p7SafeWriteDryRunSmoke.bootstrapAllowedCount} · pack ${engineBrain.packIncludedCount} sections`
+}
+
 async function readRecentAuditActions(filePath: string): Promise<LocalAuditAction[]> {
   try {
-    const text = await readFile(filePath, "utf-8")
-    return text
-      .split(/\r?\n/)
-      .map((line) => line.trim())
-      .filter(Boolean)
+    const sample = await readBoundedControlCenterActionAuditLines(filePath)
+    return sample.lines
       .slice(-5)
       .map((line) => {
         const record = JSON.parse(line) as Record<string, unknown>
         return {
-          at: String(record.at || ""),
-          auditId: String(record.audit_id || ""),
-          actor: String(record.actor || ""),
-          actorRole: String(record.actor_role || ""),
-          action: String(record.action || ""),
-          target: String(record.target || ""),
-          riskClass: String(record.risk_class || ""),
-          minimumRole: String(record.minimum_role || ""),
+          at: sanitizeOpsText(String(record.at || ""), 80),
+          auditId: sanitizeOpsText(String(record.audit_id || ""), 80),
+          actor: sanitizeOpsText(String(record.actor || ""), 80),
+          actorRole: sanitizeOpsText(String(record.actor_role || ""), 80),
+          action: sanitizeOpsText(String(record.action || ""), 80),
+          target: sanitizeOpsText(String(record.target || ""), 80),
+          riskClass: sanitizeOpsText(String(record.risk_class || ""), 80),
+          minimumRole: sanitizeOpsText(String(record.minimum_role || ""), 80),
           dryRun: Boolean(record.dry_run),
           ok: Boolean(record.ok),
           authorized: Boolean(record.authorized),
-          reason: String(record.reason || ""),
-          outputPreview: String(record.output_preview || ""),
+          reason: sanitizeOpsText(String(record.reason || ""), 160),
+          outputPreview: sanitizeOpsText(String(record.output_preview || ""), 240),
         }
       })
   } catch {
     return []
   }
+}
+
+function sanitizeOpsText(value: string, maxLength: number): string {
+  return sanitizeControlCenterDisplayText(value, maxLength)
 }
