@@ -1217,7 +1217,10 @@ def test_combat_runtime_adapter_is_passive_and_packaged():
     assert 'moduleValue(externalCombatRuntime, "spellReadiness", spells' in source
     assert 'moduleValue(externalCombatRuntime, "rotationSpell", spells' in source
     assert 'moduleValue(externalCombatRuntime, "offensiveAction", tools' in source
-    assert "local function combatRuntimeText(functionName, eventOrAction, data, fallback)" in source
+    assert "local combatRuntimeText" in source
+    assert "combatRuntimeText = function(functionName, eventOrAction, data, fallback)" in source
+    assert source.index("local combatRuntimeText") < source.index("local function retargetSafeMonster")
+    assert source.index("local combatRuntimeText") < source.index("clearUnsafeCurrentTarget = function")
     assert "moduleValue(externalCombatRuntime, functionName, eventOrAction, data or {})" in source
     assert "local function combatActionStatusText" not in source
     assert "local function combatTargetingStatusText" not in source

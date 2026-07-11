@@ -1802,6 +1802,7 @@ end
 
 local combatBlockedReason
 local clearUnsafeCurrentTarget
+local combatRuntimeText
 
 local function applyChaseMode(enabled)
     if not g_game or not g_game.setChaseMode then
@@ -2045,7 +2046,7 @@ local function buildOffensiveAction(tools, target, scan, now)
     return nil
 end
 
-local function combatRuntimeText(functionName, eventOrAction, data, fallback)
+combatRuntimeText = function(functionName, eventOrAction, data, fallback)
     local text = moduleValue(externalCombatRuntime, functionName, eventOrAction, data or {})
     return type(text) == "string" and text ~= "" and text or fallback or tostring(eventOrAction or "targeting")
 end
