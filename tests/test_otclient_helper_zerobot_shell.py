@@ -2686,7 +2686,7 @@ def test_helper_supports_runtime_smoke_command_file():
 def test_helper_otclient_architecture_hooks_are_registered():
     source = HELPER.read_text(encoding="utf-8")
 
-    assert 'local HELPER_VERSION = "v2.1.1a"' in source
+    assert 'local HELPER_VERSION = "v2.2.0"' in source
     assert 'io.open("ctoa_local.log", "a")' in source
     assert 'g_resources.getUserDir()' in source
     assert 'userDir .. "/ctoa_local.log"' in source
@@ -2702,7 +2702,7 @@ def test_helper_otclient_architecture_hooks_are_registered():
 def test_loader_is_helper_ui_only_and_loads_without_online_gate():
     source = LOADER.read_text(encoding="utf-8")
 
-    assert 'version = "2.1.1a"' in source
+    assert 'version = "2.2.0"' in source
     assert 'mode = "helper-ui-only"' in source
     assert 'local HELPER_MODULE = "ctoa_native_helper.lua"' in source
     assert 'local BOOTSTRAP_MODULE = {name = "ctoa_helper_modules", file = "ctoa_helper_modules.lua"}' in source

@@ -51,6 +51,7 @@ local PROFILE_EXPORT_SECTIONS = {
         "potion_enabled",
         "spell_threshold",
         "potion_threshold",
+        "threshold_jitter_percent",
         "spell",
         "critical_spell",
         "spell_rotation",
@@ -137,8 +138,10 @@ local PROFILE_EXPORT_SECTIONS = {
         "auto_follow",
         "pause_in_pz",
         "hold_target",
+        "require_reachable_target",
         "attack_range",
         "target_timeout_ms",
+        "unreachable_timeout_ms",
         "retarget_delay_ms",
         "log_retarget_ms",
         "block_log_ms",
@@ -166,6 +169,14 @@ local PROFILE_EXPORT_SECTIONS = {
         "exeta_interval_ms",
         "exeta_min_visible",
         "exeta_spells",
+        "auto_stance",
+        "offensive_buff_spell",
+        "defensive_buff_spell",
+        "offensive_max_monsters",
+        "defensive_min_monsters",
+        "stance_cooldown_ms",
+        "last_stance_ms",
+        "active_stance",
         "rune_enabled",
         "rune_name",
         "rune_hotkey",
@@ -245,11 +256,27 @@ end
 
 function ProfilePersistence.resolveSavePath(kind, explicitPath, workDir)
     local defaults = saveDefaults(kind)
-    if type(explicitPath) == "string" and explicitPath ~= "" then
-        return explicitPath
+    local explicit = tostring(explicitPath or "")
+    local work = tostring(workDir or "")
+    if work ~= "" and string.sub(work, -1) ~= "/" and string.sub(work, -1) ~= "\\" then
+        work = work .. "/"
     end
-    if type(workDir) == "string" and workDir ~= "" and type(defaults.work_dir_suffix) == "string" then
-        return workDir .. defaults.work_dir_suffix
+    if explicit ~= "" then
+        if work ~= "" and string.sub(explicit, 1, 9) == "user_dir/" then
+            local file = string.match(explicit, "([^/\\]+)$") or tostring(defaults.file_name or "")
+            return work .. "mods/ctoa_otclient/" .. file
+        end
+        if work ~= "" and string.sub(explicit, 1, 14) == "ctoa_otclient/" then
+            return work .. "mods/" .. explicit
+        end
+        if work ~= "" and string.sub(explicit, 1, 1) == "/" and not string.match(explicit, "^/[A-Za-z]:") then
+            local file = string.match(explicit, "([^/\\]+)$") or tostring(defaults.file_name or "")
+            return work .. "mods/ctoa_otclient/" .. file
+        end
+        return explicit
+    end
+    if work ~= "" and type(defaults.work_dir_suffix) == "string" then
+        return work .. defaults.work_dir_suffix
     end
     return tostring(defaults.file_name or "")
 end
@@ -364,10 +391,12 @@ function ProfilePersistence.exportProfile(config, profileName)
     local tools = type(cfg.tools) == "table" and cfg.tools or {}
     local profile = {
         schema_version = cfg.schema_version or "ctoa-helper-profile-v1",
+        vocation = cfg.vocation,
         name = profileName or "Built-in EK",
         enabled = cfg.enabled,
         safe_boot_runtime_disabled = cfg.safe_boot_runtime_disabled,
         tick_ms = cfg.tick_ms,
+        modules = copyTable(cfg.modules or {}),
     }
     for sectionName, fields in pairs(PROFILE_EXPORT_SECTIONS) do
         profile[sectionName] = exportSection(cfg, sectionName, fields)

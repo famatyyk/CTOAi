@@ -197,6 +197,15 @@ function Targeting.decision(candidate, tools)
             summary = "friendly summon/familiar " .. name,
         }
     end
+    if cfg.require_reachable_target == true and candidate.reachable == false then
+        return {
+            eligible = false,
+            reason = "unreachable",
+            name = name,
+            score = 99999999,
+            summary = "unreachable " .. name,
+        }
+    end
     local rank = candidate.rank or Targeting.priorityRank(name, cfg.priority_names or {})
     local scored = {
         name = name,

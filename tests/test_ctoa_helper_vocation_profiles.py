@@ -1,0 +1,171 @@
+from __future__ import annotations
+
+import shutil
+import subprocess
+from pathlib import Path
+
+import pytest
+
+from scripts.ops.otclient_helper_profile_audit import audit_profile
+
+
+ROOT = Path(__file__).resolve().parents[1]
+LUA = ROOT / "scripts" / "lua" / "otclient"
+
+
+def _run_lua(tmp_path: Path, source: str, *modules: str) -> None:
+    lua = shutil.which("lua")
+    assert lua, "Lua interpreter is required for Helper profile validation"
+    probe = tmp_path / "probe.lua"
+    probe.write_text(source, encoding="utf-8")
+    completed = subprocess.run(
+        [lua, str(probe), *(str(LUA / module) for module in modules)],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+
+
+def test_vocation_detection_routes_promoted_and_base_vocations(tmp_path: Path):
+    _run_lua(
+        tmp_path,
+        """
+local profiles = dofile(arg[1])
+local function player(id, name)
+  return {getVocationId=function() return id end, getName=function() return name end}
+end
+assert(profiles.detect(player(1, "Ek One")) == "ek")
+assert(profiles.detect(player(8, "Elite One")) == "ek")
+assert(profiles.detect(player(3, "Ms One")) == "ms")
+assert(profiles.detect(player(5, "Master One")) == "ms")
+assert(profiles.detect(player(4, "Ed One")) == "ed")
+assert(profiles.detect(player(6, "Elder One")) == "ed")
+assert(profiles.detect(player(2, "Rp One")) == "rp")
+assert(profiles.detect(player(7, "Royal One")) == "rp")
+local candidates = profiles.candidates("ms", player(3, "Master One"))
+assert(candidates[1] == "user_dir/ctoa_otclient/master_one_ctoa_ms_profile.lua")
+assert(candidates[3] == "mods/ctoa_otclient/ctoa_ms_profile.lua")
+assert(profiles.contract().runtime_actions == false)
+""",
+        "ctoa_helper_vocation_profiles.lua",
+    )
+
+
+def test_shell_renders_detected_vocation_in_profile_hint():
+    shell = (LUA / "ctoa_native_helper.lua").read_text(encoding="utf-8")
+    assert '"Look ID: " .. string.upper(tostring(Helper.vocation_id or "unknown"))' in shell
+
+
+def test_live_promotion_manifest_includes_vocation_router_and_all_profiles():
+    wrapper = (ROOT / "scripts" / "windows" / "solteria_helper_test_env.ps1").read_text(
+        encoding="utf-8"
+    )
+    package_function = wrapper.split("function Get-DevPackageFiles", 1)[1].split(
+        "function Get-LiveRootFallbackFiles", 1
+    )[0]
+    for name in (
+        "ctoa_helper_vocation_profiles.lua",
+        "ctoa_ek_profile.lua",
+        "ctoa_ms_profile.lua",
+        "ctoa_ed_profile.lua",
+        "ctoa_rp_profile.lua",
+    ):
+        assert f'mods/ctoa_otclient/{name}' in package_function
+
+
+def test_ek_rotation_never_falls_back_to_single_target_in_large_pack(tmp_path: Path):
+    _run_lua(
+        tmp_path,
+        """
+local runtime = dofile(arg[1])
+local spells = {
+  {words="exori gran", mob_count=4, min_nearby=3, cooldown_ms=6000, last_cast_ms=9500},
+  {words="exori", mob_count=4, min_nearby=2, cooldown_ms=4000, last_cast_ms=9500},
+  {words="exori gran ico", mob_count=4, min_nearby=1, max_nearby=2, cooldown_ms=1000, last_cast_ms=0},
+  {words="exori ico", mob_count=4, min_nearby=1, max_nearby=2, cooldown_ms=1000, last_cast_ms=0},
+}
+assert(runtime.rotationSpell(spells, {now_ms=10000, rotation_interval_ms=1000}) == nil)
+spells[1].last_cast_ms = 0
+local selected = runtime.rotationSpell(spells, {now_ms=10000, rotation_interval_ms=1000})
+assert(selected.words == "exori gran")
+""",
+        "ctoa_helper_combat_runtime.lua",
+    )
+
+
+def test_ek_stance_selects_attack_for_small_pack_and_defense_for_large_pack(tmp_path: Path):
+    _run_lua(
+        tmp_path,
+        """
+local runtime = dofile(arg[1])
+local cfg = {auto_stance=true, last_stance_ms=0, stance_cooldown_ms=1000,
+ offensive_max_monsters=2, defensive_min_monsters=4,
+ offensive_buff_spell="utito tempo", defensive_buff_spell="utamo tempo"}
+local attack = runtime.stanceAction(cfg, {target_present=true, nearby=2, now_ms=2000})
+assert(attack.stance == "offensive" and attack.spell == "utito tempo")
+local defense = runtime.stanceAction(cfg, {target_present=true, nearby=4, now_ms=2000})
+assert(defense.stance == "defensive" and defense.spell == "utamo tempo")
+assert(runtime.stanceAction(cfg, {target_present=true, nearby=3, now_ms=2000}) == nil)
+""",
+        "ctoa_helper_combat_runtime.lua",
+    )
+
+
+def test_targeting_rejects_unreachable_candidate_when_required(tmp_path: Path):
+    _run_lua(
+        tmp_path,
+        """
+local targeting = dofile(arg[1])
+local denied = targeting.decision({name="demon",distance=2,hp=90,reachable=false}, {require_reachable_target=true})
+assert(denied.eligible == false and denied.reason == "unreachable")
+local allowed = targeting.decision({name="demon",distance=2,hp=90,reachable=false}, {require_reachable_target=false})
+assert(allowed.eligible == true)
+""",
+        "ctoa_helper_targeting.lua",
+    )
+
+
+def test_profile_persistence_exports_modules_vocation_and_real_workdir_path():
+    source = (LUA / "ctoa_helper_profile_persistence.lua").read_text(encoding="utf-8")
+    helper = (LUA / "ctoa_native_helper.lua").read_text(encoding="utf-8")
+    wrapper = (ROOT / "scripts" / "windows" / "solteria_helper_test_env.ps1").read_text(encoding="utf-8")
+    reporter = (LUA / "ctoa_helper_client_reporter.lua").read_text(encoding="utf-8")
+
+    assert "modules = copyTable(cfg.modules or {})" in source
+    assert "vocation = cfg.vocation" in source
+    assert 'work .. "mods/ctoa_otclient/" .. file' in source
+    assert 'rawget(_G, "CTOA_HELPER_VOCATION_PROFILES")' in helper
+    assert 'vocation = tostring(data.vocation or "unknown")' in reporter
+    assert 'profile_name = tostring(data.profile_name or "unknown")' in reporter
+    for name in [
+        "ctoa_helper_vocation_profiles.lua",
+        "ctoa_ek_profile.lua",
+        "ctoa_ms_profile.lua",
+        "ctoa_ed_profile.lua",
+        "ctoa_rp_profile.lua",
+    ]:
+        assert name in wrapper
+
+
+def test_profile_save_path_maps_virtual_resource_to_real_mod_file(tmp_path: Path):
+    _run_lua(
+        tmp_path,
+        r'''
+local persistence = dofile(arg[1])
+local path = persistence.resolveSavePath("profile", "ctoa_otclient/ctoa_ms_profile.lua", "C:/client/")
+assert(path == "C:/client/mods/ctoa_otclient/ctoa_ms_profile.lua", path)
+local userPath = persistence.resolveSavePath("profile", "user_dir/ctoa_otclient/ctoa_ed_profile.lua", "C:/client")
+assert(userPath == "C:/client/mods/ctoa_otclient/ctoa_ed_profile.lua", userPath)
+local exported = persistence.exportProfile({vocation="rp", modules={healing=true}, tools={}, healing={}}, "RP")
+assert(exported.vocation == "rp" and exported.modules.healing == true)
+''',
+        "ctoa_helper_profile_persistence.lua",
+    )
+
+
+@pytest.mark.parametrize("profile_name", ["ctoa_ek_profile.lua", "ctoa_ms_profile.lua", "ctoa_ed_profile.lua", "ctoa_rp_profile.lua"])
+def test_every_vocation_profile_passes_safe_migration_audit(profile_name: str):
+    report = audit_profile(LUA / profile_name)
+    assert report.status == "passed", [finding.reason for finding in report.findings]

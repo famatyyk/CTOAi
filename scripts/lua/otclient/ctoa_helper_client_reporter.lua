@@ -162,6 +162,8 @@ function Reporter.detect(context)
         build_id = buildId,
         status = knownBuild and "known_build" or "unknown_build",
         helper_version = tostring(data.helper_version or "unknown"),
+        vocation = tostring(data.vocation or "unknown"),
+        profile_name = tostring(data.profile_name or "unknown"),
         supported_modules = sortedLoadedModules(data.loader_state),
         protocol_status = protocolReady and "ready" or "pending_protocol_source",
         profile_schema = PROFILE_SCHEMA,

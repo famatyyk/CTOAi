@@ -196,6 +196,24 @@ function CombatRuntime.rotationSpell(spells, state)
     return nil
 end
 
+function CombatRuntime.stanceAction(tools, state)
+    local cfg = tools or {}
+    local env = state or {}
+    if cfg.auto_stance ~= true or env.target_present ~= true then return nil end
+    local now = tonumber(env.now_ms) or 0
+    if now - (tonumber(cfg.last_stance_ms) or 0) < (tonumber(cfg.stance_cooldown_ms) or 10000) then
+        return nil
+    end
+    local monsters = tonumber(env.nearby) or 0
+    if monsters >= (tonumber(cfg.defensive_min_monsters) or 4) then
+        return {kind="stance", stance="defensive", fight_mode="defensive", spell=cfg.defensive_buff_spell or "utamo tempo"}
+    end
+    if monsters >= 1 and monsters <= (tonumber(cfg.offensive_max_monsters) or 2) then
+        return {kind="stance", stance="offensive", fight_mode="offensive", spell=cfg.offensive_buff_spell or "utito tempo"}
+    end
+    return nil
+end
+
 function CombatRuntime.offensiveAction(tools, state)
     local cfg = tools or {}
     local env = state or {}
@@ -213,6 +231,9 @@ function CombatRuntime.offensiveAction(tools, state)
     if boolValue(env.recovery_gap_active) then
         return nil
     end
+
+    local stance = CombatRuntime.stanceAction(cfg, env)
+    if stance then return stance end
 
     local visible = tonumber(env.visible) or 0
     if boolValue(cfg.auto_exeta) and targetPresent and visible >= (tonumber(cfg.exeta_min_visible) or 1) and now - (tonumber(cfg.last_exeta_ms) or 0) >= (tonumber(cfg.exeta_interval_ms) or 5000) then
@@ -255,6 +276,10 @@ function CombatRuntime.actionStatusText(action, state)
     if kind == "exeta" then
         return "Auto exeta: " .. tostring(item.spell or env.spell or "?") ..
             " (" .. tostring(env.visible or 0) .. " visible)"
+    end
+    if kind == "stance" then
+        return "EK stance: " .. tostring(item.stance or env.stance or "neutral") ..
+            " | " .. tostring(item.spell or env.spell or "?")
     end
     if kind == "rotation" then
         local spell = item.spell or {}
@@ -300,6 +325,9 @@ function CombatRuntime.nextActionText(action, fallback)
     if item.kind == "rotation" then
         local spell = item.spell or {}
         return "Next: " .. tostring(spell.words or "?")
+    end
+    if item.kind == "stance" then
+        return "Next: " .. tostring(item.spell or item.stance or "stance")
     end
     return fallback
 end
@@ -401,6 +429,7 @@ function CombatRuntime.contract()
         owns_rotation_spell_rows = true,
         owns_spell_readiness = true,
         owns_rotation_spell_selection = true,
+        owns_stance_selection = true,
         owns_offensive_action_selection = true,
         owns_action_status_text = true,
         owns_targeting_status_text = true,

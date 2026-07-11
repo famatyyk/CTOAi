@@ -9,8 +9,7 @@ if type(existingHelper) == "table" and existingHelper.window then
     return existingHelper
 end
 
-local HELPER_VERSION = "v2.1.1a"
-
+local HELPER_VERSION = "v2.2.0"
 local HELPER_CONFIG = {
     schema_version = "ctoa-helper-profile-v1",
     enabled = true,
@@ -24,126 +23,67 @@ local HELPER_CONFIG = {
     theme_preset = "graphite",
     compact_mode = false,
     modules = {
-        overview = true,
-        healing = true,
-        heal_friend = false,
-        conditions = false,
-        targeting = true,
-        magic = true,
-        cavebot = true,
-        equipment = false,
-        helper = true,
-        scripting = false,
-        settings = true,
-        engine = true,
+        overview = true, healing = true, heal_friend = false,
+        conditions = false, targeting = true, magic = true,
+        cavebot = true, equipment = false, helper = true,
+        scripting = false, settings = true, engine = true,
     },
     healing = {
-        spell_enabled = true,
-        potion_enabled = true,
-        spell_threshold = 80,
-        potion_threshold = 62,
-        threshold_jitter_percent = 3,
-        spell = "exura ico",
+        spell_enabled = true, potion_enabled = true,
+        spell_threshold = 80, potion_threshold = 62,
+        threshold_jitter_percent = 3, spell = "exura ico",
         critical_spell = "exura med ico",
         spell_rotation = {
             {threshold = 85, spell = "exura ico"},
             {threshold = 55, spell = "exura med ico"},
             {threshold = 30, spell = "exura gran ico"}
         },
-        potion_name = "Ultimate Health Potion",
-        potion_mode = "Actionbar",
-        potion_hotkey = "F1",
-        potion_actionbar_slot = "F1",
-        mana_potion_enabled = true,
-        mana_potion_threshold = 45,
-        mana_potion_name = "Mana Potion",
-        mana_potion_hotkey = "F2",
-        mana_potion_actionbar_slot = "F2",
-        mana_potion_cooldown_ms = 1000,
-        last_cast_ms = 0,
-        last_mana_potion_ms = 0,
-        last_recovery_action_ms = 0,
-        cooldown_ms = 1000
+        potion_name = "Ultimate Health Potion", potion_mode = "Actionbar",
+        potion_hotkey = "F1", potion_actionbar_slot = "F1",
+        mana_potion_enabled = true, mana_potion_threshold = 45,
+        mana_potion_name = "Mana Potion", mana_potion_hotkey = "F2",
+        mana_potion_actionbar_slot = "F2", mana_potion_cooldown_ms = 1000,
+        last_cast_ms = 0, last_mana_potion_ms = 0,
+        last_recovery_action_ms = 0, cooldown_ms = 1000
     },
     heal_friend = {
-        enabled = false,
-        observe_party = true,
-        sio_spell = "exura sio",
-        hp_threshold = 70,
-        cooldown_ms = 1000,
-        action_lock_ms = 1200,
-        friend_whitelist = {},
-        priority = "lowest_hp",
-        require_whitelist = true,
-        pz_safe = true,
-        runtime_enabled = false,
-        friend_scan_range = 7,
-        sample_interval_ms = 1000,
-        last_sample_ms = 0,
-        last_status = "pending",
-        observed_count = 0,
-        lowest_friend_hp = 100,
-        last_cast_ms = 0
+        enabled = false, observe_party = true, sio_spell = "exura sio",
+        hp_threshold = 70, cooldown_ms = 1000, action_lock_ms = 1200,
+        friend_whitelist = {}, priority = "lowest_hp", require_whitelist = true,
+        pz_safe = true, runtime_enabled = false, friend_scan_range = 7,
+        sample_interval_ms = 1000, last_sample_ms = 0, last_status = "pending",
+        observed_count = 0, lowest_friend_hp = 100, last_cast_ms = 0
     },
     conditions = {
-        enabled = false,
-        observe_states = true,
-        mana_shield = true,
-        paralyze = true,
-        poison = true,
-        burn = true,
-        electric = true,
-        bleeding = true,
-        runtime_enabled = false,
-        sample_interval_ms = 1000,
-        api_probe_enabled = true,
-        api_probe_status = "pending",
-        api_probe_count = 0,
-        last_sample_ms = 0,
-        last_status = "pending"
+        enabled = false, observe_states = true, mana_shield = true,
+        paralyze = true, poison = true, burn = true,
+        electric = true, bleeding = true, runtime_enabled = false,
+        sample_interval_ms = 1000, api_probe_enabled = true,
+        api_probe_status = "pending", api_probe_count = 0,
+        last_sample_ms = 0, last_status = "pending"
     },
     equipment = {
-        enabled = false,
-        observe_slots = true,
-        ring_swap = false,
-        amulet_swap = false,
-        weapon_set = "manual",
-        pvp_gear_lock = true,
-        hp_threshold = 45,
-        sample_interval_ms = 1500,
-        api_probe_enabled = true,
-        api_probe_status = "pending",
-        api_probe_count = 0,
-        runtime_enabled = false,
-        last_sample_ms = 0,
-        last_status = "pending"
+        enabled = false, observe_slots = true, ring_swap = false,
+        amulet_swap = false, weapon_set = "manual", pvp_gear_lock = true,
+        hp_threshold = 45, sample_interval_ms = 1500,
+        api_probe_enabled = true, api_probe_status = "pending",
+        api_probe_count = 0, runtime_enabled = false,
+        last_sample_ms = 0, last_status = "pending"
     },
     scripting = {
-        enabled = false,
-        policy_mode = "deny_all",
-        allow_user_snippets = false,
-        allow_runtime_eval = false,
-        command_model = "none",
-        audit_log = true,
-        sandbox_required = true,
-        max_snippet_chars = 0,
-        runtime_enabled = false,
+        enabled = false, policy_mode = "deny_all",
+        allow_user_snippets = false, allow_runtime_eval = false,
+        command_model = "none", audit_log = true, sandbox_required = true,
+        max_snippet_chars = 0, runtime_enabled = false,
         last_status = "blocked: no snippet execution"
     },
     tools = {
-        auto_attack = true,
-        chase = true,
-        auto_follow = false,
-        pause_in_pz = true,
-        hold_target = false,
-        attack_range = 7,
-        target_timeout_ms = 15000,
-        retarget_delay_ms = 200,
-        log_retarget_ms = 3000,
-        block_log_ms = 3000,
-        probe_log_ms = 5000,
-        clear_target_in_pz = true,
-        block_npc_icons = true,
+        auto_attack = true, chase = true, auto_follow = false,
+        pause_in_pz = true, hold_target = false, require_reachable_target = true,
+        attack_range = 7, target_timeout_ms = 6000,
+        unreachable_timeout_ms = 1200, retarget_delay_ms = 200,
+        log_retarget_ms = 3000, block_log_ms = 3000, probe_log_ms = 5000,
+        clear_target_in_pz = true, block_npc_icons = true,
         block_friendly_summons = true,
         friendly_summon_name_fragments = {
             " familiar ",
@@ -154,24 +94,12 @@ local HELPER_CONFIG = {
         },
         prefer_low_hp = false,
         ignored_names = {
-            "elara goldwarden",
-            "goldwarden",
-            "aldren",
-            "andrew",
-            "brumgar",
-            "hireling",
-            "postman",
-            "selmir",
-            "taskmaster",
-            "liora",
-            "npc"
+            "elara goldwarden", "goldwarden", "aldren", "andrew",
+            "brumgar", "hireling", "postman", "selmir",
+            "taskmaster", "liora", "npc"
         },
         priority_names = {
-            "demon",
-            "dragon lord",
-            "dragon",
-            "cyclops",
-            "dwarf"
+            "demon", "dragon lord", "dragon", "cyclops", "dwarf"
         },
         auto_haste = false,
         haste_spell = "utani hur",
@@ -194,8 +122,8 @@ local HELPER_CONFIG = {
             {words = "exori gran", min_nearby = 3, cooldown_ms = 6000},
             {words = "exori", min_nearby = 2, cooldown_ms = 4000},
             {words = "exori min", min_nearby = 2, cooldown_ms = 4000},
-            {words = "exori gran ico", min_nearby = 1, cooldown_ms = 6000},
-            {words = "exori ico", min_nearby = 1, cooldown_ms = 2000},
+            {words = "exori gran ico", min_nearby = 1, max_nearby = 2, cooldown_ms = 6000},
+            {words = "exori ico", min_nearby = 1, max_nearby = 2, cooldown_ms = 2000},
             {words = "exori hur", min_nearby = 1, cooldown_ms = 2000, max_nearby = 1}
         },
         auto_exeta = true,
@@ -207,6 +135,14 @@ local HELPER_CONFIG = {
             "exeta res",
             "exeta amp res"
         },
+        auto_stance = false,
+        offensive_buff_spell = "utito tempo",
+        defensive_buff_spell = "utamo tempo",
+        offensive_max_monsters = 2,
+        defensive_min_monsters = 4,
+        stance_cooldown_ms = 10000,
+        last_stance_ms = 0,
+        active_stance = "neutral",
         rune_enabled = false,
         rune_name = "Sudden Death Rune",
         rune_mode = "Actionbar",
@@ -258,18 +194,18 @@ local MODULE_LANE_INDEX = {}
 
 local function moduleCall(module, functionName, ...)
     if module and type(module[functionName]) == "function" then
-        local ok, value, extra = pcall(module[functionName], ...)
+        local ok, value, extra, detail = pcall(module[functionName], ...)
         if ok then
-            return true, value, extra
+            return true, value, extra, detail
         end
     end
     return false, nil
 end
 
 local function moduleValue(module, functionName, ...)
-    local ok, value, extra = moduleCall(module, functionName, ...)
+    local ok, value, extra, detail = moduleCall(module, functionName, ...)
     if ok then
-        return value, extra
+        return value, extra, detail
     end
     return nil
 end
@@ -307,17 +243,13 @@ local Helper = {
     smoke_subtab = nil,
     active_hunting_tab = "targeting",
     active_tools_tab = "helper",
-    profile_name = "Built-in EK",
-    profile_path = nil,
-    ui_path = nil,
-    bound_hotkey = nil,
-    pending_confirm = nil,
-    current_target_id = 0,
-    target_start_ms = 0,
-    last_retarget_ms = 0,
-    last_target_log_ms = 0,
-    last_runtime_block_reason = nil,
-    last_runtime_block_ms = 0,
+    profile_name = "Built-in EK", vocation_id = "ek",
+    vocation_source = "default", last_vocation_probe_ms = 0,
+    profile_path = nil, ui_path = nil,
+    bound_hotkey = nil, pending_confirm = nil,
+    current_target_id = 0, target_start_ms = 0,
+    last_retarget_ms = 0, last_target_log_ms = 0,
+    last_runtime_block_reason = nil, last_runtime_block_ms = 0,
     last_client_report_ms = 0,
     client_report_path = nil
 }
@@ -575,6 +507,7 @@ local externalLootRuntime = rawget(_G, "CTOA_HELPER_LOOT_RUNTIME")
 local externalTimerRuntime = rawget(_G, "CTOA_HELPER_TIMER_RUNTIME")
 local externalRecoveryRuntime = rawget(_G, "CTOA_HELPER_RECOVERY_RUNTIME")
 local externalProfileSchema = rawget(_G, "CTOA_HELPER_PROFILE_SCHEMA")
+local externalVocationProfiles = rawget(_G, "CTOA_HELPER_VOCATION_PROFILES")
 local externalProfilePersistence = rawget(_G, "CTOA_HELPER_PROFILE_PERSISTENCE")
 local externalOperatorSummary = rawget(_G, "CTOA_HELPER_OPERATOR_SUMMARY")
 local externalRuntimePolicy = rawget(_G, "CTOA_HELPER_RUNTIME_POLICY")
@@ -724,6 +657,8 @@ local function reportClientCapabilities(now, force, active)
         game = game,
         loader_state = rawget(_G, "CTOA_OTCLIENT"),
         helper_version = HELPER_VERSION,
+        vocation = Helper.vocation_id,
+        profile_name = Helper.profile_name,
         online = online,
         active = active ~= false,
         protocol_ready = false,
@@ -745,8 +680,16 @@ local function reportClientCapabilities(now, force, active)
     return false
 end
 
-local function loadProfile()
-    local candidates = profilePersistenceTable("profileCandidates", {
+local function loadProfile(requestedVocation)
+    local player = g_game and g_game.getLocalPlayer and g_game.getLocalPlayer() or nil
+    local detected, source, raw = moduleValue(externalVocationProfiles, "detect", player)
+    if type(detected) ~= "string" or detected == "" then
+        detected = Helper.vocation_id or "ek"
+        source = source or "fallback"
+    end
+    local vocationId = requestedVocation or detected or "ek"
+    local routed = moduleValue(externalVocationProfiles, "candidates", vocationId, player)
+    local candidates = type(routed) == "table" and routed or profilePersistenceTable("profileCandidates", {
         "user_dir/ctoa_otclient/ctoa_ek_profile.lua",
         "ctoa_otclient/ctoa_ek_profile.lua",
         "/ctoa_ek_profile.lua"
@@ -767,13 +710,17 @@ local function loadProfile()
                 Helper.profile_migration = migration
                 Helper.profile_name = profile.name or path
                 Helper.profile_path = path
+                Helper.vocation_id = profile.vocation or vocationId
+                Helper.vocation_source = source
+                HELPER_CONFIG.vocation = Helper.vocation_id
+                status("Vocation probe: raw=" .. tostring(raw) .. " resolved=" .. tostring(vocationId) .. " source=" .. tostring(source))
                 status(profilePersistenceValue("loadSuccessText", "Profile loaded: " .. Helper.profile_name, "profile", Helper.profile_name))
                 return true
             end
             status(profilePersistenceValue("loadFailureText", "Profile load failed: " .. path .. " " .. tostring(profile), "profile", path, profile))
         end
     end
-    status(profilePersistenceValue("loadSuccessText", "Profile loaded: " .. Helper.profile_name, "profile", Helper.profile_name))
+    status("Profile unavailable for vocation: " .. tostring(vocationId))
     return false
 end
 
@@ -1682,13 +1629,26 @@ local function scanCombatArea(tools)
     return scan
 end
 
+local function targetReachable(target, playerPos, maxRange)
+    local targetPos = getThingPosition(target)
+    local distance = distanceChebyshev(playerPos, targetPos)
+    if not targetPos or not distance then return false end
+    if distance <= 1 then return true end
+    if HELPER_CONFIG.tools.require_reachable_target ~= true then return true end
+    if not g_map or not g_map.findPath then return true end
+    local ok, directions = pcall(function()
+        return g_map.findPath(playerPos, targetPos, tonumber(maxRange) or 20, 0)
+    end)
+    return ok and type(directions) == "table" and #directions > 0
+end
+
 local function isTargetInRange(target, maxRange)
     local localPlayer = getLocalPlayer()
     if not localPlayer or not isMonsterCreature(target, localPlayer) then
         return false
     end
     local distance = distanceChebyshev(getThingPosition(localPlayer), getThingPosition(target))
-    return distance ~= nil and distance <= maxRange
+    return distance ~= nil and distance <= maxRange and targetReachable(target, getThingPosition(localPlayer), maxRange)
 end
 
 local function getSafeAttackTarget(maxRange)
@@ -1777,6 +1737,7 @@ local function buildTargetCandidate(creature, playerPos)
         name = normalizedCreatureName(creature),
         distance = distanceChebyshev(playerPos, creaturePos) or 99,
         hp = getCreatureHealthPercent(creature),
+        reachable = targetReachable(creature, playerPos, HELPER_CONFIG.tools.attack_range or 7),
         is_summon = pcallOptionalBool(creature, "isSummon") == true,
         is_familiar = pcallOptionalBool(creature, "isFamiliar") == true,
         is_friendly_summon = isFriendlySummonCreature(creature, localPlayer)
@@ -2051,6 +2012,7 @@ end
 
 local function buildOffensiveAction(tools, target, scan, now)
     local visible = scan and scan.visible or 0
+    local nearby = scan and scan.adjacent or 0
     local rotationSpell = nil
     if tools.spell_rotation and target then
         rotationSpell = selectRotationSpell(tools, scan, now)
@@ -2060,6 +2022,7 @@ local function buildOffensiveAction(tools, target, scan, now)
             target_present = target ~= nil,
             target_in_range = target and isTargetInRange(target, tools.attack_range or 7) or nil,
             visible = visible,
+            nearby = nearby,
             now_ms = now,
             recovery_gap_active = recoveryActionGap(now).active,
             rotation_spell = rotationSpell,
@@ -2090,6 +2053,24 @@ local function executeOffensiveAction(tools, action, nearby, visible, now)
     if recoveryActionGap(now).active then
         status(combatRuntimeText("actionStatusText", {kind = "recovery_gap"}, {now_ms = now}, "Combat action status unavailable"))
         return false
+    end
+    if action.kind == "stance" and action.spell then
+        local mode = nil
+        if action.fight_mode == "offensive" then
+            mode = rawget(_G, "FightOffensive") or 1
+        elseif action.fight_mode == "defensive" then
+            mode = rawget(_G, "FightDefensive") or 3
+        end
+        if mode and g_game and g_game.setFightMode then
+            pcall(function() g_game.setFightMode(mode) end)
+        end
+        if castSpell(action.spell) then
+            tools.last_stance_ms = now
+            tools.active_stance = action.stance or "neutral"
+            lockOffensiveAction(tools, now)
+            status(combatRuntimeText("actionStatusText", action, action, "EK stance changed"))
+            return true
+        end
     end
     if action.kind == "exeta" and action.spell and castSpell(action.spell) then
         tools.last_exeta_ms = now
@@ -3120,10 +3101,15 @@ end
 function onThink()
     local now = helperNowMs()
     reportClientCapabilities(now, false)
-    if not isGameOnline() then
-        return
+    if not isGameOnline() then return end
+    if now - (Helper.last_vocation_probe_ms or 0) >= 1000 then
+        Helper.last_vocation_probe_ms = now
+        local player = g_game and g_game.getLocalPlayer and g_game.getLocalPlayer() or nil
+        local detected = moduleValue(externalVocationProfiles, "detect", player)
+        if detected and detected ~= Helper.vocation_id and type(Helper.handleGameStart) == "function" then
+            Helper.handleGameStart()
+        end
     end
-
     processSmokeCommand()
     if not HELPER_CONFIG.enabled then
         local disarmedText = moduleValue(externalHud, "disarmedText")
@@ -4009,7 +3995,7 @@ buildUi = function()
     end
     Helper.status_label = createWidget("Label", window, "ctoaHelperStatus", "Status: OK", sx, UI_LAYOUT.status_y, sw, 20)
     styleUi("styleLabel", Helper.status_label, "status", UI_STYLE)
-    local hintLabel = addLabel(window, "ctoaHint", "Look ID: EK", sx, UI_LAYOUT.hint_y, sw, nil)
+    local hintLabel = addLabel(window, "ctoaHint", "Look ID: " .. string.upper(tostring(Helper.vocation_id or "unknown")), sx, UI_LAYOUT.hint_y, sw, nil)
     styleUi("styleLabel", hintLabel, "muted", UI_STYLE)
     local buildLabel = addLabel(window, "ctoaSideBuild", "Build: local", sx, UI_LAYOUT.hint_y + 18, sw, nil)
     styleUi("styleLabel", buildLabel, "muted", UI_STYLE)
@@ -4251,11 +4237,25 @@ Helper.init = init
 Helper.terminate = terminate
 Helper.toggleWindow = toggleWindow
 Helper.handleGameStart = function()
-    if Helper.window and Helper.window.show and HELPER_CONFIG.auto_show_window ~= false then
-        Helper.window:show()
-        Helper.window:raise()
-    end
-    reportClientCapabilities(helperNowMs(), true, true)
+    delay(function()
+        local player = g_game and g_game.getLocalPlayer and g_game.getLocalPlayer() or nil
+        local detected = moduleValue(externalVocationProfiles, "detect", player)
+        if detected and detected ~= Helper.vocation_id then
+            if loadProfile(detected) then
+                applySafeBootRuntimeGuard()
+                applyUiPrefs()
+                rebuildUi()
+                status("Vocation profile selected: " .. tostring(moduleValue(externalVocationProfiles, "label", detected) or detected))
+            else
+                status("Vocation profile switch blocked: " .. tostring(detected))
+            end
+        end
+        if Helper.window and Helper.window.show and HELPER_CONFIG.auto_show_window ~= false then
+            Helper.window:show()
+            Helper.window:raise()
+        end
+        reportClientCapabilities(helperNowMs(), true, true)
+    end, 250)
 end
 Helper.showTab = function(tab)
     if not Helper.window then

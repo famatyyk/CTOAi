@@ -4,6 +4,7 @@
 
 return {
     schema_version = "ctoa-helper-profile-v1",
+    vocation = "ek",
     name = "CTOAI EK: EK monk, bez aoe na 1, exeta od 2 visible, potio",
     enabled = false,
     safe_boot_runtime_disabled = true,
@@ -129,8 +130,10 @@ return {
         auto_follow = false,
         pause_in_pz = true,
         hold_target = false,
+        require_reachable_target = true,
         attack_range = 7,
-        target_timeout_ms = 15000,
+        target_timeout_ms = 6000,
+        unreachable_timeout_ms = 1200,
         retarget_delay_ms = 200,
         log_retarget_ms = 3000,
         block_log_ms = 3000,
@@ -195,11 +198,13 @@ return {
             {
                 words = "exori gran ico",
                 min_nearby = 1,
+                max_nearby = 2,
                 cooldown_ms = 6000,
             },
             {
                 words = "exori ico",
                 min_nearby = 1,
+                max_nearby = 2,
                 cooldown_ms = 2000,
             },
             {
@@ -216,6 +221,14 @@ return {
             "exeta res",
             "exeta amp res",
         },
+        auto_stance = true,
+        offensive_buff_spell = "utito tempo",
+        defensive_buff_spell = "utamo tempo",
+        offensive_max_monsters = 2,
+        defensive_min_monsters = 4,
+        stance_cooldown_ms = 10000,
+        last_stance_ms = 0,
+        active_stance = "neutral",
         rune_enabled = false,
         rune_name = "Sudden Death Rune",
         rune_hotkey = "F5",

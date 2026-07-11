@@ -27,6 +27,7 @@ local SUPPORT_MODULES = {
     {name = "ctoa_helper_timer_runtime", file = "ctoa_helper_timer_runtime.lua", phase = "domain", depends_on = {"ctoa_helper_runtime_core"}},
     {name = "ctoa_helper_recovery_runtime", file = "ctoa_helper_recovery_runtime.lua", phase = "domain", depends_on = {"ctoa_helper_recovery_observer"}},
     {name = "ctoa_helper_profile_schema", file = "ctoa_helper_profile_schema.lua", phase = "profile", depends_on = {}},
+    {name = "ctoa_helper_vocation_profiles", file = "ctoa_helper_vocation_profiles.lua", phase = "profile", depends_on = {"ctoa_helper_profile_schema"}},
     {name = "ctoa_helper_profile_persistence", file = "ctoa_helper_profile_persistence.lua", phase = "profile", depends_on = {"ctoa_helper_profile_schema"}},
     {name = "ctoa_helper_operator_summary", file = "ctoa_helper_operator_summary.lua", phase = "coordinate", depends_on = {"ctoa_helper_profile_schema"}},
     {name = "ctoa_helper_planner", file = "ctoa_helper_planner.lua", phase = "coordinate", depends_on = {}},
