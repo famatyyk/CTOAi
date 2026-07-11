@@ -26,7 +26,8 @@ def test_recovery_bridge_is_packaged_and_safe_by_default():
     assert "default_dry_run = true" in source
     assert 'mode = "sandbox_only"' in source
     assert "injected_executor_required = true" in source
-    assert 'normalized:find("/solteriacodextest/client/", 1, true)' in helper
+    assert 'local marker = "/solteriacodextest/client"' in helper
+    assert 'return suffix == "" or suffix == "/"' in helper
     assert "Helper.recoveryBridgeArm" in helper
     assert "Helper.recoveryBridgeDryRun" in helper
     assert "Helper.recoveryBridgeKill" in helper

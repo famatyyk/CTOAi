@@ -2186,7 +2186,11 @@ local function recoveryBridgeSandboxEnvironment()
     end
     local ok, workDir = pcall(function() return g_resources.getWorkDir() end)
     local normalized = ok and tostring(workDir or ""):lower():gsub("\\", "/") or ""
-    return normalized:find("/solteriacodextest/client/", 1, true) ~= nil
+    local marker = "/solteriacodextest/client"
+    local start = normalized:find(marker, 1, true)
+    if not start then return false end
+    local suffix = normalized:sub(start + #marker, start + #marker)
+    return suffix == "" or suffix == "/"
 end
 
 local function recoveryBridgeObservation(vitals)
