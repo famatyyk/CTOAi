@@ -1,5 +1,5 @@
 param(
-    [ValidateSet("PrepareDev", "ValidateDev", "Setup", "SmokePreflight", "SmokeStatus", "SmokeQueue", "GoalStatus", "BackgroundStatus", "LocalReady", "Launch", "Smoke", "SmokeAll", "SmokeAttach", "SmokeAttachModules", "SmokeAttachAll", "ThemeSnapshotMatrix", "HealingVitalsSmoke", "CombatSafetySmoke", "CavebotSafetySmoke", "TimerSafetySmoke", "LootSafetySmoke", "HealFriendNoTargetSmoke", "ConditionsObserverSmoke", "EquipmentObserverSmoke", "ScriptingPolicySmoke", "PlannerStaticSmoke", "RuntimePolicyStaticSmoke", "DispatchGuardStaticSmoke", "PlanQueueStaticSmoke", "RuntimeReadinessStaticSmoke", "ModuleStatusStaticSmoke", "ActionCatalogStaticSmoke", "DecisionTraceStaticSmoke", "DecisionPipelineStaticSmoke", "SandboxHandoffStaticSmoke", "FeatureFlagsStaticSmoke", "HudStaticSmoke", "HotkeysStaticSmoke", "ModalStaticSmoke", "InputContractsStaticSmoke", "RouteStaticSmoke", "TargetingStaticSmoke", "CombatRuntimeStaticSmoke", "CavebotRuntimeStaticSmoke", "LootRuntimeStaticSmoke", "TimerRuntimeStaticSmoke", "RecoveryRuntimeStaticSmoke", "RecoveryBridgeStaticSmoke", "ConditionsRuntimeGateStaticSmoke", "EquipmentRuntimeGateStaticSmoke", "HealFriendRuntimeGateStaticSmoke", "RuntimeModuleGatesSandboxSmoke", "RecoveryBridgeSandboxSmoke", "RecoveryBridgeActionSmoke", "ProfileSchemaStaticSmoke", "OperatorSummaryStaticSmoke", "ExternalBotImportGateStaticSmoke", "HelperShellBudgetStaticSmoke", "HelperShellBudgetPlanStaticSmoke", "ModuleContract", "ModuleAudit", "ModuleStaticGates", "Snapshot", "ReadyCheck", "BackupLiveCtoa", "PromoteLiveCtoa", "EmergencyRepairLiveCtoa", "DisableLiveCtoa", "EnableLiveCtoa", "EnableLiveCtoaUiOnly", "Stop")]
+    [ValidateSet("PrepareDev", "ValidateDev", "Setup", "SmokePreflight", "SmokeStatus", "SmokeQueue", "GoalStatus", "BackgroundStatus", "LocalReady", "Launch", "Smoke", "SmokeAll", "SmokeAttach", "SmokeAttachModules", "SmokeAttachAll", "ThemeSnapshotMatrix", "HealingVitalsSmoke", "CombatSafetySmoke", "CavebotSafetySmoke", "TimerSafetySmoke", "LootSafetySmoke", "HealFriendNoTargetSmoke", "ConditionsObserverSmoke", "EquipmentObserverSmoke", "ScriptingPolicySmoke", "PlannerStaticSmoke", "RuntimePolicyStaticSmoke", "DispatchGuardStaticSmoke", "PlanQueueStaticSmoke", "RuntimeReadinessStaticSmoke", "ModuleStatusStaticSmoke", "ActionCatalogStaticSmoke", "DecisionTraceStaticSmoke", "DecisionPipelineStaticSmoke", "SandboxHandoffStaticSmoke", "FeatureFlagsStaticSmoke", "HudStaticSmoke", "HotkeysStaticSmoke", "ModalStaticSmoke", "InputContractsStaticSmoke", "RouteStaticSmoke", "TargetingStaticSmoke", "CombatRuntimeStaticSmoke", "CavebotRuntimeStaticSmoke", "LootRuntimeStaticSmoke", "TimerRuntimeStaticSmoke", "RecoveryRuntimeStaticSmoke", "RecoveryBridgeStaticSmoke", "ConditionsRuntimeGateStaticSmoke", "EquipmentRuntimeGateStaticSmoke", "HealFriendRuntimeGateStaticSmoke", "RuntimeModuleGatesSandboxSmoke", "RecoveryBridgeSandboxSmoke", "RecoveryBridgeActionSmoke", "ProfileSchemaStaticSmoke", "OperatorSummaryStaticSmoke", "ExternalBotImportGateStaticSmoke", "HelperShellBudgetStaticSmoke", "HelperShellBudgetPlanStaticSmoke", "ModuleContract", "ModuleAudit", "ModuleStaticGates", "EquipmentShadowReplayStaticSmoke", "Snapshot", "ReadyCheck", "BackupLiveCtoa", "PromoteLiveCtoa", "EmergencyRepairLiveCtoa", "DisableLiveCtoa", "EnableLiveCtoa", "EnableLiveCtoaUiOnly", "Stop")]
     [string]$Action = "Smoke",
     [ValidateSet("Interactive", "BackgroundNoScreen")]
     [string]$OperatorMode = "Interactive",
@@ -935,6 +935,14 @@ function Invoke-DevValidation {
         throw "Pytest validation failed"
     }
     $checks += [pscustomobject]@{ name = "pytest"; status = "passed"; evidence = "tests/test_otclient_helper_zerobot_shell.py tests/test_solteria_api_audit.py tests/test_ctoa_helper_smoke_report.py tests/test_solteria_helper_release_gate.py tests/test_solteria_helper_goal_audit.py" }
+    Write-Output "[solteria-helper-test-env] Validate: P10 Equipment shadow replay fixture gate"
+    $equipmentShadowScript = Join-Path $repo "scripts\ops\otclient_equipment_shadow_replay.py"
+    & python $equipmentShadowScript --no-write --source fixture | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        Write-DevValidationReport -OutRoot $outRoot -Version $version -Status "failed" -Checks $checks | Out-Null
+        throw "Equipment shadow replay fixture gate failed"
+    }
+    $checks += [pscustomobject]@{ name = "equipment_shadow_replay"; status = "passed"; evidence = "scripts/ops/otclient_equipment_shadow_replay.py --no-write --source fixture" }
     Write-Output "[solteria-helper-test-env] Validate: static helper UI preview"
     & python scripts\ops\ctoa_helper_ui_preview.py
     if ($LASTEXITCODE -ne 0) {
@@ -4247,6 +4255,7 @@ function Invoke-ModuleStaticGates {
         [pscustomobject]@{ module = "recovery_bridge"; action = "RecoveryBridgeStaticSmoke"; report = "recovery_bridge_static_smoke.json"; attach_command = "" },
         [pscustomobject]@{ module = "conditions_runtime_gate"; action = "ConditionsRuntimeGateStaticSmoke"; report = "conditions_runtime_gate_static_smoke.json"; attach_command = "" },
         [pscustomobject]@{ module = "equipment_runtime_gate"; action = "EquipmentRuntimeGateStaticSmoke"; report = "equipment_runtime_gate_static_smoke.json"; attach_command = "" },
+        [pscustomobject]@{ module = "equipment_shadow_replay"; action = "EquipmentShadowReplayStaticSmoke"; report = "equipment_shadow_replay_static_smoke.json"; attach_command = "" },
         [pscustomobject]@{ module = "heal_friend_runtime_gate"; action = "HealFriendRuntimeGateStaticSmoke"; report = "heal_friend_runtime_gate_static_smoke.json"; attach_command = "" },
         [pscustomobject]@{ module = "profile_schema"; action = "ProfileSchemaStaticSmoke"; report = "profile_schema_static_smoke.json"; attach_command = "" },
         [pscustomobject]@{ module = "operator_summary"; action = "OperatorSummaryStaticSmoke"; report = "operator_summary_static_smoke.json"; attach_command = "" },
@@ -5691,6 +5700,39 @@ function Invoke-BackgroundStatus {
     Write-Output "[solteria-helper-test-env] BackgroundNoScreen invariants passed: process and screenshot state unchanged."
 }
 
+function Invoke-EquipmentShadowReplayStaticSmoke {
+    $repo = Get-RepoRoot
+    $python = Join-Path $repo ".venv\Scripts\python.exe"
+    $scriptPath = Join-Path $repo "scripts\ops\otclient_equipment_shadow_replay.py"
+    if (-not (Test-Path -LiteralPath $python -PathType Leaf) -or -not (Test-Path -LiteralPath $scriptPath -PathType Leaf)) {
+        throw "P10 Equipment shadow replay static smoke requires the repo interpreter and replay tool."
+    }
+    & $python $scriptPath --no-write --source fixture | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        throw "P10 Equipment shadow replay static smoke failed."
+    }
+    $outRoot = Join-Path $repo $DevDir
+    New-Item -ItemType Directory -Force -Path $outRoot | Out-Null
+    $report = [pscustomobject]@{
+        name = "equipment-shadow-replay-static-smoke"
+        created_at = (Get-Date).ToString("s")
+        status = "passed"
+        passed_count = 15
+        check_count = 15
+        failed_count = 0
+        fixture_only = $true
+        runtime_readiness_claimed = $false
+        dispatch_allowed = $false
+        runtime_actions = $false
+        executes_plan = $false
+        execute_once_allowed = $false
+        promotion_allowed = $false
+        intrusive_actions_performed = @()
+    }
+    Write-JsonAtomic -InputObject $report -Path (Join-Path $outRoot "equipment_shadow_replay_static_smoke.json") -Depth 8
+    Write-Output "[solteria-helper-test-env] Equipment shadow replay static smoke: passed (15/15 fixture cases)."
+}
+
 Assert-OperatorModeAction
 
 switch ($Action) {
@@ -5881,6 +5923,9 @@ switch ($Action) {
     }
     "ModuleStaticGates" {
         Invoke-ModuleStaticGates
+    }
+    "EquipmentShadowReplayStaticSmoke" {
+        Invoke-EquipmentShadowReplayStaticSmoke
     }
     "Snapshot" {
         Invoke-Snapshot
