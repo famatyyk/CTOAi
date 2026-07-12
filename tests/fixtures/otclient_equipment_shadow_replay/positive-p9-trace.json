@@ -1,0 +1,16 @@
+{
+  "schema_version": "ctoa.conditions-shadow-trace.v1",
+  "trace_id": "fixture-p9-trace",
+  "source": "fixture",
+  "status": "shadow_plan_ready",
+  "action": "plan_paralyze_recovery",
+  "decision": "would_plan_paralyze_recovery",
+  "blockers": [],
+  "decision_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "dispatch_allowed": false,
+  "runtime_actions": false,
+  "executes_plan": false,
+  "execute_once_allowed": false,
+  "promotion_allowed": false,
+  "intrusive_actions_performed": []
+}

@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ctoa.local/schemas/equipment-shadow-replay-report.schema.json",
+  "title": "CTOAi Equipment Shadow Replay Report v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "generated_at_unix_ms", "mode", "operational_acceptance_status", "scenario_pack_status", "fixture_only_validation_passed", "runtime_readiness_claimed", "operational_trace", "scenario_pack", "dispatch_allowed", "runtime_actions", "executes_plan", "execute_once_allowed", "promotion_allowed", "intrusive_actions_performed"],
+  "properties": {
+    "schema_version": {"const": "ctoa.equipment-shadow-replay-report.v1"},
+    "generated_at_unix_ms": {"type": "integer", "minimum": 1},
+    "mode": {"const": "offline_equipment_shadow_replay"},
+    "operational_acceptance_status": {"enum": ["shadow_plan_ready_for_operator_review", "operational_acceptance_blocked"]},
+    "scenario_pack_status": {"enum": ["passed", "failed"]},
+    "fixture_only_validation_passed": {"type": "boolean"},
+    "runtime_readiness_claimed": {"const": false},
+    "operational_trace": {"type": "object"},
+    "scenario_pack": {"type": "object"},
+    "dispatch_allowed": {"const": false},
+    "runtime_actions": {"const": false},
+    "executes_plan": {"const": false},
+    "execute_once_allowed": {"const": false},
+    "promotion_allowed": {"const": false},
+    "intrusive_actions_performed": {"const": []}
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ctoa.local/schemas/equipment-shadow-profile.schema.json",
+  "title": "CTOAi Equipment Shadow Profile v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "mode", "action", "slot", "max_observation_age_ms", "cooldown_required", "retry_budget", "requires_p9_acceptance", "exact_item_ids", "rollback_required", "dispatch_allowed", "runtime_actions", "executes_plan", "execute_once_allowed", "promotion_allowed"],
+  "properties": {
+    "schema_version": {"const": "ctoa.equipment-shadow-profile.v1"},
+    "mode": {"const": "shadow_only"},
+    "action": {"const": "plan_ring_swap"},
+    "slot": {"const": "ring"},
+    "max_observation_age_ms": {"const": 6000},
+    "cooldown_required": {"const": "ready"},
+    "retry_budget": {"const": 0},
+    "requires_p9_acceptance": {"const": true},
+    "exact_item_ids": {"const": true},
+    "rollback_required": {"const": true},
+    "dispatch_allowed": {"const": false},
+    "runtime_actions": {"const": false},
+    "executes_plan": {"const": false},
+    "execute_once_allowed": {"const": false},
+    "promotion_allowed": {"const": false}
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "schema_version": "ctoa.conditions-shadow-acceptance.v1",
+  "receipt_id": "fixture-p9-receipt",
+  "status": "accepted",
+  "acceptance_granted": true,
+  "receipt_persisted": true,
+  "decision_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "operational_inputs_fixture": true,
+  "runtime_readiness_claimed": false,
+  "dispatch_allowed": false,
+  "runtime_actions": false,
+  "executes_plan": false,
+  "execute_once_allowed": false,
+  "promotion_allowed": false,
+  "intrusive_actions_performed": []
+}

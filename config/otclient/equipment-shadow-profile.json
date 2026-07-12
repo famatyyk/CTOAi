@@ -1,0 +1,17 @@
+{
+  "schema_version": "ctoa.equipment-shadow-profile.v1",
+  "mode": "shadow_only",
+  "action": "plan_ring_swap",
+  "slot": "ring",
+  "max_observation_age_ms": 6000,
+  "cooldown_required": "ready",
+  "retry_budget": 0,
+  "requires_p9_acceptance": true,
+  "exact_item_ids": true,
+  "rollback_required": true,
+  "dispatch_allowed": false,
+  "runtime_actions": false,
+  "executes_plan": false,
+  "execute_once_allowed": false,
+  "promotion_allowed": false
+}

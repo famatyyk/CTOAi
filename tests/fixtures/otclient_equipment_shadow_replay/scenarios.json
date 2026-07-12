@@ -1,0 +1,23 @@
+{
+  "schema_version": "ctoa.equipment-shadow-scenario-pack.v1",
+  "fixture_only": true,
+  "operational_readiness_claimed": false,
+  "evaluated_at_unix_ms": 1783800000000,
+  "scenarios": [
+    {"name": "positive_ring_plan", "mutation": "none", "expected_status": "shadow_plan_ready", "expected_blockers": []},
+    {"name": "inventory_ambiguous", "mutation": "inventory_ambiguous", "expected_status": "operational_acceptance_blocked", "expected_blockers": ["inventory_ambiguous"]},
+    {"name": "revision_drift", "mutation": "revision_drift", "expected_status": "operational_acceptance_blocked", "expected_blockers": ["inventory_revision_drift"]},
+    {"name": "missing_ring", "mutation": "missing_ring", "expected_status": "operational_acceptance_blocked", "expected_blockers": ["ring_slot_mismatch"]},
+    {"name": "wrong_equipped_id", "mutation": "wrong_equipped_id", "expected_status": "operational_acceptance_blocked", "expected_blockers": ["equipped_item_id_invalid", "rollback_snapshot_mismatch"]},
+    {"name": "wrong_candidate_id", "mutation": "wrong_candidate_id", "expected_status": "operational_acceptance_blocked", "expected_blockers": ["candidate_matches_equipped"]},
+    {"name": "missing_rollback", "mutation": "missing_rollback", "expected_status": "operational_acceptance_blocked", "expected_blockers": ["rollback_item_id_invalid", "rollback_snapshot_mismatch"]},
+    {"name": "wrong_container", "mutation": "wrong_container", "expected_status": "operational_acceptance_blocked", "expected_blockers": ["rollback_container_mismatch"]},
+    {"name": "stale_snapshot", "mutation": "stale_snapshot", "expected_status": "operational_acceptance_blocked", "expected_blockers": ["snapshot_stale"]},
+    {"name": "future_snapshot", "mutation": "future_snapshot", "expected_status": "operational_acceptance_blocked", "expected_blockers": ["snapshot_future"]},
+    {"name": "protection_zone", "mutation": "protection_zone", "expected_status": "operational_acceptance_blocked", "expected_blockers": ["protection_zone_inside"]},
+    {"name": "cooldown_active", "mutation": "cooldown_active", "expected_status": "operational_acceptance_blocked", "expected_blockers": ["cooldown_active"]},
+    {"name": "p9_blocked", "mutation": "p9_blocked", "expected_status": "operational_acceptance_blocked", "expected_blockers": ["p9_receipt_not_granted"]},
+    {"name": "p9_tampered", "mutation": "p9_tampered", "expected_status": "operational_acceptance_blocked", "expected_blockers": ["p9_receipt_trace_mismatch"]},
+    {"name": "unsafe_contract", "mutation": "unsafe_contract", "expected_status": "operational_acceptance_blocked", "expected_blockers": ["snapshot_schema_invalid", "unsafe_contract"]}
+  ]
+}

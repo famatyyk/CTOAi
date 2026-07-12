@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ctoa.local/schemas/equipment-shadow-scenario-pack.schema.json",
+  "title": "CTOAi Equipment Shadow Scenario Pack v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "fixture_only", "operational_readiness_claimed", "evaluated_at_unix_ms", "scenarios"],
+  "properties": {
+    "schema_version": {"const": "ctoa.equipment-shadow-scenario-pack.v1"},
+    "fixture_only": {"const": true},
+    "operational_readiness_claimed": {"const": false},
+    "evaluated_at_unix_ms": {"type": "integer", "minimum": 1},
+    "scenarios": {"type": "array", "minItems": 1, "maxItems": 128, "items": {"type": "object", "additionalProperties": false, "required": ["name", "mutation", "expected_status", "expected_blockers"], "properties": {"name": {"type": "string", "minLength": 1}, "mutation": {"type": "string", "minLength": 1}, "expected_status": {"enum": ["shadow_plan_ready", "operational_acceptance_blocked"]}, "expected_blockers": {"type": "array", "items": {"type": "string"}}}}}
+  }
+}
