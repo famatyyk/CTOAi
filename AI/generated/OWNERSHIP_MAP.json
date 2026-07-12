@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-11T20:20:50+00:00",
+  "generated_at": "2026-07-12T00:19:26+00:00",
   "source": "runtime\\audits\\ctoai-full-workspace-audit.json",
   "status": "ready",
   "areas": [
@@ -58,10 +58,10 @@
       "path": ".git",
       "owner": "Local/uncategorized",
       "validation_gate": "manual review",
-      "files": 290,
-      "bytes": 3583928810,
+      "files": 371,
+      "bytes": 3584461549,
       "categories": {
-        "git_internal": 290
+        "git_internal": 371
       }
     },
     {
@@ -189,7 +189,7 @@
       "owner": "Engine Brain",
       "validation_gate": "brain refresh; brain pack",
       "files": 46,
-      "bytes": 1009534,
+      "bytes": 1017525,
       "categories": {
         "tracked_source": 46
       }
@@ -455,10 +455,10 @@
       "owner": "Documentation",
       "validation_gate": "doc sync guard",
       "files": 317,
-      "bytes": 4458583,
+      "bytes": 4458864,
       "categories": {
-        "tracked_source": 310,
-        "untracked_source_candidate": 7
+        "tracked_source": 311,
+        "untracked_source_candidate": 6
       }
     },
     {
@@ -476,7 +476,7 @@
       "owner": "Local/uncategorized",
       "validation_gate": "manual review",
       "files": 3,
-      "bytes": 2289192,
+      "bytes": 2320644,
       "categories": {
         "runtime_or_local_state": 3
       }
@@ -485,10 +485,10 @@
       "path": "metrics",
       "owner": "Local/uncategorized",
       "validation_gate": "manual review",
-      "files": 22,
-      "bytes": 16544,
+      "files": 24,
+      "bytes": 18048,
       "categories": {
-        "runtime_or_local_state": 22
+        "runtime_or_local_state": 24
       }
     },
     {
@@ -599,7 +599,7 @@
       "owner": "Local/uncategorized",
       "validation_gate": "manual review",
       "files": 2482,
-      "bytes": 908911949,
+      "bytes": 908926049,
       "categories": {
         "runtime_or_local_state": 2482
       }
@@ -621,8 +621,7 @@
       "files": 15,
       "bytes": 46161,
       "categories": {
-        "tracked_source": 14,
-        "untracked_source_candidate": 1
+        "tracked_source": 15
       }
     },
     {
@@ -641,10 +640,10 @@
       "owner": "Operator automation",
       "validation_gate": "pytest targeted script tests",
       "files": 451,
-      "bytes": 6213714,
+      "bytes": 6214171,
       "categories": {
-        "tracked_source": 269,
-        "untracked_source_candidate": 182
+        "tracked_source": 270,
+        "untracked_source_candidate": 181
       }
     },
     {
@@ -662,11 +661,11 @@
       "owner": "Regression suite",
       "validation_gate": "pytest tests/ --ignore=tests/e2e",
       "files": 532,
-      "bytes": 9233427,
+      "bytes": 9234668,
       "categories": {
         "local_secret_or_sensitive": 2,
-        "tracked_source": 195,
-        "untracked_source_candidate": 335
+        "tracked_source": 197,
+        "untracked_source_candidate": 333
       }
     },
     {

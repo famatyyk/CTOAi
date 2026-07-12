@@ -1,6 +1,6 @@
 # Engine Brain File Tree
 
-Generated at: `2026-07-11T20:20:50+00:00`
+Generated at: `2026-07-12T00:19:26+00:00`
 
 Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 `node_modules`, `runtime`, `logs`, `data`, `.tmp`, build outputs.
@@ -97,30 +97,30 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `AI/CHECKPOINT_2026-07-08.md` | 10285 |
 | `AI/CLASS_INDEX.md` | 1815 |
 | `AI/CODEX_CAPABILITY_MAP.md` | 5237 |
-| `AI/ENGINE_BRAIN_STATUS.md` | 136072 |
+| `AI/ENGINE_BRAIN_STATUS.md` | 136303 |
 | `AI/ENGINE_MEMORY.md` | 2971 |
 | `AI/FEATURE_ROADMAP.md` | 62304 |
-| `AI/generated/DOC_SYNC.json` | 1164 |
-| `AI/generated/DOC_SYNC.md` | 681 |
-| `AI/generated/ENGINE_BRAIN_PACK.json` | 6363 |
-| `AI/generated/ENGINE_BRAIN_PACK.md` | 301310 |
-| `AI/generated/ENV_DOCTOR.json` | 7400 |
-| `AI/generated/ENV_DOCTOR.md` | 1263 |
-| `AI/generated/FILE_TREE.md` | 71212 |
-| `AI/generated/manifest.json` | 2062 |
-| `AI/generated/OWNERSHIP_MAP.json` | 16978 |
-| `AI/generated/OWNERSHIP_MAP.md` | 6611 |
-| `AI/generated/P6_CODEX_INTEGRATION_READINESS.json` | 11010 |
-| `AI/generated/P6_CODEX_INTEGRATION_READINESS.md` | 6915 |
-| `AI/generated/P7_ACTION_READINESS.json` | 4870 |
-| `AI/generated/P7_ACTION_READINESS.md` | 1142 |
-| `AI/generated/P7_OPERATOR_BRIEF.json` | 7282 |
-| `AI/generated/P7_OPERATOR_BRIEF.md` | 1619 |
-| `AI/generated/P7_OPERATOR_WORKFLOW.json` | 4690 |
-| `AI/generated/P7_OPERATOR_WORKFLOW.md` | 3015 |
-| `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.json` | 2705 |
-| `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.md` | 2024 |
-| `AI/generated/SYMBOL_MAP.md` | 283566 |
+| `AI/generated/DOC_SYNC.json` | 1116 |
+| `AI/generated/DOC_SYNC.md` | 667 |
+| `AI/generated/ENGINE_BRAIN_PACK.json` | 6078 |
+| `AI/generated/ENGINE_BRAIN_PACK.md` | 294982 |
+| `AI/generated/ENV_DOCTOR.json` | 7182 |
+| `AI/generated/ENV_DOCTOR.md` | 1241 |
+| `AI/generated/FILE_TREE.md` | 69927 |
+| `AI/generated/manifest.json` | 2006 |
+| `AI/generated/OWNERSHIP_MAP.json` | 16262 |
+| `AI/generated/OWNERSHIP_MAP.md` | 6534 |
+| `AI/generated/P6_CODEX_INTEGRATION_READINESS.json` | 10693 |
+| `AI/generated/P6_CODEX_INTEGRATION_READINESS.md` | 6849 |
+| `AI/generated/P7_ACTION_READINESS.json` | 4732 |
+| `AI/generated/P7_ACTION_READINESS.md` | 1120 |
+| `AI/generated/P7_OPERATOR_BRIEF.json` | 7099 |
+| `AI/generated/P7_OPERATOR_BRIEF.md` | 1621 |
+| `AI/generated/P7_OPERATOR_WORKFLOW.json` | 4588 |
+| `AI/generated/P7_OPERATOR_WORKFLOW.md` | 2973 |
+| `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.json` | 2657 |
+| `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.md` | 1988 |
+| `AI/generated/SYMBOL_MAP.md` | 276035 |
 | `AI/KNOWN_BUGS.md` | 1384 |
 | `AI/LUA_INDEX.md` | 2874 |
 | `AI/OPERATIONS_AUDIT.md` | 5139 |
@@ -208,7 +208,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `docs/AGENT_PROMPT_DEFINITIVE.md` | 4201 |
 | `docs/AGENT_TRAINING_MASTERPLAN.md` | 3605 |
 | `docs/ARCHITECTURE.md` | 21905 |
-| `docs/audits/CTOAI_FULL_WORKSPACE_AUDIT_2026-07-06.md` | 6986 |
+| `docs/audits/CTOAI_FULL_WORKSPACE_AUDIT_2026-07-06.md` | 6835 |
 | `docs/audits/CTOAI_SECURITY_HARDENING_2026-07-06.md` | 114540 |
 | `docs/audits/CTOAI_WORKTREE_EXECUTION_PLAN_2026-07-11.md` | 8548 |
 | `docs/audits/CTOAI_WORKTREE_TRIAGE_2026-07-09.md` | 6985 |
@@ -458,7 +458,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `docs/otclient/solteria_helper_sandbox_smoke_queue.md` | 10222 |
 | `docs/otclient/solteria_helper_shell_budget_plan.md` | 4261 |
 | `docs/otclient/solteria_helper_supplemental_refactor_plan.md` | 27770 |
-| `docs/otclient/solteria_helper_test_env.md` | 29075 |
+| `docs/otclient/solteria_helper_test_env.md` | 29349 |
 | `docs/otclient/SOLTERIA_HELPER_V2_1_1_STYLE_MODERNIZATION_PLAN_2026-07-11.md` | 7950 |
 | `docs/otclient/SOLTERIA_HELPER_V2_1_1A_STABILIZATION_REFACTOR_PLAN_2026-07-11.md` | 2206 |
 | `docs/otclient/SOLTERIA_HELPER_V2_1_UX_PLAN_2026-07-11.md` | 1797 |
@@ -484,7 +484,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `docs/REPO_HYGIENE_POLICY.md` | 4830 |
 | `docs/REPO_SCHEMA.md` | 10994 |
 | `docs/ROADMAP_V0.2.0_TO_V1.0.0.md` | 878 |
-| `docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md` | 8303 |
+| `docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md` | 8212 |
 | `docs/runbook-althea-enc3-reverseeng.md` | 3502 |
 | `docs/runbook-azure-activity-log-interpretation.md` | 2855 |
 | `docs/runbook-disk-emergency.md` | 2223 |
@@ -825,7 +825,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/ops/smoke_must_pass.py` | 2644 |
 | `scripts/ops/solteria_api_audit.py` | 9873 |
 | `scripts/ops/solteria_helper_goal_audit.py` | 17499 |
-| `scripts/ops/solteria_helper_release_gate.py` | 25206 |
+| `scripts/ops/solteria_helper_release_gate.py` | 27415 |
 | `scripts/ops/solteria_helper_sandbox_smoke_queue.py` | 12790 |
 | `scripts/ops/sprint027_validate.py` | 8791 |
 | `scripts/ops/sprint028_validate.py` | 11765 |
@@ -891,7 +891,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/windows/build-ctoa-desktop-exe.ps1` | 1210 |
 | `scripts/windows/install-ctoa-vscode-extensions.ps1` | 1852 |
 | `scripts/windows/open-control-center.ps1` | 2306 |
-| `scripts/windows/solteria_helper_test_env.ps1` | 442614 |
+| `scripts/windows/solteria_helper_test_env.ps1` | 443272 |
 | `src/main.py` | 15 |
 | `tests/conftest.py` | 1341 |
 | `tests/e2e/__init__.py` | 0 |
@@ -1038,7 +1038,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `tests/test_security_hardening.py` | 15139 |
 | `tests/test_solteria_api_audit.py` | 2554 |
 | `tests/test_solteria_helper_goal_audit.py` | 8806 |
-| `tests/test_solteria_helper_release_gate.py` | 25561 |
+| `tests/test_solteria_helper_release_gate.py` | 27035 |
 | `tests/test_solteria_helper_sandbox_smoke_queue.py` | 15720 |
 | `tests/test_sprint029_ci_evidence.py` | 3084 |
 | `tests/test_sprint029_dashboard_ergonomics.py` | 4829 |

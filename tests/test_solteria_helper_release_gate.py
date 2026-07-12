@@ -66,6 +66,11 @@ def _write_static_artifacts(dev_dir: Path) -> None:
             "passed_count": 4,
             "failed_count": 0,
             "required_sequence": ["conditions", "equipment", "heal_friend"],
+            "manifest": {
+                "path": str(dev_dir / "manifest.json"),
+                "created_at": "2026-07-06T03:00:00",
+                "sha256": hashlib.sha256((dev_dir / "manifest.json").read_bytes()).hexdigest(),
+            },
         },
     )
     _write_json(
@@ -181,16 +186,32 @@ def test_release_gate_blocks_when_module_attach_failed(tmp_path: Path):
     assert "required Conditions -> Equipment -> Heal Friend sequence" in module_gate.reason
 
 
-def test_release_gate_blocks_when_module_attach_is_stale(tmp_path: Path):
+def test_release_gate_blocks_when_module_attach_manifest_hash_mismatches(tmp_path: Path):
     _write_static_artifacts(tmp_path)
     attach_gate = tmp_path / "module_attach_smoke.json"
-    os.utime(attach_gate, (1, 1))
+    payload = json.loads(attach_gate.read_text(encoding="utf-8"))
+    payload["manifest"]["sha256"] = "0" * 64
+    attach_gate.write_text(json.dumps(payload), encoding="utf-8")
 
     report = gate.build_report(tmp_path)
 
     module_gate = next(item for item in report.gates if item.name == "ModuleAttachSmoke")
     assert module_gate.status == "blocked"
-    assert "stale" in module_gate.reason
+    assert "SHA256" in module_gate.reason
+
+
+def test_release_gate_rejects_legacy_module_attach_without_manifest_binding(tmp_path: Path):
+    _write_static_artifacts(tmp_path)
+    attach_gate = tmp_path / "module_attach_smoke.json"
+    payload = json.loads(attach_gate.read_text(encoding="utf-8"))
+    payload.pop("manifest")
+    attach_gate.write_text(json.dumps(payload), encoding="utf-8")
+
+    report = gate.build_report(tmp_path)
+
+    module_gate = next(item for item in report.gates if item.name == "ModuleAttachSmoke")
+    assert module_gate.status == "blocked"
+    assert "manifest SHA256 binding" in module_gate.reason
 
 
 def test_release_gate_blocks_when_module_attach_sequence_is_wrong(tmp_path: Path):

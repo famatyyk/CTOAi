@@ -5325,6 +5325,13 @@ function Invoke-SmokeAttachModules {
     $repo = Get-RepoRoot
     $outRoot = Join-Path $repo $DevDir
     New-Item -ItemType Directory -Force -Path $outRoot | Out-Null
+    $manifestPath = Join-Path $outRoot "manifest.json"
+    if (-not (Test-Path -LiteralPath $manifestPath -PathType Leaf)) {
+        throw "Module attach smoke requires the current dev manifest: $manifestPath"
+    }
+    $manifestDocument = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
+    $manifestSha256 = (Get-FileHash -LiteralPath $manifestPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    $manifestCreatedAt = [string]$manifestDocument.created_at
     Write-Output "[solteria-helper-test-env] Module attach run id: $attachRunId"
 
     $moduleTabs = @("conditions", "equipment", "heal_friend", "scripting")
@@ -5371,6 +5378,11 @@ function Invoke-SmokeAttachModules {
         module_count = $moduleArray.Count
         passed_count = @($moduleArray | Where-Object { $_.status -eq "passed" }).Count
         failed_count = $failed.Count
+        manifest = [pscustomobject]@{
+            path = [System.IO.Path]::GetFullPath($manifestPath)
+            created_at = $manifestCreatedAt
+            sha256 = $manifestSha256
+        }
         modules = $moduleArray
         required_sequence = @("conditions", "equipment", "heal_friend")
         next_action = if ($failed.Count -eq 0) { "Run SmokeAttachAll for final in-world visual acceptance." } else { "Enter the sandbox test character, run ReadyCheck, then rerun SmokeAttachModules." }

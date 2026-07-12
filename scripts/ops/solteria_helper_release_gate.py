@@ -322,13 +322,6 @@ def _module_attach_smoke_gate(gates_path: Path, manifest_path: Path) -> Gate:
             evidence=str(gates_path),
             reason="Run SmokeAttachModules after sandbox character is in-world.",
         )
-    if manifest_path.is_file() and gates_path.stat().st_mtime < manifest_path.stat().st_mtime:
-        return Gate(
-            name="ModuleAttachSmoke",
-            status="blocked",
-            evidence=str(gates_path),
-            reason="ModuleAttachSmoke is stale for the current dev manifest; rerun SmokeAttachModules after sandbox character is in-world.",
-        )
     module_count = int(data.get("module_count") or 0)
     passed_count = int(data.get("passed_count") or 0)
     failed_count = int(data.get("failed_count") or 0)
@@ -340,7 +333,29 @@ def _module_attach_smoke_gate(gates_path: Path, manifest_path: Path) -> Gate:
         and failed_count == 0
         and required_sequence == ["conditions", "equipment", "heal_friend"]
     ):
-        return Gate(name="ModuleAttachSmoke", status="passed", evidence=str(gates_path))
+        binding = data.get("manifest")
+        binding_sha256 = str(binding.get("sha256") or "").lower() if isinstance(binding, dict) else ""
+        if len(binding_sha256) == 64 and all(character in "0123456789abcdef" for character in binding_sha256):
+            if not manifest_path.is_file():
+                return Gate(
+                    name="ModuleAttachSmoke",
+                    status="blocked",
+                    evidence=str(gates_path),
+                    reason="ModuleAttachSmoke manifest binding cannot be checked because the current dev manifest is missing.",
+                )
+            if _sha256(manifest_path).lower() != binding_sha256:
+                return Gate(
+                    name="ModuleAttachSmoke",
+                    status="blocked",
+                    evidence=str(gates_path),
+                    reason="ModuleAttachSmoke manifest SHA256 does not match the current dev manifest; rerun SmokeAttachModules after sandbox character is in-world.",
+                )
+            return Gate(name="ModuleAttachSmoke", status="passed", evidence=str(gates_path))
+        if manifest_path.is_file() and gates_path.stat().st_mtime < manifest_path.stat().st_mtime:
+            reason = "ModuleAttachSmoke is stale for the current dev manifest and has no manifest SHA256 binding; rerun SmokeAttachModules after sandbox character is in-world."
+        else:
+            reason = "ModuleAttachSmoke has no manifest SHA256 binding; legacy smoke evidence cannot be accepted, rerun SmokeAttachModules after sandbox character is in-world."
+        return Gate(name="ModuleAttachSmoke", status="blocked", evidence=str(gates_path), reason=reason)
     return Gate(
         name="ModuleAttachSmoke",
         status="blocked",

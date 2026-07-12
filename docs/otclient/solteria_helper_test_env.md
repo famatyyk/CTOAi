@@ -356,6 +356,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_hel
 predecessor sequence is `conditions -> equipment -> heal_friend`. It writes
 `runtime/solteria_helper_dev/module_attach_smoke.json` and routes to
 `SmokeAttachAll` only when all four module tabs capture successfully.
+The report also records the current dev manifest path, creation time, and
+SHA-256. The release gate accepts a passing 4/4 report only when that hash
+matches the current `manifest.json`; legacy reports without this binding stay
+blocked even when their module counts are 4/4.
 
 After both attach commands, run `RuntimeModuleGatesSandboxSmoke`. Its passing
 state proves action-bound dry-run and fail-closed behavior only; it does not
