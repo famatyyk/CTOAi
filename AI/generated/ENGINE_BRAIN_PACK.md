@@ -1,6 +1,6 @@
 # CTOAi Engine Brain Pack
 
-Generated at: `2026-07-12T00:19:30+00:00`
+Generated at: `2026-07-12T00:32:16+00:00`
 Repo root: `C:\Users\zycie\CTOAi`
 Profile: `helper`
 
@@ -156,9 +156,11 @@ Snapshot date: 2026-07-11 Europe/Warsaw
   all 58 entries and reports stable 57/58 parity with one executable-profile
   drift, while `acceptance_allowed=false`. Release Evidence and Control Center
   consume only allowlisted remediation and diagnostic fields.
-- `ModuleAttachSmoke` 4/4 evidence is now manifest-hash-bound at production and
-  at the release-gate consumer. Legacy 4/4 artifacts without a matching
-  `manifest.sha256` remain blocked; mtime alone cannot make stale smoke fresh.
+- `ModuleAttachSmoke` 4/4, `SmokeAttachAll` 16/16, and
+  `RuntimeModuleGatesSandboxSmoke` evidence are now manifest-hash-bound at
+  production and at the release-gate consumers. Legacy complete artifacts
+  without a matching `manifest.sha256` remain blocked; mtime alone cannot
+  make stale smoke fresh.
 - P9 Conditions is `offline_implementation_complete` and
   `operational_acceptance_blocked`. The existing heartbeat now carries an
   optional strict Conditions observation; the bounded sanitizer keeps missing
@@ -740,8 +742,6 @@ Snapshot date: 2026-07-11 Europe/Warsaw
 - Mobile console auto-trainer report reads are now physically bounded.
   `/api/agents/auto-trainer/latest` reads `latest.md` and `latest.json` through
   byte caps, reports markdown truncation, rejects oversized JSON reports with a
-  stable status, and no longer returns raw JSON parser exception text.
-- M
 
 [truncated]
 ```
@@ -2979,8 +2979,14 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_hel
 `SmokeAttachAll` automatically builds an in-world coverage report with:
 
 ```powershell
-python scripts\ops\ctoa_helper_smoke_report.py --run-id <run-id> --prefix solteria-helper-attach --in-world
+python scripts\ops\ctoa_helper_smoke_report.py --run-id <run-id> --prefix solteria-helper-attach --in-world --manifest-path runtime\solteria_helper_dev\manifest.json
 ```
+
+The report records the current dev manifest path, creation time, and SHA-256.
+The release gate accepts complete 16/16 evidence only when that hash matches
+the current manifest; a legacy report cannot be made fresh by changing its
+timestamp. `RuntimeModuleGatesSandboxSmoke` uses the same binding for its
+action-bound dry-run contract.
 
 Attach smoke writes `ctoa_smoke_command.lua`; the helper consumes it during
 runtime, switches tabs, logs `Smoke tab visible: <tab>/<subtab>`, captures a
@@ -5954,7 +5960,7 @@ fresh `ctoa_local.log` lines plus safe boot state.
 ```json
 {
   "schema_version": 1,
-  "generated_at": "2026-07-12T00:19:26+00:00",
+  "generated_at": "2026-07-12T00:32:02+00:00",
   "root": "C:\\Users\\zycie\\CTOAi",
   "file_count": 1276,
   "outputs": {
@@ -6017,14 +6023,14 @@ fresh `ctoa_local.log` lines plus safe boot state.
 ```markdown
 # Engine Brain Environment Doctor
 
-Generated at: `2026-07-11T20:21:05+00:00`
+Generated at: `2026-07-12T00:32:16+00:00`
 Overall status: `warn`
 
 | Check | Status | Key evidence |
 |---|---|---|
-| `git` | `ok` | branch=codex/p8-background-noscreen; dirty=48; path=C:\Program Files\Git\cmd\git.EXE |
+| `git` | `ok` | branch=codex/p8-background-noscreen; dirty=27; path=C:\Program Files\Git\cmd\git.EXE |
 | `docker` | `ok` | containers=2; running_broad=0; configured_broad=0 |
-| `vpn` | `warn` | warp_connected=False |
+| `vpn` | `ok` | warp_connected=True |
 | `vercel` | `ok` | version=54.10.3; project=ctoa-web |
 | `vscode` | `warn` | openai=['openai.chatgpt@26.623.141536']; old_dirs=2 |
 | `github` | `warn` | open_prs=6; dirty_prs=5; failed_runs=0 |
@@ -6045,7 +6051,7 @@ Overall status: `warn`
 ```markdown
 # Engine Brain Ownership Map
 
-Generated at: `2026-07-12T00:19:26+00:00`
+Generated at: `2026-07-12T00:32:02+00:00`
 Source audit: `runtime\audits\ctoai-full-workspace-audit.json`
 Status: `ready`
 
@@ -6128,7 +6134,7 @@ Status: `ready`
 ```markdown
 # Engine Brain Doc Sync
 
-Generated at: `2026-07-12T00:19:26+00:00`
+Generated at: `2026-07-12T00:32:02+00:00`
 Status: `passed`
 
 | Check | Path | Status | Missing |
@@ -6148,7 +6154,7 @@ Status: `passed`
 ```markdown
 # Engine Brain Secret Guardrail
 
-Generated at: `2026-07-12T00:19:26+00:00`
+Generated at: `2026-07-12T00:32:02+00:00`
 Status: `passed`
 Sensitive/local env path count in audit: `7`
 
@@ -6170,7 +6176,7 @@ Generated Engine Brain context must not include exact local sensitive/env paths 
 ```markdown
 # P6 Codex Integration Readiness
 
-Generated at: `2026-07-12T00:19:26+00:00`
+Generated at: `2026-07-12T00:32:02+00:00`
 Status: `ready_for_plugin_design`
 
 P6 allows only four read-only status/cockpit tools plus audited repo-hygiene, API-cost, evidence-pack, Engine Brain, and P7 cockpit-smoke safe-write refreshes. Do not add deploy/live shortcuts or bypass Control Center evidence gates.
@@ -6242,7 +6248,7 @@ Recommended next: Operate the plugin as four read-only status/cockpit tools plus
 ```markdown
 # P7 Operator Workflow
 
-Generated at: `2026-07-12T00:19:26+00:00`
+Generated at: `2026-07-12T00:32:02+00:00`
 Status: `safe_write_ready`
 Decision: `allow_bounded_safe_write_tools`
 
@@ -6290,7 +6296,7 @@ Next safe command: Use ctoai_repo_hygiene_refresh, ctoai_api_cost_refresh, ctoai
 ```markdown
 # P7 Action Readiness
 
-Generated at: `2026-07-12T00:19:26+00:00`
+Generated at: `2026-07-12T00:32:02+00:00`
 Status: `safe_write_tools_enabled`
 Decision: `monitor_enabled_safe_write_tools`
 
@@ -6318,7 +6324,7 @@ Next safe command: Design the next P7 plugin action only after risk model covera
 ```markdown
 # P7 Safe Write Tool Design
 
-Generated at: `2026-07-12T00:19:26+00:00`
+Generated at: `2026-07-12T00:32:02+00:00`
 Status: `implemented`
 Decision: `ready_for_dry_run_operation`
 
@@ -6360,7 +6366,7 @@ Next safe command: Run ctoai_evidence_pack_refresh with dry_run=true and verify 
 ```markdown
 # P7 Operator Brief
 
-Generated at: `2026-07-12T00:19:26+00:00`
+Generated at: `2026-07-12T00:32:02+00:00`
 Decision: `ready_for_p7_operator_workflow`
 Status: `ready`
 
@@ -6390,7 +6396,7 @@ Next safe command: Design the next P7 plugin action only after risk model covera
 ```markdown
 # Engine Brain File Tree
 
-Generated at: `2026-07-12T00:19:26+00:00`
+Generated at: `2026-07-12T00:32:02+00:00`
 
 Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 `node_modules`, `runtime`, `logs`, `data`, `.tmp`, build outputs.
@@ -6487,19 +6493,19 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `AI/CHECKPOINT_2026-07-08.md` | 10285 |
 | `AI/CLASS_INDEX.md` | 1815 |
 | `AI/CODEX_CAPABILITY_MAP.md` | 5237 |
-| `AI/ENGINE_BRAIN_STATUS.md` | 136303 |
+| `AI/ENGINE_BRAIN_STATUS.md` | 136376 |
 | `AI/ENGINE_MEMORY.md` | 2971 |
 | `AI/FEATURE_ROADMAP.md` | 62304 |
 | `AI/generated/DOC_SYNC.json` | 1116 |
 | `AI/generated/DOC_SYNC.md` | 667 |
-| `AI/generated/ENGINE_BRAIN_PACK.json` | 6078 |
-| `AI/generated/ENGINE_BRAIN_PACK.md` | 294982 |
-| `AI/generated/ENV_DOCTOR.json` | 7182 |
-| `AI/generated/ENV_DOCTOR.md` | 1241 |
+| `AI/generated/ENGINE_BRAIN_PACK.json` | 6441 |
+| `AI/generated/ENGINE_BRAIN_PACK.md` | 446138 |
+| `AI/generated/ENV_DOCTOR.json` | 7606 |
+| `AI/generated/ENV_DOCTOR.md` | 1260 |
 | `AI/generated/FILE_TREE.md` | 69927 |
 | `AI/generated/manifest.json` | 2006 |
-| `AI/generated/OWNERSHIP_MAP.json` | 16262 |
-| `AI/generated/OWNERSHIP_MAP.md` | 6534 |
+| `AI/generated/OWNERSHIP_MAP.json` | 16221 |
+| `AI/generated/OWNERSHIP_MAP.md` | 6504 |
 | `AI/generated/P6_CODEX_INTEGRATION_READINESS.json` | 10693 |
 | `AI/generated/P6_CODEX_INTEGRATION_READINESS.md` | 6849 |
 | `AI/generated/P7_ACTION_READINESS.json` | 4732 |
@@ -6510,7 +6516,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `AI/generated/P7_OPERATOR_WORKFLOW.md` | 2973 |
 | `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.json` | 2657 |
 | `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.md` | 1988 |
-| `AI/generated/SYMBOL_MAP.md` | 276035 |
+| `AI/generated/SYMBOL_MAP.md` | 276146 |
 | `AI/KNOWN_BUGS.md` | 1384 |
 | `AI/LUA_INDEX.md` | 2874 |
 | `AI/OPERATIONS_AUDIT.md` | 5139 |
@@ -6848,7 +6854,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `docs/otclient/solteria_helper_sandbox_smoke_queue.md` | 10222 |
 | `docs/otclient/solteria_helper_shell_budget_plan.md` | 4261 |
 | `docs/otclient/solteria_helper_supplemental_refactor_plan.md` | 27770 |
-| `docs/otclient/solteria_helper_test_env.md` | 29349 |
+| `docs/otclient/solteria_helper_test_env.md` | 29743 |
 | `docs/otclient/SOLTERIA_HELPER_V2_1_1_STYLE_MODERNIZATION_PLAN_2026-07-11.md` | 7950 |
 | `docs/otclient/SOLTERIA_HELPER_V2_1_1A_STABILIZATION_REFACTOR_PLAN_2026-07-11.md` | 2206 |
 | `docs/otclient/SOLTERIA_HELPER_V2_1_UX_PLAN_2026-07-11.md` | 1797 |
@@ -7142,7 +7148,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/ops/ctoa-vps.ps1` | 92112 |
 | `scripts/ops/ctoa_env_doctor.py` | 6218 |
 | `scripts/ops/ctoa_full_workspace_audit.py` | 32417 |
-| `scripts/ops/ctoa_helper_smoke_report.py` | 10065 |
+| `scripts/ops/ctoa_helper_smoke_report.py` | 11016 |
 | `scripts/ops/ctoa_helper_ui_mockup_v4.py` | 6281 |
 | `scripts/ops/ctoa_helper_ui_preview.py` | 58270 |
 | `scripts/ops/ctoa_loader.py` | 16230 |
@@ -7202,7 +7208,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 ```markdown
 # Engine Brain Symbol Map
 
-Generated at: `2026-07-12T00:19:26+00:00`
+Generated at: `2026-07-12T00:32:02+00:00`
 
 This is a lightweight map for navigation, not a full source dump.
 

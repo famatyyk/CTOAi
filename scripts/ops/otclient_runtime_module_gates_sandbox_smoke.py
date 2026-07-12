@@ -63,6 +63,15 @@ def sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def manifest_binding_matches(report: dict, manifest_sha256: str) -> bool:
+    binding = report.get("manifest") if isinstance(report, dict) else None
+    return (
+        isinstance(binding, dict)
+        and str(binding.get("sha256") or "").lower() == manifest_sha256.lower()
+        and len(manifest_sha256) == 64
+    )
+
+
 def latest_smoke_all() -> Path | None:
     reports = list(PREVIEW.glob("solteria-helper-smokeall-inworld-*.json"))
     return max(reports, key=lambda path: path.stat().st_mtime) if reports else None
@@ -232,6 +241,7 @@ print("high_risk_and_out_of_scope_deferred=passed")
 def main() -> int:
     manifest_path = DEV / "manifest.json"
     manifest = load_json(manifest_path)
+    manifest_sha256 = sha256(manifest_path) if manifest_path.is_file() else ""
     helper_version = str(manifest.get("helper_version") or "unknown")
     initialized_marker = f"Initialized successfully {helper_version}"
     manifest_mtime = manifest_path.stat().st_mtime if manifest_path.is_file() else 0
@@ -268,13 +278,14 @@ def main() -> int:
         and module_attach.get("required_sequence")
         == ["conditions", "equipment", "heal_friend"],
         "module_attach_current": module_attach_path.is_file()
-        and module_attach_path.stat().st_mtime >= manifest_mtime,
+        and manifest_binding_matches(module_attach, manifest_sha256),
         "smoke_attach_all_16": smoke_all.get("covered_count")
         == smoke_all.get("expected_count")
         == 16
         and not smoke_all.get("missing"),
         "smoke_attach_all_current": bool(
-            smoke_all_path and smoke_all_path.stat().st_mtime >= manifest_mtime
+            smoke_all_path
+            and manifest_binding_matches(smoke_all, manifest_sha256)
         ),
         "gate_modules_loaded": all(
             f"Loaded: ctoa_helper_{lane}_runtime_gate" in boot_text
@@ -306,6 +317,11 @@ def main() -> int:
     payload = {
         "schema_version": "ctoa.runtime-module-gates-sandbox-smoke.v1",
         "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "manifest": {
+            "path": str(manifest_path.resolve()),
+            "created_at": manifest.get("created_at"),
+            "sha256": manifest_sha256,
+        },
         "status": status,
         "mode": "in_world_fail_closed_dry_run",
         "sequence": ["conditions", "equipment", "heal_friend"],

@@ -5269,6 +5269,11 @@ function Invoke-SmokeAttachAll {
     if ([string]::IsNullOrWhiteSpace($attachRunId)) {
         $attachRunId = Get-Date -Format "yyyyMMdd-HHmm"
     }
+    $repoRoot = Get-RepoRoot
+    $manifestPath = Join-Path (Join-Path $repoRoot $DevDir) "manifest.json"
+    if (-not (Test-Path -LiteralPath $manifestPath -PathType Leaf)) {
+        throw "SmokeAttachAll requires the current dev manifest: $manifestPath"
+    }
     Write-Output "[solteria-helper-test-env] Attach run id: $attachRunId"
     $tabs = @(
         "overview",
@@ -5308,9 +5313,8 @@ function Invoke-SmokeAttachAll {
         }
     }
     if (-not $NoReport) {
-        $repoRoot = Get-RepoRoot
         $reportScript = Join-Path $repoRoot "scripts\ops\ctoa_helper_smoke_report.py"
-        & python $reportScript --run-id $attachRunId --prefix solteria-helper-attach --in-world --screenshot-dir (Join-Path $repoRoot $ScreenshotDir)
+        & python $reportScript --run-id $attachRunId --prefix solteria-helper-attach --in-world --screenshot-dir (Join-Path $repoRoot $ScreenshotDir) --manifest-path $manifestPath
         if ($LASTEXITCODE -ne 0) {
             throw "Attach smoke coverage report failed for run id: $attachRunId"
         }

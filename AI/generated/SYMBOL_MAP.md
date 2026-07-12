@@ -1,6 +1,6 @@
 # Engine Brain Symbol Map
 
-Generated at: `2026-07-12T00:19:26+00:00`
+Generated at: `2026-07-12T00:32:02+00:00`
 
 This is a lightweight map for navigation, not a full source dump.
 
@@ -3110,15 +3110,16 @@ This is a lightweight map for navigation, not a full source dump.
 
 ## `scripts/ops/ctoa_helper_smoke_report.py`
 
-- L56: class ViewEvidence
-- L63: class SmokeReport
-- L73: def _view_from_name(path, run_id, prefix)
-- L81: def collect_report(screenshot_dir, run_id)
-- L94: def display_path(path)
-- L120: def render_markdown(report)
-- L165: def render_html(report)
-- L238: def parse_args()
-- L250: def main()
+- L57: class ViewEvidence
+- L64: class SmokeReport
+- L74: def _view_from_name(path, run_id, prefix)
+- L82: def collect_report(screenshot_dir, run_id)
+- L95: def display_path(path)
+- L121: def manifest_binding(manifest_path)
+- L134: def render_markdown(report)
+- L179: def render_html(report)
+- L252: def parse_args()
+- L270: def main()
 
 ## `scripts/ops/ctoa_helper_ui_mockup_v4.py`
 
@@ -3744,9 +3745,10 @@ This is a lightweight map for navigation, not a full source dump.
 
 - L51: def load_json(path)
 - L58: def sha256(path)
-- L66: def latest_smoke_all()
-- L71: def run_lua_fail_closed(online, alive, client_ready, outside_pz)
-- L232: def main()
+- L66: def manifest_binding_matches(report, manifest_sha256)
+- L75: def latest_smoke_all()
+- L80: def run_lua_fail_closed(online, alive, client_ready, outside_pz)
+- L241: def main()
 
 ## `scripts/ops/phase5_nightly_checklist.py`
 
@@ -3946,24 +3948,25 @@ This is a lightweight map for navigation, not a full source dump.
 - L104: def _file_gate(name, path, reason)
 - L112: def _sha256(path)
 - L120: def _zip_gate(path, expected_sha256)
-- L137: def _manifest_gate(manifest_path, manifest)
-- L183: def find_latest_inworld_smoke_report(screenshot_dir)
-- L194: def _resolve_report_screenshot(smoke_report, screenshot_value)
-- L205: def _smoke_gate(smoke_report, manifest_path)
-- L267: def _smoke_preflight_gate(preflight_path, manifest_path, manifest)
-- L309: def _module_static_gates_gate(gates_path, manifest_path)
-- L346: def _module_attach_smoke_gate(gates_path, manifest_path)
-- L413: def _runtime_module_gates_sandbox_gate(gates_path, manifest_path)
-- L467: def _live_root_from_manifest(manifest)
-- L476: def _live_package_matches_manifest(live_root, manifest)
-- L510: def _live_approval_gate(dev_dir, manifest_path, manifest, approved)
-- L558: def _command_for_attach_gate(dev_dir, ready_command)
-- L583: def _command_for_smokeattach_gate(dev_dir)
-- L587: def _command_for_module_attach_gate(dev_dir)
-- L591: def _command_for_next_gate(gates, approved, dev_dir)
-- L620: def build_report(dev_dir, smoke_report)
-- L696: def parse_args()
-- L711: def main()
+- L135: def _manifest_gate(manifest_path, manifest)
+- L179: def find_latest_inworld_smoke_report(screenshot_dir)
+- L190: def _resolve_report_screenshot(smoke_report, screenshot_value)
+- L201: def _manifest_binding_error()
+- L228: def _smoke_gate(smoke_report, manifest_path)
+- L286: def _smoke_preflight_gate(preflight_path, manifest_path, manifest)
+- L322: def _module_static_gates_gate(gates_path, manifest_path)
+- L351: def _module_attach_smoke_gate(gates_path, manifest_path)
+- L402: def _runtime_module_gates_sandbox_gate(gates_path, manifest_path)
+- L454: def _live_root_from_manifest(manifest)
+- L463: def _live_package_matches_manifest(live_root, manifest)
+- L489: def _live_approval_gate(dev_dir, manifest_path, manifest, approved)
+- L530: def _command_for_attach_gate(dev_dir, ready_command)
+- L552: def _command_for_smokeattach_gate(dev_dir)
+- L556: def _command_for_module_attach_gate(dev_dir)
+- L560: def _command_for_next_gate(gates, approved, dev_dir)
+- L589: def build_report(dev_dir, smoke_report)
+- L640: def parse_args()
+- L651: def main()
 
 ## `scripts/ops/solteria_helper_sandbox_smoke_queue.py`
 
@@ -5258,15 +5261,16 @@ This is a lightweight map for navigation, not a full source dump.
 
 ## `tests/test_ctoa_helper_smoke_report.py`
 
-- L6: def test_expected_views_cover_zerobot_shell()
-- L27: def test_collect_report_detects_complete_coverage(tmp_path)
-- L40: def test_collect_report_supports_attach_prefix(tmp_path)
-- L56: def test_collect_report_reports_missing_views(tmp_path)
-- L66: def test_render_markdown_includes_modal_limited_acceptance_note(tmp_path)
-- L80: def test_render_markdown_inworld_note(tmp_path)
-- L96: def test_render_html_includes_visual_review_cards(tmp_path)
-- L110: def test_report_paths_are_browser_friendly(tmp_path)
-- L125: def test_render_html_inworld_status(tmp_path)
+- L10: def test_expected_views_cover_zerobot_shell()
+- L31: def test_collect_report_detects_complete_coverage(tmp_path)
+- L44: def test_collect_report_supports_attach_prefix(tmp_path)
+- L60: def test_collect_report_reports_missing_views(tmp_path)
+- L70: def test_render_markdown_includes_modal_limited_acceptance_note(tmp_path)
+- L84: def test_render_markdown_inworld_note(tmp_path)
+- L100: def test_render_html_includes_visual_review_cards(tmp_path)
+- L114: def test_report_paths_are_browser_friendly(tmp_path)
+- L129: def test_render_html_inworld_status(tmp_path)
+- L145: def test_cli_binds_inworld_report_to_manifest(tmp_path)
 
 ## `tests/test_ctoa_helper_ui_preview_security.py`
 
@@ -6425,43 +6429,45 @@ This is a lightweight map for navigation, not a full source dump.
 
 - L9: def _write_json(path, payload)
 - L13: def test_release_gate_atomic_json_write_leaves_complete_artifact(tmp_path)
-- L28: def _write_static_artifacts(dev_dir)
-- L106: def _write_complete_smoke_report(path)
-- L125: def test_release_gate_blocks_without_inworld_smoke_and_approval(tmp_path)
-- L144: def test_release_gate_uses_smoke_status_next_command_for_smokeattach_blocker(tmp_path)
-- L163: def test_release_gate_runs_smokeattachall_when_readycheck_is_ready(tmp_path)
-- L177: def test_release_gate_runs_smokeattachmodules_when_module_attach_is_missing_and_ready(tmp_path)
-- L197: def test_release_gate_blocks_when_module_attach_failed(tmp_path)
-- L215: def test_release_gate_blocks_when_module_attach_manifest_hash_mismatches(tmp_path)
-- L233: def test_release_gate_rejects_legacy_module_attach_without_manifest_binding(tmp_path)
-- L251: def test_release_gate_blocks_when_module_attach_sequence_is_wrong(tmp_path)
-- L273: def test_release_gate_requires_current_runtime_module_gate_sandbox_smoke(tmp_path)
-- L290: def test_release_gate_rejects_stale_runtime_module_gate_sandbox_smoke(tmp_path)
-- L306: def test_release_gate_rejects_runtime_module_gate_without_pz_enforcement(tmp_path)
-- L326: def test_release_gate_ignores_stale_readycheck_when_sandbox_is_not_running(tmp_path)
-- L345: def test_release_gate_passes_with_complete_inworld_smoke_and_approval(tmp_path)
-- L358: def test_release_gate_points_to_live_promotion_when_only_approval_is_pending(tmp_path)
-- L375: def test_release_gate_accepts_durable_live_promotion_evidence(tmp_path)
-- L399: def test_release_gate_blocks_stale_live_promotion_evidence(tmp_path)
-- L424: def test_release_gate_blocks_when_live_promotion_hashes_do_not_match(tmp_path)
-- L446: def test_release_gate_blocks_when_live_root_helper_fallback_remains(tmp_path)
-- L471: def test_release_gate_blocks_when_live_root_profile_hash_drifts(tmp_path)
-- L510: def test_release_gate_blocks_when_smoke_report_lacks_view_evidence(tmp_path)
-- L532: def test_release_gate_blocks_when_smoke_report_screenshot_file_is_missing(tmp_path)
-- L550: def test_release_gate_blocks_when_smoke_report_is_older_than_manifest(tmp_path)
-- L565: def test_release_gate_discovers_latest_inworld_smoke_report(tmp_path)
-- L582: def test_release_gate_ignores_modal_limited_coverage_reports(tmp_path)
-- L592: def test_release_gate_blocks_when_smoke_preflight_is_missing(tmp_path)
-- L607: def test_release_gate_blocks_when_smoke_preflight_failed(tmp_path)
-- L621: def test_release_gate_blocks_when_smoke_preflight_is_stale_for_manifest(tmp_path)
-- L639: def test_release_gate_accepts_preflight_manifest_hash_across_datetime_formats(tmp_path)
-- L661: def test_release_gate_blocks_when_module_static_gates_are_missing(tmp_path)
-- L676: def test_release_gate_blocks_when_module_static_gates_failed(tmp_path)
-- L693: def test_release_gate_blocks_when_module_static_gates_are_stale(tmp_path)
-- L709: def test_release_gate_blocks_when_zip_evidence_is_missing(tmp_path)
-- L728: def test_release_gate_blocks_when_zip_hash_does_not_match_readiness(tmp_path)
-- L748: def test_release_gate_blocks_when_manifest_stage_file_is_missing(tmp_path)
-- L761: def test_release_gate_blocks_when_manifest_stage_hash_mismatches(tmp_path)
+- L26: def _write_static_artifacts(dev_dir)
+- L107: def _write_complete_smoke_report(path)
+- L130: def test_release_gate_blocks_without_inworld_smoke_and_approval(tmp_path)
+- L143: def test_release_gate_uses_smoke_status_next_command_for_smokeattach_blocker(tmp_path)
+- L160: def test_release_gate_runs_smokeattachall_when_readycheck_is_ready(tmp_path)
+- L171: def test_release_gate_runs_smokeattachmodules_when_module_attach_is_missing_and_ready(tmp_path)
+- L184: def test_release_gate_blocks_when_module_attach_failed(tmp_path)
+- L198: def test_release_gate_blocks_when_module_attach_manifest_hash_mismatches(tmp_path)
+- L212: def test_release_gate_rejects_legacy_module_attach_without_manifest_binding(tmp_path)
+- L226: def test_release_gate_blocks_when_module_attach_sequence_is_wrong(tmp_path)
+- L246: def test_release_gate_requires_current_runtime_module_gate_sandbox_smoke(tmp_path)
+- L261: def test_release_gate_rejects_stale_runtime_module_gate_sandbox_smoke(tmp_path)
+- L280: def test_release_gate_rejects_runtime_module_gate_without_manifest_binding(tmp_path)
+- L298: def test_release_gate_rejects_smoke_report_manifest_hash_mismatch(tmp_path)
+- L313: def test_release_gate_rejects_runtime_module_gate_without_pz_enforcement(tmp_path)
+- L331: def test_release_gate_ignores_stale_readycheck_when_sandbox_is_not_running(tmp_path)
+- L348: def test_release_gate_passes_with_complete_inworld_smoke_and_approval(tmp_path)
+- L361: def test_release_gate_points_to_live_promotion_when_only_approval_is_pending(tmp_path)
+- L373: def test_release_gate_accepts_durable_live_promotion_evidence(tmp_path)
+- L397: def test_release_gate_blocks_stale_live_promotion_evidence(tmp_path)
+- L422: def test_release_gate_blocks_when_live_promotion_hashes_do_not_match(tmp_path)
+- L444: def test_release_gate_blocks_when_live_root_helper_fallback_remains(tmp_path)
+- L467: def test_release_gate_blocks_when_live_root_profile_hash_drifts(tmp_path)
+- L504: def test_release_gate_blocks_when_smoke_report_lacks_view_evidence(tmp_path)
+- L526: def test_release_gate_blocks_when_smoke_report_screenshot_file_is_missing(tmp_path)
+- L542: def test_release_gate_blocks_when_smoke_report_is_older_than_manifest(tmp_path)
+- L557: def test_release_gate_discovers_latest_inworld_smoke_report(tmp_path)
+- L574: def test_release_gate_ignores_modal_limited_coverage_reports(tmp_path)
+- L582: def test_release_gate_blocks_when_smoke_preflight_is_missing(tmp_path)
+- L594: def test_release_gate_blocks_when_smoke_preflight_failed(tmp_path)
+- L605: def test_release_gate_blocks_when_smoke_preflight_is_stale_for_manifest(tmp_path)
+- L620: def test_release_gate_accepts_preflight_manifest_hash_across_datetime_formats(tmp_path)
+- L640: def test_release_gate_blocks_when_module_static_gates_are_missing(tmp_path)
+- L653: def test_release_gate_blocks_when_module_static_gates_failed(tmp_path)
+- L668: def test_release_gate_blocks_when_module_static_gates_are_stale(tmp_path)
+- L682: def test_release_gate_blocks_when_zip_evidence_is_missing(tmp_path)
+- L701: def test_release_gate_blocks_when_zip_hash_does_not_match_readiness(tmp_path)
+- L721: def test_release_gate_blocks_when_manifest_stage_file_is_missing(tmp_path)
+- L734: def test_release_gate_blocks_when_manifest_stage_hash_mismatches(tmp_path)
 
 ## `tests/test_solteria_helper_sandbox_smoke_queue.py`
 

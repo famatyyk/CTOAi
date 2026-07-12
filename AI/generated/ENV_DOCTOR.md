@@ -1,11 +1,11 @@
 # Engine Brain Environment Doctor
 
-Generated at: `2026-07-12T00:19:47+00:00`
+Generated at: `2026-07-12T00:32:16+00:00`
 Overall status: `warn`
 
 | Check | Status | Key evidence |
 |---|---|---|
-| `git` | `ok` | branch=codex/p8-background-noscreen; dirty=26; path=C:\Program Files\Git\cmd\git.EXE |
+| `git` | `ok` | branch=codex/p8-background-noscreen; dirty=27; path=C:\Program Files\Git\cmd\git.EXE |
 | `docker` | `ok` | containers=2; running_broad=0; configured_broad=0 |
 | `vpn` | `ok` | warp_connected=True |
 | `vercel` | `ok` | version=54.10.3; project=ctoa-web |

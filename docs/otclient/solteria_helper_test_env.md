@@ -374,8 +374,14 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_hel
 `SmokeAttachAll` automatically builds an in-world coverage report with:
 
 ```powershell
-python scripts\ops\ctoa_helper_smoke_report.py --run-id <run-id> --prefix solteria-helper-attach --in-world
+python scripts\ops\ctoa_helper_smoke_report.py --run-id <run-id> --prefix solteria-helper-attach --in-world --manifest-path runtime\solteria_helper_dev\manifest.json
 ```
+
+The report records the current dev manifest path, creation time, and SHA-256.
+The release gate accepts complete 16/16 evidence only when that hash matches
+the current manifest; a legacy report cannot be made fresh by changing its
+timestamp. `RuntimeModuleGatesSandboxSmoke` uses the same binding for its
+action-bound dry-run contract.
 
 Attach smoke writes `ctoa_smoke_command.lua`; the helper consumes it during
 runtime, switches tabs, logs `Smoke tab visible: <tab>/<subtab>`, captures a

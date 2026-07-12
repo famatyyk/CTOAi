@@ -1,6 +1,6 @@
 # Engine Brain File Tree
 
-Generated at: `2026-07-12T00:19:26+00:00`
+Generated at: `2026-07-12T00:32:02+00:00`
 
 Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 `node_modules`, `runtime`, `logs`, `data`, `.tmp`, build outputs.
@@ -97,19 +97,19 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `AI/CHECKPOINT_2026-07-08.md` | 10285 |
 | `AI/CLASS_INDEX.md` | 1815 |
 | `AI/CODEX_CAPABILITY_MAP.md` | 5237 |
-| `AI/ENGINE_BRAIN_STATUS.md` | 136303 |
+| `AI/ENGINE_BRAIN_STATUS.md` | 136376 |
 | `AI/ENGINE_MEMORY.md` | 2971 |
 | `AI/FEATURE_ROADMAP.md` | 62304 |
 | `AI/generated/DOC_SYNC.json` | 1116 |
 | `AI/generated/DOC_SYNC.md` | 667 |
-| `AI/generated/ENGINE_BRAIN_PACK.json` | 6078 |
-| `AI/generated/ENGINE_BRAIN_PACK.md` | 294982 |
-| `AI/generated/ENV_DOCTOR.json` | 7182 |
-| `AI/generated/ENV_DOCTOR.md` | 1241 |
+| `AI/generated/ENGINE_BRAIN_PACK.json` | 6441 |
+| `AI/generated/ENGINE_BRAIN_PACK.md` | 446138 |
+| `AI/generated/ENV_DOCTOR.json` | 7606 |
+| `AI/generated/ENV_DOCTOR.md` | 1260 |
 | `AI/generated/FILE_TREE.md` | 69927 |
 | `AI/generated/manifest.json` | 2006 |
-| `AI/generated/OWNERSHIP_MAP.json` | 16262 |
-| `AI/generated/OWNERSHIP_MAP.md` | 6534 |
+| `AI/generated/OWNERSHIP_MAP.json` | 16221 |
+| `AI/generated/OWNERSHIP_MAP.md` | 6504 |
 | `AI/generated/P6_CODEX_INTEGRATION_READINESS.json` | 10693 |
 | `AI/generated/P6_CODEX_INTEGRATION_READINESS.md` | 6849 |
 | `AI/generated/P7_ACTION_READINESS.json` | 4732 |
@@ -120,7 +120,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `AI/generated/P7_OPERATOR_WORKFLOW.md` | 2973 |
 | `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.json` | 2657 |
 | `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.md` | 1988 |
-| `AI/generated/SYMBOL_MAP.md` | 276035 |
+| `AI/generated/SYMBOL_MAP.md` | 276146 |
 | `AI/KNOWN_BUGS.md` | 1384 |
 | `AI/LUA_INDEX.md` | 2874 |
 | `AI/OPERATIONS_AUDIT.md` | 5139 |
@@ -458,7 +458,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `docs/otclient/solteria_helper_sandbox_smoke_queue.md` | 10222 |
 | `docs/otclient/solteria_helper_shell_budget_plan.md` | 4261 |
 | `docs/otclient/solteria_helper_supplemental_refactor_plan.md` | 27770 |
-| `docs/otclient/solteria_helper_test_env.md` | 29349 |
+| `docs/otclient/solteria_helper_test_env.md` | 29743 |
 | `docs/otclient/SOLTERIA_HELPER_V2_1_1_STYLE_MODERNIZATION_PLAN_2026-07-11.md` | 7950 |
 | `docs/otclient/SOLTERIA_HELPER_V2_1_1A_STABILIZATION_REFACTOR_PLAN_2026-07-11.md` | 2206 |
 | `docs/otclient/SOLTERIA_HELPER_V2_1_UX_PLAN_2026-07-11.md` | 1797 |
@@ -752,7 +752,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/ops/ctoa-vps.ps1` | 92112 |
 | `scripts/ops/ctoa_env_doctor.py` | 6218 |
 | `scripts/ops/ctoa_full_workspace_audit.py` | 32417 |
-| `scripts/ops/ctoa_helper_smoke_report.py` | 10065 |
+| `scripts/ops/ctoa_helper_smoke_report.py` | 11016 |
 | `scripts/ops/ctoa_helper_ui_mockup_v4.py` | 6281 |
 | `scripts/ops/ctoa_helper_ui_preview.py` | 58270 |
 | `scripts/ops/ctoa_loader.py` | 16230 |
@@ -803,7 +803,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/ops/otclient_helper_shell_budget_plan.py` | 12627 |
 | `scripts/ops/otclient_input_contract_fixtures.py` | 13415 |
 | `scripts/ops/otclient_recovery_bridge_sandbox_smoke.py` | 5749 |
-| `scripts/ops/otclient_runtime_module_gates_sandbox_smoke.py` | 15367 |
+| `scripts/ops/otclient_runtime_module_gates_sandbox_smoke.py` | 15965 |
 | `scripts/ops/phase5_nightly_checklist.py` | 10720 |
 | `scripts/ops/phase5_nightly_sync.py` | 24770 |
 | `scripts/ops/project_progress_diagram.py` | 6516 |
@@ -825,7 +825,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/ops/smoke_must_pass.py` | 2644 |
 | `scripts/ops/solteria_api_audit.py` | 9873 |
 | `scripts/ops/solteria_helper_goal_audit.py` | 17499 |
-| `scripts/ops/solteria_helper_release_gate.py` | 27415 |
+| `scripts/ops/solteria_helper_release_gate.py` | 27963 |
 | `scripts/ops/solteria_helper_sandbox_smoke_queue.py` | 12790 |
 | `scripts/ops/sprint027_validate.py` | 8791 |
 | `scripts/ops/sprint028_validate.py` | 11765 |
@@ -891,7 +891,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/windows/build-ctoa-desktop-exe.ps1` | 1210 |
 | `scripts/windows/install-ctoa-vscode-extensions.ps1` | 1852 |
 | `scripts/windows/open-control-center.ps1` | 2306 |
-| `scripts/windows/solteria_helper_test_env.ps1` | 443272 |
+| `scripts/windows/solteria_helper_test_env.ps1` | 443521 |
 | `src/main.py` | 15 |
 | `tests/conftest.py` | 1341 |
 | `tests/e2e/__init__.py` | 0 |
@@ -947,7 +947,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `tests/test_ctoa_helper_recovery_observer.py` | 2775 |
 | `tests/test_ctoa_helper_runtime_core.py` | 6056 |
 | `tests/test_ctoa_helper_runtime_module_gates.py` | 18487 |
-| `tests/test_ctoa_helper_smoke_report.py` | 4628 |
+| `tests/test_ctoa_helper_smoke_report.py` | 5817 |
 | `tests/test_ctoa_helper_ui_preview_security.py` | 993 |
 | `tests/test_ctoa_helper_vocation_profiles.py` | 7062 |
 | `tests/test_ctoa_loader_process_safety.py` | 6925 |
@@ -1038,7 +1038,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `tests/test_security_hardening.py` | 15139 |
 | `tests/test_solteria_api_audit.py` | 2554 |
 | `tests/test_solteria_helper_goal_audit.py` | 8806 |
-| `tests/test_solteria_helper_release_gate.py` | 27035 |
+| `tests/test_solteria_helper_release_gate.py` | 28421 |
 | `tests/test_solteria_helper_sandbox_smoke_queue.py` | 15720 |
 | `tests/test_sprint029_ci_evidence.py` | 3084 |
 | `tests/test_sprint029_dashboard_ergonomics.py` | 4829 |

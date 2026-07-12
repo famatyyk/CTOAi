@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-12T00:19:47+00:00",
+  "generated_at": "2026-07-12T00:32:16+00:00",
   "root": "C:\\Users\\zycie\\CTOAi",
   "overall_status": "warn",
   "status_counts": {
@@ -15,14 +15,12 @@
       "status": "ok",
       "root": "C:/Users/zycie/CTOAi",
       "branch": "codex/p8-background-noscreen",
-      "head": "07034b480218c1565dd8d84010a2ed79ca54f23f",
-      "dirty_count": 26,
+      "head": "c82692b72f35998129478e7cfc9046a46b54d97e",
+      "dirty_count": 27,
       "dirty_sample": [
         "M AI/ENGINE_BRAIN_STATUS.md",
         "M AI/generated/DOC_SYNC.json",
         "M AI/generated/DOC_SYNC.md",
-        "M AI/generated/ENGINE_BRAIN_PACK.json",
-        "M AI/generated/ENGINE_BRAIN_PACK.md",
         "M AI/generated/FILE_TREE.md",
         "M AI/generated/OWNERSHIP_MAP.json",
         "M AI/generated/OWNERSHIP_MAP.md",
@@ -41,6 +39,8 @@
         "M AI/generated/SYMBOL_MAP.md",
         "M AI/generated/manifest.json",
         "M docs/otclient/solteria_helper_test_env.md",
+        "M scripts/ops/ctoa_helper_smoke_report.py",
+        "M scripts/ops/otclient_runtime_module_gates_sandbox_smoke.py",
         "M scripts/ops/solteria_helper_release_gate.py",
         "M scripts/windows/solteria_helper_test_env.ps1"
       ],

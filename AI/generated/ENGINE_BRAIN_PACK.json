@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-12T00:19:30+00:00",
+  "generated_at": "2026-07-12T00:32:16+00:00",
   "root": "C:\\Users\\zycie\\CTOAi",
   "pack_path": "AI\\generated\\ENGINE_BRAIN_PACK.md",
   "profile": "helper",
@@ -17,7 +17,7 @@
     {
       "path": "AI/ENGINE_BRAIN_STATUS.md",
       "included": true,
-      "bytes": 136303,
+      "bytes": 136376,
       "truncated": true,
       "reason": ""
     },
@@ -94,7 +94,7 @@
     {
       "path": "docs/otclient/solteria_helper_test_env.md",
       "included": true,
-      "bytes": 29349,
+      "bytes": 29743,
       "truncated": false,
       "reason": ""
     },
@@ -192,7 +192,7 @@
     {
       "path": "AI/generated/ENV_DOCTOR.md",
       "included": true,
-      "bytes": 1241,
+      "bytes": 1238,
       "truncated": false,
       "reason": ""
     },
@@ -262,7 +262,7 @@
     {
       "path": "AI/generated/SYMBOL_MAP.md",
       "included": true,
-      "bytes": 276146,
+      "bytes": 276532,
       "truncated": true,
       "reason": ""
     }

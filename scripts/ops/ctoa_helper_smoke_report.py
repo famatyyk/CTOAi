@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import html
 import json
 import re
@@ -115,6 +116,19 @@ def collect_report(
         acceptance_status="blocked_by_character_modal" if modal_limited else "ready_for_visual_review",
         views=views,
     )
+
+
+def manifest_binding(manifest_path: Path) -> dict[str, str] | None:
+    """Return content binding for the dev manifest used by this smoke run."""
+    if not manifest_path.is_file():
+        return None
+    digest = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+    payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+    return {
+        "path": str(manifest_path.resolve()),
+        "created_at": str(payload.get("created_at") or ""),
+        "sha256": digest,
+    }
 
 
 def render_markdown(report: SmokeReport) -> str:
@@ -244,6 +258,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--json-out", type=Path, default=None)
     parser.add_argument("--md-out", type=Path, default=None)
     parser.add_argument("--html-out", type=Path, default=None)
+    parser.add_argument(
+        "--manifest-path",
+        type=Path,
+        default=None,
+        help="Current dev manifest to bind into the smoke evidence.",
+    )
     return parser.parse_args()
 
 
@@ -259,7 +279,13 @@ def main() -> int:
     json_out = args.json_out or args.screenshot_dir / f"solteria-helper-smokeall-{suffix}-{args.run_id}.json"
     md_out = args.md_out or args.screenshot_dir / f"solteria-helper-smokeall-{suffix}-{args.run_id}.md"
     html_out = args.html_out or args.screenshot_dir / f"solteria-helper-smokeall-{suffix}-{args.run_id}.html"
-    json_out.write_text(json.dumps(asdict(report), indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    payload = asdict(report)
+    if args.manifest_path is not None:
+        binding = manifest_binding(args.manifest_path.resolve())
+        if binding is None:
+            raise SystemExit(f"Manifest path does not exist: {args.manifest_path}")
+        payload["manifest"] = binding
+    json_out.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     md_out.write_text(render_markdown(report), encoding="utf-8")
     html_out.write_text(render_html(report), encoding="utf-8")
     print(f"[ctoa-helper-smoke-report] JSON: {json_out}")

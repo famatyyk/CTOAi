@@ -74,9 +74,11 @@ Snapshot date: 2026-07-11 Europe/Warsaw
   all 58 entries and reports stable 57/58 parity with one executable-profile
   drift, while `acceptance_allowed=false`. Release Evidence and Control Center
   consume only allowlisted remediation and diagnostic fields.
-- `ModuleAttachSmoke` 4/4 evidence is now manifest-hash-bound at production and
-  at the release-gate consumer. Legacy 4/4 artifacts without a matching
-  `manifest.sha256` remain blocked; mtime alone cannot make stale smoke fresh.
+- `ModuleAttachSmoke` 4/4, `SmokeAttachAll` 16/16, and
+  `RuntimeModuleGatesSandboxSmoke` evidence are now manifest-hash-bound at
+  production and at the release-gate consumers. Legacy complete artifacts
+  without a matching `manifest.sha256` remain blocked; mtime alone cannot
+  make stale smoke fresh.
 - P9 Conditions is `offline_implementation_complete` and
   `operational_acceptance_blocked`. The existing heartbeat now carries an
   optional strict Conditions observation; the bounded sanitizer keeps missing
