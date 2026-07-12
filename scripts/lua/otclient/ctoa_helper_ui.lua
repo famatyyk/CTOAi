@@ -1426,6 +1426,32 @@ function Ui.updateOverviewStats(ctx, snapshot)
     return true
 end
 
+function Ui.updateDiagnosticsSnapshot(ctx, values, rows)
+    if not ctx then
+        return false
+    end
+    local widgets = ctx.widgets or {}
+    local fitText = ctx.fit_text or Ui.fitText
+    local width = tonumber(ctx.content_width) or 320
+    local descriptors = type(rows) == "table" and rows or {
+        {widget = "tools_api_snapshot", text = "api", scale = 0.78},
+        {widget = "tools_diag_core", text = "api", scale = 0.78},
+        {widget = "tools_diag_flags", text = "flags", scale = 0.82},
+        {widget = "tools_diag_detail", text = "movement", scale = 0.72},
+        {widget = "tools_diag_magic", text = "magic_loot", scale = 0.72},
+        {widget = "tools_diag_export", text = "buffer", scale = 0.86},
+    }
+    local data = values or {}
+    for _, row in ipairs(descriptors) do
+        local widget = widgets[row.widget or ""]
+        local text = data[row.text or ""]
+        if widget and widget.setText and text ~= nil then
+            widget:setText(fitText(tostring(text), width - 14, row.scale or 0.78))
+        end
+    end
+    return true
+end
+
 function Ui.refreshOperatorSummaries(ctx)
     if not ctx then
         return false
@@ -1841,6 +1867,7 @@ function Ui.contract()
         owns_operator_summary_refresh = true,
         owns_overview_panel_renderer = true,
         owns_overview_stats_update = true,
+        owns_diagnostics_snapshot_update = true,
         owns_cavebot_panel_renderer = true,
         owns_engine_panel_renderer = true,
         owns_engine_status_rows = true,

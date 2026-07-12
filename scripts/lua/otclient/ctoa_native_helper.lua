@@ -2144,43 +2144,12 @@ end
 
 local function readPlayerVitals()
     local player = getLocalPlayer()
-    local snapshot = {}
-    if not player then
-        local vitals = moduleValue(externalRecoveryRuntime, "normalizeVitals", snapshot)
-        Helper.last_vitals = type(vitals) == "table" and vitals or {source = "none"}
-        return Helper.last_vitals
-    end
-
-    local reads = {
-        {field = "hp", method = "getHealth"},
-        {field = "max_hp", method = "getMaxHealth"},
-        {field = "mana", method = "getMana"},
-        {field = "max_mana", method = "getMaxMana"},
-        {field = "hp_percent_api", method = "getHealthPercent"},
-        {field = "mana_percent_api", method = "getManaPercent"}
-    }
-    for _, read in ipairs(reads) do
-        if player[read.method] then
-            local ok, value = pcall(function()
-                return player[read.method](player)
-            end)
-            if ok then
-                snapshot[read.field] = tonumber(value)
-            end
-        end
-    end
-
-    local vitals = moduleValue(externalRecoveryRuntime, "normalizeVitals", snapshot)
+    local vitals = moduleValue(externalRecoveryRuntime, "readVitals", player)
     if type(vitals) ~= "table" then
-        vitals = {
-            source = "none",
-            hp = snapshot.hp,
-            max_hp = snapshot.max_hp,
-            hp_percent = snapshot.hp_percent_api,
-            mana = snapshot.mana,
-            max_mana = snapshot.max_mana,
-            mana_percent = snapshot.mana_percent_api
-        }
+        vitals = moduleValue(externalRecoveryRuntime, "normalizeVitals", {})
+    end
+    if type(vitals) ~= "table" then
+        vitals = {source = "none"}
     end
     Helper.last_vitals = vitals
     return vitals
@@ -2286,29 +2255,33 @@ end
 function refreshApiSnapshotUi()
     local flags = HELPER_CONFIG.tools and HELPER_CONFIG.tools.feature_flags or {}
     local exportLimit = HELPER_CONFIG.tools and HELPER_CONFIG.tools.diagnostics_export_limit or 20
-    local apiText = moduleValue(externalDiagnostics, "apiSnapshotText", Helper.api_snapshot, HELPER_VERSION)
-    local featureText = moduleValue(externalDiagnostics, "featureFlagsText", flags)
-    local movementText = moduleValue(externalDiagnostics, "movementText", Helper.api_snapshot or {})
-    local magicLootText = moduleValue(externalDiagnostics, "magicLootText", Helper.api_snapshot or {})
-    local bufferText = moduleValue(externalDiagnostics, "bufferText", Helper.diagnostics_buffer, exportLimit)
-    local textByKey = {
-        api = type(apiText) == "string" and apiText ~= "" and apiText or "Diagnostics module unavailable | API pending",
-        flags = type(featureText) == "string" and featureText ~= "" and featureText or "Diagnostics module unavailable | flags pending",
-        movement = type(movementText) == "string" and movementText ~= "" and movementText or "Diagnostics module unavailable | movement pending",
-        magic_loot = type(magicLootText) == "string" and magicLootText ~= "" and magicLootText or "Diagnostics module unavailable | magic/loot pending",
-        buffer = type(bufferText) == "string" and bufferText ~= "" and bufferText or "Diagnostics module unavailable | export gated"
-    }
-    local rows = moduleValue(externalDiagnostics, "snapshotUiRows") or {}
-    for _, row in ipairs(rows) do
-        local widget = Helper.widgets[row.widget or ""]
-        local text = textByKey[row.text or ""]
-        if widget and widget.setText and text then
-            widget:setText(fitText(text, UI_LAYOUT.content_w - 14, row.scale or 0.78))
-        end
+    local values = moduleValue(externalDiagnostics, "snapshotUiValues", Helper.api_snapshot, flags, Helper.diagnostics_buffer, exportLimit, HELPER_VERSION)
+    if type(values) ~= "table" then
+        values = {
+            api = "Diagnostics module unavailable | API pending",
+            flags = "Diagnostics module unavailable | flags pending",
+            movement = "Diagnostics module unavailable | movement pending",
+            magic_loot = "Diagnostics module unavailable | magic/loot pending",
+            buffer = "Diagnostics module unavailable | export gated"
+        }
     end
+    local rows = moduleValue(externalDiagnostics, "snapshotUiRows") or {}
+    local updater = externalUi and externalUi.updateDiagnosticsSnapshot
+    if type(updater) ~= "function" then
+        if refreshOperatorSummaries then
+            refreshOperatorSummaries()
+        end
+        return false
+    end
+    local ok = pcall(updater, {
+        widgets = Helper.widgets,
+        content_width = UI_LAYOUT.content_w,
+        fit_text = fitText
+    }, values, rows)
     if refreshOperatorSummaries then
         refreshOperatorSummaries()
     end
+    return ok == true
 end
 
 function recordDiagnosticsSnapshot(reason, snapshot)

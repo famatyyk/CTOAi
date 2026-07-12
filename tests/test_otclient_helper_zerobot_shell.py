@@ -694,6 +694,7 @@ def test_helper_diagnostics_domain_is_passive_and_wired():
     assert "function Diagnostics.movementText" in diagnostics
     assert "function Diagnostics.magicLootText" in diagnostics
     assert "function Diagnostics.snapshotUiRows" in diagnostics
+    assert "function Diagnostics.snapshotUiValues" in diagnostics
     assert "function Diagnostics.tableCount" in diagnostics
     assert "function Diagnostics.firstTableValue" in diagnostics
     assert "function Diagnostics.recordSnapshot" in diagnostics
@@ -713,6 +714,7 @@ def test_helper_diagnostics_domain_is_passive_and_wired():
     assert "owns_movement_text = true" in diagnostics
     assert "owns_magic_loot_text = true" in diagnostics
     assert "owns_snapshot_ui_rows = true" in diagnostics
+    assert "owns_snapshot_ui_values = true" in diagnostics
     assert "owns_table_count = true" in diagnostics
     assert "owns_first_table_value = true" in diagnostics
     assert "owns_smoke_command_exists = true" in diagnostics
@@ -722,15 +724,12 @@ def test_helper_diagnostics_domain_is_passive_and_wired():
     assert "owns_smoke_command_status_text = true" in diagnostics
     assert "owns_record_snapshot = true" in diagnostics
     assert "owns_export_buffer = true" in diagnostics
-    assert 'moduleValue(externalDiagnostics, "apiSnapshotText"' in source
-    assert 'moduleValue(externalDiagnostics, "featureFlagsText"' in source
+    assert 'moduleValue(externalDiagnostics, "snapshotUiValues"' in source
     assert "function diagnosticsText(functionName, fallback, ...)" not in source
     assert 'diagnosticsText("boolText"' not in source
     assert 'diagnosticsText("posText"' not in source
     assert 'moduleValue(externalDiagnostics, "boolText"' in source
     assert 'moduleValue(externalDiagnostics, "posText"' in source
-    assert 'moduleValue(externalDiagnostics, "movementText"' in source
-    assert 'moduleValue(externalDiagnostics, "magicLootText"' in source
     assert 'moduleValue(externalDiagnostics, "snapshotUiRows"' in source
     assert 'moduleValue(externalDiagnostics, "tableCount"' in source
     assert 'moduleValue(externalDiagnostics, "firstTableValue"' in source
@@ -780,7 +779,8 @@ def test_helper_diagnostics_domain_is_passive_and_wired():
     assert '"Flags: diag="' not in diagnostics_slice
     assert '"Move: " .. tostring(snapshot.movement' not in diagnostics_slice
     assert '"Magic: " .. tostring(snapshot.magic' not in diagnostics_slice
-    assert "for _, row in ipairs(rows) do" in diagnostics_slice
+    assert 'moduleValue(externalDiagnostics, "snapshotUiValues"' in diagnostics_slice
+    assert "for _, row in ipairs(rows) do" not in diagnostics_slice
     assert "Helper.widgets.tools_diag_magic:setText" not in diagnostics_slice
     assert 'moduleValue(externalDiagnostics, "apiProbeSnapshot"' in source
     assert "API probe detail:" in diagnostics
@@ -1718,6 +1718,7 @@ def test_recovery_runtime_adapter_is_passive_and_consumed_by_shell():
     assert "_G.CTOA_HELPER_RECOVERY_RUNTIME" in adapter
     for function_name in [
         "normalizeVitals",
+        "readVitals",
         "jitterThreshold",
         "selectHealingSpell",
         "potionStatusText",
@@ -1729,6 +1730,7 @@ def test_recovery_runtime_adapter_is_passive_and_consumed_by_shell():
         assert f"function RecoveryRuntime.{function_name}" in adapter
     assert 'mode = "passive"' in adapter
     assert "owns_vitals_normalization = true" in adapter
+    assert "owns_vitals_read = true" in adapter
     assert "owns_healing_spell_selection = true" in adapter
     assert "owns_recovery_status_text = true" in adapter
     assert "runtime_actions = false" in adapter
@@ -1746,7 +1748,8 @@ def test_recovery_runtime_adapter_is_passive_and_consumed_by_shell():
     assert "ctoa_helper_recovery_runtime.lua" in script
     assert "mods/ctoa_otclient/ctoa_helper_recovery_runtime.lua" in script
     assert 'rawget(_G, "CTOA_HELPER_RECOVERY_RUNTIME")' in source
-    assert 'moduleValue(externalRecoveryRuntime, "normalizeVitals", snapshot)' in source
+    assert 'moduleValue(externalRecoveryRuntime, "readVitals", player)' in source
+    assert 'moduleValue(externalRecoveryRuntime, "normalizeVitals", {})' in source
     assert (
         'moduleValue(externalRecoveryRuntime, "selectHealingSpell", healing, hp, nonce)'
         in source
@@ -3928,7 +3931,8 @@ def test_helper_v11b_exposes_api_snapshot_in_tools_ui():
         in ui_module
     )
     assert 'moduleValue(externalDiagnostics, "snapshotUiRows"' in source
-    assert 'moduleValue(externalDiagnostics, "apiSnapshotText"' in source
+    assert 'moduleValue(externalDiagnostics, "snapshotUiValues"' in source
+    assert "function Ui.updateDiagnosticsSnapshot" in ui_module
     assert '"API " .. tostring(snapshot.version or version or "?")' in diagnostics
 
 
@@ -4158,13 +4162,14 @@ def test_healing_uses_real_local_player_vitals_before_percent_fallback():
     diagnostics = DIAGNOSTICS.read_text(encoding="utf-8")
 
     assert "local function readPlayerVitals()" in source
-    assert 'moduleValue(externalRecoveryRuntime, "normalizeVitals", snapshot)' in source
+    assert 'moduleValue(externalRecoveryRuntime, "readVitals", player)' in source
+    assert 'moduleValue(externalRecoveryRuntime, "normalizeVitals", {})' in source
     assert 'source = "none"' in adapter
-    assert '{field = "hp", method = "getHealth"}' in source
-    assert '{field = "max_hp", method = "getMaxHealth"}' in source
-    assert '{field = "mana", method = "getMana"}' in source
-    assert '{field = "max_mana", method = "getMaxMana"}' in source
-    assert "player[read.method](player)" in source
+    assert '{field = "hp", method = "getHealth"}' in adapter
+    assert '{field = "max_hp", method = "getMaxHealth"}' in adapter
+    assert '{field = "mana", method = "getMana"}' in adapter
+    assert '{field = "max_mana", method = "getMaxMana"}' in adapter
+    assert "pcall(method, player)" in adapter
     assert 'vitals.source = "real"' in adapter
     assert 'vitals.source = "percent_api"' in adapter
     assert "local vitals = readPlayerVitals()" in source

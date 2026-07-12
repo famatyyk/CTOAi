@@ -32,6 +32,10 @@
   Fixture success is never reported as runtime readiness.
 - P6 is ready for plugin design and the five bounded P7 safe-write refresh tools
   are enabled with audit coverage.
+- The next static Helper slice keeps the UI shell passive: Diagnostics owns
+  snapshot text values and the UI adapter owns diagnostic widget updates;
+  `ctoa_native_helper.lua` retains only guarded orchestration and runtime
+  probing.
 
 ## Now
 

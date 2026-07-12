@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-12T00:32:16+00:00",
+  "generated_at": "2026-07-12T00:43:47+00:00",
   "root": "C:\\Users\\zycie\\CTOAi",
   "pack_path": "AI\\generated\\ENGINE_BRAIN_PACK.md",
   "profile": "helper",
@@ -17,14 +17,14 @@
     {
       "path": "AI/ENGINE_BRAIN_STATUS.md",
       "included": true,
-      "bytes": 136376,
+      "bytes": 136680,
       "truncated": true,
       "reason": ""
     },
     {
       "path": "AI/FEATURE_ROADMAP.md",
       "included": true,
-      "bytes": 62304,
+      "bytes": 62866,
       "truncated": true,
       "reason": ""
     },
@@ -115,7 +115,7 @@
     {
       "path": "docs/otclient/solteria_helper_next_modules_plan.md",
       "included": true,
-      "bytes": 18454,
+      "bytes": 18478,
       "truncated": false,
       "reason": ""
     },
@@ -255,14 +255,14 @@
     {
       "path": "AI/generated/FILE_TREE.md",
       "included": true,
-      "bytes": 69927,
+      "bytes": 69985,
       "truncated": true,
       "reason": ""
     },
     {
       "path": "AI/generated/SYMBOL_MAP.md",
       "included": true,
-      "bytes": 276532,
+      "bytes": 276754,
       "truncated": true,
       "reason": ""
     }

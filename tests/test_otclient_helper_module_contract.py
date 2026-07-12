@@ -113,6 +113,7 @@ def test_module_contract_requires_loader_registry_global_and_return():
         "featureFlagsText",
         "bufferText",
         "snapshotUiRows",
+        "snapshotUiValues",
         "smokeCommandExists",
         "parseSmokeCommandText",
         "smokeCommandTarget",
@@ -139,6 +140,7 @@ def test_module_contract_requires_loader_registry_global_and_return():
     assert "owns_feature_flags_text = true" in diagnostics_source
     assert "owns_buffer_text = true" in diagnostics_source
     assert "owns_snapshot_ui_rows = true" in diagnostics_source
+    assert "owns_snapshot_ui_values = true" in diagnostics_source
     assert "owns_movement_text = true" in diagnostics_source
     assert "owns_magic_loot_text = true" in diagnostics_source
     assert "owns_table_count = true" in diagnostics_source
@@ -303,6 +305,7 @@ def test_module_contract_requires_loader_registry_global_and_return():
     assert "owns_cavebot_action_metadata = true" in ui_source
     assert "owns_overview_panel_renderer = true" in ui_source
     assert "owns_overview_stats_update = true" in ui_source
+    assert "owns_diagnostics_snapshot_update = true" in ui_source
     assert "owns_cavebot_panel_renderer = true" in ui_source
     assert "owns_engine_panel_renderer = true" in ui_source
     assert "owns_hunting_panel_renderer = true" in ui_source
@@ -441,9 +444,10 @@ def test_module_contract_requires_loader_registry_global_and_return():
     assert "requires_sandbox_attach = true" in timer_runtime_source
 
     recovery_runtime_source = (OTCLIENT_DIR / "ctoa_helper_recovery_runtime.lua").read_text(encoding="utf-8")
-    for function_name in ["normalizeVitals", "selectHealingSpell", "potionStatusText", "spellStatusText", "actionGap", "summary", "contract"]:
+    for function_name in ["normalizeVitals", "readVitals", "selectHealingSpell", "potionStatusText", "spellStatusText", "actionGap", "summary", "contract"]:
         assert f"function RecoveryRuntime.{function_name}" in recovery_runtime_source
     assert "owns_vitals_normalization = true" in recovery_runtime_source
+    assert "owns_vitals_read = true" in recovery_runtime_source
     assert "owns_healing_spell_selection = true" in recovery_runtime_source
     assert "owns_recovery_status_text = true" in recovery_runtime_source
     assert "owns_recovery_action_gap = true" in recovery_runtime_source

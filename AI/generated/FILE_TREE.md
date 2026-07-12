@@ -1,6 +1,6 @@
 # Engine Brain File Tree
 
-Generated at: `2026-07-12T00:33:29+00:00`
+Generated at: `2026-07-12T00:44:14+00:00`
 
 Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 `node_modules`, `runtime`, `logs`, `data`, `.tmp`, build outputs.
@@ -97,16 +97,16 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `AI/CHECKPOINT_2026-07-08.md` | 10285 |
 | `AI/CLASS_INDEX.md` | 1815 |
 | `AI/CODEX_CAPABILITY_MAP.md` | 5237 |
-| `AI/ENGINE_BRAIN_STATUS.md` | 136376 |
+| `AI/ENGINE_BRAIN_STATUS.md` | 136680 |
 | `AI/ENGINE_MEMORY.md` | 2971 |
-| `AI/FEATURE_ROADMAP.md` | 62631 |
+| `AI/FEATURE_ROADMAP.md` | 62866 |
 | `AI/generated/DOC_SYNC.json` | 1164 |
 | `AI/generated/DOC_SYNC.md` | 681 |
 | `AI/generated/ENGINE_BRAIN_PACK.json` | 6441 |
-| `AI/generated/ENGINE_BRAIN_PACK.md` | 446533 |
+| `AI/generated/ENGINE_BRAIN_PACK.md` | 446562 |
 | `AI/generated/ENV_DOCTOR.json` | 7635 |
 | `AI/generated/ENV_DOCTOR.md` | 1260 |
-| `AI/generated/FILE_TREE.md` | 71212 |
+| `AI/generated/FILE_TREE.md` | 71271 |
 | `AI/generated/manifest.json` | 2062 |
 | `AI/generated/OWNERSHIP_MAP.json` | 16936 |
 | `AI/generated/OWNERSHIP_MAP.md` | 6581 |
@@ -120,7 +120,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `AI/generated/P7_OPERATOR_WORKFLOW.md` | 3015 |
 | `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.json` | 2705 |
 | `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.md` | 2024 |
-| `AI/generated/SYMBOL_MAP.md` | 284070 |
+| `AI/generated/SYMBOL_MAP.md` | 284298 |
 | `AI/KNOWN_BUGS.md` | 1384 |
 | `AI/LUA_INDEX.md` | 2874 |
 | `AI/OPERATIONS_AUDIT.md` | 5139 |
@@ -208,7 +208,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `docs/AGENT_PROMPT_DEFINITIVE.md` | 4201 |
 | `docs/AGENT_TRAINING_MASTERPLAN.md` | 3605 |
 | `docs/ARCHITECTURE.md` | 21905 |
-| `docs/audits/CTOAI_FULL_WORKSPACE_AUDIT_2026-07-06.md` | 6835 |
+| `docs/audits/CTOAI_FULL_WORKSPACE_AUDIT_2026-07-06.md` | 6986 |
 | `docs/audits/CTOAI_SECURITY_HARDENING_2026-07-06.md` | 114540 |
 | `docs/audits/CTOAI_WORKTREE_EXECUTION_PLAN_2026-07-11.md` | 8548 |
 | `docs/audits/CTOAI_WORKTREE_TRIAGE_2026-07-09.md` | 6985 |
@@ -454,7 +454,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `docs/otclient/solteria_helper_input_contracts.md` | 4430 |
 | `docs/otclient/solteria_helper_module_contract.md` | 4360 |
 | `docs/otclient/solteria_helper_module_workplan.md` | 12889 |
-| `docs/otclient/solteria_helper_next_modules_plan.md` | 18454 |
+| `docs/otclient/solteria_helper_next_modules_plan.md` | 18478 |
 | `docs/otclient/solteria_helper_sandbox_smoke_queue.md` | 10222 |
 | `docs/otclient/solteria_helper_shell_budget_plan.md` | 4261 |
 | `docs/otclient/solteria_helper_supplemental_refactor_plan.md` | 27770 |
@@ -484,7 +484,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `docs/REPO_HYGIENE_POLICY.md` | 4830 |
 | `docs/REPO_SCHEMA.md` | 10994 |
 | `docs/ROADMAP_V0.2.0_TO_V1.0.0.md` | 878 |
-| `docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md` | 8212 |
+| `docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md` | 8303 |
 | `docs/runbook-althea-enc3-reverseeng.md` | 3502 |
 | `docs/runbook-azure-activity-log-interpretation.md` | 2855 |
 | `docs/runbook-disk-emergency.md` | 2223 |
@@ -666,7 +666,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/lua/otclient/ctoa_helper_conditions_runtime_gate.lua` | 4848 |
 | `scripts/lua/otclient/ctoa_helper_decision_pipeline.lua` | 6154 |
 | `scripts/lua/otclient/ctoa_helper_decision_trace.lua` | 3937 |
-| `scripts/lua/otclient/ctoa_helper_diagnostics.lua` | 19569 |
+| `scripts/lua/otclient/ctoa_helper_diagnostics.lua` | 19996 |
 | `scripts/lua/otclient/ctoa_helper_dispatch_guard.lua` | 4041 |
 | `scripts/lua/otclient/ctoa_helper_domain_contract.lua` | 5152 |
 | `scripts/lua/otclient/ctoa_helper_equipment.lua` | 6160 |
@@ -690,7 +690,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/lua/otclient/ctoa_helper_profile_schema.lua` | 25417 |
 | `scripts/lua/otclient/ctoa_helper_recovery_bridge.lua` | 9857 |
 | `scripts/lua/otclient/ctoa_helper_recovery_observer.lua` | 4249 |
-| `scripts/lua/otclient/ctoa_helper_recovery_runtime.lua` | 4956 |
+| `scripts/lua/otclient/ctoa_helper_recovery_runtime.lua` | 5768 |
 | `scripts/lua/otclient/ctoa_helper_route.lua` | 10784 |
 | `scripts/lua/otclient/ctoa_helper_runtime_core.lua` | 10804 |
 | `scripts/lua/otclient/ctoa_helper_runtime_module_gate.lua` | 4103 |
@@ -700,12 +700,12 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/lua/otclient/ctoa_helper_scripting.lua` | 2946 |
 | `scripts/lua/otclient/ctoa_helper_targeting.lua` | 8172 |
 | `scripts/lua/otclient/ctoa_helper_timer_runtime.lua` | 4056 |
-| `scripts/lua/otclient/ctoa_helper_ui.lua` | 94443 |
+| `scripts/lua/otclient/ctoa_helper_ui.lua` | 95568 |
 | `scripts/lua/otclient/ctoa_helper_vocation_profiles.lua` | 3881 |
 | `scripts/lua/otclient/ctoa_ms_profile.lua` | 2412 |
 | `scripts/lua/otclient/ctoa_native_combat.lua` | 18058 |
 | `scripts/lua/otclient/ctoa_native_heal.lua` | 9644 |
-| `scripts/lua/otclient/ctoa_native_helper.lua` | 183181 |
+| `scripts/lua/otclient/ctoa_native_helper.lua` | 181588 |
 | `scripts/lua/otclient/ctoa_native_loot.lua` | 11632 |
 | `scripts/lua/otclient/ctoa_otclient.otmod` | 253 |
 | `scripts/lua/otclient/ctoa_otclient_loader.lua` | 7548 |
@@ -891,7 +891,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/windows/build-ctoa-desktop-exe.ps1` | 1210 |
 | `scripts/windows/install-ctoa-vscode-extensions.ps1` | 1852 |
 | `scripts/windows/open-control-center.ps1` | 2306 |
-| `scripts/windows/solteria_helper_test_env.ps1` | 443521 |
+| `scripts/windows/solteria_helper_test_env.ps1` | 443758 |
 | `src/main.py` | 15 |
 | `tests/conftest.py` | 1341 |
 | `tests/e2e/__init__.py` | 0 |
@@ -1006,12 +1006,13 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `tests/test_otclient_conditions_shadow_replay.py` | 30384 |
 | `tests/test_otclient_external_bot_intake.py` | 4551 |
 | `tests/test_otclient_headless_status.py` | 40241 |
+| `tests/test_otclient_helper_diagnostics_ui.py` | 2127 |
 | `tests/test_otclient_helper_module_audit.py` | 21111 |
-| `tests/test_otclient_helper_module_contract.py` | 39127 |
+| `tests/test_otclient_helper_module_contract.py` | 39365 |
 | `tests/test_otclient_helper_next_modules_plan.py` | 14101 |
 | `tests/test_otclient_helper_profile_audit.py` | 3639 |
 | `tests/test_otclient_helper_shell_budget_plan.py` | 3270 |
-| `tests/test_otclient_helper_zerobot_shell.py` | 194369 |
+| `tests/test_otclient_helper_zerobot_shell.py` | 194653 |
 | `tests/test_otclient_input_contract_fixtures.py` | 2605 |
 | `tests/test_otclient_recovery_bridge_sandbox_smoke.py` | 758 |
 | `tests/test_otclient_runtime_module_gates_sandbox_smoke.py` | 2922 |

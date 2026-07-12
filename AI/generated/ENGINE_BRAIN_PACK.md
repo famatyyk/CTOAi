@@ -1,6 +1,6 @@
 # CTOAi Engine Brain Pack
 
-Generated at: `2026-07-12T00:32:16+00:00`
+Generated at: `2026-07-12T00:43:47+00:00`
 Repo root: `C:\Users\zycie\CTOAi`
 Profile: `helper`
 
@@ -161,6 +161,10 @@ Snapshot date: 2026-07-11 Europe/Warsaw
   production and at the release-gate consumers. Legacy complete artifacts
   without a matching `manifest.sha256` remain blocked; mtime alone cannot
   make stale smoke fresh.
+- The next static Helper slice moved diagnostics snapshot formatting and
+  widget updates out of `ctoa_native_helper.lua` into the passive Diagnostics
+  and UI adapters. It preserves safe-boot/runtime-action invariants and is
+  covered by Lua-backed adapter tests plus the existing shell contract suite.
 - P9 Conditions is `offline_implementation_complete` and
   `operational_acceptance_blocked`. The existing heartbeat now carries an
   optional strict Conditions observation; the bounded sanitizer keeps missing
@@ -737,11 +741,7 @@ Snapshot date: 2026-07-11 Europe/Warsaw
   or non-object JSON before operator API responses are built.
 - Mobile console file metadata responses now reuse the same display-safe path
   helper for admin settings, idea parking, auto-trainer report status, disk
-  probes, one-click generated directories, and client-sync result paths, so
-  operator JSON avoids exposing absolute local host directories.
-- Mobile console auto-trainer report reads are now physically bounded.
-  `/api/agents/auto-trainer/latest` reads `latest.md` and `latest.json` through
-  byte caps, reports markdown truncation, rejects oversized JSON reports with a
+  probes, one-click generated directories, and client-sync result pat
 
 [truncated]
 ```
@@ -771,6 +771,10 @@ Snapshot date: 2026-07-11 Europe/Warsaw
   Current evidence classifies the historical pair as
   `legacy_or_unbound_attestation`; read-only diagnostic parity is stable at
   57/58 with one executable-profile drift and can never authorize acceptance.
+- The sandbox smoke chain is content-bound: `ModuleAttachSmoke` 4/4,
+  `SmokeAttachAll` 16/16, and `RuntimeModuleGatesSandboxSmoke` must carry the
+  current dev manifest SHA-256. Legacy reports remain blocked; a newer file
+  timestamp alone is not evidence of freshness.
 - P9 Conditions is `offline_implementation_complete` and
   `operational_acceptance_blocked`. Its strict data-only replay and 44-case
   fixture pack are implemented without dispatch, execute-once, promotion, or
@@ -780,6 +784,10 @@ Snapshot date: 2026-07-11 Europe/Warsaw
   Fixture success is never reported as runtime readiness.
 - P6 is ready for plugin design and the five bounded P7 safe-write refresh tools
   are enabled with audit coverage.
+- The next static Helper slice keeps the UI shell passive: Diagnostics owns
+  snapshot text values and the UI adapter owns diagnostic widget updates;
+  `ctoa_native_helper.lua` retains only guarded orchestration and runtime
+  probing.
 
 ## Now
 
@@ -1354,8 +1362,9 @@ feature work.
 - Add explicit UI smoke states for hunting, tools, profile, and UI tabs.
 - Keep the Helper redesign Phase 3 summary strips current for Healing, Hunting
   Targeting, Hunting Magic, Tools Helper, Profile, and UI.
-- Keep the release gate strict: in-world `SmokeAttachAll` evidence must be
-  newer than the current dev manifest before it can satisfy visual acceptance.
+- Keep the release gate strict: in-world `SmokeAttachAll` evidence must carry a
+  SHA-256 binding to the current dev manifest before it can satisfy visual
+  acceptance; mtime is only a legacy-staleness signal.
 - Treat the Phase 3 summary implementation as visually accepted for the current
   dev manifest after `SmokeAttachAll` run `20260706-1025`; future Helper UI
   changes must rerun in-world `SmokeAttachAll`.
@@ -1430,15 +1439,7 @@ Once available:
   client, or custom runtime parent directories.
 - Keep browser-visible Control Center markdown reports on the same sanitizer:
   release-evidence and API-cost markdown endpoints must redact token/password
-  forms and collapse Windows or POSIX absolute local paths before returning
-  text to the browser, while preserving normal UI/API route text like
-  `/api/control-center/actions`.
-- Keep Control Center markdown report reads physically size-bounded. Release-
-  evidence and API-cost markdown endpoints should read at most `max + 1` bytes,
-  close file handles in `finally`, reject symlinked configured report files
-  before `open`, and reject oversized configured files without full-file
-  `readFile`.
-- Keep Control Center configured JSON evidence reads physically size-bounded
+  forms and coll
 
 [truncated]
 ```
@@ -1894,7 +1895,7 @@ Minimum checks:
 ```markdown
 # CTOAi Three Development Plans
 
-Basis: full workspace audit with `41951` inventoried files and `1364` git-tracked files.
+Basis: full workspace audit with `42140` inventoried files and `1369` git-tracked files.
 
 ## Plan 1: Helper-First Productization
 
@@ -3511,7 +3512,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_hel
 
 | Order | Workstream | Status | Current slice | Next slice | Gate |
 |---:|---|---:|---|---|---|
-| 0 | `ui_primitives` | `in_progress_static_gated` | ctoa_helper_ui.lua owns text fit, widget style, checkbox state, visibility, guarded createWidget, nav/subtab style, button/card style, metric row/value style, setting/profile/vector row style, section/table/header strip style, priority badge style, label style, window chrome style, toggle/checkbox/sidebar-card style, overview avatar/equipment slot style, control-name style primitives, setting/profile/vector/section row geometry, sidebar/subtab metadata, section scaffold metadata, subtab content offsets, tools table-header metadata, CaveBot action/choice metadata, interactive profile/vector row builders, the passive Hunting targeting/magic panel renderer, the passive CaveBot editor renderer, the passive Tools helper/PvP/HUD/timer/diag panel renderer, the passive Settings/Profile renderer, and the passive Engine/HUD/layout renderer; helper shell now delegates all direct styleWidget calls, row geometry, tab metadata, repeated body/header scaffolding, subtab button creation, cavebot waypoint editor composition/action metadata, tools table headers, hunting targeting/magic composition, tools helper/PvP/HUD/timer/diag composition, profile/settings composition, Engine/HUD/layout composition, and profile cycle/step/vector row construction through UI functions with guarded shell adapters. | Extract remaining runtime probe summaries into passive runtime adapters while keeping value getters/setters, route mutation, and runtime arming in guarded shell adapters. | ModuleContract, UI preview, HelperShellBudgetPlanStaticSmoke, ModuleStaticGates, current LocalReady, then SmokeAttachModules for in-world visual evidence. |
+| 0 | `ui_primitives` | `in_progress_static_gated` | ctoa_helper_ui.lua owns text fit, widget style, checkbox state, visibility, guarded createWidget, nav/subtab style, button/card style, metric row/value style, setting/profile/vector row style, section/table/header strip style, priority badge style, label style, window chrome style, toggle/checkbox/sidebar-card style, overview avatar/equipment slot style, control-name style primitives, setting/profile/vector/section row geometry, sidebar/subtab metadata, section scaffold metadata, subtab content offsets, tools table-header metadata, CaveBot action/choice metadata, interactive profile/vector row builders, the passive Hunting targeting/magic panel renderer, the passive CaveBot editor renderer, the passive Tools helper/PvP/HUD/timer/diag panel renderer, the passive Settings/Profile renderer, and the passive Engine/HUD/layout renderer; helper shell now delegates all direct styleWidget calls, row geometry, tab metadata, repeated body/header scaffolding, subtab button creation, cavebot waypoint editor composition/action metadata, tools table headers, hunting targeting/magic composition, tools helper/PvP/HUD/timer/diag composition, profile/settings composition, Engine/HUD/layout composition, profile cycle/step/vector row construction, and diagnostics snapshot formatting/update through passive UI and Diagnostics adapters. | Keep diagnostics snapshot rendering in the adapters, run package/budget parity, and do not reintroduce probe formatting or widget loops into the guarded shell. | ModuleContract, UI preview, HelperShellBudgetPlanStaticSmoke, ModuleStaticGates, current LocalReady, then SmokeAttachModules for in-world visual evidence. |
 | 1 | `target_scorer` | `in_progress_static_gated` | Targeting owns bestCandidate ranking; helper now builds OTClient candidate snapshots and delegates best-target choice to ctoa_helper_targeting.lua. | Move the remaining PZ/NPC reason summaries into targeting/combat runtime adapters before adding any new combat feature. | TargetingStaticSmoke, ModuleStaticGates, current LocalReady, then SmokeAttach hunting and hunting_magic tabs in sandbox before runtime enablement. |
 | 2 | `route_engine` | `in_progress_static_gated` | Route labels, waypoint mutation, active target advancement, retry status, progress state, retryBlocked, selected summary, passive CaveBot editor panel, cavebot runtime decision text, movement blocked-reason/status/trace/path result text, and movement API probe summary text are module/UI-owned. | Move the next cavebot route/probe metadata slice into route/cavebot runtime adapters while keeping movement execution in guarded runtime. | RouteStaticSmoke, ModuleStaticGates, current LocalReady, then SmokeAttach cavebot tab in sandbox. |
 | 3 | `conditions_runtime_gate` | `offline_implementation_complete` | The default-closed static gate remains, and P9 now adds a strict data-only profile, passive heartbeat observation, hash-bound deterministic replay, 44-case fixture pack, Release Evidence, Control Center consumers, and a separately confirmed acceptance preflight; none can dispatch. | Run ctoa.ps1 otp9 only through BackgroundNoScreen, capture a fresh real trace after accepted P8 and Recovery proofs, then validate the data-only acceptance boundary; do not start P10 or execute-once review while operational acceptance is blocked. | P9 fixture pack, strict consumers, accepted P8 proof, real guarded Conditions observation, accepted Recovery trace/proof, validated no-action receipt, current attach evidence, Combat/CaveBot disabled, and no live promotion. |
@@ -5960,9 +5961,9 @@ fresh `ctoa_local.log` lines plus safe boot state.
 ```json
 {
   "schema_version": 1,
-  "generated_at": "2026-07-12T00:32:02+00:00",
+  "generated_at": "2026-07-12T00:43:42+00:00",
   "root": "C:\\Users\\zycie\\CTOAi",
-  "file_count": 1276,
+  "file_count": 1277,
   "outputs": {
     "file_tree": "AI\\generated\\FILE_TREE.md",
     "symbol_map": "AI\\generated\\SYMBOL_MAP.md",
@@ -6051,7 +6052,7 @@ Overall status: `warn`
 ```markdown
 # Engine Brain Ownership Map
 
-Generated at: `2026-07-12T00:32:02+00:00`
+Generated at: `2026-07-12T00:43:42+00:00`
 Source audit: `runtime\audits\ctoai-full-workspace-audit.json`
 Status: `ready`
 
@@ -6062,7 +6063,7 @@ Status: `ready`
 | `.dockerignore` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `.env.example` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `.foundry` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
-| `.git` | Local/uncategorized | `manual review` | 371 | git_internal:371 |
+| `.git` | Local/uncategorized | `manual review` | 474 | git_internal:474 |
 | `.gitattributes` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `.github` | Local/uncategorized | `manual review` | 41 | tracked_source:41 |
 | `.gitignore` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
@@ -6104,7 +6105,7 @@ Status: `ready`
 | `docs` | Documentation | `doc sync guard` | 317 | tracked_source:311, untracked_source_candidate:6 |
 | `evals` | Local/uncategorized | `manual review` | 6 | tracked_source:6 |
 | `logs` | Local/uncategorized | `manual review` | 3 | runtime_or_local_state:3 |
-| `metrics` | Local/uncategorized | `manual review` | 24 | runtime_or_local_state:24 |
+| `metrics` | Local/uncategorized | `manual review` | 25 | runtime_or_local_state:25 |
 | `mobile_console` | Mobile console | `pytest tests/ --ignore=tests/e2e` | 20 | tracked_source:9, untracked_source_candidate:11 |
 | `node_modules` | Local/uncategorized | `manual review` | 1 | vendor_or_cache:1 |
 | `policies` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
@@ -6121,7 +6122,7 @@ Status: `ready`
 | `scoring` | Local/uncategorized | `manual review` | 5 | tracked_source:3, untracked_source_candidate:2 |
 | `scripts` | Operator automation | `pytest targeted script tests` | 451 | tracked_source:270, untracked_source_candidate:181 |
 | `src` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
-| `tests` | Regression suite | `pytest tests/ --ignore=tests/e2e` | 532 | local_secret_or_sensitive:2, tracked_source:197, untracked_source_candidate:333 |
+| `tests` | Regression suite | `pytest tests/ --ignore=tests/e2e` | 534 | local_secret_or_sensitive:2, tracked_source:197, untracked_source_candidate:335 |
 | `training` | Local/uncategorized | `manual review` | 8 | tracked_source:5, untracked_source_candidate:3 |
 | `up` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `web` | Control Center | `cd web; npm run lint; npm test` | 32304 | local_secret_or_sensitive:2, tracked_source:98, untracked_source_candidate:5419, vendor_or_cache:26785 |
@@ -6134,7 +6135,7 @@ Status: `ready`
 ```markdown
 # Engine Brain Doc Sync
 
-Generated at: `2026-07-12T00:32:02+00:00`
+Generated at: `2026-07-12T00:43:42+00:00`
 Status: `passed`
 
 | Check | Path | Status | Missing |
@@ -6154,7 +6155,7 @@ Status: `passed`
 ```markdown
 # Engine Brain Secret Guardrail
 
-Generated at: `2026-07-12T00:32:02+00:00`
+Generated at: `2026-07-12T00:43:42+00:00`
 Status: `passed`
 Sensitive/local env path count in audit: `7`
 
@@ -6176,7 +6177,7 @@ Generated Engine Brain context must not include exact local sensitive/env paths 
 ```markdown
 # P6 Codex Integration Readiness
 
-Generated at: `2026-07-12T00:32:02+00:00`
+Generated at: `2026-07-12T00:43:42+00:00`
 Status: `ready_for_plugin_design`
 
 P6 allows only four read-only status/cockpit tools plus audited repo-hygiene, API-cost, evidence-pack, Engine Brain, and P7 cockpit-smoke safe-write refreshes. Do not add deploy/live shortcuts or bypass Control Center evidence gates.
@@ -6248,7 +6249,7 @@ Recommended next: Operate the plugin as four read-only status/cockpit tools plus
 ```markdown
 # P7 Operator Workflow
 
-Generated at: `2026-07-12T00:32:02+00:00`
+Generated at: `2026-07-12T00:43:42+00:00`
 Status: `safe_write_ready`
 Decision: `allow_bounded_safe_write_tools`
 
@@ -6296,7 +6297,7 @@ Next safe command: Use ctoai_repo_hygiene_refresh, ctoai_api_cost_refresh, ctoai
 ```markdown
 # P7 Action Readiness
 
-Generated at: `2026-07-12T00:32:02+00:00`
+Generated at: `2026-07-12T00:43:42+00:00`
 Status: `safe_write_tools_enabled`
 Decision: `monitor_enabled_safe_write_tools`
 
@@ -6324,7 +6325,7 @@ Next safe command: Design the next P7 plugin action only after risk model covera
 ```markdown
 # P7 Safe Write Tool Design
 
-Generated at: `2026-07-12T00:32:02+00:00`
+Generated at: `2026-07-12T00:43:42+00:00`
 Status: `implemented`
 Decision: `ready_for_dry_run_operation`
 
@@ -6366,7 +6367,7 @@ Next safe command: Run ctoai_evidence_pack_refresh with dry_run=true and verify 
 ```markdown
 # P7 Operator Brief
 
-Generated at: `2026-07-12T00:32:02+00:00`
+Generated at: `2026-07-12T00:43:42+00:00`
 Decision: `ready_for_p7_operator_workflow`
 Status: `ready`
 
@@ -6396,7 +6397,7 @@ Next safe command: Design the next P7 plugin action only after risk model covera
 ```markdown
 # Engine Brain File Tree
 
-Generated at: `2026-07-12T00:32:02+00:00`
+Generated at: `2026-07-12T00:43:42+00:00`
 
 Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 `node_modules`, `runtime`, `logs`, `data`, `.tmp`, build outputs.
@@ -6493,30 +6494,30 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `AI/CHECKPOINT_2026-07-08.md` | 10285 |
 | `AI/CLASS_INDEX.md` | 1815 |
 | `AI/CODEX_CAPABILITY_MAP.md` | 5237 |
-| `AI/ENGINE_BRAIN_STATUS.md` | 136376 |
+| `AI/ENGINE_BRAIN_STATUS.md` | 136680 |
 | `AI/ENGINE_MEMORY.md` | 2971 |
-| `AI/FEATURE_ROADMAP.md` | 62304 |
-| `AI/generated/DOC_SYNC.json` | 1116 |
-| `AI/generated/DOC_SYNC.md` | 667 |
+| `AI/FEATURE_ROADMAP.md` | 62866 |
+| `AI/generated/DOC_SYNC.json` | 1164 |
+| `AI/generated/DOC_SYNC.md` | 681 |
 | `AI/generated/ENGINE_BRAIN_PACK.json` | 6441 |
-| `AI/generated/ENGINE_BRAIN_PACK.md` | 446138 |
-| `AI/generated/ENV_DOCTOR.json` | 7606 |
+| `AI/generated/ENGINE_BRAIN_PACK.md` | 446533 |
+| `AI/generated/ENV_DOCTOR.json` | 7635 |
 | `AI/generated/ENV_DOCTOR.md` | 1260 |
-| `AI/generated/FILE_TREE.md` | 69927 |
-| `AI/generated/manifest.json` | 2006 |
-| `AI/generated/OWNERSHIP_MAP.json` | 16221 |
-| `AI/generated/OWNERSHIP_MAP.md` | 6504 |
-| `AI/generated/P6_CODEX_INTEGRATION_READINESS.json` | 10693 |
-| `AI/generated/P6_CODEX_INTEGRATION_READINESS.md` | 6849 |
-| `AI/generated/P7_ACTION_READINESS.json` | 4732 |
-| `AI/generated/P7_ACTION_READINESS.md` | 1120 |
-| `AI/generated/P7_OPERATOR_BRIEF.json` | 7099 |
-| `AI/generated/P7_OPERATOR_BRIEF.md` | 1621 |
-| `AI/generated/P7_OPERATOR_WORKFLOW.json` | 4588 |
-| `AI/generated/P7_OPERATOR_WORKFLOW.md` | 2973 |
-| `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.json` | 2657 |
-| `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.md` | 1988 |
-| `AI/generated/SYMBOL_MAP.md` | 276146 |
+| `AI/generated/FILE_TREE.md` | 71212 |
+| `AI/generated/manifest.json` | 2062 |
+| `AI/generated/OWNERSHIP_MAP.json` | 16936 |
+| `AI/generated/OWNERSHIP_MAP.md` | 6581 |
+| `AI/generated/P6_CODEX_INTEGRATION_READINESS.json` | 11010 |
+| `AI/generated/P6_CODEX_INTEGRATION_READINESS.md` | 6915 |
+| `AI/generated/P7_ACTION_READINESS.json` | 4870 |
+| `AI/generated/P7_ACTION_READINESS.md` | 1142 |
+| `AI/generated/P7_OPERATOR_BRIEF.json` | 7308 |
+| `AI/generated/P7_OPERATOR_BRIEF.md` | 1645 |
+| `AI/generated/P7_OPERATOR_WORKFLOW.json` | 4690 |
+| `AI/generated/P7_OPERATOR_WORKFLOW.md` | 3015 |
+| `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.json` | 2705 |
+| `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.md` | 2024 |
+| `AI/generated/SYMBOL_MAP.md` | 284070 |
 | `AI/KNOWN_BUGS.md` | 1384 |
 | `AI/LUA_INDEX.md` | 2874 |
 | `AI/OPERATIONS_AUDIT.md` | 5139 |
@@ -6604,7 +6605,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `docs/AGENT_PROMPT_DEFINITIVE.md` | 4201 |
 | `docs/AGENT_TRAINING_MASTERPLAN.md` | 3605 |
 | `docs/ARCHITECTURE.md` | 21905 |
-| `docs/audits/CTOAI_FULL_WORKSPACE_AUDIT_2026-07-06.md` | 6835 |
+| `docs/audits/CTOAI_FULL_WORKSPACE_AUDIT_2026-07-06.md` | 6986 |
 | `docs/audits/CTOAI_SECURITY_HARDENING_2026-07-06.md` | 114540 |
 | `docs/audits/CTOAI_WORKTREE_EXECUTION_PLAN_2026-07-11.md` | 8548 |
 | `docs/audits/CTOAI_WORKTREE_TRIAGE_2026-07-09.md` | 6985 |
@@ -6850,7 +6851,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `docs/otclient/solteria_helper_input_contracts.md` | 4430 |
 | `docs/otclient/solteria_helper_module_contract.md` | 4360 |
 | `docs/otclient/solteria_helper_module_workplan.md` | 12889 |
-| `docs/otclient/solteria_helper_next_modules_plan.md` | 18454 |
+| `docs/otclient/solteria_helper_next_modules_plan.md` | 18478 |
 | `docs/otclient/solteria_helper_sandbox_smoke_queue.md` | 10222 |
 | `docs/otclient/solteria_helper_shell_budget_plan.md` | 4261 |
 | `docs/otclient/solteria_helper_supplemental_refactor_plan.md` | 27770 |
@@ -6880,7 +6881,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `docs/REPO_HYGIENE_POLICY.md` | 4830 |
 | `docs/REPO_SCHEMA.md` | 10994 |
 | `docs/ROADMAP_V0.2.0_TO_V1.0.0.md` | 878 |
-| `docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md` | 8212 |
+| `docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md` | 8303 |
 | `docs/runbook-althea-enc3-reverseeng.md` | 3502 |
 | `docs/runbook-azure-activity-log-interpretation.md` | 2855 |
 | `docs/runbook-disk-emergency.md` | 2223 |
@@ -7062,7 +7063,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/lua/otclient/ctoa_helper_conditions_runtime_gate.lua` | 4848 |
 | `scripts/lua/otclient/ctoa_helper_decision_pipeline.lua` | 6154 |
 | `scripts/lua/otclient/ctoa_helper_decision_trace.lua` | 3937 |
-| `scripts/lua/otclient/ctoa_helper_diagnostics.lua` | 19569 |
+| `scripts/lua/otclient/ctoa_helper_diagnostics.lua` | 19996 |
 | `scripts/lua/otclient/ctoa_helper_dispatch_guard.lua` | 4041 |
 | `scripts/lua/otclient/ctoa_helper_domain_contract.lua` | 5152 |
 | `scripts/lua/otclient/ctoa_helper_equipment.lua` | 6160 |
@@ -7086,7 +7087,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/lua/otclient/ctoa_helper_profile_schema.lua` | 25417 |
 | `scripts/lua/otclient/ctoa_helper_recovery_bridge.lua` | 9857 |
 | `scripts/lua/otclient/ctoa_helper_recovery_observer.lua` | 4249 |
-| `scripts/lua/otclient/ctoa_helper_recovery_runtime.lua` | 4956 |
+| `scripts/lua/otclient/ctoa_helper_recovery_runtime.lua` | 5768 |
 | `scripts/lua/otclient/ctoa_helper_route.lua` | 10784 |
 | `scripts/lua/otclient/ctoa_helper_runtime_core.lua` | 10804 |
 | `scripts/lua/otclient/ctoa_helper_runtime_module_gate.lua` | 4103 |
@@ -7096,12 +7097,12 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/lua/otclient/ctoa_helper_scripting.lua` | 2946 |
 | `scripts/lua/otclient/ctoa_helper_targeting.lua` | 8172 |
 | `scripts/lua/otclient/ctoa_helper_timer_runtime.lua` | 4056 |
-| `scripts/lua/otclient/ctoa_helper_ui.lua` | 94443 |
+| `scripts/lua/otclient/ctoa_helper_ui.lua` | 95568 |
 | `scripts/lua/otclient/ctoa_helper_vocation_profiles.lua` | 3881 |
 | `scripts/lua/otclient/ctoa_ms_profile.lua` | 2412 |
 | `scripts/lua/otclient/ctoa_native_combat.lua` | 18058 |
 | `scripts/lua/otclient/ctoa_native_heal.lua` | 9644 |
-| `scripts/lua/otclient/ctoa_native_helper.lua` | 183181 |
+| `scripts/lua/otclient/ctoa_native_helper.lua` | 181588 |
 | `scripts/lua/otclient/ctoa_native_loot.lua` | 11632 |
 | `scripts/lua/otclient/ctoa_otclient.otmod` | 253 |
 | `scripts/lua/otclient/ctoa_otclient_loader.lua` | 7548 |
@@ -7208,7 +7209,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 ```markdown
 # Engine Brain Symbol Map
 
-Generated at: `2026-07-12T00:32:02+00:00`
+Generated at: `2026-07-12T00:43:42+00:00`
 
 This is a lightweight map for navigation, not a full source dump.
 

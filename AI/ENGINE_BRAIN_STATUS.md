@@ -79,6 +79,10 @@ Snapshot date: 2026-07-11 Europe/Warsaw
   production and at the release-gate consumers. Legacy complete artifacts
   without a matching `manifest.sha256` remain blocked; mtime alone cannot
   make stale smoke fresh.
+- The next static Helper slice moved diagnostics snapshot formatting and
+  widget updates out of `ctoa_native_helper.lua` into the passive Diagnostics
+  and UI adapters. It preserves safe-boot/runtime-action invariants and is
+  covered by Lua-backed adapter tests plus the existing shell contract suite.
 - P9 Conditions is `offline_implementation_complete` and
   `operational_acceptance_blocked`. The existing heartbeat now carries an
   optional strict Conditions observation; the bounded sanitizer keeps missing

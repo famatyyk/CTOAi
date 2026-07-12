@@ -1,6 +1,6 @@
 # Engine Brain Symbol Map
 
-Generated at: `2026-07-12T00:33:29+00:00`
+Generated at: `2026-07-12T00:44:14+00:00`
 
 This is a lightweight map for navigation, not a full source dump.
 
@@ -1750,20 +1750,21 @@ This is a lightweight map for navigation, not a full source dump.
 - L266: lua Diagnostics.movementText
 - L271: lua Diagnostics.magicLootText
 - L277: lua Diagnostics.snapshotUiRows
-- L288: lua Diagnostics.tableCount
-- L299: lua Diagnostics.firstTableValue
-- L309: lua Diagnostics.smokeCommandValue
-- L325: lua Diagnostics.smokeCommandExists
-- L347: lua Diagnostics.parseSmokeCommandText
-- L371: lua Diagnostics.smokeCommandTarget
-- L403: lua Diagnostics.smokeTabLabel
-- L414: lua Diagnostics.smokeTabStatusText
-- L418: lua Diagnostics.smokeCommandStatusText
-- L430: lua Diagnostics.smokeCommandBlockedText
-- L434: lua Diagnostics.smokeCommandFailedText
-- L438: lua Diagnostics.recordSnapshot
-- L464: lua Diagnostics.exportBuffer
-- L493: lua Diagnostics.contract
+- L288: lua Diagnostics.snapshotUiValues
+- L298: lua Diagnostics.tableCount
+- L309: lua Diagnostics.firstTableValue
+- L319: lua Diagnostics.smokeCommandValue
+- L335: lua Diagnostics.smokeCommandExists
+- L357: lua Diagnostics.parseSmokeCommandText
+- L381: lua Diagnostics.smokeCommandTarget
+- L413: lua Diagnostics.smokeTabLabel
+- L424: lua Diagnostics.smokeTabStatusText
+- L428: lua Diagnostics.smokeCommandStatusText
+- L440: lua Diagnostics.smokeCommandBlockedText
+- L444: lua Diagnostics.smokeCommandFailedText
+- L448: lua Diagnostics.recordSnapshot
+- L474: lua Diagnostics.exportBuffer
+- L503: lua Diagnostics.contract
 
 ## `scripts/lua/otclient/ctoa_helper_dispatch_guard.lua`
 
@@ -2168,13 +2169,14 @@ This is a lightweight map for navigation, not a full source dump.
 - L6: lua numberValue
 - L10: lua percentValue
 - L19: lua RecoveryRuntime.normalizeVitals
-- L55: lua RecoveryRuntime.jitterThreshold
-- L69: lua RecoveryRuntime.selectHealingSpell
-- L95: lua RecoveryRuntime.potionStatusText
-- L100: lua RecoveryRuntime.spellStatusText
-- L104: lua RecoveryRuntime.actionGap
-- L117: lua RecoveryRuntime.summary
-- L124: lua RecoveryRuntime.contract
+- L55: lua RecoveryRuntime.readVitals
+- L77: lua RecoveryRuntime.jitterThreshold
+- L91: lua RecoveryRuntime.selectHealingSpell
+- L117: lua RecoveryRuntime.potionStatusText
+- L122: lua RecoveryRuntime.spellStatusText
+- L126: lua RecoveryRuntime.actionGap
+- L139: lua RecoveryRuntime.summary
+- L146: lua RecoveryRuntime.contract
 
 ## `scripts/lua/otclient/ctoa_helper_route.lua`
 
@@ -2403,7 +2405,7 @@ This is a lightweight map for navigation, not a full source dump.
 - L1335: lua Ui.msText
 - L1339: lua Ui.cavebotActionSpecs
 - L1357: lua Ui.renderOverviewPanel
-- ... 13 more symbols omitted
+- ... 14 more symbols omitted
 
 ## `scripts/lua/otclient/ctoa_helper_vocation_profiles.lua`
 
@@ -2573,7 +2575,7 @@ This is a lightweight map for navigation, not a full source dump.
 - L1351: lua normalizedCreatureName
 - L1367: lua isIgnoredCreatureName
 - L1385: lua creatureHasBlockingNpcIcon
-- ... 124 more symbols omitted
+- ... 125 more symbols omitted
 
 ## `scripts/lua/otclient/ctoa_native_loot.lua`
 
@@ -6069,6 +6071,10 @@ This is a lightweight map for navigation, not a full source dump.
 - L1010: def test_background_wrapper_has_positive_allowlist_and_guarded_primitives()
 - L1078: def test_background_wrapper_publishes_only_after_external_invariants()
 
+## `tests/test_otclient_helper_diagnostics_ui.py`
+
+- L11: def test_diagnostics_values_and_ui_adapter_keep_snapshot_formatting_out_of_shell()
+
 ## `tests/test_otclient_helper_module_audit.py`
 
 - L12: def test_module_audit_tracks_remaining_function_modularization_pressure()
@@ -6088,8 +6094,8 @@ This is a lightweight map for navigation, not a full source dump.
 
 - L13: def test_module_contract_passes_current_passive_modules()
 - L29: def test_module_contract_requires_loader_registry_global_and_return()
-- L726: def test_module_contract_blocks_forbidden_passive_actions(tmp_path)
-- L748: def test_module_contract_writes_json_and_markdown(tmp_path)
+- L730: def test_module_contract_blocks_forbidden_passive_actions(tmp_path)
+- L752: def test_module_contract_writes_json_and_markdown(tmp_path)
 
 ## `tests/test_otclient_helper_next_modules_plan.py`
 
@@ -6137,55 +6143,55 @@ This is a lightweight map for navigation, not a full source dump.
 - L1635: def test_loot_runtime_adapter_is_passive_and_packaged()
 - L1681: def test_timer_runtime_adapter_is_passive_and_packaged()
 - L1712: def test_recovery_runtime_adapter_is_passive_and_consumed_by_shell()
-- L1760: def test_profile_schema_adapter_is_passive_and_packaged()
-- L1973: def test_feature_flags_adapter_is_passive_and_consumed_by_tools_summary()
-- L2022: def test_operator_summary_adapter_is_passive_and_packaged()
-- L2083: def test_planner_domain_is_passive_and_packaged()
-- L2119: def test_runtime_policy_is_passive_gatekeeper_and_packaged()
-- L2166: def test_dispatch_guard_is_passive_policy_handoff_and_packaged()
-- L2200: def test_plan_queue_is_passive_bounded_decision_queue_and_packaged()
-- L2236: def test_runtime_readiness_is_passive_bridge_status_and_packaged()
-- L2279: def test_equipment_is_read_only_profiled_module_lane()
-- L2365: def test_scripting_is_policy_shell_without_runtime_execution()
-- L2438: def test_cavebot_tab_is_interactive_waypoint_loop()
-- L2500: def test_cavebot_route_editor_does_not_trigger_movement()
-- L2546: def test_cavebot_runtime_has_guarded_retry_budget_before_looped_movement()
-- L2581: def test_smokeall_lists_every_zerobot_shell_view()
-- L2659: def test_solteria_dev_lane_packages_without_touching_live_client()
-- L3085: def test_solteria_sandbox_path_guard_rejects_live_client_aliases()
-- L3129: def test_solteria_updated_client_boot_hook_is_controlled()
-- L3171: def test_live_promotion_requires_explicit_approval_and_fresh_backup()
-- L3273: def test_live_promotion_launch_after_promote_is_explicit_and_non_restart()
-- L3305: def test_live_emergency_repair_is_audited_and_removes_root_fallback()
-- L3326: def test_helper_logs_subtab_smoke_markers()
-- L3333: def test_helper_supports_runtime_smoke_command_file()
-- L3376: def test_helper_otclient_architecture_hooks_are_registered()
-- L3395: def test_loader_is_helper_ui_only_and_loads_without_online_gate()
-- L3442: def test_helper_safe_boot_disables_runtime_automation()
-- L3467: def test_otprofile_builder_emits_safe_boot_profile_shape()
-- L3491: def test_helper_runtime_arming_has_pz_and_non_monster_guards()
-- L3531: def test_helper_targeting_on_executes_safe_monster_retarget()
-- L3590: def test_helper_blocks_npc_icons_and_known_npc_names_before_attack()
-- L3612: def test_runtime_modules_auto_arm_helper_runtime()
-- L3642: def test_healing_and_magic_cards_expose_actionbar_box_controls()
-- L3665: def test_actionbar_slots_are_the_runtime_source_for_potions_and_runes()
-- L3698: def test_rotation_debug_reports_runtime_decision_reasons()
-- L3762: def test_combat_action_selection_lives_in_passive_runtime_adapter()
-- L3794: def test_offensive_actions_are_pz_aware_and_rate_limited_at_execution()
-- L3838: def test_magic_v11b_has_safe_api_probe()
-- L3882: def test_helper_v11b_has_central_api_registry_probe()
-- L3921: def test_helper_v11b_exposes_api_snapshot_in_tools_ui()
-- L3935: def test_helper_tools_diag_tab_exposes_api_and_feature_flags()
-- L3980: def test_helper_bounded_diagnostics_export_is_wired()
-- L4018: def test_recovery_actions_do_not_hard_stop_targeting_or_rotation()
-- L4045: def test_timer_runtime_is_bounded_and_profile_persisted()
-- L4081: def test_standalone_heal_and_loot_are_profile_fed_and_passive()
-- L4106: def test_healing_spell_rotation_has_threshold_rules()
-- L4124: def test_helper_login_singleton_module_visibility_and_healing_jitter_contracts()
-- L4155: def test_healing_uses_real_local_player_vitals_before_percent_fallback()
-- L4186: def test_smoke_runner_supports_attach_without_restart()
-- L4218: def boot_graph_source()
-- L4226: def boot_graph_has_module(source, name, file_name)
+- L1763: def test_profile_schema_adapter_is_passive_and_packaged()
+- L1976: def test_feature_flags_adapter_is_passive_and_consumed_by_tools_summary()
+- L2025: def test_operator_summary_adapter_is_passive_and_packaged()
+- L2086: def test_planner_domain_is_passive_and_packaged()
+- L2122: def test_runtime_policy_is_passive_gatekeeper_and_packaged()
+- L2169: def test_dispatch_guard_is_passive_policy_handoff_and_packaged()
+- L2203: def test_plan_queue_is_passive_bounded_decision_queue_and_packaged()
+- L2239: def test_runtime_readiness_is_passive_bridge_status_and_packaged()
+- L2282: def test_equipment_is_read_only_profiled_module_lane()
+- L2368: def test_scripting_is_policy_shell_without_runtime_execution()
+- L2441: def test_cavebot_tab_is_interactive_waypoint_loop()
+- L2503: def test_cavebot_route_editor_does_not_trigger_movement()
+- L2549: def test_cavebot_runtime_has_guarded_retry_budget_before_looped_movement()
+- L2584: def test_smokeall_lists_every_zerobot_shell_view()
+- L2662: def test_solteria_dev_lane_packages_without_touching_live_client()
+- L3088: def test_solteria_sandbox_path_guard_rejects_live_client_aliases()
+- L3132: def test_solteria_updated_client_boot_hook_is_controlled()
+- L3174: def test_live_promotion_requires_explicit_approval_and_fresh_backup()
+- L3276: def test_live_promotion_launch_after_promote_is_explicit_and_non_restart()
+- L3308: def test_live_emergency_repair_is_audited_and_removes_root_fallback()
+- L3329: def test_helper_logs_subtab_smoke_markers()
+- L3336: def test_helper_supports_runtime_smoke_command_file()
+- L3379: def test_helper_otclient_architecture_hooks_are_registered()
+- L3398: def test_loader_is_helper_ui_only_and_loads_without_online_gate()
+- L3445: def test_helper_safe_boot_disables_runtime_automation()
+- L3470: def test_otprofile_builder_emits_safe_boot_profile_shape()
+- L3494: def test_helper_runtime_arming_has_pz_and_non_monster_guards()
+- L3534: def test_helper_targeting_on_executes_safe_monster_retarget()
+- L3593: def test_helper_blocks_npc_icons_and_known_npc_names_before_attack()
+- L3615: def test_runtime_modules_auto_arm_helper_runtime()
+- L3645: def test_healing_and_magic_cards_expose_actionbar_box_controls()
+- L3668: def test_actionbar_slots_are_the_runtime_source_for_potions_and_runes()
+- L3701: def test_rotation_debug_reports_runtime_decision_reasons()
+- L3765: def test_combat_action_selection_lives_in_passive_runtime_adapter()
+- L3797: def test_offensive_actions_are_pz_aware_and_rate_limited_at_execution()
+- L3841: def test_magic_v11b_has_safe_api_probe()
+- L3885: def test_helper_v11b_has_central_api_registry_probe()
+- L3924: def test_helper_v11b_exposes_api_snapshot_in_tools_ui()
+- L3939: def test_helper_tools_diag_tab_exposes_api_and_feature_flags()
+- L3984: def test_helper_bounded_diagnostics_export_is_wired()
+- L4022: def test_recovery_actions_do_not_hard_stop_targeting_or_rotation()
+- L4049: def test_timer_runtime_is_bounded_and_profile_persisted()
+- L4085: def test_standalone_heal_and_loot_are_profile_fed_and_passive()
+- L4110: def test_healing_spell_rotation_has_threshold_rules()
+- L4128: def test_helper_login_singleton_module_visibility_and_healing_jitter_contracts()
+- L4159: def test_healing_uses_real_local_player_vitals_before_percent_fallback()
+- L4191: def test_smoke_runner_supports_attach_without_restart()
+- L4223: def boot_graph_source()
+- L4231: def boot_graph_has_module(source, name, file_name)
 
 ## `tests/test_otclient_input_contract_fixtures.py`
 

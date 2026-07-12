@@ -1,12 +1,12 @@
 # CTOAi Full Workspace Audit
 
-- Generated at UTC: `2026-07-11T20:11:09+00:00`
+- Generated at UTC: `2026-07-12T00:43:27+00:00`
 - Root: `C:\Users\zycie\CTOAi`
 - Coverage: `All files under workspace root, including .git internals.`
-- Files inventoried: `41951`
-- Non-regular entries skipped: `3739`
-- Git tracked files: `1364`
-- Dirty status entries: `23`
+- Files inventoried: `42140`
+- Non-regular entries skipped: `3829`
+- Git tracked files: `1369`
+- Dirty status entries: `12`
 - Runtime JSON inventory: `runtime/audits/ctoai-full-workspace-audit.json`
 
 ## Coverage Note
@@ -17,12 +17,12 @@ The JSON inventory lists every file found under the workspace root, including `.
 
 | Category | Files | Size |
 | --- | ---: | ---: |
-| `git_internal` | 290 | 3417.90 MB |
+| `git_internal` | 474 | 3419.38 MB |
 | `local_secret_or_sensitive` | 7 | 0.08 MB |
-| `runtime_or_local_state` | 2737 | 878.38 MB |
-| `tracked_source` | 1358 | 12.09 MB |
+| `runtime_or_local_state` | 2740 | 878.47 MB |
+| `tracked_source` | 1363 | 12.31 MB |
 | `untracked_local` | 43 | 0.10 MB |
-| `untracked_source_candidate` | 6178 | 669.07 MB |
+| `untracked_source_candidate` | 6175 | 669.04 MB |
 | `vendor_or_cache` | 31338 | 594.68 MB |
 
 ## Largest Top-Level Areas
@@ -31,23 +31,23 @@ The JSON inventory lists every file found under the workspace root, including `.
 | --- | ---: | ---: |
 | `web` | 32304 | 1135.06 MB |
 | `.venv` | 4543 | 116.28 MB |
-| `runtime` | 2482 | 866.81 MB |
-| `tests` | 532 | 8.81 MB |
-| `scripts` | 451 | 5.93 MB |
+| `runtime` | 2482 | 866.85 MB |
+| `tests` | 534 | 8.83 MB |
+| `.git` | 474 | 3419.38 MB |
+| `scripts` | 451 | 5.94 MB |
 | `docs` | 317 | 4.25 MB |
-| `.git` | 290 | 3417.90 MB |
 | `runner` | 154 | 1.55 MB |
 | `bot` | 144 | 0.73 MB |
 | `_local_archive` | 111 | 1.52 MB |
 | `.tmp` | 105 | 1.59 MB |
 | `workflows` | 89 | 0.18 MB |
-| `AI` | 46 | 0.96 MB |
+| `AI` | 46 | 1.11 MB |
 | `deploy` | 43 | 0.04 MB |
 | `.github` | 41 | 0.14 MB |
 | `.ruff_cache` | 39 | 0.04 MB |
 | `releases` | 36 | 0.02 MB |
 | `agents` | 32 | 0.08 MB |
-| `metrics` | 22 | 0.02 MB |
+| `metrics` | 25 | 0.02 MB |
 | `mobile_console` | 20 | 0.64 MB |
 | `desktop_console` | 16 | 0.42 MB |
 | `schemas` | 15 | 0.04 MB |
@@ -62,11 +62,11 @@ The JSON inventory lists every file found under the workspace root, including `.
 
 | Check | Status | Evidence |
 | --- | --- | --- |
-| `regular_file_inventory` | `passed` | 41951 regular files inventoried. |
-| `non_regular_accounting` | `passed` | 3739 non-regular entries skipped ({'directory': 3739}). |
-| `bounded_hashing` | `passed` | 10163 files hashed with max size 2000000 bytes. |
+| `regular_file_inventory` | `passed` | 42140 regular files inventoried. |
+| `non_regular_accounting` | `passed` | 3829 non-regular entries skipped ({'directory': 3829}). |
+| `bounded_hashing` | `passed` | 10168 files hashed with max size 2000000 bytes. |
 | `sensitive_content_omitted` | `passed` | 7 sensitive-name files inventoried; 0 hashed. |
-| `git_status_captured` | `passed` | 23 git status entries captured. |
+| `git_status_captured` | `passed` | 12 git status entries captured. |
 
 ## Validation Evidence Gate
 
@@ -98,7 +98,7 @@ The JSON inventory lists every file found under the workspace root, including `.
 
 ### HIGH: workspace-state
 
-- Finding: Worktree is dirty with 23 status entries.
+- Finding: Worktree is dirty with 12 status entries.
 - Evidence: git status --short; see runtime audit JSON dirty_entries.
 - Action: Package current Helper/Control Center changes into one reviewable change set before opening another lane.
 
@@ -116,7 +116,7 @@ The JSON inventory lists every file found under the workspace root, including `.
 
 ### MEDIUM: runtime-state
 
-- Finding: Runtime/local state is large and active (2737 files).
+- Finding: Runtime/local state is large and active (2740 files).
 - Evidence: runtime/log/data/local dirs are visible in the file inventory.
 - Action: Continue writing release and Helper evidence to runtime, but keep canonical docs in docs/AI/release paths.
 

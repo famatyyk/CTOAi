@@ -285,6 +285,16 @@ function Diagnostics.snapshotUiRows()
     }
 end
 
+function Diagnostics.snapshotUiValues(snapshot, flags, buffer, limit, version)
+    return {
+        api = Diagnostics.apiSnapshotText(snapshot, version),
+        flags = Diagnostics.featureFlagsText(flags),
+        movement = Diagnostics.movementText(snapshot),
+        magic_loot = Diagnostics.magicLootText(snapshot),
+        buffer = Diagnostics.bufferText(buffer, limit),
+    }
+end
+
 function Diagnostics.tableCount(value)
     if type(value) ~= "table" then
         return 0
@@ -512,6 +522,7 @@ function Diagnostics.contract()
         owns_movement_text = true,
         owns_magic_loot_text = true,
         owns_snapshot_ui_rows = true,
+        owns_snapshot_ui_values = true,
         owns_table_count = true,
         owns_first_table_value = true,
         owns_smoke_command_exists = true,

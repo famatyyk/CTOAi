@@ -52,6 +52,28 @@ function RecoveryRuntime.normalizeVitals(snapshot)
     return vitals
 end
 
+function RecoveryRuntime.readVitals(player)
+    local snapshot = {}
+    local reads = {
+        {field = "hp", method = "getHealth"},
+        {field = "max_hp", method = "getMaxHealth"},
+        {field = "mana", method = "getMana"},
+        {field = "max_mana", method = "getMaxMana"},
+        {field = "hp_percent_api", method = "getHealthPercent"},
+        {field = "mana_percent_api", method = "getManaPercent"},
+    }
+    for _, read in ipairs(reads) do
+        local method = player and player[read.method]
+        if type(method) == "function" then
+            local ok, value = pcall(method, player)
+            if ok then
+                snapshot[read.field] = tonumber(value)
+            end
+        end
+    end
+    return RecoveryRuntime.normalizeVitals(snapshot)
+end
+
 function RecoveryRuntime.jitterThreshold(baseThreshold, jitterPercent, nonce)
     local base = numberValue(baseThreshold)
     if not base then
@@ -126,6 +148,7 @@ function RecoveryRuntime.contract()
         module = "ctoa_helper_recovery_runtime",
         mode = "passive",
         owns_vitals_normalization = true,
+        owns_vitals_read = true,
         owns_healing_spell_selection = true,
         owns_threshold_jitter = true,
         owns_recovery_status_text = true,
