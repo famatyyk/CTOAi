@@ -19,6 +19,10 @@
   Current evidence classifies the historical pair as
   `legacy_or_unbound_attestation`; read-only diagnostic parity is stable at
   57/58 with one executable-profile drift and can never authorize acceptance.
+- The sandbox smoke chain is content-bound: `ModuleAttachSmoke` 4/4,
+  `SmokeAttachAll` 16/16, and `RuntimeModuleGatesSandboxSmoke` must carry the
+  current dev manifest SHA-256. Legacy reports remain blocked; a newer file
+  timestamp alone is not evidence of freshness.
 - P9 Conditions is `offline_implementation_complete` and
   `operational_acceptance_blocked`. Its strict data-only replay and 44-case
   fixture pack are implemented without dispatch, execute-once, promotion, or
@@ -602,8 +606,9 @@ feature work.
 - Add explicit UI smoke states for hunting, tools, profile, and UI tabs.
 - Keep the Helper redesign Phase 3 summary strips current for Healing, Hunting
   Targeting, Hunting Magic, Tools Helper, Profile, and UI.
-- Keep the release gate strict: in-world `SmokeAttachAll` evidence must be
-  newer than the current dev manifest before it can satisfy visual acceptance.
+- Keep the release gate strict: in-world `SmokeAttachAll` evidence must carry a
+  SHA-256 binding to the current dev manifest before it can satisfy visual
+  acceptance; mtime is only a legacy-staleness signal.
 - Treat the Phase 3 summary implementation as visually accepted for the current
   dev manifest after `SmokeAttachAll` run `20260706-1025`; future Helper UI
   changes must rerun in-world `SmokeAttachAll`.

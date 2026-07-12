@@ -1,6 +1,6 @@
 # Engine Brain File Tree
 
-Generated at: `2026-07-12T00:32:02+00:00`
+Generated at: `2026-07-12T00:33:29+00:00`
 
 Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 `node_modules`, `runtime`, `logs`, `data`, `.tmp`, build outputs.
@@ -99,28 +99,28 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `AI/CODEX_CAPABILITY_MAP.md` | 5237 |
 | `AI/ENGINE_BRAIN_STATUS.md` | 136376 |
 | `AI/ENGINE_MEMORY.md` | 2971 |
-| `AI/FEATURE_ROADMAP.md` | 62304 |
-| `AI/generated/DOC_SYNC.json` | 1116 |
-| `AI/generated/DOC_SYNC.md` | 667 |
+| `AI/FEATURE_ROADMAP.md` | 62631 |
+| `AI/generated/DOC_SYNC.json` | 1164 |
+| `AI/generated/DOC_SYNC.md` | 681 |
 | `AI/generated/ENGINE_BRAIN_PACK.json` | 6441 |
-| `AI/generated/ENGINE_BRAIN_PACK.md` | 446138 |
-| `AI/generated/ENV_DOCTOR.json` | 7606 |
+| `AI/generated/ENGINE_BRAIN_PACK.md` | 446533 |
+| `AI/generated/ENV_DOCTOR.json` | 7635 |
 | `AI/generated/ENV_DOCTOR.md` | 1260 |
-| `AI/generated/FILE_TREE.md` | 69927 |
-| `AI/generated/manifest.json` | 2006 |
-| `AI/generated/OWNERSHIP_MAP.json` | 16221 |
-| `AI/generated/OWNERSHIP_MAP.md` | 6504 |
-| `AI/generated/P6_CODEX_INTEGRATION_READINESS.json` | 10693 |
-| `AI/generated/P6_CODEX_INTEGRATION_READINESS.md` | 6849 |
-| `AI/generated/P7_ACTION_READINESS.json` | 4732 |
-| `AI/generated/P7_ACTION_READINESS.md` | 1120 |
-| `AI/generated/P7_OPERATOR_BRIEF.json` | 7099 |
-| `AI/generated/P7_OPERATOR_BRIEF.md` | 1621 |
-| `AI/generated/P7_OPERATOR_WORKFLOW.json` | 4588 |
-| `AI/generated/P7_OPERATOR_WORKFLOW.md` | 2973 |
-| `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.json` | 2657 |
-| `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.md` | 1988 |
-| `AI/generated/SYMBOL_MAP.md` | 276146 |
+| `AI/generated/FILE_TREE.md` | 71212 |
+| `AI/generated/manifest.json` | 2062 |
+| `AI/generated/OWNERSHIP_MAP.json` | 16936 |
+| `AI/generated/OWNERSHIP_MAP.md` | 6581 |
+| `AI/generated/P6_CODEX_INTEGRATION_READINESS.json` | 11010 |
+| `AI/generated/P6_CODEX_INTEGRATION_READINESS.md` | 6915 |
+| `AI/generated/P7_ACTION_READINESS.json` | 4870 |
+| `AI/generated/P7_ACTION_READINESS.md` | 1142 |
+| `AI/generated/P7_OPERATOR_BRIEF.json` | 7308 |
+| `AI/generated/P7_OPERATOR_BRIEF.md` | 1645 |
+| `AI/generated/P7_OPERATOR_WORKFLOW.json` | 4690 |
+| `AI/generated/P7_OPERATOR_WORKFLOW.md` | 3015 |
+| `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.json` | 2705 |
+| `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.md` | 2024 |
+| `AI/generated/SYMBOL_MAP.md` | 284070 |
 | `AI/KNOWN_BUGS.md` | 1384 |
 | `AI/LUA_INDEX.md` | 2874 |
 | `AI/OPERATIONS_AUDIT.md` | 5139 |
