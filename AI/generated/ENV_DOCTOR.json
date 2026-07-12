@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-12T01:33:45+00:00",
+  "generated_at": "2026-07-12T01:34:37+00:00",
   "root": "C:\\Users\\zycie\\CTOAi",
   "overall_status": "warn",
   "status_counts": {
@@ -15,29 +15,9 @@
       "status": "ok",
       "root": "C:/Users/zycie/CTOAi",
       "branch": "codex/p8-background-noscreen",
-      "head": "6b90284d6377b1b2e5f5eb1c7a9b8334ac90fb79",
-      "dirty_count": 19,
-      "dirty_sample": [
-        "M AI/generated/DOC_SYNC.json",
-        "M AI/generated/DOC_SYNC.md",
-        "M AI/generated/FILE_TREE.md",
-        "M AI/generated/OWNERSHIP_MAP.json",
-        "M AI/generated/OWNERSHIP_MAP.md",
-        "M AI/generated/P6_CODEX_INTEGRATION_READINESS.json",
-        "M AI/generated/P6_CODEX_INTEGRATION_READINESS.md",
-        "M AI/generated/P7_ACTION_READINESS.json",
-        "M AI/generated/P7_ACTION_READINESS.md",
-        "M AI/generated/P7_OPERATOR_BRIEF.json",
-        "M AI/generated/P7_OPERATOR_BRIEF.md",
-        "M AI/generated/P7_OPERATOR_WORKFLOW.json",
-        "M AI/generated/P7_OPERATOR_WORKFLOW.md",
-        "M AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.json",
-        "M AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.md",
-        "M AI/generated/SECRET_GUARDRAIL.json",
-        "M AI/generated/SECRET_GUARDRAIL.md",
-        "M AI/generated/SYMBOL_MAP.md",
-        "M AI/generated/manifest.json"
-      ],
+      "head": "eed2c4e335a9c6e610d041c77241e3f02ba61534",
+      "dirty_count": 0,
+      "dirty_sample": [],
       "remotes": [
         "origin\thttps://github.com/famatyyk/CTOAi.git (fetch)",
         "origin\thttps://github.com/famatyyk/CTOAi.git (push)"
