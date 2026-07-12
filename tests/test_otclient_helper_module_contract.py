@@ -712,13 +712,16 @@ def test_module_contract_requires_loader_registry_global_and_return():
     assert "owns_summary_text = true" in conditions_source
 
     equipment_source = (OTCLIENT_DIR / "ctoa_helper_equipment.lua").read_text(encoding="utf-8")
-    for function_name in ["plan", "contract"]:
+    for function_name in ["plan", "shadowPlan", "contract"]:
         assert f"function Equipment.{function_name}" in equipment_source
     assert "owns_slot_text = true" in equipment_source
     assert "owns_snapshot = true" in equipment_source
     assert "owns_api_probe = true" in equipment_source
     assert "owns_observer = true" in equipment_source
     assert "owns_summary_text = true" in equipment_source
+    assert "owns_shadow_ring_plan = true" in equipment_source
+    assert "shadow_plan_data_only = true" in equipment_source
+    assert "rollback_revision_required = true" in equipment_source
 
     scripting_source = (OTCLIENT_DIR / "ctoa_helper_scripting.lua").read_text(encoding="utf-8")
     for function_name in ["plan", "contract"]:

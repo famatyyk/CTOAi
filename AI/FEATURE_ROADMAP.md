@@ -4,14 +4,16 @@
 
 - Engine Brain Plan 3 is operational and maintained as the secret-safe context
   foundation; roadmap work now consumes its generated evidence.
-- Helper `v2.2.1` is live-promoted with 58-file manifest parity at promotion.
+- Helper `v2.3.0` is live-promoted with 58-file manifest parity at promotion;
+  the next staged package is `v2.3.1` and carries the passive P10 ring-plan
+  contract.
   Vocation-profile drift after play is tracked separately, but remains blocking
   because the current Lua profile is executable rather than data-only.
 - P8 `BackgroundNoScreen` is `implementation_complete` and
   `operational_acceptance_blocked`. It replaces routine mouse/focus/screenshot
   testing with bounded passive evidence and never implies another live promotion.
-  The staged source version is `v2.3.0`; live stays on `v2.2.1` until a later
-  explicit release cycle.
+  The current live package is `v2.3.0`; P8 acceptance remains separate from
+  the explicit package promotion cycle.
 - P8 operational acceptance requires all three proofs: an official
   promotion-bound trusted pin, a fresh capability heartbeat newer than the one
   canonical client process, and full producer/consumer parity for the no-action
@@ -30,6 +32,11 @@
   canonical inputs and requires exact operator confirmation before it can write
   a receipt. Current evidence remains blocked and no receipt exists.
   Fixture success is never reported as runtime readiness.
+- P10 Equipment is `offline_implementation_complete` and
+  `operational_acceptance_blocked`. Its ring-only snapshot, exact item/slot/
+  container/revision checks, rollback simulation, P9 receipt binding, and
+  15-case tamper pack are data-only; `otp10` and the static sandbox gate never
+  move, use, or dispatch an item.
 - P6 is ready for plugin design and the five bounded P7 safe-write refresh tools
   are enabled with audit coverage.
 - The next static Helper slice keeps the UI shell passive: Diagnostics owns
@@ -65,7 +72,8 @@
 4. **Equipment runtime safety gate** — owner: Helper Runtime; status:
    `static_contract_accepted`; risk: `runtime_equipment`. It is ordered after
    Conditions and allowlists only a ring-swap dry-run with exact item IDs,
-   rollback snapshot, zero retry, and no live promotion.
+   rollback snapshot, zero retry, and no live promotion. The offline P10
+   replay is available through `ctoa.ps1 otp10`.
 5. **Heal Friend runtime safety gate** — owner: Helper Runtime; status:
    `static_contract_accepted`; risk: `runtime_cast`. It is ordered after both
    Conditions and Equipment and requires exact persisted whitelist plus stable
@@ -82,8 +90,9 @@
   real `shadow_plan_ready_for_operator_review` trace under accepted P8 and
   Recovery proofs, then pass the independently reviewed data-only acceptance
   boundary. The offline fixture pack may stay green while this is blocked.
-- P10 remains blocked until that real P9 trace is explicitly reviewed; it then
-  repeats the independent shadow/replay sequence for rollback-ready Equipment.
+- P10 remains operationally blocked until that real P9 trace is explicitly
+  reviewed, but its independent offline shadow/replay sequence is complete and
+  ready to consume the accepted receipt.
   P11 does the same for exact-whitelist Heal Friend.
 - P12 is the first possible execute-once sandbox phase, still with no live dispatch.
 - P13 adds decision/result replay and machine-readable roadmap state; P14 moves
@@ -126,7 +135,7 @@ feature work.
 - A post-promotion live client launch is not implicit. Operators must add
   `-LaunchAfterPromote`; the wrapper may launch a missing live client but must
   never stop or restart an existing live client.
-- Current Helper `v2.2.1` is live-promoted. Its promotion report verified 58
+- Current Helper `v2.3.0` is live-promoted. Its promotion report verified 58
   staged/live SHA-256 matches; release gate and GoalStatus passed. Runtime module
   acceptance remains fail-closed and separate from package promotion.
 - Helper P6 Module Lane is repo- and sandbox-complete: Healing/Recovery, Combat,

@@ -114,9 +114,12 @@ Objective: validate one ring-swap plan and its rollback without touching invento
 
 Dependencies: explicitly reviewed action-bound P9 trace plus its validated
 data-only acceptance receipt. Neither artifact authorizes runtime dispatch.
+The offline implementation may be developed and fixture-tested before those
+operational dependencies are accepted; the operational gate remains closed.
 
 Deliverables: exact item/slot/container/revision snapshot, zero-retry plan, rollback
-simulation, tamper detection, and negative scenario pack.
+simulation, tamper detection, P9 receipt hash binding, and a 15-case negative
+scenario pack. `ctoa.ps1 otp10` is the repo-local entry point.
 
 Done gates: ambiguous inventory, revision drift, missing slot, wrong IDs, missing
 rollback, stale evidence, or PZ block readiness; no amulet or rotation scope.

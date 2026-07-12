@@ -134,6 +134,40 @@ function Equipment.plan(config, observation, context)
     return plan
 end
 
+-- Build a bounded, data-only ring plan for the P10 shadow lane.  This helper
+-- never calls an inventory API and never mutates a slot; the runtime gate and
+-- offline replay remain the only consumers allowed to review the plan.
+function Equipment.shadowPlan(snapshot)
+    local observed = type(snapshot) == "table" and snapshot or {}
+    local blockers = {}
+    local equipped = tonumber(observed.equipped_item_id)
+    local candidate = tonumber(observed.candidate_item_id)
+    local rollback = tonumber(observed.rollback_item_id)
+    if observed.slot_name ~= "ring" or observed.rollback_slot_name ~= "ring" then blockers[#blockers + 1] = "ring_slot_snapshot_required" end
+    if not equipped or equipped <= 0 or not candidate or candidate <= 0 then blockers[#blockers + 1] = "item_id_snapshot_required" end
+    if equipped and candidate and equipped == candidate then blockers[#blockers + 1] = "candidate_matches_equipped" end
+    if not rollback or rollback ~= equipped then blockers[#blockers + 1] = "rollback_snapshot_mismatch" end
+    if tostring(observed.inventory_revision or "") == "" or tostring(observed.rollback_inventory_revision or "") ~= tostring(observed.inventory_revision or "") then blockers[#blockers + 1] = "inventory_revision_drift" end
+    if observed.inventory_unambiguous ~= true then blockers[#blockers + 1] = "inventory_ambiguous" end
+    if observed.protection_zone ~= "outside" then blockers[#blockers + 1] = "protection_zone_not_outside" end
+    local plan = {
+        action = "plan_ring_swap", slot = "ring", before_item_id = equipped,
+        candidate_item_id = candidate, rollback_item_id = rollback,
+        inventory_revision = tostring(observed.inventory_revision or ""),
+        rollback_inventory_revision = tostring(observed.rollback_inventory_revision or ""),
+        dispatch_allowed = false, runtime_actions = false, retry_budget = 0,
+    }
+    return {
+        schema_version = "ctoa.equipment-shadow-plan.v1", mode = "shadow_only",
+        status = #blockers == 0 and "shadow_plan_ready" or "operational_acceptance_blocked",
+        action = "plan_ring_swap", blockers = blockers, plan = plan,
+        rollback_simulation = #blockers == 0 and "ready" or "blocked",
+        dispatch_allowed = false, runtime_actions = false, executes_plan = false,
+        execute_once_allowed = false, promotion_allowed = false,
+        intrusive_actions_performed = {},
+    }
+end
+
 function Equipment.summary(config, helpers)
     helpers = helpers or {}
     local equipment = config or {}
@@ -159,6 +193,9 @@ function Equipment.contract()
         owns_api_probe = true,
         owns_observer = true,
         owns_summary_text = true,
+        owns_shadow_ring_plan = true,
+        shadow_plan_data_only = true,
+        rollback_revision_required = true,
         runtime_actions = false,
         swaps = false,
         moves_items = false,
