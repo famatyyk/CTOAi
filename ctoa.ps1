@@ -200,6 +200,7 @@ Usage:
     .\\ctoa.ps1 otest
     .\\ctoa.ps1 otbg
     .\\ctoa.ps1 otp9
+    .\\ctoa.ps1 otp10
     .\\ctoa.ps1 brain <refresh|doctor|pack>
 
 Short aliases:
@@ -241,6 +242,7 @@ Examples:
   .\\ctoa.ps1 otest
   .\\ctoa.ps1 otbg
   .\\ctoa.ps1 otp9
+  .\\ctoa.ps1 otp10
   .\\ctoa.ps1 brain refresh
   .\\ctoa.ps1 brain doctor
   .\\ctoa.ps1 brain pack
@@ -853,6 +855,18 @@ function Invoke-OtConditionsShadowReplay {
     }
 }
 
+function Invoke-OtEquipmentShadowReplay {
+    $python = Join-Path $Root ".venv\Scripts\python.exe"
+    $scriptPath = Join-Path $Root "scripts\ops\otclient_equipment_shadow_replay.py"
+    if (-not (Test-Path -LiteralPath $python -PathType Leaf)) {
+        throw "P10 Equipment shadow replay requires the trusted repo interpreter: $python"
+    }
+    if (-not (Test-Path -LiteralPath $scriptPath -PathType Leaf)) {
+        throw "P10 Equipment shadow replay tool is missing: $scriptPath"
+    }
+    Invoke-FromRoot -FilePath $python -Arguments @($scriptPath)
+}
+
 function Invoke-EngineBrain {
     param(
         [string]$Subcommand,
@@ -1006,6 +1020,7 @@ switch ($Command.ToLowerInvariant()) {
     "otest" { Invoke-OtTestLoop; break }
     "otbg" { Invoke-OtBackgroundStatus; break }
     "otp9" { Invoke-OtConditionsShadowReplay; break }
+    "otp10" { Invoke-OtEquipmentShadowReplay; break }
     "brain" { Invoke-EngineBrain -Subcommand $Arg1 -Profile $Arg2; break }
 
     default {

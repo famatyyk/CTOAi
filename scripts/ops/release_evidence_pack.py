@@ -122,6 +122,14 @@ CONDITIONS_SHADOW_FALSE_FLAGS = (
     "execute_once_allowed",
     "promotion_allowed",
 )
+EQUIPMENT_SHADOW_REPORT_SCHEMA = "ctoa.equipment-shadow-replay-report.v1"
+EQUIPMENT_SHADOW_MODE = "offline_equipment_shadow_replay"
+EQUIPMENT_SHADOW_MAX_AGE_SECONDS = 30
+EQUIPMENT_SHADOW_STATUS_VALUES = {
+    "operational_acceptance_blocked",
+    "shadow_plan_ready_for_operator_review",
+}
+EQUIPMENT_SHADOW_FALSE_FLAGS = CONDITIONS_SHADOW_FALSE_FLAGS
 CONDITIONS_SHADOW_REPORT_KEYS = {
     "schema_version",
     "generated_at_unix_ms",
@@ -1054,6 +1062,81 @@ def _conditions_shadow_summary(
     }
 
 
+def _equipment_shadow_summary(
+    payload: dict[str, Any] | None,
+    path: Path,
+    *,
+    now: dt.datetime | None = None,
+    artifact_present: bool | None = None,
+) -> dict[str, Any]:
+    present = payload is not None if artifact_present is None else artifact_present
+    data = payload if isinstance(payload, dict) else {}
+    errors: list[str] = []
+    if not isinstance(payload, dict):
+        errors.append("report.unreadable_or_malformed")
+    else:
+        if data.get("schema_version") != EQUIPMENT_SHADOW_REPORT_SCHEMA:
+            errors.append("report.schema_version")
+        if data.get("mode") != EQUIPMENT_SHADOW_MODE:
+            errors.append("report.mode")
+        if data.get("runtime_readiness_claimed") is not False:
+            errors.append("report.runtime_readiness_claimed")
+        if any(data.get(key) is not False for key in EQUIPMENT_SHADOW_FALSE_FLAGS):
+            errors.append("report.unsafe_action_contract")
+        if data.get("intrusive_actions_performed") != []:
+            errors.append("report.intrusive_actions_performed")
+        trace = data.get("operational_trace")
+        scenario = data.get("scenario_pack")
+        if not isinstance(trace, dict):
+            errors.append("report.operational_trace")
+        elif trace.get("action") != "plan_ring_swap" or trace.get("rollback_simulation") not in {"ready", "blocked"}:
+            errors.append("report.trace_contract")
+        if not isinstance(scenario, dict) or scenario.get("status") not in {"passed", "failed"}:
+            errors.append("report.scenario_pack")
+    generated_at = data.get("generated_at_unix_ms")
+    observed_at = (now or dt.datetime.now(dt.UTC)).astimezone(dt.UTC)
+    age_seconds = (
+        (observed_at.timestamp() * 1000 - generated_at) / 1000
+        if isinstance(generated_at, int) and not isinstance(generated_at, bool) and generated_at > 0
+        else None
+    )
+    fresh = bool(age_seconds is not None and 0 <= age_seconds <= EQUIPMENT_SHADOW_MAX_AGE_SECONDS)
+    contract_valid = present and not errors
+    if not present:
+        status = "missing"
+    elif not contract_valid:
+        status = "invalid"
+    elif not fresh:
+        status = "stale"
+    else:
+        status = data.get("operational_acceptance_status", "invalid")
+        if status not in EQUIPMENT_SHADOW_STATUS_VALUES:
+            status = "invalid"
+    trace = data.get("operational_trace") if isinstance(data.get("operational_trace"), dict) else {}
+    scenario = data.get("scenario_pack") if isinstance(data.get("scenario_pack"), dict) else {}
+    return {
+        "status": status,
+        "reported_status": data.get("operational_acceptance_status", "invalid"),
+        "mode": data.get("mode") if data.get("mode") == EQUIPMENT_SHADOW_MODE else "invalid",
+        "generated_at_unix_ms": generated_at if isinstance(generated_at, int) and generated_at > 0 else 0,
+        "max_age_seconds": EQUIPMENT_SHADOW_MAX_AGE_SECONDS,
+        "age_seconds": round(age_seconds, 3) if age_seconds is not None else None,
+        "fresh": fresh,
+        "contract_valid": contract_valid,
+        "contract_errors": errors,
+        "trace_status": trace.get("status", "invalid"),
+        "decision": trace.get("decision", "hold"),
+        "blockers": trace.get("blockers", []) if isinstance(trace.get("blockers"), list) else [],
+        "rollback_simulation": trace.get("rollback_simulation", "blocked"),
+        "fixture_validation_status": scenario.get("status", "invalid"),
+        "fixture_only_validation_passed": bool(contract_valid and scenario.get("status") == "passed"),
+        "runtime_readiness_claimed": False,
+        **{key: False for key in EQUIPMENT_SHADOW_FALSE_FLAGS},
+        "intrusive_actions_performed": [],
+        "path": str(path).replace("\\", "/"),
+    }
+
+
 def _safe_nonnegative_int(value: Any) -> tuple[int, bool]:
     if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
         return value, True
@@ -1605,6 +1688,7 @@ def _helper_status(helper_dev_dir: Path) -> dict[str, Any]:
     live_promotion_path = helper_dev_dir / "live_promotion.json"
     background_status_path = helper_dev_dir / "background_status.json"
     conditions_shadow_path = helper_dev_dir / "conditions_shadow_replay.json"
+    equipment_shadow_path = helper_dev_dir / "equipment_shadow_replay.json"
 
     helper_dir_safe = _safe_dir_stat(helper_dev_dir) is not None
     manifest = _read_json_or_none(manifest_path) if helper_dir_safe else None
@@ -1638,6 +1722,14 @@ def _helper_status(helper_dev_dir: Path) -> dict[str, Any]:
         conditions_shadow,
         conditions_shadow_path,
         artifact_present=_safe_file_stat(conditions_shadow_path) is not None,
+    )
+    equipment_shadow = (
+        _read_json_strict_or_none(equipment_shadow_path) if helper_dir_safe else None
+    )
+    equipment_shadow_summary = _equipment_shadow_summary(
+        equipment_shadow,
+        equipment_shadow_path,
+        artifact_present=_safe_file_stat(equipment_shadow_path) is not None,
     )
 
     gates = gate.get("gates", []) if gate else []
@@ -1788,6 +1880,7 @@ def _helper_status(helper_dev_dir: Path) -> dict[str, Any]:
         "sandbox_smoke_queue": sandbox_smoke_queue,
         "background_status": background_summary,
         "conditions_shadow": conditions_shadow_summary,
+        "equipment_shadow": equipment_shadow_summary,
         "next_action": str(
             (gate or {}).get("next_action")
             or (goal_status or {}).get("next_action")
@@ -1811,6 +1904,7 @@ def _helper_status(helper_dev_dir: Path) -> dict[str, Any]:
             "live_promotion": str(live_promotion_path).replace("\\", "/"),
             "background_status": str(background_status_path).replace("\\", "/"),
             "conditions_shadow": str(conditions_shadow_path).replace("\\", "/"),
+            "equipment_shadow": str(equipment_shadow_path).replace("\\", "/"),
         },
     }
 
@@ -2184,6 +2278,12 @@ def render_markdown(pack: dict[str, Any]) -> str:
             f"fixture_only_passed=`{helper.get('conditions_shadow', {}).get('fixture_only_validation_passed', False)}` "
             f"runtime_readiness_claimed=`{helper.get('conditions_shadow', {}).get('runtime_readiness_claimed', False)}` "
             f"dispatch_allowed=`{helper.get('conditions_shadow', {}).get('dispatch_allowed', False)}`",
+            f"- Equipment Shadow: `{helper.get('equipment_shadow', {}).get('status', 'missing')}` "
+            f"contract_valid=`{helper.get('equipment_shadow', {}).get('contract_valid', False)}` "
+            f"fresh=`{helper.get('equipment_shadow', {}).get('fresh', False)}` "
+            f"fixtures=`{helper.get('equipment_shadow', {}).get('fixture_validation_status', 'missing')}` "
+            f"rollback=`{helper.get('equipment_shadow', {}).get('rollback_simulation', 'blocked')}` "
+            f"dispatch_allowed=`{helper.get('equipment_shadow', {}).get('dispatch_allowed', False)}`",
             f"- Package SHA256: `{helper['package_sha256'] or 'missing'}`",
             f"- Next command: `{helper['next_command'] or 'n/a'}`",
         ]

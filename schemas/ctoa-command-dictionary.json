@@ -128,6 +128,11 @@
       "description": "Refresh bounded BackgroundNoScreen evidence and run the no-action Conditions shadow replay"
     },
     {
+      "command": "otp10",
+      "aliases": [],
+      "description": "Run the data-only ring Equipment shadow replay with rollback and tamper checks"
+    },
+    {
       "command": "brain",
       "aliases": [],
       "description": "Engine Brain helpers: refresh|doctor|pack [all|helper|control-center|infra|security]"
