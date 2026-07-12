@@ -1,6 +1,6 @@
 # CTOAi Engine Brain Pack
 
-Generated at: `2026-07-12T00:43:47+00:00`
+Generated at: `2026-07-12T01:33:46+00:00`
 Repo root: `C:\Users\zycie\CTOAi`
 Profile: `helper`
 
@@ -143,8 +143,9 @@ Snapshot date: 2026-07-11 Europe/Warsaw
   `background_status.json`, a positive wrapper allowlist, primitive GUI/input/
   screenshot/start-stop/live-write guards, `ctoa.ps1 otbg`, and a read-only
   Control Center status tile. It records process/screenshot stability and never
-  authorizes dispatch or promotion. The staged source version is `v2.3.0`; the
-  protected live client remains `v2.2.1` during this development cycle. Canonical
+  authorizes dispatch or promotion. The current live package is promoted only
+  through the explicit wrapper gate; the protected live client remains guarded
+  and the staged source version is tracked by the release manifest. Canonical
   sequence: `AI/P8_P16_EXECUTION_ROADMAP.md`.
 - P8 operational acceptance is fail-closed and requires all three proofs: a
   manifest with `official_live_promotion` provenance and matching SHA256 in
@@ -172,7 +173,8 @@ Snapshot date: 2026-07-11 Europe/Warsaw
   replay has strict hash-bound P8/Recovery inputs, a 44-case deterministic
   fixture pack, atomic runtime output, Release Evidence and Control Center
   consumers, and `ctoa.ps1 otp9`. Fixture success does not claim runtime
-  readiness. P10 stays blocked until a fresh real P9 trace is reviewed under
+  readiness. P10 offline replay is complete, but P10 stays blocked operationally
+  until a fresh real P9 trace is reviewed under
   accepted P8 and Recovery proofs. Canonical contract:
   `docs/otclient/P9_CONDITIONS_SHADOW_REPLAY_DESIGN.md`.
 - P9 also has a separate data-only operator acceptance boundary. It strictly
@@ -740,8 +742,7 @@ Snapshot date: 2026-07-11 Europe/Warsaw
   user config reads fail closed to defaults for oversized, invalid, symlinked,
   or non-object JSON before operator API responses are built.
 - Mobile console file metadata responses now reuse the same display-safe path
-  helper for admin settings, idea parking, auto-trainer report status, disk
-  probes, one-click generated directories, and client-sync result pat
+  helper for admin
 
 [truncated]
 ```
@@ -756,14 +757,16 @@ Snapshot date: 2026-07-11 Europe/Warsaw
 
 - Engine Brain Plan 3 is operational and maintained as the secret-safe context
   foundation; roadmap work now consumes its generated evidence.
-- Helper `v2.2.1` is live-promoted with 58-file manifest parity at promotion.
+- Helper `v2.3.1` is live-promoted with 58-file manifest parity at promotion;
+  the next staged package is `v2.3.2` and carries the passive P10 ring-plan
+  contract.
   Vocation-profile drift after play is tracked separately, but remains blocking
   because the current Lua profile is executable rather than data-only.
 - P8 `BackgroundNoScreen` is `implementation_complete` and
   `operational_acceptance_blocked`. It replaces routine mouse/focus/screenshot
   testing with bounded passive evidence and never implies another live promotion.
-  The staged source version is `v2.3.0`; live stays on `v2.2.1` until a later
-  explicit release cycle.
+  The current live package is `v2.3.1`; P8 acceptance remains separate from
+  the explicit package promotion cycle.
 - P8 operational acceptance requires all three proofs: an official
   promotion-bound trusted pin, a fresh capability heartbeat newer than the one
   canonical client process, and full producer/consumer parity for the no-action
@@ -782,6 +785,11 @@ Snapshot date: 2026-07-11 Europe/Warsaw
   canonical inputs and requires exact operator confirmation before it can write
   a receipt. Current evidence remains blocked and no receipt exists.
   Fixture success is never reported as runtime readiness.
+- P10 Equipment is `offline_implementation_complete` and
+  `operational_acceptance_blocked`. Its ring-only snapshot, exact item/slot/
+  container/revision checks, rollback simulation, P9 receipt binding, and
+  15-case tamper pack are data-only; `otp10` and the static sandbox gate never
+  move, use, or dispatch an item.
 - P6 is ready for plugin design and the five bounded P7 safe-write refresh tools
   are enabled with audit coverage.
 - The next static Helper slice keeps the UI shell passive: Diagnostics owns
@@ -817,7 +825,8 @@ Snapshot date: 2026-07-11 Europe/Warsaw
 4. **Equipment runtime safety gate** — owner: Helper Runtime; status:
    `static_contract_accepted`; risk: `runtime_equipment`. It is ordered after
    Conditions and allowlists only a ring-swap dry-run with exact item IDs,
-   rollback snapshot, zero retry, and no live promotion.
+   rollback snapshot, zero retry, and no live promotion. The offline P10
+   replay is available through `ctoa.ps1 otp10`.
 5. **Heal Friend runtime safety gate** — owner: Helper Runtime; status:
    `static_contract_accepted`; risk: `runtime_cast`. It is ordered after both
    Conditions and Equipment and requires exact persisted whitelist plus stable
@@ -834,8 +843,9 @@ Snapshot date: 2026-07-11 Europe/Warsaw
   real `shadow_plan_ready_for_operator_review` trace under accepted P8 and
   Recovery proofs, then pass the independently reviewed data-only acceptance
   boundary. The offline fixture pack may stay green while this is blocked.
-- P10 remains blocked until that real P9 trace is explicitly reviewed; it then
-  repeats the independent shadow/replay sequence for rollback-ready Equipment.
+- P10 remains operationally blocked until that real P9 trace is explicitly
+  reviewed, but its independent offline shadow/replay sequence is complete and
+  ready to consume the accepted receipt.
   P11 does the same for exact-whitelist Heal Friend.
 - P12 is the first possible execute-once sandbox phase, still with no live dispatch.
 - P13 adds decision/result replay and machine-readable roadmap state; P14 moves
@@ -878,7 +888,7 @@ feature work.
 - A post-promotion live client launch is not implicit. Operators must add
   `-LaunchAfterPromote`; the wrapper may launch a missing live client but must
   never stop or restart an existing live client.
-- Current Helper `v2.2.1` is live-promoted. Its promotion report verified 58
+- Current Helper `v2.3.1` is live-promoted. Its promotion report verified 58
   staged/live SHA-256 matches; release gate and GoalStatus passed. Runtime module
   acceptance remains fail-closed and separate from package promotion.
 - Helper P6 Module Lane is repo- and sandbox-complete: Healing/Recovery, Combat,
@@ -1431,15 +1441,7 @@ Once available:
   Overview/Local Status ops detail panels through `/api/control-center/ops`.
 - Keep Control Center evidence read endpoints operator-gated. Anonymous users
   and `member` sessions must not receive runtime evidence JSON, ops detail
-  payloads, release-evidence markdown, API cost markdown, local filesystem paths,
-  or action-audit metadata.
-- Keep browser-visible Control Center evidence paths display-safe: repo-local
-  paths may be shown relative to the repo, while external absolute paths should
-  be collapsed to `[external]/name` instead of exposing user profile, temp, live
-  client, or custom runtime parent directories.
-- Keep browser-visible Control Center markdown reports on the same sanitizer:
-  release-evidence and API-cost markdown endpoints must redact token/password
-  forms and coll
+  payloads, release-evidence markdown, API cos
 
 [truncated]
 ```
@@ -1564,9 +1566,12 @@ Objective: validate one ring-swap plan and its rollback without touching invento
 
 Dependencies: explicitly reviewed action-bound P9 trace plus its validated
 data-only acceptance receipt. Neither artifact authorizes runtime dispatch.
+The offline implementation may be developed and fixture-tested before those
+operational dependencies are accepted; the operational gate remains closed.
 
 Deliverables: exact item/slot/container/revision snapshot, zero-retry plan, rollback
-simulation, tamper detection, and negative scenario pack.
+simulation, tamper detection, P9 receipt hash binding, and a 15-case negative
+scenario pack. `ctoa.ps1 otp10` is the repo-local entry point.
 
 Done gates: ambiguous inventory, revision drift, missing slot, wrong IDs, missing
 rollback, stale evidence, or PZ block readiness; no amulet or rotation scope.
@@ -3486,7 +3491,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_hel
 ## Prerequisites
 
 - Follow ConditionsRuntimeGate, then EquipmentRuntimeGate, then HealFriendRuntimeGate; do not reorder the phases.
-- Keep P10 blocked until ctoa.ps1 otp9 produces a reviewed real P9 trace under accepted P8 and Recovery proofs and the separate data-only acceptance boundary validates it.
+- Keep P10 operational acceptance blocked until ctoa.ps1 otp9 produces a reviewed real P9 trace under accepted P8 and Recovery proofs; the offline ring-only replay is available through ctoa.ps1 otp10.
 - Run SmokeAttachModules after sandbox character is in-world.
 - Run SmokeAttachAll for the current dev manifest before enabling runtime actions.
 - Keep PromoteLiveCtoa behind -ApproveLiveDeploy.
@@ -3515,8 +3520,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_hel
 | 0 | `ui_primitives` | `in_progress_static_gated` | ctoa_helper_ui.lua owns text fit, widget style, checkbox state, visibility, guarded createWidget, nav/subtab style, button/card style, metric row/value style, setting/profile/vector row style, section/table/header strip style, priority badge style, label style, window chrome style, toggle/checkbox/sidebar-card style, overview avatar/equipment slot style, control-name style primitives, setting/profile/vector/section row geometry, sidebar/subtab metadata, section scaffold metadata, subtab content offsets, tools table-header metadata, CaveBot action/choice metadata, interactive profile/vector row builders, the passive Hunting targeting/magic panel renderer, the passive CaveBot editor renderer, the passive Tools helper/PvP/HUD/timer/diag panel renderer, the passive Settings/Profile renderer, and the passive Engine/HUD/layout renderer; helper shell now delegates all direct styleWidget calls, row geometry, tab metadata, repeated body/header scaffolding, subtab button creation, cavebot waypoint editor composition/action metadata, tools table headers, hunting targeting/magic composition, tools helper/PvP/HUD/timer/diag composition, profile/settings composition, Engine/HUD/layout composition, profile cycle/step/vector row construction, and diagnostics snapshot formatting/update through passive UI and Diagnostics adapters. | Keep diagnostics snapshot rendering in the adapters, run package/budget parity, and do not reintroduce probe formatting or widget loops into the guarded shell. | ModuleContract, UI preview, HelperShellBudgetPlanStaticSmoke, ModuleStaticGates, current LocalReady, then SmokeAttachModules for in-world visual evidence. |
 | 1 | `target_scorer` | `in_progress_static_gated` | Targeting owns bestCandidate ranking; helper now builds OTClient candidate snapshots and delegates best-target choice to ctoa_helper_targeting.lua. | Move the remaining PZ/NPC reason summaries into targeting/combat runtime adapters before adding any new combat feature. | TargetingStaticSmoke, ModuleStaticGates, current LocalReady, then SmokeAttach hunting and hunting_magic tabs in sandbox before runtime enablement. |
 | 2 | `route_engine` | `in_progress_static_gated` | Route labels, waypoint mutation, active target advancement, retry status, progress state, retryBlocked, selected summary, passive CaveBot editor panel, cavebot runtime decision text, movement blocked-reason/status/trace/path result text, and movement API probe summary text are module/UI-owned. | Move the next cavebot route/probe metadata slice into route/cavebot runtime adapters while keeping movement execution in guarded runtime. | RouteStaticSmoke, ModuleStaticGates, current LocalReady, then SmokeAttach cavebot tab in sandbox. |
-| 3 | `conditions_runtime_gate` | `offline_implementation_complete` | The default-closed static gate remains, and P9 now adds a strict data-only profile, passive heartbeat observation, hash-bound deterministic replay, 44-case fixture pack, Release Evidence, Control Center consumers, and a separately confirmed acceptance preflight; none can dispatch. | Run ctoa.ps1 otp9 only through BackgroundNoScreen, capture a fresh real trace after accepted P8 and Recovery proofs, then validate the data-only acceptance boundary; do not start P10 or execute-once review while operational acceptance is blocked. | P9 fixture pack, strict consumers, accepted P8 proof, real guarded Conditions observation, accepted Recovery trace/proof, validated no-action receipt, current attach evidence, Combat/CaveBot disabled, and no live promotion. |
-| 4 | `equipment_runtime_gate` | `static_contract_accepted` | ctoa_helper_equipment_runtime_gate.lua owns a default-closed ring-only, exact-ID, rollback-ready, zero-retry dry-run gate after Conditions; it cannot move or use items. | After Conditions acceptance, refresh inventory evidence and prove an unambiguous rollback-ready dry-run before any execute-once bridge review. | EquipmentRuntimeGateStaticSmoke, accepted Conditions gate, fresh EquipmentObserverSmoke, exact item/rollback evidence, Combat/CaveBot disabled, and no live promotion. |
+| 3 | `conditions_runtime_gate` | `offline_implementation_complete` | The default-closed static gate remains, and P9 now adds a strict data-only profile, passive heartbeat observation, hash-bound deterministic replay, 44-case fixture pack, Release Evidence, Control Center consumers, and a separately confirmed acceptance preflight; none can dispatch. | Run ctoa.ps1 otp9 only through BackgroundNoScreen, capture a fresh real trace after accepted P8 and Recovery proofs, then validate the data-only acceptance boundary; P10 can be fixture-tested while operational acceptance remains blocked. | P9 fixture pack, strict consumers, accepted P8 proof, real guarded Conditions observation, accepted Recovery trace/proof, validated no-action receipt, current attach evidence, Combat/CaveBot disabled, and no live promotion. |
+| 4 | `equipment_runtime_gate` | `offline_implementation_complete` | ctoa_helper_equipment_runtime_gate.lua plus the P10 replay own a default-closed ring-only, exact-ID, rollback-ready, zero-retry dry-run contract after Conditions; they cannot move or use items. | Run ctoa.ps1 otp10, then after Conditions acceptance refresh real inventory evidence and prove an unambiguous rollback-ready dry-run before any execute-once bridge review. | EquipmentRuntimeGateStaticSmoke, EquipmentShadowReplayStaticSmoke, accepted Conditions gate, fresh EquipmentObserverSmoke, exact item/rollback evidence, Combat/CaveBot disabled, and no live promotion. |
 | 5 | `heal_friend_runtime_gate` | `static_contract_accepted` | ctoa_helper_heal_friend_runtime_gate.lua owns a default-closed exact-whitelist and stable-party-target dry-run gate after Conditions and Equipment; it cannot cast. | After both predecessor gates pass, refresh no-target/whitelist evidence and prove a stable exact target dry-run before any execute-once bridge review. | HealFriendRuntimeGateStaticSmoke, accepted Conditions/Equipment gates, persisted exact whitelist, fresh target evidence, Combat/CaveBot disabled, and no live promotion. |
 | 6 | `scripting_policy` | `in_progress_static_gated` | ctoa_helper_scripting.lua owns policy snapshots, deny-all planning, and summary text; helper shell only delegates policy rendering and keeps eval/snippets forced off. | Add sandbox policy-shell evidence and keep all snippet/eval execution unavailable until security review, audit logging, ModuleAttachSmoke, SmokeAttachAll, and live approval are current. | ScriptingPolicySmoke, ModuleStaticGates, current LocalReady, then SmokeAttach scripting tab in sandbox; no runtime eval or snippet bridge. |
 | 7 | `operator_summary_bridge` | `in_progress_static_gated` | ctoa_helper_operator_summary.lua owns title/domain/profile/UI summary composition; helper shell now only passes local context and renders returned text. | Move any remaining operator-facing summary branches into the module before adding new runtime features, keeping summaries passive and widget-free. | Operator summary static contract, OperatorSummaryStaticSmoke, ModuleStaticGates, UI preview, current LocalReady, then SmokeAttachModules in sandbox before summaries can inform runtime bridge decisions. |
@@ -5961,9 +5966,9 @@ fresh `ctoa_local.log` lines plus safe boot state.
 ```json
 {
   "schema_version": 1,
-  "generated_at": "2026-07-12T00:43:42+00:00",
+  "generated_at": "2026-07-12T01:33:15+00:00",
   "root": "C:\\Users\\zycie\\CTOAi",
-  "file_count": 1277,
+  "file_count": 1289,
   "outputs": {
     "file_tree": "AI\\generated\\FILE_TREE.md",
     "symbol_map": "AI\\generated\\SYMBOL_MAP.md",
@@ -6024,14 +6029,14 @@ fresh `ctoa_local.log` lines plus safe boot state.
 ```markdown
 # Engine Brain Environment Doctor
 
-Generated at: `2026-07-12T00:32:16+00:00`
+Generated at: `2026-07-12T01:33:45+00:00`
 Overall status: `warn`
 
 | Check | Status | Key evidence |
 |---|---|---|
-| `git` | `ok` | branch=codex/p8-background-noscreen; dirty=27; path=C:\Program Files\Git\cmd\git.EXE |
+| `git` | `ok` | branch=codex/p8-background-noscreen; dirty=19; path=C:\Program Files\Git\cmd\git.EXE |
 | `docker` | `ok` | containers=2; running_broad=0; configured_broad=0 |
-| `vpn` | `ok` | warp_connected=True |
+| `vpn` | `warn` | warp_connected=False |
 | `vercel` | `ok` | version=54.10.3; project=ctoa-web |
 | `vscode` | `warn` | openai=['openai.chatgpt@26.623.141536']; old_dirs=2 |
 | `github` | `warn` | open_prs=6; dirty_prs=5; failed_runs=0 |
@@ -6052,7 +6057,7 @@ Overall status: `warn`
 ```markdown
 # Engine Brain Ownership Map
 
-Generated at: `2026-07-12T00:43:42+00:00`
+Generated at: `2026-07-12T01:33:15+00:00`
 Source audit: `runtime\audits\ctoai-full-workspace-audit.json`
 Status: `ready`
 
@@ -6135,7 +6140,7 @@ Status: `ready`
 ```markdown
 # Engine Brain Doc Sync
 
-Generated at: `2026-07-12T00:43:42+00:00`
+Generated at: `2026-07-12T01:33:15+00:00`
 Status: `passed`
 
 | Check | Path | Status | Missing |
@@ -6155,7 +6160,7 @@ Status: `passed`
 ```markdown
 # Engine Brain Secret Guardrail
 
-Generated at: `2026-07-12T00:43:42+00:00`
+Generated at: `2026-07-12T01:33:15+00:00`
 Status: `passed`
 Sensitive/local env path count in audit: `7`
 
@@ -6177,7 +6182,7 @@ Generated Engine Brain context must not include exact local sensitive/env paths 
 ```markdown
 # P6 Codex Integration Readiness
 
-Generated at: `2026-07-12T00:43:42+00:00`
+Generated at: `2026-07-12T01:33:15+00:00`
 Status: `ready_for_plugin_design`
 
 P6 allows only four read-only status/cockpit tools plus audited repo-hygiene, API-cost, evidence-pack, Engine Brain, and P7 cockpit-smoke safe-write refreshes. Do not add deploy/live shortcuts or bypass Control Center evidence gates.
@@ -6249,7 +6254,7 @@ Recommended next: Operate the plugin as four read-only status/cockpit tools plus
 ```markdown
 # P7 Operator Workflow
 
-Generated at: `2026-07-12T00:43:42+00:00`
+Generated at: `2026-07-12T01:33:15+00:00`
 Status: `safe_write_ready`
 Decision: `allow_bounded_safe_write_tools`
 
@@ -6297,7 +6302,7 @@ Next safe command: Use ctoai_repo_hygiene_refresh, ctoai_api_cost_refresh, ctoai
 ```markdown
 # P7 Action Readiness
 
-Generated at: `2026-07-12T00:43:42+00:00`
+Generated at: `2026-07-12T01:33:15+00:00`
 Status: `safe_write_tools_enabled`
 Decision: `monitor_enabled_safe_write_tools`
 
@@ -6325,7 +6330,7 @@ Next safe command: Design the next P7 plugin action only after risk model covera
 ```markdown
 # P7 Safe Write Tool Design
 
-Generated at: `2026-07-12T00:43:42+00:00`
+Generated at: `2026-07-12T01:33:15+00:00`
 Status: `implemented`
 Decision: `ready_for_dry_run_operation`
 
@@ -6367,7 +6372,7 @@ Next safe command: Run ctoai_evidence_pack_refresh with dry_run=true and verify 
 ```markdown
 # P7 Operator Brief
 
-Generated at: `2026-07-12T00:43:42+00:00`
+Generated at: `2026-07-12T01:33:15+00:00`
 Decision: `ready_for_p7_operator_workflow`
 Status: `ready`
 
@@ -6397,7 +6402,7 @@ Next safe command: Design the next P7 plugin action only after risk model covera
 ```markdown
 # Engine Brain File Tree
 
-Generated at: `2026-07-12T00:43:42+00:00`
+Generated at: `2026-07-12T01:33:15+00:00`
 
 Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 `node_modules`, `runtime`, `logs`, `data`, `.tmp`, build outputs.
@@ -6494,16 +6499,16 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `AI/CHECKPOINT_2026-07-08.md` | 10285 |
 | `AI/CLASS_INDEX.md` | 1815 |
 | `AI/CODEX_CAPABILITY_MAP.md` | 5237 |
-| `AI/ENGINE_BRAIN_STATUS.md` | 136680 |
+| `AI/ENGINE_BRAIN_STATUS.md` | 136806 |
 | `AI/ENGINE_MEMORY.md` | 2971 |
-| `AI/FEATURE_ROADMAP.md` | 62866 |
+| `AI/FEATURE_ROADMAP.md` | 63389 |
 | `AI/generated/DOC_SYNC.json` | 1164 |
 | `AI/generated/DOC_SYNC.md` | 681 |
 | `AI/generated/ENGINE_BRAIN_PACK.json` | 6441 |
-| `AI/generated/ENGINE_BRAIN_PACK.md` | 446533 |
-| `AI/generated/ENV_DOCTOR.json` | 7635 |
-| `AI/generated/ENV_DOCTOR.md` | 1260 |
-| `AI/generated/FILE_TREE.md` | 71212 |
+| `AI/generated/ENGINE_BRAIN_PACK.md` | 446562 |
+| `AI/generated/ENV_DOCTOR.json` | 6357 |
+| `AI/generated/ENV_DOCTOR.md` | 1259 |
+| `AI/generated/FILE_TREE.md` | 72095 |
 | `AI/generated/manifest.json` | 2062 |
 | `AI/generated/OWNERSHIP_MAP.json` | 16936 |
 | `AI/generated/OWNERSHIP_MAP.md` | 6581 |
@@ -6517,12 +6522,12 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `AI/generated/P7_OPERATOR_WORKFLOW.md` | 3015 |
 | `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.json` | 2705 |
 | `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.md` | 2024 |
-| `AI/generated/SYMBOL_MAP.md` | 284070 |
+| `AI/generated/SYMBOL_MAP.md` | 286140 |
 | `AI/KNOWN_BUGS.md` | 1384 |
 | `AI/LUA_INDEX.md` | 2874 |
 | `AI/OPERATIONS_AUDIT.md` | 5139 |
 | `AI/OTCLIENT_INDEX.md` | 3675 |
-| `AI/P8_P16_EXECUTION_ROADMAP.md` | 10156 |
+| `AI/P8_P16_EXECUTION_ROADMAP.md` | 10391 |
 | `AI/PACKET_INDEX.md` | 1405 |
 | `AI/PROJECT_CONTEXT.md` | 3648 |
 | `AI/README.md` | 2927 |
@@ -6580,12 +6585,13 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `config/client_profiles.json` | 2161 |
 | `config/ctoa-user-config.template.json` | 400 |
 | `config/otclient/conditions-shadow-profile.json` | 467 |
+| `config/otclient/equipment-shadow-profile.json` | 454 |
 | `config/rosetta-presets.json` | 19137 |
 | `conftest.py` | 121 |
 | `core/protected-files.txt` | 222 |
 | `core/runtime-freeze-policy.json` | 301 |
 | `ctoa-vps.ps1` | 547 |
-| `ctoa.ps1` | 33019 |
+| `ctoa.ps1` | 34041 |
 | `ctoa_ui_prefs.lua` | 397 |
 | `deploy/local/observability/grafana/provisioning/datasources/datasources.yml` | 224 |
 | `deploy/local/observability/loki-config.yml` | 539 |
@@ -6851,7 +6857,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `docs/otclient/solteria_helper_input_contracts.md` | 4430 |
 | `docs/otclient/solteria_helper_module_contract.md` | 4360 |
 | `docs/otclient/solteria_helper_module_workplan.md` | 12889 |
-| `docs/otclient/solteria_helper_next_modules_plan.md` | 18478 |
+| `docs/otclient/solteria_helper_next_modules_plan.md` | 18593 |
 | `docs/otclient/solteria_helper_sandbox_smoke_queue.md` | 10222 |
 | `docs/otclient/solteria_helper_shell_budget_plan.md` | 4261 |
 | `docs/otclient/solteria_helper_supplemental_refactor_plan.md` | 27770 |
@@ -7024,7 +7030,12 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `schemas/conditions-shadow-replay-report.schema.json` | 4775 |
 | `schemas/conditions-shadow-scenario-pack.schema.json` | 1353 |
 | `schemas/conditions-shadow-trace.schema.json` | 2874 |
-| `schemas/ctoa-command-dictionary.json` | 3529 |
+| `schemas/ctoa-command-dictionary.json` | 3691 |
+| `schemas/equipment-shadow-profile.schema.json` | 1198 |
+| `schemas/equipment-shadow-replay-report.schema.json` | 1468 |
+| `schemas/equipment-shadow-scenario-pack.schema.json` | 1090 |
+| `schemas/equipment-shadow-snapshot.schema.json` | 2251 |
+| `schemas/equipment-shadow-trace.schema.json` | 1792 |
 | `schemas/intel-projects.schema.json` | 1136 |
 | `schemas/mobile_console_api_contract.snapshot.json` | 8456 |
 | `schemas/otclient-helper-config.schema.json` | 4451 |
@@ -7066,7 +7077,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/lua/otclient/ctoa_helper_diagnostics.lua` | 19996 |
 | `scripts/lua/otclient/ctoa_helper_dispatch_guard.lua` | 4041 |
 | `scripts/lua/otclient/ctoa_helper_domain_contract.lua` | 5152 |
-| `scripts/lua/otclient/ctoa_helper_equipment.lua` | 6160 |
+| `scripts/lua/otclient/ctoa_helper_equipment.lua` | 10155 |
 | `scripts/lua/otclient/ctoa_helper_equipment_observer.lua` | 3333 |
 | `scripts/lua/otclient/ctoa_helper_equipment_runtime_gate.lua` | 5849 |
 | `scripts/lua/otclient/ctoa_helper_feature_flags.lua` | 6789 |
@@ -7164,7 +7175,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/ops/depack_top_candidates.py` | 10352 |
 | `scripts/ops/depack_window_aware_focused.py` | 8002 |
 | `scripts/ops/engine_brain_doctor.py` | 19184 |
-| `scripts/ops/engine_brain_index.py` | 118790 |
+| `scripts/ops/engine_brain_index.py` | 118719 |
 | `scripts/ops/engine_brain_pack.py` | 9730 |
 | `scripts/ops/evidence_retention.py` | 2057 |
 | `scripts/ops/git_exec.py` | 2142 |
@@ -7190,15 +7201,9 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/ops/orchestrator-loop.ps1` | 6161 |
 | `scripts/ops/otclient_conditions_shadow_acceptance.py` | 33276 |
 | `scripts/ops/otclient_conditions_shadow_replay.py` | 58656 |
+| `scripts/ops/otclient_equipment_shadow_replay.py` | 28763 |
 | `scripts/ops/otclient_external_bot_intake.py` | 14940 |
-| `scripts/ops/otclient_headless_evidence.py` | 20797 |
-| `scripts/ops/otclient_headless_status.py` | 31346 |
-| `scripts/ops/otclient_helper_module_audit.py` | 32239 |
-| `scripts/ops/otclient_helper_module_contract.py` | 27457 |
-| `scripts/ops/otclient_helper_next_modules_plan.py` | 30438 |
-| `scripts/ops/otclient_helper_profile_audit.py` | 5236 |
-| `scripts/ops/otclient_helper_shell_budget_plan.py` | 12627 |
-| `scripts/ops/otclient_input_contract_fixt
+| `scripts/ops/otclient_headless_e
 
 [truncated]
 ```
@@ -7209,7 +7214,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 ```markdown
 # Engine Brain Symbol Map
 
-Generated at: `2026-07-12T00:43:42+00:00`
+Generated at: `2026-07-12T01:33:15+00:00`
 
 This is a lightweight map for navigation, not a full source dump.
 
@@ -7667,39 +7672,40 @@ This is a lightweight map for navigation, not a full source dump.
 - L111: function Invoke-FromRootCapture
 - L141: function Get-CommandDictionary
 - L168: function Show-Help
-- L252: function Get-GitExe
-- L266: function Get-NpmExe
-- L277: function Get-WorktreeSummary
-- L299: function Show-Next
-- L322: function Open-ControlCenter
-- L377: function Resolve-Sprint
-- L391: function Invoke-ValidateSprint
-- L411: function Invoke-Nightly
-- L428: function Invoke-Up
-- L442: function Invoke-Test
-- L453: function Invoke-Doctor
-- L466: function Invoke-DevProfile
-- L471: function Invoke-OpsProfile
-- L476: function Invoke-ProdProfile
-- L486: function Invoke-VpsAction
-- L526: function Invoke-VpsActionCapture
-- L574: function Invoke-RunnerCommand
-- L586: function Invoke-ReportCommand
-- L599: function Invoke-MobileCommand
-- L611: function Invoke-LogsCommand
-- L625: function Invoke-StatusSnapshot
-- L705: function Invoke-DashboardSnapshot
-- L709: function Invoke-ReportNow
-- L713: function Invoke-OtProfileBuilder
-- L727: function Invoke-OtHelperPreview
-- L737: function Invoke-OtHelperMockup
-- L747: function Invoke-OtHelperDeploy
-- L768: function Invoke-OtTestLoop
-- L783: function Invoke-OtBackgroundStatus
-- L799: function Invoke-OtConditionsShadowReplay
-- L856: function Invoke-EngineBrain
-- L887: function Get-ValueOrDefault
-- L899: function Show-Menu
+- L254: function Get-GitExe
+- L268: function Get-NpmExe
+- L279: function Get-WorktreeSummary
+- L301: function Show-Next
+- L324: function Open-ControlCenter
+- L379: function Resolve-Sprint
+- L393: function Invoke-ValidateSprint
+- L413: function Invoke-Nightly
+- L430: function Invoke-Up
+- L444: function Invoke-Test
+- L455: function Invoke-Doctor
+- L468: function Invoke-DevProfile
+- L473: function Invoke-OpsProfile
+- L478: function Invoke-ProdProfile
+- L488: function Invoke-VpsAction
+- L528: function Invoke-VpsActionCapture
+- L576: function Invoke-RunnerCommand
+- L588: function Invoke-ReportCommand
+- L601: function Invoke-MobileCommand
+- L613: function Invoke-LogsCommand
+- L627: function Invoke-StatusSnapshot
+- L707: function Invoke-DashboardSnapshot
+- L711: function Invoke-ReportNow
+- L715: function Invoke-OtProfileBuilder
+- L729: function Invoke-OtHelperPreview
+- L739: function Invoke-OtHelperMockup
+- L749: function Invoke-OtHelperDeploy
+- L770: function Invoke-OtTestLoop
+- L785: function Invoke-OtBackgroundStatus
+- L801: function Invoke-OtConditionsShadowReplay
+- L858: function Invoke-OtEquipmentShadowReplay
+- L882: function Invoke-EngineBrain
+- L913: function Get-ValueOrDefault
+- L925: function Show-Menu
 
 ## `ctoa_ui_prefs.lua`
 
@@ -8592,8 +8598,7 @@ This is a lightweight map for navigation, not a full source dump.
 - L502: def _write_inventory(self)
 - L587: def _latest_parser_error(self, source_kind)
 - L595: def _recent_events(self, limit)
-- L611: def source_definition(source_kind)
-- L618: def collected_from_file(sourc
+- L611: def source_definition(so
 
 [truncated]
 ```

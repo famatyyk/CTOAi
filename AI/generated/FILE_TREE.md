@@ -1,6 +1,6 @@
 # Engine Brain File Tree
 
-Generated at: `2026-07-12T01:21:40+00:00`
+Generated at: `2026-07-12T01:33:15+00:00`
 
 Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 `node_modules`, `runtime`, `logs`, `data`, `.tmp`, build outputs.
@@ -107,15 +107,15 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `AI/generated/ENV_DOCTOR.json` | 6357 |
 | `AI/generated/ENV_DOCTOR.md` | 1259 |
 | `AI/generated/FILE_TREE.md` | 72095 |
-| `AI/generated/manifest.json` | 2072 |
+| `AI/generated/manifest.json` | 2062 |
 | `AI/generated/OWNERSHIP_MAP.json` | 16936 |
 | `AI/generated/OWNERSHIP_MAP.md` | 6581 |
 | `AI/generated/P6_CODEX_INTEGRATION_READINESS.json` | 11010 |
 | `AI/generated/P6_CODEX_INTEGRATION_READINESS.md` | 6915 |
 | `AI/generated/P7_ACTION_READINESS.json` | 4870 |
 | `AI/generated/P7_ACTION_READINESS.md` | 1142 |
-| `AI/generated/P7_OPERATOR_BRIEF.json` | 7505 |
-| `AI/generated/P7_OPERATOR_BRIEF.md` | 1669 |
+| `AI/generated/P7_OPERATOR_BRIEF.json` | 7308 |
+| `AI/generated/P7_OPERATOR_BRIEF.md` | 1645 |
 | `AI/generated/P7_OPERATOR_WORKFLOW.json` | 4690 |
 | `AI/generated/P7_OPERATOR_WORKFLOW.md` | 3015 |
 | `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.json` | 2705 |
