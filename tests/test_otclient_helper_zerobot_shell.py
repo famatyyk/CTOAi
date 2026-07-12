@@ -3379,7 +3379,7 @@ def test_helper_supports_runtime_smoke_command_file():
 def test_helper_otclient_architecture_hooks_are_registered():
     source = HELPER.read_text(encoding="utf-8")
 
-    assert 'local HELPER_VERSION = "v2.3.1"' in source
+    assert 'local HELPER_VERSION = "v2.3.2"' in source
     assert 'io.open("ctoa_local.log", "a")' in source
     assert "g_resources.getUserDir()" in source
     assert 'userDir .. "/ctoa_local.log"' in source

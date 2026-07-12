@@ -4,15 +4,15 @@
 
 - Engine Brain Plan 3 is operational and maintained as the secret-safe context
   foundation; roadmap work now consumes its generated evidence.
-- Helper `v2.3.0` is live-promoted with 58-file manifest parity at promotion;
-  the next staged package is `v2.3.1` and carries the passive P10 ring-plan
+- Helper `v2.3.1` is live-promoted with 58-file manifest parity at promotion;
+  the next staged package is `v2.3.2` and carries the passive P10 ring-plan
   contract.
   Vocation-profile drift after play is tracked separately, but remains blocking
   because the current Lua profile is executable rather than data-only.
 - P8 `BackgroundNoScreen` is `implementation_complete` and
   `operational_acceptance_blocked`. It replaces routine mouse/focus/screenshot
   testing with bounded passive evidence and never implies another live promotion.
-  The current live package is `v2.3.0`; P8 acceptance remains separate from
+  The current live package is `v2.3.1`; P8 acceptance remains separate from
   the explicit package promotion cycle.
 - P8 operational acceptance requires all three proofs: an official
   promotion-bound trusted pin, a fresh capability heartbeat newer than the one
@@ -135,7 +135,7 @@ feature work.
 - A post-promotion live client launch is not implicit. Operators must add
   `-LaunchAfterPromote`; the wrapper may launch a missing live client but must
   never stop or restart an existing live client.
-- Current Helper `v2.3.0` is live-promoted. Its promotion report verified 58
+- Current Helper `v2.3.1` is live-promoted. Its promotion report verified 58
   staged/live SHA-256 matches; release gate and GoalStatus passed. Runtime module
   acceptance remains fail-closed and separate from package promotion.
 - Helper P6 Module Lane is repo- and sandbox-complete: Healing/Recovery, Combat,

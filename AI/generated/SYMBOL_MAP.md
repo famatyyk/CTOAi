@@ -1,6 +1,6 @@
 # Engine Brain Symbol Map
 
-Generated at: `2026-07-12T00:44:14+00:00`
+Generated at: `2026-07-12T01:21:40+00:00`
 
 This is a lightweight map for navigation, not a full source dump.
 
@@ -458,39 +458,40 @@ This is a lightweight map for navigation, not a full source dump.
 - L111: function Invoke-FromRootCapture
 - L141: function Get-CommandDictionary
 - L168: function Show-Help
-- L252: function Get-GitExe
-- L266: function Get-NpmExe
-- L277: function Get-WorktreeSummary
-- L299: function Show-Next
-- L322: function Open-ControlCenter
-- L377: function Resolve-Sprint
-- L391: function Invoke-ValidateSprint
-- L411: function Invoke-Nightly
-- L428: function Invoke-Up
-- L442: function Invoke-Test
-- L453: function Invoke-Doctor
-- L466: function Invoke-DevProfile
-- L471: function Invoke-OpsProfile
-- L476: function Invoke-ProdProfile
-- L486: function Invoke-VpsAction
-- L526: function Invoke-VpsActionCapture
-- L574: function Invoke-RunnerCommand
-- L586: function Invoke-ReportCommand
-- L599: function Invoke-MobileCommand
-- L611: function Invoke-LogsCommand
-- L625: function Invoke-StatusSnapshot
-- L705: function Invoke-DashboardSnapshot
-- L709: function Invoke-ReportNow
-- L713: function Invoke-OtProfileBuilder
-- L727: function Invoke-OtHelperPreview
-- L737: function Invoke-OtHelperMockup
-- L747: function Invoke-OtHelperDeploy
-- L768: function Invoke-OtTestLoop
-- L783: function Invoke-OtBackgroundStatus
-- L799: function Invoke-OtConditionsShadowReplay
-- L856: function Invoke-EngineBrain
-- L887: function Get-ValueOrDefault
-- L899: function Show-Menu
+- L254: function Get-GitExe
+- L268: function Get-NpmExe
+- L279: function Get-WorktreeSummary
+- L301: function Show-Next
+- L324: function Open-ControlCenter
+- L379: function Resolve-Sprint
+- L393: function Invoke-ValidateSprint
+- L413: function Invoke-Nightly
+- L430: function Invoke-Up
+- L444: function Invoke-Test
+- L455: function Invoke-Doctor
+- L468: function Invoke-DevProfile
+- L473: function Invoke-OpsProfile
+- L478: function Invoke-ProdProfile
+- L488: function Invoke-VpsAction
+- L528: function Invoke-VpsActionCapture
+- L576: function Invoke-RunnerCommand
+- L588: function Invoke-ReportCommand
+- L601: function Invoke-MobileCommand
+- L613: function Invoke-LogsCommand
+- L627: function Invoke-StatusSnapshot
+- L707: function Invoke-DashboardSnapshot
+- L711: function Invoke-ReportNow
+- L715: function Invoke-OtProfileBuilder
+- L729: function Invoke-OtHelperPreview
+- L739: function Invoke-OtHelperMockup
+- L749: function Invoke-OtHelperDeploy
+- L770: function Invoke-OtTestLoop
+- L785: function Invoke-OtBackgroundStatus
+- L801: function Invoke-OtConditionsShadowReplay
+- L858: function Invoke-OtEquipmentShadowReplay
+- L882: function Invoke-EngineBrain
+- L913: function Get-ValueOrDefault
+- L925: function Show-Menu
 
 ## `ctoa_ui_prefs.lua`
 
@@ -1799,8 +1800,12 @@ This is a lightweight map for navigation, not a full source dump.
 - L57: lua Equipment.apiProbe
 - L77: lua Equipment.observe
 - L91: lua Equipment.plan
-- L137: lua Equipment.summary
-- L154: lua Equipment.contract
+- L140: lua Equipment.shadowPlan
+- L146: lua validItemId
+- L149: lua validContainer
+- L179: lua intrusive_actions_performed
+- L183: lua Equipment.summary
+- L200: lua Equipment.contract
 
 ## `scripts/lua/otclient/ctoa_helper_equipment_observer.lua`
 
@@ -3589,6 +3594,29 @@ This is a lightweight map for navigation, not a full source dump.
 - L1499: def parse_args(argv)
 - L1521: def main(argv)
 
+## `scripts/ops/otclient_equipment_shadow_replay.py`
+
+- L174: def _false_flags(payload)
+- L178: def _empty_ledger(payload)
+- L182: def _is_int(value)
+- L186: def _is_sha256(value)
+- L194: def _ordered(values)
+- L198: def _read(path, max_bytes)
+- L202: def _profile_valid(payload)
+- L233: def _snapshot_valid(payload)
+- L280: def _p9_trace_valid(payload)
+- L298: def _p9_receipt_structurally_valid(payload)
+- L314: def _p9_receipt_valid(payload)
+- L323: def evaluate_shadow()
+- L513: def _fixture_documents()
+- L525: def _scenario_documents(mutation, evaluated_at)
+- L575: def _scenario_pack_valid(payload)
+- L623: def run_scenario_pack(document)
+- L693: def build_report()
+- L727: def _validate_output(path)
+- L769: def _write_atomic(path, payload)
+- L785: def main(argv)
+
 ## `scripts/ops/otclient_external_bot_intake.py`
 
 - L94: class SourceFileReport
@@ -3817,51 +3845,55 @@ This is a lightweight map for navigation, not a full source dump.
 
 ## `scripts/ops/release_evidence_pack.py`
 
-- L340: def _now_iso()
-- L349: def _safe_filename(value)
-- L357: def build_release_evidence_pack()
-- L393: def write_release_evidence_pack(output_dir, pack)
-- L434: def _configured_path(env_name, fallback)
-- L439: def _safe_file_stat(path)
-- L449: def _safe_dir_stat(path)
-- L459: def _read_text_bounded(path, max_bytes)
-- L475: def _read_json(path)
-- L482: def _read_json_or_none(path)
-- L497: class _DuplicateJsonKeyError
-- L501: def _reject_duplicate_json_pairs(pairs)
-- L510: def _reject_json_constant(value)
-- L514: def _parse_finite_json_float(value)
-- L521: def _json_shape_within_bounds(value)
-- L538: def _read_json_strict_or_none(path)
-- L563: def _conditions_shadow_is_int(value)
-- L567: def _conditions_shadow_is_sha256(value)
-- L575: def _conditions_shadow_is_allowed(value, allowed)
-- L579: def _conditions_shadow_canonical_sha256(value)
-- L590: def _conditions_shadow_false_flags(payload)
-- L594: def _conditions_shadow_empty_ledger(payload)
-- L598: def _conditions_shadow_blockers_valid(value)
-- L609: def _conditions_shadow_unique_errors(errors)
-- L613: def _conditions_shadow_trace_errors(trace, generated_at_unix_ms)
-- L738: def _conditions_shadow_scenario_errors(pack)
-- L891: def _conditions_shadow_contract_errors(payload)
-- L953: def _conditions_shadow_summary(payload, path)
-- L1057: def _safe_nonnegative_int(value)
-- L1063: def _matches_exact_contract(value, expected)
-- L1074: def _background_pin_error_valid(value)
-- L1111: def _background_pin_remediation_valid(value)
-- L1141: def _background_diagnostic_parity_valid(value)
-- L1204: def _parse_utc_timestamp(value)
-- L1216: def _background_status_summary(payload, path)
-- L1540: def _count_jsonl_records(path)
-- L1565: def _find_latest_markdown(releases_dir)
-- L1587: def _count_markdown_files(releases_dir)
-- L1595: def _helper_status(helper_dev_dir)
-- L1818: def _p7_operator_brief_status(operator_brief_path)
-- L1951: def _list_release_sprints(releases_dir)
-- L1993: def build_evidence_pack(releases_dir, quality_path, cost_report_path, action_audit_path, helper_dev_dir, operator_brief_path)
-- L2123: def render_markdown(pack)
-- L2265: def _build_parser()
-- L2323: def main()
+- L348: def _now_iso()
+- L357: def _safe_filename(value)
+- L365: def build_release_evidence_pack()
+- L401: def write_release_evidence_pack(output_dir, pack)
+- L442: def _configured_path(env_name, fallback)
+- L447: def _safe_file_stat(path)
+- L457: def _safe_dir_stat(path)
+- L467: def _read_text_bounded(path, max_bytes)
+- L483: def _read_json(path)
+- L490: def _read_json_or_none(path)
+- L505: class _DuplicateJsonKeyError
+- L509: def _reject_duplicate_json_pairs(pairs)
+- L518: def _reject_json_constant(value)
+- L522: def _parse_finite_json_float(value)
+- L529: def _json_shape_within_bounds(value)
+- L546: def _read_json_strict_or_none(path)
+- L571: def _conditions_shadow_is_int(value)
+- L575: def _conditions_shadow_is_sha256(value)
+- L583: def _conditions_shadow_is_allowed(value, allowed)
+- L587: def _conditions_shadow_canonical_sha256(value)
+- L598: def _conditions_shadow_false_flags(payload)
+- L602: def _conditions_shadow_empty_ledger(payload)
+- L606: def _conditions_shadow_blockers_valid(value)
+- L617: def _conditions_shadow_unique_errors(errors)
+- L621: def _conditions_shadow_trace_errors(trace, generated_at_unix_ms)
+- L746: def _conditions_shadow_scenario_errors(pack)
+- L899: def _conditions_shadow_contract_errors(payload)
+- L961: def _conditions_shadow_summary(payload, path)
+- L1065: def _equipment_shadow_summary(payload, path)
+- L1130: def valid_sha(value)
+- L1137: def valid_trace(value)
+- L1196: def valid_scenario(value)
+- L1313: def _safe_nonnegative_int(value)
+- L1319: def _matches_exact_contract(value, expected)
+- L1330: def _background_pin_error_valid(value)
+- L1367: def _background_pin_remediation_valid(value)
+- L1399: def _background_diagnostic_parity_valid(value)
+- L1465: def _parse_utc_timestamp(value)
+- L1477: def _background_status_summary(payload, path)
+- L1801: def _count_jsonl_records(path)
+- L1826: def _find_latest_markdown(releases_dir)
+- L1848: def _count_markdown_files(releases_dir)
+- L1856: def _helper_status(helper_dev_dir)
+- L2090: def _p7_operator_brief_status(operator_brief_path)
+- L2223: def _list_release_sprints(releases_dir)
+- L2265: def build_evidence_pack(releases_dir, quality_path, cost_report_path, action_audit_path, helper_dev_dir, operator_brief_path)
+- L2395: def render_markdown(pack)
+- L2543: def _build_parser()
+- L2601: def main()
 
 ## `scripts/ops/repo_hygiene_audit.py`
 
@@ -4771,54 +4803,54 @@ This is a lightweight map for navigation, not a full source dump.
 - L787: function Write-DevValidationReport
 - L807: function New-DevPackage
 - L917: function Invoke-DevValidation
-- L972: function Resolve-SmokeTab
-- L999: function Initialize-Sandbox
-- L1048: function Invoke-SmokePreflight
-- L1129: function Start-SandboxClient
-- L1139: function Get-SandboxProcesses
-- L1156: function Get-SandboxProcessSummaries
-- L1203: function Stop-SandboxClient
-- L1217: function Set-LiveCtoaEnabled
-- L1327: function Set-LiveCtoaUiOnly
-- L1431: function New-LiveCtoaBackup
-- L1477: function Assert-LiveDeployApproved
-- L1483: function Assert-ReleaseGateForLivePromotion
-- L1499: function Get-VerifiedStagePromotionEntries
-- L1569: function Assert-LivePromotionMatchesStage
-- L1639: function Write-LiveManifestSnapshot
-- L1686: function Invoke-LivePromotion
-- L1776: function Invoke-LiveEmergencyRepair
-- L1840: function Capture-Screenshot
-- L1898: function Wait-ForSmokeTab
-- L1937: function Get-SmokeLogLineCount
-- L1945: function Test-AtCharacterSelect
-- L1954: function Invoke-SmokeStatus
-- L2032: function Invoke-HealFriendNoTargetSmoke
-- L2088: function Invoke-ConditionsObserverSmoke
-- L2147: function Invoke-EquipmentObserverSmoke
-- L2207: function Invoke-ScriptingPolicySmoke
-- L2267: function Invoke-PlannerStaticSmoke
-- L2317: function Invoke-RuntimePolicyStaticSmoke
-- L2372: function Invoke-DispatchGuardStaticSmoke
-- L2422: function Invoke-PlanQueueStaticSmoke
-- L2472: function Invoke-RuntimeReadinessStaticSmoke
-- L2523: function Invoke-ModuleStatusStaticSmoke
-- L2574: function Invoke-ActionCatalogStaticSmoke
-- L2629: function Invoke-DecisionTraceStaticSmoke
-- L2681: function Invoke-SandboxHandoffStaticSmoke
-- L2732: function Invoke-FeatureFlagsStaticSmoke
-- L2790: function Invoke-HudStaticSmoke
-- L2845: function Invoke-HotkeysStaticSmoke
-- L2899: function Invoke-ModalStaticSmoke
-- L2955: function Invoke-InputContractsStaticSmoke
-- L2977: function Invoke-RouteStaticSmoke
-- L3032: function Invoke-TargetingStaticSmoke
-- L3089: function Invoke-CombatRuntimeStaticSmoke
-- L3145: function Invoke-CavebotRuntimeStaticSmoke
-- L3201: function Invoke-LootRuntimeStaticSmoke
-- L3259: function Invoke-TimerRuntimeStaticSmoke
-- L3315: function Invoke-RecoveryRuntimeStaticSmoke
-- ... 42 more symbols omitted
+- L980: function Resolve-SmokeTab
+- L1007: function Initialize-Sandbox
+- L1056: function Invoke-SmokePreflight
+- L1137: function Start-SandboxClient
+- L1147: function Get-SandboxProcesses
+- L1164: function Get-SandboxProcessSummaries
+- L1211: function Stop-SandboxClient
+- L1225: function Set-LiveCtoaEnabled
+- L1335: function Set-LiveCtoaUiOnly
+- L1439: function New-LiveCtoaBackup
+- L1485: function Assert-LiveDeployApproved
+- L1491: function Assert-ReleaseGateForLivePromotion
+- L1507: function Get-VerifiedStagePromotionEntries
+- L1577: function Assert-LivePromotionMatchesStage
+- L1647: function Write-LiveManifestSnapshot
+- L1694: function Invoke-LivePromotion
+- L1784: function Invoke-LiveEmergencyRepair
+- L1848: function Capture-Screenshot
+- L1906: function Wait-ForSmokeTab
+- L1945: function Get-SmokeLogLineCount
+- L1953: function Test-AtCharacterSelect
+- L1962: function Invoke-SmokeStatus
+- L2040: function Invoke-HealFriendNoTargetSmoke
+- L2096: function Invoke-ConditionsObserverSmoke
+- L2155: function Invoke-EquipmentObserverSmoke
+- L2215: function Invoke-ScriptingPolicySmoke
+- L2275: function Invoke-PlannerStaticSmoke
+- L2325: function Invoke-RuntimePolicyStaticSmoke
+- L2380: function Invoke-DispatchGuardStaticSmoke
+- L2430: function Invoke-PlanQueueStaticSmoke
+- L2480: function Invoke-RuntimeReadinessStaticSmoke
+- L2531: function Invoke-ModuleStatusStaticSmoke
+- L2582: function Invoke-ActionCatalogStaticSmoke
+- L2637: function Invoke-DecisionTraceStaticSmoke
+- L2689: function Invoke-SandboxHandoffStaticSmoke
+- L2740: function Invoke-FeatureFlagsStaticSmoke
+- L2798: function Invoke-HudStaticSmoke
+- L2853: function Invoke-HotkeysStaticSmoke
+- L2907: function Invoke-ModalStaticSmoke
+- L2963: function Invoke-InputContractsStaticSmoke
+- L2985: function Invoke-RouteStaticSmoke
+- L3040: function Invoke-TargetingStaticSmoke
+- L3097: function Invoke-CombatRuntimeStaticSmoke
+- L3153: function Invoke-CavebotRuntimeStaticSmoke
+- L3209: function Invoke-LootRuntimeStaticSmoke
+- L3267: function Invoke-TimerRuntimeStaticSmoke
+- L3323: function Invoke-RecoveryRuntimeStaticSmoke
+- ... 43 more symbols omitted
 
 ## `tests/conftest.py`
 
@@ -6022,6 +6054,19 @@ This is a lightweight map for navigation, not a full source dump.
 - L793: def test_failed_scenario_pack_blocks_an_otherwise_ready_operational_trace()
 - L842: def test_default_source_has_no_client_or_process_interaction_primitives()
 
+## `tests/test_otclient_equipment_shadow_replay.py`
+
+- L17: def _docs()
+- L21: def _no_action(payload)
+- L26: def test_positive_ring_plan_is_deterministic_and_data_only()
+- L53: def test_fixture_pack_covers_ring_only_negative_matrix()
+- L64: def test_operational_report_never_promotes_fixture_p9()
+- L73: def test_snapshot_extra_field_is_rejected()
+- L91: def test_p9_unknown_keys_and_malformed_scenario_pack_fail_closed()
+- L122: def test_release_evidence_rejects_nested_p10_tamper()
+- L137: def test_static_wrapper_confines_p10_evidence_to_canonical_runtime_dir()
+- L148: def test_equipment_schemas_are_closed_draft_2020_12()
+
 ## `tests/test_otclient_external_bot_intake.py`
 
 - L8: def test_missing_source_reports_source_required()
@@ -6094,8 +6139,8 @@ This is a lightweight map for navigation, not a full source dump.
 
 - L13: def test_module_contract_passes_current_passive_modules()
 - L29: def test_module_contract_requires_loader_registry_global_and_return()
-- L730: def test_module_contract_blocks_forbidden_passive_actions(tmp_path)
-- L752: def test_module_contract_writes_json_and_markdown(tmp_path)
+- L733: def test_module_contract_blocks_forbidden_passive_actions(tmp_path)
+- L755: def test_module_contract_writes_json_and_markdown(tmp_path)
 
 ## `tests/test_otclient_helper_next_modules_plan.py`
 
@@ -6276,12 +6321,13 @@ This is a lightweight map for navigation, not a full source dump.
 - L71: def test_mobile_console_operator_docs_do_not_recommend_public_dev_bind()
 - L80: def test_ctoa_cli_uses_explicit_file_path_for_generated_helper_html()
 - L89: def test_ctoa_cli_uses_official_wrapper_for_helper_operations()
-- L111: def test_p9_shadow_command_is_in_shared_command_dictionary()
-- L120: def test_control_center_opener_rejects_traversal_urls_at_runtime()
-- L145: def test_control_center_opener_rejects_backslash_urls_at_runtime()
-- L170: def test_ctoa_cli_rejects_control_center_traversal_env_url_before_probe()
-- L193: def test_kamil_launcher_restricts_client_path_and_profile_override()
-- L206: def test_kamil_launcher_keeps_macro_studio_on_repo_local_python()
+- L114: def test_p9_shadow_command_is_in_shared_command_dictionary()
+- L122: def test_p10_shadow_command_is_in_shared_command_dictionary()
+- L131: def test_control_center_opener_rejects_traversal_urls_at_runtime()
+- L156: def test_control_center_opener_rejects_backslash_urls_at_runtime()
+- L181: def test_ctoa_cli_rejects_control_center_traversal_env_url_before_probe()
+- L204: def test_kamil_launcher_restricts_client_path_and_profile_override()
+- L217: def test_kamil_launcher_keeps_macro_studio_on_repo_local_python()
 
 ## `tests/test_process_safety.py`
 

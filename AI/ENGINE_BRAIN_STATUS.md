@@ -61,8 +61,9 @@ Snapshot date: 2026-07-11 Europe/Warsaw
   `background_status.json`, a positive wrapper allowlist, primitive GUI/input/
   screenshot/start-stop/live-write guards, `ctoa.ps1 otbg`, and a read-only
   Control Center status tile. It records process/screenshot stability and never
-  authorizes dispatch or promotion. The staged source version is `v2.3.0`; the
-  protected live client remains `v2.2.1` during this development cycle. Canonical
+  authorizes dispatch or promotion. The current live package is promoted only
+  through the explicit wrapper gate; the protected live client remains guarded
+  and the staged source version is tracked by the release manifest. Canonical
   sequence: `AI/P8_P16_EXECUTION_ROADMAP.md`.
 - P8 operational acceptance is fail-closed and requires all three proofs: a
   manifest with `official_live_promotion` provenance and matching SHA256 in
@@ -90,7 +91,8 @@ Snapshot date: 2026-07-11 Europe/Warsaw
   replay has strict hash-bound P8/Recovery inputs, a 44-case deterministic
   fixture pack, atomic runtime output, Release Evidence and Control Center
   consumers, and `ctoa.ps1 otp9`. Fixture success does not claim runtime
-  readiness. P10 stays blocked until a fresh real P9 trace is reviewed under
+  readiness. P10 offline replay is complete, but P10 stays blocked operationally
+  until a fresh real P9 trace is reviewed under
   accepted P8 and Recovery proofs. Canonical contract:
   `docs/otclient/P9_CONDITIONS_SHADOW_REPLAY_DESIGN.md`.
 - P9 also has a separate data-only operator acceptance boundary. It strictly

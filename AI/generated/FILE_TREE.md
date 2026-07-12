@@ -1,6 +1,6 @@
 # Engine Brain File Tree
 
-Generated at: `2026-07-12T00:44:14+00:00`
+Generated at: `2026-07-12T01:21:40+00:00`
 
 Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 `node_modules`, `runtime`, `logs`, `data`, `.tmp`, build outputs.
@@ -97,35 +97,35 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `AI/CHECKPOINT_2026-07-08.md` | 10285 |
 | `AI/CLASS_INDEX.md` | 1815 |
 | `AI/CODEX_CAPABILITY_MAP.md` | 5237 |
-| `AI/ENGINE_BRAIN_STATUS.md` | 136680 |
+| `AI/ENGINE_BRAIN_STATUS.md` | 136806 |
 | `AI/ENGINE_MEMORY.md` | 2971 |
-| `AI/FEATURE_ROADMAP.md` | 62866 |
+| `AI/FEATURE_ROADMAP.md` | 63389 |
 | `AI/generated/DOC_SYNC.json` | 1164 |
 | `AI/generated/DOC_SYNC.md` | 681 |
 | `AI/generated/ENGINE_BRAIN_PACK.json` | 6441 |
 | `AI/generated/ENGINE_BRAIN_PACK.md` | 446562 |
-| `AI/generated/ENV_DOCTOR.json` | 7635 |
-| `AI/generated/ENV_DOCTOR.md` | 1260 |
-| `AI/generated/FILE_TREE.md` | 71271 |
-| `AI/generated/manifest.json` | 2062 |
+| `AI/generated/ENV_DOCTOR.json` | 6357 |
+| `AI/generated/ENV_DOCTOR.md` | 1259 |
+| `AI/generated/FILE_TREE.md` | 72095 |
+| `AI/generated/manifest.json` | 2072 |
 | `AI/generated/OWNERSHIP_MAP.json` | 16936 |
 | `AI/generated/OWNERSHIP_MAP.md` | 6581 |
 | `AI/generated/P6_CODEX_INTEGRATION_READINESS.json` | 11010 |
 | `AI/generated/P6_CODEX_INTEGRATION_READINESS.md` | 6915 |
 | `AI/generated/P7_ACTION_READINESS.json` | 4870 |
 | `AI/generated/P7_ACTION_READINESS.md` | 1142 |
-| `AI/generated/P7_OPERATOR_BRIEF.json` | 7308 |
-| `AI/generated/P7_OPERATOR_BRIEF.md` | 1645 |
+| `AI/generated/P7_OPERATOR_BRIEF.json` | 7505 |
+| `AI/generated/P7_OPERATOR_BRIEF.md` | 1669 |
 | `AI/generated/P7_OPERATOR_WORKFLOW.json` | 4690 |
 | `AI/generated/P7_OPERATOR_WORKFLOW.md` | 3015 |
 | `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.json` | 2705 |
 | `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.md` | 2024 |
-| `AI/generated/SYMBOL_MAP.md` | 284298 |
+| `AI/generated/SYMBOL_MAP.md` | 286140 |
 | `AI/KNOWN_BUGS.md` | 1384 |
 | `AI/LUA_INDEX.md` | 2874 |
 | `AI/OPERATIONS_AUDIT.md` | 5139 |
 | `AI/OTCLIENT_INDEX.md` | 3675 |
-| `AI/P8_P16_EXECUTION_ROADMAP.md` | 10156 |
+| `AI/P8_P16_EXECUTION_ROADMAP.md` | 10391 |
 | `AI/PACKET_INDEX.md` | 1405 |
 | `AI/PROJECT_CONTEXT.md` | 3648 |
 | `AI/README.md` | 2927 |
@@ -183,12 +183,13 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `config/client_profiles.json` | 2161 |
 | `config/ctoa-user-config.template.json` | 400 |
 | `config/otclient/conditions-shadow-profile.json` | 467 |
+| `config/otclient/equipment-shadow-profile.json` | 454 |
 | `config/rosetta-presets.json` | 19137 |
 | `conftest.py` | 121 |
 | `core/protected-files.txt` | 222 |
 | `core/runtime-freeze-policy.json` | 301 |
 | `ctoa-vps.ps1` | 547 |
-| `ctoa.ps1` | 33019 |
+| `ctoa.ps1` | 34041 |
 | `ctoa_ui_prefs.lua` | 397 |
 | `deploy/local/observability/grafana/provisioning/datasources/datasources.yml` | 224 |
 | `deploy/local/observability/loki-config.yml` | 539 |
@@ -454,7 +455,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `docs/otclient/solteria_helper_input_contracts.md` | 4430 |
 | `docs/otclient/solteria_helper_module_contract.md` | 4360 |
 | `docs/otclient/solteria_helper_module_workplan.md` | 12889 |
-| `docs/otclient/solteria_helper_next_modules_plan.md` | 18478 |
+| `docs/otclient/solteria_helper_next_modules_plan.md` | 18593 |
 | `docs/otclient/solteria_helper_sandbox_smoke_queue.md` | 10222 |
 | `docs/otclient/solteria_helper_shell_budget_plan.md` | 4261 |
 | `docs/otclient/solteria_helper_supplemental_refactor_plan.md` | 27770 |
@@ -627,7 +628,12 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `schemas/conditions-shadow-replay-report.schema.json` | 4775 |
 | `schemas/conditions-shadow-scenario-pack.schema.json` | 1353 |
 | `schemas/conditions-shadow-trace.schema.json` | 2874 |
-| `schemas/ctoa-command-dictionary.json` | 3529 |
+| `schemas/ctoa-command-dictionary.json` | 3691 |
+| `schemas/equipment-shadow-profile.schema.json` | 1198 |
+| `schemas/equipment-shadow-replay-report.schema.json` | 1468 |
+| `schemas/equipment-shadow-scenario-pack.schema.json` | 1090 |
+| `schemas/equipment-shadow-snapshot.schema.json` | 2251 |
+| `schemas/equipment-shadow-trace.schema.json` | 1792 |
 | `schemas/intel-projects.schema.json` | 1136 |
 | `schemas/mobile_console_api_contract.snapshot.json` | 8456 |
 | `schemas/otclient-helper-config.schema.json` | 4451 |
@@ -669,7 +675,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/lua/otclient/ctoa_helper_diagnostics.lua` | 19996 |
 | `scripts/lua/otclient/ctoa_helper_dispatch_guard.lua` | 4041 |
 | `scripts/lua/otclient/ctoa_helper_domain_contract.lua` | 5152 |
-| `scripts/lua/otclient/ctoa_helper_equipment.lua` | 6160 |
+| `scripts/lua/otclient/ctoa_helper_equipment.lua` | 10155 |
 | `scripts/lua/otclient/ctoa_helper_equipment_observer.lua` | 3333 |
 | `scripts/lua/otclient/ctoa_helper_equipment_runtime_gate.lua` | 5849 |
 | `scripts/lua/otclient/ctoa_helper_feature_flags.lua` | 6789 |
@@ -767,7 +773,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/ops/depack_top_candidates.py` | 10352 |
 | `scripts/ops/depack_window_aware_focused.py` | 8002 |
 | `scripts/ops/engine_brain_doctor.py` | 19184 |
-| `scripts/ops/engine_brain_index.py` | 118790 |
+| `scripts/ops/engine_brain_index.py` | 118719 |
 | `scripts/ops/engine_brain_pack.py` | 9730 |
 | `scripts/ops/evidence_retention.py` | 2057 |
 | `scripts/ops/git_exec.py` | 2142 |
@@ -793,6 +799,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/ops/orchestrator-loop.ps1` | 6161 |
 | `scripts/ops/otclient_conditions_shadow_acceptance.py` | 33276 |
 | `scripts/ops/otclient_conditions_shadow_replay.py` | 58656 |
+| `scripts/ops/otclient_equipment_shadow_replay.py` | 28763 |
 | `scripts/ops/otclient_external_bot_intake.py` | 14940 |
 | `scripts/ops/otclient_headless_evidence.py` | 20797 |
 | `scripts/ops/otclient_headless_status.py` | 31346 |
@@ -808,7 +815,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/ops/phase5_nightly_sync.py` | 24770 |
 | `scripts/ops/project_progress_diagram.py` | 6516 |
 | `scripts/ops/queue_enqueue_job.py` | 1142 |
-| `scripts/ops/release_evidence_pack.py` | 89973 |
+| `scripts/ops/release_evidence_pack.py` | 100615 |
 | `scripts/ops/remove-mythibia-autosync-task.ps1` | 460 |
 | `scripts/ops/remove-mythibia-watcher-task.ps1` | 819 |
 | `scripts/ops/remove-phase5-morning-sync-task.ps1` | 415 |
@@ -891,7 +898,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/windows/build-ctoa-desktop-exe.ps1` | 1210 |
 | `scripts/windows/install-ctoa-vscode-extensions.ps1` | 1852 |
 | `scripts/windows/open-control-center.ps1` | 2306 |
-| `scripts/windows/solteria_helper_test_env.ps1` | 443758 |
+| `scripts/windows/solteria_helper_test_env.ps1` | 446276 |
 | `src/main.py` | 15 |
 | `tests/conftest.py` | 1341 |
 | `tests/e2e/__init__.py` | 0 |
@@ -903,6 +910,10 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `tests/fixtures/otclient_conditions_shadow_replay/positive-recovery-proof.json` | 816 |
 | `tests/fixtures/otclient_conditions_shadow_replay/positive-recovery-trace.json` | 492 |
 | `tests/fixtures/otclient_conditions_shadow_replay/scenarios.json` | 7665 |
+| `tests/fixtures/otclient_equipment_shadow_replay/positive-p9-receipt.json` | 2149 |
+| `tests/fixtures/otclient_equipment_shadow_replay/positive-p9-trace.json` | 1336 |
+| `tests/fixtures/otclient_equipment_shadow_replay/positive-snapshot.json` | 849 |
+| `tests/fixtures/otclient_equipment_shadow_replay/scenarios.json` | 2699 |
 | `tests/integration/bot/test_bot_loop.py` | 9419 |
 | `tests/integration/bot/test_stress.py` | 8366 |
 | `tests/js/dashboard_helpers.test.js` | 702 |
@@ -1004,11 +1015,12 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `tests/test_otclient_conditions_shadow_acceptance.py` | 22148 |
 | `tests/test_otclient_conditions_shadow_consumers.py` | 15537 |
 | `tests/test_otclient_conditions_shadow_replay.py` | 30384 |
+| `tests/test_otclient_equipment_shadow_replay.py` | 5414 |
 | `tests/test_otclient_external_bot_intake.py` | 4551 |
 | `tests/test_otclient_headless_status.py` | 40241 |
 | `tests/test_otclient_helper_diagnostics_ui.py` | 2127 |
 | `tests/test_otclient_helper_module_audit.py` | 21111 |
-| `tests/test_otclient_helper_module_contract.py` | 39365 |
+| `tests/test_otclient_helper_module_contract.py` | 39570 |
 | `tests/test_otclient_helper_next_modules_plan.py` | 14101 |
 | `tests/test_otclient_helper_profile_audit.py` | 3639 |
 | `tests/test_otclient_helper_shell_budget_plan.py` | 3270 |
@@ -1022,7 +1034,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `tests/test_phase5_nightly_sync.py` | 8121 |
 | `tests/test_phase5_nightly_sync_more.py` | 6158 |
 | `tests/test_phase5_ops_acceleration.py` | 1721 |
-| `tests/test_powershell_launcher_security.py` | 8463 |
+| `tests/test_powershell_launcher_security.py` | 9019 |
 | `tests/test_process_safety.py` | 1328 |
 | `tests/test_project_progress_diagram.py` | 3190 |
 | `tests/test_queue_worker_security.py` | 1250 |

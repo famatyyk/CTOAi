@@ -99,6 +99,9 @@ def test_ctoa_cli_uses_official_wrapper_for_helper_operations() -> None:
     assert '"otdeploy" { Invoke-OtHelperDeploy -Approval $Arg1; break }' in script
     assert '"otbg" { Invoke-OtBackgroundStatus; break }' in script
     assert '"otp9" { Invoke-OtConditionsShadowReplay; break }' in script
+    assert '"otp10" { Invoke-OtEquipmentShadowReplay; break }' in script
+    assert "function Invoke-OtEquipmentShadowReplay" in script
+    assert '$env:CTOA_OPERATOR_MODE = "background_no_screen"' in script
     assert '"scripts\\ops\\otclient_conditions_shadow_replay.py"' in script
     assert '".venv\\Scripts\\python.exe"' in script
     assert "Invoke-FromRootCapture -FilePath $powershell" in script
@@ -114,6 +117,14 @@ def test_p9_shadow_command_is_in_shared_command_dictionary() -> None:
 
     assert commands["otp9"]["aliases"] == []
     assert "no-action Conditions shadow replay" in commands["otp9"]["description"]
+
+
+def test_p10_shadow_command_is_in_shared_command_dictionary() -> None:
+    dictionary = json.loads(COMMAND_DICTIONARY.read_text(encoding="utf-8"))
+    commands = {item["command"]: item for item in dictionary["commands"]}
+
+    assert commands["otp10"]["aliases"] == []
+    assert "ring Equipment shadow replay" in commands["otp10"]["description"]
 
 
 @pytest.mark.skipif(POWERSHELL is None, reason="PowerShell runtime is unavailable")

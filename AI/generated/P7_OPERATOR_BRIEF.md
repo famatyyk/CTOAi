@@ -1,6 +1,6 @@
 # P7 Operator Brief
 
-Generated at: `2026-07-12T00:44:14+00:00`
+Generated at: `2026-07-12T01:21:40+00:00`
 Decision: `ready_for_p7_operator_workflow`
 Status: `ready`
 

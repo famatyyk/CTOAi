@@ -9,7 +9,7 @@ if type(existingHelper) == "table" and existingHelper.window then
     return existingHelper
 end
 
-local HELPER_VERSION = "v2.3.1"
+local HELPER_VERSION = "v2.3.2"
 local HELPER_CONFIG = {
     schema_version = "ctoa-helper-profile-v1",
     enabled = true,

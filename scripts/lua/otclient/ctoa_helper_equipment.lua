@@ -143,13 +143,25 @@ function Equipment.shadowPlan(snapshot)
     local equipped = tonumber(observed.equipped_item_id)
     local candidate = tonumber(observed.candidate_item_id)
     local rollback = tonumber(observed.rollback_item_id)
-    if observed.slot_name ~= "ring" or observed.rollback_slot_name ~= "ring" then blockers[#blockers + 1] = "ring_slot_snapshot_required" end
-    if not equipped or equipped <= 0 or not candidate or candidate <= 0 then blockers[#blockers + 1] = "item_id_snapshot_required" end
+    local function validItemId(value)
+        return value and value % 1 == 0 and value > 0 and value <= 65535
+    end
+    local function validContainer(value)
+        return value and value % 1 == 0 and value >= 0
+    end
+    if observed.schema_version ~= "ctoa.equipment-shadow-snapshot.v1" then blockers[#blockers + 1] = "snapshot_schema_required" end
+    if observed.online ~= true then blockers[#blockers + 1] = "player_offline" end
+    if observed.alive ~= true then blockers[#blockers + 1] = "player_dead" end
+    if string.lower(tostring(observed.slot_name or "")) ~= "ring" or string.lower(tostring(observed.rollback_slot_name or "")) ~= "ring" then blockers[#blockers + 1] = "ring_slot_snapshot_required" end
+    if not validItemId(equipped) or not validItemId(candidate) then blockers[#blockers + 1] = "item_id_snapshot_required" end
     if equipped and candidate and equipped == candidate then blockers[#blockers + 1] = "candidate_matches_equipped" end
-    if not rollback or rollback ~= equipped then blockers[#blockers + 1] = "rollback_snapshot_mismatch" end
+    if not validItemId(rollback) or rollback ~= equipped then blockers[#blockers + 1] = "rollback_snapshot_mismatch" end
     if tostring(observed.inventory_revision or "") == "" or tostring(observed.rollback_inventory_revision or "") ~= tostring(observed.inventory_revision or "") then blockers[#blockers + 1] = "inventory_revision_drift" end
     if observed.inventory_unambiguous ~= true then blockers[#blockers + 1] = "inventory_ambiguous" end
-    if observed.protection_zone ~= "outside" then blockers[#blockers + 1] = "protection_zone_not_outside" end
+    if observed.protection_zone ~= "outside" or observed.protection_zone_source ~= "player_method" then blockers[#blockers + 1] = "protection_zone_not_outside" end
+    if not validContainer(tonumber(observed.candidate_source_container_id)) or not validContainer(tonumber(observed.rollback_destination_container_id)) or tonumber(observed.candidate_source_container_id) ~= tonumber(observed.rollback_destination_container_id) then blockers[#blockers + 1] = "rollback_container_snapshot_mismatch" end
+    if observed.cooldown ~= "ready" or observed.cooldown_source ~= "game_cooldown_group" then blockers[#blockers + 1] = "cooldown_not_ready" end
+    if observed.dispatch_allowed ~= false or observed.runtime_actions ~= false or observed.executes_plan ~= false or observed.execute_once_allowed ~= false or observed.promotion_allowed ~= false or type(observed.intrusive_actions_performed) ~= "table" or #observed.intrusive_actions_performed ~= 0 then blockers[#blockers + 1] = "unsafe_contract" end
     local plan = {
         action = "plan_ring_swap", slot = "ring", before_item_id = equipped,
         candidate_item_id = candidate, rollback_item_id = rollback,

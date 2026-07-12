@@ -18,8 +18,10 @@ from pathlib import Path
 from typing import Any, Iterable
 
 if __package__:
+    from . import otclient_conditions_shadow_acceptance as p9_acceptance
     from . import otclient_conditions_shadow_replay as p9_replay
 else:  # pragma: no cover - direct script execution
+    import otclient_conditions_shadow_acceptance as p9_acceptance
     import otclient_conditions_shadow_replay as p9_replay
 
 
@@ -71,6 +73,30 @@ FALSE_FLAGS = (
     "execute_once_allowed",
     "promotion_allowed",
 )
+P9_TRACE_KEYS = {
+    "schema_version",
+    "trace_id",
+    "source",
+    "evaluated_at_unix_ms",
+    "mode",
+    "action",
+    "condition",
+    "spell",
+    "input_sha256",
+    "canonical_input_sha256",
+    "observation_age_ms",
+    "p8_age_ms",
+    "recovery_trace_age_ms",
+    "recovery_age_ms",
+    "status",
+    "decision",
+    "blockers",
+    "decision_sha256",
+    "operator_review_required",
+    *FALSE_FLAGS,
+    "intrusive_actions_performed",
+}
+P9_RECEIPT_KEYS = set(p9_acceptance.RECEIPT_KEYS)
 
 ACTION = "plan_ring_swap"
 BLOCKER_ORDER = (
@@ -254,9 +280,13 @@ def _snapshot_valid(payload: Any) -> bool:
 def _p9_trace_valid(payload: Any) -> bool:
     return (
         isinstance(payload, dict)
+        and set(payload) == P9_TRACE_KEYS
         and payload.get("schema_version") == P9_TRACE_SCHEMA
+        and payload.get("source") in {"fixture", "operational"}
         and payload.get("status") == "shadow_plan_ready"
         and payload.get("action") == "plan_paralyze_recovery"
+        and payload.get("condition") == "paralyze"
+        and payload.get("spell") == "exura"
         and payload.get("decision") == "would_plan_paralyze_recovery"
         and payload.get("blockers") == []
         and _is_sha256(payload.get("decision_sha256"))
@@ -266,21 +296,15 @@ def _p9_trace_valid(payload: Any) -> bool:
 
 
 def _p9_receipt_structurally_valid(payload: Any) -> bool:
-    required = {
-        "schema_version",
-        "status",
-        "acceptance_granted",
-        "receipt_persisted",
-        "decision_sha256",
-        "operational_inputs_fixture",
-        "runtime_readiness_claimed",
-        *FALSE_FLAGS,
-        "intrusive_actions_performed",
-    }
     return (
         isinstance(payload, dict)
-        and required <= set(payload)
+        and set(payload) == P9_RECEIPT_KEYS
         and payload.get("schema_version") == P9_RECEIPT_SCHEMA
+        and payload.get("status") in {"accepted", "blocked"}
+        and isinstance(payload.get("acceptance_granted"), bool)
+        and isinstance(payload.get("receipt_persisted"), bool)
+        and isinstance(payload.get("operational_inputs_fixture"), bool)
+        and payload.get("runtime_readiness_claimed") is False
         and _is_sha256(payload.get("decision_sha256"))
         and _false_flags(payload)
         and _empty_ledger(payload)
@@ -548,14 +572,57 @@ def _scenario_documents(
     )
 
 
+def _scenario_pack_valid(payload: Any) -> bool:
+    if not isinstance(payload, dict) or set(payload) != {
+        "schema_version",
+        "fixture_only",
+        "operational_readiness_claimed",
+        "evaluated_at_unix_ms",
+        "scenarios",
+    }:
+        return False
+    scenarios = payload.get("scenarios")
+    if not (
+        payload.get("schema_version") == SCENARIO_SCHEMA
+        and payload.get("fixture_only") is True
+        and payload.get("operational_readiness_claimed") is False
+        and _is_int(payload.get("evaluated_at_unix_ms"))
+        and payload["evaluated_at_unix_ms"] > 0
+        and isinstance(scenarios, list)
+        and 1 <= len(scenarios) <= 128
+    ):
+        return False
+    seen: set[str] = set()
+    for scenario in scenarios:
+        if not isinstance(scenario, dict) or set(scenario) != {
+            "name",
+            "mutation",
+            "expected_status",
+            "expected_blockers",
+        }:
+            return False
+        name = scenario.get("name")
+        blockers = scenario.get("expected_blockers")
+        if (
+            not isinstance(name, str)
+            or not name
+            or name in seen
+            or scenario.get("mutation") not in SCENARIO_MUTATIONS
+            or scenario.get("expected_status")
+            not in {"shadow_plan_ready", "operational_acceptance_blocked"}
+            or not isinstance(blockers, list)
+            or any(item not in BLOCKER_RANK for item in blockers)
+            or blockers != _ordered(blockers)
+            or len(blockers) != len(set(blockers))
+        ):
+            return False
+        seen.add(name)
+    return True
+
+
 def run_scenario_pack(document: p9_replay.InputDocument) -> dict[str, Any]:
     payload = document.payload
-    if (
-        document.status != "loaded"
-        or not isinstance(payload, dict)
-        or payload.get("schema_version") != SCENARIO_SCHEMA
-        or payload.get("fixture_only") is not True
-    ):
+    if document.status != "loaded" or not _scenario_pack_valid(payload):
         return {
             "status": "failed",
             "total_count": 0,
@@ -666,6 +733,30 @@ def _validate_output(path: Path) -> Path:
         RUNTIME_ROOT.resolve(strict=False)
     ):
         raise ValueError(f"JSON output must stay under {RUNTIME_ROOT}")
+    absolute_parent = Path(os.path.abspath(path.parent))
+    boundary = Path(os.path.abspath(RUNTIME_ROOT))
+    try:
+        relative_parent = absolute_parent.relative_to(boundary)
+    except ValueError as exc:
+        raise ValueError(f"JSON output must stay under {RUNTIME_ROOT}") from exc
+    candidates = [boundary]
+    current = boundary
+    for part in relative_parent.parts:
+        current /= part
+        candidates.append(current)
+    for candidate in candidates:
+        try:
+            metadata = candidate.lstat()
+        except FileNotFoundError:
+            continue
+        reparse_flag = int(getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0))
+        if (
+            stat.S_ISLNK(metadata.st_mode)
+            or int(getattr(metadata, "st_file_attributes", 0)) & reparse_flag
+        ):
+            raise ValueError(
+                "JSON output parent must not contain a symlink or reparse point"
+            )
     try:
         metadata = path.lstat()
     except FileNotFoundError:

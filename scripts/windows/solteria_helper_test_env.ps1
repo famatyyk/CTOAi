@@ -5711,7 +5711,7 @@ function Invoke-EquipmentShadowReplayStaticSmoke {
     if ($LASTEXITCODE -ne 0) {
         throw "P10 Equipment shadow replay static smoke failed."
     }
-    $outRoot = Join-Path $repo $DevDir
+    $outRoot = Assert-ExactBackgroundOutputPath -RepoRoot $repo -Candidate (Join-Path $repo $DevDir)
     New-Item -ItemType Directory -Force -Path $outRoot | Out-Null
     $report = [pscustomobject]@{
         name = "equipment-shadow-replay-static-smoke"

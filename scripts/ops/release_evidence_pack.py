@@ -1072,9 +1072,166 @@ def _equipment_shadow_summary(
     present = payload is not None if artifact_present is None else artifact_present
     data = payload if isinstance(payload, dict) else {}
     errors: list[str] = []
+    expected_report_keys = {
+        "schema_version",
+        "generated_at_unix_ms",
+        "mode",
+        "operational_acceptance_status",
+        "scenario_pack_status",
+        "fixture_only_validation_passed",
+        "runtime_readiness_claimed",
+        "operational_trace",
+        "scenario_pack",
+        *EQUIPMENT_SHADOW_FALSE_FLAGS,
+        "intrusive_actions_performed",
+    }
+    expected_trace_keys = {
+        "schema_version",
+        "status",
+        "decision",
+        "action",
+        "blockers",
+        "canonical_input_sha256",
+        "plan",
+        "rollback_simulation",
+        *EQUIPMENT_SHADOW_FALSE_FLAGS,
+        "intrusive_actions_performed",
+        "trace_id",
+        "source",
+        "evaluated_at_unix_ms",
+        "input_sha256",
+        "decision_sha256",
+        "observation_age_ms",
+        "operator_review_required",
+    }
+    expected_scenario_keys = {
+        "status",
+        "total_count",
+        "passed_count",
+        "failed_count",
+        "cases",
+        *EQUIPMENT_SHADOW_FALSE_FLAGS,
+        "intrusive_actions_performed",
+    }
+    expected_case_keys = {
+        "name",
+        "mutation",
+        "expected_status",
+        "actual_status",
+        "expected_blockers",
+        "blockers",
+        "decision_sha256",
+        "deterministic",
+        "passed",
+        *EQUIPMENT_SHADOW_FALSE_FLAGS,
+        "intrusive_actions_performed",
+    }
+
+    def valid_sha(value: Any) -> bool:
+        return (
+            isinstance(value, str)
+            and len(value) == 64
+            and all(char in "0123456789abcdef" for char in value)
+        )
+
+    def valid_trace(value: Any) -> bool:
+        if not isinstance(value, dict) or set(value) != expected_trace_keys:
+            return False
+        if value.get("schema_version") != "ctoa.equipment-shadow-trace.v1":
+            return False
+        if value.get("status") not in {
+            "shadow_plan_ready",
+            "operational_acceptance_blocked",
+        }:
+            return False
+        if (
+            value.get("decision") not in {"would_plan_ring_swap", "hold"}
+            or value.get("action") != "plan_ring_swap"
+        ):
+            return False
+        if not isinstance(value.get("blockers"), list) or not all(
+            isinstance(item, str) for item in value["blockers"]
+        ):
+            return False
+        if not valid_sha(value.get("canonical_input_sha256")) or not valid_sha(
+            value.get("decision_sha256")
+        ):
+            return False
+        if (
+            value.get("rollback_simulation") not in {"ready", "blocked"}
+            or value.get("operator_review_required") is not True
+        ):
+            return False
+        if (
+            any(value.get(key) is not False for key in EQUIPMENT_SHADOW_FALSE_FLAGS)
+            or value.get("intrusive_actions_performed") != []
+        ):
+            return False
+        if value.get("status") == "shadow_plan_ready" and (
+            value["blockers"]
+            or value["decision"] != "would_plan_ring_swap"
+            or value["rollback_simulation"] != "ready"
+        ):
+            return False
+        if value.get("status") == "operational_acceptance_blocked" and (
+            value["decision"] != "hold" or value["rollback_simulation"] != "blocked"
+        ):
+            return False
+        plan = value.get("plan")
+        if (
+            not isinstance(plan, dict)
+            or plan.get("action") != "plan_ring_swap"
+            or plan.get("slot") != "ring"
+            or plan.get("dispatch_allowed") is not False
+            or plan.get("retry_budget") != 0
+        ):
+            return False
+        return (
+            isinstance(value.get("input_sha256"), dict)
+            and set(value["input_sha256"])
+            == {"profile", "snapshot", "p9_trace", "p9_receipt"}
+            and all(valid_sha(item) for item in value["input_sha256"].values())
+        )
+
+    def valid_scenario(value: Any) -> bool:
+        if not isinstance(value, dict) or set(value) != expected_scenario_keys:
+            return False
+        if value.get("status") not in {"passed", "failed"} or not isinstance(
+            value.get("cases"), list
+        ):
+            return False
+        if (
+            any(value.get(key) is not False for key in EQUIPMENT_SHADOW_FALSE_FLAGS)
+            or value.get("intrusive_actions_performed") != []
+        ):
+            return False
+        for case in value["cases"]:
+            if not isinstance(case, dict) or set(case) != expected_case_keys:
+                return False
+            if not isinstance(case.get("blockers"), list) or not isinstance(
+                case.get("expected_blockers"), list
+            ):
+                return False
+            if (
+                not valid_sha(case.get("decision_sha256"))
+                or case.get("deterministic") is not True
+                or case.get("passed") is not True
+            ):
+                return False
+            if (
+                any(case.get(key) is not False for key in EQUIPMENT_SHADOW_FALSE_FLAGS)
+                or case.get("intrusive_actions_performed") != []
+            ):
+                return False
+        return value.get("failed_count") == 0 and value.get(
+            "passed_count"
+        ) == value.get("total_count") == len(value["cases"])
+
     if not isinstance(payload, dict):
         errors.append("report.unreadable_or_malformed")
     else:
+        if set(data) != expected_report_keys:
+            errors.append("report.keys")
         if data.get("schema_version") != EQUIPMENT_SHADOW_REPORT_SCHEMA:
             errors.append("report.schema_version")
         if data.get("mode") != EQUIPMENT_SHADOW_MODE:
@@ -1087,20 +1244,22 @@ def _equipment_shadow_summary(
             errors.append("report.intrusive_actions_performed")
         trace = data.get("operational_trace")
         scenario = data.get("scenario_pack")
-        if not isinstance(trace, dict):
+        if not valid_trace(trace):
             errors.append("report.operational_trace")
-        elif trace.get("action") != "plan_ring_swap" or trace.get("rollback_simulation") not in {"ready", "blocked"}:
-            errors.append("report.trace_contract")
-        if not isinstance(scenario, dict) or scenario.get("status") not in {"passed", "failed"}:
+        if not valid_scenario(scenario):
             errors.append("report.scenario_pack")
     generated_at = data.get("generated_at_unix_ms")
     observed_at = (now or dt.datetime.now(dt.UTC)).astimezone(dt.UTC)
     age_seconds = (
         (observed_at.timestamp() * 1000 - generated_at) / 1000
-        if isinstance(generated_at, int) and not isinstance(generated_at, bool) and generated_at > 0
+        if isinstance(generated_at, int)
+        and not isinstance(generated_at, bool)
+        and generated_at > 0
         else None
     )
-    fresh = bool(age_seconds is not None and 0 <= age_seconds <= EQUIPMENT_SHADOW_MAX_AGE_SECONDS)
+    fresh = bool(
+        age_seconds is not None and 0 <= age_seconds <= EQUIPMENT_SHADOW_MAX_AGE_SECONDS
+    )
     contract_valid = present and not errors
     if not present:
         status = "missing"
@@ -1112,13 +1271,23 @@ def _equipment_shadow_summary(
         status = data.get("operational_acceptance_status", "invalid")
         if status not in EQUIPMENT_SHADOW_STATUS_VALUES:
             status = "invalid"
-    trace = data.get("operational_trace") if isinstance(data.get("operational_trace"), dict) else {}
-    scenario = data.get("scenario_pack") if isinstance(data.get("scenario_pack"), dict) else {}
+    trace = (
+        data.get("operational_trace")
+        if isinstance(data.get("operational_trace"), dict)
+        else {}
+    )
+    scenario = (
+        data.get("scenario_pack") if isinstance(data.get("scenario_pack"), dict) else {}
+    )
     return {
         "status": status,
         "reported_status": data.get("operational_acceptance_status", "invalid"),
-        "mode": data.get("mode") if data.get("mode") == EQUIPMENT_SHADOW_MODE else "invalid",
-        "generated_at_unix_ms": generated_at if isinstance(generated_at, int) and generated_at > 0 else 0,
+        "mode": data.get("mode")
+        if data.get("mode") == EQUIPMENT_SHADOW_MODE
+        else "invalid",
+        "generated_at_unix_ms": generated_at
+        if isinstance(generated_at, int) and generated_at > 0
+        else 0,
         "max_age_seconds": EQUIPMENT_SHADOW_MAX_AGE_SECONDS,
         "age_seconds": round(age_seconds, 3) if age_seconds is not None else None,
         "fresh": fresh,
@@ -1126,10 +1295,14 @@ def _equipment_shadow_summary(
         "contract_errors": errors,
         "trace_status": trace.get("status", "invalid"),
         "decision": trace.get("decision", "hold"),
-        "blockers": trace.get("blockers", []) if isinstance(trace.get("blockers"), list) else [],
+        "blockers": trace.get("blockers", [])
+        if isinstance(trace.get("blockers"), list)
+        else [],
         "rollback_simulation": trace.get("rollback_simulation", "blocked"),
         "fixture_validation_status": scenario.get("status", "invalid"),
-        "fixture_only_validation_passed": bool(contract_valid and scenario.get("status") == "passed"),
+        "fixture_only_validation_passed": bool(
+            contract_valid and scenario.get("status") == "passed"
+        ),
         "runtime_readiness_claimed": False,
         **{key: False for key in EQUIPMENT_SHADOW_FALSE_FLAGS},
         "intrusive_actions_performed": [],
@@ -1215,7 +1388,9 @@ def _background_pin_remediation_valid(value: Any) -> bool:
     trusted = classification == "trusted"
     return bool(
         required_action
-        == ("none" if trusted else "refresh_official_live_promotion_after_current_gates")
+        == (
+            "none" if trusted else "refresh_official_live_promotion_after_current_gates"
+        )
         and value.get("requires_current_release_gate") is (not trusted)
         and value.get("requires_explicit_live_approval") is (not trusted)
     )
@@ -1276,7 +1451,10 @@ def _background_diagnostic_parity_valid(value: Any) -> bool:
                 "oversize_count",
             )
         )
-        if status not in {"passed", "failed"} or observed > value["manifest_file_count"]:
+        if (
+            status not in {"passed", "failed"}
+            or observed > value["manifest_file_count"]
+        ):
             return False
     else:
         if status not in {"not_required", "unavailable"}:

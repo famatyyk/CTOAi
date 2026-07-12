@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import copy
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 
 from scripts.ops import otclient_equipment_shadow_replay as replay
+from scripts.ops import release_evidence_pack as evidence
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -84,6 +86,63 @@ def test_snapshot_extra_field_is_rejected():
     )
     assert trace["status"] == "operational_acceptance_blocked"
     assert "snapshot_schema_invalid" in trace["blockers"]
+
+
+def test_p9_unknown_keys_and_malformed_scenario_pack_fail_closed():
+    docs = list(_docs())
+    assert docs[2].payload is not None
+    p9_trace = copy.deepcopy(docs[2].payload)
+    p9_trace["unexpected"] = "dispatch"
+    docs[2] = replay.p9_replay.document_from_payload(p9_trace)
+    trace = replay.evaluate_shadow(
+        profile=docs[0],
+        snapshot=docs[1],
+        p9_trace=docs[2],
+        p9_receipt=docs[3],
+        evaluated_at_unix_ms=NOW_MS,
+        source="fixture",
+    )
+    assert trace["status"] == "operational_acceptance_blocked"
+    assert "p9_trace_schema_invalid" in trace["blockers"]
+
+    scenario = replay.p9_replay.document_from_payload(
+        {
+            "schema_version": replay.SCENARIO_SCHEMA,
+            "fixture_only": True,
+            "operational_readiness_claimed": False,
+            "evaluated_at_unix_ms": NOW_MS,
+            "scenarios": [{}],
+        }
+    )
+    report = replay.run_scenario_pack(scenario)
+    assert report["status"] == "failed"
+    assert report["failed_count"] == 1
+
+
+def test_release_evidence_rejects_nested_p10_tamper():
+    report = replay.build_report(evaluated_at_unix_ms=NOW_MS, source="fixture")
+    report["operational_trace"]["runtime_actions"] = True
+    report["scenario_pack"]["cases"][0]["intrusive_actions_performed"] = ["move_item"]
+    summary = evidence._equipment_shadow_summary(
+        report,
+        replay.DEFAULT_OUTPUT,
+        now=datetime.fromtimestamp(NOW_MS / 1000, tz=timezone.utc),
+    )
+    assert summary["contract_valid"] is False
+    assert summary["status"] == "invalid"
+    assert "report.operational_trace" in summary["contract_errors"]
+    assert "report.scenario_pack" in summary["contract_errors"]
+
+
+def test_static_wrapper_confines_p10_evidence_to_canonical_runtime_dir():
+    wrapper = (ROOT / "scripts" / "windows" / "solteria_helper_test_env.ps1").read_text(
+        encoding="utf-8"
+    )
+    start = wrapper.index("function Invoke-EquipmentShadowReplayStaticSmoke")
+    end = wrapper.index("Assert-OperatorModeAction", start)
+    block = wrapper[start:end]
+    assert "Assert-ExactBackgroundOutputPath" in block
+    assert "equipment_shadow_replay_static_smoke.json" in block
 
 
 def test_equipment_schemas_are_closed_draft_2020_12():

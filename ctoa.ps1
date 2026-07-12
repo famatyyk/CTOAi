@@ -864,7 +864,19 @@ function Invoke-OtEquipmentShadowReplay {
     if (-not (Test-Path -LiteralPath $scriptPath -PathType Leaf)) {
         throw "P10 Equipment shadow replay tool is missing: $scriptPath"
     }
-    Invoke-FromRoot -FilePath $python -Arguments @($scriptPath)
+    $previousOperatorMode = $env:CTOA_OPERATOR_MODE
+    try {
+        $env:CTOA_OPERATOR_MODE = "background_no_screen"
+        Invoke-FromRoot -FilePath $python -Arguments @($scriptPath)
+    }
+    finally {
+        if ($null -eq $previousOperatorMode) {
+            Remove-Item Env:CTOA_OPERATOR_MODE -ErrorAction SilentlyContinue
+        }
+        else {
+            $env:CTOA_OPERATOR_MODE = $previousOperatorMode
+        }
+    }
 }
 
 function Invoke-EngineBrain {
