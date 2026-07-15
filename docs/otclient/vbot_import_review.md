@@ -2,13 +2,17 @@
 
 ## Decision
 
-- Status: `source_required`.
-- No vBot source tree or reviewed local archive is present in this checkout.
-- Do not claim vBot-derived implementation until source provenance, license
-  notes, secret scan, and module mapping are recorded here.
-- External bot projects may be used as capability checklists and naming
-  references only. Do not directly copy code into CTOAi helper modules without
-  explicit source and license review.
+- Status: `capability_mapping_only`.
+- Reviewed upstream: `https://github.com/Vithrax/vBot`, branch `main`, commit
+  `09d6816c817f881735ecf78e87e052fcf7c02816` on 2026-07-15.
+- Reviewed files: `vBot/Sio.lua` and `vBot/playerlist.lua` through the public
+  GitHub source view. No source archive was imported into this checkout.
+- No repository license file was visible in the reviewed tree, so direct copy
+  remains prohibited. Only behavior-level capability mapping is permitted.
+- The mapped Heal Friend predicates are spectator scan, player/not-self,
+  friend-or-party membership, line-of-sight, range, HP threshold, and spell
+  cooldown. CTOAi strengthens them with one exact stable ID plus canonical name,
+  no ranking, no fallback, and no cast/talk path.
 
 ## Intake Requirements
 
@@ -86,16 +90,18 @@ Before any external logic changes runtime behavior:
 
 ## Current Source Review
 
-No vBot source is available in the repository as of this review. The current
+The public vBot source was reviewed as a capability checklist only. The current
 safe basis is:
 
 - `docs/otclient/zerobot_reference.md` as a local capability/API reference.
+- Vithrax/vBot `Sio.lua` for spectator/player/self/visibility/range/HP/cooldown
+  predicate mapping, without copying its macro, cast, item-heal, or storage code.
 - CTOAi helper modules already extracted into passive domains.
 - Runtime gates from `scripts/windows/solteria_helper_test_env.ps1`.
 
 ## Next Operator Step
 
-If a vBot archive is provided, place it outside runtime client state, record its
-path and hash here, run `scripts/ops/otclient_external_bot_intake.py`, then
-review it as a capability checklist. Keep all imported behavior passive until
-its matching CTOAi module gate and sandbox evidence pass.
+If a vBot archive is later provided for deeper review, place it outside runtime
+client state, record its path and hash here, and run
+`scripts/ops/otclient_external_bot_intake.py`. Keep all mapped behavior passive
+until its matching CTOAi module gate and sandbox evidence pass.

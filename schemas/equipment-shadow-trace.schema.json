@@ -4,27 +4,57 @@
   "title": "CTOAi Equipment Shadow Trace v1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "trace_id", "source", "evaluated_at_unix_ms", "input_sha256", "canonical_input_sha256", "status", "decision", "action", "blockers", "plan", "rollback_simulation", "decision_sha256", "operator_review_required", "dispatch_allowed", "runtime_actions", "executes_plan", "execute_once_allowed", "promotion_allowed", "intrusive_actions_performed"],
+  "required": ["schema_version", "trace_id", "source", "evaluated_at_unix_ms", "input_sha256", "canonical_input_sha256", "status", "decision", "action", "blockers", "plan", "rollback_simulation", "decision_sha256", "observation_age_ms", "operator_review_required", "dispatch_allowed", "runtime_actions", "executes_plan", "execute_once_allowed", "promotion_allowed", "intrusive_actions_performed"],
   "properties": {
     "schema_version": {"const": "ctoa.equipment-shadow-trace.v1"},
-    "trace_id": {"type": "string", "minLength": 1},
+    "trace_id": {"type": "string", "pattern": "^equipment-shadow-[0-9a-f]{16}$"},
     "source": {"enum": ["operational", "fixture"]},
     "evaluated_at_unix_ms": {"type": "integer", "minimum": 1},
-    "input_sha256": {"type": "object", "additionalProperties": {"type": "string", "pattern": "^[0-9a-f]{64}$"}},
-    "canonical_input_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "input_sha256": {
+      "type": "object", "additionalProperties": false,
+      "required": ["profile", "snapshot", "p9_trace", "p9_receipt"],
+      "properties": {
+        "profile": {"$ref": "#/$defs/sha256"}, "snapshot": {"$ref": "#/$defs/sha256"},
+        "p9_trace": {"$ref": "#/$defs/sha256"}, "p9_receipt": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "canonical_input_sha256": {"$ref": "#/$defs/sha256"},
     "status": {"enum": ["shadow_plan_ready", "operational_acceptance_blocked"]},
     "decision": {"enum": ["would_plan_ring_swap", "hold"]},
     "action": {"const": "plan_ring_swap"},
-    "blockers": {"type": "array", "items": {"type": "string"}},
-    "plan": {"type": ["object", "null"]},
+    "blockers": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/blocker"}},
+    "plan": {"oneOf": [{"$ref": "#/$defs/plan"}, {"type": "null"}]},
     "rollback_simulation": {"enum": ["ready", "blocked"]},
-    "decision_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "decision_sha256": {"$ref": "#/$defs/sha256"},
+    "observation_age_ms": {"type": ["integer", "null"]},
     "operator_review_required": {"const": true},
-    "dispatch_allowed": {"const": false},
-    "runtime_actions": {"const": false},
-    "executes_plan": {"const": false},
-    "execute_once_allowed": {"const": false},
-    "promotion_allowed": {"const": false},
-    "intrusive_actions_performed": {"const": []}
-  }
+    "dispatch_allowed": {"const": false}, "runtime_actions": {"const": false},
+    "executes_plan": {"const": false}, "execute_once_allowed": {"const": false},
+    "promotion_allowed": {"const": false}, "intrusive_actions_performed": {"const": []}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "blocker": {"enum": ["profile_missing", "profile_malformed", "profile_duplicate_keys", "profile_oversize", "profile_symlink_rejected", "profile_not_regular", "profile_schema_invalid", "snapshot_missing", "snapshot_malformed", "snapshot_duplicate_keys", "snapshot_oversize", "snapshot_symlink_rejected", "snapshot_not_regular", "snapshot_schema_invalid", "snapshot_fixture_not_operational", "snapshot_future", "snapshot_stale", "player_offline", "player_dead", "protection_zone_inside", "protection_zone_unknown", "protection_zone_source_untrusted", "inventory_ambiguous", "inventory_revision_missing", "inventory_revision_drift", "ring_slot_missing", "ring_slot_mismatch", "equipped_item_id_invalid", "candidate_item_id_invalid", "candidate_matches_equipped", "rollback_item_id_invalid", "rollback_snapshot_mismatch", "candidate_container_invalid", "rollback_container_mismatch", "cooldown_active", "cooldown_unknown", "cooldown_source_untrusted", "retry_budget_nonzero", "p9_trace_missing", "p9_trace_malformed", "p9_trace_schema_invalid", "p9_trace_blocked", "p9_trace_action_mismatch", "p9_trace_hash_mismatch", "p9_receipt_missing", "p9_receipt_malformed", "p9_receipt_schema_invalid", "p9_receipt_not_granted", "p9_receipt_trace_mismatch", "p9_fixture_not_operational", "unsafe_contract"]},
+    "plan": {
+      "type": "object", "additionalProperties": false,
+      "required": ["action", "slot", "before_item_id", "candidate_item_id", "rollback_item_id", "source_container_id", "source_slot_index", "rollback_container_id", "rollback_slot_index", "inventory_revision", "rollback_inventory_revision", "retry_budget", "dispatch_allowed"],
+      "properties": {
+        "action": {"const": "plan_ring_swap"}, "slot": {"const": "ring"},
+        "before_item_id": {"type": "integer", "minimum": 1, "maximum": 65535},
+        "candidate_item_id": {"type": "integer", "minimum": 1, "maximum": 65535},
+        "rollback_item_id": {"type": "integer", "minimum": 1, "maximum": 65535},
+        "source_container_id": {"type": "integer", "minimum": 0, "maximum": 65535},
+        "source_slot_index": {"type": "integer", "minimum": 1, "maximum": 65535},
+        "rollback_container_id": {"type": "integer", "minimum": 0, "maximum": 65535},
+        "rollback_slot_index": {"type": "integer", "minimum": 1, "maximum": 65535},
+        "inventory_revision": {"$ref": "#/$defs/sha256"},
+        "rollback_inventory_revision": {"$ref": "#/$defs/sha256"},
+        "retry_budget": {"const": 0}, "dispatch_allowed": {"const": false}
+      }
+    }
+  },
+  "allOf": [
+    {"if": {"properties": {"status": {"const": "shadow_plan_ready"}}}, "then": {"properties": {"decision": {"const": "would_plan_ring_swap"}, "blockers": {"maxItems": 0}, "plan": {"$ref": "#/$defs/plan"}, "rollback_simulation": {"const": "ready"}}}},
+    {"if": {"properties": {"status": {"const": "operational_acceptance_blocked"}}}, "then": {"properties": {"decision": {"const": "hold"}, "blockers": {"minItems": 1}, "plan": {"type": "null"}, "rollback_simulation": {"const": "blocked"}}}}
+  ]
 }

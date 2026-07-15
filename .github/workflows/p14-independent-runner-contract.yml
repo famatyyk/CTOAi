@@ -1,0 +1,169 @@
+name: P14 Independent Runner Contract
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/p14-independent-runner-contract.yml"
+      - "AI/generated/ROADMAP_STATE.json"
+      - "scripts/lua/ctoa_chooser/**"
+      - "requirements.txt"
+      - "schemas/ctoa-p14-runner-*.schema.json"
+      - "scripts/lua/otclient/**"
+      - "scripts/ops/otclient_p14_independent_runner.py"
+      - "tests/test_otclient_p14_independent_runner.py"
+  workflow_dispatch:
+    inputs:
+      run_self_hosted:
+        description: Run the trusted P14 replay on the isolated Windows runner
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: p14-independent-runner-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  artifact-replay:
+    name: GitHub-hosted signed artifact replay
+    runs-on: windows-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out clean source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install contract dependencies
+        run: python -m pip install pytest "jsonschema>=4.23.0,<5.0.0"
+
+      - name: Run schema, tamper, and rollback contract tests
+        run: python -m pytest tests/test_otclient_p14_independent_runner.py -q
+
+      - name: Create job-scoped signing material
+        shell: python
+        run: |
+          import os
+          import secrets
+
+          env_file = os.environ["GITHUB_ENV"]
+          with open(env_file, "a", encoding="utf-8") as handle:
+              handle.write(f"CTOA_P14_RUNNER_SIGNING_KEY={secrets.token_hex(32)}\n")
+              handle.write("CTOA_P14_RUNNER_KEY_ID=github-p14-contract\n")
+
+      - name: Prepare signed request from tracked sources
+        run: >-
+          python scripts/ops/otclient_p14_independent_runner.py prepare
+          --artifact-root runtime/p14_independent_runner
+
+      - name: Verify on the clean independent runner
+        run: >-
+          python scripts/ops/otclient_p14_independent_runner.py verify
+          --artifact-root runtime/p14_independent_runner
+          --runner-id github-windows-p14
+
+      - name: Verify signed result handoff
+        run: >-
+          python scripts/ops/otclient_p14_independent_runner.py verify-result
+          --artifact-root runtime/p14_independent_runner
+
+      - name: Upload non-promotable contract evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: p14-github-hosted-contract-${{ github.run_id }}
+          path: runtime/p14_independent_runner/*.json
+          if-no-files-found: error
+          retention-days: 7
+
+  self-hosted-artifact-replay:
+    name: Self-hosted Windows signed artifact replay
+    if: github.event_name == 'workflow_dispatch' && inputs.run_self_hosted == true
+    runs-on: [self-hosted, Windows, X64, ctoa-p14]
+    environment:
+      name: p14-independent-runner
+    timeout-minutes: 15
+    env:
+      CTOA_P14_RUNNER_SIGNING_KEY: ${{ secrets.CTOA_P14_RUNNER_SIGNING_KEY }}
+      CTOA_P14_RUNNER_KEY_ID: ${{ vars.CTOA_P14_RUNNER_KEY_ID }}
+
+    steps:
+      - name: Check out clean source without persisted credentials
+        uses: actions/checkout@v4
+        with:
+          clean: true
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install contract dependencies
+        run: python -m pip install pytest "jsonschema>=4.23.0,<5.0.0"
+
+      - name: Validate protected signing material
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          if ([string]::IsNullOrWhiteSpace($env:CTOA_P14_RUNNER_SIGNING_KEY)) {
+            throw "Missing protected CTOA_P14_RUNNER_SIGNING_KEY environment secret."
+          }
+          if ([Text.Encoding]::UTF8.GetByteCount($env:CTOA_P14_RUNNER_SIGNING_KEY) -lt 32) {
+            throw "Protected signing key must contain at least 32 UTF-8 bytes."
+          }
+          if ($env:CTOA_P14_RUNNER_KEY_ID -notmatch '^[a-z0-9][a-z0-9._-]{2,63}$') {
+            throw "Protected CTOA_P14_RUNNER_KEY_ID environment variable is invalid."
+          }
+
+      - name: Derive a safe evidence runner ID
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $normalized = $env:RUNNER_NAME.ToLowerInvariant() -replace '[^a-z0-9._-]', '-'
+          $normalized = $normalized.Trim([char[]]'-_.')
+          if ($normalized.Length -lt 3) {
+            $normalized = "windows-runner"
+          }
+          if ($normalized.Length -gt 59) {
+            $normalized = $normalized.Substring(0, 59)
+          }
+          Add-Content -LiteralPath $env:GITHUB_ENV -Value "CTOA_P14_RUNNER_ID=p14-$normalized"
+
+      - name: Run schema, tamper, and rollback contract tests
+        run: python -m pytest tests/test_otclient_p14_independent_runner.py -q
+
+      - name: Prepare request from the trusted clean checkout
+        run: >-
+          python scripts/ops/otclient_p14_independent_runner.py prepare
+          --artifact-root runtime/p14_independent_runner
+
+      - name: Verify request on the isolated runner
+        run: >-
+          python scripts/ops/otclient_p14_independent_runner.py verify
+          --artifact-root runtime/p14_independent_runner
+          --runner-id ${{ env.CTOA_P14_RUNNER_ID }}
+
+      - name: Verify signed result handoff
+        run: >-
+          python scripts/ops/otclient_p14_independent_runner.py verify-result
+          --artifact-root runtime/p14_independent_runner
+
+      - name: Upload isolated contract evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: p14-self-hosted-contract-${{ github.run_id }}
+          path: runtime/p14_independent_runner/*.json
+          if-no-files-found: error
+          retention-days: 7

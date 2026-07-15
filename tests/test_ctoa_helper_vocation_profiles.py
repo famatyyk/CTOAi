@@ -45,8 +45,9 @@ assert(profiles.detect(player(6, "Elder One")) == "ed")
 assert(profiles.detect(player(2, "Rp One")) == "rp")
 assert(profiles.detect(player(7, "Royal One")) == "rp")
 local candidates = profiles.candidates("ms", player(3, "Master One"))
-assert(candidates[1] == "user_dir/ctoa_otclient/master_one_ctoa_ms_profile.lua")
-assert(candidates[3] == "mods/ctoa_otclient/ctoa_ms_profile.lua")
+assert(candidates[1] == "/ctoa_user_master_one_ctoa_ms_profile.lua")
+assert(candidates[2] == "/ctoa_user_ms_profile.lua")
+assert(candidates[5] == "mods/ctoa_otclient/ctoa_ms_profile.lua")
 assert(profiles.contract().runtime_actions == false)
 """,
         "ctoa_helper_vocation_profiles.lua",
@@ -63,7 +64,7 @@ def test_live_promotion_manifest_includes_vocation_router_and_all_profiles():
         encoding="utf-8"
     )
     package_function = wrapper.split("function Get-DevPackageFiles", 1)[1].split(
-        "function Get-LiveRootFallbackFiles", 1
+        "function Get-LiveLegacyFiles", 1
     )[0]
     for name in (
         "ctoa_helper_vocation_profiles.lua",
@@ -135,7 +136,9 @@ def test_profile_persistence_exports_modules_vocation_and_real_workdir_path():
 
     assert "modules = copyTable(cfg.modules or {})" in source
     assert "vocation = cfg.vocation" in source
-    assert 'work .. "mods/ctoa_otclient/" .. file' in source
+    assert 'return work .. mutableFileName(kind, explicit)' in source
+    assert 'work_dir_suffix = "ctoa_user_ek_profile.lua"' in source
+    assert 'work_dir_suffix = "ctoa_user_ui_prefs.lua"' in source
     assert 'rawget(_G, "CTOA_HELPER_VOCATION_PROFILES")' in helper
     assert 'vocation = tostring(data.vocation or "unknown")' in reporter
     assert 'profile_name = tostring(data.profile_name or "unknown")' in reporter
@@ -149,15 +152,19 @@ def test_profile_persistence_exports_modules_vocation_and_real_workdir_path():
         assert name in wrapper
 
 
-def test_profile_save_path_maps_virtual_resource_to_real_mod_file(tmp_path: Path):
+def test_profile_save_path_maps_packaged_resources_to_mutable_user_files(tmp_path: Path):
     _run_lua(
         tmp_path,
         r'''
 local persistence = dofile(arg[1])
 local path = persistence.resolveSavePath("profile", "ctoa_otclient/ctoa_ms_profile.lua", "C:/client/")
-assert(path == "C:/client/mods/ctoa_otclient/ctoa_ms_profile.lua", path)
+assert(path == "C:/client/ctoa_user_ms_profile.lua", path)
 local userPath = persistence.resolveSavePath("profile", "user_dir/ctoa_otclient/ctoa_ed_profile.lua", "C:/client")
-assert(userPath == "C:/client/mods/ctoa_otclient/ctoa_ed_profile.lua", userPath)
+assert(userPath == "C:/client/ctoa_user_ed_profile.lua", userPath)
+local characterPath = persistence.resolveSavePath("profile", "/ctoa_user_master_one_ctoa_ms_profile.lua", "C:/client")
+assert(characterPath == "C:/client/ctoa_user_master_one_ctoa_ms_profile.lua", characterPath)
+local prefsPath = persistence.resolveSavePath("ui_prefs", "mods/ctoa_otclient/ctoa_ui_prefs.lua", "C:/client")
+assert(prefsPath == "C:/client/ctoa_user_ui_prefs.lua", prefsPath)
 local exported = persistence.exportProfile({vocation="rp", modules={healing=true}, tools={}, healing={}}, "RP")
 assert(exported.vocation == "rp" and exported.modules.healing == true)
 ''',

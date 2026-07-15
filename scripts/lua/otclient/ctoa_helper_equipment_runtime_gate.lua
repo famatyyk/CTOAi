@@ -82,6 +82,11 @@ function EquipmentRuntimeGate.evaluate(input)
     if not sourceContainer or sourceContainer < 0 or not rollbackContainer or rollbackContainer ~= sourceContainer then
         Gate.block(trace, "rollback_container_snapshot_mismatch")
     end
+    local sourceSlot = integer(data.candidate_source_slot_index)
+    local rollbackSlot = integer(data.rollback_destination_slot_index)
+    if not sourceSlot or sourceSlot < 1 or not rollbackSlot or rollbackSlot ~= sourceSlot then
+        Gate.block(trace, "rollback_container_slot_snapshot_mismatch")
+    end
     local inventoryRevision = tostring(data.inventory_revision or "")
     if inventoryRevision == "" or tostring(data.rollback_inventory_revision or "") ~= inventoryRevision then
         Gate.block(trace, "rollback_inventory_revision_mismatch")

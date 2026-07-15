@@ -59,7 +59,7 @@ local OPTION_LISTS = {
     hotkey = {"F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12"},
     rune_name = {"Sudden Death Rune", "Avalanche Rune", "Great Fireball Rune", "Stone Shower Rune", "Thunderstorm Rune"},
     sio_spell = {"exura sio", "exura gran sio"},
-    heal_friend_priority = {"lowest_hp", "whitelist_order"},
+    heal_friend_priority = {"single_exact_target"},
     magic_priority = {"rotation", "rune"},
     ui_hotkey = {"Ctrl+J", "Ctrl+K", "Ctrl+L", "Ctrl+H", "F1", "F2", "F3", "F4", "F5", "F6"},
     theme_preset = {"classic", "graphite", "amber", "emerald"},
@@ -153,6 +153,7 @@ local KEY_ORDERS = {
         "cooldown_ms",
         "action_lock_ms",
         "friend_whitelist",
+        "friend_target_id",
         "priority",
         "require_whitelist",
         "pz_safe",
@@ -187,6 +188,7 @@ local KEY_ORDERS = {
         "observe_slots",
         "ring_swap",
         "amulet_swap",
+        "family_enabled",
         "weapon_set",
         "pvp_gear_lock",
         "hp_threshold",
@@ -287,7 +289,17 @@ local KEY_ORDERS = {
     rotation = {"words", "min_nearby", "cooldown_ms", "max_nearby", "scan_range"},
     heal_spell = {"threshold", "spell"},
     waypoint = {"x", "y", "z", "label"},
+    family_enabled = {"ring_primary", "ring_secondary"},
     feature_flags = {"diagnostics", "experimental_cavebot", "experimental_loot", "experimental_combat"},
+}
+
+local PROFILE_EXPORT_SECTION_ORDER = {
+    "healing",
+    "heal_friend",
+    "conditions",
+    "equipment",
+    "scripting",
+    "tools",
 }
 
 local function copyList(values)
@@ -400,6 +412,44 @@ local function shortValue(value, maxLen)
     return string.sub(text, 1, math.max(1, limit - 1)) .. "~"
 end
 
+function ProfileSchema.displayProfileName(profileName, shortener)
+    local name = tostring(profileName or "EK profile")
+    if string.find(name, "monk") then
+        return "EK monk profile"
+    end
+    if string.find(name, "CTOAI EK:") then
+        return "CTOAI EK profile"
+    end
+    if type(shortener) == "function" then
+        local ok, text = pcall(shortener, name, 22)
+        if ok and type(text) == "string" and text ~= "" then
+            return text
+        end
+    end
+    return shortValue(name, 22)
+end
+
+function ProfileSchema.profileSchemaValue(functionName, fallback, ...)
+    local callback = rawget(ProfileSchema, tostring(functionName or ""))
+    if type(callback) == "function" and
+        callback ~= ProfileSchema.profileSchemaValue and
+        callback ~= ProfileSchema.profileSchemaTable then
+        local ok, value = pcall(callback, ...)
+        if ok and value ~= nil then
+            return value
+        end
+    end
+    return fallback
+end
+
+function ProfileSchema.profileSchemaTable(functionName, fallback, ...)
+    local value = ProfileSchema.profileSchemaValue(functionName, fallback, ...)
+    if type(value) == "table" then
+        return value
+    end
+    return type(fallback) == "table" and fallback or {}
+end
+
 function ProfileSchema.requiredSections()
     return copyList(REQUIRED_SECTIONS)
 end
@@ -422,6 +472,20 @@ end
 
 function ProfileSchema.keyOrder(key)
     return copyList(KEY_ORDERS[tostring(key or "")] or {})
+end
+
+function ProfileSchema.profileExportDescriptors()
+    local descriptors = {}
+    for index, sectionName in ipairs(PROFILE_EXPORT_SECTION_ORDER) do
+        descriptors[index] = {
+            id = sectionName,
+            source = sectionName,
+            output = sectionName,
+            fields = copyList(KEY_ORDERS[sectionName] or {}),
+            generated = true,
+        }
+    end
+    return descriptors
 end
 
 function ProfileSchema.valueIndex(options, current)
@@ -683,6 +747,14 @@ function ProfileSchema.rotationPresetLabel(presets, presetId)
     return id
 end
 
+function ProfileSchema.rotationPresetFormatter(presets)
+    return function(value)
+        local fallback = tostring(value)
+        local label = ProfileSchema.rotationPresetLabel(presets, value)
+        return type(label) == "string" and label ~= "" and label or fallback
+    end
+end
+
 function ProfileSchema.rotationSummary(spells, helpers)
     helpers = helpers or {}
     local spellText = helpers.spellText or tostring
@@ -710,6 +782,11 @@ function ProfileSchema.rotationSummary(spells, helpers)
         return "Rotation: no spells"
     end
     return "Rotation: " .. shortText(table.concat(pieces, " | "), 52)
+end
+
+function ProfileSchema.rotationSummaryText(tools, helpers)
+    local cfg = type(tools) == "table" and tools or {}
+    return ProfileSchema.rotationSummary(cfg.rotation_spells or {}, helpers or {})
 end
 
 function ProfileSchema.spellLabel(value, helpers)
@@ -756,10 +833,10 @@ function ProfileSchema.runeLabel(value, helpers)
 end
 
 function ProfileSchema.healFriendPriorityLabel(value)
-    if value == "whitelist_order" then
-        return "Whitelist"
+    if value == "single_exact_target" then
+        return "Exact target"
     end
-    return "Lowest HP"
+    return "Blocked"
 end
 
 function ProfileSchema.magicPriorityLabel(value)
@@ -794,14 +871,20 @@ function ProfileSchema.contract()
         owns_versioned_migration_plan = true,
         owns_safe_profile_migration = true,
         owns_key_order_metadata = true,
+        owns_profile_export_descriptors = true,
         owns_merge_table = true,
         owns_lua_serializer = true,
+        owns_display_profile_name = true,
+        owns_schema_value_bridge = true,
+        owns_schema_table_bridge = true,
         owns_rotation_metadata = true,
         owns_profile_labels = true,
         owns_profile_summaries = true,
         owns_title_summary = true,
         owns_healing_summary = true,
         owns_rotation_summary = true,
+        owns_rotation_preset_formatter = true,
+        owns_rotation_summary_text = true,
         runtime_actions = false,
         loads_files = false,
         saves_files = false,

@@ -62,12 +62,14 @@ PIN_LOAD_STATUSES = {
     "unreadable",
 }
 ROOT_MANIFEST_FILES = {
+    "ctoa_project_loader.lua",
     "ctoa_otclient_loader.lua",
     "ctoa_ek_profile.lua",
     "ctoa_ms_profile.lua",
     "ctoa_ed_profile.lua",
     "ctoa_rp_profile.lua",
 }
+ALLOWED_MANIFEST_MODULES = {"ctoa_chooser", "ctoa_otclient", "ctoa_safe"}
 PROFILE_RUNTIME_PATHS = {
     "mods/ctoa_otclient/ctoa_ek_profile.lua",
     "mods/ctoa_otclient/ctoa_ms_profile.lua",
@@ -128,7 +130,7 @@ def _manifest_relative_path(value: object) -> Path | None:
     if (
         len(pure.parts) == 3
         and pure.parts[0] == "mods"
-        and pure.parts[1] == "ctoa_otclient"
+        and pure.parts[1] in ALLOWED_MANIFEST_MODULES
         and pure.parts[2]
     ):
         return Path(*pure.parts)

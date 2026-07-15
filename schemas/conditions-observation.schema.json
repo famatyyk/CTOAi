@@ -39,7 +39,7 @@
     "online": {"enum": ["online", "offline", "unknown"]},
     "alive": {"enum": ["alive", "dead", "unknown"]},
     "protection_zone": {"enum": ["outside", "inside", "unknown"]},
-    "protection_zone_source": {"enum": ["player_method", "unavailable"]},
+    "protection_zone_source": {"enum": ["player_method", "player_states", "unavailable"]},
     "condition_id": {"const": "paralyze"},
     "condition_state": {"enum": ["present", "absent", "unknown"]},
     "cooldown": {"enum": ["ready", "active", "unknown"]},

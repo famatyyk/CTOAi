@@ -156,6 +156,7 @@ PASSIVE_MODULES = [
             "hasApi",
             "apiText",
             "valueText",
+            "vocationProbeText",
             "apiSnapshotText",
             "apiProbeSnapshot",
             "apiProbeText",
@@ -256,7 +257,7 @@ PASSIVE_MODULES = [
         "file": "ctoa_helper_timer_runtime.lua",
         "global": "CTOA_HELPER_TIMER_RUNTIME",
         "lane_id": "",
-        "required_functions": ["plan", "summary", "dispatch", "contract"],
+        "required_functions": ["plan", "summary", "probeSummary", "dispatch", "contract"],
     },
     {
         "id": "recovery_runtime",
@@ -485,7 +486,7 @@ PASSIVE_MODULES = [
         "file": "ctoa_helper_heal_friend.lua",
         "global": "CTOA_HELPER_HEAL_FRIEND",
         "lane_id": "heal_friend",
-        "required_functions": ["whitelistContainsName", "scan", "observe", "plan", "statusText", "decisionText", "summary", "contract"],
+        "required_functions": ["whitelistContainsName", "scan", "observe", "executeOnceObservation", "plan", "statusText", "decisionText", "summary", "contract"],
     },
 ]
 

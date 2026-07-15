@@ -90,6 +90,10 @@ function VocationProfiles.candidates(profileId, player)
     local character = VocationProfiles.characterName(player)
     local result = {}
     if character ~= "" then
+        result[#result + 1] = "/ctoa_user_" .. character .. "_" .. file
+    end
+    result[#result + 1] = "/ctoa_user_" .. file:gsub("^ctoa_", "")
+    if character ~= "" then
         result[#result + 1] = "user_dir/ctoa_otclient/" .. character .. "_" .. file
     end
     result[#result + 1] = "user_dir/ctoa_otclient/" .. file

@@ -240,6 +240,22 @@ and absence of `castSpell`, actionbar sends, `g_game.talk`, `g_game.move`,
 `moveTo`, item use, or inventory-use calls in the Equipment observer slice. It
 does not launch, stop, move gear, use items, or overwrite any client.
 
+Validate the passive P10 operational boundary with three separate repo-only
+checks:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action EquipmentShadowSnapshotStaticSmoke
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action EquipmentShadowReplayStaticSmoke
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action EquipmentShadowAcceptanceStaticSmoke
+```
+
+The snapshot check consumes only sanitized `background_status.json` plus the
+explicit capture profile. The replay check rejects fixture provenance and
+noncanonical paths in operational mode. The acceptance check is a no-write
+preflight and must remain blocked until current accepted P9 evidence and exact
+ring/container IDs are present. None of these checks enables runtime readiness,
+dispatch, item movement, or live promotion.
+
 Run the static Scripting policy contract before enabling any command model,
 snippet, or runtime eval path:
 

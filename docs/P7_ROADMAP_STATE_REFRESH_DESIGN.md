@@ -1,23 +1,24 @@
 # P7 Roadmap State Refresh Design
 
-Status: `design_only`; the action and MCP tool are not enabled.
+Status: `implemented_cli_only_confirmed_refresh_complete`; the MCP tool is not
+enabled and Control Center remains read-only.
 
 ## Selection
 
 - Action ID: `roadmap-state-refresh`
-- Proposed MCP tool: `ctoai_roadmap_state_refresh`
+- Proposed MCP tool: `ctoai_roadmap_state_refresh` (not implemented or enabled)
 - Risk class: `safe_write`
 - Purpose: derive one machine-readable roadmap state from existing generated
   manifests and evidence, reducing drift between `Current State`, `Now`, and
   `Next` without editing hand-authored roadmap policy.
 
-Exactly this one action is selected for the next P7 design lane. Deploy, live
-client, promotion, arbitrary command, and arbitrary path actions remain outside
-the plugin surface.
+Exactly this one CLI action is implemented for the bounded P13 lane. Deploy,
+live client, promotion, arbitrary command, and arbitrary path actions remain
+outside both the CLI and plugin surfaces.
 
 ## Bounded Write Contract
 
-The future implementation may write only:
+The implemented CLI may write only:
 
 - `AI/generated/ROADMAP_STATE.json`
 - `AI/generated/ROADMAP_STATE.md`
@@ -27,6 +28,10 @@ Inputs are fixed to `AI/FEATURE_ROADMAP.md`, `AI/generated/manifest.json`,
 `AI/generated/P7_OPERATOR_BRIEF.json`, and bounded Helper/Control Center
 evidence summaries. It must not read `.env`, auth stores, logs, databases,
 arbitrary runtime files, or paths supplied by a caller.
+
+The versioned registry and both JSON Schema contracts are independently pinned
+by raw SHA-256 in the generator. Same-version semantic mutation therefore fails
+closed even before the first `ROADMAP_STATE.json` baseline exists.
 
 ## Dry Run And Confirmation
 
@@ -48,29 +53,35 @@ No deploy or live-client command may be returned as `next_command`.
 
 ## Control Center Gate
 
-Control Center remains read-only for this candidate until all contract tests
-pass and at least one current dry-run audit record is reviewed. Before
-enablement it may display only `design_only`, missing gates, proposed outputs,
-and the dry-run command. The action button and MCP write tool count must remain
-unchanged.
+Control Center consumes only the fixed JSON artifact. It validates the state
+hash and authority boundary, displays the seven terminal ledger entries, and
+checks confirmed audit binding separately from freshness and tamper status.
+There is no refresh button or command in the evidence model. The MCP write tool
+count remains unchanged.
 
-## Required Tests Before Enablement
+## Implemented Tests
 
 - schema and fixed-input parsing;
+- first-generation registry/schema hash-pin tamper rejection;
 - output path confinement and symlink rejection;
 - dry-run produces zero artifact writes;
 - exact confirmation rejection/acceptance;
 - cockpit preflight failure is fail-closed;
 - atomic JSON/Markdown output parity;
 - sanitized audit record on dry-run, confirmed success, and failure;
-- MCP schema rejects arbitrary command/path fields;
-- Control Center evidence and detail views show `design_only` without an action
-  button;
+- CLI rejects arbitrary command/path fields and exposes no caller-selected
+  source or output path;
+- Control Center evidence and detail views remain read-only without an action
+  button or command;
 - regression proof that active safe-write tool count remains five until a
   separate reviewed enablement change.
 
 ## Enablement Boundary
 
-Implementation, dry-run evidence, Control Center UI exposure, and MCP
-enablement are separate future changes. This design alone does not authorize or
-enable `ctoai_roadmap_state_refresh`.
+Implementation, dry-run evidence, confirmed fixed-output generation, and MCP
+enablement remain separate authorities. The CLI implementation and read-only UI
+do not authorize or enable `ctoai_roadmap_state_refresh`. The real dry-run wrote
+only its sanitized audit record; the later exact confirmation
+`refresh roadmap state` authorized the fixed JSON/Markdown outputs and a
+hash-bound confirmed audit record. No MCP, runtime, P12 reopening, or live
+authority follows.

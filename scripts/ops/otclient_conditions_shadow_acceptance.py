@@ -197,8 +197,8 @@ def _ordered_blockers(values: Iterable[str]) -> list[str]:
 
 
 def _same_path(left: Path, right: Path) -> bool:
-    return os.path.normcase(str(left.resolve(strict=False))) == os.path.normcase(
-        str(right.resolve(strict=False))
+    return os.path.normcase(os.path.abspath(left)) == os.path.normcase(
+        os.path.abspath(right)
     )
 
 
@@ -238,16 +238,18 @@ def _path_has_reparse_component(path: Path, boundary: Path) -> bool:
 def _validate_output_path(path: Path) -> Path:
     if not _same_path(path, DEFAULT_OUTPUT):
         raise ValueError(f"JSON output must equal {DEFAULT_OUTPUT}")
-    if not _is_within(path, RUNTIME_ROOT):
-        raise ValueError(f"JSON output must stay under {RUNTIME_ROOT}")
     if _path_has_reparse_component(path.parent, RUNTIME_ROOT.parent):
         raise ValueError("JSON output ancestors must not contain reparse points")
     try:
         metadata = path.lstat()
     except FileNotFoundError:
-        return path.resolve(strict=False)
-    if stat.S_ISLNK(metadata.st_mode) or not stat.S_ISREG(metadata.st_mode):
+        metadata = None
+    if metadata is not None and (
+        stat.S_ISLNK(metadata.st_mode) or not stat.S_ISREG(metadata.st_mode)
+    ):
         raise ValueError("JSON output must be a regular non-link file")
+    if not _is_within(path, RUNTIME_ROOT):
+        raise ValueError(f"JSON output must stay under {RUNTIME_ROOT}")
     return path.resolve(strict=False)
 
 

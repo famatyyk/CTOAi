@@ -1,0 +1,199 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ctoa.local/schemas/equipment-operator-readiness.schema.json",
+  "title": "CTOAi P10 Equipment Operator Readiness v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "mode",
+    "generated_at_unix_ms",
+    "status",
+    "operator_inputs_ready",
+    "inputs",
+    "input_sha256",
+    "canonical_input_sha256",
+    "blocker_counts",
+    "blockers",
+    "blocker_details",
+    "next_actions",
+    "eligibility_changed",
+    "eligibility_state",
+    "operational_readiness_claimed",
+    "operator_review_required",
+    "repo_report_write_only",
+    "live_file_writes",
+    "dispatch_allowed",
+    "runtime_actions",
+    "executes_plan",
+    "execute_once_allowed",
+    "promotion_allowed",
+    "intrusive_actions_performed"
+  ],
+  "properties": {
+    "schema_version": {"const": "ctoa.equipment-operator-readiness.v1"},
+    "mode": {"const": "repo_only_operator_explain"},
+    "generated_at_unix_ms": {"type": "integer", "minimum": 1},
+    "status": {"enum": ["operator_inputs_ready", "blocked"]},
+    "operator_inputs_ready": {"type": "boolean"},
+    "inputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["capture_doctor", "observation_preview", "dependency_preflight", "candidate_catalog", "change_plan"],
+      "properties": {
+        "capture_doctor": {"$ref": "#/$defs/inputSummary"},
+        "observation_preview": {"$ref": "#/$defs/inputSummary"},
+        "dependency_preflight": {"$ref": "#/$defs/inputSummary"},
+        "candidate_catalog": {"$ref": "#/$defs/inputSummary"},
+        "change_plan": {"$ref": "#/$defs/inputSummary"}
+      }
+    },
+    "input_sha256": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["capture_doctor", "observation_preview", "dependency_preflight", "candidate_catalog", "change_plan"],
+      "properties": {
+        "capture_doctor": {"$ref": "#/$defs/sha256"},
+        "observation_preview": {"$ref": "#/$defs/sha256"},
+        "dependency_preflight": {"$ref": "#/$defs/sha256"},
+        "candidate_catalog": {"$ref": "#/$defs/sha256"},
+        "change_plan": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "canonical_input_sha256": {"$ref": "#/$defs/nonZeroSha256"},
+    "blocker_counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["missing", "invalid", "stale", "upstream", "total"],
+      "properties": {
+        "missing": {"type": "integer", "minimum": 0, "maximum": 5},
+        "invalid": {"type": "integer", "minimum": 0, "maximum": 5},
+        "stale": {"type": "integer", "minimum": 0, "maximum": 5},
+        "upstream": {"type": "integer", "minimum": 0, "maximum": 5},
+        "total": {"type": "integer", "minimum": 0, "maximum": 5}
+      }
+    },
+    "blockers": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/blockerCode"}
+    },
+    "blocker_details": {
+      "type": "array",
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "category", "source", "upstream_blockers"],
+        "properties": {
+          "code": {"$ref": "#/$defs/blockerCode"},
+          "category": {"$ref": "#/$defs/category"},
+          "source": {"$ref": "#/$defs/source"},
+          "upstream_blockers": {"$ref": "#/$defs/upstreamBlockers"}
+        }
+      }
+    },
+    "next_actions": {
+      "type": "array",
+      "maxItems": 7,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["order", "source", "category", "command", "instruction", "changes_eligibility", "action_scope"],
+        "properties": {
+          "order": {"type": "integer", "minimum": 1, "maximum": 7},
+          "source": {"enum": ["capture_doctor", "observation_preview", "dependency_preflight", "candidate_catalog", "change_plan", "p9_chain"]},
+          "category": {"$ref": "#/$defs/category"},
+          "command": {
+            "enum": [
+              ".\\ctoa.ps1 otp9",
+              ".\\ctoa.ps1 otp9accept \"accept P9 conditions shadow\"",
+              ".\\ctoa.ps1 otp10doctor",
+              ".\\ctoa.ps1 otp10preview",
+              ".\\ctoa.ps1 otp10preflight",
+              ".\\ctoa.ps1 otp10catalog",
+              ".\\ctoa.ps1 otp10plan"
+            ]
+          },
+          "instruction": {"type": "string", "minLength": 1, "maxLength": 256},
+          "changes_eligibility": {"const": false},
+          "action_scope": {"enum": ["passive_or_repo_only", "repo_only_review"]}
+        }
+      }
+    },
+    "eligibility_changed": {"const": false},
+    "eligibility_state": {"const": "unchanged"},
+    "operational_readiness_claimed": {"const": false},
+    "operator_review_required": {"const": true},
+    "repo_report_write_only": {"const": true},
+    "live_file_writes": {"const": false},
+    "dispatch_allowed": {"const": false},
+    "runtime_actions": {"const": false},
+    "executes_plan": {"const": false},
+    "execute_once_allowed": {"const": false},
+    "promotion_allowed": {"const": false},
+    "intrusive_actions_performed": {"const": []}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "nonZeroSha256": {"type": "string", "pattern": "^(?!0{64}$)[0-9a-f]{64}$"},
+    "category": {"enum": ["missing", "invalid", "stale", "upstream"]},
+    "source": {"enum": ["capture_doctor", "observation_preview", "dependency_preflight", "candidate_catalog", "change_plan"]},
+    "blockerCode": {
+      "enum": [
+        "capture_doctor_missing", "capture_doctor_invalid", "capture_doctor_stale", "capture_doctor_upstream",
+        "observation_preview_missing", "observation_preview_invalid", "observation_preview_stale", "observation_preview_upstream",
+        "dependency_preflight_missing", "dependency_preflight_invalid", "dependency_preflight_stale", "dependency_preflight_upstream",
+        "candidate_catalog_missing", "candidate_catalog_invalid", "candidate_catalog_stale", "candidate_catalog_upstream",
+        "change_plan_missing", "change_plan_invalid", "change_plan_stale", "change_plan_upstream"
+      ]
+    },
+    "upstreamBlockers": {
+      "type": "array",
+      "uniqueItems": true,
+      "maxItems": 256,
+      "items": {"type": "string", "pattern": "^[a-z0-9_]+$", "maxLength": 128}
+    },
+    "inputSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "load_status", "schema_version", "expected_schema_version", "sha256", "valid", "ready", "fresh", "age_ms", "upstream_blockers"],
+      "properties": {
+        "path": {"type": "string", "pattern": "^runtime/solteria_helper_dev/[a-z0-9_]+\\.json$"},
+        "load_status": {"enum": ["loaded", "missing", "malformed", "duplicate_keys", "oversize", "symlink_rejected", "not_regular", "unreadable", "not_object"]},
+        "schema_version": {"type": ["string", "null"]},
+        "expected_schema_version": {"type": "string", "minLength": 1},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "valid": {"type": "boolean"},
+        "ready": {"type": "boolean"},
+        "fresh": {"type": "boolean"},
+        "age_ms": {"type": ["integer", "null"]},
+        "upstream_blockers": {"$ref": "#/$defs/upstreamBlockers"}
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"status": {"const": "operator_inputs_ready"}}},
+      "then": {
+        "properties": {
+          "operator_inputs_ready": {"const": true},
+          "blockers": {"maxItems": 0},
+          "blocker_details": {"maxItems": 0},
+          "next_actions": {"maxItems": 0}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"status": {"const": "blocked"}}},
+      "then": {
+        "properties": {
+          "operator_inputs_ready": {"const": false},
+          "blockers": {"minItems": 1},
+          "blocker_details": {"minItems": 1},
+          "next_actions": {"minItems": 1}
+        }
+      }
+    }
+  ]
+}

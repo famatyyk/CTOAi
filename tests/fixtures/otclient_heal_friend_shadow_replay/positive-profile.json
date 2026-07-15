@@ -1,0 +1,33 @@
+{
+  "schema_version": "ctoa.heal-friend-shadow-profile.v1",
+  "mode": "shadow_only",
+  "action": "plan_sio",
+  "spell": "exura sio",
+  "selection_policy": "single_exact_target",
+  "whitelist": [
+    {
+      "target_id": 424242,
+      "target_name": "fixture ally"
+    }
+  ],
+  "whitelist_revision": "15648e2d2f6695035e40307c6b453d08df688847b5ae0f742cb2b7a5ee9d43b3",
+  "hp_threshold": 70,
+  "max_range": 7,
+  "max_observation_age_ms": 6000,
+  "max_party_age_ms": 6000,
+  "cooldown_required": "ready",
+  "retry_budget": 0,
+  "requires_p9_acceptance": true,
+  "requires_p10_acceptance": true,
+  "require_party_membership": true,
+  "prohibit_self": true,
+  "require_visible": true,
+  "require_same_floor": true,
+  "dispatch_allowed": false,
+  "runtime_actions": false,
+  "executes_plan": false,
+  "execute_once_allowed": false,
+  "promotion_allowed": false,
+  "casts": false,
+  "talks": false
+}

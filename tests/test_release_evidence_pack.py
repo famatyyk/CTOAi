@@ -74,6 +74,158 @@ def _background_payload(generated_at: str) -> dict[str, object]:
     }
 
 
+def _write_p10_payload(module, path: Path, payload: dict[str, object]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(
+        module.equipment_operator_readiness.documents.canonical_bytes(payload) + b"\n"
+    )
+
+
+def _write_blocked_p10_chain(module, helper_dev_dir: Path, now_ms: int) -> None:
+    readiness = module.equipment_operator_readiness
+    documents = readiness.documents
+    preview = readiness.observation_preview
+    dependency = readiness.dependency_preflight
+    catalog = readiness.candidate_catalog
+    change_plan = readiness.change_plan
+
+    observation = {
+        "status": "valid",
+        "present": True,
+        "valid": True,
+        "schema_version": preview.OBSERVATION_SCHEMA,
+        "observed_at_unix_ms": now_ms - 1_000,
+        "observation_id": "equipment-release-evidence-1",
+        "online": "online",
+        "alive": "alive",
+        "protection_zone": "outside",
+        "protection_zone_source": "player_method",
+        "inventory_api_available": True,
+        "containers_complete": True,
+        "ring": {"present": True, "item_id": 3051, "count": 1},
+        "candidates": [
+            {"container_id": 2, "slot_index": 1, "item_id": 3048, "count": 1}
+        ],
+        "cooldown": "ready",
+        "cooldown_source": "game_cooldown_group",
+        "producer_source": "otclient_guarded_adapter",
+        "dispatch_allowed": False,
+        "runtime_actions": False,
+        "executes_plan": False,
+        "execute_once_allowed": False,
+        "promotion_allowed": False,
+        "validation_errors": [],
+        "p10_blocker": None,
+    }
+    background = {
+        "schema_version": preview.BACKGROUND_SCHEMA,
+        "mode": "background_no_screen",
+        "status": "blocked",
+        "advisory_only": True,
+        "safe_to_run_while_playing": True,
+        "dispatch_allowed": False,
+        "runtime_actions": False,
+        "promotion_allowed": False,
+        "intrusive_actions_performed": [],
+        "interaction_contract": dict(preview.INTERACTION_CONTRACT),
+        "wrapper_invariants": {
+            "client_process_stable": True,
+            "screenshot_count_stable": True,
+        },
+        "capability": {
+            "fresh": True,
+            "contract_valid": True,
+            "version_match": True,
+            "runtime_actions": False,
+            "runtime_core_actions": False,
+            "equipment_shadow_observation": observation,
+        },
+        "blockers": ["waiting_for_p8_refresh"],
+    }
+    background_path = helper_dev_dir / "background_status.json"
+    _write_p10_payload(module, background_path, background)
+    background_document = documents.read_document(background_path)
+
+    doctor = {
+        "schema_version": "ctoa.equipment-capture-profile-doctor.v1",
+        "status": "ready",
+        "source": "local_operator_override",
+        "path": str(
+            ROOT / ".ctoa-local" / "otclient" / "equipment-shadow-capture-profile.json"
+        ),
+        "sha256": "a" * 64,
+        "configured_by_operator": True,
+        "slot": "ring",
+        "identifiers_present": True,
+        "candidate_slot_index_valid": True,
+        "no_action_contract": True,
+        "blockers": [],
+        "next_action": "Run the separate P10 dependency preflight.",
+        "runtime_actions": False,
+        "live_file_writes": False,
+        "runtime_readiness_claimed": False,
+    }
+    doctor_path = helper_dev_dir / "equipment_capture_profile_doctor.json"
+    _write_p10_payload(module, doctor_path, doctor)
+    doctor_document = documents.read_document(doctor_path)
+
+    preview_payload = preview.build_preview(
+        background=background_document,
+        generated_at_unix_ms=now_ms,
+    )
+    preview_path = helper_dev_dir / "equipment_observation_preview.json"
+    _write_p10_payload(module, preview_path, preview_payload)
+    preview_document = documents.read_document(preview_path)
+
+    missing = documents.document_from_payload(None, "missing")
+    dependency_payload = dependency.evaluate_preflight(
+        dependency.EvidenceBundle(
+            p8_report=background_document,
+            p9_report=missing,
+            p9_receipt=missing,
+            capture_doctor=doctor_document,
+            observation_preview=preview_document,
+        ),
+        evaluated_at_unix_ms=now_ms,
+    )
+    dependency_path = helper_dev_dir / "equipment_dependency_preflight.json"
+    _write_p10_payload(module, dependency_path, dependency_payload)
+
+    catalog_payload = catalog.build_catalog(
+        preview_document=preview_document,
+        generated_at_unix_ms=now_ms,
+    )
+    catalog_path = helper_dev_dir / "equipment_candidate_catalog.json"
+    _write_p10_payload(module, catalog_path, catalog_payload)
+
+    plan_payload = change_plan.evaluate_change_plan(
+        change_plan.CanonicalInputs(
+            capture_doctor=doctor_document,
+            observation_preview=preview_document,
+        ),
+        generated_at_unix_ms=now_ms,
+    )
+    plan_path = helper_dev_dir / "equipment_capture_profile_change_plan.json"
+    _write_p10_payload(module, plan_path, plan_payload)
+
+    source_documents = {
+        "capture_doctor": documents.read_document(doctor_path),
+        "observation_preview": documents.read_document(preview_path),
+        "dependency_preflight": documents.read_document(dependency_path),
+        "candidate_catalog": documents.read_document(catalog_path),
+        "change_plan": documents.read_document(plan_path),
+    }
+    readiness_payload = readiness.evaluate_readiness(
+        source_documents,
+        generated_at_unix_ms=now_ms,
+    )
+    _write_p10_payload(
+        module,
+        helper_dev_dir / "equipment_operator_readiness.json",
+        readiness_payload,
+    )
+
+
 def test_build_evidence_pack_handles_missing_artifacts(tmp_path: Path):
     module = _load_module()
 
@@ -94,6 +246,26 @@ def test_build_evidence_pack_handles_missing_artifacts(tmp_path: Path):
     assert pack["otclient_helper"]["background_status"]["status"] == "missing"
     assert pack["otclient_helper"]["background_status"]["contract_valid"] is False
     assert pack["otclient_helper"]["background_status"]["fresh"] is False
+    equipment_operator = pack["otclient_helper"]["equipment_operator_readiness"]
+    assert (
+        equipment_operator["schema_version"]
+        == module.P10_EQUIPMENT_CONSUMER_PARITY_SCHEMA
+    )
+    assert equipment_operator["status"] == "missing"
+    assert equipment_operator["reported_status"] == "missing"
+    assert equipment_operator["contract_valid"] is False
+    assert equipment_operator["operator_inputs_ready"] is False
+    assert equipment_operator["eligibility_changed"] is False
+    assert equipment_operator["eligibility_state"] == "unchanged"
+    assert equipment_operator["acceptance_granted"] is False
+    assert equipment_operator["read_only"] is True
+    assert set(equipment_operator["artifacts"]) == set(
+        module.EQUIPMENT_OPERATOR_ARTIFACT_FILES
+    )
+    assert all(
+        artifact["status"] == "missing"
+        for artifact in equipment_operator["artifacts"].values()
+    )
     assert pack["p7_operator_brief"]["status"] == "missing"
     assert pack["p7_operator_brief"]["roadmap_generation"]["status"] == "missing"
     assert (
@@ -102,6 +274,157 @@ def test_build_evidence_pack_handles_missing_artifacts(tmp_path: Path):
     )
     assert any("repo hygiene" in item.lower() for item in pack["recommendations"])
     assert any("api_cost_report" in item for item in pack["recommendations"])
+
+
+def test_p10_equipment_readiness_projects_strict_read_only_blocked_chain(
+    tmp_path: Path,
+):
+    module = _load_module()
+    helper_dev_dir = tmp_path / "runtime" / "solteria_helper_dev"
+    now = dt.datetime(2026, 7, 12, 12, 0, tzinfo=dt.UTC)
+    now_ms = int(now.timestamp() * 1_000)
+    _write_blocked_p10_chain(module, helper_dev_dir, now_ms)
+
+    summary = module._equipment_operator_readiness_summary(
+        helper_dev_dir,
+        helper_dir_safe=True,
+        now=now,
+    )
+
+    assert summary["status"] == "blocked"
+    assert summary["schema_version"] == module.P10_EQUIPMENT_CONSUMER_PARITY_SCHEMA
+    assert summary["reported_status"] == "blocked"
+    assert summary["contract_valid"] is True
+    assert summary["fresh"] is True
+    assert summary["operator_inputs_ready"] is False
+    assert summary["eligibility_changed"] is False
+    assert summary["eligibility_state"] == "unchanged"
+    assert summary["acceptance_granted"] is False
+    assert summary["operational_readiness_claimed"] is False
+    assert summary["read_only"] is True
+    assert summary["blockers"]
+    assert summary["next_actions"]
+    assert all(
+        action["changes_eligibility"] is False for action in summary["next_actions"]
+    )
+    assert all(
+        summary[key] is False
+        for key in (
+            "live_file_writes",
+            "dispatch_allowed",
+            "runtime_actions",
+            "executes_plan",
+            "execute_once_allowed",
+            "promotion_allowed",
+        )
+    )
+    assert summary["intrusive_actions_performed"] == []
+    assert set(summary["artifacts"]) == set(module.EQUIPMENT_OPERATOR_ARTIFACT_FILES)
+    for artifact, projection in summary["artifacts"].items():
+        assert projection["path"] == (
+            "runtime/solteria_helper_dev/"
+            + module.EQUIPMENT_OPERATOR_ARTIFACT_FILES[artifact]
+        )
+        assert projection["load_status"] == "loaded"
+        assert (
+            projection["schema_version"]
+            == (module.EQUIPMENT_OPERATOR_EXPECTED_SCHEMAS[artifact])
+        )
+        assert len(projection["sha256"]) == 64
+        assert projection["contract_valid"] is True
+        assert projection["fresh"] is True
+
+
+@pytest.mark.parametrize(
+    ("artifact", "mutation"),
+    [
+        ("equipment_capture_profile_doctor", "schema"),
+        ("equipment_observation_preview", "status"),
+        ("equipment_candidate_catalog", "hash"),
+        ("equipment_capture_profile_change_plan", "path"),
+        ("equipment_dependency_preflight", "no_action"),
+    ],
+)
+def test_p10_equipment_readiness_rejects_schema_status_hash_path_and_action_tamper(
+    tmp_path: Path,
+    artifact: str,
+    mutation: str,
+):
+    module = _load_module()
+    helper_dev_dir = tmp_path / "runtime" / "solteria_helper_dev"
+    now = dt.datetime(2026, 7, 12, 12, 0, tzinfo=dt.UTC)
+    now_ms = int(now.timestamp() * 1_000)
+    _write_blocked_p10_chain(module, helper_dev_dir, now_ms)
+    path = helper_dev_dir / module.EQUIPMENT_OPERATOR_ARTIFACT_FILES[artifact]
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if mutation == "schema":
+        payload["schema_version"] = "ctoa.equipment-capture-profile-doctor.v2"
+    elif mutation == "status":
+        payload["status"] = "ready_to_dispatch"
+    elif mutation == "hash":
+        payload["preview_sha256"] = "f" * 64
+    elif mutation == "path":
+        payload["sources"]["capture_doctor"] = "runtime/override/doctor.json"
+    else:
+        payload["runtime_actions"] = True
+    _write_p10_payload(module, path, payload)
+
+    summary = module._equipment_operator_readiness_summary(
+        helper_dev_dir,
+        helper_dir_safe=True,
+        now=now,
+    )
+
+    assert summary["status"] == "invalid"
+    assert summary["contract_valid"] is False
+    assert summary["operator_inputs_ready"] is False
+    assert summary["eligibility_changed"] is False
+    assert summary["acceptance_granted"] is False
+    assert summary["artifacts"][artifact]["status"] == "invalid"
+    assert summary["artifacts"][artifact]["contract_valid"] is False
+    commands = [action["command"] for action in summary["next_actions"]]
+    expected_source_commands = {
+        "equipment_capture_profile_doctor": ".\\ctoa.ps1 otp10doctor",
+        "equipment_observation_preview": ".\\ctoa.ps1 otp10preview",
+        "equipment_dependency_preflight": ".\\ctoa.ps1 otp10preflight",
+        "equipment_candidate_catalog": ".\\ctoa.ps1 otp10catalog",
+        "equipment_capture_profile_change_plan": ".\\ctoa.ps1 otp10plan",
+    }
+    assert expected_source_commands[artifact] in commands
+    assert commands[-1] == ".\\ctoa.ps1 otp10ready"
+    assert all(
+        action["changes_eligibility"] is False for action in summary["next_actions"]
+    )
+
+
+def test_p10_equipment_readiness_expires_without_changing_release_eligibility(
+    tmp_path: Path,
+):
+    module = _load_module()
+    helper_dev_dir = tmp_path / "runtime" / "solteria_helper_dev"
+    generated_at = dt.datetime(2026, 7, 12, 12, 0, tzinfo=dt.UTC)
+    _write_blocked_p10_chain(
+        module,
+        helper_dev_dir,
+        int(generated_at.timestamp() * 1_000),
+    )
+
+    summary = module._equipment_operator_readiness_summary(
+        helper_dev_dir,
+        helper_dir_safe=True,
+        now=generated_at
+        + dt.timedelta(milliseconds=module.EQUIPMENT_OPERATOR_MAX_AGE_MS + 1),
+    )
+
+    assert summary["status"] == "stale"
+    assert summary["reported_status"] == "blocked"
+    assert summary["contract_valid"] is True
+    assert summary["fresh"] is False
+    assert summary["operator_inputs_ready"] is False
+    assert summary["eligibility_changed"] is False
+    assert summary["eligibility_state"] == "unchanged"
+    assert summary["acceptance_granted"] is False
+    assert any(blocker.endswith("_stale") for blocker in summary["blockers"])
 
 
 def test_background_status_expires_without_affecting_live_promotion(tmp_path: Path):
@@ -973,7 +1296,7 @@ def test_helper_status_promoted_requires_durable_live_promotion_evidence(
                     {
                         "name": "live_approval",
                         "status": "passed",
-                        "evidence": "runtime/solteria_helper_dev/live_promotion.json",
+                        "evidence": "-ApproveLiveDeploy",
                     },
                 ],
             }
@@ -990,7 +1313,10 @@ def test_helper_status_promoted_requires_durable_live_promotion_evidence(
         json.dumps(
             {
                 "created_at": "2026-07-06T11:06:46",
+                "helper_version": "v1.1b",
                 "approval_switch": "ApproveLiveDeploy",
+                "verification": "stage_live_sha256_match",
+                "verified_file_count": 1,
                 "live_client": "C:/Users/zycie/AppData/Local/Solteria/client",
                 "backup": "runtime/solteria_helper_dev/live_backup_20260706-110646",
             }
@@ -1006,4 +1332,25 @@ def test_helper_status_promoted_requires_durable_live_promotion_evidence(
     assert status["live_promotion_status"] == "promoted"
     assert status["live_promotion_created_at"] == "2026-07-06T11:06:46"
     assert status["next_command"] == ""
+    assert status["equipment_operator_readiness"]["status"] == "missing"
+    assert status["equipment_operator_readiness"]["eligibility_state"] == "unchanged"
+    assert status["equipment_operator_readiness"]["acceptance_granted"] is False
     assert status["paths"]["live_promotion"].endswith("live_promotion.json")
+def test_equipment_operator_refresh_run_summary_fails_closed(tmp_path: Path) -> None:
+    module = _load_module()
+    artifact = tmp_path / "equipment_operator_refresh_run.json"
+    missing = module._equipment_operator_refresh_run_summary(None, artifact, artifact_present=False)
+    assert missing["status"] == "missing"
+    assert missing["contract_valid"] is False
+    assert missing["dispatch_allowed"] is False
+    assert missing["eligibility_changed"] is False
+
+    invalid = module._equipment_operator_refresh_run_summary(
+        {"schema_version": module.P10_EQUIPMENT_OPERATOR_REFRESH_RUN_SCHEMA, "status": "completed"},
+        artifact,
+        artifact_present=True,
+    )
+    assert invalid["status"] == "invalid"
+    assert invalid["run_id"] == ""
+    assert invalid["artifact_hashes"] == {}
+    assert invalid["no_action_verified"] is False

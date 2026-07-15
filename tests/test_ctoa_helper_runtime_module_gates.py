@@ -139,6 +139,7 @@ local equipmentInput = with(common, {
   equipped_item_id = 3051, candidate_item_id = 3048, rollback_item_id = 3051,
   slot_name = "ring", rollback_slot_name = "ring",
   candidate_source_container_id = 2, rollback_destination_container_id = 2,
+  candidate_source_slot_index = 1, rollback_destination_slot_index = 1,
   inventory_revision = "inventory-r1", rollback_inventory_revision = "inventory-r1",
   observed_at_ms = 2000, evaluated_at_ms = 2100,
   cooldown_ms = 1500, cooldown_elapsed_ms = 1500, retry_budget = 0,

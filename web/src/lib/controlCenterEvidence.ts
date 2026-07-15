@@ -5,6 +5,38 @@ import { toControlCenterDisplayConfig, toControlCenterDisplayPath } from "@/lib/
 import { getControlCenterEvidenceConfig, type ControlCenterEvidenceConfig } from "@/lib/controlCenterEvidenceConfig"
 import { sanitizeControlCenterDisplayText } from "@/lib/controlCenterRedaction"
 
+export const P10_EQUIPMENT_CONSUMER_PARITY_SCHEMA = "ctoa.equipment-consumer-parity.v1"
+export const P10_EQUIPMENT_OPERATOR_REFRESH_RUN_SCHEMA = "ctoa.equipment-operator-refresh-run.v1"
+
+type EquipmentP10ArtifactSummary = {
+  path: string
+  schemaVersion: string
+  status: string
+  reportedStatus: string
+  sha256: string
+  generatedAtUnixMs: number | null
+  ageMs: number | null
+  ageSeconds: number | null
+  fresh: boolean
+  ready: boolean
+  contractValid: boolean
+  contractErrors: string[]
+  blockers: string[]
+  nextAction: string
+  nextActions: string[]
+  eligibilityChanged: boolean | null
+  eligibilityState: string
+  operatorInputsReady: boolean | null
+  operationalReadinessClaimed: boolean
+  dispatchAllowed: boolean
+  runtimeActions: boolean
+  executesPlan: boolean
+  executeOnceAllowed: boolean
+  promotionAllowed: boolean
+  liveFileWrites: boolean
+  intrusiveActionsPerformed: string[]
+}
+
 export type ControlCenterEvidence = {
   generatedAt: string
   config: ControlCenterEvidenceConfig
@@ -108,6 +140,81 @@ export type ControlCenterEvidence = {
     nextAction: string
     nextCommand: string
   }
+  roadmapState: {
+    status: string
+    reportedStatus: string
+    schemaVersion: string
+    generatedAt: string
+    ageMinutes: number | null
+    phase: string
+    phaseStatus: string
+    nextPhase: string
+    stateSha256: string
+    fileSha256: string
+    contractValid: boolean
+    contractErrors: string[]
+    freshnessStatus: string
+    tamperStatus: string
+    auditBinding: {
+      status: string
+      auditId: string
+      at: string
+      expectedSha256: string
+      actualSha256: string
+    }
+    summary: {
+      ledgerCount: number
+      acceptedCount: number
+      closedNoActionCount: number
+      blockedCount: number
+      tamperedCount: number
+      totalAttemptCount: number
+      runtimeAuthorityCount: number
+      liveAuthorityCount: number
+    }
+    authority: {
+      controlCenterMode: string
+      runtimeExecutorAdded: boolean
+      runtimeActions: boolean
+      liveAuthority: boolean
+      p12HealFriendReopened: boolean
+      mcpWriteToolEnabled: boolean
+    }
+    ledger: Array<{
+      decisionId: string
+      phase: string
+      lane: string
+      decisionStatus: string
+      resultStatus: string
+      integrityStatus: string
+      freshnessStatus: string
+      attemptCount: number | null
+      finalState: string
+      blockerCount: number
+    }>
+    blockers: string[]
+    nextAction: string
+    sourcePath: string
+    readOnly: true
+  }
+  p14RunnerFoundation: {
+    status: string
+    reportedStatus: string
+    currentPhase: string
+    nextPhase: string
+    contractVersion: string
+    implementationFileCount: number
+    requiredFileCount: number
+    operationalRunnerResult: string
+    operationalReady: boolean
+    runtimeAuthorityGranted: boolean
+    liveAuthorityGranted: boolean
+    promotionApproved: boolean
+    mcpWriteToolEnabled: boolean
+    blockers: string[]
+    sourcePath: string
+    readOnly: true
+  }
   otclientHelper: {
     status: string
     helperVersion: string
@@ -187,6 +294,50 @@ export type ControlCenterEvidence = {
       executeOnceAllowed: boolean
       promotionAllowed: boolean
     }
+    equipmentObservationPreview: EquipmentP10ArtifactSummary
+    equipmentCandidateCatalog: EquipmentP10ArtifactSummary
+    equipmentCaptureProfileDoctor: EquipmentP10ArtifactSummary
+    equipmentCaptureProfileChangePlan: EquipmentP10ArtifactSummary
+    equipmentDependencyPreflight: EquipmentP10ArtifactSummary
+    equipmentOperatorReadiness: EquipmentP10ArtifactSummary
+    equipmentOperatorRefreshRun: {
+      status: string; reportedStatus: string; contractValid: boolean; contractErrors: string[]; fresh: boolean
+      ageMs: number | null; runId: string; startedAtUnixMs: number | null; completedAtUnixMs: number | null
+      durationMs: number | null; canonicalAggregateSha256: string; artifactHashes: Record<string, string>
+      sourceStatuses: Record<string, string>; blockers: string[]; noActionVerified: boolean
+      eligibilityChanged: false; eligibilityState: "unchanged"; dispatchAllowed: false; runtimeActions: false
+      executesPlan: false; executeOnceAllowed: false; promotionAllowed: false; liveFileWrites: false
+      intrusiveActionsPerformed: string[]; readOnly: true
+    }
+    equipmentShadowReplay: {
+      status: string
+      generatedAtUnixMs: number | null
+      maxAgeSeconds: number
+      ageSeconds: number | null
+      fresh: boolean
+      contractValid: boolean
+      contractErrors: string[]
+      scenarioPackStatus: string
+      scenarioTotalCount: number
+      scenarioPassedCount: number
+      rollbackSimulation: string
+      blockers: string[]
+      runtimeReadinessClaimed: false
+      dispatchAllowed: false
+      runtimeActions: false
+    }
+    equipmentShadowAcceptance: {
+      status: string
+      fresh: boolean
+      contractValid: boolean
+      reportHashMatch: boolean
+      acceptanceGranted: boolean
+      p11PredecessorEligible: boolean
+      blockers: string[]
+      runtimeReadinessClaimed: false
+      dispatchAllowed: false
+      runtimeActions: false
+    }
     nextAction: string
     nextCommand: string
     sourcePaths: {
@@ -201,6 +352,15 @@ export type ControlCenterEvidence = {
       livePromotion: string
       backgroundStatus: string
       conditionsShadowReplay: string
+      equipmentObservationPreview: string
+      equipmentCandidateCatalog: string
+      equipmentCaptureProfileDoctor: string
+      equipmentCaptureProfileChangePlan: string
+      equipmentDependencyPreflight: string
+      equipmentOperatorReadiness: string
+      equipmentOperatorRefreshRun: string
+      equipmentShadowReplay: string
+      equipmentShadowAcceptance: string
     }
   }
   engineBrain: {
@@ -638,6 +798,119 @@ const CONDITIONS_SHADOW_INPUT_HASH_KEYS = [
   "recovery_trace",
   "recovery_proof",
 ] as const
+const EQUIPMENT_SHADOW_REPORT_SCHEMA = "ctoa.equipment-shadow-replay-report.v1"
+const EQUIPMENT_SHADOW_REPORT_MODE = "offline_equipment_shadow_replay"
+const EQUIPMENT_SHADOW_ACCEPTANCE_SCHEMA = "ctoa.equipment-shadow-acceptance.v1"
+const EQUIPMENT_SHADOW_MAX_AGE_MS = 30_000
+const EQUIPMENT_SHADOW_ACCEPTANCE_MODE = "data_only_operator_acceptance"
+const EQUIPMENT_SHADOW_ACCEPTANCE_CONFIRMATION = "accept P10 equipment shadow"
+const EQUIPMENT_SHADOW_REQUIRED_MUTATIONS = new Set([
+  "none", "inventory_ambiguous", "revision_drift", "missing_ring", "wrong_equipped_id",
+  "wrong_candidate_id", "missing_rollback", "wrong_container", "stale_snapshot", "future_snapshot",
+  "protection_zone", "cooldown_active", "p9_blocked", "p9_tampered", "unsafe_contract",
+  "player_offline", "player_dead", "protection_zone_unknown", "protection_zone_untrusted",
+  "candidate_zero", "rollback_wrong_id", "candidate_container_negative", "candidate_slot_zero",
+  "rollback_slot_mismatch", "cooldown_unknown", "cooldown_untrusted", "retry_nonzero",
+  "inventory_revision_zero", "rollback_revision_zero", "snapshot_extra_key",
+])
+const EQUIPMENT_SHADOW_ACCEPTANCE_KEYS = [
+  "schema_version", "receipt_id", "created_at_unix_ms", "mode", "status",
+  "acceptance_granted", "operator_review_completed", "downstream_use_requires_separate_review",
+  "confirmation_required", "confirmation_matched", "confirmation_sha256", "receipt_persisted",
+  "report_sha256", "recomputed_report_sha256", "report_generated_at_unix_ms", "report_age_ms",
+  "operational_status", "scenario_pack_status", "fixture_only_validation_passed",
+  "operational_inputs_fixture", "canonical_operational_paths", "action", "decision_sha256",
+  "input_sha256", "scenario_pack_sha256", "blockers", "acceptance_basis_sha256",
+  "runtime_readiness_claimed", ...CONDITIONS_SHADOW_ACTION_FLAGS, "intrusive_actions_performed",
+] as const
+const EQUIPMENT_SHADOW_ACCEPTANCE_BLOCKER_ORDER = [
+  "report_missing", "report_invalid", "report_future", "report_stale", "current_input_invalid",
+  "p9_receipt_report_mismatch", "report_recompute_mismatch", "operational_status_not_ready",
+  "operational_trace_not_ready", "operational_trace_has_blockers", "scenario_pack_not_passed",
+  "fixture_validation_not_passed", "operational_inputs_fixture", "noncanonical_operational_paths",
+  "unsafe_action_contract", "operator_confirmation_mismatch", "evidence_changed_before_write",
+] as const
+const EQUIPMENT_SHADOW_ACCEPTANCE_BLOCKER_RANK = new Map(
+  EQUIPMENT_SHADOW_ACCEPTANCE_BLOCKER_ORDER.map((value, index) => [value, index]),
+)
+const EQUIPMENT_P10_ARTIFACT_MAX_AGE_MS = 30_000
+const EQUIPMENT_P10_ARTIFACT_SPECS = {
+  observationPreview: {
+    schema: "ctoa.equipment-observation-preview.v1",
+    timestampKey: "generated_at_unix_ms",
+    keys: [
+      "schema_version", "generated_at_unix_ms", "status", "source", "source_sha256", "observation_sha256",
+      "observation", "freshness", "provenance", "blockers", "interaction_contract", "dispatch_allowed",
+      "runtime_actions", "executes_plan", "execute_once_allowed", "promotion_allowed", "intrusive_actions_performed",
+    ],
+    statuses: ["preview_ready", "blocked"],
+    nextAction: "Run .\\ctoa.ps1 otp10preview after the current passive BackgroundNoScreen sample is fresh.",
+  },
+  candidateCatalog: {
+    schema: "ctoa.equipment-candidate-catalog.v1",
+    timestampKey: "generated_at_unix_ms",
+    keys: [
+      "schema_version", "generated_at_unix_ms", "status", "source", "preview_sha256", "preview_status",
+      "preview_blockers", "selection_policy", "recommendation", "ring", "groups", "summary", "blockers",
+      "dispatch_allowed", "runtime_actions", "executes_plan", "execute_once_allowed", "promotion_allowed",
+      "intrusive_actions_performed",
+    ],
+    statuses: ["catalog_ready", "blocked"],
+    nextAction: "Run .\\ctoa.ps1 otp10catalog after the observation preview is current.",
+  },
+  captureProfileDoctor: {
+    schema: "ctoa.equipment-capture-profile-doctor.v1",
+    timestampKey: null,
+    keys: [
+      "schema_version", "status", "source", "path", "sha256", "configured_by_operator", "slot",
+      "identifiers_present", "candidate_slot_index_valid", "no_action_contract", "blockers", "next_action",
+      "runtime_actions", "live_file_writes", "runtime_readiness_claimed",
+    ],
+    statuses: ["ready", "blocked"],
+    nextAction: "Run .\\ctoa.ps1 otp10doctor against the fixed capture profile.",
+  },
+  captureProfileChangePlan: {
+    schema: "ctoa.equipment-capture-profile-change-plan.v1",
+    timestampKey: "generated_at_unix_ms",
+    keys: [
+      "schema_version", "generated_at_unix_ms", "status", "mode", "sources", "input_status", "input_sha256",
+      "input_binding_sha256", "requested_identifiers", "operator_confirmation", "checks", "observation_age_ms",
+      "blockers", "plan", "plan_sha256", "explanation", "operator_review_required", "acceptance_granted",
+      "runtime_readiness_claimed", "eligibility_changed", "profile_write_performed", "repo_report_write_only",
+      "live_file_writes", "interaction_contract", "dispatch_allowed", "runtime_actions", "executes_plan",
+      "execute_once_allowed", "promotion_allowed", "intrusive_actions_performed",
+    ],
+    statuses: ["plan_generated", "blocked"],
+    nextAction: "Run .\\ctoa.ps1 otp10plan only for a review-only capture profile change plan.",
+  },
+  dependencyPreflight: {
+    schema: "ctoa.equipment-dependency-preflight.v1",
+    timestampKey: "evaluated_at_unix_ms",
+    keys: [
+      "schema_version", "mode", "evaluated_at_unix_ms", "status", "dependencies_satisfied", "inputs",
+      "input_sha256", "canonical_input_sha256", "checks", "upstream_blockers", "blockers", "decision_sha256",
+      "eligibility_changed", "eligibility_state", "operational_readiness_claimed", "operator_review_required",
+      "repo_report_write_only", "live_file_writes", "dispatch_allowed", "runtime_actions", "executes_plan",
+      "execute_once_allowed", "promotion_allowed", "intrusive_actions_performed",
+    ],
+    statuses: ["passed", "blocked"],
+    nextAction: "Run .\\ctoa.ps1 otp10preflight to re-check the fixed P9/P10 dependency chain.",
+  },
+  operatorReadiness: {
+    schema: "ctoa.equipment-operator-readiness.v1",
+    timestampKey: "generated_at_unix_ms",
+    keys: [
+      "schema_version", "mode", "generated_at_unix_ms", "status", "operator_inputs_ready", "inputs",
+      "input_sha256", "canonical_input_sha256", "blocker_counts", "blockers", "blocker_details", "next_actions",
+      "eligibility_changed", "eligibility_state", "operational_readiness_claimed", "operator_review_required",
+      "repo_report_write_only", "live_file_writes", "dispatch_allowed", "runtime_actions", "executes_plan",
+      "execute_once_allowed", "promotion_allowed", "intrusive_actions_performed",
+    ],
+    statuses: ["operator_inputs_ready", "blocked"],
+    nextAction: "Run .\\ctoa.ps1 otp10ready for the consolidated read-only P10 operator explanation.",
+  },
+} as const
+type EquipmentP10ArtifactSpec = (typeof EQUIPMENT_P10_ARTIFACT_SPECS)[keyof typeof EQUIPMENT_P10_ARTIFACT_SPECS]
 const CONDITIONS_SHADOW_BLOCKER_ORDER = [
   "profile_missing", "profile_malformed", "profile_duplicate_keys", "profile_oversize", "profile_symlink_rejected",
   "profile_not_regular", "profile_unreadable", "profile_schema_invalid", "profile_action_mismatch", "profile_condition_mismatch",
@@ -719,6 +992,8 @@ export async function collectControlCenterEvidence(): Promise<ControlCenterEvide
   const repoHygiene = await readJsonIfExists(config.qualityPath)
   const apiCostReport = await readJsonIfExists(config.costReportPath)
   const actionAuditDrilldown = await collectActionAuditDrilldown(config.actionAuditPath)
+  const roadmapState = await collectRoadmapState(config)
+  const p14RunnerFoundation = await collectP14RunnerFoundation(config)
   const otclientHelper = await collectOtclientHelperStatus(config)
   const engineBrain = await collectEngineBrainStatus(config)
   const artifactHealth = await collectArtifactHealth(config, actionAuditDrilldown)
@@ -814,12 +1089,364 @@ export async function collectControlCenterEvidence(): Promise<ControlCenterEvide
       recordCount: actionAuditDrilldown.recordCount,
     },
     actionAuditDrilldown,
+    roadmapState,
+    p14RunnerFoundation,
     otclientHelper,
     engineBrain,
     artifactHealth,
     operatorBrief,
     operatorNext,
     recommendations,
+  }
+}
+
+const ROADMAP_STATE_SCHEMA = "ctoa.roadmap-state.v1"
+const ROADMAP_STATE_ACTION = "roadmap-state-refresh"
+const ROADMAP_STATE_OUTPUT = "AI/generated/ROADMAP_STATE.json"
+const P14_FOUNDATION_FILE_COUNT = 6
+const ROADMAP_STATE_DECISIONS = [
+  "p8-background-acceptance",
+  "p9-conditions-shadow-acceptance",
+  "p10-equipment-shadow-acceptance",
+  "p11-heal-friend-shadow-acceptance",
+  "p12-conditions-execute-once",
+  "p12-equipment-execute-once",
+  "p12-heal-friend-no-compatible-vocation",
+] as const
+
+async function collectRoadmapState(
+  config: ControlCenterEvidenceConfig,
+): Promise<ControlCenterEvidence["roadmapState"]> {
+  const payload = await readStrictJsonIfExists(config.engineBrainRoadmapStatePath)
+  const sourcePath = toControlCenterDisplayPath(config.engineBrainRoadmapStatePath)
+  const fileSha256 = await sha256IfExists(config.engineBrainRoadmapStatePath)
+  const ageMinutes = await fileAgeMinutes(config.engineBrainRoadmapStatePath)
+
+  if (!payload) {
+    return {
+      status: "missing",
+      reportedStatus: "missing",
+      schemaVersion: "",
+      generatedAt: "",
+      ageMinutes,
+      phase: "",
+      phaseStatus: "",
+      nextPhase: "",
+      stateSha256: "",
+      fileSha256,
+      contractValid: false,
+      contractErrors: ["roadmap_state_missing_or_invalid_json"],
+      freshnessStatus: "missing",
+      tamperStatus: "missing",
+      auditBinding: {
+        status: "missing",
+        auditId: "",
+        at: "",
+        expectedSha256: "",
+        actualSha256: fileSha256,
+      },
+      summary: {
+        ledgerCount: 0,
+        acceptedCount: 0,
+        closedNoActionCount: 0,
+        blockedCount: 0,
+        tamperedCount: 0,
+        totalAttemptCount: 0,
+        runtimeAuthorityCount: 0,
+        liveAuthorityCount: 0,
+      },
+      authority: {
+        controlCenterMode: "read_only",
+        runtimeExecutorAdded: false,
+        runtimeActions: false,
+        liveAuthority: false,
+        p12HealFriendReopened: false,
+        mcpWriteToolEnabled: false,
+      },
+      ledger: [],
+      blockers: [],
+      nextAction: "Generate the bounded P13 roadmap state through its audited confirmed refresh.",
+      sourcePath,
+      readOnly: true,
+    }
+  }
+
+  const errors: string[] = []
+  const summary = isRecord(payload.summary) ? payload.summary : {}
+  const authority = isRecord(payload.authority) ? payload.authority : {}
+  const registry = isRecord(payload.schema_registry) ? payload.schema_registry : {}
+  const preflight = isRecord(payload.control_center_preflight) ? payload.control_center_preflight : {}
+  const sourceHealth = Array.isArray(payload.source_health) ? payload.source_health : []
+  const rawLedger = Array.isArray(payload.ledger) ? payload.ledger : []
+  const blockers = Array.isArray(payload.blockers)
+    ? payload.blockers.map((item) => sanitizeText(String(item), 160)).filter(Boolean).slice(0, 12)
+    : []
+  const reportedStatus = sanitizeText(String(payload.status || "missing"), 40)
+  const stateSha256 = typeof payload.state_sha256 === "string" ? payload.state_sha256 : ""
+
+  if (payload.schema_version !== ROADMAP_STATE_SCHEMA) errors.push("schema_version_invalid")
+  if (payload.status !== "ready") errors.push("reported_status_not_ready")
+  if (payload.phase !== "P13" || payload.phase_status !== "runtime_evidence_ready" || payload.next_phase !== "P14") {
+    errors.push("phase_boundary_invalid")
+  }
+  if (payload.freshness_status !== "current") errors.push("freshness_not_current")
+  if (payload.tamper_status !== "passed") errors.push("tamper_status_not_passed")
+  if (!Array.isArray(payload.blockers) || payload.blockers.length !== 0) errors.push("state_blockers_present")
+  if (preflight.status !== "ready" || preflight.ready !== true || !Array.isArray(preflight.hard_blockers) || preflight.hard_blockers.length !== 0) {
+    errors.push("control_center_preflight_invalid")
+  }
+  if (registry.status !== "passed" || registry.entry_count !== ROADMAP_STATE_DECISIONS.length) {
+    errors.push("schema_registry_invalid")
+  }
+  if (
+    sourceHealth.length < 3 ||
+    sourceHealth.some(
+      (item) =>
+        !isRecord(item) ||
+        item.contract_status !== "passed" ||
+        !["current", "timeless"].includes(String(item.freshness_status || "")),
+    )
+  ) {
+    errors.push("source_health_invalid")
+  }
+
+  const allowedOutputPaths = Array.isArray(authority.allowed_output_paths) ? authority.allowed_output_paths : []
+  if (
+    authority.control_center_mode !== "read_only" ||
+    authority.runtime_executor_added !== false ||
+    authority.runtime_actions !== false ||
+    authority.live_authority !== false ||
+    authority.p12_heal_friend_reopened !== false ||
+    authority.mcp_write_tool_enabled !== false ||
+    JSON.stringify(allowedOutputPaths) !==
+      JSON.stringify([ROADMAP_STATE_OUTPUT, "AI/generated/ROADMAP_STATE.md", "runtime/control-center/action-audit.jsonl"])
+  ) {
+    errors.push("authority_boundary_invalid")
+  }
+
+  const ledger = rawLedger.slice(0, ROADMAP_STATE_DECISIONS.length).map((item) => {
+    const record = isRecord(item) ? item : {}
+    const entryBlockers = Array.isArray(record.blockers) ? record.blockers : []
+    return {
+      decisionId: sanitizeText(String(record.decision_id || ""), 80),
+      phase: sanitizeText(String(record.phase || ""), 12),
+      lane: sanitizeText(String(record.lane || ""), 40),
+      decisionStatus: sanitizeText(String(record.decision_status || ""), 40),
+      resultStatus: sanitizeText(String(record.result_status || ""), 80),
+      integrityStatus: sanitizeText(String(record.integrity_status || ""), 40),
+      freshnessStatus: sanitizeText(String(record.freshness_status || ""), 40),
+      attemptCount:
+        record.attempt_count === null || (typeof record.attempt_count === "number" && Number.isSafeInteger(record.attempt_count))
+          ? record.attempt_count
+          : null,
+      finalState: sanitizeText(String(record.final_state || ""), 80),
+      blockerCount: entryBlockers.length,
+    }
+  })
+  const ledgerIds = rawLedger.map((item) => (isRecord(item) ? item.decision_id : null))
+  const unsafeLedgerEntry = rawLedger.some(
+    (item) =>
+      !isRecord(item) ||
+      item.terminal !== true ||
+      item.downstream_authority_granted !== false ||
+      item.dispatch_allowed !== false ||
+      item.runtime_actions !== false ||
+      item.execute_once_allowed !== false ||
+      item.live_promotion !== false ||
+      item.integrity_status !== "passed" ||
+      item.freshness_status !== "immutable_terminal" ||
+      !Array.isArray(item.blockers) ||
+      item.blockers.length !== 0,
+  )
+  if (
+    rawLedger.length !== ROADMAP_STATE_DECISIONS.length ||
+    JSON.stringify(ledgerIds) !== JSON.stringify(ROADMAP_STATE_DECISIONS) ||
+    unsafeLedgerEntry
+  ) {
+    errors.push("terminal_ledger_invalid")
+  }
+
+  const expectedSummary = {
+    ledger_count: ROADMAP_STATE_DECISIONS.length,
+    accepted_count: 6,
+    closed_no_action_count: 1,
+    blocked_count: 0,
+    tampered_count: 0,
+    total_attempt_count: 2,
+    runtime_authority_count: 0,
+    live_authority_count: 0,
+  }
+  if (Object.entries(expectedSummary).some(([key, value]) => summary[key] !== value)) {
+    errors.push("summary_invalid")
+  }
+
+  const stateBasis = Object.fromEntries(Object.entries(payload).filter(([key]) => key !== "state_sha256"))
+  if (!/^[a-f0-9]{64}$/.test(stateSha256) || conditionsShadowCanonicalSha(stateBasis) !== stateSha256) {
+    errors.push("state_sha256_invalid")
+  }
+
+  const auditBinding = await collectRoadmapStateAuditBinding(config.actionAuditPath, fileSha256)
+  const contractValid = errors.length === 0
+  const status = contractValid && auditBinding.status === "passed" ? "ready" : "blocked"
+
+  return {
+    status,
+    reportedStatus,
+    schemaVersion: sanitizeText(String(payload.schema_version || ""), 80),
+    generatedAt: sanitizeText(String(payload.generated_at || ""), 80),
+    ageMinutes,
+    phase: sanitizeText(String(payload.phase || ""), 12),
+    phaseStatus: sanitizeText(String(payload.phase_status || ""), 80),
+    nextPhase: sanitizeText(String(payload.next_phase || ""), 12),
+    stateSha256,
+    fileSha256,
+    contractValid,
+    contractErrors: errors,
+    freshnessStatus: sanitizeText(String(payload.freshness_status || "missing"), 40),
+    tamperStatus: sanitizeText(String(payload.tamper_status || "missing"), 40),
+    auditBinding,
+    summary: {
+      ledgerCount: Number(summary.ledger_count || 0),
+      acceptedCount: Number(summary.accepted_count || 0),
+      closedNoActionCount: Number(summary.closed_no_action_count || 0),
+      blockedCount: Number(summary.blocked_count || 0),
+      tamperedCount: Number(summary.tampered_count || 0),
+      totalAttemptCount: Number(summary.total_attempt_count || 0),
+      runtimeAuthorityCount: Number(summary.runtime_authority_count || 0),
+      liveAuthorityCount: Number(summary.live_authority_count || 0),
+    },
+    authority: {
+      controlCenterMode: sanitizeText(String(authority.control_center_mode || ""), 40),
+      runtimeExecutorAdded: authority.runtime_executor_added === true,
+      runtimeActions: authority.runtime_actions === true,
+      liveAuthority: authority.live_authority === true,
+      p12HealFriendReopened: authority.p12_heal_friend_reopened === true,
+      mcpWriteToolEnabled: authority.mcp_write_tool_enabled === true,
+    },
+    ledger,
+    blockers,
+    nextAction: sanitizeText(String(payload.next_action || ""), 240),
+    sourcePath,
+    readOnly: true,
+  }
+}
+
+async function collectP14RunnerFoundation(
+  config: ControlCenterEvidenceConfig,
+): Promise<ControlCenterEvidence["p14RunnerFoundation"]> {
+  const payload = await readStrictJsonIfExists(config.evidenceJsonPath)
+  const sourcePath = toControlCenterDisplayPath(config.evidenceJsonPath)
+  const helper = payload && isRecord(payload.otclient_helper) ? payload.otclient_helper : {}
+  const phaseState = isRecord(helper.roadmap_phase_state) ? helper.roadmap_phase_state : {}
+  const foundation = isRecord(phaseState.p14) ? phaseState.p14 : {}
+  const blockers = Array.isArray(foundation.blockers)
+    ? foundation.blockers.map((item) => sanitizeText(String(item), 160)).filter(Boolean).slice(0, 12)
+    : []
+  const reportedStatus = sanitizeText(String(foundation.status || "missing"), 80)
+
+  if (!payload || !isRecord(helper.roadmap_phase_state) || !isRecord(phaseState.p14)) {
+    return {
+      status: "missing",
+      reportedStatus,
+      currentPhase: "",
+      nextPhase: "",
+      contractVersion: "",
+      implementationFileCount: 0,
+      requiredFileCount: P14_FOUNDATION_FILE_COUNT,
+      operationalRunnerResult: "missing",
+      operationalReady: false,
+      runtimeAuthorityGranted: false,
+      liveAuthorityGranted: false,
+      promotionApproved: false,
+      mcpWriteToolEnabled: false,
+      blockers,
+      sourcePath,
+      readOnly: true,
+    }
+  }
+
+  const implementationFileCount = Number(foundation.implementation_file_count || 0)
+  const requiredFileCount = Number(foundation.required_file_count || 0)
+  const operationalRunnerResult = sanitizeText(String(foundation.operational_runner_result || "missing"), 100)
+  const contractValid =
+    phaseState.status === "p14_foundation_ready" &&
+    phaseState.current_phase === "P14" &&
+    phaseState.next_phase === "P14" &&
+    phaseState.aligned_with_current_roadmap === true &&
+    foundation.status === "foundation_ready" &&
+    foundation.contract_version === "ctoa.p14-runner-request.v1" &&
+    implementationFileCount === P14_FOUNDATION_FILE_COUNT &&
+    requiredFileCount === P14_FOUNDATION_FILE_COUNT &&
+    ["missing", "present_untrusted_until_external_key_verification"].includes(operationalRunnerResult) &&
+    foundation.operational_ready === false &&
+    foundation.runtime_authority_granted === false &&
+    foundation.live_authority_granted === false &&
+    foundation.promotion_approved === false &&
+    foundation.mcp_write_tool_enabled === false &&
+    Array.isArray(foundation.blockers) &&
+    foundation.blockers.length === 0
+
+  return {
+    status: contractValid ? "ready" : "blocked",
+    reportedStatus,
+    currentPhase: sanitizeText(String(phaseState.current_phase || ""), 12),
+    nextPhase: sanitizeText(String(phaseState.next_phase || ""), 12),
+    contractVersion: sanitizeText(String(foundation.contract_version || ""), 80),
+    implementationFileCount,
+    requiredFileCount,
+    operationalRunnerResult,
+    operationalReady: foundation.operational_ready === true,
+    runtimeAuthorityGranted: foundation.runtime_authority_granted === true,
+    liveAuthorityGranted: foundation.live_authority_granted === true,
+    promotionApproved: foundation.promotion_approved === true,
+    mcpWriteToolEnabled: foundation.mcp_write_tool_enabled === true,
+    blockers,
+    sourcePath,
+    readOnly: true,
+  }
+}
+
+async function collectRoadmapStateAuditBinding(
+  actionAuditPath: string,
+  actualSha256: string,
+): Promise<ControlCenterEvidence["roadmapState"]["auditBinding"]> {
+  try {
+    const sample = await readBoundedControlCenterActionAuditLines(actionAuditPath)
+    for (const line of sample.lines.slice().reverse()) {
+      if (line.length > ACTION_AUDIT_MAX_LINE_LENGTH) continue
+      let parsed: unknown
+      try {
+        parsed = JSON.parse(line)
+      } catch {
+        continue
+      }
+      if (!isRecord(parsed) || parsed.action !== ROADMAP_STATE_ACTION || parsed.dry_run !== false) continue
+      const outputHashes = isRecord(parsed.output_hashes) ? parsed.output_hashes : {}
+      const writtenPaths = Array.isArray(parsed.written_paths) ? parsed.written_paths : []
+      if (!writtenPaths.includes(ROADMAP_STATE_OUTPUT)) continue
+      const expectedSha256 = typeof outputHashes[ROADMAP_STATE_OUTPUT] === "string" ? outputHashes[ROADMAP_STATE_OUTPUT] : ""
+      const passed =
+        parsed.authorized === true &&
+        parsed.ok === true &&
+        /^[a-f0-9]{64}$/.test(expectedSha256) &&
+        expectedSha256 === actualSha256
+      return {
+        status: passed ? "passed" : "mismatch",
+        auditId: sanitizeText(String(parsed.audit_id || ""), 80),
+        at: sanitizeText(String(parsed.at || ""), 80),
+        expectedSha256,
+        actualSha256,
+      }
+    }
+  } catch {
+    // Missing or unsafe audit input remains a separate fail-closed provenance state.
+  }
+  return {
+    status: "missing",
+    auditId: "",
+    at: "",
+    expectedSha256: "",
+    actualSha256,
   }
 }
 
@@ -2352,6 +2979,318 @@ function summarizeConditionsShadowReplay(
   }
 }
 
+function summarizeEquipmentP10Artifact(
+  payload: Record<string, unknown> | null,
+  artifactPresent: boolean,
+  spec: EquipmentP10ArtifactSpec,
+  displayPath: string,
+  modifiedAtMs: number | null,
+  nowMs = Date.now(),
+): EquipmentP10ArtifactSummary {
+  const data = payload ?? {}
+  const reportedStatus = typeof data.status === "string" ? sanitizeText(data.status, 80) : "missing"
+  const schemaVersion = typeof data.schema_version === "string" ? sanitizeText(data.schema_version, 100) : ""
+  const timestampValue = spec.timestampKey ? data[spec.timestampKey] : (modifiedAtMs === null ? null : Math.floor(modifiedAtMs))
+  const generatedAtUnixMs = typeof timestampValue === "number" && Number.isSafeInteger(timestampValue) && timestampValue > 0
+    ? timestampValue
+    : null
+  const ageMs = generatedAtUnixMs === null ? null : nowMs - generatedAtUnixMs
+  const blockers = Array.isArray(data.blockers) && data.blockers.every((item) => typeof item === "string") &&
+    new Set(data.blockers).size === data.blockers.length
+    ? data.blockers.map((item) => sanitizeText(String(item), 120))
+    : []
+  const blockersValid = Array.isArray(data.blockers) && data.blockers.every((item) => typeof item === "string") &&
+    new Set(data.blockers).size === data.blockers.length
+  const noActionKeys = ["dispatch_allowed", "runtime_actions", "executes_plan", "execute_once_allowed", "promotion_allowed"]
+  const noActionValid = noActionKeys.every((key) => !(key in data) || data[key] === false) &&
+    (!("intrusive_actions_performed" in data) || (Array.isArray(data.intrusive_actions_performed) && data.intrusive_actions_performed.length === 0)) &&
+    (!("live_file_writes" in data) || data.live_file_writes === false) &&
+    (!("profile_write_performed" in data) || data.profile_write_performed === false) &&
+    (!("no_action_contract" in data) || data.no_action_contract === true)
+  const eligibilityValid = (!("eligibility_changed" in data) || data.eligibility_changed === false) &&
+    (!("eligibility_state" in data) || data.eligibility_state === "unchanged")
+  const generatedAtValid = spec.timestampKey === null || generatedAtUnixMs !== null
+  const statusValid = typeof data.status === "string" && spec.statuses.some((status) => status === data.status)
+  const contractErrors = [
+    ["schema_version", schemaVersion === spec.schema],
+    ["top_level_keys", hasExactKeys(data, spec.keys)],
+    ["status", statusValid],
+    ["timestamp", generatedAtValid],
+    ["blockers", blockersValid],
+    ["no_action_contract", noActionValid],
+    ["eligibility", eligibilityValid],
+  ].filter(([, valid]) => !valid).map(([name]) => String(name))
+  const contractValid = artifactPresent && payload !== null && contractErrors.length === 0
+  const fresh = contractValid && ageMs !== null && ageMs >= 0 && ageMs <= EQUIPMENT_P10_ARTIFACT_MAX_AGE_MS
+  const readyStatuses = new Set(["preview_ready", "catalog_ready", "ready", "plan_generated", "passed", "operator_inputs_ready"])
+  const ready = contractValid && fresh && readyStatuses.has(reportedStatus) && blockers.length === 0
+  const nextActions = Array.isArray(data.next_actions)
+    ? data.next_actions.filter(isRecord).map((item) => sanitizeText(String(item.instruction || item.command || ""), 240)).filter(Boolean).slice(0, 7)
+    : []
+  const nextActionFromPayload = typeof data.next_action === "string" ? sanitizeText(data.next_action, 240) : ""
+  const nextAction = nextActions[0] || nextActionFromPayload || (
+    !artifactPresent ? `Generate ${displayPath}.` : !contractValid ? `Inspect invalid P10 artifact ${displayPath}.` : !fresh ? `Refresh stale P10 artifact ${displayPath}.` : spec.nextAction
+  )
+  const status = !artifactPresent ? "missing" : !contractValid ? "invalid" : !fresh ? "stale" : reportedStatus
+  return {
+    path: displayPath,
+    schemaVersion,
+    status,
+    reportedStatus,
+    sha256: payload && contractValid ? conditionsShadowCanonicalSha(payload) : "",
+    generatedAtUnixMs,
+    ageMs,
+    ageSeconds: ageMs === null ? null : Math.round(ageMs) / 1000,
+    fresh,
+    ready,
+    contractValid,
+    contractErrors,
+    blockers: contractValid ? blockers : [],
+    nextAction,
+    nextActions: nextActions.length ? nextActions : [nextAction],
+    eligibilityChanged: typeof data.eligibility_changed === "boolean" ? data.eligibility_changed : null,
+    eligibilityState: typeof data.eligibility_state === "string" ? sanitizeText(data.eligibility_state, 40) : "not_declared",
+    operatorInputsReady: typeof data.operator_inputs_ready === "boolean" ? data.operator_inputs_ready : null,
+    operationalReadinessClaimed: contractValid && data.operational_readiness_claimed === true,
+    dispatchAllowed: contractValid && data.dispatch_allowed === true,
+    runtimeActions: contractValid && data.runtime_actions === true,
+    executesPlan: contractValid && data.executes_plan === true,
+    executeOnceAllowed: contractValid && data.execute_once_allowed === true,
+    promotionAllowed: contractValid && data.promotion_allowed === true,
+    liveFileWrites: contractValid && data.live_file_writes === true,
+    intrusiveActionsPerformed: contractValid && Array.isArray(data.intrusive_actions_performed)
+      ? data.intrusive_actions_performed.filter((item): item is string => typeof item === "string").map((item) => sanitizeText(item, 120))
+      : [],
+  }
+}
+
+function summarizeEquipmentShadowReplay(
+  payload: Record<string, unknown> | null,
+  artifactPresent: boolean,
+  nowMs = Date.now(),
+): ControlCenterEvidence["otclientHelper"]["equipmentShadowReplay"] {
+  const data = payload ?? {}
+  const trace = isRecord(data.operational_trace) ? data.operational_trace : {}
+  const scenario = isRecord(data.scenario_pack) ? data.scenario_pack : {}
+  const generatedAt = data.generated_at_unix_ms
+  const generatedAtValid = typeof generatedAt === "number" && Number.isSafeInteger(generatedAt) && generatedAt > 0
+  const blockers = Array.isArray(trace.blockers) && trace.blockers.every((item) => typeof item === "string")
+    ? trace.blockers.map((item) => sanitizeText(String(item), 100))
+    : []
+  const inputHashes = isRecord(trace.input_sha256) ? trace.input_sha256 : {}
+  const hashesValid = ["profile", "snapshot", "p9_trace", "p9_receipt"].every(
+    (key) => isConditionsShadowSha(inputHashes[key]) && inputHashes[key] !== "0".repeat(64),
+  )
+  const traceReady = trace.status === "shadow_plan_ready" && trace.source === "operational" &&
+    trace.decision === "would_plan_ring_swap" && trace.rollback_simulation === "ready" && blockers.length === 0
+  const traceBlocked = trace.status === "operational_acceptance_blocked" &&
+    trace.decision === "hold" && trace.rollback_simulation === "blocked" && blockers.length > 0
+  const scenarioCounts = safeNonnegativeInteger(scenario.total_count).value
+  const scenarioCases = Array.isArray(scenario.cases) ? scenario.cases : []
+  const scenarioMutations = new Set(
+    scenarioCases.filter(isRecord).map((item) => String(item.mutation ?? "")),
+  )
+  const scenarioCoverageReady = scenarioMutations.size === EQUIPMENT_SHADOW_REQUIRED_MUTATIONS.size &&
+    [...EQUIPMENT_SHADOW_REQUIRED_MUTATIONS].every((mutation) => scenarioMutations.has(mutation))
+  const scenarioReady = scenario.status === "passed" && scenario.failed_count === 0 &&
+    scenarioCounts === 30 && scenario.passed_count === scenarioCounts &&
+    scenarioCases.length === scenarioCounts && scenarioCoverageReady &&
+    isConditionsShadowSha(scenario.scenario_pack_sha256) && scenario.scenario_pack_sha256 !== "0".repeat(64)
+  const statusCoherent = data.operational_acceptance_status === "shadow_plan_ready_for_operator_review"
+    ? traceReady && scenarioReady && data.scenario_pack_status === "passed" && data.fixture_only_validation_passed === true
+    : data.operational_acceptance_status === "operational_acceptance_blocked" && traceBlocked
+  const checks: Array<[string, boolean]> = [
+    ["schema_version", data.schema_version === EQUIPMENT_SHADOW_REPORT_SCHEMA],
+    ["generated_at_unix_ms", generatedAtValid],
+    ["mode", data.mode === EQUIPMENT_SHADOW_REPORT_MODE],
+    ["operational_status", data.operational_acceptance_status === "operational_acceptance_blocked" || data.operational_acceptance_status === "shadow_plan_ready_for_operator_review"],
+    ["scenario_status", data.scenario_pack_status === "passed" || data.scenario_pack_status === "failed"],
+    ["runtime_readiness", data.runtime_readiness_claimed === false],
+    ["no_action_contract", hasConditionsShadowNoActionContract(data)],
+    ["trace", isRecord(data.operational_trace) && hasConditionsShadowNoActionContract(trace)],
+    ["scenario", isRecord(data.scenario_pack) && hasConditionsShadowNoActionContract(scenario)],
+    ["trace_provenance", trace.source === "operational"],
+    ["trace_hashes", hashesValid && isConditionsShadowSha(trace.canonical_input_sha256) && isConditionsShadowSha(trace.decision_sha256)],
+    ["scenario_counts", data.operational_acceptance_status !== "shadow_plan_ready_for_operator_review" || scenarioReady],
+    ["status_coherence", statusCoherent],
+  ]
+  const contractErrors = artifactPresent ? checks.filter(([, passed]) => !passed).map(([name]) => name) : []
+  const contractValid = payload !== null && contractErrors.length === 0
+  const ageMs = generatedAtValid ? nowMs - generatedAt : null
+  const fresh = contractValid && ageMs !== null && ageMs >= 0 && ageMs <= EQUIPMENT_SHADOW_MAX_AGE_MS
+  const status = !artifactPresent ? "missing" : !contractValid ? "invalid" : !fresh ? "stale" : String(data.operational_acceptance_status)
+  return {
+    status,
+    generatedAtUnixMs: generatedAtValid ? generatedAt : null,
+    maxAgeSeconds: EQUIPMENT_SHADOW_MAX_AGE_MS / 1000,
+    ageSeconds: ageMs === null ? null : Math.round(ageMs) / 1000,
+    fresh,
+    contractValid,
+    contractErrors,
+    scenarioPackStatus: typeof scenario.status === "string" ? sanitizeText(scenario.status, 40) : "invalid",
+    scenarioTotalCount: safeNonnegativeInteger(scenario.total_count).value,
+    scenarioPassedCount: safeNonnegativeInteger(scenario.passed_count).value,
+    rollbackSimulation: typeof trace.rollback_simulation === "string" ? sanitizeText(trace.rollback_simulation, 40) : "blocked",
+    blockers: contractValid ? blockers : [],
+    runtimeReadinessClaimed: false,
+    dispatchAllowed: false,
+    runtimeActions: false,
+  }
+}
+
+function validateEquipmentShadowAcceptance(value: Record<string, unknown>): boolean {
+  if (!hasExactKeys(value, EQUIPMENT_SHADOW_ACCEPTANCE_KEYS)) return false
+  const createdAt = value.created_at_unix_ms
+  const generatedAt = value.report_generated_at_unix_ms
+  const reportAge = value.report_age_ms
+  const status = value.status
+  const blockers = value.blockers
+  const inputs = value.input_sha256
+  const isSha = (candidate: unknown, allowZero = false): candidate is string =>
+    typeof candidate === "string" && /^[a-f0-9]{64}$/.test(candidate) && (allowZero || candidate !== "0".repeat(64))
+  if (
+    value.schema_version !== EQUIPMENT_SHADOW_ACCEPTANCE_SCHEMA ||
+    value.mode !== EQUIPMENT_SHADOW_ACCEPTANCE_MODE ||
+    typeof createdAt !== "number" || !Number.isSafeInteger(createdAt) || createdAt <= 0 ||
+    !["blocked", "ready_for_operator_review", "accepted"].includes(String(status)) ||
+    typeof value.acceptance_granted !== "boolean" ||
+    typeof value.operator_review_completed !== "boolean" ||
+    value.downstream_use_requires_separate_review !== true || value.confirmation_required !== true ||
+    typeof value.confirmation_matched !== "boolean" || typeof value.receipt_persisted !== "boolean" ||
+    !isSha(value.report_sha256, true) || !isSha(value.recomputed_report_sha256, true) ||
+    !isSha(value.decision_sha256, true) || !isSha(value.scenario_pack_sha256, true) ||
+    !isSha(value.acceptance_basis_sha256) || !isRecord(inputs) ||
+    !hasExactKeys(inputs, ["profile", "snapshot", "p9_trace", "p9_receipt"]) ||
+    !Object.values(inputs).every((item) => isSha(item, true)) ||
+    !Array.isArray(blockers) || !blockers.every((item) => typeof item === "string") ||
+    value.runtime_readiness_claimed !== false || !hasConditionsShadowNoActionContract(value) ||
+    value.action !== "plan_ring_swap" || typeof value.fixture_only_validation_passed !== "boolean" ||
+    typeof value.operational_inputs_fixture !== "boolean" || typeof value.canonical_operational_paths !== "boolean"
+  ) return false
+  if (generatedAt !== null && (typeof generatedAt !== "number" || !Number.isSafeInteger(generatedAt))) return false
+  if (reportAge !== null && (typeof reportAge !== "number" || !Number.isSafeInteger(reportAge))) return false
+  if (typeof generatedAt === "number" && generatedAt > 0 && reportAge !== createdAt - generatedAt) return false
+  const ranks = blockers.map((item) => EQUIPMENT_SHADOW_ACCEPTANCE_BLOCKER_RANK.get(item as typeof EQUIPMENT_SHADOW_ACCEPTANCE_BLOCKER_ORDER[number]))
+  if (ranks.some((rank) => rank === undefined) || new Set(blockers).size !== blockers.length) return false
+  if (!ranks.every((rank, index) => index === 0 || Number(ranks[index - 1]) < Number(rank))) return false
+  if ((status === "blocked") !== (blockers.length > 0)) return false
+  if (value.acceptance_granted !== (status === "accepted")) return false
+  if (value.operator_review_completed !== value.acceptance_granted || value.receipt_persisted !== value.acceptance_granted) return false
+  if (status === "accepted" && value.confirmation_matched !== true) return false
+  const confirmationSha = crypto.createHash("sha256").update(EQUIPMENT_SHADOW_ACCEPTANCE_CONFIRMATION).digest("hex")
+  if (value.confirmation_sha256 !== (value.confirmation_matched ? confirmationSha : null)) return false
+  if (!["invalid", "operational_acceptance_blocked", "shadow_plan_ready_for_operator_review"].includes(String(value.operational_status))) return false
+  if (!["invalid", "failed", "passed"].includes(String(value.scenario_pack_status))) return false
+  if (status === "accepted" && (
+    value.operational_status !== "shadow_plan_ready_for_operator_review" || value.scenario_pack_status !== "passed" ||
+    value.fixture_only_validation_passed !== true || value.operational_inputs_fixture !== false ||
+    value.canonical_operational_paths !== true
+  )) return false
+  const basis = {
+    schema_version: EQUIPMENT_SHADOW_ACCEPTANCE_SCHEMA,
+    created_at_unix_ms: createdAt,
+    status,
+    report_sha256: value.report_sha256,
+    recomputed_report_sha256: value.recomputed_report_sha256,
+    report_generated_at_unix_ms: value.report_generated_at_unix_ms,
+    report_age_ms: value.report_age_ms,
+    operational_status: value.operational_status,
+    scenario_pack_status: value.scenario_pack_status,
+    fixture_only_validation_passed: value.fixture_only_validation_passed,
+    operational_inputs_fixture: value.operational_inputs_fixture,
+    canonical_operational_paths: value.canonical_operational_paths,
+    action: value.action,
+    decision_sha256: value.decision_sha256,
+    input_sha256: inputs,
+    scenario_pack_sha256: value.scenario_pack_sha256,
+    confirmation_sha256: value.confirmation_sha256,
+    blockers,
+  }
+  const basisSha = conditionsShadowCanonicalSha(basis)
+  return value.acceptance_basis_sha256 === basisSha && value.receipt_id === `equipment-shadow-acceptance-${basisSha.slice(0, 16)}`
+}
+
+function summarizeEquipmentShadowAcceptance(
+  payload: Record<string, unknown> | null,
+  artifactPresent: boolean,
+  report: Record<string, unknown> | null,
+  reportSummary: ControlCenterEvidence["otclientHelper"]["equipmentShadowReplay"],
+  nowMs = Date.now(),
+): ControlCenterEvidence["otclientHelper"]["equipmentShadowAcceptance"] {
+  const data = payload ?? {}
+  const createdAt = data.created_at_unix_ms
+  const createdAtValid = typeof createdAt === "number" && Number.isSafeInteger(createdAt) && createdAt > 0
+  const blockers = Array.isArray(data.blockers) && data.blockers.every((item) => typeof item === "string")
+    ? data.blockers.map((item) => sanitizeText(String(item), 100))
+    : []
+  const contractValid = Boolean(payload && createdAtValid && validateEquipmentShadowAcceptance(data))
+  const reportHash = report ? conditionsShadowCanonicalSha(report) : ""
+  const reportHashMatch = contractValid && reportHash !== "" && data.report_sha256 === reportHash && data.recomputed_report_sha256 === reportHash
+  const ageMs = createdAtValid ? nowMs - createdAt : null
+  const fresh = contractValid && ageMs !== null && ageMs >= 0 && ageMs <= EQUIPMENT_SHADOW_MAX_AGE_MS
+  const accepted = Boolean(
+    fresh && reportHashMatch && reportSummary.contractValid && reportSummary.fresh &&
+      reportSummary.status === "shadow_plan_ready_for_operator_review" &&
+      data.status === "accepted" && data.acceptance_granted === true &&
+      data.receipt_persisted === true && data.canonical_operational_paths === true && data.operational_inputs_fixture === false,
+  )
+  const acceptedReportInvalid = data.status === "accepted" && (
+    !reportSummary.contractValid || !reportSummary.fresh || reportSummary.status !== "shadow_plan_ready_for_operator_review"
+  )
+  const status = !artifactPresent ? "missing" : !contractValid || !reportHashMatch || acceptedReportInvalid ? "invalid" : !fresh ? "stale" : String(data.status || "invalid")
+  return {
+    status,
+    fresh,
+    contractValid,
+    reportHashMatch,
+    acceptanceGranted: accepted,
+    p11PredecessorEligible: accepted,
+    blockers: contractValid ? blockers : [],
+    runtimeReadinessClaimed: false,
+    dispatchAllowed: false,
+    runtimeActions: false,
+  }
+}
+
+const REFRESH_STAGES = ["capture_profile_doctor", "observation_preview", "dependency_preflight", "candidate_catalog", "capture_profile_change_plan", "operator_readiness", "consumer_parity"] as const
+const REFRESH_KEYS = ["schema_version", "status", "run_id", "started_at_unix_ms", "completed_at_unix_ms", "duration_ms", "stage_count", "stage_order", "stage_receipts", "artifact_hashes", "source_statuses", "source_blockers", "canonical_aggregate_sha256", "artifact_skew_ms", "max_artifact_skew_ms", "oldest_artifact_age_ms", "freshness_max_age_ms", "hashes_verified", "schemas_verified", "no_action_verified", "eligibility_verified", "mixed_run_detected", "stale_artifact_detected", "hash_mismatch_detected", "all_source_stages_ready", "operator_inputs_ready_observed", "eligibility_changed", "eligibility_state", "acceptance_granted", "operational_readiness_claimed", "runtime_actions", "dispatch_allowed", "executes_plan", "execute_once_allowed", "promotion_allowed", "live_file_writes", "intrusive_actions_performed", "live_safety"] as const
+const REFRESH_RECEIPT_KEYS = ["stage_index", "stage_id", "artifact_filename", "schema_version", "reported_status", "blockers", "artifact_sha256", "artifact_modified_at_unix_ms", "source_timestamp_unix_ms", "recorded_at_unix_ms", "no_action_valid", "eligibility_valid"] as const
+
+function summarizeEquipmentOperatorRefreshRun(payload: Record<string, unknown> | null, present: boolean, nowMs = Date.now()): ControlCenterEvidence["otclientHelper"]["equipmentOperatorRefreshRun"] {
+  const data = payload ?? {}
+  const hashes = isRecord(data.artifact_hashes) ? data.artifact_hashes : {}
+  const statuses = isRecord(data.source_statuses) ? data.source_statuses : {}
+  const sourceBlockers = isRecord(data.source_blockers) ? data.source_blockers : {}
+  const exactStages = (value: unknown) => isRecord(value) && hasExactKeys(value, REFRESH_STAGES)
+  const safeInt = (value: unknown) => typeof value === "number" && Number.isSafeInteger(value)
+  const falseFlags = ["eligibility_changed", "acceptance_granted", "operational_readiness_claimed", "runtime_actions", "dispatch_allowed", "executes_plan", "execute_once_allowed", "promotion_allowed", "live_file_writes"]
+  const errors: string[] = []
+  if (!payload || !hasExactKeys(data, REFRESH_KEYS)) errors.push("top-level contract mismatch")
+  if (data.schema_version !== P10_EQUIPMENT_OPERATOR_REFRESH_RUN_SCHEMA || data.status !== "completed") errors.push("schema/status mismatch")
+  if (typeof data.run_id !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(data.run_id)) errors.push("run_id invalid")
+  if (!safeInt(data.started_at_unix_ms) || !safeInt(data.completed_at_unix_ms) || !safeInt(data.duration_ms)) errors.push("timestamps invalid")
+  if (data.stage_count !== 7 || JSON.stringify(data.stage_order) !== JSON.stringify(REFRESH_STAGES)) errors.push("stage order invalid")
+  const receipts = Array.isArray(data.stage_receipts) ? data.stage_receipts : []
+  if (receipts.length !== 7 || receipts.some((receipt, index) => !hasExactKeys(receipt, REFRESH_RECEIPT_KEYS) || receipt.stage_index !== index + 1 || receipt.stage_id !== REFRESH_STAGES[index] || receipt.no_action_valid !== true || receipt.eligibility_valid !== true || typeof receipt.artifact_sha256 !== "string" || !/^[0-9a-f]{64}$/.test(receipt.artifact_sha256) || !Array.isArray(receipt.blockers))) errors.push("stage receipts invalid")
+  if (!exactStages(hashes) || !exactStages(statuses) || !exactStages(sourceBlockers)) errors.push("stage maps invalid")
+  if (Object.values(hashes).some((v) => typeof v !== "string" || !/^[0-9a-f]{64}$/.test(v))) errors.push("stage hash invalid")
+  if (typeof data.canonical_aggregate_sha256 !== "string" || !/^[0-9a-f]{64}$/.test(data.canonical_aggregate_sha256)) errors.push("aggregate hash invalid")
+  if (["hashes_verified", "schemas_verified", "no_action_verified", "eligibility_verified"].some((k) => data[k] !== true) || falseFlags.some((k) => data[k] !== false) || data.eligibility_state !== "unchanged" || !Array.isArray(data.intrusive_actions_performed) || data.intrusive_actions_performed.length !== 0) errors.push("safety contract invalid")
+  if (data.mixed_run_detected !== false || data.stale_artifact_detected !== false || data.hash_mismatch_detected !== false || data.max_artifact_skew_ms !== 30_000 || data.freshness_max_age_ms !== 30_000 || typeof data.live_safety !== "string" || data.live_safety.length < 64) errors.push("verification contract invalid")
+  const completed = safeInt(data.completed_at_unix_ms) ? data.completed_at_unix_ms as number : null
+  const age = completed === null ? null : nowMs - completed
+  const valid = errors.length === 0
+  const fresh = valid && age !== null && age >= 0 && age <= 30_000
+  const blockers = valid ? Object.entries(sourceBlockers).flatMap(([stage, value]) => Array.isArray(value) ? value.filter((v): v is string => typeof v === "string").map((v) => `${stage}: ${sanitizeText(v, 100)}`) : []) : []
+  return {
+    status: !present ? "missing" : !valid ? "invalid" : !fresh ? "stale" : "completed", reportedStatus: typeof data.status === "string" ? data.status : "missing",
+    contractValid: valid, contractErrors: present ? errors : [], fresh, ageMs: age, runId: valid ? String(data.run_id) : "",
+    startedAtUnixMs: valid ? data.started_at_unix_ms as number : null, completedAtUnixMs: valid ? completed : null, durationMs: valid ? data.duration_ms as number : null,
+    canonicalAggregateSha256: valid ? String(data.canonical_aggregate_sha256) : "", artifactHashes: valid ? hashes as Record<string, string> : {}, sourceStatuses: valid ? statuses as Record<string, string> : {}, blockers,
+    noActionVerified: valid && data.no_action_verified === true, eligibilityChanged: false, eligibilityState: "unchanged", dispatchAllowed: false, runtimeActions: false, executesPlan: false, executeOnceAllowed: false, promotionAllowed: false, liveFileWrites: false, intrusiveActionsPerformed: [], readOnly: true,
+  }
+}
+
 async function collectOtclientHelperStatus(
   config: ControlCenterEvidenceConfig,
 ): Promise<ControlCenterEvidence["otclientHelper"]> {
@@ -2367,6 +3306,24 @@ async function collectOtclientHelperStatus(
   const backgroundStatusArtifact = await statIfExists(config.helperBackgroundStatusPath)
   const conditionsShadowReplay = await readStrictJsonIfExists(config.helperConditionsShadowReplayPath)
   const conditionsShadowReplayArtifact = await statIfExists(config.helperConditionsShadowReplayPath)
+  const equipmentObservationPreview = await readStrictJsonIfExists(config.helperEquipmentObservationPreviewPath)
+  const equipmentObservationPreviewArtifact = await statIfExists(config.helperEquipmentObservationPreviewPath)
+  const equipmentCandidateCatalog = await readStrictJsonIfExists(config.helperEquipmentCandidateCatalogPath)
+  const equipmentCandidateCatalogArtifact = await statIfExists(config.helperEquipmentCandidateCatalogPath)
+  const equipmentCaptureProfileDoctor = await readStrictJsonIfExists(config.helperEquipmentCaptureProfileDoctorPath)
+  const equipmentCaptureProfileDoctorArtifact = await statIfExists(config.helperEquipmentCaptureProfileDoctorPath)
+  const equipmentCaptureProfileChangePlan = await readStrictJsonIfExists(config.helperEquipmentCaptureProfileChangePlanPath)
+  const equipmentCaptureProfileChangePlanArtifact = await statIfExists(config.helperEquipmentCaptureProfileChangePlanPath)
+  const equipmentDependencyPreflight = await readStrictJsonIfExists(config.helperEquipmentDependencyPreflightPath)
+  const equipmentDependencyPreflightArtifact = await statIfExists(config.helperEquipmentDependencyPreflightPath)
+  const equipmentOperatorReadiness = await readStrictJsonIfExists(config.helperEquipmentOperatorReadinessPath)
+  const equipmentOperatorReadinessArtifact = await statIfExists(config.helperEquipmentOperatorReadinessPath)
+  const equipmentOperatorRefreshRun = await readStrictJsonIfExists(config.helperEquipmentOperatorRefreshRunPath)
+  const equipmentOperatorRefreshRunArtifact = await statIfExists(config.helperEquipmentOperatorRefreshRunPath)
+  const equipmentShadowReplay = await readStrictJsonIfExists(config.helperEquipmentShadowReplayPath)
+  const equipmentShadowReplayArtifact = await statIfExists(config.helperEquipmentShadowReplayPath)
+  const equipmentShadowAcceptance = await readStrictJsonIfExists(config.helperEquipmentShadowAcceptancePath)
+  const equipmentShadowAcceptanceArtifact = await statIfExists(config.helperEquipmentShadowAcceptancePath)
 
   const releaseGateStatus = String(releaseGate?.status || "missing")
   const validationStatus = String(validation?.status || "missing")
@@ -2408,6 +3365,62 @@ async function collectOtclientHelperStatus(
     conditionsShadowReplay,
     conditionsShadowReplayArtifact !== null,
   )
+  const equipmentObservationPreviewSummary = summarizeEquipmentP10Artifact(
+    equipmentObservationPreview,
+    equipmentObservationPreviewArtifact !== null,
+    EQUIPMENT_P10_ARTIFACT_SPECS.observationPreview,
+    toControlCenterDisplayPath(config.helperEquipmentObservationPreviewPath),
+    equipmentObservationPreviewArtifact?.mtimeMs ?? null,
+  )
+  const equipmentCandidateCatalogSummary = summarizeEquipmentP10Artifact(
+    equipmentCandidateCatalog,
+    equipmentCandidateCatalogArtifact !== null,
+    EQUIPMENT_P10_ARTIFACT_SPECS.candidateCatalog,
+    toControlCenterDisplayPath(config.helperEquipmentCandidateCatalogPath),
+    equipmentCandidateCatalogArtifact?.mtimeMs ?? null,
+  )
+  const equipmentCaptureProfileDoctorSummary = summarizeEquipmentP10Artifact(
+    equipmentCaptureProfileDoctor,
+    equipmentCaptureProfileDoctorArtifact !== null,
+    EQUIPMENT_P10_ARTIFACT_SPECS.captureProfileDoctor,
+    toControlCenterDisplayPath(config.helperEquipmentCaptureProfileDoctorPath),
+    equipmentCaptureProfileDoctorArtifact?.mtimeMs ?? null,
+  )
+  const equipmentCaptureProfileChangePlanSummary = summarizeEquipmentP10Artifact(
+    equipmentCaptureProfileChangePlan,
+    equipmentCaptureProfileChangePlanArtifact !== null,
+    EQUIPMENT_P10_ARTIFACT_SPECS.captureProfileChangePlan,
+    toControlCenterDisplayPath(config.helperEquipmentCaptureProfileChangePlanPath),
+    equipmentCaptureProfileChangePlanArtifact?.mtimeMs ?? null,
+  )
+  const equipmentDependencyPreflightSummary = summarizeEquipmentP10Artifact(
+    equipmentDependencyPreflight,
+    equipmentDependencyPreflightArtifact !== null,
+    EQUIPMENT_P10_ARTIFACT_SPECS.dependencyPreflight,
+    toControlCenterDisplayPath(config.helperEquipmentDependencyPreflightPath),
+    equipmentDependencyPreflightArtifact?.mtimeMs ?? null,
+  )
+  const equipmentOperatorReadinessSummary = summarizeEquipmentP10Artifact(
+    equipmentOperatorReadiness,
+    equipmentOperatorReadinessArtifact !== null,
+    EQUIPMENT_P10_ARTIFACT_SPECS.operatorReadiness,
+    toControlCenterDisplayPath(config.helperEquipmentOperatorReadinessPath),
+    equipmentOperatorReadinessArtifact?.mtimeMs ?? null,
+  )
+  const equipmentOperatorRefreshRunSummary = summarizeEquipmentOperatorRefreshRun(
+    equipmentOperatorRefreshRun,
+    equipmentOperatorRefreshRunArtifact !== null,
+  )
+  const equipmentShadowSummary = summarizeEquipmentShadowReplay(
+    equipmentShadowReplay,
+    equipmentShadowReplayArtifact !== null,
+  )
+  const equipmentShadowAcceptanceSummary = summarizeEquipmentShadowAcceptance(
+    equipmentShadowAcceptance,
+    equipmentShadowAcceptanceArtifact !== null,
+    equipmentShadowReplay,
+    equipmentShadowSummary,
+  )
   const releasableToLive = releaseGateReleasableToLive && blockers.length === 0
   let status = "missing"
   if (manifest) {
@@ -2439,6 +3452,15 @@ async function collectOtclientHelperStatus(
     blockers: blockers.length ? blockers : Array.isArray(goalStatus?.blockers) ? goalStatus.blockers.map(String) : [],
     backgroundStatus: backgroundSummary,
     conditionsShadowReplay: conditionsShadowSummary,
+    equipmentObservationPreview: equipmentObservationPreviewSummary,
+    equipmentCandidateCatalog: equipmentCandidateCatalogSummary,
+    equipmentCaptureProfileDoctor: equipmentCaptureProfileDoctorSummary,
+    equipmentCaptureProfileChangePlan: equipmentCaptureProfileChangePlanSummary,
+    equipmentDependencyPreflight: equipmentDependencyPreflightSummary,
+    equipmentOperatorReadiness: equipmentOperatorReadinessSummary,
+    equipmentOperatorRefreshRun: equipmentOperatorRefreshRunSummary,
+    equipmentShadowReplay: equipmentShadowSummary,
+    equipmentShadowAcceptance: equipmentShadowAcceptanceSummary,
     nextAction: String(releaseGate?.next_action || goalStatus?.next_action || smokeStatus?.next_action || "Run ValidateDev."),
     nextCommand,
     sourcePaths: {
@@ -2453,6 +3475,15 @@ async function collectOtclientHelperStatus(
       livePromotion: toControlCenterDisplayPath(config.helperLivePromotionPath),
       backgroundStatus: toControlCenterDisplayPath(config.helperBackgroundStatusPath),
       conditionsShadowReplay: toControlCenterDisplayPath(config.helperConditionsShadowReplayPath),
+      equipmentObservationPreview: toControlCenterDisplayPath(config.helperEquipmentObservationPreviewPath),
+      equipmentCandidateCatalog: toControlCenterDisplayPath(config.helperEquipmentCandidateCatalogPath),
+      equipmentCaptureProfileDoctor: toControlCenterDisplayPath(config.helperEquipmentCaptureProfileDoctorPath),
+      equipmentCaptureProfileChangePlan: toControlCenterDisplayPath(config.helperEquipmentCaptureProfileChangePlanPath),
+      equipmentDependencyPreflight: toControlCenterDisplayPath(config.helperEquipmentDependencyPreflightPath),
+      equipmentOperatorReadiness: toControlCenterDisplayPath(config.helperEquipmentOperatorReadinessPath),
+      equipmentOperatorRefreshRun: toControlCenterDisplayPath(config.helperEquipmentOperatorRefreshRunPath),
+      equipmentShadowReplay: toControlCenterDisplayPath(config.helperEquipmentShadowReplayPath),
+      equipmentShadowAcceptance: toControlCenterDisplayPath(config.helperEquipmentShadowAcceptancePath),
     },
   }
 }

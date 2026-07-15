@@ -37,12 +37,14 @@ ROADMAP_GENERATION_DOCS = {
             "P6: Codex Integration",
             "P7_OPERATOR_BRIEF.json",
             "Expand the CTOAi plugin beyond these five safe-write MCP tools only after",
-            "P8 `BackgroundNoScreen` is `implementation_complete` and",
-            "`operational_acceptance_blocked`.",
-            "P8 acceptance remains separate from",
-            "promotion-bound trusted pin",
-            "full producer/consumer parity",
-            "P9 Conditions is `offline_implementation_complete` and",
+            "P8, P9, P10, and P11 are `operational_acceptance_complete`.",
+            "P12 execute-once review is `closed_with_deferred_heal_friend_lane`.",
+            "P12 Conditions is `operational_acceptance_complete`",
+            "P12 Equipment is `operational_acceptance_complete`",
+            "p12-equipment-bdf7027cf48c438d",
+            "one attempt, zero retry",
+            "P12 Heal Friend is `closed_blocked_no_compatible_vocation`",
+            "P13 is `runtime_evidence_ready`",
             "Fixture success is never reported as runtime readiness.",
         ],
     },
@@ -52,14 +54,18 @@ ROADMAP_GENERATION_DOCS = {
             "P6 Codex Integration",
             "P7 operator brief",
             "plugin-style operator surface",
-            "P8 `BackgroundNoScreen` is `implementation_complete` and",
-            "`operational_acceptance_blocked`.",
-            "P8 operational acceptance is fail-closed",
-            "protected live client",
-            "full producer/consumer parity for the",
-            "The observer cannot create that trusted pin.",
-            "P9 Conditions is `offline_implementation_complete` and",
-            "P10 stays blocked operationally",
+            "P8, P9, P10, and P11 are `operational_acceptance_complete`.",
+            "P12 execute-once review is `closed_with_deferred_heal_friend_lane`.",
+            "P12 Conditions is `operational_acceptance_complete`",
+            "P12 Equipment is also",
+            "`operational_acceptance_complete`",
+            "terminally disarmed rejected Equipment attempt remains historical",
+            "p12-equipment-bdf7027cf48c438d",
+            "exactly one `3097 -> 3099` executor request",
+            "P12 Heal Friend is",
+            "`closed_blocked_no_compatible_vocation`",
+            "P13 is `runtime_evidence_ready`",
+            "cannot be replayed",
         ],
     },
     "p8_p16_execution_roadmap": {
@@ -69,10 +75,15 @@ ROADMAP_GENERATION_DOCS = {
             "P9 — Conditions Shadow Observation And Replay",
             "P15 — Combat Design-Only Digital Twin",
             "P16 — CaveBot Design-Only Digital Twin",
-            "P8 is `implementation_complete` and",
-            "`operational_acceptance_blocked` after P6/P7 readiness",
-            "P9 is `offline_implementation_complete` while its",
-            "operational acceptance remains blocked by the same P8 proof gate",
+            "P8, P9, P10, and P11 are `operational_acceptance_complete`.",
+            "P12 execute-once",
+            "`closed_with_deferred_heal_friend_lane`",
+            "Conditions and Equipment lanes are `operational_acceptance_complete`",
+            "p12-equipment-bdf7027cf48c438d",
+            "one attempt, zero",
+            "P12 Heal Friend plan",
+            "closed_blocked_no_compatible_vocation",
+            "Status: `runtime_evidence_ready`",
             "manifest pinned by an official promotion record",
             "the observer never creates or",
         ],
@@ -195,6 +206,7 @@ DOC_SYNC_CHECKS = [
             "BackgroundNoScreen",
             "P12 — Execute-Once Sandbox Acceptance",
             "P14 — Independent Runner And Release Automation",
+            "foundation_in_progress",
         ],
     },
 ]
@@ -1542,6 +1554,11 @@ def read_roadmap_text(path: Path) -> tuple[str, int]:
     return text[:ROADMAP_MAX_BYTES], size
 
 
+def normalize_roadmap_marker_text(value: str) -> str:
+    """Make roadmap marker checks insensitive to Markdown line wrapping."""
+    return re.sub(r"\s+", " ", value).strip()
+
+
 def build_roadmap_generation_payload(
     generated_at: str,
     doc_sync_payload: dict[str, Any] | None = None,
@@ -1578,7 +1595,12 @@ def build_roadmap_generation_payload(
         text, source_bytes = read_roadmap_text(path)
         exists = bool(text)
         needles = [str(item) for item in config["needles"]]
-        missing = [needle for needle in needles if needle not in text]
+        normalized_text = normalize_roadmap_marker_text(text)
+        missing = [
+            needle
+            for needle in needles
+            if normalize_roadmap_marker_text(needle) not in normalized_text
+        ]
         status = "passed" if exists and not missing else "blocked"
         if not exists:
             hard_blockers.append(f"missing_doc:{rel_path}")
@@ -1675,6 +1697,15 @@ def read_release_evidence_summary(
     conditions_shadow = helper.get("conditions_shadow")
     if not isinstance(conditions_shadow, dict):
         conditions_shadow = {}
+    equipment_shadow = helper.get("equipment_shadow")
+    if not isinstance(equipment_shadow, dict):
+        equipment_shadow = {}
+    equipment_acceptance = helper.get("equipment_shadow_acceptance")
+    if not isinstance(equipment_acceptance, dict):
+        equipment_acceptance = {}
+    roadmap_phase_state = helper.get("roadmap_phase_state")
+    if not isinstance(roadmap_phase_state, dict):
+        roadmap_phase_state = {}
     next_steps = queue.get("next_steps")
     if not isinstance(next_steps, list):
         next_steps = []
@@ -1728,6 +1759,38 @@ def read_release_evidence_summary(
             )
             is True,
         },
+        "otclient_helper_equipment_shadow": {
+            "status": str(equipment_shadow.get("status") or "missing"),
+            "contract_valid": equipment_shadow.get("contract_valid") is True,
+            "fresh": equipment_shadow.get("fresh") is True,
+            "fixture_validation_status": str(
+                equipment_shadow.get("fixture_validation_status") or "missing"
+            ),
+            "rollback_simulation": str(
+                equipment_shadow.get("rollback_simulation") or "blocked"
+            ),
+            "runtime_readiness_claimed": equipment_shadow.get(
+                "runtime_readiness_claimed"
+            )
+            is True,
+        },
+        "otclient_helper_equipment_acceptance": {
+            "status": str(equipment_acceptance.get("status") or "missing"),
+            "contract_valid": equipment_acceptance.get("contract_valid") is True,
+            "fresh": equipment_acceptance.get("fresh") is True,
+            "report_hash_match": equipment_acceptance.get("report_hash_match") is True,
+            "acceptance_granted": equipment_acceptance.get("acceptance_granted")
+            is True,
+            "p11_predecessor_eligible": equipment_acceptance.get(
+                "p11_predecessor_eligible"
+            )
+            is True,
+            "runtime_readiness_claimed": equipment_acceptance.get(
+                "runtime_readiness_claimed"
+            )
+            is True,
+        },
+        "otclient_helper_roadmap_phase_state": roadmap_phase_state,
         "sandbox_smoke_queue": {
             "status": str(queue.get("status") or ""),
             "runtime_status": str(queue.get("runtime_status") or ""),
@@ -2789,6 +2852,28 @@ def render_p7_operator_brief(payload: dict[str, Any]) -> str:
         if isinstance(release_evidence.get("otclient_helper_conditions_shadow"), dict)
         else {}
     )
+    equipment_shadow = (
+        release_evidence.get("otclient_helper_equipment_shadow")
+        if isinstance(release_evidence.get("otclient_helper_equipment_shadow"), dict)
+        else {}
+    )
+    equipment_acceptance = (
+        release_evidence.get("otclient_helper_equipment_acceptance")
+        if isinstance(
+            release_evidence.get("otclient_helper_equipment_acceptance"), dict
+        )
+        else {}
+    )
+    roadmap_phase_state = (
+        release_evidence.get("otclient_helper_roadmap_phase_state")
+        if isinstance(release_evidence.get("otclient_helper_roadmap_phase_state"), dict)
+        else {}
+    )
+    p12_phase = (
+        roadmap_phase_state.get("p12")
+        if isinstance(roadmap_phase_state.get("p12"), dict)
+        else {}
+    )
     action_audit = (
         cockpit_handoff.get("action_audit")
         if isinstance(cockpit_handoff.get("action_audit"), dict)
@@ -2847,11 +2932,38 @@ def render_p7_operator_brief(payload: dict[str, Any]) -> str:
             f"runtime `{background_status.get('runtime_state', 'unknown')}`."
         ),
         (
+            f"- Helper roadmap phase evidence: "
+            f"`{roadmap_phase_state.get('status', 'missing')}`; "
+            f"aligned `{roadmap_phase_state.get('aligned_with_current_roadmap', False)}`; "
+            f"P8/P9/P10/P11 "
+            f"`{roadmap_phase_state.get('p8', 'missing')}`/"
+            f"`{roadmap_phase_state.get('p9', 'missing')}`/"
+            f"`{roadmap_phase_state.get('p10', 'missing')}`/"
+            f"`{roadmap_phase_state.get('p11', 'missing')}`; "
+            f"P12 `{p12_phase.get('status', 'missing')}`."
+        ),
+        (
             f"- P9 Conditions shadow: `{conditions_shadow.get('status', 'missing')}`; "
             f"contract `{conditions_shadow.get('contract_valid', False)}`; "
             f"fresh `{conditions_shadow.get('fresh', False)}`; "
             f"fixtures `{conditions_shadow.get('fixture_validation_status', 'missing')}`; "
             f"runtime readiness `{conditions_shadow.get('runtime_readiness_claimed', False)}`."
+        ),
+        (
+            f"- P10 Equipment shadow: `{equipment_shadow.get('status', 'missing')}`; "
+            f"contract `{equipment_shadow.get('contract_valid', False)}`; "
+            f"fresh `{equipment_shadow.get('fresh', False)}`; "
+            f"fixtures `{equipment_shadow.get('fixture_validation_status', 'missing')}`; "
+            f"rollback `{equipment_shadow.get('rollback_simulation', 'blocked')}`; "
+            f"runtime readiness `{equipment_shadow.get('runtime_readiness_claimed', False)}`."
+        ),
+        (
+            f"- P10 Equipment acceptance: `{equipment_acceptance.get('status', 'missing')}`; "
+            f"contract `{equipment_acceptance.get('contract_valid', False)}`; "
+            f"fresh `{equipment_acceptance.get('fresh', False)}`; "
+            f"report bound `{equipment_acceptance.get('report_hash_match', False)}`; "
+            f"accepted `{equipment_acceptance.get('acceptance_granted', False)}`; "
+            f"P11 eligible `{equipment_acceptance.get('p11_predecessor_eligible', False)}`."
         ),
         (
             f"- Roadmap generation: `{roadmap_generation.get('status', 'missing')}`; "

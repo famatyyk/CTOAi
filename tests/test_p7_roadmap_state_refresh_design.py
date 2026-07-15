@@ -9,7 +9,7 @@ RISK_MODEL = ROOT / "docs" / "CTOAI_COMMAND_RISK_MODEL.md"
 ROADMAP = ROOT / "AI" / "FEATURE_ROADMAP.md"
 
 
-def test_next_p7_action_has_complete_design_but_is_not_enabled():
+def test_p13_cli_is_implemented_but_mcp_candidate_is_not_enabled():
     design = DESIGN.read_text(encoding="utf-8")
     risk = RISK_MODEL.read_text(encoding="utf-8")
     roadmap = ROADMAP.read_text(encoding="utf-8")
@@ -17,7 +17,7 @@ def test_next_p7_action_has_complete_design_but_is_not_enabled():
     for marker in [
         "roadmap-state-refresh",
         "ctoai_roadmap_state_refresh",
-        "design_only",
+        "implemented_cli_only_confirmed_refresh_complete",
         "safe_write",
         "dry_run=true",
         "refresh roadmap state",

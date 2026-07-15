@@ -1,13 +1,24 @@
 -- ctoa_otclient_loader.lua  [CTOA OTClient Native]
 -- Safe loader for CTOA OTClient helper UI.
 
+local LOADER_VERSION = "2.4.1"
+local PACKAGE_VERSION = "v2.4.1"
 local CTOA_OTCLIENT = rawget(_G, "CTOA_OTCLIENT") or {
-    version = "2.2.1",
+    version = LOADER_VERSION,
+    loader_version = LOADER_VERSION,
+    package_version = PACKAGE_VERSION,
     mode = "helper-ui-only",
     modules = {},
     loaded = false,
     loading = false,
 }
+CTOA_OTCLIENT.version = LOADER_VERSION
+CTOA_OTCLIENT.loader_version = LOADER_VERSION
+CTOA_OTCLIENT.package_version = PACKAGE_VERSION
+CTOA_OTCLIENT.load_event = CTOA_OTCLIENT.load_event or nil
+CTOA_OTCLIENT.load_scheduled = CTOA_OTCLIENT.load_scheduled == true
+CTOA_OTCLIENT.events_connected = CTOA_OTCLIENT.events_connected == true
+CTOA_OTCLIENT.initialized = CTOA_OTCLIENT.initialized == true
 
 local LOAD_DELAY_MS = 1500
 local HELPER_MODULE = "ctoa_native_helper.lua"
@@ -35,7 +46,13 @@ local function log(msg)
     bootLog(msg)
     if modules and modules.game_console and modules.game_console.addText then
         pcall(function()
-            modules.game_console.addText("[CTOA-OTC] " .. msg, MessageModes.ModeStatus)
+            local modes = rawget(_G, "MessageModes")
+            local mode = type(modes) == "table" and (modes.Status or modes.ModeStatus) or nil
+            if mode ~= nil then
+                modules.game_console.addText("[CTOA-OTC] " .. msg, mode)
+            else
+                modules.game_console.addText("[CTOA-OTC] " .. msg)
+            end
         end)
     end
 end
@@ -54,7 +71,9 @@ end
 
 local function resolveModuleDir(anchorFile)
     local candidates = {
+        "/ctoa_otclient/",
         "ctoa_otclient/",
+        "mods/ctoa_otclient/",
     }
     for _, dir in ipairs(candidates) do
         if fileExists(dir .. anchorFile) then
@@ -62,10 +81,6 @@ local function resolveModuleDir(anchorFile)
         end
     end
     return nil
-end
-
-local function isOnline()
-    return g_game and g_game.isOnline and g_game.isOnline()
 end
 
 local function loadModule(moduleName, filePath)
@@ -215,44 +230,44 @@ local function loadHelperOnly()
     end
 end
 
-local function scheduleHelperLoad()
-    if CTOA_OTCLIENT.loaded or CTOA_OTCLIENT.loading then
-        return
-    end
-    if scheduleEvent then
-        scheduleEvent(loadHelperOnly, LOAD_DELAY_MS)
-    elseif addEvent then
-        addEvent(loadHelperOnly)
-    else
-        loadHelperOnly()
-    end
-end
-
-local function onGameStart()
-    if CTOA_OTCLIENT.loaded then
-        local helper = rawget(_G, "CTOA_Helper")
-        if type(helper) == "table" and type(helper.handleGameStart) == "function" then
-            pcall(helper.handleGameStart)
-        end
-        log("Game started; reused existing helper singleton")
-        return
-    end
-    scheduleHelperLoad()
-end
-
-local function onGameEnd()
-    CTOA_OTCLIENT.loading = false
-    log("Game ended; helper singleton retained for next login")
-end
-
-if g_game and connect then
-    connect(g_game, {
-        onGameStart = onGameStart,
-        onGameEnd = onGameEnd,
-    })
-end
-
-scheduleHelperLoad()
-
 CTOA_OTCLIENT.loadHelperOnly = loadHelperOnly
+
+local function selectionAuthorized()
+    local loader = rawget(_G, "CTOA_PROJECT_LOADER")
+    return type(loader) == "table"
+        and type(loader.isSelected) == "function"
+        and loader.isSelected("helper") == true
+end
+
+function CTOA_OTCLIENT.init()
+    if CTOA_OTCLIENT.loaded then return true end
+    if not selectionAuthorized() then
+        log("Initialization rejected: neutral loader did not select Helper")
+        return false
+    end
+    CTOA_OTCLIENT.initialized = true
+    loadHelperOnly()
+    return CTOA_OTCLIENT.loaded == true
+end
+
+function CTOA_OTCLIENT.terminate()
+    if CTOA_OTCLIENT.load_event and removeEvent then
+        pcall(removeEvent, CTOA_OTCLIENT.load_event)
+    end
+    CTOA_OTCLIENT.load_event = nil
+    CTOA_OTCLIENT.load_scheduled = false
+    CTOA_OTCLIENT.events_connected = false
+    CTOA_OTCLIENT.callbacks = nil
+    CTOA_OTCLIENT.initialized = false
+    CTOA_OTCLIENT.loading = false
+    local helper = rawget(_G, "CTOA_Helper")
+    if CTOA_OTCLIENT.loaded and type(helper) == "table" and type(helper.terminate) == "function" then
+        pcall(helper.terminate)
+    end
+    CTOA_OTCLIENT.loaded = false
+    CTOA_OTCLIENT.modules = {}
+    return true
+end
+
 _G.CTOA_OTCLIENT = CTOA_OTCLIENT
+return CTOA_OTCLIENT

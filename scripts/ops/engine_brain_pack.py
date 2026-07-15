@@ -46,6 +46,10 @@ CURATED_FILES = [
     "docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md",
     "docs/otclient/P9_CONDITIONS_SHADOW_REPLAY_DESIGN.md",
     "docs/otclient/P9_CONDITIONS_SHADOW_ACCEPTANCE.md",
+    "docs/otclient/P10_EQUIPMENT_SHADOW_REPLAY_DESIGN.md",
+    "docs/otclient/P11_HEAL_FRIEND_SHADOW_REPLAY_DESIGN.md",
+    "docs/otclient/P14_INDEPENDENT_RUNNER_CONTRACT.md",
+    "docs/otclient/CTOA_EXCLUSIVE_PROJECT_LOADER_V1.md",
     "docs/otclient/HELPER_RUNTIME_MODULE_GATES_V1.md",
     "AI/KNOWN_BUGS.md",
     "AI/TECH_DEBT.md",
@@ -63,6 +67,8 @@ CURATED_FILES = [
     "AI/generated/P7_ACTION_READINESS.md",
     "AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.md",
     "AI/generated/P7_OPERATOR_BRIEF.md",
+    "AI/generated/ROADMAP_STATE.json",
+    "AI/generated/ROADMAP_STATE.md",
 ]
 
 OPTIONAL_SUMMARY_FILES = [
@@ -81,6 +87,8 @@ GENERATED_PLAN3_FILES = [
     "AI/generated/P7_ACTION_READINESS.md",
     "AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.md",
     "AI/generated/P7_OPERATOR_BRIEF.md",
+    "AI/generated/ROADMAP_STATE.json",
+    "AI/generated/ROADMAP_STATE.md",
 ]
 
 PROFILE_FILES = {
@@ -95,6 +103,10 @@ PROFILE_FILES = {
         "docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md",
         "docs/otclient/P9_CONDITIONS_SHADOW_REPLAY_DESIGN.md",
         "docs/otclient/P9_CONDITIONS_SHADOW_ACCEPTANCE.md",
+        "docs/otclient/P10_EQUIPMENT_SHADOW_REPLAY_DESIGN.md",
+        "docs/otclient/P11_HEAL_FRIEND_SHADOW_REPLAY_DESIGN.md",
+        "docs/otclient/P14_INDEPENDENT_RUNNER_CONTRACT.md",
+        "docs/otclient/CTOA_EXCLUSIVE_PROJECT_LOADER_V1.md",
         "docs/otclient/solteria_helper_development_plan.md",
         "docs/otclient/HELPER_RUNTIME_BRIDGE_V1.md",
         "docs/otclient/HELPER_RUNTIME_MODULE_GATES_V1.md",
@@ -122,6 +134,7 @@ PROFILE_FILES = {
         "AI/ARCHITECTURE_INDEX.md",
         "docs/CTOA_CLI.md",
         "docs/P7_ROADMAP_STATE_REFRESH_DESIGN.md",
+        "docs/otclient/P14_INDEPENDENT_RUNNER_CONTRACT.md",
         "docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md",
         *GENERATED_PLAN3_FILES,
     ],

@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ctoa.local/schemas/equipment-shadow-acceptance.schema.json",
+  "title": "CTOAi Equipment Shadow Acceptance v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "receipt_id", "created_at_unix_ms", "mode", "status", "acceptance_granted", "operator_review_completed", "downstream_use_requires_separate_review", "confirmation_required", "confirmation_matched", "confirmation_sha256", "receipt_persisted", "report_sha256", "recomputed_report_sha256", "report_generated_at_unix_ms", "report_age_ms", "operational_status", "scenario_pack_status", "fixture_only_validation_passed", "operational_inputs_fixture", "canonical_operational_paths", "action", "decision_sha256", "input_sha256", "scenario_pack_sha256", "blockers", "acceptance_basis_sha256", "runtime_readiness_claimed", "dispatch_allowed", "runtime_actions", "executes_plan", "execute_once_allowed", "promotion_allowed", "intrusive_actions_performed"],
+  "properties": {
+    "schema_version": {"const": "ctoa.equipment-shadow-acceptance.v1"},
+    "receipt_id": {"type": "string", "pattern": "^equipment-shadow-acceptance-[0-9a-f]{16}$"},
+    "created_at_unix_ms": {"type": "integer", "minimum": 1},
+    "mode": {"const": "data_only_operator_acceptance"},
+    "status": {"enum": ["blocked", "ready_for_operator_review", "accepted"]},
+    "acceptance_granted": {"type": "boolean"},
+    "operator_review_completed": {"type": "boolean"},
+    "downstream_use_requires_separate_review": {"const": true},
+    "confirmation_required": {"const": true},
+    "confirmation_matched": {"type": "boolean"},
+    "confirmation_sha256": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"},
+    "receipt_persisted": {"type": "boolean"},
+    "report_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "recomputed_report_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "report_generated_at_unix_ms": {"type": "integer", "minimum": 0},
+    "report_age_ms": {"type": ["integer", "null"]},
+    "operational_status": {"enum": ["invalid", "operational_acceptance_blocked", "shadow_plan_ready_for_operator_review"]},
+    "scenario_pack_status": {"enum": ["invalid", "failed", "passed"]},
+    "fixture_only_validation_passed": {"type": "boolean"},
+    "operational_inputs_fixture": {"type": "boolean"},
+    "canonical_operational_paths": {"type": "boolean"},
+    "action": {"const": "plan_ring_swap"},
+    "decision_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "input_sha256": {"type": "object", "additionalProperties": false, "required": ["profile", "snapshot", "p9_trace", "p9_receipt"], "properties": {"profile": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "snapshot": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "p9_trace": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "p9_receipt": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}},
+    "scenario_pack_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "blockers": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "acceptance_basis_sha256": {"type": "string", "pattern": "^(?!0{64}$)[0-9a-f]{64}$"},
+    "runtime_readiness_claimed": {"const": false},
+    "dispatch_allowed": {"const": false},
+    "runtime_actions": {"const": false},
+    "executes_plan": {"const": false},
+    "execute_once_allowed": {"const": false},
+    "promotion_allowed": {"const": false},
+    "intrusive_actions_performed": {"const": []}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"status": {"const": "accepted"}}, "required": ["status"]},
+      "then": {
+        "properties": {
+          "acceptance_granted": {"const": true},
+          "operator_review_completed": {"const": true},
+          "confirmation_matched": {"const": true},
+          "confirmation_sha256": {"const": "22ade56fcf6422d1a05882fbb50b7a2a214758fb9de454419d4cd16d5d2838b1"},
+          "receipt_persisted": {"const": true},
+          "report_sha256": {"pattern": "^(?!0{64}$)[0-9a-f]{64}$"},
+          "recomputed_report_sha256": {"pattern": "^(?!0{64}$)[0-9a-f]{64}$"},
+          "report_age_ms": {"type": "integer", "minimum": 0, "maximum": 30000},
+          "operational_status": {"const": "shadow_plan_ready_for_operator_review"},
+          "scenario_pack_status": {"const": "passed"},
+          "fixture_only_validation_passed": {"const": true},
+          "operational_inputs_fixture": {"const": false},
+          "canonical_operational_paths": {"const": true},
+          "decision_sha256": {"pattern": "^(?!0{64}$)[0-9a-f]{64}$"},
+          "input_sha256": {"properties": {"profile": {"pattern": "^(?!0{64}$)[0-9a-f]{64}$"}, "snapshot": {"pattern": "^(?!0{64}$)[0-9a-f]{64}$"}, "p9_trace": {"pattern": "^(?!0{64}$)[0-9a-f]{64}$"}, "p9_receipt": {"pattern": "^(?!0{64}$)[0-9a-f]{64}$"}}},
+          "scenario_pack_sha256": {"pattern": "^(?!0{64}$)[0-9a-f]{64}$"},
+          "blockers": {"maxItems": 0}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"status": {"const": "blocked"}}, "required": ["status"]},
+      "then": {"properties": {"acceptance_granted": {"const": false}, "operator_review_completed": {"const": false}, "receipt_persisted": {"const": false}, "blockers": {"minItems": 1}}}
+    },
+    {
+      "if": {"properties": {"status": {"const": "ready_for_operator_review"}}, "required": ["status"]},
+      "then": {"properties": {"acceptance_granted": {"const": false}, "operator_review_completed": {"const": false}, "receipt_persisted": {"const": false}, "blockers": {"maxItems": 0}}}
+    }
+  ]
+}

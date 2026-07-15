@@ -11,7 +11,7 @@ return {
         mana_potion_enabled=true, mana_potion_threshold=72, mana_potion_hotkey="F2", mana_potion_actionbar_slot="F2",
         mana_potion_cooldown_ms=1000, cooldown_ms=1000,
     },
-    heal_friend = {enabled=false, runtime_enabled=false, observe_party=true, friend_whitelist={}, require_whitelist=true},
+    heal_friend = {enabled=false, runtime_enabled=false, observe_party=true, friend_whitelist={}, friend_target_id=0, priority="single_exact_target", require_whitelist=true},
     conditions = {enabled=false, runtime_enabled=false, observe_states=true},
     equipment = {enabled=false, runtime_enabled=false, observe_slots=true},
     scripting = {enabled=false, runtime_enabled=false, allow_user_snippets=false, allow_runtime_eval=false, policy_mode="deny_all"},

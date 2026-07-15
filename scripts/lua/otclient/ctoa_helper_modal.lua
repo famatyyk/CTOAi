@@ -47,6 +47,10 @@ function Modal.request(action, context, nowMs, ttlMs)
     }
 end
 
+function Modal.modalRequest(action, context, ttlMs, nowMs)
+    return Modal.request(action, context, nowMs, ttlMs)
+end
+
 function Modal.isPending(request, action, nowMs)
     if type(request) ~= "table" then
         return false
@@ -172,6 +176,7 @@ function Modal.contract()
         creates_widgets = false,
         live_shortcuts = false,
         runtime_actions = false,
+        owns_modal_request = true,
         owns_decision_text = true,
         default_ttl_ms = DEFAULT_TTL_MS,
         guarded_actions = {"cavebot_delete", "cavebot_clear", "profile_reset", "ui_reset", "promote_live"},

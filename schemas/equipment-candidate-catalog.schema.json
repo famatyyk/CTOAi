@@ -1,0 +1,181 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ctoa.local/schemas/equipment-candidate-catalog.schema.json",
+  "title": "CTOAi Passive Equipment Candidate Catalog v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "generated_at_unix_ms",
+    "status",
+    "source",
+    "preview_sha256",
+    "preview_status",
+    "preview_blockers",
+    "selection_policy",
+    "recommendation",
+    "ring",
+    "groups",
+    "summary",
+    "blockers",
+    "dispatch_allowed",
+    "runtime_actions",
+    "executes_plan",
+    "execute_once_allowed",
+    "promotion_allowed",
+    "intrusive_actions_performed"
+  ],
+  "properties": {
+    "schema_version": {"const": "ctoa.equipment-candidate-catalog.v1"},
+    "generated_at_unix_ms": {"type": "integer", "minimum": 1},
+    "status": {"enum": ["catalog_ready", "blocked"]},
+    "source": {"const": "equipment_observation_preview"},
+    "preview_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "preview_status": {"enum": ["preview_ready", "blocked", null]},
+    "preview_blockers": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "background_missing",
+          "background_invalid",
+          "background_not_ready",
+          "background_contract_invalid",
+          "equipment_observation_missing",
+          "equipment_observation_invalid",
+          "equipment_observation_future",
+          "equipment_observation_stale",
+          "equipment_observation_provenance_untrusted",
+          "player_offline",
+          "player_dead",
+          "protection_zone_inside",
+          "protection_zone_unknown",
+          "protection_zone_source_untrusted",
+          "inventory_api_unavailable",
+          "containers_incomplete",
+          "ring_missing",
+          "cooldown_active",
+          "cooldown_unknown",
+          "cooldown_source_untrusted",
+          "unsafe_contract"
+        ]
+      }
+    },
+    "selection_policy": {"const": "none"},
+    "recommendation": {"const": null},
+    "ring": {
+      "anyOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["present", "item_id", "count"],
+          "properties": {
+            "present": {"type": "boolean"},
+            "item_id": {"type": "integer", "minimum": 0, "maximum": 65535},
+            "count": {"type": "integer", "minimum": 0, "maximum": 65535}
+          }
+        }
+      ]
+    },
+    "groups": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "item_id",
+          "container_id",
+          "slot_index",
+          "count",
+          "occurrences",
+          "flags"
+        ],
+        "properties": {
+          "item_id": {"type": "integer", "minimum": 0, "maximum": 65535},
+          "container_id": {"type": "integer", "minimum": 0, "maximum": 65535},
+          "slot_index": {"type": "integer", "minimum": 0, "maximum": 65535},
+          "count": {"type": "integer", "minimum": 0, "maximum": 65535},
+          "occurrences": {"type": "integer", "minimum": 1, "maximum": 65535},
+          "flags": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "exact_duplicate",
+                "item_ambiguous",
+                "position_ambiguous",
+                "zero_id"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_count",
+        "exact_group_count",
+        "duplicate_group_count",
+        "unique_item_id_count",
+        "ambiguous_item_id_count",
+        "position_conflict_count",
+        "zero_id_count"
+      ],
+      "properties": {
+        "candidate_count": {"type": "integer", "minimum": 0, "maximum": 65535},
+        "exact_group_count": {"type": "integer", "minimum": 0, "maximum": 65535},
+        "duplicate_group_count": {"type": "integer", "minimum": 0, "maximum": 65535},
+        "unique_item_id_count": {"type": "integer", "minimum": 0, "maximum": 65535},
+        "ambiguous_item_id_count": {"type": "integer", "minimum": 0, "maximum": 65535},
+        "position_conflict_count": {"type": "integer", "minimum": 0, "maximum": 65535},
+        "zero_id_count": {"type": "integer", "minimum": 0, "maximum": 65535}
+      }
+    },
+    "blockers": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "preview_missing",
+          "preview_invalid",
+          "preview_not_ready",
+          "preview_contract_invalid",
+          "preview_observation_missing",
+          "preview_observation_hash_mismatch",
+          "candidates_empty",
+          "candidate_zero_id",
+          "candidate_exact_duplicate",
+          "candidate_position_ambiguous",
+          "candidate_item_ambiguous",
+          "ring_zero_id",
+          "unsafe_contract"
+        ]
+      }
+    },
+    "dispatch_allowed": {"const": false},
+    "runtime_actions": {"const": false},
+    "executes_plan": {"const": false},
+    "execute_once_allowed": {"const": false},
+    "promotion_allowed": {"const": false},
+    "intrusive_actions_performed": {"const": []}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"status": {"const": "catalog_ready"}}},
+      "then": {
+        "properties": {
+          "blockers": {"maxItems": 0},
+          "preview_status": {"const": "preview_ready"}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"status": {"const": "blocked"}}},
+      "then": {"properties": {"blockers": {"minItems": 1}}}
+    }
+  ]
+}

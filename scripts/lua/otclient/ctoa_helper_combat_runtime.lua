@@ -241,6 +241,21 @@ function CombatRuntime.rotationSpell(spells, state)
     return selected
 end
 
+function CombatRuntime.selectRotationSpell(tools, scan, now)
+    local cfg = type(tools) == "table" and tools or {}
+    local spells = CombatRuntime.rotationSpellRows(cfg.rotation_spells or {}, {
+        scan = scan or {},
+        rotation_scan_range = cfg.rotation_scan_range,
+        last_spell_casts = cfg.last_spell_casts or {},
+    })
+    return CombatRuntime.rotationSpell(spells, {
+        now_ms = now,
+        action_lock_until_ms = cfg.attack_action_lock_until_ms,
+        last_attack_spell_ms = cfg.last_attack_spell_ms,
+        rotation_interval_ms = cfg.rotation_interval_ms,
+    })
+end
+
 function CombatRuntime.stanceAction(tools, state)
     local cfg = tools or {}
     local env = state or {}
@@ -474,6 +489,7 @@ function CombatRuntime.contract()
         owns_rotation_spell_rows = true,
         owns_spell_readiness = true,
         owns_rotation_spell_selection = true,
+        owns_select_rotation_spell = true,
         owns_stance_selection = true,
         owns_offensive_action_selection = true,
         owns_action_status_text = true,

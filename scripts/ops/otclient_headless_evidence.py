@@ -19,9 +19,13 @@ from typing import Any
 
 MAX_CAPABILITY_BYTES = 64 * 1024
 MAX_CONDITIONS_OBSERVATION_BYTES = 4 * 1024
+MAX_EQUIPMENT_SHADOW_OBSERVATION_BYTES = 24 * 1024
+MAX_HEAL_FRIEND_SCAN_BYTES = 24 * 1024
 MAX_LOG_TAIL_BYTES = 256 * 1024
 CAPABILITY_SCHEMA = "ctoa-client-capabilities-v1"
 CONDITIONS_OBSERVATION_SCHEMA = "ctoa.conditions-observation.v1"
+EQUIPMENT_SHADOW_OBSERVATION_SCHEMA = "ctoa.equipment-shadow-observation.v1"
+HEAL_FRIEND_SCAN_SCHEMA = "ctoa.heal-friend-scan.v1"
 EXPECTED_HEARTBEAT_INTERVAL_MS = 5_000
 MAX_HEARTBEAT_AGE_MS = 15_000
 INITIALIZED_PATTERN = re.compile(r"Initialized successfully v[0-9][^\s]*")
@@ -58,6 +62,35 @@ CONDITIONS_ACTION_FLAGS = (
     "executes_plan",
     "execute_once_allowed",
     "promotion_allowed",
+)
+EQUIPMENT_SHADOW_OBSERVATION_FIELDS = frozenset(
+    {
+        "schema_version",
+        "observed_at_unix_ms",
+        "observation_id",
+        "online",
+        "alive",
+        "protection_zone",
+        "protection_zone_source",
+        "inventory_api_available",
+        "containers_complete",
+        "ring",
+        "candidates",
+        "cooldown",
+        "cooldown_source",
+        "producer_source",
+        *CONDITIONS_ACTION_FLAGS,
+    }
+)
+HEAL_FRIEND_SCAN_ACTION_FLAGS = (*CONDITIONS_ACTION_FLAGS, "casts", "talks")
+HEAL_FRIEND_SCAN_FIELDS = frozenset(
+    {
+        "schema_version", "observed_at_unix_ms", "party_observed_at_unix_ms",
+        "observation_id", "online", "alive", "protection_zone",
+        "protection_zone_source", "self_id", "scan_complete", "candidates",
+        "cooldown", "cooldown_source", "producer_source",
+        *HEAL_FRIEND_SCAN_ACTION_FLAGS,
+    }
 )
 _MISSING = object()
 
@@ -157,10 +190,10 @@ def parse_json_object_bytes(raw: bytes) -> tuple[dict[str, Any] | None, str]:
         )
     except (UnicodeError, ValueError, RecursionError):
         return None, "malformed"
-    if not isinstance(payload, dict):
-        return None, "not_object"
     if not _json_shape_within_bounds(payload):
         return None, "malformed"
+    if not isinstance(payload, dict):
+        return None, "not_object"
     return payload, "loaded"
 
 
@@ -392,7 +425,11 @@ def summarize_conditions_observation(
         "online": {"online", "offline", "unknown"},
         "alive": {"alive", "dead", "unknown"},
         "protection_zone": {"outside", "inside", "unknown"},
-        "protection_zone_source": {"player_method", "unavailable"},
+        "protection_zone_source": {
+            "player_method",
+            "player_states",
+            "unavailable",
+        },
         "condition_id": {"paralyze"},
         "condition_state": {"present", "absent", "unknown"},
         "cooldown": {"ready", "active", "unknown"},
@@ -436,6 +473,287 @@ def summarize_conditions_observation(
     }
 
 
+def _normalized_equipment_shadow_observation(
+    status: str, errors: list[str]
+) -> dict[str, Any]:
+    return {
+        "status": status,
+        "present": status != "missing",
+        "valid": False,
+        "schema_version": "unknown",
+        "observed_at_unix_ms": None,
+        "observation_id": "",
+        "online": "unknown",
+        "alive": "unknown",
+        "protection_zone": "unknown",
+        "protection_zone_source": "unavailable",
+        "inventory_api_available": False,
+        "containers_complete": False,
+        "ring": {"present": False, "item_id": 0, "count": 0},
+        "candidates": [],
+        "cooldown": "unknown",
+        "cooldown_source": "unavailable",
+        "producer_source": "unknown",
+        **{field: False for field in CONDITIONS_ACTION_FLAGS},
+        "validation_errors": errors,
+        "p10_blocker": (
+            "equipment_observation_missing"
+            if status == "missing"
+            else "equipment_observation_invalid"
+        ),
+    }
+
+
+def _bounded_int(value: Any, minimum: int, maximum: int) -> bool:
+    return (
+        isinstance(value, int)
+        and not isinstance(value, bool)
+        and minimum <= value <= maximum
+    )
+
+
+def summarize_equipment_shadow_observation(
+    value: Any = _MISSING,
+    *,
+    expected_observed_at_unix_ms: int | None = None,
+    require_timestamp_binding: bool = False,
+) -> dict[str, Any]:
+    if value is _MISSING:
+        return _normalized_equipment_shadow_observation("missing", [])
+    if not isinstance(value, dict):
+        return _normalized_equipment_shadow_observation("invalid", ["object_type"])
+    errors: list[str] = []
+    try:
+        encoded = json.dumps(
+            value,
+            allow_nan=False,
+            ensure_ascii=True,
+            separators=(",", ":"),
+            sort_keys=True,
+        ).encode("utf-8")
+    except (TypeError, ValueError):
+        encoded = b""
+        errors.append("encoding")
+    if len(encoded) > MAX_EQUIPMENT_SHADOW_OBSERVATION_BYTES:
+        errors.append("oversize")
+    keys = frozenset(value)
+    if EQUIPMENT_SHADOW_OBSERVATION_FIELDS - keys:
+        errors.append("fields_missing")
+    if keys - EQUIPMENT_SHADOW_OBSERVATION_FIELDS:
+        errors.append("fields_extra")
+    if value.get("schema_version") != EQUIPMENT_SHADOW_OBSERVATION_SCHEMA:
+        errors.append("schema_version")
+    observed_at = value.get("observed_at_unix_ms")
+    if not _bounded_int(observed_at, 1, 9_999_999_999_999):
+        errors.append("observed_at_unix_ms")
+    elif isinstance(expected_observed_at_unix_ms, int) and observed_at != expected_observed_at_unix_ms:
+        errors.append("observed_at_mismatch")
+    elif require_timestamp_binding and not isinstance(expected_observed_at_unix_ms, int):
+        errors.append("parent_observed_at_unbound")
+    observation_id = value.get("observation_id")
+    if not (
+        isinstance(observation_id, str)
+        and CONDITIONS_OBSERVATION_ID_PATTERN.fullmatch(observation_id)
+    ):
+        errors.append("observation_id")
+    enum_fields = {
+        "online": {"online", "offline", "unknown"},
+        "alive": {"alive", "dead", "unknown"},
+        "protection_zone": {"outside", "inside", "unknown"},
+        "protection_zone_source": {
+            "player_method",
+            "player_states",
+            "unavailable",
+        },
+        "cooldown": {"ready", "active", "unknown"},
+        "cooldown_source": {"game_cooldown_group", "unavailable"},
+        "producer_source": {"otclient_guarded_adapter", "fixture"},
+    }
+    for field, allowed in enum_fields.items():
+        if value.get(field) not in allowed:
+            errors.append(f"{field}_enum")
+    for field in ("inventory_api_available", "containers_complete"):
+        if not isinstance(value.get(field), bool):
+            errors.append(field)
+    for field in CONDITIONS_ACTION_FLAGS:
+        if value.get(field) is not False:
+            errors.append(f"{field}_unsafe")
+    ring = value.get("ring")
+    if not (
+        isinstance(ring, dict)
+        and set(ring) == {"present", "item_id", "count"}
+        and isinstance(ring.get("present"), bool)
+        and _bounded_int(ring.get("item_id"), 0, 65535)
+        and _bounded_int(ring.get("count"), 0, 65535)
+    ):
+        errors.append("ring")
+    candidates = value.get("candidates")
+    clean_candidates: list[dict[str, int]] = []
+    if not isinstance(candidates, list) or len(candidates) > 256:
+        errors.append("candidates")
+    else:
+        seen_positions: set[tuple[int, int]] = set()
+        previous: tuple[int, int, int] | None = None
+        for item in candidates:
+            valid = (
+                isinstance(item, dict)
+                and set(item) == {"container_id", "slot_index", "item_id", "count"}
+                and _bounded_int(item.get("container_id"), 0, 65535)
+                and _bounded_int(item.get("slot_index"), 1, 65535)
+                and _bounded_int(item.get("item_id"), 1, 65535)
+                and _bounded_int(item.get("count"), 1, 65535)
+            )
+            if not valid:
+                errors.append("candidate_entry")
+                break
+            position = (item["container_id"], item["slot_index"])
+            ordering = (*position, item["item_id"])
+            if position in seen_positions or (previous is not None and ordering < previous):
+                errors.append("candidate_order_or_duplicate")
+                break
+            seen_positions.add(position)
+            previous = ordering
+            clean_candidates.append(dict(item))
+    if errors:
+        return _normalized_equipment_shadow_observation("invalid", errors)
+    assert isinstance(ring, dict)
+    return {
+        "status": "valid",
+        "present": True,
+        "valid": True,
+        "schema_version": EQUIPMENT_SHADOW_OBSERVATION_SCHEMA,
+        "observed_at_unix_ms": observed_at,
+        "observation_id": observation_id,
+        "online": value["online"],
+        "alive": value["alive"],
+        "protection_zone": value["protection_zone"],
+        "protection_zone_source": value["protection_zone_source"],
+        "inventory_api_available": value["inventory_api_available"],
+        "containers_complete": value["containers_complete"],
+        "ring": {"present": ring["present"], "item_id": ring["item_id"], "count": ring["count"]},
+        "candidates": clean_candidates,
+        "cooldown": value["cooldown"],
+        "cooldown_source": value["cooldown_source"],
+        "producer_source": value["producer_source"],
+        **{field: False for field in CONDITIONS_ACTION_FLAGS},
+        "validation_errors": [],
+        "p10_blocker": None,
+    }
+
+
+def _normalized_heal_friend_scan(status: str, errors: list[str]) -> dict[str, Any]:
+    return {
+        "status": status, "present": status != "missing", "valid": False,
+        "schema_version": "unknown", "observed_at_unix_ms": None,
+        "party_observed_at_unix_ms": None, "observation_id": "",
+        "online": "unknown", "alive": "unknown", "protection_zone": "unknown",
+        "protection_zone_source": "unavailable", "self_id": 0,
+        "scan_complete": False, "candidates": [], "cooldown": "unknown",
+        "cooldown_source": "unavailable", "producer_source": "unknown",
+        **{field: False for field in HEAL_FRIEND_SCAN_ACTION_FLAGS},
+        "validation_errors": errors,
+        "p11_blocker": "heal_friend_scan_missing" if status == "missing" else "heal_friend_scan_invalid",
+    }
+
+
+def summarize_heal_friend_scan(
+    value: Any = _MISSING,
+    *,
+    expected_observed_at_unix_ms: int | None = None,
+    require_timestamp_binding: bool = False,
+) -> dict[str, Any]:
+    if value is _MISSING:
+        return _normalized_heal_friend_scan("missing", [])
+    if not isinstance(value, dict):
+        return _normalized_heal_friend_scan("invalid", ["object_type"])
+    errors: list[str] = []
+    try:
+        encoded = json.dumps(value, allow_nan=False, ensure_ascii=True, separators=(",", ":"), sort_keys=True).encode()
+    except (TypeError, ValueError):
+        encoded = b""
+        errors.append("encoding")
+    if len(encoded) > MAX_HEAL_FRIEND_SCAN_BYTES:
+        errors.append("oversize")
+    keys = frozenset(value)
+    if HEAL_FRIEND_SCAN_FIELDS - keys:
+        errors.append("fields_missing")
+    if keys - HEAL_FRIEND_SCAN_FIELDS:
+        errors.append("fields_extra")
+    if value.get("schema_version") != HEAL_FRIEND_SCAN_SCHEMA:
+        errors.append("schema_version")
+    observed_at = value.get("observed_at_unix_ms")
+    party_at = value.get("party_observed_at_unix_ms")
+    if not _bounded_int(observed_at, 1, 9_999_999_999_999):
+        errors.append("observed_at_unix_ms")
+    elif isinstance(expected_observed_at_unix_ms, int) and observed_at != expected_observed_at_unix_ms:
+        errors.append("observed_at_mismatch")
+    elif require_timestamp_binding and not isinstance(expected_observed_at_unix_ms, int):
+        errors.append("parent_observed_at_unbound")
+    if not _bounded_int(party_at, 1, 9_999_999_999_999) or party_at != observed_at:
+        errors.append("party_observed_at_unix_ms")
+    observation_id = value.get("observation_id")
+    if not isinstance(observation_id, str) or not CONDITIONS_OBSERVATION_ID_PATTERN.fullmatch(observation_id):
+        errors.append("observation_id")
+    enum_fields = {
+        "online": {"online", "offline", "unknown"}, "alive": {"alive", "dead", "unknown"},
+        "protection_zone": {"outside", "inside", "unknown"},
+        "protection_zone_source": {"player_method", "player_states", "unavailable"},
+        "cooldown": {"ready", "active", "unknown"},
+        "cooldown_source": {"game_cooldown_group", "unavailable"},
+        "producer_source": {"otclient_guarded_adapter"},
+    }
+    for field, allowed in enum_fields.items():
+        if value.get(field) not in allowed:
+            errors.append(f"{field}_enum")
+    if not _bounded_int(value.get("self_id"), 0, 2_147_483_647):
+        errors.append("self_id")
+    if not isinstance(value.get("scan_complete"), bool):
+        errors.append("scan_complete")
+    for field in HEAL_FRIEND_SCAN_ACTION_FLAGS:
+        if value.get(field) is not False:
+            errors.append(f"{field}_unsafe")
+    candidates = value.get("candidates")
+    clean: list[dict[str, Any]] = []
+    previous: tuple[int, str] | None = None
+    candidate_fields = {"target_id", "target_name", "hp_percent", "distance", "target_is_player", "target_is_self", "target_party_member", "target_visible", "target_same_floor"}
+    if not isinstance(candidates, list) or len(candidates) > 64:
+        errors.append("candidates")
+    else:
+        for candidate in candidates:
+            valid = (
+                isinstance(candidate, dict) and set(candidate) == candidate_fields
+                and _bounded_int(candidate.get("target_id"), 1, 2_147_483_647)
+                and isinstance(candidate.get("target_name"), str)
+                and re.fullmatch(r"[a-z][a-z0-9 ]{0,63}", candidate["target_name"]) is not None
+                and candidate["target_name"] == " ".join(candidate["target_name"].split())
+                and _bounded_int(candidate.get("hp_percent"), 0, 100)
+                and _bounded_int(candidate.get("distance"), 0, 255)
+                and all(isinstance(candidate.get(field), bool) for field in candidate_fields if field.startswith("target_") and field not in {"target_id", "target_name"})
+            )
+            if not valid:
+                errors.append("candidate_entry")
+                break
+            ordering = (candidate["target_id"], candidate["target_name"])
+            if previous is not None and ordering < previous:
+                errors.append("candidate_order")
+                break
+            previous = ordering
+            clean.append(dict(candidate))
+    if errors:
+        return _normalized_heal_friend_scan("invalid", errors)
+    return {
+        "status": "valid", "present": True, "valid": True,
+        "schema_version": HEAL_FRIEND_SCAN_SCHEMA, "observed_at_unix_ms": observed_at,
+        "party_observed_at_unix_ms": party_at, "observation_id": observation_id,
+        "online": value["online"], "alive": value["alive"],
+        "protection_zone": value["protection_zone"],
+        "protection_zone_source": value["protection_zone_source"],
+        "self_id": value["self_id"], "scan_complete": value["scan_complete"],
+        "candidates": clean, "cooldown": value["cooldown"],
+        "cooldown_source": value["cooldown_source"], "producer_source": value["producer_source"],
+        **{field: False for field in HEAL_FRIEND_SCAN_ACTION_FLAGS},
+        "validation_errors": [], "p11_blocker": None,
+    }
 def summarize_capability(
     payload: dict[str, Any] | None,
     load_status: str,
@@ -458,6 +776,8 @@ def summarize_capability(
             "version_match": False,
             "heartbeat_after_process_start": False,
             "conditions_observation": summarize_conditions_observation(),
+            "equipment_shadow_observation": summarize_equipment_shadow_observation(),
+            "heal_friend_scan": summarize_heal_friend_scan(),
         }
 
     schema_valid = payload.get("schema_version") == CAPABILITY_SCHEMA
@@ -494,11 +814,35 @@ def summarize_capability(
         expected_observed_at_unix_ms=observed if observed_valid else None,
         require_timestamp_binding=True,
     )
+    equipment_value = (
+        payload["equipment_shadow_observation"]
+        if "equipment_shadow_observation" in payload
+        else _MISSING
+    )
+    equipment_shadow_observation = summarize_equipment_shadow_observation(
+        equipment_value,
+        expected_observed_at_unix_ms=observed if observed_valid else None,
+        require_timestamp_binding=True,
+    )
+    heal_friend_value = payload["heal_friend_scan"] if "heal_friend_scan" in payload else _MISSING
+    heal_friend_scan = summarize_heal_friend_scan(
+        heal_friend_value,
+        expected_observed_at_unix_ms=observed if observed_valid else None,
+        require_timestamp_binding=True,
+    )
     nested_conditions_actions = bool(
         isinstance(conditions_value, dict)
         and any(
             conditions_value.get(field) is True for field in CONDITIONS_ACTION_FLAGS
         )
+    )
+    nested_equipment_actions = bool(
+        isinstance(equipment_value, dict)
+        and any(equipment_value.get(field) is True for field in CONDITIONS_ACTION_FLAGS)
+    )
+    nested_heal_friend_actions = bool(
+        isinstance(heal_friend_value, dict)
+        and any(heal_friend_value.get(field) is True for field in HEAL_FRIEND_SCAN_ACTION_FLAGS)
     )
 
     runtime_actions_value = payload.get("runtime_actions")
@@ -511,7 +855,7 @@ def summarize_capability(
     runtime_core_actions_explicit_safe = (
         core_present and runtime_core_actions_value is False
     )
-    unsafe = runtime_actions or runtime_core_actions or nested_conditions_actions
+    unsafe = runtime_actions or runtime_core_actions or nested_conditions_actions or nested_equipment_actions or nested_heal_friend_actions
     heartbeat_online = payload.get("heartbeat_status") == "online"
     game_online = payload.get("online") is True
     helper_version_value = payload.get("helper_version")
@@ -527,6 +871,8 @@ def summarize_capability(
         runtime_actions_explicit_safe
         and runtime_core_actions_explicit_safe
         and not nested_conditions_actions
+        and not nested_equipment_actions
+        and not nested_heal_friend_actions
         and heartbeat_online
         and game_online
         and helper_version_valid
@@ -590,4 +936,6 @@ def summarize_capability(
         "version_match": version_match,
         "heartbeat_after_process_start": heartbeat_after_process_start,
         "conditions_observation": conditions_observation,
+        "equipment_shadow_observation": equipment_shadow_observation,
+        "heal_friend_scan": heal_friend_scan,
     }

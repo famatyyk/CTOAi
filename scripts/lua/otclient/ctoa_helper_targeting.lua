@@ -47,18 +47,16 @@ function Targeting.isIgnoredName(name, ignoredNames)
     return false
 end
 
-function Targeting.hasBlockingNpcIcon(creature, tools)
+function Targeting.creatureHasBlockingNpcIcon(icon, tools)
     local cfg = tools or {}
     if cfg.block_npc_icons == false then
         return false
     end
-    if creature and creature.getIcon then
-        local ok, icon = pcall(function()
-            return creature:getIcon()
-        end)
-        return ok and icon ~= nil and icon ~= false and icon ~= 0 and icon ~= ""
-    end
-    return false
+    return icon ~= nil and icon ~= false and icon ~= 0 and icon ~= ""
+end
+
+function Targeting.hasBlockingNpcIcon(icon, tools)
+    return Targeting.creatureHasBlockingNpcIcon(icon, tools)
 end
 
 local function friendlySummonFragments(tools)
@@ -125,6 +123,14 @@ function Targeting.scoreCandidate(candidate, tools)
         return rank * 10000 + hp * 100 + distance
     end
     return rank * 10000 + distance * 100 + hp
+end
+
+function Targeting.targetCandidateScore(candidate, tools)
+    local score = Targeting.scoreCandidate(candidate, tools)
+    if tonumber(score) then
+        return tonumber(score)
+    end
+    return 99999999
 end
 
 function Targeting.bestCandidate(candidates, tools)
@@ -255,7 +261,10 @@ function Targeting.contract()
         owns_creature_type_decision = true,
         owns_ignored_names = true,
         owns_npc_icon_guard = true,
+        owns_blocking_npc_icon_value = true,
         owns_friendly_summon_guard = true,
+        owns_friendly_summon_name = true,
+        owns_target_candidate_score = true,
         owns_config_summary = true,
         owns_targeting_summary_text = true,
         runtime_actions = false,

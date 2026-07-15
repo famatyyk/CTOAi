@@ -2,6 +2,7 @@
 -- Read-only equipment observer domain. It never swaps, moves, or uses items.
 
 local Equipment = rawget(_G, "CTOA_HELPER_EQUIPMENT") or {}
+local FamilyRegistry = rawget(_G, "CTOA_HELPER_EQUIPMENT_FAMILY_REGISTRY")
 
 local function boolText(value)
     return value and "yes" or "no"
@@ -116,11 +117,21 @@ function Equipment.plan(config, observation, context)
         plan.threshold = threshold
         return plan
     end
-    if equipment.ring_swap == true then
+    local family, familyError = nil, "registry_unavailable"
+    if FamilyRegistry and type(FamilyRegistry.enabledFamily) == "function" then
+        family, familyError = FamilyRegistry.enabledFamily(equipment, "ring")
+    end
+    if family then
         plan.next_action = "plan_ring_swap"
         plan.reason = "hp_threshold"
+        plan.family_key = family.key
+        plan.slot = family.slot
         plan.hp_percent = hp
         plan.threshold = threshold
+        return plan
+    end
+    if equipment.ring_swap == true then
+        plan.reason = tostring(familyError or "no_family_enabled")
         return plan
     end
     if equipment.amulet_swap == true then
@@ -149,6 +160,9 @@ function Equipment.shadowPlan(snapshot)
     local function validContainer(value)
         return value and value % 1 == 0 and value >= 0
     end
+    local function validContainerSlot(value)
+        return value and value % 1 == 0 and value >= 1 and value <= 65535
+    end
     if observed.schema_version ~= "ctoa.equipment-shadow-snapshot.v1" then blockers[#blockers + 1] = "snapshot_schema_required" end
     if observed.online ~= true then blockers[#blockers + 1] = "player_offline" end
     if observed.alive ~= true then blockers[#blockers + 1] = "player_dead" end
@@ -158,8 +172,13 @@ function Equipment.shadowPlan(snapshot)
     if not validItemId(rollback) or rollback ~= equipped then blockers[#blockers + 1] = "rollback_snapshot_mismatch" end
     if tostring(observed.inventory_revision or "") == "" or tostring(observed.rollback_inventory_revision or "") ~= tostring(observed.inventory_revision or "") then blockers[#blockers + 1] = "inventory_revision_drift" end
     if observed.inventory_unambiguous ~= true then blockers[#blockers + 1] = "inventory_ambiguous" end
-    if observed.protection_zone ~= "outside" or observed.protection_zone_source ~= "player_method" then blockers[#blockers + 1] = "protection_zone_not_outside" end
+    if observed.protection_zone ~= "outside" or
+        (observed.protection_zone_source ~= "player_method" and
+            observed.protection_zone_source ~= "player_states") then
+        blockers[#blockers + 1] = "protection_zone_not_outside"
+    end
     if not validContainer(tonumber(observed.candidate_source_container_id)) or not validContainer(tonumber(observed.rollback_destination_container_id)) or tonumber(observed.candidate_source_container_id) ~= tonumber(observed.rollback_destination_container_id) then blockers[#blockers + 1] = "rollback_container_snapshot_mismatch" end
+    if not validContainerSlot(tonumber(observed.candidate_source_slot_index)) or not validContainerSlot(tonumber(observed.rollback_destination_slot_index)) or tonumber(observed.candidate_source_slot_index) ~= tonumber(observed.rollback_destination_slot_index) then blockers[#blockers + 1] = "rollback_container_slot_snapshot_mismatch" end
     if observed.cooldown ~= "ready" or observed.cooldown_source ~= "game_cooldown_group" then blockers[#blockers + 1] = "cooldown_not_ready" end
     if observed.dispatch_allowed ~= false or observed.runtime_actions ~= false or observed.executes_plan ~= false or observed.execute_once_allowed ~= false or observed.promotion_allowed ~= false or type(observed.intrusive_actions_performed) ~= "table" or #observed.intrusive_actions_performed ~= 0 then blockers[#blockers + 1] = "unsafe_contract" end
     local plan = {
@@ -167,6 +186,10 @@ function Equipment.shadowPlan(snapshot)
         candidate_item_id = candidate, rollback_item_id = rollback,
         inventory_revision = tostring(observed.inventory_revision or ""),
         rollback_inventory_revision = tostring(observed.rollback_inventory_revision or ""),
+        source_container_id = tonumber(observed.candidate_source_container_id),
+        source_slot_index = tonumber(observed.candidate_source_slot_index),
+        rollback_container_id = tonumber(observed.rollback_destination_container_id),
+        rollback_slot_index = tonumber(observed.rollback_destination_slot_index),
         dispatch_allowed = false, runtime_actions = false, retry_budget = 0,
     }
     return {
@@ -188,8 +211,14 @@ function Equipment.summary(config, helpers)
     end
     local runtimeText = equipment.runtime_enabled and "runtime ON" or "read-only"
     local planText = equipment.runtime_enabled and "planner gated" or "planner passive"
+    local familyCount = 0
+    if FamilyRegistry and type(FamilyRegistry.families) == "function" and type(FamilyRegistry.isEnabled) == "function" then
+        for _, family in ipairs(FamilyRegistry.families("ring")) do
+            if FamilyRegistry.isEnabled(equipment, family.key) then familyCount = familyCount + 1 end
+        end
+    end
     return "Observer " .. onOffText(equipment.enabled == true) ..
-        " | Ring " .. onOffText(equipment.ring_swap == true) ..
+        " | Ring families " .. tostring(familyCount) ..
         " | Amulet " .. onOffText(equipment.amulet_swap == true) ..
         " | API " .. onOffText(equipment.api_probe_enabled ~= false) ..
         " | " .. tostring(equipment.weapon_set or "manual") ..
@@ -206,6 +235,7 @@ function Equipment.contract()
         owns_observer = true,
         owns_summary_text = true,
         owns_shadow_ring_plan = true,
+        uses_equipment_family_registry = FamilyRegistry ~= nil,
         shadow_plan_data_only = true,
         rollback_revision_required = true,
         runtime_actions = false,

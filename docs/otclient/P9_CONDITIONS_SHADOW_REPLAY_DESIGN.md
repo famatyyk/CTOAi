@@ -36,7 +36,7 @@ guarded OTClient adapter
 
 The existing 5-second heartbeat remains the only client-side producer loop. A
 missing Conditions observation blocks P9 only and remains compatible with the
-currently protected `v2.2.1` live client.
+currently protected live client; version mismatch remains an explicit P8 blocker.
 
 ## Data-Only Profile
 
@@ -130,7 +130,8 @@ remain false in every result.
 2. Passive Conditions observation added to the existing heartbeat through a
    guarded adapter; no new loop and no action API.
 3. Bounded P8 sanitizer support for the optional observation.
-4. Recovery predecessor trace with version and hash binding.
+4. Canonical passive Recovery predecessor trace/proof with version, deterministic
+   ID, oldest-source timestamp, and profile/observation/P8 hash binding.
 5. Offline replay tool with path confinement, size limits, symlink rejection,
    atomic repo-local evidence writes, and deterministic hashes.
 6. Read-only Release Evidence and Control Center consumers with full mutation
@@ -149,7 +150,8 @@ stale, or unaccepted. No live promotion is implied.
 ## P9 Done Gate
 
 P9 may be marked accepted only when a real, current observation produces an
-action-bound trace under an accepted P8 proof set and accepted Recovery trace;
+action-bound trace under an accepted P8 proof set and canonical ready Recovery
+trace/proof reviewed by the separate P9 acceptance boundary;
 the entire positive/negative pack is deterministic; consumers fail closed; and
 all execution, dispatch, promotion, and intrusive-action fields remain false.
 The separate acceptance boundary in

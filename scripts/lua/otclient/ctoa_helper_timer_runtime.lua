@@ -78,6 +78,10 @@ function TimerRuntime.summary(plan)
         " | due " .. tostring(plan.due_in_ms or 0) .. "ms"
 end
 
+function TimerRuntime.probeSummary(plan)
+    return "Timer probe: " .. TimerRuntime.summary(plan)
+end
+
 function TimerRuntime.dispatch(plan, tools, helpers)
     local cfg = tools or {}
     local runtimePlan = plan or {}
@@ -120,6 +124,7 @@ function TimerRuntime.contract()
         module = "ctoa_helper_timer_runtime",
         mode = "passive",
         owns_runtime_plan = true,
+        owns_probe_summary_text = true,
         owns_dispatch_decision = true,
         runtime_actions = false,
         talks = false,

@@ -1239,6 +1239,17 @@ function Ui.sectionBodyGeometry(panelX, bodyY, panelW, bodyH)
     }
 end
 
+function Ui.mergePanelRendererContext(base, extra)
+    local context = {}
+    for key, value in pairs(base or {}) do
+        context[key] = value
+    end
+    for key, value in pairs(extra or {}) do
+        context[key] = value
+    end
+    return context
+end
+
 function Ui.sidebarTabs(layout)
     layout = layout or {}
     return {
@@ -1581,12 +1592,27 @@ function Ui.renderEquipmentPanel(ctx)
 
     ctx.add_section_scaffold(window, {section = "equipment", body_id = "ctoaEquipmentBody", header_id = "ctoaEquipmentHeader", title = "Equipment", subtitle = "slot observer / no swaps"}, panelX, ctx.body_y, panelW, ctx.body_h)
     ctx.widgets.equipment_summary = ctx.add_summary_strip(window, "ctoaEquipmentSummary", ctx.equipment_summary_text, panelX, ctx.body_y, panelW, "equipment")
-    ctx.add_toggle_content_rows(window, {
+    local rows = {
         {id = "ctoaEquipmentObserver", label = "Observer", getter = function() return equipment.enabled end, setter = function(value) equipment.enabled = value == true end, y = layout.row_2_y, section = "equipment"},
-        {id = "ctoaEquipmentSlots", label = "Read slots", getter = function() return equipment.observe_slots end, setter = function(value) equipment.observe_slots = value == true end, y = layout.row_3_y, section = "equipment"},
-        {id = "ctoaEquipmentRingPlan", label = "Ring plan", getter = function() return equipment.ring_swap end, setter = function(value) equipment.ring_swap = value == true end, y = layout.row_4_y, section = "equipment"},
-        {id = "ctoaEquipmentAmuletPlan", label = "Amulet plan", getter = function() return equipment.amulet_swap end, setter = function(value) equipment.amulet_swap = value == true end, y = layout.row_5_y, section = "equipment"}
-    }, panelX, panelW)
+        {id = "ctoaEquipmentSlots", label = "Read slots", getter = function() return equipment.observe_slots end, setter = function(value) equipment.observe_slots = value == true end, y = layout.row_3_y, section = "equipment"}
+    }
+    local familyYs = {layout.row_4_y, layout.row_5_y, layout.row_6_y}
+    for index, family in ipairs(ctx.equipment_family_rows or {}) do
+        if familyYs[index] then
+            local key = tostring(family.key or "")
+            rows[#rows + 1] = {
+                id = "ctoaEquipmentFamily" .. tostring(index),
+                label = tostring(family.label or "Equipment family"),
+                getter = function() return type(equipment.family_enabled) == "table" and equipment.family_enabled[key] == true end,
+                setter = function(value)
+                    if type(ctx.set_equipment_family_enabled) == "function" then ctx.set_equipment_family_enabled(key, value == true) end
+                end,
+                y = familyYs[index],
+                section = "equipment"
+            }
+        end
+    end
+    ctx.add_toggle_content_rows(window, rows, panelX, panelW)
     ctx.add_profile_cycle_row(window, "ctoaEquipmentWeaponSet", "Weapon set", function() return equipment.weapon_set end, function(value) equipment.weapon_set = value end, {"manual", "shield", "two_hand"}, panelX, layout.row_6_y, panelW, "equipment", tostring)
     ctx.add_profile_step_row(window, "ctoaEquipmentHp", "HP guard", function() return equipment.hp_threshold end, function(value) equipment.hp_threshold = value end, 5, 1, 100, panelX, layout.row_7_y, panelW, "equipment", ctx.percent_text)
     ctx.add_toggle_setting_row(window, "ctoaEquipmentApiProbe", "API probe", function() return equipment.api_probe_enabled ~= false end, function(value) equipment.api_probe_enabled = value == true end, panelX, layout.row_7_y + 26, panelW, "equipment")
@@ -1833,6 +1859,7 @@ function Ui.contract()
         owns_widget_create_wrapper = true,
         owns_nav_style = true,
         owns_adaptive_sidebar_geometry = true,
+        owns_panel_renderer_context_merge = true,
         owns_utility_navigation_divider = true,
         owns_subtab_style = true,
         owns_button_style = true,

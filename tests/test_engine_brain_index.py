@@ -70,14 +70,16 @@ def test_roadmap_generation_requires_all_doc_sync_gates(
     assert payload["doc_sync_roadmap_p8_p16_status"] == p8_p16_status
 
 
-def test_roadmap_generation_blocks_p8_contract_marker_drift(tmp_path, monkeypatch):
+def test_roadmap_generation_blocks_current_phase_marker_drift(tmp_path, monkeypatch):
     _write_roadmap_generation_docs(tmp_path)
     monkeypatch.setattr(engine_brain_index, "ROOT", tmp_path)
     roadmap_path = tmp_path / "AI" / "P8_P16_EXECUTION_ROADMAP.md"
-    required_marker = "`operational_acceptance_blocked` after P6/P7 readiness"
+    required_marker = (
+        "Conditions and Equipment lanes are `operational_acceptance_complete`"
+    )
     roadmap_path.write_text(
         roadmap_path.read_text(encoding="utf-8").replace(
-            required_marker, "operational acceptance remains under review"
+            required_marker, "Conditions and Equipment lanes remain under review"
         ),
         encoding="utf-8",
     )
@@ -96,6 +98,36 @@ def test_roadmap_generation_blocks_p8_contract_marker_drift(tmp_path, monkeypatc
     )
     assert p8_doc["status"] == "blocked"
     assert required_marker in p8_doc["missing_markers"]
+
+
+def test_roadmap_generation_accepts_markdown_line_wrapping(tmp_path, monkeypatch):
+    _write_roadmap_generation_docs(tmp_path)
+    monkeypatch.setattr(engine_brain_index, "ROOT", tmp_path)
+
+    status_path = tmp_path / "AI" / "ENGINE_BRAIN_STATUS.md"
+    status_path.write_text(
+        status_path.read_text(encoding="utf-8").replace(
+            "session and execution approvals remain false",
+            "session and execution\napprovals remain false",
+        ),
+        encoding="utf-8",
+    )
+    roadmap_path = tmp_path / "AI" / "P8_P16_EXECUTION_ROADMAP.md"
+    roadmap_path.write_text(
+        roadmap_path.read_text(encoding="utf-8").replace(
+            "no sandbox client process is running",
+            "no sandbox client process\nis running",
+        ),
+        encoding="utf-8",
+    )
+
+    payload = engine_brain_index.build_roadmap_generation_payload(
+        "2099-01-01T00:00:00+00:00", _roadmap_doc_sync_payload()
+    )
+
+    assert payload["status"] == "ready"
+    assert payload["hard_blockers"] == []
+    assert payload["ready_doc_count"] == payload["doc_count"]
 
 
 def test_release_evidence_summary_exposes_helper_sandbox_queue(tmp_path):
@@ -126,6 +158,41 @@ def test_release_evidence_summary_exposes_helper_sandbox_queue(tmp_path):
                         "fixture_validation_status": "passed",
                         "fixture_only_validation_passed": True,
                         "runtime_readiness_claimed": False,
+                    },
+                    "equipment_shadow": {
+                        "status": "operational_acceptance_blocked",
+                        "contract_valid": True,
+                        "fresh": True,
+                        "fixture_validation_status": "passed",
+                        "rollback_simulation": "blocked",
+                        "runtime_readiness_claimed": False,
+                    },
+                    "equipment_shadow_acceptance": {
+                        "status": "blocked",
+                        "contract_valid": True,
+                        "fresh": True,
+                        "report_hash_match": True,
+                        "acceptance_granted": False,
+                        "p11_predecessor_eligible": False,
+                        "runtime_readiness_claimed": False,
+                    },
+                    "roadmap_phase_state": {
+                        "status": "p12_in_progress",
+                        "aligned_with_current_roadmap": True,
+                        "p8": "operational_acceptance_complete",
+                        "p9": "operational_acceptance_complete",
+                        "p10": "operational_acceptance_complete",
+                        "p11": "operational_acceptance_complete",
+                        "p12": {
+                            "status": "in_progress",
+                            "conditions": {"status": "operational_acceptance_complete"},
+                            "equipment": {
+                                "status": "operational_acceptance_blocked",
+                                "current_plan_status": "blocked",
+                                "attempt_count": 0,
+                            },
+                            "heal_friend": {"status": "not_started"},
+                        },
                     },
                     "sandbox_smoke_queue": {
                         "status": "ready_for_operator",
@@ -160,6 +227,35 @@ def test_release_evidence_summary_exposes_helper_sandbox_queue(tmp_path):
         "fixture_validation_status": "passed",
         "fixture_only_validation_passed": True,
         "runtime_readiness_claimed": False,
+    }
+    assert summary["otclient_helper_equipment_shadow"] == {
+        "status": "operational_acceptance_blocked",
+        "contract_valid": True,
+        "fresh": True,
+        "fixture_validation_status": "passed",
+        "rollback_simulation": "blocked",
+        "runtime_readiness_claimed": False,
+    }
+    assert summary["otclient_helper_equipment_acceptance"] == {
+        "status": "blocked",
+        "contract_valid": True,
+        "fresh": True,
+        "report_hash_match": True,
+        "acceptance_granted": False,
+        "p11_predecessor_eligible": False,
+        "runtime_readiness_claimed": False,
+    }
+    assert summary["otclient_helper_roadmap_phase_state"]["status"] == (
+        "p12_in_progress"
+    )
+    assert (
+        summary["otclient_helper_roadmap_phase_state"]["aligned_with_current_roadmap"]
+        is True
+    )
+    assert summary["otclient_helper_roadmap_phase_state"]["p12"]["equipment"] == {
+        "status": "operational_acceptance_blocked",
+        "current_plan_status": "blocked",
+        "attempt_count": 0,
     }
     assert summary["sandbox_smoke_queue"]["status"] == "ready_for_operator"
     assert summary["sandbox_smoke_queue"]["first_step"] == "launch_sandbox"
@@ -229,6 +325,8 @@ def test_engine_brain_index_writes_secret_safe_outputs(tmp_path):
         encoding="utf-8"
     )
     assert "P7 Operator Brief" in p7_operator_brief.read_text(encoding="utf-8")
+    assert "P10 Equipment shadow" in p7_operator_brief.read_text(encoding="utf-8")
+    assert "P10 Equipment acceptance" in p7_operator_brief.read_text(encoding="utf-8")
     p6_payload = json.loads(p6_readiness_json.read_text(encoding="utf-8"))
     p6_check_names = {check["name"] for check in p6_payload["checks"]}
     assert {
@@ -803,6 +901,16 @@ def test_p7_operator_brief_reports_next_safe_step():
     assert payload["cockpit_handoff"]["release_evidence"]["status"] == "ready"
     assert payload["cockpit_handoff"]["release_evidence"]["file_count"] > 0
     assert payload["cockpit_handoff"]["release_evidence"]["sprint_count"] > 0
+    phase_state = payload["cockpit_handoff"]["release_evidence"][
+        "otclient_helper_roadmap_phase_state"
+    ]
+    assert phase_state["status"] == "p14_foundation_ready"
+    assert phase_state["aligned_with_current_roadmap"] is True
+    assert phase_state["p12"]["status"] == "complete"
+    assert (
+        phase_state["p12"]["equipment_current_plan_status"]
+        == "ready_for_sandbox_session_approval"
+    )
     assert payload["cockpit_handoff"]["action_audit"]["status"] == "ready"
     assert payload["cockpit_handoff"]["action_audit"]["record_count"] >= 3
     assert "safe_write" in payload["cockpit_handoff"]["action_audit"]["risk_counts"]
@@ -862,13 +970,15 @@ def _run_plugin_cockpit(workspace):
 
 
 @requires_engine_brain_plugin
-def test_p6_plugin_cockpit_blocks_p8_contract_marker_drift(tmp_path):
+def test_p6_plugin_cockpit_blocks_current_phase_marker_drift(tmp_path):
     _write_plugin_roadmap_workspace(tmp_path)
     roadmap_path = tmp_path / "AI" / "P8_P16_EXECUTION_ROADMAP.md"
-    required_marker = "`operational_acceptance_blocked` after P6/P7 readiness"
+    required_marker = (
+        "Conditions and Equipment lanes are `operational_acceptance_complete`"
+    )
     roadmap_path.write_text(
         roadmap_path.read_text(encoding="utf-8").replace(
-            required_marker, "operational acceptance remains under review"
+            required_marker, "Conditions and Equipment lanes remain under review"
         ),
         encoding="utf-8",
     )
@@ -929,6 +1039,22 @@ def test_p6_control_center_cockpit_script_reports_read_only_status():
     assert payload["operator_next"]["status"] == "ready"
     assert payload["operator_next"]["lane"] == "p7-safe-write"
     assert payload["operator_next"]["risk_class"] == "safe_write"
+    phase_state = payload["otclient_helper"]["roadmap_phase_state"]
+    assert phase_state["status"] == "p14_foundation_ready"
+    assert phase_state["aligned_with_current_roadmap"] is True
+    assert phase_state["p12"] == {
+        "status": "complete",
+        "conditions_status": "operational_acceptance_complete",
+        "equipment_status": "operational_acceptance_complete",
+        "equipment_receipt_status": "accepted",
+        "equipment_consumed_attempt": True,
+        "equipment_current_plan_status": "ready_for_sandbox_session_approval",
+        "equipment_current_plan_safe": True,
+        "equipment_attempt_count": 1,
+        "equipment_session_approved": True,
+        "equipment_execution_approved": True,
+        "heal_friend_status": "closed_blocked_no_compatible_vocation",
+    }
     assert (
         payload["operator_next"]["source_path"] == "AI/generated/P7_OPERATOR_BRIEF.json"
     )
@@ -1071,6 +1197,29 @@ def write_cockpit_preflight_fixture(root):
                     "status": "blocked",
                     "release_gate_status": "blocked",
                     "next_action": "Run SmokeAttachModules after sandbox character is in-world.",
+                    "roadmap_phase_state": {
+                        "status": "p12_in_progress",
+                        "aligned_with_current_roadmap": True,
+                        "p8": "operational_acceptance_complete",
+                        "p9": "operational_acceptance_complete",
+                        "p10": "operational_acceptance_complete",
+                        "p11": "operational_acceptance_complete",
+                        "p12": {
+                            "status": "in_progress",
+                            "conditions": {"status": "operational_acceptance_complete"},
+                            "equipment": {
+                                "status": "operational_acceptance_blocked",
+                                "receipt_status": "rejected",
+                                "consumed_attempt": True,
+                                "current_plan_status": "blocked",
+                                "current_plan_safe": True,
+                                "attempt_count": 0,
+                                "session_approved": False,
+                                "execution_approved": False,
+                            },
+                            "heal_friend": {"status": "not_started"},
+                        },
+                    },
                     "sandbox_smoke_queue": {
                         "status": "ready_for_operator",
                         "runtime_status": "not_running",

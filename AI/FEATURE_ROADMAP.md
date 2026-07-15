@@ -2,41 +2,250 @@
 
 ## Current State
 
+- Canonical product snapshot (2026-07-14): Helper source and last verified live
+  package are `v2.4.1`; Safe source candidate is `v2.9.0`, while the last
+  separately verified live Safe package remains `v2.8.0`. Neutral chooser is
+  `2.1.0`. Historical version paragraphs below are release history, not current
+  version declarations.
+- Current phase state (2026-07-15): P8, P9, P10, and P11 are `operational_acceptance_complete`.
+  Their accepted receipts remain independent
+  and grant no P12 action authority.
+- P12 execute-once review is `closed_with_deferred_heal_friend_lane`. P12
+  Conditions is `operational_acceptance_complete`:
+  exactly one approved sandbox executor call
+  succeeded, the trace ended `killed_and_disarmed`, retry remained false, and
+  the accepted receipt grants no downstream authority.
+- P12 Equipment is `operational_acceptance_complete`. Registry v1 plan
+  `d041db806c6417b018c6ae390e3d384ccec9bead2a77e498a582093bf7c823e0`
+  was separately approved and made exactly one `3097 -> 3099` sandbox executor
+  request. Receipt `p12-equipment-bdf7027cf48c438d` is `accepted`; retry stayed
+  false, transformed rollback item `3093` returned to the source slot, terminal
+  state was `killed_and_disarmed`, and no downstream or live authority was
+  granted. The earlier rejected attempt remains historical and cannot be replayed.
+- P12 Heal Friend is `closed_blocked_no_compatible_vocation`. Plan
+  `964ff8f0c178c7b646a565380e96846a8b29780eb02a734a259713d9ccf023b3`
+  remains immutable and binds the accepted P11 shadow receipt, accepted P12
+  Equipment predecessor, exact target identity and whitelist revision, ED-only
+  vocation, HP `<= 70`, range `<= 7`, zero retry, and terminal KILL/disarm.
+  The current 63-file manifest has `39/39` static gates, `4/4` module attach,
+  `16/16` full attach, and `19/19` runtime gates. The separately approved
+  sandbox session reached a fresh preflight whose only blocker was
+  `vocation_must_be_ed`; the operator has only sorcerer and knight characters.
+  `p12_heal_friend_no_compatible_vocation_closure.json` therefore expires that
+  session approval, forbids its reuse and any execution approval, and records
+  attempt count `0`, retry false, final state `disarmed`, no cast, and no
+  downstream or live authority. No Conditions or Equipment authority was inherited.
+  Fixture success is never reported as runtime readiness.
+  Historical compatibility marker: P12 is `in_progress`. P12 Heal Friend is
+  `plan_ready_for_sandbox_session_approval`, `ready_for_sandbox_session_approval`,
+  and P12 Heal Friend is `not_started` are superseded and retained only for
+  older read-only cockpit checks; none describes the current state.
+- P13 is `runtime_evidence_ready`. The fixed seven-entry
+  decision/result ledger, versioned schema registry with independent v1/schema
+  SHA-256 pins, freshness/tamper checks,
+  atomic `ROADMAP_STATE.json/md` generator, sanitized dry-run/success/failure
+  audit contract, read-only Control Center panel, and release-evidence phase
+  consumer are implemented and tested. The exact confirmation
+  `refresh roadmap state` authorized the fixed-output refresh; generated JSON
+  and Markdown now carry the terminal ledger, while the confirmed safe-write
+  audit binds their raw hashes independently from freshness and tamper status.
+  P13 adds no runtime executor, MCP write tool, live authority, or inherited
+  permission, and it does not reopen the closed P12 Heal Friend lane.
+- P14 is active with status `foundation_in_progress`. Its v1 request/result
+  schemas, HMAC-SHA256 artifact-only handoff, tracked-source 63-file manifest,
+  clean-checkout/revision binding, tamper/path tests, deterministic manifest
+  rollback replay, Windows CI contract job, Release Evidence phase state, and
+  read-only Control Center card are implemented. No operational second-runner
+  result, visual/in-world evidence, canary, actual rollback, promotion, runtime,
+  live, or MCP-write authority is claimed; P15 remains closed.
+- The accepted shadow-gate dependency order remains **Conditions runtime safety gate**,
+  then **Equipment runtime safety gate**, then **Heal Friend runtime safety gate**.
+  P9-P11 acceptance is complete, but this order still governs the independent
+  P12 execute-once lanes and grants no inherited action authority.
+
 - Engine Brain Plan 3 is operational and maintained as the secret-safe context
   foundation; roadmap work now consumes its generated evidence.
-- Helper `v2.3.1` is live-promoted with 58-file manifest parity at promotion;
-  the next staged package is `v2.3.2` and carries the passive P10 ring-plan
-  contract.
+- Product direction is now explicitly split: the full OTClient/Solteria Helper
+  remains the primary P8-P16 project, while `mods/ctoa_safe` is a secondary
+  minimalist, movable client panel with fixed module labels and broad editing
+  inside its supported lanes. Safe may provide editable healing, spell and Exeta
+  rotations, Conditions, Timer, and portable data-only presets, but permanently
+  excludes CaveBot, route/movement automation, generic Settings, arbitrary Lua,
+  and any path that satisfies or bypasses a Helper acceptance gate. The delivery
+  contract is S0 scope reduction, S1 rotation editors, S2 mobile preset schema,
+  S3 compact UI acceptance, and S4 separate package/release evidence.
+- S0 is repo- and stage-complete in candidate package `v2.4.0`: a single neutral
+  loader is the only CTOA autoload, asks after every login, activates exactly one
+  of Helper or Safe, and tears it down on logout. Direct Helper/Safe initialization
+  is rejected without the matching selection. Safe now has only three project
+  files, fixed Healing/Combat/Conditions/Timer labels, forced safe boot, and no
+  copied Helper runtime, CaveBot, or generic Settings surface. Operational crash
+  closure remains unclaimed until fresh sandbox selection plus Safe ENABLE smoke
+  and the separately approved promotion gate pass.
+- Safe `v2.0.1` closes the ENABLE-only zero-argument spectator query found during
+  crash-path review. It now uses the fork-native bounded center-position API and
+  guarded fallback; an executable Lua fixture verifies the exact arguments.
+  This strengthens the staged candidate but does not replace in-world crash proof.
+- Safe `v2.8.0` advances S1/S2 with a fixed Support label below Conditions,
+  module-specific ordered editors for Healing, Targeting, Spell Rotation, and
+  Support, selection-to-form editing, bounded JSON persistence, and export-time
+  removal of runtime timestamps. Healing includes HP/mana percentage controls,
+  bounded randomization, and drag-and-drop item slots with hotkey fallback.
+  Support accepts spell or item rules triggered always, by HP, or by mana.
+  Combat rules include a compact monster-count checkbox and per-spell distance.
+  Support is default-off and has no CaveBot, movement, Settings, scripting, or
+  Helper-profile compatibility path.
+- Safe `v2.8.0` is live-promoted after sandbox visual acceptance, real item
+  drag/drop and JSON persistence proof, Helper attach coverage 4/4 and 16/16,
+  runtime module gates 19/19, and exact repo/stage/live hash parity. Backup:
+  `runtime/solteria_helper_dev/live_backup_20260713-021234`.
+- Safe `v2.9.0` is the next repo-only candidate. It completes the ordered Exeta
+  editor with per-entry monster count and cooldown, introduces strict
+  `ctoa-safe-profile-v3` named preset libraries with v2 migration and explicit
+  fixed-path import/export, keeps `.bak` recovery, excludes runtime arm state,
+  clamps restored window geometry, and adds bounded keyboard navigation. It is
+  not staged, visually accepted, or live-promoted yet.
+- Add a separate cross-fork OTS Connection Profile lane for OTC, OTCv8,
+  OTC Brasil, and derived clients. Keep the UI normalized while fork adapters
+  map protocol/client differences. Store only authenticated encrypted envelopes;
+  keep key material in the OS credential store, pin server identity when the
+  fork supports it, redact logs/evidence, and require an explicit Connect action.
+  Begin with passive capability discovery and validated profile import/export;
+  do not place this surface inside Safe or couple it to Helper runtime arming.
+  The public profile contract is now schema-closed in
+  `schemas/otclient-server-profile.schema.json`; secrets are represented only by
+  an OS-vault reference and unknown adapters or missing public-key pins fail.
+  A bounded passive detector now identifies the source checkout as
+  `redemption-mehah` and records proven UIItem/action-bar/keybind/shader/HTML
+  capabilities without reading credentials or connecting. A protected live
+  tree with no public markers remains explicitly `unknown`.
+- Safe S4 now has an independent three-file release lane documented in
+  `docs/otclient/solteria_safe_release.md`. Safe `v2.8.0` is live-promoted with
+  3/3 source/live SHA-256 parity and backup
+  `runtime/solteria_safe_release/live_backup_20260713-015729`; the running client
+  PID remained unchanged. Activation and visual/runtime acceptance are pending
+  a normal reload, so this evidence does not satisfy any Helper release gate.
+- Helper `v2.4.1` hardens guarded auto-targeting so the currently attacked safe
+  creature is not redispatched every retarget interval. This is an idempotency
+  fix only and does not alter P8-P16 eligibility, runtime gates, or safe boot.
+- Helper `v2.3.6` is live-promoted with 58/58 verified files and
+  `launch_after_promote=false`; backup: `live_backup_20260712-121859`.
+  It adds the passive P10 observation, canonical snapshot producer, operational
+  replay, and separate acceptance receipt contract.
+  The already-running live client still reports the prior capability version;
+  P8 correctly returns `capability_version_mismatch` until the user performs a
+  normal client restart. Promotion did not force-close or restart that session.
   Vocation-profile drift after play is tracked separately, but remains blocking
   because the current Lua profile is executable rather than data-only.
-- P8 `BackgroundNoScreen` is `implementation_complete` and
-  `operational_acceptance_blocked`. It replaces routine mouse/focus/screenshot
-  testing with bounded passive evidence and never implies another live promotion.
-  The current live package is `v2.3.1`; P8 acceptance remains separate from
-  the explicit package promotion cycle.
-- P8 operational acceptance requires all three proofs: an official
-  promotion-bound trusted pin, a fresh capability heartbeat newer than the one
-  canonical client process, and full producer/consumer parity for the no-action
-  contract. The observer cannot create its own live manifest or trust anchor.
-  Current evidence classifies the historical pair as
-  `legacy_or_unbound_attestation`; read-only diagnostic parity is stable at
-  57/58 with one executable-profile drift and can never authorize acceptance.
+- Helper `v2.3.6` adds a passive exact-single-target
+  Heal Friend scan boundary and a fixture-only P11 replay that passes 55/55
+  deterministic cases under mandatory `--no-write`. P11 operational acceptance
+  remains `not_started`: there is no operational producer, receipt, dispatch,
+  Control Center unlock, cast, talk, execute-once, or runtime-readiness claim.
+- Helper `v2.3.7` is live-promoted with 58/58 verified files,
+  `launch_after_promote=false`, and backup `live_backup_20260712-150157`.
+  It hardens P10 with a fixed 30-case
+  corpus, scenario-pack SHA binding, current-wall-clock operational evaluation,
+  strict nested schemas and Release Evidence/Control Center coverage parity.
+  Privileged smoke commands now fail closed while runtime is disabled, while
+  passive tab/probe smoke remains available for sandbox evidence.
+- Helper `v2.3.8` is live-promoted with 58/58 stage/live SHA-256 matches,
+  `launch_after_promote=false`; the latest content-bound P10 operator-tooling
+  promotion backup is `live_backup_20260712-163259`.
+  It closes safe-boot lifecycle bypasses across init, terminate, profile reload,
+  external disable/enable, and the persisted Recovery Bridge arm. Profile and
+  UI-preference Lua now execute in an empty data-only environment rather than
+  inheriting OTClient or filesystem authority. The current-manifest sandbox
+  evidence passed ModuleAttachSmoke 4/4, SmokeAttachAll 16/16, and runtime
+  module gates 19/19 before promotion.
+- Helper `v2.3.9` is live-promoted with backup
+  `live_backup_20260712-185148`, 58/58 stage/live SHA-256 matches, and
+  `launch_after_promote=false`. The main Lua shell was reduced from 160 to the
+  enforced 130-function budget (4308 lines) by moving pure profile/input,
+  route/target/cavebot, recovery/combat, registry, and UI metadata into existing
+  support modules. Lifecycle, arming, OTClient API access, and final action
+  guards remain shell-owned. The in-world smoke caught and fixed a missing
+  Profile renderer visibility callback before promotion.
+- Helper `v2.3.10` is live-promoted with backup
+  `live_backup_20260712-192857`. It moves vocation/timer and route/cavebot probe
+  presentation into passive adapters, adds schema-owned export descriptors for
+  all six generated profile sections, and centralizes initial operator-summary
+  collection. Native reads, route mutation, arming, movement, and dispatch stay
+  in the guarded shell, now at 4298 lines and 129 named functions. Sandbox QA
+  caught and fixed a nil UI-preference write and an unsafe generic wrapper around
+  native `g_map.findPath`; the proven direct guarded `pcall` boundary is retained.
+  Final evidence passed 1666 Python tests, ValidateDev 127/127, static gates
+  39/39, attach 4/4 and 16/16, and runtime gates 19/19.
+- P10 operator evidence now has strict read-only parity across its six producer
+  artifacts, Python Release Evidence, and the web Control Center. A dedicated
+  `ctoa.equipment-consumer-parity.v1` gate validates fixed paths, schemas,
+  canonical hashes/bindings, copied status/blockers, freshness, unchanged
+  eligibility, and all no-action fields. Control Center exposes only read-only
+  summaries and evidence links; no write or action endpoint was added.
+- P10 now has one fixed repo-only refresh entry point, `ctoa.ps1 otp10refresh`.
+  It runs doctor, preview, dependency preflight, catalog, a no-ID change plan,
+  readiness, and strict consumer parity in order. Producer blockers are allowed
+  as data, but parity must pass; the command accepts no IDs, confirmation,
+  acceptance, replay, client action, or `.ctoa-local` write path. Successful
+  runs persist one UUID-bound anti-mix envelope with seven ordered canonical
+  hashes; failed runs abort only their matching pending journal. The completed
+  batch passed 1657 Python tests, 147 web tests, ValidateDev 127/127, static
+  gates 39/39, sandbox attach 4/4 and 16/16, and runtime gates 19/19.
+- P10 now exposes `ctoa.ps1 otp10doctor`: a schema-closed no-action preflight
+  for the fixed ignored capture profile. It reports exact missing IDs,
+  confirmation, validity, and identity-collision blockers, writes only bounded
+  runtime evidence, and is enforced by ValidateDev without treating a blocked
+  operational profile as fixture failure or runtime permission.
+- The next P10 operator batch adds three fail-closed boundaries: exclusive
+  zero-ID `otp10doctor init` with no overwrite path, bounded `otp10preview` for
+  sanitized ring/container/slot evidence, and `otp10preflight` for the complete
+  P8/P9/doctor/preview dependency chain. Preflight never changes eligibility and
+  all three remain repo/runtime-evidence only. The content-bound release cycle
+  passed 1585 tests, ValidateDev, 39/39 static gates, 4/4 module attach, 16/16
+  full attach, and 19/19 runtime gates before the latest live promotion.
+- P10 profile preparation now also has `otp10plan`: a strict hash-bound,
+  data-only plan/diff over the fixed doctor and observation preview. It requires
+  four exact IDs plus an exact planning confirmation, writes only repo runtime
+  evidence, never reads or writes `.ctoa-local`, and grants no acceptance,
+  readiness, eligibility, dispatch, execution, or promotion.
+- The latest P10 operator batch adds `otp10catalog` with no selection or
+  recommendation policy, `otp10plan` as a write-free exact-ID review artifact,
+  and `otp10ready` as an ordered blocker/next-action explanation. ValidateDev
+  enforces all three no-action contracts. The content-bound cycle passed 1612
+  tests, 39/39 static gates, 4/4 module attach, 16/16 full attach, and 19/19
+  runtime gates before promotion; operational readiness remains unclaimed.
+- The v2.3.5 package retains the v2.3.4 loader hardening and adds a canonical
+  passive Recovery trace/proof producer, `otp9accept`, a fixed ignored local P10
+  profile override, exact container-slot binding, and P10.1 consumer closure.
+  Release Evidence and Control Center now require the bound P10 report itself to
+  be fresh, operational, non-fixture, blocker-free, rollback-ready, and scenario-
+  complete before P11 predecessor eligibility can become true.
+- The v2.3.4 package fixed lowercase OTML autoload metadata,
+  cross-fork console enums, idempotent loader teardown/reload, and hidden
+  no-focus startup. It also seals P10 receipt eligibility consistently across
+  Python, JSON Schema, Release Evidence, and Control Center, and hardens passive
+  snapshot/replay writes. It does not accept P10 or enable P11/runtime actions.
+- P8 `BackgroundNoScreen` is `operational_acceptance_complete`. Its final
+  acceptance used the official promotion-bound trusted pin, one fresh
+  capability heartbeat newer than the canonical process, `62/62` live hash
+  parity, and full producer/consumer no-action parity. The earlier
+  `legacy_or_unbound_attestation` evidence remains historical and was never
+  rebound into trust by the observer.
 - The sandbox smoke chain is content-bound: `ModuleAttachSmoke` 4/4,
   `SmokeAttachAll` 16/16, and `RuntimeModuleGatesSandboxSmoke` must carry the
   current dev manifest SHA-256. Legacy reports remain blocked; a newer file
   timestamp alone is not evidence of freshness.
-- P9 Conditions is `offline_implementation_complete` and
-  `operational_acceptance_blocked`. Its strict data-only replay and 44-case
-  fixture pack are implemented without dispatch, execute-once, promotion, or
-  client interaction. A strict data-only acceptance preflight now recomputes
-  canonical inputs and requires exact operator confirmation before it can write
-  a receipt. Current evidence remains blocked and no receipt exists.
-  Fixture success is never reported as runtime readiness.
-- P10 Equipment is `offline_implementation_complete` and
-  `operational_acceptance_blocked`. Its ring-only snapshot, exact item/slot/
-  container/revision checks, rollback simulation, P9 receipt binding, and
-  15-case tamper pack are data-only; `otp10` and the static sandbox gate never
-  move, use, or dispatch an item.
+- P9 Conditions is `operational_acceptance_complete`. Its accepted data-only
+  receipt binds fresh real Conditions evidence plus canonical P8 and Recovery
+  predecessors; dispatch, execute-once, promotion, and runtime readiness remain
+  false.
+- P10 Equipment shadow/replay is `operational_acceptance_complete`. Its accepted
+  receipt binds the exact ring/container/slot observation and the P9 receipt;
+  it authorizes no item movement. The later P12 Equipment execute-once lane was
+  completed through its own separate Registry v1 authority boundary.
+- P11 Heal Friend shadow/replay is `operational_acceptance_complete`. It retains
+  exactly one stable allowlisted party identity and no ranking, fallback,
+  multi-target, cast, talk, dispatch, or promotion path.
 - P6 is ready for plugin design and the five bounded P7 safe-write refresh tools
   are enabled with audit coverage.
 - The next static Helper slice keeps the UI shell passive: Diagnostics owns
@@ -46,55 +255,31 @@
 
 ## Now
 
-1. **BackgroundNoScreen foundation (P8)** — owner: Helper Runtime + Evidence;
-   implementation status: `implementation_complete`; operational status:
-   `operational_acceptance_blocked`; risk: `read_only_observability`. Contract:
-   `AI/P8_P16_EXECUTION_ROADMAP.md`. The only allowed wrapper action in this mode
-   is `BackgroundStatus`; it cannot launch, stop, focus, capture, send input, or
-   write inside a client. Acceptance stays blocked until the promotion-bound
-   trusted pin, fresh capability heartbeat, and full no-action consumer parity
-   are proven together. Pin Doctor may expose allowlisted provenance errors and
-   diagnostic parity, but `acceptance_allowed` remains false for an untrusted pin.
-2. **Conditions data-only shadow replay (P9)** — owner: Helper Runtime +
-   Evidence; implementation status: `offline_implementation_complete`;
-   operational status: `operational_acceptance_blocked`; risk:
-   `read_only_shadow`. `ctoa.ps1 otp9` refreshes the repo-local
-   `background_status.json` and then writes
-   `runtime/solteria_helper_dev/conditions_shadow_replay.json`. Acceptance
-   still requires trusted/fresh P8, a real current guarded observation, and an
-   accepted hash-bound Recovery trace. The separate
-   `otclient_conditions_shadow_acceptance.py --no-write` preflight validates
-   freshness, recomputation, no-action invariants, canonical paths, and fixture
-   separation without creating permission for P10.
-3. **Conditions runtime safety gate** — owner: Helper Runtime; status:
-   `static_contract_accepted`; risk: `runtime_recovery`. It remains separate
-   from P9 and cannot dispatch until P9 operational acceptance is reviewed.
-4. **Equipment runtime safety gate** — owner: Helper Runtime; status:
-   `static_contract_accepted`; risk: `runtime_equipment`. It is ordered after
-   Conditions and allowlists only a ring-swap dry-run with exact item IDs,
-   rollback snapshot, zero retry, and no live promotion. The offline P10
-   replay is available through `ctoa.ps1 otp10`.
-5. **Heal Friend runtime safety gate** — owner: Helper Runtime; status:
-   `static_contract_accepted`; risk: `runtime_cast`. It is ordered after both
-   Conditions and Equipment and requires exact persisted whitelist plus stable
-   party target identity. Contract:
-   `docs/otclient/HELPER_RUNTIME_MODULE_GATES_V1.md`.
+1. **P12 Heal Friend exact-whitelist boundary** — owner: Helper Runtime +
+   Evidence; status: `plan_ready_for_sandbox_session_approval`; risk:
+   `execute_once_sandbox`. Its lane-specific plan is bound to the persisted
+   exact whitelist and current manifest gates. Next it requires the exact
+   sandbox-session approval; later, on ED, a fresh stable party-target window,
+   independent execution approval, one terminal trace, and its own receipt.
+2. **P12 Conditions accepted boundary** — owner: Helper Runtime + Evidence;
+   status: `operational_acceptance_complete`. Its one terminal trace and receipt
+   stay immutable, killed/disarmed, zero-retry, sandbox-only, and grant no
+   authority to Equipment, Heal Friend, live promotion, or automatic execution.
+3. **P12 Equipment accepted boundary** — owner: Helper Runtime + Evidence;
+   status: `operational_acceptance_complete`. Registry v1 receipt
+   `p12-equipment-bdf7027cf48c438d` stays immutable: one attempt, zero retry,
+   killed/disarmed, sandbox-only, and no authority for Heal Friend or live
+   promotion.
 
 ## Next
 
-- Close P8 operational acceptance only after an official promotion-bound trusted
-  pin, a fresh capability heartbeat, and full producer/consumer parity are proven
-  together through `ctoa.ps1 otbg`, release evidence, and Control Center without
-  touching the game window.
-- Close P9 operational acceptance only after `ctoa.ps1 otp9` produces a fresh,
-  real `shadow_plan_ready_for_operator_review` trace under accepted P8 and
-  Recovery proofs, then pass the independently reviewed data-only acceptance
-  boundary. The offline fixture pack may stay green while this is blocked.
-- P10 remains operationally blocked until that real P9 trace is explicitly
-  reviewed, but its independent offline shadow/replay sequence is complete and
-  ready to consume the accepted receipt.
-  P11 does the same for exact-whitelist Heal Friend.
-- P12 is the first possible execute-once sandbox phase, still with no live dispatch.
+- Request only the exact sandbox-session confirmation for plan
+  `964ff8f0c178c7b646a565380e96846a8b29780eb02a734a259713d9ccf023b3`.
+- Switch the sandbox to ED and wait for the approved target to be a visible,
+  same-floor party member within seven tiles at or below 70% HP. The current EK
+  character and missing approved target keep execution fail-closed.
+- Request execution approval later and independently; permit at most one
+  terminal attempt, zero retry, immediate KILL/disarm, and no live promotion.
 - P13 adds decision/result replay and machine-readable roadmap state; P14 moves
   visual acceptance to a separate runner/VM.
 - Add sandbox-to-live promotion visibility without implicit promotion.
@@ -116,6 +301,13 @@ feature work.
 
 - Stabilize and productize the OTClient/Solteria Helper before broader CTOAi
   expansion.
+- Treat CTOA Safe as a bounded companion lane, never as a replacement or fork of
+  the full Helper roadmap. Shared utilities must preserve separate policies and
+  prove that Safe exclusions cannot be restored through Helper configuration.
+- Reduce the current `mods/ctoa_safe` prototype before product acceptance:
+  remove CaveBot and generic Settings/profile surfaces, freeze the visible label
+  set and order, then implement validated ordered spell/Exeta editors and
+  non-executable portable presets with safe boot default-off.
 - Keep `scripts/lua/otclient/` as the canonical Helper source tree; generated
   ZIPs stay under `runtime\solteria_helper_dev\` or release staging.
 - Preserve safe boot defaults: runtime disarmed, combat/offensive/movement
@@ -135,7 +327,8 @@ feature work.
 - A post-promotion live client launch is not implicit. Operators must add
   `-LaunchAfterPromote`; the wrapper may launch a missing live client but must
   never stop or restart an existing live client.
-- Current Helper `v2.3.1` is live-promoted. Its promotion report verified 58
+- Current Helper `v2.4.1` is live-promoted. Its promotion report verified the
+  current manifest
   staged/live SHA-256 matches; release gate and GoalStatus passed. Runtime module
   acceptance remains fail-closed and separate from package promotion.
 - Helper P6 Module Lane is repo- and sandbox-complete: Healing/Recovery, Combat,

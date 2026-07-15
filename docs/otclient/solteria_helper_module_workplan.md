@@ -3,21 +3,21 @@
 ## Current Decision
 
 - Status: `ready`
-- Helper lines: `4400`
-- Helper functions: `158`
+- Helper lines: `4359`
+- Helper functions: `130`
 - Helper line budget: `4500`
 - Helper function budget: `130`
-- Helper budget status: `over_budget`
+- Helper budget status: `within_budget`
 - Helper shell target: UI composition, profile persistence, and guarded dispatch only; registry/domain logic belongs in helper modules/adapters.
 - Modularization pressure: `medium`
 - Placeholder modules: `0`
-- Implemented modules: `26`
-- Prototype modules: `5`
+- Implemented modules: `31`
+- Prototype modules: `0`
 - Registry coverage: `9` / `9`
 - Next extraction: `none`
 - Next supplemental split: `none`
-- Next phase: P6-module-lane: keep the main helper as UI composition shell; move runtime adapters behind static contracts and sandbox gates.
-- Next module action: `conditions` - Pass ConditionsRuntimeGate after fresh observer and attach evidence; only paralyze recovery dry-run is in scope.
+- Next phase: Keep module gates current before adding new runtime actions.
+- Next module action: `` - Keep module gates current before adding new runtime actions.
 
 ## Operating Rule
 
@@ -30,14 +30,14 @@ The helper Overview must expose module readiness from `ctoa_helper_modules.lua` 
 | Module | Status | Target | Next step | Gate |
 |---|---:|---|---|---|
 | `healing` / Healing and recovery | `static_gated` | `ctoa_native_heal.lua` | Keep runtime logic mirrored in standalone passive recovery module and add sandbox HP/MP log smoke. | ValidateDev plus in-world HP/MP sandbox log evidence. |
-| `combat` / Targeting and magic shooter | `prototype` | `ctoa_native_combat.lua` | Extract shared target scoring/guards into a reusable helper runtime domain before adding more attacks. | PZ/NPC regression log plus SmokeAttachAll hunting and hunting_magic views. |
+| `combat` / Targeting and magic shooter | `static_gated` | `ctoa_native_combat.lua` | Extract shared target scoring/guards into a reusable helper runtime domain before adding more attacks. | PZ/NPC regression log plus SmokeAttachAll hunting and hunting_magic views. |
 | `cavebot` / CaveBot route and movement | `static_gated` | `ctoa_native_helper.lua` | Split route editing from movement execution into separate domain blocks before adding waypoint actions. | Route editor static tests plus sandbox autoWalk retry-budget evidence. |
 | `loot` / Loot scanner | `static_gated` | `ctoa_native_loot.lua` | Promote loot from experimental flag only after in-world container scan evidence exists. | ValidateDev plus bounded ctoa_local.log loot scan evidence in sandbox. |
 | `timer` / Timer action | `static_gated` | `ctoa_native_helper.lua` | Keep timer as a small bounded action; do not add arbitrary scripting through timer message. | Static contract and sandbox log evidence for one timer tick. |
-| `conditions` / Conditions | `prototype` | `ctoa_helper_conditions.lua` | Pass ConditionsRuntimeGate after fresh observer and attach evidence; only paralyze recovery dry-run is in scope. | ConditionsRuntimeGate requires Recovery acceptance, fresh ConditionsObserverSmoke, current attach evidence, operator confirmation, dry-run, and Combat/CaveBot disabled. |
-| `equipment` / Equipment | `prototype` | `ctoa_helper_equipment.lua` | Pass EquipmentRuntimeGate after Conditions; keep the first plan ring-only, dry-run, exact-ID, and rollback-ready. | EquipmentRuntimeGate requires accepted Conditions gate, fresh inventory evidence, exact item IDs, rollback snapshot, zero retry, and Combat/CaveBot disabled. |
-| `heal_friend` / Heal Friend | `prototype` | `ctoa_helper_heal_friend.lua` | Pass HealFriendRuntimeGate only after Conditions and Equipment; require persisted exact whitelist and stable party target identity. | HealFriendRuntimeGate requires accepted Conditions/Equipment gates, no-target smoke, exact whitelist identity, fresh target evidence, cooldown, and Combat/CaveBot disabled. |
-| `scripting` / Scripting | `prototype` | `ctoa_helper_scripting.lua` | Run ScriptingPolicySmoke, then capture grouped in-world SmokeAttachModules policy shell evidence; keep eval and user snippets blocked. | No user snippet execution until passive plan contract, security review, denylist tests, audit logging, ScriptingPolicySmoke, ModuleStaticGates, and ModuleAttachSmoke pass. |
+| `conditions` / Conditions | `static_gated` | `ctoa_helper_conditions.lua` | Pass ConditionsRuntimeGate after fresh observer and attach evidence; only paralyze recovery dry-run is in scope. | ConditionsRuntimeGate requires Recovery acceptance, fresh ConditionsObserverSmoke, current attach evidence, operator confirmation, dry-run, and Combat/CaveBot disabled. |
+| `equipment` / Equipment | `static_gated` | `ctoa_helper_equipment.lua` | Pass EquipmentRuntimeGate after Conditions; keep the first plan ring-only, dry-run, exact-ID, and rollback-ready. | EquipmentRuntimeGate requires accepted Conditions gate, fresh inventory evidence, exact item IDs, rollback snapshot, zero retry, and Combat/CaveBot disabled. |
+| `heal_friend` / Heal Friend | `static_gated` | `ctoa_helper_heal_friend.lua` | Pass HealFriendRuntimeGate only after Conditions and Equipment; require persisted exact whitelist and stable party target identity. | HealFriendRuntimeGate requires accepted Conditions/Equipment gates, no-target smoke, exact whitelist identity, fresh target evidence, cooldown, and Combat/CaveBot disabled. |
+| `scripting` / Scripting | `static_gated` | `ctoa_helper_scripting.lua` | Run ScriptingPolicySmoke, then capture grouped in-world SmokeAttachModules policy shell evidence; keep eval and user snippets blocked. | No user snippet execution until passive plan contract, security review, denylist tests, audit logging, ScriptingPolicySmoke, ModuleStaticGates, and ModuleAttachSmoke pass. |
 
 ## Extraction Map
 

@@ -107,6 +107,13 @@ def test_flat_observation_fixture_matches_the_producer_contract_exactly():
     assert replay._observation_structurally_valid(observation.payload)
 
 
+def test_player_states_is_a_structurally_valid_proven_pz_source():
+    observation = dict(_documents()[1].payload or {})
+    observation["protection_zone_source"] = "player_states"
+
+    assert replay._observation_structurally_valid(observation)
+
+
 def test_observation_id_with_dot_is_rejected_like_the_passive_producer():
     documents = list(_documents())
     assert documents[1].payload is not None
@@ -704,6 +711,10 @@ def test_raw_background_status_blocked_is_not_promoted_by_a_passing_pack():
     assert recovery_trace.payload is not None
     trace_payload = dict(recovery_trace.payload)
     trace_payload["source"] = "recovery_shadow"
+    trace_payload["trace_id"] = ""
+    trace_payload["trace_id"] = "recovery-shadow-" + replay.canonical_sha256(
+        {key: value for key, value in trace_payload.items() if key != "trace_id"}
+    )[:16]
     operational_recovery_trace = replay.document_from_payload(trace_payload)
 
     assert recovery.payload is not None
@@ -713,6 +724,10 @@ def test_raw_background_status_blocked_is_not_promoted_by_a_passing_pack():
     recovery_payload["observation_sha256"] = projected_observation.sha256
     recovery_payload["p8_proof_sha256"] = normalized_p8.sha256
     recovery_payload["recovery_trace_sha256"] = operational_recovery_trace.sha256
+    recovery_payload["proof_id"] = ""
+    recovery_payload["proof_id"] = "conditions-recovery-" + replay.canonical_sha256(
+        {key: value for key, value in recovery_payload.items() if key != "proof_id"}
+    )[:16]
     operational_recovery = replay.document_from_payload(recovery_payload)
 
     report = replay.build_report(
@@ -810,6 +825,10 @@ def test_failed_scenario_pack_blocks_an_otherwise_ready_operational_trace():
     assert recovery_trace.payload is not None
     operational_trace_payload = dict(recovery_trace.payload)
     operational_trace_payload["source"] = "recovery_shadow"
+    operational_trace_payload["trace_id"] = ""
+    operational_trace_payload["trace_id"] = "recovery-shadow-" + replay.canonical_sha256(
+        {key: value for key, value in operational_trace_payload.items() if key != "trace_id"}
+    )[:16]
     operational_recovery_trace = replay.document_from_payload(operational_trace_payload)
 
     assert recovery.payload is not None
@@ -821,6 +840,10 @@ def test_failed_scenario_pack_blocks_an_otherwise_ready_operational_trace():
     operational_recovery_payload["recovery_trace_sha256"] = (
         operational_recovery_trace.sha256
     )
+    operational_recovery_payload["proof_id"] = ""
+    operational_recovery_payload["proof_id"] = "conditions-recovery-" + replay.canonical_sha256(
+        {key: value for key, value in operational_recovery_payload.items() if key != "proof_id"}
+    )[:16]
     operational_recovery = replay.document_from_payload(operational_recovery_payload)
 
     report = replay.build_report(

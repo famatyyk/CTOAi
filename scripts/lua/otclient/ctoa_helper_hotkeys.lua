@@ -188,6 +188,24 @@ function Hotkeys.bindingDecision(value, currentValue, allowed)
     }
 end
 
+function Hotkeys.normalizeHelperHotkey(value)
+    return Hotkeys.normalize(value)
+end
+
+function Hotkeys.hotkeyBindingDecision(value, currentValue, allowed)
+    return Hotkeys.bindingDecision(value, currentValue, allowed)
+end
+
+function Hotkeys.resolveActionbarSlot(primarySlot, fallbackHotkey)
+    if primarySlot and primarySlot ~= "" then
+        return primarySlot
+    end
+    if fallbackHotkey and fallbackHotkey ~= "" then
+        return fallbackHotkey
+    end
+    return nil
+end
+
 function Hotkeys.display(value)
     local normalized = Hotkeys.normalize(value)
     if normalized == "" then
@@ -208,6 +226,8 @@ function Hotkeys.contract()
         mode = "passive",
         owns_actionbar_slot_text = true,
         owns_binding_decision = true,
+        owns_hotkey_normalization = true,
+        owns_actionbar_slot_resolution = true,
         binds_keys = false,
         sends_keys = false,
         runtime_actions = false,

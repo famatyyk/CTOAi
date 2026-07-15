@@ -40,6 +40,13 @@ function Diagnostics.valueText(ok, value)
     return tostring(value)
 end
 
+function Diagnostics.vocationProbeText(snapshot)
+    local data = snapshot or {}
+    return "Vocation probe: raw=" .. tostring(data.raw) ..
+        " resolved=" .. tostring(data.resolved) ..
+        " source=" .. tostring(data.source)
+end
+
 local function unavailableRuntimeCoreSnapshot()
     return {
             schema_version = "ctoa.runtime-core.v1",
@@ -360,7 +367,7 @@ function Diagnostics.parseSmokeCommandText(text)
     end
     local command = {}
     local hasValue = false
-    for _, key in ipairs({"action", "tab", "subtab", "theme"}) do
+    for _, key in ipairs({"action", "tab", "subtab", "theme", "session_id", "plan_sha256", "p9_receipt_sha256", "p10_receipt_sha256", "p11_receipt_sha256", "p12_equipment_receipt_sha256", "retry_budget", "before_item_id", "candidate_item_id", "source_container_id", "source_slot_index", "target_id", "target_name", "whitelist_revision", "hp_threshold", "max_range"}) do
         local value = Diagnostics.smokeCommandValue(text, key)
         if value and value ~= "" then
             command[key] = value
@@ -371,6 +378,12 @@ function Diagnostics.parseSmokeCommandText(text)
     if confirm == "true" then
         command.confirm = true
         hasValue = true
+    end
+    for _, key in ipairs({"session_approved", "execution_approved"}) do
+        if Diagnostics.smokeCommandValue(text, key) == "true" then
+            command[key] = true
+            hasValue = true
+        end
     end
     if hasValue then
         return command
@@ -509,6 +522,7 @@ function Diagnostics.contract()
         owns_pos_text = true,
         owns_api_text = true,
         owns_value_text = true,
+        owns_vocation_probe_text = true,
         owns_runtime_core_snapshot = true,
         owns_runtime_core_text = true,
         owns_api_snapshot_text = true,

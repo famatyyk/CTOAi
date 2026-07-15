@@ -4,6 +4,8 @@
 local Adapter = rawget(_G, "CTOA_HELPER_OTCLIENT_OBSERVATION_ADAPTER") or {}
 
 local CONDITIONS_OBSERVATION_SCHEMA = "ctoa.conditions-observation.v1"
+local EQUIPMENT_SHADOW_OBSERVATION_SCHEMA = "ctoa.equipment-shadow-observation.v1"
+local HEAL_FRIEND_SCAN_SCHEMA = "ctoa.heal-friend-scan.v1"
 
 local function call(owner, methodName, fallback, ...)
     if type(owner) ~= "table" and type(owner) ~= "userdata" then
@@ -73,7 +75,7 @@ local function spectatorSnapshot(map, player)
     local position = call(player, "getPosition", nil)
     local spectators = {}
     if map and position and type(map.getSpectators) == "function" then
-        local ok, result = pcall(map.getSpectators, map, position, false)
+        local ok, result = pcall(map.getSpectators, position, false)
         if ok and type(result) == "table" then
             spectators = result
         end
@@ -91,6 +93,48 @@ local function spectatorSnapshot(map, player)
         end
     end
     return counts
+end
+
+local function normalizedName(value)
+    return string.lower(tostring(value or "")):gsub("^%s+", ""):gsub("%s+$", ""):gsub("%s+", " ")
+end
+
+local function boundedPartyCandidates(map, player)
+    local playerPosition = call(player, "getPosition", nil)
+    local selfId = tonumber(call(player, "getId", 0)) or 0
+    local spectators, complete = {}, playerPosition ~= nil and map ~= nil
+    if complete and type(map.getSpectators) == "function" then
+        local ok, result = pcall(map.getSpectators, playerPosition, false)
+        if ok and type(result) == "table" then spectators = result else complete = false end
+    else
+        complete = false
+    end
+    local candidates = {}
+    for _, creature in pairs(spectators) do
+        if #candidates >= 64 then complete = false break end
+        if call(creature, "isPlayer", false) == true then
+            local creatureId = tonumber(call(creature, "getId", 0)) or 0
+            local creaturePosition = call(creature, "getPosition", nil)
+            local hp = tonumber(call(creature, "getHealthPercent", 0)) or 0
+            candidates[#candidates + 1] = {
+                target_id = math.max(0, math.floor(creatureId)),
+                target_name = normalizedName(call(creature, "getName", "")),
+                hp_percent = math.max(0, math.min(100, math.floor(hp))),
+                distance = math.max(0, math.floor(distanceBetween(playerPosition, creaturePosition))),
+                target_is_player = true,
+                target_is_self = creatureId > 0 and creatureId == selfId,
+                target_party_member = call(creature, "isPartyMember", false) == true,
+                target_visible = call(creature, "canShoot", false) == true,
+                target_same_floor = playerPosition ~= nil and creaturePosition ~= nil and
+                    playerPosition.z == creaturePosition.z,
+            }
+        end
+    end
+    table.sort(candidates, function(left, right)
+        if left.target_id ~= right.target_id then return left.target_id < right.target_id end
+        return left.target_name < right.target_name
+    end)
+    return candidates, complete, math.max(0, math.floor(selfId))
 end
 
 local function cooldownActive(group)
@@ -146,35 +190,87 @@ local function playerAliveState(player)
     return "unknown"
 end
 
-local function paralyzeState(player)
+local function hasBitFlag(value, flag)
+    if type(value) ~= "number" or type(flag) ~= "number" or flag <= 0 then return false end
+    if bit32 and bit32.band then return bit32.band(value, flag) == flag end
+    if bit and bit.band then return bit.band(value, flag) == flag end
+    return value % (flag * 2) >= flag
+end
+
+local function playerStates(player)
     if (type(player) ~= "table" and type(player) ~= "userdata") or
-        type(player.hasState) ~= "function" then
-        return "unknown"
+        type(player.getStates) ~= "function" then return nil end
+    local ok, value = pcall(player.getStates, player)
+    if ok and type(value) == "number" and value == value and value >= 0 and
+        value < math.huge and value % 1 == 0 then return value end
+    return nil
+end
+
+local function stateFlags(globals, fallbacks)
+    local result, seen = {}, {}
+    for _, name in ipairs(globals or {}) do
+        local value = rawget(_G, name)
+        if type(value) == "number" and value > 0 and value % 1 == 0 and not seen[value] then
+            result[#result + 1], seen[value] = value, true
+        end
     end
-    local function verifiedStateConstant(value)
-        return type(value) == "number" and value == value and value > 0 and
-            value < math.huge and value % 1 == 0
+    for _, value in ipairs(fallbacks or {}) do
+        if type(value) == "number" and value > 0 and not seen[value] then
+            result[#result + 1], seen[value] = value, true
+        end
     end
-    local candidates = {}
-    if verifiedStateConstant(_G.CreatureStateParalyze) then
-        candidates[#candidates + 1] = _G.CreatureStateParalyze
+    return result
+end
+
+local function speedSlowedState(player)
+    local speed = call(player, "getSpeed", nil)
+    local baseSpeed = call(player, "getBaseSpeed", nil)
+    if type(speed) ~= "number" or type(baseSpeed) ~= "number" or
+        speed ~= speed or baseSpeed ~= baseSpeed or baseSpeed <= 0 or
+        speed <= -math.huge or speed >= math.huge or
+        baseSpeed <= -math.huge or baseSpeed >= math.huge then
+        return nil
     end
-    if verifiedStateConstant(_G.CreatureStateSlowed) then
-        candidates[#candidates + 1] = _G.CreatureStateSlowed
+    return speed < baseSpeed
+end
+
+local function protectionZoneState(player)
+    local state, source = triStateBooleanCall(player, {
+        "isInPz", "isInProtectionZone", "isInSafeZone", "isProtected"
+    }, "inside", "outside")
+    if state ~= "unknown" then return state, source end
+    local states = playerStates(player)
+    if states == nil then return "unknown", "unavailable" end
+    for _, flag in ipairs(stateFlags({
+        "CreatureStateProtectionZone", "CreatureStatePz", "CreatureStateSafeZone"
+    }, {16384})) do
+        if hasBitFlag(states, flag) then return "inside", "player_states" end
     end
-    if #candidates == 0 then
-        return "unknown"
-    end
+    return "outside", "player_states"
+end
+
+local function paralyzeState(player)
+    if type(player) ~= "table" and type(player) ~= "userdata" then return "unknown" end
+    local candidates = stateFlags({"CreatureStateParalyze", "CreatureStateSlowed"}, {32})
     local observed = false
-    for _, candidate in ipairs(candidates) do
-        local ok, active = pcall(player.hasState, player, candidate)
-        if ok and type(active) == "boolean" then
-            observed = true
-            if active then
-                return "present"
+    if type(player.hasState) == "function" then
+        for _, candidate in ipairs(candidates) do
+            local ok, active = pcall(player.hasState, player, candidate)
+            if ok and type(active) == "boolean" then
+                observed = true
+                if active then return "present" end
             end
         end
     end
+    local states = playerStates(player)
+    if states ~= nil then
+        for _, candidate in ipairs(candidates) do
+            if hasBitFlag(states, candidate) then return "present" end
+        end
+    end
+    local slowed = speedSlowedState(player)
+    if slowed ~= nil then return slowed and "present" or "absent" end
+    if states ~= nil then return "absent" end
     return observed and "absent" or "unknown"
 end
 
@@ -197,9 +293,7 @@ function Adapter.conditionsSnapshot(context)
     local game = ctx.game or rawget(_G, "g_game")
     local online, _ = triStateBooleanCall(game, {"isOnline"}, "online", "offline")
     local player = online == "online" and call(game, "getLocalPlayer", nil) or nil
-    local protectionZone, protectionZoneSource = triStateBooleanCall(player, {
-        "isInPz", "isInProtectionZone", "isInSafeZone", "isProtected"
-    }, "inside", "outside")
+    local protectionZone, protectionZoneSource = protectionZoneState(player)
     local cooldown, cooldownSource = "unknown", "unavailable"
     if online == "online" then
         cooldown, cooldownSource = spellCooldownState(ctx)
@@ -313,9 +407,10 @@ function Adapter.lootSnapshot(context)
     }
 end
 
-local function inventorySlot(player, candidates)
+local function inventorySlot(player, ...)
     if not player or type(player.getInventoryItem) ~= "function" then return {present = false} end
-    for _, slotId in ipairs(candidates or {}) do
+    for index = 1, select("#", ...) do
+        local slotId = select(index, ...)
         if slotId ~= nil then
             local item = call(player, "getInventoryItem", nil, slotId)
             if item then
@@ -324,6 +419,113 @@ local function inventorySlot(player, candidates)
         end
     end
     return {present = false}
+end
+
+local function boundedContainerItems(game)
+    local containers = call(game, "getContainers", {})
+    local result, containerCount, itemCount = {}, 0, 0
+    local complete = type(containers) == "table"
+    if type(containers) ~= "table" then return result, false end
+    for key, container in pairs(containers) do
+        containerCount = containerCount + 1
+        if containerCount > 32 then complete = false break end
+        local containerId = tonumber(call(container, "getId", nil)) or tonumber(key)
+        local items = call(container, "getItems", {})
+        if not containerId or containerId < 0 or containerId % 1 ~= 0 or type(items) ~= "table" then
+            complete = false
+        else
+            local slotIndex = 0
+            for _, item in pairs(items) do
+                slotIndex = slotIndex + 1
+                itemCount = itemCount + 1
+                if itemCount > 256 then complete = false break end
+                local itemId = tonumber(call(item, "getId", 0)) or 0
+                local count = tonumber(call(item, "getCount", 1)) or 1
+                result[#result + 1] = {
+                    container_id = math.floor(containerId), slot_index = slotIndex,
+                    item_id = math.max(0, math.floor(itemId)), count = math.max(0, math.floor(count)),
+                }
+            end
+            if itemCount > 256 then break end
+        end
+    end
+    table.sort(result, function(left, right)
+        if left.container_id ~= right.container_id then return left.container_id < right.container_id end
+        if left.slot_index ~= right.slot_index then return left.slot_index < right.slot_index end
+        return left.item_id < right.item_id
+    end)
+    return result, complete
+end
+
+function Adapter.equipmentShadowObservation(context)
+    local ctx = context or {}
+    local game = ctx.game or rawget(_G, "g_game")
+    local online, _ = triStateBooleanCall(game, {"isOnline"}, "online", "offline")
+    local player = online == "online" and call(game, "getLocalPlayer", nil) or nil
+    local protectionZone, protectionZoneSource = protectionZoneState(player)
+    local cooldown, cooldownSource = "unknown", "unavailable"
+    if online == "online" then cooldown, cooldownSource = spellCooldownState(ctx) end
+    local observedAt = math.max(0, math.floor(tonumber(ctx.observed_at_unix_ms) or 0))
+    local candidates, containersComplete = boundedContainerItems(game)
+    local ring = inventorySlot(player, _G.InventorySlotFinger, _G.InventorySlotRing)
+    return {
+        schema_version = EQUIPMENT_SHADOW_OBSERVATION_SCHEMA,
+        observed_at_unix_ms = observedAt,
+        observation_id = "equipment-" .. tostring(observedAt),
+        online = online,
+        alive = playerAliveState(player),
+        protection_zone = protectionZone,
+        protection_zone_source = protectionZoneSource,
+        inventory_api_available = hasMethod(player, "getInventoryItem"),
+        containers_complete = containersComplete,
+        ring = {present = ring.present == true, item_id = tonumber(ring.item_id) or 0,
+            count = tonumber(ring.count) or 0},
+        candidates = candidates,
+        cooldown = cooldown,
+        cooldown_source = cooldownSource,
+        producer_source = "otclient_guarded_adapter",
+        dispatch_allowed = false,
+        runtime_actions = false,
+        executes_plan = false,
+        execute_once_allowed = false,
+        promotion_allowed = false,
+    }
+end
+
+function Adapter.healFriendScan(context)
+    local ctx = context or {}
+    local game = ctx.game or rawget(_G, "g_game")
+    local map = ctx.map or rawget(_G, "g_map")
+    local online, _ = triStateBooleanCall(game, {"isOnline"}, "online", "offline")
+    local player = online == "online" and call(game, "getLocalPlayer", nil) or nil
+    local protectionZone, protectionZoneSource = protectionZoneState(player)
+    local cooldown, cooldownSource = "unknown", "unavailable"
+    if online == "online" then cooldown, cooldownSource = spellCooldownState(ctx) end
+    local observedAt = math.max(0, math.floor(tonumber(ctx.observed_at_unix_ms) or 0))
+    local candidates, scanComplete, selfId = boundedPartyCandidates(map, player)
+    return {
+        schema_version = HEAL_FRIEND_SCAN_SCHEMA,
+        observed_at_unix_ms = observedAt,
+        party_observed_at_unix_ms = observedAt,
+        observation_id = "heal-friend-" .. tostring(observedAt),
+        online = online,
+        alive = playerAliveState(player),
+        protection_zone = protectionZone,
+        protection_zone_source = protectionZoneSource,
+        self_id = selfId,
+        scan_complete = scanComplete,
+        candidates = candidates,
+        cooldown = cooldown,
+        cooldown_source = cooldownSource,
+        producer_source = "otclient_guarded_adapter",
+        dispatch_allowed = false,
+        runtime_actions = false,
+        executes_plan = false,
+        execute_once_allowed = false,
+        promotion_allowed = false,
+        casts = false,
+        talks = false,
+    }
 end
 
 function Adapter.equipmentSnapshot(context)
@@ -335,10 +537,10 @@ function Adapter.equipmentSnapshot(context)
         online = online,
         inventory_api_available = hasMethod(player, "getInventoryItem"),
         slots = {
-            ring = inventorySlot(player, {_G.InventorySlotFinger, _G.InventorySlotRing}),
-            amulet = inventorySlot(player, {_G.InventorySlotNecklace, _G.InventorySlotAmulet}),
-            left = inventorySlot(player, {_G.InventorySlotLeft, _G.InventorySlotLeftHand}),
-            right = inventorySlot(player, {_G.InventorySlotRight, _G.InventorySlotRightHand}),
+            ring = inventorySlot(player, _G.InventorySlotFinger, _G.InventorySlotRing),
+            amulet = inventorySlot(player, _G.InventorySlotNecklace, _G.InventorySlotAmulet),
+            left = inventorySlot(player, _G.InventorySlotLeft, _G.InventorySlotLeftHand),
+            right = inventorySlot(player, _G.InventorySlotRight, _G.InventorySlotRightHand),
         },
         source = "otclient_guarded_adapter",
     }
@@ -393,6 +595,10 @@ function Adapter.contract()
         guarded_globals = {"g_game", "g_map", "g_clock"},
         conditions_observation_schema = CONDITIONS_OBSERVATION_SCHEMA,
         owns_conditions_observation = true,
+        equipment_shadow_observation_schema = EQUIPMENT_SHADOW_OBSERVATION_SCHEMA,
+        owns_equipment_shadow_observation = true,
+        heal_friend_scan_schema = HEAL_FRIEND_SCAN_SCHEMA,
+        owns_heal_friend_scan = true,
         runtime_actions = false,
         executes_plans = false,
         casts = false,

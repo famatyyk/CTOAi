@@ -48,9 +48,12 @@ def _ready_workspace(
     observation["observation_id"] = "operational-paralyze-observation"
     observation["producer_source"] = "otclient_guarded_adapter"
     recovery_trace = _read_json(P9_FIXTURES / "positive-recovery-trace.json")
-    recovery_trace["trace_id"] = "operational-recovery-trace"
     recovery_trace["observed_at_unix_ms"] = evaluated_at - 2_000
     recovery_trace["source"] = "recovery_shadow"
+    recovery_trace["trace_id"] = ""
+    recovery_trace["trace_id"] = "recovery-shadow-" + replay.canonical_sha256(
+        {key: value for key, value in recovery_trace.items() if key != "trace_id"}
+    )[:16]
     observed_at = datetime.fromtimestamp(
         (evaluated_at - 2_000) / 1000, tz=timezone.utc
     ).isoformat()
@@ -113,7 +116,6 @@ def _ready_workspace(
         "blockers": [],
     }
     recovery_proof = _read_json(P9_FIXTURES / "positive-recovery-proof.json")
-    recovery_proof["proof_id"] = "operational-recovery-proof"
     recovery_proof["observed_at_unix_ms"] = evaluated_at - 2_000
     recovery_proof["source"] = "recovery_shadow"
     scenarios = _read_json(replay.DEFAULT_SCENARIO_PACK)
@@ -131,6 +133,10 @@ def _ready_workspace(
     recovery_proof["profile_sha256"] = profile_document.sha256
     recovery_proof["observation_sha256"] = observation_document.sha256
     recovery_proof["p8_proof_sha256"] = p8_document.sha256
+    recovery_proof["proof_id"] = ""
+    recovery_proof["proof_id"] = "conditions-recovery-" + replay.canonical_sha256(
+        {key: value for key, value in recovery_proof.items() if key != "proof_id"}
+    )[:16]
     _write_json(recovery_proof_path, recovery_proof)
     recovery_proof_document = replay.read_document(recovery_proof_path)
     scenario_document = replay.read_document(scenario_path, replay.MAX_SCENARIO_BYTES)
