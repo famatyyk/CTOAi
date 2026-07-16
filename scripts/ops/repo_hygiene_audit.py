@@ -47,6 +47,7 @@ TOP_LEVEL_ALLOWLIST = {
     "deploy-to-vps.sh",
     "docs",
     "mobile_console",
+    "mods",
     "desktop_console",
     "policies",
     "product",
@@ -109,6 +110,7 @@ FLAGGED_TOP_LEVEL_FILES = {
 LOCAL_ONLY_CANDIDATES = {
     ".agents",
     ".codex",
+    ".codex-tmp",
     ".ctoa-local",
     ".env",
     ".env.dev",
@@ -117,12 +119,16 @@ LOCAL_ONLY_CANDIDATES = {
     ".tmp",
     "Althea.log",
     "ctoa_local.log",
+    "ctoa_client_capabilities.json",
+    "ctoa_ui_prefs.lua",
     "MythibiaV2.log",
     "_local_archive",
     "build",
     "dist",
     "logs",
     "metrics",
+    "node_modules",
+    "outputs",
 }
 
 CORE_DISTRIBUTION_PATHS = {
