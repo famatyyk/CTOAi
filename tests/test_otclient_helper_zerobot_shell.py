@@ -9,6 +9,9 @@ HELPER = ROOT / "scripts" / "lua" / "otclient" / "ctoa_native_helper.lua"
 LOADER = ROOT / "scripts" / "lua" / "otclient" / "ctoa_otclient_loader.lua"
 MODULE_REGISTRY = ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_modules.lua"
 UI_HELPERS = ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_ui.lua"
+UI_COMPOSITION = (
+    ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_ui_composition.lua"
+)
 CLIENT_REPORTER = (
     ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_client_reporter.lua"
 )
@@ -110,6 +113,7 @@ def test_zerobot_shell_sections_render_without_layout_issues():
 def test_helper_redesign_keeps_operator_layout_contract():
     source = HELPER.read_text(encoding="utf-8")
     ui_module = UI_HELPERS.read_text(encoding="utf-8")
+    composition = UI_COMPOSITION.read_text(encoding="utf-8")
 
     assert 'moduleValue(externalUi, "newLayout")' in source
     assert 'moduleValue(externalUi, "newStyle")' in source
@@ -163,11 +167,12 @@ def test_helper_redesign_keeps_operator_layout_contract():
     assert 'accent = "#f0c36a"' in graphite
     assert 'border_active = "#f0c36a"' in graphite
     assert "function Ui.sidebarGeometry" in ui_module
-    assert "local dense = count > 10" in ui_module
-    assert "local rowHeight = dense and 18 or 21" in ui_module
-    assert "local gap = dense and 1 or 2" in ui_module
-    assert 'mode = dense and "dense_overflow" or "standard"' in ui_module
-    assert "utility_divider_y = utilityIndex and" in ui_module
+    assert "return Composition.sidebarGeometry" in ui_module
+    assert "local dense = count > 10" in composition
+    assert "local rowHeight = dense and 18 or 21" in composition
+    assert "local gap = dense and 1 or 2" in composition
+    assert 'mode = dense and "dense_overflow" or "standard"' in composition
+    assert "utility_divider_y = utilityIndex and" in composition
     assert 'createWidget("Button", window, "ctoaHelperEnabled"' in source
     assert 'styleUi("styleRuntimeBadge"' in source
     assert 'role = "destructive"' in ui_module
@@ -2569,6 +2574,7 @@ def test_scripting_is_policy_shell_without_runtime_execution():
 def test_cavebot_tab_is_interactive_waypoint_loop():
     source = HELPER.read_text(encoding="utf-8")
     ui_module = UI_HELPERS.read_text(encoding="utf-8")
+    composition = UI_COMPOSITION.read_text(encoding="utf-8")
 
     assert (
         'bindClick(Helper.widgets.cavebot_tab, function() switchTab("cavebot") end)'
@@ -2582,13 +2588,13 @@ def test_cavebot_tab_is_interactive_waypoint_loop():
     assert "Ui.cavebotReachChoices()" in ui_module
     assert 'ctx.add_toggle_setting_row(window, "ctoaCavebotEnabled"' in ui_module
     assert 'ctx.add_toggle_setting_row(window, "ctoaCavebotMovement"' in ui_module
-    assert 'id = "ctoaCavebotAdd", text = "Add"' in ui_module
-    assert 'id = "ctoaCavebotTestWalk", text = "Test"' in ui_module
-    assert 'id = "ctoaCavebotDelete", text = "Del"' in ui_module
-    assert 'id = "ctoaCavebotUp", text = "Up"' in ui_module
-    assert 'id = "ctoaCavebotDown", text = "Down"' in ui_module
-    assert 'id = "ctoaCavebotPrev", text = "Prev"' in ui_module
-    assert 'id = "ctoaCavebotNext", text = "Next"' in ui_module
+    assert 'id = "ctoaCavebotAdd", text = "Add"' in composition
+    assert 'id = "ctoaCavebotTestWalk", text = "Test"' in composition
+    assert 'id = "ctoaCavebotDelete", text = "Del"' in composition
+    assert 'id = "ctoaCavebotUp", text = "Up"' in composition
+    assert 'id = "ctoaCavebotDown", text = "Down"' in composition
+    assert 'id = "ctoaCavebotPrev", text = "Prev"' in composition
+    assert 'id = "ctoaCavebotNext", text = "Next"' in composition
     assert 'moduleValue(externalRoute, "editorBindings", applyCavebotEditorAction)' in source
     assert "select_cavebot_waypoint = Helper.cavebot_editor_bindings.select" in source
     assert "function deleteCurrentCavebotWaypoint(confirm)" in source
@@ -4176,9 +4182,10 @@ def test_helper_tools_diag_tab_exposes_api_and_feature_flags():
 
     assert "tools_diag" in source
     ui_module = UI_HELPERS.read_text(encoding="utf-8")
+    composition = UI_COMPOSITION.read_text(encoding="utf-8")
     assert "function Ui.toolsSubtabs" in ui_module
     assert (
-        '{key = "tools_diag_tab", id = "ctoaToolsDiagTab", text = "Diag"' in ui_module
+        '{key = "tools_diag_tab", id = "ctoaToolsDiagTab", text = "Diag"' in composition
     )
     assert (
         'ctx.add_subtab_buttons(window, "toolsSubtabs", "tools", panelX, bodyY, panelW)'

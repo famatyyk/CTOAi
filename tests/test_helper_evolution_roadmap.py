@@ -168,7 +168,7 @@ def test_p18_1_closes_versioned_rule_migration_without_runtime_authority() -> No
     assert p24["status"] == "in_progress"
     assert p24_2["status"] == "in_progress"
     assert p24_2["runtime_authority"] is False
-    assert p24_2["validation"]["official_stage_file_count"] == 63
+    assert p24_2["validation"]["official_stage_file_count"] == 64
     assert p24_2["validation"]["github_hosted_current_revision"] is True
     assert p24_2["validation"]["self_hosted_runner_online"] is False
 
@@ -187,14 +187,19 @@ def test_p18_1_closes_versioned_rule_migration_without_runtime_authority() -> No
 
     p26_1 = next(item for item in roadmap["immediate_slices"] if item["id"] == "P26.1")
     p26_2 = next(item for item in roadmap["immediate_slices"] if item["id"] == "P26.2")
+    p26_3 = next(item for item in roadmap["immediate_slices"] if item["id"] == "P26.3")
     p26 = next(item for item in roadmap["phases"] if item["id"] == "P26")
     assert p26["status"] == "in_progress"
     assert p26_1["status"] == "complete"
     assert p26_1["runtime_authority"] is False
     assert p26_1["validation"]["official_stage_file_count"] == 63
     assert p26_1["validation"]["preview_layout_issues"] == 0
-    assert p26_2["status"] == "not_started"
+    assert p26_2["status"] == "complete"
     assert p26_2["runtime_authority"] is False
+    assert p26_2["validation"]["official_stage_file_count"] == 64
+    assert p26_2["validation"]["passive_module_contracts_passed"] == 36
+    assert p26_3["status"] == "not_started"
+    assert p26_3["runtime_authority"] is False
 
 
 def test_p19_1_opens_target_name_policy_without_runtime_authority() -> None:

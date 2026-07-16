@@ -175,8 +175,8 @@ def test_module_contract_passes_current_passive_modules():
 
     assert report.name == "otclient-helper-module-contract"
     assert report.status == "passed"
-    assert report.expected_module_count == 35
-    assert report.passed_count == 35
+    assert report.expected_module_count == 36
+    assert report.passed_count == 36
     assert report.failed_count == 0
     assert report.registry_lane_count == 9
     assert report.registry_missing == []
@@ -1197,7 +1197,7 @@ def test_module_contract_writes_json_and_markdown(tmp_path: Path):
     markdown = plan_out.read_text(encoding="utf-8")
 
     assert payload["status"] == "passed"
-    assert payload["passed_count"] == 35
+    assert payload["passed_count"] == 36
     assert "# Solteria Helper Module Contract" in markdown
     assert "Passive helper modules may observe" in markdown
     assert "otclient_helper_module_contract.py" in markdown

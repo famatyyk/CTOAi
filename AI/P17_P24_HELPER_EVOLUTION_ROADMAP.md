@@ -233,7 +233,7 @@ sandbox canaries define preconditions, actions, observations, abort conditions
 and rollback; none has been executed or authorized. The focused replay suite
 passes 61 tests and the sandbox queue/release-gate suite passes 47.
 
-P24.2 is in progress. The official stage now matches 63 distributable Helper
+P24.2 is in progress. The official stage now matches 64 distributable Helper
 files and the current-revision GitHub-hosted signed replay passes. The separate
 `CTOA-P14-VM` runner is offline, environment review protection remains
 incomplete, and visual/in-world/canary/rollback capabilities remain unproven.
@@ -267,9 +267,17 @@ keeps panel composition plus explicit profile callbacks. The official stage is
 now 63 files, 35 passive module contracts pass, the official validation passes
 162 tests, and both the 208-widget preview and SmokePreflight remain clean.
 
-P26.2 is next: move tab and section composition behind declarative passive
-specifications while keeping mutation callbacks visible and product-local. It
-adds no runtime authority and does not satisfy the external P24 acceptance.
+P26.2 is complete. The new 127-line passive
+`ctoa_helper_ui_composition.lua` owns sidebar, subtab, table-header and CaveBot
+action metadata. `ctoa_helper_ui.lua` now delegates these specifications while
+keeping all profile mutations and dirty tracking explicit. The current stage
+contains 64 files, 36 passive module contracts pass, official validation stays
+at 162 passing tests, the 208-widget preview has zero issues and SmokePreflight
+passes. This slice adds no runtime authority.
+
+P26.3 is next: extract Target, Spell and Combat Action rule-editor renderers
+from the unrelated panels while retaining injected product-local mutation
+callbacks and real-Lua bounded-navigation coverage.
 
 ## Immediate Work Order
 
@@ -343,7 +351,10 @@ adds no runtime authority and does not satisfy the external P24 acceptance.
 25. P26.1: extract passive widget/form primitives and bounded rule navigation
     from the UI monolith — complete; 97 focused tests and 162 official
     validation tests pass with zero preview issues.
-26. P26.2: separate declarative tab/section composition from explicit profile
-    mutation callbacks — next.
-27. P27-P28: add strict portable rule presets and execute isolated signed
+26. P26.2: separate declarative tab/section/action composition from explicit
+    profile mutation callbacks — complete; the current stage is 64 files and
+    all preview plus passive module contracts remain green.
+27. P26.3: extract the three rule-editor renderers from unrelated panels while
+    retaining injected mutation callbacks — next.
+28. P27-P28: add strict portable rule presets and execute isolated signed
     sandbox acceptance without weakening the P24/live gates.

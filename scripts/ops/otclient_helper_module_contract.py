@@ -96,6 +96,26 @@ PASSIVE_MODULES = [
         ],
     },
     {
+        "id": "ui_composition",
+        "loader_name": "ctoa_helper_ui_composition",
+        "file": "ctoa_helper_ui_composition.lua",
+        "global": "CTOA_HELPER_UI_COMPOSITION",
+        "lane_id": "",
+        "required_functions": [
+            "sidebarTabs",
+            "sidebarGeometry",
+            "huntingSubtabs",
+            "subtabContentY",
+            "toolsSubtabs",
+            "toolsTableHeaders",
+            "cavebotDelayChoices",
+            "cavebotReachChoices",
+            "msText",
+            "cavebotActionSpecs",
+            "contract",
+        ],
+    },
+    {
         "id": "ui",
         "loader_name": "ctoa_helper_ui",
         "file": "ctoa_helper_ui.lua",
@@ -652,6 +672,8 @@ def missing_functions(source: str, module_global: str, required: list[str]) -> l
         local_name = "Registry"
     elif module_global == "CTOA_HELPER_UI_PRIMITIVES":
         local_name = "Primitives"
+    elif module_global == "CTOA_HELPER_UI_COMPOSITION":
+        local_name = "Composition"
     return [
         function_name
         for function_name in required
@@ -689,6 +711,8 @@ def build_report(
             return_present = "return Registry" in source
         elif expected["id"] == "ui_primitives":
             return_present = "return Primitives" in source
+        elif expected["id"] == "ui_composition":
+            return_present = "return Composition" in source
         forbidden = forbidden_hits(source)
         missing_required = missing_functions(
             source,

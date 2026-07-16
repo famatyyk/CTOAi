@@ -582,7 +582,7 @@
         "acceptance request remains action-free and names all four P14 capabilities"
       ],
       "validation": {
-        "official_stage_file_count": 63,
+        "official_stage_file_count": 64,
         "github_hosted_current_revision": true,
         "self_hosted_runner_online": false,
         "required_reviewer_configured": false,
@@ -677,14 +677,45 @@
     {
       "id": "P26.2",
       "title": "Separate tab composition from profile mutation callbacks",
-      "status": "not_started",
+      "status": "complete",
+      "artifacts": [
+        "scripts/lua/otclient/ctoa_helper_ui_composition.lua",
+        "scripts/lua/otclient/ctoa_helper_ui.lua",
+        "tests/test_ctoa_helper_ui_composition.py"
+      ],
       "runtime_authority": false,
       "entry_gate": "P26.1 passive primitives complete",
       "done_gates": [
-        "tab and section composition use declarative passive specifications",
+        "tab section and action composition use declarative passive specifications",
         "profile mutation callbacks stay explicit and product-local",
-        "rule editor rendering no longer owns unrelated panels",
+        "composition metadata contains no profile mutation or gameplay APIs",
         "default and compact previews retain zero layout issues"
+      ],
+      "validation": {
+        "official_stage_file_count": 64,
+        "composition_module_lines": 127,
+        "ui_composition_lines_after": 2385,
+        "passive_module_contracts_passed": 36,
+        "focused_tests_passed": 87,
+        "official_validation_tests_passed": 162,
+        "preview_widgets": 208,
+        "preview_layout_issues": 0,
+        "smoke_preflight": "passed",
+        "runtime_authority": false,
+        "promotion_allowed": false
+      }
+    },
+    {
+      "id": "P26.3",
+      "title": "Extract rule editor renderers from unrelated panels",
+      "status": "not_started",
+      "runtime_authority": false,
+      "entry_gate": "P26.2 declarative composition complete",
+      "done_gates": [
+        "target spell and combat action editors have one presentation owner",
+        "profile mutations remain injected callbacks with explicit dirty tracking",
+        "non-rule panels do not depend on rule editor implementation",
+        "real Lua editor navigation and preview containment remain green"
       ]
     }
   ],
