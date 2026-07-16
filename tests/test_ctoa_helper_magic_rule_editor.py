@@ -12,6 +12,7 @@ SCHEMA = OTCLIENT_DIR / "ctoa_helper_profile_schema.lua"
 PERSISTENCE = OTCLIENT_DIR / "ctoa_helper_profile_persistence.lua"
 UI = OTCLIENT_DIR / "ctoa_helper_ui.lua"
 UI_COMPOSITION = OTCLIENT_DIR / "ctoa_helper_ui_composition.lua"
+UI_RULE_EDITORS = OTCLIENT_DIR / "ctoa_helper_ui_rule_editors.lua"
 HELPER = OTCLIENT_DIR / "ctoa_native_helper.lua"
 
 
@@ -26,7 +27,7 @@ def test_magic_rule_editor_is_bounded_ordered_persistent_and_action_free(
     assert lua, "Lua interpreter is required for magic-rule editor validation"
     probe = tmp_path / "magic_rule_editor_probe.lua"
     probe.write_text(
-        r'''
+        r"""
 local combat = dofile(arg[1])
 local schema = dofile(arg[2])
 local persistence = dofile(arg[3])
@@ -99,7 +100,7 @@ assert(contract.owns_rotation_rule_editor == true)
 assert(contract.owns_rotation_rule_sanitization == true)
 assert(contract.rotation_rule_limit == 16)
 assert(contract.runtime_actions == false and contract.attacks == false and contract.casts == false)
-''',
+""",
         encoding="utf-8",
     )
     completed = subprocess.run(
@@ -114,7 +115,10 @@ assert(contract.runtime_actions == false and contract.attacks == false and contr
 
 
 def test_magic_rule_editor_replaces_fixed_ek_rows_and_autosaves() -> None:
-    ui = UI.read_text(encoding="utf-8") + "\n" + UI_COMPOSITION.read_text(encoding="utf-8")
+    ui = "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in (UI, UI_COMPOSITION, UI_RULE_EDITORS)
+    )
     helper = HELPER.read_text(encoding="utf-8")
 
     for widget_id in (

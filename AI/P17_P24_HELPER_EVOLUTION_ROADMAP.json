@@ -582,7 +582,7 @@
         "acceptance request remains action-free and names all four P14 capabilities"
       ],
       "validation": {
-        "official_stage_file_count": 64,
+        "official_stage_file_count": 65,
         "github_hosted_current_revision": true,
         "self_hosted_runner_online": false,
         "required_reviewer_configured": false,
@@ -708,7 +708,12 @@
     {
       "id": "P26.3",
       "title": "Extract rule editor renderers from unrelated panels",
-      "status": "not_started",
+      "status": "complete",
+      "artifacts": [
+        "scripts/lua/otclient/ctoa_helper_ui_rule_editors.lua",
+        "scripts/lua/otclient/ctoa_helper_ui.lua",
+        "tests/test_ctoa_helper_ui_rule_editors.py"
+      ],
       "runtime_authority": false,
       "entry_gate": "P26.2 declarative composition complete",
       "done_gates": [
@@ -716,6 +721,34 @@
         "profile mutations remain injected callbacks with explicit dirty tracking",
         "non-rule panels do not depend on rule editor implementation",
         "real Lua editor navigation and preview containment remain green"
+      ],
+      "validation": {
+        "official_stage_file_count": 65,
+        "rule_editor_module_lines": 476,
+        "ui_composition_lines_after": 1953,
+        "passive_module_contracts_passed": 37,
+        "focused_tests_passed": 131,
+        "focused_tests_skipped": 1,
+        "official_validation_tests_passed": 162,
+        "preview_widgets": 208,
+        "preview_layout_issues": 0,
+        "module_static_gates_passed": 39,
+        "smoke_preflight": "passed",
+        "runtime_authority": false,
+        "promotion_allowed": false
+      }
+    },
+    {
+      "id": "P27.1",
+      "title": "Define strict portable rule preset schema and import export boundary",
+      "status": "not_started",
+      "runtime_authority": false,
+      "entry_gate": "P26 presentation ownership split complete",
+      "done_gates": [
+        "preset payload is versioned bounded data only",
+        "unknown fields executable values and future versions fail closed",
+        "import preserves disabled safe boot and never dispatches actions",
+        "target spell and combat action rules round trip deterministically"
       ]
     }
   ],
@@ -840,7 +873,7 @@
     {
       "id": "P26",
       "title": "UI Composition And Rule Editor Split",
-      "status": "in_progress",
+      "status": "complete",
       "depends_on": ["P22", "P25"],
       "objective": "Reduce the UI monolith while preserving the proven OTCv8 programmatic widget and bounded navigation contracts.",
       "done_gates": [
@@ -853,7 +886,7 @@
     {
       "id": "P27",
       "title": "Portable Rule Presets And Explainability",
-      "status": "planned",
+      "status": "in_progress",
       "depends_on": ["P18", "P19", "P21", "P26"],
       "objective": "Make targeting spell and action rule sets portable and understandable without importing executable code or arming runtime.",
       "done_gates": [

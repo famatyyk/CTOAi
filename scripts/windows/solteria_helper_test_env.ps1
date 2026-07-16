@@ -609,6 +609,7 @@ function Get-DevPackageFiles {
         "mods/ctoa_otclient/ctoa_otclient_loader.lua",
         "mods/ctoa_otclient/ctoa_helper_ui_primitives.lua",
         "mods/ctoa_otclient/ctoa_helper_ui_composition.lua",
+        "mods/ctoa_otclient/ctoa_helper_ui_rule_editors.lua",
         "mods/ctoa_otclient/ctoa_helper_ui.lua",
         "mods/ctoa_otclient/ctoa_helper_client_reporter.lua",
         "mods/ctoa_otclient/ctoa_helper_diagnostics.lua",

@@ -275,9 +275,18 @@ contains 64 files, 36 passive module contracts pass, official validation stays
 at 162 passing tests, the 208-widget preview has zero issues and SmokePreflight
 passes. This slice adds no runtime authority.
 
-P26.3 is next: extract Target, Spell and Combat Action rule-editor renderers
-from the unrelated panels while retaining injected product-local mutation
-callbacks and real-Lua bounded-navigation coverage.
+P26.3 completes the phase. The new 476-line passive
+`ctoa_helper_ui_rule_editors.lua` is the single presentation owner for Target,
+Spell and Combat Action editors. The 1953-line `ctoa_helper_ui.lua` keeps thin
+compatibility delegates while mutation callbacks and dirty tracking stay
+product-local and injected. The current stage contains 65 files, 37 passive
+module contracts and all 39 static gates pass; official validation remains at
+162 tests, the 208-widget preview has zero issues and SmokePreflight passes.
+
+P27.1 is next: define a strict, bounded and versioned data-only preset schema
+for deterministic Target, Spell and Combat Action rule import/export. Unknown
+fields, executable values and future versions must fail closed, and importing a
+preset must preserve disabled safe boot without dispatching actions.
 
 ## Immediate Work Order
 
@@ -355,6 +364,9 @@ callbacks and real-Lua bounded-navigation coverage.
     profile mutation callbacks — complete; the current stage is 64 files and
     all preview plus passive module contracts remain green.
 27. P26.3: extract the three rule-editor renderers from unrelated panels while
-    retaining injected mutation callbacks — next.
-28. P27-P28: add strict portable rule presets and execute isolated signed
+    retaining injected mutation callbacks — complete; the UI shell is 1953
+    lines and the passive editor owner is covered by real Lua.
+28. P27.1: add a strict versioned data-only rule preset schema and deterministic
+    import/export without arming runtime — next.
+29. P27.2-P28: add deterministic rule explanations and execute isolated signed
     sandbox acceptance without weakening the P24/live gates.

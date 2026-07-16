@@ -12,6 +12,9 @@ UI_HELPERS = ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_ui.lua"
 UI_COMPOSITION = (
     ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_ui_composition.lua"
 )
+UI_RULE_EDITORS = (
+    ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_ui_rule_editors.lua"
+)
 CLIENT_REPORTER = (
     ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_client_reporter.lua"
 )
@@ -101,7 +104,9 @@ SMOKE_ALL_TABS = {
 
 def test_zerobot_shell_sections_render_without_layout_issues():
     source = HELPER.read_text(encoding="utf-8")
-    ui_module = UI_HELPERS.read_text(encoding="utf-8")
+    ui_module = UI_HELPERS.read_text(encoding="utf-8") + UI_RULE_EDITORS.read_text(
+        encoding="utf-8"
+    )
     window = preview.extract_window(source)
     widgets = preview.extract_widgets(source + "\n" + ui_module)
 
@@ -112,7 +117,9 @@ def test_zerobot_shell_sections_render_without_layout_issues():
 
 def test_helper_redesign_keeps_operator_layout_contract():
     source = HELPER.read_text(encoding="utf-8")
-    ui_module = UI_HELPERS.read_text(encoding="utf-8")
+    ui_module = UI_HELPERS.read_text(encoding="utf-8") + UI_RULE_EDITORS.read_text(
+        encoding="utf-8"
+    )
     composition = UI_COMPOSITION.read_text(encoding="utf-8")
 
     assert 'moduleValue(externalUi, "newLayout")' in source
@@ -182,7 +189,10 @@ def test_helper_redesign_keeps_operator_layout_contract():
     assert 'action == "theme_set"' in source
     assert 'status("Smoke theme visible: " .. tostring(theme))' in source
     diagnostics = DIAGNOSTICS.read_text(encoding="utf-8")
-    assert '{"action", "tab", "subtab", "theme", "session_id", "plan_sha256", "p9_receipt_sha256", "p10_receipt_sha256", "p11_receipt_sha256", "p12_equipment_receipt_sha256", "retry_budget", "before_item_id", "candidate_item_id", "source_container_id", "source_slot_index", "target_id", "target_name", "whitelist_revision", "hp_threshold", "max_range"}' in diagnostics
+    assert (
+        '{"action", "tab", "subtab", "theme", "session_id", "plan_sha256", "p9_receipt_sha256", "p10_receipt_sha256", "p11_receipt_sha256", "p12_equipment_receipt_sha256", "retry_budget", "before_item_id", "candidate_item_id", "source_container_id", "source_slot_index", "target_id", "target_name", "whitelist_revision", "hp_threshold", "max_range"}'
+        in diagnostics
+    )
     assert "theme = theme" in diagnostics
     smoke = SMOKE_SCRIPT.read_text(encoding="utf-8")
     assert '"ThemeSnapshotMatrix"' in smoke
@@ -1364,7 +1374,10 @@ def test_targeting_domain_is_passive_and_packaged():
     assert "creature_scan = false" in targeting_module
     assert 'reason = "ignored_name"' in targeting_module
     assert 'reason = "friendly_summon"' in targeting_module
-    assert 'moduleValue(externalTargeting, "targetCandidateScore", candidate, tools)' not in source
+    assert (
+        'moduleValue(externalTargeting, "targetCandidateScore", candidate, tools)'
+        not in source
+    )
     assert (
         'moduleValue(externalTargeting, "bestCandidate", candidates, tools)' in source
     )
@@ -2199,7 +2212,10 @@ def test_operator_summary_adapter_is_passive_and_packaged():
     assert "local function operatorSummaryBridgeText" not in source
     assert "titleSummaryText = function()" not in source
     assert "uiSummaryText = function()" not in source
-    assert 'local operatorSummaries = moduleValue(externalOperatorSummary, "collect"' in source
+    assert (
+        'local operatorSummaries = moduleValue(externalOperatorSummary, "collect"'
+        in source
+    )
     assert "function OperatorSummary.bridgeText" in adapter
     assert "owns_bridge_dispatch = true" in adapter
     assert "function OperatorSummary.collect" in adapter
@@ -2595,10 +2611,15 @@ def test_cavebot_tab_is_interactive_waypoint_loop():
     assert 'id = "ctoaCavebotDown", text = "Down"' in composition
     assert 'id = "ctoaCavebotPrev", text = "Prev"' in composition
     assert 'id = "ctoaCavebotNext", text = "Next"' in composition
-    assert 'moduleValue(externalRoute, "editorBindings", applyCavebotEditorAction)' in source
+    assert (
+        'moduleValue(externalRoute, "editorBindings", applyCavebotEditorAction)'
+        in source
+    )
     assert "select_cavebot_waypoint = Helper.cavebot_editor_bindings.select" in source
     assert "function deleteCurrentCavebotWaypoint(confirm)" in source
-    assert "move_current_cavebot_waypoint = Helper.cavebot_editor_bindings.move" in source
+    assert (
+        "move_current_cavebot_waypoint = Helper.cavebot_editor_bindings.move" in source
+    )
     assert 'action == "cavebot_delete"' in source
     assert 'action == "cavebot_move_up"' in source
     assert 'action == "cavebot_move_down"' in source
@@ -2662,7 +2683,10 @@ def test_cavebot_route_editor_does_not_trigger_movement():
     assert 'return apply("select", {delta = delta})' in route_module
     assert 'applyCavebotEditorAction("delete"' in editor_source
     assert 'return apply("move", {delta = delta})' in route_module
-    assert 'moduleValue(externalRoute, "editorBindings", applyCavebotEditorAction)' in source
+    assert (
+        'moduleValue(externalRoute, "editorBindings", applyCavebotEditorAction)'
+        in source
+    )
     assert "markProfileDirty(result.dirty_reason)" in source
     assert 'dirtyReason = "cavebot_delete"' in route_module
     assert 'dirtyReason = "cavebot_reorder"' in route_module
@@ -2709,7 +2733,10 @@ def test_cavebot_runtime_has_guarded_retry_budget_before_looped_movement():
         in route_module
     )
     assert "tools.cavebot_movement_enabled = false" in runtime_source
-    assert 'moduleValue(externalCavebotRuntime, "resetMovementState", tools)' in runtime_source
+    assert (
+        'moduleValue(externalCavebotRuntime, "resetMovementState", tools)'
+        in runtime_source
+    )
     assert (
         'moduleValue(externalCavebotRuntime, "cavebotRuntimeText", "traceText", "movement_reset"'
         in runtime_source
@@ -3322,8 +3349,7 @@ def test_solteria_updated_client_boot_hook_is_controlled():
         )
     ]
     assert (
-        '@("init.lua") + (Get-DevPackageFiles) + (Get-LiveLegacyFiles)'
-        in backup_source
+        '@("init.lua") + (Get-DevPackageFiles) + (Get-LiveLegacyFiles)' in backup_source
     )
 
     promotion_source = script[
@@ -3576,7 +3602,9 @@ def test_profile_renderer_context_keeps_module_visibility_callback_after_extract
     ]
 
     assert "module_visible = function(moduleId)" in profile_context
-    assert 'moduleValue(externalModules, "moduleTabVisible", moduleId' in profile_context
+    assert (
+        'moduleValue(externalModules, "moduleTabVisible", moduleId' in profile_context
+    )
     assert "set_module_visible = setModuleTabVisible" in profile_context
     assert "function ensureCTOAManager()" in source
     assert 'CTOA_Manager:registerModule("helper", {' in source
@@ -3605,7 +3633,9 @@ def test_loader_is_helper_ui_only_and_requires_neutral_loader_selection():
     assert "loadSupportModulesFromFilesystem()" in source
     assert "local function selectionAuthorized()" in source
     assert 'loader.isSelected("helper") == true' in source
-    assert 'log("Initialization rejected: neutral loader did not select Helper")' in source
+    assert (
+        'log("Initialization rejected: neutral loader did not select Helper")' in source
+    )
     assert "loadHelperOnly()" in source
     assert "loadHelperFromFilesystem" in source
     assert "local function bootLog(msg)" in source
@@ -3847,7 +3877,9 @@ def test_runtime_modules_auto_arm_helper_runtime():
 
 def test_healing_and_magic_cards_expose_actionbar_box_controls():
     source = HELPER.read_text(encoding="utf-8")
-    ui_module = UI_HELPERS.read_text(encoding="utf-8")
+    ui_module = UI_HELPERS.read_text(encoding="utf-8") + UI_RULE_EDITORS.read_text(
+        encoding="utf-8"
+    )
 
     assert '"ctoaSpellHeal", "HP spell"' in ui_module
     assert '"ctoaPotionHeal", "HP potion"' in ui_module
@@ -3857,7 +3889,7 @@ def test_healing_and_magic_cards_expose_actionbar_box_controls():
     assert '"ctoaManaPotionHotkeyHealing", "MP box"' in ui_module
     assert "healing.potion_actionbar_slot = value" in ui_module
     assert "healing.mana_potion_actionbar_slot = value" in ui_module
-    assert '{hotkey = cycle(ctx.hotkey_choices' in ui_module
+    assert "{hotkey = cycle(ctx.hotkey_choices" in ui_module
     assert '"ctoaMagicRuleEditor"' in ui_module
     assert '"ctoaMagicRuleWords"' in ui_module
     assert '"ctoaMagicRuleAdd"' in ui_module
@@ -3912,7 +3944,9 @@ def test_actionbar_slots_are_the_runtime_source_for_potions_and_runes():
     )
     assert '"Potion heal via " .. slotText .. " at " .. hp .. "%"' in source
     assert '"Mana potion via " .. slotText .. " at " .. mp .. "%"' in source
-    assert 'slot_text = moduleValue(externalHotkeys, "actionbarSlotText", slot)' in source
+    assert (
+        'slot_text = moduleValue(externalHotkeys, "actionbarSlotText", slot)' in source
+    )
     assert "sendHotkey(healing.potion_hotkey)" not in source
     assert (
         "healing.mana_potion_hotkey or healing.mana_potion_actionbar_slot" not in source
@@ -4065,10 +4099,19 @@ def test_offensive_actions_are_pz_aware_and_rate_limited_at_execution():
     assert '"Next: rune/AoE"' not in plan_source
     assert '"Next: " .. action.spell.words' not in plan_source
     assert "lockOffensiveAction(tools, now)" in execute_source
-    assert 'moduleValue(externalCombatRuntime, "dispatchDescriptor", action, tools)' in execute_source
-    assert 'moduleValue(externalCombatRuntime, "recordActionSuccess", tools, action, now)' in execute_source
+    assert (
+        'moduleValue(externalCombatRuntime, "dispatchDescriptor", action, tools)'
+        in execute_source
+    )
+    assert (
+        'moduleValue(externalCombatRuntime, "recordActionSuccess", tools, action, now)'
+        in execute_source
+    )
     assert "cfg.last_exeta_ms = current" in combat_runtime
-    assert "cfg.last_spell_casts[tostring(item.spell.words or \"\")] = current" in combat_runtime
+    assert (
+        'cfg.last_spell_casts[tostring(item.spell.words or "")] = current'
+        in combat_runtime
+    )
     assert "cfg.last_rune_ms = current" in combat_runtime
 
 

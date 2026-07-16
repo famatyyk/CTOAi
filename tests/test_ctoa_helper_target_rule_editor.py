@@ -12,6 +12,7 @@ SCHEMA = OTCLIENT_DIR / "ctoa_helper_profile_schema.lua"
 PERSISTENCE = OTCLIENT_DIR / "ctoa_helper_profile_persistence.lua"
 UI = OTCLIENT_DIR / "ctoa_helper_ui.lua"
 UI_COMPOSITION = OTCLIENT_DIR / "ctoa_helper_ui_composition.lua"
+UI_RULE_EDITORS = OTCLIENT_DIR / "ctoa_helper_ui_rule_editors.lua"
 HELPER = OTCLIENT_DIR / "ctoa_native_helper.lua"
 
 
@@ -19,12 +20,14 @@ def _lua() -> str | None:
     return shutil.which("lua") or shutil.which("lua5.4") or shutil.which("lua54")
 
 
-def test_target_rules_are_ordered_bounded_persistent_and_action_free(tmp_path: Path) -> None:
+def test_target_rules_are_ordered_bounded_persistent_and_action_free(
+    tmp_path: Path,
+) -> None:
     lua = _lua()
     assert lua, "Lua interpreter is required for target-rule validation"
     probe = tmp_path / "target_rule_editor_probe.lua"
     probe.write_text(
-        r'''
+        r"""
 local targeting = dofile(arg[1])
 local schema = dofile(arg[2])
 local persistence = dofile(arg[3])
@@ -81,7 +84,7 @@ end
 local contract = targeting.contract()
 assert(contract.owns_target_rule_editor == true and contract.owns_target_rule_matching == true)
 assert(contract.target_rule_limit == 16 and contract.runtime_actions == false and contract.attacks == false)
-''',
+""",
         encoding="utf-8",
     )
     completed = subprocess.run(
@@ -96,7 +99,10 @@ assert(contract.target_rule_limit == 16 and contract.runtime_actions == false an
 
 
 def test_target_rule_editor_is_native_autosaved_and_applied_to_chase() -> None:
-    ui = UI.read_text(encoding="utf-8") + "\n" + UI_COMPOSITION.read_text(encoding="utf-8")
+    ui = "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in (UI, UI_COMPOSITION, UI_RULE_EDITORS)
+    )
     helper = HELPER.read_text(encoding="utf-8")
 
     for widget_id in (
@@ -126,11 +132,15 @@ def test_target_rule_editor_is_native_autosaved_and_applied_to_chase() -> None:
 
 
 def test_rule_editors_share_chrome_and_settings_have_one_visible_owner() -> None:
-    ui = UI.read_text(encoding="utf-8") + "\n" + UI_COMPOSITION.read_text(encoding="utf-8")
+    ui = "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in (UI, UI_COMPOSITION, UI_RULE_EDITORS)
+    )
 
     assert "function Ui.addRuleEditorChrome" in ui
-    assert ui.count("Ui.addRuleEditorChrome(ctx, window, {") == 3
-    assert "owns_rule_editor_chrome = true" in ui
+    assert ui.count("RuleEditors.addRuleEditorChrome(ui, ctx, window, {") == 3
+    assert "owns_shared_editor_chrome = true" in ui
+    assert "delegates_rule_editor_presentation = true" in ui
     assert "owns_single_settings_surface = true" in ui
     assert '{key = "ui_tab", id = "ctoaUiTab", text = "  Settings"' in ui
     assert '{key = "profile_tab", id = "ctoaProfileTab", text = "  Profile"' in ui
@@ -147,8 +157,13 @@ def test_rule_editors_share_chrome_and_settings_have_one_visible_owner() -> None
     assert '"ctoaUiCompactMode"' in settings_source
 
 
-def test_rune_and_stance_parameters_are_editable_separately_from_runtime_arming() -> None:
-    ui = UI.read_text(encoding="utf-8") + "\n" + UI_COMPOSITION.read_text(encoding="utf-8")
+def test_rune_and_stance_parameters_are_editable_separately_from_runtime_arming() -> (
+    None
+):
+    ui = "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in (UI, UI_COMPOSITION, UI_RULE_EDITORS)
+    )
 
     for widget_id in (
         "ctoaHuntingActionsTab",
@@ -171,20 +186,22 @@ def test_rune_and_stance_parameters_are_editable_separately_from_runtime_arming(
         assert f'"{widget_id}"' in ui
     assert 'ctx.mark_profile_dirty("combat_action_rule_editor")' in ui
     assert 'helper.setRuntimeModuleEnabled({"tools", "auto_stance"}' in ui
-    actions_start = ui.index('ctx.widgets.hunting_actions_summary')
-    runtime_start = ui.index('ctx.widgets.hunting_magic_runtime_summary')
+    actions_start = ui.index("ctx.widgets.hunting_actions_summary")
+    runtime_start = ui.index("ctx.widgets.hunting_magic_runtime_summary")
     actions_source = ui[actions_start:runtime_start]
     assert "setRuntimeModuleEnabled" not in actions_source
     assert "g_game" not in actions_source
     assert "talk(" not in actions_source
 
 
-def test_combat_action_rules_are_ordered_and_drive_rune_and_stance_selection(tmp_path: Path) -> None:
+def test_combat_action_rules_are_ordered_and_drive_rune_and_stance_selection(
+    tmp_path: Path,
+) -> None:
     lua = _lua()
     assert lua
     probe = tmp_path / "combat_action_rule_probe.lua"
     probe.write_text(
-        r'''
+        r"""
 local combat = dofile(arg[1])
 local schema = dofile(arg[2])
 local persistence = dofile(arg[3])
@@ -228,11 +245,17 @@ local serialized = schema.serializeLua(exported, "profile")
 for _, key in ipairs({"combat_action_rules", "kind", "action_text", "hotkey", "min_count", "max_count", "cooldown_ms", "stance_mode", "state_id", "require_target", "pvp_safe"}) do
   assert(string.find(serialized, key, 1, true) ~= nil)
 end
-''',
+""",
         encoding="utf-8",
     )
     completed = subprocess.run(
-        [lua, str(probe), str(OTCLIENT_DIR / "ctoa_helper_combat_runtime.lua"), str(SCHEMA), str(PERSISTENCE)],
+        [
+            lua,
+            str(probe),
+            str(OTCLIENT_DIR / "ctoa_helper_combat_runtime.lua"),
+            str(SCHEMA),
+            str(PERSISTENCE),
+        ],
         check=False,
         capture_output=True,
         text=True,

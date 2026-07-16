@@ -116,6 +116,20 @@ PASSIVE_MODULES = [
         ],
     },
     {
+        "id": "ui_rule_editors",
+        "loader_name": "ctoa_helper_ui_rule_editors",
+        "file": "ctoa_helper_ui_rule_editors.lua",
+        "global": "CTOA_HELPER_UI_RULE_EDITORS",
+        "lane_id": "",
+        "required_functions": [
+            "addRuleEditorChrome",
+            "addTargetRuleEditor",
+            "addMagicRuleEditor",
+            "addCombatActionRuleEditor",
+            "contract",
+        ],
+    },
+    {
         "id": "ui",
         "loader_name": "ctoa_helper_ui",
         "file": "ctoa_helper_ui.lua",
@@ -674,6 +688,8 @@ def missing_functions(source: str, module_global: str, required: list[str]) -> l
         local_name = "Primitives"
     elif module_global == "CTOA_HELPER_UI_COMPOSITION":
         local_name = "Composition"
+    elif module_global == "CTOA_HELPER_UI_RULE_EDITORS":
+        local_name = "RuleEditors"
     return [
         function_name
         for function_name in required
@@ -713,6 +729,8 @@ def build_report(
             return_present = "return Primitives" in source
         elif expected["id"] == "ui_composition":
             return_present = "return Composition" in source
+        elif expected["id"] == "ui_rule_editors":
+            return_present = "return RuleEditors" in source
         forbidden = forbidden_hits(source)
         missing_required = missing_functions(
             source,

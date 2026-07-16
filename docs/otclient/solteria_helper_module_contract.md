@@ -1,8 +1,8 @@
 # Solteria Helper Module Contract
 
 - Status: `passed`
-- Expected modules: `34`
-- Passed modules: `34`
+- Expected modules: `37`
+- Passed modules: `37`
 - Failed modules: `0`
 - Registry lanes: `9` / `9`
 - Forbidden passive hits: `0`
@@ -19,6 +19,9 @@ Passive helper modules may observe, format, plan, or expose UI state. They must 
 | `modules` | `ctoa_helper_modules.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
 | `domain_contract` | `ctoa_helper_domain_contract.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
 | `rule_engine` | `ctoa_helper_rule_engine.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
+| `ui_primitives` | `ctoa_helper_ui_primitives.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
+| `ui_composition` | `ctoa_helper_ui_composition.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
+| `ui_rule_editors` | `ctoa_helper_ui_rule_editors.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
 | `ui` | `ctoa_helper_ui.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
 | `diagnostics` | `ctoa_helper_diagnostics.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
 | `hotkeys` | `ctoa_helper_hotkeys.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |

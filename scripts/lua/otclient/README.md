@@ -26,6 +26,7 @@ selection loads its UI but does not arm gameplay automation.
 | **ctoa_helper_modules.lua** | Passive module lane registry | `_G.CTOA_HELPER_MODULES`, `getModuleLanes()`, `getShortLabels()` |
 | **ctoa_helper_ui_primitives.lua** | Passive shared widget/form primitives | `_G.CTOA_HELPER_UI_PRIMITIVES`, guarded widget basics, form geometry, bounded rule navigation; no gameplay callbacks |
 | **ctoa_helper_ui_composition.lua** | Passive declarative UI composition | `_G.CTOA_HELPER_UI_COMPOSITION`, sidebar/subtab/table/action metadata; no profile mutation or gameplay callbacks |
+| **ctoa_helper_ui_rule_editors.lua** | Passive rule-editor presentation | `_G.CTOA_HELPER_UI_RULE_EDITORS`, shared chrome plus Target/Spell/Combat Action editors with injected callbacks; no gameplay APIs |
 | **ctoa_helper_rule_engine.lua** | Pure typed action/condition validation and passive evaluation | `_G.CTOA_HELPER_RULE_ENGINE`, HP/MP/monster/distance/PZ/condition metrics, AND/OR, cooldown, hysteresis, bounded randomization; no dispatch |
 | **ctoa_helper_runtime_core.lua** | Passive runtime registry, event bus, and budgeted scheduler | `_G.CTOA_HELPER_RUNTIME_CORE`, disabled-by-default tasks, bounded ticks, failure backoff |
 | **ctoa_helper_combat_observer.lua** | Passive normalized combat/targeting observations | `_G.CTOA_HELPER_COMBAT_OBSERVER`, `ctoa.combat-observation.v1`, `combat.observed` |

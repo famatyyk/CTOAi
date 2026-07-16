@@ -10,6 +10,9 @@ ROADMAP_MD = ROOT / "AI" / "P17_P24_HELPER_EVOLUTION_ROADMAP.md"
 AUDIT_MD = ROOT / "docs" / "otclient" / "HELPER_SIMPLIFICATION_AUDIT_2026-07-16.md"
 NATIVE_HELPER = ROOT / "scripts" / "lua" / "otclient" / "ctoa_native_helper.lua"
 HELPER_UI = ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_ui.lua"
+HELPER_UI_RULE_EDITORS = (
+    ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_ui_rule_editors.lua"
+)
 
 
 def test_helper_evolution_roadmap_preserves_release_boundaries() -> None:
@@ -69,8 +72,18 @@ def test_roadmap_and_audit_record_confirmed_helper_debt() -> None:
     audit_text = AUDIT_MD.read_text(encoding="utf-8")
 
     for marker in (
-        "P17", "P18", "P19", "P20", "P21", "P22",
-        "P23", "P24", "P25", "P26", "P27", "P28",
+        "P17",
+        "P18",
+        "P19",
+        "P20",
+        "P21",
+        "P22",
+        "P23",
+        "P24",
+        "P25",
+        "P26",
+        "P27",
+        "P28",
     ):
         assert marker in roadmap_text
 
@@ -88,7 +101,11 @@ def test_p17_2_removes_proven_dead_native_locals() -> None:
     roadmap = json.loads(ROADMAP_JSON.read_text(encoding="utf-8"))
     helper_text = NATIVE_HELPER.read_text(encoding="utf-8")
 
-    assert roadmap["baseline"]["current_native_helper_lines"] == len(helper_text.splitlines()) == 3576
+    assert (
+        roadmap["baseline"]["current_native_helper_lines"]
+        == len(helper_text.splitlines())
+        == 3576
+    )
     assert roadmap["baseline"]["current_native_helper_functions"] == 102
     p17 = next(item for item in roadmap["phases"] if item["id"] == "P17")
     p17_9 = next(item for item in roadmap["immediate_slices"] if item["id"] == "P17.9")
@@ -160,7 +177,9 @@ def test_p18_1_closes_versioned_rule_migration_without_runtime_authority() -> No
     assert p24_1["status"] == "complete"
     assert p24_1["runtime_authority"] is False
     assert p24_1["validation"]["p18_p23_replay_tests"] == 61
-    assert p24_1["validation"]["independent_runner_status"] == "externally_verified_stale"
+    assert (
+        p24_1["validation"]["independent_runner_status"] == "externally_verified_stale"
+    )
     assert p24_1["validation"]["canary_execution_authorized"] is False
 
     p24 = next(item for item in roadmap["phases"] if item["id"] == "P24")
@@ -168,7 +187,7 @@ def test_p18_1_closes_versioned_rule_migration_without_runtime_authority() -> No
     assert p24["status"] == "in_progress"
     assert p24_2["status"] == "in_progress"
     assert p24_2["runtime_authority"] is False
-    assert p24_2["validation"]["official_stage_file_count"] == 64
+    assert p24_2["validation"]["official_stage_file_count"] == 65
     assert p24_2["validation"]["github_hosted_current_revision"] is True
     assert p24_2["validation"]["self_hosted_runner_online"] is False
 
@@ -189,7 +208,7 @@ def test_p18_1_closes_versioned_rule_migration_without_runtime_authority() -> No
     p26_2 = next(item for item in roadmap["immediate_slices"] if item["id"] == "P26.2")
     p26_3 = next(item for item in roadmap["immediate_slices"] if item["id"] == "P26.3")
     p26 = next(item for item in roadmap["phases"] if item["id"] == "P26")
-    assert p26["status"] == "in_progress"
+    assert p26["status"] == "complete"
     assert p26_1["status"] == "complete"
     assert p26_1["runtime_authority"] is False
     assert p26_1["validation"]["official_stage_file_count"] == 63
@@ -198,14 +217,27 @@ def test_p18_1_closes_versioned_rule_migration_without_runtime_authority() -> No
     assert p26_2["runtime_authority"] is False
     assert p26_2["validation"]["official_stage_file_count"] == 64
     assert p26_2["validation"]["passive_module_contracts_passed"] == 36
-    assert p26_3["status"] == "not_started"
+    assert p26_3["status"] == "complete"
     assert p26_3["runtime_authority"] is False
+    assert p26_3["validation"]["official_stage_file_count"] == 65
+    assert p26_3["validation"]["passive_module_contracts_passed"] == 37
+    assert p26_3["validation"]["preview_layout_issues"] == 0
+
+    p27 = next(item for item in roadmap["phases"] if item["id"] == "P27")
+    p27_1 = next(item for item in roadmap["immediate_slices"] if item["id"] == "P27.1")
+    assert p27["status"] == "in_progress"
+    assert p27_1["status"] == "not_started"
+    assert p27_1["runtime_authority"] is False
 
 
 def test_p19_1_opens_target_name_policy_without_runtime_authority() -> None:
     roadmap = json.loads(ROADMAP_JSON.read_text(encoding="utf-8"))
-    ui_text = HELPER_UI.read_text(encoding="utf-8")
-    targeting_text = (ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_targeting.lua").read_text(encoding="utf-8")
+    ui_text = HELPER_UI.read_text(encoding="utf-8") + HELPER_UI_RULE_EDITORS.read_text(
+        encoding="utf-8"
+    )
+    targeting_text = (
+        ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_targeting.lua"
+    ).read_text(encoding="utf-8")
 
     slice_ = next(item for item in roadmap["immediate_slices"] if item["id"] == "P19.1")
     assert slice_["status"] == "complete"
@@ -218,7 +250,9 @@ def test_p19_1_opens_target_name_policy_without_runtime_authority() -> None:
 
 def test_p19_2_opens_ordered_spell_rules_without_runtime_authority() -> None:
     roadmap = json.loads(ROADMAP_JSON.read_text(encoding="utf-8"))
-    ui_text = HELPER_UI.read_text(encoding="utf-8")
+    ui_text = HELPER_UI.read_text(encoding="utf-8") + HELPER_UI_RULE_EDITORS.read_text(
+        encoding="utf-8"
+    )
     combat_text = (
         ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_combat_runtime.lua"
     ).read_text(encoding="utf-8")
@@ -237,7 +271,9 @@ def test_p19_2_opens_ordered_spell_rules_without_runtime_authority() -> None:
 
 def test_p19_3_completes_ordered_target_and_combat_action_configuration() -> None:
     roadmap = json.loads(ROADMAP_JSON.read_text(encoding="utf-8"))
-    ui_text = HELPER_UI.read_text(encoding="utf-8")
+    ui_text = HELPER_UI.read_text(encoding="utf-8") + HELPER_UI_RULE_EDITORS.read_text(
+        encoding="utf-8"
+    )
     targeting_text = (
         ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_targeting.lua"
     ).read_text(encoding="utf-8")
@@ -276,7 +312,9 @@ def test_p20_completes_data_driven_spell_state_and_anti_spam_contract() -> None:
     assert "bounded_unknown_fallback" in registry_text
     assert "stateDecisions[rule.state_id].allowed == true" in combat_text
     for vocation in ("ek", "ms", "ed", "rp"):
-        profile = (ROOT / "scripts" / "lua" / "otclient" / f"ctoa_{vocation}_profile.lua").read_text(encoding="utf-8")
+        profile = (
+            ROOT / "scripts" / "lua" / "otclient" / f"ctoa_{vocation}_profile.lua"
+        ).read_text(encoding="utf-8")
         assert "spell_state_families" in profile
 
 
