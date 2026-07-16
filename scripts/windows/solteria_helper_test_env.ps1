@@ -362,14 +362,25 @@ function Write-SmokeCommand {
 function Sync-CtoaRuntimeFiles {
     param([string]$ClientDir)
     Assert-InteractiveOperatorMode -Operation "sync runtime files"
+    $ClientDir = Assert-SandboxClientPath -SandboxPath $ClientDir -SourcePath $SourceClient
     $repo = Get-RepoRoot
     $stageRoot = Join-Path (Join-Path $repo $DevDir) "latest"
     $modDir = Join-Path $ClientDir "mods\ctoa_otclient"
     $chooserDir = Join-Path $ClientDir "mods\ctoa_chooser"
-    $safeDir = Join-Path $ClientDir "mods\ctoa_safe"
+    $safeDir = [System.IO.Path]::GetFullPath((Join-Path $ClientDir "mods\ctoa_safe"))
+    $clientPrefix = $ClientDir.TrimEnd([char[]]@('\', '/')) + [System.IO.Path]::DirectorySeparatorChar
+    if (-not $safeDir.StartsWith($clientPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "Refusing to remove Safe outside the verified Helper sandbox: $safeDir"
+    }
+    if (Test-Path -LiteralPath $safeDir) {
+        $safeItem = Get-Item -LiteralPath $safeDir -Force
+        if (($safeItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+            throw "Refusing to remove reparse-point Safe directory from Helper sandbox: $safeDir"
+        }
+        Remove-Item -LiteralPath $safeDir -Recurse -Force
+    }
     New-Item -ItemType Directory -Force -Path $modDir | Out-Null
     New-Item -ItemType Directory -Force -Path $chooserDir | Out-Null
-    New-Item -ItemType Directory -Force -Path $safeDir | Out-Null
 
     function Copy-CtoaRuntimeFile {
         param(
@@ -404,6 +415,7 @@ function Sync-CtoaRuntimeFiles {
         "ctoa_helper_route.lua",
         "ctoa_helper_targeting.lua",
         "ctoa_helper_combat_runtime.lua",
+        "ctoa_helper_spell_state_registry.lua",
         "ctoa_helper_cavebot_runtime.lua",
         "ctoa_helper_loot_runtime.lua",
         "ctoa_helper_timer_runtime.lua",
@@ -439,6 +451,7 @@ function Sync-CtoaRuntimeFiles {
         "ctoa_helper_heal_friend.lua",
         "ctoa_helper_modules.lua",
         "ctoa_helper_domain_contract.lua",
+        "ctoa_helper_rule_engine.lua",
         "ctoa_helper_runtime_core.lua",
         "ctoa_helper_combat_observer.lua",
         "ctoa_helper_recovery_observer.lua",
@@ -460,14 +473,6 @@ function Sync-CtoaRuntimeFiles {
     }
     foreach ($name in @("ctoa_chooser.otmod", "ctoa_chooser_loader.lua")) {
         Copy-CtoaRuntimeFile -StageRelative "mods\ctoa_chooser\$name" -RepoRelative "scripts\lua\ctoa_chooser\$name" -Destination (Join-Path $chooserDir $name)
-    }
-    foreach ($name in @("ctoa_safe.otmod", "ctoa_safe_loader.lua", "ctoa_safe_helper.lua")) {
-        Copy-CtoaRuntimeFile -StageRelative "mods\ctoa_safe\$name" -RepoRelative "mods\ctoa_safe\$name" -Destination (Join-Path $safeDir $name)
-    }
-    $safeStyles = Join-Path $safeDir "styles"
-    New-Item -ItemType Directory -Force -Path $safeStyles | Out-Null
-    foreach ($name in @("helper.otui", "spell.otui", "siolist.otui", "shooterPreset.otui")) {
-        Copy-CtoaRuntimeFile -StageRelative "mods\ctoa_safe\styles\$name" -RepoRelative "mods\ctoa_safe\styles\$name" -Destination (Join-Path $safeStyles $name)
     }
     Copy-CtoaRuntimeFile -StageRelative "ctoa_project_loader.lua" -RepoRelative "scripts\lua\ctoa_chooser\ctoa_chooser_loader.lua" -Destination (Join-Path $ClientDir "ctoa_project_loader.lua")
     foreach ($legacyRelative in Get-LiveLegacyFiles) {
@@ -673,6 +678,7 @@ function Get-DevPackageFiles {
         "mods/ctoa_otclient/ctoa_helper_route.lua",
         "mods/ctoa_otclient/ctoa_helper_targeting.lua",
         "mods/ctoa_otclient/ctoa_helper_combat_runtime.lua",
+        "mods/ctoa_otclient/ctoa_helper_spell_state_registry.lua",
         "mods/ctoa_otclient/ctoa_helper_cavebot_runtime.lua",
         "mods/ctoa_otclient/ctoa_helper_loot_runtime.lua",
         "mods/ctoa_otclient/ctoa_helper_timer_runtime.lua",
@@ -708,6 +714,7 @@ function Get-DevPackageFiles {
         "mods/ctoa_otclient/ctoa_helper_heal_friend.lua",
         "mods/ctoa_otclient/ctoa_helper_modules.lua",
         "mods/ctoa_otclient/ctoa_helper_domain_contract.lua",
+        "mods/ctoa_otclient/ctoa_helper_rule_engine.lua",
         "mods/ctoa_otclient/ctoa_helper_runtime_core.lua",
         "mods/ctoa_otclient/ctoa_helper_combat_observer.lua",
         "mods/ctoa_otclient/ctoa_helper_recovery_observer.lua",
@@ -724,6 +731,26 @@ function Get-DevPackageFiles {
         "mods/ctoa_otclient/ctoa_ed_profile.lua",
         "mods/ctoa_otclient/ctoa_rp_profile.lua"
     )
+}
+
+function Get-DevPackageSourcePath {
+    param(
+        [Parameter(Mandatory = $true)][string]$Repo,
+        [Parameter(Mandatory = $true)][string]$Relative
+    )
+
+    $normalized = $Relative.Replace("\", "/")
+    $name = [System.IO.Path]::GetFileName($normalized)
+    if ($normalized -eq "ctoa_project_loader.lua") {
+        return (Join-Path $Repo "scripts\lua\ctoa_chooser\ctoa_chooser_loader.lua")
+    }
+    if ($normalized.StartsWith("mods/ctoa_chooser/", [System.StringComparison]::Ordinal)) {
+        return (Join-Path $Repo ("scripts\lua\ctoa_chooser\{0}" -f $name))
+    }
+    if ($normalized.StartsWith("mods/ctoa_otclient/", [System.StringComparison]::Ordinal)) {
+        return (Join-Path $Repo ("scripts\lua\otclient\{0}" -f $name))
+    }
+    throw "No tracked source mapping for staged file: $Relative"
 }
 
 function Get-LiveLegacyFiles {
@@ -951,10 +978,8 @@ function New-DevPackage {
     }
     $moduleDir = Join-Path $stage "mods\ctoa_otclient"
     $chooserDir = Join-Path $stage "mods\ctoa_chooser"
-    $safeDir = Join-Path $stage "mods\ctoa_safe"
     New-Item -ItemType Directory -Force -Path $moduleDir | Out-Null
     New-Item -ItemType Directory -Force -Path $chooserDir | Out-Null
-    New-Item -ItemType Directory -Force -Path $safeDir | Out-Null
 
     $moduleFiles = @(
         "ctoa_otclient.otmod",
@@ -967,6 +992,7 @@ function New-DevPackage {
         "ctoa_helper_route.lua",
         "ctoa_helper_targeting.lua",
         "ctoa_helper_combat_runtime.lua",
+        "ctoa_helper_spell_state_registry.lua",
         "ctoa_helper_cavebot_runtime.lua",
         "ctoa_helper_loot_runtime.lua",
         "ctoa_helper_timer_runtime.lua",
@@ -1002,6 +1028,7 @@ function New-DevPackage {
         "ctoa_helper_heal_friend.lua",
         "ctoa_helper_modules.lua",
         "ctoa_helper_domain_contract.lua",
+        "ctoa_helper_rule_engine.lua",
         "ctoa_helper_runtime_core.lua",
         "ctoa_helper_combat_observer.lua",
         "ctoa_helper_recovery_observer.lua",
@@ -1023,14 +1050,6 @@ function New-DevPackage {
     }
     foreach ($name in @("ctoa_chooser.otmod", "ctoa_chooser_loader.lua")) {
         Copy-Item -LiteralPath (Join-Path $repo "scripts\lua\ctoa_chooser\$name") -Destination (Join-Path $chooserDir $name) -Force
-    }
-    foreach ($name in @("ctoa_safe.otmod", "ctoa_safe_loader.lua", "ctoa_safe_helper.lua")) {
-        Copy-Item -LiteralPath (Join-Path $repo "mods\ctoa_safe\$name") -Destination (Join-Path $safeDir $name) -Force
-    }
-    $safeStyles = Join-Path $safeDir "styles"
-    New-Item -ItemType Directory -Force -Path $safeStyles | Out-Null
-    foreach ($name in @("helper.otui", "spell.otui", "siolist.otui", "shooterPreset.otui")) {
-        Copy-Item -LiteralPath (Join-Path $repo "mods\ctoa_safe\styles\$name") -Destination (Join-Path $safeStyles $name) -Force
     }
     Copy-Item -LiteralPath (Join-Path $repo "scripts\lua\ctoa_chooser\ctoa_chooser_loader.lua") -Destination (Join-Path $stage "ctoa_project_loader.lua") -Force
 
@@ -1334,7 +1353,27 @@ function Invoke-SmokePreflight {
             }
         }
     }
-    if ($missingPackage) {
+    $packageStale = $missingPackage
+    if (-not $packageStale) {
+        foreach ($relative in Get-DevPackageFiles) {
+            $sourcePath = Get-DevPackageSourcePath -Repo $repo -Relative $relative
+            $stagePath = Join-Path $stage $relative
+            if (
+                -not (Test-Path -LiteralPath $sourcePath) -or
+                -not (Test-Path -LiteralPath $stagePath)
+            ) {
+                $packageStale = $true
+                break
+            }
+            $sourceHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath).Hash
+            $stageHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $stagePath).Hash
+            if ($sourceHash -ne $stageHash) {
+                $packageStale = $true
+                break
+            }
+        }
+    }
+    if ($packageStale) {
         New-DevPackage
     }
 
@@ -1507,6 +1546,7 @@ function Set-LiveCtoaEnabled {
         "ctoa_helper_route.lua",
         "ctoa_helper_targeting.lua",
         "ctoa_helper_combat_runtime.lua",
+        "ctoa_helper_spell_state_registry.lua",
         "ctoa_helper_cavebot_runtime.lua",
         "ctoa_helper_loot_runtime.lua",
         "ctoa_helper_timer_runtime.lua",
@@ -1542,6 +1582,7 @@ function Set-LiveCtoaEnabled {
         "ctoa_helper_heal_friend.lua",
         "ctoa_helper_modules.lua",
         "ctoa_helper_domain_contract.lua",
+        "ctoa_helper_rule_engine.lua",
         "ctoa_helper_runtime_core.lua",
         "ctoa_helper_combat_observer.lua",
         "ctoa_helper_recovery_observer.lua",
@@ -1621,6 +1662,7 @@ function Set-LiveCtoaUiOnly {
         "ctoa_helper_route.lua",
         "ctoa_helper_targeting.lua",
         "ctoa_helper_combat_runtime.lua",
+        "ctoa_helper_spell_state_registry.lua",
         "ctoa_helper_cavebot_runtime.lua",
         "ctoa_helper_loot_runtime.lua",
         "ctoa_helper_timer_runtime.lua",
@@ -1656,6 +1698,7 @@ function Set-LiveCtoaUiOnly {
         "ctoa_helper_heal_friend.lua",
         "ctoa_helper_modules.lua",
         "ctoa_helper_domain_contract.lua",
+        "ctoa_helper_rule_engine.lua",
         "ctoa_helper_runtime_core.lua",
         "ctoa_helper_combat_observer.lua",
         "ctoa_helper_recovery_observer.lua",
@@ -2300,6 +2343,23 @@ function Invoke-SmokeStatus {
     }
 }
 
+function Test-HelperModuleConfigured {
+    param(
+        [Parameter(Mandatory = $true)][string]$Repo,
+        [Parameter(Mandatory = $true)][string]$HelperSource,
+        [Parameter(Mandatory = $true)][string]$ModuleName
+    )
+    $schemaPath = Join-Path $Repo "scripts\lua\otclient\ctoa_helper_profile_schema.lua"
+    if (-not (Test-Path -LiteralPath $schemaPath -PathType Leaf)) {
+        return $false
+    }
+    $schemaSource = Get-Content -LiteralPath $schemaPath -Raw
+    return (
+        $HelperSource.Contains("pcall(externalProfileSchema.defaultProfile)") -and
+        $schemaSource.Contains("$ModuleName = {")
+    )
+}
+
 function Invoke-HealFriendNoTargetSmoke {
     $repo = Get-RepoRoot
     $outRoot = Join-Path $repo $DevDir
@@ -2317,7 +2377,7 @@ function Invoke-HealFriendNoTargetSmoke {
         $adapterSource = $helper.Substring($adapterStart, $adapterEnd - $adapterStart)
     }
     $checks = @(
-        [pscustomobject]@{ name = "module_configured"; status = if ($helper.Contains("heal_friend = {")) { "passed" } else { "failed" }; evidence = "helper heal_friend config exists" },
+        [pscustomobject]@{ name = "module_configured"; status = if (Test-HelperModuleConfigured -Repo $repo -HelperSource $helper -ModuleName "heal_friend") { "passed" } else { "failed" }; evidence = "profile schema owns heal_friend config and helper loads defaultProfile" },
         [pscustomobject]@{ name = "observer_module_present"; status = if ($module.Contains("function HealFriend.scan") -and $module.Contains("function HealFriend.observe") -and $module.Contains("function HealFriend.statusText") -and $module.Contains("function HealFriend.decisionText") -and $helper.Contains('moduleValue(externalHealFriend, "observe", healFriend, now, {') -and -not $helper.Contains("pcall(externalHealFriend.observe")) { "passed" } else { "failed" }; evidence = "module owns scan/observe/status/decision text and helper delegates observer context through guarded moduleValue" },
         [pscustomobject]@{ name = "profile_safe_boot"; status = if ($profile.Contains("heal_friend = {") -and $profile.Contains("runtime_enabled = false") -and $profile.Contains("friend_whitelist = {}")) { "passed" } else { "failed" }; evidence = "profile keeps runtime disabled and empty whitelist" },
         [pscustomobject]@{ name = "no_cast_in_observer"; status = if (-not $module.Contains("castSpell(") -and -not $adapterSource.Contains("castSpell(")) { "passed" } else { "failed" }; evidence = "observer module and helper adapter have no castSpell" },
@@ -2375,7 +2435,7 @@ function Invoke-ConditionsObserverSmoke {
         $adapterSource = $helper.Substring($adapterStart, $adapterEnd - $adapterStart)
     }
     $checks = @(
-        [pscustomobject]@{ name = "module_configured"; status = if ($helper.Contains("conditions = {")) { "passed" } else { "failed" }; evidence = "helper conditions config exists" },
+        [pscustomobject]@{ name = "module_configured"; status = if (Test-HelperModuleConfigured -Repo $repo -HelperSource $helper -ModuleName "conditions") { "passed" } else { "failed" }; evidence = "profile schema owns conditions config and helper loads defaultProfile" },
         [pscustomobject]@{ name = "observer_module_present"; status = if ($module.Contains("function Conditions.snapshot") -and $module.Contains("function Conditions.apiProbe") -and $module.Contains("function Conditions.observe") -and $helper.Contains('moduleValue(externalConditions, "observe", conditions, now, {') -and -not $helper.Contains("pcall(externalConditions.observe")) { "passed" } else { "failed" }; evidence = "module owns condition snapshot/api probe/observe and helper delegates context through guarded moduleValue" },
         [pscustomobject]@{ name = "profile_safe_boot"; status = if ($profile.Contains("conditions = {") -and $profile.Contains("runtime_enabled = false") -and $profile.Contains("observe_states = true")) { "passed" } else { "failed" }; evidence = "profile keeps runtime disabled while allowing state observation" },
         [pscustomobject]@{ name = "state_api_probe_present"; status = if ($module.Contains("player.hasState=") -and $module.Contains("player.getStates=") -and $module.Contains("state.manaShield=") -and $module.Contains("owns_api_probe = true")) { "passed" } else { "failed" }; evidence = "module reports state API availability" },
@@ -2434,7 +2494,7 @@ function Invoke-EquipmentObserverSmoke {
         $adapterSource = $helper.Substring($adapterStart, $adapterEnd - $adapterStart)
     }
     $checks = @(
-        [pscustomobject]@{ name = "module_configured"; status = if ($helper.Contains("equipment = {")) { "passed" } else { "failed" }; evidence = "helper equipment config exists" },
+        [pscustomobject]@{ name = "module_configured"; status = if (Test-HelperModuleConfigured -Repo $repo -HelperSource $helper -ModuleName "equipment") { "passed" } else { "failed" }; evidence = "profile schema owns equipment config and helper loads defaultProfile" },
         [pscustomobject]@{ name = "observer_module_present"; status = if ($module.Contains("function Equipment.snapshot") -and $module.Contains("function Equipment.apiProbe") -and $module.Contains("function Equipment.observe") -and $helper.Contains('moduleValue(externalEquipment, "observe", equipment, now, {') -and -not $helper.Contains("pcall(externalEquipment.observe")) { "passed" } else { "failed" }; evidence = "module owns equipment snapshot/api probe/observe and helper delegates context through guarded moduleValue" },
         [pscustomobject]@{ name = "profile_safe_boot"; status = if ($profile.Contains("equipment = {") -and $profile.Contains("runtime_enabled = false") -and $profile.Contains("ring_swap = false") -and $profile.Contains("amulet_swap = false")) { "passed" } else { "failed" }; evidence = "profile keeps runtime and swaps disabled" },
         [pscustomobject]@{ name = "inventory_api_probe_present"; status = if ($module.Contains("player.getInventoryItem=") -and $module.Contains("slot.ring=") -and $module.Contains("slot.amulet=") -and $module.Contains("owns_api_probe = true")) { "passed" } else { "failed" }; evidence = "module reports inventory slot API availability" },
@@ -2494,7 +2554,7 @@ function Invoke-ScriptingPolicySmoke {
         $policySource = $helper.Substring($policyStart, $policyEnd - $policyStart)
     }
     $checks = @(
-        [pscustomobject]@{ name = "module_configured"; status = if ($helper.Contains("scripting = {")) { "passed" } else { "failed" }; evidence = "helper scripting config exists" },
+        [pscustomobject]@{ name = "module_configured"; status = if (Test-HelperModuleConfigured -Repo $repo -HelperSource $helper -ModuleName "scripting") { "passed" } else { "failed" }; evidence = "profile schema owns scripting config and helper loads defaultProfile" },
         [pscustomobject]@{ name = "policy_shell_present"; status = if (-not $helper.Contains("function buildScriptingPolicySnapshot()") -and $helper.Contains("build_scripting_policy_snapshot = function()") -and $helper.Contains('moduleValue(externalScripting, "policySnapshot", scripting)') -and -not $helper.Contains("pcall(externalScripting.policySnapshot") -and $helper.Contains("OPERATOR_SUMMARY_BRIDGES.scripting") -and $helper.Contains('scripting = moduleValue(externalOperatorSummary, "bridgeText", "scripting", OPERATOR_SUMMARY_BRIDGES)') -and $helper.Contains("scripting_summary_text = operatorSummaries.scripting")) { "passed" } else { "failed" }; evidence = "policy shell delegates passive snapshot through shared guarded renderer callback" },
         [pscustomobject]@{ name = "profile_safe_boot"; status = if ($profile.Contains("scripting = {") -and $profile.Contains('policy_mode = "deny_all"') -and $profile.Contains("allow_user_snippets = false") -and $profile.Contains("allow_runtime_eval = false") -and $profile.Contains('command_model = "none"')) { "passed" } else { "failed" }; evidence = "profile blocks snippets, eval, and command model" },
         [pscustomobject]@{ name = "runtime_flags_forced_off"; status = if ($helper.Contains("HELPER_CONFIG.scripting.runtime_enabled = false") -and $helper.Contains("HELPER_CONFIG.scripting.allow_user_snippets = false") -and $helper.Contains("HELPER_CONFIG.scripting.allow_runtime_eval = false")) { "passed" } else { "failed" }; evidence = "loader forces unsafe scripting flags off" },
@@ -3320,7 +3380,7 @@ function Invoke-TargetingStaticSmoke {
         [pscustomobject]@{ name = "ignored_name_policy"; status = if ($targeting.Contains("function Targeting.isIgnoredName") -and $targeting.Contains("string.find(normalized, needle, 1, true)") -and $targeting.Contains('reason = "ignored_name"') -and $targeting.Contains("score = 99999999")) { "passed" } else { "failed" }; evidence = "targeting owns ignored-name rejection before runtime attack code" },
         [pscustomobject]@{ name = "friendly_summon_policy"; status = if ($targeting.Contains("function Targeting.isFriendlySummonName") -and $targeting.Contains("function Targeting.isFriendlySummonCandidate") -and $targeting.Contains('reason = "friendly_summon"') -and $targeting.Contains("owns_friendly_summon_guard = true") -and $helper.Contains("isFriendlySummonCreature(target, getLocalPlayer())") -and $helper.Contains('clearUnsafeCurrentTarget("friendly summon/familiar target", now, true)')) { "passed" } else { "failed" }; evidence = "targeting/helper block friendly summons or familiars before runtime attack code" },
         [pscustomobject]@{ name = "passive_contract"; status = if ($targeting.Contains('mode = "passive"') -and $targeting.Contains("owns_target_score = true") -and $targeting.Contains("owns_target_candidate_score = true") -and $targeting.Contains("owns_best_candidate = true") -and $targeting.Contains("owns_ignored_names = true") -and $targeting.Contains("owns_npc_icon_guard = true") -and $targeting.Contains("owns_blocking_npc_icon_value = true") -and $targeting.Contains("owns_friendly_summon_name = true") -and $targeting.Contains("owns_config_summary = true") -and $targeting.Contains("owns_targeting_summary_text = true") -and $targeting.Contains("runtime_actions = false") -and $targeting.Contains("attacks = false") -and $targeting.Contains("casts = false") -and $targeting.Contains("creature_scan = false")) { "passed" } else { "failed" }; evidence = "targeting contract declares passive icon, summon-name, scoring/config summary ownership and no attacks/casts/scan" },
-        [pscustomobject]@{ name = "helper_uses_targeting_domain"; status = if ($helper.Contains('moduleValue(externalTargeting, "normalizedName", creature)') -and $helper.Contains('moduleValue(externalTargeting, "isIgnoredName", name, HELPER_CONFIG.tools.ignored_names or {})') -and $helper.Contains('moduleValue(externalTargeting, "isFriendlySummonName", normalizedCreatureName(creature), HELPER_CONFIG.tools)') -and $helper.Contains('moduleValue(externalTargeting, "creatureHasBlockingNpcIcon", npcIcon, HELPER_CONFIG.tools)') -and $helper.Contains('moduleValue(externalTargeting, "targetCandidateScore", candidate, tools)') -and $helper.Contains('moduleValue(externalTargeting, "bestCandidate", candidates, tools)') -and $helper.Contains("pcall(creature.getIcon, creature)") -and -not $helper.Contains("local function creatureHasBlockingNpcIcon") -and -not $helper.Contains("local function isFriendlySummonName") -and -not $helper.Contains("local function targetCandidateScore") -and $helper.Contains("OPERATOR_SUMMARY_BRIDGES.targeting") -and $helper.Contains('targeting = moduleValue(externalOperatorSummary, "bridgeText", "targeting", OPERATOR_SUMMARY_BRIDGES)') -and $helper.Contains("targeting_summary_text = operatorSummaries.targeting") -and $helper.Contains("targeting = externalTargeting")) { "passed" } else { "failed" }; evidence = "helper shell normalizes OTClient observations and delegates pure icon, summon-name, scoring, best-candidate, and summary decisions through guarded targeting adapters" },
+        [pscustomobject]@{ name = "helper_uses_targeting_domain"; status = if ($helper.Contains('moduleValue(externalTargeting, "normalizedName", creature)') -and $helper.Contains('moduleValue(externalTargeting, "isIgnoredName", name, HELPER_CONFIG.tools.ignored_names or {})') -and $helper.Contains('moduleValue(externalTargeting, "isFriendlySummonName", normalizedCreatureName(creature), HELPER_CONFIG.tools)') -and $helper.Contains('moduleValue(externalTargeting, "creatureHasBlockingNpcIcon", npcIcon, HELPER_CONFIG.tools)') -and $helper.Contains('moduleValue(externalTargeting, "bestCandidate", candidates, tools)') -and -not $helper.Contains('moduleValue(externalTargeting, "targetCandidateScore", candidate, tools)') -and -not $helper.Contains("local bestScore = nil") -and $helper.Contains("pcall(creature.getIcon, creature)") -and -not $helper.Contains("local function creatureHasBlockingNpcIcon") -and -not $helper.Contains("local function isFriendlySummonName") -and -not $helper.Contains("local function targetCandidateScore") -and $helper.Contains("OPERATOR_SUMMARY_BRIDGES.targeting") -and $helper.Contains('targeting = moduleValue(externalOperatorSummary, "bridgeText", "targeting", OPERATOR_SUMMARY_BRIDGES)') -and $helper.Contains("targeting_summary_text = operatorSummaries.targeting") -and $helper.Contains("targeting = externalTargeting")) { "passed" } else { "failed" }; evidence = "helper shell delegates normalized names, ignore policy, icon/summon guards, and best-candidate ranking to the required targeting module; missing module output fails closed" },
         [pscustomobject]@{ name = "runtime_execution_stays_in_helper"; status = if ($helper.Contains("pcall(function() g_game.attack(target) end)") -and -not $targeting.Contains("g_game.attack") -and -not $targeting.Contains("g_game.follow")) { "passed" } else { "failed" }; evidence = "targeting module scores only; guarded attack execution remains in helper runtime" },
         [pscustomobject]@{ name = "no_otclient_globals"; status = if (-not $targeting.Contains("g_game") -and -not $targeting.Contains("g_map") -and -not $targeting.Contains("g_ui") -and -not $targeting.Contains("g_keyboard") -and -not $targeting.Contains("g_resources")) { "passed" } else { "failed" }; evidence = "targeting module does not call native OTClient globals" },
         [pscustomobject]@{ name = "no_runtime_actions"; status = if (-not $targeting.Contains("castSpell") -and -not $targeting.Contains("sendActionbarSlot") -and -not $targeting.Contains("useInventoryItem") -and -not $targeting.Contains("autoWalk") -and -not $targeting.Contains("findPath") -and -not $targeting.Contains("createWidget")) { "passed" } else { "failed" }; evidence = "targeting module does not attack, cast, use items, walk, pathfind, or create widgets" },
@@ -3377,7 +3437,7 @@ function Invoke-CombatRuntimeStaticSmoke {
         [pscustomobject]@{ name = "plan_actions"; status = if ($combat.Contains('action = "target"') -and $combat.Contains('action = "plan_spell"') -and $combat.Contains('action = "plan_rune"') -and $combat.Contains('next_action = "hold"')) { "passed" } else { "failed" }; evidence = "combat runtime returns target, canonical spell/rune, or hold plans without executing them" },
         [pscustomobject]@{ name = "passive_contract"; status = if ($combat.Contains('mode = "passive"') -and $combat.Contains("owns_runtime_plan = true") -and $combat.Contains("owns_adapter_summary = true") -and $combat.Contains("owns_magic_summary = true") -and $combat.Contains("owns_magic_summary_text = true") -and $combat.Contains("owns_cooldown_text = true") -and $combat.Contains("owns_rotation_spell_rows = true") -and $combat.Contains("owns_rotation_spell_selection = true") -and $combat.Contains("owns_select_rotation_spell = true") -and $combat.Contains("owns_action_status_text = true") -and $combat.Contains("owns_targeting_status_text = true") -and $combat.Contains("owns_next_action_text = true") -and $combat.Contains("owns_wait_reason_text = true") -and $combat.Contains("owns_decision_state_text = true") -and $combat.Contains("owns_decision_state_summary = true") -and $combat.Contains("runtime_actions = false") -and $combat.Contains("scans_creatures = false") -and $combat.Contains("attacks = false") -and $combat.Contains("casts = false") -and $combat.Contains("uses_items = false") -and $combat.Contains("requires_target_scorer = true")) { "passed" } else { "failed" }; evidence = "combat runtime contract owns passive normalized rotation selection and no attack/cast/item execution" },
         [pscustomobject]@{ name = "helper_uses_combat_runtime_adapter"; status = if ($helper.Contains('rawget(_G, "CTOA_HELPER_COMBAT_RUNTIME")') -and $helper.Contains("local function moduleValue(module, functionName, ...)") -and -not $helper.Contains("local function combatRuntimeAdapterSummary") -and $helper.Contains('moduleValue(externalCombatRuntime, "decisionStateSummary", tools') -and $helper.Contains("OPERATOR_SUMMARY_BRIDGES.magic") -and $helper.Contains('magic = moduleValue(externalOperatorSummary, "bridgeText", "magic", OPERATOR_SUMMARY_BRIDGES)') -and $helper.Contains("magic_summary_text = operatorSummaries.magic") -and $helper.Contains("combatRuntime = externalCombatRuntime") -and -not $helper.Contains("local function msLeftText") -and -not $helper.Contains("local function monsterCountForSpell") -and -not $helper.Contains("local function runeReady") -and -not $helper.Contains("local function selectRotationSpell") -and $helper.Contains('moduleValue(externalCombatRuntime, "runeReady", tools') -and $helper.Contains('moduleValue(externalCombatRuntime, "selectRotationSpell", tools, scan, now)') -and $helper.Contains('moduleValue(externalCombatRuntime, "rotationSpellRows", tools.rotation_spells') -and $helper.Contains('moduleValue(externalCombatRuntime, "spellReadiness", spells') -and $helper.Contains('moduleValue(externalCombatRuntime, "offensiveAction", tools') -and $helper.Contains("local combatRuntimeText") -and $helper.Contains("combatRuntimeText = function(functionName, eventOrAction, data, fallback)") -and $helper.IndexOf("local combatRuntimeText") -lt $helper.IndexOf("local function retargetSafeMonster") -and $helper.Contains("moduleValue(externalCombatRuntime, functionName, eventOrAction, data or {})") -and -not $helper.Contains("local function combatActionStatusText") -and -not $helper.Contains("local function combatTargetingStatusText") -and $helper.Contains('combatRuntimeText("targetingStatusText", "friendly_summon"') -and $helper.Contains('combatRuntimeText("actionStatusText", action') -and $helper.Contains('moduleValue(externalCombatRuntime, "nextActionText", action, fallback)') -and $helper.Contains('moduleValue(externalCombatRuntime, "waitReason", {') -and -not $helper.Contains('moduleValue(externalCombatRuntime, "decisionState", {') -and -not $helper.Contains("adapter_text = adapterText") -and -not $helper.Contains('"Auto exeta: " .. action.spell') -and -not $helper.Contains('"Rotation: " .. action.spell.words') -and -not $helper.Contains('"Rune: " .. (tools.rune_name or "rune")') -and -not $helper.Contains('"Next: rune/AoE"')) { "passed" } else { "failed" }; evidence = "helper shell consumes pure rune/rotation decisions while runtime execution remains shell-owned" },
-        [pscustomobject]@{ name = "runtime_execution_stays_in_helper"; status = if ($helper.Contains("local function executeOffensiveAction") -and $helper.Contains("castSpell(action.spell.words)") -and $helper.Contains("sendActionbarSlot(tools.rune_actionbar_slot, tools.rune_hotkey)") -and -not $combat.Contains("castSpell") -and -not $combat.Contains("sendActionbarSlot") -and -not $combat.Contains("g_game.attack")) { "passed" } else { "failed" }; evidence = "combat runtime plans only; guarded attack/cast/rune execution remains in helper runtime" },
+        [pscustomobject]@{ name = "runtime_execution_stays_in_helper"; status = if ($helper.Contains("local function executeOffensiveAction") -and $helper.Contains('moduleValue(externalCombatRuntime, "dispatchDescriptor", action, tools)') -and $helper.Contains("castSpell(descriptor.words)") -and $helper.Contains("sendActionbarSlot(descriptor.slot, descriptor.hotkey)") -and $combat.Contains("function CombatRuntime.dispatchDescriptor") -and -not $combat.Contains("castSpell") -and -not $combat.Contains("sendActionbarSlot") -and -not $combat.Contains("g_game.attack")) { "passed" } else { "failed" }; evidence = "combat runtime returns passive dispatch descriptors; guarded attack/cast/rune execution remains in helper runtime" },
         [pscustomobject]@{ name = "no_otclient_globals"; status = if (-not $combat.Contains("g_game") -and -not $combat.Contains("g_map") -and -not $combat.Contains("g_ui") -and -not $combat.Contains("g_keyboard") -and -not $combat.Contains("g_resources")) { "passed" } else { "failed" }; evidence = "combat runtime module does not call native OTClient globals" },
         [pscustomobject]@{ name = "no_runtime_actions"; status = if (-not $combat.Contains("castSpell") -and -not $combat.Contains("sendActionbarSlot") -and -not $combat.Contains("useInventoryItem") -and -not $combat.Contains("autoWalk") -and -not $combat.Contains("findPath") -and -not $combat.Contains("createWidget")) { "passed" } else { "failed" }; evidence = "combat runtime module does not cast, use items, walk, pathfind, or create widgets" },
         [pscustomobject]@{ name = "loader_present"; status = if ((Test-CtoaHelperBootGraphModule -Source $loader -Name "ctoa_helper_combat_runtime" -File "ctoa_helper_combat_runtime.lua")) { "passed" } else { "failed" }; evidence = "loader stages combat runtime with support modules" },
@@ -3432,7 +3492,7 @@ function Invoke-CavebotRuntimeStaticSmoke {
         [pscustomobject]@{ name = "blocked_reasons"; status = if ($cavebot.Contains('return "movement_disabled"') -and $cavebot.Contains('return "protection_zone"') -and $cavebot.Contains('return "offline"') -and $cavebot.Contains('return "empty_route"') -and $cavebot.Contains('return "retry_budget_exhausted"')) { "passed" } else { "failed" }; evidence = "cavebot runtime planner owns movement/PZ/offline/empty-route/retry-blocked decisions" },
         [pscustomobject]@{ name = "plan_actions"; status = if ($cavebot.Contains('next_action = "hold"') -and $cavebot.Contains('next_action = "plan_walk"') -and $cavebot.Contains("waypoint_index = selected > 0 and selected or 1") -and $cavebot.Contains("retry_budget = numberValue(cfg.max_retries, 3)")) { "passed" } else { "failed" }; evidence = "cavebot runtime returns hold or plan_walk decisions without executing movement" },
         [pscustomobject]@{ name = "passive_contract"; status = if ($cavebot.Contains('mode = "passive"') -and $cavebot.Contains("owns_runtime_plan = true") -and $cavebot.Contains("owns_decision_text = true") -and $cavebot.Contains("owns_adapter_summary = true") -and $cavebot.Contains("owns_adapter_status_text = true") -and $cavebot.Contains("owns_adapter_status_summary = true") -and $cavebot.Contains("owns_probe_metadata = true") -and $cavebot.Contains("owns_probe_summary_text = true") -and $cavebot.Contains("owns_path_text = true") -and $cavebot.Contains("owns_blocked_reason_text = true") -and $cavebot.Contains("owns_walk_preflight = true") -and $cavebot.Contains("owns_test_walk_plan = true") -and $cavebot.Contains("owns_walking_status = true") -and $cavebot.Contains("owns_retry_decision = true") -and $cavebot.Contains("owns_status_text = true") -and $cavebot.Contains("owns_trace_text = true") -and $cavebot.Contains("owns_runtime_text_bridge = true") -and $cavebot.Contains("owns_retry_budget = true") -and $cavebot.Contains("runtime_actions = false") -and $cavebot.Contains("movement_enabled = false") -and $cavebot.Contains("probe_executes_movement = false") -and $cavebot.Contains("probe_mutates_route = false") -and $cavebot.Contains("probe_changes_arming = false") -and $cavebot.Contains("pathfinding = false") -and $cavebot.Contains("uses_map = false") -and $cavebot.Contains("walks = false") -and $cavebot.Contains("requires_route_engine = true")) { "passed" } else { "failed" }; evidence = "cavebot runtime contract declares passive probe metadata/formatting and no movement, mutation, arming, pathfinding or map calls" },
-        [pscustomobject]@{ name = "helper_uses_cavebot_runtime_adapter"; status = if ($helper.Contains('rawget(_G, "CTOA_HELPER_CAVEBOT_RUNTIME")') -and $helper.Contains("local function moduleValue(module, functionName, ...)") -and -not $helper.Contains("function cavebotRuntimeAdapterSummary") -and -not $helper.Contains("function cavebotRuntimeAdapterStatusText") -and $helper.Contains('moduleValue(externalCavebotRuntime, "adapterStatusSummary"') -and $helper.Contains('moduleValue(externalCavebotRuntime, "movementCapability"') -and $helper.Contains('moduleValue(externalCavebotRuntime, "probeReport"') -and $helper.Contains('moduleValue(externalCavebotRuntime, "pathText"') -and $helper.Contains('moduleValue(externalCavebotRuntime, "movementBlockedReason"') -and $helper.Contains('moduleValue(externalCavebotRuntime, "walkPreflight"') -and $helper.Contains('moduleValue(externalCavebotRuntime, "testWalkPlan"') -and $helper.Contains('moduleValue(externalCavebotRuntime, "walkingStatus"') -and $helper.Contains('moduleValue(externalCavebotRuntime, "retryDecision"') -and $helper.Contains('moduleValue(externalCavebotRuntime, "cavebotRuntimeText"') -and $helper.Contains('moduleValue(externalCavebotRuntime, "cavebotRetryBudgetExceeded"') -and -not $helper.Contains("function cavebotRuntimeText(functionName, event, data, fallback)") -and -not $helper.Contains("function cavebotRetryBudgetExceeded(tools)") -and $cavebot.Contains('kind == "movement_reset"') -and $cavebot.Contains("CavebotRuntime.walkingStatus(item)") -and -not $helper.Contains("Cavebot movement target=") -and -not $helper.Contains("Test walk target=") -and -not $helper.Contains("Test walk blocked") -and -not $helper.Contains("Cavebot movement disabled: retry budget reached") -and -not $helper.Contains("Cavebot movement disabled: walk failed retry budget") -and $helper.Contains("setCavebotStatus(fitText(adapterStatus")) { "passed" } else { "failed" }; evidence = "helper shell consumes cavebot runtime through guarded module calls while runtime execution stays shell-owned" },
+        [pscustomobject]@{ name = "helper_uses_cavebot_runtime_adapter"; status = if ($helper.Contains('rawget(_G, "CTOA_HELPER_CAVEBOT_RUNTIME")') -and $helper.Contains("local function moduleValue(module, functionName, ...)") -and -not $helper.Contains("function cavebotRuntimeAdapterSummary") -and -not $helper.Contains("function cavebotRuntimeAdapterStatusText") -and $helper.Contains('moduleValue(externalCavebotRuntime, "adapterStatusSummary"') -and $helper.Contains('moduleValue(externalCavebotRuntime, "movementCapabilityForPlayer"') -and $helper.Contains('moduleValue(externalCavebotRuntime, "probeReport"') -and $helper.Contains('moduleValue(externalCavebotRuntime, "pathText"') -and $helper.Contains('moduleCall(externalCavebotRuntime, "movementBlockedReason"') -and $helper.Contains('moduleValue(externalCavebotRuntime, "walkPreflight"') -and $helper.Contains('moduleValue(externalCavebotRuntime, "testWalkPlan"') -and $helper.Contains('moduleValue(externalCavebotRuntime, "walkingStatus"') -and $helper.Contains('moduleValue(externalCavebotRuntime, "retryDecision"') -and $helper.Contains('moduleValue(externalCavebotRuntime, "cavebotRuntimeText"') -and $helper.Contains('moduleValue(externalCavebotRuntime, "cavebotRetryBudgetExceeded"') -and -not $helper.Contains("function cavebotRuntimeText(functionName, event, data, fallback)") -and -not $helper.Contains("function cavebotRetryBudgetExceeded(tools)") -and $cavebot.Contains('kind == "movement_reset"') -and $cavebot.Contains("CavebotRuntime.walkingStatus(item)") -and -not $helper.Contains("Cavebot movement target=") -and -not $helper.Contains("Test walk target=") -and -not $helper.Contains("Test walk blocked") -and -not $helper.Contains("Cavebot movement disabled: retry budget reached") -and -not $helper.Contains("Cavebot movement disabled: walk failed retry budget") -and $helper.Contains("setCavebotStatus(fitText(adapterStatus")) { "passed" } else { "failed" }; evidence = "helper shell consumes cavebot runtime through guarded module calls while runtime execution stays shell-owned" },
         [pscustomobject]@{ name = "runtime_execution_stays_in_helper"; status = if ($helper.Contains("function autoWalkTo(pos)") -and $helper.Contains("return player:autoWalk(pos, retry)") -and -not $helper.Contains("function movementPathProbeText") -and $helper.Contains('safeCall(player, "canWalk", true)') -and $helper.Contains('return g_map.findPath(current, target, 200, 0)') -and -not $cavebot.Contains("autoWalk") -and -not $cavebot.Contains("findPath") -and -not $cavebot.Contains("g_map")) { "passed" } else { "failed" }; evidence = "cavebot runtime formats passive metadata only; guarded canWalk/findPath/autoWalk calls remain in helper runtime" },
         [pscustomobject]@{ name = "no_otclient_globals"; status = if (-not $cavebot.Contains("g_game") -and -not $cavebot.Contains("g_map") -and -not $cavebot.Contains("g_ui") -and -not $cavebot.Contains("g_keyboard") -and -not $cavebot.Contains("g_resources")) { "passed" } else { "failed" }; evidence = "cavebot runtime module does not call native OTClient globals" },
         [pscustomobject]@{ name = "no_runtime_actions"; status = if (-not $cavebot.Contains("autoWalk") -and -not $cavebot.Contains("findPath") -and -not $cavebot.Contains("castSpell") -and -not $cavebot.Contains("sendActionbarSlot") -and -not $cavebot.Contains("useInventoryItem") -and -not $cavebot.Contains("createWidget")) { "passed" } else { "failed" }; evidence = "cavebot runtime module does not walk, pathfind, cast, use items, or create widgets" },
@@ -3491,7 +3551,7 @@ function Invoke-LootRuntimeStaticSmoke {
         [pscustomobject]@{ name = "plan_actions"; status = if ($loot.Contains('next_action = "plan_loot"') -and $loot.Contains('lootOperation = "scan"') -and $loot.Contains('lootOperation = "open"') -and $loot.Contains('lootOperation = "move"') -and $loot.Contains('next_action = "hold"')) { "passed" } else { "failed" }; evidence = "loot runtime returns canonical plan_loot with scan/open/move detail without executing loot actions" },
         [pscustomobject]@{ name = "passive_contract"; status = if ($loot.Contains('mode = "passive"') -and $loot.Contains("owns_runtime_plan = true") -and $loot.Contains("owns_adapter_summary = true") -and $loot.Contains("runtime_actions = false") -and $loot.Contains("scans_containers = false") -and $loot.Contains("opens_containers = false") -and $loot.Contains("moves_items = false") -and $loot.Contains("uses_items = false") -and $loot.Contains("requires_experimental_flag = true")) { "passed" } else { "failed" }; evidence = "loot runtime contract declares passive planning/adapter summary and no scan/open/move/use execution" },
         [pscustomobject]@{ name = "helper_uses_loot_runtime_adapter"; status = if ($helper.Contains('rawget(_G, "CTOA_HELPER_LOOT_RUNTIME")') -and -not $helper.Contains("function lootRuntimeAdapterSummary") -and $helper.Contains('moduleValue(externalLootRuntime, "adapterSummary"') -and -not $helper.Contains("pcall(externalLootRuntime.adapterSummary") -and -not $helper.Contains("pcall(externalLootRuntime.plan") -and -not $helper.Contains("pcall(externalLootRuntime.summary") -and $diagnostics.Contains('" adapter=" .. tostring(data.loot_adapter_text')) { "passed" } else { "failed" }; evidence = "helper shell consumes loot runtime adapter summary for diagnostics only through the shared guarded moduleValue invoker and module-owned passive adapter" },
-        [pscustomobject]@{ name = "runtime_execution_stays_out_of_helper_adapter"; status = if ($helper.Contains('safeGlobalCall(g_game, "getContainers")') -and $diagnostics.Contains('Diagnostics.apiText(game, "move")') -and -not $loot.Contains("g_game.move") -and -not $loot.Contains("useInventoryItem") -and -not $loot.Contains("openContainer(") -and -not $loot.Contains("g_game.open")) { "passed" } else { "failed" }; evidence = "loot runtime plans only; helper adapter reads API probe state without moving or using items" },
+        [pscustomobject]@{ name = "runtime_execution_stays_out_of_helper_adapter"; status = if ($helper.Contains("loot_adapter_text = function") -and $helper.Contains("game = g_game") -and $diagnostics.Contains('Diagnostics.safeGlobalCall(ctx.game, "getContainers")') -and $diagnostics.Contains('Diagnostics.apiText(game, "move")') -and -not $loot.Contains("g_game.move") -and -not $loot.Contains("useInventoryItem") -and -not $loot.Contains("openContainer(") -and -not $loot.Contains("g_game.open")) { "passed" } else { "failed" }; evidence = "loot runtime plans only; diagnostics controller reads API probe state through the injected game dependency without moving or using items" },
         [pscustomobject]@{ name = "no_otclient_globals"; status = if (-not $loot.Contains("g_game") -and -not $loot.Contains("g_map") -and -not $loot.Contains("g_ui") -and -not $loot.Contains("g_keyboard") -and -not $loot.Contains("g_resources")) { "passed" } else { "failed" }; evidence = "loot runtime module does not call native OTClient globals" },
         [pscustomobject]@{ name = "no_runtime_actions"; status = if (-not $loot.Contains("useInventoryItem") -and -not $loot.Contains("openContainer(") -and -not $loot.Contains("g_game.open") -and -not $loot.Contains("g_game.move") -and -not $loot.Contains("autoWalk") -and -not $loot.Contains("findPath") -and -not $loot.Contains("createWidget")) { "passed" } else { "failed" }; evidence = "loot runtime module does not use items, open containers, move items, walk, pathfind, or create widgets" },
         [pscustomobject]@{ name = "loader_present"; status = if ((Test-CtoaHelperBootGraphModule -Source $loader -Name "ctoa_helper_loot_runtime" -File "ctoa_helper_loot_runtime.lua")) { "passed" } else { "failed" }; evidence = "loader stages loot runtime with support modules" },

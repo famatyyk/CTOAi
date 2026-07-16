@@ -38,6 +38,9 @@ needed for a task instead of relying on one long prompt.
 - `FEATURE_ROADMAP.md`: next implementation lanes.
 - `P8_P16_EXECUTION_ROADMAP.md`: background-first post-P7 phase sequence and
   evidence gates through design-only Combat/CaveBot work.
+- `P17_P24_HELPER_EVOLUTION_ROADMAP.md` and `.json`: post-P16 Helper
+  simplification, typed rules, configurable combat surfaces, spell-state
+  correctness, unified UX, shared pure contracts, and canary/rollback plan.
 - `../docs/otclient/P9_CONDITIONS_SHADOW_REPLAY_DESIGN.md`: review-ready P9
   data-only observation/replay contract, still blocked by P8 operational acceptance.
 - `../docs/otclient/P9_CONDITIONS_SHADOW_ACCEPTANCE.md`: strict current-evidence

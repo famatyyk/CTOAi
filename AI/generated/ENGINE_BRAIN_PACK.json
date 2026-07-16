@@ -1,181 +1,93 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-15T14:16:00+00:00",
+  "generated_at": "2026-07-16T18:27:20+00:00",
   "root": "C:\\Users\\zycie\\CTOAi",
   "pack_path": "AI\\generated\\ENGINE_BRAIN_PACK.md",
-  "profile": "control-center",
+  "profile": "control-central",
   "include_generated": true,
   "max_chars_per_file": 45000,
   "sections": [
     {
       "path": "AI/README.md",
       "included": true,
-      "bytes": 2927,
+      "bytes": 3145,
       "truncated": false,
-      "reason": ""
-    },
-    {
-      "path": "AI/ENGINE_BRAIN_STATUS.md",
-      "included": true,
-      "bytes": 148910,
-      "truncated": true,
-      "reason": ""
-    },
-    {
-      "path": "AI/FEATURE_ROADMAP.md",
-      "included": true,
-      "bytes": 77693,
-      "truncated": true,
-      "reason": ""
-    },
-    {
-      "path": "AI/P8_P16_EXECUTION_ROADMAP.md",
-      "included": true,
-      "bytes": 40971,
-      "truncated": false,
-      "reason": ""
-    },
-    {
-      "path": "AI/API_INDEX.md",
-      "included": true,
-      "bytes": 3125,
-      "truncated": false,
-      "reason": ""
-    },
-    {
-      "path": "AI/ARCHITECTURE_INDEX.md",
-      "included": true,
-      "bytes": 2492,
-      "truncated": false,
-      "reason": ""
-    },
-    {
-      "path": "docs/CTOA_CLI.md",
-      "included": true,
-      "bytes": 7772,
-      "truncated": false,
-      "reason": ""
-    },
-    {
-      "path": "docs/P7_ROADMAP_STATE_REFRESH_DESIGN.md",
-      "included": true,
-      "bytes": 3717,
-      "truncated": false,
-      "reason": ""
-    },
-    {
-      "path": "docs/otclient/P14_INDEPENDENT_RUNNER_CONTRACT.md",
-      "included": true,
-      "bytes": 3412,
-      "truncated": false,
-      "reason": ""
-    },
-    {
-      "path": "docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md",
-      "included": true,
-      "bytes": 10327,
-      "truncated": false,
-      "reason": ""
+      "reason": "",
+      "critical_markers": []
     },
     {
       "path": "AI/generated/manifest.json",
       "included": true,
-      "bytes": 2006,
+      "bytes": 1991,
       "truncated": false,
-      "reason": ""
+      "reason": "",
+      "critical_markers": []
     },
     {
       "path": "AI/generated/ENV_DOCTOR.md",
       "included": true,
-      "bytes": 1242,
+      "bytes": 1241,
       "truncated": false,
-      "reason": ""
-    },
-    {
-      "path": "AI/generated/OWNERSHIP_MAP.md",
-      "included": true,
-      "bytes": 6793,
-      "truncated": false,
-      "reason": ""
+      "reason": "",
+      "critical_markers": []
     },
     {
       "path": "AI/generated/DOC_SYNC.md",
       "included": true,
       "bytes": 667,
       "truncated": false,
-      "reason": ""
+      "reason": "",
+      "critical_markers": []
     },
     {
       "path": "AI/generated/SECRET_GUARDRAIL.md",
       "included": true,
       "bytes": 524,
       "truncated": false,
-      "reason": ""
+      "reason": "",
+      "critical_markers": []
     },
     {
       "path": "AI/generated/P6_CODEX_INTEGRATION_READINESS.md",
       "included": true,
-      "bytes": 6849,
+      "bytes": 11456,
       "truncated": false,
-      "reason": ""
+      "reason": "",
+      "critical_markers": []
     },
     {
       "path": "AI/generated/P7_OPERATOR_WORKFLOW.md",
       "included": true,
-      "bytes": 2973,
+      "bytes": 3186,
       "truncated": false,
-      "reason": ""
+      "reason": "",
+      "critical_markers": []
     },
     {
       "path": "AI/generated/P7_ACTION_READINESS.md",
       "included": true,
-      "bytes": 1120,
+      "bytes": 1148,
       "truncated": false,
-      "reason": ""
+      "reason": "",
+      "critical_markers": []
     },
     {
       "path": "AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.md",
       "included": true,
       "bytes": 1988,
       "truncated": false,
-      "reason": ""
+      "reason": "",
+      "critical_markers": []
     },
     {
       "path": "AI/generated/P7_OPERATOR_BRIEF.md",
       "included": true,
-      "bytes": 2089,
+      "bytes": 2034,
       "truncated": false,
-      "reason": ""
-    },
-    {
-      "path": "AI/generated/ROADMAP_STATE.json",
-      "included": true,
-      "bytes": 17137,
-      "truncated": false,
-      "reason": ""
-    },
-    {
-      "path": "AI/generated/ROADMAP_STATE.md",
-      "included": true,
-      "bytes": 2721,
-      "truncated": false,
-      "reason": ""
-    },
-    {
-      "path": "AI/generated/FILE_TREE.md",
-      "included": true,
-      "bytes": 80033,
-      "truncated": true,
-      "reason": ""
-    },
-    {
-      "path": "AI/generated/SYMBOL_MAP.md",
-      "included": true,
-      "bytes": 333413,
-      "truncated": true,
-      "reason": ""
+      "reason": "",
+      "critical_markers": []
     }
   ],
-  "included_count": 24,
-  "truncated_count": 4
+  "included_count": 10,
+  "truncated_count": 0
 }

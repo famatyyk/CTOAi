@@ -14,7 +14,8 @@ def test_module_audit_tracks_remaining_function_modularization_pressure():
 
     assert result.name == "otclient-helper-module-audit"
     assert result.status == "ready"
-    assert result.helper_line_count <= result.helper_line_budget
+    assert result.helper_line_count <= 4000
+    assert result.helper_function_count <= 110
     assert result.helper_line_budget == 4500
     assert result.helper_function_budget == 130
     assert result.helper_budget_status == "within_budget"
@@ -25,6 +26,9 @@ def test_module_audit_tracks_remaining_function_modularization_pressure():
     assert result.prototype_count >= 4
     assert result.registry_count == 9
     assert result.registry_missing == []
+    assert result.single_reference_local_candidates == []
+    assert result.duplicate_config_surfaces == []
+    assert result.rigid_behavior_findings == []
     assert result.next_extraction_id == ""
     assert result.next_supplemental_id == ""
     assert len(result.extraction_plan) == 6
@@ -197,6 +201,11 @@ def test_module_audit_writes_atomic_json_and_plan(tmp_path: Path):
     plan = plan_out.read_text(encoding="utf-8")
 
     assert payload["status"] == "ready"
+    assert payload["helper_line_count"] <= 4000
+    assert payload["helper_function_count"] <= 110
+    assert payload["single_reference_local_candidates"] == []
+    assert payload["duplicate_config_surfaces"] == []
+    assert payload["rigid_behavior_findings"] == []
     assert payload["next_module_id"] == "conditions"
     assert payload["next_extraction_id"] == ""
     assert payload["next_supplemental_id"] == ""

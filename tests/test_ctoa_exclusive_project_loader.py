@@ -204,7 +204,7 @@ assert(CTOA_SAFE.terminate()==true)
 def test_official_package_stages_only_the_neutral_root_loader() -> None:
     source = WRAPPER.read_text(encoding="utf-8")
     package = source.split("function Get-DevPackageFiles", 1)[1].split(
-        "function Get-LiveLegacyFiles", 1
+        "function Get-DevPackageSourcePath", 1
     )[0]
     assert '"ctoa_project_loader.lua"' in package
     assert '"mods/ctoa_chooser/ctoa_chooser.otmod"' in package
@@ -212,14 +212,20 @@ def test_official_package_stages_only_the_neutral_root_loader() -> None:
     assert '"mods/ctoa_safe/' not in package
     assert '\n        "ctoa_otclient_loader.lua",' not in package
     staging = source.split("function New-DevPackage", 1)[1].split(
-        "function Invoke-ValidateDev", 1
+        "function Invoke-DevValidation", 1
     )[0]
-    assert '"ctoa_safe.otmod", "ctoa_safe_loader.lua", "ctoa_safe_helper.lua"' in staging
-    assert '"helper.otui", "spell.otui", "siolist.otui", "shooterPreset.otui"' in staging
+    assert '"ctoa_safe.otmod", "ctoa_safe_loader.lua", "ctoa_safe_helper.lua"' not in staging
+    assert '"helper.otui", "spell.otui", "siolist.otui", "shooterPreset.otui"' not in staging
     assert r"scripts\lua\ctoa_chooser\$name" in staging
     assert "local loader = '/ctoa_project_loader.lua'" in source
     assert "CTOA_PROJECT_LOADER.init()" in source
     assert "/XD ctoa_otclient ctoa_chooser ctoa_safe" in source
+    sync = source.split("function Sync-CtoaRuntimeFiles", 1)[1].split(
+        "function Ensure-CtoaBootHook", 1
+    )[0]
+    assert "Assert-SandboxClientPath -SandboxPath $ClientDir" in sync
+    assert "Remove-Item -LiteralPath $safeDir -Recurse -Force" in sync
+    assert 'StageRelative "mods\\ctoa_safe\\$name"' not in sync
     fallbacks = source.split("function Get-LiveLegacyFiles", 1)[1].split(
         "function Copy-LegacyHelperUserState", 1
     )[0]

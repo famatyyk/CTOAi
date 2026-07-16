@@ -1,15 +1,17 @@
 # CTOAi P13 Roadmap State
 
-Generated at: `2026-07-15T17:14:01.672603Z`
-State SHA-256: `401ef95b53dd3ef677fd44327b9fa168b70c738c70a4daffb4857770ee783f1c`
+Generated at: `2026-07-16T18:22:52.727961Z`
+State SHA-256: `094e472084b3e12bb89bdc52446219d3c5104f1764ff60d4b8c6f763e820317d`
 Status: `ready`
+Readiness: `awaiting_external`
 Phase: `P13` / `runtime_evidence_ready`; next `P14`.
 Freshness: `current`; tamper: `passed`.
 
 ## Authority Boundary
 
 - Control Center is read-only.
-- No runtime executor, runtime action, MCP write tool, or live authority is introduced.
+- The bounded roadmap refresh tool is enabled as `safe_write` for fixed outputs only.
+- No runtime executor, runtime action, runtime MCP write tool, or live authority is introduced.
 - P12 Heal Friend remains closed and is not reopened.
 
 ## Decision / Result Ledger
@@ -32,12 +34,16 @@ Freshness: `current`; tamper: `passed`.
 
 ## Source Health
 
-- `feature_roadmap`: contract `passed`, freshness `timeless`, source `AI/FEATURE_ROADMAP.md`.
-- `engine_brain_manifest`: contract `passed`, freshness `current`, source `AI/generated/manifest.json`.
-- `operator_brief`: contract `passed`, freshness `current`, source `AI/generated/P7_OPERATOR_BRIEF.json`.
-- `helper_manifest`: contract `passed`, freshness `current`, source `runtime/solteria_helper_dev/manifest.json`.
-- `runtime_module_gates`: contract `passed`, freshness `current`, source `runtime/solteria_helper_dev/runtime_module_gates_sandbox_smoke.json`.
+- `feature_roadmap` (required): contract `passed`, availability `available`, freshness `timeless`, source `AI/FEATURE_ROADMAP.md`.
+- `engine_brain_manifest` (required): contract `passed`, availability `available`, freshness `current`, source `AI/generated/manifest.json`.
+- `operator_brief` (required): contract `passed`, availability `available`, freshness `current`, source `AI/generated/P7_OPERATOR_BRIEF.json`.
+- `helper_manifest` (required): contract `passed`, availability `available`, freshness `current`, source `runtime/solteria_helper_dev/manifest.json`.
+- `runtime_module_gates` (advisory): contract `pending`, availability `awaiting_external`, freshness `stale`, source `runtime/solteria_helper_dev/runtime_module_gates_sandbox_smoke.json`.
+
+## Pending External Evidence
+
+- `runtime_module_gates_pending`
 
 ## Next Action
 
-Consume this P13 state read-only in Control Center; keep runtime, live authority, MCP writes, and the closed P12 Heal Friend lane unchanged.
+Refresh the pending P14 sandbox evidence when an in-world session is available; the P13 ledger and bounded roadmap refresh remain operational.

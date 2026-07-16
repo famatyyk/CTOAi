@@ -623,13 +623,23 @@ safe-write tool requires a separate review; the P7 tool count does not grow here
 
 Objective: move visual and in-world regression work away from the user's only screen.
 
-Status: `foundation_in_progress`. The v1 signed artifact-only request/result
+Status: `foundation_ready_operational_hardening_required`. The v1 signed artifact-only request/result
 contract, tracked-source Helper manifest derivation, clean-checkout/revision binding,
 tamper/path-confinement tests, deterministic manifest rollback replay, and clean
 Windows CI job are implemented. This foundation launches no client, uses no operator
 workstation focus/input, grants no promotion/live authority, and adds no MCP tool.
-P14 remains open until a real second machine/VM returns matching signed evidence and
-completes isolated visual/in-world plus actual canary/rollback rehearsals.
+A signed capability-driven acceptance request/report/result contract is also
+implemented for isolated visual, in-world, canary, and rollback proof. It accepts
+partial capability evidence, derives only bounded blocker codes, binds every result
+to the runner request/result hashes, and exports only status/count projections to
+Control Central; the workflow prepares a request but never fabricates an acceptance
+report or result.
+A matching second runner is online and has returned structurally valid,
+signature-verified, clean-checkout and rollback-replay evidence. Its result targets
+an older revision; the protected environment also lacks a required reviewer and
+still permits administrator bypass. P14 remains open until those controls pass, a
+current signed replay returns, and isolated visual/in-world plus actual
+canary/rollback rehearsals complete.
 
 Deliverables: second-machine/VM runner contract, artifact-only handoff, CI schema and
 replay checks, signed manifest/evidence bundle, canary/rollback evidence, and explicit
@@ -659,11 +669,18 @@ detection, and kill switch. `autoWalk` and live movement remain forbidden.
 
 ## Beyond P16
 
-Only accepted low-risk lanes may enter an explicit live-canary program. Combat and
-CaveBot require separate canaries and must never be opened by a generic static gate.
-TFS/protocol indexing remains read-only until real source is supplied. Multi-client
-or hosted operation starts only after provenance, tenancy, secrets, rollback, and
-operator-authorization models have their own evidence-backed phase.
+The concrete continuation is defined by
+`AI/P17_P24_HELPER_EVOLUTION_ROADMAP.md` and its machine-readable JSON
+companion. P17 simplifies ownership before new feature growth; P18 introduces a
+typed action/condition engine; P19-P20 rebuild configurable targeting, magic
+shooter and spell-state correctness; P21-P23 cover profiles, unified UX and
+pure cross-project contracts; P24 binds replay, canary and rollback evidence.
+
+Only accepted low-risk lanes may enter that sequence's explicit live-canary
+program. Combat and CaveBot require separate canaries and must never be opened
+by a generic static gate. P17 static refactoring may begin during P14, but
+runtime acceptance beyond the current state still requires P14 completion.
+TFS/protocol indexing remains read-only until real source is supplied.
 
 ## Commit And Release Boundaries
 

@@ -34,6 +34,11 @@ def _copy_inputs(destination: Path) -> None:
         target = destination / relative
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source, target)
+    operator_brief_path = destination / roadmap.SOURCE_HEALTH_PATHS["operator_brief"]
+    operator_brief = json.loads(operator_brief_path.read_text(encoding="utf-8"))
+    operator_brief["status"] = "ready"
+    operator_brief["hard_blockers"] = []
+    operator_brief_path.write_text(json.dumps(operator_brief), encoding="utf-8")
 
 
 def _now() -> datetime:
@@ -61,10 +66,12 @@ def test_committed_p13_contract_and_state_are_self_validating() -> None:
     )
     assert hashlib.sha256(registry_raw).hexdigest() == roadmap.REGISTRY_V1_SHA256
     assert hashlib.sha256(state_schema_raw).hexdigest() == roadmap.STATE_SCHEMA_SHA256
+    assert state["schema_version"] == "ctoa.roadmap-state.v2"
     assert state["phase"] == "P13"
     assert state["phase_status"] == "runtime_evidence_ready"
     assert state["next_phase"] == "P14"
     assert state["blockers"] == []
+    assert state["readiness_status"] in {"ready", "awaiting_external"}
     assert state["state_sha256"] == roadmap._canonical_sha256(
         {key: value for key, value in state.items() if key != "state_sha256"}
     )
@@ -115,7 +122,9 @@ def test_p13_state_schema_registry_and_ledger_are_complete(tmp_path: Path) -> No
         "runtime_actions": False,
         "live_authority": False,
         "p12_heal_friend_reopened": False,
-        "mcp_write_tool_enabled": False,
+        "runtime_mcp_write_tool_enabled": False,
+        "roadmap_refresh_tool_enabled": True,
+        "roadmap_refresh_risk_class": "safe_write",
         "allowed_output_paths": roadmap.ALLOWED_OUTPUT_PATHS,
     }
     serialized = json.dumps(state).lower()
@@ -144,6 +153,66 @@ def test_dry_run_writes_only_sanitized_audit(tmp_path: Path) -> None:
     assert "secret-value" not in audit
     assert "legacy-password" not in audit
     assert "[redacted]" in audit
+
+
+def test_future_sandbox_gate_is_advisory_not_a_p13_outage(tmp_path: Path) -> None:
+    _copy_inputs(tmp_path)
+    gate_path = tmp_path / roadmap.SOURCE_HEALTH_PATHS["runtime_module_gates"]
+    gate = json.loads(gate_path.read_text(encoding="utf-8"))
+    gate["status"] = "blocked"
+    gate["failed"] = ["interactive_session_required"]
+    gate_path.write_text(json.dumps(gate), encoding="utf-8")
+
+    state = roadmap.build_state(tmp_path, now=_now())
+
+    gate_health = next(
+        item for item in state["source_health"] if item["name"] == "runtime_module_gates"
+    )
+    assert state["status"] == "ready"
+    assert state["readiness_status"] == "awaiting_external"
+    assert state["blockers"] == []
+    assert state["warnings"] == ["runtime_module_gates_pending"]
+    assert gate_health["impact"] == "advisory"
+    assert gate_health["availability"] == "awaiting_external"
+    assert gate_health["contract_status"] == "pending"
+
+
+def test_generated_plugin_cache_gap_is_advisory_during_safe_bootstrap(
+    tmp_path: Path,
+) -> None:
+    _copy_inputs(tmp_path)
+    brief_path = tmp_path / roadmap.SOURCE_HEALTH_PATHS["operator_brief"]
+    brief = json.loads(brief_path.read_text(encoding="utf-8"))
+    brief["status"] = "needs_attention"
+    brief["hard_blockers"] = [
+        "p6_readiness_status",
+        "p6:ctoai_plugin_installed_cache",
+        "p7_operator_workflow_status",
+    ]
+    brief_path.write_text(json.dumps(brief), encoding="utf-8")
+
+    state = roadmap.build_state(tmp_path, now=_now())
+
+    assert state["status"] == "ready"
+    assert state["readiness_status"] == "awaiting_external"
+    assert state["blockers"] == []
+    assert "control_center_preflight_pending" in state["warnings"]
+    assert state["control_center_preflight"]["ready"] is True
+    assert state["control_center_preflight"]["hard_blockers"] == []
+
+
+def test_unrecognized_operator_blocker_still_fails_closed(tmp_path: Path) -> None:
+    _copy_inputs(tmp_path)
+    brief_path = tmp_path / roadmap.SOURCE_HEALTH_PATHS["operator_brief"]
+    brief = json.loads(brief_path.read_text(encoding="utf-8"))
+    brief["status"] = "needs_attention"
+    brief["hard_blockers"] = ["untrusted_runtime_authority"]
+    brief_path.write_text(json.dumps(brief), encoding="utf-8")
+
+    state = roadmap.build_state(tmp_path, now=_now())
+
+    assert state["status"] == "blocked"
+    assert "control_center_preflight:untrusted_runtime_authority" in state["blockers"]
 
 
 def test_confirmed_refresh_writes_atomic_json_markdown_and_hash_audit(

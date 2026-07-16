@@ -12,6 +12,7 @@ LUA_DIR = ROOT / "scripts" / "lua" / "otclient"
 LOADER = LUA_DIR / "ctoa_otclient_loader.lua"
 OTMOD = LUA_DIR / "ctoa_otclient.otmod"
 HELPER = LUA_DIR / "ctoa_native_helper.lua"
+PROFILE_SCHEMA = LUA_DIR / "ctoa_helper_profile_schema.lua"
 
 
 def test_otmod_uses_native_cross_fork_metadata_contract() -> None:
@@ -49,8 +50,11 @@ def test_loader_has_no_focus_input_or_runtime_dispatch_surface() -> None:
 
 def test_native_helper_safe_start_is_hidden_and_message_mode_adaptive() -> None:
     source = HELPER.read_text(encoding="utf-8")
+    defaults = PROFILE_SCHEMA.read_text(encoding="utf-8")
 
-    assert "auto_show_window = false" in source
+    assert "auto_show_window = false" in defaults
+    assert "local HELPER_CONFIG = {" not in source
+    assert "pcall(externalProfileSchema.defaultProfile)" in source
     assert "modes.Status or modes.ModeStatus" in source
     build_ui = source[
         source.index("buildUi = function()") : source.index("function toggleWindow")
@@ -236,7 +240,11 @@ dofile(base .. "/ctoa_helper_modules.lua")
 local manifest = CTOA_HELPER_MODULES.getSupportModules()
 local valid, errors = CTOA_HELPER_MODULES.validateSupportModules(manifest)
 assert(valid, table.concat(errors or {{}}, ";"))
-for _, module in ipairs(manifest) do dofile(base .. "/" .. module.file) end
+local loadedModules = {{}}
+for _, module in ipairs(manifest) do
+  dofile(base .. "/" .. module.file)
+  loadedModules[module.name] = true
+end
 local bridge = CTOA_HELPER_RECOVERY_BRIDGE
 local armed = bridge.arm({{
   session_id = "stale-session", sandbox = true,
@@ -246,7 +254,8 @@ assert(armed == true and bridge.snapshot().armed == true)
 dofile(base .. "/ctoa_native_helper.lua")
 
 io.open, os.remove, os.rename = realOpen, realRemove, realRename
-assert(#manifest == 49)
+assert(loadedModules["ctoa_helper_rule_engine"] == true)
+assert(loadedModules["ctoa_helper_spell_state_registry"] == true)
 assert(actionCalls == 0, "loader-time action call")
 assert(type(CTOA_Helper) == "table")
 assert(CTOA_Helper.config.enabled == false)

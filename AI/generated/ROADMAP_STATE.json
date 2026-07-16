@@ -7,10 +7,12 @@
     ],
     "control_center_mode": "read_only",
     "live_authority": false,
-    "mcp_write_tool_enabled": false,
     "p12_heal_friend_reopened": false,
+    "roadmap_refresh_risk_class": "safe_write",
+    "roadmap_refresh_tool_enabled": true,
     "runtime_actions": false,
-    "runtime_executor_added": false
+    "runtime_executor_added": false,
+    "runtime_mcp_write_tool_enabled": false
   },
   "blockers": [],
   "control_center_preflight": {
@@ -22,10 +24,10 @@
     "status": "ready"
   },
   "freshness_status": "current",
-  "generated_at": "2026-07-15T17:14:01.672603Z",
+  "generated_at": "2026-07-16T18:22:52.727961Z",
   "ledger": [
     {
-      "age_seconds": 176,
+      "age_seconds": 90707,
       "attempt_count": null,
       "bindings": [],
       "blockers": [],
@@ -48,14 +50,14 @@
       "ordinal": 8,
       "phase": "P8",
       "predecessor_ids": [],
-      "previous_evidence_sha256": "97df52ac6064aa4bce7a736e2d580c5136c2c6b3138a262cff97a04a7bab5d51",
+      "previous_evidence_sha256": "f871b64e7c1981c591b3013ab2b3560417e3bdc26c5aae4d74949bcb6501df78",
       "result_status": "operational_acceptance_complete",
       "retry_scheduled": null,
       "runtime_actions": false,
       "terminal": true
     },
     {
-      "age_seconds": 80910,
+      "age_seconds": 171441,
       "attempt_count": null,
       "bindings": [
         {
@@ -96,7 +98,7 @@
       "terminal": true
     },
     {
-      "age_seconds": 45230,
+      "age_seconds": 135761,
       "attempt_count": null,
       "bindings": [
         {
@@ -137,7 +139,7 @@
       "terminal": true
     },
     {
-      "age_seconds": 41847,
+      "age_seconds": 132379,
       "attempt_count": null,
       "bindings": [
         {
@@ -178,7 +180,7 @@
       "terminal": true
     },
     {
-      "age_seconds": 36550,
+      "age_seconds": 127081,
       "attempt_count": 1,
       "bindings": [
         {
@@ -235,7 +237,7 @@
       "terminal": true
     },
     {
-      "age_seconds": 24068,
+      "age_seconds": 114599,
       "attempt_count": 1,
       "bindings": [
         {
@@ -292,7 +294,7 @@
       "terminal": true
     },
     {
-      "age_seconds": 18361,
+      "age_seconds": 108892,
       "attempt_count": 0,
       "bindings": [
         {
@@ -350,11 +352,12 @@
       "terminal": true
     }
   ],
-  "next_action": "Consume this P13 state read-only in Control Center; keep runtime, live authority, MCP writes, and the closed P12 Heal Friend lane unchanged.",
+  "next_action": "Refresh the pending P14 sandbox evidence when an in-world session is available; the P13 ledger and bounded roadmap refresh remain operational.",
   "next_phase": "P14",
   "phase": "P13",
   "phase_status": "runtime_evidence_ready",
-  "previous_state_sha256": "c0f457006235f61f5d31bd13a69398513093c3ba3fb1b7a73d242cec090fb003",
+  "previous_state_sha256": "b6e5f455c30740b8215020bcc59e2f3b0a6d56d0b687835159321e4fbe8167de",
+  "readiness_status": "awaiting_external",
   "schema_registry": {
     "entry_count": 7,
     "path": "schemas/ctoa-roadmap-schema-registry.v1.json",
@@ -365,55 +368,65 @@
     "sha256": "c3dd65689219229de0a5d5bcda50f7b60779ad8cc6ea0262dc73386c7ae17fb2",
     "status": "passed"
   },
-  "schema_version": "ctoa.roadmap-state.v1",
+  "schema_version": "ctoa.roadmap-state.v2",
   "source_health": [
     {
       "age_seconds": null,
+      "availability": "available",
       "contract_status": "passed",
       "freshness_status": "timeless",
+      "impact": "required",
       "load_status": "loaded",
       "name": "feature_roadmap",
       "path": "AI/FEATURE_ROADMAP.md",
-      "sha256": "b21aac2007787acfa5b2eeea1c924b74b8e75161b53e562495cceb23722c3f6c"
+      "sha256": "794f54bb681ae9fff7b0466f7f761acc99f426abf17d4402b925567eedc50f87"
     },
     {
-      "age_seconds": 709,
+      "age_seconds": 182,
+      "availability": "available",
       "contract_status": "passed",
       "freshness_status": "current",
+      "impact": "required",
       "load_status": "loaded",
       "name": "engine_brain_manifest",
       "path": "AI/generated/manifest.json",
-      "sha256": "68a533d011e3bbcb51099f50068aa6d00d8be66d5ee95c681bae78645fdd73c1"
+      "sha256": "f2089eb9563fac123e5767f63fd20f545a1d4212e0e005f85648dc6063e7fc3a"
     },
     {
-      "age_seconds": 709,
+      "age_seconds": 182,
+      "availability": "available",
       "contract_status": "passed",
       "freshness_status": "current",
+      "impact": "required",
       "load_status": "loaded",
       "name": "operator_brief",
       "path": "AI/generated/P7_OPERATOR_BRIEF.json",
-      "sha256": "aba66377c3264bd4af41a74a392211eb343763bbfbfe0be3ecde1f073a0df17b"
+      "sha256": "f779e232f579c8e55abe9889b9d78c00c83fbe0ed2846bad000dba5e678b49a0"
     },
     {
       "age_seconds": 0,
+      "availability": "available",
       "contract_status": "passed",
       "freshness_status": "current",
+      "impact": "required",
       "load_status": "loaded",
       "name": "helper_manifest",
       "path": "runtime/solteria_helper_dev/manifest.json",
-      "sha256": "c970dd86326ea30ce9fd72f22b3d150fc7eb99bb267ec767e258201eba73c8ab"
+      "sha256": "4a9418472babbe9a99d242363ca351e26c311e104a310b08dc7032631bf24be5"
     },
     {
-      "age_seconds": 849,
-      "contract_status": "passed",
-      "freshness_status": "current",
+      "age_seconds": 91380,
+      "availability": "awaiting_external",
+      "contract_status": "pending",
+      "freshness_status": "stale",
+      "impact": "advisory",
       "load_status": "loaded",
       "name": "runtime_module_gates",
       "path": "runtime/solteria_helper_dev/runtime_module_gates_sandbox_smoke.json",
       "sha256": "f22c309f1145ae51c2e3654cd1345ec2fe41ef5a8495792cc23a70e0ec8e1b2b"
     }
   ],
-  "state_sha256": "401ef95b53dd3ef677fd44327b9fa168b70c738c70a4daffb4857770ee783f1c",
+  "state_sha256": "094e472084b3e12bb89bdc52446219d3c5104f1764ff60d4b8c6f763e820317d",
   "status": "ready",
   "summary": {
     "accepted_count": 6,
@@ -425,5 +438,8 @@
     "tampered_count": 0,
     "total_attempt_count": 2
   },
-  "tamper_status": "passed"
+  "tamper_status": "passed",
+  "warnings": [
+    "runtime_module_gates_pending"
+  ]
 }

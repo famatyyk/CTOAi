@@ -54,14 +54,17 @@ write tool, live authority, or P12 Heal Friend reopening. Historical compatibili
 `ready_for_sandbox_session_approval`, and P12 Heal Friend is `not_started` are
 superseded; they remain only for older read-only cockpit checks.
 
-P14 is active with status `foundation_in_progress`. The versioned signed
+P14 is active with status `foundation_ready_operational_hardening_required`. The versioned signed
 artifact-only request/result contract derives the official 63-file Helper
 manifest from tracked sources, binds a clean checkout and exact revision, rejects
 tamper/path drift, replays a deterministic manifest rollback, runs in a clean
 Windows CI contract job, and is exposed read-only through Release Evidence and
-Control Center. No real second-machine result, visual/in-world suite, canary,
-actual rollback, promotion, runtime/live authority, or additional MCP tool is
-claimed; P15 remains closed.
+Control Center. A matching second runner is online and returned structurally
+valid, signature-verified, clean-checkout, authority-safe rollback-replay evidence.
+The result targets an older revision; a required environment reviewer is missing
+and administrator bypass remains enabled. No current-revision result,
+visual/in-world suite, canary, actual rollback, promotion, runtime/live authority,
+or additional MCP tool is claimed; P15 remains closed.
 
 ## Completed In This Brain
 
@@ -339,8 +342,9 @@ claimed; P15 remains closed.
   workspace audit and canonical docs.
 - Engine Brain indexing now prunes excluded volatile directories before
   traversal and tolerates disappearing build paths such as `web/.next/*`.
-- `brain pack` now supports context profiles: `all`, `helper`,
-  `control-center`, `infra`, and `security`.
+- `brain pack` now supports context profiles: `all`, `control-central`,
+  `helper`, `control-center`, `infra`, and `security`. `control-central` is the
+  minimal daily handoff and omits the large file-tree/symbol-map summaries.
 - Local Codex skill `ctoa-engine-brain` added under
   `C:\Users\zycie\.codex\skills\ctoa-engine-brain` and validated with the
   skill creator quick validator.
@@ -370,8 +374,15 @@ claimed; P15 remains closed.
   `AI/generated/P7_OPERATOR_BRIEF.json`, P7 cockpit smoke evidence, and bounded
   Control Center action-audit drilldown status without running refresh, deploy,
   or live-client actions.
+- The local plugin now includes token-efficient Control Central script
+  `scripts/ctoai_control_central.py`, exposed through MCP as
+  `ctoai_control_central`. Its compact default unifies `brain`,
+  `control-center`, `plugin-management`, and `sites`, reports the source/output
+  payload size and estimated token reduction, and includes raw drilldown only
+  for an explicitly selected lane with `detail=full`.
 - The local plugin now includes read-only MCP server
-  `scripts/ctoai_engine_brain_mcp.py`. It exposes four read-only tools
+  `scripts/ctoai_engine_brain_mcp.py`. It exposes the compact
+  `ctoai_control_central` entrypoint, four compatibility read-only tools
   (`ctoai_engine_brain_status`, `ctoai_engine_brain_self_check`,
   `ctoai_engine_brain_brief`, `ctoai_control_center_cockpit`) plus five
   dry-run-first safe-write refresh tools for repo hygiene, API cost, evidence
@@ -386,7 +397,7 @@ claimed; P15 remains closed.
   plugin MCP server to be loaded.
 - `brain refresh` now also generates `AI/generated/P7_OPERATOR_WORKFLOW.md` and
   `AI/generated/P7_OPERATOR_WORKFLOW.json` as the P7 risk gate. It reports
-  the allowed read-only cockpit/status tools, the five audited safe-write
+  the allowed Control Central and compatibility read-only tools, the five audited safe-write
   refresh tools, and blocked `guarded_write`, `dangerous`, and
   `forbidden_ui` action classes.
 - `brain refresh` now generates `AI/generated/P7_ACTION_READINESS.md` and

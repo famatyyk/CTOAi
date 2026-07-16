@@ -28,6 +28,9 @@ if str(ROOT) not in sys.path:
 from runner import process_safety  # noqa: E402
 
 DEFAULT_RUNTIME_OUT = ROOT / "runtime" / "audits" / "ctoai-full-workspace-audit.json"
+DEFAULT_RUNTIME_SUMMARY_OUT = (
+    ROOT / "runtime" / "audits" / "ctoai-full-workspace-audit-summary.json"
+)
 DEFAULT_VALIDATION_IN = (
     ROOT / "runtime" / "audits" / "ctoai-full-workspace-validation.json"
 )
@@ -712,11 +715,30 @@ def render_plans_markdown(inventory: dict[str, Any]) -> str:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--json-out", type=Path, default=DEFAULT_RUNTIME_OUT)
+    parser.add_argument(
+        "--summary-json-out", type=Path, default=DEFAULT_RUNTIME_SUMMARY_OUT
+    )
     parser.add_argument("--validation-json", type=Path, default=DEFAULT_VALIDATION_IN)
     parser.add_argument("--audit-md-out", type=Path, default=DEFAULT_MARKDOWN_OUT)
     parser.add_argument("--plans-md-out", type=Path, default=DEFAULT_PLANS_OUT)
     parser.add_argument("--max-hash-bytes", type=int, default=2_000_000)
     return parser.parse_args()
+
+
+def build_compact_summary(inventory: dict[str, object]) -> dict[str, object]:
+    return {
+        key: inventory[key]
+        for key in (
+            "schema_version",
+            "generated_at_utc",
+            "root",
+            "coverage",
+            "counts_by_category",
+            "bytes_by_category",
+            "audit_gate",
+        )
+        if key in inventory
+    }
 
 
 def main() -> int:
@@ -726,6 +748,11 @@ def main() -> int:
 
     args.json_out.parent.mkdir(parents=True, exist_ok=True)
     args.json_out.write_text(json.dumps(inventory, indent=2), encoding="utf-8")
+    compact_summary = build_compact_summary(inventory)
+    args.summary_json_out.parent.mkdir(parents=True, exist_ok=True)
+    args.summary_json_out.write_text(
+        json.dumps(compact_summary, indent=2), encoding="utf-8"
+    )
 
     args.audit_md_out.parent.mkdir(parents=True, exist_ok=True)
     args.audit_md_out.write_text(
@@ -739,13 +766,14 @@ def main() -> int:
     print(
         json.dumps(
             {
-                k: inventory[k]
+                k: compact_summary[k]
                 for k in ["generated_at_utc", "root", "coverage", "counts_by_category"]
             },
             indent=2,
         )
     )
     print(f"JSON audit written to: {args.json_out}")
+    print(f"Compact audit summary written to: {args.summary_json_out}")
     print(f"Markdown audit written to: {args.audit_md_out}")
     print(f"Development plans written to: {args.plans_md_out}")
     return 0

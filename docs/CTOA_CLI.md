@@ -48,7 +48,7 @@ Run from repository root:
 - `otp10refresh` - refresh the complete fixed repo-only P10 operator chain through strict consumer parity; accepts no paths, IDs, confirmation, acceptance, replay, client-control, or local-profile-write inputs
 - `brain refresh` - regenerate secret-safe Engine Brain file tree and symbol map
 - `brain doctor` - run secret-safe Engine Brain environment audit
-- `brain pack [all|helper|control-center|infra|security]` - build a portable secret-safe Engine Brain markdown pack
+- `brain pack [all|control-central|helper|control-center|infra|security]` - build a portable secret-safe Engine Brain markdown pack; `control-central` is the minimal daily operator handoff
 
 ## Practical examples
 
@@ -100,6 +100,7 @@ Run from repository root:
 .\ctoa.ps1 brain refresh
 .\ctoa.ps1 brain doctor
 .\ctoa.ps1 brain pack
+.\ctoa.ps1 brain pack control-central
 .\ctoa.ps1 brain pack helper
 ```
 

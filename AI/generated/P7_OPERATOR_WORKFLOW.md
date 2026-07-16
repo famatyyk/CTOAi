@@ -1,18 +1,19 @@
 # P7 Operator Workflow
 
-Generated at: `2026-07-15T17:14:27+00:00`
-Status: `safe_write_ready`
-Decision: `allow_bounded_safe_write_tools`
+Generated at: `2026-07-16T18:25:57+00:00`
+Status: `blocked`
+Decision: `fix_p6_before_operator_workflow`
 
-P7 operator workflow allows five audited safe_write evidence/context refresh tools. Deploy/live actions stay blocked.
+P7 operator workflow allows six audited safe_write evidence/context refresh tools. Deploy/live actions stay blocked.
 
 Risk model: `docs/CTOAI_COMMAND_RISK_MODEL.md`
-Next safe command: Use ctoai_repo_hygiene_refresh, ctoai_api_cost_refresh, ctoai_evidence_pack_refresh, ctoai_engine_brain_refresh, and ctoai_p7_cockpit_smoke_refresh with dry_run=true before any confirmed refresh.
+Next safe command: Fix P6 readiness before exposing the P7 operator workflow.
 
 ## Allowed MCP Tools
 
 | Tool | Risk | Purpose |
 |---|---|---|
+| `ctoai_control_central` | `read_only` | Return token-efficient brain, Control Center, plugin-management, and sites status with lane-specific drilldown. |
 | `ctoai_engine_brain_status` | `read_only` | Summarize generated Engine Brain, validation, doctor, and pack status. |
 | `ctoai_engine_brain_self_check` | `read_only` | Verify plugin install state and generated workspace evidence. |
 | `ctoai_engine_brain_brief` | `read_only` | Return the generated P7 operator decision and next safe command. |
@@ -22,6 +23,7 @@ Next safe command: Use ctoai_repo_hygiene_refresh, ctoai_api_cost_refresh, ctoai
 | `ctoai_evidence_pack_refresh` | `safe_write` | Dry-run-first refresh of release evidence with Control Center-compatible audit logging. |
 | `ctoai_engine_brain_refresh` | `safe_write` | Dry-run-first refresh of Engine Brain generated context with Control Center-compatible audit logging. |
 | `ctoai_p7_cockpit_smoke_refresh` | `safe_write` | Dry-run-first refresh of P7 cockpit smoke evidence with Control Center-compatible audit logging. |
+| `ctoai_roadmap_state_refresh` | `safe_write` | Native dry-run-first refresh of the adaptive roadmap state with fixed inputs, fixed outputs, and hash-bound audit logging. |
 
 ## Blocked Action Classes
 
@@ -35,7 +37,7 @@ Next safe command: Use ctoai_repo_hygiene_refresh, ctoai_api_cost_refresh, ctoai
 
 - Every plugin tool must have a stable risk class from docs/CTOAI_COMMAND_RISK_MODEL.md.
 - Every write-capable tool must be represented in Control Center action audit before enablement.
-- Only ctoai_repo_hygiene_refresh, ctoai_api_cost_refresh, ctoai_evidence_pack_refresh, ctoai_engine_brain_refresh, and ctoai_p7_cockpit_smoke_refresh may be exposed as safe_write in this wave.
+- Only ctoai_repo_hygiene_refresh, ctoai_api_cost_refresh, ctoai_evidence_pack_refresh, ctoai_engine_brain_refresh, ctoai_p7_cockpit_smoke_refresh, and ctoai_roadmap_state_refresh may be exposed as safe_write in this wave.
 - Every safe-write MCP tool must default to dry-run and append runtime/control-center/action-audit.jsonl.
 - No tool may bypass PromoteLiveCtoa -ApproveLiveDeploy for Solteria Helper live promotion.
 - No tool may read .env, logs, databases, runtime client state, or private Solteria client data into generated context.

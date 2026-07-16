@@ -12,7 +12,21 @@ LOADER = OTCLIENT_DIR / "ctoa_otclient_loader.lua"
 REGISTRY = OTCLIENT_DIR / "ctoa_helper_modules.lua"
 
 
-def test_extracted_route_targeting_and_cavebot_helpers_and_guarded_fallbacks(
+def test_module_bridge_has_no_duplicate_domain_fallbacks_and_saves_fail_closed() -> None:
+    helper = (OTCLIENT_DIR / "ctoa_native_helper.lua").read_text(encoding="utf-8")
+    bridge = helper[helper.index("local function moduleCall") : helper.index("local externalLanes")]
+    profile_save = helper[helper.index("flushProfileSave = function()") : helper.index("local PRIVILEGED_SMOKE_ACTIONS")]
+    ui_save = helper[helper.index("flushUiPrefsSave = function()") : helper.index("local function markProfileDirty")]
+
+    assert "elseif functionName" not in bridge
+    assert "return 99999999" not in bridge
+    assert 'status("Profile save blocked: required profile owner unavailable")' in profile_save
+    assert 'status("UI prefs save blocked: required profile owner unavailable")' in ui_save
+    assert profile_save.index('moduleValue(externalProfileSchema, "serializeLua"') < profile_save.index('io.open(path, "w")')
+    assert ui_save.index('moduleValue(externalProfileSchema, "serializeLua"') < ui_save.index('io.open(path, "w")')
+
+
+def test_extracted_route_targeting_and_cavebot_helpers_fail_closed_without_owner(
     tmp_path: Path,
 ):
     lua = shutil.which("lua")
@@ -43,35 +57,11 @@ assert(moduleValue(cavebot, "cavebotRuntimeText", "missing", "event", {}, "fallb
 assert(moduleValue(cavebot, "cavebotRetryBudgetExceeded", {cavebot_retry_attempts = 3, cavebot_retry_limit = 3}) == true)
 assert(moduleValue(cavebot, "cavebotRetryBudgetExceeded", {cavebot_retry_attempts = 2, cavebot_retry_limit = 3}) == false)
 
-local malformed = {
-  profileSchemaValue = "not-a-function",
-  normalizeHelperHotkey = false,
-  modalRequest = 7,
-}
-assert(moduleValue(nil, "displayProfileName", "Standalone profile") == "Standalone profile")
-assert(moduleValue(malformed, "profileSchemaValue", "missing", false) == false)
-local tableFallback = {fallback = true}
-assert(moduleValue(false, "profileSchemaTable", "missing", tableFallback) == tableFallback)
-assert(moduleValue(42, "profilePersistenceValue", "missing", "fallback") == "fallback")
-assert(moduleValue({}, "profilePersistenceTable", "missing", tableFallback) == tableFallback)
-assert(moduleValue(malformed, "normalizeHelperHotkey", "  Ctrl+J  ") == "Ctrl+J")
-local hotkeyDecision = moduleValue(nil, "hotkeyBindingDecision", " F2 ", " F1 ", {"F2"})
-assert(hotkeyDecision.allowed == false and hotkeyDecision.normalized == "F2" and hotkeyDecision.previous == "F1")
-local request = moduleValue(malformed, "modalRequest", " cavebot_delete ", " waypoint 2 ", 4500, 100)
-assert(request.action == "cavebot_delete" and request.context == "waypoint 2")
-assert(request.requested_at_ms == 100 and request.expires_at_ms == 4600)
-local base = {enabled = false}
-assert(moduleValue(nil, "mergeTable", base, {enabled = true}) == base and base.enabled == false)
-assert(moduleValue(nil, "serializeLua", {enabled = false}, "profile") == "{}")
-local exported = moduleValue(nil, "exportProfile", {schema_version = "ctoa-helper-profile-v1", enabled = true}, "EK")
-assert(exported.name == "EK" and exported.enabled == false and exported.safe_boot_runtime_disabled == true)
-local prefs = moduleValue(nil, "exportUiPrefs", {hotkey = "Ctrl+H"}, {active_tab = "tools"})
-assert(prefs.hotkey == "Ctrl+H" and prefs.active_tab == "tools" and prefs.hud.enabled == false)
-assert(moduleValue(nil, "resolveActionbarSlot", " F2 ", "F3") == "F2")
-assert(moduleValue(nil, "resolveActionbarSlot", nil, " F3 ") == "F3")
-assert(moduleValue(nil, "resolveActionbarSlot", nil, nil) == nil)
-assert(moduleValue(nil, "isFriendlySummonName", "knight familiar", {block_friendly_summons = true}) == true)
-assert(moduleValue(nil, "isFriendlySummonName", "ordinary rat", {block_friendly_summons = true}) == false)
+local malformed = {profileSchemaValue = "not-a-function", normalizeHelperHotkey = false, modalRequest = 7}
+for _, name in ipairs({"displayProfileName", "profileSchemaValue", "profileSchemaTable", "profilePersistenceValue", "normalizeHelperHotkey", "hotkeyBindingDecision", "modalRequest", "mergeTable", "serializeLua", "exportProfile", "exportUiPrefs", "resolveActionbarSlot", "isFriendlySummonName"}) do
+  assert(moduleValue(nil, name, "value") == nil)
+  assert(moduleValue(malformed, name, "value") == nil)
+end
 
 assert(route.contract().owns_distance_chebyshev == true)
 assert(targeting.contract().owns_target_candidate_score == true)
@@ -95,7 +85,7 @@ assert(cavebot.contract().owns_runtime_text_bridge == true)
     assert completed.returncode == 0, completed.stdout + completed.stderr
 
 
-def test_extracted_combat_recovery_registry_and_ui_helpers_with_fallbacks(
+def test_extracted_combat_recovery_registry_and_ui_helpers_fail_closed_without_owner(
     tmp_path: Path,
 ):
     lua = shutil.which("lua")
@@ -146,17 +136,10 @@ assert(registry.moduleTabVisible("conditions", {}, "conditions", {overview = tru
 local context = ui.mergePanelRendererContext({a = 1, b = 1}, {b = 2, c = 3})
 assert(context.a == 1 and context.b == 2 and context.c == 3)
 
-local fallbackGap = moduleValue(nil, "recoveryActionGap", 1200, {last_recovery_action_ms = 1000}, {recovery_action_gap_ms = 250})
-assert(fallbackGap.active == true and fallbackGap.remaining_ms == 50)
 assert(moduleValue(nil, "selectRotationSpell", tools, {adjacent = 3}, 2000) == nil)
-assert(moduleValue(nil, "runeReady", tools, {}) == false)
-assert(moduleValue(nil, "selectHealingSpell", healing, 20, 1) == "exura ico")
-assert(moduleValue(nil, "rotationSummaryText", {}, {}, "fallback") == "fallback")
-assert(moduleValue(nil, "rotationPresetFormatter", {})("raw") == "raw")
-assert(moduleValue(nil, "rebuildModuleLaneIndex", {{id = "combat"}}).combat.id == "combat")
-assert(moduleValue(nil, "moduleTabVisible", "overview", {}, nil, {overview = true}) == true)
-local fallbackContext = moduleValue(nil, "mergePanelRendererContext", {a = 1}, {a = 2})
-assert(fallbackContext.a == 2)
+for _, name in ipairs({"recoveryActionGap", "runeReady", "selectHealingSpell", "rotationSummaryText", "rotationPresetFormatter", "rebuildModuleLaneIndex", "moduleTabVisible", "mergePanelRendererContext"}) do
+  assert(moduleValue(nil, name, {}) == nil)
+end
 
 assert(recovery.contract().owns_recovery_action_gap_bridge == true)
 assert(combat.contract().owns_select_rotation_spell == true)
@@ -189,8 +172,8 @@ def test_module_contract_passes_current_passive_modules():
 
     assert report.name == "otclient-helper-module-contract"
     assert report.status == "passed"
-    assert report.expected_module_count == 32
-    assert report.passed_count == 32
+    assert report.expected_module_count == 34
+    assert report.passed_count == 34
     assert report.failed_count == 0
     assert report.registry_lane_count == 9
     assert report.registry_missing == []
@@ -207,6 +190,7 @@ def test_module_contract_requires_loader_registry_global_and_return():
     for module_id in [
         "modules",
         "domain_contract",
+        "rule_engine",
         "ui",
         "diagnostics",
         "hotkeys",
@@ -1210,7 +1194,7 @@ def test_module_contract_writes_json_and_markdown(tmp_path: Path):
     markdown = plan_out.read_text(encoding="utf-8")
 
     assert payload["status"] == "passed"
-    assert payload["passed_count"] == 32
+    assert payload["passed_count"] == 34
     assert "# Solteria Helper Module Contract" in markdown
     assert "Passive helper modules may observe" in markdown
     assert "otclient_helper_module_contract.py" in markdown

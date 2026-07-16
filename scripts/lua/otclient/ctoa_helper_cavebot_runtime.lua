@@ -164,6 +164,31 @@ function CavebotRuntime.movementCapability(sample)
     }
 end
 
+function CavebotRuntime.movementCapabilityForPlayer(player, safeCall)
+    local available = player ~= nil and type(player.canWalk) == "function"
+    local ok, value = false, nil
+    if available and type(safeCall) == "function" then
+        ok, value = safeCall(player, "canWalk", true)
+    end
+    return CavebotRuntime.movementCapability({
+        available = available,
+        ok = ok,
+        value = value,
+    })
+end
+
+function CavebotRuntime.resetMovementState(tools)
+    if type(tools) ~= "table" then
+        return false
+    end
+    tools.cavebot_retry_attempts = 0
+    tools.cavebot_stuck_ticks = 0
+    tools.cavebot_last_position_key = nil
+    tools.cavebot_last_target_key = nil
+    tools.cavebot_last_stuck_ms = 0
+    return true
+end
+
 function CavebotRuntime.probeMetadata(snapshot)
     local data = type(snapshot) == "table" and snapshot or {}
     local api = type(data.api) == "table" and data.api or {}
@@ -552,6 +577,8 @@ function CavebotRuntime.contract()
         owns_adapter_status_text = true,
         owns_adapter_status_summary = true,
         owns_movement_capability = true,
+        owns_player_movement_capability = true,
+        owns_movement_state_reset = true,
         owns_probe_metadata = true,
         owns_probe_snapshot = true,
         owns_probe_summary_text = true,

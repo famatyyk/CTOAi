@@ -169,7 +169,7 @@
         {
           "properties": {
             "name": {"const": "roadmap_state"},
-            "schema_version": {"const": "ctoa.roadmap-state.v1"},
+            "schema_version": {"const": "ctoa.roadmap-state.v2"},
             "media_type": {"const": "application/json"},
             "bytes": {"type": "integer", "minimum": 1, "maximum": 262144},
             "sha256": {"$ref": "#/$defs/sha256"},

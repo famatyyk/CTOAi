@@ -12,6 +12,7 @@ from jsonschema import Draft202012Validator
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "ops" / "otclient_p14_independent_runner.py"
 WORKFLOW = ROOT / ".github" / "workflows" / "p14-independent-runner-contract.yml"
+CONTRACT_DOC = ROOT / "docs" / "otclient" / "P14_INDEPENDENT_RUNNER_CONTRACT.md"
 SPEC = importlib.util.spec_from_file_location("otclient_p14_independent_runner", SCRIPT)
 assert SPEC and SPEC.loader
 p14 = importlib.util.module_from_spec(SPEC)
@@ -25,21 +26,31 @@ GENERATED_AT = "2026-07-15T14:00:00Z"
 
 def roadmap_state() -> dict[str, object]:
     basis: dict[str, object] = {
-        "schema_version": "ctoa.roadmap-state.v1",
+        "schema_version": "ctoa.roadmap-state.v2",
         "generated_at": "2026-07-15T13:25:55Z",
         "status": "ready",
+        "readiness_status": "awaiting_external",
         "phase": "P13",
         "phase_status": "runtime_evidence_ready",
         "next_phase": "P14",
         "freshness_status": "current",
         "tamper_status": "passed",
         "blockers": [],
+        "warnings": ["runtime_module_gates_pending"],
         "authority": {
+            "control_center_mode": "read_only",
             "runtime_executor_added": False,
             "runtime_actions": False,
             "live_authority": False,
             "p12_heal_friend_reopened": False,
-            "mcp_write_tool_enabled": False,
+            "runtime_mcp_write_tool_enabled": False,
+            "roadmap_refresh_tool_enabled": True,
+            "roadmap_refresh_risk_class": "safe_write",
+            "allowed_output_paths": [
+                "AI/generated/ROADMAP_STATE.json",
+                "AI/generated/ROADMAP_STATE.md",
+                "runtime/control-center/action-audit.jsonl",
+            ],
         },
         "summary": {"runtime_authority_count": 0, "live_authority_count": 0},
     }
@@ -292,7 +303,8 @@ def test_tracked_source_derivation_matches_current_official_stage_manifest() -> 
     official_files = sorted(official["files"], key=lambda item: item["path"])
 
     assert derived["helper_version"] == official["helper_version"]
-    assert derived["file_count"] == len(official_files) == 63
+    assert derived["file_count"] == len(official_files)
+    assert derived["file_count"] > 0
     assert derived["files"] == official_files
 
 
@@ -340,3 +352,10 @@ def test_workflow_separates_pr_and_trusted_self_hosted_execution() -> None:
     assert "${{ vars.CTOA_P14_RUNNER_KEY_ID }}" in source
     assert "persist-credentials: false" in source
     assert "pull_request_target" not in source
+
+
+def test_contract_does_not_hardcode_derived_helper_file_count() -> None:
+    source = CONTRACT_DOC.read_text(encoding="utf-8")
+
+    assert "63-file" not in source
+    assert "current tracked" in source

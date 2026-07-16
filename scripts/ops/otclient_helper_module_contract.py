@@ -60,6 +60,19 @@ PASSIVE_MODULES = [
         ],
     },
     {
+        "id": "rule_engine",
+        "loader_name": "ctoa_helper_rule_engine",
+        "file": "ctoa_helper_rule_engine.lua",
+        "global": "CTOA_HELPER_RULE_ENGINE",
+        "lane_id": "",
+        "required_functions": [
+            "sanitizeCondition",
+            "sanitizeRule",
+            "evaluate",
+            "contract",
+        ],
+    },
+    {
         "id": "ui",
         "loader_name": "ctoa_helper_ui",
         "file": "ctoa_helper_ui.lua",
@@ -215,6 +228,14 @@ PASSIVE_MODULES = [
         "global": "CTOA_HELPER_COMBAT_RUNTIME",
         "lane_id": "",
         "required_functions": ["plan", "summary", "adapterSummary", "magicSummary", "msLeftText", "runeReady", "rotationSpellRows", "spellReadiness", "rotationSpell", "offensiveAction", "actionStatusText", "targetingStatusText", "nextActionText", "waitReason", "decisionState", "contract"],
+    },
+    {
+        "id": "spell_state_registry",
+        "loader_name": "ctoa_helper_spell_state_registry",
+        "file": "ctoa_helper_spell_state_registry.lua",
+        "global": "CTOA_HELPER_SPELL_STATE_REGISTRY",
+        "lane_id": "",
+        "required_functions": ["hasteFlag", "observeHaste", "hasteDecision", "summary", "contract"],
     },
     {
         "id": "cavebot_runtime",

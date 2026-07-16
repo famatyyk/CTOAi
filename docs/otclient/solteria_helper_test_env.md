@@ -478,6 +478,14 @@ runtime\solteria_helper_dev\latest\
 runtime\solteria_helper_dev\ctoa_otclient_<version>.zip
 ```
 
+The Helper development stage and ZIP contain only the neutral chooser plus the
+Helper project files listed in `manifest.json`. They intentionally exclude
+`mods/ctoa_safe`; Safe has its own source tree, seven-file release manifest,
+validation, and promotion workflow through `scripts/windows/solteria_safe_release.ps1`.
+Helper sandbox synchronization removes a stale `mods/ctoa_safe` directory only
+inside the verified separate sandbox root so Helper and Safe evidence cannot be
+mixed. It never removes or rewrites Safe in the live client.
+
 `manifest.json` contains the staged file list with SHA256 hashes and a snapshot
 of any running Solteria process. The release gate verifies those staged file
 hashes against `latest` before promotion. `validation.json` is `pending` after

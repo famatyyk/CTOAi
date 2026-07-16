@@ -223,6 +223,23 @@ function Route.editorAction(tools, action, options)
     }
 end
 
+function Route.editorBindings(apply)
+    if type(apply) ~= "function" then
+        return {}
+    end
+    return {
+        clear = function()
+            return apply("clear")
+        end,
+        select = function(delta)
+            return apply("select", {delta = delta})
+        end,
+        move = function(delta)
+            return apply("move", {delta = delta})
+        end,
+    }
+end
+
 function Route.retryStatus(tools)
     if type(tools) ~= "table" then
         return "retry unavailable"
@@ -384,6 +401,7 @@ function Route.contract()
         owns_waypoint_mutation = true,
         owns_editor_state = true,
         owns_editor_action = true,
+        owns_editor_bindings = true,
         owns_distance_chebyshev = true,
         owns_position_key = true,
         owns_position_text = true,

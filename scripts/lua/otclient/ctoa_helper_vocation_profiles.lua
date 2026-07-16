@@ -24,6 +24,24 @@ local LABELS = {
     rp = "Royal Paladin",
 }
 
+local PROFILE_SCHEMA = "ctoa-helper-profile-v1"
+local MAX_PACK_DEPTH = 12
+local MAX_PACK_NODES = 4096
+local SAFE_FALSE_PATHS = {
+    "enabled",
+    "tools.auto_attack",
+    "tools.auto_exeta",
+    "tools.auto_haste",
+    "tools.spell_rotation",
+    "tools.rune_enabled",
+    "tools.cavebot_enabled",
+    "tools.cavebot_movement_enabled",
+    "tools.timer_enabled",
+    "tools.feature_flags.experimental_cavebot",
+    "tools.feature_flags.experimental_loot",
+    "tools.feature_flags.experimental_combat",
+}
+
 local function safeCall(value, method)
     if value and type(value[method]) == "function" then
         local ok, result = pcall(function() return value[method](value) end)
@@ -38,6 +56,52 @@ local function slug(value)
     text = string.gsub(text, "^_+", "")
     text = string.gsub(text, "_+$", "")
     return text
+end
+
+local function pathValue(root, path)
+    local current = root
+    for part in string.gmatch(path, "[^%.]+") do
+        if type(current) ~= "table" then return nil end
+        current = current[part]
+    end
+    return current
+end
+
+local function validateData(value, path, depth, state)
+    local kind = type(value)
+    if kind == "nil" or kind == "boolean" or kind == "number" or kind == "string" then
+        state.nodes = state.nodes + 1
+        return state.nodes <= MAX_PACK_NODES
+    end
+    if kind ~= "table" then
+        state.errors[#state.errors + 1] = tostring(path) .. ":non_data_" .. kind
+        return false
+    end
+    if depth > MAX_PACK_DEPTH then
+        state.errors[#state.errors + 1] = tostring(path) .. ":max_depth"
+        return false
+    end
+    if state.seen[value] then
+        state.errors[#state.errors + 1] = tostring(path) .. ":cycle"
+        return false
+    end
+    state.seen[value] = true
+    state.nodes = state.nodes + 1
+    if state.nodes > MAX_PACK_NODES then
+        state.errors[#state.errors + 1] = tostring(path) .. ":max_nodes"
+        state.seen[value] = nil
+        return false
+    end
+    for key, item in pairs(value) do
+        local keyKind = type(key)
+        if keyKind ~= "string" and keyKind ~= "number" then
+            state.errors[#state.errors + 1] = tostring(path) .. ":invalid_key_" .. keyKind
+        else
+            validateData(item, tostring(path) .. "." .. tostring(key), depth + 1, state)
+        end
+    end
+    state.seen[value] = nil
+    return #state.errors == 0
 end
 
 function VocationProfiles.normalize(value)
@@ -104,12 +168,57 @@ function VocationProfiles.candidates(profileId, player)
     return result
 end
 
+function VocationProfiles.validatePack(profile, expectedVocation)
+    local errors = {}
+    local cfg = type(profile) == "table" and profile or nil
+    if not cfg then
+        return {allowed = false, reason = "pack_not_table", errors = {"profile:not_table"}, runtime_actions = false}
+    end
+    if cfg.schema_version ~= PROFILE_SCHEMA then
+        errors[#errors + 1] = "schema_version:invalid"
+    end
+    local vocation = VocationProfiles.normalize(cfg.vocation)
+    local expected = VocationProfiles.normalize(expectedVocation)
+    if not vocation then
+        errors[#errors + 1] = "vocation:invalid"
+    elseif expected and vocation ~= expected then
+        errors[#errors + 1] = "vocation:mismatch"
+    end
+    if cfg.safe_boot_runtime_disabled ~= true then
+        errors[#errors + 1] = "safe_boot_runtime_disabled:required"
+    end
+    for _, path in ipairs(SAFE_FALSE_PATHS) do
+        if pathValue(cfg, path) == true then
+            errors[#errors + 1] = path .. ":must_default_false"
+        end
+    end
+    local state = {errors = errors, seen = {}, nodes = 0}
+    validateData(cfg, "profile", 0, state)
+    return {
+        allowed = #errors == 0,
+        reason = #errors == 0 and "pack_ready" or "pack_invalid",
+        errors = errors,
+        vocation = vocation,
+        expected_vocation = expected,
+        schema_version = cfg.schema_version,
+        data_only = #errors == 0,
+        node_count = state.nodes,
+        max_nodes = MAX_PACK_NODES,
+        max_depth = MAX_PACK_DEPTH,
+        runtime_actions = false,
+    }
+end
+
 function VocationProfiles.contract()
     return {
         module = "ctoa_helper_vocation_profiles",
         mode = "passive",
         supported = {"ek", "ms", "ed", "rp"},
         auto_detect = true,
+        owns_data_only_pack_validation = true,
+        profile_schema = PROFILE_SCHEMA,
+        max_pack_depth = MAX_PACK_DEPTH,
+        max_pack_nodes = MAX_PACK_NODES,
         runtime_actions = false,
         writes_files = false,
     }

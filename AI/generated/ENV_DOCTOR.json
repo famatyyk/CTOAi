@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-15T17:02:58+00:00",
+  "generated_at": "2026-07-16T18:26:54+00:00",
   "root": "C:\\Users\\zycie\\CTOAi",
   "overall_status": "warn",
   "status_counts": {
-    "ok": 5,
-    "warn": 2,
+    "ok": 4,
+    "warn": 3,
     "fail": 0
   },
   "checks": {
@@ -15,34 +15,34 @@
       "status": "ok",
       "root": "C:/Users/zycie/CTOAi",
       "branch": "codex/p14-independent-runner",
-      "head": "9ac264fb48c050a3e6a3be96552197b98fd35454",
-      "dirty_count": 124,
+      "head": "fa2f306e8e61415fce71e1a085e46e4f6e6e19e1",
+      "dirty_count": 194,
       "dirty_sample": [
-        "M .github/PULL_REQUEST_TEMPLATE/template.md",
-        "M .github/workflows/site-pages.yml",
-        "M .pre-commit-config.yaml",
-        "M AI/OTCLIENT_INDEX.md",
-        "M AI/generated/DOC_SYNC.json",
-        "M AI/generated/DOC_SYNC.md",
-        "M AI/generated/ENGINE_BRAIN_PACK.json",
-        "M AI/generated/ENGINE_BRAIN_PACK.md",
-        "M AI/generated/ENV_DOCTOR.json",
-        "M AI/generated/ENV_DOCTOR.md",
-        "M AI/generated/FILE_TREE.md",
-        "M AI/generated/OWNERSHIP_MAP.json",
-        "M AI/generated/OWNERSHIP_MAP.md",
-        "M AI/generated/P6_CODEX_INTEGRATION_READINESS.json",
-        "M AI/generated/P6_CODEX_INTEGRATION_READINESS.md",
-        "M AI/generated/P7_ACTION_READINESS.json",
-        "M AI/generated/P7_ACTION_READINESS.md",
-        "M AI/generated/P7_OPERATOR_BRIEF.json",
-        "M AI/generated/P7_OPERATOR_BRIEF.md",
-        "M AI/generated/P7_OPERATOR_WORKFLOW.json",
-        "M AI/generated/P7_OPERATOR_WORKFLOW.md",
-        "M AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.json",
-        "M AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.md",
-        "M AI/generated/SECRET_GUARDRAIL.json",
-        "M AI/generated/SECRET_GUARDRAIL.md"
+        "M  .github/workflows/p14-independent-runner-contract.yml",
+        "M  AI/ENGINE_BRAIN_STATUS.md",
+        "M  AI/FEATURE_ROADMAP.md",
+        "A  AI/P17_P24_HELPER_EVOLUTION_ROADMAP.json",
+        "A  AI/P17_P24_HELPER_EVOLUTION_ROADMAP.md",
+        "A  AI/P23_2_CONDITION_CORE_DECISION.json",
+        "A  AI/P23_HELPER_SAFE_CONTRACT_INVENTORY.json",
+        "A  AI/P24_REPLAY_CANARY_MATRIX.json",
+        "M  AI/P8_P16_EXECUTION_ROADMAP.md",
+        "M  AI/README.md",
+        "MM AI/generated/DOC_SYNC.json",
+        "MM AI/generated/DOC_SYNC.md",
+        "M  AI/generated/ENGINE_BRAIN_PACK.json",
+        "M  AI/generated/ENGINE_BRAIN_PACK.md",
+        "M  AI/generated/ENV_DOCTOR.json",
+        "M  AI/generated/ENV_DOCTOR.md",
+        "MM AI/generated/FILE_TREE.md",
+        "MM AI/generated/OWNERSHIP_MAP.json",
+        "MM AI/generated/OWNERSHIP_MAP.md",
+        "MM AI/generated/P6_CODEX_INTEGRATION_READINESS.json",
+        "MM AI/generated/P6_CODEX_INTEGRATION_READINESS.md",
+        "MM AI/generated/P7_ACTION_READINESS.json",
+        "MM AI/generated/P7_ACTION_READINESS.md",
+        "MM AI/generated/P7_OPERATOR_BRIEF.json",
+        "MM AI/generated/P7_OPERATOR_BRIEF.md"
       ],
       "remotes": [
         "origin\thttps://github.com/famatyyk/CTOAi.git (fetch)",
@@ -59,12 +59,12 @@
       "containers": [
         {
           "name": "ctoa-api",
-          "status": "Up 5 days",
+          "status": "Up 7 hours",
           "ports": "127.0.0.1:8001->8000/tcp"
         },
         {
           "name": "ctoa-postgres",
-          "status": "Up 5 days (healthy)",
+          "status": "Up 7 hours (healthy)",
           "ports": "5432/tcp"
         }
       ],
@@ -77,7 +77,7 @@
       "warp_connected": false,
       "warp_status": [
         "Status update: Disconnected",
-        "Reason: Settings Changed"
+        "Reason: Manual Disconnection"
       ],
       "adapters": [
         {
@@ -88,6 +88,11 @@
         {
           "Name": "Wi-Fi",
           "InterfaceDescription": "Killer(R) Wi-Fi 6 AX1650x 160MHz Wireless Network Adapter (200NGW)",
+          "Status": "Up"
+        },
+        {
+          "Name": "Ethernet 2",
+          "InterfaceDescription": "VirtualBox Host-Only Ethernet Adapter",
           "Status": "Up"
         }
       ]
@@ -106,21 +111,22 @@
       }
     },
     "vscode": {
-      "status": "ok",
+      "status": "warn",
       "code_on_path": true,
       "active_openai_extensions": [
-        "openai.chatgpt@26.707.71524"
+        "openai.chatgpt@26.707.91948"
       ],
       "openai_extension_dirs": [
-        "openai.chatgpt-26.707.71524-win32-x64"
+        "openai.chatgpt-26.707.71524-win32-x64",
+        "openai.chatgpt-26.707.91948-win32-x64"
       ],
       "relevant_extensions": [
         "docker.docker@0.18.0",
         "github.codespaces@1.18.15",
         "github.remotehub@0.64.0",
-        "github.vscode-github-actions@0.32.1",
+        "github.vscode-github-actions@0.32.3",
         "github.vscode-pull-request-github@0.156.0",
-        "martinortiz.codex-stats@1.0.3",
+        "martinortiz.codex-stats@1.0.4",
         "ms-azuretools.vscode-azure-github-copilot@1.0.209",
         "ms-python.debugpy@2026.7.11831010",
         "ms-python.python@2026.4.0",
@@ -135,7 +141,7 @@
         "ms-vscode.remote-explorer@0.5.0",
         "ms-vscode.remote-repositories@0.42.0",
         "ms-vscode.remote-server@1.5.3",
-        "openai.chatgpt@26.707.71524",
+        "openai.chatgpt@26.707.91948",
         "vinirossa.vscode-gitandgithub-pack@2.0.1",
         "ziyasal.vscode-open-in-github@1.3.6"
       ],
@@ -153,7 +159,7 @@
           "name": "main"
         },
         "nameWithOwner": "famatyyk/CTOAi",
-        "pushedAt": "2026-07-15T15:04:41Z",
+        "pushedAt": "2026-07-16T07:21:07Z",
         "updatedAt": "2026-07-15T08:31:42Z",
         "url": "https://github.com/famatyyk/CTOAi",
         "visibility": "PRIVATE"
@@ -202,15 +208,7 @@
         }
       ],
       "recent_run_count": 15,
-      "failed_recent_runs": [
-        {
-          "conclusion": "skipped",
-          "createdAt": "2026-07-15T15:09:34Z",
-          "status": "completed",
-          "url": "https://github.com/famatyyk/CTOAi/actions/runs/29426838888",
-          "workflowName": "CTOA Close On Gate"
-        }
-      ]
+      "failed_recent_runs": []
     },
     "update_gate": {
       "status": "ok",

@@ -288,6 +288,8 @@ SUPPLEMENTAL_REFACTOR_PLAN = [
 
 HELPER_LINE_BUDGET = 4500
 HELPER_FUNCTION_BUDGET = 130
+HELPER_PRODUCT_LINE_TARGET = 4000
+HELPER_PRODUCT_FUNCTION_TARGET = 110
 
 
 @dataclass(frozen=True)
@@ -338,6 +340,9 @@ class ModuleAudit:
     prototype_count: int
     registry_count: int
     registry_missing: list[str]
+    single_reference_local_candidates: list[str]
+    duplicate_config_surfaces: list[str]
+    rigid_behavior_findings: list[str]
     modules: list[ModuleAuditItem]
     extraction_plan: list[ExtractionPlanItem]
     supplemental_refactor_plan: list[SupplementalPlanItem]
@@ -436,6 +441,52 @@ def _static_gate_evidence(module_id: str, evidence_dir: Path | None) -> list[str
     return [str(report_path), str(module_gates_path), str(ready_path), str(newest_screenshot)]
 
 
+def _single_reference_local_candidates(helper_text: str) -> list[str]:
+    names = re.findall(
+        r"^\s*local\s+function\s+([A-Za-z_]\w*)\s*\(",
+        helper_text,
+        re.MULTILINE,
+    )
+    return sorted(
+        name
+        for name in names
+        if len(re.findall(rf"\b{re.escape(name)}\b", helper_text)) == 1
+    )
+
+
+def _duplicate_config_surfaces(ui_text: str) -> list[str]:
+    findings: list[str] = []
+    if "ctoaToolsHudEnabled" in ui_text and "ctoaUiHudEnabled" in ui_text:
+        findings.append("hud_preferences:tools_and_engine")
+    if "ctoaToolsHudPos" in ui_text and "ctoaUiHudPos" in ui_text:
+        findings.append("hud_position:tools_and_engine")
+    return findings
+
+
+def _rigid_behavior_findings(helper_text: str, ui_text: str) -> list[str]:
+    findings: list[str] = []
+    if (
+        "ignored_names = {" in helper_text
+        and "priority_names = {" in helper_text
+        and "ctoaTargetRuleEditor" not in ui_text
+    ):
+        findings.append("target_name_policy_without_rule_editor")
+    fixed_magic_rows = (
+        'getRotationMin("exori gran"' in ui_text
+        and 'getRotationMin("exori"' in ui_text
+        and 'getRotationMin("exori min"' in ui_text
+    )
+    if fixed_magic_rows and "ctoaMagicRuleEditor" not in ui_text:
+        findings.append("fixed_ek_magic_shooter_rows")
+    timer_haste = (
+        "if tools.auto_haste and now - tools.last_haste_ms >= tools.haste_interval_ms then"
+        in helper_text
+    )
+    if timer_haste and "activeHasteState" not in helper_text:
+        findings.append("auto_haste_without_active_state_evidence")
+    return findings
+
+
 def build_audit(
     helper_path: Path = DEFAULT_HELPER,
     otclient_dir: Path = DEFAULT_OTCLIENT_DIR,
@@ -445,6 +496,15 @@ def build_audit(
     helper_text = helper_path.read_text(encoding="utf-8")
     registry_path = otclient_dir / "ctoa_helper_modules.lua"
     registry_text = registry_path.read_text(encoding="utf-8") if registry_path.is_file() else ""
+    ui_path = otclient_dir / "ctoa_helper_ui.lua"
+    ui_text = ui_path.read_text(encoding="utf-8") if ui_path.is_file() else ""
+    profile_schema_path = otclient_dir / "ctoa_helper_profile_schema.lua"
+    profile_schema_text = (
+        profile_schema_path.read_text(encoding="utf-8")
+        if profile_schema_path.is_file()
+        else ""
+    )
+    contract_text = helper_text + "\n" + profile_schema_text
     helper_lines = helper_text.splitlines()
     function_count = len(re.findall(r"^\s*(?:local\s+)?function\s+", helper_text, re.MULTILINE))
     helper_budget_status = (
@@ -454,7 +514,7 @@ def build_audit(
     )
     modules: list[ModuleAuditItem] = []
     for contract in MODULE_CONTRACTS:
-        status, evidence = _status_for_contract(contract, helper_text, otclient_dir)
+        status, evidence = _status_for_contract(contract, contract_text, otclient_dir)
         gate_evidence = _static_gate_evidence(str(contract["id"]), evidence_dir)
         if status in {"prototype", "implemented"} and gate_evidence:
             status = "static_gated"
@@ -476,8 +536,22 @@ def build_audit(
     registry_ids = set(re.findall(r'id\s*=\s*"([^"]+)"', registry_text))
     contract_ids = {str(contract["id"]) for contract in MODULE_CONTRACTS}
     registry_missing = sorted(contract_ids - registry_ids)
+    single_reference_locals = _single_reference_local_candidates(helper_text)
+    duplicate_surfaces = _duplicate_config_surfaces(ui_text)
+    rigid_findings = _rigid_behavior_findings(helper_text, ui_text)
     pressure = "high" if len(helper_lines) >= 5000 or placeholder_count >= 3 else "medium"
-    status = "needs_modularization" if pressure == "high" or placeholder_count else "ready"
+    if pressure == "high" or placeholder_count:
+        status = "needs_modularization"
+    elif (
+        len(helper_lines) > HELPER_PRODUCT_LINE_TARGET
+        or function_count > HELPER_PRODUCT_FUNCTION_TARGET
+        or single_reference_locals
+        or duplicate_surfaces
+        or rigid_findings
+    ):
+        status = "needs_simplification"
+    else:
+        status = "ready"
     extraction_plan: list[ExtractionPlanItem] = []
     for phase in EXTRACTION_PHASES:
         target_file = str(phase["target_file"])
@@ -516,7 +590,7 @@ def build_audit(
         + sum(1 for item in supplemental_plan if item.status == "extracted")
     )
     next_phase = (
-        "P6-module-lane: keep the main helper as UI composition shell; move runtime adapters behind static contracts and sandbox gates."
+        "P17 simplification: resolve reachability, ownership, and rigid behavior findings before adding runtime actions."
         if helper_budget_status == "over_budget" or status != "ready"
         else "Keep module gates current before adding new runtime actions."
     )
@@ -544,6 +618,9 @@ def build_audit(
         prototype_count=prototype_count,
         registry_count=len(registry_ids & contract_ids),
         registry_missing=registry_missing,
+        single_reference_local_candidates=single_reference_locals,
+        duplicate_config_surfaces=duplicate_surfaces,
+        rigid_behavior_findings=rigid_findings,
         modules=modules,
         extraction_plan=extraction_plan,
         supplemental_refactor_plan=supplemental_plan,
@@ -574,6 +651,9 @@ def render_markdown(audit: ModuleAudit) -> str:
         f"- Implemented modules: `{audit.implemented_count}`",
         f"- Prototype modules: `{audit.prototype_count}`",
         f"- Registry coverage: `{audit.registry_count}` / `{len(MODULE_CONTRACTS)}`",
+        f"- Single-reference local candidates: `{len(audit.single_reference_local_candidates)}`",
+        f"- Duplicate config surfaces: `{len(audit.duplicate_config_surfaces)}`",
+        f"- Rigid behavior findings: `{len(audit.rigid_behavior_findings)}`",
         f"- Next extraction: `{audit.next_extraction_id or 'none'}`",
         f"- Next supplemental split: `{audit.next_supplemental_id or 'none'}`",
         f"- Next phase: {audit.next_phase}",

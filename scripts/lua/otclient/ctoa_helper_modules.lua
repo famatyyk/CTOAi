@@ -8,6 +8,8 @@ local Registry = rawget(_G, "CTOA_HELPER_MODULES") or {}
 local SUPPORT_MODULES = {
     {name = "ctoa_helper_runtime_core", file = "ctoa_helper_runtime_core.lua", phase = "core", depends_on = {}},
     {name = "ctoa_helper_domain_contract", file = "ctoa_helper_domain_contract.lua", phase = "core", depends_on = {"ctoa_helper_runtime_core"}},
+    {name = "ctoa_helper_rule_engine", file = "ctoa_helper_rule_engine.lua", phase = "core", depends_on = {"ctoa_helper_domain_contract"}},
+    {name = "ctoa_helper_spell_state_registry", file = "ctoa_helper_spell_state_registry.lua", phase = "observe", depends_on = {"ctoa_helper_runtime_core"}},
     {name = "ctoa_helper_combat_observer", file = "ctoa_helper_combat_observer.lua", phase = "observe", depends_on = {"ctoa_helper_runtime_core"}},
     {name = "ctoa_helper_recovery_observer", file = "ctoa_helper_recovery_observer.lua", phase = "observe", depends_on = {"ctoa_helper_runtime_core"}},
     {name = "ctoa_helper_cavebot_observer", file = "ctoa_helper_cavebot_observer.lua", phase = "observe", depends_on = {"ctoa_helper_runtime_core"}},
@@ -27,7 +29,7 @@ local SUPPORT_MODULES = {
     {name = "ctoa_helper_loot_runtime", file = "ctoa_helper_loot_runtime.lua", phase = "domain", depends_on = {"ctoa_helper_loot_observer"}},
     {name = "ctoa_helper_timer_runtime", file = "ctoa_helper_timer_runtime.lua", phase = "domain", depends_on = {"ctoa_helper_runtime_core"}},
     {name = "ctoa_helper_recovery_runtime", file = "ctoa_helper_recovery_runtime.lua", phase = "domain", depends_on = {"ctoa_helper_recovery_observer"}},
-    {name = "ctoa_helper_profile_schema", file = "ctoa_helper_profile_schema.lua", phase = "profile", depends_on = {}},
+    {name = "ctoa_helper_profile_schema", file = "ctoa_helper_profile_schema.lua", phase = "profile", depends_on = {"ctoa_helper_rule_engine"}},
     {name = "ctoa_helper_vocation_profiles", file = "ctoa_helper_vocation_profiles.lua", phase = "profile", depends_on = {"ctoa_helper_profile_schema"}},
     {name = "ctoa_helper_profile_persistence", file = "ctoa_helper_profile_persistence.lua", phase = "profile", depends_on = {"ctoa_helper_profile_schema"}},
     {name = "ctoa_helper_operator_summary", file = "ctoa_helper_operator_summary.lua", phase = "coordinate", depends_on = {"ctoa_helper_profile_schema"}},

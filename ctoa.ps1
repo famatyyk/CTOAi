@@ -1246,7 +1246,7 @@ function Invoke-EngineBrain {
             Invoke-FromRoot -FilePath $python -Arguments $args
             break
         }
-        default { throw "Unknown brain subcommand '$Subcommand'. Use refresh|doctor|pack [all|helper|control-center|infra|security]" }
+        default { throw "Unknown brain subcommand '$Subcommand'. Use refresh|doctor|pack [all|control-central|helper|control-center|infra|security]" }
     }
 }
 

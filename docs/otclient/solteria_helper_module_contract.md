@@ -1,8 +1,8 @@
 # Solteria Helper Module Contract
 
 - Status: `passed`
-- Expected modules: `32`
-- Passed modules: `32`
+- Expected modules: `34`
+- Passed modules: `34`
 - Failed modules: `0`
 - Registry lanes: `9` / `9`
 - Forbidden passive hits: `0`
@@ -18,6 +18,7 @@ Passive helper modules may observe, format, plan, or expose UI state. They must 
 |---|---|---:|---:|---:|---:|---:|---|---|
 | `modules` | `ctoa_helper_modules.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
 | `domain_contract` | `ctoa_helper_domain_contract.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
+| `rule_engine` | `ctoa_helper_rule_engine.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
 | `ui` | `ctoa_helper_ui.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
 | `diagnostics` | `ctoa_helper_diagnostics.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
 | `hotkeys` | `ctoa_helper_hotkeys.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
@@ -25,6 +26,7 @@ Passive helper modules may observe, format, plan, or expose UI state. They must 
 | `route` | `ctoa_helper_route.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
 | `targeting` | `ctoa_helper_targeting.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
 | `combat_runtime` | `ctoa_helper_combat_runtime.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
+| `spell_state_registry` | `ctoa_helper_spell_state_registry.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
 | `cavebot_runtime` | `ctoa_helper_cavebot_runtime.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
 | `loot_runtime` | `ctoa_helper_loot_runtime.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
 | `timer_runtime` | `ctoa_helper_timer_runtime.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |

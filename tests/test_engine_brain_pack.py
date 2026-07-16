@@ -32,6 +32,10 @@ def test_engine_brain_pack_writes_manifest_and_markdown(tmp_path):
     assert "AI/generated/P7_OPERATOR_BRIEF.md" in text
     assert "docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md" in text
     assert "AI/P8_P16_EXECUTION_ROADMAP.md" in text
+    assert "AI/P17_P24_HELPER_EVOLUTION_ROADMAP.md" in text
+    assert "AI/P17_P24_HELPER_EVOLUTION_ROADMAP.json" in text
+    assert "docs/otclient/HELPER_SIMPLIFICATION_AUDIT_2026-07-16.md" in text
+    assert "scripts/lua/otclient/ctoa_helper_rule_engine.lua" in text
     assert "docs/otclient/P9_CONDITIONS_SHADOW_REPLAY_DESIGN.md" in text
     assert "docs/otclient/P9_CONDITIONS_SHADOW_ACCEPTANCE.md" in text
     assert "docs/otclient/P10_EQUIPMENT_SHADOW_REPLAY_DESIGN.md" in text
@@ -58,6 +62,13 @@ def test_engine_brain_pack_can_include_generated_sections(tmp_path):
     )
 
     assert manifest["truncated_count"] >= 1
+    roadmap_section = next(
+        section
+        for section in manifest["sections"]
+        if section["path"]
+        == "docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md"
+    )
+    assert roadmap_section["critical_markers"] == ["deferred_high_risk"]
     text = pack_path.read_text(encoding="utf-8")
     assert "AI/generated/FILE_TREE.md" in text
 
@@ -88,6 +99,10 @@ def test_engine_brain_pack_supports_helper_profile(tmp_path):
     assert "Profile: `helper`" in text
     assert "AI/OTCLIENT_INDEX.md" in text
     assert "AI/P8_P16_EXECUTION_ROADMAP.md" in text
+    assert "AI/P17_P24_HELPER_EVOLUTION_ROADMAP.md" in text
+    assert "AI/P17_P24_HELPER_EVOLUTION_ROADMAP.json" in text
+    assert "docs/otclient/HELPER_SIMPLIFICATION_AUDIT_2026-07-16.md" in text
+    assert "scripts/lua/otclient/ctoa_helper_rule_engine.lua" in text
     assert "docs/otclient/P9_CONDITIONS_SHADOW_REPLAY_DESIGN.md" in text
     assert "docs/otclient/P9_CONDITIONS_SHADOW_ACCEPTANCE.md" in text
     assert "docs/otclient/P10_EQUIPMENT_SHADOW_REPLAY_DESIGN.md" in text
@@ -110,3 +125,39 @@ def test_engine_brain_pack_supports_helper_profile(tmp_path):
     assert "AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.md" in text
     assert "AI/generated/P7_OPERATOR_BRIEF.md" in text
     assert "AI/API_INDEX.md" not in text
+
+
+def test_engine_brain_pack_supports_compact_control_central_profile(tmp_path):
+    build_indexes(DEFAULT_OUT_DIR)
+    compact_path = tmp_path / "control-central-pack.md"
+    compact_manifest_path = tmp_path / "control-central-pack.json"
+    full_path = tmp_path / "control-center-pack.md"
+    full_manifest_path = tmp_path / "control-center-pack.json"
+
+    compact = build_pack(
+        compact_path,
+        compact_manifest_path,
+        profile="control-central",
+        include_generated=True,
+        max_chars_per_file=45000,
+    )
+    full = build_pack(
+        full_path,
+        full_manifest_path,
+        profile="control-center",
+        include_generated=True,
+        max_chars_per_file=45000,
+    )
+
+    text = compact_path.read_text(encoding="utf-8")
+    assert compact["profile"] == "control-central"
+    assert compact["included_count"] == 10
+    assert compact["truncated_count"] == 0
+    assert "Profile: `control-central`" in text
+    assert "AI/generated/manifest.json" in text
+    assert "AI/generated/P7_OPERATOR_BRIEF.md" in text
+    assert "AI/generated/FILE_TREE.md" not in text
+    assert "AI/generated/SYMBOL_MAP.md" not in text
+    assert "AI/ENGINE_BRAIN_STATUS.md" not in text
+    assert compact["included_count"] < full["included_count"]
+    assert compact_path.stat().st_size < full_path.stat().st_size * 0.25

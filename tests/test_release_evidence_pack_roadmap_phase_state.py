@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 from copy import deepcopy
+import datetime as dt
+import json
 
 from scripts.ops import (
     otclient_p12_conditions_execute_once_receipt as conditions_receipt,
 )
 from scripts.ops import otclient_p12_equipment_execute_once_receipt as equipment_receipt
 from scripts.ops import release_evidence_pack as evidence
+from scripts.ops import otclient_p14_runner_preflight as preflight
 
 
 SHA_A = "a" * 64
@@ -28,6 +31,146 @@ def _p14_foundation_ready() -> dict:
         "mcp_write_tool_enabled": False,
         "blockers": [],
     }
+
+
+def _write_p14_preflight(tmp_path, *, result: str, ready: bool, blockers: list[str]):
+    target = tmp_path / evidence.P14_RUNNER_PREFLIGHT_PATH
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(
+        json.dumps(
+            {
+                "schema_version": evidence.P14_RUNNER_PREFLIGHT_SCHEMA,
+                "generated_at": dt.datetime.now(dt.UTC).isoformat().replace("+00:00", "Z"),
+                "status": "ready" if ready else "needs_attention",
+                "operational_result": result,
+                "operational_ready": ready,
+                "hard_blockers": blockers,
+                "warnings": [],
+                "acceptance": {
+                    "status": "passed",
+                    "request_present": True,
+                    "request_valid": True,
+                    "result_present": True,
+                    "result_valid": True,
+                    "signature_verification_passed": True,
+                    "source_current": True,
+                    "proven_capability_count": 4,
+                    "required_capability_count": 4,
+                    "complete": True,
+                    "authority_safe": True,
+                    "capabilities": {
+                        "visual_regression": True,
+                        "in_world_regression": True,
+                        "canary_rehearsal": True,
+                        "rollback_rehearsal": True,
+                    },
+                },
+                "remediation": preflight.build_remediation_plan(blockers),
+                "workflow": {
+                    "signature_verification_passed": True,
+                    "acceptance_signature_verification_passed": True,
+                },
+                "runner": {"online": True},
+                "authority": {
+                    "runtime_actions": False,
+                    "live_authority": False,
+                    "promotion_approved": False,
+                    "mcp_write_tool_enabled": False,
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+
+def test_p14_foundation_keeps_external_security_gaps_separate(monkeypatch, tmp_path):
+    monkeypatch.setattr(evidence, "P14_FOUNDATION_PATHS", ("p14-contract.txt",))
+    (tmp_path / "p14-contract.txt").write_text("bounded", encoding="utf-8")
+    blockers = [
+        "p14_environment_required_reviewer_missing",
+        "p14_environment_admin_bypass_enabled",
+        "p14_self_hosted_result_revision_mismatch",
+    ]
+    _write_p14_preflight(
+        tmp_path,
+        result="externally_verified_stale",
+        ready=False,
+        blockers=blockers,
+    )
+
+    summary = evidence._p14_foundation_summary(tmp_path)
+
+    assert summary["status"] == "foundation_ready"
+    assert summary["blockers"] == []
+    assert summary["operational_ready"] is False
+    assert summary["operational_runner_result"] == "externally_verified_stale"
+    assert summary["operational_blockers"] == blockers
+    assert summary["runner_preflight"]["authority_safe"] is True
+    assert summary["remediation_plan"]["next_action"] == "harden_p14_environment"
+    assert summary["remediation_plan"]["action_count"] == 2
+    assert summary["remediation_plan"]["actions"][1]["status"] == "blocked"
+
+
+def test_p14_foundation_accepts_current_external_verification(monkeypatch, tmp_path):
+    monkeypatch.setattr(evidence, "P14_FOUNDATION_PATHS", ("p14-contract.txt",))
+    (tmp_path / "p14-contract.txt").write_text("bounded", encoding="utf-8")
+    _write_p14_preflight(
+        tmp_path,
+        result="externally_verified_current",
+        ready=True,
+        blockers=[],
+    )
+
+    summary = evidence._p14_foundation_summary(tmp_path)
+
+    assert summary["status"] == "foundation_ready"
+    assert summary["operational_ready"] is True
+    assert summary["operational_runner_result"] == "externally_verified_current"
+    assert summary["operational_blockers"] == []
+    assert summary["remediation_plan"]["status"] == "complete"
+    assert summary["remediation_plan"]["next_action"] == "none"
+
+
+def test_p14_foundation_fails_closed_on_unbounded_remediation(monkeypatch, tmp_path):
+    monkeypatch.setattr(evidence, "P14_FOUNDATION_PATHS", ("p14-contract.txt",))
+    (tmp_path / "p14-contract.txt").write_text("bounded", encoding="utf-8")
+    _write_p14_preflight(
+        tmp_path,
+        result="externally_verified_stale",
+        ready=False,
+        blockers=["p14_self_hosted_result_revision_mismatch"],
+    )
+    path = tmp_path / evidence.P14_RUNNER_PREFLIGHT_PATH
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload["remediation"]["actions"][0]["action_id"] = "run_arbitrary_command"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+    summary = evidence._p14_foundation_summary(tmp_path)
+
+    assert summary["runner_preflight"]["contract_valid"] is False
+    assert summary["operational_blockers"] == ["p14_runner_preflight_invalid"]
+    assert summary["remediation_plan"]["next_action"] == "review_p14_external_state"
+
+
+def test_p14_foundation_rejects_action_contract_substitution(monkeypatch, tmp_path):
+    monkeypatch.setattr(evidence, "P14_FOUNDATION_PATHS", ("p14-contract.txt",))
+    (tmp_path / "p14-contract.txt").write_text("bounded", encoding="utf-8")
+    _write_p14_preflight(
+        tmp_path,
+        result="externally_verified_stale",
+        ready=False,
+        blockers=["p14_environment_required_reviewer_missing"],
+    )
+    path = tmp_path / evidence.P14_RUNNER_PREFLIGHT_PATH
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload["remediation"]["actions"][0]["capability"] = "signing_material"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+    summary = evidence._p14_foundation_summary(tmp_path)
+
+    assert summary["runner_preflight"]["contract_valid"] is False
+    assert summary["operational_blockers"] == ["p14_runner_preflight_invalid"]
+    assert summary["remediation_plan"]["next_action"] == "review_p14_external_state"
 
 
 def _safe_plan(basis: dict, *, status: str, blockers: list[str]) -> dict:

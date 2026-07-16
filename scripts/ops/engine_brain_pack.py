@@ -24,6 +24,12 @@ from scripts.ops.engine_brain_index import (
 
 DEFAULT_PACK_PATH = DEFAULT_OUT_DIR / "ENGINE_BRAIN_PACK.md"
 DEFAULT_MANIFEST_PATH = DEFAULT_OUT_DIR / "ENGINE_BRAIN_PACK.json"
+CRITICAL_MARKERS_BY_PATH = {
+    "docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md": (
+        "deferred_high_risk",
+    ),
+}
+CRITICAL_EXCERPT_MAX_CHARS = 700
 
 CURATED_FILES = [
     "AI/README.md",
@@ -42,6 +48,8 @@ CURATED_FILES = [
     "AI/CLASS_INDEX.md",
     "AI/FEATURE_ROADMAP.md",
     "AI/P8_P16_EXECUTION_ROADMAP.md",
+    "AI/P17_P24_HELPER_EVOLUTION_ROADMAP.md",
+    "AI/P17_P24_HELPER_EVOLUTION_ROADMAP.json",
     "docs/P7_ROADMAP_STATE_REFRESH_DESIGN.md",
     "docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md",
     "docs/otclient/P9_CONDITIONS_SHADOW_REPLAY_DESIGN.md",
@@ -49,6 +57,8 @@ CURATED_FILES = [
     "docs/otclient/P10_EQUIPMENT_SHADOW_REPLAY_DESIGN.md",
     "docs/otclient/P11_HEAL_FRIEND_SHADOW_REPLAY_DESIGN.md",
     "docs/otclient/P14_INDEPENDENT_RUNNER_CONTRACT.md",
+    "docs/otclient/HELPER_SIMPLIFICATION_AUDIT_2026-07-16.md",
+    "scripts/lua/otclient/ctoa_helper_rule_engine.lua",
     "docs/otclient/CTOA_EXCLUSIVE_PROJECT_LOADER_V1.md",
     "docs/otclient/HELPER_RUNTIME_MODULE_GATES_V1.md",
     "AI/KNOWN_BUGS.md",
@@ -91,13 +101,29 @@ GENERATED_PLAN3_FILES = [
     "AI/generated/ROADMAP_STATE.md",
 ]
 
+CONTROL_CENTRAL_FILES = [
+    "AI/README.md",
+    "AI/generated/manifest.json",
+    "AI/generated/ENV_DOCTOR.md",
+    "AI/generated/DOC_SYNC.md",
+    "AI/generated/SECRET_GUARDRAIL.md",
+    "AI/generated/P6_CODEX_INTEGRATION_READINESS.md",
+    "AI/generated/P7_OPERATOR_WORKFLOW.md",
+    "AI/generated/P7_ACTION_READINESS.md",
+    "AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.md",
+    "AI/generated/P7_OPERATOR_BRIEF.md",
+]
+
 PROFILE_FILES = {
     "all": CURATED_FILES,
+    "control-central": CONTROL_CENTRAL_FILES,
     "helper": [
         "AI/README.md",
         "AI/ENGINE_BRAIN_STATUS.md",
         "AI/FEATURE_ROADMAP.md",
         "AI/P8_P16_EXECUTION_ROADMAP.md",
+        "AI/P17_P24_HELPER_EVOLUTION_ROADMAP.md",
+        "AI/P17_P24_HELPER_EVOLUTION_ROADMAP.json",
         "AI/LUA_INDEX.md",
         "AI/OTCLIENT_INDEX.md",
         "docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md",
@@ -106,6 +132,8 @@ PROFILE_FILES = {
         "docs/otclient/P10_EQUIPMENT_SHADOW_REPLAY_DESIGN.md",
         "docs/otclient/P11_HEAL_FRIEND_SHADOW_REPLAY_DESIGN.md",
         "docs/otclient/P14_INDEPENDENT_RUNNER_CONTRACT.md",
+        "docs/otclient/HELPER_SIMPLIFICATION_AUDIT_2026-07-16.md",
+        "scripts/lua/otclient/ctoa_helper_rule_engine.lua",
         "docs/otclient/CTOA_EXCLUSIVE_PROJECT_LOADER_V1.md",
         "docs/otclient/solteria_helper_development_plan.md",
         "docs/otclient/HELPER_RUNTIME_BRIDGE_V1.md",
@@ -158,6 +186,10 @@ PROFILE_FILES = {
     ],
 }
 
+PROFILE_OPTIONAL_SUMMARY_FILES = {
+    "control-central": [],
+}
+
 
 def is_secretish_path(path: Path) -> bool:
     try:
@@ -203,6 +235,7 @@ def append_file_section(
         "bytes": 0,
         "truncated": False,
         "reason": "",
+        "critical_markers": [],
     }
     if not path.exists():
         section["reason"] = "missing"
@@ -214,7 +247,30 @@ def append_file_section(
     text = read_text(path)
     section["bytes"] = len(text.encode("utf-8"))
     if len(text) > max_chars:
-        text = text[:max_chars].rstrip() + "\n\n[truncated]\n"
+        critical_excerpts: list[str] = []
+        for marker in CRITICAL_MARKERS_BY_PATH.get(rel_path, ()):
+            marker_index = text.find(marker)
+            if marker_index < 0 or marker_index < max_chars:
+                continue
+            line_start = text.rfind("\n", 0, marker_index) + 1
+            line_end = text.find("\n", marker_index)
+            if line_end < 0:
+                line_end = len(text)
+            excerpt = text[line_start:line_end].strip()
+            if len(excerpt) > CRITICAL_EXCERPT_MAX_CHARS:
+                local_index = marker_index - line_start
+                half = CRITICAL_EXCERPT_MAX_CHARS // 2
+                start = max(0, local_index - half)
+                end = min(len(excerpt), start + CRITICAL_EXCERPT_MAX_CHARS)
+                excerpt = excerpt[start:end].strip()
+            critical_excerpts.append(f"[{marker}]\n{excerpt}")
+            section["critical_markers"].append(marker)
+        suffix_parts = ["", "[truncated]"]
+        if critical_excerpts:
+            suffix_parts.extend(["", "[critical excerpts]", *critical_excerpts])
+        suffix = "\n\n".join(suffix_parts).rstrip() + "\n"
+        head_budget = max(0, max_chars - len(suffix))
+        text = text[:head_budget].rstrip() + "\n\n" + suffix
         section["truncated"] = True
 
     lines.extend(
@@ -264,7 +320,9 @@ def build_pack(
 
     files = list(dict.fromkeys(PROFILE_FILES[profile]))
     if include_generated:
-        files.extend(OPTIONAL_SUMMARY_FILES)
+        files.extend(
+            PROFILE_OPTIONAL_SUMMARY_FILES.get(profile, OPTIONAL_SUMMARY_FILES)
+        )
 
     sections: list[dict[str, Any]] = []
     for rel_path in files:

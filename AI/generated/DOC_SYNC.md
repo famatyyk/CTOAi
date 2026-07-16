@@ -1,6 +1,6 @@
 # Engine Brain Doc Sync
 
-Generated at: `2026-07-15T17:14:27+00:00`
+Generated at: `2026-07-16T18:25:57+00:00`
 Status: `passed`
 
 | Check | Path | Status | Missing |

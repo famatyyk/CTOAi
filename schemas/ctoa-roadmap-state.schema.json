@@ -1,13 +1,14 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://ctoai.local/schemas/ctoa-roadmap-state.schema.json",
-  "title": "CTOAi P13 Machine-Readable Roadmap State",
+  "title": "CTOAi P13 Adaptive Machine-Readable Roadmap State",
   "type": "object",
   "additionalProperties": false,
   "required": [
     "schema_version",
     "generated_at",
     "status",
+    "readiness_status",
     "phase",
     "phase_status",
     "next_phase",
@@ -22,12 +23,14 @@
     "tamper_status",
     "authority",
     "blockers",
+    "warnings",
     "next_action"
   ],
   "properties": {
-    "schema_version": {"const": "ctoa.roadmap-state.v1"},
+    "schema_version": {"const": "ctoa.roadmap-state.v2"},
     "generated_at": {"type": "string", "format": "date-time"},
     "status": {"enum": ["ready", "blocked"]},
+    "readiness_status": {"enum": ["ready", "awaiting_external", "blocked"]},
     "phase": {"const": "P13"},
     "phase_status": {"enum": ["runtime_evidence_ready", "blocked"]},
     "next_phase": {"const": "P14"},
@@ -51,6 +54,7 @@
     "tamper_status": {"enum": ["passed", "tampered", "blocked"]},
     "authority": {"$ref": "#/$defs/authority"},
     "blockers": {"$ref": "#/$defs/stringList"},
+    "warnings": {"$ref": "#/$defs/stringList"},
     "next_action": {"type": "string", "minLength": 20, "maxLength": 300}
   },
   "$defs": {
@@ -92,15 +96,17 @@
     "sourceHealth": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["name", "path", "load_status", "sha256", "freshness_status", "age_seconds", "contract_status"],
+      "required": ["name", "path", "impact", "availability", "load_status", "sha256", "freshness_status", "age_seconds", "contract_status"],
       "properties": {
         "name": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
         "path": {"type": "string", "minLength": 1},
+        "impact": {"enum": ["required", "advisory"]},
+        "availability": {"enum": ["available", "awaiting_external", "blocked"]},
         "load_status": {"enum": ["loaded", "missing", "symlink_rejected", "outside_root", "oversize", "changed_during_read", "duplicate_keys", "malformed", "not_object"]},
         "sha256": {"$ref": "#/$defs/nullableSha256"},
         "freshness_status": {"enum": ["current", "stale", "timeless", "blocked"]},
         "age_seconds": {"type": ["integer", "null"], "minimum": 0},
-        "contract_status": {"enum": ["passed", "blocked"]}
+        "contract_status": {"enum": ["passed", "pending", "blocked"]}
       }
     },
     "binding": {
@@ -198,14 +204,16 @@
     "authority": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["control_center_mode", "runtime_executor_added", "runtime_actions", "live_authority", "p12_heal_friend_reopened", "mcp_write_tool_enabled", "allowed_output_paths"],
+      "required": ["control_center_mode", "runtime_executor_added", "runtime_actions", "live_authority", "p12_heal_friend_reopened", "runtime_mcp_write_tool_enabled", "roadmap_refresh_tool_enabled", "roadmap_refresh_risk_class", "allowed_output_paths"],
       "properties": {
         "control_center_mode": {"const": "read_only"},
         "runtime_executor_added": {"const": false},
         "runtime_actions": {"const": false},
         "live_authority": {"const": false},
         "p12_heal_friend_reopened": {"const": false},
-        "mcp_write_tool_enabled": {"const": false},
+        "runtime_mcp_write_tool_enabled": {"const": false},
+        "roadmap_refresh_tool_enabled": {"const": true},
+        "roadmap_refresh_risk_class": {"const": "safe_write"},
         "allowed_output_paths": {
           "type": "array",
           "const": ["AI/generated/ROADMAP_STATE.json", "AI/generated/ROADMAP_STATE.md", "runtime/control-center/action-audit.jsonl"]

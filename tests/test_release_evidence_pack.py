@@ -254,6 +254,8 @@ def test_build_evidence_pack_handles_missing_artifacts(tmp_path: Path):
     assert equipment_operator["status"] == "missing"
     assert equipment_operator["reported_status"] == "missing"
     assert equipment_operator["contract_valid"] is False
+
+
     assert equipment_operator["operator_inputs_ready"] is False
     assert equipment_operator["eligibility_changed"] is False
     assert equipment_operator["eligibility_state"] == "unchanged"
@@ -274,6 +276,38 @@ def test_build_evidence_pack_handles_missing_artifacts(tmp_path: Path):
     )
     assert any("repo hygiene" in item.lower() for item in pack["recommendations"])
     assert any("api_cost_report" in item for item in pack["recommendations"])
+
+
+def test_evidence_pack_binds_preallocated_audit_and_self_hashes(tmp_path: Path):
+    module = _load_module()
+    source_audit_id = "20260716153000123456-evidence-pack-refresh"
+
+    pack = module.build_evidence_pack(
+        tmp_path / "releases" / "evidence",
+        tmp_path / "runtime" / "repo-hygiene" / "local-pr-quality.json",
+        tmp_path / "runtime" / "api-cost" / "latest.json",
+        tmp_path / "runtime" / "control-center" / "action-audit.jsonl",
+        tmp_path / "runtime" / "solteria_helper_dev",
+        tmp_path / "AI" / "generated" / "P7_OPERATOR_BRIEF.json",
+        source_audit_id=source_audit_id,
+    )
+
+    provenance = pack["provenance"]
+    basis = {
+        **pack,
+        "provenance": {
+            key: value
+            for key, value in provenance.items()
+            if key != "content_sha256"
+        },
+    }
+    assert pack["schema_version"] == module.EVIDENCE_SCHEMA_VERSION
+    assert provenance["source_audit_id"] == source_audit_id
+    assert provenance["binding_status"] == "bound"
+    assert provenance["content_sha256"] == module._canonical_json_sha256(basis)
+
+    with pytest.raises(ValueError, match="source_audit_id"):
+        module.build_evidence_pack(source_audit_id="private/path")
 
 
 def test_p10_equipment_readiness_projects_strict_read_only_blocked_chain(

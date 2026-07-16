@@ -60,12 +60,122 @@ DEFAULT_MD_OUT = Path("runtime/evidence/latest.md")
 DEFAULT_HELPER_DEV_DIR = Path("runtime/solteria_helper_dev")
 DEFAULT_ENGINE_BRAIN_OPERATOR_BRIEF_PATH = Path("AI/generated/P7_OPERATOR_BRIEF.json")
 DEFAULT_ENGINE_BRAIN_ROADMAP_STATE_PATH = Path("AI/generated/ROADMAP_STATE.json")
+P14_RUNNER_PREFLIGHT_PATH = Path("runtime/control-center/p14-runner-preflight.json")
+P14_RUNNER_PREFLIGHT_SCHEMA = "ctoa.p14-runner-preflight.v2"
+P14_REMEDIATION_SCHEMA = "ctoa.p14-remediation-plan.v1"
+P14_RUNNER_PREFLIGHT_MAX_AGE_SECONDS = 6 * 60 * 60
+P14_REMEDIATION_ACTION_IDS = frozenset(
+    {
+        "none",
+        "activate_p14_workflow",
+        "restore_p14_runner_capacity",
+        "harden_p14_environment",
+        "configure_p14_signing_material",
+        "allow_p14_source_branch",
+        "refresh_p14_independent_runner_evidence",
+        "collect_p14_visual_evidence",
+        "collect_p14_in_world_evidence",
+        "run_p14_canary_rehearsal",
+        "run_p14_rollback_rehearsal",
+        "review_p14_external_state",
+    }
+)
+P14_REMEDIATION_ACTION_CONTRACTS = {
+    "activate_p14_workflow": (
+        "workflow_active",
+        "guarded_write",
+        "external_config",
+    ),
+    "restore_p14_runner_capacity": (
+        "runner_capacity",
+        "guarded_write",
+        "external_config",
+    ),
+    "harden_p14_environment": (
+        "environment_protection",
+        "guarded_write",
+        "external_config",
+    ),
+    "configure_p14_signing_material": (
+        "signing_material",
+        "guarded_write",
+        "external_config",
+    ),
+    "allow_p14_source_branch": (
+        "branch_scope",
+        "guarded_write",
+        "external_config",
+    ),
+    "refresh_p14_independent_runner_evidence": (
+        "external_attestation",
+        "safe_write",
+        "external_runner",
+    ),
+    "collect_p14_visual_evidence": (
+        "visual_attestation",
+        "safe_write",
+        "external_runner",
+    ),
+    "collect_p14_in_world_evidence": (
+        "in_world_attestation",
+        "safe_write",
+        "external_runner",
+    ),
+    "run_p14_canary_rehearsal": (
+        "canary_attestation",
+        "guarded_write",
+        "external_runner",
+    ),
+    "run_p14_rollback_rehearsal": (
+        "rollback_attestation",
+        "guarded_write",
+        "external_runner",
+    ),
+    "review_p14_external_state": (
+        "external_evidence_review",
+        "read_only",
+        "operator_review",
+    ),
+}
+P14_REMEDIATION_CAPABILITIES = frozenset(
+    {
+        "workflow_active",
+        "runner_capacity",
+        "environment_protection",
+        "signing_material",
+        "branch_scope",
+        "external_attestation",
+        "visual_attestation",
+        "in_world_attestation",
+        "canary_attestation",
+        "rollback_attestation",
+        "external_evidence_review",
+    }
+)
+P14_REMEDIATION_INTERACTIONS = frozenset(
+    {"none", "external_config", "external_runner", "operator_review"}
+)
+P14_REMEDIATION_RISK_CLASSES = frozenset(
+    {"read_only", "safe_write", "guarded_write"}
+)
+EVIDENCE_SCHEMA_VERSION = "ctoa.control-center.evidence.v2"
+EVIDENCE_SOURCE_ACTION = "evidence-pack-refresh"
+EVIDENCE_SOURCE_AUDIT_ID_RE = re.compile(
+    r"^[0-9]{14,20}-evidence-pack-refresh$"
+)
 REPO_ROOT = Path(__file__).resolve().parents[2]
 P14_FOUNDATION_PATHS = (
+    "schemas/ctoa-p14-acceptance-request.schema.json",
+    "schemas/ctoa-p14-acceptance-report.schema.json",
+    "schemas/ctoa-p14-acceptance-result.schema.json",
     "schemas/ctoa-p14-runner-request.schema.json",
     "schemas/ctoa-p14-runner-result.schema.json",
+    "scripts/ops/otclient_p14_acceptance_attestation.py",
     "scripts/ops/otclient_p14_independent_runner.py",
+    "scripts/ops/otclient_p14_runner_preflight.py",
+    "tests/test_otclient_p14_acceptance_attestation.py",
     "tests/test_otclient_p14_independent_runner.py",
+    "tests/test_otclient_p14_runner_preflight.py",
     ".github/workflows/p14-independent-runner-contract.yml",
     "docs/otclient/P14_INDEPENDENT_RUNNER_CONTRACT.md",
 )
@@ -737,7 +847,7 @@ def _conditions_shadow_is_allowed(value: Any, allowed: set[str]) -> bool:
     return isinstance(value, str) and value in allowed
 
 
-def _conditions_shadow_canonical_sha256(value: Any) -> str:
+def _canonical_json_sha256(value: Any) -> str:
     encoded = json.dumps(
         value,
         allow_nan=False,
@@ -746,6 +856,10 @@ def _conditions_shadow_canonical_sha256(value: Any) -> str:
         sort_keys=True,
     ).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
+
+
+def _conditions_shadow_canonical_sha256(value: Any) -> str:
+    return _canonical_json_sha256(value)
 
 
 def _conditions_shadow_false_flags(payload: dict[str, Any]) -> bool:
@@ -2029,14 +2143,26 @@ def _roadmap_state_contract_valid(payload: dict[str, Any] | None) -> bool:
     state_sha = data.get("state_sha256")
     state_basis = {key: value for key, value in data.items() if key != "state_sha256"}
     return bool(
-        data.get("schema_version") == "ctoa.roadmap-state.v1"
+        data.get("schema_version") == "ctoa.roadmap-state.v2"
         and data.get("status") == "ready"
+        and data.get("readiness_status") in {"ready", "awaiting_external"}
         and data.get("phase") == "P13"
         and data.get("phase_status") == "runtime_evidence_ready"
         and data.get("next_phase") == "P14"
         and data.get("freshness_status") == "current"
         and data.get("tamper_status") == "passed"
         and data.get("blockers") == []
+        and isinstance(data.get("warnings"), list)
+        and all(
+            item == "runtime_module_gates_pending" for item in data.get("warnings", [])
+        )
+        and (
+            (data.get("readiness_status") == "ready" and data.get("warnings") == [])
+            or (
+                data.get("readiness_status") == "awaiting_external"
+                and data.get("warnings") == ["runtime_module_gates_pending"]
+            )
+        )
         and preflight.get("status") == "ready"
         and preflight.get("ready") is True
         and preflight.get("hard_blockers") == []
@@ -2045,8 +2171,22 @@ def _roadmap_state_contract_valid(payload: dict[str, Any] | None) -> bool:
         and len(source_health) >= 3
         and all(
             isinstance(item, dict)
-            and item.get("contract_status") == "passed"
-            and item.get("freshness_status") in {"current", "timeless"}
+            and (
+                (
+                    item.get("impact") == "required"
+                    and item.get("availability") == "available"
+                    and item.get("contract_status") == "passed"
+                    and item.get("freshness_status") in {"current", "timeless"}
+                )
+                or (
+                    item.get("impact") == "advisory"
+                    and item.get("availability")
+                    in {"available", "awaiting_external"}
+                    and item.get("contract_status") in {"passed", "pending"}
+                    and item.get("freshness_status")
+                    in {"current", "stale", "timeless"}
+                )
+            )
             for item in source_health
         )
         and len(ledger) == 7
@@ -2071,7 +2211,9 @@ def _roadmap_state_contract_valid(payload: dict[str, Any] | None) -> bool:
         and authority.get("runtime_actions") is False
         and authority.get("live_authority") is False
         and authority.get("p12_heal_friend_reopened") is False
-        and authority.get("mcp_write_tool_enabled") is False
+        and authority.get("runtime_mcp_write_tool_enabled") is False
+        and authority.get("roadmap_refresh_tool_enabled") is True
+        and authority.get("roadmap_refresh_risk_class") == "safe_write"
         and authority.get("allowed_output_paths") == expected_outputs
         and _conditions_shadow_is_sha256(state_sha)
         and _conditions_shadow_canonical_sha256(state_basis) == state_sha
@@ -2161,6 +2303,10 @@ def _roadmap_state_summary(
         if ready
         else ("blocked" if artifact_present else "missing"),
         "contract_valid": contract_valid,
+        "readiness_status": str(data.get("readiness_status") or "missing"),
+        "warning_count": len(data.get("warnings", []))
+        if isinstance(data.get("warnings"), list)
+        else 0,
         "freshness_status": str(data.get("freshness_status") or "missing"),
         "tamper_status": str(data.get("tamper_status") or "missing"),
         "audit_binding_status": audit_binding["status"],
@@ -2335,7 +2481,6 @@ def _roadmap_phase_state_summary(
     p14_foundation_ready = bool(
         p14.get("status") == "foundation_ready"
         and p14.get("implementation_file_count") == len(P14_FOUNDATION_PATHS)
-        and p14.get("operational_ready") is False
         and p14.get("runtime_authority_granted") is False
         and p14.get("live_authority_granted") is False
         and p14.get("promotion_approved") is False
@@ -2406,6 +2551,344 @@ def _roadmap_phase_state_summary(
     }
 
 
+def _p14_runner_preflight_summary(root: Path) -> dict[str, Any]:
+    payload = _read_json_strict_or_none(root / P14_RUNNER_PREFLIGHT_PATH)
+    if not isinstance(payload, dict):
+        return {
+            "status": "missing",
+            "fresh": False,
+            "contract_valid": False,
+            "operational_result": "missing",
+            "operational_ready": False,
+            "hard_blockers": ["p14_runner_preflight_missing"],
+            "warnings": [],
+            "acceptance": {
+                "status": "missing",
+                "request_present": False,
+                "result_present": False,
+                "proven_capability_count": 0,
+                "required_capability_count": 4,
+                "complete": False,
+                "capabilities": {
+                    "visual_regression": False,
+                    "in_world_regression": False,
+                    "canary_rehearsal": False,
+                    "rollback_rehearsal": False,
+                },
+            },
+            "remediation": {
+                "schema_version": P14_REMEDIATION_SCHEMA,
+                "status": "review_required",
+                "next_action": "review_p14_external_state",
+                "interaction": "operator_review",
+                "risk_class": "read_only",
+                "action_count": 1,
+                "ready_action_count": 1,
+                "blocked_action_count": 0,
+                "unknown_blocker_count": 1,
+                "actions": [
+                    {
+                        "action_id": "review_p14_external_state",
+                        "capability": "external_evidence_review",
+                        "status": "ready",
+                        "risk_class": "read_only",
+                        "interaction": "operator_review",
+                        "reason_codes": ["unclassified_blocker"],
+                        "blocked_by": [],
+                        "auto_executable": False,
+                    }
+                ],
+            },
+        }
+    generated_at = _parse_utc_timestamp(payload.get("generated_at"))
+    now = dt.datetime.now(dt.UTC)
+    age_seconds = (
+        max(0, int((now - generated_at).total_seconds()))
+        if generated_at is not None and generated_at <= now
+        else P14_RUNNER_PREFLIGHT_MAX_AGE_SECONDS + 1
+    )
+    fresh = age_seconds <= P14_RUNNER_PREFLIGHT_MAX_AGE_SECONDS
+    authority = payload.get("authority") if isinstance(payload.get("authority"), dict) else {}
+    authority_safe = all(
+        authority.get(key) is False
+        for key in (
+            "runtime_actions",
+            "live_authority",
+            "promotion_approved",
+            "mcp_write_tool_enabled",
+        )
+    )
+    operational_result = str(payload.get("operational_result") or "missing")
+    allowed_results = {
+        "missing",
+        "external_result_invalid",
+        "externally_verified_stale",
+        "externally_verified_current",
+    }
+    blockers = [
+        str(item)[:120]
+        for item in payload.get("hard_blockers", [])[:12]
+        if isinstance(item, str) and re.fullmatch(r"[a-z0-9_:-]{1,120}", item)
+    ] if isinstance(payload.get("hard_blockers"), list) else []
+    warnings = [
+        str(item)[:120]
+        for item in payload.get("warnings", [])[:8]
+        if isinstance(item, str) and re.fullmatch(r"[a-z0-9_:-]{1,120}", item)
+    ] if isinstance(payload.get("warnings"), list) else []
+    remediation = payload.get("remediation") if isinstance(payload.get("remediation"), dict) else {}
+    remediation_actions: list[dict[str, Any]] = []
+    raw_remediation_actions = remediation.get("actions")
+    remediation_actions_valid = bool(
+        isinstance(raw_remediation_actions, list)
+        and len(raw_remediation_actions) <= 6
+    )
+    if remediation_actions_valid:
+        for item in raw_remediation_actions[:6]:
+            if not isinstance(item, dict):
+                remediation_actions_valid = False
+                break
+            reason_codes = item.get("reason_codes")
+            blocked_by = item.get("blocked_by")
+            projected_reason_codes = [
+                str(value)
+                for value in reason_codes[:6]
+                if isinstance(value, str)
+                and re.fullmatch(r"p14_[a-z0-9_]{1,100}|unclassified_blocker", value)
+            ] if isinstance(reason_codes, list) else []
+            projected_blocked_by = [
+                str(value)
+                for value in blocked_by[:5]
+                if isinstance(value, str) and value in P14_REMEDIATION_CAPABILITIES
+            ] if isinstance(blocked_by, list) else []
+            action_contract = P14_REMEDIATION_ACTION_CONTRACTS.get(
+                str(item.get("action_id") or "")
+            )
+            action_valid = bool(
+                action_contract is not None
+                and action_contract
+                == (
+                    item.get("capability"),
+                    item.get("risk_class"),
+                    item.get("interaction"),
+                )
+                and item.get("status") in {"ready", "blocked"}
+                and item.get("auto_executable") is False
+                and isinstance(reason_codes, list)
+                and len(reason_codes) <= 6
+                and len(projected_reason_codes) == len(reason_codes[:6])
+                and isinstance(blocked_by, list)
+                and len(blocked_by) <= 5
+                and len(projected_blocked_by) == len(blocked_by[:5])
+                and (
+                    item.get("status") == "ready" and not projected_blocked_by
+                    or item.get("status") == "blocked" and bool(projected_blocked_by)
+                )
+            )
+            if not action_valid:
+                remediation_actions_valid = False
+                break
+            remediation_actions.append(
+                {
+                    "action_id": item["action_id"],
+                    "capability": item["capability"],
+                    "status": item["status"],
+                    "risk_class": item["risk_class"],
+                    "interaction": item["interaction"],
+                    "reason_codes": projected_reason_codes,
+                    "blocked_by": projected_blocked_by,
+                    "auto_executable": False,
+                }
+            )
+    remediation_authority = remediation.get("authority") if isinstance(remediation.get("authority"), dict) else {}
+    remediation_action_ids = [item["action_id"] for item in remediation_actions]
+    ready_remediation_action_ids = [
+        item["action_id"]
+        for item in remediation_actions
+        if item["status"] == "ready"
+    ]
+    next_remediation_contract = P14_REMEDIATION_ACTION_CONTRACTS.get(
+        str(remediation.get("next_action") or "")
+    )
+    remediation_valid = bool(
+        remediation.get("schema_version") == P14_REMEDIATION_SCHEMA
+        and remediation.get("status") in {"complete", "action_required", "review_required"}
+        and remediation.get("next_action") in P14_REMEDIATION_ACTION_IDS
+        and remediation.get("interaction") in P14_REMEDIATION_INTERACTIONS
+        and remediation.get("risk_class") in P14_REMEDIATION_RISK_CLASSES
+        and type(remediation.get("action_count")) is int
+        and remediation.get("action_count") == len(remediation_actions)
+        and type(remediation.get("ready_action_count")) is int
+        and remediation.get("ready_action_count") == sum(
+            1 for item in remediation_actions if item["status"] == "ready"
+        )
+        and type(remediation.get("blocked_action_count")) is int
+        and remediation.get("blocked_action_count") == sum(
+            1 for item in remediation_actions if item["status"] == "blocked"
+        )
+        and len(remediation_action_ids) == len(set(remediation_action_ids))
+        and type(remediation.get("unknown_blocker_count")) is int
+        and 0 <= remediation.get("unknown_blocker_count") <= 12
+        and remediation_actions_valid
+        and remediation_authority.get("auto_execute") is False
+        and remediation_authority.get("live_mutation") is False
+        and remediation_authority.get("authority_grant") is False
+        and (
+            (
+                not blockers
+                and remediation.get("status") == "complete"
+                and remediation.get("next_action") == "none"
+                and len(remediation_actions) == 0
+            )
+            or (
+                bool(blockers)
+                and remediation.get("status") in {"action_required", "review_required"}
+                and remediation.get("next_action") != "none"
+                and remediation.get("next_action") in ready_remediation_action_ids
+                and next_remediation_contract is not None
+                and next_remediation_contract[1:] == (
+                    remediation.get("risk_class"),
+                    remediation.get("interaction"),
+                )
+                and len(remediation_actions) > 0
+            )
+        )
+    )
+    remediation_projection = {
+        "schema_version": P14_REMEDIATION_SCHEMA,
+        "status": str(remediation.get("status") or "review_required")
+        if remediation_valid
+        else "review_required",
+        "next_action": str(remediation.get("next_action") or "review_p14_external_state")
+        if remediation_valid
+        else "review_p14_external_state",
+        "interaction": str(remediation.get("interaction") or "operator_review")
+        if remediation_valid
+        else "operator_review",
+        "risk_class": str(remediation.get("risk_class") or "read_only")
+        if remediation_valid
+        else "read_only",
+        "action_count": len(remediation_actions) if remediation_valid else 0,
+        "ready_action_count": sum(
+            1 for item in remediation_actions if item["status"] == "ready"
+        ) if remediation_valid else 0,
+        "blocked_action_count": sum(
+            1 for item in remediation_actions if item["status"] == "blocked"
+        ) if remediation_valid else 0,
+        "unknown_blocker_count": int(remediation.get("unknown_blocker_count", 0))
+        if remediation_valid
+        and type(remediation.get("unknown_blocker_count", 0)) is int
+        else 0,
+        "actions": remediation_actions if remediation_valid else [],
+    }
+    acceptance = payload.get("acceptance") if isinstance(payload.get("acceptance"), dict) else {}
+    acceptance_capabilities = (
+        acceptance.get("capabilities")
+        if isinstance(acceptance.get("capabilities"), dict)
+        else {}
+    )
+    acceptance_capability_ids = {
+        "visual_regression",
+        "in_world_regression",
+        "canary_rehearsal",
+        "rollback_rehearsal",
+    }
+    acceptance_statuses = {
+        "missing",
+        "invalid",
+        "request_ready",
+        "partial",
+        "result_untrusted",
+        "passed",
+    }
+    acceptance_valid = bool(
+        acceptance.get("status") in acceptance_statuses
+        and isinstance(acceptance.get("request_present"), bool)
+        and isinstance(acceptance.get("request_valid"), bool)
+        and isinstance(acceptance.get("result_present"), bool)
+        and isinstance(acceptance.get("result_valid"), bool)
+        and isinstance(acceptance.get("signature_verification_passed"), bool)
+        and isinstance(acceptance.get("source_current"), bool)
+        and type(acceptance.get("proven_capability_count")) is int
+        and 0 <= acceptance.get("proven_capability_count") <= 4
+        and acceptance.get("required_capability_count") == 4
+        and set(acceptance_capabilities) == acceptance_capability_ids
+        and all(isinstance(value, bool) for value in acceptance_capabilities.values())
+        and acceptance.get("proven_capability_count")
+        == sum(1 for value in acceptance_capabilities.values() if value)
+        and isinstance(acceptance.get("complete"), bool)
+        and acceptance.get("complete") is all(acceptance_capabilities.values())
+        and isinstance(acceptance.get("authority_safe"), bool)
+    )
+    acceptance_projection = {
+        "status": str(acceptance.get("status") or "invalid")
+        if acceptance_valid
+        else "invalid",
+        "request_present": acceptance.get("request_present") is True
+        if acceptance_valid
+        else False,
+        "result_present": acceptance.get("result_present") is True
+        if acceptance_valid
+        else False,
+        "proven_capability_count": int(acceptance.get("proven_capability_count", 0))
+        if acceptance_valid
+        else 0,
+        "required_capability_count": 4,
+        "complete": acceptance.get("complete") is True if acceptance_valid else False,
+        "capabilities": {
+            capability: acceptance_capabilities.get(capability) is True
+            if acceptance_valid
+            else False
+            for capability in sorted(acceptance_capability_ids)
+        },
+    }
+    contract_valid = bool(
+        payload.get("schema_version") == P14_RUNNER_PREFLIGHT_SCHEMA
+        and payload.get("status") in {"ready", "needs_attention", "unavailable"}
+        and operational_result in allowed_results
+        and isinstance(payload.get("operational_ready"), bool)
+        and authority_safe
+        and remediation_valid
+        and acceptance_valid
+    )
+    if not contract_valid:
+        blockers = ["p14_runner_preflight_invalid"]
+    elif not fresh and "p14_runner_preflight_stale" not in blockers:
+        blockers.append("p14_runner_preflight_stale")
+    operational_ready = bool(
+        contract_valid
+        and fresh
+        and payload.get("status") == "ready"
+        and payload.get("operational_ready") is True
+        and operational_result == "externally_verified_current"
+        and not blockers
+    )
+    return {
+        "status": str(payload.get("status") or "invalid")
+        if contract_valid
+        else "invalid",
+        "fresh": fresh,
+        "age_seconds": age_seconds,
+        "contract_valid": contract_valid,
+        "operational_result": operational_result
+        if operational_result in allowed_results
+        else "missing",
+        "operational_ready": operational_ready,
+        "hard_blockers": blockers,
+        "warnings": warnings,
+        "acceptance": acceptance_projection,
+        "remediation": remediation_projection,
+        "runner_online": bool(
+            isinstance(payload.get("runner"), dict)
+            and payload["runner"].get("online") is True
+        ),
+        "signature_verification_passed": bool(
+            isinstance(payload.get("workflow"), dict)
+            and payload["workflow"].get("signature_verification_passed") is True
+        ),
+        "authority_safe": authority_safe,
+    }
+
+
 def _p14_foundation_summary(root: Path = REPO_ROOT) -> dict[str, Any]:
     present: list[str] = []
     blockers: list[str] = []
@@ -2417,6 +2900,7 @@ def _p14_foundation_summary(root: Path = REPO_ROOT) -> dict[str, Any]:
             present.append(relative)
     result_path = root / "runtime" / "p14_independent_runner" / "result.json"
     result_present = _safe_file_stat(result_path) is not None
+    runner_preflight = _p14_runner_preflight_summary(root)
     ready = len(present) == len(P14_FOUNDATION_PATHS) and not blockers
     return {
         "status": "foundation_ready" if ready else "blocked",
@@ -2424,11 +2908,18 @@ def _p14_foundation_summary(root: Path = REPO_ROOT) -> dict[str, Any]:
         "implementation_file_count": len(present),
         "required_file_count": len(P14_FOUNDATION_PATHS),
         "operational_runner_result": (
-            "present_untrusted_until_external_key_verification"
+            runner_preflight["operational_result"]
+            if runner_preflight["contract_valid"]
+            else "present_untrusted_until_external_key_verification"
             if result_present
             else "missing"
         ),
-        "operational_ready": False,
+        "operational_ready": runner_preflight["operational_ready"],
+        "operational_blockers": runner_preflight["hard_blockers"],
+        "operational_warnings": runner_preflight["warnings"],
+        "acceptance": runner_preflight["acceptance"],
+        "remediation_plan": runner_preflight["remediation"],
+        "runner_preflight": runner_preflight,
         "runtime_authority_granted": False,
         "live_authority_granted": False,
         "promotion_approved": False,
@@ -4156,7 +4647,11 @@ def build_evidence_pack(
     helper_dev_dir: Path | None = None,
     operator_brief_path: Path | None = None,
     roadmap_state_path: Path | None = None,
+    source_audit_id: str = "",
 ) -> dict[str, Any]:
+    source_audit_id = str(source_audit_id or "").strip()
+    if source_audit_id and not EVIDENCE_SOURCE_AUDIT_ID_RE.fullmatch(source_audit_id):
+        raise ValueError("source_audit_id must identify an evidence-pack-refresh audit")
     releases_dir = releases_dir or _configured_path(
         "CTOA_RELEASES_DIR", "releases/evidence"
     )
@@ -4247,7 +4742,8 @@ def build_evidence_pack(
             "Evidence pack is ready for review. Keep fresh traces attached to the release note."
         )
 
-    return {
+    pack = {
+        "schema_version": EVIDENCE_SCHEMA_VERSION,
         "generated_at_utc": dt.datetime.now(dt.UTC).isoformat(timespec="seconds"),
         "releases_dir": str(releases_dir).replace("\\", "/"),
         "quality_path": str(quality_path).replace("\\", "/"),
@@ -4285,6 +4781,14 @@ def build_evidence_pack(
         "p7_operator_brief": p7_operator_brief,
         "recommendations": recommendations,
     }
+    provenance = {
+        "source_action": EVIDENCE_SOURCE_ACTION,
+        "source_audit_id": source_audit_id,
+        "binding_status": "bound" if source_audit_id else "standalone",
+    }
+    pack["provenance"] = provenance
+    provenance["content_sha256"] = _canonical_json_sha256(pack)
+    return pack
 
 
 def render_markdown(pack: dict[str, Any]) -> str:
@@ -4307,6 +4811,7 @@ def render_markdown(pack: dict[str, Any]) -> str:
         f"- P7 action readiness: `{pack['p7_operator_brief']['action_readiness']['status']}`",
         f"- P7 safe-write design: `{pack['p7_operator_brief']['safe_write_tool_design']['status']}`",
         f"- P7 roadmap generation: `{pack['p7_operator_brief']['roadmap_generation']['status']}`",
+        f"- Evidence audit binding: `{pack['provenance']['binding_status']}`",
     ]
 
     if latest is not None:
@@ -4569,6 +5074,11 @@ def _build_parser() -> argparse.ArgumentParser:
         type=Path,
         default=_configured_path("CTOA_EVIDENCE_MD_PATH", "runtime/evidence/latest.md"),
     )
+    parser.add_argument(
+        "--source-audit-id",
+        default="",
+        help="Preallocated safe-write audit ID that binds this evidence artifact.",
+    )
     return parser
 
 
@@ -4581,6 +5091,7 @@ def main() -> int:
         args.action_audit_path,
         args.helper_dev_dir,
         args.operator_brief_path,
+        source_audit_id=args.source_audit_id,
     )
 
     args.json_out.parent.mkdir(parents=True, exist_ok=True)

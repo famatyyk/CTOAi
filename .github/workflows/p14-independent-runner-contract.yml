@@ -7,9 +7,12 @@ on:
       - "AI/generated/ROADMAP_STATE.json"
       - "scripts/lua/ctoa_chooser/**"
       - "requirements.txt"
+      - "schemas/ctoa-p14-acceptance-*.schema.json"
       - "schemas/ctoa-p14-runner-*.schema.json"
       - "scripts/lua/otclient/**"
+      - "scripts/ops/otclient_p14_acceptance_attestation.py"
       - "scripts/ops/otclient_p14_independent_runner.py"
+      - "tests/test_otclient_p14_acceptance_attestation.py"
       - "tests/test_otclient_p14_independent_runner.py"
   workflow_dispatch:
     inputs:
@@ -48,7 +51,10 @@ jobs:
         run: python -m pip install pytest "jsonschema>=4.23.0,<5.0.0"
 
       - name: Run schema, tamper, and rollback contract tests
-        run: python -m pytest tests/test_otclient_p14_independent_runner.py -q
+        run: >-
+          python -m pytest
+          tests/test_otclient_p14_independent_runner.py
+          tests/test_otclient_p14_acceptance_attestation.py -q
 
       - name: Create job-scoped signing material
         shell: python
@@ -75,6 +81,17 @@ jobs:
       - name: Verify signed result handoff
         run: >-
           python scripts/ops/otclient_p14_independent_runner.py verify-result
+          --artifact-root runtime/p14_independent_runner
+
+      - name: Prepare capability-driven isolated acceptance request
+        run: >-
+          python scripts/ops/otclient_p14_acceptance_attestation.py prepare
+          --artifact-root runtime/p14_independent_runner
+
+      - name: Verify signed acceptance attestation
+        if: ${{ hashFiles('runtime/p14_independent_runner/acceptance-result.json') != '' }}
+        run: >-
+          python scripts/ops/otclient_p14_acceptance_attestation.py verify-result
           --artifact-root runtime/p14_independent_runner
 
       - name: Upload non-promotable contract evidence
@@ -142,7 +159,10 @@ jobs:
           Add-Content -LiteralPath $env:GITHUB_ENV -Value "CTOA_P14_RUNNER_ID=p14-$normalized"
 
       - name: Run schema, tamper, and rollback contract tests
-        run: python -m pytest tests/test_otclient_p14_independent_runner.py -q
+        run: >-
+          python -m pytest
+          tests/test_otclient_p14_independent_runner.py
+          tests/test_otclient_p14_acceptance_attestation.py -q
 
       - name: Prepare request from the trusted clean checkout
         run: >-
@@ -158,6 +178,17 @@ jobs:
       - name: Verify signed result handoff
         run: >-
           python scripts/ops/otclient_p14_independent_runner.py verify-result
+          --artifact-root runtime/p14_independent_runner
+
+      - name: Prepare capability-driven isolated acceptance request
+        run: >-
+          python scripts/ops/otclient_p14_acceptance_attestation.py prepare
+          --artifact-root runtime/p14_independent_runner
+
+      - name: Verify signed acceptance attestation
+        if: ${{ hashFiles('runtime/p14_independent_runner/acceptance-result.json') != '' }}
+        run: >-
+          python scripts/ops/otclient_p14_acceptance_attestation.py verify-result
           --artifact-root runtime/p14_independent_runner
 
       - name: Upload isolated contract evidence

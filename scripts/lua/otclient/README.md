@@ -24,6 +24,7 @@ selection loads its UI but does not arm gameplay automation.
 | **ctoa_native_combat.lua** | Guarded monster targeting | `g_game.attack()`, `g_game.setChaseMode()`, `g_map.getCreaturesInRange()` |
 | **ctoa_native_loot.lua** | Passive loot scanner | `Container.onOpen`, `Map.onItemAppear`, `g_game.getContainers()` |
 | **ctoa_helper_modules.lua** | Passive module lane registry | `_G.CTOA_HELPER_MODULES`, `getModuleLanes()`, `getShortLabels()` |
+| **ctoa_helper_rule_engine.lua** | Pure typed action/condition validation and passive evaluation | `_G.CTOA_HELPER_RULE_ENGINE`, HP/MP/monster/distance/PZ/condition metrics, AND/OR, cooldown, hysteresis, bounded randomization; no dispatch |
 | **ctoa_helper_runtime_core.lua** | Passive runtime registry, event bus, and budgeted scheduler | `_G.CTOA_HELPER_RUNTIME_CORE`, disabled-by-default tasks, bounded ticks, failure backoff |
 | **ctoa_helper_combat_observer.lua** | Passive normalized combat/targeting observations | `_G.CTOA_HELPER_COMBAT_OBSERVER`, `ctoa.combat-observation.v1`, `combat.observed` |
 | **ctoa_helper_recovery_observer.lua** | Passive normalized HP/MP/recovery observations | `_G.CTOA_HELPER_RECOVERY_OBSERVER`, `ctoa.recovery-observation.v1`, `recovery.observed` |

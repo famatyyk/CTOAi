@@ -233,9 +233,12 @@ local KEY_ORDERS = {
         "ignored_names",
         "prefer_low_hp",
         "priority_names",
+        "target_rules",
         "auto_haste",
         "haste_spell",
         "haste_interval_ms",
+        "spell_state_max_age_ms",
+        "spell_state_families",
         "api_probe_enabled",
         "magic_api_probe_enabled",
         "spell_rotation",
@@ -265,6 +268,8 @@ local KEY_ORDERS = {
         "rune_cooldown_ms",
         "rune_pvp_safe",
         "rune_requires_target",
+        "combat_action_rules",
+        "automation",
         "timer_enabled",
         "timer_interval_ms",
         "timer_message",
@@ -286,11 +291,204 @@ local KEY_ORDERS = {
         "diagnostics_sample_interval_ms",
     },
     hud = {"enabled", "x", "y"},
-    rotation = {"words", "min_nearby", "cooldown_ms", "max_nearby", "scan_range"},
+    rotation = {"enabled", "words", "use_mob_count", "min_nearby", "max_nearby", "scan_range", "cooldown_ms", "directional"},
+    target_rule = {"enabled", "name_pattern", "min_hp", "max_hp", "min_distance", "max_distance", "min_count", "max_count", "priority", "chase_policy"},
+    combat_action_rule = {"enabled", "kind", "action_text", "hotkey", "min_count", "max_count", "cooldown_ms", "stance_mode", "state_id", "require_target", "pvp_safe"},
+    spell_state_family = {"id", "flag_names", "spells", "max_age_ms", "unknown_policy", "fallback_cooldown_ms"},
     heal_spell = {"threshold", "spell"},
     waypoint = {"x", "y", "z", "label"},
     family_enabled = {"ring_primary", "ring_secondary"},
     feature_flags = {"diagnostics", "experimental_cavebot", "experimental_loot", "experimental_combat"},
+}
+
+local DEFAULT_PROFILE = {
+    schema_version = "ctoa-helper-profile-v1",
+    enabled = true,
+    safe_boot_runtime_disabled = true,
+    tick_ms = 500,
+    hotkey = "Ctrl+J",
+    auto_show_window = false,
+    auto_hide_ms = 0,
+    window_x = 520,
+    window_y = 34,
+    theme_preset = "graphite",
+    compact_mode = false,
+    modules = {
+        overview = true, healing = true, heal_friend = false,
+        conditions = false, targeting = true, magic = true,
+        cavebot = true, equipment = false, helper = true,
+        scripting = false, settings = true, engine = true,
+    },
+    healing = {
+        spell_enabled = true, potion_enabled = true,
+        spell_threshold = 80, potion_threshold = 62,
+        threshold_jitter_percent = 3, spell = "exura ico",
+        critical_spell = "exura med ico",
+        spell_rotation = {
+            {threshold = 85, spell = "exura ico"},
+            {threshold = 55, spell = "exura med ico"},
+            {threshold = 30, spell = "exura gran ico"}
+        },
+        potion_name = "Ultimate Health Potion", potion_mode = "Actionbar",
+        potion_hotkey = "F1", potion_actionbar_slot = "F1",
+        mana_potion_enabled = true, mana_potion_threshold = 45,
+        mana_potion_name = "Mana Potion", mana_potion_hotkey = "F2",
+        mana_potion_actionbar_slot = "F2", mana_potion_cooldown_ms = 1000,
+        last_cast_ms = 0, last_mana_potion_ms = 0,
+        last_recovery_action_ms = 0, cooldown_ms = 1000
+    },
+    heal_friend = {
+        enabled = false, observe_party = true, sio_spell = "exura sio",
+        hp_threshold = 70, cooldown_ms = 1000, action_lock_ms = 1200,
+        friend_whitelist = {}, friend_target_id = 0,
+        priority = "single_exact_target", require_whitelist = true,
+        pz_safe = true, runtime_enabled = false, friend_scan_range = 7,
+        sample_interval_ms = 1000, last_sample_ms = 0, last_status = "pending",
+        observed_count = 0, lowest_friend_hp = 100, last_cast_ms = 0
+    },
+    conditions = {
+        enabled = false, observe_states = true, mana_shield = true,
+        paralyze = true, poison = true, burn = true,
+        electric = true, bleeding = true, runtime_enabled = false,
+        sample_interval_ms = 1000, api_probe_enabled = true,
+        api_probe_status = "pending", api_probe_count = 0,
+        last_sample_ms = 0, last_status = "pending"
+    },
+    equipment = {
+        enabled = false, observe_slots = true, ring_swap = false,
+        amulet_swap = false, weapon_set = "manual", pvp_gear_lock = true,
+        family_enabled = {ring_primary = false, ring_secondary = false},
+        hp_threshold = 45, sample_interval_ms = 1500,
+        api_probe_enabled = true, api_probe_status = "pending",
+        api_probe_count = 0, runtime_enabled = false,
+        last_sample_ms = 0, last_status = "pending"
+    },
+    scripting = {
+        enabled = false, policy_mode = "deny_all",
+        allow_user_snippets = false, allow_runtime_eval = false,
+        command_model = "none", audit_log = true, sandbox_required = true,
+        max_snippet_chars = 0, runtime_enabled = false,
+        last_status = "blocked: no snippet execution"
+    },
+    tools = {
+        auto_attack = true, chase = true, auto_follow = false,
+        pause_in_pz = true, hold_target = false, require_reachable_target = true,
+        attack_range = 7, target_timeout_ms = 6000,
+        unreachable_timeout_ms = 1200, retarget_delay_ms = 200,
+        log_retarget_ms = 3000, block_log_ms = 3000, probe_log_ms = 5000,
+        clear_target_in_pz = true, block_npc_icons = true,
+        block_friendly_summons = true,
+        friendly_summon_name_fragments = {
+            " familiar ",
+            " summon ",
+            " summoned ",
+            "familiar",
+            "summon"
+        },
+        prefer_low_hp = false,
+        ignored_names = {
+            "elara goldwarden", "goldwarden", "aldren", "andrew",
+            "brumgar", "hireling", "postman", "selmir",
+            "taskmaster", "liora", "npc"
+        },
+        priority_names = {
+            "demon", "dragon lord", "dragon", "cyclops", "dwarf"
+        },
+        target_rules = {
+            {enabled = true, name_pattern = "", min_hp = 0, max_hp = 100,
+             min_distance = 0, max_distance = 7, min_count = 0, max_count = 99,
+             priority = 50, chase_policy = "inherit"}
+        },
+        auto_haste = false,
+        haste_spell = "utani hur",
+        haste_interval_ms = 30000,
+        spell_state_max_age_ms = 1500,
+        spell_state_families = {{id = "haste", flag_names = {"Haste"}, spells = {"utani hur"}, max_age_ms = 1500, unknown_policy = "block", fallback_cooldown_ms = 30000},
+            {id = "strengthened", flag_names = {"PartyBuff"}, spells = {"utito tempo"}, max_age_ms = 1500, unknown_policy = "block", fallback_cooldown_ms = 30000},
+            {id = "defensive_stance", flag_names = {}, spells = {"utamo tempo"}, max_age_ms = 1500, unknown_policy = "bounded_cooldown", fallback_cooldown_ms = 30000}},
+        last_spell_state_casts = {},
+        api_probe_enabled = true,
+        magic_api_probe_enabled = true,
+        last_haste_ms = 0,
+        spell_rotation = true,
+        magic_priority = "rotation",
+        rotation_preset = "smart",
+        rotation_interval_ms = 1050,
+        rotation_scan_range = 1,
+        last_rotation_ms = 0,
+        last_attack_spell_ms = 0,
+        recovery_action_gap_ms = 250,
+        attack_action_lock_ms = 1050,
+        attack_action_lock_until_ms = 0,
+        last_spell_casts = {},
+        rotation_spells = {
+            {words = "exori gran", min_nearby = 3, cooldown_ms = 6000},
+            {words = "exori min", min_nearby = 2, cooldown_ms = 4000, directional = true},
+            {words = "exori", min_nearby = 2, cooldown_ms = 4000},
+            {words = "exori gran ico", min_nearby = 1, max_nearby = 2, cooldown_ms = 6000},
+            {words = "exori ico", min_nearby = 1, max_nearby = 2, cooldown_ms = 2000},
+            {words = "exori hur", min_nearby = 1, cooldown_ms = 2000, max_nearby = 1}
+        },
+        auto_exeta = true,
+        exeta_interval_ms = 5000,
+        last_exeta_ms = 0,
+        exeta_index = 1,
+        exeta_min_visible = 2,
+        exeta_spells = {
+            "exeta res",
+            "exeta amp res"
+        },
+        auto_stance = false,
+        last_stance_ms = 0,
+        rune_enabled = false,
+        rune_name = "Sudden Death Rune",
+        rune_mode = "Actionbar",
+        rune_hotkey = "F5",
+        rune_actionbar_slot = "F5",
+        rune_min_visible = 1,
+        rune_cooldown_ms = 1000,
+        rune_pvp_safe = true,
+        rune_requires_target = true,
+        last_rune_ms = 0,
+        combat_action_rules = {
+            {enabled = false, kind = "rune", action_text = "Sudden Death Rune", hotkey = "F5",
+             min_count = 1, max_count = 99, cooldown_ms = 1000, require_target = true, pvp_safe = true},
+            {enabled = false, kind = "stance", action_text = "utito tempo", min_count = 1,
+             max_count = 2, cooldown_ms = 10000, stance_mode = "offensive", state_id = "strengthened", require_target = true, pvp_safe = true},
+            {enabled = false, kind = "stance", action_text = "utamo tempo", min_count = 4,
+             max_count = 99, cooldown_ms = 10000, stance_mode = "defensive", state_id = "defensive_stance", require_target = true, pvp_safe = true}
+        },
+        automation = {schema_version = "ctoa-helper-rule-set-v1", rules = {}},
+        timer_enabled = false,
+        timer_interval_ms = 60000,
+        timer_message = "timer",
+        last_timer_ms = 0,
+        auto_open_corpses = false,
+        auto_loot_containers = false,
+        loot_range = 2,
+        loot_capacity_threshold = 50,
+        loot_max_items_per_scan = 8,
+        cavebot_api_probe_enabled = true,
+        cavebot_enabled = false,
+        cavebot_movement_enabled = false,
+        cavebot_step_delay_ms = 1200,
+        cavebot_reach_distance = 1,
+        cavebot_retry_limit = 3,
+        cavebot_index = 1,
+        cavebot_last_walk_ms = 0,
+        cavebot_retry_attempts = 0,
+        cavebot_stuck_ticks = 0,
+        cavebot_waypoints = {},
+        feature_flags = {
+            diagnostics = true,
+            experimental_cavebot = false,
+            experimental_loot = false,
+            experimental_combat = false
+        },
+        diagnostics_export_limit = 20,
+        diagnostics_sample_interval_ms = 5000,
+        last_diagnostics_sample_ms = 0
+    }
 }
 
 local PROFILE_EXPORT_SECTION_ORDER = {
@@ -319,6 +517,10 @@ local function copyTable(value)
         result[key] = copyTable(item)
     end
     return result
+end
+
+function ProfileSchema.defaultProfile()
+    return copyTable(DEFAULT_PROFILE)
 end
 
 local function isArrayTable(value)
@@ -350,6 +552,15 @@ end
 local function nestedOrderForKey(key)
     if key == "rotation_spells" then
         return "rotation"
+    end
+    if key == "target_rules" then
+        return "target_rule"
+    end
+    if key == "combat_action_rules" then
+        return "combat_action_rule"
+    end
+    if key == "spell_state_families" then
+        return "spell_state_family"
     end
     if key == "spell_rotation" then
         return "heal_spell"
@@ -623,7 +834,7 @@ function ProfileSchema.migrationPlan(profile)
     }
 end
 
-function ProfileSchema.migrate(profile, defaults)
+function ProfileSchema.migrate(profile, defaults, ruleEngine)
     local plan = ProfileSchema.migrationPlan(profile)
     if plan.allowed ~= true then
         return nil, plan
@@ -648,6 +859,26 @@ function ProfileSchema.migrate(profile, defaults)
         "scripting.allow_runtime_eval",
     }) do
         setPath(migrated, path, false)
+    end
+    local sourceTools = type(profile) == "table" and type(profile.tools) == "table" and profile.tools or {}
+    local sourceAutomation = sourceTools.automation
+    local automation = sourceAutomation ~= nil and sourceAutomation or (type(migrated.tools) == "table" and migrated.tools.automation or nil)
+    if automation ~= nil then
+        local engine = type(ruleEngine) == "table" and ruleEngine or rawget(_G, "CTOA_HELPER_RULE_ENGINE")
+        if type(engine) ~= "table" or type(engine.migrateRuleSet) ~= "function" then
+            plan.allowed = false
+            plan.reason = "rule_engine_unavailable"
+            return nil, plan
+        end
+        local migratedRules, rulePlan = engine.migrateRuleSet(automation)
+        plan.rule_set_migration = rulePlan
+        if type(migratedRules) ~= "table" then
+            plan.allowed = false
+            plan.reason = "rule_set_migration_failed"
+            return nil, plan
+        end
+        migrated.tools = migrated.tools or {}
+        migrated.tools.automation = migratedRules
     end
     plan.applied = #plan.steps > 0
     plan.result_schema = migrated.schema_version
@@ -870,9 +1101,13 @@ function ProfileSchema.contract()
         owns_schema_metadata = true,
         owns_versioned_migration_plan = true,
         owns_safe_profile_migration = true,
+        owns_rule_set_profile_migration = true,
         owns_key_order_metadata = true,
         owns_profile_export_descriptors = true,
         owns_merge_table = true,
+        owns_default_profile = true,
+        default_profile_schema = CURRENT_PROFILE_SCHEMA,
+        default_profile_safe_boot = true,
         owns_lua_serializer = true,
         owns_display_profile_name = true,
         owns_schema_value_bridge = true,

@@ -1,18 +1,18 @@
 # P7 Roadmap State Refresh Design
 
-Status: `implemented_cli_only_confirmed_refresh_complete`; the MCP tool is not
-enabled and Control Center remains read-only.
+Status: `enabled_end_to_end`; the native generator is available through the
+Control Center action engine and `ctoai_roadmap_state_refresh` MCP tool.
 
 ## Selection
 
 - Action ID: `roadmap-state-refresh`
-- Proposed MCP tool: `ctoai_roadmap_state_refresh` (not implemented or enabled)
+- MCP tool: `ctoai_roadmap_state_refresh` (enabled, native dry-run)
 - Risk class: `safe_write`
 - Purpose: derive one machine-readable roadmap state from existing generated
   manifests and evidence, reducing drift between `Current State`, `Now`, and
   `Next` without editing hand-authored roadmap policy.
 
-Exactly this one CLI action is implemented for the bounded P13 lane. Deploy,
+Exactly this one CLI action is enabled for the bounded P13 lane. Deploy,
 live client, promotion, arbitrary command, and arbitrary path actions remain
 outside both the CLI and plugin surfaces.
 
@@ -71,8 +71,17 @@ input or output path, authorize runtime/live work, or rebaseline P9-P12.
 Control Center consumes only the fixed JSON artifact. It validates the state
 hash and authority boundary, displays the seven terminal ledger entries, and
 checks confirmed audit binding separately from freshness and tamper status.
-There is no refresh button or command in the evidence model. The MCP write tool
-count remains unchanged.
+The action panel exposes one dry-run-first refresh capability. Its dry-run
+executes the real generator instead of returning a simulated plan. Confirmed
+execution remains actor-bound, time-limited, exact-confirmed, and limited to
+the fixed JSON/Markdown outputs. The sixth MCP safe-write capability uses the
+same generator and cockpit preflight.
+
+P14 sandbox/runtime evidence is advisory to P13 state generation. A current
+manifest mismatch therefore produces `readiness_status=awaiting_external` and
+`runtime_module_gates_pending`; it does not turn the roadmap platform into a
+false outage. Required P13 source, schema, ledger, tamper, or preflight failures
+still block generation.
 
 ## Implemented Tests
 
@@ -89,17 +98,16 @@ count remains unchanged.
 - sanitized audit record on dry-run, confirmed success, and failure;
 - CLI rejects arbitrary command/path fields and exposes no caller-selected
   source or output path;
-- Control Center evidence and detail views remain read-only without an action
-  button or command;
-- regression proof that active safe-write tool count remains five until a
-  separate reviewed enablement change.
+- native Control Center and MCP dry-runs execute the fixed generator;
+- active safe-write tool count is six and all six require successful audited
+  dry-run/preflight evidence.
 
 ## Enablement Boundary
 
-Implementation, dry-run evidence, confirmed fixed-output generation, and MCP
-enablement remain separate authorities. The CLI implementation and read-only UI
-do not authorize or enable `ctoai_roadmap_state_refresh`. The real dry-run wrote
-only its sanitized audit record; the later exact confirmation
-`refresh roadmap state` authorized the fixed JSON/Markdown outputs and a
-hash-bound confirmed audit record. No MCP, runtime, P12 reopening, or live
-authority follows.
+Implementation, dry-run evidence, confirmed fixed-output generation, and
+runtime/live authority remain separate. `ctoai_roadmap_state_refresh` is enabled
+only as `safe_write`; the real dry-run writes sanitized audit evidence and the
+exact confirmation `refresh roadmap state` authorizes the fixed JSON/Markdown
+outputs. The state declares `roadmap_refresh_tool_enabled=true` while preserving
+`runtime_mcp_write_tool_enabled=false`, runtime actions false, P12 reopening
+false, and live authority false.

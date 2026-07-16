@@ -34,7 +34,7 @@ REGISTRY_V1_SHA256 = "c3dd65689219229de0a5d5bcda50f7b60779ad8cc6ea0262dc73386c7a
 REGISTRY_SCHEMA_SHA256 = (
     "e63f70b0443c5327a9bf2e597a30e6f49748ae5dee86c7e305ea3b4d28102dd6"
 )
-STATE_SCHEMA_SHA256 = "3f2afa6a4a49407ecce6f8bcc71cf4d131c2e98507b6b1b4977f08c8f5067854"
+STATE_SCHEMA_SHA256 = "20e2590a5b7a91097ebf5ac02397ffb05a1e380593fd6e711909e83270fca5d4"
 
 FIXED_ENTRY_PATHS = {
     "p8-background-acceptance": "runtime/solteria_helper_dev/background_status.json",
@@ -245,9 +245,10 @@ def _schema_errors(schema: dict[str, Any], payload: dict[str, Any]) -> list[str]
 
 def _source_health(
     root: Path, now: datetime, cache: dict[str, LoadedJson]
-) -> tuple[list[dict[str, Any]], list[str]]:
+) -> tuple[list[dict[str, Any]], list[str], list[str]]:
     checks: list[dict[str, Any]] = []
     blockers: list[str] = []
+    warnings: list[str] = []
     feature = _load_text(root, SOURCE_HEALTH_PATHS["feature_roadmap"])
     feature_ok = bool(
         feature.status == "loaded"
@@ -266,6 +267,8 @@ def _source_health(
         {
             "name": "feature_roadmap",
             "path": SOURCE_HEALTH_PATHS["feature_roadmap"],
+            "impact": "required",
+            "availability": "available" if feature_ok else "blocked",
             "load_status": feature.status,
             "sha256": feature.sha256,
             "freshness_status": "timeless" if feature.status == "loaded" else "blocked",
@@ -282,6 +285,7 @@ def _source_health(
         "helper_manifest",
         "runtime_module_gates",
     ):
+        impact = "advisory" if name == "runtime_module_gates" else "required"
         relative = SOURCE_HEALTH_PATHS[name]
         loaded = cache.setdefault(relative, _load_json(root, relative))
         payload = loaded.payload or {}
@@ -308,12 +312,16 @@ def _source_health(
                 if isinstance(payload.get("cockpit_handoff"), dict)
                 else {}
             )
+            action_readiness = (
+                payload.get("action_readiness")
+                if isinstance(payload.get("action_readiness"), dict)
+                else {}
+            )
             contract_ok = (
                 contract_ok
-                and payload.get("status") == "ready"
-                and payload.get("hard_blockers") == []
                 and roadmap.get("status") == "ready"
                 and handoff.get("status") == "ready"
+                and action_readiness.get("status") == "safe_write_tools_enabled"
             )
         elif name == "helper_manifest":
             contract_ok = (
@@ -338,27 +346,39 @@ def _source_health(
                 and payload.get("observed", {}).get("runtime_state") == "disarmed"
                 and gate_manifest.get("sha256") == manifest.sha256
             )
-        if freshness == "stale":
+        if freshness == "stale" and impact == "required":
             contract_ok = False
+        pending = impact == "advisory" and not contract_ok
+        availability = (
+            "available" if contract_ok else "awaiting_external" if pending else "blocked"
+        )
         checks.append(
             {
                 "name": name,
                 "path": relative,
+                "impact": impact,
+                "availability": availability,
                 "load_status": loaded.status,
                 "sha256": loaded.sha256,
                 "freshness_status": freshness
                 if loaded.status == "loaded"
                 else "blocked",
                 "age_seconds": age,
-                "contract_status": "passed" if contract_ok else "blocked",
+                "contract_status": (
+                    "passed" if contract_ok else "pending" if pending else "blocked"
+                ),
             }
         )
-        if not contract_ok:
+        if not contract_ok and impact == "required":
             blockers.append(f"{name}_contract")
-    return checks, blockers
+        elif pending:
+            warnings.append(f"{name}_pending")
+    return checks, blockers, warnings
 
 
-def _control_center_preflight(operator_brief: LoadedJson) -> dict[str, Any]:
+def _control_center_preflight(
+    operator_brief: LoadedJson,
+) -> tuple[dict[str, Any], list[str]]:
     payload = operator_brief.payload or {}
     roadmap = (
         payload.get("roadmap_generation")
@@ -370,7 +390,7 @@ def _control_center_preflight(operator_brief: LoadedJson) -> dict[str, Any]:
         if isinstance(payload.get("cockpit_handoff"), dict)
         else {}
     )
-    hard_blockers = (
+    reported_blockers = (
         [
             str(item)[:200]
             for item in payload.get("hard_blockers", [])
@@ -380,22 +400,41 @@ def _control_center_preflight(operator_brief: LoadedJson) -> dict[str, Any]:
         else ["operator_brief_hard_blockers_invalid"]
     )
     if operator_brief.status != "loaded":
-        hard_blockers.append(f"operator_brief_{operator_brief.status}")
-    if payload.get("status") != "ready":
-        hard_blockers.append("operator_brief_not_ready")
+        reported_blockers.append(f"operator_brief_{operator_brief.status}")
+    if payload.get("status") != "ready" and not reported_blockers:
+        reported_blockers.append("operator_brief_not_ready")
     if roadmap.get("status") != "ready":
-        hard_blockers.append("roadmap_generation_not_ready")
+        reported_blockers.append("roadmap_generation_not_ready")
     if handoff.get("status") != "ready":
-        hard_blockers.append("cockpit_handoff_not_ready")
-    unique = list(dict.fromkeys(hard_blockers))
+        reported_blockers.append("cockpit_handoff_not_ready")
+    action_readiness = (
+        payload.get("action_readiness")
+        if isinstance(payload.get("action_readiness"), dict)
+        else {}
+    )
+    bootstrap_only = {
+        "p6_readiness_status",
+        "p6:ctoai_plugin_installed_cache",
+        "p7_operator_workflow_status",
+    }
+    unique_reported = list(dict.fromkeys(reported_blockers))
+    adaptive_bootstrap = bool(
+        unique_reported
+        and set(unique_reported).issubset(bootstrap_only)
+        and roadmap.get("status") == "ready"
+        and handoff.get("status") == "ready"
+        and action_readiness.get("status") == "safe_write_tools_enabled"
+    )
+    unique_blocking = [] if adaptive_bootstrap else unique_reported
+    warnings = ["control_center_preflight_pending"] if adaptive_bootstrap else []
     return {
-        "status": "ready" if not unique else "blocked",
-        "ready": not unique,
+        "status": "ready" if not unique_blocking else "blocked",
+        "ready": not unique_blocking,
         "operator_brief_status": str(payload.get("status") or operator_brief.status),
         "roadmap_generation_status": str(roadmap.get("status") or "missing"),
         "cockpit_handoff_status": str(handoff.get("status") or "missing"),
-        "hard_blockers": unique,
-    }
+        "hard_blockers": unique_blocking,
+    }, warnings
 
 
 def _binding_result(
@@ -694,26 +733,40 @@ def build_state(
             f"{item['decision_id']}:{blocker}" for blocker in item["blockers"]
         )
 
-    source_health, source_blockers = _source_health(root, current, cache)
+    source_health, source_blockers, source_warnings = _source_health(
+        root, current, cache
+    )
     blockers.extend(source_blockers)
     operator_brief = cache.setdefault(
         SOURCE_HEALTH_PATHS["operator_brief"],
         _load_json(root, SOURCE_HEALTH_PATHS["operator_brief"]),
     )
-    preflight = _control_center_preflight(operator_brief)
+    preflight, preflight_warnings = _control_center_preflight(operator_brief)
     blockers.extend(
         f"control_center_preflight:{item}" for item in preflight["hard_blockers"]
     )
     unique_blockers = list(dict.fromkeys(blockers))
     tampered_count = sum(1 for item in ledger if item["integrity_status"] == "tampered")
     blocked_count = sum(1 for item in ledger if item["blockers"])
-    stale = any(item["freshness_status"] == "stale" for item in source_health)
+    stale = any(
+        item["impact"] == "required" and item["freshness_status"] == "stale"
+        for item in source_health
+    )
     ready = not unique_blockers and preflight["ready"]
+    warnings = list(dict.fromkeys([*source_warnings, *preflight_warnings]))
+    readiness_status = (
+        "blocked"
+        if not ready
+        else "awaiting_external"
+        if warnings
+        else "ready"
+    )
 
     basis: dict[str, Any] = {
-        "schema_version": "ctoa.roadmap-state.v1",
+        "schema_version": "ctoa.roadmap-state.v2",
         "generated_at": current.isoformat().replace("+00:00", "Z"),
         "status": "ready" if ready else "blocked",
+        "readiness_status": readiness_status,
         "phase": "P13",
         "phase_status": "runtime_evidence_ready" if ready else "blocked",
         "next_phase": "P14",
@@ -770,12 +823,17 @@ def build_state(
             "runtime_actions": False,
             "live_authority": False,
             "p12_heal_friend_reopened": False,
-            "mcp_write_tool_enabled": False,
+            "runtime_mcp_write_tool_enabled": False,
+            "roadmap_refresh_tool_enabled": True,
+            "roadmap_refresh_risk_class": "safe_write",
             "allowed_output_paths": ALLOWED_OUTPUT_PATHS,
         },
         "blockers": unique_blockers,
+        "warnings": warnings,
         "next_action": (
-            "Consume this P13 state read-only in Control Center; keep runtime, live authority, MCP writes, and the closed P12 Heal Friend lane unchanged."
+            "Refresh the pending P14 sandbox evidence when an in-world session is available; the P13 ledger and bounded roadmap refresh remain operational."
+            if ready and source_warnings
+            else "Consume this P13 state in Control Center; keep runtime and live authority disabled while the bounded roadmap refresh remains available."
             if ready
             else "Repair the listed P13 evidence, freshness, schema, binding, or preflight blockers before writing a new roadmap state."
         ),
@@ -797,6 +855,7 @@ def build_state(
         )
         payload["blockers"] = merged
         payload["status"] = "blocked"
+        payload["readiness_status"] = "blocked"
         payload["phase_status"] = "blocked"
         payload["freshness_status"] = "blocked"
         payload["tamper_status"] = (
@@ -818,13 +877,15 @@ def render_markdown(payload: dict[str, Any]) -> str:
         f"Generated at: `{payload['generated_at']}`",
         f"State SHA-256: `{payload['state_sha256']}`",
         f"Status: `{payload['status']}`",
+        f"Readiness: `{payload['readiness_status']}`",
         f"Phase: `{payload['phase']}` / `{payload['phase_status']}`; next `{payload['next_phase']}`.",
         f"Freshness: `{payload['freshness_status']}`; tamper: `{payload['tamper_status']}`.",
         "",
         "## Authority Boundary",
         "",
         "- Control Center is read-only.",
-        "- No runtime executor, runtime action, MCP write tool, or live authority is introduced.",
+        "- The bounded roadmap refresh tool is enabled as `safe_write` for fixed outputs only.",
+        "- No runtime executor, runtime action, runtime MCP write tool, or live authority is introduced.",
         "- P12 Heal Friend remains closed and is not reopened.",
         "",
         "## Decision / Result Ledger",
@@ -851,11 +912,14 @@ def render_markdown(payload: dict[str, Any]) -> str:
     )
     for item in payload["source_health"]:
         lines.append(
-            f"- `{item['name']}`: contract `{item['contract_status']}`, freshness `{item['freshness_status']}`, source `{item['path']}`."
+            f"- `{item['name']}` ({item['impact']}): contract `{item['contract_status']}`, availability `{item['availability']}`, freshness `{item['freshness_status']}`, source `{item['path']}`."
         )
     if payload["blockers"]:
         lines.extend(["", "## Blockers", ""])
         lines.extend(f"- `{item}`" for item in payload["blockers"])
+    if payload["warnings"]:
+        lines.extend(["", "## Pending External Evidence", ""])
+        lines.extend(f"- `{item}`" for item in payload["warnings"])
     lines.extend(["", "## Next Action", "", payload["next_action"], ""])
     return "\n".join(lines)
 

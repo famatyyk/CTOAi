@@ -1,0 +1,57 @@
+{
+  "schema_version": "ctoa.helper-safe-condition-core-decision.v1",
+  "status": "complete",
+  "decision": "no_shared_runtime_core",
+  "generated_at": "2026-07-16",
+  "scope": "P23.2",
+  "summary": "Share the numeric operator vocabulary and deterministic parity evidence, but keep the Helper and Safe condition evaluators product-local.",
+  "reasons": [
+    "Helper and Safe have independent loaders, package manifests, profile schemas and promotion gates.",
+    "Helper evaluates up to eight conditions and owns hysteresis, cooldown and extended metrics.",
+    "Safe evaluates up to four conditions and caches randomized thresholds until the owning action resets them.",
+    "A shared runtime file would either erase product semantics or add a cross-package lifecycle dependency."
+  ],
+  "shared_contract": {
+    "operators": ["<", "<=", "=", "!=", ">=", ">"],
+    "combinators": ["AND", "OR"],
+    "numeric_comparison_only": true,
+    "one_shot_fixture_parity": true,
+    "runtime_randomization_parity": false,
+    "runtime_actions": false,
+    "dispatch_allowed": false
+  },
+  "product_adapters": {
+    "helper": {
+      "owner": "scripts/lua/otclient/ctoa_helper_rule_engine.lua",
+      "profile_schema": "ctoa-helper-profile-v1",
+      "rule_schema": "ctoa-helper-rule-v1",
+      "max_conditions": 8,
+      "randomization_lifecycle": "per_evaluation_injected_offset",
+      "extended_semantics": ["hysteresis", "cooldown_ms", "distance", "pz", "active_condition"]
+    },
+    "safe": {
+      "owner": "mods/ctoa_safe/ctoa_safe_helper.lua",
+      "profile_schema": "ctoa-safe-profile-v3",
+      "max_conditions": 4,
+      "randomization_lifecycle": "cached_effective_threshold_until_successful_action_reset",
+      "extended_semantics": []
+    }
+  },
+  "fixture_adapter": {
+    "path": "tests/fixtures/lua/ctoa_safe_condition_contract.lua",
+    "role": "contract_probe_not_product_adapter",
+    "loaded_by_safe": false,
+    "operational_acceptance_evaluated": false
+  },
+  "boundaries": {
+    "shared_runtime_files": [],
+    "shared_loaders": [],
+    "shared_mutable_state": [],
+    "shared_profile_schemas": [],
+    "shared_acceptance_receipts": [],
+    "safe_release_manifest_changed": false,
+    "helper_release_manifest_changed": false,
+    "live_or_sandbox_mutation": false
+  },
+  "next_slice": "P24.1 build the independent replay matrix and canary specification without granting runtime authority"
+}

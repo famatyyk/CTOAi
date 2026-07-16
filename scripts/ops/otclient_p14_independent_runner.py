@@ -226,15 +226,19 @@ def _sanitize_helper_manifest() -> dict[str, Any]:
 def _validate_roadmap_state(payload: dict[str, Any]) -> None:
     authority = payload.get("authority")
     summary = payload.get("summary")
+    warnings = payload.get("warnings")
     if (
-        payload.get("schema_version") != "ctoa.roadmap-state.v1"
+        payload.get("schema_version") != "ctoa.roadmap-state.v2"
         or payload.get("status") != "ready"
+        or payload.get("readiness_status")
+        not in {"ready", "awaiting_external"}
         or payload.get("phase") != "P13"
         or payload.get("phase_status") != "runtime_evidence_ready"
         or payload.get("next_phase") != "P14"
         or payload.get("freshness_status") != "current"
         or payload.get("tamper_status") != "passed"
         or payload.get("blockers") != []
+        or not isinstance(warnings, list)
         or not isinstance(authority, dict)
         or not isinstance(summary, dict)
     ):
@@ -246,10 +250,29 @@ def _validate_roadmap_state(payload: dict[str, Any]) -> None:
             "runtime_actions": False,
             "live_authority": False,
             "p12_heal_friend_reopened": False,
-            "mcp_write_tool_enabled": False,
+            "runtime_mcp_write_tool_enabled": False,
+            "roadmap_refresh_tool_enabled": True,
         }.items()
     ):
         raise ContractError("roadmap_state_authority_invalid")
+    if authority.get("roadmap_refresh_risk_class") != "safe_write":
+        raise ContractError("roadmap_state_refresh_risk_invalid")
+    if (
+        authority.get("control_center_mode") != "read_only"
+        or authority.get("allowed_output_paths")
+        != [
+            "AI/generated/ROADMAP_STATE.json",
+            "AI/generated/ROADMAP_STATE.md",
+            "runtime/control-center/action-audit.jsonl",
+        ]
+    ):
+        raise ContractError("roadmap_state_refresh_boundary_invalid")
+    if (
+        any(item != "runtime_module_gates_pending" for item in warnings)
+        or (payload.get("readiness_status") == "ready" and warnings)
+        or (payload.get("readiness_status") == "awaiting_external" and not warnings)
+    ):
+        raise ContractError("roadmap_state_readiness_invalid")
     if (
         summary.get("runtime_authority_count") != 0
         or summary.get("live_authority_count") != 0
@@ -397,7 +420,7 @@ def build_request(
         },
         "replay_checks": CHECK_IDS,
         "artifacts": [
-            _embedded_artifact("roadmap_state", "ctoa.roadmap-state.v1", roadmap),
+            _embedded_artifact("roadmap_state", "ctoa.roadmap-state.v2", roadmap),
             _embedded_artifact(
                 "helper_source_manifest", "ctoa.p14-helper-source-manifest.v1", helper
             ),

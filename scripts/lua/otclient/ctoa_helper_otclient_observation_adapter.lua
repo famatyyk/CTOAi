@@ -55,6 +55,27 @@ local function distanceBetween(left, right)
     return 0
 end
 
+function Adapter.isGameOnline(game)
+    return call(game or rawget(_G, "g_game"), "isOnline", false) == true
+end
+
+function Adapter.localPlayer(game)
+    return call(game or rawget(_G, "g_game"), "getLocalPlayer", nil)
+end
+
+function Adapter.position(thing)
+    return call(thing, "getPosition", nil)
+end
+
+function Adapter.creatureId(creature)
+    return tonumber(call(creature, "getId", 0)) or 0
+end
+
+function Adapter.healthPercent(creature)
+    local value = call(creature, "getHealthPercent", 100)
+    return type(value) == "number" and value or 100
+end
+
 local function targetSnapshot(game, player)
     local target = call(game, "getAttackingCreature", nil)
     if not target then

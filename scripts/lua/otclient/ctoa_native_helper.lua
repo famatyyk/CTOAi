@@ -10,183 +10,16 @@ if type(existingHelper) == "table" and existingHelper.window then
 end
 
 local HELPER_VERSION = "v2.4.1"
-local HELPER_CONFIG = {
-    schema_version = "ctoa-helper-profile-v1",
-    enabled = true,
-    safe_boot_runtime_disabled = true,
-    tick_ms = 500,
-    hotkey = "Ctrl+J",
-    auto_show_window = false,
-    auto_hide_ms = 0,
-    window_x = 520,
-    window_y = 34,
-    theme_preset = "graphite",
-    compact_mode = false,
-    modules = {
-        overview = true, healing = true, heal_friend = false,
-        conditions = false, targeting = true, magic = true,
-        cavebot = true, equipment = false, helper = true,
-        scripting = false, settings = true, engine = true,
-    },
-    healing = {
-        spell_enabled = true, potion_enabled = true,
-        spell_threshold = 80, potion_threshold = 62,
-        threshold_jitter_percent = 3, spell = "exura ico",
-        critical_spell = "exura med ico",
-        spell_rotation = {
-            {threshold = 85, spell = "exura ico"},
-            {threshold = 55, spell = "exura med ico"},
-            {threshold = 30, spell = "exura gran ico"}
-        },
-        potion_name = "Ultimate Health Potion", potion_mode = "Actionbar",
-        potion_hotkey = "F1", potion_actionbar_slot = "F1",
-        mana_potion_enabled = true, mana_potion_threshold = 45,
-        mana_potion_name = "Mana Potion", mana_potion_hotkey = "F2",
-        mana_potion_actionbar_slot = "F2", mana_potion_cooldown_ms = 1000,
-        last_cast_ms = 0, last_mana_potion_ms = 0,
-        last_recovery_action_ms = 0, cooldown_ms = 1000
-    },
-    heal_friend = {
-        enabled = false, observe_party = true, sio_spell = "exura sio",
-        hp_threshold = 70, cooldown_ms = 1000, action_lock_ms = 1200,
-        friend_whitelist = {}, friend_target_id = 0,
-        priority = "single_exact_target", require_whitelist = true,
-        pz_safe = true, runtime_enabled = false, friend_scan_range = 7,
-        sample_interval_ms = 1000, last_sample_ms = 0, last_status = "pending",
-        observed_count = 0, lowest_friend_hp = 100, last_cast_ms = 0
-    },
-    conditions = {
-        enabled = false, observe_states = true, mana_shield = true,
-        paralyze = true, poison = true, burn = true,
-        electric = true, bleeding = true, runtime_enabled = false,
-        sample_interval_ms = 1000, api_probe_enabled = true,
-        api_probe_status = "pending", api_probe_count = 0,
-        last_sample_ms = 0, last_status = "pending"
-    },
-    equipment = {
-        enabled = false, observe_slots = true, ring_swap = false,
-        amulet_swap = false, weapon_set = "manual", pvp_gear_lock = true,
-        family_enabled = {ring_primary = false, ring_secondary = false},
-        hp_threshold = 45, sample_interval_ms = 1500,
-        api_probe_enabled = true, api_probe_status = "pending",
-        api_probe_count = 0, runtime_enabled = false,
-        last_sample_ms = 0, last_status = "pending"
-    },
-    scripting = {
-        enabled = false, policy_mode = "deny_all",
-        allow_user_snippets = false, allow_runtime_eval = false,
-        command_model = "none", audit_log = true, sandbox_required = true,
-        max_snippet_chars = 0, runtime_enabled = false,
-        last_status = "blocked: no snippet execution"
-    },
-    tools = {
-        auto_attack = true, chase = true, auto_follow = false,
-        pause_in_pz = true, hold_target = false, require_reachable_target = true,
-        attack_range = 7, target_timeout_ms = 6000,
-        unreachable_timeout_ms = 1200, retarget_delay_ms = 200,
-        log_retarget_ms = 3000, block_log_ms = 3000, probe_log_ms = 5000,
-        clear_target_in_pz = true, block_npc_icons = true,
-        block_friendly_summons = true,
-        friendly_summon_name_fragments = {
-            " familiar ",
-            " summon ",
-            " summoned ",
-            "familiar",
-            "summon"
-        },
-        prefer_low_hp = false,
-        ignored_names = {
-            "elara goldwarden", "goldwarden", "aldren", "andrew",
-            "brumgar", "hireling", "postman", "selmir",
-            "taskmaster", "liora", "npc"
-        },
-        priority_names = {
-            "demon", "dragon lord", "dragon", "cyclops", "dwarf"
-        },
-        auto_haste = false,
-        haste_spell = "utani hur",
-        haste_interval_ms = 30000,
-        api_probe_enabled = true,
-        magic_api_probe_enabled = true,
-        last_haste_ms = 0,
-        spell_rotation = true,
-        magic_priority = "rotation",
-        rotation_preset = "smart",
-        rotation_interval_ms = 1050,
-        rotation_scan_range = 1,
-        last_rotation_ms = 0,
-        last_attack_spell_ms = 0,
-        recovery_action_gap_ms = 250,
-        attack_action_lock_ms = 1050,
-        attack_action_lock_until_ms = 0,
-        last_spell_casts = {},
-        rotation_spells = {
-            {words = "exori gran", min_nearby = 3, cooldown_ms = 6000},
-            {words = "exori min", min_nearby = 2, cooldown_ms = 4000, directional = true},
-            {words = "exori", min_nearby = 2, cooldown_ms = 4000},
-            {words = "exori gran ico", min_nearby = 1, max_nearby = 2, cooldown_ms = 6000},
-            {words = "exori ico", min_nearby = 1, max_nearby = 2, cooldown_ms = 2000},
-            {words = "exori hur", min_nearby = 1, cooldown_ms = 2000, max_nearby = 1}
-        },
-        auto_exeta = true,
-        exeta_interval_ms = 5000,
-        last_exeta_ms = 0,
-        exeta_index = 1,
-        exeta_min_visible = 2,
-        exeta_spells = {
-            "exeta res",
-            "exeta amp res"
-        },
-        auto_stance = false,
-        offensive_buff_spell = "utito tempo",
-        defensive_buff_spell = "utamo tempo",
-        offensive_max_monsters = 2,
-        defensive_min_monsters = 4,
-        stance_cooldown_ms = 10000,
-        last_stance_ms = 0,
-        active_stance = "neutral",
-        rune_enabled = false,
-        rune_name = "Sudden Death Rune",
-        rune_mode = "Actionbar",
-        rune_hotkey = "F5",
-        rune_actionbar_slot = "F5",
-        rune_min_visible = 1,
-        rune_cooldown_ms = 1000,
-        rune_pvp_safe = true,
-        rune_requires_target = true,
-        last_rune_ms = 0,
-        timer_enabled = false,
-        timer_interval_ms = 60000,
-        timer_message = "timer",
-        last_timer_ms = 0,
-        auto_open_corpses = false,
-        auto_loot_containers = false,
-        loot_range = 2,
-        loot_capacity_threshold = 50,
-        loot_max_items_per_scan = 8,
-        cavebot_api_probe_enabled = true,
-        cavebot_enabled = false,
-        cavebot_movement_enabled = false,
-        cavebot_step_delay_ms = 1200,
-        cavebot_reach_distance = 1,
-        cavebot_retry_limit = 3,
-        cavebot_index = 1,
-        cavebot_last_walk_ms = 0,
-        cavebot_retry_attempts = 0,
-        cavebot_stuck_ticks = 0,
-        cavebot_waypoints = {},
-        feature_flags = {
-            diagnostics = true,
-            experimental_cavebot = false,
-            experimental_loot = false,
-            experimental_combat = false
-        },
-        diagnostics_export_limit = 20,
-        diagnostics_sample_interval_ms = 5000,
-        last_diagnostics_sample_ms = 0
-    }
-}
-
+local externalProfileSchema = rawget(_G, "CTOA_HELPER_PROFILE_SCHEMA")
+if type(externalProfileSchema) ~= "table" or type(externalProfileSchema.defaultProfile) ~= "function" then
+    _G.CTOA_HELPER_BOOT_BLOCKER = "profile_schema_defaults_unavailable"
+    return nil
+end
+local defaultProfileOk, HELPER_CONFIG = pcall(externalProfileSchema.defaultProfile)
+if not defaultProfileOk or type(HELPER_CONFIG) ~= "table" then
+    _G.CTOA_HELPER_BOOT_BLOCKER = "profile_schema_defaults_invalid"
+    return nil
+end
 local externalModules = rawget(_G, "CTOA_HELPER_MODULES")
 local externalUi = rawget(_G, "CTOA_HELPER_UI")
 local externalClientReporter = rawget(_G, "CTOA_HELPER_CLIENT_REPORTER")
@@ -209,117 +42,6 @@ local function moduleValue(module, functionName, ...)
     local ok, value, extra, detail = moduleCall(module, functionName, ...)
     if ok then
         return value, extra, detail
-    end
-    local first, second, third, fourth = ...
-    if functionName == "displayProfileName" then
-        return tostring(first or "EK profile")
-    elseif functionName == "profileSchemaValue" or functionName == "profilePersistenceValue" then
-        return second
-    elseif functionName == "profileSchemaTable" or functionName == "profilePersistenceTable" then
-        return type(second) == "table" and second or {}
-    elseif functionName == "normalizeHelperHotkey" then
-        local text = tostring(first or "")
-        return (text:gsub("^%s+", ""):gsub("%s+$", ""))
-    elseif functionName == "hotkeyBindingDecision" then
-        local requested = tostring(first or ""):gsub("^%s+", ""):gsub("%s+$", "")
-        local previous = tostring(second or ""):gsub("^%s+", ""):gsub("%s+$", "")
-        return {allowed = false, reason = "hotkey_module_unavailable", normalized = requested, previous = previous, changed = false}
-    elseif functionName == "modalRequest" then
-        local action = tostring(first or ""):gsub("^%s+", ""):gsub("%s+$", "")
-        local context = tostring(second or ""):gsub("^%s+", ""):gsub("%s+$", "")
-        local ttl = tonumber(third) or 4500
-        local now = tonumber(fourth) or 0
-        return {action = action, context = context, requested_at_ms = now, expires_at_ms = now + ttl, message = "Confirm " .. action, confirm_label = "Confirm", cancel_label = "Cancel"}
-    elseif functionName == "mergeTable" then
-        return first
-    elseif functionName == "serializeLua" then
-        return "{}"
-    elseif functionName == "exportProfile" then
-        local cfg = type(first) == "table" and first or {}
-        return {schema_version = cfg.schema_version or "ctoa-helper-profile-v1", name = second or "Built-in EK", enabled = false, safe_boot_runtime_disabled = true, modules = {}, healing = {}, heal_friend = {}, conditions = {}, equipment = {}, scripting = {}, tools = {}, hud = {}}
-    elseif functionName == "exportUiPrefs" then
-        local cfg = type(first) == "table" and first or {}
-        local helper = type(second) == "table" and second or {}
-        return {hotkey = cfg.hotkey, auto_hide_ms = cfg.auto_hide_ms or 0, theme_preset = cfg.theme_preset or "classic", compact_mode = false, window_x = cfg.window_x or 520, window_y = cfg.window_y or 34, active_tab = helper.active_tab or "overview", hud = {enabled = false, x = 22, y = 170}}
-    elseif functionName == "resolveActionbarSlot" then
-        local primary = tostring(first or ""):gsub("^%s+", ""):gsub("%s+$", "")
-        local fallback = tostring(second or ""):gsub("^%s+", ""):gsub("%s+$", "")
-        return primary ~= "" and primary or (fallback ~= "" and fallback or nil)
-    elseif functionName == "distanceChebyshev" then
-        if type(first) ~= "table" or type(second) ~= "table" or first.z ~= second.z then
-            return nil
-        end
-        return math.max(math.abs((tonumber(first.x) or 0) - (tonumber(second.x) or 0)), math.abs((tonumber(first.y) or 0) - (tonumber(second.y) or 0)))
-    elseif functionName == "posKey" then
-        return type(first) == "table" and (tostring(first.x) .. ":" .. tostring(first.y) .. ":" .. tostring(first.z)) or nil
-    elseif functionName == "creatureHasBlockingNpcIcon" then
-        local cfg = type(second) == "table" and second or {}
-        return cfg.block_npc_icons ~= false and first ~= nil and first ~= false and first ~= 0 and first ~= ""
-    elseif functionName == "isFriendlySummonName" then
-        local cfg = type(second) == "table" and second or {}
-        if cfg.block_friendly_summons == false then
-            return false
-        end
-        local normalized = " " .. string.lower(tostring(first or "")) .. " "
-        local fragments = type(cfg.friendly_summon_name_fragments) == "table" and cfg.friendly_summon_name_fragments or {" familiar ", " summon ", " summoned ", "familiar", "summon"}
-        for _, fragment in ipairs(fragments) do
-            local needle = string.lower(tostring(fragment or ""))
-            if needle ~= "" and string.find(normalized, needle, 1, true) then
-                return true
-            end
-        end
-        return false
-    elseif functionName == "targetCandidateScore" then
-        return 99999999
-    elseif functionName == "cavebotRuntimeText" then
-        return fourth or tostring(second or "idle")
-    elseif functionName == "cavebotRetryBudgetExceeded" then
-        local cfg = type(first) == "table" and first or {}
-        return (tonumber(cfg.cavebot_retry_attempts) or 0) >= math.max(1, tonumber(cfg.cavebot_retry_limit) or 3)
-    elseif functionName == "rebuildModuleLaneIndex" then
-        local index = {}
-        for _, lane in ipairs(first or {}) do
-            if type(lane) == "table" and lane.id ~= nil then
-                index[lane.id] = lane
-            end
-        end
-        return index
-    elseif functionName == "recoveryActionGap" then
-        local healing = type(second) == "table" and second or {}
-        local tools = type(third) == "table" and third or {}
-        local current = tonumber(first) or 0
-        local gap = tonumber(tools.recovery_action_gap_ms) or 250
-        local untilMs = (tonumber(healing.last_recovery_action_ms) or 0) + gap
-        return {active = current < untilMs, until_ms = untilMs, remaining_ms = math.max(0, untilMs - current), gap_ms = gap}
-    elseif functionName == "selectRotationSpell" then
-        return nil
-    elseif functionName == "runeReady" then
-        return false
-    elseif functionName == "selectHealingSpell" then
-        local healing = type(first) == "table" and first or {}
-        return healing.spell
-    elseif functionName == "rotationSummaryText" then
-        return third or "rotation summary unavailable"
-    elseif functionName == "rotationPresetFormatter" then
-        return function(value)
-            return tostring(value)
-        end
-    elseif functionName == "moduleTabVisible" then
-        if third == first then
-            return true
-        end
-        local config = type(second) == "table" and second or {}
-        local core = type(fourth) == "table" and fourth or {}
-        return core[first] and config[first] ~= false or config[first] == true
-    elseif functionName == "mergePanelRendererContext" then
-        local context = {}
-        for key, item in pairs(type(first) == "table" and first or {}) do
-            context[key] = item
-        end
-        for key, item in pairs(type(second) == "table" and second or {}) do
-            context[key] = item
-        end
-        return context
     end
     return nil
 end
@@ -347,7 +69,9 @@ local Helper = {
     smoke_tab = nil,
     smoke_subtab = nil,
     active_hunting_tab = "targeting",
+    magic_rule_index = 1,
     active_tools_tab = "helper",
+    cavebot_editor_bindings = {},
     profile_name = "Built-in EK", vocation_id = "ek",
     vocation_source = "default", last_vocation_probe_ms = 0,
     profile_path = nil, ui_path = nil,
@@ -370,222 +94,18 @@ local switchHuntingSubtab
 local switchToolsSubtab
 local THEME_PRESETS
 
-local UI_STYLE = {
-    text = "#ffffff",
-    muted = "#eeeeee",
-    accent = "#f0c56a",
-    accent_soft = "#dfbf72",
-    good = "#a6f08f",
-    off = "#c0c0c0",
-    panel = "#262626",
-    panel_dark = "#101010",
-    panel_subtle = "#2e2e2e",
-    panel_surface = "#1a1a1a",
-    panel_raised = "#383838",
-    border = "#737373",
-    divider = "#707070",
-    border_active = "#b58c42",
-    sidebar_fill = "#181818",
-    content_fill = "#171717",
-    row_fill = "#303030",
-    row_fill_active = "#3d3d3d",
-    value_fill = "#0d0d0d",
-    button_fill = "#474747",
-    button_fill_active = "#545454"
-}
+local UI_STYLE = moduleValue(externalUi, "newStyle") or {}
 
-local UI_THEMES = {
-    classic = {
-        text = "#ffffff",
-        muted = "#eeeeee",
-        accent = "#f0c56a",
-        accent_soft = "#c8b16f",
-        good = "#93d987",
-        off = "#a0a0a0",
-        panel = "#262626",
-        panel_dark = "#101010",
-        panel_subtle = "#2e2e2e",
-        panel_surface = "#1a1a1a",
-        panel_raised = "#383838",
-        border = "#737373",
-        divider = "#707070",
-        border_active = "#b58c42",
-        sidebar_fill = "#181818",
-        content_fill = "#171717",
-        row_fill = "#303030",
-        row_fill_active = "#3d3d3d",
-        value_fill = "#0d0d0d",
-        button_fill = "#474747",
-        button_fill_active = "#545454"
-    },
-    graphite = {
-        text = "#f0f2f5",
-        muted = "#a8b0b8",
-        accent = "#f0c36a",
-        accent_soft = "#d7ae55",
-        good = "#9be7a0",
-        off = "#8a9096",
-        panel = "#23262b",
-        panel_dark = "#1d2024",
-        panel_subtle = "#2a2f35",
-        panel_surface = "#262b31",
-        panel_raised = "#313843",
-        border = "#4f5964",
-        divider = "#3f4750",
-        border_active = "#f0c36a",
-        sidebar_fill = "#2a2f35",
-        content_fill = "#252a30",
-        row_fill = "#30353b",
-        row_fill_active = "#363c43",
-        value_fill = "#22272c",
-        button_fill = "#3d4650",
-        button_fill_active = "#495561"
-    },
-    amber = {
-        text = "#f8f0dd",
-        muted = "#c9bfa8",
-        accent = "#f0c36a",
-        accent_soft = "#d7ae55",
-        good = "#b9e36d",
-        off = "#aea28a",
-        panel = "#2f291f",
-        panel_dark = "#241f17",
-        panel_subtle = "#3a3125",
-        panel_surface = "#2f291d",
-        panel_raised = "#4a3920",
-        border = "#7a6644",
-        divider = "#5b4a30",
-        border_active = "#f0c36a",
-        sidebar_fill = "#322b1f",
-        content_fill = "#312a20",
-        row_fill = "#3a3125",
-        row_fill_active = "#433726",
-        value_fill = "#292218",
-        button_fill = "#56452d",
-        button_fill_active = "#6a5432"
-    },
-    emerald = {
-        text = "#ecfff0",
-        muted = "#a7c2ab",
-        accent = "#7fd7a8",
-        accent_soft = "#69bd8e",
-        good = "#8ddf93",
-        off = "#91a097",
-        panel = "#1f2b23",
-        panel_dark = "#18231c",
-        panel_subtle = "#243328",
-        panel_surface = "#213126",
-        panel_raised = "#2e4633",
-        border = "#4d7356",
-        divider = "#38543f",
-        border_active = "#7fd7a8",
-        sidebar_fill = "#243328",
-        content_fill = "#223127",
-        row_fill = "#28392d",
-        row_fill_active = "#2d4033",
-        value_fill = "#1d2a20",
-        button_fill = "#36503d",
-        button_fill_active = "#44664d"
-    }
-}
+local UI_THEMES = moduleValue(externalUi, "themes") or {}
 
-local UI_LAYOUT = {
-    outer_margin = 18,
-    column_gap = 14,
-    window_w = 690,
-    window_h = 560,
-    base_x = 10,
-    base_y = 10,
-    base_w = 664,
-    base_h = 524,
-    sheet_x = 28,
-    sheet_y = 54,
-    sheet_w = 634,
-    sheet_h = 482,
-    inner_title_x = 38,
-    inner_title_y = 64,
-    inner_title_w = 614,
-    inner_title_h = 18,
-    title_x = 14,
-    title_y = 14,
-    title_w = 658,
-    title_h = 18,
-    sidebar_x = 44,
-    sidebar_w = 122,
-    content_x = 186,
-    content_w = 466,
-    card_w = 466,
-    value_w = 138,
-    side_title_y = 98,
-    side_subtitle_y = 112,
-    row_1_y = 152,
-    row_2_y = 180,
-    row_3_y = 208,
-    row_4_y = 236,
-    row_5_y = 264,
-    row_6_y = 292,
-    row_7_y = 320,
-    ui_runtime_row_1_y = 152,
-    ui_runtime_row_2_y = 180,
-    ui_runtime_row_3_y = 208,
-    ui_runtime_row_4_y = 236,
-    ui_theme_section_y = 258,
-    ui_theme_row_1_y = 286,
-    ui_theme_info_y = 310,
-    ui_layout_section_y = 326,
-    ui_layout_row_1_y = 350,
-    ui_layout_row_2_y = 374,
-    ui_value_row_w = 344,
-    ui_status_y = 378,
-    content_body_y = 124,
-    content_body_h = 304,
-    overview_tab_y = 120,
-    healing_tab_y = 138,
-    heal_friend_tab_y = 156,
-    conditions_tab_y = 174,
-    hunting_tab_y = 192,
-    magic_tab_y = 210,
-    cavebot_tab_y = 228,
-    equipment_tab_y = 246,
-    tools_tab_y = 264,
-    ui_tab_y = 282,
-    scripting_tab_y = 300,
-    profile_tab_y = 318,
-    profile_caption_y = 358,
-    profile_card_y = 378,
-    enabled_y = 408,
-    status_y = 432,
-    hint_y = 454,
-    section_y = 96,
-    profile_left_x = 204,
-    profile_right_x = 378,
-    profile_col_w = 216,
-    profile_block_w = 420,
-    profile_status_w = 326,
-    profile_row_1_y = 152,
-    profile_row_2_y = 178,
-    profile_row_3_y = 204,
-    profile_row_4_y = 230,
-    profile_row_5_y = 256,
-    profile_row_6_y = 282,
-    profile_rotation_y = 310,
-    profile_rotation_info_y = 332,
-    ui_summary_y = 154,
-    footer_y = 398,
-    profile_footer_y = 408,
-    profile_save_x = 676,
-    profile_save_y = 406,
-    profile_save_w = 78,
-    profile_save_h = 24,
-    close_x = 586,
-    close_y = 514,
-    close_w = 66,
-    close_h = 24
-}
+local UI_LAYOUT = moduleValue(externalUi, "newLayout") or {}
 
 local shortText = externalUi and externalUi.shortText or tostring; local fitText = externalUi and externalUi.fitText or shortText
 
 local externalDiagnostics = rawget(_G, "CTOA_HELPER_DIAGNOSTICS")
+local hasApi = externalDiagnostics and externalDiagnostics.hasApi
+local safeCall = externalDiagnostics and externalDiagnostics.safeCall
+local safeGlobalCall = externalDiagnostics and externalDiagnostics.safeGlobalCall
 local externalHealFriend = rawget(_G, "CTOA_HELPER_HEAL_FRIEND")
 local externalConditions = rawget(_G, "CTOA_HELPER_CONDITIONS")
 local externalEquipment = rawget(_G, "CTOA_HELPER_EQUIPMENT")
@@ -597,6 +117,7 @@ local externalModal = rawget(_G, "CTOA_HELPER_MODAL")
 local externalRoute = rawget(_G, "CTOA_HELPER_ROUTE")
 local externalTargeting = rawget(_G, "CTOA_HELPER_TARGETING")
 local externalCombatRuntime = rawget(_G, "CTOA_HELPER_COMBAT_RUNTIME")
+local externalSpellStateRegistry = rawget(_G, "CTOA_HELPER_SPELL_STATE_REGISTRY")
 local externalCavebotRuntime = rawget(_G, "CTOA_HELPER_CAVEBOT_RUNTIME")
 local externalLootRuntime = rawget(_G, "CTOA_HELPER_LOOT_RUNTIME")
 local externalTimerRuntime = rawget(_G, "CTOA_HELPER_TIMER_RUNTIME")
@@ -605,13 +126,23 @@ local externalRecoveryBridge = rawget(_G, "CTOA_HELPER_RECOVERY_BRIDGE")
 local externalConditionsExecuteOnce = rawget(_G, "CTOA_HELPER_CONDITIONS_EXECUTE_ONCE")
 local externalEquipmentExecuteOnce = rawget(_G, "CTOA_HELPER_EQUIPMENT_EXECUTE_ONCE")
 local externalHealFriendExecuteOnce = rawget(_G, "CTOA_HELPER_HEAL_FRIEND_EXECUTE_ONCE")
-local externalProfileSchema = rawget(_G, "CTOA_HELPER_PROFILE_SCHEMA")
+local externalRuleEngine = rawget(_G, "CTOA_HELPER_RULE_ENGINE")
 local externalVocationProfiles = rawget(_G, "CTOA_HELPER_VOCATION_PROFILES")
 local externalProfilePersistence = rawget(_G, "CTOA_HELPER_PROFILE_PERSISTENCE")
 local externalOperatorSummary = rawget(_G, "CTOA_HELPER_OPERATOR_SUMMARY")
 local externalRuntimePolicy = rawget(_G, "CTOA_HELPER_RUNTIME_POLICY")
 local externalDecisionPipeline = rawget(_G, "CTOA_HELPER_DECISION_PIPELINE")
 local externalFeatureFlags = rawget(_G, "CTOA_HELPER_FEATURE_FLAGS")
+
+local isGameOnline = externalObservationAdapter and externalObservationAdapter.isGameOnline
+local getLocalPlayer = externalObservationAdapter and externalObservationAdapter.localPlayer
+local getThingPosition = externalObservationAdapter and externalObservationAdapter.position
+local currentTargetId = externalObservationAdapter and externalObservationAdapter.creatureId
+local getCreatureHealthPercent = externalObservationAdapter and externalObservationAdapter.healthPercent
+local pcallBool = externalDiagnostics and externalDiagnostics.callBoolean
+local pcallNumber = externalDiagnostics and externalDiagnostics.callNumber
+local hasAnyState = externalDiagnostics and externalDiagnostics.hasAnyState
+local anyPcallBool = externalDiagnostics and externalDiagnostics.anyBooleanMethod
 
 local function helperNowMs()
     if g_clock and g_clock.millis then
@@ -700,6 +231,10 @@ local function loadDataOnlyLua(path)
 end
 
 local function loadProfile(requestedVocation)
+    if type(externalVocationProfiles) ~= "table" or type(externalProfileSchema) ~= "table" or type(externalProfilePersistence) ~= "table" then
+        status("Profile blocked: required profile owner unavailable")
+        return false
+    end
     local player = g_game and g_game.getLocalPlayer and g_game.getLocalPlayer() or nil
     local detected, source, raw = moduleValue(externalVocationProfiles, "detect", player)
     if type(detected) ~= "string" or detected == "" then
@@ -713,11 +248,18 @@ local function loadProfile(requestedVocation)
         "ctoa_otclient/ctoa_ek_profile.lua",
         "/ctoa_ek_profile.lua"
     })
+    candidates = type(candidates) == "table" and candidates or {}
     for _, path in ipairs(candidates) do
         if g_resources and g_resources.fileExists and g_resources.fileExists(path) then
             local ok, profile = loadDataOnlyLua(path)
             if ok and type(profile) == "table" then
-                local migrated, migration = moduleValue(externalProfileSchema, "migrate", profile, HELPER_CONFIG)
+                local packDecision = moduleValue(externalVocationProfiles, "validatePack", profile, vocationId)
+                if type(packDecision) ~= "table" or packDecision.allowed ~= true then
+                    local reason = type(packDecision) == "table" and packDecision.reason or "pack_validation_unavailable"
+                    status("Profile blocked: " .. tostring(reason))
+                    return false
+                end
+                local migrated, migration = moduleValue(externalProfileSchema, "migrate", profile, HELPER_CONFIG, externalRuleEngine)
                 if type(migrated) ~= "table" then
                     local reason = type(migration) == "table" and migration.reason or "migration_unavailable"
                     status("Profile blocked: " .. tostring(reason))
@@ -794,11 +336,16 @@ local function requestRuntimeSessionArm(reason)
 end
 
 local function loadUiPrefs()
+    if type(externalProfilePersistence) ~= "table" then
+        status("UI prefs blocked: persistence owner unavailable")
+        return false
+    end
     local candidates = moduleValue(externalProfilePersistence, "profilePersistenceTable", "uiPrefsCandidates", {
         "user_dir/ctoa_otclient/ctoa_ui_prefs.lua",
         "ctoa_otclient/ctoa_ui_prefs.lua",
         "/ctoa_ui_prefs.lua"
     })
+    candidates = type(candidates) == "table" and candidates or {}
     for _, path in ipairs(candidates) do
         if g_resources and g_resources.fileExists and g_resources.fileExists(path) then
             local ok, prefs = loadDataOnlyLua(path)
@@ -806,6 +353,7 @@ local function loadUiPrefs()
                 local plan = moduleValue(externalProfilePersistence, "profilePersistenceTable", "uiPrefsPlan", {}, prefs, HELPER_CONFIG, {
                     normalize_hotkey = type(externalHotkeys) == "table" and type(externalHotkeys.normalizeHelperHotkey) == "function" and externalHotkeys.normalizeHelperHotkey or nil
                 })
+                if type(plan) ~= "table" then status("UI prefs blocked: invalid persistence plan"); return false end
                 if type(plan.config_updates) == "table" then
                     for key, value in pairs(plan.config_updates) do
                         HELPER_CONFIG[key] = value
@@ -846,7 +394,7 @@ local function applyThemePreset(presetId)
     UI_STYLE.edge_highlight = theme.border_active or theme.border
     UI_STYLE.edge_shadow = theme.divider or theme.border
     UI_STYLE.state_on = theme.good or theme.accent
-    UI_STYLE.state_off = theme.off or theme.muted; UI_STYLE.state_blocked = theme.blocked or "#d9825b"
+    UI_STYLE.state_off = theme.off or theme.muted; UI_STYLE.state_blocked = theme.blocked or "#d9825b"; UI_STYLE.state_stale = theme.stale or theme.accent or "#f0c36a"
 end
 
 function applyWindowPlacement()
@@ -887,12 +435,23 @@ function setCompactMode(enabled)
 end
 
 flushProfileSave = function()
+    if type(externalProfileSchema) ~= "table" or type(externalProfilePersistence) ~= "table" then
+        status("Profile save blocked: required profile owner unavailable")
+        return false
+    end
     if Helper.profile_save_event then
         removeEvent(Helper.profile_save_event)
         Helper.profile_save_event = nil
     end
     local defaults = moduleValue(externalProfilePersistence, "profilePersistenceTable", "saveDefaults", {}, "profile")
     local path = moduleValue(externalProfilePersistence, "profilePersistenceValue", "resolveSavePath", Helper.profile_path or "ctoa_ek_profile.lua", "profile", Helper.profile_path, g_resources and g_resources.getWorkDir and g_resources.getWorkDir() or "")
+    defaults = type(defaults) == "table" and defaults or {}
+    if type(path) ~= "string" or path == "" then status("Profile save blocked: save path unavailable"); return false end
+    local exportedProfile = moduleValue(externalProfilePersistence, "exportProfile", HELPER_CONFIG, Helper.profile_name or "Built-in EK")
+    local serializedProfile = moduleValue(externalProfileSchema, "serializeLua", exportedProfile, "profile")
+    if type(serializedProfile) ~= "string" then status("Profile save blocked: serialization unavailable"); return false end
+    local profileSaveText = moduleValue(externalProfilePersistence, "profilePersistenceValue", "saveText", "return " .. serializedProfile .. "\n", "profile", serializedProfile)
+    if type(profileSaveText) ~= "string" then status("Profile save blocked: save text unavailable"); return false end
     local file = io.open(path, "w")
     if not file and path ~= "ctoa_ek_profile.lua" then
         local fallbackPath = moduleValue(externalProfilePersistence, "profilePersistenceValue", "fallbackSavePath", "ctoa_ek_profile.lua", "profile", path)
@@ -906,9 +465,6 @@ flushProfileSave = function()
         return false
     end
 
-    local serializedProfile = moduleValue(externalProfileSchema, "serializeLua", moduleValue(externalProfilePersistence, "exportProfile", HELPER_CONFIG, Helper.profile_name or "Built-in EK"), "profile")
-    local profileSaveText = moduleValue(externalProfilePersistence, "profilePersistenceValue", "saveText", "return " .. serializedProfile .. "\n", "profile", serializedProfile)
-    if type(profileSaveText) ~= "string" then profileSaveText = "return " .. tostring(serializedProfile or "nil") .. "\n" end
     file:write(profileSaveText)
     file:close()
     Helper.profile_dirty = false
@@ -920,60 +476,6 @@ flushProfileSave = function()
     end
     status(tostring(defaults.saved_status or "Profile saved"))
     return true
-end
-
-local function getSmokeCommandPath()
-    if Helper.ui_path and Helper.ui_path ~= "" and string.sub(Helper.ui_path, 1, 1) ~= "/" then
-        return string.gsub(Helper.ui_path, "ctoa_ui_prefs%.lua$", "ctoa_smoke_command.lua")
-    end
-    if g_resources and g_resources.getWorkDir then
-        local ok, workDir = pcall(function()
-            return g_resources.getWorkDir()
-        end)
-        if ok and type(workDir) == "string" and workDir ~= "" then
-            local suffix = string.sub(workDir, -1)
-            if suffix ~= "/" and suffix ~= "\\" then
-                workDir = workDir .. "/"
-            end
-            return workDir .. "ctoa_smoke_command.lua"
-        end
-    end
-    return "ctoa_smoke_command.lua"
-end
-
-local function getDiagnosticsExportPath()
-    local path = moduleValue(externalDiagnostics, "exportPath", Helper.ui_path)
-    if type(path) == "string" and path ~= "" then
-        return path
-    end
-    if Helper.ui_path and Helper.ui_path ~= "" then
-        return string.gsub(Helper.ui_path, "ctoa_ui_prefs%.lua$", "ctoa_diag_export.lua")
-    end
-    if g_resources and g_resources.getWorkDir then
-        return g_resources.getWorkDir() .. "mods/ctoa_otclient/ctoa_diag_export.lua"
-    end
-    return "ctoa_diag_export.lua"
-end
-
-local function removeSmokeCommand(path)
-    if os and os.remove then
-        pcall(function()
-            os.remove(path)
-        end)
-    end
-end
-
-local function readSmokeCommand(path)
-    if not io or not io.open then
-        return nil
-    end
-    local file = io.open(path, "r")
-    if not file then
-        return nil
-    end
-    local text = file:read("*a")
-    file:close()
-    return moduleValue(externalDiagnostics, "parseSmokeCommandText", text)
 end
 
 local PRIVILEGED_SMOKE_ACTIONS = {
@@ -1051,16 +553,16 @@ local function applySmokeCommand(command)
             return false
         end
         return testCavebotAutoWalk()
-    elseif action == "cavebot_prev" and selectCavebotWaypoint then
-        return selectCavebotWaypoint(-1)
-    elseif action == "cavebot_next" and selectCavebotWaypoint then
-        return selectCavebotWaypoint(1)
+    elseif action == "cavebot_prev" and type(Helper.cavebot_editor_bindings.select) == "function" then
+        return Helper.cavebot_editor_bindings.select(-1)
+    elseif action == "cavebot_next" and type(Helper.cavebot_editor_bindings.select) == "function" then
+        return Helper.cavebot_editor_bindings.select(1)
     elseif action == "cavebot_delete" and deleteCurrentCavebotWaypoint then
         return deleteCurrentCavebotWaypoint(command.confirm == true)
-    elseif action == "cavebot_move_up" and moveCurrentCavebotWaypoint then
-        return moveCurrentCavebotWaypoint(-1)
-    elseif action == "cavebot_move_down" and moveCurrentCavebotWaypoint then
-        return moveCurrentCavebotWaypoint(1)
+    elseif action == "cavebot_move_up" and type(Helper.cavebot_editor_bindings.move) == "function" then
+        return Helper.cavebot_editor_bindings.move(-1)
+    elseif action == "cavebot_move_down" and type(Helper.cavebot_editor_bindings.move) == "function" then
+        return Helper.cavebot_editor_bindings.move(1)
     elseif action == "magic_probe" and Helper.runMagicApiProbe then
         return Helper.runMagicApiProbe()
     elseif action == "api_probe" and Helper.runApiProbe then
@@ -1099,13 +601,16 @@ local function applySmokeCommand(command)
 end
 
 local function processSmokeCommand()
-    local path = getSmokeCommandPath()
+    local path = moduleValue(externalDiagnostics, "smokeCommandPath", Helper.ui_path, g_resources)
+    if type(path) ~= "string" or path == "" then
+        return false
+    end
     if not moduleValue(externalDiagnostics, "smokeCommandExists", path, g_resources, io) then
         return false
     end
-    local ok, command = pcall(readSmokeCommand, path)
-    removeSmokeCommand(path)
-    if not ok or type(command) ~= "table" then
+    local command = moduleValue(externalDiagnostics, "readSmokeCommand", path, io)
+    moduleValue(externalDiagnostics, "removeSmokeCommand", path, os)
+    if type(command) ~= "table" then
         local failedText = moduleValue(externalDiagnostics, "smokeCommandStatusText", "failed", {value = command})
         status(type(failedText) == "string" and failedText ~= "" and failedText or "smoke failed")
         return false
@@ -1114,12 +619,23 @@ local function processSmokeCommand()
 end
 
 flushUiPrefsSave = function()
+    if type(externalProfileSchema) ~= "table" or type(externalProfilePersistence) ~= "table" then
+        status("UI prefs save blocked: required profile owner unavailable")
+        return false
+    end
     if Helper.ui_save_event then
         removeEvent(Helper.ui_save_event)
         Helper.ui_save_event = nil
     end
     local defaults = moduleValue(externalProfilePersistence, "profilePersistenceTable", "saveDefaults", {}, "ui_prefs")
     local path = moduleValue(externalProfilePersistence, "profilePersistenceValue", "resolveSavePath", Helper.ui_path or "ctoa_ui_prefs.lua", "ui_prefs", Helper.ui_path, g_resources and g_resources.getWorkDir and g_resources.getWorkDir() or "")
+    defaults = type(defaults) == "table" and defaults or {}
+    if type(path) ~= "string" or path == "" then status("UI prefs save blocked: save path unavailable"); return false end
+    local exportedPrefs = moduleValue(externalProfilePersistence, "exportUiPrefs", HELPER_CONFIG, Helper)
+    local serializedPrefs = moduleValue(externalProfileSchema, "serializeLua", exportedPrefs, "ui_prefs")
+    if type(serializedPrefs) ~= "string" then status("UI prefs save blocked: serialization unavailable"); return false end
+    local uiPrefsSaveText = moduleValue(externalProfilePersistence, "profilePersistenceValue", "saveText", "return " .. serializedPrefs .. "\n", "ui_prefs", serializedPrefs)
+    if type(uiPrefsSaveText) ~= "string" then status("UI prefs save blocked: save text unavailable"); return false end
     local file = io.open(path, "w")
     if not file and path ~= "ctoa_ui_prefs.lua" then
         local fallbackPath = moduleValue(externalProfilePersistence, "profilePersistenceValue", "fallbackSavePath", "ctoa_ui_prefs.lua", "ui_prefs", path)
@@ -1133,9 +649,6 @@ flushUiPrefsSave = function()
         return false
     end
 
-    local serializedPrefs = moduleValue(externalProfileSchema, "serializeLua", moduleValue(externalProfilePersistence, "exportUiPrefs", HELPER_CONFIG, Helper), "ui_prefs")
-    local uiPrefsSaveText = moduleValue(externalProfilePersistence, "profilePersistenceValue", "saveText", "return " .. serializedPrefs .. "\n", "ui_prefs", serializedPrefs)
-    if type(uiPrefsSaveText) ~= "string" then uiPrefsSaveText = "return " .. tostring(serializedPrefs or "nil") .. "\n" end
     file:write(uiPrefsSaveText)
     file:close()
     Helper.ui_dirty = false
@@ -1302,10 +815,6 @@ local function castSpell(spell)
     return false
 end
 
-local function hasAttackTarget()
-    return g_game.getAttackingCreature and g_game.getAttackingCreature() ~= nil
-end
-
 local function getAttackTarget()
     if g_game and g_game.getAttackingCreature then
         local ok, creature = pcall(function()
@@ -1318,54 +827,9 @@ local function getAttackTarget()
     return nil
 end
 
-local function isGameOnline()
-    if not g_game or not g_game.isOnline then
-        return false
-    end
-    local ok, online = pcall(function()
-        return g_game.isOnline()
-    end)
-    return ok and online == true
-end
-
-local function getLocalPlayer()
-    if g_game and g_game.getLocalPlayer then
-        local ok, player = pcall(function()
-            return g_game.getLocalPlayer()
-        end)
-        if ok then
-            return player
-        end
-    end
-    return nil
-end
-
-local function getThingPosition(thing)
-    if thing and thing.getPosition then
-        local ok, pos = pcall(function()
-            return thing:getPosition()
-        end)
-        if ok then
-            return pos
-        end
-    end
-    return nil
-end
-
 local function normalizedCreatureName(creature)
     local name = moduleValue(externalTargeting, "normalizedName", creature)
-    if type(name) == "string" then
-        return name
-    end
-    if creature and creature.getName then
-        local ok, name = pcall(function()
-            return creature:getName()
-        end)
-        if ok and name then
-            return string.lower(name)
-        end
-    end
-    return ""
+    return type(name) == "string" and name or ""
 end
 
 local function isIgnoredCreatureName(creature)
@@ -1373,17 +837,7 @@ local function isIgnoredCreatureName(creature)
     if name == "" then
         return false
     end
-    local ignored = moduleValue(externalTargeting, "isIgnoredName", name, HELPER_CONFIG.tools.ignored_names or {})
-    if ignored ~= nil then
-        return ignored == true
-    end
-    for _, ignored in ipairs(HELPER_CONFIG.tools.ignored_names or {}) do
-        local needle = string.lower(ignored or "")
-        if needle ~= "" and string.find(name, needle, 1, true) then
-            return true
-        end
-    end
-    return false
+    return moduleValue(externalTargeting, "isIgnoredName", name, HELPER_CONFIG.tools.ignored_names or {}) == true
 end
 
 local pcallOptionalBool
@@ -1420,18 +874,6 @@ local function isFriendlySummonCreature(creature, localPlayer)
     return moduleValue(externalTargeting, "isFriendlySummonName", normalizedCreatureName(creature), HELPER_CONFIG.tools) == true
 end
 
-local function pcallBool(obj, methodName)
-    if obj and obj[methodName] then
-        local ok, result = pcall(function()
-            return obj[methodName](obj)
-        end)
-        if ok then
-            return result == true
-        end
-    end
-    return false
-end
-
 pcallOptionalBool = function(obj, methodName)
     if obj and obj[methodName] then
         local ok, result = pcall(function()
@@ -1443,44 +885,6 @@ pcallOptionalBool = function(obj, methodName)
         return false
     end
     return nil
-end
-
-local function pcallNumber(obj, methodName)
-    if obj and obj[methodName] then
-        local ok, result = pcall(function()
-            return obj[methodName](obj)
-        end)
-        if ok and type(result) == "number" then
-            return result
-        end
-    end
-    return nil
-end
-
-local function hasAnyState(obj, methodName, states)
-    if not obj or not obj[methodName] then
-        return false
-    end
-    for _, state in ipairs(states) do
-        if state ~= nil then
-            local ok, result = pcall(function()
-                return obj[methodName](obj, state)
-            end)
-            if ok and result == true then
-                return true
-            end
-        end
-    end
-    return false
-end
-
-local function anyPcallBool(obj, methods)
-    for _, methodName in ipairs(methods or {}) do
-        if pcallBool(obj, methodName) then
-            return true
-        end
-    end
-    return false
 end
 
 local function isLocalPlayerInProtectionZone()
@@ -1571,26 +975,6 @@ local function getSpectatorsInRange(pos, range)
     return {}
 end
 
-local function countMonsters(maxRange)
-    local localPlayer = getLocalPlayer()
-    local playerPos = getThingPosition(localPlayer)
-    if not localPlayer or not playerPos then
-        return 0
-    end
-
-    local count = 0
-    local spectators = getSpectatorsInRange(playerPos, maxRange)
-    for _, creature in ipairs(spectators) do
-        if isMonsterCreature(creature, localPlayer) then
-            local distance = moduleValue(externalRoute, "distanceChebyshev", playerPos, getThingPosition(creature))
-            if distance and distance <= maxRange then
-                count = count + 1
-            end
-        end
-    end
-    return count
-end
-
 local function scanCombatArea(tools)
     local localPlayer = getLocalPlayer()
     local playerPos = getThingPosition(localPlayer)
@@ -1663,30 +1047,6 @@ local function getSafeAttackTarget(maxRange)
         return nil
     end
     return target
-end
-
-local function currentTargetId(creature)
-    if creature and creature.getId then
-        local ok, id = pcall(function()
-            return creature:getId()
-        end)
-        if ok then
-            return id or 0
-        end
-    end
-    return 0
-end
-
-local function getCreatureHealthPercent(creature)
-    if creature and creature.getHealthPercent then
-        local ok, hp = pcall(function()
-            return creature:getHealthPercent()
-        end)
-        if ok and type(hp) == "number" then
-            return hp
-        end
-    end
-    return 100
 end
 
 local function isPlayerCreature(creature, localPlayer)
@@ -1779,21 +1139,13 @@ local function findBestAttackTarget(tools)
         end
     end
 
-    local best = moduleValue(externalTargeting, "bestCandidate", candidates, tools)
-    if type(best) == "table" and best.ref then
-        return best.ref
-    end
+    for _, candidate in ipairs(candidates) do candidate.monster_count = #candidates end
 
-    local bestTarget = nil
-    local bestScore = nil
-    for _, candidate in ipairs(candidates) do
-        local score = moduleValue(externalTargeting, "targetCandidateScore", candidate, tools)
-        if not bestScore or score < bestScore then
-            bestTarget = candidate.ref
-            bestScore = score
-        end
+    local best, decision = moduleValue(externalTargeting, "bestCandidate", candidates, tools)
+    if type(best) == "table" and best.ref then
+        return best.ref, decision
     end
-    return bestTarget
+    return nil
 end
 
 local combatBlockedReason
@@ -1825,7 +1177,7 @@ local function retargetSafeMonster(now, tools)
         return nil
     end
 
-    local target = findBestAttackTarget(tools)
+    local target, targetDecision = findBestAttackTarget(tools)
     if not target then
         clearUnsafeCurrentTarget("no valid monster target", now)
         throttledRuntimeStatus(combatRuntimeText("targetingStatusText", "no_valid_target"), now)
@@ -1839,7 +1191,10 @@ local function retargetSafeMonster(now, tools)
         return nil
     end
 
-    applyChaseMode(tools.chase == true)
+    local chase = tools.chase == true
+    if type(targetDecision) == "table" and targetDecision.chase_policy == "follow" then chase = true end
+    if type(targetDecision) == "table" and targetDecision.chase_policy == "stand" then chase = false end
+    applyChaseMode(chase)
     local targetId = currentTargetId(target)
     local current = getCurrentAttackTarget()
     local currentId = currentTargetId(current)
@@ -1925,7 +1280,20 @@ end
 
 local MODULE_SHORT_LABELS = moduleValue(externalModules, "getShortLabels") or {}
 
-local function updateOverviewStats(target, nearby, visible, hp, mp, nextAction)
+local function decisionPipelineIsStale(now)
+    local observedAt = tonumber(Helper.decision_pipeline_updated_at_ms)
+    return type(Helper.decision_pipeline_result) == "table" and observedAt ~= nil and tonumber(now) ~= nil and now - observedAt > 5000
+end
+
+local function currentOperatorRuntimeState(now, blockedReason)
+    return moduleValue(externalUi, "operatorRuntimeState", {
+        enabled = HELPER_CONFIG.enabled == true,
+        blocked_reason = blockedReason,
+        stale = decisionPipelineIsStale(now),
+    }) or "disabled"
+end
+
+local function updateOverviewStats(target, nearby, visible, hp, mp, nextAction, now)
     local targetName = target and target.getName and target:getName() or "none"
     local moduleSummaryText = moduleValue(externalModules, "registrySummary", MODULE_LANES, HELPER_CONFIG)
     if type(moduleSummaryText) ~= "string" or moduleSummaryText == "" then
@@ -1942,7 +1310,15 @@ local function updateOverviewStats(target, nearby, visible, hp, mp, nextAction)
     local loaderState = rawget(_G, "CTOA_OTCLIENT") or {}
     local bootSnapshot = moduleValue(externalModules, "bootSnapshot", loaderState.modules or {})
     local bootStatusText = moduleValue(externalModules, "bootSummary", bootSnapshot or {}) or "Boot status unavailable"
-    local pipelineStatusText = moduleValue(externalDecisionPipeline, "summary", Helper.decision_pipeline_result or {}) or "Decision pipeline idle"
+    local pipelineResult = Helper.decision_pipeline_result or {}
+    local pipelineStatusText = moduleValue(externalDecisionPipeline, "summary", pipelineResult) or "Decision pipeline idle"
+    local pipelineState = moduleValue(externalUi, "normalizeOperatorState", pipelineResult.status or "disabled") or "disabled"
+    if decisionPipelineIsStale(now) then
+        pipelineState = "stale"
+        pipelineStatusText = "STALE | " .. pipelineStatusText
+    end
+    local bootState = moduleValue(externalUi, "normalizeOperatorState", bootSnapshot and bootSnapshot.status or "blocked") or "blocked"
+    local runtimeState = currentOperatorRuntimeState(now, nil)
     local updater = externalUi and externalUi.updateOverviewStats
     if type(updater) ~= "function" then
         return false
@@ -1950,7 +1326,10 @@ local function updateOverviewStats(target, nearby, visible, hp, mp, nextAction)
     local ok = pcall(updater, {
         widgets = Helper.widgets,
         content_width = UI_LAYOUT.content_w,
-        set_metric_text = externalUi and externalUi.setMetricText
+        set_metric_text = externalUi and externalUi.setMetricText,
+        ui_style = UI_STYLE,
+        align_left = AlignLeft,
+        align_center = AlignCenter
     }, {
         profile_name = moduleValue(externalProfileSchema, "displayProfileName", Helper.profile_name, shortText),
         hp = hp,
@@ -1964,7 +1343,10 @@ local function updateOverviewStats(target, nearby, visible, hp, mp, nextAction)
         runtime_readiness = runtimeReadinessText,
         prototype_readiness = prototypeReadinessText,
         boot_status = bootStatusText,
-        pipeline_status = pipelineStatusText
+        boot_state = bootState,
+        pipeline_status = pipelineStatusText,
+        pipeline_state = pipelineState,
+        runtime_state = runtimeState
     })
     return ok == true
 end
@@ -2014,6 +1396,10 @@ local function buildOffensiveAction(tools, target, scan, now)
     if tools.spell_rotation and target then
         rotationSpell = moduleValue(externalCombatRuntime, "selectRotationSpell", tools, scan, now)
     end
+    local spellStateEvidence = moduleValue(externalSpellStateRegistry, "observeAll", getLocalPlayer(), tools.spell_state_families, now, {
+        read_states = function(player) return pcallNumber(player, "getStates") end
+    })
+    local spellStateDecisions = moduleValue(externalSpellStateRegistry, "decisionMap", tools.spell_state_families, spellStateEvidence, now, tools.last_spell_state_casts)
     local action = moduleValue(externalCombatRuntime, "offensiveAction", tools, {
             blocked_reason = combatBlockedReason(tools),
             target_present = target ~= nil,
@@ -2023,7 +1409,8 @@ local function buildOffensiveAction(tools, target, scan, now)
             now_ms = now,
             recovery_gap_active = moduleValue(externalRecoveryRuntime, "recoveryActionGap", now, HELPER_CONFIG.healing, HELPER_CONFIG.tools).active,
             rotation_spell = rotationSpell,
-            rune_target_safe = canUseRuneOnTarget(tools, target)
+            rune_target_safe = canUseRuneOnTarget(tools, target),
+            spell_state_decisions = spellStateDecisions
     })
     if type(action) == "table" then return action end
     return nil
@@ -2039,59 +1426,31 @@ local function executeOffensiveAction(tools, action, nearby, visible, now)
     if blocked then status(combatRuntimeText("actionStatusText", {kind = "blocked", reason = blocked}, {reason = blocked}, "Combat action status unavailable")); return false end
     if now < (tools.attack_action_lock_until_ms or 0) then status(combatRuntimeText("actionStatusText", {kind = "action_lock"}, {now_ms = now}, "Combat action status unavailable")); return false end
     if moduleValue(externalRecoveryRuntime, "recoveryActionGap", now, HELPER_CONFIG.healing, HELPER_CONFIG.tools).active then status(combatRuntimeText("actionStatusText", {kind = "recovery_gap"}, {now_ms = now}, "Combat action status unavailable")); return false end
-    if action.kind == "stance" and action.spell then
-        local mode = nil
-        if action.fight_mode == "offensive" then
-            mode = rawget(_G, "FightOffensive") or 1
-        elseif action.fight_mode == "defensive" then
-            mode = rawget(_G, "FightDefensive") or 3
-        end
-        if mode and g_game and g_game.setFightMode then
-            pcall(function() g_game.setFightMode(mode) end)
-        end
-        if castSpell(action.spell) then
-            tools.last_stance_ms = now
-            tools.active_stance = action.stance or "neutral"
-            lockOffensiveAction(tools, now)
-            status(combatRuntimeText("actionStatusText", action, action, "EK stance changed"))
-            return true
-        end
+    local descriptor = moduleValue(externalCombatRuntime, "dispatchDescriptor", action, tools)
+    if type(descriptor) ~= "table" or descriptor.kind == "none" then return false end
+    if descriptor.fight_mode and g_game and g_game.setFightMode then
+        local mode = descriptor.fight_mode == "offensive" and (rawget(_G, "FightOffensive") or 1) or (rawget(_G, "FightDefensive") or 3)
+        pcall(function() g_game.setFightMode(mode) end)
     end
-    if action.kind == "exeta" and action.spell and castSpell(action.spell) then
-        tools.last_exeta_ms = now
-        tools.exeta_index = (tools.exeta_index % #tools.exeta_spells) + 1
-        lockOffensiveAction(tools, now)
-        status(combatRuntimeText("actionStatusText", action, {visible = visible}, "Combat action status unavailable"))
-        return true
-    end
-    if action.kind == "rotation" and action.spell and action.spell.turn_direction ~= nil then
+    if descriptor.turn_direction ~= nil then
         local player = getLocalPlayer()
         local currentDirection = player and player.getDirection and player:getDirection() or nil
-        local desiredDirection = tonumber(action.spell.turn_direction)
+        local desiredDirection = tonumber(descriptor.turn_direction)
         if desiredDirection ~= nil and currentDirection ~= desiredDirection then
-            if not g_game or type(g_game.turn) ~= "function" then status("Rotation blocked: turn API unavailable for " .. tostring(action.spell.words)); return false end
+            if not g_game or type(g_game.turn) ~= "function" then status("Rotation blocked: turn API unavailable for " .. tostring(descriptor.words)); return false end
             local turned = pcall(function() g_game.turn(desiredDirection) end)
-            if not turned then status("Rotation blocked: could not face " .. tostring(action.spell.words)); return false end
+            if not turned then status("Rotation blocked: could not face " .. tostring(descriptor.words)); return false end
         end
     end
-    if action.kind == "rotation" and action.spell and castSpell(action.spell.words) then
-        tools.last_rotation_ms = now
-        tools.last_spell_casts[action.spell.words] = now
-        lockOffensiveAction(tools, now)
-        status(combatRuntimeText("actionStatusText", action, {nearby = nearby}, "Combat action status unavailable"))
-        return true
-    end
-    if action.kind == "rune" then
-        local runeSent, runeSlot = sendActionbarSlot(tools.rune_actionbar_slot, tools.rune_hotkey)
-        if runeSent then
-            tools.last_rune_ms = now
-            lockOffensiveAction(tools, now)
-            local slotText = moduleValue(externalHotkeys, "actionbarSlotText", runeSlot) or "actionbar ?"
-            status(combatRuntimeText("actionStatusText", action, {rune_name = tools.rune_name or "rune", slot_text = slotText}, "Combat action status unavailable"))
-            return true
-        end
-    end
-    return false
+    local sent, slot = false, nil
+    if descriptor.kind == "spell" and descriptor.words ~= "" then sent = castSpell(descriptor.words) end
+    if descriptor.kind == "actionbar" then sent, slot = sendActionbarSlot(descriptor.slot, descriptor.hotkey) end
+    if not sent then return false end
+    moduleValue(externalCombatRuntime, "recordActionSuccess", tools, action, now)
+    lockOffensiveAction(tools, now)
+    local detail = {nearby = nearby, visible = visible, rune_name = action.rune_name or tools.rune_name or "rune", slot_text = moduleValue(externalHotkeys, "actionbarSlotText", slot) or "actionbar ?"}
+    status(combatRuntimeText("actionStatusText", action, detail, "Combat action status unavailable"))
+    return true
 end
 local function planNextCombatAction(target, scan, now)
     local tools = HELPER_CONFIG.tools
@@ -2186,202 +1545,26 @@ function setCavebotStatus(text)
     end
 end
 
-function hasApi(owner, methodName)
-    return owner ~= nil and type(owner[methodName]) == "function"
-end
-
-function safeCall(owner, methodName, ...)
-    if not hasApi(owner, methodName) then
-        return false, "missing"
-    end
-    local args = {...}
-    return pcall(function()
-        return owner[methodName](owner, unpack(args))
-    end)
-end
-
-function safeGlobalCall(owner, methodName, ...)
-    if not hasApi(owner, methodName) then
-        return false, "missing"
-    end
-    local args = {...}
-    return pcall(function()
-        return owner[methodName](unpack(args))
-    end)
-end
-
-function refreshApiSnapshotUi()
-    local flags = HELPER_CONFIG.tools and HELPER_CONFIG.tools.feature_flags or {}
-    local exportLimit = HELPER_CONFIG.tools and HELPER_CONFIG.tools.diagnostics_export_limit or 20
-    local values = moduleValue(externalDiagnostics, "snapshotUiValues", Helper.api_snapshot, flags, Helper.diagnostics_buffer, exportLimit, HELPER_VERSION)
-    if type(values) ~= "table" then
-        values = {
-            api = "Diagnostics module unavailable | API pending",
-            flags = "Diagnostics module unavailable | flags pending",
-            movement = "Diagnostics module unavailable | movement pending",
-            magic_loot = "Diagnostics module unavailable | magic/loot pending",
-            buffer = "Diagnostics module unavailable | export gated"
-        }
-    end
-    local rows = moduleValue(externalDiagnostics, "snapshotUiRows") or {}
-    local updater = externalUi and externalUi.updateDiagnosticsSnapshot
-    if type(updater) ~= "function" then
-        if refreshOperatorSummaries then
-            refreshOperatorSummaries()
-        end
-        return false
-    end
-    local ok = pcall(updater, {
-        widgets = Helper.widgets,
-        content_width = UI_LAYOUT.content_w,
-        fit_text = fitText
-    }, values, rows)
-    if refreshOperatorSummaries then
-        refreshOperatorSummaries()
-    end
-    return ok == true
-end
-
-function recordDiagnosticsSnapshot(reason, snapshot)
-    local tools = HELPER_CONFIG.tools or {}
-    local flags = tools.feature_flags or {}
-    if flags.diagnostics ~= true then
-        return false
-    end
-    if type(snapshot) ~= "table" then
-        return false
-    end
-    local buffer, recorded = moduleValue(externalDiagnostics, "recordSnapshot", Helper.diagnostics_buffer, {
-        version = HELPER_VERSION,
-        reason = reason,
-        captured_ms = g_clock and g_clock.millis and g_clock.millis() or 0,
-        snapshot = snapshot,
-        limit = tools.diagnostics_export_limit
-    })
-    if recorded == true and type(buffer) == "table" then
-        Helper.diagnostics_buffer = buffer
-        return true
-    end
-    return false
-end
-
-function exportDiagnosticsBuffer(reason)
-    local path = getDiagnosticsExportPath()
-    local exported = moduleValue(externalDiagnostics, "exportBuffer", {
-        path = path,
-        version = HELPER_VERSION,
-        reason = reason,
-        exported_ms = g_clock and g_clock.millis and g_clock.millis() or 0,
-        samples = Helper.diagnostics_buffer or {},
-        serialize = type(externalProfileSchema) == "table" and type(externalProfileSchema.serializeLua) == "function" and externalProfileSchema.serializeLua or nil,
-        status = status,
-        refresh = refreshApiSnapshotUi
-    })
-    if exported == true then
-        return true
-    end
-    status("Diagnostics module unavailable")
-    refreshApiSnapshotUi()
-    return false
-end
-
-function runApiProbe(reason)
-    if Helper.api_probe_ran and reason ~= "manual" then
-        return false
-    end
-
-    local player = getLocalPlayer()
-    local current = getThingPosition(player)
-    local deferPlan = moduleValue(externalDiagnostics, "probeDeferredPlan", {reason = reason, label = "API", online = g_game and g_game.isOnline and g_game.isOnline() or false, has_player = player ~= nil, attempts = Helper.api_probe_attempts, max_attempts = 120})
-    if type(deferPlan) == "table" and deferPlan.defer == true then
-        Helper.api_probe_attempts = deferPlan.attempts or ((Helper.api_probe_attempts or 0) + 1)
-        if deferPlan.retry == true then
-            delay(function() runApiProbe("startup") end, deferPlan.retry_delay_ms or 2000)
-        else
-            status(deferPlan.status_text or "API probe deferred: no local player")
-        end
-        return false
-    end
-    Helper.api_probe_ran = true
-
-    local vitals = readPlayerVitals()
-    local canWalkOk, canWalk = safeCall(player, "canWalk", true)
-    local autoWalkingOk, autoWalking = safeCall(player, "isAutoWalking")
-    local pzOk, pz = safeCall(player, "isInProtectionZone")
-    local states = pcallNumber(player, "getStates")
-    local containersOk, containers = safeGlobalCall(g_game, "getContainers")
-    local container = moduleValue(externalDiagnostics, "firstTableValue", containers)
-    local lootAdapterText = ""
-    local lootText = moduleValue(externalLootRuntime, "adapterSummary", HELPER_CONFIG.tools or {}, {
-        online = g_game and g_game.isOnline and g_game.isOnline() or false,
-        in_protection_zone = isLocalPlayerInProtectionZone()
-    }, {open_container_count = tonumber(moduleValue(externalDiagnostics, "tableCount", containersOk and containers or {})) or 0, corpse_candidate_count = 0, valuable_item_count = 0, free_capacity = 1})
-    if type(lootText) == "string" and lootText ~= "" then
-        lootAdapterText = fitText(lootText, UI_LAYOUT.content_w - 14, 0.78)
-    end
-    local targetOk, target = safeGlobalCall(g_game, "getAttackingCreature")
-    local tileFlags = nil
-    if current and g_map and g_map.getTile then
-        local tileOk, tile = pcall(function()
-            return g_map.getTile(current)
-        end)
-        if tileOk and tile then
-            tileFlags = pcallNumber(tile, "getFlags")
-        end
-    end
-    local targetName = "n/a"
-    if targetOk and target and hasApi(target, "getName") then
-        local ok, name = safeCall(target, "getName")
-        targetName = ok and tostring(name) or "error"
-    end
-
-    local snapshot = moduleValue(externalDiagnostics, "apiProbeSnapshot", {
-        version = HELPER_VERSION,
-        online = g_game and g_game.isOnline and g_game.isOnline(),
-        player = player,
-        clock_millis = g_clock and g_clock.millis,
-        current_pos = current,
-        vitals = vitals,
-        pz_ok = pzOk,
-        pz = pz,
-        states = states,
-        tile_flags = tileFlags,
-        can_walk_ok = canWalkOk,
-        can_walk = canWalk,
-        auto_walking_ok = autoWalkingOk,
-        auto_walking = autoWalking,
-        map = g_map,
-        game = g_game,
-        target_ok = targetOk,
-        target = target,
-        target_name = targetName,
-        ui = g_ui,
-        keyboard = g_keyboard,
-        resources = g_resources,
-        container = container,
-        container_count = containersOk and (tonumber(moduleValue(externalDiagnostics, "tableCount", containers)) or 0) or 0,
-        loot_adapter_text = lootAdapterText,
-        runtime_core = externalRuntimeCore,
-    }) or {}
-    Helper.api_snapshot = snapshot
-    recordDiagnosticsSnapshot(reason, snapshot)
-    refreshApiSnapshotUi()
-
-    local summaryText, detailText = moduleValue(externalDiagnostics, "apiProbeText", {
-        reason = reason,
-        version = HELPER_VERSION,
-        snapshot = snapshot
-    })
-    if type(summaryText) == "string" and summaryText ~= "" then
-        status(summaryText)
-        if type(detailText) == "string" and detailText ~= "" then
-            status(detailText)
-        end
-        return true
-    end
-    status("Diagnostics module unavailable | API probe status unavailable")
-    return true
-end
+local diagnosticsController = moduleValue(externalDiagnostics, "createController", {
+    helper = Helper, config = HELPER_CONFIG, version = HELPER_VERSION,
+    content_width = UI_LAYOUT.content_w, fit_text = fitText,
+    update_snapshot = externalUi and externalUi.updateDiagnosticsSnapshot,
+    serialize = externalProfileSchema and externalProfileSchema.serializeLua,
+    now_ms = helperNowMs, status = status, delay = delay,
+    get_player = getLocalPlayer, get_position = getThingPosition,
+    read_vitals = readPlayerVitals, pcall_number = pcallNumber,
+    online = isGameOnline, game = g_game, map = g_map, ui = g_ui,
+    keyboard = g_keyboard, resources = g_resources, runtime_core = externalRuntimeCore,
+    clock_millis = g_clock and g_clock.millis,
+    refresh_operator = function() if refreshOperatorSummaries then refreshOperatorSummaries() end end,
+    loot_adapter_text = function(containersOk, containers, online)
+        local text = moduleValue(externalLootRuntime, "adapterSummary", HELPER_CONFIG.tools or {},
+            {online = online, in_protection_zone = isLocalPlayerInProtectionZone()},
+            {open_container_count = containersOk and moduleValue(externalDiagnostics, "tableCount", containers) or 0,
+             corpse_candidate_count = 0, valuable_item_count = 0, free_capacity = 1})
+        return type(text) == "string" and fitText(text, UI_LAYOUT.content_w - 14, 0.78) or ""
+    end,
+})
 
 function maybeSampleDiagnostics(now)
     local tools = HELPER_CONFIG.tools or {}
@@ -2393,7 +1576,7 @@ function maybeSampleDiagnostics(now)
         return false
     end
     tools.last_diagnostics_sample_ms = now
-    return runApiProbe("sample")
+    return diagnosticsController.runApiProbe("sample")
 end
 
 function runMovementApiProbe(reason)
@@ -2530,14 +1713,6 @@ function addCurrentCavebotWaypoint()
     return applyCavebotEditorAction("add", {pos = pos})
 end
 
-function clearCavebotWaypoints()
-    return applyCavebotEditorAction("clear")
-end
-
-function selectCavebotWaypoint(delta)
-    return applyCavebotEditorAction("select", {delta = delta})
-end
-
 function deleteCurrentCavebotWaypoint(confirm)
     if confirm ~= true and moduleValue(externalModal, "isPending", Helper.pending_confirm, "cavebot_delete", helperNowMs()) ~= true then
         local request = {label = "no waypoint", timeout_ms = 4500}
@@ -2554,82 +1729,6 @@ function deleteCurrentCavebotWaypoint(confirm)
     return applyCavebotEditorAction("delete")
 end
 
-function moveCurrentCavebotWaypoint(delta)
-    return applyCavebotEditorAction("move", {delta = delta})
-end
-
-function resetCavebotMovementState(reason)
-    local tools = HELPER_CONFIG.tools or {}
-    tools.cavebot_retry_attempts = 0
-    tools.cavebot_stuck_ticks = 0
-    tools.cavebot_last_position_key = nil
-    tools.cavebot_last_target_key = nil
-    tools.cavebot_last_stuck_ms = 0
-    if reason then
-        status(moduleValue(externalCavebotRuntime, "cavebotRuntimeText", "traceText", "movement_reset", {
-            reason = reason
-        }))
-    end
-end
-
-function cavebotRuntimeMovementCapability(player)
-    local available = player ~= nil and player.canWalk ~= nil
-    local ok, value = false, nil
-    if available then
-        ok, value = pcall(function()
-            return player:canWalk(true)
-        end)
-    end
-    local capability = moduleValue(externalCavebotRuntime, "movementCapability", {
-        available = available,
-        ok = ok,
-        value = value
-    })
-    if type(capability) == "table" then
-        return capability
-    end
-    return {
-        can_move = false,
-        can_move_value = nil,
-        text = "cavebot adapter unavailable"
-    }
-end
-
-function cavebotMovementBlockedReason(player, current)
-    local context = {
-        online = isGameOnline(),
-        has_player = player ~= nil,
-        has_position = current ~= nil,
-        in_protection_zone = isLocalPlayerInProtectionZone()
-    }
-    local reason = moduleValue(externalCavebotRuntime, "movementBlockedReason", context)
-    if reason ~= nil then
-        return reason
-    end
-    if context.online == false then
-        return "offline"
-    elseif context.has_player == false then
-        return "no player"
-    elseif context.has_position == false then
-        return "no position"
-    elseif context.in_protection_zone == true then
-        return "PZ guard"
-    end
-    return nil
-end
-
-function noteCavebotProgress(tools, current, target, now)
-    return moduleValue(externalRoute, "progress", tools, moduleValue(externalRoute, "posKey", current), moduleValue(externalRoute, "posKey", target), now) == true
-end
-
-function cavebotRouteActiveTarget(tools, current)
-    local target = moduleValue(externalRoute, "activeTarget", tools, current, tools and tools.cavebot_reach_distance or 1)
-    if type(target) == "table" then
-        return target
-    end
-    return {ok = false, status_event = "no_waypoints"}
-end
-
 function autoWalkTo(pos)
     if not pos then
         return false
@@ -2637,7 +1736,11 @@ function autoWalkTo(pos)
 
     local player = getLocalPlayer()
     local current = getThingPosition(player)
-    local blocked = cavebotMovementBlockedReason(player, current)
+    local blockedOk, blocked = moduleCall(externalCavebotRuntime, "movementBlockedReason", {
+        online = isGameOnline(), has_player = player ~= nil, has_position = current ~= nil,
+        in_protection_zone = isLocalPlayerInProtectionZone()
+    })
+    if not blockedOk then blocked = "movement adapter unavailable" end
     local alreadyMoving = false
     if player and player.isAutoWalking then
         local walkingOk, walking = pcall(function()
@@ -2645,7 +1748,7 @@ function autoWalkTo(pos)
         end)
         alreadyMoving = walkingOk and walking == true
     end
-    local movementCapability = cavebotRuntimeMovementCapability(player)
+    local movementCapability = moduleValue(externalCavebotRuntime, "movementCapabilityForPlayer", player, safeCall) or {can_move = false, can_move_value = nil}
     local preflight = {allowed = true}
     local planned = moduleValue(externalCavebotRuntime, "walkPreflight", {
         movement_enabled = HELPER_CONFIG.tools.cavebot_movement_enabled == true,
@@ -2700,7 +1803,7 @@ function testCavebotAutoWalk()
     end
     local waypoint = waypoints[tools.cavebot_index or 1]
     local target = moduleValue(externalRoute, "position", waypoint)
-    local movementCapability = cavebotRuntimeMovementCapability(player)
+    local movementCapability = moduleValue(externalCavebotRuntime, "movementCapabilityForPlayer", player, safeCall) or {can_move = false, can_move_value = nil}
     local plan = {allowed = true}
     local planned = moduleValue(externalCavebotRuntime, "testWalkPlan", {
         has_player_position = player ~= nil and current ~= nil,
@@ -2749,7 +1852,7 @@ function maybeRunCavebot(now)
         return false
     end
     if not tools.cavebot_movement_enabled then
-        resetCavebotMovementState()
+        moduleValue(externalCavebotRuntime, "resetMovementState", tools)
         setCavebotStatus(moduleValue(externalCavebotRuntime, "cavebotRuntimeText", "statusText", "movement_disabled", nil, "movement disabled"))
         return false
     end
@@ -2760,16 +1863,22 @@ function maybeRunCavebot(now)
 
     local player = getLocalPlayer()
     local current = getThingPosition(player)
-    local blocked = cavebotMovementBlockedReason(player, current)
+    local blockedOk, blocked = moduleCall(externalCavebotRuntime, "movementBlockedReason", {
+        online = isGameOnline(), has_player = player ~= nil, has_position = current ~= nil,
+        in_protection_zone = isLocalPlayerInProtectionZone()
+    })
+    if not blockedOk then blocked = "movement adapter unavailable" end
     if blocked then
-        resetCavebotMovementState()
+        moduleValue(externalCavebotRuntime, "resetMovementState", tools)
         setCavebotStatus(moduleValue(externalCavebotRuntime, "cavebotRuntimeText", "statusText", "movement_blocked", {reason = blocked}))
         return false
     end
 
-    local routeTarget = cavebotRouteActiveTarget(tools, current)
+    local routeTarget = moduleValue(externalRoute, "activeTarget", tools, current, tools.cavebot_reach_distance or 1)
+    if type(routeTarget) ~= "table" then routeTarget = {ok = false, status_event = "route_unavailable"} end
     if routeTarget.reached then
-        resetCavebotMovementState("waypoint reached")
+        moduleValue(externalCavebotRuntime, "resetMovementState", tools)
+        status(moduleValue(externalCavebotRuntime, "cavebotRuntimeText", "traceText", "movement_reset", {reason = "waypoint reached"}))
     end
     if not routeTarget.ok then
         setCavebotStatus(moduleValue(externalCavebotRuntime, "cavebotRuntimeText", "statusText", routeTarget.status_event))
@@ -2790,7 +1899,7 @@ function maybeRunCavebot(now)
         setCavebotStatus(fitText(adapterStatus, UI_LAYOUT.content_w - 14, 0.78))
     end
 
-    local stuck = noteCavebotProgress(tools, current, target, now)
+    local stuck = moduleValue(externalRoute, "progress", tools, moduleValue(externalRoute, "posKey", current), moduleValue(externalRoute, "posKey", target), now) == true
     local retryDecision = moduleValue(externalCavebotRuntime, "retryDecision", {
         stuck = stuck,
         retry_budget_exceeded = moduleValue(externalCavebotRuntime, "cavebotRetryBudgetExceeded", tools),
@@ -2989,7 +2098,7 @@ function maybeUseTools(now, vitals)
     local nextAction = planNextCombatAction(target, scan, now)
     local decisionState = combatDecisionStateText(tools, target, scan, now, nextAction)
     updateCombatStats(target, nearby, visible)
-    updateOverviewStats(target, nearby, visible, hp, mp, nextAction)
+    updateOverviewStats(target, nearby, visible, hp, mp, nextAction, now)
     if Helper.widgets.magic_footer and Helper.widgets.magic_footer.setText then
         Helper.widgets.magic_footer:setText(fitText("Magic " .. HELPER_VERSION .. ": " .. decisionState, UI_LAYOUT.content_w - 22, 0.82))
     end
@@ -3000,14 +2109,19 @@ function maybeUseTools(now, vitals)
         mp = mp,
         nearby = nearby,
         visible = visible,
+        runtime_state = currentOperatorRuntimeState(now, nil),
         decision = decisionState
     })
     setHudText(type(hudRuntimeText) == "string" and hudRuntimeText ~= "" and hudRuntimeText or "HUD module unavailable | runtime gated")
 
-    if tools.auto_haste and now - tools.last_haste_ms >= tools.haste_interval_ms then
-        if castSpell(tools.haste_spell) then
+    local hasteEvidence = moduleValue(externalSpellStateRegistry, "observeHaste", getLocalPlayer(), now, {
+        read_states = function(player) return pcallNumber(player, "getStates") end
+    })
+    local hastePlan = moduleValue(externalSpellStateRegistry, "hasteDecision", tools, hasteEvidence, now)
+    if type(hastePlan) == "table" and hastePlan.allowed == true then
+        if castSpell(hastePlan.spell) then
             tools.last_haste_ms = now
-            status("Auto haste: " .. tools.haste_spell)
+            status("Auto haste: " .. tostring(hastePlan.spell))
         end
     end
 
@@ -3533,24 +2647,34 @@ addVectorStepRow = function(parent, id, label, getterX, setterX, getterY, setter
 function applyRotationPreset(presetId)
     for _, preset in ipairs(ROTATION_PRESETS) do
         if preset.id == presetId then
-            HELPER_CONFIG.tools.rotation_spells = {}
+            local presetRules = {}
             for _, spell in ipairs(preset.spells) do
-                HELPER_CONFIG.tools.rotation_spells[#HELPER_CONFIG.tools.rotation_spells + 1] = {
+                presetRules[#presetRules + 1] = {
+                    enabled = true,
                     words = spell.words,
+                    use_mob_count = true,
                     min_nearby = spell.min_nearby,
                     cooldown_ms = spell.cooldown_ms,
                     max_nearby = spell.max_nearby,
+                    scan_range = spell.scan_range,
                     directional = spell.directional == true
                 }
             end
+            local rules, decision = moduleValue(externalCombatRuntime, "replaceRotationRules", HELPER_CONFIG.tools, presetRules)
+            if type(rules) ~= "table" or type(decision) ~= "table" or decision.allowed ~= true then
+                status("Rotation preset blocked: combat runtime editor unavailable")
+                return false
+            end
             HELPER_CONFIG.tools.rotation_preset = presetId
+            Helper.magic_rule_index = #rules > 0 and 1 or 0
             if Helper.widgets.profile_rotation_info and Helper.widgets.profile_rotation_info.setText then
                 Helper.widgets.profile_rotation_info:setText(moduleValue(externalProfileSchema, "rotationSummaryText", HELPER_CONFIG.tools, {spellText = spellText, shortText = shortText}, "rotation summary unavailable"))
             end
             markProfileDirty("rotation_preset")
-            return
+            return true
         end
     end
+    return false
 end
 
 function addProfileRotationRow(parent, id, label, x, y, width, section)
@@ -3566,73 +2690,44 @@ function addProfileRotationRow(parent, id, label, x, y, width, section)
     end, applyRotationPreset, options, x, y, width, section, formatter)
 end
 
-Helper.findRotationSpell = function(words)
-    local tools = HELPER_CONFIG.tools or {}
-    for _, spell in ipairs(tools.rotation_spells or {}) do
-        if spell.words == words then
-            return spell
-        end
-    end
-    return nil
-end
-
-Helper.getRotationMin = function(words, fallback)
-    local spell = Helper.findRotationSpell(words)
-    return spell and spell.min_nearby or fallback or 1
-end
-
-Helper.setRotationMin = function(words, value)
-    local spell = Helper.findRotationSpell(words)
-    if spell then
-        spell.min_nearby = value
-        HELPER_CONFIG.tools.rotation_preset = "custom"
-        if Helper.widgets.profile_rotation_info and Helper.widgets.profile_rotation_info.setText then
-            Helper.widgets.profile_rotation_info:setText(moduleValue(externalProfileSchema, "rotationSummaryText", HELPER_CONFIG.tools, {spellText = spellText, shortText = shortText}, "rotation summary unavailable"))
-        end
-    end
-end
-
-Helper.getRotationCooldown = function(words, fallback)
-    local spell = Helper.findRotationSpell(words)
-    return spell and spell.cooldown_ms or fallback or 2000
-end
-
-Helper.setRotationCooldown = function(words, value)
-    local spell = Helper.findRotationSpell(words)
-    if spell then
-        spell.cooldown_ms = value
-        HELPER_CONFIG.tools.rotation_preset = "custom"
-        if Helper.widgets.profile_rotation_info and Helper.widgets.profile_rotation_info.setText then
-            Helper.widgets.profile_rotation_info:setText(moduleValue(externalProfileSchema, "rotationSummaryText", HELPER_CONFIG.tools, {spellText = spellText, shortText = shortText}, "rotation summary unavailable"))
-        end
-    end
-end
-
 switchHuntingSubtab = function(subtab)
     Helper.active_hunting_tab = subtab or "targeting"
     setSectionVisible("hunting_targeting", Helper.active_tab == "hunting" and Helper.active_hunting_tab == "targeting")
+    setSectionVisible("hunting_target_rules", Helper.active_tab == "hunting" and Helper.active_hunting_tab == "target_rules")
     setSectionVisible("hunting_magic", Helper.active_tab == "hunting" and Helper.active_hunting_tab == "magic")
+    setSectionVisible("hunting_actions", Helper.active_tab == "hunting" and Helper.active_hunting_tab == "actions")
+    setSectionVisible("hunting_magic_runtime", Helper.active_tab == "hunting" and Helper.active_hunting_tab == "magic_runtime")
     setWidgetText(Helper.widgets.hunting_targeting_tab, "Targeting")
-    setWidgetText(Helper.widgets.hunting_magic_tab, "Magic Shooter")
+    setWidgetText(Helper.widgets.hunting_target_rules_tab, "Target Rules")
+    setWidgetText(Helper.widgets.hunting_magic_tab, "Spell Rules")
+    setWidgetText(Helper.widgets.hunting_actions_tab, "Actions")
+    setWidgetText(Helper.widgets.hunting_magic_runtime_tab, "Runtime")
     styleUi("styleSubtabState", Helper.widgets.hunting_targeting_tab, Helper.active_hunting_tab == "targeting", UI_STYLE, AlignCenter)
+    styleUi("styleSubtabState", Helper.widgets.hunting_target_rules_tab, Helper.active_hunting_tab == "target_rules", UI_STYLE, AlignCenter)
     styleUi("styleSubtabState", Helper.widgets.hunting_magic_tab, Helper.active_hunting_tab == "magic", UI_STYLE, AlignCenter)
+    styleUi("styleSubtabState", Helper.widgets.hunting_actions_tab, Helper.active_hunting_tab == "actions", UI_STYLE, AlignCenter)
+    styleUi("styleSubtabState", Helper.widgets.hunting_magic_runtime_tab, Helper.active_hunting_tab == "magic_runtime", UI_STYLE, AlignCenter)
 end
 
 switchToolsSubtab = function(subtab)
+    if subtab == "hud" then
+        Helper.active_tools_tab = "helper"
+        if Helper.active_tab == "tools" then
+            switchTab("ui")
+        end
+        return
+    end
     Helper.active_tools_tab = subtab or "helper"
     setSectionVisible("tools_helper", Helper.active_tab == "tools" and Helper.active_tools_tab == "helper")
     setSectionVisible("tools_pvp", Helper.active_tab == "tools" and Helper.active_tools_tab == "pvp")
-    setSectionVisible("tools_hud", Helper.active_tab == "tools" and Helper.active_tools_tab == "hud")
     setSectionVisible("tools_timer", Helper.active_tab == "tools" and Helper.active_tools_tab == "timer")
     setSectionVisible("tools_diag", Helper.active_tab == "tools" and Helper.active_tools_tab == "diag")
     setWidgetText(Helper.widgets.tools_helper_tab, "Helper")
     setWidgetText(Helper.widgets.tools_pvp_tab, "PvP")
-    setWidgetText(Helper.widgets.tools_hud_tab, "HUD")
     setWidgetText(Helper.widgets.tools_timer_tab, "Timer")
     setWidgetText(Helper.widgets.tools_diag_tab, "Diag")
     styleUi("styleSubtabState", Helper.widgets.tools_helper_tab, Helper.active_tools_tab == "helper", UI_STYLE, AlignCenter)
     styleUi("styleSubtabState", Helper.widgets.tools_pvp_tab, Helper.active_tools_tab == "pvp", UI_STYLE, AlignCenter)
-    styleUi("styleSubtabState", Helper.widgets.tools_hud_tab, Helper.active_tools_tab == "hud", UI_STYLE, AlignCenter)
     styleUi("styleSubtabState", Helper.widgets.tools_timer_tab, Helper.active_tools_tab == "timer", UI_STYLE, AlignCenter)
     styleUi("styleSubtabState", Helper.widgets.tools_diag_tab, Helper.active_tools_tab == "diag", UI_STYLE, AlignCenter)
 end
@@ -3653,7 +2748,7 @@ tabModuleId = function(tab, huntingSubtab)
     if tab == "ui" then return "engine" end
     if tab == "tools" then return "helper" end
     if tab == "hunting" then
-        return huntingSubtab == "magic" and "magic" or "targeting"
+        return (huntingSubtab == "targeting" or huntingSubtab == "target_rules") and "targeting" or "magic"
     end
     return tab
 end
@@ -3698,8 +2793,8 @@ switchTab = function(tab)
     setSectionVisible("scripting", tab == "scripting")
     setSectionVisible("profile", tab == "profile")
     setSectionVisible("ui", tab == "ui")
-    local targetingActive = tab == "hunting" and Helper.active_hunting_tab ~= "magic"
-    local magicActive = tab == "hunting" and Helper.active_hunting_tab == "magic"
+    local targetingActive = tab == "hunting" and (Helper.active_hunting_tab == "targeting" or Helper.active_hunting_tab == "target_rules")
+    local magicActive = tab == "hunting" and not targetingActive
     for _, nav in ipairs(Helper.sidebar_tabs or {}) do
         local active = tab == nav.target
         if nav.target == "hunting" then
@@ -3864,6 +2959,7 @@ buildUi = function()
     local body_y = UI_LAYOUT.content_body_y or 58
     local body_h = UI_LAYOUT.content_body_h or 252
     local operatorSummaries = moduleValue(externalOperatorSummary, "collect", OPERATOR_SUMMARY_BRIDGES, false) or {}
+    Helper.cavebot_editor_bindings = moduleValue(externalRoute, "editorBindings", applyCavebotEditorAction) or {}
     local panel_renderer_base = {
         window = window, config = HELPER_CONFIG, helper = Helper, widgets = Helper.widgets, layout = UI_LAYOUT,
         panel_x = panel_x, panel_w = panel_w, body_y = body_y, body_h = body_h,
@@ -4050,15 +3146,90 @@ buildUi = function()
         targeting_summary_text = operatorSummaries.targeting, magic_summary_text = operatorSummaries.magic,
         profile_number_text = tostring, magic_priority_text = magicPriorityText,
         tool_range_choices = TOOL_RANGE_CHOICES, tool_timeout_choices = TOOL_TIMEOUT_CHOICES,
-        magic_priority_choices = MAGIC_PRIORITY_CHOICES, hotkey_choices = HOTKEY_CHOICES
+        magic_priority_choices = MAGIC_PRIORITY_CHOICES, hotkey_choices = HOTKEY_CHOICES,
+        rune_name_choices = RUNE_NAME_CHOICES,
+        ui_style = UI_STYLE, align_center = AlignCenter, targeting_module = externalTargeting,
+        combat_runtime_module = externalCombatRuntime,
+        mark_profile_dirty = markProfileDirty,
+        format_target_name_list = function(key)
+            return moduleValue(externalTargeting, "formatNameList", HELPER_CONFIG.tools[key] or {}) or ""
+        end,
+        update_target_name_list = function(key, text)
+            local names, decision = moduleValue(externalTargeting, "updateNameList", HELPER_CONFIG.tools, key, text)
+            if type(names) ~= "table" or type(decision) ~= "table" or decision.allowed ~= true then
+                status("Target name policy blocked: " .. tostring(decision and decision.reason or "targeting module unavailable"))
+                return false
+            end
+            markProfileDirty("target_name_policy:" .. tostring(key))
+            return true
+        end,
+        magic_rule_state = function()
+            local state = moduleValue(externalCombatRuntime, "rotationRuleState", HELPER_CONFIG.tools, Helper.magic_rule_index)
+            if type(state) ~= "table" then
+                return {index = 0, count = 0, rule = nil, summary = "editor unavailable"}
+            end
+            Helper.magic_rule_index = tonumber(state.index) or 0
+            return state
+        end,
+        select_magic_rule = function(delta)
+            local state = moduleValue(externalCombatRuntime, "rotationRuleState", HELPER_CONFIG.tools, Helper.magic_rule_index)
+            if type(state) ~= "table" or tonumber(state.count) == nil or state.count < 1 then
+                Helper.magic_rule_index = 0
+                return false
+            end
+            Helper.magic_rule_index = math.max(1, math.min(state.count, (tonumber(state.index) or 1) + (tonumber(delta) or 0)))
+            return true
+        end,
+        update_magic_rule = function(patch)
+            local _, decision = moduleValue(externalCombatRuntime, "updateRotationRule", HELPER_CONFIG.tools, Helper.magic_rule_index, patch)
+            if type(decision) ~= "table" or decision.allowed ~= true or decision.runtime_actions ~= false then
+                status("Spell rule update blocked: " .. tostring(decision and decision.reason or "combat runtime editor unavailable"))
+                return false
+            end
+            markProfileDirty("magic_rule_update")
+            return true
+        end,
+        add_magic_rule = function()
+            local index, decision = moduleValue(externalCombatRuntime, "addRotationRule", HELPER_CONFIG.tools, {
+                enabled = false, words = "", use_mob_count = true, min_nearby = 1,
+                max_nearby = 99, scan_range = 1, cooldown_ms = 2000, directional = false
+            })
+            if type(decision) ~= "table" or decision.allowed ~= true or decision.runtime_actions ~= false then
+                status("Spell rule add blocked: " .. tostring(decision and decision.reason or "combat runtime editor unavailable"))
+                return false
+            end
+            Helper.magic_rule_index = tonumber(index) or Helper.magic_rule_index
+            markProfileDirty("magic_rule_add")
+            return true
+        end,
+        remove_magic_rule = function()
+            local index, decision = moduleValue(externalCombatRuntime, "removeRotationRule", HELPER_CONFIG.tools, Helper.magic_rule_index)
+            if type(decision) ~= "table" or decision.allowed ~= true or decision.runtime_actions ~= false then
+                status("Spell rule remove blocked: " .. tostring(decision and decision.reason or "combat runtime editor unavailable"))
+                return false
+            end
+            Helper.magic_rule_index = tonumber(index) or 0
+            markProfileDirty("magic_rule_remove")
+            return true
+        end,
+        move_magic_rule = function(delta)
+            local index, decision = moduleValue(externalCombatRuntime, "moveRotationRule", HELPER_CONFIG.tools, Helper.magic_rule_index, delta)
+            if type(decision) ~= "table" or decision.allowed ~= true or decision.runtime_actions ~= false then
+                status("Spell rule move blocked: " .. tostring(decision and decision.reason or "edge reached"))
+                return false
+            end
+            Helper.magic_rule_index = tonumber(index) or Helper.magic_rule_index
+            markProfileDirty("magic_rule_move")
+            return true
+        end
     }))
 
     styleUi("renderCavebotPanel", moduleValue(externalUi, "mergePanelRendererContext", panel_renderer_base, {
         create_widget = createWidget, style_action_button = function(widget, role, enabled) styleUi("styleActionButton", widget, role, enabled, UI_STYLE, AlignCenter) end, add_to_section = addToSection,
         profile_number_text = tostring,
         add_current_cavebot_waypoint = addCurrentCavebotWaypoint, delete_current_cavebot_waypoint = deleteCurrentCavebotWaypoint,
-        move_current_cavebot_waypoint = moveCurrentCavebotWaypoint, select_cavebot_waypoint = selectCavebotWaypoint,
-        clear_cavebot_waypoints = clearCavebotWaypoints, test_cavebot_auto_walk = testCavebotAutoWalk
+        move_current_cavebot_waypoint = Helper.cavebot_editor_bindings.move, select_cavebot_waypoint = Helper.cavebot_editor_bindings.select,
+        clear_cavebot_waypoints = Helper.cavebot_editor_bindings.clear, test_cavebot_auto_walk = testCavebotAutoWalk
     }))
 
     styleUi("renderEquipmentPanel", moduleValue(externalUi, "mergePanelRendererContext", panel_renderer_base, {
@@ -4083,7 +3254,7 @@ buildUi = function()
             local text = moduleValue(externalDiagnostics, "bufferText", Helper.diagnostics_buffer, limit)
             return type(text) == "string" and text ~= "" and text or "Diagnostics module unavailable | export gated"
         end, short_text = shortText,
-        apply_hud_prefs = applyHudPrefs, refresh_api_snapshot_ui = refreshApiSnapshotUi, mark_ui_prefs_dirty = markUiPrefsDirty
+        apply_hud_prefs = applyHudPrefs, refresh_api_snapshot_ui = diagnosticsController.refresh, mark_ui_prefs_dirty = markUiPrefsDirty
     }))
 
     styleUi("renderScriptingPanel", moduleValue(externalUi, "mergePanelRendererContext", panel_renderer_base, {
@@ -4213,7 +3384,7 @@ function init()
     Helper.think_event = cycleEvent(onThink, HELPER_CONFIG.tick_ms)
     if HELPER_CONFIG.tools and HELPER_CONFIG.tools.api_probe_enabled then
         delay(function()
-            runApiProbe("startup")
+            diagnosticsController.runApiProbe("startup")
         end, 900)
     end
     if HELPER_CONFIG.tools and HELPER_CONFIG.tools.cavebot_api_probe_enabled then
@@ -4322,10 +3493,10 @@ Helper.runMagicApiProbe = function()
     return runMagicApiProbe("manual")
 end
 Helper.runApiProbe = function()
-    return runApiProbe("manual")
+    return diagnosticsController.runApiProbe("manual")
 end
 Helper.exportDiagnostics = function()
-    return exportDiagnosticsBuffer("manual")
+    return diagnosticsController.export("manual")
 end
 Helper.setEnabled = function(enabled)
     local requested = enabled == true or enabled == "true" or enabled == 1
@@ -4362,6 +3533,7 @@ Helper.evaluateDecisionPipeline = function(entries, state)
         return nil
     end
     Helper.decision_pipeline_result = result
+    Helper.decision_pipeline_updated_at_ms = tonumber(pipelineState.now_ms) or helperNowMs()
     if type(result.queue) == "table" then
         Helper.decision_pipeline_queue = result.queue
     end

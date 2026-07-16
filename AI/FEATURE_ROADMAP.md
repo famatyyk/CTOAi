@@ -51,13 +51,28 @@
   audit binds their raw hashes independently from freshness and tamper status.
   P13 adds no runtime executor, MCP write tool, live authority, or inherited
   permission, and it does not reopen the closed P12 Heal Friend lane.
-- P14 is active with status `foundation_in_progress`. Its v1 request/result
+- P14 is active with status `foundation_ready_operational_hardening_required`.
+  Its v1 request/result
   schemas, HMAC-SHA256 artifact-only handoff, tracked-source 63-file manifest,
   clean-checkout/revision binding, tamper/path tests, deterministic manifest
   rollback replay, Windows CI contract job, Release Evidence phase state, and
-  read-only Control Center card are implemented. No operational second-runner
-  result, visual/in-world evidence, canary, actual rollback, promotion, runtime,
-  live, or MCP-write authority is claimed; P15 remains closed.
+  read-only Control Center card and bounded external preflight are implemented.
+  A matching runner is online and a self-hosted clean-checkout replay returned a
+  structurally valid, signature-verified, authority-safe result with deterministic
+  rollback replay. That result targets an older revision. Required environment
+  reviewers are not configured and administrator bypass remains enabled, so P14
+  fails closed on those three explicit codes. Visual/in-world evidence, canary,
+  actual rollback, promotion, runtime, live, and MCP-write authority remain
+  unclaimed; P15 stays closed.
+- The post-P16 continuation is now explicit in
+  `AI/P17_P24_HELPER_EVOLUTION_ROADMAP.md` and its machine-readable JSON
+  companion. P17 static ownership/reachability work may proceed during P14;
+  runtime acceptance remains gated. The measured baseline is 4404 lines and
+  130 functions in `ctoa_native_helper.lua`, duplicate HUD configuration exists
+  in Tools and Engine, targeting/magic configuration is incomplete, and Auto
+  Haste lacks active-state evidence. P17-P24 address simplification, typed
+  action/condition rules, configurable targeting/shooter, spell anti-spam,
+  schema migration, unified UX, pure Helper/Safe contracts, and canary/rollback.
 - The accepted shadow-gate dependency order remains **Conditions runtime safety gate**,
   then **Equipment runtime safety gate**, then **Heal Friend runtime safety gate**.
   P9-P11 acceptance is complete, but this order still governs the independent
@@ -246,7 +261,7 @@
 - P11 Heal Friend shadow/replay is `operational_acceptance_complete`. It retains
   exactly one stable allowlisted party identity and no ranking, fallback,
   multi-target, cast, talk, dispatch, or promotion path.
-- P6 is ready for plugin design and the five bounded P7 safe-write refresh tools
+- P6 is ready for plugin design and the six bounded P7 safe-write refresh tools
   are enabled with audit coverage.
 - The next static Helper slice keeps the UI shell passive: Diagnostics owns
   snapshot text values and the UI adapter owns diagnostic widget updates;
@@ -286,8 +301,11 @@
 - Index a supplied TFS fork and protocol sources; do not infer missing server
   behavior.
 - Generate roadmap status from manifests and evidence to reduce manual drift.
-- **Roadmap state refresh** remains `design_only`; retain its audited P7
-  contract without enabling another safe-write tool; the active safe-write tool count stays five.
+- **Roadmap state refresh** is enabled end-to-end as the sixth bounded
+  `safe_write` capability. Its native dry-run separates P13 platform health
+  from pending P14 sandbox evidence, exact confirmation writes only the fixed
+  roadmap JSON/Markdown artifacts, and active external P14 recovery still
+  outranks routine roadmap maintenance.
 - Keep Combat and CaveBot explicitly `deferred_high_risk` until all three safer
   lanes have independent acceptance evidence and a new review opens P15/P16.
 
@@ -365,8 +383,10 @@ feature work.
   `AI/generated/SECRET_GUARDRAIL.md` during `brain refresh`.
 - Keep Engine Brain indexing tolerant of volatile generated directories such as
   `web/.next/*`; excluded directories should be pruned before traversal.
-- Use `brain pack all|helper|control-center|infra|security` for scoped context
-  packs.
+- Use `brain pack control-central` for the minimal daily operator handoff. Use
+  `all|helper|control-center|infra|security` only when the active task needs the
+  broader scoped context; never append file-tree or symbol-map summaries to the
+  `control-central` profile.
 - Keep the local Codex skill `ctoa-engine-brain` aligned with the operator
   shortcuts, generated artifacts, and secret-safe context rules.
 - Restore or replace the missing environment doctor with checks for Git, Docker,
@@ -977,9 +997,13 @@ Once available:
   local skill, scoped packs, Control Center evidence contracts, release evidence
   tooling, full workspace validation evidence, doc sync, and secret guardrails
   before reporting `ready_for_plugin_design`.
-- Keep the local `ctoai-engine-brain` plugin bounded to read-only status/brief
-  tools plus audited repo-hygiene, API-cost, evidence-pack, and Engine Brain
-  safe-write refreshes. Its
+- Keep the local `ctoai-engine-brain` plugin centered on the read-only
+  `ctoai_control_central` entrypoint. Its compact default must unify `brain`,
+  `control-center`, `plugin-management`, and `sites`, measure payload reduction,
+  and expose full drilldown only for a selected lane. Retain the four direct
+  status/brief/cockpit tools as compatibility drilldowns. Keep write authority
+  bounded to audited repo-hygiene, API-cost, evidence-pack, Engine Brain, and
+  P7 cockpit-smoke refreshes. Its
   plugin manifest, MCP config/server, operator skill, and personal marketplace
   entry must be detected by P6 readiness before moving beyond plugin design.
   After cachebuster/reinstall, P6 readiness should also detect the installed
@@ -989,7 +1013,7 @@ Once available:
   doctor, audit, and validation status without reading `.env`, logs, databases,
   or live client state.
 - Keep the plugin-owned `scripts/ctoai_engine_brain_mcp.py` server bounded.
-  Its MCP tools should expose only `ctoai_engine_brain_status`,
+  Its MCP tools should expose only `ctoai_control_central`, `ctoai_engine_brain_status`,
   `ctoai_engine_brain_self_check`, `ctoai_engine_brain_brief`,
   `ctoai_control_center_cockpit`, `ctoai_repo_hygiene_refresh`,
   `ctoai_api_cost_refresh`, `ctoai_evidence_pack_refresh`,
@@ -1077,15 +1101,15 @@ Once available:
   Missing smoke remains a warning to avoid refresh bootstrap loops; present
   non-ready smoke is a plugin cockpit blocker.
 - Keep `scripts/ops/control_center_p7_safe_write_dry_run_smoke.py` as the
-  operator smoke for the five bounded P7 safe-write MCP tools. It must call
+  operator smoke for the six bounded P7 safe-write MCP tools. It must call
   `ctoai_repo_hygiene_refresh`, `ctoai_api_cost_refresh`,
   `ctoai_evidence_pack_refresh`, `ctoai_engine_brain_refresh`, and
-  `ctoai_p7_cockpit_smoke_refresh` with
+  `ctoai_p7_cockpit_smoke_refresh`, and `ctoai_roadmap_state_refresh` with
   `dry_run=true`, verify the plugin stdio payloads, and prove matching
   `runtime/control-center/action-audit.jsonl`
   records before a new plugin action is designed.
 - Treat P7 safe-write dry-run smoke as operator-ready only when it reports
-  `dry_run_ready_count=5`, `preflight_ready_count=5`, and
+  `dry_run_ready_count=6`, `preflight_ready_count=6`, and
   `bootstrap_allowed_count=0`. The explicit bootstrap allowance is only a
   temporary self-stale P7 audit/smoke recovery path, not the normal cockpit
   acceptance state.
@@ -1096,7 +1120,7 @@ Once available:
 - Keep Control Center artifact health aligned with the same P7 dry-run smoke
   acceptance rule: a bootstrap-only or partial-preflight smoke report must be a
   blocking mismatch, not a passed artifact.
-- Once all five enabled P7 safe-write tools have current dry-run/preflight
+- Once all six enabled P7 safe-write tools have current dry-run/preflight
   evidence, let the generated operator recommendation advance to the selected
   confirmed evidence refresh only:
   `ctoai_evidence_pack_refresh dry_run=false confirm='refresh evidence pack'`.
@@ -1145,16 +1169,17 @@ Once available:
   `AI/ENGINE_BRAIN_STATUS.md`,
   `docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md`, and
   `AI/generated/DOC_SYNC.json` before expanding plugin actions.
-- Keep the CTOAi plugin bounded to four read-only status/cockpit tools plus
+- Keep the CTOAi plugin bounded to one compact Control Central entrypoint, four
+  compatibility read-only status/cockpit drilldowns, plus
   `ctoai_repo_hygiene_refresh`, `ctoai_api_cost_refresh`,
   `ctoai_evidence_pack_refresh`, `ctoai_engine_brain_refresh`, and
-  `ctoai_p7_cockpit_smoke_refresh`.
-  The read-only cockpit tool is
-  `ctoai_control_center_cockpit`; all safe-write tools must default to
+  `ctoai_p7_cockpit_smoke_refresh`, plus `ctoai_roadmap_state_refresh`.
+  The default read-only tool is `ctoai_control_central`; the full cockpit
+  drilldown remains `ctoai_control_center_cockpit`. All safe-write tools must default to
   dry-run, require `ctoai_control_center_cockpit` preflight status `ready`,
   write `runtime/control-center/action-audit.jsonl`, and reject non-dry-run
   calls unless the explicit confirmation text is supplied.
-- Expand the CTOAi plugin beyond these five safe-write MCP tools only after the
+- Expand the CTOAi plugin beyond these six safe-write MCP tools only after the
   next action has risk model coverage, audit logging, Control Center evidence
   gates, and targeted MCP tests.
 - Evaluate Repomix MCP mode for secret-safe full-repo context packs.

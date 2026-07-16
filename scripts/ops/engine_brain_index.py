@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import hashlib
 import json
 import os
 import re
@@ -36,7 +37,7 @@ ROADMAP_GENERATION_DOCS = {
         "needles": [
             "P6: Codex Integration",
             "P7_OPERATOR_BRIEF.json",
-            "Expand the CTOAi plugin beyond these five safe-write MCP tools only after",
+            "Expand the CTOAi plugin beyond these six safe-write MCP tools only after",
             "P8, P9, P10, and P11 are `operational_acceptance_complete`.",
             "P12 execute-once review is `closed_with_deferred_heal_friend_lane`.",
             "P12 Conditions is `operational_acceptance_complete`",
@@ -206,7 +207,7 @@ DOC_SYNC_CHECKS = [
             "BackgroundNoScreen",
             "P12 — Execute-Once Sandbox Acceptance",
             "P14 — Independent Runner And Release Automation",
-            "foundation_in_progress",
+            "foundation_ready_operational_hardening_required",
         ],
     },
 ]
@@ -262,16 +263,27 @@ P7_SAFE_WRITE_ACTION_CANDIDATES = [
         "source": "web/src/lib/controlCenterActions.ts",
         "risk_model": "docs/CTOAI_COMMAND_RISK_MODEL.md",
     },
+    {
+        "id": "roadmap-state-refresh",
+        "risk_class": "safe_write",
+        "control_center_label": "Refresh adaptive roadmap state",
+        "source": "web/src/lib/controlCenterActions.ts",
+        "risk_model": "docs/CTOAI_COMMAND_RISK_MODEL.md",
+    },
 ]
 P7_SELECTED_SAFE_WRITE_ACTION_ID = "evidence-pack-refresh"
 P7_SELECTED_SAFE_WRITE_MCP_TOOL = "ctoai_evidence_pack_refresh"
 P7_SELECTED_SAFE_WRITE_CONFIRM_TEXT = "refresh evidence pack"
+P7_ROADMAP_STATE_ACTION_ID = "roadmap-state-refresh"
+P7_ROADMAP_STATE_MCP_TOOL = "ctoai_roadmap_state_refresh"
+P7_ROADMAP_STATE_CONFIRM_TEXT = "refresh roadmap state"
 P7_ENABLED_SAFE_WRITE_MCP_TOOLS = {
     "repo-hygiene-refresh": "ctoai_repo_hygiene_refresh",
     "api-cost-refresh": "ctoai_api_cost_refresh",
     "evidence-pack-refresh": "ctoai_evidence_pack_refresh",
     "engine-brain-refresh": "ctoai_engine_brain_refresh",
     "p7-cockpit-smoke-refresh": "ctoai_p7_cockpit_smoke_refresh",
+    "roadmap-state-refresh": "ctoai_roadmap_state_refresh",
 }
 
 
@@ -748,11 +760,19 @@ def _installed_plugin_cache_check() -> dict[str, str]:
             "evidence": f"missing installed cache for {version}",
         }
     cache_root = cache_manifest_path.parents[1]
+    plugin_root = Path.home() / "plugins" / P6_PLUGIN_NAME
     required_files = [
         ".mcp.json",
         ".codex-plugin/plugin.json",
         "skills/ctoai-engine-brain-operator/SKILL.md",
+        "scripts/ctoai_collection_policy.py",
+        "scripts/ctoai_control_central.py",
         "scripts/ctoai_control_center_cockpit.py",
+        "scripts/ctoai_evidence_io.py",
+        "scripts/ctoai_freshness.py",
+        "scripts/ctoai_helper_readiness.py",
+        "scripts/ctoai_operator_decision.py",
+        "scripts/ctoai_public_projection.py",
         "scripts/ctoai_engine_brain_brief.py",
         "scripts/ctoai_engine_brain_mcp.py",
         "scripts/ctoai_engine_brain_status.py",
@@ -761,17 +781,37 @@ def _installed_plugin_cache_check() -> dict[str, str]:
     missing = [
         relative for relative in required_files if not (cache_root / relative).exists()
     ]
+    mismatched: list[str] = []
+    for relative in required_files:
+        source_path = plugin_root / relative
+        cache_path = cache_root / relative
+        try:
+            source_digest = hashlib.sha256(source_path.read_bytes()).digest()
+            cache_digest = hashlib.sha256(cache_path.read_bytes()).digest()
+        except OSError:
+            if relative not in missing:
+                mismatched.append(relative)
+            continue
+        if source_digest != cache_digest:
+            mismatched.append(relative)
     ok = (
         cached.get("name") == P6_PLUGIN_NAME
         and cached.get("version") == version
         and not missing
+        and not mismatched
     )
     return {
         "name": "ctoai_plugin_installed_cache",
         "status": "passed" if ok else "blocked",
-        "evidence": f"installed personal cache version {version}"
+        "evidence": (
+            f"installed personal cache version {version}; "
+            f"hash parity {len(required_files)}/{len(required_files)}"
+        )
         if ok
-        else "installed cache manifest or files mismatch",
+        else (
+            f"cache parity failed for {version}; missing={len(missing)}; "
+            f"hash_mismatch={len(mismatched)}"
+        ),
     }
 
 
@@ -905,12 +945,20 @@ def build_p6_readiness_payload(
 ) -> dict[str, Any]:
     checks: list[dict[str, Any]] = [
         _path_check("ai_agents_instruction", "AI/AGENTS.md"),
+        _path_check(
+            "control_central_freshness_policy",
+            "AI/control-central-freshness-policy.json",
+        ),
         _path_check("lua_agents_instruction", "scripts/lua/AGENTS.md"),
         _local_codex_skill_check(),
         _local_plugin_file_check("ctoai_plugin_manifest", ".codex-plugin/plugin.json"),
         _local_plugin_file_check(
             "ctoai_plugin_brief_script",
             "scripts/ctoai_engine_brain_brief.py",
+        ),
+        _local_plugin_file_check(
+            "ctoai_plugin_control_central_script",
+            "scripts/ctoai_control_central.py",
         ),
         _local_plugin_file_check("ctoai_plugin_mcp_config", ".mcp.json"),
         _plugin_mcp_absolute_script_check(),
@@ -929,6 +977,22 @@ def build_p6_readiness_payload(
         _local_plugin_file_check(
             "ctoai_plugin_control_center_cockpit_script",
             "scripts/ctoai_control_center_cockpit.py",
+        ),
+        _local_plugin_file_check(
+            "ctoai_plugin_evidence_io",
+            "scripts/ctoai_evidence_io.py",
+        ),
+        _local_plugin_file_check(
+            "ctoai_plugin_freshness",
+            "scripts/ctoai_freshness.py",
+        ),
+        _local_plugin_file_check(
+            "ctoai_plugin_helper_readiness",
+            "scripts/ctoai_helper_readiness.py",
+        ),
+        _local_plugin_file_check(
+            "ctoai_plugin_operator_decision",
+            "scripts/ctoai_operator_decision.py",
         ),
         _local_plugin_file_check(
             "ctoai_plugin_self_check_script",
@@ -960,6 +1024,7 @@ def build_p6_readiness_payload(
                 "action_audit",
                 "roadmap_generation",
                 "recommended_tool_order",
+                "ctoai_control_central",
                 "ctoai_evidence_pack_refresh dry_run=true",
             ],
         ),
@@ -968,7 +1033,7 @@ def build_p6_readiness_payload(
             "scripts/ctoai_engine_brain_mcp.py",
             [
                 "ctoai_control_center_cockpit",
-                "ctoai_control_center_cockpit.build_cockpit",
+                "ctoai_control_center_cockpit.build_public_cockpit",
                 "cockpit_preflight",
                 "Control Center cockpit preflight",
                 "operator_next",
@@ -976,6 +1041,168 @@ def build_p6_readiness_payload(
                 "action audit",
                 "p7_cockpit_smoke",
                 "p7_safe_write_dry_run_smoke",
+            ],
+        ),
+        _local_plugin_source_needles_check(
+            "ctoai_plugin_public_cockpit_projection",
+            "scripts/ctoai_control_center_cockpit.py",
+            [
+                "project_public_cockpit",
+                "build_public_cockpit",
+                "json.dumps(build_public_cockpit(args.workspace)",
+                '"schema_version": 2',
+                '"action_audit"',
+                '"operator_next"',
+                "Commands, paths, identities, audit IDs, reasons, output",
+            ],
+        ),
+        _source_needles_check(
+            "control_center_evidence_provenance_contract",
+            "scripts/ops/release_evidence_pack.py",
+            [
+                "EVIDENCE_SCHEMA_VERSION",
+                "--source-audit-id",
+                '"source_audit_id"',
+                '"content_sha256"',
+                "_canonical_json_sha256(pack)",
+            ],
+        ),
+        _local_plugin_source_needles_check(
+            "ctoai_plugin_evidence_artifact_hash_contract",
+            "scripts/ctoai_engine_brain_mcp.py",
+            [
+                "collect_output_hashes",
+                '"output_hashes"',
+                '"source_audit_arg": "--source-audit-id"',
+                "evidence_integrity_repair_allowed",
+                '"artifact_integrity"',
+            ],
+        ),
+        _local_plugin_source_needles_check(
+            "ctoai_plugin_evidence_integrity_gate",
+            "scripts/ctoai_control_center_cockpit.py",
+            [
+                "evidence_integrity_status",
+                "runtime_evidence_integrity_not_verified",
+                "audit_binding_verified",
+                "artifact_hash_verified",
+                "canonical_json_sha256",
+            ],
+        ),
+        _source_needles_check(
+            "control_center_evidence_integrity_tests",
+            "tests/test_ctoai_control_central.py",
+            [
+                "cockpit_verifies_evidence_self_hash_audit_binding_and_file_hash",
+                "evidence_safe_write_binds_audit_id_and_hashes_declared_outputs",
+                "runtime_evidence_integrity_not_verified",
+                '"--source-audit-id"',
+            ],
+        ),
+        _source_needles_check(
+            "ctoai_plugin_public_cockpit_tests",
+            "tests/test_ctoai_control_central.py",
+            [
+                "public_cockpit_omits_private_rows_paths_commands_and_identity",
+                "mcp_cockpit_uses_public_projection",
+                "read_only_public_projections_are_bounded_and_private_data_safe",
+                "safe_write_public_projection_rejects_private_preflight_data",
+                "mcp_safe_write_projection_delegates_to_shared_public_boundary",
+                "build_public_cockpit",
+                "len(serialized) < 6000",
+            ],
+        ),
+        _local_plugin_source_needles_check(
+            "ctoai_plugin_public_projection_contract",
+            "scripts/ctoai_public_projection.py",
+            [
+                "project_status",
+                "project_brief",
+                "project_self_check",
+                "project_safe_write",
+                "SAFE_WRITE_ACTION_TO_TOOL",
+                "DIAGNOSTIC_CODE_ALLOWLIST",
+                "validation:failed_check",
+                "unknown_action",
+                "unknown_tool",
+                "confirmed_dry_run_bootstrap_allowed",
+            ],
+        ),
+        _local_plugin_source_needles_check(
+            "ctoai_plugin_control_central_contract",
+            "scripts/ctoai_control_central.py",
+            [
+                "PROFILES",
+                'DETAIL_LEVELS = ("summary", "compact", "full")',
+                '"plugin-management"',
+                '"sites"',
+                "build_control_central",
+                "estimated_reduction_percent",
+                "_summary_lane",
+                'detail: str = "summary"',
+                'detail == "full"',
+                "FULL_DETAIL_MAX_CHARS",
+                "_bounded_drilldown",
+                "_collect_lane",
+                "collector_failed",
+                "_collect_lane_subprocess",
+                "subprocess.TimeoutExpired",
+                "collector_timeout",
+                '"--internal-lane"',
+                "ThreadPoolExecutor",
+                '"process_isolated"',
+                "COLLECTION_POLICY_RELATIVE_PATH",
+                "COLLECTION_POLICY_MAX_BYTES",
+                "COLLECTION_POLICY_MAX_DEADLINE_MS",
+                "_load_collection_policy",
+                '"lanes_deadline_ms"',
+                "SLOW_LANE_THRESHOLD_MS",
+                '"collection"',
+                "full detail requires a selected lane profile",
+                '"schema_version": 2',
+                "ctoai_engine_brain_status.build_status",
+                "ctoai_control_center_cockpit.build_cockpit",
+                "ctoai_engine_brain_self_check.build_self_check",
+            ],
+        ),
+        _source_needles_check(
+            "ctoai_plugin_control_central_fault_isolation_tests",
+            "tests/test_ctoai_control_central.py",
+            [
+                "isolates_a_failed_lane_without_leaking_exception",
+                "process_isolated_lane_enforces_hard_timeout_without_a_hard_blocker",
+                "process_isolated_all_profile_keeps_healthy_lanes_on_timeout",
+                "process_envelope_rejects_private_fields_without_echoing_them",
+                "committed_collection_policy_is_valid_and_bounded",
+                "collection_policy_drives_each_isolated_lane_deadline",
+                "invalid_or_oversized_collection_policy_fails_closed_without_echo",
+                "reuses_brain_status_for_plugin_self_check",
+                "summary_is_default_and_materially_smaller_than_compact",
+                "mcp_defaults_control_central_to_summary",
+                "blocked_p14_decision_makes_summary_needs_attention_with_bounded_reasons",
+                "operator_summary_fails_closed_without_echoing_unknown_semantics",
+                "engine_brain_bootstrap_confirm_requires_recent_authorized_dry_run",
+                "self_check_reuses_prebuilt_workspace_status",
+                "control_center_unavailable",
+                "build_status.assert_not_called()",
+            ],
+        ),
+        _local_plugin_source_needles_check(
+            "ctoai_plugin_control_central_mcp_contract",
+            "scripts/ctoai_engine_brain_mcp.py",
+            [
+                "ctoai_control_central",
+                "ctoai_control_central.build_control_central",
+                "isolate_collectors=True",
+                "control_central_schema",
+                "profile",
+                "detail",
+                "project_public_safe_write_result",
+                "safe_write_tool_result",
+                "ctoai_public_projection.project_status",
+                "ctoai_public_projection.project_brief",
+                "ctoai_public_projection.project_self_check",
+                "ctoai_public_projection.project_safe_write",
             ],
         ),
         _local_plugin_source_needles_check(
@@ -998,6 +1225,170 @@ def build_p6_readiness_payload(
                 "AI/FEATURE_ROADMAP.md",
                 "CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md",
                 "blocked_until",
+            ],
+        ),
+        _local_plugin_source_needles_check(
+            "ctoai_plugin_bounded_evidence_io_contract",
+            "scripts/ctoai_evidence_io.py",
+            [
+                "read_bounded_bytes",
+                "read_bounded_text",
+                "load_json_object",
+                "read_bounded_tail",
+                "DuplicateJsonKeyError",
+                "path.lstat()",
+                "os.fstat",
+                "_same_file",
+            ],
+        ),
+        _local_plugin_source_needles_check(
+            "ctoai_plugin_freshness_contract",
+            "scripts/ctoai_freshness.py",
+            [
+                "load_freshness_policy",
+                "classify_freshness",
+                "evaluate_freshness",
+                "freshness_gate",
+                "FUTURE_SKEW_SECONDS",
+                "AGING_RATIO",
+            ],
+        ),
+        _local_plugin_source_needles_check(
+            "ctoai_plugin_freshness_status_gate",
+            "scripts/ctoai_engine_brain_status.py",
+            [
+                "load_freshness_policy",
+                "freshness_blockers",
+                "freshness_warnings",
+                '"freshness"',
+                '"policy_revision"',
+            ],
+        ),
+        _local_plugin_source_needles_check(
+            "ctoai_plugin_freshness_cockpit_gate",
+            "scripts/ctoai_control_center_cockpit.py",
+            [
+                "load_freshness_policy",
+                '"evidence"',
+                '"action_audit"',
+                '"p7_cockpit_smoke"',
+                '"p7_dry_run_smoke"',
+                '"freshness"',
+            ],
+        ),
+        _source_needles_check(
+            "control_central_freshness_tests",
+            "tests/test_ctoai_freshness.py",
+            [
+                "policy_is_workspace_configurable_but_strict_and_bounded",
+                "freshness_classification_fails_closed_for_stale_invalid_and_future",
+                "gate_blocks_hard_staleness_and_warns_for_soft_staleness",
+                "engine_brain_status_cannot_report_ready_with_stale_manifest",
+            ],
+        ),
+        _local_plugin_source_needles_check(
+            "ctoai_plugin_helper_readiness_contract",
+            "scripts/ctoai_helper_readiness.py",
+            [
+                "BLOCKER_PHASES",
+                "LEGACY_BLOCKER_ALIASES",
+                "build_helper_readiness",
+                '"unknown_blocker_codes"',
+                '"action_options"',
+                '"mutates_live"',
+                "P14_CONTRACT",
+                "prepare_independent_runner_request",
+                '"authority_safe"',
+            ],
+        ),
+        _local_plugin_source_needles_check(
+            "ctoai_plugin_helper_recovery_projection",
+            "scripts/ctoai_control_center_cockpit.py",
+            [
+                "ctoai_helper_readiness",
+                "ctoai_operator_decision",
+                "helper_recovery",
+                "step_interaction",
+                '"recovery"',
+                '"decision_policy"',
+                '"alternatives"',
+            ],
+        ),
+        _local_plugin_source_needles_check(
+            "ctoai_plugin_operator_decision_contract",
+            "scripts/ctoai_operator_decision.py",
+            [
+                "POLICY_REVISION",
+                "build_operator_decision",
+                '"mutates_live"',
+                '"grants_authority"',
+                '"auto_executable"',
+                "live_mutation_requires_explicit_approval",
+                "design_roadmap_state_refresh_contract",
+            ],
+        ),
+        _source_needles_check(
+            "control_central_helper_readiness_tests",
+            "tests/test_ctoai_helper_readiness.py",
+            [
+                "test_manifest_mismatch_becomes_an_adaptive_recovery_chain",
+                "test_unknown_blocker_fails_closed_without_inventing_a_command",
+                "test_promoted_helper_has_no_remaining_recovery_phase",
+                "test_p14_foundation_prefers_external_runner_without_granting_authority",
+                "test_p14_authority_drift_disables_external_runner_preference",
+                "test_legacy_and_camel_case_blockers_normalize_to_one_stable_code",
+            ],
+        ),
+        _source_needles_check(
+            "control_central_operator_decision_tests",
+            "tests/test_ctoai_operator_decision.py",
+            [
+                "test_p14_runner_outranks_design_only_p7_without_authority_or_live_mutation",
+                "test_time_limited_confirmed_p7_proof_outranks_runner_preparation",
+                "test_runner_authority_drift_fails_closed_to_review",
+                "test_live_promotion_is_never_selected_or_returned_as_an_alternative",
+                "test_unknown_actions_and_modes_return_only_bounded_semantic_metadata",
+            ],
+        ),
+        _local_plugin_source_needles_check(
+            "ctoai_plugin_cache_hash_parity",
+            "scripts/ctoai_engine_brain_self_check.py",
+            [
+                "hashlib.sha256",
+                "read_bounded_bytes",
+                "hash parity",
+                "hash_mismatch",
+                "scripts/ctoai_collection_policy.py",
+                "collection_policy_check(workspace)",
+                "installed_cache_check(manifest, root)",
+            ],
+        ),
+        _local_plugin_source_needles_check(
+            "ctoai_plugin_compact_audit_status",
+            "scripts/ctoai_engine_brain_status.py",
+            [
+                "ctoai-full-workspace-audit-summary.json",
+                '"regular_file_count"',
+                '"sensitive_hash_count"',
+            ],
+        ),
+        _source_needles_check(
+            "full_workspace_audit_compact_summary",
+            "scripts/ops/ctoa_full_workspace_audit.py",
+            [
+                "DEFAULT_RUNTIME_SUMMARY_OUT",
+                "build_compact_summary",
+                "--summary-json-out",
+                "Compact audit summary written to",
+            ],
+        ),
+        _source_needles_check(
+            "ctoai_plugin_bounded_evidence_io_tests",
+            "tests/test_ctoai_evidence_io.py",
+            [
+                "rejects_oversize_non_objects_and_duplicate_keys",
+                "reject_symlinks",
+                "stable_suffix",
             ],
         ),
         _local_plugin_source_needles_check(
@@ -1107,6 +1498,18 @@ def build_p6_readiness_payload(
             ],
         ),
         _local_plugin_source_needles_check(
+            "ctoai_plugin_roadmap_state_refresh_mcp_contract",
+            "scripts/ctoai_engine_brain_mcp.py",
+            [
+                "ROADMAP_STATE_TOOL_NAME",
+                "ctoai_roadmap_state_refresh",
+                "run_roadmap_state_refresh",
+                "ctoai_roadmap_state.py",
+                '"native_dry_run": True',
+                "refresh roadmap state",
+            ],
+        ),
+        _local_plugin_source_needles_check(
             "ctoai_plugin_p6_handoff_smoke_status_contract",
             "scripts/ctoai_engine_brain_status.py",
             [
@@ -1164,6 +1567,8 @@ def build_p6_readiness_payload(
                 "ctoai_engine_brain_refresh",
                 "p7-cockpit-smoke-refresh",
                 "ctoai_p7_cockpit_smoke_refresh",
+                "roadmap-state-refresh",
+                "ctoai_roadmap_state_refresh",
                 "preflight",
                 "runtime/control-center/p7-cockpit-smoke.json",
                 "runtime/control-center/p7-safe-write-dry-run-smoke.json",
@@ -1204,6 +1609,8 @@ def build_p6_readiness_payload(
                 "test_safe_write_dry_run_smoke_blocks_forbidden_tool",
                 "dry_run_ready_count",
                 "mcp_tool_policy_mismatch",
+                '"schema_version": 2',
+                '"audit_id" not in item',
             ],
         ),
         _path_check(
@@ -1242,8 +1649,55 @@ def build_p6_readiness_payload(
                 'id: "evidence-pack-refresh"',
                 'id: "engine-brain-refresh"',
                 'id: "p7-cockpit-smoke-refresh"',
+                'id: "roadmap-state-refresh"',
                 'riskClass: "safe_write"',
+                "nativeDryRun: true",
                 "appendAuditRecord",
+            ],
+        ),
+        _source_needles_check(
+            "control_center_dry_run_first_action_engine",
+            "web/src/lib/controlCenterActions.ts",
+            [
+                "listControlCenterActionCapabilities",
+                'executionMode: "dry_run_first"',
+                "recentSuccessfulDryRun",
+                "evaluateActionPreflight",
+                "P7_ACTION_READINESS_PATH",
+                "ControlCenterPreflightError",
+                "randomUUID",
+            ],
+        ),
+        _source_needles_check(
+            "control_center_action_capability_api",
+            "web/src/app/api/control-center/actions/route.ts",
+            [
+                "requireControlCenterReadAccess",
+                "listControlCenterActionCapabilities",
+                "getControlCenterActionSchemaVersion",
+                '"Cache-Control": "private, no-store"',
+                "ControlCenterPreflightError",
+            ],
+        ),
+        _source_needles_check(
+            "control_center_action_capability_ui",
+            "web/src/components/ControlCenterActionPanel.tsx",
+            [
+                "Action capability engine",
+                "Validate dry-run",
+                "Open execution gate",
+                "preflight.executeAllowed",
+                "Identity and command details are not projected",
+            ],
+        ),
+        _source_needles_check(
+            "control_center_action_capability_tests",
+            "web/src/lib/__tests__/controlCenterActions.test.ts",
+            [
+                "publishes schema-v2 capabilities without command or filesystem details",
+                "does not let another operator reuse an actor-bound dry-run",
+                "executes after dry-run, sanitizes output, and consumes the proof",
+                'not.toContain("commandSummary")',
             ],
         ),
         _source_needles_check(
@@ -1269,7 +1723,7 @@ def build_p6_readiness_payload(
         ),
         _source_needles_check(
             "control_center_p7_operator_brief_payload",
-            "web/src/lib/controlCenterEvidence.ts",
+            "web/src/lib/controlCenterEngineBrainEvidence.ts",
             [
                 "config.engineBrainP6ReadinessPath",
                 "config.engineBrainP6PluginHandoffSmokePath",
@@ -1293,8 +1747,6 @@ def build_p6_readiness_payload(
                 "p7CockpitSmoke",
                 "p7SafeWriteDryRunSmoke",
                 "operatorBrief",
-                "cockpitHandoff",
-                "operatorNext",
                 "sourcePaths",
             ],
         ),
@@ -1318,55 +1770,130 @@ def build_p6_readiness_payload(
         ),
         _source_needles_check(
             "control_center_p7_operator_brief_ui",
-            "web/src/components/ControlCenterEvidencePanel.tsx",
+            "web/src/lib/controlCenterCapabilities.ts",
             [
-                "Operator next",
-                "P6 plugin",
-                "P6 plugin handoff",
-                "P6 plugin handoff smoke",
-                "freshThreadRequired",
-                "freshThreadRecommendedToolOrder",
-                "currentThreadToolDiscoveryStatus",
-                "runtime/control-center/p6-plugin-handoff-smoke.json",
-                "AI/generated/P6_CODEX_INTEGRATION_READINESS.json",
-                "P7 operator brief",
-                "AI/generated/P7_OPERATOR_BRIEF.json",
-                "Recommended tool order",
-                "cockpitHandoff",
-                "P7 operator handoff",
-                "p7OperatorBriefStatus",
-                "p7NextSafeCommand",
-                "P7 action gate",
-                "P7 cockpit status",
-                "Safe-write design",
-                "Safe-write audit",
-                "P7 cockpit smoke",
-                "Dry-run smoke",
-                "p7SafeWriteDryRunSmoke",
-                "p7ActionReadinessStatus",
-                "p7OperatorCockpitSummary",
-                "p7EnabledSafeWriteTools",
-                "p7SafeWriteAudit",
-                "p7CockpitSmoke",
-                "p7SafeWriteDryRunSmoke",
-                "operatorNext",
+                "CONTROL_CENTER_SCHEMA_VERSION",
+                "ControlCenterCapabilityManifest",
+                'id: "operator-next"',
+                'id: "engine-brain"',
+                'minimumRole: "operator"',
+                'refresh: "on-demand"',
+                "projectControlCenterOpsSummary",
+                "projectControlCenterCapability",
+                "OperatorNextDetail",
+                "EngineBrainDetail",
+                "operatorBriefStatus",
+                "actionReadinessStatus",
+                "cockpitSmokeStatus",
+                "dryRunReadyCount",
             ],
         ),
         _source_needles_check(
             "control_center_p7_operator_brief_detail_ui",
             "web/src/components/ControlCenterDetailPanels.tsx",
             [
+                "useControlCenterData",
+                "loadCapability",
+                "ControlCenterCapabilityDetail",
                 "OperatorNextPanel",
                 "Operator next",
                 "EngineBrainPanel",
-                "P7 cockpit status",
-                "p7OperatorCockpitSummary",
-                "p7EnabledSafeWriteTools",
-                "p7EnabledSafeWriteToolCount",
-                "p7ReadySafeWriteAuditCount",
-                "p7CockpitSmoke",
-                "p7SafeWriteDryRunSmoke",
+                "P6 readiness",
+                "P7 action gate",
+                "P7 blockers",
+                "P7 cockpit",
+                "Dry-run tools",
+                "value.p7.operatorBriefStatus",
+            ],
+        ),
+        _source_needles_check(
+            "control_center_scoped_capability_runtime",
+            "web/src/lib/controlCenterCapabilityRuntime.ts",
+            [
+                "collectControlCenterCapabilitySummary",
+                "collectControlCenterCapabilityDetail",
+                "collectControlCenterEvidenceSlices",
+                "collector([capabilityId])",
+                "assertCompleteSlices",
+                "projectControlCenterCapabilityFromSlice",
+                "projectControlCenterOpsSummaryFromSlices",
+            ],
+        ),
+        _source_needles_check(
+            "control_center_scoped_evidence_slices",
+            "web/src/lib/controlCenterEvidence.ts",
+            [
+                "ControlCenterEvidenceSliceMap",
+                "collectControlCenterEvidenceSlices",
+                "repoPromise",
+                "apiCostPromise",
+                "auditSourcePromise",
+                "engineBrainSourcePromise",
+                "operatorNextPromise",
+                "collectRepoHygieneCapability",
+                "collectReleaseEvidenceCapability",
+                "cockpitHandoff",
                 "operatorNext",
+                "projectOperatorNextCapabilityEvidence",
+                "projectEngineBrainCapabilityEvidence",
+                "Array.from(new Set(ids))",
+            ],
+        ),
+        _source_needles_check(
+            "control_center_evidence_bounded_io",
+            "web/src/lib/controlCenterEvidenceIo.ts",
+            [
+                "CONTROL_CENTER_EVIDENCE_JSON_MAX_BYTES",
+                "readBoundedControlCenterText",
+                "readStrictControlCenterJson",
+                "jsonHasDuplicateObjectKeys",
+                "readBoundedControlCenterActionAuditLines",
+                "fileInfo.size !== pathInfo.size",
+                "fileStat.size !== sourceBytes",
+            ],
+        ),
+        _source_needles_check(
+            "control_center_evidence_domain_adapters",
+            "web/src/lib/controlCenterEvidenceAdapters.ts",
+            [
+                "RELEASE_SPRINT_LIMIT",
+                "RELEASE_FILE_LIMIT",
+                "collectRepoHygieneCapability",
+                "collectApiCostCapability",
+                "collectControlCenterAuditCapability",
+                "collectReleaseEvidenceCapability",
+                "collectReleaseEvidenceBundle",
+                "auditOutcomeSummary",
+            ],
+        ),
+        _source_needles_check(
+            "control_center_capability_adapter_tests",
+            "web/src/lib/__tests__/controlCenterEvidenceAdapters.test.ts",
+            [
+                "without source paths or prompt names",
+                "without identity, ids, reasons, or output",
+                "path-free bounded projection",
+                'not.toContain("private-user")',
+            ],
+        ),
+        _source_needles_check(
+            "control_center_engine_brain_evidence_adapter",
+            "web/src/lib/controlCenterEngineBrainEvidence.ts",
+            [
+                "collectEngineBrainStatus",
+                "Promise.all",
+                "readBoundedControlCenterActionAuditLines",
+                'latest.actor_role || "unknown"',
+            ],
+        ),
+        _source_needles_check(
+            "control_center_evidence_adapter_tests",
+            "web/src/lib/__tests__/controlCenterEngineBrainEvidence.test.ts",
+            [
+                "uses bounded readers",
+                "never promotes an audit actor",
+                "private-user-name",
+                "readControlCenterJsonMock",
             ],
         ),
         _path_check("release_evidence_pack", "scripts/ops/release_evidence_pack.py"),
@@ -1400,7 +1927,7 @@ def build_p6_readiness_payload(
 
     blocking = [check for check in checks if check["status"] != "passed"]
     recommended_next = (
-        "Operate the plugin as four read-only status/cockpit tools plus audited repo-hygiene, API-cost, evidence-pack, Engine Brain, and P7 cockpit-smoke safe-write refreshes."
+        "Operate the plugin as five read-only Control Central/status/cockpit tools plus audited repo-hygiene, API-cost, evidence-pack, Engine Brain, P7 cockpit-smoke, and adaptive roadmap-state safe-write refreshes."
         if not blocking
         else "Fix blocked readiness checks before creating a CTOAi plugin."
     )
@@ -1408,7 +1935,7 @@ def build_p6_readiness_payload(
         "schema_version": 1,
         "generated_at": generated_at,
         "status": "ready_for_plugin_design" if not blocking else "blocked",
-        "policy": "P6 allows only four read-only status/cockpit tools plus audited repo-hygiene, API-cost, evidence-pack, Engine Brain, and P7 cockpit-smoke safe-write refreshes. Do not add deploy/live shortcuts or bypass Control Center evidence gates.",
+        "policy": "P6 allows only five read-only Control Central/status/cockpit tools plus audited repo-hygiene, API-cost, evidence-pack, Engine Brain, P7 cockpit-smoke, and adaptive roadmap-state safe-write refreshes. Do not add deploy/live shortcuts or bypass Control Center evidence gates.",
         "recommended_next": recommended_next,
         "checks": checks,
     }
@@ -1491,6 +2018,8 @@ def read_action_audit_summary(
                         "dry_run_count": 0,
                         "authorized_count": 0,
                         "ok_count": 0,
+                        "successful_dry_run_count": 0,
+                        "successful_confirmed_count": 0,
                         "risk_classes": Counter(),
                     },
                 )
@@ -1501,6 +2030,11 @@ def read_action_audit_summary(
                     entry["authorized_count"] += 1
                 if record.get("ok") is True:
                     entry["ok_count"] += 1
+                if record.get("authorized") is True and record.get("ok") is True:
+                    if record.get("dry_run") is True:
+                        entry["successful_dry_run_count"] += 1
+                    elif record.get("dry_run") is False:
+                        entry["successful_confirmed_count"] += 1
                 if risk_class:
                     entry["risk_classes"][risk_class] += 1
     except OSError:
@@ -1521,6 +2055,8 @@ def read_action_audit_summary(
             "dry_run_count": entry["dry_run_count"],
             "authorized_count": entry["authorized_count"],
             "ok_count": entry["ok_count"],
+            "successful_dry_run_count": entry["successful_dry_run_count"],
+            "successful_confirmed_count": entry["successful_confirmed_count"],
             "risk_classes": sorted(risk_classes.keys()),
         }
     return {
@@ -1944,14 +2480,13 @@ def build_p7_cockpit_handoff_payload(
             "risk_counts": action_audit.get("risk_counts") or {},
         },
         "recommended_tool_order": [
-            "ctoai_engine_brain_brief",
-            "ctoai_control_center_cockpit",
+            "ctoai_control_central",
             next_operator_step,
         ]
         if ready
         else [
+            "ctoai_control_central",
             "ctoai_engine_brain_self_check",
-            "ctoai_control_center_cockpit",
         ],
     }
 
@@ -2018,7 +2553,13 @@ def build_p7_action_readiness_payload(
             if isinstance(audit_by_action.get(action_id), dict)
             else {}
         )
-        audit_seen = bool(audit_entry.get("record_count", 0))
+        successful_dry_runs = int(
+            audit_entry.get("successful_dry_run_count", 0) or 0
+        )
+        successful_confirmed = int(
+            audit_entry.get("successful_confirmed_count", 0) or 0
+        )
+        audit_seen = successful_dry_runs > 0 or successful_confirmed > 0
         missing_gates: list[str] = []
         if not source_ok:
             missing_gates.append("control_center_action_source_contract")
@@ -2037,12 +2578,8 @@ def build_p7_action_readiness_payload(
                 "risk_model_present": risk_model_ok,
                 "audit_seen": audit_seen,
                 "audit_record_count": int(audit_entry.get("record_count", 0) or 0),
-                "audit_dry_run_count": int(audit_entry.get("dry_run_count", 0) or 0),
-                "audit_confirmed_count": max(
-                    0,
-                    int(audit_entry.get("record_count", 0) or 0)
-                    - int(audit_entry.get("dry_run_count", 0) or 0),
-                ),
+                "audit_dry_run_count": successful_dry_runs,
+                "audit_confirmed_count": successful_confirmed,
                 "expected_mcp_tool": expected_mcp_tool,
                 "plugin_mcp_allowed": plugin_mcp_allowed,
                 "missing_gates": missing_gates,
@@ -2060,6 +2597,14 @@ def build_p7_action_readiness_payload(
             candidate
             for candidate in candidates
             if candidate["id"] == P7_SELECTED_SAFE_WRITE_ACTION_ID
+        ),
+        {},
+    )
+    roadmap_candidate = next(
+        (
+            candidate
+            for candidate in candidates
+            if candidate["id"] == P7_ROADMAP_STATE_ACTION_ID
         ),
         {},
     )
@@ -2139,15 +2684,29 @@ def build_p7_action_readiness_payload(
         == P7_SELECTED_SAFE_WRITE_ACTION_ID
         and evidence_review.get("selected_mcp_tool") == P7_SELECTED_SAFE_WRITE_MCP_TOOL
     )
+    roadmap_dry_run_ready = bool(
+        roadmap_candidate and int(roadmap_candidate.get("audit_dry_run_count") or 0)
+    )
+    roadmap_confirmed_ready = bool(
+        roadmap_candidate
+        and int(roadmap_candidate.get("audit_confirmed_count") or 0)
+    )
     selected_confirmed_command = (
         f"Run {P7_SELECTED_SAFE_WRITE_MCP_TOOL} with dry_run=false "
         f"confirm={P7_SELECTED_SAFE_WRITE_CONFIRM_TEXT!r} after reviewing "
         "runtime/control-center/action-audit.jsonl."
     )
-    selected_design_command = (
-        "Design the next P7 plugin action only after risk model coverage, "
-        "audit logging, Control Center gates, and targeted MCP tests exist; "
-        "keep deploy/live actions outside the plugin surface."
+    roadmap_dry_run_command = (
+        f"Run {P7_ROADMAP_STATE_MCP_TOOL} with dry_run=true and verify that "
+        "pending P14 sandbox evidence is reported as awaiting_external."
+    )
+    roadmap_confirmed_command = (
+        f"Run {P7_ROADMAP_STATE_MCP_TOOL} with dry_run=false "
+        f"confirm={P7_ROADMAP_STATE_CONFIRM_TEXT!r} after reviewing the native dry-run."
+    )
+    roadmap_monitor_command = (
+        "Monitor the adaptive ROADMAP_STATE and refresh it only when required P13 "
+        "inputs change; pending P14 evidence must not degrade the platform."
     )
     selected_review_command = (
         "Review confirmed evidence-pack-refresh audit evidence in "
@@ -2161,8 +2720,15 @@ def build_p7_action_readiness_payload(
         and selected_confirmed_ready
         and selected_evidence_review_ready
     ):
-        safe_write_next = selected_design_command
-        next_safe_mode = "design_next_p7_plugin_action"
+        if not roadmap_dry_run_ready:
+            safe_write_next = roadmap_dry_run_command
+            next_safe_mode = "dry_run_roadmap_state_refresh"
+        elif not roadmap_confirmed_ready:
+            safe_write_next = roadmap_confirmed_command
+            next_safe_mode = "confirmed_roadmap_state_refresh"
+        else:
+            safe_write_next = roadmap_monitor_command
+            next_safe_mode = "monitor_adaptive_roadmap_state"
     elif safe_write_tools_enabled and selected_confirmed_ready:
         safe_write_next = selected_review_command
         next_safe_mode = "review_confirmed_safe_write_evidence"
@@ -2645,7 +3211,7 @@ def build_p7_operator_brief_payload(
             if ready
             else "Fix hard_blockers before expanding P7 operator workflow."
         ),
-        "policy": "Generated operator brief. Only audited repo-hygiene, API-cost, evidence-pack, Engine Brain, and P7 cockpit-smoke safe_write tools are allowed; deploy/live actions remain blocked.",
+        "policy": "Generated operator brief. Only audited repo-hygiene, API-cost, evidence-pack, Engine Brain, P7 cockpit-smoke, and roadmap-state safe_write tools are allowed; deploy/live actions remain blocked.",
     }
 
 
@@ -2655,6 +3221,12 @@ def build_p7_operator_workflow_payload(
 ) -> dict[str, Any]:
     p6_ready = p6_payload.get("status") == "ready_for_plugin_design"
     allowed_tools = [
+        {
+            "name": "ctoai_control_central",
+            "risk_class": "read_only",
+            "allowed": True,
+            "purpose": "Return token-efficient brain, Control Center, plugin-management, and sites status with lane-specific drilldown.",
+        },
         {
             "name": "ctoai_engine_brain_status",
             "risk_class": "read_only",
@@ -2724,6 +3296,15 @@ def build_p7_operator_workflow_payload(
             "audit_sink": "runtime/control-center/action-audit.jsonl",
             "purpose": "Dry-run-first refresh of P7 cockpit smoke evidence with Control Center-compatible audit logging.",
         },
+        {
+            "name": P7_ENABLED_SAFE_WRITE_MCP_TOOLS["roadmap-state-refresh"],
+            "risk_class": "safe_write",
+            "allowed": True,
+            "action_id": "roadmap-state-refresh",
+            "dry_run_default": True,
+            "audit_sink": "runtime/control-center/action-audit.jsonl",
+            "purpose": "Native dry-run-first refresh of the adaptive roadmap state with fixed inputs, fixed outputs, and hash-bound audit logging.",
+        },
     ]
     blocked_action_classes = [
         {
@@ -2742,7 +3323,7 @@ def build_p7_operator_workflow_payload(
     gates_before_actions = [
         "Every plugin tool must have a stable risk class from docs/CTOAI_COMMAND_RISK_MODEL.md.",
         "Every write-capable tool must be represented in Control Center action audit before enablement.",
-        "Only ctoai_repo_hygiene_refresh, ctoai_api_cost_refresh, ctoai_evidence_pack_refresh, ctoai_engine_brain_refresh, and ctoai_p7_cockpit_smoke_refresh may be exposed as safe_write in this wave.",
+        "Only ctoai_repo_hygiene_refresh, ctoai_api_cost_refresh, ctoai_evidence_pack_refresh, ctoai_engine_brain_refresh, ctoai_p7_cockpit_smoke_refresh, and ctoai_roadmap_state_refresh may be exposed as safe_write in this wave.",
         "Every safe-write MCP tool must default to dry-run and append runtime/control-center/action-audit.jsonl.",
         "No tool may bypass PromoteLiveCtoa -ApproveLiveDeploy for Solteria Helper live promotion.",
         "No tool may read .env, logs, databases, runtime client state, or private Solteria client data into generated context.",
@@ -2761,11 +3342,11 @@ def build_p7_operator_workflow_payload(
         "blocked_action_classes": blocked_action_classes,
         "gates_before_actions": gates_before_actions,
         "next_safe_command": (
-            "Use ctoai_repo_hygiene_refresh, ctoai_api_cost_refresh, ctoai_evidence_pack_refresh, ctoai_engine_brain_refresh, and ctoai_p7_cockpit_smoke_refresh with dry_run=true before any confirmed refresh."
+            "Use ctoai_repo_hygiene_refresh, ctoai_api_cost_refresh, ctoai_evidence_pack_refresh, ctoai_engine_brain_refresh, ctoai_p7_cockpit_smoke_refresh, and ctoai_roadmap_state_refresh with dry_run=true before any confirmed refresh."
             if p6_ready
             else "Fix P6 readiness before exposing the P7 operator workflow."
         ),
-        "policy": "P7 operator workflow allows five audited safe_write evidence/context refresh tools. Deploy/live actions stay blocked.",
+        "policy": "P7 operator workflow allows six audited safe_write evidence/context refresh tools. Deploy/live actions stay blocked.",
     }
 
 

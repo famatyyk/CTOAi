@@ -19,6 +19,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 HELPER = ROOT / "scripts" / "lua" / "otclient" / "ctoa_native_helper.lua"
+UI_HELPER = ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_ui.lua"
 OUT_DIR = ROOT / "runtime" / "otclient_ui_preview"
 OUT_HTML = OUT_DIR / "ctoa_helper_preview.html"
 
@@ -237,10 +238,12 @@ def section_from_args(args: list[str]) -> str:
             '"cavebot"',
             '"equipment"',
             '"hunting_targeting"',
+            '"hunting_target_rules"',
             '"hunting_magic"',
+            '"hunting_actions"',
+            '"hunting_magic_runtime"',
             '"tools_helper"',
             '"tools_pvp"',
-            '"tools_hud"',
             '"tools_timer"',
             '"tools_diag"',
             '"tools"',
@@ -267,17 +270,32 @@ def section_from_id(widget_id: str, fallback: str = "global") -> str:
         ("ctoaequipment", "equipment"),
         ("ctoaScripting", "scripting"),
         ("ctoascripting", "scripting"),
-        ("ctoaSpellRotation", "hunting_magic"),
+        ("ctoaSpellRotation", "hunting_magic_runtime"),
         ("ctoaHealing", "healing"),
         ("ctoaSpell", "healing"),
         ("ctoaCritical", "healing"),
         ("ctoaPotion", "healing"),
+        ("ctoaHuntingTargetRules", "hunting_target_rules"),
+        ("ctoaHuntingActions", "hunting_actions"),
         ("ctoaHunting", "hunting"),
-        ("ctoaRuneShooter", "hunting_magic"),
-        ("ctoaMagicPriority", "hunting_magic"),
-        ("ctoaRuneHotkeyHunting", "hunting_magic"),
-        ("ctoaRuneNameHunting", "hunting_magic"),
-        ("ctoaRuneMinVisible", "hunting_magic"),
+        ("ctoaRuneShooter", "hunting_magic_runtime"),
+        ("ctoaMagicPriority", "hunting_magic_runtime"),
+        ("ctoaRotationLockMs", "hunting_magic_runtime"),
+        ("ctoaRuneHotkeyMagic", "hunting_magic_runtime"),
+        ("ctoaAutoExetaMagic", "hunting_magic_runtime"),
+        ("ctoaMagicRuntime", "hunting_magic_runtime"),
+        ("ctoaMagicRule", "hunting_magic"),
+        ("ctoaCombatAction", "hunting_actions"),
+        ("ctoaRuneNameAction", "hunting_actions"),
+        ("ctoaRuneHotkeyAction", "hunting_actions"),
+        ("ctoaRuneMinVisibleAction", "hunting_actions"),
+        ("ctoaRuneCooldownAction", "hunting_actions"),
+        ("ctoaOffensiveStance", "hunting_actions"),
+        ("ctoaDefensiveStance", "hunting_actions"),
+        ("ctoaStanceCooldownAction", "hunting_actions"),
+        ("ctoaTargetRuleEditorIgnored", "hunting_targeting"),
+        ("ctoaTargetRuleEditorPriority", "hunting_targeting"),
+        ("ctoaTargetRule", "hunting_target_rules"),
         ("ctoaAutoAttack", "hunting_targeting"),
         ("ctoaAutoFollowTargeting", "hunting_targeting"),
         ("ctoaHoldTargetPvp", "tools_pvp"),
@@ -286,7 +304,6 @@ def section_from_id(widget_id: str, fallback: str = "global") -> str:
         ("ctoaTargetTimeoutHunting", "hunting_targeting"),
         ("ctoaPreferLowHp", "hunting_targeting"),
         ("ctoaMagic", "hunting"),
-        ("ctoaToolsHud", "tools_hud"),
         ("ctoaToolsTimer", "tools_timer"),
         ("ctoaToolsDiag", "tools_diag"),
         ("ctoaTools", "tools"),
@@ -342,10 +359,26 @@ def width_from_args(fn: str, args: list[str], fallback: int, variables: dict[str
     return fallback
 
 
-def extract_layout_variables(source: str) -> dict[str, int]:
+def extract_layout_variables(source: str, compact: bool = False) -> dict[str, int]:
     variables: dict[str, int] = {}
-    layout_match = re.search(r"local UI_LAYOUT = \{(?P<body>.*?)\n\}", source, re.S)
-    if layout_match:
+    layout_source = source
+    if (
+        'moduleValue(externalUi, "newLayout")' in source
+        and "local BASE_LAYOUT = {" not in source
+        and UI_HELPER.is_file()
+    ):
+        layout_source += "\n" + UI_HELPER.read_text(encoding="utf-8")
+
+    # The production shell delegates layout ownership to ctoa_helper_ui.lua.
+    # Compose the same base + default tables here instead of requiring geometry
+    # literals to remain duplicated in the shell just for static previewing.
+    selected_layout = "COMPACT_LAYOUT" if compact else "DEFAULT_LAYOUT"
+    for table_name in ("BASE_LAYOUT", selected_layout, "UI_LAYOUT"):
+        layout_match = re.search(
+            rf"local {table_name} = \{{(?P<body>.*?)\n\}}", layout_source, re.S
+        )
+        if not layout_match:
+            continue
         for key, value in re.findall(r"(\w+)\s*=\s*(\d+)", layout_match.group("body")):
             variables[f"UI_LAYOUT.{key}"] = int(value)
 
@@ -404,8 +437,8 @@ def extract_layout_variables(source: str) -> dict[str, int]:
     return variables
 
 
-def extract_window(source: str) -> tuple[int, int, int, int]:
-    variables = extract_layout_variables(source)
+def extract_window(source: str, compact: bool = False) -> tuple[int, int, int, int]:
+    variables = extract_layout_variables(source, compact=compact)
     for line in source.splitlines():
         if "ctoaNativeHelperWindow" not in line:
             continue
@@ -417,10 +450,10 @@ def extract_window(source: str) -> tuple[int, int, int, int]:
     raise SystemExit("Could not find ctoaNativeHelperWindow declaration.")
 
 
-def extract_widgets(source: str) -> list[Widget]:
+def extract_widgets(source: str, compact: bool = False) -> list[Widget]:
     widgets: list[Widget] = []
     lines = source.splitlines()
-    variables = extract_layout_variables(source)
+    variables = extract_layout_variables(source, compact=compact)
     section_overrides: dict[str, str] = {}
     widgets_by_var: dict[str, Widget] = {}
 
@@ -743,6 +776,13 @@ def extract_toggle_content_rows(source: str, variables: dict[str, int], existing
 def extract_rendered_hunting_panel(source: str, variables: dict[str, int], existing: list[Widget]) -> list[Widget]:
     if 'styleUi("renderHuntingPanel"' not in source:
         return []
+    dynamic_hunting_ids = {
+        "ctoaRuneMinVisibleAction",
+        "ctoaRuneCooldownAction",
+        "ctoaOffensiveStanceMax",
+        "ctoaDefensiveStanceMin",
+    }
+    existing[:] = [widget for widget in existing if widget.widget_id not in dynamic_hunting_ids]
     existing_ids = {widget.widget_id for widget in existing}
     widgets: list[Widget] = []
     panel_x = variables.get("panel_x", 234)
@@ -759,7 +799,16 @@ def extract_rendered_hunting_panel(source: str, variables: dict[str, int], exist
     }
     footer_y = variables.get("UI_LAYOUT.footer_y", 350)
 
-    def add(widget_id: str, text: str, y: int, section: str, width: int | None = None, kind: str = "RuleCard") -> None:
+    def add(
+        widget_id: str,
+        text: str,
+        y: int,
+        section: str,
+        width: int | None = None,
+        kind: str = "RuleCard",
+        x: int | None = None,
+        height: int | None = None,
+    ) -> None:
         if widget_id in existing_ids:
             return
         existing_ids.add(widget_id)
@@ -768,23 +817,27 @@ def extract_rendered_hunting_panel(source: str, variables: dict[str, int], exist
                 kind=kind,
                 widget_id=widget_id,
                 text=clean_text(text, widget_id),
-                x=panel_x,
+                x=panel_x if x is None else x,
                 y=y,
                 width=width or panel_w,
-                height=DEFAULT_HEIGHTS[kind],
+                height=height or DEFAULT_HEIGHTS[kind],
                 section=section,
             )
         )
 
     add("ctoaHuntingHeader", "Hunting", variables.get("UI_LAYOUT.section_y", 96), "hunting")
-    tab_w = (panel_w - 8) // 2
+    tab_gap = 4
+    tab_w = (panel_w - (tab_gap * 4)) // 5
     for index, (widget_id, label) in enumerate(
         [
             ("ctoaHuntingTargetingTab", "Targeting"),
-            ("ctoaHuntingMagicTab", "Magic Shooter"),
+            ("ctoaHuntingTargetRulesTab", "Target Rules"),
+            ("ctoaHuntingMagicTab", "Spell Rules"),
+            ("ctoaHuntingActionsTab", "Actions"),
+            ("ctoaHuntingMagicRuntimeTab", "Runtime"),
         ]
     ):
-        x = panel_x + (tab_w + 8) * index
+        x = panel_x + (tab_w + tab_gap) * index
         if widget_id not in existing_ids:
             existing_ids.add(widget_id)
             widgets.append(Widget("Button", widget_id, label, x, body_y, tab_w, 20, "hunting"))
@@ -795,21 +848,81 @@ def extract_rendered_hunting_panel(source: str, variables: dict[str, int], exist
         ("ctoaChaseTargeting", "Chase | ON/OFF", row_y[3], "hunting_targeting"),
         ("ctoaHoldTarget", "Hold Target | ON/OFF", row_y[4], "hunting_targeting"),
         ("ctoaAttackRange", "Attack range | 1", row_y[5], "hunting_targeting"),
-        ("ctoaTargetTimeoutHunting", "Target timeout | 4s", row_y[6], "hunting_targeting"),
-        ("ctoaPreferLowHp", "Prefer low HP | ON/OFF", row_y[7], "hunting_targeting"),
-        ("ctoaMonsterStats", "Target: none | nearby 0 / visible 0", footer_y, "hunting_targeting"),
+        ("ctoaTargetRuleEditorIgnored", "Ignored names | npc name, summon", row_y[6], "hunting_targeting"),
+        ("ctoaTargetRuleEditorPriority", "Priority order | boss, elite", row_y[7], "hunting_targeting"),
+        ("ctoaMonsterStats", "Comma separated | priority order is left to right", footer_y, "hunting_targeting"),
+        ("ctoaHuntingTargetRulesSummary", "Ordered filters | mandatory safety guards stay outside rules", content_y, "hunting_target_rules"),
+        ("ctoaTargetRuleName", "Name / blank = any", row_y[3], "hunting_target_rules"),
+        ("ctoaTargetRuleHp", "HP min / max | 0% / 100%", row_y[4], "hunting_target_rules"),
+        ("ctoaTargetRuleDistance", "Dist min / max | 0 / 7", row_y[5], "hunting_target_rules"),
+        ("ctoaTargetRuleCount", "Mobs min / max | 0 / 99", row_y[6], "hunting_target_rules"),
+        ("ctoaTargetRulesFooter", "Profile data only | lower priority number wins", footer_y + 10, "hunting_target_rules"),
         ("ctoaHuntingMagicSummary", "Magic: safe defaults", content_y, "hunting_magic"),
-        ("ctoaSpellRotation", "Spell Rotation | ON/OFF", row_y[2], "hunting_magic"),
-        ("ctoaRuneShooter", "Rune Shooter | ON/OFF", row_y[3], "hunting_magic"),
-        ("ctoaMagicPriority", "Priority | rotation", row_y[4], "hunting_magic"),
-        ("ctoaRotationGranMobs", "Gran mobs | 3", row_y[5], "hunting_magic"),
-        ("ctoaRotationExoriMobs", "Exori mobs | 2", row_y[6], "hunting_magic"),
-        ("ctoaRotationMinMobs", "Min mobs | 2", row_y[7], "hunting_magic"),
-        ("ctoaRotationLockMs", "Spell lock | 1050 ms", row_y[7] + 26, "hunting_magic"),
-        ("ctoaRuneHotkeyMagic", "Rune box | 3", row_y[7] + 52, "hunting_magic"),
-        ("ctoaMagicFooter", "Decision: waiting for runtime", footer_y + 10, "hunting_magic"),
+        ("ctoaMagicRuleWords", "Spell words | exori", row_y[3], "hunting_magic"),
+        ("ctoaMagicRuleMin", "Minimum mobs | 2", row_y[4], "hunting_magic"),
+        ("ctoaMagicRuleMax", "Maximum mobs | 8", row_y[5], "hunting_magic"),
+        ("ctoaMagicRuleCooldown", "Cooldown | 2000 ms", row_y[6], "hunting_magic"),
+        ("ctoaMagicRuleRange", "Scan range | 1 sqm", row_y[7], "hunting_magic"),
+        ("ctoaMagicFooter", "Profile data only | actions remain runtime-gated", footer_y + 10, "hunting_magic"),
+        ("ctoaHuntingActionsSummary", "Ordered rune / stance rules | arbitrary server words", content_y, "hunting_actions"),
+        ("ctoaCombatActionText", "Rune / spell | Sudden Death Rune", row_y[3], "hunting_actions"),
+        ("ctoaCombatActionCooldown", "Cooldown | 1000 ms", row_y[6], "hunting_actions"),
+        ("ctoaHuntingActionsFooter", "Profile data only | global activation remains on Runtime", footer_y + 10, "hunting_actions"),
+        ("ctoaHuntingMagicRuntimeSummary", "Magic: runtime gated", content_y, "hunting_magic_runtime"),
+        ("ctoaSpellRotation", "Spell Rotation | ON/OFF", row_y[2], "hunting_magic_runtime"),
+        ("ctoaRuneShooter", "Rune Shooter | ON/OFF", row_y[3], "hunting_magic_runtime"),
+        ("ctoaAutoStanceMagic", "Auto stance | ON/OFF", row_y[4], "hunting_magic_runtime"),
+        ("ctoaMagicPriority", "Priority | rotation", row_y[5], "hunting_magic_runtime"),
+        ("ctoaRotationLockMs", "Spell lock | 1050 ms", row_y[6], "hunting_magic_runtime"),
+        ("ctoaAutoExetaMagic", "Auto exeta | ON/OFF", row_y[7], "hunting_magic_runtime"),
+        ("ctoaMagicRuntimeFooter", "Decision: waiting for runtime", footer_y, "hunting_magic_runtime"),
     ]:
         add(widget_id, label, y, section)
+
+    actions_half_w = (panel_w - 6) // 2
+    add("ctoaCombatActionPrev", "<", row_y[2], "hunting_actions", 34, "Button", height=22)
+    add("ctoaCombatActionRuleEditor", "1/3 Sudden Death Rune", row_y[2], "hunting_actions", panel_w - 84, "Label", panel_x + 42)
+    add("ctoaCombatActionNext", ">", row_y[2], "hunting_actions", 34, "Button", panel_x + panel_w - 34, 22)
+    add("ctoaCombatActionKind", "Kind rune", row_y[4], "hunting_actions", actions_half_w, "Button", height=22)
+    add("ctoaCombatActionMode", "Box F5", row_y[4], "hunting_actions", actions_half_w, "Button", panel_x + actions_half_w + 6, 22)
+    add("ctoaCombatActionMin", "Min mobs | 1", row_y[5], "hunting_actions", actions_half_w)
+    add("ctoaCombatActionMax", "Max mobs | 99", row_y[5], "hunting_actions", actions_half_w, x=panel_x + actions_half_w + 6)
+    combat_toggle_w = (panel_w - 8) // 3
+    for index, (widget_id, label) in enumerate(
+        [("ctoaCombatActionEnabled", "Enabled OFF"), ("ctoaCombatActionTarget", "Target ON"), ("ctoaCombatActionPvpSafe", "PvP safe ON")]
+    ):
+        add(widget_id, label, row_y[7], "hunting_actions", combat_toggle_w, "Button", panel_x + index * (combat_toggle_w + 4), 22)
+    combat_action_w = (panel_w - 12) // 4
+    for index, (widget_id, label) in enumerate(
+        [("ctoaCombatActionAdd", "+ ADD"), ("ctoaCombatActionRemove", "REMOVE"), ("ctoaCombatActionUp", "UP"), ("ctoaCombatActionDown", "DOWN")]
+    ):
+        add(widget_id, label, row_y[7] + 26, "hunting_actions", combat_action_w, "Button", panel_x + index * (combat_action_w + 4), 22)
+
+    add("ctoaTargetRulePrev", "<", row_y[2], "hunting_target_rules", 34, "Button", height=22)
+    add("ctoaTargetRuleEditor", "1/1 any monster", row_y[2], "hunting_target_rules", panel_w - 84, "Label", panel_x + 42)
+    add("ctoaTargetRuleNext", ">", row_y[2], "hunting_target_rules", 34, "Button", panel_x + panel_w - 34, 22)
+    add("ctoaTargetRulePriority", "Priority | 50", row_y[7], "hunting_target_rules", 182)
+    add("ctoaTargetRuleChase", "Chase inherit", row_y[7], "hunting_target_rules", panel_w - 190, "Button", panel_x + 190, 22)
+    add("ctoaTargetRuleEnabled", "Enabled ON", row_y[7] + 26, "hunting_target_rules", panel_w, "Button", height=22)
+    target_action_w = (panel_w - 12) // 4
+    for index, (widget_id, label) in enumerate(
+        [("ctoaTargetRuleAdd", "+ ADD"), ("ctoaTargetRuleRemove", "REMOVE"), ("ctoaTargetRuleUp", "UP"), ("ctoaTargetRuleDown", "DOWN")]
+    ):
+        add(widget_id, label, row_y[7] + 52, "hunting_target_rules", target_action_w, "Button", panel_x + index * (target_action_w + 4), 22)
+
+    add("ctoaMagicRulePrev", "<", row_y[2], "hunting_magic", 34, "Button", height=22)
+    add("ctoaMagicRuleEditor", "1/3 exori", row_y[2], "hunting_magic", panel_w - 84, "Label", panel_x + 42)
+    add("ctoaMagicRuleNext", ">", row_y[2], "hunting_magic", 34, "Button", panel_x + panel_w - 34, 22)
+    toggle_w = (panel_w - 8) // 3
+    for index, (widget_id, label) in enumerate(
+        [("ctoaMagicRuleEnabled", "Enabled ON"), ("ctoaMagicRuleMobCount", "Mob count ON"), ("ctoaMagicRuleDirectional", "Directional OFF")]
+    ):
+        add(widget_id, label, row_y[7] + 26, "hunting_magic", toggle_w, "Button", panel_x + index * (toggle_w + 4), 22)
+    action_w = (panel_w - 12) // 4
+    for index, (widget_id, label) in enumerate(
+        [("ctoaMagicRuleAdd", "+ ADD"), ("ctoaMagicRuleRemove", "REMOVE"), ("ctoaMagicRuleUp", "UP"), ("ctoaMagicRuleDown", "DOWN")]
+    ):
+        add(widget_id, label, row_y[7] + 52, "hunting_magic", action_w, "Button", panel_x + index * (action_w + 4), 22)
 
     return widgets
 
@@ -924,12 +1037,11 @@ def extract_rendered_tools_panel(source: str, variables: dict[str, int], existin
         )
 
     add("ctoaToolsHeader", "Tools", variables.get("UI_LAYOUT.section_y", 96), "tools")
-    tab_w = (panel_w - 16) // 5
+    tab_w = (panel_w - 12) // 4
     for index, (widget_id, label) in enumerate(
         [
             ("ctoaToolsHelperTab", "Helper"),
             ("ctoaToolsPvpTab", "PvP"),
-            ("ctoaToolsHudTab", "HUD"),
             ("ctoaToolsTimerTab", "Timer"),
             ("ctoaToolsDiagTab", "Diag"),
         ]
@@ -939,7 +1051,7 @@ def extract_rendered_tools_panel(source: str, variables: dict[str, int], existin
             existing_ids.add(widget_id)
             widgets.append(Widget("Button", widget_id, label, x, body_y, tab_w, 20, "tools"))
 
-    add("ctoaToolsSummary", "Tools: helper / PvP / HUD / timer / diag", content_y, "tools_helper")
+    add("ctoaToolsSummary", "Tools: helper / PvP / timer / diag", content_y, "tools_helper")
     tool_rows = [
         ("ctoaChaseTools", "Chase mode | ON/OFF", row_y[2], "tools_helper"),
         ("ctoaAutoHasteTools", "Auto Haste | ON/OFF", row_y[3], "tools_helper"),
@@ -953,9 +1065,6 @@ def extract_rendered_tools_panel(source: str, variables: dict[str, int], existin
         ("ctoaPauseInPzPvp", "Pause in PZ | ON/OFF", row_y[4], "tools_pvp"),
         ("ctoaRuneRequiresTargetPvp", "Rune needs target | ON/OFF", row_y[5], "tools_pvp"),
         ("ctoaToolsPvpFooter", "PvP guards protect shooter and targeting", footer_y, "tools_pvp"),
-        ("ctoaToolsHudEnabled", "HUD enabled | ON", row_y[2], "tools_hud"),
-        ("ctoaToolsHudPos", "HUD position | X 22 / Y 170", row_y[3], "tools_hud", ui_value_row_w),
-        ("ctoaToolsHudFooter", "Shows profile, HP, mobs and next action", footer_y, "tools_hud"),
         ("ctoaToolsTimerEnabled", "Timer enabled | ON/OFF", row_y[2], "tools_timer"),
         ("ctoaToolsTimerInterval", "Interval | 60s", row_y[3], "tools_timer"),
         ("ctoaToolsTimerMessage", "Message | timer", row_y[4], "tools_timer"),
@@ -975,7 +1084,6 @@ def extract_rendered_tools_panel(source: str, variables: dict[str, int], existin
 
     for widget_id, left, right, section in [
         ("ctoaToolsPvpHead", "PvP", "Value", "tools_pvp"),
-        ("ctoaToolsHudHead", "HUD", "Value", "tools_hud"),
         ("ctoaToolsTimerHead", "Timer", "Value", "tools_timer"),
         ("ctoaToolsDiagHead", "Diagnostics", "Snapshot", "tools_diag"),
     ]:
@@ -1104,13 +1212,15 @@ def validate(window: tuple[int, int, int, int], widgets: list[Widget]) -> list[s
         "conditions",
         "hunting",
         "hunting_targeting",
+        "hunting_target_rules",
         "hunting_magic",
+        "hunting_actions",
+        "hunting_magic_runtime",
         "cavebot",
         "equipment",
         "tools",
         "tools_helper",
         "tools_pvp",
-        "tools_hud",
         "tools_timer",
         "tools_diag",
         "scripting",
@@ -1146,13 +1256,15 @@ def render_stage(width: int, height: int, widgets: list[Widget], active: str) ->
         "conditions": "#d7b36a",
         "hunting": "#8fd17f",
         "hunting_targeting": "#8fd17f",
+        "hunting_target_rules": "#8fd17f",
         "hunting_magic": "#8fd17f",
+        "hunting_actions": "#8fd17f",
+        "hunting_magic_runtime": "#8fd17f",
         "cavebot": "#8fd17f",
         "equipment": "#8fd17f",
         "tools": "#8fd17f",
         "tools_helper": "#8fd17f",
         "tools_pvp": "#8fd17f",
-        "tools_hud": "#8fd17f",
         "tools_timer": "#8fd17f",
         "tools_diag": "#8fd17f",
         "scripting": "#c2a2ff",
@@ -1165,12 +1277,14 @@ def render_stage(width: int, height: int, widgets: list[Widget], active: str) ->
         "heal_friend": {"global", "heal_friend"},
         "conditions": {"global", "conditions"},
         "hunting_targeting": {"global", "hunting", "hunting_targeting"},
+        "hunting_target_rules": {"global", "hunting", "hunting_target_rules"},
         "hunting_magic": {"global", "hunting", "hunting_magic"},
+        "hunting_actions": {"global", "hunting", "hunting_actions"},
+        "hunting_magic_runtime": {"global", "hunting", "hunting_magic_runtime"},
         "cavebot": {"global", "cavebot"},
         "equipment": {"global", "equipment"},
         "tools_helper": {"global", "tools", "tools_helper"},
         "tools_pvp": {"global", "tools", "tools_pvp"},
-        "tools_hud": {"global", "tools", "tools_hud"},
         "tools_timer": {"global", "tools", "tools_timer"},
         "tools_diag": {"global", "tools", "tools_diag"},
         "scripting": {"global", "scripting"},
@@ -1189,8 +1303,8 @@ def render_stage(width: int, height: int, widgets: list[Widget], active: str) ->
             "ctoaHealingTab": active == "healing",
             "ctoaHealFriendTab": active == "heal_friend",
             "ctoaConditionsTab": active == "conditions",
-            "ctoaHuntingTab": active == "hunting_targeting",
-            "ctoaMagicTab": active == "hunting_magic",
+            "ctoaHuntingTab": active in {"hunting_targeting", "hunting_target_rules"},
+            "ctoaMagicTab": active in {"hunting_magic", "hunting_actions", "hunting_magic_runtime"},
             "ctoaCavebotTab": active == "cavebot",
             "ctoaEquipmentTab": active == "equipment",
             "ctoaToolsTab": active.startswith("tools_"),
@@ -1215,15 +1329,15 @@ def render_stage(width: int, height: int, widgets: list[Widget], active: str) ->
         elif widget.widget_id == "ctoaScriptingTab":
             text = "[ Scripting ]" if active == "scripting" else "Scripting"
         elif widget.widget_id == "ctoaUiTab":
-            text = "[ UI ]" if active == "ui" else "UI"
+            text = "[ Settings ]" if active == "ui" else "Settings"
         elif widget.widget_id == "ctoaOverviewTab":
             text = "[ Overview ]" if active == "overview" else "Overview"
         elif widget.widget_id == "ctoaHuntingTab":
-            text = "[ Targeting ]" if active == "hunting_targeting" else "Targeting"
+            text = "[ Targeting ]" if active in {"hunting_targeting", "hunting_target_rules"} else "Targeting"
         elif widget.widget_id == "ctoaMagicTab":
-            text = "[ Magic ]" if active == "hunting_magic" else "Magic"
+            text = "[ Magic ]" if active in {"hunting_magic", "hunting_actions", "hunting_magic_runtime"} else "Magic"
         elif widget.widget_id == "ctoaProfileTab":
-            text = "[ Settings ]" if active == "profile" else "Settings"
+            text = "[ Profile ]" if active == "profile" else "Profile"
         cls = widget.kind.lower()
         content = html.escape(text)
         extra_class = ""
@@ -1386,12 +1500,14 @@ h2 {{
 {render_stage(width, height, widgets, "heal_friend")}
 {render_stage(width, height, widgets, "conditions")}
 {render_stage(width, height, widgets, "hunting_targeting")}
+{render_stage(width, height, widgets, "hunting_target_rules")}
 {render_stage(width, height, widgets, "hunting_magic")}
+{render_stage(width, height, widgets, "hunting_actions")}
+{render_stage(width, height, widgets, "hunting_magic_runtime")}
 {render_stage(width, height, widgets, "cavebot")}
 {render_stage(width, height, widgets, "equipment")}
 {render_stage(width, height, widgets, "tools_helper")}
 {render_stage(width, height, widgets, "tools_pvp")}
-{render_stage(width, height, widgets, "tools_hud")}
 {render_stage(width, height, widgets, "tools_timer")}
 {render_stage(width, height, widgets, "scripting")}
 {render_stage(width, height, widgets, "profile")}
@@ -1406,20 +1522,28 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--helper", type=Path, default=HELPER)
     parser.add_argument("--out", type=Path, default=OUT_HTML)
+    parser.add_argument(
+        "--layout",
+        choices=("default", "compact"),
+        default="default",
+        help="Render the selected production layout table.",
+    )
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
     source = args.helper.read_text(encoding="utf-8")
-    window = extract_window(source)
-    widgets = extract_widgets(source)
+    compact = args.layout == "compact"
+    window = extract_window(source, compact=compact)
+    widgets = extract_widgets(source, compact=compact)
     issues = validate(window, widgets)
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(render_html(window, widgets), encoding="utf-8")
 
     print(f"preview: {args.out}")
+    print(f"layout: {args.layout}")
     print(f"window: x={window[0]} y={window[1]} w={window[2]} h={window[3]}")
     print(f"widgets: {len(widgets)}")
     if issues:
