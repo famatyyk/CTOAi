@@ -20,6 +20,8 @@ TEST_ENV = ROOT / "scripts" / "windows" / "solteria_helper_test_env.ps1"
 def test_remaining_observers_are_loader_wired_passive_and_disabled():
     loader = LOADER.read_text(encoding="utf-8") + "\n" + REGISTRY.read_text(encoding="utf-8")
     test_env = TEST_ENV.read_text(encoding="utf-8")
+    assert "function Get-DevModuleFileNames" in test_env
+    assert "foreach ($relative in Get-DevPackageFiles)" in test_env
     specs = [
         (CAVEBOT, "ctoa_helper_cavebot_observer", "ctoa.cavebot-observation.v1"),
         (LOOT, "ctoa_helper_loot_observer", "ctoa.loot-observation.v1"),
@@ -28,7 +30,6 @@ def test_remaining_observers_are_loader_wired_passive_and_disabled():
     for path, module_name, schema in specs:
         source = path.read_text(encoding="utf-8")
         assert f'{{name = "{module_name}", file = "{module_name}.lua"' in loader
-        assert f'"{module_name}.lua"' in test_env
         assert f'"mods/ctoa_otclient/{module_name}.lua"' in test_env
         assert schema in source
         assert "enabled = false" in source
@@ -41,7 +42,6 @@ def test_remaining_observers_are_loader_wired_passive_and_disabled():
         "ctoa_helper_runtime_core",
         "ctoa_helper_otclient_observation_adapter",
     ]:
-        assert f'"{module_name}.lua"' in test_env
         assert f'"mods/ctoa_otclient/{module_name}.lua"' in test_env
 
 
