@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-12T01:34:37+00:00",
+  "generated_at": "2026-07-15T17:02:58+00:00",
   "root": "C:\\Users\\zycie\\CTOAi",
   "overall_status": "warn",
   "status_counts": {
-    "ok": 4,
-    "warn": 3,
+    "ok": 5,
+    "warn": 2,
     "fail": 0
   },
   "checks": {
@@ -14,10 +14,36 @@
       "git_path": "C:\\Program Files\\Git\\cmd\\git.EXE",
       "status": "ok",
       "root": "C:/Users/zycie/CTOAi",
-      "branch": "codex/p8-background-noscreen",
-      "head": "eed2c4e335a9c6e610d041c77241e3f02ba61534",
-      "dirty_count": 0,
-      "dirty_sample": [],
+      "branch": "codex/p14-independent-runner",
+      "head": "9ac264fb48c050a3e6a3be96552197b98fd35454",
+      "dirty_count": 124,
+      "dirty_sample": [
+        "M .github/PULL_REQUEST_TEMPLATE/template.md",
+        "M .github/workflows/site-pages.yml",
+        "M .pre-commit-config.yaml",
+        "M AI/OTCLIENT_INDEX.md",
+        "M AI/generated/DOC_SYNC.json",
+        "M AI/generated/DOC_SYNC.md",
+        "M AI/generated/ENGINE_BRAIN_PACK.json",
+        "M AI/generated/ENGINE_BRAIN_PACK.md",
+        "M AI/generated/ENV_DOCTOR.json",
+        "M AI/generated/ENV_DOCTOR.md",
+        "M AI/generated/FILE_TREE.md",
+        "M AI/generated/OWNERSHIP_MAP.json",
+        "M AI/generated/OWNERSHIP_MAP.md",
+        "M AI/generated/P6_CODEX_INTEGRATION_READINESS.json",
+        "M AI/generated/P6_CODEX_INTEGRATION_READINESS.md",
+        "M AI/generated/P7_ACTION_READINESS.json",
+        "M AI/generated/P7_ACTION_READINESS.md",
+        "M AI/generated/P7_OPERATOR_BRIEF.json",
+        "M AI/generated/P7_OPERATOR_BRIEF.md",
+        "M AI/generated/P7_OPERATOR_WORKFLOW.json",
+        "M AI/generated/P7_OPERATOR_WORKFLOW.md",
+        "M AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.json",
+        "M AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.md",
+        "M AI/generated/SECRET_GUARDRAIL.json",
+        "M AI/generated/SECRET_GUARDRAIL.md"
+      ],
       "remotes": [
         "origin\thttps://github.com/famatyyk/CTOAi.git (fetch)",
         "origin\thttps://github.com/famatyyk/CTOAi.git (push)"
@@ -33,12 +59,12 @@
       "containers": [
         {
           "name": "ctoa-api",
-          "status": "Up 2 days",
+          "status": "Up 5 days",
           "ports": "127.0.0.1:8001->8000/tcp"
         },
         {
           "name": "ctoa-postgres",
-          "status": "Up 2 days (healthy)",
+          "status": "Up 5 days (healthy)",
           "ports": "5432/tcp"
         }
       ],
@@ -80,14 +106,13 @@
       }
     },
     "vscode": {
-      "status": "warn",
+      "status": "ok",
       "code_on_path": true,
       "active_openai_extensions": [
-        "openai.chatgpt@26.623.141536"
+        "openai.chatgpt@26.707.71524"
       ],
       "openai_extension_dirs": [
-        "openai.chatgpt-26.623.141536-win32-x64",
-        "openai.chatgpt-26.707.31123-win32-x64"
+        "openai.chatgpt-26.707.71524-win32-x64"
       ],
       "relevant_extensions": [
         "docker.docker@0.18.0",
@@ -102,7 +127,7 @@
         "ms-python.vscode-pylance@2026.2.108",
         "ms-python.vscode-python-envs@1.36.0",
         "ms-toolsai.vscode-ai-remote@1.4.8",
-        "ms-vscode-remote.remote-containers@0.465.0",
+        "ms-vscode-remote.remote-containers@0.467.0",
         "ms-vscode-remote.remote-ssh@0.124.0",
         "ms-vscode-remote.remote-ssh-edit@0.87.0",
         "ms-vscode-remote.remote-wsl@0.104.3",
@@ -110,7 +135,7 @@
         "ms-vscode.remote-explorer@0.5.0",
         "ms-vscode.remote-repositories@0.42.0",
         "ms-vscode.remote-server@1.5.3",
-        "openai.chatgpt@26.623.141536",
+        "openai.chatgpt@26.707.71524",
         "vinirossa.vscode-gitandgithub-pack@2.0.1",
         "ziyasal.vscode-open-in-github@1.3.6"
       ],
@@ -128,12 +153,12 @@
           "name": "main"
         },
         "nameWithOwner": "famatyyk/CTOAi",
-        "pushedAt": "2026-07-11T20:29:48Z",
-        "updatedAt": "2026-07-11T09:37:24Z",
+        "pushedAt": "2026-07-15T15:04:41Z",
+        "updatedAt": "2026-07-15T08:31:42Z",
         "url": "https://github.com/famatyyk/CTOAi",
-        "visibility": "PUBLIC"
+        "visibility": "PRIVATE"
       },
-      "open_pr_count": 6,
+      "open_pr_count": 7,
       "dirty_prs": [
         {
           "isDraft": false,
@@ -177,7 +202,15 @@
         }
       ],
       "recent_run_count": 15,
-      "failed_recent_runs": []
+      "failed_recent_runs": [
+        {
+          "conclusion": "skipped",
+          "createdAt": "2026-07-15T15:09:34Z",
+          "status": "completed",
+          "url": "https://github.com/famatyyk/CTOAi/actions/runs/29426838888",
+          "workflowName": "CTOA Close On Gate"
+        }
+      ]
     },
     "update_gate": {
       "status": "ok",

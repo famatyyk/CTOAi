@@ -56,37 +56,17 @@ connect(LocalPlayer, { onHealthChanged = onHealthChanged })
 3. Click **"Generate OTClient Pack"**
 4. Follow installation instructions
 
-### **Method 2: Manual Installation**
-```bash
-# Clone CTOA repository
-git clone https://github.com/famatyyk/CTOAi.git
-cd CTOAi
+### **Method 2: Official Local Package**
 
-# Copy OTClient modules
-cp scripts/lua/otclient/*.lua ~/.otclient/user_dir/ctoa_native/
+Run `solteria_helper_test_env.ps1 -Action PrepareDev`, then use its staged ZIP
+and manifest. The package preserves separate `ctoa_chooser`, `ctoa_otclient`,
+and `ctoa_safe` directories.
 
-# Add to your OTClient init.lua
-echo 'dofile("user_dir/ctoa_native/ctoa_otclient_loader.lua")' >> ~/.otclient/init.lua
-```
-
-### **Method 3: OTClient Modules Directory**
-```bash
-# Copy to OTClient modules folder
-cp scripts/lua/otclient/*.lua /path/to/otclient/modules/ctoa_native/
-
-# Create module descriptor (otmod file)
-cat > /path/to/otclient/modules/ctoa_native/ctoa_native.otmod << EOF
-Module
-  name: ctoa_native
-  description: CTOA Native API Integration
-  author: CTOA AI Toolkit
-  website: github.com/famatyyk/CTOAi
-  version: 1.0.0
-  autoLoad: true
-  autoLoadPriority: 1000
-  scripts: [ ctoa_otclient_loader ]
-EOF
-```
+Manual `dofile` installation of `ctoa_otclient_loader.lua`,
+`ctoa_native_helper.lua`, or `ctoa_safe_loader.lua` is unsupported because it
+bypasses the exclusive per-login selection. Only `ctoa_project_loader.lua` may
+be referenced by the controlled boot hook. Helper and Safe `.otmod` descriptors
+must remain `autoload: false`; the chooser is the sole CTOA autoload.
 
 ---
 
@@ -245,7 +225,8 @@ cycleEvent(callback, interval) -- Repeat callback
 
 -- UI Integration  
 modules.game_console.addText(text, mode) -- Add console message
-MessageModes.ModeStatus       -- Status message type
+MessageModes.Status           -- Current status message type
+MessageModes.ModeStatus       -- Guarded legacy fallback
 
 -- Item Database
 ItemsDatabase:getItemInfo(id) -- Get item information

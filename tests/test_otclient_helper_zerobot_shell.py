@@ -3204,7 +3204,7 @@ def test_solteria_dev_lane_packages_without_touching_live_client():
         in script
     )
     assert (
-        'Copy-CtoaRuntimeFile -StageRelative "ctoa_project_loader.lua" -RepoRelative "mods\\ctoa_chooser\\ctoa_chooser_loader.lua" -Destination (Join-Path $ClientDir "ctoa_project_loader.lua")'
+        'Copy-CtoaRuntimeFile -StageRelative "ctoa_project_loader.lua" -RepoRelative "scripts\\lua\\ctoa_chooser\\ctoa_chooser_loader.lua" -Destination (Join-Path $ClientDir "ctoa_project_loader.lua")'
         in script
     )
     assert (

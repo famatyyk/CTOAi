@@ -22,21 +22,21 @@
     "status": "ready"
   },
   "freshness_status": "current",
-  "generated_at": "2026-07-15T13:25:55.553813Z",
+  "generated_at": "2026-07-15T17:14:01.672603Z",
   "ledger": [
     {
-      "age_seconds": 31548,
+      "age_seconds": 176,
       "attempt_count": null,
       "bindings": [],
       "blockers": [],
-      "created_at": "2026-07-15T04:40:07Z",
+      "created_at": "2026-07-15T17:11:05Z",
       "decision_id": "p8-background-acceptance",
       "decision_status": "accepted",
       "dispatch_allowed": false,
       "downstream_authority_granted": false,
       "evidence_path": "runtime/solteria_helper_dev/background_status.json",
       "evidence_schema_version": "ctoa.otclient-headless-status.v1",
-      "evidence_sha256": "97df52ac6064aa4bce7a736e2d580c5136c2c6b3138a262cff97a04a7bab5d51",
+      "evidence_sha256": "f871b64e7c1981c591b3013ab2b3560417e3bdc26c5aae4d74949bcb6501df78",
       "evidence_status": "ready",
       "execute_once_allowed": false,
       "final_state": null,
@@ -55,7 +55,7 @@
       "terminal": true
     },
     {
-      "age_seconds": 67223,
+      "age_seconds": 80910,
       "attempt_count": null,
       "bindings": [
         {
@@ -96,7 +96,7 @@
       "terminal": true
     },
     {
-      "age_seconds": 31544,
+      "age_seconds": 45230,
       "attempt_count": null,
       "bindings": [
         {
@@ -137,7 +137,7 @@
       "terminal": true
     },
     {
-      "age_seconds": 28161,
+      "age_seconds": 41847,
       "attempt_count": null,
       "bindings": [
         {
@@ -178,7 +178,7 @@
       "terminal": true
     },
     {
-      "age_seconds": 22863,
+      "age_seconds": 36550,
       "attempt_count": 1,
       "bindings": [
         {
@@ -235,7 +235,7 @@
       "terminal": true
     },
     {
-      "age_seconds": 10382,
+      "age_seconds": 24068,
       "attempt_count": 1,
       "bindings": [
         {
@@ -292,7 +292,7 @@
       "terminal": true
     },
     {
-      "age_seconds": 4675,
+      "age_seconds": 18361,
       "attempt_count": 0,
       "bindings": [
         {
@@ -354,7 +354,7 @@
   "next_phase": "P14",
   "phase": "P13",
   "phase_status": "runtime_evidence_ready",
-  "previous_state_sha256": "2ac9245d863d26343dad0a0a76abe4ee80c89d0d0152e9b70f4af33d11cf1610",
+  "previous_state_sha256": "c0f457006235f61f5d31bd13a69398513093c3ba3fb1b7a73d242cec090fb003",
   "schema_registry": {
     "entry_count": 7,
     "path": "schemas/ctoa-roadmap-schema-registry.v1.json",
@@ -374,46 +374,46 @@
       "load_status": "loaded",
       "name": "feature_roadmap",
       "path": "AI/FEATURE_ROADMAP.md",
-      "sha256": "c90cce6b8d345548b7d6e5ccb11905c941ad2f6c66598e613af8c3b7b91f4216"
+      "sha256": "b21aac2007787acfa5b2eeea1c924b74b8e75161b53e562495cceb23722c3f6c"
     },
     {
-      "age_seconds": 11,
+      "age_seconds": 709,
       "contract_status": "passed",
       "freshness_status": "current",
       "load_status": "loaded",
       "name": "engine_brain_manifest",
       "path": "AI/generated/manifest.json",
-      "sha256": "42f0c1fe9ce9da5c9a0582c7088cd76a2c2baa8446844375497a3882eacdfb59"
+      "sha256": "68a533d011e3bbcb51099f50068aa6d00d8be66d5ee95c681bae78645fdd73c1"
     },
     {
-      "age_seconds": 11,
+      "age_seconds": 709,
       "contract_status": "passed",
       "freshness_status": "current",
       "load_status": "loaded",
       "name": "operator_brief",
       "path": "AI/generated/P7_OPERATOR_BRIEF.json",
-      "sha256": "58a9359fa4a6115b9084c2ee06b4e717878d6b68ff0c6cc0a3cbbc9b8c7d6c09"
+      "sha256": "aba66377c3264bd4af41a74a392211eb343763bbfbfe0be3ecde1f073a0df17b"
     },
     {
-      "age_seconds": 389,
+      "age_seconds": 0,
       "contract_status": "passed",
       "freshness_status": "current",
       "load_status": "loaded",
       "name": "helper_manifest",
       "path": "runtime/solteria_helper_dev/manifest.json",
-      "sha256": "21ac5e73a18fe0d027c22608b95785d90e62c5e6c56f5245724fab8c8045c573"
+      "sha256": "c970dd86326ea30ce9fd72f22b3d150fc7eb99bb267ec767e258201eba73c8ab"
     },
     {
-      "age_seconds": 7288,
+      "age_seconds": 849,
       "contract_status": "passed",
       "freshness_status": "current",
       "load_status": "loaded",
       "name": "runtime_module_gates",
       "path": "runtime/solteria_helper_dev/runtime_module_gates_sandbox_smoke.json",
-      "sha256": "6015c1da86590bf699d5e118176dd20984e49016282493ec67ee4541cfdf3a26"
+      "sha256": "f22c309f1145ae51c2e3654cd1345ec2fe41ef5a8495792cc23a70e0ec8e1b2b"
     }
   ],
-  "state_sha256": "2aacaa7d3a3e30cec10822824f46239b5ef5ea80f879ade3286f1b6096495b99",
+  "state_sha256": "401ef95b53dd3ef677fd44327b9fa168b70c738c70a4daffb4857770ee783f1c",
   "status": "ready",
   "summary": {
     "accepted_count": 6,

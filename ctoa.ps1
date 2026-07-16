@@ -6,7 +6,16 @@ param(
     [string]$Arg1,
 
     [Parameter(Position = 2)]
-    [string]$Arg2
+    [string]$Arg2,
+
+    [Parameter(Position = 3)]
+    [string]$Arg3,
+
+    [Parameter(Position = 4)]
+    [string]$Arg4,
+
+    [Parameter(Position = 5)]
+    [string]$Arg5
 )
 
 Set-StrictMode -Version Latest
@@ -200,7 +209,19 @@ Usage:
     .\\ctoa.ps1 otest
     .\\ctoa.ps1 otbg
     .\\ctoa.ps1 otp9
+    .\\ctoa.ps1 otp9accept "accept P9 conditions shadow"
+    .\\ctoa.ps1 otp10doctor [init]
+    .\\ctoa.ps1 otp10preview
+    .\\ctoa.ps1 otp10catalog
+    .\\ctoa.ps1 otp10plan [equippedItem candidateItem container slot "plan P10 capture profile change"]
+    .\\ctoa.ps1 otp10autoplan equippedItem candidateItem "plan P10 capture profile change"
+    .\\ctoa.ps1 otp10apply planSha "zatwierdzam zastosowanie planu P10 <planSha>"
+    .\\ctoa.ps1 otp10preflight
+    .\\ctoa.ps1 otp10ready
+    .\\ctoa.ps1 otp10refresh
     .\\ctoa.ps1 otp10
+    .\\ctoa.ps1 otp10accept "accept P10 equipment shadow"
+    .\\ctoa.ps1 otp11catalog
     .\\ctoa.ps1 brain <refresh|doctor|pack>
 
 Short aliases:
@@ -242,7 +263,19 @@ Examples:
   .\\ctoa.ps1 otest
   .\\ctoa.ps1 otbg
   .\\ctoa.ps1 otp9
+  .\\ctoa.ps1 otp9accept "accept P9 conditions shadow"
+  .\\ctoa.ps1 otp10doctor [init]
+  .\\ctoa.ps1 otp10preview
+  .\\ctoa.ps1 otp10catalog
+  .\\ctoa.ps1 otp10plan 3051 3048 2 1 "plan P10 capture profile change"
+  .\\ctoa.ps1 otp10autoplan 3051 3048 "plan P10 capture profile change"
+  .\\ctoa.ps1 otp10apply <planSha> "zatwierdzam zastosowanie planu P10 <planSha>"
+  .\\ctoa.ps1 otp10preflight
+  .\\ctoa.ps1 otp10ready
+  .\\ctoa.ps1 otp10refresh
   .\\ctoa.ps1 otp10
+  .\\ctoa.ps1 otp10accept "accept P10 equipment shadow"
+  .\\ctoa.ps1 otp11catalog
   .\\ctoa.ps1 brain refresh
   .\\ctoa.ps1 brain doctor
   .\\ctoa.ps1 brain pack
@@ -832,6 +865,7 @@ function Invoke-OtConditionsShadowReplay {
     }
 
     $python = Join-Path $Root ".venv\Scripts\python.exe"
+    $recoveryScript = Join-Path $Root "scripts\ops\otclient_conditions_recovery_proof.py"
     $scriptPath = Join-Path $Root "scripts\ops\otclient_conditions_shadow_replay.py"
     if (-not (Test-Path -LiteralPath $python -PathType Leaf)) {
         throw "P9 Conditions shadow replay requires the trusted repo interpreter: $python"
@@ -839,7 +873,291 @@ function Invoke-OtConditionsShadowReplay {
     if (-not (Test-Path -LiteralPath $scriptPath -PathType Leaf)) {
         throw "P9 Conditions shadow replay tool is missing: $scriptPath"
     }
+    if (-not (Test-Path -LiteralPath $recoveryScript -PathType Leaf)) {
+        throw "P9 passive Recovery proof producer is missing: $recoveryScript"
+    }
 
+    $previousOperatorMode = $env:CTOA_OPERATOR_MODE
+    try {
+        $env:CTOA_OPERATOR_MODE = "background_no_screen"
+        Invoke-FromRoot -FilePath $python -Arguments @($recoveryScript, "--allow-blocked")
+        Invoke-FromRoot -FilePath $python -Arguments @($scriptPath)
+    }
+    finally {
+        if ($null -eq $previousOperatorMode) {
+            Remove-Item Env:CTOA_OPERATOR_MODE -ErrorAction SilentlyContinue
+        }
+        else {
+            $env:CTOA_OPERATOR_MODE = $previousOperatorMode
+        }
+    }
+}
+
+function Invoke-OtEquipmentShadowReplay {
+    $powershell = (Get-Command powershell -ErrorAction Stop).Source
+    $wrapper = Join-Path $Root "scripts/windows/solteria_helper_test_env.ps1"
+    $backgroundPath = Join-Path $Root "runtime\solteria_helper_dev\background_status.json"
+    $observationStartedAt = [DateTime]::UtcNow.AddSeconds(-1)
+    $backgroundResult = Invoke-FromRootCapture -FilePath $powershell -Arguments @(
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        $wrapper,
+        "-Action",
+        "BackgroundStatus",
+        "-OperatorMode",
+        "BackgroundNoScreen"
+    )
+    if (-not [string]::IsNullOrWhiteSpace([string]$backgroundResult.output)) {
+        Write-Output $backgroundResult.output
+    }
+    if ([int]$backgroundResult.exit_code -notin @(0, 1)) {
+        throw "P10 Equipment replay could not collect bounded P8 evidence (exit $($backgroundResult.exit_code))."
+    }
+    if (-not (Test-Path -LiteralPath $backgroundPath -PathType Leaf)) {
+        throw "P10 Equipment replay requires a current BackgroundNoScreen artifact: $backgroundPath"
+    }
+    $backgroundItem = Get-Item -LiteralPath $backgroundPath -Force
+    if (
+        ($backgroundItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0 -or
+        $backgroundItem.LastWriteTimeUtc -lt $observationStartedAt
+    ) {
+        throw "P10 Equipment replay rejects stale or reparse-point BackgroundNoScreen output."
+    }
+
+    $python = Join-Path $Root ".venv\Scripts\python.exe"
+    $snapshotScript = Join-Path $Root "scripts\ops\otclient_equipment_shadow_snapshot.py"
+    $scriptPath = Join-Path $Root "scripts\ops\otclient_equipment_shadow_replay.py"
+    if (-not (Test-Path -LiteralPath $python -PathType Leaf)) {
+        throw "P10 Equipment shadow replay requires the trusted repo interpreter: $python"
+    }
+    if (-not (Test-Path -LiteralPath $scriptPath -PathType Leaf)) {
+        throw "P10 Equipment shadow replay tool is missing: $scriptPath"
+    }
+    if (-not (Test-Path -LiteralPath $snapshotScript -PathType Leaf)) {
+        throw "P10 Equipment shadow snapshot producer is missing: $snapshotScript"
+    }
+    $previousOperatorMode = $env:CTOA_OPERATOR_MODE
+    try {
+        $env:CTOA_OPERATOR_MODE = "background_no_screen"
+        $snapshotResult = Invoke-FromRootCapture -FilePath $python -Arguments @($snapshotScript)
+        if (-not [string]::IsNullOrWhiteSpace([string]$snapshotResult.output)) {
+            Write-Host ([string]$snapshotResult.output)
+        }
+        $replayResult = Invoke-FromRootCapture -FilePath $python -Arguments @($scriptPath, "--source", "operational")
+        if (-not [string]::IsNullOrWhiteSpace([string]$replayResult.output)) {
+            Write-Host ([string]$replayResult.output)
+        }
+        if (-not $snapshotResult.ok -or -not $replayResult.ok) {
+            throw "P10 operational snapshot/replay remains fail-closed. Inspect the canonical ingest and replay reports."
+        }
+    }
+    finally {
+        if ($null -eq $previousOperatorMode) {
+            Remove-Item Env:CTOA_OPERATOR_MODE -ErrorAction SilentlyContinue
+        }
+        else {
+            $env:CTOA_OPERATOR_MODE = $previousOperatorMode
+        }
+    }
+}
+
+function Invoke-OtEquipmentObservationPreview {
+    $python = Join-Path $Root ".venv\Scripts\python.exe"
+    $scriptPath = Join-Path $Root "scripts\ops\otclient_equipment_observation_preview.py"
+    if (-not (Test-Path -LiteralPath $python -PathType Leaf)) {
+        throw "P10 equipment observation preview requires the trusted repo interpreter: $python"
+    }
+    if (-not (Test-Path -LiteralPath $scriptPath -PathType Leaf)) {
+        throw "P10 equipment observation preview tool is missing: $scriptPath"
+    }
+    $previousOperatorMode = $env:CTOA_OPERATOR_MODE
+    try {
+        $env:CTOA_OPERATOR_MODE = "background_no_screen"
+        Invoke-FromRoot -FilePath $python -Arguments @($scriptPath, "--allow-blocked")
+    }
+    finally {
+        if ($null -eq $previousOperatorMode) {
+            Remove-Item Env:CTOA_OPERATOR_MODE -ErrorAction SilentlyContinue
+        }
+        else {
+            $env:CTOA_OPERATOR_MODE = $previousOperatorMode
+        }
+    }
+}
+
+function Invoke-OtEquipmentCandidateCatalog {
+    $python = Join-Path $Root ".venv\Scripts\python.exe"
+    $scriptPath = Join-Path $Root "scripts\ops\otclient_equipment_candidate_catalog.py"
+    if (-not (Test-Path -LiteralPath $python -PathType Leaf)) {
+        throw "P10 equipment candidate catalog requires the trusted repo interpreter: $python"
+    }
+    if (-not (Test-Path -LiteralPath $scriptPath -PathType Leaf)) {
+        throw "P10 equipment candidate catalog tool is missing: $scriptPath"
+    }
+    $previousOperatorMode = $env:CTOA_OPERATOR_MODE
+    try {
+        $env:CTOA_OPERATOR_MODE = "background_no_screen"
+        Invoke-FromRoot -FilePath $python -Arguments @($scriptPath, "--allow-blocked")
+    }
+    finally {
+        if ($null -eq $previousOperatorMode) {
+            Remove-Item Env:CTOA_OPERATOR_MODE -ErrorAction SilentlyContinue
+        }
+        else {
+            $env:CTOA_OPERATOR_MODE = $previousOperatorMode
+        }
+    }
+}
+
+function Invoke-OtEquipmentCaptureProfileChangePlan {
+    param(
+        [string]$EquippedItemId,
+        [string]$CandidateItemId,
+        [string]$CandidateContainerId,
+        [string]$CandidateSlotIndex,
+        [string]$Confirmation,
+        [switch]$RefreshPreview
+    )
+    $python = Join-Path $Root ".venv\Scripts\python.exe"
+    $scriptPath = Join-Path $Root "scripts\ops\otclient_equipment_capture_profile_change_plan.py"
+    if (-not (Test-Path -LiteralPath $python -PathType Leaf)) {
+        throw "P10 capture-profile change plan requires the trusted repo interpreter: $python"
+    }
+    if (-not (Test-Path -LiteralPath $scriptPath -PathType Leaf)) {
+        throw "P10 capture-profile change plan generator is missing: $scriptPath"
+    }
+    if ($RefreshPreview) {
+        $powershell = (Get-Command powershell -ErrorAction Stop).Source
+        $wrapper = Join-Path $Root "scripts/windows/solteria_helper_test_env.ps1"
+        $backgroundPath = Join-Path $Root "runtime\solteria_helper_dev\background_status.json"
+        $observationStartedAt = [DateTime]::UtcNow.AddSeconds(-1)
+        $backgroundResult = Invoke-FromRootCapture -FilePath $powershell -Arguments @(
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            $wrapper,
+            "-Action",
+            "BackgroundStatus",
+            "-OperatorMode",
+            "BackgroundNoScreen"
+        )
+        if (-not [string]::IsNullOrWhiteSpace([string]$backgroundResult.output)) {
+            Write-Output $backgroundResult.output
+        }
+        if ([int]$backgroundResult.exit_code -notin @(0, 1)) {
+            throw "P10 autoplan could not collect bounded BackgroundNoScreen evidence (exit $($backgroundResult.exit_code))."
+        }
+        if (-not (Test-Path -LiteralPath $backgroundPath -PathType Leaf)) {
+            throw "P10 autoplan requires a current BackgroundNoScreen artifact: $backgroundPath"
+        }
+        $backgroundItem = Get-Item -LiteralPath $backgroundPath -Force
+        if (
+            ($backgroundItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0 -or
+            $backgroundItem.LastWriteTimeUtc -lt $observationStartedAt
+        ) {
+            throw "P10 autoplan rejects stale or reparse-point BackgroundNoScreen output."
+        }
+    }
+    $arguments = @($scriptPath, "--allow-blocked")
+    if (-not [string]::IsNullOrWhiteSpace($EquippedItemId)) {
+        $arguments += @("--equipped-item-id", $EquippedItemId)
+    }
+    if (-not [string]::IsNullOrWhiteSpace($CandidateItemId)) {
+        $arguments += @("--candidate-item-id", $CandidateItemId)
+    }
+    if (-not [string]::IsNullOrWhiteSpace($CandidateContainerId)) {
+        $arguments += @("--candidate-container-id", $CandidateContainerId)
+    }
+    if (-not [string]::IsNullOrWhiteSpace($CandidateSlotIndex)) {
+        $arguments += @("--candidate-slot-index", $CandidateSlotIndex)
+    }
+    if (-not [string]::IsNullOrWhiteSpace($Confirmation)) {
+        $arguments += @("--confirm", $Confirmation)
+    }
+    if ($RefreshPreview) {
+        $arguments += "--refresh-preview"
+    }
+    Invoke-FromRoot -FilePath $python -Arguments $arguments
+}
+
+function Invoke-OtEquipmentCaptureProfileDoctor {
+    param([string]$Action)
+    $python = Join-Path $Root ".venv\Scripts\python.exe"
+    $scriptPath = Join-Path $Root "scripts\ops\otclient_equipment_capture_profile_doctor.py"
+    if (-not (Test-Path -LiteralPath $python -PathType Leaf)) {
+        throw "P10 capture-profile doctor requires the trusted repo interpreter: $python"
+    }
+    if (-not (Test-Path -LiteralPath $scriptPath -PathType Leaf)) {
+        throw "P10 capture-profile doctor is missing: $scriptPath"
+    }
+    $arguments = @($scriptPath)
+    switch ((Get-ValueOrDefault -Value $Action -Fallback "").ToLowerInvariant()) {
+        "" { }
+        "init" { $arguments += "--init-local" }
+        default { throw "Unknown otp10doctor action '$Action'. Use: .\\ctoa.ps1 otp10doctor [init]" }
+    }
+    Invoke-FromRoot -FilePath $python -Arguments $arguments
+}
+
+function Invoke-OtEquipmentCaptureProfileApply {
+    param(
+        [string]$PlanSha256,
+        [string]$Confirmation
+    )
+    $python = Join-Path $Root ".venv\Scripts\python.exe"
+    $scriptPath = Join-Path $Root "scripts\ops\otclient_equipment_capture_profile_apply.py"
+    if (-not (Test-Path -LiteralPath $python -PathType Leaf)) {
+        throw "P10 capture-profile apply requires the trusted repo interpreter: $python"
+    }
+    if (-not (Test-Path -LiteralPath $scriptPath -PathType Leaf)) {
+        throw "P10 capture-profile apply tool is missing: $scriptPath"
+    }
+    if ([string]::IsNullOrWhiteSpace($PlanSha256)) {
+        throw "otp10apply requires the reviewed plan SHA-256."
+    }
+    $arguments = @($scriptPath, "--plan-sha256", $PlanSha256)
+    if (-not [string]::IsNullOrWhiteSpace($Confirmation)) {
+        $arguments += @("--confirm", $Confirmation)
+    }
+    Invoke-FromRoot -FilePath $python -Arguments $arguments
+}
+
+function Invoke-OtEquipmentDependencyPreflight {
+    $python = Join-Path $Root ".venv\Scripts\python.exe"
+    $scriptPath = Join-Path $Root "scripts\ops\otclient_equipment_dependency_preflight.py"
+    if (-not (Test-Path -LiteralPath $python -PathType Leaf)) {
+        throw "P10 dependency preflight requires the trusted repo interpreter: $python"
+    }
+    if (-not (Test-Path -LiteralPath $scriptPath -PathType Leaf)) {
+        throw "P10 dependency preflight is missing: $scriptPath"
+    }
+    Invoke-FromRoot -FilePath $python -Arguments @($scriptPath)
+}
+
+function Invoke-OtEquipmentOperatorReadiness {
+    $python = Join-Path $Root ".venv\Scripts\python.exe"
+    $scriptPath = Join-Path $Root "scripts\ops\otclient_equipment_operator_readiness.py"
+    if (-not (Test-Path -LiteralPath $python -PathType Leaf)) {
+        throw "P10 operator readiness requires the trusted repo interpreter: $python"
+    }
+    if (-not (Test-Path -LiteralPath $scriptPath -PathType Leaf)) {
+        throw "P10 operator readiness tool is missing: $scriptPath"
+    }
+    Invoke-FromRoot -FilePath $python -Arguments @($scriptPath, "--allow-blocked")
+}
+
+function Invoke-OtEquipmentOperatorRefresh {
+    $python = Join-Path $Root ".venv\Scripts\python.exe"
+    $scriptPath = Join-Path $Root "scripts\ops\otclient_equipment_operator_refresh.py"
+    if (-not (Test-Path -LiteralPath $python -PathType Leaf)) {
+        throw "P10 operator refresh requires the trusted repo interpreter: $python"
+    }
+    if (-not (Test-Path -LiteralPath $scriptPath -PathType Leaf)) {
+        throw "P10 operator refresh orchestrator is missing: $scriptPath"
+    }
     $previousOperatorMode = $env:CTOA_OPERATOR_MODE
     try {
         $env:CTOA_OPERATOR_MODE = "background_no_screen"
@@ -855,28 +1173,50 @@ function Invoke-OtConditionsShadowReplay {
     }
 }
 
-function Invoke-OtEquipmentShadowReplay {
+function Invoke-OtConditionsShadowAcceptance {
+    param([string]$Confirmation)
     $python = Join-Path $Root ".venv\Scripts\python.exe"
-    $scriptPath = Join-Path $Root "scripts\ops\otclient_equipment_shadow_replay.py"
+    $scriptPath = Join-Path $Root "scripts\ops\otclient_conditions_shadow_acceptance.py"
     if (-not (Test-Path -LiteralPath $python -PathType Leaf)) {
-        throw "P10 Equipment shadow replay requires the trusted repo interpreter: $python"
+        throw "P9 Conditions acceptance requires the trusted repo interpreter: $python"
     }
     if (-not (Test-Path -LiteralPath $scriptPath -PathType Leaf)) {
-        throw "P10 Equipment shadow replay tool is missing: $scriptPath"
+        throw "P9 Conditions acceptance tool is missing: $scriptPath"
     }
-    $previousOperatorMode = $env:CTOA_OPERATOR_MODE
-    try {
-        $env:CTOA_OPERATOR_MODE = "background_no_screen"
-        Invoke-FromRoot -FilePath $python -Arguments @($scriptPath)
+    $arguments = @($scriptPath)
+    if (-not [string]::IsNullOrWhiteSpace($Confirmation)) {
+        $arguments += @("--confirm", $Confirmation)
     }
-    finally {
-        if ($null -eq $previousOperatorMode) {
-            Remove-Item Env:CTOA_OPERATOR_MODE -ErrorAction SilentlyContinue
-        }
-        else {
-            $env:CTOA_OPERATOR_MODE = $previousOperatorMode
-        }
+    Invoke-FromRoot -FilePath $python -Arguments $arguments
+}
+
+function Invoke-OtEquipmentShadowAcceptance {
+    param([string]$Confirmation)
+    $python = Join-Path $Root ".venv\Scripts\python.exe"
+    $scriptPath = Join-Path $Root "scripts\ops\otclient_equipment_shadow_acceptance.py"
+    if (-not (Test-Path -LiteralPath $python -PathType Leaf)) {
+        throw "P10 Equipment acceptance requires the trusted repo interpreter: $python"
     }
+    if (-not (Test-Path -LiteralPath $scriptPath -PathType Leaf)) {
+        throw "P10 Equipment acceptance tool is missing: $scriptPath"
+    }
+    $arguments = @($scriptPath)
+    if (-not [string]::IsNullOrWhiteSpace($Confirmation)) {
+        $arguments += @("--confirm", $Confirmation)
+    }
+    Invoke-FromRoot -FilePath $python -Arguments $arguments
+}
+
+function Invoke-OtHealFriendCandidateCatalog {
+    $python = Join-Path $Root ".venv\Scripts\python.exe"
+    $scriptPath = Join-Path $Root "scripts\ops\otclient_heal_friend_candidate_catalog.py"
+    if (-not (Test-Path -LiteralPath $python -PathType Leaf)) {
+        throw "P11 candidate catalog requires the trusted repo interpreter: $python"
+    }
+    if (-not (Test-Path -LiteralPath $scriptPath -PathType Leaf)) {
+        throw "P11 candidate catalog tool is missing: $scriptPath"
+    }
+    Invoke-FromRoot -FilePath $python -Arguments @($scriptPath, "--allow-blocked")
 }
 
 function Invoke-EngineBrain {
@@ -1032,7 +1372,19 @@ switch ($Command.ToLowerInvariant()) {
     "otest" { Invoke-OtTestLoop; break }
     "otbg" { Invoke-OtBackgroundStatus; break }
     "otp9" { Invoke-OtConditionsShadowReplay; break }
+    "otp9accept" { Invoke-OtConditionsShadowAcceptance -Confirmation $Arg1; break }
+    "otp10doctor" { Invoke-OtEquipmentCaptureProfileDoctor -Action $Arg1; break }
+    "otp10preview" { Invoke-OtEquipmentObservationPreview; break }
+    "otp10catalog" { Invoke-OtEquipmentCandidateCatalog; break }
+    "otp10plan" { Invoke-OtEquipmentCaptureProfileChangePlan -EquippedItemId $Arg1 -CandidateItemId $Arg2 -CandidateContainerId $Arg3 -CandidateSlotIndex $Arg4 -Confirmation $Arg5; break }
+    "otp10autoplan" { Invoke-OtEquipmentCaptureProfileChangePlan -EquippedItemId $Arg1 -CandidateItemId $Arg2 -Confirmation $Arg3 -RefreshPreview; break }
+    "otp10apply" { Invoke-OtEquipmentCaptureProfileApply -PlanSha256 $Arg1 -Confirmation $Arg2; break }
+    "otp10preflight" { Invoke-OtEquipmentDependencyPreflight; break }
+    "otp10ready" { Invoke-OtEquipmentOperatorReadiness; break }
+    "otp10refresh" { Invoke-OtEquipmentOperatorRefresh; break }
     "otp10" { Invoke-OtEquipmentShadowReplay; break }
+    "otp10accept" { Invoke-OtEquipmentShadowAcceptance -Confirmation $Arg1; break }
+    "otp11catalog" { Invoke-OtHealFriendCandidateCatalog; break }
     "brain" { Invoke-EngineBrain -Subcommand $Arg1 -Profile $Arg2; break }
 
     default {

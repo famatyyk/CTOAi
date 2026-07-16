@@ -1,8 +1,8 @@
 # CTOAi Engine Brain Pack
 
-Generated at: `2026-07-12T01:33:46+00:00`
+Generated at: `2026-07-15T14:16:00+00:00`
 Repo root: `C:\Users\zycie\CTOAi`
-Profile: `helper`
+Profile: `control-center`
 
 This pack is curated and secret-safe. It excludes `.env*`, auth stores,
 runtime data, logs, local databases, tokens, credentials, and generated
@@ -82,7 +82,68 @@ needed for a task instead of relying on one long prompt.
 ```markdown
 # Engine Brain Status
 
-Snapshot date: 2026-07-11 Europe/Warsaw
+Snapshot date: 2026-07-14 Europe/Warsaw
+
+Canonical product snapshot: Helper source and last verified live package are
+`v2.4.1`. Safe source candidate is `v2.9.0`; last separately verified live Safe
+is `v2.8.0`; neutral chooser is `2.1.0`. Historical release entries below do
+not override this snapshot.
+
+Current phase state (2026-07-15): P8, P9, P10, and P11 are `operational_acceptance_complete`.
+P8 closed with the official trusted pin,
+fresh `v2.4.1` heartbeat, `62/62` parity, and stable no-screen invariants. P9,
+P10, and P11 each have separate accepted, hash-bound, no-action receipts.
+
+P12 execute-once review is `closed_with_deferred_heal_friend_lane`. P12
+Conditions is `operational_acceptance_complete`:
+exactly one approved sandbox executor call
+ended `killed_and_disarmed`, retry remained false, and its accepted receipt
+grants no downstream authority. P12 Equipment is also
+`operational_acceptance_complete`. Registry v1 plan
+`d041db806c6417b018c6ae390e3d384ccec9bead2a77e498a582093bf7c823e0`
+was separately approved for its sandbox session and execution. The official
+wrapper made exactly one `3097 -> 3099` executor request, verified transformed
+rollback item `3093` in the source slot, scheduled no retry, and ended
+`killed_and_disarmed`. Receipt `p12-equipment-bdf7027cf48c438d` is `accepted`
+and grants no downstream or live authority.
+
+The first terminally disarmed rejected Equipment attempt remains historical and
+cannot be replayed. It exposed the server-specific `3096 -> 3093` and
+`3097 -> 3099` transformations that Registry v1 now models. P12 Heal Friend is
+`closed_blocked_no_compatible_vocation`. Plan
+`964ff8f0c178c7b646a565380e96846a8b29780eb02a734a259713d9ccf023b3`
+binds the accepted P11 and Equipment predecessors, exact target identity and
+whitelist revision, ED-only execution, HP `<= 70`, range `<= 7`, zero retry,
+and terminal KILL/disarm. Current 63-file manifest evidence passes `39/39`
+static, `4/4` module attach, `16/16` full attach, and `19/19` runtime gates.
+The sandbox session approval was granted, but its fresh preflight stopped on the
+single blocker `vocation_must_be_ed`. The operator has only sorcerer and knight,
+so `p12_heal_friend_no_compatible_vocation_closure.json` terminally expires the
+session approval without action. Execution approval and reuse are forbidden;
+attempt count remains `0`, retry false, final state `disarmed`, no cast occurred,
+and no downstream or live authority exists.
+
+P13 is `runtime_evidence_ready`: the fixed seven-entry
+decision/result ledger, stable schema registry with independent v1/schema
+SHA-256 pins, freshness/tamper checks, atomic
+`ROADMAP_STATE.json/md` generator, sanitized audit contract, read-only Control
+Center panel, and release-evidence phase consumer are implemented and tested.
+The exact confirmation `refresh roadmap state` authorized the fixed-output
+JSON/Markdown refresh and its raw output hashes are independently audit-bound.
+P13 introduces no runtime executor, MCP
+write tool, live authority, or P12 Heal Friend reopening. Historical compatibility marker: P12 is
+`in_progress`. P12 Heal Friend is `plan_ready_for_sandbox_session_approval`,
+`ready_for_sandbox_session_approval`, and P12 Heal Friend is `not_started` are
+superseded; they remain only for older read-only cockpit checks.
+
+P14 is active with status `foundation_in_progress`. The versioned signed
+artifact-only request/result contract derives the official 63-file Helper
+manifest from tracked sources, binds a clean checkout and exact revision, rejects
+tamper/path drift, replays a deterministic manifest rollback, runs in a clean
+Windows CI contract job, and is exposed read-only through Release Evidence and
+Control Center. No real second-machine result, visual/in-world suite, canary,
+actual rollback, promotion, runtime/live authority, or additional MCP tool is
+claimed; P15 remains closed.
 
 ## Completed In This Brain
 
@@ -100,9 +161,117 @@ Snapshot date: 2026-07-11 Europe/Warsaw
 - `.\ctoa.ps1 brain doctor` added as the one-command local operations audit.
 - `.\ctoa.ps1 brain pack` added as the one-command portable context packer.
 - Nested `AGENTS.md` added for `AI/` and `scripts/lua/`.
+- Canonical planning now distinguishes the primary full Helper P8-P16 mainline
+  from the bounded CTOA Safe S0-S4 companion lane. Safe is defined as a compact,
+  movable, fixed-label editor for supported healing/spell/Exeta/Conditions/Timer
+  behavior with portable data-only presets; CaveBot, movement/routes, generic
+  Settings, arbitrary Lua, and Helper-gate substitution are excluded.
+- Exclusive project-loader candidate `v2.4.0` is repo- and stage-complete. The
+  neutral chooser is the only CTOA autoload and requires a new Helper/Safe choice
+  after each login; both project loaders fail closed without authorization and
+  logout terminates the selected project. `PrepareDev` emits 62 manifest entries
+  with only `ctoa_project_loader.lua` at package root, and `SmokePreflight` proves
+  stage/sandbox parity. No live promotion or live crash-fix claim is made yet.
+- Safe `v2.0.1` removes an invalid zero-argument `g_map.getSpectators()` call
+  reached only after ENABLE. The replacement uses the detected fork's bounded
+  center-position signature, guarded fallback, and executable Lua coverage.
+  Fresh `ValidateDev` passed 145 tests and `SmokePreflight` passed; the sandbox
+  is not running, so operational no-crash acceptance remains pending.
+- Safe `v2.9.0` is now a repo-only candidate with an ordered per-entry Exeta
+  editor, strict named `ctoa-safe-profile-v3` preset libraries, one-way v2
+  migration, explicit fixed-path import/export, retained `.bak` recovery,
+  geometry clamping, and keyboard navigation. Safe boot remains disarmed and
+  the fixed module set remains Healing/Combat/Conditions/Support/Timer. This
+  candidate has no sandbox visual acceptance or live promotion yet.
 - Docker compose defaults hardened to loopback through `CTOA_BIND_HOST`,
   `CTOA_BOT_DASHBOARD_BIND_HOST`, and `CTOA_MONITOR_BIND_HOST`.
-- OTClient Helper `v2.2.1` is live-promoted. The official wrapper created a
+- OTClient Helper `v2.3.6` is live-promoted. The official wrapper created
+  `runtime/solteria_helper_dev/live_backup_20260712-121859`, verified 58/58
+  files, and kept `launch_after_promote=false`.
+- The v2.3.5 lane adds the canonical passive P9 Recovery pair producer,
+  `otp9accept`, fixed ignored P10 local override, exact container-slot binding,
+  and P10.1 strict Release Evidence/Control Center eligibility checks. P11 stays
+  closed until a fresh accepted non-fixture P10 report and matching receipt exist.
+- Helper v2.3.6 adds a passive exact-target
+  Heal Friend scan and a no-write P11 fixture replay with 55/55 deterministic
+  cases. The replay explicitly reports operational acceptance as `not_evaluated`;
+  it has no operational producer, receipt, Control Center unlock, dispatch, cast,
+  talk, execute-once path, or runtime-readiness claim.
+- Helper v2.3.7 is live-promoted. The official wrapper created
+  `runtime/solteria_helper_dev/live_backup_20260712-150157`, verified 58/58
+  stage/live hashes, and kept `launch_after_promote=false`. P10 now requires the
+  fixed 30-case scenario corpus and its SHA-256, uses wall-clock time for every
+  operational replay, and rejects caller-selected scenario paths and time.
+  Nested trace/plan/report schemas and both evidence consumers enforce the same
+  corpus. Privileged recovery/cavebot smoke commands cannot bypass disabled runtime.
+- Helper v2.3.8 is live-promoted. The official wrapper created
+  the latest `runtime/solteria_helper_dev/live_backup_20260712-163259`, verified 58/58
+  stage/live hashes, and kept `launch_after_promote=false`. Safe boot now resets
+  external enable state and persisted Recovery Bridge arms across init, reload,
+  disable, and terminate. Profile and UI-preference files are evaluated as
+  data-only chunks without OTClient or filesystem globals. Current-manifest
+  sandbox evidence passed 4/4 module attach, 16/16 full attach, and 19/19 runtime
+  module gates before promotion.
+- Helper v2.3.9 is live-promoted. The official wrapper created
+  the latest `runtime/solteria_helper_dev/live_backup_20260712-185148`, verified 58/58
+  stage/live hashes, and kept `launch_after_promote=false`. The main Helper
+  shell now meets its canonical hard gate at 130 named functions and 4308
+  lines. Pure logic moved behind guarded support modules while lifecycle,
+  runtime arming, OTClient API edges, and final dispatch remain in the shell.
+  A first sandbox attempt exposed `module_visible=nil` in the Profile renderer;
+  the callback adapter was restored, regression-tested, and the complete fresh
+  sandbox chain passed before promotion.
+- Helper v2.3.10 is live-promoted. The official wrapper created
+  `runtime/solteria_helper_dev/live_backup_20260712-192857`. Passive adapters now
+  own vocation/timer probe text, route/cavebot probe metadata and formatting,
+  profile export descriptors, and initial operator-summary collection. The
+  guarded shell retains native API sampling, profile/file mutations, movement,
+  arming, and dispatch at 4298 lines and 129 named functions. Sandbox testing
+  found and fixed both a nil UI-preference write payload and a native heap crash
+  caused by a generic `findPath` wrapper; the stable direct guarded `pcall` path
+  passed the complete fresh sandbox cycle before promotion. Final verification:
+  1666 Python tests, 127/127 ValidateDev, 39/39 static gates, 4/4 and 16/16
+  attach, and 19/19 runtime gates.
+- The six P10 operator artifacts are now consumed consistently by Python Release
+  Evidence and the web Control Center. A separate consumer-parity report binds
+  their strict schemas, hashes, downstream references, status/blocker copies,
+  freshness, no-action fields, and unchanged eligibility. ValidateDev runs this
+  read-only gate before the independent P10 acceptance boundary; Control Center
+  exposes no mutation or execution control for this evidence.
+- `ctoa.ps1 otp10refresh` now refreshes that complete repo-only chain in fixed
+  order and requires the final consumer-parity report to pass. Its successful
+  process status means refresh/parity success, not operator readiness; the
+  no-ID plan remains independently blocked and no acceptance or runtime action
+  is granted. The completed run envelope binds all seven stage hashes to one
+  UUID and matching failure cleanup preserves the last good receipt.
+  Release Evidence and Control Center consume that receipt read-only and fail
+  closed for missing, invalid, stale, mixed, or replayed evidence. The final
+  verification passed 1657 Python tests, 147 web tests, 127/127 ValidateDev,
+  39/39 static gates, 4/4 and 16/16 sandbox attach, and 19/19 runtime gates.
+- P10 capture-profile readiness now has a dedicated `otp10doctor` operator
+  command, strict JSON Schema, runbook, and ValidateDev no-action gate. The
+  current tracked zero-ID template correctly reports `blocked`; no real item or
+  container identifiers are inferred, persisted, or copied into evidence.
+- P10 operator evidence now includes exclusive zero-ID profile initialization,
+  a bounded sanitized Equipment observation preview, and a strict P9-to-P10
+  dependency preflight. The preflight binds P8, non-fixture P9 report/receipt,
+  doctor, and preview hashes while always preserving `eligibility_changed=false`
+  and false action/live flags. The current operational chain remains correctly
+  blocked; the tooling batch was promoted only after current-manifest sandbox
+  evidence passed 4/4, 16/16, and 19/19.
+- P10 profile changes have a separate `otp10plan` review boundary. It binds the
+  fixed capture doctor and observation preview hashes, requires exact ring and
+  candidate coordinates plus an exact planning confirmation, and emits only
+  `runtime/solteria_helper_dev/equipment_capture_profile_change_plan.json`.
+  The generator cannot read or write `.ctoa-local`, control OTClient, accept a
+  receipt, or claim runtime readiness.
+- P10 operator workflow now also has a deterministic candidate catalog with
+  `selection_policy=none`, plus consolidated `otp10ready` explanation across
+  doctor, preview, dependency preflight, catalog, and change plan. Missing,
+  invalid, stale, and upstream blockers remain distinct; every suggested next
+  action preserves unchanged eligibility and no runtime/live execution. The
+  latest tooling manifest passed the full sandbox chain before live promotion.
+- OTClient Helper `v2.3.4` was previously live-promoted. The official wrapper created a
   backup, verified 58/58 staged/live manifest hashes at promotion, completed the
   release gate and GoalStatus, and refreshed Control Center evidence. Later
   profile edits during play are mutable drift and do not redefine immutable
@@ -137,26 +306,14 @@ Snapshot date: 2026-07-11 Europe/Warsaw
   and live approval predates the current dev manifest. Those gates remain
   dry-run/no-dispatch; the current dev package was not promoted live, and runtime
   acceptance remains separate from any earlier package promotion.
-- P8 `BackgroundNoScreen` is `implementation_complete` and
-  `operational_acceptance_blocked`. It adds bounded passive heartbeat and log
-  readers, immutable live/manifest parity, an advisory-only
-  `background_status.json`, a positive wrapper allowlist, primitive GUI/input/
-  screenshot/start-stop/live-write guards, `ctoa.ps1 otbg`, and a read-only
-  Control Center status tile. It records process/screenshot stability and never
-  authorizes dispatch or promotion. The current live package is promoted only
-  through the explicit wrapper gate; the protected live client remains guarded
-  and the staged source version is tracked by the release manifest. Canonical
-  sequence: `AI/P8_P16_EXECUTION_ROADMAP.md`.
-- P8 operational acceptance is fail-closed and requires all three proofs: a
-  manifest with `official_live_promotion` provenance and matching SHA256 in
-  `live_promotion.json`, an explicit fresh online capability heartbeat newer than
-  exactly one canonical client process, and full producer/consumer parity for the
-  no-action contract. The observer cannot create that trusted pin.
-- The current historical P8 artifacts are classified
-  `legacy_or_unbound_attestation`. Read-only diagnostic parity safely inspects
-  all 58 entries and reports stable 57/58 parity with one executable-profile
-  drift, while `acceptance_allowed=false`. Release Evidence and Control Center
-  consume only allowlisted remediation and diagnostic fields.
+- P8 `BackgroundNoScreen` is `operational_acceptance_complete`. Its bounded
+  passive readers, positive wrapper allowlist, protected live-client boundary,
+  `ctoa.ps1 otbg`, Release Evidence, and Control Center consumers preserve the
+  no-action contract and never authorize dispatch or promotion. Acceptance used
+  official promotion provenance, a fresh heartbeat newer than one canonical
+  process, and full producer/consumer parity together. The observer cannot
+  create that trusted pin. Earlier `legacy_or_unbound_attestation` artifacts
+  remain historical diagnostic evidence only.
 - `ModuleAttachSmoke` 4/4, `SmokeAttachAll` 16/16, and
   `RuntimeModuleGatesSandboxSmoke` evidence are now manifest-hash-bound at
   production and at the release-gate consumers. Legacy complete artifacts
@@ -166,22 +323,36 @@ Snapshot date: 2026-07-11 Europe/Warsaw
   widget updates out of `ctoa_native_helper.lua` into the passive Diagnostics
   and UI adapters. It preserves safe-boot/runtime-action invariants and is
   covered by Lua-backed adapter tests plus the existing shell contract suite.
-- P9 Conditions is `offline_implementation_complete` and
-  `operational_acceptance_blocked`. The existing heartbeat now carries an
-  optional strict Conditions observation; the bounded sanitizer keeps missing
-  data compatible with P8 but rejects unsafe nested action claims. The data-only
-  replay has strict hash-bound P8/Recovery inputs, a 44-case deterministic
-  fixture pack, atomic runtime output, Release Evidence and Control Center
-  consumers, and `ctoa.ps1 otp9`. Fixture success does not claim runtime
-  readiness. P10 offline replay is complete, but P10 stays blocked operationally
-  until a fresh real P9 trace is reviewed under
-  accepted P8 and Recovery proofs. Canonical contract:
-  `docs/otclient/P9_CONDITIONS_SHADOW_REPLAY_DESIGN.md`.
+- P9 Conditions is `operational_acceptance_complete`. Its accepted receipt binds
+  the fresh real Conditions trace, accepted P8, and canonical Recovery proofs;
+  all dispatch, execute-once, promotion, and runtime-readiness fields remain
+  false. Fixture success still does not claim runtime readiness. Canonical
+  contract: `docs/otclient/P9_CONDITIONS_SHADOW_REPLAY_DESIGN.md`.
+- P10 Equipment shadow/replay is `operational_acceptance_complete`. Its real
+  passive input boundary was introduced in live-promoted Helper `v2.3.5`:
+  the guarded adapter reports a bounded inventory observation, the reporter
+  sanitizes it, and a repo-local producer combines it with an explicitly
+  configured ring/container profile into a canonical snapshot. Operational
+  replay rejects fixture provenance and noncanonical paths. A separate receipt
+  preflight replays current inputs, binds the accepted P9 receipt to its raw
+  report, requires exact confirmation, and never authorizes dispatch, runtime
+  readiness, or promotion. Release Evidence, P7, and Control Center report P10
+  replay and acceptance independently. The accepted P10 receipt binds real P9
+  evidence and exact ring/container/slot inputs but grants no item movement or
+  P12 execute-once authority.
+- Live-promoted Helper v2.3.6 retains the case-sensitive `.otmod` autoload metadata for
+  classic/mehah parsers, uses current and legacy console status enums, retains
+  one lifecycle subscription across duplicate loader authorities, tears down
+  idempotently, and starts hidden without window focus. P10 accepted semantics
+  are now bound into the receipt hash and enforced by Python, JSON Schema,
+  Release Evidence, and Control Center; snapshot/replay writers use confined
+  exclusive atomic writes. Those hardening invariants remain active after P10
+  and P11 acceptance.
 - P9 also has a separate data-only operator acceptance boundary. It strictly
   recomputes the current report and hashes, rejects fixtures/reparse paths and
   stale or changing evidence, requires exact confirmation for persistence, and
-  keeps all action flags false. The current preflight is blocked and no
-  `conditions_shadow_acceptance.json` receipt exists. Contract:
+  keeps all action flags false. The persisted
+  `conditions_shadow_acceptance.json` receipt is accepted. Contract:
   `docs/otclient/P9_CONDITIONS_SHADOW_ACCEPTANCE.md`.
 - Vocation-profile drift is visible as its own count but cannot satisfy parity:
   the current profile is executable Lua. A later schema-validated data-only
@@ -568,181 +739,6 @@ Snapshot date: 2026-07-11 Europe/Warsaw
   Repo-relative allowlisted scripts must still resolve inside the real
   workspace root after following parent symlinks or junctions, and direct
   script symlinks are rejected before `execFile`.
-- Control Center action catalog reads are now role-scoped. Anonymous or member
-  viewers no longer receive local action `commandSummary` metadata, and the
-  client action panel defensively renders no actions until a viewer role is
-  available.
-- Control Center action POST requests now reject cross-site action triggers
-  before auth lookup or execution by validating explicit `Origin`, cross-site
-  `Sec-Fetch-Site`, and fallback `Referer` signals against the request origin.
-- `web/src/lib/requestOriginGuard.ts` centralizes that same-origin check, and
-  `/api/auth` POST now uses it before rate-limit, body parsing, or backend
-  forwarding, so cookie-authenticated invite/setRole/logout-style wrapper calls
-  cannot be explicitly cross-site triggered.
-- `/api/chat` and local `/api/auth/seed-login` now use the same guard before
-  rate-limit, body parsing, cookie/token forwarding, or backend fetch, preventing
-  explicit cross-site chat prompts and local seed-login attempts.
-- `/api/auth` proxy responses now strip token-like backend fields recursively
-  and sanitize string values before browser JSON is returned. Login, register,
-  accept-invite, invite, role-change, and GET proxy responses keep httpOnly
-  cookie auth while avoiding token/password or local-path echoes in response
-  bodies.
-- `authProxySanitizer.ts` now centralizes that auth proxy contract, and local
-  `/api/auth/seed-login` uses it too. Seed-login still extracts the backend
-  token for the httpOnly cookie, but nested token-like fields and backend
-  detail strings are removed or sanitized before browser JSON is returned.
-- Web API base URL config now fails closed before proxy or browser API calls:
-  `VPS_API_URL` and `NEXT_PUBLIC_API_URL` must be absolute HTTP(S) URLs, must
-  not include credentials, path components, path separators, query strings, or
-  fragments, and must use HTTPS for non-local hosts.
-- Web proxy route rate-limit identity now mirrors the FastAPI proxy-header
-  contract. `/api/auth` and `/api/chat` ignore `X-Forwarded-For` and
-  `X-Real-IP` unless `CTOA_TRUST_PROXY_HEADERS=true`; trusted mode accepts
-  only syntactically valid IP values, otherwise the limiter key falls back to
-  `unknown`.
-- Desktop Console API and Control Center URLs now use the same fail-closed URL
-  contract before settings, login, or browser launch use them: local HTTP is
-  allowed, remote hosts require HTTPS, and credentials/query/fragment
-  components are rejected without echoing rejected values.
-- Desktop updater downloads now keep initial release asset URLs pinned to
-  trusted GitHub HTTPS hosts and safe `.exe` asset names, while allowing signed
-  query strings only on the final trusted GitHub asset CDN redirect before the
-  update file is written. Downloads also enforce a maximum size and use a
-  `.download` temp file that is atomically moved into place only after the full
-  stream succeeds; oversized or failed streams clean up the partial temp file.
-- Phase-5 attention notification posting now validates Slack and Discord
-  webhook URLs with `runner.http_safety.require_notify_webhook_url` before
-  `urlopen`. The guard requires HTTPS, allowlisted Slack/Discord hosts, strict
-  webhook path prefixes, and rejects credentials, query strings, fragments,
-  backslashes, traversal, empty segments, and encoded path separators without
-  echoing rejected URLs.
-- `/api/chat` now builds a strict backend payload from normalized messages plus
-  allowlisted `model`, `route_mode`, and bounded `temperature`. It drops
-  arbitrary client JSON fields such as `debug_route`, `quality_retry`,
-  `max_tokens`, token-like values, and other unrecognized keys before backend
-  forwarding.
-- Backend `/api/chat` and `/v1/chat/completions` now keep `debug_route`
-  operator-only by requiring `owner` or `operator` before route diagnostics are
-  generated, and they return only allowlisted route metadata without backend
-  URLs, fallback backend URLs, or key-like values. Router stdout logging now
-  uses the same sanitized route view instead of dumping internal backend URLs.
-- The API dev JWT fallback uses an explicit non-secret placeholder name. The
-  production guard still rejects unset/default `CTOA_JWT_SECRET`, while the API
-  Bandit scan remains clean of hardcoded-secret placeholder findings.
-- Control Center evidence now includes a read-only dashboard comparison between
-  current runtime evidence (`runtime/evidence/latest.json` and `latest.md`) and
-  the newest tracked release-evidence markdown.
-- OTClient Helper redesign Phase 1/2 started from
-  `docs/otclient/helper_redesign.md`: narrower module rail, wider active
-  workspace, single operator header, quieter row/control styling, and a
-  regression contract for the layout treatment.
-- OTClient Helper redesign Phase 3 implemented repo-side: summary strips now
-  cover Healing, Hunting Targeting, Hunting Magic, Tools Helper, Profile, and
-  UI, with live title/autosave refresh wiring and a regression contract for
-  summary wiring.
-- OTClient Helper P5 live promotion completed for the historical `v1.1b` staged
-  package after strict release-gate approval. Promotion created a live CTOA
-  backup, copied staged files, and recorded durable `live_promotion.json`
-  evidence without stopping, restarting, or launching the live Solteria client
-  by default. A post-promotion launch must be explicit through
-  `-LaunchAfterPromote`, and the wrapper only starts the live executable when
-  it is not already running.
-- Production API startup now rejects wildcard CORS, default JWT secrets, and
-  automatic default auth-account seeding. Production mobile console startup now
-  defaults self-registration off and requires `CTOA_SELF_REGISTER_CODE` if
-  self-registration is explicitly enabled.
-- `api/startup_guard.py` now performs lightweight production fail-fast checks
-  for wildcard CORS, default JWT secrets, and production API self-registration
-  without an invite code before importing heavier API dependencies.
-- Default API auth-account seeding is now opt-in even outside production via
-  `CTOA_ALLOW_SEED_ACCOUNTS=true`. Control Center local seed-login no longer
-  embeds seed passwords and only runs on localhost when
-  `CTOA_ENABLE_LOCAL_SEED_LOGIN=true` plus `CTOA_SEED_*_PASSWORD` env vars are
-  set.
-- Web `ctoa_token` cookie writes now go through `authCookies.ts`, keeping
-  `httpOnly`, `sameSite=lax`, `/` path scope, and adding `Secure`
-  automatically under `NODE_ENV=production`. Server routes read the token name
-  through the same shared constant.
-- API public member self-registration now defaults off in production, requires
-  `CTOA_API_SELF_REGISTER_ENABLED=true` plus `CTOA_API_SELF_REGISTER_CODE`, and
-  `/api/auth/register` no longer creates `owner` or `operator` accounts without
-  an authenticated owner token when the auth store is empty.
-- API auth-store and runner state artifact writes now avoid predictable sibling
-  `*.tmp` paths. `api/main.py` and `runner/runner.py` use hidden PID/UUID temp
-  files in the target directory, `fsync` before `replace`, and cleanup in
-  `finally` for auth JSON, scheduler YAML state, and execution-summary JSON.
-  API auth-store reads now use a byte cap, reject symlinked or invalid existing
-  stores, and fail closed instead of seeding over a bad store.
-- Health Metrics latest snapshots now follow the same state-artifact write
-  discipline. `runner/health_metrics.py` writes `health-latest.json` through a
-  hidden PID/UUID temp file with `fsync`, atomic `replace`, and cleanup, so a
-  symlinked latest snapshot is replaced instead of writing through it.
-- Desktop Console settings now follow the same state-artifact write discipline.
-  `desktop_console/app.py` saves `desktop-settings.json` through a hidden
-  PID/UUID temp file with `fsync`, atomic `replace`, and cleanup, preventing
-  partial writes and replacing a symlinked settings path instead of writing
-  through it. Settings reads now use a byte cap, reject symlinked settings, and
-  fail closed to defaults for oversized, invalid, or non-object JSON.
-- Mobile Console local operator state now follows the same state-artifact
-  contract. Admin settings and idea parking JSON are read through byte caps and
-  invalid/oversized state fails closed to defaults; writes use hidden PID/UUID
-  temp files with `fsync`, atomic `replace`, and cleanup so symlinked state
-  paths are replaced instead of written through.
-- Product bootstrap local state now follows the same state-artifact contract.
-  `scripts/ops/ctoa_product_bootstrap.py` writes
-  `.ctoa-local/user-config.json` and `.ctoa-local/bootstrap-state.json` through
-  hidden PID/UUID temp files with `fsync`, atomic `replace`, and cleanup, so
-  update-gate state cannot be left partially written and symlinked JSON state
-  is replaced instead of written through.
-- Product update gate local state reads now fail closed. `ctoa_update_gate.py`
-  reads `.ctoa-local/bootstrap-state.json` through a byte cap, rejects symlinked
-  state before reading through it, and returns stable `invalid_bootstrap_state`
-  reason codes for malformed JSON, oversized state, unreadable state, and
-  invalid version/schema values instead of raising parser tracebacks or echoing
-  state contents.
-- Helper/release-gate and sprint state writers now follow the same
-  non-predictable temp-file contract. `otclient_helper_profile_audit.py`,
-  `solteria_helper_goal_audit.py`, `solteria_helper_release_gate.py`, and
-  `sprint_state_sync.py` use PID/UUID temp names with cleanup; the Solteria
-  Helper PowerShell test-env `Write-JsonAtomic` uses PID/GUID temp names with
-  cleanup after `Move-Item`.
-- Mobile console DB fallback execution no longer passes `DB_PASSWORD` in local
-  `psql` or `docker exec` argv; fallbacks now pass it through process
-  environment handling.
-- Runner agent DB pooling no longer assembles `DB_PASSWORD` into a text DSN;
-  `runner/agents/db.py` passes connection fields to psycopg2 as keyword
-  arguments instead. Agent-run write failure logs now sanitize
-  `password=...`, `PGPASSWORD=...`, and PostgreSQL URL password forms before
-  emitting exception text.
-- Mobile console command audit now redacts common secret forms from `/api/command`
-  command strings before writing `logs/mobile-console-audit.log`, covering
-  Bearer tokens, common provider tokens, token/password assignments, and common
-  long token/password CLI options.
-- Mobile console command execution now redacts returned stdout/stderr for
-  operator-facing command/status/log paths before sending them back to the UI.
-  This covers safe-mode `/api/command` presets, full-access command output,
-  runner report status output, and local log tails without changing DB fallback
-  stdout parsing. The `/api/logs` fallback path now reads only a bounded tail
-  from the end of local log files and rejects symlinked logs before reading.
-- Mobile console audit records now include actor accountability fields
-  (`actor`, `actor_role`, `auth_mode`, `auth_transport`) while avoiding session
-  token or CSRF token persistence.
-- Mobile console cookie-authenticated mutations now have direct CSRF regression
-  coverage: cookie-only unsafe methods require `X-CSRF-Token`, while
-  bearer/header-authenticated operator calls remain usable without CSRF.
-- Mobile console generated-artifact APIs now return public artifact paths
-  instead of local absolute paths. `/api/agents/generated/latest` and SLO
-  manifest observations redact `GENERATED_DIR`, temp-directory, and unknown
-  runtime path prefixes before JSON is returned to dashboard clients. Generated
-  `latest.json` and run `manifest.json` reads now use a byte-capped,
-  symlink-rejecting loader and fail closed to scan/default responses for
-  oversized or invalid manifests.
-- Mobile Console local metadata JSON reads now go through a byte-capped,
-  symlink-rejecting loader. Command dictionary, product manifest, and product
-  user config reads fail closed to defaults for oversized, invalid, symlinked,
-  or non-object JSON before operator API responses are built.
-- Mobile console file metadata responses now reuse the same display-safe path
-  helper for admin
 
 [truncated]
 ```
@@ -755,41 +751,250 @@ Snapshot date: 2026-07-11 Europe/Warsaw
 
 ## Current State
 
+- Canonical product snapshot (2026-07-14): Helper source and last verified live
+  package are `v2.4.1`; Safe source candidate is `v2.9.0`, while the last
+  separately verified live Safe package remains `v2.8.0`. Neutral chooser is
+  `2.1.0`. Historical version paragraphs below are release history, not current
+  version declarations.
+- Current phase state (2026-07-15): P8, P9, P10, and P11 are `operational_acceptance_complete`.
+  Their accepted receipts remain independent
+  and grant no P12 action authority.
+- P12 execute-once review is `closed_with_deferred_heal_friend_lane`. P12
+  Conditions is `operational_acceptance_complete`:
+  exactly one approved sandbox executor call
+  succeeded, the trace ended `killed_and_disarmed`, retry remained false, and
+  the accepted receipt grants no downstream authority.
+- P12 Equipment is `operational_acceptance_complete`. Registry v1 plan
+  `d041db806c6417b018c6ae390e3d384ccec9bead2a77e498a582093bf7c823e0`
+  was separately approved and made exactly one `3097 -> 3099` sandbox executor
+  request. Receipt `p12-equipment-bdf7027cf48c438d` is `accepted`; retry stayed
+  false, transformed rollback item `3093` returned to the source slot, terminal
+  state was `killed_and_disarmed`, and no downstream or live authority was
+  granted. The earlier rejected attempt remains historical and cannot be replayed.
+- P12 Heal Friend is `closed_blocked_no_compatible_vocation`. Plan
+  `964ff8f0c178c7b646a565380e96846a8b29780eb02a734a259713d9ccf023b3`
+  remains immutable and binds the accepted P11 shadow receipt, accepted P12
+  Equipment predecessor, exact target identity and whitelist revision, ED-only
+  vocation, HP `<= 70`, range `<= 7`, zero retry, and terminal KILL/disarm.
+  The current 63-file manifest has `39/39` static gates, `4/4` module attach,
+  `16/16` full attach, and `19/19` runtime gates. The separately approved
+  sandbox session reached a fresh preflight whose only blocker was
+  `vocation_must_be_ed`; the operator has only sorcerer and knight characters.
+  `p12_heal_friend_no_compatible_vocation_closure.json` therefore expires that
+  session approval, forbids its reuse and any execution approval, and records
+  attempt count `0`, retry false, final state `disarmed`, no cast, and no
+  downstream or live authority. No Conditions or Equipment authority was inherited.
+  Fixture success is never reported as runtime readiness.
+  Historical compatibility marker: P12 is `in_progress`. P12 Heal Friend is
+  `plan_ready_for_sandbox_session_approval`, `ready_for_sandbox_session_approval`,
+  and P12 Heal Friend is `not_started` are superseded and retained only for
+  older read-only cockpit checks; none describes the current state.
+- P13 is `runtime_evidence_ready`. The fixed seven-entry
+  decision/result ledger, versioned schema registry with independent v1/schema
+  SHA-256 pins, freshness/tamper checks,
+  atomic `ROADMAP_STATE.json/md` generator, sanitized dry-run/success/failure
+  audit contract, read-only Control Center panel, and release-evidence phase
+  consumer are implemented and tested. The exact confirmation
+  `refresh roadmap state` authorized the fixed-output refresh; generated JSON
+  and Markdown now carry the terminal ledger, while the confirmed safe-write
+  audit binds their raw hashes independently from freshness and tamper status.
+  P13 adds no runtime executor, MCP write tool, live authority, or inherited
+  permission, and it does not reopen the closed P12 Heal Friend lane.
+- P14 is active with status `foundation_in_progress`. Its v1 request/result
+  schemas, HMAC-SHA256 artifact-only handoff, tracked-source 63-file manifest,
+  clean-checkout/revision binding, tamper/path tests, deterministic manifest
+  rollback replay, Windows CI contract job, Release Evidence phase state, and
+  read-only Control Center card are implemented. No operational second-runner
+  result, visual/in-world evidence, canary, actual rollback, promotion, runtime,
+  live, or MCP-write authority is claimed; P15 remains closed.
+- The accepted shadow-gate dependency order remains **Conditions runtime safety gate**,
+  then **Equipment runtime safety gate**, then **Heal Friend runtime safety gate**.
+  P9-P11 acceptance is complete, but this order still governs the independent
+  P12 execute-once lanes and grants no inherited action authority.
+
 - Engine Brain Plan 3 is operational and maintained as the secret-safe context
   foundation; roadmap work now consumes its generated evidence.
-- Helper `v2.3.1` is live-promoted with 58-file manifest parity at promotion;
-  the next staged package is `v2.3.2` and carries the passive P10 ring-plan
-  contract.
+- Product direction is now explicitly split: the full OTClient/Solteria Helper
+  remains the primary P8-P16 project, while `mods/ctoa_safe` is a secondary
+  minimalist, movable client panel with fixed module labels and broad editing
+  inside its supported lanes. Safe may provide editable healing, spell and Exeta
+  rotations, Conditions, Timer, and portable data-only presets, but permanently
+  excludes CaveBot, route/movement automation, generic Settings, arbitrary Lua,
+  and any path that satisfies or bypasses a Helper acceptance gate. The delivery
+  contract is S0 scope reduction, S1 rotation editors, S2 mobile preset schema,
+  S3 compact UI acceptance, and S4 separate package/release evidence.
+- S0 is repo- and stage-complete in candidate package `v2.4.0`: a single neutral
+  loader is the only CTOA autoload, asks after every login, activates exactly one
+  of Helper or Safe, and tears it down on logout. Direct Helper/Safe initialization
+  is rejected without the matching selection. Safe now has only three project
+  files, fixed Healing/Combat/Conditions/Timer labels, forced safe boot, and no
+  copied Helper runtime, CaveBot, or generic Settings surface. Operational crash
+  closure remains unclaimed until fresh sandbox selection plus Safe ENABLE smoke
+  and the separately approved promotion gate pass.
+- Safe `v2.0.1` closes the ENABLE-only zero-argument spectator query found during
+  crash-path review. It now uses the fork-native bounded center-position API and
+  guarded fallback; an executable Lua fixture verifies the exact arguments.
+  This strengthens the staged candidate but does not replace in-world crash proof.
+- Safe `v2.8.0` advances S1/S2 with a fixed Support label below Conditions,
+  module-specific ordered editors for Healing, Targeting, Spell Rotation, and
+  Support, selection-to-form editing, bounded JSON persistence, and export-time
+  removal of runtime timestamps. Healing includes HP/mana percentage controls,
+  bounded randomization, and drag-and-drop item slots with hotkey fallback.
+  Support accepts spell or item rules triggered always, by HP, or by mana.
+  Combat rules include a compact monster-count checkbox and per-spell distance.
+  Support is default-off and has no CaveBot, movement, Settings, scripting, or
+  Helper-profile compatibility path.
+- Safe `v2.8.0` is live-promoted after sandbox visual acceptance, real item
+  drag/drop and JSON persistence proof, Helper attach coverage 4/4 and 16/16,
+  runtime module gates 19/19, and exact repo/stage/live hash parity. Backup:
+  `runtime/solteria_helper_dev/live_backup_20260713-021234`.
+- Safe `v2.9.0` is the next repo-only candidate. It completes the ordered Exeta
+  editor with per-entry monster count and cooldown, introduces strict
+  `ctoa-safe-profile-v3` named preset libraries with v2 migration and explicit
+  fixed-path import/export, keeps `.bak` recovery, excludes runtime arm state,
+  clamps restored window geometry, and adds bounded keyboard navigation. It is
+  not staged, visually accepted, or live-promoted yet.
+- Add a separate cross-fork OTS Connection Profile lane for OTC, OTCv8,
+  OTC Brasil, and derived clients. Keep the UI normalized while fork adapters
+  map protocol/client differences. Store only authenticated encrypted envelopes;
+  keep key material in the OS credential store, pin server identity when the
+  fork supports it, redact logs/evidence, and require an explicit Connect action.
+  Begin with passive capability discovery and validated profile import/export;
+  do not place this surface inside Safe or couple it to Helper runtime arming.
+  The public profile contract is now schema-closed in
+  `schemas/otclient-server-profile.schema.json`; secrets are represented only by
+  an OS-vault reference and unknown adapters or missing public-key pins fail.
+  A bounded passive detector now identifies the source checkout as
+  `redemption-mehah` and records proven UIItem/action-bar/keybind/shader/HTML
+  capabilities without reading credentials or connecting. A protected live
+  tree with no public markers remains explicitly `unknown`.
+- Safe S4 now has an independent three-file release lane documented in
+  `docs/otclient/solteria_safe_release.md`. Safe `v2.8.0` is live-promoted with
+  3/3 source/live SHA-256 parity and backup
+  `runtime/solteria_safe_release/live_backup_20260713-015729`; the running client
+  PID remained unchanged. Activation and visual/runtime acceptance are pending
+  a normal reload, so this evidence does not satisfy any Helper release gate.
+- Helper `v2.4.1` hardens guarded auto-targeting so the currently attacked safe
+  creature is not redispatched every retarget interval. This is an idempotency
+  fix only and does not alter P8-P16 eligibility, runtime gates, or safe boot.
+- Helper `v2.3.6` is live-promoted with 58/58 verified files and
+  `launch_after_promote=false`; backup: `live_backup_20260712-121859`.
+  It adds the passive P10 observation, canonical snapshot producer, operational
+  replay, and separate acceptance receipt contract.
+  The already-running live client still reports the prior capability version;
+  P8 correctly returns `capability_version_mismatch` until the user performs a
+  normal client restart. Promotion did not force-close or restart that session.
   Vocation-profile drift after play is tracked separately, but remains blocking
   because the current Lua profile is executable rather than data-only.
-- P8 `BackgroundNoScreen` is `implementation_complete` and
-  `operational_acceptance_blocked`. It replaces routine mouse/focus/screenshot
-  testing with bounded passive evidence and never implies another live promotion.
-  The current live package is `v2.3.1`; P8 acceptance remains separate from
-  the explicit package promotion cycle.
-- P8 operational acceptance requires all three proofs: an official
-  promotion-bound trusted pin, a fresh capability heartbeat newer than the one
-  canonical client process, and full producer/consumer parity for the no-action
-  contract. The observer cannot create its own live manifest or trust anchor.
-  Current evidence classifies the historical pair as
-  `legacy_or_unbound_attestation`; read-only diagnostic parity is stable at
-  57/58 with one executable-profile drift and can never authorize acceptance.
+- Helper `v2.3.6` adds a passive exact-single-target
+  Heal Friend scan boundary and a fixture-only P11 replay that passes 55/55
+  deterministic cases under mandatory `--no-write`. P11 operational acceptance
+  remains `not_started`: there is no operational producer, receipt, dispatch,
+  Control Center unlock, cast, talk, execute-once, or runtime-readiness claim.
+- Helper `v2.3.7` is live-promoted with 58/58 verified files,
+  `launch_after_promote=false`, and backup `live_backup_20260712-150157`.
+  It hardens P10 with a fixed 30-case
+  corpus, scenario-pack SHA binding, current-wall-clock operational evaluation,
+  strict nested schemas and Release Evidence/Control Center coverage parity.
+  Privileged smoke commands now fail closed while runtime is disabled, while
+  passive tab/probe smoke remains available for sandbox evidence.
+- Helper `v2.3.8` is live-promoted with 58/58 stage/live SHA-256 matches,
+  `launch_after_promote=false`; the latest content-bound P10 operator-tooling
+  promotion backup is `live_backup_20260712-163259`.
+  It closes safe-boot lifecycle bypasses across init, terminate, profile reload,
+  external disable/enable, and the persisted Recovery Bridge arm. Profile and
+  UI-preference Lua now execute in an empty data-only environment rather than
+  inheriting OTClient or filesystem authority. The current-manifest sandbox
+  evidence passed ModuleAttachSmoke 4/4, SmokeAttachAll 16/16, and runtime
+  module gates 19/19 before promotion.
+- Helper `v2.3.9` is live-promoted with backup
+  `live_backup_20260712-185148`, 58/58 stage/live SHA-256 matches, and
+  `launch_after_promote=false`. The main Lua shell was reduced from 160 to the
+  enforced 130-function budget (4308 lines) by moving pure profile/input,
+  route/target/cavebot, recovery/combat, registry, and UI metadata into existing
+  support modules. Lifecycle, arming, OTClient API access, and final action
+  guards remain shell-owned. The in-world smoke caught and fixed a missing
+  Profile renderer visibility callback before promotion.
+- Helper `v2.3.10` is live-promoted with backup
+  `live_backup_20260712-192857`. It moves vocation/timer and route/cavebot probe
+  presentation into passive adapters, adds schema-owned export descriptors for
+  all six generated profile sections, and centralizes initial operator-summary
+  collection. Native reads, route mutation, arming, movement, and dispatch stay
+  in the guarded shell, now at 4298 lines and 129 named functions. Sandbox QA
+  caught and fixed a nil UI-preference write and an unsafe generic wrapper around
+  native `g_map.findPath`; the proven direct guarded `pcall` boundary is retained.
+  Final evidence passed 1666 Python tests, ValidateDev 127/127, static gates
+  39/39, attach 4/4 and 16/16, and runtime gates 19/19.
+- P10 operator evidence now has strict read-only parity across its six producer
+  artifacts, Python Release Evidence, and the web Control Center. A dedicated
+  `ctoa.equipment-consumer-parity.v1` gate validates fixed paths, schemas,
+  canonical hashes/bindings, copied status/blockers, freshness, unchanged
+  eligibility, and all no-action fields. Control Center exposes only read-only
+  summaries and evidence links; no write or action endpoint was added.
+- P10 now has one fixed repo-only refresh entry point, `ctoa.ps1 otp10refresh`.
+  It runs doctor, preview, dependency preflight, catalog, a no-ID change plan,
+  readiness, and strict consumer parity in order. Producer blockers are allowed
+  as data, but parity must pass; the command accepts no IDs, confirmation,
+  acceptance, replay, client action, or `.ctoa-local` write path. Successful
+  runs persist one UUID-bound anti-mix envelope with seven ordered canonical
+  hashes; failed runs abort only their matching pending journal. The completed
+  batch passed 1657 Python tests, 147 web tests, ValidateDev 127/127, static
+  gates 39/39, sandbox attach 4/4 and 16/16, and runtime gates 19/19.
+- P10 now exposes `ctoa.ps1 otp10doctor`: a schema-closed no-action preflight
+  for the fixed ignored capture profile. It reports exact missing IDs,
+  confirmation, validity, and identity-collision blockers, writes only bounded
+  runtime evidence, and is enforced by ValidateDev without treating a blocked
+  operational profile as fixture failure or runtime permission.
+- The next P10 operator batch adds three fail-closed boundaries: exclusive
+  zero-ID `otp10doctor init` with no overwrite path, bounded `otp10preview` for
+  sanitized ring/container/slot evidence, and `otp10preflight` for the complete
+  P8/P9/doctor/preview dependency chain. Preflight never changes eligibility and
+  all three remain repo/runtime-evidence only. The content-bound release cycle
+  passed 1585 tests, ValidateDev, 39/39 static gates, 4/4 module attach, 16/16
+  full attach, and 19/19 runtime gates before the latest live promotion.
+- P10 profile preparation now also has `otp10plan`: a strict hash-bound,
+  data-only plan/diff over the fixed doctor and observation preview. It requires
+  four exact IDs plus an exact planning confirmation, writes only repo runtime
+  evidence, never reads or writes `.ctoa-local`, and grants no acceptance,
+  readiness, eligibility, dispatch, execution, or promotion.
+- The latest P10 operator batch adds `otp10catalog` with no selection or
+  recommendation policy, `otp10plan` as a write-free exact-ID review artifact,
+  and `otp10ready` as an ordered blocker/next-action explanation. ValidateDev
+  enforces all three no-action contracts. The content-bound cycle passed 1612
+  tests, 39/39 static gates, 4/4 module attach, 16/16 full attach, and 19/19
+  runtime gates before promotion; operational readiness remains unclaimed.
+- The v2.3.5 package retains the v2.3.4 loader hardening and adds a canonical
+  passive Recovery trace/proof producer, `otp9accept`, a fixed ignored local P10
+  profile override, exact container-slot binding, and P10.1 consumer closure.
+  Release Evidence and Control Center now require the bound P10 report itself to
+  be fresh, operational, non-fixture, blocker-free, rollback-ready, and scenario-
+  complete before P11 predecessor eligibility can become true.
+- The v2.3.4 package fixed lowercase OTML autoload metadata,
+  cross-fork console enums, idempotent loader teardown/reload, and hidden
+  no-focus startup. It also seals P10 receipt eligibility consistently across
+  Python, JSON Schema, Release Evidence, and Control Center, and hardens passive
+  snapshot/replay writes. It does not accept P10 or enable P11/runtime actions.
+- P8 `BackgroundNoScreen` is `operational_acceptance_complete`. Its final
+  acceptance used the official promotion-bound trusted pin, one fresh
+  capability heartbeat newer than the canonical process, `62/62` live hash
+  parity, and full producer/consumer no-action parity. The earlier
+  `legacy_or_unbound_attestation` evidence remains historical and was never
+  rebound into trust by the observer.
 - The sandbox smoke chain is content-bound: `ModuleAttachSmoke` 4/4,
   `SmokeAttachAll` 16/16, and `RuntimeModuleGatesSandboxSmoke` must carry the
   current dev manifest SHA-256. Legacy reports remain blocked; a newer file
   timestamp alone is not evidence of freshness.
-- P9 Conditions is `offline_implementation_complete` and
-  `operational_acceptance_blocked`. Its strict data-only replay and 44-case
-  fixture pack are implemented without dispatch, execute-once, promotion, or
-  client interaction. A strict data-only acceptance preflight now recomputes
-  canonical inputs and requires exact operator confirmation before it can write
-  a receipt. Current evidence remains blocked and no receipt exists.
-  Fixture success is never reported as runtime readiness.
-- P10 Equipment is `offline_implementation_complete` and
-  `operational_acceptance_blocked`. Its ring-only snapshot, exact item/slot/
-  container/revision checks, rollback simulation, P9 receipt binding, and
-  15-case tamper pack are data-only; `otp10` and the static sandbox gate never
-  move, use, or dispatch an item.
+- P9 Conditions is `operational_acceptance_complete`. Its accepted data-only
+  receipt binds fresh real Conditions evidence plus canonical P8 and Recovery
+  predecessors; dispatch, execute-once, promotion, and runtime readiness remain
+  false.
+- P10 Equipment shadow/replay is `operational_acceptance_complete`. Its accepted
+  receipt binds the exact ring/container/slot observation and the P9 receipt;
+  it authorizes no item movement. The later P12 Equipment execute-once lane was
+  completed through its own separate Registry v1 authority boundary.
+- P11 Heal Friend shadow/replay is `operational_acceptance_complete`. It retains
+  exactly one stable allowlisted party identity and no ranking, fallback,
+  multi-target, cast, talk, dispatch, or promotion path.
 - P6 is ready for plugin design and the five bounded P7 safe-write refresh tools
   are enabled with audit coverage.
 - The next static Helper slice keeps the UI shell passive: Diagnostics owns
@@ -799,55 +1004,31 @@ Snapshot date: 2026-07-11 Europe/Warsaw
 
 ## Now
 
-1. **BackgroundNoScreen foundation (P8)** — owner: Helper Runtime + Evidence;
-   implementation status: `implementation_complete`; operational status:
-   `operational_acceptance_blocked`; risk: `read_only_observability`. Contract:
-   `AI/P8_P16_EXECUTION_ROADMAP.md`. The only allowed wrapper action in this mode
-   is `BackgroundStatus`; it cannot launch, stop, focus, capture, send input, or
-   write inside a client. Acceptance stays blocked until the promotion-bound
-   trusted pin, fresh capability heartbeat, and full no-action consumer parity
-   are proven together. Pin Doctor may expose allowlisted provenance errors and
-   diagnostic parity, but `acceptance_allowed` remains false for an untrusted pin.
-2. **Conditions data-only shadow replay (P9)** — owner: Helper Runtime +
-   Evidence; implementation status: `offline_implementation_complete`;
-   operational status: `operational_acceptance_blocked`; risk:
-   `read_only_shadow`. `ctoa.ps1 otp9` refreshes the repo-local
-   `background_status.json` and then writes
-   `runtime/solteria_helper_dev/conditions_shadow_replay.json`. Acceptance
-   still requires trusted/fresh P8, a real current guarded observation, and an
-   accepted hash-bound Recovery trace. The separate
-   `otclient_conditions_shadow_acceptance.py --no-write` preflight validates
-   freshness, recomputation, no-action invariants, canonical paths, and fixture
-   separation without creating permission for P10.
-3. **Conditions runtime safety gate** — owner: Helper Runtime; status:
-   `static_contract_accepted`; risk: `runtime_recovery`. It remains separate
-   from P9 and cannot dispatch until P9 operational acceptance is reviewed.
-4. **Equipment runtime safety gate** — owner: Helper Runtime; status:
-   `static_contract_accepted`; risk: `runtime_equipment`. It is ordered after
-   Conditions and allowlists only a ring-swap dry-run with exact item IDs,
-   rollback snapshot, zero retry, and no live promotion. The offline P10
-   replay is available through `ctoa.ps1 otp10`.
-5. **Heal Friend runtime safety gate** — owner: Helper Runtime; status:
-   `static_contract_accepted`; risk: `runtime_cast`. It is ordered after both
-   Conditions and Equipment and requires exact persisted whitelist plus stable
-   party target identity. Contract:
-   `docs/otclient/HELPER_RUNTIME_MODULE_GATES_V1.md`.
+1. **P12 Heal Friend exact-whitelist boundary** — owner: Helper Runtime +
+   Evidence; status: `plan_ready_for_sandbox_session_approval`; risk:
+   `execute_once_sandbox`. Its lane-specific plan is bound to the persisted
+   exact whitelist and current manifest gates. Next it requires the exact
+   sandbox-session approval; later, on ED, a fresh stable party-target window,
+   independent execution approval, one terminal trace, and its own receipt.
+2. **P12 Conditions accepted boundary** — owner: Helper Runtime + Evidence;
+   status: `operational_acceptance_complete`. Its one terminal trace and receipt
+   stay immutable, killed/disarmed, zero-retry, sandbox-only, and grant no
+   authority to Equipment, Heal Friend, live promotion, or automatic execution.
+3. **P12 Equipment accepted boundary** — owner: Helper Runtime + Evidence;
+   status: `operational_acceptance_complete`. Registry v1 receipt
+   `p12-equipment-bdf7027cf48c438d` stays immutable: one attempt, zero retry,
+   killed/disarmed, sandbox-only, and no authority for Heal Friend or live
+   promotion.
 
 ## Next
 
-- Close P8 operational acceptance only after an official promotion-bound trusted
-  pin, a fresh capability heartbeat, and full producer/consumer parity are proven
-  together through `ctoa.ps1 otbg`, release evidence, and Control Center without
-  touching the game window.
-- Close P9 operational acceptance only after `ctoa.ps1 otp9` produces a fresh,
-  real `shadow_plan_ready_for_operator_review` trace under accepted P8 and
-  Recovery proofs, then pass the independently reviewed data-only acceptance
-  boundary. The offline fixture pack may stay green while this is blocked.
-- P10 remains operationally blocked until that real P9 trace is explicitly
-  reviewed, but its independent offline shadow/replay sequence is complete and
-  ready to consume the accepted receipt.
-  P11 does the same for exact-whitelist Heal Friend.
-- P12 is the first possible execute-once sandbox phase, still with no live dispatch.
+- Request only the exact sandbox-session confirmation for plan
+  `964ff8f0c178c7b646a565380e96846a8b29780eb02a734a259713d9ccf023b3`.
+- Switch the sandbox to ED and wait for the approved target to be a visible,
+  same-floor party member within seven tiles at or below 70% HP. The current EK
+  character and missing approved target keep execution fail-closed.
+- Request execution approval later and independently; permit at most one
+  terminal attempt, zero retry, immediate KILL/disarm, and no live promotion.
 - P13 adds decision/result replay and machine-readable roadmap state; P14 moves
   visual acceptance to a separate runner/VM.
 - Add sandbox-to-live promotion visibility without implicit promotion.
@@ -869,6 +1050,13 @@ feature work.
 
 - Stabilize and productize the OTClient/Solteria Helper before broader CTOAi
   expansion.
+- Treat CTOA Safe as a bounded companion lane, never as a replacement or fork of
+  the full Helper roadmap. Shared utilities must preserve separate policies and
+  prove that Safe exclusions cannot be restored through Helper configuration.
+- Reduce the current `mods/ctoa_safe` prototype before product acceptance:
+  remove CaveBot and generic Settings/profile surfaces, freeze the visible label
+  set and order, then implement validated ordered spell/Exeta editors and
+  non-executable portable presets with safe boot default-off.
 - Keep `scripts/lua/otclient/` as the canonical Helper source tree; generated
   ZIPs stay under `runtime\solteria_helper_dev\` or release staging.
 - Preserve safe boot defaults: runtime disarmed, combat/offensive/movement
@@ -888,7 +1076,8 @@ feature work.
 - A post-promotion live client launch is not implicit. Operators must add
   `-LaunchAfterPromote`; the wrapper may launch a missing live client but must
   never stop or restart an existing live client.
-- Current Helper `v2.3.1` is live-promoted. Its promotion report verified 58
+- Current Helper `v2.4.1` is live-promoted. Its promotion report verified the
+  current manifest
   staged/live SHA-256 matches; release gate and GoalStatus passed. Runtime module
   acceptance remains fail-closed and separate from package promotion.
 - Helper P6 Module Lane is repo- and sandbox-complete: Healing/Recovery, Combat,
@@ -1213,235 +1402,7 @@ feature work.
   without climbing above the repo, explicit `CTOA_WORKSPACE_ROOT` overrides must
   be absolute existing directories, and allowlisted scripts must remain inside
   that workspace. The action catalog read path must also be role-scoped so
-  unauthenticated/member sessions cannot enumerate local command summaries.
-  Cookie-authenticated action POST routes must reject explicit cross-site
-  request signals before auth lookup or execution, and auth wrapper POST routes
-  that forward invite, role, login, logout, or registration actions must use
-  the same guard. Apply the same rule to chat and local seed-login proxy routes
-  before rate-limit, body parsing, cookie/token forwarding, or backend fetch.
-  Chat proxy payloads must be built from an explicit allowlist instead of
-  spreading arbitrary client JSON into backend model requests.
-- Keep web proxy route rate limits fail-closed on client identity:
-  `/api/auth` and `/api/chat` must ignore `X-Forwarded-For` and `X-Real-IP`
-  unless `CTOA_TRUST_PROXY_HEADERS=true`; trusted mode should accept only
-  syntactically valid IP values and otherwise fall back to `unknown`.
-- Keep Control Center API base URL config fail-closed: `VPS_API_URL` and
-  `NEXT_PUBLIC_API_URL` must parse as absolute HTTP(S), must not include
-  credentials, path components, path separators, query strings, or fragments,
-  and must require HTTPS for non-local hosts before any proxy route or browser
-  API call uses them.
-- Keep Desktop Console API and Control Center URL handling on the same
-  fail-closed contract before login, settings persistence, or browser launch:
-  local HTTP is allowed, remote hosts require HTTPS, and URLs with credentials,
-  query strings, or fragments must be rejected without echoing rejected values.
-- Keep health/drift/worker subprocess surfaces on fixed executable resolution;
-  optional cleanup hooks must use explicit tool resolvers instead of raw shell
-  names.
-- Keep mobile-console operator command execution and ops sync scripts on the
-  same resolver path before launching external tools.
-- Keep operator wrappers such as `ctoa_loader.py`, `engine_brain_doctor.py`,
-  smoke checks, validator preflight, and nightly stability on
-  `runner.process_safety`; new wrappers should resolve Python, Git, file
-  openers, and optional tools before launch.
-- Keep legacy Mythibia unsafe runtime bootstrap paths gated: the plaintext
-  bootstrap must require `-UnsafeRuntimeBootstrap` plus
-  `CTOA_ALLOW_UNSAFE_RUNTIME_BOOTSTRAP=true`, and bootstrap writes/removals
-  must stay under the resolved client root.
-- Keep local PowerShell installers and watchers separator-aware before
-  recursive writes or cleanup: containment checks must include a path separator
-  boundary and use `-LiteralPath` for replacement/removal operations. Scheduled
-  task and Run-key names should stay under the `CTOA-*` namespace, watcher logs
-  should remain under `%LOCALAPPDATA%\CTOA\logs`, and hidden runners should
-  accept only existing repo-local `.ps1` targets.
-- Keep VS Code workspace launch/task configs local-only and secret-free:
-  Mobile Console launchers must bind to `127.0.0.1`, reference `CTOA_*`
-  environment variables instead of committed passwords/tokens, and run the
-  shared env preflight before starting.
-- Keep operator Mobile Console launch guidance local-only too: `.\ctoa.ps1 up`,
-  `docs/MOBILE_CONSOLE.md`, and Desktop Console connection-error hints should
-  recommend `uvicorn mobile_console.app:app --host 127.0.0.1 --port 8787`, not
-  `0.0.0.0`.
-- Keep PowerShell background launchers secret-safe: avoid hidden
-  `-EncodedCommand` wrappers that embed environment values, pass secrets through
-  inherited process environment, and verify PID ownership before force-stopping
-  long-running workers.
-- Keep operator-facing PowerShell launchers input-validated before
-  `Start-Process`: URL openers must reject unsafe protocols and embedded
-  credentials, query strings, fragments, raw/decoded backslashes, and decoded
-  `.`/`..` path traversal without echoing rejected values; client launchers
-  should require absolute existing `.exe` paths plus safe
-  profile names, and watcher loop scripts should execute only repo-local `.ps1`
-  targets.
-- Keep LAB003 operator smoke scripts on the same URL and process guardrails:
-  mobile proxy and shift guard `BaseUrl` values must stay local loopback
-  HTTP(S) origins, alert webhooks must be HTTPS unless explicitly loopback HTTP,
-  webhook URLs must not include credentials or fragments, and child PowerShell
-  launches must use the current `$PSHOME` executable rather than PATH-only
-  `powershell`.
-- Keep VPS/bootstrap scripts supply-chain-safe: do not pipe remote installer
-  downloads into shells as root, prefer distro packages or pinned artifacts,
-  validate target users, host strings, and deployment directories, avoid
-  interpolating untrusted deploy paths into remote heredocs, and keep public
-  ports closed unless explicitly enabled. Root wrappers, including deploy-time
-  wrapper copies, must use private temporary files from `mktemp` plus cleanup
-  traps instead of predictable `/tmp` paths. Mobile token rotation should
-  follow the same rule for generated token, `.env`, and history temp files,
-  with root-only secret permissions. `ctoa-vps.ps1` remote install/update
-  flows should use randomized remote temp paths for copied wrappers and
-  generated `.env` updates.
-- Keep SSH/SCP target construction input-safe: env-provided remote users and
-  hosts must be validated before command launch. Remote users should follow a
-  lowercase system-user pattern; hosts should be restricted to valid IPv4, DNS
-  labels, or bracketed IPv6; and SSH key paths must be resolved as literal
-  existing files.
-- Keep remote-script operator inputs on shared validators: URLs and URL lists,
-  SQL literals, service names, status filters, git refs, timer values, and
-  similar heredoc/placeholder inputs should not rely on one-off string
-  replacement or ad hoc quoting.
-- Keep local GS reset operator inputs fail-closed before service shutdown or
-  health probes: `API_HEALTH_URL` and `API_BASE_URL` must stay local HTTP(S)
-  URLs on `127.0.0.1`, `localhost`, or `[::1]` without credentials, query
-  strings, fragments, or `API_BASE_URL` path components, and retry/wait values
-  must be positive integers. Direct `gs-api-validator.py` runs must enforce the
-  same loopback-only API URL contract before `urlopen`, not only rely on
-  `gs-reset.sh`.
-- Keep remote secret writes command-line-safe: operator actions must not embed
-  PATs, passwords, or tokens in SSH command strings, base64-encoded remote
-  scripts, or shell `echo` fragments. Use validated temp files, stdin, or other
-  non-argv transfer paths, then clean up local and remote secret-bearing temp
-  files.
-- Keep sprint validators on the same `runner.process_safety` path for focused
-  regression tests, including older validator scripts that are mostly
-  historical CI evidence gates.
-- Keep the pre-commit Bandit scope at zero subprocess audit findings
-  (`B404`, `B603`, `B607`) by routing long-running launches through
-  `process_safety.start_trusted` and one-shot commands through
-  `process_safety.run_trusted`.
-- Keep broad exception-control findings closed: prefer concrete exception
-  types for parse/read/decode/zlib paths, and record structured diagnostics for
-  best-effort cleanup, breakpoint, or probe failures instead of silently
-  swallowing them.
-- Keep bot ML regression tests isolated from local runtime state: stress tests
-  must not load persisted `runtime/state/qtable_*.json`, and reward shaping
-  must not reinforce `loot` in healthy no-target states.
-
-## P1: OTClient Source Normalization
-
-- Keep the expanded `scripts/lua/otclient/` folder canonical.
-- Keep generated ZIPs under `runtime\solteria_helper_dev\` or release staging,
-  not beside source files.
-- Add Lua syntax validation for every OTClient source file.
-- Add helper smoke instructions for each main tab/subtab.
-- Keep `docs/otclient/helper_redesign.md` as the active UI rebuild brief and
-  update it after each Helper layout pass.
-
-## P2: OTClient Helper Hardening
-
-- Execute `docs/otclient/ctoai_runtime_2_execution_plan.md` in order. P0 now
-  provides a passive runtime module registry, isolated event bus, and budgeted
-  scheduler; all tasks remain disabled by default and runtime actions remain
-  behind the existing policy and dispatch guards.
-- Continue P1 with the passive `ctoa.combat-observation.v1` adapter. It may
-  normalize and publish targeting/combat observations, but it must not call
-  attack, walk, cast, talk, item-use, or keypress APIs.
-- Runtime 2 P2 now exposes additive `ctoa.runtime-core.v1` status through Helper
-  diagnostics, bounded exports, and client capability reports. Preserve the
-  disabled/deferred/failed counters and `runtime_actions=false` invariant.
-- Runtime 2 P3 now includes disabled-by-default combat/targeting and
-  recovery/healing observers. Continue next with cavebot/pathing, then loot and
-  equipment; require observer-only tests before any executor design.
-- Runtime 2 P3 observer migration is complete repo-side across combat,
-  recovery, cavebot, loot, and equipment. Preserve the five-registered/zero-
-  enabled safe-boot invariant until P4 evidence authorizes executor design.
-- Keep Runtime 2 P4 blocked while Helper evidence freshness is unresolved and
-  in-world ModuleAttachSmoke/SmokeAttachAll plus current live approval are
-  missing. Passing local static gates alone must not authorize an executor.
-- Use the official `GoalStatus` action after SmokePreflight and
-  ModuleStaticGates so release-gate freshness is regenerated before goal audit.
-- Keep the seven Runtime 2 files in every test-env package, manifest, sync, and
-  enable/disable list; package coverage tests must fail when one is omitted.
-- Keep smoke-command paths in one filesystem domain: virtual resource paths may
-  be probed with `g_resources`, while `io.open` must consume the resolved host
-  work-directory path. Preserve regression coverage for virtual UI prefs.
-- Split `ctoa_native_helper.lua` into smaller modules if the target client
-  supports module-local `dofile` cleanly.
-- Maintain `schemas/otclient-helper-config.schema.json` as the machine-readable
-  config schema for `HELPER_CONFIG`.
-- Keep `scripts/ops/otclient_helper_profile_audit.py` in `ValidateDev` so old
-  `ctoa_ek_profile.lua` files cannot silently arm unsafe runtime behavior.
-- Add explicit UI smoke states for hunting, tools, profile, and UI tabs.
-- Keep the Helper redesign Phase 3 summary strips current for Healing, Hunting
-  Targeting, Hunting Magic, Tools Helper, Profile, and UI.
-- Keep the release gate strict: in-world `SmokeAttachAll` evidence must carry a
-  SHA-256 binding to the current dev manifest before it can satisfy visual
-  acceptance; mtime is only a legacy-staleness signal.
-- Treat the Phase 3 summary implementation as visually accepted for the current
-  dev manifest after `SmokeAttachAll` run `20260706-1025`; future Helper UI
-  changes must rerun in-world `SmokeAttachAll`.
-- Keep `SmokeStatus` and `ReadyCheck` evidence readable during blocked sandbox
-  states; missing-window and Select Character/modal-helper-offline blockers
-  should produce JSON with the next safe operator command.
-- Keep the release gate next-command logic tied to current sandbox evidence:
-  `Launch` for not-running, `ReadyCheck` for readiness blockers, and
-  `SmokeAttachAll` only after `ready_check.json` reports `ready`.
-
-## P3: Generator Quality Upgrade
-
-- Align generic generated Lua templates with OTClient-native capabilities where
-  an adapter exists.
-- Add stronger Lua validation beyond bracket balance when `luac` is missing.
-- Add negative tests for unsafe runtime activation.
-- Add quality scoring for cooldowns, bounded retries, and guard checks.
-
-## P4: TFS Fork Index
-
-Blocked until TFS source is available.
-
-Once available:
-
-- Index C++ classes and ownership boundaries.
-- Index protocol packets and extended opcodes.
-- Index Lua script interface and callback names.
-- Write server-side rulebook entries based on actual code.
-- Add packet/event flow diagrams.
-
-## P5: End-To-End Evidence
-
-- Connect generated module manifests to release evidence.
-- Keep the Control Center read-only Helper status panel backed by
-  `runtime\solteria_helper_dev` artifacts.
-- Keep the Control Center read-only Engine Brain status panel backed by
-  `AI/generated/manifest.json`, `ENGINE_BRAIN_PACK.json`, `DOC_SYNC.json`, and
-  `SECRET_GUARDRAIL.json`.
-- Keep the Control Center artifact freshness panel read-only and backed by
-  manifest age, ZIP SHA256 comparison, smoke evidence, live-promotion evidence,
-  and action audit traces. Helper ZIP SHA256 comparison must resolve package
-  paths inside the configured Helper dev lane only; external or escaping
-  `release_readiness.json` package paths should fail closed as missing evidence.
-- Keep release evidence packs reporting OTClient Helper package validation and
-  release gate state when Helper files change.
-- Keep release evidence packs reporting the generated P7 operator brief status,
-  decision, blockers, warnings, and next safe command from
-  `AI/generated/P7_OPERATOR_BRIEF.json`.
-- Keep release evidence packs aligned with Control Center Helper semantics:
-  durable `live_promotion.json` evidence must report `status=promoted` and must
-  not leak stale next-command guidance after the release gate has passed.
-- Keep `scripts/ops/release_evidence_pack.py` on the same local evidence read
-  contract as Control Center: configured JSON reads are byte-bounded and
-  symlink-rejecting, action-audit JSONL is counted from a bounded tail sample,
-  release markdown discovery ignores symlinked files, and a symlinked Helper dev
-  directory fails closed to missing Helper status.
-- Keep Control Center release-evidence and action-audit drilldowns read-only:
-  release markdowns should show latest tracked files and sprint coverage, while
-  action audit should show sanitized metadata rather than raw command output.
-- Keep release-evidence drilldown metadata reads bounded too. Markdown title
-  extraction should read only a small capped prefix, reject symlinked or
-  oversized files, and fall back to the file name instead of full-file reads.
-- Keep those drilldowns visible in both the dedicated Evidence tab and the
-  Overview/Local Status ops detail panels through `/api/control-center/ops`.
-- Keep Control Center evidence read endpoints operator-gated. Anonymous users
-  and `member` sessions must not receive runtime evidence JSON, ops detail
-  payloads, release-evidence markdown, API cos
+  unauthenticated/member sessions cannot enumerate local command summari
 
 [truncated]
 ```
@@ -1452,14 +1413,135 @@ Once available:
 ```markdown
 # CTOAi P8-P16 Execution Roadmap
 
-Status: P8 is `implementation_complete` and
-`operational_acceptance_blocked` after P6/P7 readiness and Helper `v2.2.1` live
-promotion. Its implementation is the `v2.3.0` staged-source lane and does not
-auto-promote that version. P9 is `offline_implementation_complete` while its
-operational acceptance remains blocked by the same P8 proof gate and a missing
-accepted Recovery predecessor trace. The data-only P9 acceptance boundary is
-implemented, but current evidence cannot create an accepted receipt and P10
-remains blocked.
+Canonical snapshot (2026-07-14): Helper source/live is `v2.4.1`; Safe source
+candidate is `v2.9.0`, last verified live Safe is `v2.8.0`, and chooser is
+`2.1.0`. P8 operational acceptance completed on 2026-07-14: exactly one live
+process, a fresh `v2.4.1` heartbeat newer than that process, trusted manifest
+pin, `62/62` live hash parity, and unchanged process/screenshot invariants.
+Repository validation for this snapshot passed with `1694 passed, 46 skipped`
+outside e2e; web validation passed `147/147` tests and lint.
+
+P9 promotion update (2026-07-14): the Helper release boundary was separated
+from Safe, the fresh sandbox chain passed `4/4`, `16/16`, and `19/19`, and the
+explicitly approved official promotion verified `59/59` Helper/chooser files.
+The manifest contains zero `mods/ctoa_safe` entries. GoalStatus is complete and
+the release gate is passed. The running live process was not restarted, so the
+canonical P9 observation still waits for a normal client reload and fresh
+Helper heartbeat.
+
+The normal reload is now complete and `otbg` is `ready`. Canonical live `otp9`
+accepts the fork-proven `player_states` source after synchronizing the Python
+sanitizer, replay, and Recovery contracts (`186 passed, 2 skipped`). The current
+real decision is a valid fail-closed `hold`, blocked only by
+`protection_zone_inside` and `condition_absent`; scenario replay passes. No P9
+acceptance receipt may be issued until a fresh passive sample observes the test
+character outside PZ with paralyze present and all remaining guards ready.
+
+That sample was captured on 2026-07-14 by a bounded passive monitor that invoked
+the canonical wrapper immediately after the short-lived state appeared. P9 now
+reports `shadow_plan_ready_for_operator_review`; the operational trace is
+`shadow_plan_ready` with decision `would_plan_paralyze_recovery`, no blockers,
+Recovery trace/proof `ready`, scenario pack `passed`, and report SHA-256
+`65776a653981f9681b799faf29ce085fc63435d60284fb3c3849381acff075a4`.
+Dispatch, runtime, execute-once, promotion, and intrusive-action fields remain
+false/empty. The separate `otp9accept` receipt still requires exact operator
+confirmation and has not been created.
+
+P9 acceptance completed on 2026-07-14. The persisted receipt is `accepted`,
+`acceptance_granted=true`, and binds canonical report SHA-256
+`795c2d4b1a130376335035d144be1cff609fe51ed826a75f46530571579ce0df`;
+the independently recomputed canonical hash matches. All runtime, dispatch,
+execute-once, promotion, and intrusive-action fields remain false/empty. P10 is
+now the active phase. Its first dependency preflight confirms the P9 report and
+receipt are ready and hash-bound, but remains blocked by the missing local
+operator exact-ID override, stale/blocked Equipment preview, unknown Equipment
+PZ source, and no equipped ring. No item movement was performed.
+
+The operator then supplied ring IDs `3096 -> 3097`. Passive inventory evidence
+confirmed equipped ring `3096` and candidate `3097`; `10325` was an item ID in
+another container, not a container handle. Runtime container handles are
+session-scoped: the live observation used `container_id=1`, `slot_index=1`,
+while the approved P10 sandbox resolved the same candidate at
+`container_id=2`, `slot_index=1`. The sandbox chain passed module attach `4/4`,
+full attach `16/16`, and runtime gates `19/19`, with all action flags false.
+Equipment uses the fork-proven `player_states` PZ fallback across Lua, Python
+validators, and JSON Schemas. `otp10autoplan` now refreshes the fixed passive
+preview, accepts only the equipped and candidate item IDs, and binds
+container/slot from exactly one fresh operational match in the same process;
+missing or duplicate matches fail closed. The passive planning preview allows
+`10000 ms` solely for the complete official-wrapper transport chain, while the operational
+snapshot/replay boundary remains `6000 ms`. Targeted P10 validation passed
+`187 passed, 5 skipped`. The separately approved Helper promotion then passed
+the official release gate with independent `59/59` stage/live SHA-256 parity,
+zero mismatches, and zero Safe files in the Helper manifest. Backup:
+`runtime/solteria_helper_dev/live_backup_20260714-211806`. The active live
+process was not restarted, so a normal client reload and fresh passive preview
+are still required. No profile or item change was performed.
+
+P10 operational acceptance completed on 2026-07-15. A fresh passive snapshot
+bound equipped ring `3096` to candidate `3097` at session-local
+`container_id=2`, `slot_index=1`; replay returned
+`shadow_plan_ready_for_operator_review`, and the separately confirmed receipt
+is `accepted`. Its acceptance basis SHA-256 is
+`b6d08795b7f7352da96dd250aab98f17a8bb8b3e093689e7fe836636e5acf9e7`.
+The scenario pack passed `30/30`, targeted acceptance validation passed
+`44/44`, and runtime, dispatch, execute-once, promotion, item movement, and
+intrusive-action fields remained false/empty.
+
+P11 operational shadow acceptance completed on 2026-07-15. The fixed sandbox
+adapter observed the exact allowlisted party target `268435471 / amir to moja
+dziwka` at `53%` HP, distance `0`, on the same floor and visible, while the
+local player `268435472 / el cvvel` remained excluded as self. The persisted
+profile is `shadow_only`, uses retry budget `0`, and has canonical SHA-256
+`c499ef6bfb059705f670c8ed8f239e00765463a6869934582718116b88bb4c00`.
+Replay returned `would_plan_sio` without casting. The accepted receipt is
+`heal-friend-shadow-acceptance-82535ea97fd19483`, binds canonical report
+SHA-256 `b6d5f8e53c7e7354445ab9b134b4b04a7bda984df93c477ed2cbb2a57d575ed8`,
+and has acceptance-basis SHA-256
+`82535ea97fd19483f704451972f21cc56405c82cc0749f26724bce51cd774358`.
+Runtime, dispatch, execute-once, promotion, cast, talk, and intrusive-action
+fields remained false/empty. P12 is the next phase and still requires separate
+per-lane execute-once reviews; P11 acceptance grants no P12 action authority.
+
+Status: P8, P9, P10, and P11 are `operational_acceptance_complete`. P12 execute-once
+review is `closed_with_deferred_heal_friend_lane`.
+Current accepted-lane marker: Conditions and Equipment lanes are `operational_acceptance_complete`.
+Heal Friend is `closed_blocked_no_compatible_vocation`. Equipment completed through separately approved
+Registry v1 plan `d041db806c6417b018c6ae390e3d384ccec9bead2a77e498a582093bf7c823e0`:
+accepted receipt `p12-equipment-bdf7027cf48c438d` records one attempt, zero
+retry, `killed_and_disarmed`, and no downstream or live authority.
+Historical evidence follows: P9's
+first real passive trace remained fail-closed on `protection_zone_unknown` and
+`condition_unknown`. The repo-only adapter candidate now uses the fork-proven
+`player:getStates()` bitmask plus fork-proven `getSpeed()`/`getBaseSpeed()`
+fallback and passed the approved in-world sandbox
+session on 2026-07-14: module attach `4/4`, full attach `16/16`, and runtime
+module gates `19/19`, with runtime continuously disarmed. The real sandbox
+observation reported `protection_zone=inside` from `player_states`, paralyze
+`absent`, and cooldown `ready`, with every execution flag false. Operational
+`otp9` remains blocked until this adapter is promoted through a separately
+approved Helper live release and a fresh live observation is collected; the
+strict observer correctly rejected an attempted mixed live/sandbox evidence
+path as `capability_explicit_path_mismatch`. The passive
+P10 implementation was promoted only after its separate
+v2.3.3 sandbox and explicit live gate passed. The promoted v2.3.4 hardening lane
+adds cross-fork/no-focus startup and cross-consumer P10 receipt enforcement.
+The v2.3.5 candidate adds the missing passive Recovery trace/proof producer,
+safe local P10 capture override, exact slot binding, and P10.1 consumer closure;
+it does not change operational acceptance. P9 is `offline_implementation_complete`; its
+operational acceptance no longer depends on P8, but still lacks a reviewable
+real Conditions trace. Canonical
+Recovery predecessor trace/proof can now be produced passively, but the data-only P9 acceptance boundary is
+implemented, but current evidence cannot create an accepted receipt. P10 now has
+its own operational input and receipt boundary, but remains blocked. The live-promoted v2.3.6
+lane adds only the fixture P11 exact-target replay and passive Helper scan
+boundary; it does not change P8-P10 operational acceptance.
+The live-promoted v2.3.7 lane expands P10 fixture coverage to 30 exact mutations and
+closes time-override, scenario-path, nested-schema, and consumer-parity gaps;
+it still cannot create operational acceptance or execute an item action.
+The live-promoted v2.3.8 lane closes Helper safe-boot lifecycle bypasses and
+loads Lua profiles/preferences with no OTClient or filesystem authority. Its
+promotion is package hardening only and does not alter P8-P10 acceptance state.
 
 ## Operating Contract
 
@@ -1473,15 +1555,177 @@ Visual acceptance is not silently removed. UI-layout work waits for a separate
 runner/VM or an explicit user-provided visual review. Live promotion remains a
 separate, explicit wrapper action and never follows from background evidence.
 
+## Product Topology: Helper Mainline And CTOA Safe
+
+The Helper remains the main CTOAi OTClient project and owns the P8-P16 sequence.
+It is the full operator platform: evidence and acceptance gates, profiles,
+advanced configuration, Conditions, Equipment, Heal Friend, Combat and CaveBot
+design/replay lanes, Control Center integration, and future sandbox bridges.
+CTOA Safe does not replace the Helper and must not reduce or redirect the
+Helper roadmap.
+
+CTOA Safe is a secondary, deliberately constrained product lane. Its purpose is
+to provide a compact, movable, minimalist in-client panel for the small set of
+automations an operator wants close at hand. The visible module labels and their
+order are product-owned and fixed; each supported module may expose a broad,
+purpose-built editor without turning the panel into another full Helper.
+
+CTOA Safe target scope:
+
+- compact movable window, low visual footprint, fixed module labels, and one
+  explicit master arm/disarm control;
+- editable healing thresholds, spells, potions, cooldowns, and hotkey bindings;
+- editable ordered combat spell rotations, per-entry conditions and cooldowns;
+- editable Exeta rotations, including spell order, intervals, and minimum nearby
+  creature conditions;
+- narrowly scoped Conditions and Timer editing where it preserves the same
+  compact interaction model;
+- local, versioned, schema-validated presets with safe defaults, atomic saves,
+  bounded values, and explicit import/export suitable for moving the same setup
+  between supported clients;
+- safe boot: loading the mod or a preset never arms runtime automation.
+
+CTOA Safe permanent exclusions:
+
+- no CaveBot, waypoint editor, route runner, movement automation, or hidden
+  CaveBot compatibility switch;
+- no generic Settings module or open-ended settings screen;
+- no scripting console, arbitrary Lua editor, plugin marketplace, Control Center
+  cockpit, or duplication of the Helper's evidence/acceptance platform;
+- no automatic migration of a full Helper profile into executable Safe behavior.
+
+The current `mods/ctoa_safe` prototype is an input to this lane, not the final
+scope contract. Copied Helper surfaces that conflict with these boundaries,
+especially CaveBot and generic profile/settings machinery, must be removed or
+reduced before CTOA Safe is considered product-ready.
+
+### CTOA Safe Delivery Lane
+
+1. **S0 — Scope freeze and reduction:** define the fixed label set, remove
+   CaveBot and generic Settings surfaces, inventory copied Helper dependencies,
+   and keep only code required by the compact product.
+2. **S1 — Editable rotations:** complete ordered spell and Exeta rotation editors
+   with add/remove/reorder, per-entry validation, bounded timing/condition fields,
+   and deterministic runtime selection.
+3. **S2 — Mobile preset contract:** move editable data to a non-executable,
+   versioned schema; provide atomic save, named presets, explicit import/export,
+   migration, validation, and fail-closed recovery from malformed data.
+4. **S3 — Minimal UI acceptance:** verify the fixed-label compact layout,
+   movable-window persistence, keyboard-only access, clear armed state, and no
+   accidental growth into Helper-style navigation. Visual acceptance follows the
+   separate runner/VM or explicit user-review rule above.
+5. **S4 — Separate package and release gate:** give Safe its own manifest,
+   sandbox checks, evidence, versioning, and explicit promotion action. Safe
+   acceptance must never satisfy or bypass a Helper P8-P16 gate.
+
+S4 implementation status (2026-07-14): `complete_for_v2.8.0`; the separate
+`v2.9.0` candidate requires a new sandbox and release cycle.
+`scripts/windows/solteria_safe_release.ps1` now validates and promotes exactly
+the three Safe files with an explicit approval switch, timestamped backup,
+content-bound manifest, source/live SHA-256 parity, and unchanged live-process
+proof. Safe `v2.8.0` was promoted 3/3 to the live Solteria tree; backup:
+`runtime/solteria_safe_release/live_backup_20260713-015729`. PID 17988 remained
+unchanged. The later sandbox visual report passed 10/10 for v2.8.0. File parity
+and Safe acceptance remain independent from every Helper gate.
+
+Safe implementation may progress alongside passive/offline Helper work, but
+Helper milestones have priority when both lanes compete for the same runtime,
+release, or validation work. Reusable schema, persistence, and guard utilities
+may be shared only when their product policies remain separate and tests prove
+that Safe exclusions cannot be re-enabled through shared Helper configuration.
+
+S0 implementation status: `complete`. Package `v2.4.0` introduced the exclusive
+per-login project loader documented in
+`docs/otclient/CTOA_EXCLUSIVE_PROJECT_LOADER_V1.md`. Only the neutral chooser
+autoloads; Helper and Safe reject direct startup, terminate on logout, and cannot
+run together. The staged Safe tree has no copied Helper runtime files, CaveBot,
+or generic Settings surface. The later v2.8.0 sandbox selection/ENABLE and
+separately approved promotion provide operational crash closure.
+
+The staged Safe `v2.0.1` hardening additionally replaces the invalid
+zero-argument spectator query reached after ENABLE with the fork-proven bounded
+center-position signature. Lua fixture evidence covers the exact native call
+shape, but operational crash closure still requires the sandbox smoke above.
+
+S1/S2 implementation update (2026-07-13): Safe `v2.8.0` exposes fixed
+Healing, Combat, Conditions, Support, and Timer labels. Healing, Targeting,
+Spell Rotation, and Support use purpose-built ordered list editors with
+add/remove/edit/reorder operations and selection-to-form hydration. Their data
+is bounded and persisted through the dedicated `ctoa-safe-profile-v2` JSON
+contract; runtime-only timestamps are stripped during export. Support remains
+default-off and Safe remains globally disarmed at boot. Target dispatch is
+idempotent: an already attacked creature is not attacked again every tick.
+The Healing editor now has independently configurable HP and mana thresholds,
+bounded randomization, hotkey fallback, and drag-and-drop item slots. Support
+rules are typed as spell or item and may trigger always, on HP, or on mana with
+a randomized threshold range. Combat rotation entries use one compact
+`require monster count` checkbox, a minimum count, and an explicit per-spell
+distance. Editor close controls are inset from the content edge and primary
+panel labels use a larger font scale. These changes do not alter safe boot,
+module exclusions, or Helper gate ownership.
+
+S1/S2/S3 candidate update (2026-07-14): repo-only Safe `v2.9.0` replaces the
+remaining text-only Exeta configuration with an ordered editor and per-entry
+monster/cooldown fields. `ctoa-safe-profile-v3` stores up to 12 named presets,
+migrates v2 once, rejects unknown v3 fields, uses atomic save with retained
+backup, and provides fixed-path import/export without arm state or runtime
+timestamps. Restored geometry is clamped and Ctrl+Tab/Ctrl+Shift+Tab/Ctrl+E/
+Ctrl+Space provide bounded keyboard navigation. S1/S2 implementation is
+complete in source; S3 and the next S4 release remain pending sandbox visual
+and explicit live approval.
+
+### Cross-Fork OTS Connection Profile Lane
+
+The planned OTC/OTCv8/OTC Brasil/fork connection layer is a separate platform
+lane, not a Safe runtime module. Its contract is documented in
+`docs/otclient/CTOA_ENCRYPTED_SERVER_PROFILE_DESIGN.md`: one normalized,
+UI-friendly server profile; fork capability adapters; OS-keystore-backed local
+secrets; authenticated encrypted profile envelopes; certificate/public-key
+pinning where supported; and an explicit connect action. No password, token,
+private key, or decrypted profile may enter Git, Engine Brain packs, logs, or
+generated evidence. Implementation starts with passive capability discovery
+and import/export validation before any login/connect adapter is enabled. The
+public portable subset is schema-closed by
+`schemas/otclient-server-profile.schema.json`; unknown adapters, unpinned keys,
+and plaintext secret fields fail validation.
+The first passive implementation is now present in
+`scripts/ops/otclient_fork_capability_detector.py`. It identifies the available
+source checkout as `redemption-mehah`, reports only proven file/API
+capabilities, does not inspect profiles or credentials, and makes no connection.
+Protected live packages without public fork markers remain `unknown` rather
+than inheriting a guessed adapter.
+
+The primary Helper continues independently as `v2.4.1`. Its guarded targeting
+path applies the same idempotent-current-target rule without broadening any
+P8-P16 permission or acceptance boundary. P8-P11 operational acceptance states
+remain unchanged.
+
+Safe `v2.8.0` operational acceptance update (2026-07-13): sandbox visual
+acceptance passed for Healing item slots and HP/mana randomization, Support
+`ITEM + MANA` drag-and-drop and JSON persistence, Combat monster-count/distance
+controls, readable labels, and in-bounds editor close buttons. The test item
+`23375` was assigned and persisted while Safe and Support remained disarmed.
+Helper attach evidence passed 4/4 modules and 16/16 full tabs; runtime module
+gates passed 19/19. The official wrapper promoted the current manifest to live
+with backup `runtime/solteria_helper_dev/live_backup_20260713-021234`; repo,
+stage, and live Safe hashes match. Release gate and GoalStatus both report
+complete with no blockers.
+
+Client feature extraction is also complete for the two requested shortcuts:
+`Ctrl+Y` maps to `game_shaders` (Map/Outfit/Mount/Text), while the dynamic
+registry proves `Ctrl+Shift+C` maps to `Debug / Toggle Chromium Color Test`
+from `/webview_color_demo/webview_color_demo.lua:108`. Both complete module
+trees are preserved under `C:/Users/zycie/Desktop/shader map outfit etc`.
+
 ## Phase Sequence
 
 ### P8 — BackgroundNoScreen Foundation
 
 Objective: make routine Helper validation non-intrusive while the user plays.
 
-State: `implementation_complete`; `operational_acceptance_blocked`. Acceptance
-requires an official promotion-bound trusted pin, a fresh capability heartbeat,
-and full producer/consumer parity for the no-action contract to pass together.
+State: `operational_acceptance_complete` since 2026-07-14. Acceptance proved an
+official promotion-bound trusted pin, a fresh capability heartbeat, and full
+producer/consumer parity for the no-action contract together.
 
 Deliverables:
 
@@ -1517,27 +1761,28 @@ Done gates:
 - Python, Lua, PowerShell, web, release-evidence, doc-sync, and secret-guardrail
   tests pass.
 
-Current evidence is `legacy_or_unbound_attestation`: all 58 manifest entries are
-safe to inspect, 57 match, one executable profile drifts, and the observation is
-stable. This is diagnostic evidence only; acceptance remains false until a new
-official promotion-bound pin is produced after current gates and explicit live
-approval.
+Historical pre-acceptance evidence was `legacy_or_unbound_attestation`: all 58
+manifest entries were safe to inspect, 57 matched, and one executable profile
+drifted. It remained diagnostic-only and was not rebound into trust. Final P8
+acceptance used a new official promotion-bound pin, one fresh `v2.4.1`
+heartbeat newer than the canonical process, `62/62` live hash parity, and full
+no-action consumer parity while process and screenshot invariants stayed
+unchanged.
 
 ### P9 — Conditions Shadow Observation And Replay
 
 Objective: validate only `plan_paralyze_recovery` from passive observations before
 any execute-once design.
 
-Implementation state: `offline_implementation_complete`; operational acceptance
-remains `operational_acceptance_blocked`, with blocker reason
-`blocked_by_p8_operational_acceptance`. Canonical contract:
+State: `operational_acceptance_complete` since 2026-07-14. Canonical contract:
 `docs/otclient/P9_CONDITIONS_SHADOW_REPLAY_DESIGN.md`.
 
-Acceptance dependencies: explicitly accepted P8 operational acceptance,
+Acceptance dependencies were explicitly accepted P8 operational acceptance,
 including its trusted promotion pin, fresh heartbeat, and full consumer-parity
-proofs; a real current Conditions observation; and an accepted, hash-bound
-Recovery trace. Offline/staging replay may run while these are blocked, but it
-cannot claim runtime readiness or unlock P10.
+proofs; a real current Conditions observation; and canonical ready, hash-bound
+Recovery trace/proof reviewed inside P9 acceptance. Those dependencies passed
+together before the accepted receipt was written. Offline/staging replay still
+cannot claim runtime readiness or independently unlock a downstream phase.
 
 Deliverables: sanitized Conditions observation schema, freshness/PZ tri-state,
 action-bound trace replay, deterministic positive and negative scenario pack, and
@@ -1546,13 +1791,14 @@ profile persistence must gain a non-executable, schema-validated representation.
 
 Implemented evidence: strict profile/observation/P8/Recovery/trace/report schemas,
 the existing-heartbeat passive producer, bounded sanitizer, 44-case deterministic
-fixture pack, `ctoa.ps1 otp9`, atomic runtime report, Release Evidence summary,
+fixture pack, canonical passive Recovery pair producer, `ctoa.ps1 otp9`,
+`ctoa.ps1 otp9accept`, atomic runtime report, Release Evidence summary,
 read-only Control Center tile, and a separate strict data-only operator acceptance
 schema/preflight. Its writer revalidates fresh canonical evidence, hashes,
 no-action invariants, reparse safety, and exact confirmation before an atomic
-receipt write. Current evidence is blocked and writes no receipt. All action,
-dispatch, execute-once, promotion, and intrusive-action fields remain disabled
-or empty.
+receipt write. The persisted receipt is `accepted` and binds the independently
+recomputed canonical report SHA-256. All action, dispatch, execute-once,
+promotion, and intrusive-action fields remain disabled or empty.
 
 Done gates: stale/offline/dead/PZ/wrong-condition/wrong-spell/cooldown/retry cases
 fail closed; replay parity is deterministic; runtime and dispatch remain false;
@@ -1566,15 +1812,26 @@ Objective: validate one ring-swap plan and its rollback without touching invento
 
 Dependencies: explicitly reviewed action-bound P9 trace plus its validated
 data-only acceptance receipt. Neither artifact authorizes runtime dispatch.
-The offline implementation may be developed and fixture-tested before those
-operational dependencies are accepted; the operational gate remains closed.
+Those dependencies and the separate P10 operational evidence are accepted.
+State: `operational_acceptance_complete` since 2026-07-15; neither receipt
+authorizes runtime dispatch.
 
-Deliverables: exact item/slot/container/revision snapshot, zero-retry plan, rollback
-simulation, tamper detection, P9 receipt hash binding, and a 15-case negative
-scenario pack. `ctoa.ps1 otp10` is the repo-local entry point.
+Deliverables: a sanitized passive adapter observation, operator-configured exact
+item/slot/container capture profile, canonical snapshot producer, zero-retry
+plan, rollback simulation, tamper detection, raw-report-bound P9 receipt, and a
+30-case negative scenario pack. `ctoa.ps1 otp10` produces the snapshot and runs
+the operational replay; `ctoa.ps1 otp10accept` is the separate hash-bound exact-
+confirmation receipt boundary. Real IDs are confined to the fixed ignored
+`.ctoa-local/otclient` override; the tracked template is permanently unconfigured.
+Release Evidence, P7, and Control Center expose
+replay and acceptance separately. Neither command dispatches or promotes.
 
 Done gates: ambiguous inventory, revision drift, missing slot, wrong IDs, missing
-rollback, stale evidence, or PZ block readiness; no amulet or rotation scope.
+rollback, stale evidence, PZ, fixture provenance, noncanonical paths, or a P9
+receipt/raw-report mismatch block readiness; no amulet or rotation scope. P11
+eligibility requires both a strict fresh operational blocker-free P10 report and
+its matching accepted non-fixture receipt. Both passed before P11 acceptance;
+the P10 receipt still grants no execute-once authority.
 
 ### P11 — Heal Friend Exact-Whitelist Shadow And Replay
 
@@ -1584,6 +1841,20 @@ Dependencies: accepted P9 and P10 traces.
 
 Deliverables: persisted whitelist revision, stable creature ID/name, real party-ID
 membership, fresh HP/range/floor/visibility evidence, and deterministic replay.
+
+Current status: `operational_acceptance_complete`. The fixed synthetic profile
+and observation remain as deterministic regression fixtures, while the real
+sandbox producer, exact-target local profile, operational replay, and separate
+hash-bound acceptance receipt are complete.
+The reviewed Vithrax/vBot spectator/Sio pattern has been capability-mapped into
+the Helper without copying its macro or action paths. The passive scan now
+requires one configured stable ID plus canonical name, party membership,
+visibility, same floor, range, and valid HP; ranking and fallback were removed.
+`HealFriendNoTargetSmoke` passes, the static runtime gate passes `9/9`, and the
+final focused P11 validation passed `34 passed, 1 skipped` before acceptance;
+the acceptance validator then passed `17 passed, 1 skipped`. The operational
+receipt remains explicitly ineligible for runtime readiness or P12 without a
+new, separate execute-once review.
 
 Done gates: self/spoofed/changed/stale/non-party/out-of-range/PZ/cooldown cases fail
 closed; whitelist mutation, ranking, multi-target healing, and dispatch remain out.
@@ -1599,12 +1870,163 @@ Done gates for each lane: exactly one bounded action, current domain evidence,
 operator confirmation, result trace, immediate KILL/disarm, zero automatic retry,
 and no implication of live promotion. A lane cannot inherit another lane's approval.
 
+Historical Conditions preparation evidence (2026-07-15): the separate execute-once bridge,
+session-approval contract, execution-approval contract, and terminal receipt
+validator and the sandbox-only command transport are implemented. Focused
+validation passed `93/93`; `ValidateDev`
+passed `154/154`; `SmokePreflight`, `ModuleContract` (`32/32`), and
+`ModuleStaticGates` (`39/39`) passed against the current manifest. The current
+hash-bound plan is
+`ce7f011bea67fcd75f0004557e91279f5cc58ddfa820311ce83adceb618aca07`
+with no blockers. Its state is `ready_for_sandbox_session_approval`, attempt
+count `0`, runtime/dispatch/execute-once/live-promotion flags false, and no
+intrusive actions. No sandbox package sync, cast, or live promotion has occurred
+under P12.
+
+The Conditions sandbox session was separately approved on 2026-07-15 as
+`p12-conditions-session-7932a9fab7954713`, bound to the plan and accepted P9
+receipt. The stale sandbox process was replaced through the official wrapper;
+the new sandbox boot reached and executed the neutral chooser loader while the
+live process remained unchanged. Execution approval is still false, attempt
+count remains zero, and the operator must select CTOA Helper and enter the
+sandbox character before attach/readiness evidence can be collected.
+
+The refreshed in-world session then passed `ReadyCheck`, Conditions attach,
+`SmokeAttachModules` `4/4`, `SmokeAttachAll` `16/16`, and
+`RuntimeModuleGatesSandboxSmoke` `19/19`, all against manifest SHA-256
+`79465eb48ef484f5994451a193e833d31f7c9e00e064cea4b341500a917b1923`.
+The current execution preflight is `waiting_for_paralyze`: the guarded heartbeat
+is fresh, online/alive/outside-PZ, cooldown-ready, runtime-disarmed and no-action,
+but `condition_state=absent`. The attempt remains unconsumed and execution
+approval remains false until a fresh observation reports paralyze present.
+
+The next bounded observation reported paralyze `present` with a 789 ms heartbeat
+age and no blockers, so the Conditions lane reached
+`ready_for_execution_approval`. The official wrapper now repeats this preflight
+after execution approval and immediately before command delivery; if the
+condition expires, it sends no command and leaves attempt count zero.
+
+Before command delivery, the operator corrected the exact EK recovery spell:
+the canonical EK profile and live capability both prove vocation `ek` and
+`ctoa_ek_profile.healing.spell = "exura ico"`. No command had been sent and
+attempt count remained zero. The former `exura` plan
+`ce7f011bea67fcd75f0004557e91279f5cc58ddfa820311ce83adceb618aca07`
+and its approvals are superseded and cannot authorize the corrected action.
+The new plan binds vocation `ek`, the EK profile hash, action
+`cast_exura_ico`, spell `exura ico`, and accepted P9 condition evidence; its
+SHA-256 is
+`93a99ec795c93641017eac3a8fe258c324a581e0d8aeb279fa8ba3bb950ce17f`.
+Focused tests passed `27/27`, `ValidateDev` passed `154/154`, and current
+static gates passed `39/39`. A new plan-bound sandbox session approval and
+fresh in-world evidence are required before execution can be reconsidered.
+
+The corrected EK session was approved as
+`p12-conditions-session-709b17c7269d4ede`. Sandbox PID `27324` loaded the
+`exura ico` module with stage/sandbox SHA-256 parity while live PID `29352`
+remained unchanged. The corrected manifest then passed `ReadyCheck`, module
+attach `4/4`, full attach `16/16`, and runtime gates `19/19`. Current execution
+preflight remains blocked without consuming an attempt because paralyze is
+absent and the game cooldown group is active; runtime is still disarmed and no
+command has been delivered.
+
+Final Conditions acceptance (2026-07-15): the first approved command was held
+before the executor because the old observer reported `paralyze_not_present`;
+its trace proved `result=not_called` and terminal `killed_and_disarmed`. Review
+found two fail-closed defects: a rejected guard consumed the attempt counter,
+and boolean `false` values were serialized as empty strings. The bridge now
+increments `attempt_count` only immediately before a real executor call and
+preserves boolean terminal fields. The condition adapter and direct P12 guard
+also share the fork-proven speed fallback because this client can visibly show
+paralysis without setting state bit `32`. Regression tests passed `14/14`, full
+`ValidateDev` passed `154/154`, module attach passed `4/4`, full attach passed
+`16/16`, and runtime gates passed `19/19` against manifest SHA-256
+`81d6ced724ac99ee3e3a91e336f4506d7218c882c7addcd5a12620453cb80e71`.
+
+The replacement plan
+`67c27a26797b0b01e4f8dfccec4e02b0e5f454ca6818434709e4b55850f49810`
+was separately approved for session and execution. The official wrapper made
+exactly one executor call for `cast_exura_ico`; trace result was `success`,
+attempt count `1`, retry scheduled `false`, and terminal state
+`killed_and_disarmed`. Receipt `p12-conditions-78a8b689653640af` is `accepted`
+with no blockers and grants no downstream authority. The sandbox runtime remains
+disarmed, only the sandbox client process is running, and live was untouched.
+That Conditions receipt granted no Equipment authority; the subsequent separate
+Equipment lane and its result are recorded below.
+
+First Equipment execute-once result (2026-07-15): plan
+`f129ccaefd6b9c0ca9b6d7bdba69addc6c8cd20c4233c196aa625daceea9432f`
+was separately approved for the sandbox session and execution. The official
+wrapper dispatched exactly one request to move source item `3097` from dynamic
+`container_id=3`, `slot_index=1` onto the ring slot occupied by `3096`.
+The terminal log proves `attempt=1`, `result=requested`, `retry=false`, and
+`final=killed_and_disarmed`; no retry occurred and only sandbox PID `21124`
+was running. The original postcondition was incorrect for this server because
+ring IDs transform across the equipment boundary: the passive reporter briefly
+observed equipped `3099`, then the ring slot became empty, while source slot
+`3/1` contained transformed rollback item `3093`. Reconciled receipt
+`p12-equipment-4716714ecc674b47` is therefore correctly `rejected`; it grants
+no acceptance or downstream authority. A replacement Equipment attempt must
+use separately reviewed backpack/equipped ID pairs (`3097 -> 3099` and
+`3096 -> 3093`), a fresh prepared inventory state, and new plan-bound session
+and execution approvals. The consumed attempt must never be replayed.
+
+Equipment Family Registry v1 is now the corrective design boundary. It models
+`3093/3096` as one ring family and `3097/3099` as another, with separate
+inventory, equipped, and returned states. The Helper UI exposes disabled-by-
+default family checkboxes instead of editable numeric IDs; selecting a family
+does not arm runtime or authorize an item move. Unknown ID transitions produce
+only a passive `review_required` proposal. The registry is slot-generic for
+future amulets, but P12 execution remains strictly ring-only and a new registry-
+bound plan plus two new approvals are required before another attempt.
+
+Fresh Registry v1 sandbox evidence (2026-07-15): official `SmokePreflight`
+passed for the 62-file manifest, stage/sandbox registry SHA-256 matched at
+`c9061af7927e0863de637b7e5db7924401162a178f392f3394cdedf161cab8a6`,
+and sandbox PID `8484` remained runtime-disarmed. The Equipment view visibly
+showed separate `Primary ring` and `Secondary ring` checkboxes, both OFF, with
+no raw-ID input or layout overlap. Module attach passed `4/4`, full in-world
+attach passed `16/16`, and runtime module gates passed `19/19`. No family was
+enabled and no equipment action, retry, or live promotion occurred.
+
+Final Equipment acceptance (2026-07-15): Registry v1 plan
+`d041db806c6417b018c6ae390e3d384ccec9bead2a77e498a582093bf7c823e0`
+was separately approved for session and execution after current manifest-bound
+attach/runtime gates, fresh sandbox capability, and prepared inventory evidence
+passed. The official wrapper made exactly one request to move `3097` onto the
+ring slot. The terminal observation verified equipped `3099` and transformed
+rollback item `3093` in source container `2`, slot `1`. Attempt count was `1`,
+retry remained `false`, and final state was `killed_and_disarmed`. Receipt
+`p12-equipment-bdf7027cf48c438d` is `accepted`, grants no downstream authority,
+and did not touch a live client. The earlier rejected attempt remains immutable
+historical evidence and cannot be replayed. P12 Heal Friend plan
+`964ff8f0c178c7b646a565380e96846a8b29780eb02a734a259713d9ccf023b3`
+is now `closed_blocked_no_compatible_vocation`. Its bridge is present in the
+63-file manifest, attach/runtime evidence passes `4/4`, `16/16`, and `19/19`,
+and the plan binds ED plus the exact accepted P11 target policy. The sandbox
+session was approved, then a fresh preflight stopped on the single
+`vocation_must_be_ed` blocker. Because the operator has only sorcerer and knight,
+`p12_heal_friend_no_compatible_vocation_closure.json` expires that approval and
+forbids execution or reuse. Attempt count remains `0`, retry false, final state
+`disarmed`, no cast occurred, and no downstream or live authority exists.
+The earlier phrase "P12 Heal Friend is now the next" and historical marker P12
+is `in_progress`, plus `plan_ready_for_sandbox_session_approval`,
+`ready_for_sandbox_session_approval`, and Heal Friend `not_started` are
+superseded and retained only for compatibility with older read-only cockpit checks.
+
 ### P13 — Runtime Evidence And Machine-Readable Roadmap State
 
 Objective: make P8-P12 state replayable and drift-resistant.
 
-Deliverables: bounded decision/result ledger, schema registry, artifact freshness and
-tamper status, read-only Control Center cards, and generated `ROADMAP_STATE.json/md`.
+Status: `runtime_evidence_ready`. The terminal no-action
+Heal Friend closure is represented as the seventh immutable ledger entry without
+reopening P12 or introducing an executor. Schemas, generator, dry-run audit,
+read-only Control Center consumption, release-evidence phase state, and tests are
+complete. The exact confirmed fixed-output refresh is audit-bound and P13 grants
+no runtime, live, MCP-write, or reopened P12 authority.
+
+Deliverables: bounded decision/result ledger, SHA-pinned versioned schema registry,
+artifact freshness and tamper status, read-only Control Center cards, and generated
+`ROADMAP_STATE.json/md`.
 
 Done gates: atomic writes, path confinement, symlink rejection, redaction, stable
 schema tests, pack parity, and an audited dry-run contract. Enabling another MCP
@@ -1613,6 +2035,14 @@ safe-write tool requires a separate review; the P7 tool count does not grow here
 ### P14 — Independent Runner And Release Automation
 
 Objective: move visual and in-world regression work away from the user's only screen.
+
+Status: `foundation_in_progress`. The v1 signed artifact-only request/result
+contract, tracked-source Helper manifest derivation, clean-checkout/revision binding,
+tamper/path-confinement tests, deterministic manifest rollback replay, and clean
+Windows CI job are implemented. This foundation launches no client, uses no operator
+workstation focus/input, grants no promotion/live authority, and adds no MCP tool.
+P14 remains open until a real second machine/VM returns matching signed evidence and
+completes isolated visual/in-world plus actual canary/rollback rehearsals.
 
 Deliverables: second-machine/VM runner contract, artifact-only handoff, CI schema and
 replay checks, signed manifest/evidence bundle, canary/rollback evidence, and explicit
@@ -1660,238 +2090,519 @@ operator-authorization models have their own evidence-backed phase.
 ```
 
 
-## `AI/LUA_INDEX.md`
+## `AI/API_INDEX.md`
 
 ```markdown
-# Lua Index
+# API Index
 
-## Standalone Lua Modules
+## FastAPI Surface
 
-Source folder: `scripts/lua/`
+Source: `api/main.py`
 
-- `auto_heal.lua`: `AutoHeal.shouldCast`, `AutoHeal.nextAction`.
-- `event_logger.lua`: JSONL event shaping through `EventLogger`.
-- `loot_filter.lua`: allow/deny loot decision helpers.
-- `pathing_helper.lua`: route normalization, next waypoint, blocked retry.
-- `supply_manager.lua`: supply threshold checks and refill action.
-- `target_priority.lua`: target scoring and priority selection.
-- `safety_interrupt.lua`: critical-state interrupt action.
-- `telemetry_exporter.lua`: JSONL telemetry serialization.
-- `ctoa_hotkey_status.lua`: periodic hotkey status file/log emission.
-- `ctoa_path_probe.lua`: runtime path probe.
-- `module_reporter.lua`: periodic module status log.
-- `proximity_watch.lua`: player proximity alert.
-- `status_beacon.lua`: HP/mana status beacon.
-- `emergency_heal.lua`: simple emergency heal loop.
+Known endpoints:
 
-Standalone modules often assume a generic runtime API such as `Player`, `Game`,
-`Creature`, and `register("onThink", ...)`. Keep these separate from OTClient
-native modules unless an adapter layer is written.
+- `GET /health`
+- `GET /api/status`
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `GET /api/auth/me`
+- `POST /api/community/invite`
+- `POST /api/community/invite/accept`
+- `GET /api/community/members`
+- `POST /api/community/members/{username}/role`
+- `GET /api/community/feed`
+- `GET /api/community/invites`
+- `GET /api/release-evidence`
+- `POST /api/chat`
+- `POST /v1/chat/completions`
+- `GET /api/safety/metrics`
+- `GET /api/safety/telemetry`
+- `GET /api/safety/status`
 
-## OTClient Native Lua Modules
+## Request Models
 
-Source tree: `scripts/lua/otclient/`
+- `Message`
+- `ChatRequest`
+- `OpenAIChatRequest`
+- `RegisterRequest`
+- `LoginRequest`
+- `InviteRequest`
+- `AcceptInviteRequest`
+- `RoleUpdateRequest`
 
-- `ctoa_otclient_loader.lua`
-- `ctoa_native_helper.lua`
-- `ctoa_native_combat.lua`
-- `ctoa_native_heal.lua`
-- `ctoa_native_loot.lua`
-- `ctoa_ek_profile.lua`
+## Important Environment Variables
 
-Native modules use OTClient globals:
+- `CTOA_ENV`
+- `CTOA_LOCAL_MODEL_URL`
+- `CTOA_LOCAL_MODEL_NAME`
+- `CTOA_MODEL_SMALL`
+- `CTOA_MODEL_LARGE`
+- `CTOA_SMALL_MODEL_URL`
+- `CTOA_LARGE_MODEL_URL`
+- `CTOA_SMALL_API_KEY`
+- `CTOA_LARGE_API_KEY`
+- `CTOA_ROUTE_DEFAULT`
+- `CTOA_ROUTER_LONG_CHARS`
+- `CTOA_ROUTER_LONG_TURNS`
+- `CTOA_QUALITY_RETRY`
+- `CTOA_ROUTER_LOG`
+- `CTOA_RELEASE_EVIDENCE_FILE`
+- `CTOA_AUTH_STORE_FILE`
+- `CTOA_AUTH_REQUIRED`
+- `CTOA_API_SELF_REGISTER_ENABLED`
+- `CTOA_API_SELF_REGISTER_CODE`
+- `CTOA_JWT_SECRET`
+- `CTOA_JWT_TTL_SECONDS`
+- `CTOA_RATE_LIMIT_ENABLED`
+- `CTOA_TRUST_PROXY_HEADERS`
+- `CTOA_CHAT_RATE_LIMIT_PER_MIN`
+- `CTOA_AUTH_RATE_LIMIT_PER_MIN`
+- `CTOA_READ_RATE_LIMIT_PER_MIN`
+- `CTOA_AUDIT_LOG_FILE`
+- `CTOA_SAFETY_TELEMETRY_FILE`
+- `CTOA_SAFETY_ALERT_THRESHOLD`
 
-- `g_game`
-- `g_map`
-- `g_ui`
-- `g_keyboard`
-- `g_resources`
-- `g_clock`
-- `connect`
-- `cycleEvent`
-- `scheduleEvent`
-- `addEvent`
-- `removeEvent`
+## Behavior Rules
 
-## Helper Config Areas
+- Production must have a non-default `CTOA_JWT_SECRET`.
+- Production public member self-registration is disabled unless
+  `CTOA_API_SELF_REGISTER_ENABLED=true` and `CTOA_API_SELF_REGISTER_CODE` are
+  configured.
+- `/api/auth/register` cannot create `owner` or `operator` accounts without an
+  authenticated owner token, even when the auth store is empty.
+- Rate limiting is grouped by endpoint type.
+- Rate limiting and HTTP audit IP identity use the socket client by default.
+  `X-Forwarded-For` is trusted only when `CTOA_TRUST_PROXY_HEADERS=true`, and
+  then only the first syntactically valid forwarded IP is accepted.
+- Audit logging writes JSONL-style HTTP audit entries.
+- HTTP audit entries redact token/password/API-key/Bearer forms and collapse
+  local absolute paths in actor, IP, user-agent, request path, and nested meta
+  before writing `CTOA_AUDIT_LOG_FILE`.
+- Chat execution selects model/backend based on request complexity and route
+  settings.
+- Safety sanitizer records interventions and masks unsafe assistant claims.
+- Release evidence reads from `CTOA_RELEASE_EVIDENCE_FILE` or default
+  `runtime/release/latest-approval.json`, with bounded JSON reads,
+  display-safe `evidence_path`, recursive token/password/API-key redaction, and
+  local absolute path collapse before browser response.
 
-`HELPER_CONFIG` in `ctoa_native_helper.lua` owns:
+## Test Guidance
 
-- global enable state
-- safe boot runtime disable flag
-- helper hotkey
-- auto hide
-- window position
-- theme preset
-- compact mode
-- healing settings
-- combat/targeting settings
-- tools settings
-- cavebot waypoints and movement
-- HUD preferences
-- smoke tab/subtab state
+When touching `api/main.py`, prefer targeted API tests for:
 
-## Profile Files
-
-`ctoa_ek_profile.lua` is generated by `scripts/ops/ctoa_otprofile_builder.py`.
-The helper loads profile candidates from user/module paths and merges them into
-`HELPER_CONFIG`.
-
-Profile saves are ordered by:
-
-- `PROFILE_KEY_ORDER`
-- `UI_PREFS_KEY_ORDER`
-- `HEALING_KEY_ORDER`
-- `TOOLS_KEY_ORDER`
-- `HUD_KEY_ORDER`
-- `ROTATION_KEY_ORDER`
-- `HEAL_SPELL_KEY_ORDER`
-- `WAYPOINT_KEY_ORDER`
-
-Preserve this order when changing profile persistence.
-
-## Hook Patterns
-
-- Generic scripts: `register("onThink", onThink)`.
-- OTClient events: `connect(LocalPlayer, {...})`,
-  `connect(Creature, {...})`, `connect(Container, {...})`,
-  `connect(Map, {...})`, `connect(g_game, {...})`.
-- Periodic OTClient loops: `cycleEvent(onThink, interval_ms)`.
-
-## Validation
-
-Minimum checks:
-
-- Syntax parse with `luac -p` when available.
-- Fallback bracket/sanity checks when `luac` is not available.
-- Manual OTClient load smoke for helper/UI/hotkey work.
-- Fresh `ctoa_local.log` lines for loader/helper changes.
+- auth required vs disabled
+- role checks
+- rate limit groups
+- audit logging side effects
+- chat model route selection
+- safety sanitizer output
+- release evidence missing/invalid/valid states
 ```
 
 
-## `AI/OTCLIENT_INDEX.md`
+## `AI/ARCHITECTURE_INDEX.md`
 
 ```markdown
-# OTClient Index
+# Architecture Index
 
-## Package Contents
+## High-Level Flow
 
-`scripts/lua/otclient/` contains the canonical helper source files:
+```mermaid
+flowchart LR
+  Sources["Server/game data"] --> Ingest["runner/agents/ingest_agent.py"]
+  Ingest --> DB["runner/agents/db.py"]
+  DB --> Brain["runner/agents/brain_v2.py"]
+  Brain --> Generator["runner/agents/generator_agent.py"]
+  Generator --> Validator["runner/agents/validator_agent.py"]
+  Validator --> Publisher["runner/agents/publisher_agent.py"]
+  Publisher --> Artifacts["Generated Lua/Python artifacts"]
+  API["api/main.py"] --> Chat["local/OpenAI-compatible model routing"]
+  Web["web Control Center"] --> API
+  OTClient["scripts/lua/otclient/"] --> Helper["ctoa_native_helper.lua"]
+```
 
-- `ctoa_otclient.otmod`
-- `ctoa_otclient_loader.lua`
-- `ctoa_native_helper.lua`
-- `ctoa_native_combat.lua`
-- `ctoa_native_heal.lua`
-- `ctoa_native_loot.lua`
-- `ctoa_ek_profile.lua`
-- `README.md`
+## Main Subsystems
 
-## Module Definition
+### API and Control Plane
 
-`ctoa_otclient.otmod`:
+- `api/main.py` is the main FastAPI app.
+- It owns auth, chat routing, community endpoints, safety telemetry, release
+  evidence, and OpenAI-compatible chat completion compatibility.
+- Web Control Center helpers are under `web/src/lib/`.
 
-- name: `ctoa_otclient`
-- description: `CTOA OTClient helper and native automation modules`
-- version: `1.1b`
-- `autoLoad: true`
-- `autoLoadPriority: 1000`
-- script: `ctoa_otclient_loader`
+### Agent Pipeline
 
-## Loader
+- Catalog discovers candidate servers.
+- Ingest stores server/game data.
+- Brain plans modules.
+- Generator renders modules.
+- Validator checks syntax and quality.
+- Publisher moves validated output to delivery surfaces.
 
-`ctoa_otclient_loader.lua`:
+### Local Bot Runtime
 
-- Creates/reuses `_G.CTOA_OTCLIENT`.
-- Version: `1.1b`.
-- Main helper module: `ctoa_native_helper.lua`.
-- Load delay: `1500 ms`.
-- Resolves helper from resource/workdir candidate paths.
-- Connects to `g_game.onGameStart` and `g_game.onGameEnd`.
-- Schedules helper load through `scheduleEvent` or `addEvent` fallback.
-- Logs through game console when available.
-- Runtime modules are skipped by loader; helper UI is loaded first.
+- Perception: screen/window/memory parsing.
+- Action: movement, combat, loot, spell rotation.
+- Safety: scheduler/session/humanizer.
+- Overlay: runtime status and macro UI.
 
-## Helper
+### Hybrid Bot Runtime
 
-`ctoa_native_helper.lua`:
+- Higher-level gameplay loop with vision, templates, pathfinding, command
+  execution, and metrics.
+- Intended to bridge manual, hybrid, and autonomous modes.
 
-- Owns `HELPER_CONFIG`, `Helper`, UI style/theme/layout tables, widgets, and
-  runtime state.
-- Loads `ctoa_ek_profile.lua` from candidate user/module paths.
-- Applies safe boot by disabling runtime action modules unless profile opts out.
-- Builds helper window, tabs, settings rows, tools panels, HUD, and profile UI.
-- Binds helper hotkey, default `Ctrl+J`.
-- Uses `cycleEvent(onThink, HELPER_CONFIG.tick_ms)`.
-- Exposes:
-  - `Helper.showTab(tab)`
-  - `Helper.onThink(self)`
-  - `Helper.reloadProfile()`
-  - `Helper.runMovementApiProbe()`
-  - `Helper.runMagicApiProbe()`
-  - `Helper.runApiProbe()`
-  - `Helper.setEnabled(enabled)`
-- Current helper version: `v1.1b`.
-- API v1.1b adds a central safe API registry probe for core, player/vitals,
-  movement/pathing, combat, magic/runes, UI/resources, and container/loot APIs.
-- Magic v1.1b keeps the safe API probe, versioned HUD/footer text, and a Magic
-  tab `Rune box` actionbar selector.
-- Ensures `_G.CTOA_Manager` exists and registers module `helper`.
+### OTClient Native Runtime
 
-## Combat
+- Loader only loads the helper by default.
+- Helper owns config, UI, HUD, profile save/load, runtime toggles, and manager
+  registration.
+- Native combat/heal/loot modules provide direct OTClient event/API examples.
 
-`ctoa_native_combat.lua`:
+## Integration Points
 
-- Config: `DEFAULT_COMBAT_CONFIG`.
-- Runtime state: `Combat`.
-- Guards offline, disabled, PZ, no local player, invalid targets.
-- Finds targets through `g_map.getSpectatorsInRange` or
-  `g_map.getCreaturesInRange`.
-- Scores by priority names, distance, and validity.
-- Uses `g_game.attack(target)` and optional `g_game.follow(target)`.
-- Clears with `cancelAttack`, `stopAttack`, `attack(nil)`, `follow(nil)` where
-  available.
-- Uses `cycleEvent(onThink, 100)`.
-- Connects `Creature.onDeath`.
+- `scripts/lua/otclient/` is the canonical OTClient helper source tree.
+- `scripts/lua/*.lua` contains small standalone generated/runtime Lua modules.
+- `prompts/mmo-lua-pack.yaml` defines prompt quality expectations for MMO Lua.
+- `runner/agents/generator_agent.py` emits Lua templates.
+- `runner/agents/validator_agent.py` validates generated Lua/Python output.
 
-## Heal
+## Trust Boundaries
 
-`ctoa_native_heal.lua`:
+- Local secrets: `.env`, runtime auth store, JWT secret, local DB state.
+- External model backends: configured through `CTOA_*MODEL*` environment
+  variables.
+- OTClient native API: not uniform across forks; always guard calls.
+- TFS protocol: unknown until source is provided.
+```
 
-- Config: `HEAL_SETTINGS`.
-- Cooldown: `HEAL_COOLDOWN = 1000`.
-- Uses `g_game.talk(spell)` for heal/mana spells.
-- Connects `LocalPlayer.onHealthChanged` and `LocalPlayer.onManaChanged`.
 
-## Loot
+## `docs/CTOA_CLI.md`
 
-`ctoa_native_loot.lua`:
+```markdown
+# CTOAi CLI (MVP)
 
-- Config: `LOOT_CONFIG`.
-- Uses `VALUABLE_LOOT` item id map.
-- Connects `Container.onOpen` and `Map.onItemAppear`.
-- Scans container/item events and moves valuable items when supported.
+Single entrypoint for day-to-day operations using short commands.
 
-## Profile
+## Entry point
 
-`ctoa_ek_profile.lua`:
+Run from repository root:
 
-- Generated by `scripts/ops/ctoa_otprofile_builder.py`.
-- Default hotkey: `Ctrl+J`.
-- Potion hotkey: `F1`.
-- Mana potion hotkey: `F2`.
-- Rune hotkey: `F5`.
-- Contains healing, combat, tools, rune, and profile settings for EK use.
+```powershell
+.\ctoa.ps1 help
+```
 
-## Manual Smoke
+## Command legend
 
-1. Put package files under the OTClient module/user directory.
-2. Ensure loader is called by OTClient module autoload or `init.lua`.
-3. Start OTClient.
-4. Confirm `[CTOA-OTC]` or helper log line appears.
-5. Toggle helper with configured hotkey.
-6. Confirm runtime remains disabled in safe boot unless explicitly enabled.
-7. Check fresh `ctoa_local.log` lines.
+- `menu` (`m`) - interactive command picker for the most common workflows
+- `next` (`nx`) - show the recommended next step and current review lane
+- `cc` (`control-center`) - open the visual Control Center and start web dev if needed
+- `dev` - developer profile; starts mobile console in dev mode
+- `ops` - operator profile; runs core/risk/sprint health checks
+- `prod` - production profile; runs update gate and sprint-029 validation
+- `status` (`s`) - combined snapshot: local guards + VPS services + dashboard health
+- `up` - start mobile console in dev mode (`uvicorn` on port `8787`)
+- `test` (`t`) - run local test suite (excludes `tests/e2e`)
+- `val <sprint>` (`v`) - run sprint validator and write CI artifact JSON
+- `nightly [sprint]` (`n`) - run nightly stability batch for sprint (default `029`)
+- `doctor` (`d`) - run core guard + runtime freeze guard + sprint-029 validator
+- `vps <action>` - run VPS operation via `scripts/ops/ctoa-vps.ps1 -Action <action>`
+- `runner <status|restart|logs>` - runner service shortcuts
+- `report <status|restart|now|logs>` - report service shortcuts
+- `mobile <status|restart|logs>` - mobile service shortcuts
+- `logs <runner|health|agents|report|mobile>` - logs shortcuts
+- `dash snap` - VPS dashboard snapshot
+- `report now` - publish report via service environment
+- `otprofile "<opis profilu EK>"` - generate and deploy an OTClient EK profile
+- `otpreview` - render and open the helper UI preview
+- `otmockup` - render and open the helper UI mockup
+- `otdeploy approve-live` - promote the staged Helper through the official wrapper after all release gates pass
+- `otest` - run `ValidateDev` through the official wrapper and open the local preview; never touches live
+- `otbg` - collect bounded passive `BackgroundNoScreen` evidence against an official promotion pin; never launches, stops, focuses, captures, sends input to, or writes inside a client
+- `otp9` - refresh bounded `otbg` evidence and run the strict data-only Conditions shadow replay; writes only repo-local evidence and never dispatches, executes once, or promotes
+- `otp10preview` - render a bounded, sanitized ring/container/slot observation preview from canonical `BackgroundNoScreen` evidence; never reads or controls an OTClient process
+- `otp10catalog` - classify exact ring/container/slot candidates from the fixed preview without selecting or recommending an item
+- `otp10plan [equipped candidate container slot "plan P10 capture profile change"]` - fail closed without arguments or generate a hash-bound repo-runtime profile plan/diff; never reads or writes `.ctoa-local` and grants no acceptance or readiness
+- `otp10autoplan equipped candidate "plan P10 capture profile change"` - refresh canonical `BackgroundNoScreen` evidence, rebuild the fixed passive preview, and resolve the session-scoped candidate container/slot from exactly one fresh operational item-ID match in one command; missing and duplicate matches fail closed, and the command still writes only a reviewable no-action plan
+- `otp10apply planSha "zatwierdzam zastosowanie planu P10 <planSha>"` - apply only the reviewed hash-bound plan to the fixed ignored local capture profile after verifying the current-profile SHA; retains `.bak`, writes a no-action receipt, and never reads or controls OTClient
+- `otp10preflight` - validate the fixed repo-only P8/P9 report and receipt, capture doctor, and Equipment observation preview chain; writes one blocked/passed report without changing eligibility or performing runtime/live actions
+- `otp10ready` - consolidate doctor, preview, dependency, catalog, and change-plan blockers into ordered human-safe next commands; missing inputs remain blocked and eligibility is unchanged
+- `otp10refresh` - refresh the complete fixed repo-only P10 operator chain through strict consumer parity; accepts no paths, IDs, confirmation, acceptance, replay, client-control, or local-profile-write inputs
+- `brain refresh` - regenerate secret-safe Engine Brain file tree and symbol map
+- `brain doctor` - run secret-safe Engine Brain environment audit
+- `brain pack [all|helper|control-center|infra|security]` - build a portable secret-safe Engine Brain markdown pack
+
+## Practical examples
+
+```powershell
+# Interactive start
+.\ctoa.ps1 next
+.\ctoa.ps1 cc
+.\ctoa.ps1 menu
+
+# Profiles
+.\ctoa.ps1 dev
+.\ctoa.ps1 ops
+.\ctoa.ps1 prod
+
+# Unified status snapshot
+.\ctoa.ps1 status
+
+# Quick startup
+.\ctoa.ps1 up
+
+# Fast validation loop
+.\ctoa.ps1 t
+.\ctoa.ps1 v 029
+
+# Daily health check
+.\ctoa.ps1 d
+
+# VPS operations
+.\ctoa.ps1 runner status
+.\ctoa.ps1 report restart
+.\ctoa.ps1 mobile logs
+.\ctoa.ps1 logs health
+.\ctoa.ps1 vps ValidateServices
+.\ctoa.ps1 dash snap
+.\ctoa.ps1 report now
+.\ctoa.ps1 otprofile "EK monk, bez aoe na 1, exeta od 2 visible, potion F1 heal 80"
+.\ctoa.ps1 otest
+.\ctoa.ps1 otbg
+.\ctoa.ps1 otp9
+.\ctoa.ps1 otp10preview
+.\ctoa.ps1 otp10catalog
+.\ctoa.ps1 otp10plan 3051 3048 2 1 "plan P10 capture profile change"
+.\ctoa.ps1 otp10autoplan 3051 3048 "plan P10 capture profile change"
+.\ctoa.ps1 otp10apply <planSha> "zatwierdzam zastosowanie planu P10 <planSha>"
+.\ctoa.ps1 otp10preflight
+.\ctoa.ps1 otp10ready
+.\ctoa.ps1 otp10refresh
+.\ctoa.ps1 otdeploy approve-live
+.\ctoa.ps1 brain refresh
+.\ctoa.ps1 brain doctor
+.\ctoa.ps1 brain pack
+.\ctoa.ps1 brain pack helper
+```
+
+## Fixed P10 operator refresh
+
+`otp10refresh` runs exactly this sequence: capture-profile doctor, passive
+observation preview, dependency preflight, candidate catalog, change plan with
+no explicit identifiers, operator readiness, then consumer parity. Producer
+stages use `--allow-blocked`, so a coherent data-only blocker is preserved and
+the sequence can continue. Consumer parity runs without that override and must
+finish `passed`; otherwise the command exits non-zero.
+
+The orchestrator's own `status=passed` means that every artifact was refreshed
+and consumer parity passed. It does not mean `operator_inputs_ready`: the
+no-ID change-plan stage is normally blocked and readiness remains separately
+visible in the summary.
+
+The command writes the seven fixed stage files plus the strict anti-mix,
+anti-replay receipt
+`runtime/solteria_helper_dev/equipment_operator_refresh_run.json`. The receipt
+binds one UUIDv4, ordered stage receipts, exact canonical artifact hashes,
+freshness/skew checks, and the final consumer-parity hash. Failed runs clean up
+only their matching pending UUID and preserve the last good completed envelope.
+It does not run
+`otp10`, either acceptance command, the client, or the local-profile initializer,
+and it never accepts an item ID or operator confirmation. See
+`docs/otclient/P10_EQUIPMENT_OPERATOR_REFRESH_RUN.md` for the fixed finalizer
+contract.
+
+## Rule for adding aliases
+
+If you run any command manually more than 2 times, add a dedicated alias to `ctoa.ps1`.
+
+This keeps operations centralized and reduces context switching across scripts/tasks/web UIs.
+
+## Shared command vocabulary (CLI + Web)
+
+Command dictionary source:
+
+- `schemas/ctoa-command-dictionary.json`
+
+Web/API exposure:
+
+- `GET /api/commands/dictionary`
+
+This keeps dashboard/web and CLI aligned to the same command names and meanings.
+
+## Suggested daily usage
+
+- Start with `menu` if you do not remember the command.
+- Start with `next` if you are overloaded and need one concrete recommendation.
+- Use `cc` when you need the visual cockpit instead of reading code or scripts; it starts web dev if port 3000 is not responding.
+- Use `dev` when you are building locally.
+- Use `ops` when you want a quick operational snapshot.
+- Use `prod` before release-facing work.
+```
+
+
+## `docs/P7_ROADMAP_STATE_REFRESH_DESIGN.md`
+
+```markdown
+# P7 Roadmap State Refresh Design
+
+Status: `implemented_cli_only_confirmed_refresh_complete`; the MCP tool is not
+enabled and Control Center remains read-only.
+
+## Selection
+
+- Action ID: `roadmap-state-refresh`
+- Proposed MCP tool: `ctoai_roadmap_state_refresh` (not implemented or enabled)
+- Risk class: `safe_write`
+- Purpose: derive one machine-readable roadmap state from existing generated
+  manifests and evidence, reducing drift between `Current State`, `Now`, and
+  `Next` without editing hand-authored roadmap policy.
+
+Exactly this one CLI action is implemented for the bounded P13 lane. Deploy,
+live client, promotion, arbitrary command, and arbitrary path actions remain
+outside both the CLI and plugin surfaces.
+
+## Bounded Write Contract
+
+The implemented CLI may write only:
+
+- `AI/generated/ROADMAP_STATE.json`
+- `AI/generated/ROADMAP_STATE.md`
+- sanitized audit records in `runtime/control-center/action-audit.jsonl`
+
+Inputs are fixed to `AI/FEATURE_ROADMAP.md`, `AI/generated/manifest.json`,
+`AI/generated/P7_OPERATOR_BRIEF.json`, and bounded Helper/Control Center
+evidence summaries. It must not read `.env`, auth stores, logs, databases,
+arbitrary runtime files, or paths supplied by a caller.
+
+The versioned registry and both JSON Schema contracts are independently pinned
+by raw SHA-256 in the generator. Same-version semantic mutation therefore fails
+closed even before the first `ROADMAP_STATE.json` baseline exists.
+
+## Dry Run And Confirmation
+
+`dry_run=true` is the default. It performs the Control Center cockpit preflight,
+parses the fixed inputs, and returns planned output paths, status changes, and
+content hashes without writing either roadmap artifact.
+
+Confirmed execution requires all of:
+
+1. `ctoai_control_center_cockpit` preflight status `ready`;
+2. `dry_run=false`;
+3. exact confirmation text `refresh roadmap state`;
+4. fixed workspace validation;
+5. atomic temporary-file replacement for both outputs;
+6. a sanitized `safe_write` audit record containing action ID, mode,
+   authorization result, output hashes, and success/failure summary.
+
+No deploy or live-client command may be returned as `next_command`.
+
+## Control Center Gate
+
+Control Center consumes only the fixed JSON artifact. It validates the state
+hash and authority boundary, displays the seven terminal ledger entries, and
+checks confirmed audit binding separately from freshness and tamper status.
+There is no refresh button or command in the evidence model. The MCP write tool
+count remains unchanged.
+
+## Implemented Tests
+
+- schema and fixed-input parsing;
+- first-generation registry/schema hash-pin tamper rejection;
+- output path confinement and symlink rejection;
+- dry-run produces zero artifact writes;
+- exact confirmation rejection/acceptance;
+- cockpit preflight failure is fail-closed;
+- atomic JSON/Markdown output parity;
+- sanitized audit record on dry-run, confirmed success, and failure;
+- CLI rejects arbitrary command/path fields and exposes no caller-selected
+  source or output path;
+- Control Center evidence and detail views remain read-only without an action
+  button or command;
+- regression proof that active safe-write tool count remains five until a
+  separate reviewed enablement change.
+
+## Enablement Boundary
+
+Implementation, dry-run evidence, confirmed fixed-output generation, and MCP
+enablement remain separate authorities. The CLI implementation and read-only UI
+do not authorize or enable `ctoai_roadmap_state_refresh`. The real dry-run wrote
+only its sanitized audit record; the later exact confirmation
+`refresh roadmap state` authorized the fixed JSON/Markdown outputs and a
+hash-bound confirmed audit record. No MCP, runtime, P12 reopening, or live
+authority follows.
+```
+
+
+## `docs/otclient/P14_INDEPENDENT_RUNNER_CONTRACT.md`
+
+```markdown
+# P14 Independent Runner And Release Automation
+
+Status: `foundation_in_progress`.
+
+P14 moves regression evidence away from the operator workstation. The first
+implementation slice is deliberately artifact-only: it does not launch a client,
+capture the user's screen, send input, dispatch network or game actions, promote a
+package, or add an MCP write tool.
+
+## Capability basis
+
+The current source checkout at `C:\otclient` was detected as
+`mehah-redemption` with high confidence. Module discovery, `.otmod` metadata,
+`g_ui.loadUI`, `g_ui.createWidget`, OTUI files, anchors, and state selectors are
+supported by native-source evidence. The exact client version and all widget aliases
+remain unproven and are not used as an authorization signal.
+
+## Contract
+
+`scripts/ops/otclient_p14_independent_runner.py` exposes only three commands:
+
+- `prepare` derives the official 63-file Helper package manifest from tracked
+  `scripts/lua/otclient` and `mods/ctoa_chooser` sources, embeds the terminal P13
+  roadmap state, adds a rollback baseline, signs the canonical request, and writes
+  only `request.json` under the selected artifact root.
+- `verify` accepts only that fixed request file, verifies the versioned schema,
+  trusted key ID, HMAC-SHA256 signature, embedded hashes, terminal P13 boundary,
+  sanitized Helper manifest, Git revision, clean checkout, and deterministic
+  rollback replay. It writes only `result.json`.
+- `verify-result` performs the controller-side schema, signature, request-hash,
+  check-order, authority, clean-checkout, and rollback binding verification without
+  writing another artifact.
+
+The request never carries a command, executable path, local client path, runtime
+log, credential, signing key, or arbitrary output path. Every authority field is
+fixed to false. Canary status is `planned_not_executed`; promotion always requires a
+separate external approval and cannot be granted by this runner.
+
+The signing key and its trusted ID are injected outside the repository:
+
+```powershell
+$env:CTOA_P14_RUNNER_SIGNING_KEY = '<at least 32 bytes from a secret store>'
+$env:CTOA_P14_RUNNER_KEY_ID = 'independent-runner-prod'
+```
+
+The key must never be committed, printed, copied into Engine Brain, or included in
+an uploaded artifact. HMAC is the v1 transport integrity mechanism; production
+sender and runner must obtain the shared key from their independent secret stores.
+
+## CI replay
+
+`.github/workflows/p14-independent-runner-contract.yml` runs on a clean Windows
+runner. It generates job-scoped test signing material, runs the schema/tamper/path
+tests, prepares the signed request from tracked sources, verifies it on the same
+clean job, and uploads the non-promotable request/result evidence for seven days.
+The CI key is discarded, so that artifact proves the contract job only and is never
+eligible for release promotion.
+
+## Current gate and next slice
+
+The local checkout is intentionally fail-closed for an operational request while it
+contains tracked modifications or lacks externally supplied signing material. The
+foundation is complete when local tests pass; P14 itself remains open until a real
+second machine or VM returns a matching signed result, an isolated visual/in-world
+suite is attached without operator-workstation focus/input, and a canary plus actual
+rollback rehearsal are independently evidenced. Promotion approval remains outside
+plugin MCP actions.
 ```
 
 
@@ -1900,25 +2611,30 @@ Minimum checks:
 ```markdown
 # CTOAi Three Development Plans
 
-Basis: full workspace audit with `42140` inventoried files and `1369` git-tracked files.
+Basis: full workspace audit with `45487` inventoried files and `1382` git-tracked files.
 
 ## Plan 1: Helper-First Productization
 
 Goal: turn the OTClient/Solteria Helper into a safe, repeatable product lane before broad expansion.
 
+Product split: Helper remains the primary full platform and owns P8-P16. CTOA Safe is a separate compact movable panel with fixed module labels and deep editing only inside supported modules. Safe has no CaveBot, movement/routes, generic Settings, arbitrary Lua, or authority to satisfy a Helper gate.
+
 ### 0-30 Days
 
 - Keep `scripts/lua/otclient/` canonical and keep live Solteria protected.
+- S0 source and staging are complete in candidate `v2.4.0`: the neutral chooser is the only CTOA autoload, requires a new Helper/Safe choice after every login, rejects direct project startup, and terminates the selected project on logout. Safe contains only its `.otmod`, explicit loader, and self-contained project; copied Helper runtime files, CaveBot, and generic Settings are absent.
+- Keep S0 operational acceptance pending until a fresh sandbox Safe selection plus ENABLE smoke passes without a client crash and the separately approved, manifest-bound promotion is verified. Staging evidence cannot claim the live crash fixed.
 - Require `PrepareDev`, `ValidateDev`, `SmokePreflight`, in-world `SmokeAttachAll`, and explicit live approval.
 - Expand `otclient_helper_profile_audit.py` from text checks toward schema-backed migration validation.
 - Keep Control Center Helper status read-only and backed by runtime artifacts.
-- Treat P8 `BackgroundNoScreen` as `implementation_complete` but `operational_acceptance_blocked`: keep it the default routine Helper evidence lane with no mouse/keyboard input, focus, screenshots, client launch/stop, or live-client writes; accept it only after an official promotion-bound trusted pin, a fresh capability heartbeat, and full no-action producer/consumer parity pass together. The current historical pin is `legacy_or_unbound_attestation`; its stable 57/58 diagnostic parity and one executable-profile drift are informational only and cannot be rebound into trust. P9 Conditions is offline/staging-complete and now has a strict separately confirmed data-only acceptance boundary, but current operational evidence writes no receipt and P10 remains blocked until accepted P8, real Conditions, and hash-bound Recovery proofs pass together.
+- Current Helper phase state: P8, P9, P10, and P11 are `operational_acceptance_complete`; P12 execute-once review is `closed_with_deferred_heal_friend_lane`. Conditions and Equipment are separately accepted, terminally disarmed, zero-retry, and grant no downstream authority. Heal Friend plan `964ff8f0c178c7b646a565380e96846a8b29780eb02a734a259713d9ccf023b3` is `closed_blocked_no_compatible_vocation`: its approved sandbox session reached a fresh ED-only blocked preflight, then `p12_heal_friend_no_compatible_vocation_closure.json` expired the approval because only sorcerer and knight are available. Attempt count is 0, execution approval and reuse are forbidden, and no cast, retry, downstream authority, or live promotion occurred. P13 Runtime Evidence And Machine-Readable Roadmap State is `runtime_evidence_ready`: its fixed seven-entry ledger, SHA-pinned schema registry, freshness/tamper validation, atomic generator, sanitized audit trail, read-only Control Center surface, and release-evidence consumer are implemented and tested. Exact confirmation `refresh roadmap state` authorized the fixed JSON/Markdown outputs and their hash-bound confirmed audit record. No runtime executor, MCP write tool, live authority, or P12 Heal Friend reopening is introduced. Keep BackgroundNoScreen as the default routine evidence lane with no mouse/keyboard input, focus, screenshots, client launch/stop, or live-client writes.
+- P14 Independent Runner And Release Automation is active as `foundation_in_progress`: signed artifact-only request/result schemas, tracked-source package manifest derivation, clean-checkout/revision binding, deterministic manifest rollback replay, Windows CI, Release Evidence, and a read-only Control Center card are implemented. A real second-machine/VM result, isolated visual/in-world suite, canary, and actual rollback rehearsal remain required; no promotion, runtime/live authority, or additional MCP tool exists.
 - Keep the post-Recovery runtime sequence fixed: Conditions paralyze-only gate, then Equipment ring-only rollback gate, then Heal Friend exact-whitelist gate. Require action-bound predecessor traces and current `RuntimeModuleGatesSandboxSmoke` evidence; Combat and CaveBot remain `deferred_high_risk` and may receive passive refactor work only.
 
 ### 31-60 Days
 
 - Split `ctoa_native_helper.lua` only along stable boundaries: config/schema, profile persistence, UI, runtime loops, diagnostics.
-- Preserve `ctoa_native_helper.lua` as the public loader entrypoint.
+- Preserve `ctoa_project_loader.lua` as the only public root loader; keep `ctoa_native_helper.lua` reachable only through an authorized Helper selection.
 - Add stable diagnostics export coverage for HP/MP, movement, combat, magic, container/loot, UI/resources.
 
 ### 61-90 Days
@@ -1992,3983 +2708,14 @@ Goal: make `AI/` the local, secret-safe planning/context layer and evolve it int
 ```
 
 
-## `docs/otclient/P9_CONDITIONS_SHADOW_REPLAY_DESIGN.md`
-
-```markdown
-# P9 Conditions Shadow Observation And Replay
-
-Implementation status: `offline_implementation_complete`. Operational acceptance:
-`operational_acceptance_blocked`; blocker reason:
-`blocked_by_p8_operational_acceptance`.
-
-## Purpose
-
-P9 validates only `plan_paralyze_recovery` from passive, sanitized evidence. It
-does not cast, dispatch, arm runtime, execute once, promote a package, or touch a
-client window. The product is a deterministic offline replay lane fed by the
-existing P8 heartbeat.
-
-P9 operational acceptance requires one jointly accepted P8 proof set:
-
-1. an official promotion-bound trusted manifest pin;
-2. one canonical process with a fresh online capability heartbeat newer than
-   that process;
-3. full producer/consumer parity for the BackgroundNoScreen no-action contract.
-
-Offline/staging implementation is allowed while that proof is blocked because
-the complete lane is data-only, deterministic, and no-action. It must not be
-represented as P9 runtime readiness or operational acceptance.
-
-## Data Flow
-
-```text
-guarded OTClient adapter
-  -> optional Conditions observation in the P8 heartbeat
-  -> bounded headless validation and sanitization
-  -> deterministic replay with a data-only JSON profile
-  -> conditions_shadow_replay.json
-  -> read-only Release Evidence and Control Center summaries
-  -> separate data-only operator acceptance preflight
-```
-
-The existing 5-second heartbeat remains the only client-side producer loop. A
-missing Conditions observation blocks P9 only and remains compatible with the
-currently protected `v2.2.1` live client.
-
-## Data-Only Profile
-
-Canonical path: `config/otclient/conditions-shadow-profile.json`.
-
-Canonical schema: `ctoa.conditions-shadow-profile.v1`, JSON Schema draft
-2020-12, with `additionalProperties=false` at every object boundary.
-
-Required fixed safety values:
-
-```json
-{
-  "schema_version": "ctoa.conditions-shadow-profile.v1",
-  "mode": "shadow_only",
-  "action": "plan_paralyze_recovery",
-  "condition": "paralyze",
-  "spell": "exura",
-  "max_observation_age_ms": 6000,
-  "cooldown_required": "ready",
-  "retry_budget": 0,
-  "requires_p8_ready": true,
-  "requires_recovery_trace": true,
-  "dispatch_allowed": false,
-  "runtime_actions": false,
-  "executes_plan": false,
-  "execute_once_allowed": false,
-  "promotion_allowed": false
-}
-```
-
-This profile is consumed only by the offline P9 replay tool. Lua, `dofile`, the
-client UI, autosave, and runtime dispatch must never load it. It does not migrate
-the existing vocation profiles; their executable-Lua drift remains blocking.
-
-## Sanitized Observation
-
-Schema `ctoa.conditions-observation.v1` contains only:
-
-- observation timestamp and bounded observation ID;
-- `online|offline|unknown`;
-- `alive|dead|unknown`;
-- protection-zone tri-state `outside|inside|unknown` plus an allowlisted source;
-- fixed condition ID `paralyze` and state `present|absent|unknown`;
-- cooldown `ready|active|unknown` plus an allowlisted source;
-- producer source `otclient_guarded_adapter|fixture`;
-- explicit false action, dispatch, execute-once, and promotion flags.
-
-Names, creature IDs, coordinates, raw state bitmasks, log lines, local paths, and
-arbitrary strings are forbidden.
-
-## Deterministic Replay Trace
-
-Schema `ctoa.conditions-shadow-trace.v1` binds:
-
-- the exact action, condition, and spell;
-- SHA-256 of the profile, observation, accepted P8 status, and Recovery trace;
-- evaluation timestamp and derived observation age;
-- stable, allowlisted blockers in canonical order;
-- canonical input and decision SHA-256 values;
-- `operator_review_required=true`;
-- `dispatch_allowed=false`, `runtime_actions=false`,
-  `execute_once_allowed=false`, and `promotion_allowed=false`;
-- an empty intrusive-action ledger.
-
-Two replays of identical canonical inputs must produce the same decision hash.
-A normal observation without paralyze is a valid blocked decision, not a tool
-failure.
-
-## Scenario Pack
-
-The deterministic pack must include one positive shadow decision and negative
-cases for:
-
-- missing, blocked, or stale P8 evidence;
-- missing, malformed, or hash-mismatched Recovery evidence;
-- stale or future observation;
-- offline, dead, or unknown player state;
-- protection zone `inside` and `unknown`;
-- condition absent, unknown, or wrong;
-- action or spell mismatch;
-- cooldown active or unknown;
-- non-zero retry budget;
-- malformed, future-version, oversized, symlinked, or extra-field profile.
-
-Every case runs twice and asserts trace parity. Runtime and dispatch flags must
-remain false in every result.
-
-## Implemented Offline Slices
-
-1. Strict profile, observation, trace, and report schemas plus fixtures.
-2. Passive Conditions observation added to the existing heartbeat through a
-   guarded adapter; no new loop and no action API.
-3. Bounded P8 sanitizer support for the optional observation.
-4. Recovery predecessor trace with version and hash binding.
-5. Offline replay tool with path confinement, size limits, symlink rejection,
-   atomic repo-local evidence writes, and deterministic hashes.
-6. Read-only Release Evidence and Control Center consumers with full mutation
-   tests.
-7. Documentation, Engine Brain refresh, and separate P9 review commit.
-8. Strict acceptance schema/preflight with canonical recomputation, exact
-   confirmation, repeated evidence fingerprints, and atomic repo-local receipt.
-
-The first six slices are implemented in staging. `ctoa.ps1 otp9` first refreshes
-the bounded P8 artifact through the existing `BackgroundStatus` allowlist and
-then runs the repo-local replay tool. The fixture pack can pass independently,
-but a real trace remains `operational_acceptance_blocked` when P8, the optional
-Conditions observation, or the hash-bound Recovery predecessor is missing,
-stale, or unaccepted. No live promotion is implied.
-
-## P9 Done Gate
-
-P9 may be marked accepted only when a real, current observation produces an
-action-bound trace under an accepted P8 proof set and accepted Recovery trace;
-the entire positive/negative pack is deterministic; consumers fail closed; and
-all execution, dispatch, promotion, and intrusive-action fields remain false.
-The separate acceptance boundary in
-`docs/otclient/P9_CONDITIONS_SHADOW_ACCEPTANCE.md` must then validate the current
-canonical inputs; fixture success or a schema-only check is insufficient.
-
-P10 remains blocked until that trace is reviewed and explicitly accepted.
-```
-
-
-## `docs/otclient/P9_CONDITIONS_SHADOW_ACCEPTANCE.md`
-
-```markdown
-# P9 Conditions Shadow Operator Acceptance
-
-Status: data-only acceptance boundary implemented; current operational acceptance
-remains dependent on a fresh trusted P8 proof, a real guarded Conditions
-observation, and current hash-bound Recovery evidence.
-
-## Boundary
-
-`scripts/ops/otclient_conditions_shadow_acceptance.py` closes the evidence-type
-gap between the P9 shadow report and any later predecessor review. It does not
-start P10, create an Equipment plan, dispatch an action, write to OTClient, or
-claim runtime readiness.
-
-The tool rereads the P9 report and all source documents, rebuilds the report at
-its recorded timestamp, verifies canonical hash parity, enforces a 30-second
-freshness window, rejects fixture operational inputs, and validates the full
-no-action scenario pack. Its default invocation is a read-only preflight:
-
-```powershell
-python scripts/ops/otclient_conditions_shadow_acceptance.py
-```
-
-A preflight prints either `blocked` or `ready_for_operator_review` and never
-writes an accepted receipt. Even with the confirmation present, `--no-write`
-cannot produce `accepted`:
-
-```powershell
-python scripts/ops/otclient_conditions_shadow_acceptance.py `
-  --confirm "accept P9 conditions shadow" `
-  --no-write
-```
-
-Only a fully operational, fresh, exactly recomputed report plus this exact
-case-sensitive confirmation may atomically write
-`runtime/solteria_helper_dev/conditions_shadow_acceptance.json`:
-
-```powershell
-python scripts/ops/otclient_conditions_shadow_acceptance.py `
-  --confirm "accept P9 conditions shadow"
-```
-
-Immediately before writing, the tool rereads every physical input and rejects
-any fingerprint change. The writer boundary performs this current-evidence
-revalidation itself; it cannot persist a caller-supplied receipt dictionary.
-Persistence also requires the canonical repo profile,
-scenario pack, runtime P9 report, raw `background_status.json`, and runtime
-Recovery paths; alternate fixture or explicit-observation paths cannot be used
-to create an accepted receipt. The persisted receipt remains data-only:
-`runtime_readiness_claimed=false`; dispatch, runtime, execution, execute-once,
-and promotion flags are false; the intrusive-action ledger is empty. Its
-`downstream_use_requires_separate_review=true` field prevents the receipt from
-being treated as automatic permission for P10 or any runtime bridge.
-
-## Fail-Closed Cases
-
-- missing, malformed, duplicate-key, oversized, symlinked, or non-object report;
-- report/source recomputation mismatch or input change before write;
-- future or older-than-30-seconds report;
-- blocked operational trace, failed scenario pack, or unsafe action field;
-- fixture observation, P8 proof, Recovery trace, or Recovery proof;
-- absent confirmation for persistence or any non-exact confirmation value.
-
-The schema is `schemas/conditions-shadow-acceptance.schema.json`. P10 stays
-blocked until the real P9 evidence is independently reviewed; this receipt does
-not alter Lua, Helper runtime policy, Equipment, Control Center, or live files.
-```
-
-
-## `docs/otclient/solteria_helper_development_plan.md`
-
-```markdown
-# Solteria Helper Development Plan
-
-## Objective
-
-Build new Helper features in an isolated lane first, then promote them to the
-live Solteria client only after static validation, sandbox smoke, and log
-evidence pass.
-
-## Non-Interference Rule
-
-The active play client under:
-
-```text
-C:\Users\zycie\AppData\Local\Solteria\client
-```
-
-must not be restarted, stopped, or overwritten during normal development work.
-Development work uses:
-
-```text
-runtime\solteria_helper_dev
-C:\Users\zycie\AppData\Local\SolteriaCodexTest\client
-```
-
-Sandbox operations must keep `SandboxClient` under `%LOCALAPPDATA%` with
-separator-aware path containment, and `SandboxClient` must not equal or sit
-inside `SourceClient`. This prevents manual smoke/status/stop commands from
-aliasing the live Solteria client.
-
-Use `PrepareDev` and `ValidateDev` first. Use live copy only when the user
-explicitly asks to deploy to the active play client.
-
-## Environment Commands
-
-Prepare a package and manifest without launching a client:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action PrepareDev
-```
-
-Run static validation without touching the live client:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action ValidateDev
-```
-
-Prepare the sandbox client without touching the live client:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action Setup
-```
-
-Verify sandbox files match the staged dev package without launching a client:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokePreflight
-```
-
-Inspect sandbox smoke readiness without launching or stopping a client:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeStatus
-```
-
-Refresh and print the full development goal status without launching or stopping
-a client:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action GoalStatus
-```
-
-Only the sandbox client should be launched for interactive smoke:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action Launch
-```
-
-## Promotion Gates
-
-1. `PrepareDev` writes a fresh package under `runtime\solteria_helper_dev`.
-2. `PrepareDev` writes `manifest.json`, `CHANGELOG.md`, `validation.json`, and
-   a versioned ZIP without touching the live client.
-3. `ValidateDev` passes helper/API/report tests, static UI preview, and API
-   catalog refresh.
-4. `SmokePreflight` verifies sandbox files match the staged dev package.
-5. Sandbox launch loads the Helper and writes fresh `ctoa_local.log` evidence.
-6. `SmokeAttachAll` passes after a sandbox test character is in-world.
-7. Only then copy to the active client with
-   `PromoteLiveCtoa -ApproveLiveDeploy`.
-
-## Feature Roadmap
-
-### P0: Development Lane
-
-- Keep `PrepareDev` and `ValidateDev` green.
-- Keep package manifest evidence current.
-  Status: the release gate verifies every staged file listed in
-  `manifest.json` still exists under `latest` and matches its SHA256.
-- Keep `CHANGELOG.md` and `validation.json` attached to every dev package.
-- Never use active play-client restart as the first validation step.
-
-### P1: Runtime Observability
-
-- Add an in-client diagnostics tab that renders the last API probe snapshot.
-  Status: `Tools / Diag` added in source; validate through `ValidateDev`.
-- Add bounded log export for HP/MP, movement, combat, magic, and container APIs.
-  Status: bounded diagnostics buffer and `ctoa_diag_export.lua` export added in
-  source; validate through `ValidateDev`.
-- Add feature flags for experimental modules.
-  Status: profile-backed flags added for diagnostics, cavebot, loot, and combat.
-
-### P2: Healing And Mana
-
-- Use real `LocalPlayer:getHealth/getMaxHealth/getMana/getMaxMana` reads first.
-  Status: `readPlayerVitals()` added in source; percent APIs are fallback only.
-- Keep spell rotation by HP thresholds.
-- Keep potion/rune selection actionbar-compatible: choose item/actionbar slot in
-  the same model as the client actionbar assignment flow.
-  Status: HP/MP/rune box selectors remain actionbar-slot backed, and runtime
-  item actions resolve `*_actionbar_slot` before legacy hotkey fields.
-
-### P3: CaveBot
-
-- Keep movement disabled separately from route editing.
-- Route editor first: add/current/delete/reorder waypoints without movement.
-  Status: add/delete/select/reorder controls added; editor functions only mutate
-  route/profile state and do not call movement APIs.
-- Movement execution only through `LocalPlayer:autoWalk(destination, retry)`.
-- Add stuck detection, retry budget, and PZ/offline guards before looped movement.
-  Status: movement runtime now checks offline/PZ/player-position guards, tracks
-  same-position retries, passes the retry flag into `LocalPlayer:autoWalk`, and
-  disables movement after the retry budget is reached while keeping the edited
-  route intact.
-
-### P4: Combat And Magic
-
-- Keep monster-only targeting guards.
-  Status: targeting clears non-monster/unsafe targets and retargets only
-  monster candidates inside configured range.
-- Add visible decision state for spell rotation, exeta, rune, and target lock.
-  Status: magic footer and HUD render the next action with target, action-lock,
-  exeta cooldown, and rune readiness/cooldown state.
-- Keep all offensive actions rate-limited and PZ-aware.
-  Status: offensive action execution rechecks PZ/runtime block, action lock, and
-  recovery gap before casting exeta, rotation spells, or rune actions.
-
-### P5: Packaging And Release
-
-- Build a versioned zip from canonical source files.
-  Status: `PrepareDev` stages canonical OTClient files and creates
-  `ctoa_otclient_<version>.zip` with SHA256 manifest evidence. The release gate
-  verifies the ZIP exists and its SHA256 matches `release_readiness.json`.
-- Generate a changelog from manifest + validation evidence.
-  Status: `ValidateDev` refreshes `CHANGELOG.md`, `validation.json`, and
-  `release_readiness.json` after tests, UI preview, and API audit pass. It also
-  writes `release_gate.json`, which stays `blocked` until `SmokePreflight`
-  passes, in-world `SmokeAttachAll` evidence exists, and live
-  approval/promotion evidence exists. The gate auto-discovers only
-  `solteria-helper-smokeall-inworld-*.json` reports, ignores modal-limited
-  coverage reports, and verifies that the report contains every expected helper
-  view with an existing screenshot file.
-- Promote to live only with explicit approval and fresh backup.
-  Status: live promotion is a separate `PromoteLiveCtoa` action that refuses to
-  run without `-ApproveLiveDeploy`, checks the existing strict `release_gate`
-  for the current staged package without regenerating the manifest, then writes
-  a fresh `live_backup_<timestamp>` with `backup_manifest.json`, copies staged
-  files without stopping, restarting, or launching the live client by default,
-  and records `live_promotion.json` as durable post-promotion evidence. A live
-  client launch after promotion is available only through the explicit
-  `-LaunchAfterPromote` switch; it starts the live executable when it is not
-  already running and never restarts an existing live client.
-- Prepare sandbox smoke without interfering with live play.
-  Status: `SmokePreflight` uses the latest staged package, creates one only
-  when it is missing, runs sandbox setup, verifies staged package hashes against
-  sandbox files, writes the current manifest fingerprint into
-  `smoke_preflight.json`, and does not launch, stop, or overwrite the live
-  client. The release gate blocks stale preflight evidence after a new manifest
-  is generated.
-- Inspect sandbox smoke state without changing client state.
-  Status: `SmokeStatus` writes `smoke_status.json` from existing sandbox
-  process/log state and does not launch, stop, or overwrite any client. It also
-  rejects a `SandboxClient` path that aliases `SourceClient`.
-- Inspect full goal state without changing client state.
-  Status: `GoalStatus` refreshes `release_gate.json` and `goal_audit.json`,
-  writes `goal_status.json`, prints P0-P5 status and the next command when a
-  next gate exists, and does not launch, stop, or overwrite any client.
-
-### P6: Module Lane And New Features
-
-- Keep the generated module workplan current before adding new helper behavior.
-  Status: `scripts/ops/otclient_helper_module_audit.py` writes
-  `runtime/solteria_helper_dev/module_audit.json` and
-  `docs/otclient/solteria_helper_module_workplan.md`.
-- Treat the 5k-line helper as a module host, not as the default place for new
-  behavior. New features must enter through a named lane with profile keys,
-  safe boot defaults, tests, sandbox smoke evidence, and release-gate evidence.
-- Extract or isolate shared domains before extending runtime behavior:
-  recovery/vitals, target guards, actionbar actions, diagnostics, and module
-  registry.
-- Convert functional placeholders in order: Conditions paralyze-only gate,
-  Equipment ring-only rollback gate, Heal Friend exact-whitelist gate, then
-  Scripting policy shell. Combat and CaveBot stay refactor-only and
-  `deferred_high_risk`.
-- Do not implement arbitrary scripting or live-client actions until the risk
-  model, audit logging, Control Center evidence, and targeted tests exist.
-  Status: this remains a planning lane; runtime enablement is blocked until the
-  module-specific gates in `solteria_helper_module_workplan.md` pass.
-
-### P7: Next Module Design Queue
-
-- Keep the supplemental next-module plan current after the extraction map is
-  complete.
-  Status: `scripts/ops/otclient_helper_next_modules_plan.py` writes
-  `runtime/solteria_helper_dev/next_modules_plan.json` and
-  `docs/otclient/solteria_helper_next_modules_plan.md`.
-- Treat local ZeroBot material as a capability/API reference, not as a visual
-  or runtime copy target.
-- Treat vBot or other external bot logic as `source_required` until the actual
-  source/archive is present, reviewed for provenance, and mapped into CTOAi
-  safe-boot gates.
-- Build the next functions in this order unless sandbox evidence changes the
-  priority: HUD overlay domain, hotkey normalization, confirmation modal
-  lifecycle, route engine split, target scorer split, then external vBot import
-  review.
-```
-
-
-## `docs/otclient/HELPER_RUNTIME_BRIDGE_V1.md`
-
-```markdown
-# Helper Runtime Bridge v1
-
-Status: `sandbox_action_accepted` on 2026-07-11. Evidence: ModuleStaticGates 33/33,
-ModuleAttachSmoke 4/4, SmokeAttachAll 16/16, and
-`recovery_bridge_sandbox_smoke.json` 9/9. Runtime remained disarmed and the
-dry-run trace did not invoke its injected executor.
-
-The controlled native action acceptance also passed 5/5: dry-run, confirmation
-request, confirmed session arm, exactly one Healing execution, and the operator
-kill switch. The final state was `killed_and_disarmed`; live promotion remained
-false.
-
-Native sandbox execution is routed through the Helper's existing guarded
-`castSpell` adapter only after the bridge verifies the `SolteriaCodexTest`
-work directory, a matching armed session, client readiness, PZ/cooldown guards,
-and the operator's second confirmation click. The Healing panel exposes
-`ARM bridge`, `Dry run`, and an immediate `KILL`; live paths fail closed.
-
-## Outcome
-
-Enable one bounded Healing/Recovery action in the sandbox without changing the
-Helper safe-boot contract. The bridge connects passive decisions to an injected
-executor; it does not call OTClient globals directly and does not authorize live
-promotion.
-
-## Scope
-
-- Action: `plan_heal` / `cast_heal` only.
-- Environment: sandbox only.
-- Boot state: disarmed and dry-run.
-- Arm gate: explicit operator confirmation, runtime enablement, and a non-empty
-  session identifier.
-- Runtime guards: online client, living player, client readiness, protection
-  zone exclusion, cooldown, armed-session match, and active kill switch.
-- Failure policy: bounded consecutive failures activate the kill switch.
-- Trace: `decision -> guard -> action -> result` using
-  `ctoa.recovery-bridge-trace.v1`.
-
-## Acceptance Evidence
-
-1. Real-Lua tests prove dry-run never invokes the executor.
-2. Execution requires an explicitly armed matching sandbox session.
-3. Cooldown and PZ guards fail closed.
-4. Retry-budget exhaustion disarms the bridge and activates its kill switch.
-5. The packaged boot graph includes the bridge after policy and dispatch guard.
-6. No direct `g_game`, cast, item-use, movement, or live-promotion call exists.
-7. Sandbox attach and in-world evidence are required before adding a native
-   executor adapter or expanding beyond Healing/Recovery.
-
-## Deliberate Boundary
-
-This phase supplies the execution boundary and injected-executor contract. The
-native OTClient executor adapter, operator UI arming control, live promotion,
-Combat, CaveBot, Equipment, Conditions, and Heal Friend remain outside v1 until
-the sandbox acceptance evidence is complete.
-```
-
-
-## `docs/otclient/HELPER_RUNTIME_MODULE_GATES_V1.md`
-
-```markdown
-# Helper Runtime Module Safety Gates v1
-
-Status: `static_contract_accepted`; runtime dispatch remains unavailable.
-
-## Outcome
-
-Move beyond the accepted Recovery Bridge without treating general Helper static
-or attach evidence as permission to execute a different action class. Every new
-domain has its own default-closed, sandbox dry-run gate and an explicit place in
-the sequence.
-
-## Required Sequence
-
-Canonical order: `Conditions -> Equipment -> Heal Friend`.
-
-1. `conditions_runtime_gate` follows accepted Recovery evidence. Version 1
-   allowlists only `plan_paralyze_recovery` and requires a current condition
-   observation, the exact allowlisted `exura` recovery spell, a bound Recovery
-   dry-run trace, PZ/offline/dead/client guards, operator confirmation, elapsed
-   cooldown, bounded non-negative retry, and disabled Combat/CaveBot.
-2. `equipment_runtime_gate` follows an accepted Conditions gate. Version 1
-   allowlists only `plan_ring_swap`, requires exact current/candidate item IDs,
-   a matching ring-slot/container/revision rollback snapshot, an unambiguous
-   inventory, a confirmed free slot, elapsed cooldown, and zero automatic
-   retries. The accepted Conditions trace is carried into this decision.
-3. `heal_friend_runtime_gate` follows accepted Conditions and Equipment gates.
-   Version 1 allowlists only `plan_sio` and requires a persisted exact whitelist,
-   stable observed/current creature ID and name, a current persisted-whitelist
-   revision, real party membership by creature ID, visibility, same-floor and
-   range checks, fresh timestamp-derived HP evidence, PZ/offline/dead/client
-   guards, elapsed cooldown, and explicit operator confirmation. Both accepted
-   predecessor traces are carried into this decision.
-
-The shared `ctoa_helper_runtime_policy.lua` requires the matching action-specific
-gate in addition to the existing manifest/static/attach/full-smoke/live-approval
-policy. Gate acceptance is a structured trace bound to `gate_id` and
-`next_action`; a caller-provided boolean or `runtime_action=false` cannot bypass
-classification. Poison/burn/energy/bleed recovery and amulet swaps are
-`deferred_module_scope` in v1. `plan_attack`, offensive spell/rune plans, and
-`plan_walk` always return `high_risk_deferred`, even if every generic gate is
-green.
-
-## Evidence Contract
-
-- `ConditionsRuntimeGateStaticSmoke` ->
-  `conditions_runtime_gate_static_smoke.json`
-- `EquipmentRuntimeGateStaticSmoke` ->
-  `equipment_runtime_gate_static_smoke.json`
-- `HealFriendRuntimeGateStaticSmoke` ->
-  `heal_friend_runtime_gate_static_smoke.json`
-- real-Lua guard matrices prove accepted and blocked cases;
-- `RuntimeModuleGatesSandboxSmoke` proves synthetic action-bound acceptance,
-  explicit outside-PZ fail-closed behavior, current in-world gate behavior, and
-  high-risk/out-of-scope deferral; it is a mandatory release-gate artifact;
-- all reports declare `dispatch_allowed=false`, `runtime_actions=false`, and
-  `live_promotion=false`.
-
-Static acceptance proves the policy boundary only. A domain may gain an
-execute-once bridge only after fresh package, module static gates, in-world tab
-evidence, a domain-specific dry-run against real observations, and a separate
-operator-reviewed action smoke. No gate in this document promotes or changes
-the live Solteria client.
-
-`RuntimeModuleGatesSandboxSmoke=passed` is not action acceptance. Its current
-lane result may remain `blocked_fail_closed` when PZ is unknown/in-zone or real
-domain evidence and operator confirmation are absent. That is the intended
-safe result; a later domain-specific acceptance must be reviewed separately.
-
-`BackgroundNoScreen` evidence is intentionally weaker than action acceptance.
-It may prove heartbeat freshness, runtime state, bounded log health, and
-immutable manifest parity while the user plays, but it is always advisory with
-`dispatch_allowed=false` and `promotion_allowed=false`. It cannot satisfy a
-domain observation, operator confirmation, execute-once smoke, visual review,
-or live approval by itself.
-
-## Deliberate Boundary
-
-- Conditions execution is not enabled by this gate.
-- Equipment movement/use and rollback execution are not enabled by this gate.
-- Heal Friend casting and whitelist mutation are not enabled by this gate.
-- Combat and CaveBot remain later, high-risk phases.
-```
-
-
-## `docs/otclient/solteria_helper_test_env.md`
-
-```markdown
-# Solteria Helper Test Environment
-
-This sandbox runs a separate Solteria client from:
-
-```text
-C:\Users\zycie\AppData\Local\SolteriaCodexTest\client
-```
-
-It keeps mutable CTOA files, logs, and UI preferences separate from the normal play client:
-
-```text
-C:\Users\zycie\AppData\Local\Solteria\client
-```
-
-Large data folders/packages are linked to avoid duplicating the full client. The executable files are copied, not hardlinked, so the sandbox can run next to the normal client.
-
-## Commands
-
-Prepare a development package and manifest without launching, stopping, or
-overwriting the live play client:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action PrepareDev
-```
-
-Run static validation for the current development package without touching the
-live play client:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action ValidateDev
-```
-
-Prepare sandbox files:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action Setup -Tab healing
-```
-
-Verify sandbox files match the staged dev package without launching a client:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokePreflight
-```
-
-`SmokePreflight` uses the latest staged package and only creates a fresh one
-when the staged package is missing, so it does not reset a freshly passed
-`ValidateDev` report.
-
-Inspect current sandbox smoke readiness without launching or stopping a client:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeStatus
-```
-
-`SmokeStatus` writes `next_action` and `next_command` into
-`runtime\solteria_helper_dev\smoke_status.json` so the next safe operator step
-is explicit. The report is written atomically and uses simple process summaries
-so a blocked or closed sandbox does not leave a partial JSON file.
-
-Refresh the full development goal status without launching or stopping a
-client:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action GoalStatus
-```
-
-`GoalStatus` refreshes `release_gate.json` and `goal_audit.json`, writes
-`runtime\solteria_helper_dev\goal_status.json`, and prints P0-P5 status,
-current blockers, and the next safe command when a next gate still exists. It
-does not launch, stop, or overwrite any client.
-
-Collect passive live evidence while the user keeps the only game screen:
-
-```powershell
-.\ctoa.ps1 otbg
-```
-
-Equivalent explicit wrapper command:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action BackgroundStatus -OperatorMode BackgroundNoScreen
-```
-
-`BackgroundNoScreen` has a positive allowlist containing only
-`BackgroundStatus`. The mode is inherited by child processes and cannot be
-downgraded. It rejects live approval, launch, helper-toggle, and dialog-control
-parameters before dispatch. The action performs bounded passive reads, checks
-immutable live parity against the manifest cryptographically bound to the
-official promotion report, and writes only
-`runtime\solteria_helper_dev\background_status.json`. It does not move the
-mouse, send keys, focus or capture a window, start/stop a client, write a smoke
-command, copy into live, or approve promotion. Use `-NoReport` for stdout-only
-JSON with no evidence-file write. It requires the canonical
-`%LOCALAPPDATA%\Solteria\client` root and the trusted repo-local interpreter.
-
-Missing, stale, offline, cross-client, incomplete, or pre-process capability
-heartbeat is reported as waiting/blocked rather than ready. A missing or
-untrusted official live-manifest pin also blocks; the observer never creates
-that pin. Only `PromoteLiveCtoa -ApproveLiveDeploy` writes it and binds its
-SHA256 into `live_promotion.json`. Mutable vocation-profile drift is counted
-separately from other package-code mismatch, but still blocks because those
-profiles are executable Lua. The wrapper only publishes the sample after client
-process identity and screenshot count are checked.
-
-Run the P9 Conditions data-only replay through the same bounded entry path:
-
-```powershell
-.\ctoa.ps1 otp9
-```
-
-`otp9` first invokes the allowlisted `BackgroundStatus` action, requires a fresh
-repo-local `background_status.json`, and then runs the trusted repo interpreter
-against `scripts\ops\otclient_conditions_shadow_replay.py`. It refreshes only
-the two repo-local evidence artifacts `background_status.json` and
-`conditions_shadow_replay.json`. A green fixture
-pack is reported separately from operational acceptance; missing or unaccepted
-P8, Conditions, or Recovery evidence remains blocked. The command never adds a
-wrapper action, interacts with the client window, dispatches, executes once, or
-promotes live.
-
-Emergency-disable CTOA modules in the normal live Solteria client when login is
-unstable:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action DisableLiveCtoa
-```
-
-Re-enable them after testing:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action EnableLiveCtoa
-```
-
-Launch the sandbox manually:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action Launch -Tab healing
-```
-
-Capture the current sandbox window without restarting or changing helper tabs:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action Snapshot
-```
-
-Check whether the sandbox is ready for in-world attach smoke:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action ReadyCheck
-```
-
-`ReadyCheck` writes `runtime\solteria_helper_dev\ready_check.json` for both
-success and blocker states. If the sandbox window is missing, or if the Select
-Character modal/helper-offline state blocks tab switching, the JSON records the
-status, latest smoke marker, screenshot path when available, and next safe
-command.
-
-Verify real HP/MP observation while the sandbox runtime is disarmed:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action HealingVitalsSmoke
-```
-
-This writes `runtime\solteria_helper_dev\healing_vitals_smoke.json`. It reads
-only the sandbox `ctoa_local.log`, requires a real bounded HP/mana API sample,
-and fails closed unless the latest runtime state is disarmed. It never casts,
-uses potions, arms runtime, launches a client, or touches the live client. After
-it passes, capture newer visual evidence with `SmokeAttach -Tab healing`.
-
-Verify the passive Combat/PZ/NPC safety lane with a fresh manual API probe:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action CombatSafetySmoke
-```
-
-This writes `runtime\solteria_helper_dev\combat_safety_smoke.json`. It combines
-the targeting and combat-runtime static reports with a fresh read-only sandbox
-probe, requires no active target, and requires runtime to be disarmed before and
-throughout the probe. It does not attack, follow, cast, use runes/items, or touch
-the live client. After it passes, refresh Hunting and Hunting/Magic evidence
-with `SmokeAttachAll`.
-
-Verify the CaveBot planner without walking or pathfinding:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action CavebotSafetySmoke
-```
-
-Verify one passive Timer planning tick while Timer and runtime remain disabled:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action TimerSafetySmoke
-```
-
-Verify read-only container capabilities while experimental Loot remains off:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action LootSafetySmoke
-```
-
-These reports require current static gates and disarmed runtime. CaveBot records
-capabilities and route guards only, Timer must return `hold_timer_disabled`,
-and Loot must return `hold_feature_flag_disabled` with zero planned items.
-Refresh their evidence with `SmokeAttach -Tab cavebot`,
-`SmokeAttach -Tab tools_timer`, and `SmokeAttach -Tab tools_diag`.
-
-Run the static Heal Friend no-target contract before enabling any sio path:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action HealFriendNoTargetSmoke
-```
-
-This writes `runtime\solteria_helper_dev\heal_friend_no_target_smoke.json` and
-checks the read-only observer, safe boot profile defaults, whitelist guard, and
-absence of `castSpell`, actionbar sends, and `g_game.talk` in the Heal Friend
-observer slice. It does not launch, stop, or overwrite any client.
-
-Run the static Conditions observer contract before enabling any condition
-recovery action:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action ConditionsObserverSmoke
-```
-
-This writes `runtime\solteria_helper_dev\conditions_observer_smoke.json` and
-checks the read-only state/API observer, safe boot profile defaults, and absence
-of `castSpell`, actionbar sends, and `g_game.talk` in the Conditions observer
-slice. It does not launch, stop, or overwrite any client.
-
-Run the static Equipment observer contract before enabling any ring, amulet, or
-weapon swap path:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action EquipmentObserverSmoke
-```
-
-This writes `runtime\solteria_helper_dev\equipment_observer_smoke.json` and
-checks the read-only inventory slot/API observer, safe boot profile defaults,
-and absence of `castSpell`, actionbar sends, `g_game.talk`, `g_game.move`,
-`moveTo`, item use, or inventory-use calls in the Equipment observer slice. It
-does not launch, stop, move gear, use items, or overwrite any client.
-
-Run the static Scripting policy contract before enabling any command model,
-snippet, or runtime eval path:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action ScriptingPolicySmoke
-```
-
-This writes `runtime\solteria_helper_dev\scripting_policy_smoke.json` and
-checks the deny-all profile defaults, forced-off runtime flags, blocked unsafe
-status text, and absence of `loadstring`, `dofile`, `require`, runtime calls,
-talk, casts, or actionbar sends in the Scripting policy slice. It does not
-launch, stop, evaluate snippets, run files, talk, cast, or overwrite any client.
-
-Run every static prototype-module gate with one command:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action ModuleStaticGates
-```
-
-This writes `runtime\solteria_helper_dev\module_static_gates.json` after running
-`HealFriendNoTargetSmoke`, `ConditionsObserverSmoke`,
-`EquipmentObserverSmoke`, and `ScriptingPolicySmoke`. It is repo-only evidence:
-it does not launch, stop, attach to, promote, or overwrite any client.
-
-Run the complete local readiness pipeline before opening the sandbox client:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action LocalReady
-```
-
-This runs `ValidateDev`, `SmokePreflight`, `ModuleStaticGates`, `GoalStatus`,
-and `SmokeQueue` in order, then writes
-`runtime\solteria_helper_dev\local_ready.json`. A
-`ready_for_sandbox` result means local packaging, static validation, staged
-sandbox files, and prototype-module static gates are current; it still does not
-launch, stop, attach to, promote, or overwrite any live client.
-
-Run a UI smoke and capture a screenshot from the sandbox window:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action Smoke -Tab healing
-```
-
-Run all ZeroBot-like helper tabs/subtabs:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAll -DismissDialogs
-```
-
-Covered views:
-
-```text
-overview, healing, heal_friend, conditions, hunting, hunting_magic,
-cavebot, equipment, tools, tools_pvp, tools_hud, tools_timer,
-tools_diag, scripting, profile, ui
-```
-
-Build a machine-readable coverage report from the screenshots:
-
-```powershell
-python scripts\ops\ctoa_helper_smoke_report.py --run-id 20260705-035
-```
-
-Expected result:
-
-```text
-Coverage: 16/16
-```
-
-The report includes a `ZeroBot Mapping` section that maps every captured view
-to the expected ZeroBot-like module surface. If the report says
-`blocked_by_character_modal`, it is only a routing/screenshot proof, not final
-in-world visual acceptance.
-
-The reporter also writes an HTML visual review gallery next to the JSON/MD
-artifacts. Open `solteria-helper-smokeall-coverage-<run-id>.html` for a compact
-contact sheet of every ZeroBot-like view.
-
-## Post-login Attach Smoke
-
-Use this when the sandbox client is already running and a character is inside
-the game world. This avoids restarting the client and avoids the Select
-Character modal covering the helper.
-
-1. Launch the sandbox:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action Launch
-```
-
-2. Log in with a test character.
-3. Optionally confirm the sandbox is in-world:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action ReadyCheck
-```
-
-4. Switch a helper tab without restarting the client:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttach -Tab hunting_magic
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttach -Tab tools_pvp
-```
-
-Run every view in the already-logged-in client:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttachModules
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttachAll
-```
-
-`SmokeAttachModules` is the focused in-world gate for the prototype module tabs:
-`conditions`, `equipment`, `heal_friend`, and `scripting`. The required runtime
-predecessor sequence is `conditions -> equipment -> heal_friend`. It writes
-`runtime/solteria_helper_dev/module_attach_smoke.json` and routes to
-`SmokeAttachAll` only when all four module tabs capture successfully.
-The report also records the current dev manifest path, creation time, and
-SHA-256. The release gate accepts a passing 4/4 report only when that hash
-matches the current `manifest.json`; legacy reports without this binding stay
-blocked even when their module counts are 4/4.
-
-After both attach commands, run `RuntimeModuleGatesSandboxSmoke`. Its passing
-state proves action-bound dry-run and fail-closed behavior only; it does not
-accept a domain action and does not promote the live client.
-
-Use a stable run id when you want repeatable artifact names:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttachAll -RunId 20260705-0430
-```
-
-`SmokeAttachAll` automatically builds an in-world coverage report with:
-
-```powershell
-python scripts\ops\ctoa_helper_smoke_report.py --run-id <run-id> --prefix solteria-helper-attach --in-world --manifest-path runtime\solteria_helper_dev\manifest.json
-```
-
-The report records the current dev manifest path, creation time, and SHA-256.
-The release gate accepts complete 16/16 evidence only when that hash matches
-the current manifest; a legacy report cannot be made fresh by changing its
-timestamp. `RuntimeModuleGatesSandboxSmoke` uses the same binding for its
-action-bound dry-run contract.
-
-Attach smoke writes `ctoa_smoke_command.lua`; the helper consumes it during
-runtime, switches tabs, logs `Smoke tab visible: <tab>/<subtab>`, captures a
-screenshot, and then generates the coverage report.
-
-Attach smoke requires a fresh `Smoke tab visible: ...` marker written after the
-command file is created. If the client is still on `Select Character`, attach
-smoke fails with an instruction to enter the character first instead of
-accepting an old log marker.
-
-If the client is stopped at the character list, the `Select Character` modal can cover the helper. This is expected and means the screenshot is only a partial runtime proof. You can attempt to dismiss startup dialogs:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action Smoke -Tab overview -DismissDialogs
-```
-
-Stop only the sandbox client:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action Stop
-```
-
-## Tab Persistence
-
-The smoke writes `ctoa_ui_prefs.lua` with:
-
-```lua
-active_tab = "healing"
-```
-
-The helper loads it through `ctoa_native_helper.lua`, switches to that tab on `buildUi()`, and exposes:
-
-```lua
-CTOA_Helper.showTab("healing")
-```
-
-Use this for targeted screenshots:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action Smoke -Tab ui
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action Smoke -Tab hunting
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action Smoke -Tab hunting_magic
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action Smoke -Tab tools_pvp
-```
-
-## Logs And Screenshots
-
-Sandbox logs:
-
-```text
-C:\Users\zycie\AppData\Local\SolteriaCodexTest\client\otclient.log
-C:\Users\zycie\AppData\Local\SolteriaCodexTest\client\ctoa_local.log
-```
-
-Screenshots:
-
-```text
-runtime\otclient_ui_preview\solteria-helper-testenv-<tab>-<timestamp>.png
-```
-
-Development package artifacts:
-
-```text
-runtime\solteria_helper_dev\manifest.json
-runtime\solteria_helper_dev\CHANGELOG.md
-runtime\solteria_helper_dev\validation.json
-runtime\solteria_helper_dev\release_readiness.json
-runtime\solteria_helper_dev\release_gate.json
-runtime\solteria_helper_dev\goal_audit.json
-runtime\solteria_helper_dev\goal_status.json
-runtime\solteria_helper_dev\smoke_preflight.json
-runtime\solteria_helper_dev\smoke_status.json
-runtime\solteria_helper_dev\ready_check.json
-runtime\solteria_helper_dev\live_promotion.json
-runtime\solteria_helper_dev\background_status.json
-runtime\solteria_helper_dev\live_backup_<timestamp>\backup_manifest.json
-runtime\solteria_helper_dev\latest\
-runtime\solteria_helper_dev\ctoa_otclient_<version>.zip
-```
-
-`manifest.json` contains the staged file list with SHA256 hashes and a snapshot
-of any running Solteria process. The release gate verifies those staged file
-hashes against `latest` before promotion. `validation.json` is `pending` after
-`PrepareDev` and becomes `passed` only after `ValidateDev` completes all gates.
-`release_readiness.json` keeps the promotion gates explicit: static validation
-can pass while sandbox launch, `SmokeAttachModules`, `SmokeAttachAll`, and live approval remain
-pending.
-`release_gate.json` is the strict audit result. It remains `blocked` until
-`smoke_preflight.json` is `passed`, fresh `SmokeAttachModules` evidence exists,
-a complete in-world SmokeAttachAll report is present, and explicit live approval
-or durable `live_promotion.json` evidence is present. It also writes
-`next_action` and `next_command` for the next safe gate step. The preflight
-report includes the current manifest fingerprint, so the gate blocks stale
-preflight evidence after a new package is generated. The gate also verifies the
-versioned ZIP SHA256 against `release_readiness.json` before allowing
-promotion. After promotion, `live_promotion.json` must be newer than the current
-manifest and the live client files must match the current manifest hashes before
-`live_approval` remains `passed`.
-When `ModuleAttachSmoke` or `SmokeAttachAll` is the active blocker, the gate reads
-`smoke_status.json` and `ready_check.json` to choose the next safe command:
-`Launch` when the sandbox is not running, `ReadyCheck` when the sandbox needs an
-in-world readiness check, `SmokeAttachModules` first after `ReadyCheck` reports
-`ready`, and `SmokeAttachAll` only after module attach evidence has passed. A
-fresh `SmokeStatus` blocker such as `not_running`,
-`character_modal`, or `helper_log_missing` takes precedence over older
-`ready_check.json` evidence.
-`goal_audit.json` summarizes the full development plan state and repeats the
-current blockers plus the next command from the release gate when one exists.
-It also lists the P0-P5 roadmap phases so the remaining incomplete phase is
-visible. `goal_audit.html` is generated from that same audit as a local,
-read-only dashboard with the release state, next command, roadmap, blockers,
-and evidence inventory; its path is included in `goal_status.json`.
-`goal_status.json` is the operator-facing read-only summary generated by
-`GoalStatus`: it repeats the audit/gate state, P0-P5 roadmap statuses, live
-process snapshot, blockers, and next safe command when one exists. It refreshes
-`SmokeStatus` first, so the next command reflects the current sandbox process,
-window, helper log, and character-modal state before release-gate routing runs.
-`GOAL_HANDOFF.md` is generated from the same status payload as a one-screen
-operator checklist with current state, P0-P5 roadmap, blockers, next safe
-command, module workplan summary, and the live-promotion completion rule. When
-`runtime\solteria_helper_dev\module_audit.json` exists, `GoalStatus` also adds
-module status, modularization pressure, registry coverage, and each lane's next
-step to both `goal_status.json` and `GOAL_HANDOFF.md`. The module audit also
-selects `next_module_id` and `next_module_action`, so the handoff separates the
-next safe smoke command from the next helper-module development move. When
-`heal_friend_no_target_smoke.json` is `passed`, `GoalStatus` advances the
-module recommendation to grouped in-world `SmokeAttachModules` evidence and
-adds `next_module_command`: `HealFriendNoTargetSmoke` before static evidence,
-`Launch` or `ReadyCheck` while the sandbox is not ready, and
-`SmokeAttachModules` once `ReadyCheck` reports `ready`.
-The same prototype-gate pattern is now available for `conditions` through
-`ConditionsObserverSmoke`, with in-world visual acceptance captured later by
-`SmokeAttach -Tab conditions`.
-`EquipmentObserverSmoke` applies the same rule to `equipment`; it only accepts
-read-only inventory observation and leaves ring/amulet/weapon swaps blocked
-until sandbox evidence exists.
-`ScriptingPolicySmoke` applies the same rule to `scripting`; it only accepts a
-deny-all policy shell and leaves snippets, eval, and command execution blocked.
-`GoalStatus` aggregates these prototype gates as `static_gate_summary` in
-`goal_status.json` and as a `Static gates: passed/total` block in
-`GOAL_HANDOFF.md`, so the operator can see which local module gates are ready
-before starting sandbox attach smoke. `ModuleStaticGates` refreshes all four
-prototype gate reports and writes `module_static_gates.json`; run `GoalStatus`
-after it to route the next release step. The release gate also requires a fresh
-passed `module_static_gates.json` and a fresh passed
-`module_attach_smoke.json` before it routes to final in-world `SmokeAttachAll`,
-so new prototype-module risk cannot be skipped during packaging.
-`LocalReady` wraps the local half of this flow and should be the first command
-when the operator wants one current handoff before opening the sandbox client.
-`release_gate.json`, `goal_audit.json`, `goal_status.json`, and
-`GOAL_HANDOFF.md` are written atomically, so readers do not observe partial
-outputs while `GoalStatus` refreshes the audit.
-Neither action copies files into the live play client.
-
-Generate the read-only sandbox smoke queue after `LocalReady` when the release
-gate is waiting on attach evidence:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeQueue
-.\.venv\Scripts\python.exe scripts\ops\solteria_helper_sandbox_smoke_queue.py
-```
-
-This writes `runtime\solteria_helper_dev\sandbox_smoke_queue.json` and
-`docs\otclient\solteria_helper_sandbox_smoke_queue.md` from the current
-manifest, release gate, smoke status, and goal status. It only plans the
-operator sequence; it does not launch, attach to, promote, stop, or overwrite
-any client.
-
-You can run the gate audit directly:
-
-```powershell
-python scripts\ops\solteria_helper_release_gate.py --dev-dir runtime\solteria_helper_dev --allow-blocked
-```
-
-If `--smoke-report` is not provided, the gate looks for the latest
-`runtime\otclient_ui_preview\solteria-helper-smokeall-inworld-*.json` report.
-It intentionally ignores modal-limited `solteria-helper-smokeall-coverage-*.json`
-reports. An in-world report must include every expected helper view and each
-listed screenshot file must exist on disk.
-
-Live promotion is intentionally separate:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action BackupLiveCtoa
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action PromoteLiveCtoa -ApproveLiveDeploy
-```
-
-`PromoteLiveCtoa` refuses to run without `-ApproveLiveDeploy`, then checks the
-existing strict release gate for the current staged package with approval. It
-does not run `ValidateDev`, run `SmokePreflight`, regenerate the manifest, or
-change the staged package after in-world `SmokeAttachAll` has passed. It will
-still refuse to copy files until `SmokePreflight` and in-world `SmokeAttachAll`
-are passed. After the gate passes, it writes a fresh
-`live_backup_<timestamp>\backup_manifest.json`, copies staged files into the
-live client without stopping, restarting, or launching it by default, and
-records `live_promotion.json` as durable post-promotion evidence.
-
-If the operator wants the live client opened immediately after a successful
-promotion, make that explicit:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action PromoteLiveCtoa -ApproveLiveDeploy -LaunchAfterPromote
-```
-
-`-LaunchAfterPromote` starts `SourceClient\solteria-client.exe` only when that
-exact live client is not already running. It records `launched`,
-`already_running`, or `failed` in `live_promotion.json`; it never stops or
-restarts the live client.
-
-If needed, pass a specific in-world smoke report:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action PromoteLiveCtoa -ApproveLiveDeploy -SmokeReport runtime\otclient_ui_preview\solteria-helper-smokeall-inworld-<run-id>.json
-```
-
-The Helper can also export its bounded runtime diagnostics buffer from the
-sandbox/live module directory as:
-
-```text
-ctoa_diag_export.lua
-```
-
-Use the smoke command action `diag_export` or the in-client
-`CTOA_Helper.exportDiagnostics()` entrypoint after the sandbox Helper has
-collected samples. The export contains only bounded passive snapshots for
-HP/MP, movement, combat, magic, and container APIs.
-
-## Test Account
-
-Interactive in-game UI/runtime checks are no longer routine background work.
-Use a separate runner/VM, or an explicitly scheduled user-visible session with a
-low-risk sandbox character. Keep the main play client untouched. That separate
-interactive lane is used only for:
-
-- helper UI screenshots,
-- tab persistence checks,
-- combat/healing log validation,
-- PZ/NPC/targeting regression tests,
-- actionbar potion/rune behavior checks.
-
-Full visual acceptance for all tabs requires the sandbox to enter the game world with a separate test character. Before login, the character selection modal is above helper widgets and can obscure screenshots even when `CTOA_Helper.showTab("<tab>")` succeeds.
-
-Static geometry/layout acceptance is covered by:
-
-```powershell
-python scripts\ops\ctoa_helper_ui_preview.py
-```
-
-Expected result:
-
-```text
-issues: none
-```
-
-Regression tests for the ZeroBot-like shell contract:
-
-```powershell
-python -m pytest tests\test_otclient_helper_zerobot_shell.py -q
-```
-
-Expected result:
-
-```text
-4 passed
-```
-
-## PZ / NPC Targeting Regression
-
-The helper combat runtime must not attack NPCs or run offensive actions in PZ.
-Use this after changing targeting, magic shooter, rune shooter, or auto exeta.
-
-Live/sandbox steps:
-
-1. Enter the game world with a test character.
-2. Stand in PZ or near an NPC such as `Taskmaster Liora`.
-3. Keep `Targeting` enabled for 30-60 seconds.
-4. Inspect `ctoa_local.log`.
-
-Passing log pattern:
-
-```text
-[CTOA-OTC-COMBAT] Combat paused: no valid monster target
-```
-
-Failing log pattern:
-
-```text
-[CTOA-OTC-COMBAT] Auto target: Taskmaster Liora
-```
-
-If a bad target still appears, inspect the probe line. It logs the client-side
-creature methods used by the guard:
-
-```text
-[CTOA-OTC-COMBAT] Target probe: <name> id=<id> reason=<reason> isNpc=<...> isMonster=<...> isPlayer=<...> isAttackable=<...> canBeAttacked=<...> isTargetable=<...>
-```
-
-Current guard behavior:
-
-- `pause_in_pz=true` blocks targeting, rune shooter, spell rotation, and auto exeta.
-- NPC/player/ignored names are rejected before attack.
-- Unknown creature types are treated as non-monsters.
-- The helper HUD and combat module share the same valid-target rules.
-```
-
-
-## `docs/otclient/solteria_helper_module_workplan.md`
-
-```markdown
-# Solteria Helper Module Workplan
-
-## Current Decision
-
-- Status: `ready`
-- Helper lines: `4400`
-- Helper functions: `158`
-- Helper line budget: `4500`
-- Helper function budget: `130`
-- Helper budget status: `over_budget`
-- Helper shell target: UI composition, profile persistence, and guarded dispatch only; registry/domain logic belongs in helper modules/adapters.
-- Modularization pressure: `medium`
-- Placeholder modules: `0`
-- Implemented modules: `26`
-- Prototype modules: `5`
-- Registry coverage: `9` / `9`
-- Next extraction: `none`
-- Next supplemental split: `none`
-- Next phase: P6-module-lane: keep the main helper as UI composition shell; move runtime adapters behind static contracts and sandbox gates.
-- Next module action: `conditions` - Pass ConditionsRuntimeGate after fresh observer and attach evidence; only paralyze recovery dry-run is in scope.
-
-## Operating Rule
-
-New behavior must enter through a named module lane with profile keys, safe boot defaults, static tests, sandbox smoke evidence, and release-gate evidence. Do not add broad runtime logic directly to the main helper without updating this workplan and the module audit.
-
-The helper Overview must expose module readiness from `ctoa_helper_modules.lua` so operators can see implemented, prototype, armed, gated, and experimental lanes without enabling runtime actions.
-
-## Module Lanes
-
-| Module | Status | Target | Next step | Gate |
-|---|---:|---|---|---|
-| `healing` / Healing and recovery | `static_gated` | `ctoa_native_heal.lua` | Keep runtime logic mirrored in standalone passive recovery module and add sandbox HP/MP log smoke. | ValidateDev plus in-world HP/MP sandbox log evidence. |
-| `combat` / Targeting and magic shooter | `prototype` | `ctoa_native_combat.lua` | Extract shared target scoring/guards into a reusable helper runtime domain before adding more attacks. | PZ/NPC regression log plus SmokeAttachAll hunting and hunting_magic views. |
-| `cavebot` / CaveBot route and movement | `static_gated` | `ctoa_native_helper.lua` | Split route editing from movement execution into separate domain blocks before adding waypoint actions. | Route editor static tests plus sandbox autoWalk retry-budget evidence. |
-| `loot` / Loot scanner | `static_gated` | `ctoa_native_loot.lua` | Promote loot from experimental flag only after in-world container scan evidence exists. | ValidateDev plus bounded ctoa_local.log loot scan evidence in sandbox. |
-| `timer` / Timer action | `static_gated` | `ctoa_native_helper.lua` | Keep timer as a small bounded action; do not add arbitrary scripting through timer message. | Static contract and sandbox log evidence for one timer tick. |
-| `conditions` / Conditions | `prototype` | `ctoa_helper_conditions.lua` | Pass ConditionsRuntimeGate after fresh observer and attach evidence; only paralyze recovery dry-run is in scope. | ConditionsRuntimeGate requires Recovery acceptance, fresh ConditionsObserverSmoke, current attach evidence, operator confirmation, dry-run, and Combat/CaveBot disabled. |
-| `equipment` / Equipment | `prototype` | `ctoa_helper_equipment.lua` | Pass EquipmentRuntimeGate after Conditions; keep the first plan ring-only, dry-run, exact-ID, and rollback-ready. | EquipmentRuntimeGate requires accepted Conditions gate, fresh inventory evidence, exact item IDs, rollback snapshot, zero retry, and Combat/CaveBot disabled. |
-| `heal_friend` / Heal Friend | `prototype` | `ctoa_helper_heal_friend.lua` | Pass HealFriendRuntimeGate only after Conditions and Equipment; require persisted exact whitelist and stable party target identity. | HealFriendRuntimeGate requires accepted Conditions/Equipment gates, no-target smoke, exact whitelist identity, fresh target evidence, cooldown, and Combat/CaveBot disabled. |
-| `scripting` / Scripting | `prototype` | `ctoa_helper_scripting.lua` | Run ScriptingPolicySmoke, then capture grouped in-world SmokeAttachModules policy shell evidence; keep eval and user snippets blocked. | No user snippet execution until passive plan contract, security review, denylist tests, audit logging, ScriptingPolicySmoke, ModuleStaticGates, and ModuleAttachSmoke pass. |
-
-## Extraction Map
-
-| Order | Domain | Target | Status | Gate |
-|---:|---|---|---:|---|
-| 1 | `module_registry` / MODULE_LANES, module lane lookup, readiness text | `ctoa_helper_modules.lua` | `extracted` | Registry parity test plus Overview readiness smoke. |
-| 2 | `diagnostics` / log helpers, API probes, status snapshots, module evidence formatting | `ctoa_helper_diagnostics.lua` | `extracted` | ValidateDev, UI preview, and no secret/runtime path leakage in generated evidence. |
-| 3 | `conditions` / condition state API probes, read-only observer rows, passive recovery planner, profile defaults | `ctoa_helper_conditions.lua` | `extracted` | ConditionsRuntimeGate after Recovery acceptance; paralyze-only dry-run before any recovery action. |
-| 4 | `equipment` / inventory slot probes, passive ring/amulet swap planner, read-only UI summary | `ctoa_helper_equipment.lua` | `extracted` | EquipmentRuntimeGate after Conditions; ring-only exact-ID dry-run with rollback snapshot. |
-| 5 | `heal_friend` / heal friend profile defaults, whitelist matching, observer sampling, UI summary | `ctoa_helper_heal_friend.lua` | `extracted` | HealFriendRuntimeGate only after Conditions and Equipment; exact whitelist target dry-run before any sio runtime arm. |
-| 6 | `scripting` / policy shell, deny-all snippet planner, audit metadata | `ctoa_helper_scripting.lua` | `extracted` | ScriptingPolicySmoke, passive plan contract, ModuleStaticGates, and ModuleAttachSmoke; eval remains blocked. |
-
-## Supplemental Refactor Plan
-
-This is the next wave after the passive helper modules are contracted. It exists because the main helper is still over budget and should become a composition shell instead of absorbing more runtime logic.
-
-| Order | Split | Target | Status | Gate |
-|---:|---|---|---:|---|
-| 1 | `combat_runtime_adapter` / combat arming, monster scan adapter, attack/cast execution guards | `ctoa_helper_combat_runtime.lua` | `extracted` | Combat runtime static contract, target scorer contract, monster-only regressions, PZ/NPC smoke, SmokeAttachAll hunting tabs. |
-| 2 | `cavebot_runtime_adapter` / movement execution, path probe, retry budget, PZ/offline movement guards | `ctoa_helper_cavebot_runtime.lua` | `extracted` | Route contract, cavebot static tests, in-world retry-budget evidence, SmokeAttachAll cavebot tab. |
-| 3 | `loot_runtime_adapter` / corpse/container scan orchestration, item move bounds, capacity guard | `ctoa_helper_loot_runtime.lua` | `extracted` | Container API probe, experimental_loot remains false by default, bounded sandbox loot log evidence. |
-| 4 | `timer_runtime_adapter` / bounded timer message/cast action, interval guard, action lock | `ctoa_helper_timer_runtime.lua` | `extracted` | Static no-eval contract, one-tick sandbox log evidence, no scripting bridge. |
-| 5 | `profile_schema_adapter` / profile defaults, migration keys, rotation preset metadata, profile dirty reasons, profile UI persistence | `ctoa_helper_profile_schema.lua` | `extracted` | Profile audit, schema snapshot, safe migration and rotation-summary tests, no key-order churn. |
-| 6 | `operator_summary_bridge` / operator title, domain summary text, profile/UI summary bridge, and no-widget text composition | `ctoa_helper_operator_summary.lua` | `extracted` | OperatorSummary static contract, profile schema and domain summary parity, ModuleStaticGates, UI preview, and sandbox SmokeAttachModules before any runtime bridge can consume summaries. |
-| 7 | `planner_coordinator` / passive plan collection, ranking, summary, and no-execution contract | `ctoa_helper_planner.lua` | `extracted` | Planner static contract, module planner regressions, ModuleStaticGates, and sandbox SmokeAttachModules before any runtime dispatcher wiring. |
-| 8 | `runtime_policy_guard` / shared runtime gate evaluation, manifest freshness, sandbox smoke, and live approval policy | `ctoa_helper_runtime_policy.lua` | `extracted` | RuntimePolicy static contract, ModuleStaticGates, current manifest, ModuleAttachSmoke, SmokeAttachAll, and explicit live approval before any dispatcher executes a plan. |
-| 9 | `dispatch_guard_coordinator` / ranked plan classification, runtime policy handoff, and dispatch allow/deny reasons | `ctoa_helper_dispatch_guard.lua` | `extracted` | DispatchGuard static contract, RuntimePolicy ready decision, sandbox attach evidence, and explicit live approval before any dispatcher bridge is wired. |
-| 10 | `plan_queue_coordinator` / bounded guarded-decision queue, review summaries, and no-execution handoff state | `ctoa_helper_plan_queue.lua` | `extracted` | PlanQueue static contract, DispatchGuard decision evidence, bounded queue tests, sandbox attach evidence, and explicit live approval before queued plans can feed any dispatcher bridge. |
-| 11 | `runtime_readiness_status` / component readiness, gate readiness, queued-plan review status, and no-execution runtime bridge summary | `ctoa_helper_runtime_readiness.lua` | `extracted` | RuntimeReadiness static contract, required component/gate coverage, current manifest, sandbox attach evidence, SmokeAttachAll, and explicit live approval before any runtime bridge is considered ready. |
-| 12 | `module_status_board` / module readiness rows, status counts, blocker summary, and no-execution evidence board | `ctoa_helper_module_status.lua` | `extracted` | ModuleStatus static contract, module contract coverage, ModuleStaticGates, sandbox attach evidence, and explicit live approval before status can support runtime enablement. |
-| 13 | `action_catalog_policy` / runtime action capability names, domain mapping, risk class, required gates, and no-execution dispatch metadata | `ctoa_helper_action_catalog.lua` | `extracted` | ActionCatalog static contract, action risk coverage, RuntimePolicy gate parity, ModuleStaticGates, sandbox attach evidence, and explicit live approval before any action can be dispatched. |
-| 14 | `decision_trace_review` / plan/policy/guard/queue decision traces, missing gate summaries, and no-write review metadata | `ctoa_helper_decision_trace.lua` | `extracted` | DecisionTrace static contract, policy/guard reason coverage, bounded queue trace, ModuleStaticGates, sandbox attach evidence, and explicit live approval before any trace informs runtime dispatch. |
-| 15 | `sandbox_handoff_checklist` / operator sandbox smoke checklist, required runtime gates, next-step summary, and no-launch/no-promote handoff metadata | `ctoa_helper_sandbox_handoff.lua` | `extracted` | SandboxHandoff static contract, Launch/ReadyCheck/SmokeAttachModules/SmokeAttachAll/ApproveLiveDeploy sequence coverage, ModuleStaticGates, and explicit live approval before live promotion. |
-| 16 | `feature_flag_matrix` / safe false runtime flags, feature domains, required gates, and no-toggle profile audit metadata | `ctoa_helper_feature_flags.lua` | `extracted` | FeatureFlags static contract, safe-default coverage, profile audit parity, ModuleStaticGates, SmokeAttachAll, and explicit live approval before runtime flags can be enabled. |
-
-## P6 Module Lane
-
-1. Freeze the current helper UI contract with `ValidateDev`, `ctoa_helper_ui_preview.py`, and `SmokePreflight`.
-2. Extract domains in the `Extraction Map` order and keep the main helper as the UI composition shell.
-3. Execute the `Supplemental Refactor Plan` one adapter at a time; adapter files may plan or dispatch guarded actions only after static contracts exist.
-4. Convert prototype modules in order: Conditions diagnostics and paralyze-only gate, Equipment ring-only rollback gate, Heal Friend exact-whitelist gate, then Scripting policy shell.
-5. For each module, add profile schema keys, safe boot defaults, tests, README/docs, `ModuleStaticGates`, and `SmokeAttachModules` before runtime enablement.
-6. Keep live promotion separate and require `PromoteLiveCtoa -ApproveLiveDeploy` after in-world `SmokeAttachAll` evidence.
-
-## Verification Commands
-
-```powershell
-.\.venv\Scripts\python.exe scripts\ops\otclient_helper_module_audit.py --json-out runtime\solteria_helper_dev\module_audit.json
-.\.venv\Scripts\python.exe -m pytest tests\test_otclient_helper_module_audit.py tests\test_otclient_helper_zerobot_shell.py tests\test_otclient_helper_profile_audit.py tests\test_ctoa_helper_smoke_report.py -q
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action ValidateDev
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokePreflight
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action ModuleStaticGates
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttachModules
-```
-```
-
-
-## `docs/otclient/solteria_helper_module_contract.md`
-
-```markdown
-# Solteria Helper Module Contract
-
-- Status: `passed`
-- Expected modules: `32`
-- Passed modules: `32`
-- Failed modules: `0`
-- Registry lanes: `9` / `9`
-- Forbidden passive hits: `0`
-- Next action: Run ModuleStaticGates, then sandbox SmokeAttachModules.
-
-## Rule
-
-Passive helper modules may observe, format, plan, or expose UI state. They must not cast spells, use items, walk, execute snippets, or load arbitrary files. Runtime actions stay in the guarded native helper domains and still require sandbox evidence.
-
-## Modules
-
-| Module | File | Status | Loader | Registry | Global | Return | Missing functions | Forbidden |
-|---|---|---:|---:|---:|---:|---:|---|---|
-| `modules` | `ctoa_helper_modules.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `domain_contract` | `ctoa_helper_domain_contract.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `ui` | `ctoa_helper_ui.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `diagnostics` | `ctoa_helper_diagnostics.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `hotkeys` | `ctoa_helper_hotkeys.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `modal` | `ctoa_helper_modal.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `route` | `ctoa_helper_route.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `targeting` | `ctoa_helper_targeting.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `combat_runtime` | `ctoa_helper_combat_runtime.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `cavebot_runtime` | `ctoa_helper_cavebot_runtime.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `loot_runtime` | `ctoa_helper_loot_runtime.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `timer_runtime` | `ctoa_helper_timer_runtime.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `recovery_runtime` | `ctoa_helper_recovery_runtime.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `profile_schema` | `ctoa_helper_profile_schema.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `profile_persistence` | `ctoa_helper_profile_persistence.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `operator_summary` | `ctoa_helper_operator_summary.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `planner` | `ctoa_helper_planner.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `runtime_policy` | `ctoa_helper_runtime_policy.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `dispatch_guard` | `ctoa_helper_dispatch_guard.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `plan_queue` | `ctoa_helper_plan_queue.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `runtime_readiness` | `ctoa_helper_runtime_readiness.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `module_status` | `ctoa_helper_module_status.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `action_catalog` | `ctoa_helper_action_catalog.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `decision_trace` | `ctoa_helper_decision_trace.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `decision_pipeline` | `ctoa_helper_decision_pipeline.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `sandbox_handoff` | `ctoa_helper_sandbox_handoff.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `feature_flags` | `ctoa_helper_feature_flags.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `hud` | `ctoa_helper_hud.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `conditions` | `ctoa_helper_conditions.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `equipment` | `ctoa_helper_equipment.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `scripting` | `ctoa_helper_scripting.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `heal_friend` | `ctoa_helper_heal_friend.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-
-## Verification
-
-```powershell
-.\.venv\Scripts\python.exe scripts\ops\otclient_helper_module_contract.py
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action ModuleStaticGates
-```
-```
-
-
-## `docs/otclient/solteria_helper_next_modules_plan.md`
-
-```markdown
-# Solteria Helper Next Modules Plan
-
-## Decision
-
-- Implementation status: `offline_implementation_complete`.
-- Operational acceptance: `operational_acceptance_blocked`.
-- Current extraction map: complete.
-- Budget priority source: `runtime/solteria_helper_dev/helper_shell_budget_plan.json`.
-- Budget top non-shell domain: `conditions_runtime_gate`.
-- Budget next extraction domains: `conditions_runtime_gate, equipment_runtime_gate, heal_friend_runtime_gate`.
-- Raw shell-budget signals (refactor-only): `runtime_combat, diagnostics_smoke, runtime_cavebot, runtime_recovery, profile_persistence`.
-- Runtime sequence: `Conditions -> Equipment -> Heal Friend`; each has a separate action-specific dry-run gate.
-- Runtime blocker: in-world `SmokeAttachModules` and fresh `SmokeAttachAll` are still required before any execute-once bridge review.
-- External vBot source: `source_required`; do not claim vBot-derived implementation until source/provenance is present.
-
-## Source Policy
-
-- ZeroBot reference: `docs/otclient/zerobot_reference.md`
-- vBot: `source_required`
-- External bot intake: `scripts/ops/otclient_external_bot_intake.py`
-- External bot import gate: import_gate.runtime_import_allowed must remain false until mapped module gates and sandbox evidence pass
-- Rule: Use external bots as capability checklists and naming references only; no direct copy without provenance review; keep CTOAi safe boot, gates, and tests.
-
-## Prerequisites
-
-- Follow ConditionsRuntimeGate, then EquipmentRuntimeGate, then HealFriendRuntimeGate; do not reorder the phases.
-- Keep P10 operational acceptance blocked until ctoa.ps1 otp9 produces a reviewed real P9 trace under accepted P8 and Recovery proofs; the offline ring-only replay is available through ctoa.ps1 otp10.
-- Run SmokeAttachModules after sandbox character is in-world.
-- Run SmokeAttachAll for the current dev manifest before enabling runtime actions.
-- Keep PromoteLiveCtoa behind -ApproveLiveDeploy.
-
-## Candidate Modules
-
-| Order | Module | Status | Source basis | Target | First slice | Gate | Blocked until |
-|---:|---|---:|---|---|---|---|---|
-| 0 | `ui_primitives` / Guarded UI primitives split | `static_gated` | Current UI composition shell plus passive UI adapter; corrected budget keeps it below cavebot/combat pressure | `ctoa_helper_ui.lua` | Move text fitting, widget styling, checkbox state helpers, visibility helpers, guarded createWidget wrapper, nav/subtab style functions, button/card style descriptors, metric row styling, setting/profile/vector row styling, section/table/strip styling, priority badge styling, label styling, window chrome styling, toggle/checkbox/sidebar-card styling, overview avatar/equipment styling, control-name styling, row geometry, and tab metadata behind CTOA_HELPER_UI. | ModuleContract, UI preview, HelperShellBudgetPlanStaticSmoke, ModuleStaticGates, and current LocalReady. | Further UI builder extraction waits for sandbox SmokeAttachModules so visual regressions can be checked in-world. |
-| 1 | `hud` / HUD overlay domain | `static_gated` | ZeroBot HUD wrapper reference plus current Tools/HUD controls | `ctoa_helper_hud.lua` | Extract HUD state formatting and visibility/draggable summary without adding new overlay actions. | HUD static contract, UI preview, ModuleStaticGates, and in-world SmokeAttach -Tab tools_hud. | Current sandbox SmokeAttachModules and fresh SmokeAttachAll evidence exist. |
-| 2 | `hotkeys` / Hotkey normalization domain | `static_gated` | ZeroBot hotkeymanager reference plus current Ctrl+H binding | `ctoa_helper_hotkeys.lua` | Add parser/normalizer tests for modifier strings; keep runtime binding unchanged. | Parser unit tests, safe boot check, UI preview, and no automatic new key bindings during loader init. | HUD extraction has tests and sandbox attach evidence. |
-| 3 | `modal_confirm` / Confirmation modal domain | `static_gated` | ZeroBot custom modal wrapper reference plus helper profile/reset workflows | `ctoa_helper_modal.lua` | Create a passive modal lifecycle wrapper for destructive helper commands; no live-client action shortcuts. | Static lifecycle tests, UI preview, no PromoteLiveCtoa bypass, and explicit approval path retained. | Hotkey parser is isolated and profile commands remain guarded. |
-| 4 | `route_engine` / Cavebot route engine split | `static_gated` | Route engine is static-gated; current shell budget now points remaining runtime pressure at combat/cavebot adapters | `ctoa_helper_route.lua` | Move route labels, waypoint mutation, active target advancement, and retry-budget status into a domain module; keep autoWalk gated. | Route editor static tests, SmokeAttach -Tab cavebot, PZ/offline guard evidence, and no movement at loader init. | Sandbox SmokeAttachModules proves current cavebot tab state in-world. |
-| 5 | `target_scorer` / Combat target scorer split | `static_gated` | Current monster-only target guards plus bot decision scoring concepts | `ctoa_helper_targeting.lua` | Extract candidate scoring and ignored-name checks; keep attack/cast execution in existing guarded runtime. | Monster-only regression tests, PZ/NPC smoke evidence, and SmokeAttachAll hunting/hunting_magic screenshots. | Route engine extraction is stable and combat runtime evidence is fresh. |
-| 6 | `combat_runtime` / Combat runtime planner split | `deferred_high_risk_refactor_only` | Current guarded combat runtime plus target scorer and passive adapter plan | `ctoa_helper_combat_runtime.lua` | Keep passive combat planning, wait-reason text, decision-state text, and cooldown text in the runtime adapter; keep attack, cast, rune, and exeta execution in guarded helper runtime. | Combat runtime static contract, SmokeAttach -Tab hunting_magic, PZ/offline/target-required plan evidence, and no loader-time combat actions. | Target scorer static gate is stable and sandbox combat tabs have fresh attach evidence. |
-| 7 | `cavebot_runtime` / Cavebot runtime planner split | `deferred_high_risk_refactor_only` | Current guarded autoWalk retry loop plus route engine and passive cavebot adapter plan | `ctoa_helper_cavebot_runtime.lua` | Keep passive cavebot planning, movement decision text, movement blocked-reason/status/trace/path result text, and movement API probe summary text in the runtime adapter; keep autoWalk/findPath execution in guarded helper runtime. | Cavebot runtime static contract, SmokeAttach -Tab cavebot, PZ/offline/empty-route/retry plan evidence, and no loader-time movement. | Route engine static gate is stable and sandbox cavebot tab has fresh attach evidence. |
-| 8 | `loot_runtime` / Loot runtime planner split | `static_gated` | Current loot feature flag, API probe, and passive loot adapter plan | `ctoa_helper_loot_runtime.lua` | Use a passive loot runtime planner for diagnostics text; keep container scan/open/move/use behavior outside loader init and guarded by feature flags. | Loot runtime static contract, SmokeAttach -Tab tools_diag, feature-flag/offline/container plan evidence, and no loader-time loot actions. | Experimental loot stays feature-flagged and sandbox diagnostics have fresh attach evidence. |
-| 9 | `timer_runtime` / Timer runtime planner split | `static_gated` | Current guarded timer loop plus passive timer adapter plan | `ctoa_helper_timer_runtime.lua` | Use a passive timer runtime planner for timer decision/status text; keep talk/cast execution in the guarded helper runtime. | Timer runtime static contract, SmokeAttach -Tab tools_timer, disabled/PZ/offline/message plan evidence, and no loader-time timer actions. | Timer remains disabled by default and sandbox tools timer tab has fresh attach evidence. |
-| 10 | `profile_schema` / Profile schema, persistence policy, rotation metadata, and migration metadata | `static_gated` | Current EK profile defaults plus passive profile schema adapter plan | `ctoa_helper_profile_schema.lua + ctoa_helper_profile_persistence.lua` | Use passive profile schema metadata for required sections, safe false keys, rotation preset labels/summaries, migration readiness, load candidate lists, save path policy, generated save headers, load/save status text, and autosave metadata; keep file reads/writes in existing guarded profile audit/persistence shell paths. | Profile schema static contract, profile audit parity, safe-boot false-key coverage, rotation-summary coverage, key-order preservation, and no loader-time profile writes. | Profile audit and ModuleStaticGates stay current for the staged helper manifest. |
-| 11 | `vbot_import` / External vBot/vBot-like import lane | `source_required` | source_required: no vBot source is present in this checkout | `docs/otclient/vbot_import_review.md` | If a vBot source tree is provided, run otclient_external_bot_intake.py and require its import_gate before capability mapping; no direct copy without license/source notes. | Intake import_gate, source provenance note, secret scan, license/provenance review, runtime_gate_mapping, and mapping into existing module gates. | User provides the actual vBot source or a reviewed local archive. |
-
-## Supplemental Execution Plan
-
-| Order | Workstream | Status | Current slice | Next slice | Gate |
-|---:|---|---:|---|---|---|
-| 0 | `ui_primitives` | `in_progress_static_gated` | ctoa_helper_ui.lua owns text fit, widget style, checkbox state, visibility, guarded createWidget, nav/subtab style, button/card style, metric row/value style, setting/profile/vector row style, section/table/header strip style, priority badge style, label style, window chrome style, toggle/checkbox/sidebar-card style, overview avatar/equipment slot style, control-name style primitives, setting/profile/vector/section row geometry, sidebar/subtab metadata, section scaffold metadata, subtab content offsets, tools table-header metadata, CaveBot action/choice metadata, interactive profile/vector row builders, the passive Hunting targeting/magic panel renderer, the passive CaveBot editor renderer, the passive Tools helper/PvP/HUD/timer/diag panel renderer, the passive Settings/Profile renderer, and the passive Engine/HUD/layout renderer; helper shell now delegates all direct styleWidget calls, row geometry, tab metadata, repeated body/header scaffolding, subtab button creation, cavebot waypoint editor composition/action metadata, tools table headers, hunting targeting/magic composition, tools helper/PvP/HUD/timer/diag composition, profile/settings composition, Engine/HUD/layout composition, profile cycle/step/vector row construction, and diagnostics snapshot formatting/update through passive UI and Diagnostics adapters. | Keep diagnostics snapshot rendering in the adapters, run package/budget parity, and do not reintroduce probe formatting or widget loops into the guarded shell. | ModuleContract, UI preview, HelperShellBudgetPlanStaticSmoke, ModuleStaticGates, current LocalReady, then SmokeAttachModules for in-world visual evidence. |
-| 1 | `target_scorer` | `in_progress_static_gated` | Targeting owns bestCandidate ranking; helper now builds OTClient candidate snapshots and delegates best-target choice to ctoa_helper_targeting.lua. | Move the remaining PZ/NPC reason summaries into targeting/combat runtime adapters before adding any new combat feature. | TargetingStaticSmoke, ModuleStaticGates, current LocalReady, then SmokeAttach hunting and hunting_magic tabs in sandbox before runtime enablement. |
-| 2 | `route_engine` | `in_progress_static_gated` | Route labels, waypoint mutation, active target advancement, retry status, progress state, retryBlocked, selected summary, passive CaveBot editor panel, cavebot runtime decision text, movement blocked-reason/status/trace/path result text, and movement API probe summary text are module/UI-owned. | Move the next cavebot route/probe metadata slice into route/cavebot runtime adapters while keeping movement execution in guarded runtime. | RouteStaticSmoke, ModuleStaticGates, current LocalReady, then SmokeAttach cavebot tab in sandbox. |
-| 3 | `conditions_runtime_gate` | `offline_implementation_complete` | The default-closed static gate remains, and P9 now adds a strict data-only profile, passive heartbeat observation, hash-bound deterministic replay, 44-case fixture pack, Release Evidence, Control Center consumers, and a separately confirmed acceptance preflight; none can dispatch. | Run ctoa.ps1 otp9 only through BackgroundNoScreen, capture a fresh real trace after accepted P8 and Recovery proofs, then validate the data-only acceptance boundary; P10 can be fixture-tested while operational acceptance remains blocked. | P9 fixture pack, strict consumers, accepted P8 proof, real guarded Conditions observation, accepted Recovery trace/proof, validated no-action receipt, current attach evidence, Combat/CaveBot disabled, and no live promotion. |
-| 4 | `equipment_runtime_gate` | `offline_implementation_complete` | ctoa_helper_equipment_runtime_gate.lua plus the P10 replay own a default-closed ring-only, exact-ID, rollback-ready, zero-retry dry-run contract after Conditions; they cannot move or use items. | Run ctoa.ps1 otp10, then after Conditions acceptance refresh real inventory evidence and prove an unambiguous rollback-ready dry-run before any execute-once bridge review. | EquipmentRuntimeGateStaticSmoke, EquipmentShadowReplayStaticSmoke, accepted Conditions gate, fresh EquipmentObserverSmoke, exact item/rollback evidence, Combat/CaveBot disabled, and no live promotion. |
-| 5 | `heal_friend_runtime_gate` | `static_contract_accepted` | ctoa_helper_heal_friend_runtime_gate.lua owns a default-closed exact-whitelist and stable-party-target dry-run gate after Conditions and Equipment; it cannot cast. | After both predecessor gates pass, refresh no-target/whitelist evidence and prove a stable exact target dry-run before any execute-once bridge review. | HealFriendRuntimeGateStaticSmoke, accepted Conditions/Equipment gates, persisted exact whitelist, fresh target evidence, Combat/CaveBot disabled, and no live promotion. |
-| 6 | `scripting_policy` | `in_progress_static_gated` | ctoa_helper_scripting.lua owns policy snapshots, deny-all planning, and summary text; helper shell only delegates policy rendering and keeps eval/snippets forced off. | Add sandbox policy-shell evidence and keep all snippet/eval execution unavailable until security review, audit logging, ModuleAttachSmoke, SmokeAttachAll, and live approval are current. | ScriptingPolicySmoke, ModuleStaticGates, current LocalReady, then SmokeAttach scripting tab in sandbox; no runtime eval or snippet bridge. |
-| 7 | `operator_summary_bridge` | `in_progress_static_gated` | ctoa_helper_operator_summary.lua owns title/domain/profile/UI summary composition; helper shell now only passes local context and renders returned text. | Move any remaining operator-facing summary branches into the module before adding new runtime features, keeping summaries passive and widget-free. | Operator summary static contract, OperatorSummaryStaticSmoke, ModuleStaticGates, UI preview, current LocalReady, then SmokeAttachModules in sandbox before summaries can inform runtime bridge decisions. |
-| 8 | `input_contracts` | `in_progress_static_gated` | ctoa_helper_hotkeys.lua owns passive binding decisions, ctoa_helper_modal.lua owns passive confirmation decision text, and otclient_input_contract_fixtures.py now records behavior fixtures for parser and modal states. | Expand fixture cases whenever a new keyboard shortcut, destructive helper action, or external bot command mapping is proposed; keep actual binding and execution inside guarded helper shell paths. | InputContractsStaticSmoke, HotkeysStaticSmoke, ModalStaticSmoke, ModuleStaticGates, current LocalReady, and no loader-time key binding beyond the existing guarded helper toggle. |
-| 9 | `profile_persistence` | `in_progress_static_gated` | ctoa_helper_profile_schema.lua owns key order, serializer, labels, summaries, and schema metadata; ctoa_helper_profile_persistence.lua now owns passive load candidates, save path fallback policy, generated save headers, load/save status text, and autosave delay metadata. The helper shell still owns every dofile, io.open, dirty flag mutation, and save execution path. | Move profile export field grouping into schema/persistence descriptors once profile audit parity has fixtures for every generated section; keep actual profile writes in guarded shell paths. | Profile schema contract, ProfileSchemaStaticSmoke, module contract, profile audit parity, HelperShellBudgetPlanStaticSmoke, ModuleStaticGates, and current LocalReady. |
-| 10 | `runtime_bridge_review` | `sequenced_static_gates` | Recovery is sandbox-action accepted; Conditions, Equipment, and Heal Friend now have separate ordered static gates while Combat/CaveBot are deferred_high_risk. | Capture fresh Conditions evidence first, then Equipment, then Heal Friend; review one execute-once bridge at a time without live promotion. | Action-specific gate plus fresh ModuleStaticGates/ModuleAttachSmoke/SmokeAttachAll evidence; Combat and CaveBot remain deferred regardless of generic gate state. |
-
-## Operator Sequence
-
-1. Keep Engine Brain current, run `ctoa.ps1 otp9`, and finish the real Conditions acceptance trace without treating fixture success as runtime readiness.
-2. Review Equipment only after Conditions acceptance; review Heal Friend only after both predecessor gates.
-3. Keep every new module passive/read-only unless its action-specific gate and a separately reviewed bridge explicitly allow one sandbox action.
-4. Add profile keys, safe boot defaults, module registry entry, package copy, README note, static smoke, and release-gate evidence for every new module.
-5. Promote a module from `contracted` to `static_gated` only after its dedicated static smoke is included in `ModuleStaticGates`.
-6. Maintain the supplemental status-board lane (`ctoa_helper_module_status.lua`) so module readiness, blockers, and static-only modules remain visible before any runtime bridge work.
-7. Maintain the supplemental action-catalog lane (`ctoa_helper_action_catalog.lua`) so future features declare action names, risk class, and required gates before any dispatcher can consume them.
-8. Maintain the supplemental decision-trace lane (`ctoa_helper_decision_trace.lua`) so runtime policy and dispatch guard reasons are visible before any queued plan is reviewed.
-9. Maintain `ctoa_helper_sandbox_handoff.lua` and `ctoa_helper_feature_flags.lua` so evidence, default-false state, and explicit live approval stay mandatory.
-10. Keep Combat and CaveBot deferred_high_risk until a later review explicitly reopens them.
-```
-
-
-## `docs/otclient/ctoai_runtime_2_execution_plan.md`
-
-```markdown
-# CTOAi Runtime 2 Execution Plan
-
-## Decision
-
-CTOAi Runtime 2 will adapt the lightweight event-driven execution model observed in the reviewed vBot 5.0 source without importing its global-state architecture wholesale. CTOAi remains the policy, planning, evidence, and operator layer. OTClient Lua remains the low-latency observation and execution layer.
-
-Runtime actions remain disabled by default. Existing `ctoa_helper_runtime_policy.lua` and `ctoa_helper_dispatch_guard.lua` contracts remain authoritative for future execution.
-
-## Target Flow
-
-1. OTClient adapters collect bounded observations.
-2. Domain observers publish normalized events.
-3. Passive planners produce candidate plans.
-4. Runtime policy and dispatch guard classify each plan.
-5. A future executor may act only after sandbox, manifest, smoke, and live-approval gates pass.
-6. Bounded telemetry reports results to the Helper and Control Center surfaces.
-
-## Migration Principles
-
-- Adapt behavior and domain boundaries; do not copy unreviewed external code.
-- Keep OTClient globals behind guarded adapters.
-- Keep UI, observation, planning, policy, and execution separate.
-- Use one budgeted scheduler instead of adding independent high-frequency loops.
-- New tasks are passive and disabled by default.
-- A scheduler overrun defers work; it never expands the tick budget.
-- A failed task receives bounded backoff and cannot stop other domains.
-- Capability reports must distinguish registered, enabled, healthy, deferred, and failed states.
-
-## Execution Sequence
-
-### P0 — Runtime Core
-
-- Add a runtime module registry separate from the descriptive Helper lane registry.
-- Add a synchronous, failure-isolated event bus.
-- Add a budgeted cooperative scheduler with per-task interval and failure backoff.
-- Expose passive snapshots and counters for diagnostics.
-- Keep every task disabled by default.
-
-Evidence: static contract tests, scheduler behavior tests, loader wiring, safe-boot assertions.
-
-### P1 — Passive Combat/Targeting Adapter
-
-- Normalize target, spectator, protection-zone, cooldown, and latency observations.
-- Publish observation events without calling attack, talk, use, walk, or cast APIs.
-- Feed the existing passive combat planner and decision trace.
-- Report plan and guard status through existing capability telemetry.
-
-Evidence: fixture-based observation tests, no-action static scan, malformed-API fallbacks.
-
-### P2 — Tick Budget and Telemetry Integration
-
-- Route the first observer through Runtime Core.
-- Add deferred-task, execution-time, failure, and backoff counters.
-- Surface a compact scheduler snapshot in Helper diagnostics and the client reporter.
-
-Evidence: deterministic clock tests and bounded diagnostic snapshot tests.
-
-### P3 — Domain Migration
-
-Passive observer/refactor migration may continue without enabling actions. The
-functional runtime sequence after Recovery is fixed: Conditions paralyze-only,
-then Equipment ring-only rollback, then Heal Friend exact-whitelist. Combat and
-CaveBot remain `deferred_high_risk`; no executor follows from passive refactor
-status alone. Each domain must pass observer-only tests before an executor is
-designed.
-
-### P4 — Guarded Executor
-
-Design an executor only after current sandbox attach, SmokeAttachAll,
-`RuntimeModuleGatesSandboxSmoke`, manifest, release-gate, and explicit
-live-approval evidence are present. The executor must consume an action-bound
-accepted gate trace, never a caller boolean, and must add action-specific
-cooldown and protection-zone checks.
-
-## Current Status
-
-- P0 implementation: complete repo-side; registry, event bus, budgeted scheduler,
-  Lua behavior probe, loader wiring, and safe-default tests pass.
-- P1 implementation: complete repo-side with a normalized passive
-  combat/targeting observer and guarded OTClient snapshot provider. Loader
-  attachment registers the observer task disabled by default.
-- P2 implementation: complete repo-side. Runtime Core status now reaches Helper
-  diagnostics, bounded diagnostic exports, and the additive `runtime_core`
-  section of the v1 capability report with disabled/deferred/failed counters.
-- P3 implementation: complete repo-side for targeting/combat, recovery/healing,
-  cavebot/pathing, loot, and equipment observers. All five are attached to
-  guarded OTClient providers; Runtime Core reports five registered tasks and
-  zero enabled tasks after safe boot.
-- P4: blocked by current evidence. The latest goal audit verifies 14/19 checks
-  after the official `GoalStatus` refresh and now reports only the genuine
-  in-world ModuleAttachSmoke, SmokeAttachAll, and live-approval blockers. The
-  earlier static freshness mismatch came from running the goal audit without
-  first regenerating `release_gate.json` through `GoalStatus`.
-- The sandbox packaging contract now includes Runtime Core, all five observers,
-  and the guarded OTClient observation adapter in runtime sync, dev manifest,
-  stage construction, and enable/disable lists. A full PrepareDev/ValidateDev
-  rebuild passes 114 tests; the sandbox must log in and rerun attach smoke.
-- The smoke-command resolver now converts virtual `/ctoa_ui_prefs.lua` state to
-  the real sandbox work-directory `ctoa_smoke_command.lua` path before `io.open`.
-  This fixes the repeated `Smoke command failed: nil` loop caused by mixing the
-  resource filesystem with the host filesystem. The rebuilt sandbox is waiting
-  at saved-credential login before the in-world verification can run.
-- Runtime action enablement: prohibited until P4 evidence is complete.
-```
-
-
-## `docs/otclient/solteria_helper_supplemental_refactor_plan.md`
-
-```markdown
-# Solteria Helper Supplemental Refactor Plan
-
-## Current State
-
-- Static helper pack: `passed`.
-- Module static gates: `passed (31/31)`.
-- Local ready: `ready_for_sandbox`.
-- Sandbox queue: `ready_for_operator`.
-- Helper shell budget: `needs_extraction`, `4222` lines and `165` functions.
-- Live status: not ready for live promotion.
-
-The current refactor keeps runtime execution in the guarded helper shell. Passive
-policy, planning, summary, and UI responsibilities should continue moving into
-named modules with static contracts before any runtime bridge is expanded.
-
-## Completed In Current Slice
-
-- Runtime policy now owns protection-zone policy metadata and the final PZ
-  decision.
-- The native helper shell now collects guarded OTClient observations and asks
-  `CTOA_HELPER_RUNTIME_POLICY.protectionZoneDecision(...)` for the block result.
-- Module contract now records runtime-policy ownership for PZ policy and PZ
-  decision.
-- Helper shell PZ logic is smaller while still failing closed when the policy
-  module is unavailable or errors.
-- Profile persistence now owns passive profile export grouping through
-  `ProfilePersistence.exportProfile(...)`; the shell keeps save execution,
-  autosave scheduling, and fallback-only profile assembly.
-- Targeting now owns passive creature-type decisions through
-  `Targeting.creatureTypeDecision(...)`; the shell keeps guarded OTClient
-  method reads and attack execution.
-- Timer runtime now owns passive timer dispatch/status decisions through
-  `TimerRuntime.dispatch(...)`; the shell keeps guarded `castSpell(...)`,
-  `last_timer_ms`, and runtime execution.
-- Static smoke checks now require the new timer dispatch contract and the
-  combat adapter's current `adapter_text` handoff rather than stale shell-only
-  suffix strings.
-- Cavebot runtime now owns passive adapter summary, movement capability
-  normalization, and movement probe snapshot normalization through
-  `CavebotRuntime.adapterSummary(...)`,
-  `CavebotRuntime.movementCapability(...)`, and
-  `CavebotRuntime.probeSnapshot(...)`.
-- Cavebot runtime now owns the passive adapter summary-to-status pipeline
-  through `CavebotRuntime.adapterStatusSummary(...)`; the native shell still
-  supplies guarded online/PZ/route context and only fits the returned status for
-  UI display.
-- Cavebot runtime now owns the full passive movement probe report assembly
-  through `CavebotRuntime.probeReport(...)`; the native shell still reads
-  guarded OTClient movement APIs and only sends the report text to status.
-- The native helper shell still performs guarded OTClient reads, `findPath`, and
-  `autoWalk`, but no longer builds cavebot adapter-summary callbacks inside the
-  runtime loop.
-- Route now owns passive CaveBot editor state and delete-confirm request
-  metadata through `Route.uiState(...)` and `Route.deleteRequest(...)`; the
-  native shell still renders widgets and executes guarded modal confirmation.
-- Combat runtime now owns passive spell cooldown/readiness row normalization
-  through `CombatRuntime.spellReadiness(...)`; the shell still performs guarded
-  creature scanning and spell mob-count observation, while attack/cast execution
-  remains in the guarded helper runtime.
-- Combat runtime now owns passive combat adapter summary assembly through
-  `CombatRuntime.adapterSummary(...)`; the shell passes guarded online/PZ/target
-  observations and only fits the returned text for UI display.
-- Combat runtime now owns passive decision-state summary shaping through
-  `CombatRuntime.decisionStateSummary(...)`; the native shell still reads
-  guarded online/PZ/rune state and performs the final UI text fitting, while
-  attack, cast, rune, and exeta execution remain shell-owned.
-- Diagnostics now owns central API probe status/detail text assembly through
-  `Diagnostics.apiProbeText(...)`; the shell still performs guarded OTClient API
-  reads, retry scheduling, snapshot recording, and UI refresh.
-- Diagnostics now owns passive API/magic probe deferred-retry decisions through
-  `Diagnostics.probeDeferredPlan(...)`; the shell still owns `delay(...)`,
-  startup retry scheduling, guarded OTClient reads, snapshot recording, and UI
-  refresh.
-- Diagnostics now owns passive diagnostics snapshot UI row descriptors through
-  `Diagnostics.snapshotUiRows(...)`; the shell still owns widget existence
-  checks, `fitText(...)`, and `setText(...)`.
-- Cavebot runtime now owns passive movement-reset trace text through
-  `CavebotRuntime.traceText("movement_reset", ...)`; the shell still resets
-  retry/stuck state and only emits the module-owned status message.
-- Cavebot runtime now owns the movement probe report handoff through
-  `CavebotRuntime.probeReport(...)`; the shell no longer orchestrates separate
-  `probeSnapshot` and `probeSummary` calls.
-- Cavebot runtime now owns path-result status text through
-  `CavebotRuntime.pathText(...)`; the shell still performs the guarded
-  `g_map.findPath` read and only passes the passive result snapshot with
-  fallback `n/a`.
-- Cavebot runtime now owns passive movement status/trace prose for walk
-  attempts, test walks, retry-budget blocks, and walk-failed blocks through
-  `CavebotRuntime.statusText(...)` and `CavebotRuntime.traceText(...)`; the
-  native shell still mutates retry state and performs guarded `player:autoWalk`.
-- Cavebot runtime now owns passive walking-status assembly through
-  `CavebotRuntime.walkingStatus(...)`; the native shell still resolves the
-  current route label/retry snapshot and performs guarded `player:autoWalk`.
-- Diagnostics now owns passive smoke-command parsing, tab/subtab target
-  normalization, and smoke status text through
-  `Diagnostics.parseSmokeCommandText(...)`,
-  `Diagnostics.smokeCommandTarget(...)`, and
-  `Diagnostics.smokeTabStatusText(...)`; the native shell still reads/removes
-  the command file, focuses widgets, and executes the guarded smoke action.
-- Route now owns passive CaveBot editor action dispatch through
-  `Route.editorAction(...)`; the native shell still reads the player position,
-  preserves the delete confirmation modal, marks profiles dirty only from the
-  route-owned result, and never moves/pathfinds from the route module.
-- Combat runtime now owns passive rotation spell selection through
-  `CombatRuntime.rotationSpell(...)`; the native shell still observes nearby
-  monsters, builds spell rows from guarded scan results, and keeps all
-  `castSpell(...)` execution inside the guarded helper runtime.
-- Combat runtime now owns passive offensive action status text through
-  `CombatRuntime.actionStatusText(...)`; the native shell still enforces PZ,
-  action-lock, recovery-gap, cast, and rune execution guards.
-- Combat runtime now owns passive targeting status text through
-  `CombatRuntime.targetingStatusText(...)`; the native shell still performs
-  guarded target scanning, target clearing, chase mode, and `g_game.attack`.
-- Combat runtime now owns passive next-action label formatting through
-  `CombatRuntime.nextActionText(...)`; the native shell still computes the
-  guarded action and fallback wait reason.
-- The native helper shell now calls diagnostics, route, combat runtime, and
-  cavebot runtime adapters through one shared guarded `moduleValue(...)`
-  invoker, reducing repeated `pcall` scaffolding while keeping all guarded
-  scans, file command handling, widget rendering, modal confirmation,
-  profile-dirty marking, `autoWalk`, `findPath`, casts, rune use, and attacks
-  shell-owned.
-- Combat decision-state and adapter-summary handoffs now rely only on the
-  shared `moduleValue(externalCombatRuntime, ...)` guard; the shell no longer
-  carries duplicate `externalCombatRuntime.*` preflight branches for those
-  passive text paths.
-- Combat runtime now owns passive rotation spell row normalization through
-  `CombatRuntime.rotationSpellRows(...)`; the native shell still supplies only
-  guarded scan snapshots and last-cast state, while spell selection, readiness
-  rows, and target/status prose remain behind
-  `moduleValue(externalCombatRuntime, ...)`.
-- Module contract and static smoke now require `CombatRuntime.targetingStatusText(...)`
-  and `owns_targeting_status_text = true`, matching the existing shell handoff
-  for blocked/no-target/friendly-summon/auto-target runtime status text.
-- Diagnostics now owns passive smoke-command status text through
-  `Diagnostics.smokeCommandStatusText(...)`; the native shell still reads and
-  removes the smoke command file, switches helper tabs, and executes only the
-  existing guarded probe/action paths.
-- The native helper shell now calls smoke-command parsing, target selection,
-  and status text directly through `moduleValue(externalDiagnostics, ...)`,
-  removing the remaining local smoke-command wrapper functions while keeping
-  tab switching, command-file removal, probe execution, export, and cavebot
-  action dispatch shell-owned.
-- The native helper shell now calls diagnostics formatter/probe/export helpers
-  through the shared `moduleValue(externalDiagnostics, ...)` invoker while
-  keeping OTClient reads, file command handling, and smoke execution
-  shell-owned.
-- The native helper shell now calls cavebot runtime adapter summary and movement
-  probe report helpers directly through
-  `moduleValue(externalCavebotRuntime, ...)`, removing extra shell wrapper
-  functions while keeping `autoWalk`, `findPath`, retry mutation, and status
-  emission shell-owned.
-- The native helper shell now calls cavebot adapter status text directly through
-  `moduleValue(externalCavebotRuntime, "adapterStatusText", ...)`, removing
-  the last adapter-status wrapper while keeping status display and all movement
-  execution in the guarded shell.
-- Cavebot movement capability now keeps only the guarded `player:canWalk(true)`
-  read in the shell; `CavebotRuntime.movementCapability(...)` owns the passive
-  capability decision, and the shell fallback is reduced to a minimal
-  module-unavailable path.
-- Cavebot movement blocked-reason fallback now reuses the same online/player/
-  position/PZ context passed to `CavebotRuntime.movementBlockedReason(...)`,
-  avoiding repeated shell-side state checks while keeping movement execution
-  and `autoWalk` guarded in the native shell.
-- Cavebot runtime now owns passive adapter status text through
-  `CavebotRuntime.adapterStatusText(...)`; the native shell still resolves the
-  active route target, gathers guarded route context, mutates retry state, and
-  executes only the existing guarded `player:autoWalk(...)` path.
-- The native helper shell now calls cavebot path-result and walking-status
-  adapters directly through `moduleValue(externalCavebotRuntime, ...)`,
-  removing the remaining one-off shell wrappers for those passive cavebot texts
-  while keeping `g_map.findPath`, route label resolution, retry mutation, and
-  `player:autoWalk(...)` shell-owned.
-- The native helper shell now calls combat adapter summary directly through
-  `moduleValue(externalCombatRuntime, "adapterSummary", ...)`, removing the one-off
-  `combatRuntimeAdapterSummary(...)` wrapper while keeping guarded online/PZ
-  observation, target presence, text fitting, creature scans, casts, rune use,
-  and attacks shell-owned.
-- Loot runtime now owns passive adapter summary assembly through
-  `LootRuntime.adapterSummary(...)`; the native shell no longer carries the
-  `lootRuntimeAdapterSummary(...)` wrapper or a one-off
-  `pcall(externalLootRuntime.adapterSummary, ...)` branch and only passes
-  guarded online/PZ context plus container-count probe data for diagnostics
-  text through `moduleValue(externalLootRuntime, "adapterSummary", ...)`.
-- Cavebot runtime now owns passive retry-budget decisions through
-  `CavebotRuntime.retryDecision(...)`; the native shell still mutates
-  `cavebot_movement_enabled` and retry counters, emits module-owned status and
-  trace text, and keeps every guarded `player:autoWalk(...)` call shell-owned.
-- Cavebot runtime now owns the passive "no player position" waypoint-editor
-  status through `CavebotRuntime.statusText("no_player_position")`; the native
-  shell still performs the guarded local-player position read and refuses to add
-  a waypoint when no position is available.
-- Diagnostics now owns passive smoke-command file existence probing through
-  `Diagnostics.smokeCommandExists(...)`; the native shell still chooses the
-  smoke command path, reads/parses the command, deletes the command file, and
-  executes every smoke action in guarded shell code.
-- Profile persistence now owns the full profile export field grouping through
-  `ProfilePersistence.exportProfile(...)`; the native shell keeps only a
-  minimal module-unavailable fallback plus the guarded save execution path.
-- Profile persistence also owns the UI preferences export shape through
-  `ProfilePersistence.exportUiPrefs(...)`; the native shell keeps the guarded
-  save path, serializer call, and minimal module-unavailable fallback.
-- Profile persistence now owns passive UI preferences normalization through
-  `ProfilePersistence.uiPrefsPlan(...)`; the native shell still owns
-  `dofile(...)`, guarded config/helper mutation, status emission, and the
-  selected `Helper.ui_path`.
-- Diagnostics now owns movement API probe deferral decisions through the shared
-  `Diagnostics.probeDeferredPlan(...)`; the native shell still owns delayed
-  scheduling, guarded movement/API reads, path probing, and status emission.
-- The profile schema, profile persistence, and hotkey shell adapters now reuse
-  the generic `moduleValue(...)` protected invoker instead of carrying separate
-  per-domain `pcall(...)` branches.
-- Diagnostics formatter/counting bridge calls now share one
-  `diagnosticsText(...)` shell adapter, and unused shell-only `apiText`,
-  `valueText`, `boolText`, `posText`, `tableCount`, and `firstTableValue`
-  wrappers were removed; the diagnostics module still owns the passive text,
-  table-count, and first-value decisions.
-- Operator summary, scripting policy snapshot, modal request/status, and
-  targeting score/best-candidate handoffs now reuse the shared
-  `moduleValue(...)` guarded invoker instead of one-off `pcall(...)` branches;
-  the shell still owns UI rendering, modal confirmation execution, guarded
-  creature scans, target choice fallback, and all attack/cast execution.
-- Cavebot status and trace formatting now share one
-  `cavebotRuntimeText(...)` bridge into `CavebotRuntime.statusText(...)` and
-  `CavebotRuntime.traceText(...)`, replacing separate shell wrappers while
-  keeping `g_map.findPath`, retry mutation, and every `player:autoWalk(...)`
-  call in the guarded native shell.
-- Combat action and targeting status formatting now share one
-  `combatRuntimeText(...)` bridge into `CombatRuntime.actionStatusText(...)`
-  and `CombatRuntime.targetingStatusText(...)`, replacing separate shell
-  wrappers while keeping guarded target scans, spell casts, rune actionbar use,
-  action locks, and `g_game.attack(...)` execution in the native shell.
-- HUD start/disarmed/runtime text and passive position lookup now route through
-  direct `moduleValue(externalHud, ...)` calls instead of per-HUD `pcall(...)`
-  wrappers or a shell-owned HUD text bridge; `ctoa_helper_hud.lua` still owns
-  passive text and geometry defaults, while the shell keeps widget creation,
-  movement, visibility, and all OTClient UI calls.
-- Protection-zone policy resolution and final PZ decision now use the shared
-  `moduleValue(externalRuntimePolicy, ...)` bridge instead of two local
-  runtime-policy `pcall(...)` wrappers; the shell still performs guarded
-  `g_game` / `g_map` observation because the policy module remains passive and
-  does not call OTClient globals.
-- The native shell no longer carries a duplicate protection-zone policy fallback
-  table; if `ctoa_helper_runtime_policy.lua` is unavailable, PZ-sensitive
-  runtime gates now fail closed by treating the player as protected instead of
-  reconstructing policy metadata in the shell.
-- Module registry summary/readiness shell calls now use the shared
-  `moduleValue(externalModules, ...)` bridge for lane enabled/runtime text,
-  registry summary, short labels, and readiness rows; `ctoa_helper_modules.lua`
-  stays the owner of registry/readiness semantics while the native helper keeps
-  only overview widget wiring.
-- Operator summary calls now share one table-driven bridge map for
-  title/domain/profile/UI summaries; `ctoa_helper_operator_summary.lua` owns
-  summary formatting plus `bridgeText(...)` fallback dispatch, while the shell
-  keeps only context assembly, widget refresh calls, and guarded module
-  invocation through `moduleValue(...)`.
-- Profile label callbacks now share one table-driven `profileLabelText(...)`
-  bridge into `ctoa_helper_profile_schema.lua` for spell, potion, rune,
-  priority, and theme labels; the UI-facing callback names remain stable while
-  duplicate shell wrapper functions are removed.
-- Recovery runtime now owns passive vitals normalization, healing spell
-  selection, recovery action-gap planning, and recovery status text through
-  `ctoa_helper_recovery_runtime.lua`; the native shell still performs guarded
-  player API reads, actionbar potion sends, spell casts, cooldown mutation, and
-  UI/status emission.
-- UI now owns passive metric-card geometry and metric text update planning
-  through `Ui.metricCardGeometry(...)` and `Ui.metricTextPlan(...)`; the native
-  shell still creates widgets, assigns sections, and calls guarded OTClient UI
-  APIs, while the unused placeholder-module shell helper has been removed.
-- The native shell no longer carries the obsolete toggle-button registry path
-  (`setToggleText`, `addToggleButton`, and `Helper.toggles`); current row
-  toggles remain owned by the guarded UI row builders and profile/UI adapters.
-- UI now owns active panel renderers for `healing`, `heal_friend`,
-  `conditions`, `equipment`, and `scripting`; the native shell passes guarded
-  callbacks/config context and keeps runtime execution, OTClient API calls, and
-  arming decisions in the shell.
-- UI now owns operator-summary refresh and setting-row builders
-  (`Ui.refreshOperatorSummaries`, `Ui.addSettingRow`,
-  `Ui.addToggleSettingRow`); the native shell remains the source of summary
-  data and dirty/sync callbacks but no longer manually updates each summary
-  widget or lays out setting rows.
-- The native shell no longer carries dead coming-soon tab configuration or
-  one-shot UI wrapper functions for section bodies, sidebar profile card, and
-  overview rendering; active tabs remain bound directly and overview rendering
-  delegates to the UI module inline.
-- The native shell also removed the remaining one-shot table/toggle row wrapper
-  names; panel renderers now receive inline guarded context callbacks, and the
-  UI module contract no longer exposes unused inactive/disabled nav styles.
-- Profile schema now owns one more passive text bridge (`onOffLabel`) and the
-  native shell consumes schema option lists and profile labels directly from
-  the module instead of carrying local profile option/list/label adapters.
-- UI builder delegation is leaner: tab, subtab, and action-button styling now
-  calls `CTOA_HELPER_UI` directly through `styleUi(...)`; the shell no longer
-  carries local style wrapper functions for those controls.
-- Muted/accent sidebar and section labels now use `addLabel(...)` plus direct
-  UI style calls instead of named shell wrappers, leaving the UI module as the
-  styling owner while preserving the same rendered labels.
-- Priority badges follow the same pattern: panel renderers receive an inline
-  guarded context callback, so the shell no longer carries a named
-  `addPriorityBadge(...)` wrapper.
-- Footer and summary strips now follow the same renderer-context pattern. The
-  shell no longer carries named `addFooterStrip(...)` or `addSummaryStrip(...)`
-  wrappers, while panel renderers still receive guarded callbacks with the same
-  widget styling and section registration.
-- Table headers now use the renderer context directly as well: the shell no
-  longer carries a named `addTableHeader(...)` wrapper, and batch table headers
-  call the same guarded context callback.
-- Section bands and subtab buttons now use renderer-context callbacks instead
-  of named shell wrappers. `addSectionScaffold(...)` remains shell-owned because
-  it creates the guarded OTClient body container, while section header and
-  subtab widget composition no longer add shell function pressure.
-- Diagnostics text formatting now bypasses shell forwarding wrappers. The shell
-  calls `ctoa_helper_diagnostics.lua` through `moduleValue(...)` for boolean,
-  position, API snapshot, feature flag, movement, magic/loot, and export-buffer
-  text; the smoke commands and runtime sampling remain guarded shell-owned.
-- Operator summary bridge calls now bypass the last shell-owned dispatch
-  wrapper. `ctoa_helper_operator_summary.lua` owns `bridgeText(...)` fallback
-  dispatch, while the shell still owns context assembly and widget refresh
-  calls.
-- Heal Friend fallback status text now uses the shared
-  `moduleValue(externalHealFriend, "statusText", ...)` adapter. The shell no
-  longer has a one-off `externalHealFriend.statusText` pcall branch, while
-  observation scans and all runtime execution gates remain shell-owned.
-- Scripting policy snapshot no longer has a named shell wrapper. The scripting
-  panel renderer receives a guarded callback that calls
-  `ctoa_helper_scripting.lua` through `moduleValue(...)`, while the module
-  still owns passive policy text and blocked unsafe-state wording.
-- Module registry overview data now bypasses four shell wrappers
-  (`moduleLaneEnabled`, `moduleLaneRuntimeText`, `moduleRegistrySummaryText`,
-  and `moduleReadinessRowText`). Overview refresh calls
-  `ctoa_helper_modules.lua` through `moduleValue(...)` directly for registry
-  summary and readiness rows, while the UI module still owns rendering.
-- Profile step rows no longer use the single-call `profileSchemaNumber(...)`
-  shell wrapper. The row adapter calls `ProfileSchema.stepValue(...)` through
-  `profileSchemaValue(...)` directly and keeps the same numeric fallback.
-- Protection-zone state checks no longer use the single-call `pcallWithArg(...)`
-  wrapper. `hasAnyState(...)` keeps the same guarded `pcall` behavior inline,
-  returning false on unavailable methods or protected-call failures.
-- Actionbar slot display text no longer has a shell-owned
-  `actionbarSlotText(...)` wrapper. Runtime potion/rune status and operator
-  summaries call `ctoa_helper_hotkeys.lua` through `moduleValue(...)` or pass
-  the module formatter directly, while `sendActionbarSlot(...)` remains the
-  guarded shell-owned execution path.
-- Hotkey display and module forwarding now bypass the shell-owned
-  `hotkeyValue(...)` and `hotkeyDisplayText(...)` wrappers. The helper shell
-  still keeps guarded hotkey bind fallback logic, while passive normalize,
-  display, and binding decisions are owned by `ctoa_helper_hotkeys.lua`.
-- Modal confirmation flow no longer uses shell-owned `modalValue(...)` or
-  `modalStatusText(...)` wrappers. The shell calls `ctoa_helper_modal.lua`
-  directly through `moduleValue(...)` for request, pending, and status text,
-  while cavebot delete execution and confirmation fallback remain shell-owned.
-- HUD runtime/start/disarmed text no longer uses the shell-owned
-  `hudText(...)` wrapper. The shell calls `ctoa_helper_hud.lua` directly
-  through `moduleValue(...)`, while HUD widget creation, positioning, and
-  visibility remain shell-owned and guarded.
-- Profile schema text formatting no longer uses the shell-owned
-  `profileSchemaText(...)` wrapper. On/off labels, autosave labels, rotation
-  preset labels, and rotation summary now call `ProfileSchema` directly through
-  `profileSchemaValue(...)` with local fallbacks at each use site.
-- Profile number formatting no longer keeps a shell-owned `profileNumberText`
-  alias. UI renderer contexts receive `tostring` directly for passive numeric
-  display text.
-- Profile field geometry now reuses `profileSchemaTable("fieldGeometry", ...)`
-  directly from the UI row adapter instead of unpacking and rebuilding the same
-  table in the shell; `ctoa_helper_profile_schema.lua` remains the passive
-  geometry owner while OTClient widget construction stays shell-owned.
-- The obsolete shell-owned `profileFieldGeometry(...)` wrapper is removed; the
-  static profile-schema gate now requires direct UI/profile row delegation.
-- Operator-summary panel setup no longer carries per-domain
-  `*SummaryText = function()` wrappers. Initial panel summary text is captured
-  as a string snapshot during `rebuildUi(...)`, while
-  `refreshOperatorSummaries(...)` still refreshes live widgets through
-  `ctoa_helper_operator_summary.lua` and the shared guarded `moduleValue(...)`
-  bridge.
-
-## Non-Negotiable Gates
-
-- Do not promote live until sandbox `SmokeAttachModules`, fresh
-  `SmokeAttachAll`, release gate, and explicit
-  `PromoteLiveCtoa -ApproveLiveDeploy` are current.
-- Do not enable combat, movement, rune casting, timer, healing, loot, or eval at
-  loader initialization.
-- Keep external bot sources as references only until provenance, license, secret
-  scan, import gate, and mapped module gates pass.
-- Keep vBot-derived implementation claims blocked until a reviewed source tree
-  or archive is present in this checkout.
-
-## Next Work Order
-
-| Order | Workstream | Goal | First action | Required gate |
-|---:|---|---|---|---|
-| 1 | `runtime_cavebot` | Continue reducing cavebot runtime shell pressure without moving movement execution. | Move remaining movement preflight/status labels into cavebot runtime adapters; keep `autoWalk` and `findPath` shell-owned. | CavebotRuntimeStaticSmoke, RouteStaticSmoke, sandbox cavebot attach evidence. |
-| 2 | `runtime_combat` | Keep attack/cast guarded while extracting remaining passive readiness labels. | Move remaining combat wait/decision-state input shaping into combat runtime/targeting adapters; keep creature scans and casts shell-owned. | CombatRuntimeStaticSmoke, TargetingStaticSmoke, sandbox hunting and hunting_magic attach evidence. |
-| 3 | `diagnostics_smoke` | Keep smoke evidence formatting module-owned. | Move any remaining smoke report/static result labels into diagnostics helpers; keep smoke command execution shell-owned. | Diagnostics contract checks, ModuleStaticGates, LocalReady. |
-| 4 | `ui_builder` | Reduce shell-only UI builder pressure before adding new tabs. | Continue moving repeated section, row, and metric metadata into passive UI descriptor tables; metric-card geometry/text planning is already module-owned. | UI preview, ModuleStaticGates, no layout overlap evidence. |
-| 5 | `runtime_recovery` | Prepare healing/recovery metadata without enabling new actions. | Continue mirroring potion/spell blocked-reason labels in passive recovery metadata; vitals, spell selection, status text, and action-gap planning are already module-owned. | Safe-boot false-key coverage, recovery targeted tests, sandbox evidence. |
-| 6 | `sandbox_runtime_review` | Decide whether any passive plan can become a guarded dispatcher input. | Run Launch, ReadyCheck, SmokeAttachModules, SmokeAttachAll for the current manifest. | Release gate current and live promotion still explicit. |
-
-## Operator Sequence
-
-1. Run `ValidateDev` after source changes so manifest, ZIP hash, smoke preflight,
-   and release-readiness evidence are synchronized.
-2. Run `ModuleStaticGates` and `LocalReady`.
-3. Launch the sandbox client and enter a test character.
-4. Run `SmokeAttachModules`, then `SmokeAttachAll`.
-5. Only after those pass, review runtime bridge candidates.
-6. Use the official live wrapper only when the release gate is current and the
-   user explicitly approves live deployment.
-```
-
-
-## `docs/otclient/solteria_helper_sandbox_smoke_queue.md`
-
-```markdown
-# Solteria Helper Sandbox Smoke Queue
-
-## Decision
-
-- Status: `passed`
-- Helper version: `v2.0.0`
-- Runtime status: `ready_for_readycheck`
-- Release gate: `passed`
-- Next action: Refresh local package and static gates
-- Live safety: read-only plan; live promotion still requires `-ApproveLiveDeploy`.
-
-## Queue
-
-| Order | Step | Status | Command | Evidence | Reason |
-|---:|---|---:|---|---|---|
-| 1 | `local_ready` / Refresh local package and static gates | `required` | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action LocalReady` | `C:\Users\zycie\CTOAi\runtime\solteria_helper_dev\local_ready.json` | Local package, SmokePreflight, ModuleStaticGates, and GoalStatus should be current before attach. |
-| 2 | `launch_sandbox` / Launch sandbox client and enter test character | `required` | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action Launch` | `C:\Users\zycie\CTOAi\runtime\solteria_helper_dev\smoke_status.json` | Run ReadyCheck, then SmokeAttachModules when the test character is in-world. |
-| 3 | `ready_check` / Confirm helper is attached in-world | `required` | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action ReadyCheck` | `C:\Users\zycie\CTOAi\runtime\solteria_helper_dev\ready_check.json` | Run after the sandbox character is in-world; character-select screens are not enough. |
-| 4 | `module_attach_group` / Capture grouped prototype module tab evidence | `passed` | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttachModules` | `C:\Users\zycie\CTOAi\runtime\solteria_helper_dev\module_attach_smoke.json` | Prototype module tabs need grouped in-world evidence. |
-| 5 | `attach_heal_friend` / Attach module tab: heal_friend | `passed` | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttach -Tab heal_friend` | `runtime\solteria_helper_dev\module_attach_smoke.json` | Static gate is passed; in-world tab evidence is still required. |
-| 6 | `attach_conditions` / Attach module tab: conditions | `passed` | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttach -Tab conditions` | `runtime\solteria_helper_dev\module_attach_smoke.json` | Static gate is passed; in-world tab evidence is still required. |
-| 7 | `attach_equipment` / Attach module tab: equipment | `passed` | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttach -Tab equipment` | `runtime\solteria_helper_dev\module_attach_smoke.json` | Static gate is passed; in-world tab evidence is still required. |
-| 8 | `attach_scripting` / Attach module tab: scripting | `passed` | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttach -Tab scripting` | `runtime\solteria_helper_dev\module_attach_smoke.json` | Static gate is passed; in-world tab evidence is still required. |
-| 9 | `attach_hud` / Attach module tab: hud | `passed` | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttach -Tab tools_hud` | `runtime\solteria_helper_dev\module_attach_smoke.json` | Static gate is passed; in-world tab evidence is still required. |
-| 10 | `attach_route` / Attach module tab: route | `passed` | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttach -Tab cavebot` | `runtime\solteria_helper_dev\module_attach_smoke.json` | Static gate is passed; in-world tab evidence is still required. |
-| 11 | `attach_targeting` / Attach module tab: targeting | `passed` | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttach -Tab hunting` | `runtime\solteria_helper_dev\module_attach_smoke.json` | Static gate is passed; in-world tab evidence is still required. |
-| 12 | `attach_combat_runtime` / Attach module tab: combat_runtime | `passed` | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttach -Tab hunting_magic` | `runtime\solteria_helper_dev\module_attach_smoke.json` | Static gate is passed; in-world tab evidence is still required. |
-| 13 | `attach_cavebot_runtime` / Attach module tab: cavebot_runtime | `passed` | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttach -Tab cavebot` | `runtime\solteria_helper_dev\module_attach_smoke.json` | Static gate is passed; in-world tab evidence is still required. |
-| 14 | `attach_loot_runtime` / Attach module tab: loot_runtime | `passed` | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttach -Tab tools_diag` | `runtime\solteria_helper_dev\module_attach_smoke.json` | Static gate is passed; in-world tab evidence is still required. |
-| 15 | `attach_timer_runtime` / Attach module tab: timer_runtime | `passed` | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttach -Tab tools_timer` | `runtime\solteria_helper_dev\module_attach_smoke.json` | Static gate is passed; in-world tab evidence is still required. |
-| 16 | `smoke_attach_all` / Capture full in-world helper acceptance | `passed` | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttachAll` | `C:\Users\zycie\CTOAi\runtime\otclient_ui_preview\solteria-helper-smokeall-inworld-20260711-0131.json` | Fresh full attach report is required for the current manifest. |
-| 17 | `promote_live_approval` / Promote only after explicit live approval | `passed` | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action PromoteLiveCtoa -ApproveLiveDeploy -SmokeReport <fresh-smokeattachall-json>` | `C:\Users\zycie\CTOAi\runtime\solteria_helper_dev\live_promotion.json` | Live promotion remains gated by explicit approval. |
-
-## Static-Only Modules
-
-| Module | Status | Evidence | Reason |
-|---|---:|---|---|
-| `planner` | `passed` | `C:\Users\zycie\CTOAi\runtime\solteria_helper_dev\planner_static_smoke.json` | No dedicated UI tab; covered by static gate report and grouped module attach context. |
-| `runtime_policy` | `passed` | `C:\Users\zycie\CTOAi\runtime\solteria_helper_dev\runtime_policy_static_smoke.json` | No dedicated UI tab; covered by static gate report and grouped module attach context. |
-| `dispatch_guard` | `passed` | `C:\Users\zycie\CTOAi\runtime\solteria_helper_dev\dispatch_guard_static_smoke.json` | No dedicated UI tab; covered by static gate report and grouped module attach context. |
-| `plan_queue` | `passed` | `C:\Users\zycie\CTOAi\runtime\solteria_helper_dev\plan_queue_static_smoke.json` | No dedicated UI tab; covered by static gate report and grouped module attach context. |
-| `runtime_readiness` | `passed` | `C:\Users\zycie\CTOAi\runtime\solteria_helper_dev\runtime_readiness_static_smoke.json` | No dedicated UI tab; covered by static gate report and grouped module attach context. |
-| `module_status` | `passed` | `C:\Users\zycie\CTOAi\runtime\solteria_helper_dev\module_status_static_smoke.json` | No dedicated UI tab; covered by static gate report and grouped module attach context. |
-| `action_catalog` | `passed` | `C:\Users\zycie\CTOAi\runtime\solteria_helper_dev\action_catalog_static_smoke.json` | No dedicated UI tab; covered by static gate report and grouped module attach context. |
-| `decision_trace` | `passed` | `C:\Users\zycie\CTOAi\runtime\solteria_helper_dev\decision_trace_static_smoke.json` | No dedicated UI tab; covered by static gate report and grouped module attach context. |
-| `sandbox_handoff` | `passed` | `C:\Users\zycie\CTOAi\runtime\solteria_helper_dev\sandbox_handoff_static_smoke.json` | No dedicated UI tab; covered by static gate report and grouped module attach context. |
-| `feature_flags` | `passed` | `C:\Users\zycie\CTOAi\runtime\solteria_helper_dev\feature_flags_static_smoke.json` | No dedicated UI tab; covered by static gate report and grouped module attach context. |
-| `hotkeys` | `passed` | `C:\Users\zycie\CTOAi\runtime\solteria_helper_dev\hotkeys_static_smoke.json` | No dedicated UI tab; covered by static gate report and grouped module attach context. |
-| `modal` | `passed` | `C:\Users\zycie\CTOAi\runtime\solteria_helper_dev\modal_static_smoke.json` | No dedicated UI tab; covered by static gate report and grouped module attach context. |
-| `input_contracts` | `passed` | `C:\Users\zycie\CTOAi\runtime\solteria_helper_dev\input_contract_fixtures.json` | No dedicated UI tab; covered by static gate report and grouped module attach context. |
-| `profile_schema` | `passed` | `C:\Users\zycie\CTOAi\runtime\solteria_helper_dev\profile_schema_static_smoke.json` | No dedicated UI tab; covered by static gate report and grouped module attach context. |
-| `operator_summary` | `passed` | `C:\Users\zycie\CTOAi\runtime\solteria_helper_dev\operator_summary_static_smoke.json` | No dedicated UI tab; covered by static gate report and grouped module attach context. |
-| `external_bot_import_gate` | `passed` | `C:\Users\zycie\CTOAi\runtime\solteria_helper_dev\external_bot_import_gate_static_smoke.json` | No dedicated UI tab; covered by static gate report and grouped module attach context. |
-| `helper_shell_budget` | `passed` | `C:\Users\zycie\CTOAi\runtime\solteria_helper_dev\helper_shell_budget_static_smoke.json` | No dedicated UI tab; covered by static gate report and grouped module attach context. |
-| `helper_shell_budget_plan` | `passed` | `C:\Users\zycie\CTOAi\runtime\solteria_helper_dev\helper_shell_budget_plan.json` | No dedicated UI tab; covered by static gate report and grouped module attach context. |
-
-## Operator Rule
-
-Run this queue from top to bottom. If any attach step reports character-select, offline helper, stale manifest, or failed screenshot evidence, stop and refresh `LocalReady` before continuing.
-```
-
-
-## `docs/otclient/zerobot_reference.md`
-
-```markdown
-# ZeroBot / ZeroLauncher Reference
-
-## Purpose
-
-This note captures what is actually useful from the local `ZeroLauncher` package for CTOAi OTClient work.
-
-Source inspected:
-
-- `C:\Users\zycie\Downloads\ZeroLauncher (1).zip`
-- `C:\Users\zycie\Downloads\ZeroLauncher`
-- `C:\Users\zycie\Downloads\ZeroLauncher\data\core.zip`
-
-This is not product documentation. It is a binary launcher package with a Lua runtime layer and client patch metadata.
-
-## What The Package Contains
-
-Top-level package contents:
-
-- `ZeroBot.exe`
-- `ZeroBotLauncher.exe`
-- `ZeroBotLauncher64.exe`
-- `data/core.zip`
-- `data/sounds.zip`
-- `data/ZeroBot-*.dll`
-- `versions.txt`
-- `patch_addresses.txt`
-- `version_addresses.txt`
-
-Practical reading:
-
-- the package is useful for behavior and API patterns
-- the package is not useful as a clean visual reference for the current helper panel
-- the package does not provide a ready-made OTClient UI skin we should copy
-
-## Lua Runtime Inventory
-
-The main technical value sits in `data/core.zip`.
-
-Relevant files:
-
-- `hud.lua`
-- `custom_modal_window.lua`
-- `hotkeymanager.lua`
-- `game.lua`
-- `player.lua`
-- `inventory.lua`
-- `map.lua`
-- `spells.lua`
-- `cavebot.lua`
-- `engine.lua`
-
-These files describe the wrapper layer ZeroBot exposes to scripts.
-
-## Useful Capabilities To Reuse Conceptually
-
-### HUD wrapper
-
-`hud.lua` exposes a structured HUD object with:
-
-- creation of text, item, spell-icon, and outfit HUD nodes
-- explicit `setPos`, `show`, `hide`, `setDraggable`
-- visual controls such as `setColor`, `setFontSize`, `setScale`, `setOpacity`, `setZIndex`
-- click callbacks with `setCallback`
-
-Why this matters for CTOAi:
-
-- our helper already has HUD behavior, but the ZeroBot wrapper is cleaner as an API surface
-- it suggests separating panel UI from overlay HUD concerns
-- it confirms that HUD state should be treated as a first-class subsystem, not just a couple of booleans in a larger panel
-
-### Custom modal wrapper
-
-`custom_modal_window.lua` exposes:
-
-- modal creation
-- caption and description setters
-- button creation
-- click callback registration
-- explicit destroy lifecycle
-
-Why this matters for CTOAi:
-
-- confirms a good pattern for confirmation UI
-- useful later if we want profile import/export confirmation, reset actions, or runtime warnings
-- this is a logic/API reference, not a visual reference
-
-### Hotkey parsing
-
-`hotkeymanager.lua` exposes:
-
-- string-to-keycode mapping
-- parsing for combinations like `Ctrl+H`
-- a normalization point for keyboard modifiers
-
-Why this matters for CTOAi:
-
-- our helper already binds hotkeys, but this file is a good reference if we later want stricter parsing or validation
-- it suggests keeping hotkey parsing isolated from panel layout logic
-
-### Runtime domain modules
-
-The package also has focused runtime modules such as:
-
-- player state
-- map access
-- inventory access
-- cavebot orchestration
-- spell helpers
-
-Why this matters for CTOAi:
-
-- these files are useful for capability mapping and naming conventions
-- they are not a reason to change the current helper UI layout directly
-
-## What Is Not Worth Copying
-
-Do not copy from ZeroLauncher:
-
-- launcher aesthetics inferred from the binaries
-- old-school bot UX conventions with dense technical labeling everywhere
-- modal-heavy workflows as the default interaction model
-- version patch tables and address metadata
-- opaque monolithic wrappers without a clean separation between domain state and presentation
-
-## Direct Comparison With Current CTOAi Helper
-
-Current CTOAi helper implementation:
-
-- [ctoa_native_helper.lua](../../scripts/lua/otclient/ctoa_native_helper.lua)
-
-Current CTOAi helper strengths:
-
-- runtime/profile/UI prefs are already separated conceptually
-- helper supports profile save/load and UI prefs persistence
-- helper has explicit sections for healing, tools, profile, and UI
-- helper already exposes HUD toggles and window placement
-
-Current CTOAi helper weaknesses:
-
-- layout is widget-heavy and visually noisy
-- too many bordered boxes compete for attention
-- labels, values, and controls do not produce a clear visual hierarchy
-- the panel reads like a debug tool rather than a polished in-client operator surface
-
-## Recommended Use Of ZeroLauncher Material
-
-Use ZeroLauncher as:
-
-- an API reference
-- a behavior reference
-- a capability checklist
-
-Do not use ZeroLauncher as:
-
-- the visual blueprint for the helper panel
-- the design language for spacing, typography, or control composition
-
-## Actionable Follow-Up
-
-The right next step is not reverse-engineering more binaries. The right next step is rebuilding the helper panel around a quieter information architecture.
-
-Companion design note:
-
-- [helper_redesign.md](helper_redesign.md)
-```
-
-
-## `docs/otclient/vbot_import_review.md`
-
-```markdown
-# vBot Import Review
-
-## Decision
-
-- Status: `source_required`.
-- No vBot source tree or reviewed local archive is present in this checkout.
-- Do not claim vBot-derived implementation until source provenance, license
-  notes, secret scan, and module mapping are recorded here.
-- External bot projects may be used as capability checklists and naming
-  references only. Do not directly copy code into CTOAi helper modules without
-  explicit source and license review.
-
-## Intake Requirements
-
-A valid vBot or vBot-like source handoff must include:
-
-1. Source path or archive name.
-2. Origin URL or owner-provided provenance note.
-3. License text or explicit permission note.
-4. SHA256 for the archive or source snapshot.
-5. Secret scan result for tokens, accounts, server IPs, and local runtime state.
-6. File inventory grouped by capability: healing, targeting, cavebot, looting,
-   HUD, hotkeys, conditions, equipment, scripting, and diagnostics.
-7. Risk notes for every runtime action path: movement, attack, spell cast, rune,
-   item use, chat/talk, filesystem write, and profile migration.
-
-Use the checked intake command before reviewing code manually:
-
-```powershell
-.\.venv\Scripts\python.exe scripts\ops\otclient_external_bot_intake.py <source-path-or-zip> --origin "<origin-or-owner-note>" --license-note "<license-or-permission-note>"
-```
-
-The generated report is an intake gate, not an import approval. Any warnings
-for movement, attack, spell cast, item use, keyboard binding, filesystem write,
-or dynamic code still need mapping into passive CTOAi helper modules first.
-The report must include `import_gate`, and `import_gate.runtime_import_allowed`
-must stay `false` until the matching CTOAi module gates and sandbox evidence
-prove the behavior.
-
-## Import Gate Contract
-
-The intake gate converts external bot findings into a CTOAi decision:
-
-- `source_required`: no source was provided, so no import work can claim vBot
-  behavior.
-- `review_required`: source exists, but provenance, license, secret, or review
-  blockers remain.
-- `capability_mapping_only`: source can be reviewed as a checklist, but runtime
-  import is still blocked.
-
-`import_gate.direct_copy_allowed` is always `false`. Detected runtime actions
-must appear in `runtime_gate_mapping` and point at existing CTOAi gates such as
-`combat_runtime`, `cavebot_runtime`, `loot_runtime`, `hotkeys`,
-`profile_schema`, or `scripting`.
-
-## Mapping Policy
-
-Map external bot behavior into existing CTOAi helper domains instead of adding
-new runtime shortcuts:
-
-| External capability | CTOAi target | Import rule |
-|---|---|---|
-| HUD text/overlay helpers | `ctoa_helper_hud.lua` | Keep passive text/position formatting only. |
-| Hotkey parsing/manager | `ctoa_helper_hotkeys.lua` | Keep parser/display helpers only; binding stays in helper shell. |
-| Confirmation modals | `ctoa_helper_modal.lua` | Keep request/expiry/status lifecycle only; execution stays guarded. |
-| Cavebot route editor | `ctoa_helper_route.lua` | Keep waypoint labels and mutations only; `autoWalk` stays gated in helper shell. |
-| Target selection/scoring | `ctoa_helper_targeting.lua` | Keep score and ignored-name rules only; `g_game.attack` stays guarded in helper shell. |
-| Heal friend/sio | `ctoa_helper_heal_friend.lua` | Observer and whitelist first; no cast until sandbox whitelist smoke exists. |
-| Conditions | `ctoa_helper_conditions.lua` | Read-only state observer first; no recovery action until condition smoke exists. |
-| Equipment | `ctoa_helper_equipment.lua` | Read-only slot observer first; no item move/use until inventory smoke exists. |
-| Scripting/macros | `ctoa_helper_scripting.lua` | Deny-all policy shell first; no eval/snippets without security review. |
-
-## Required Evidence Before Import
-
-Before any external logic changes runtime behavior:
-
-1. Add or update a named helper module file.
-2. Add package copy coverage in `scripts/windows/solteria_helper_test_env.ps1`.
-3. Add static contracts in `tests/test_otclient_helper_zerobot_shell.py`.
-4. Update `scripts/lua/otclient/README.md`.
-5. Regenerate `docs/otclient/solteria_helper_next_modules_plan.md`.
-6. Run `ValidateDev`, `SmokePreflight`, and `ModuleStaticGates`.
-7. Run `SmokeAttachModules` and fresh `SmokeAttachAll` after sandbox character
-   is in-world.
-8. Keep `PromoteLiveCtoa` behind `-ApproveLiveDeploy`.
-
-## Current Source Review
-
-No vBot source is available in the repository as of this review. The current
-safe basis is:
-
-- `docs/otclient/zerobot_reference.md` as a local capability/API reference.
-- CTOAi helper modules already extracted into passive domains.
-- Runtime gates from `scripts/windows/solteria_helper_test_env.ps1`.
-
-## Next Operator Step
-
-If a vBot archive is provided, place it outside runtime client state, record its
-path and hash here, run `scripts/ops/otclient_external_bot_intake.py`, then
-review it as a capability checklist. Keep all imported behavior passive until
-its matching CTOAi module gate and sandbox evidence pass.
-```
-
-
-## `scripts/ops/otclient_external_bot_intake.py`
-
-```python
-"""Inspect external OTClient bot sources before CTOAi helper import."""
-
-from __future__ import annotations
-
-import argparse
-import hashlib
-import json
-import os
-import re
-import zipfile
-from dataclasses import asdict, dataclass
-from datetime import datetime
-from pathlib import Path
-from typing import Iterable
-
-
-ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_JSON = ROOT / "runtime" / "solteria_helper_dev" / "external_bot_intake.json"
-DEFAULT_MARKDOWN = ROOT / "docs" / "otclient" / "vbot_import_intake.md"
-
-TEXT_SUFFIXES = {
-    ".lua",
-    ".otui",
-    ".otmod",
-    ".json",
-    ".yml",
-    ".yaml",
-    ".txt",
-    ".md",
-    ".cfg",
-    ".conf",
-    ".ini",
-}
-LICENSE_NAMES = {"license", "license.md", "license.txt", "copying", "copying.txt", "notice", "notice.txt"}
-MAX_SCAN_BYTES = 512_000
-
-CAPABILITY_PATTERNS = {
-    "healing": re.compile(r"\b(heal|sio|uh|mana|health|hp|mp)\b", re.IGNORECASE),
-    "targeting": re.compile(r"\b(target|attack|monster|creature|priority)\b", re.IGNORECASE),
-    "cavebot": re.compile(r"\b(cavebot|waypoint|walk|route|path|label)\b", re.IGNORECASE),
-    "looting": re.compile(r"\b(loot|container|corpse|pickup)\b", re.IGNORECASE),
-    "hud": re.compile(r"\b(hud|overlay|label|widget|panel)\b", re.IGNORECASE),
-    "hotkeys": re.compile(r"\b(hotkey|bindKey|keyboard|shortcut)\b", re.IGNORECASE),
-    "conditions": re.compile(r"\b(condition|haste|paralyze|poison|burn|curse)\b", re.IGNORECASE),
-    "equipment": re.compile(r"\b(equip|slot|ring|amulet|weapon|armor)\b", re.IGNORECASE),
-    "scripting": re.compile(r"\b(macro|script|eval|loadstring|scheduleEvent|cycleEvent)\b", re.IGNORECASE),
-    "diagnostics": re.compile(r"\b(log|debug|trace|diagnostic|export)\b", re.IGNORECASE),
-}
-
-RUNTIME_ACTION_PATTERNS = {
-    "movement": re.compile(r"\b(autoWalk|walk|findPath|goto|moveTo)\b"),
-    "attack": re.compile(r"\b(g_game\.attack|attack\(|setTarget)\b"),
-    "spell_cast": re.compile(r"\b(say|talk|cast|exori|exura|utani|utevo|exeta)\b", re.IGNORECASE),
-    "rune_or_item_use": re.compile(r"\b(useInventoryItem|useWith|g_game\.use|useItem|useRune)\b"),
-    "item_move": re.compile(r"\b(moveItem|g_game\.move|moveToParentContainer)\b"),
-    "keyboard_binding": re.compile(r"\b(bindKey|g_keyboard|pressKey)\b"),
-    "filesystem_write": re.compile(r"\b(io\.open|writefile|save|g_resources\.writeFileContents)\b"),
-    "dynamic_code": re.compile(r"\b(loadstring|dofile|require|assert\(load)\b"),
-}
-
-SECRET_PATTERNS = {
-    "token_like": re.compile(r"(?i)\b(token|secret|api[_-]?key)\b\s*[:=]\s*['\"]?[A-Za-z0-9_\-]{16,}"),
-    "password_like": re.compile(r"(?i)\b(pass|password)\b\s*[:=]\s*['\"]?[^'\"\s]{6,}"),
-    "bearer": re.compile(r"(?i)\bbearer\s+[A-Za-z0-9_\-.]{20,}"),
-    "ipv4": re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b"),
-}
-
-CAPABILITY_TARGETS = {
-    "healing": "ctoa_helper_heal_friend.lua",
-    "targeting": "ctoa_helper_targeting.lua",
-    "cavebot": "ctoa_helper_route.lua",
-    "looting": "ctoa_helper_loot_runtime.lua",
-    "hud": "ctoa_helper_hud.lua",
-    "hotkeys": "ctoa_helper_hotkeys.lua",
-    "conditions": "ctoa_helper_conditions.lua",
-    "equipment": "ctoa_helper_equipment.lua",
-    "scripting": "ctoa_helper_scripting.lua",
-    "diagnostics": "ctoa_helper_diagnostics.lua",
-}
-
-RUNTIME_ACTION_GATES = {
-    "movement": "cavebot_runtime",
-    "attack": "combat_runtime",
-    "spell_cast": "combat_runtime",
-    "rune_or_item_use": "combat_runtime",
-    "item_move": "loot_runtime",
-    "keyboard_binding": "hotkeys",
-    "filesystem_write": "profile_schema",
-    "dynamic_code": "scripting",
-}
-
-
-@dataclass(frozen=True)
-class SourceFileReport:
-    path: str
-    bytes: int
-    sha256: str
-    capabilities: list[str]
-    runtime_actions: list[str]
-    secret_hits: list[str]
-
-
-def _sha256_bytes(data: bytes) -> str:
-    return hashlib.sha256(data).hexdigest()
-
-
-def _read_limited(path: Path) -> bytes:
-    with path.open("rb") as handle:
-        return handle.read(MAX_SCAN_BYTES + 1)
-
-
-def _is_text_candidate(path: str) -> bool:
-    return Path(path).suffix.lower() in TEXT_SUFFIXES or Path(path).name.lower() in LICENSE_NAMES
-
-
-def _decode(data: bytes) -> str:
-    return data[:MAX_SCAN_BYTES].decode("utf-8", errors="replace")
-
-
-def _matches(patterns: dict[str, re.Pattern[str]], haystack: str) -> list[str]:
-    return [name for name, pattern in patterns.items() if pattern.search(haystack)]
-
-
-def _directory_snapshot_sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    for file_path in sorted(item for item in path.rglob("*") if item.is_file()):
-        rel = file_path.relative_to(path).as_posix()
-        digest.update(rel.encode("utf-8"))
-        digest.update(b"\0")
-        with file_path.open("rb") as handle:
-            for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-                digest.update(chunk)
-        digest.update(b"\0")
-    return digest.hexdigest()
-
-
-def _zip_text_entries(path: Path) -> Iterable[tuple[str, bytes]]:
-    with zipfile.ZipFile(path) as archive:
-        for info in archive.infolist():
-            if info.is_dir() or not _is_text_candidate(info.filename):
-                continue
-            with archive.open(info) as handle:
-                yield info.filename, handle.read(MAX_SCAN_BYTES + 1)
-
-
-def _directory_text_entries(path: Path) -> Iterable[tuple[str, bytes]]:
-    for file_path in sorted(item for item in path.rglob("*") if item.is_file()):
-        rel = file_path.relative_to(path).as_posix()
-        if _is_text_candidate(rel):
-            yield rel, _read_limited(file_path)
-
-
-def _source_entries(path: Path) -> Iterable[tuple[str, bytes]]:
-    if path.is_dir():
-        return _directory_text_entries(path)
-    if zipfile.is_zipfile(path):
-        return _zip_text_entries(path)
-    if _is_text_candidate(path.name):
-        return [(path.name, _read_limited(path))]
-    return []
-
-
-def _source_sha256(path: Path) -> str:
-    if path.is_dir():
-        return _directory_snapshot_sha256(path)
-    return _sha256_bytes(path.read_bytes())
-
-
-def inspect_source_file(name: str, data: bytes) -> SourceFileReport:
-    text = _decode(data)
-    haystack = f"{name}\n{text}"
-    return SourceFileReport(
-        path=name,
-        bytes=len(data),
-        sha256=_sha256_bytes(data),
-        capabilities=_matches(CAPABILITY_PATTERNS, haystack),
-        runtime_actions=_matches(RUNTIME_ACTION_PATTERNS, haystack),
-        secret_hits=_matches(SECRET_PATTERNS, haystack),
-    )
-
-
-def build_import_gate(report: dict) -> dict:
-    """Convert intake findings into an explicit CTOAi import decision."""
-    if report.get("status") == "source_missing":
-        decision = "source_required"
-    elif report.get("blockers"):
-        decision = "review_required"
-    else:
-        decision = "capability_mapping_only"
-
-    capability_mapping = {}
-    for capability, paths in report.get("capability_inventory", {}).items():
-        if paths:
-            capability_mapping[capability] = {
-                "target_module": CAPABILITY_TARGETS.get(capability, "manual_review_required"),
-                "source_files": sorted(paths),
-                "import_rule": "map concepts only; no direct code copy; runtime behavior remains gated",
-            }
-
-    runtime_gate_mapping = {}
-    for action, paths in report.get("runtime_action_inventory", {}).items():
-        if paths:
-            runtime_gate_mapping[action] = {
-                "required_gate": RUNTIME_ACTION_GATES.get(action, "manual_review_required"),
-                "source_files": sorted(paths),
-                "allowed_now": False,
-            }
-
-    blockers = list(report.get("blockers") or [])
-    if decision == "capability_mapping_only" and runtime_gate_mapping:
-        blockers.append("runtime actions detected; map as passive module plans before any execution path")
-
-    return {
-        "decision": decision,
-        "runtime_import_allowed": False,
-        "direct_copy_allowed": False,
-        "capability_mapping": capability_mapping,
-        "runtime_gate_mapping": runtime_gate_mapping,
-        "blockers": blockers,
-        "next_action": (
-            "Provide vBot source with origin and license notes."
-            if decision == "source_required"
-            else "Resolve provenance, license, secret, and review blockers."
-            if decision == "review_required"
-            else "Map detected capabilities into CTOAi passive module contracts and sandbox gates."
-        ),
-    }
-
-
-def build_report(source: Path, *, origin: str = "", license_note: str = "") -> dict:
-    source = source.expanduser()
-    generated_at = datetime.now().replace(microsecond=0).isoformat()
-    if not source.exists():
-        report = {
-            "schema_version": 1,
-            "generated_at": generated_at,
-            "source": str(source),
-            "status": "source_missing",
-            "blockers": ["source path does not exist"],
-            "warnings": [],
-            "source_sha256": "",
-            "origin": origin,
-            "license_note": license_note,
-            "files": [],
-            "capability_inventory": {},
-            "runtime_action_inventory": {},
-            "secret_scan_status": "not_run",
-        }
-        report["import_gate"] = build_import_gate(report)
-        return report
-
-    files = [inspect_source_file(name, data) for name, data in _source_entries(source)]
-    capability_inventory = {
-        capability: sorted(report.path for report in files if capability in report.capabilities)
-        for capability in CAPABILITY_PATTERNS
-    }
-    runtime_action_inventory = {
-        action: sorted(report.path for report in files if action in report.runtime_actions)
-        for action in RUNTIME_ACTION_PATTERNS
-    }
-    secret_files = sorted(report.path for report in files if report.secret_hits)
-    license_files = sorted(report.path for report in files if Path(report.path).name.lower() in LICENSE_NAMES)
-
-    blockers: list[str] = []
-    warnings: list[str] = []
-    if not origin:
-        blockers.append("origin/provenance note missing")
-    if not license_note and not license_files:
-        blockers.append("license note or license file missing")
-    if secret_files:
-        blockers.append("secret-like values require review")
-    if not files:
-        blockers.append("no scan-compatible text files found")
-    for action, action_files in runtime_action_inventory.items():
-        if action_files:
-            warnings.append(f"runtime action path detected: {action}")
-
-    status = "ready_for_capability_mapping" if not blockers else "review_required"
-    report = {
-        "schema_version": 1,
-        "generated_at": generated_at,
-        "source": str(source),
-        "status": status,
-        "blockers": blockers,
-        "warnings": warnings,
-        "source_sha256": _source_sha256(source),
-        "origin": origin,
-        "license_note": license_note,
-        "license_files": license_files,
-        "files": [asdict(report) for report in files],
-        "capability_inventory": capability_inventory,
-        "runtime_action_inventory": runtime_action_inventory,
-        "secret_scan_status": "needs_review" if secret_files else "passed",
-        "secret_files": secret_files,
-    }
-    report["import_gate"] = build_import_gate(report)
-    return report
-
-
-def render_markdown(report: dict) -> str:
-    lines = [
-        "# External Bot Intake Report",
-        "",
-        "## Decision",
-        "",
-        f"- Status: `{report['status']}`",
-        f"- Source: `{report['source']}`",
-        f"- Source SHA256: `{report['source_sha256'] or 'missing'}`",
-        f"- Secret scan: `{report['secret_scan_status']}`",
-        "",
-        "## Blockers",
-        "",
-    ]
-    blockers = report.get("blockers") or ["none"]
-    lines.extend(f"- {item}" for item in blockers)
-    lines.extend(["", "## Runtime Action Warnings", ""])
-    warnings = report.get("warnings") or ["none"]
-    lines.extend(f"- {item}" for item in warnings)
-    lines.extend(["", "## Capability Inventory", ""])
-    for capability, paths in report.get("capability_inventory", {}).items():
-        value = ", ".join(paths[:20]) if paths else "none"
-        suffix = " ..." if len(paths) > 20 else ""
-        lines.append(f"- `{capability}`: {value}{suffix}")
-    gate = report.get("import_gate", {})
-    lines.extend(
-        [
-            "",
-            "## CTOAi Import Gate",
-            "",
-            f"- Decision: `{gate.get('decision', 'unknown')}`",
-            f"- Runtime import allowed: `{str(gate.get('runtime_import_allowed', False)).lower()}`",
-            f"- Direct copy allowed: `{str(gate.get('direct_copy_allowed', False)).lower()}`",
-            f"- Next action: {gate.get('next_action', 'Review source before import.')}",
-            "",
-            "## Runtime Gate Mapping",
-            "",
-        ]
-    )
-    runtime_gate_mapping = gate.get("runtime_gate_mapping") or {}
-    if runtime_gate_mapping:
-        for action, item in runtime_gate_mapping.items():
-            lines.append(
-                f"- `{action}` -> `{item['required_gate']}`: {', '.join(item['source_files'][:20])}"
-            )
-    else:
-        lines.append("- none")
-    lines.extend(["", "## Import Rule", ""])
-    lines.append(
-        "Use this report as a capability checklist only. Runtime behavior must still be mapped into passive CTOAi helper modules and proven by sandbox smoke before live promotion."
-    )
-    return "\n".join(lines) + "\n"
-
-
-def write_text_atomic(path: Path, text: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_name(f".{path.name}.{os.getpid()}.{id(text)}.tmp")
-    try:
-        tmp.write_text(text if text.endswith("\n") else f"{text}\n", encoding="utf-8", newline="\n")
-        tmp.replace(path)
-    finally:
-        try:
-            tmp.unlink()
-        except FileNotFoundError:
-            pass
-
-
-def main() -> int:
-    parser = argparse.ArgumentParser(description="Inspect external OTClient bot sources before helper import")
-    parser.add_argument("source", type=Path)
-    parser.add_argument("--origin", default="", help="Origin URL or owner-provided provenance note")
-    parser.add_argument("--license-note", default="", help="License text reference or explicit permission note")
-    parser.add_argument("--json-out", type=Path, default=DEFAULT_JSON)
-    parser.add_argument("--markdown-out", type=Path, default=DEFAULT_MARKDOWN)
-    args = parser.parse_args()
-
-    report = build_report(args.source, origin=args.origin, license_note=args.license_note)
-    write_text_atomic(args.json_out, json.dumps(report, indent=2))
-    write_text_atomic(args.markdown_out, render_markdown(report))
-    print(f"[otclient-external-bot-intake] JSON: {args.json_out}")
-    print(f"[otclient-external-bot-intake] Markdown: {args.markdown_out}")
-    print(f"[otclient-external-bot-intake] Status: {report['status']}")
-    return 0 if report["status"] != "source_missing" else 2
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
-```
-
-
-## `scripts/ops/otclient_helper_module_contract.py`
-
-```python
-#!/usr/bin/env python3
-"""Validate OTClient helper passive module contracts before sandbox attach."""
-
-from __future__ import annotations
-
-import argparse
-from datetime import datetime
-import json
-import os
-import re
-import uuid
-from dataclasses import asdict, dataclass
-from pathlib import Path
-
-
-ROOT = Path(__file__).resolve().parents[2]
-OTCLIENT_DIR = ROOT / "scripts" / "lua" / "otclient"
-DEFAULT_LOADER = OTCLIENT_DIR / "ctoa_otclient_loader.lua"
-DEFAULT_REGISTRY = OTCLIENT_DIR / "ctoa_helper_modules.lua"
-DEFAULT_JSON_OUT = ROOT / "runtime" / "solteria_helper_dev" / "module_contract.json"
-DEFAULT_PLAN_OUT = ROOT / "docs" / "otclient" / "solteria_helper_module_contract.md"
-
-PASSIVE_MODULES = [
-    {
-        "id": "modules",
-        "loader_name": "ctoa_helper_modules",
-        "file": "ctoa_helper_modules.lua",
-        "global": "CTOA_HELPER_MODULES",
-        "lane_id": "",
-        "required_functions": [
-            "getModuleLanes",
-            "getShortLabels",
-            "getSupportModules",
-            "validateSupportModules",
-            "bootSnapshot",
-            "bootSummary",
-            "laneEnabled",
-            "laneRuntimeText",
-            "registrySummary",
-            "readinessTag",
-            "readinessRow",
-            "contract",
-        ],
-    },
-    {
-        "id": "domain_contract",
-        "loader_name": "ctoa_helper_domain_contract",
-        "file": "ctoa_helper_domain_contract.lua",
-        "global": "CTOA_HELPER_DOMAIN_CONTRACT",
-        "lane_id": "",
-        "required_functions": [
-            "schemaVersion",
-            "lanes",
-            "lane",
-            "observationEnvelope",
-            "planEnvelope",
-            "summaryEnvelope",
-            "validateEnvelope",
-            "contract",
-        ],
-    },
-    {
-        "id": "ui",
-        "loader_name": "ctoa_helper_ui",
-        "file": "ctoa_helper_ui.lua",
-        "global": "CTOA_HELPER_UI",
-        "lane_id": "",
-        "required_functions": [
-            "shortText",
-            "configureLayout",
-            "fitText",
-            "setWidgetText",
-            "styleWidget",
-            "setWidgetChecked",
-            "getWidgetChecked",
-            "showWidget",
-            "createWidget",
-            "styleTabState",
-            "styleSubtabState",
-            "styleMiniButton",
-            "styleActionButton",
-            "styleRuleCard",
-            "styleMetricRow",
-            "styleMetricLabel",
-            "styleMetricValue",
-            "styleSettingState",
-            "styleProfileField",
-            "styleVectorRow",
-            "styleSectionBody",
-            "styleTableHeader",
-            "styleTableHeaderLabel",
-            "styleFooterStrip",
-            "styleFooterStripLabel",
-            "styleSummaryStrip",
-            "styleSummaryStripLabel",
-            "styleSectionBandTitle",
-            "styleSectionBandSubtitle",
-            "styleSectionBandDivider",
-            "stylePriorityBadge",
-            "styleLabel",
-            "styleWindowRoot",
-            "styleWindowFrame",
-            "styleWindowTitleLabel",
-            "styleToggleButton",
-            "styleCheckBox",
-            "styleSidebarCard",
-            "styleOverviewAvatarFrame",
-            "styleOverviewAvatar",
-            "styleOverviewAvatarName",
-            "styleOverviewHpBar",
-            "styleOverviewEquipSlot",
-            "styleControlName",
-            "settingRowGeometry",
-            "metricCardGeometry",
-            "metricTextPlan",
-            "profileFieldGeometry",
-            "vectorStepGeometry",
-            "addSettingRow",
-            "addToggleSettingRow",
-            "addProfileCycleRow",
-            "addProfileStepRow",
-            "addVectorStepRow",
-            "sectionBodyGeometry",
-            "sidebarTabs",
-            "huntingSubtabs",
-            "subtabContentY",
-            "toolsSubtabs",
-            "toolsTableHeaders",
-            "cavebotDelayChoices",
-            "cavebotReachChoices",
-            "msText",
-            "cavebotActionSpecs",
-            "refreshOperatorSummaries",
-            "renderConditionsPanel",
-            "renderEquipmentPanel",
-            "renderCavebotPanel",
-            "renderEnginePanel",
-            "renderHealingPanel",
-            "renderHealFriendPanel",
-            "renderHuntingPanel",
-            "renderProfilePanel",
-            "renderScriptingPanel",
-            "renderToolsPanel",
-            "contract",
-        ],
-    },
-    {
-        "id": "diagnostics",
-        "loader_name": "ctoa_helper_diagnostics",
-        "file": "ctoa_helper_diagnostics.lua",
-        "global": "CTOA_HELPER_DIAGNOSTICS",
-        "lane_id": "",
-        "required_functions": [
-            "boolText",
-            "posText",
-            "hasApi",
-            "apiText",
-            "valueText",
-            "apiSnapshotText",
-            "apiProbeSnapshot",
-            "apiProbeText",
-            "magicApiProbeText",
-            "featureFlagsText",
-            "bufferText",
-            "movementText",
-            "magicLootText",
-            "tableCount",
-            "firstTableValue",
-            "parseSmokeCommandText",
-            "smokeCommandTarget",
-            "smokeTabStatusText",
-            "smokeCommandStatusText",
-            "recordSnapshot",
-            "exportBuffer",
-            "contract",
-        ],
-    },
-    {
-        "id": "hotkeys",
-        "loader_name": "ctoa_helper_hotkeys",
-        "file": "ctoa_helper_hotkeys.lua",
-        "global": "CTOA_HELPER_HOTKEYS",
-        "lane_id": "",
-        "required_functions": ["normalizeKeyName", "parse", "normalize", "isAllowed", "bindingDecision", "display", "contract"],
-    },
-    {
-        "id": "modal",
-        "loader_name": "ctoa_helper_modal",
-        "file": "ctoa_helper_modal.lua",
-        "global": "CTOA_HELPER_MODAL",
-        "lane_id": "",
-        "required_functions": ["request", "confirm", "cancel", "isExpired", "decision", "decisionText", "contract"],
-    },
-    {
-        "id": "route",
-        "loader_name": "ctoa_helper_route",
-        "file": "ctoa_helper_route.lua",
-        "global": "CTOA_HELPER_ROUTE",
-        "lane_id": "",
-        "required_functions": ["position", "label", "add", "clear", "select", "delete", "move", "editorAction", "retryBlocked", "progress", "activeTarget", "selectedSummary", "stats", "uiState", "deleteRequest", "contract"],
-    },
-    {
-        "id": "targeting",
-        "loader_name": "ctoa_helper_targeting",
-        "file": "ctoa_helper_targeting.lua",
-        "global": "CTOA_HELPER_TARGETING",
-        "lane_id": "",
-        "required_functions": ["normalizedName", "isIgnoredName", "hasBlockingNpcIcon", "creatureTypeDecision", "priorityRank", "scoreCandidate", "bestCandidate", "decision", "summary", "configSummary", "contract"],
-    },
-    {
-        "id": "combat_runtime",
-        "loader_name": "ctoa_helper_combat_runtime",
-        "file": "ctoa_helper_combat_runtime.lua",
-        "global": "CTOA_HELPER_COMBAT_RUNTIME",
-        "lane_id": "",
-        "required_functions": ["plan", "summary", "adapterSummary", "magicSummary", "msLeftText", "runeReady", "rotationSpellRows", "spellReadiness", "rotationSpell", "offensiveAction", "actionStatusText", "targetingStatusText", "nextActionText", "waitReason", "decisionState", "contract"],
-    },
-    {
-        "id": "cavebot_runtime",
-        "loader_name": "ctoa_helper_cavebot_runtime",
-        "file": "ctoa_helper_cavebot_runtime.lua",
-        "global": "CTOA_HELPER_CAVEBOT_RUNTIME",
-        "lane_id": "",
-        "required_functions": [
-            "plan",
-            "summary",
-            "decisionText",
-            "adapterSummary",
-            "adapterStatusText",
-            "movementCapability",
-            "probeSnapshot",
-            "probeSummary",
-            "probeReport",
-            "pathText",
-            "movementBlockedReason",
-            "walkPreflight",
-            "testWalkPlan",
-            "walkingStatus",
-            "retryDecision",
-            "statusText",
-            "traceText",
-            "contract",
-        ],
-    },
-    {
-        "id": "loot_runtime",
-        "loader_name": "ctoa_helper_loot_runtime",
-        "file": "ctoa_helper_loot_runtime.lua",
-        "global": "CTOA_HELPER_LOOT_RUNTIME",
-        "lane_id": "",
-        "required_functions": ["plan", "summary", "adapterSummary", "contract"],
-    },
-    {
-        "id": "timer_runtime",
-        "loader_name": "ctoa_helper_timer_runtime",
-        "file": "ctoa_helper_timer_runtime.lua",
-        "global": "CTOA_HELPER_TIMER_RUNTIME",
-        "lane_id": "",
-        "required_functions": ["plan", "summary", "dispatch", "contract"],
-    },
-    {
-        "id": "recovery_runtime",
-        "loader_name": "ctoa_helper_recovery_runtime",
-        "file": "ctoa_helper_recovery_runtime.lua",
-        "global": "CTOA_HELPER_RECOVERY_RUNTIME",
-        "lane_id": "",
-        "required_functions": ["normalizeVitals", "selectHealingSpell", "potionStatusText", "spellStatusText", "actionGap", "summary", "contract"],
-    },
-    {
-        "id": "profile_schema",
-        "loader_name": "ctoa_helper_profile_schema",
-        "file": "ctoa_helper_profile_schema.lua",
-        "global": "CTOA_HELPER_PROFILE_SCHEMA",
-        "lane_id": "",
-        "required_functions": [
-            "requiredSections",
-            "sectionOrder",
-            "safeFalseKeys",
-            "optionList",
-            "rotationPresets",
-            "keyOrder",
-            "valueIndex",
-            "cycleValue",
-            "fieldGeometry",
-            "stepValue",
-            "currentVersion",
-            "currentSchema",
-            "profileVersion",
-            "migrationPlan",
-            "migrate",
-            "summary",
-            "profileSchemaSuffix",
-            "rotationPresetIds",
-            "rotationPresetLabel",
-            "rotationSummary",
-            "spellLabel",
-            "potionLabel",
-            "runeLabel",
-            "healFriendPriorityLabel",
-            "magicPriorityLabel",
-            "themePresetLabel",
-            "onOffLabel",
-            "autosaveLabel",
-            "titleSummary",
-            "healingSummary",
-            "profileSummary",
-            "contract",
-        ],
-    },
-    {
-        "id": "profile_persistence",
-        "loader_name": "ctoa_helper_profile_persistence",
-        "file": "ctoa_helper_profile_persistence.lua",
-        "global": "CTOA_HELPER_PROFILE_PERSISTENCE",
-        "lane_id": "",
-        "required_functions": [
-            "profileCandidates",
-            "uiPrefsCandidates",
-            "saveDefaults",
-            "resolveSavePath",
-            "fallbackSavePath",
-            "saveText",
-            "loadSuccessText",
-            "loadFailureText",
-            "dirtyState",
-            "exportProfile",
-            "contract",
-        ],
-    },
-    {
-        "id": "operator_summary",
-        "loader_name": "ctoa_helper_operator_summary",
-        "file": "ctoa_helper_operator_summary.lua",
-        "global": "CTOA_HELPER_OPERATOR_SUMMARY",
-        "lane_id": "",
-        "required_functions": [
-            "title",
-            "healing",
-            "healFriend",
-            "conditions",
-            "equipment",
-            "scripting",
-            "targeting",
-            "magic",
-            "tools",
-            "profile",
-            "ui",
-            "bridgeText",
-            "contract",
-        ],
-    },
-    {
-        "id": "planner",
-        "loader_name": "ctoa_helper_planner",
-        "file": "ctoa_helper_planner.lua",
-        "global": "CTOA_HELPER_PLANNER",
-        "lane_id": "",
-        "required_functions": ["collect", "best", "summary", "summaryEnvelope", "contract"],
-    },
-    {
-        "id": "runtime_policy",
-        "loader_name": "ctoa_helper_runtime_policy",
-        "file": "ctoa_helper_runtime_policy.lua",
-        "global": "CTOA_HELPER_RUNTIME_POLICY",
-        "lane_id": "",
-        "required_functions": ["requiredGates", "protectionZonePolicy", "resolvedProtectionZonePolicy", "protectionZoneDecision", "snapshot", "decision", "summary", "contract"],
-    },
-    {
-        "id": "dispatch_guard",
-        "loader_name": "ctoa_helper_dispatch_guard",
-        "file": "ctoa_helper_dispatch_guard.lua",
-        "global": "CTOA_HELPER_DISPATCH_GUARD",
-        "lane_id": "",
-        "required_functions": ["classify", "decision", "summary", "contract"],
-    },
-    {
-        "id": "plan_queue",
-        "loader_name": "ctoa_helper_plan_queue",
-        "file": "ctoa_helper_plan_queue.lua",
-        "global": "CTOA_HELPER_PLAN_QUEUE",
-        "lane_id": "",
-        "required_functions": ["normalize", "enqueue", "trim", "summary", "contract"],
-    },
-    {
-        "id": "runtime_readiness",
-        "loader_name": "ctoa_helper_runtime_readiness",
-        "file": "ctoa_helper_runtime_readiness.lua",
-        "global": "CTOA_HELPER_RUNTIME_READINESS",
-        "lane_id": "",
-        "required_functions": ["requiredComponents", "requiredGates", "snapshot", "decision", "summary", "contract"],
-    },
-    {
-        "id": "module_status",
-        "loader_name": "ctoa_helper_module_status",
-        "file": "ctoa_helper_module_status.lua",
-        "global": "CTOA_HELPER_MODULE_STATUS",
-        "lane_id": "",
-        "required_functions": ["defaultOrder", "normalize", "snapshot", "summary", "contract"],
-    },
-    {
-        "id": "action_catalog",
-        "loader_name": "ctoa_helper_action_catalog",
-        "file": "ctoa_helper_action_catalog.lua",
-        "global": "CTOA_HELPER_ACTION_CATALOG",
-        "lane_id": "",
-        "required_functions": ["requiredGates", "all", "domains", "byAction", "classify", "summary", "contract"],
-    },
-    {
-        "id": "decision_trace",
-        "loader_name": "ctoa_helper_decision_trace",
-        "file": "ctoa_helper_decision_trace.lua",
-        "global": "CTOA_HELPER_DECISION_TRACE",
-        "lane_id": "",
-        "required_functions": ["record", "queue", "summary", "contract"],
-    },
-    {
-        "id": "decision_pipeline",
-        "loader_name": "ctoa_helper_decision_pipeline",
-        "file": "ctoa_helper_decision_pipeline.lua",
-        "global": "CTOA_HELPER_DECISION_PIPELINE",
-        "lane_id": "",
-        "required_functions": ["components", "evaluate", "summary", "blockers", "contract"],
-    },
-    {
-        "id": "sandbox_handoff",
-        "loader_name": "ctoa_helper_sandbox_handoff",
-        "file": "ctoa_helper_sandbox_handoff.lua",
-        "global": "CTOA_HELPER_SANDBOX_HANDOFF",
-        "lane_id": "",
-        "required_functions": ["steps", "snapshot", "next", "summary", "contract"],
-    },
-    {
-        "id": "feature_flags",
-        "loader_name": "ctoa_helper_feature_flags",
-        "file": "ctoa_helper_feature_flags.lua",
-        "global": "CTOA_HELPER_FEATURE_FLAGS",
-        "lane_id": "",
-        "required_functions": ["all", "safeFalseKeys", "byKey", "audit", "summary", "toolsSummary", "contract"],
-    },
-    {
-        "id": "hud",
-        "loader_name": "ctoa_helper_hud",
-        "file": "ctoa_helper_hud.lua",
-        "global": "CTOA_HELPER_HUD",
-        "lane_id": "",
-        "required_functions": [
-            "startText",
-            "disarmedText",
-            "position",
-            "state",
-            "visibilityText",
-            "runtimeText",
-            "uiSummary",
-            "operatorSummary",
-            "contract",
-        ],
-    },
-    {
-        "id": "conditions",
-        "loader_name": "ctoa_helper_conditions",
-        "file": "ctoa_helper_conditions.lua",
-        "global": "CTOA_HELPER_CONDITIONS",
-        "lane_id": "conditions",
-        "required_functions": ["flagText", "snapshot", "apiProbe", "observe", "plan", "summary", "contract"],
-    },
-    {
-        "id": "equipment",
-        "loader_name": "ctoa_helper_equipment",
-        "file": "ctoa_helper_equipment.lua",
-        "global": "CTOA_HELPER_EQUIPMENT",
-        "lane_id": "equipment",
-        "required_functions": ["slotText", "snapshot", "apiProbe", "observe", "plan", "summary", "contract"],
-    },
-    {
-        "id": "scripting",
-        "loader_name": "ctoa_helper_scripting",
-        "file": "ctoa_helper_scripting.lua",
-        "global": "CTOA_HELPER_SCRIPTING",
-        "lane_id": "scripting",
-        "required_functions": ["policySnapshot", "plan", "summary", "contract"],
-    },
-    {
-        "id": "heal_friend",
-        "loader_name": "ctoa_helper_heal_friend",
-        "file": "ctoa_helper_heal_friend.lua",
-        "global": "CTOA_HELPER_HEAL_FRIEND",
-        "lane_id": "heal_friend",
-        "required_functions": ["whitelistContainsName", "scan", "observe", "plan", "statusText", "decisionText", "summary", "contract"],
-    },
-]
-
-FORBIDDEN_PASSIVE_PATTERNS = {
-    "spell_cast": re.compile(r"\bcastSpell\s*\(|\bg_game\.talk\s*\(|\bsay\s*\("),
-    "item_use": re.compile(
-        r"\bg_game\.use(?:InventoryItem|InventoryItemWith)?\s*\(|\buseWith\s*\("
-    ),
-    "movement": re.compile(r"\bautoWalk\s*\(|\bg_game\.walk\s*\("),
-    "snippet_eval": re.compile(r"\bloadstring\s*\(|\bload\s*\(|\bdofile\s*\("),
-}
-
-REQUIRED_LANES = {
-    "healing",
-    "combat",
-    "cavebot",
-    "loot",
-    "timer",
-    "heal_friend",
-    "conditions",
-    "equipment",
-    "scripting",
-}
-
-
-@dataclass(frozen=True)
-class ModuleContractItem:
-    id: str
-    file: str
-    status: str
-    loader_present: bool
-    registry_present: bool
-    global_present: bool
-    return_present: bool
-    missing_functions: list[str]
-    forbidden_hits: list[str]
-
-
-@dataclass(frozen=True)
-class ModuleContractReport:
-    name: str
-    created_at: str
-    status: str
-    loader_path: str
-    registry_path: str
-    expected_module_count: int
-    check_count: int
-    passed_count: int
-    failed_count: int
-    registry_lane_count: int
-    registry_missing: list[str]
-    loader_missing: list[str]
-    forbidden_count: int
-    modules: list[ModuleContractItem]
-    next_action: str
-    live_safety: str
-
-
-def write_json_atomic(path: Path, payload: dict) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_name(f".{path.name}.{os.getpid()}.{uuid.uuid4().hex}.tmp")
-    try:
-        with tmp.open("w", encoding="utf-8") as handle:
-            json.dump(payload, handle, indent=2)
-            handle.write("\n")
-            handle.flush()
-            os.fsync(handle.fileno())
-        tmp.replace(path)
-    finally:
-        try:
-            tmp.unlink()
-        except FileNotFoundError:
-            pass
-
-
-def write_text_atomic(path: Path, text: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_name(f".{path.name}.{os.getpid()}.{uuid.uuid4().hex}.tmp")
-    try:
-        with tmp.open("w", encoding="utf-8", newline="\n") as handle:
-            handle.write(text)
-            if not text.endswith("\n"):
-                handle.write("\n")
-            handle.flush()
-            os.fsync(handle.fileno())
-        tmp.replace(path)
-    finally:
-        try:
-            tmp.unlink()
-        except FileNotFoundError:
-            pass
-
-
-def parse_loader_modules(loader_text: str) -> dict[str, str]:
-    return {
-        match.group("name"): match.group("file")
-        for match in re.finditer(
-            r'\{name\s*=\s*"(?P<name>[^"]+)",\s*file\s*=\s*"(?P<file>[^"]+)"[^}]*\}',
-            loader_text,
-        )
-    }
-
-
-def parse_registry_lanes(registry_text: str) -> set[str]:
-    return set(re.findall(r'id\s*=\s*"([^"]+)"', registry_text))
-
-
-def forbidden_hits(source: str) -> list[str]:
-    hits: list[str] = []
-    for name, pattern in FORBIDDEN_PASSIVE_PATTERNS.items():
-        if pattern.search(source):
-            hits.append(name)
-    return hits
-
-
-def missing_functions(source: str, module_global: str, required: list[str]) -> list[str]:
-    local_name = module_global.removeprefix("CTOA_HELPER_").title().replace("_", "")
-    if module_global == "CTOA_HELPER_MODULES":
-        local_name = "Registry"
-    return [
-        function_name
-        for function_name in required
-        if f"function {local_name}.{function_name}" not in source
-    ]
-
-
-def build_report(
-    otclient_dir: Path = OTCLIENT_DIR,
-    loader_path: Path = DEFAULT_LOADER,
-    registry_path: Path = DEFAULT_REGISTRY,
-) -> ModuleContractReport:
-    loader_text = loader_path.read_text(encoding="utf-8")
-    registry_text = registry_path.read_text(encoding="utf-8")
-    # The loader owns the registry bootstrap; the registry owns the ordered
-    # support-module graph. Validate both sources as one boot contract.
-    loader_modules = parse_loader_modules(loader_text + "\n" + registry_text)
-    registry_lanes = parse_registry_lanes(registry_text)
-    registry_missing = sorted(REQUIRED_LANES - registry_lanes)
-    modules: list[ModuleContractItem] = []
-
-    for expected in PASSIVE_MODULES:
-        source_path = otclient_dir / str(expected["file"])
-        source = source_path.read_text(encoding="utf-8") if source_path.is_file() else ""
-        loader_present = loader_modules.get(str(expected["loader_name"])) == expected["file"]
-        lane_id = str(expected["lane_id"])
-        registry_present = not lane_id or lane_id in registry_lanes
-        global_name = str(expected["global"])
-        global_present = (
-            f'rawget(_G, "{global_name}")' in source
-            and f"_G.{global_name}" in source
-        )
-        return_present = f"return {global_name.removeprefix('CTOA_HELPER_').title().replace('_', '')}" in source
-        if expected["id"] == "modules":
-            return_present = "return Registry" in source
-        forbidden = forbidden_hits(source)
-        missing_required = missing_functions(
-            source,
-            global_name,
-            [str(item) for item in expected.get("required_functions", [])],
-        )
-        status = (
-            "passed"
-            if source_path.is_file()
-            and loader_present
-            and registry_present
-            and global_present
-            and return_present
-            and not missing_required
-            and not forbidden
-            else "failed"
-        )
-        modules.append(
-            ModuleContractItem(
-                id=str(expected["id"]),
-                file=str(expected["file"]),
-                status=status,
-                loader_present=loader_present,
-                registry_present=registry_present,
-                global_present=global_present,
-                return_present=return_present,
-                missing_functions=missing_required,
-                forbidden_hits=forbidden,
-            )
-        )
-
-    failed = [item for item in modules if item.status != "passed"]
-    loader_missing = sorted(
-        str(item["loader_name"])
-        for item in PASSIVE_MODULES
-        if loader_modules.get(str(item["loader_name"])) != item["file"]
-    )
-    forbidden_count = sum(len(item.forbidden_hits) for item in modules)
-    status = "passed" if not failed and not registry_missing else "failed"
-    return ModuleContractReport(
-        name="otclient-helper-module-contract",
-        created_at=datetime.now().replace(microsecond=0).isoformat(),
-        status=status,
-        loader_path=str(loader_path),
-        registry_path=str(registry_path),
-        expected_module_count=len(PASSIVE_MODULES),
-        check_count=len(PASSIVE_MODULES),
-        passed_count=sum(1 for item in modules if item.status == "passed"),
-        failed_count=len(failed),
-        registry_lane_count=len(registry_lanes & REQUIRED_LANES),
-        registry_missing=registry_missing,
-        loader_missing=loader_missing,
-        forbidden_count=forbidden_count,
-        modules=modules,
-        next_action=(
-            "Run ModuleStaticGates, then sandbox SmokeAttachModules."
-            if status == "passed"
-            else "Fix loader, registry, passive globals, or forbidden passive module actions before sandbox attach."
-        ),
-        live_safety=(
-            "ModuleContract is repo-only static analysis; it does not launch, stop, attach to, promote, or overwrite any client."
-        ),
-    )
-
-
-def render_markdown(report: ModuleContractReport) -> str:
-    lines = [
-        "# Solteria Helper Module Contract",
-        "",
-        f"- Status: `{report.status}`",
-        f"- Expected modules: `{report.expected_module_count}`",
-        f"- Passed modules: `{report.passed_count}`",
-        f"- Failed modules: `{report.failed_count}`",
-        f"- Registry lanes: `{report.registry_lane_count}` / `{len(REQUIRED_LANES)}`",
-        f"- Forbidden passive hits: `{report.forbidden_count}`",
-        f"- Next action: {report.next_action}",
-        "",
-        "## Rule",
-        "",
-        "Passive helper modules may observe, format, plan, or expose UI state. They must not cast spells, use items, walk, execute snippets, or load arbitrary files. Runtime actions stay in the guarded native helper domains and still require sandbox evidence.",
-        "",
-        "## Modules",
-        "",
-        "| Module | File | Status | Loader | Registry | Global | Return | Missing functions | Forbidden |",
-        "|---|---|---:|---:|---:|---:|---:|---|---|",
-    ]
-    for item in report.modules:
-        lines.append(
-            "| `{}` | `{}` | `{}` | `{}` | `{}` | `{}` | `{}` | {} | {} |".format(
-                item.id,
-                item.file,
-                item.status,
-                "yes" if item.loader_present else "no",
-                "yes" if item.registry_present else "no",
-                "yes" if item.global_present else "no",
-                "yes" if item.return_present else "no",
-                ", ".join(item.missing_functions) if item.missing_functions else "none",
-                ", ".join(item.forbidden_hits) if item.forbidden_hits else "none",
-            )
-        )
-    lines.extend(
-        [
-            "",
-            "## Verification",
-            "",
-            "```powershell",
-            ".\\.venv\\Scripts\\python.exe scripts\\ops\\otclient_helper_module_contract.py",
-            "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\\windows\\solteria_helper_test_env.ps1 -Action ModuleStaticGates",
-            "```",
-            "",
-        ]
-    )
-    return "\n".join(lines)
-
-
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--otclient-dir", type=Path, default=OTCLIENT_DIR)
-    parser.add_argument("--loader", type=Path, default=DEFAULT_LOADER)
-    parser.add_argument("--registry", type=Path, default=DEFAULT_REGISTRY)
-    parser.add_argument("--json-out", type=Path, default=DEFAULT_JSON_OUT)
-    parser.add_argument("--plan-out", type=Path, default=DEFAULT_PLAN_OUT)
-    parser.add_argument("--no-plan-write", action="store_true")
-    return parser.parse_args()
-
-
-def main() -> int:
-    args = parse_args()
-    report = build_report(
-        args.otclient_dir.resolve(),
-        args.loader.resolve(),
-        args.registry.resolve(),
-    )
-    write_json_atomic(args.json_out.resolve(), asdict(report))
-    if not args.no_plan_write:
-        write_text_atomic(args.plan_out.resolve(), render_markdown(report))
-    print(f"[otclient-helper-module-contract] JSON: {args.json_out}")
-    if not args.no_plan_write:
-        print(f"[otclient-helper-module-contract] Plan: {args.plan_out}")
-    print(
-        "[otclient-helper-module-contract] Status: "
-        f"{report.status} ({report.passed_count}/{report.expected_module_count})"
-    )
-    return 0 if report.status == "passed" else 1
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
-```
-
-
-## `scripts/ops/solteria_helper_sandbox_smoke_queue.py`
-
-```python
-"""Generate the sandbox smoke queue for the Solteria OTClient helper."""
-
-from __future__ import annotations
-
-import argparse
-import json
-import os
-import re
-from dataclasses import asdict, dataclass
-from datetime import datetime
-from pathlib import Path
-from typing import Any
-
-
-ROOT = Path(__file__).resolve().parents[2]
-DEV_DIR = ROOT / "runtime" / "solteria_helper_dev"
-DEFAULT_JSON = DEV_DIR / "sandbox_smoke_queue.json"
-DEFAULT_PLAN = ROOT / "docs" / "otclient" / "solteria_helper_sandbox_smoke_queue.md"
-SMOKE_ENV_SCRIPT = ROOT / "scripts" / "windows" / "solteria_helper_test_env.ps1"
-SMOKE_SCRIPT = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\\windows\\solteria_helper_test_env.ps1"
-
-
-@dataclass(frozen=True)
-class SmokeQueueStep:
-    order: int
-    step_id: str
-    label: str
-    status: str
-    command: str
-    evidence: str
-    reason: str
-
-
-def read_json(path: Path) -> dict[str, Any]:
-    if not path.exists():
-        return {}
-    return json.loads(path.read_text(encoding="utf-8"))
-
-
-def _gate_status(release_gate: dict[str, Any], name: str) -> tuple[str, str, str]:
-    for gate in release_gate.get("gates", []):
-        if gate.get("name") == name:
-            return str(gate.get("status", "missing")), str(gate.get("evidence", "")), str(gate.get("reason", ""))
-    return "missing", "", "gate not found"
-
-
-def _fresh_status(status: str) -> str:
-    if status == "passed":
-        return "passed"
-    if status in {"pending", "blocked", "missing"}:
-        return "required"
-    return status or "required"
-
-
-def _valid_attach_tabs(script_path: Path = SMOKE_ENV_SCRIPT) -> set[str]:
-    if not script_path.is_file():
-        return set()
-    source = script_path.read_text(encoding="utf-8")
-    match = re.search(
-        r'\[ValidateSet\((?P<values>"overview".*?)\)\]\s*\n\s*\[string\]\$Tab',
-        source,
-        flags=re.DOTALL,
-    )
-    if not match:
-        return set()
-    return set(re.findall(r'"([^"]+)"', match.group("values")))
-
-
-def _attach_tab(command: str) -> str:
-    match = re.search(r"(?:^|\s)-Tab\s+([A-Za-z0-9_]+)(?:\s|$)", command)
-    return match.group(1) if match else ""
-
-
-def _static_module_steps(
-    goal_status: dict[str, Any],
-    valid_tabs: set[str],
-) -> tuple[list[SmokeQueueStep], list[dict[str, str]]]:
-    module_audit = goal_status.get("module_audit") or {}
-    summary = module_audit.get("static_gate_summary") or []
-    steps: list[SmokeQueueStep] = []
-    static_only: list[dict[str, str]] = []
-    for item in summary:
-        module = str(item.get("module", "")).strip()
-        if not module:
-            continue
-        attach_command = str(item.get("attach_command") or "").strip()
-        attach_tab = _attach_tab(attach_command)
-        if not attach_command:
-            static_only.append(
-                {
-                    "module": module,
-                    "status": str(item.get("status", "unknown")),
-                    "report_path": str(item.get("report_path", "")),
-                    "reason": "No dedicated UI tab; covered by static gate report and grouped module attach context.",
-                }
-            )
-            continue
-        if attach_tab and attach_tab not in valid_tabs:
-            static_only.append(
-                {
-                    "module": module,
-                    "status": str(item.get("status", "unknown")),
-                    "report_path": str(item.get("report_path", "")),
-                    "reason": f"Invalid attach tab `{attach_tab}`; covered by static gate report and grouped module attach context.",
-                }
-            )
-            continue
-        steps.append(
-            SmokeQueueStep(
-                order=0,
-                step_id=f"attach_{module}",
-                label=f"Attach module tab: {module}",
-                status="queued",
-                command=attach_command,
-                evidence="runtime\\solteria_helper_dev\\module_attach_smoke.json",
-                reason=f"Static gate is {item.get('status', 'unknown')}; in-world tab evidence is still required.",
-            )
-        )
-    return steps, static_only
-
-
-def build_queue(dev_dir: Path = DEV_DIR) -> dict[str, Any]:
-    manifest = read_json(dev_dir / "manifest.json")
-    release_gate = read_json(dev_dir / "release_gate.json")
-    smoke_status = read_json(dev_dir / "smoke_status.json")
-    goal_status = read_json(dev_dir / "goal_status.json")
-
-    preflight_status, preflight_evidence, preflight_reason = _gate_status(release_gate, "SmokePreflight")
-    static_status, static_evidence, static_reason = _gate_status(release_gate, "ModuleStaticGates")
-    module_attach_status, module_attach_evidence, module_attach_reason = _gate_status(release_gate, "ModuleAttachSmoke")
-    smoke_all_status, smoke_all_evidence, smoke_all_reason = _gate_status(release_gate, "SmokeAttachAll")
-    live_status, live_evidence, live_reason = _gate_status(release_gate, "live_approval")
-    smoke_runtime_status = str(smoke_status.get("status", "missing"))
-
-    steps = [
-        SmokeQueueStep(
-            1,
-            "local_ready",
-            "Refresh local package and static gates",
-            "passed" if goal_status.get("status") in {"blocked", "passed"} and preflight_status == "passed" else "required",
-            f"{SMOKE_SCRIPT} -Action LocalReady",
-            str(dev_dir / "local_ready.json"),
-            "Local package, SmokePreflight, ModuleStaticGates, and GoalStatus should be current before attach.",
-        ),
-        SmokeQueueStep(
-            2,
-            "launch_sandbox",
-            "Launch sandbox client and enter test character",
-            "required" if smoke_runtime_status != "running" else "passed",
-            f"{SMOKE_SCRIPT} -Action Launch",
-            str(dev_dir / "smoke_status.json"),
-            str(smoke_status.get("next_action") or "Sandbox client must be running in-world before attach smoke."),
-        ),
-        SmokeQueueStep(
-            3,
-            "ready_check",
-            "Confirm helper is attached in-world",
-            "required" if smoke_runtime_status != "running" else "queued",
-            f"{SMOKE_SCRIPT} -Action ReadyCheck",
-            str(dev_dir / "ready_check.json"),
-            "Run after the sandbox character is in-world; character-select screens are not enough.",
-        ),
-        SmokeQueueStep(
-            4,
-            "module_attach_group",
-            "Capture grouped prototype module tab evidence",
-            _fresh_status(module_attach_status),
-            f"{SMOKE_SCRIPT} -Action SmokeAttachModules",
-            module_attach_evidence,
-            module_attach_reason or "Prototype module tabs need grouped in-world evidence.",
-        ),
-    ]
-
-    module_steps, static_only_modules = _static_module_steps(goal_status, _valid_attach_tabs())
-    for index, step in enumerate(module_steps, start=5):
-        steps.append(
-            SmokeQueueStep(
-                index,
-                step.step_id,
-                step.label,
-                step.status if module_attach_status != "passed" else "passed",
-                step.command,
-                step.evidence,
-                step.reason,
-            )
-        )
-
-    next_order = 5 + len(module_steps)
-    steps.extend(
-        [
-            SmokeQueueStep(
-                next_order,
-                "smoke_attach_all",
-                "Capture full in-world helper acceptance",
-                _fresh_status(smoke_all_status),
-                f"{SMOKE_SCRIPT} -Action SmokeAttachAll",
-                smoke_all_evidence,
-                smoke_all_reason or "Fresh full attach report is required for the current manifest.",
-            ),
-            SmokeQueueStep(
-                next_order + 1,
-                "promote_live_approval",
-                "Promote only after explicit live approval",
-                _fresh_status(live_status),
-                f"{SMOKE_SCRIPT} -Action PromoteLiveCtoa -ApproveLiveDeploy -SmokeReport <fresh-smokeattachall-json>",
-                live_evidence,
-                live_reason or "Live promotion remains gated by explicit approval.",
-            ),
-        ]
-    )
-
-    queue_status = "ready_for_operator" if preflight_status == "passed" and static_status == "passed" else "refresh_required"
-    if module_attach_status == "passed" and smoke_all_status == "passed" and live_status == "passed":
-        queue_status = "passed"
-
-    return {
-        "schema_version": 1,
-        "generated_at": datetime.now().replace(microsecond=0).isoformat(),
-        "status": queue_status,
-        "helper_version": manifest.get("helper_version", ""),
-        "manifest_created_at": manifest.get("created_at", ""),
-        "runtime_status": smoke_runtime_status,
-        "release_gate_status": release_gate.get("status", "missing"),
-        "preflight_status": preflight_status,
-        "module_static_gates_status": static_status,
-        "module_attach_status": module_attach_status,
-        "smoke_attach_all_status": smoke_all_status,
-        "live_approval_status": live_status,
-        "next_action": next((step.label for step in steps if step.status in {"required", "queued", "blocked"}), "none"),
-        "steps": [asdict(step) for step in steps],
-        "static_only_modules": static_only_modules,
-        "live_safety": "This queue is read-only planning evidence; it does not launch, attach to, promote, stop, or overwrite any client.",
-        "source_evidence": {
-            "manifest": str(dev_dir / "manifest.json"),
-            "release_gate": str(dev_dir / "release_gate.json"),
-            "smoke_status": str(dev_dir / "smoke_status.json"),
-            "goal_status": str(dev_dir / "goal_status.json"),
-            "preflight": preflight_evidence,
-            "static_gates": static_evidence or static_reason,
-        },
-    }
-
-
-def render_markdown(queue: dict[str, Any]) -> str:
-    lines = [
-        "# Solteria Helper Sandbox Smoke Queue",
-        "",
-        "## Decision",
-        "",
-        f"- Status: `{queue['status']}`",
-        f"- Helper version: `{queue['helper_version']}`",
-        f"- Runtime status: `{queue['runtime_status']}`",
-        f"- Release gate: `{queue['release_gate_status']}`",
-        f"- Next action: {queue['next_action']}",
-        "- Live safety: read-only plan; live promotion still requires `-ApproveLiveDeploy`.",
-        "",
-        "## Queue",
-        "",
-        "| Order | Step | Status | Command | Evidence | Reason |",
-        "|---:|---|---:|---|---|---|",
-    ]
-    for step in queue["steps"]:
-        lines.append(
-            f"| {step['order']} | `{step['step_id']}` / {step['label']} | `{step['status']}` | `{step['command']}` | `{step['evidence']}` | {step['reason']} |"
-        )
-    static_only = queue.get("static_only_modules") or []
-    if static_only:
-        lines.extend(
-            [
-                "",
-                "## Static-Only Modules",
-                "",
-                "| Module | Status | Evidence | Reason |",
-                "|---|---:|---|---|",
-            ]
-        )
-        for item in static_only:
-            lines.append(
-                f"| `{item['module']}` | `{item['status']}` | `{item['report_path']}` | {item['reason']} |"
-            )
-    lines.extend(
-        [
-            "",
-            "## Operator Rule",
-            "",
-            "Run this queue from top to bottom. If any attach step reports character-select, offline helper, stale manifest, or failed screenshot evidence, stop and refresh `LocalReady` before continuing.",
-        ]
-    )
-    return "\n".join(lines) + "\n"
-
-
-def write_text_atomic(path: Path, text: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_name(f".{path.name}.{os.getpid()}.{id(text)}.tmp")
-    try:
-        tmp.write_text(text if text.endswith("\n") else f"{text}\n", encoding="utf-8", newline="\n")
-        tmp.replace(path)
-    finally:
-        try:
-            tmp.unlink()
-        except FileNotFoundError:
-            pass
-
-
-def main() -> int:
-    parser = argparse.ArgumentParser(description="Generate Solteria Helper sandbox smoke queue")
-    parser.add_argument("--dev-dir", type=Path, default=DEV_DIR)
-    parser.add_argument("--json-out", type=Path, default=DEFAULT_JSON)
-    parser.add_argument("--plan-out", type=Path, default=DEFAULT_PLAN)
-    args = parser.parse_args()
-
-    queue = build_queue(args.dev_dir.resolve())
-    write_text_atomic(args.json_out, json.dumps(queue, indent=2))
-    write_text_atomic(args.plan_out, render_markdown(queue))
-    print(f"[solteria-helper-sandbox-smoke-queue] JSON: {args.json_out}")
-    print(f"[solteria-helper-sandbox-smoke-queue] Plan: {args.plan_out}")
-    print(f"[solteria-helper-sandbox-smoke-queue] Status: {queue['status']}")
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
-```
-
-
-## `scripts/lua/AGENTS.md`
-
-```markdown
-# Lua And OTClient Instructions
-
-This folder contains standalone CTOAi Lua modules and the OTClient helper
-package/source.
-
-## Rules
-
-- Keep standalone runtime scripts and OTClient-native scripts separate unless an
-  adapter is explicitly added.
-- For OTClient files, guard native globals such as `g_game`, `g_map`, `g_ui`,
-  `g_keyboard`, `g_resources`, and `g_clock`.
-- Preserve safe boot defaults. Do not enable combat, cavebot movement, rune
-  casting, auto haste, exeta, timer, or healing during loader initialization.
-- Use `connect(...)` for supported OTClient events and `cycleEvent` for bounded
-  loops.
-- Use `scheduleEvent` for delayed boot work; `addEvent` is only a fallback.
-- Keep cooldowns, bounded retries, and explicit early exits in `onThink` logic.
-- Preserve profile/UI key order when changing helper persistence.
-
-## Validation
-
-Run the narrowest available check:
-
-```powershell
-.\ctoa.ps1 brain refresh
-.\.venv\Scripts\python.exe -m pytest tests\test_otclient_helper_zerobot_shell.py tests\test_ctoa_helper_smoke_report.py -q
-```
-
-For manual OTClient UI changes, also load the helper in the client and verify
-fresh `ctoa_local.log` lines plus safe boot state.
-```
-
-
 ## `AI/generated/manifest.json`
 
 ```json
 {
   "schema_version": 1,
-  "generated_at": "2026-07-12T01:33:15+00:00",
+  "generated_at": "2026-07-15T14:15:53+00:00",
   "root": "C:\\Users\\zycie\\CTOAi",
-  "file_count": 1289,
+  "file_count": 1432,
   "outputs": {
     "file_tree": "AI\\generated\\FILE_TREE.md",
     "symbol_map": "AI\\generated\\SYMBOL_MAP.md",
@@ -6029,16 +2776,16 @@ fresh `ctoa_local.log` lines plus safe boot state.
 ```markdown
 # Engine Brain Environment Doctor
 
-Generated at: `2026-07-12T01:33:45+00:00`
+Generated at: `2026-07-15T14:14:09+00:00`
 Overall status: `warn`
 
 | Check | Status | Key evidence |
 |---|---|---|
-| `git` | `ok` | branch=codex/p8-background-noscreen; dirty=19; path=C:\Program Files\Git\cmd\git.EXE |
+| `git` | `ok` | branch=codex/p8-background-noscreen; dirty=265; path=C:\Program Files\Git\cmd\git.EXE |
 | `docker` | `ok` | containers=2; running_broad=0; configured_broad=0 |
 | `vpn` | `warn` | warp_connected=False |
 | `vercel` | `ok` | version=54.10.3; project=ctoa-web |
-| `vscode` | `warn` | openai=['openai.chatgpt@26.623.141536']; old_dirs=2 |
+| `vscode` | `warn` | openai=['openai.chatgpt@26.623.141536']; old_dirs=3 |
 | `github` | `warn` | open_prs=6; dirty_prs=5; failed_runs=0 |
 | `update_gate` | `ok` | gate=ok; product=CTOA Toolkit; version=1.1.1 |
 
@@ -6057,20 +2804,20 @@ Overall status: `warn`
 ```markdown
 # Engine Brain Ownership Map
 
-Generated at: `2026-07-12T01:33:15+00:00`
+Generated at: `2026-07-15T14:15:53+00:00`
 Source audit: `runtime\audits\ctoai-full-workspace-audit.json`
 Status: `ready`
 
 | Path | Owner | Validation gate | Files | Categories |
 |---|---|---|---:|---|
-| `.ctoa-local` | Local/uncategorized | `manual review` | 9 | runtime_or_local_state:9 |
+| `.ctoa-local` | Local/uncategorized | `manual review` | 12 | runtime_or_local_state:12 |
 | `.devcontainer` | Local/uncategorized | `manual review` | 2 | tracked_source:2 |
 | `.dockerignore` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `.env.example` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `.foundry` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
-| `.git` | Local/uncategorized | `manual review` | 474 | git_internal:474 |
+| `.git` | Local/uncategorized | `manual review` | 747 | git_internal:747 |
 | `.gitattributes` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
-| `.github` | Local/uncategorized | `manual review` | 41 | tracked_source:41 |
+| `.github` | Local/uncategorized | `manual review` | 44 | tracked_source:41, untracked_local:3 |
 | `.gitignore` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `.gitmodules` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `.luarc.json` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
@@ -6081,7 +2828,7 @@ Status: `ready`
 | `.venv` | Local/uncategorized | `manual review` | 4543 | vendor_or_cache:4543 |
 | `.vscode` | Local/uncategorized | `manual review` | 4 | tracked_source:4 |
 | `AGENTS.md` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
-| `AI` | Engine Brain | `brain refresh; brain pack` | 46 | tracked_source:46 |
+| `AI` | Engine Brain | `brain refresh; brain pack` | 48 | tracked_source:46, untracked_source_candidate:2 |
 | `CHANGELOG.md` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `Dockerfile` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `Dockerfile.api` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
@@ -6095,11 +2842,12 @@ Status: `ready`
 | `alembic.ini` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `api` | API runtime | `pytest tests/ --ignore=tests/e2e` | 9 | tracked_source:3, untracked_source_candidate:6 |
 | `bot` | Bot runtime | `pytest tests/ --ignore=tests/e2e` | 144 | tracked_source:43, untracked_source_candidate:101 |
-| `config` | Local/uncategorized | `manual review` | 7 | local_secret_or_sensitive:1, tracked_source:6 |
+| `config` | Local/uncategorized | `manual review` | 11 | local_secret_or_sensitive:1, tracked_source:7, untracked_source_candidate:3 |
 | `conftest.py` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `core` | Local/uncategorized | `manual review` | 3 | tracked_source:3 |
 | `ctoa-vps.ps1` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `ctoa.ps1` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
+| `ctoa_client_capabilities.json` | Local/uncategorized | `manual review` | 1 | untracked_local:1 |
 | `ctoa_local.log` | Local/uncategorized | `manual review` | 1 | untracked_local:1 |
 | `ctoa_ui_prefs.lua` | Local/uncategorized | `manual review` | 1 | untracked_local:1 |
 | `data` | Local/uncategorized | `manual review` | 5 | runtime_or_local_state:5 |
@@ -6107,11 +2855,12 @@ Status: `ready`
 | `desktop_console` | Local/uncategorized | `manual review` | 16 | tracked_source:6, untracked_source_candidate:10 |
 | `docker` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `docker-compose.yml` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
-| `docs` | Documentation | `doc sync guard` | 317 | tracked_source:311, untracked_source_candidate:6 |
+| `docs` | Documentation | `doc sync guard` | 326 | tracked_source:311, untracked_source_candidate:15 |
 | `evals` | Local/uncategorized | `manual review` | 6 | tracked_source:6 |
 | `logs` | Local/uncategorized | `manual review` | 3 | runtime_or_local_state:3 |
-| `metrics` | Local/uncategorized | `manual review` | 25 | runtime_or_local_state:25 |
+| `metrics` | Local/uncategorized | `manual review` | 56 | runtime_or_local_state:56 |
 | `mobile_console` | Mobile console | `pytest tests/ --ignore=tests/e2e` | 20 | tracked_source:9, untracked_source_candidate:11 |
+| `mods` | Local/uncategorized | `manual review` | 5 | untracked_local:5 |
 | `node_modules` | Local/uncategorized | `manual review` | 1 | vendor_or_cache:1 |
 | `policies` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `product` | Local/uncategorized | `manual review` | 4 | tracked_source:4 |
@@ -6121,16 +2870,16 @@ Status: `ready`
 | `requirements-dev.txt` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `requirements.txt` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `runner` | Runner runtime | `pytest tests/ --ignore=tests/e2e` | 154 | tracked_source:57, untracked_source_candidate:97 |
-| `runtime` | Local/uncategorized | `manual review` | 2482 | runtime_or_local_state:2482 |
+| `runtime` | Local/uncategorized | `manual review` | 5274 | runtime_or_local_state:5274 |
 | `runtime_context.py` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
-| `schemas` | Contracts | `schema consumers and pytest` | 15 | tracked_source:15 |
+| `schemas` | Contracts | `schema consumers and pytest` | 44 | tracked_source:20, untracked_source_candidate:24 |
 | `scoring` | Local/uncategorized | `manual review` | 5 | tracked_source:3, untracked_source_candidate:2 |
-| `scripts` | Operator automation | `pytest targeted script tests` | 451 | tracked_source:270, untracked_source_candidate:181 |
+| `scripts` | Operator automation | `pytest targeted script tests` | 538 | tracked_source:271, untracked_source_candidate:267 |
 | `src` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
-| `tests` | Regression suite | `pytest tests/ --ignore=tests/e2e` | 534 | local_secret_or_sensitive:2, tracked_source:197, untracked_source_candidate:335 |
+| `tests` | Regression suite | `pytest tests/ --ignore=tests/e2e` | 641 | local_secret_or_sensitive:2, tracked_source:203, untracked_source_candidate:436 |
 | `training` | Local/uncategorized | `manual review` | 8 | tracked_source:5, untracked_source_candidate:3 |
 | `up` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
-| `web` | Control Center | `cd web; npm run lint; npm test` | 32304 | local_secret_or_sensitive:2, tracked_source:98, untracked_source_candidate:5419, vendor_or_cache:26785 |
+| `web` | Control Center | `cd web; npm run lint; npm test` | 32305 | local_secret_or_sensitive:2, tracked_source:98, untracked_source_candidate:5420, vendor_or_cache:26785 |
 | `workflows` | Sprint workflows | `sprint validators` | 89 | tracked_source:89 |
 ```
 
@@ -6140,7 +2889,7 @@ Status: `ready`
 ```markdown
 # Engine Brain Doc Sync
 
-Generated at: `2026-07-12T01:33:15+00:00`
+Generated at: `2026-07-15T14:15:53+00:00`
 Status: `passed`
 
 | Check | Path | Status | Missing |
@@ -6160,7 +2909,7 @@ Status: `passed`
 ```markdown
 # Engine Brain Secret Guardrail
 
-Generated at: `2026-07-12T01:33:15+00:00`
+Generated at: `2026-07-15T14:15:53+00:00`
 Status: `passed`
 Sensitive/local env path count in audit: `7`
 
@@ -6182,7 +2931,7 @@ Generated Engine Brain context must not include exact local sensitive/env paths 
 ```markdown
 # P6 Codex Integration Readiness
 
-Generated at: `2026-07-12T01:33:15+00:00`
+Generated at: `2026-07-15T14:15:53+00:00`
 Status: `ready_for_plugin_design`
 
 P6 allows only four read-only status/cockpit tools plus audited repo-hygiene, API-cost, evidence-pack, Engine Brain, and P7 cockpit-smoke safe-write refreshes. Do not add deploy/live shortcuts or bypass Control Center evidence gates.
@@ -6225,7 +2974,7 @@ Recommended next: Operate the plugin as four read-only status/cockpit tools plus
 | `ctoai_plugin_bounded_write_policy_contract` | `passed` | home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_self_check.py |
 | `ctoai_plugin_p7_cockpit_smoke_contract_tests` | `passed` | tests/test_engine_brain_index.py |
 | `ctoai_plugin_marketplace_entry` | `passed` | personal marketplace entry |
-| `ctoai_plugin_installed_cache` | `passed` | installed personal cache version 0.1.0+codex.20260711185848 |
+| `ctoai_plugin_installed_cache` | `passed` | installed personal cache version 0.1.0+codex.20260715104609 |
 | `control_center_evidence_contract` | `passed` | web/src/lib/controlCenterEvidence.ts |
 | `control_center_evidence_tests` | `passed` | web/src/lib/__tests__/controlCenterEvidence.test.ts |
 | `control_center_p7_cockpit_smoke_script` | `passed` | scripts/ops/control_center_p7_cockpit_smoke.py |
@@ -6254,7 +3003,7 @@ Recommended next: Operate the plugin as four read-only status/cockpit tools plus
 ```markdown
 # P7 Operator Workflow
 
-Generated at: `2026-07-12T01:33:15+00:00`
+Generated at: `2026-07-15T14:15:53+00:00`
 Status: `safe_write_ready`
 Decision: `allow_bounded_safe_write_tools`
 
@@ -6302,14 +3051,14 @@ Next safe command: Use ctoai_repo_hygiene_refresh, ctoai_api_cost_refresh, ctoai
 ```markdown
 # P7 Action Readiness
 
-Generated at: `2026-07-12T01:33:15+00:00`
+Generated at: `2026-07-15T14:15:53+00:00`
 Status: `safe_write_tools_enabled`
 Decision: `monitor_enabled_safe_write_tools`
 
 P7 action readiness is evidence-only. MCP write tools stay disabled until every candidate has audit evidence and explicit enablement.
 
 Risk model: `docs/CTOAI_COMMAND_RISK_MODEL.md`
-Action audit: `runtime\control-center\action-audit.jsonl` with `135` records.
+Action audit: `runtime\control-center\action-audit.jsonl` with `151` records.
 MCP write tools: `5`
 Next safe command: Design the next P7 plugin action only after risk model coverage, audit logging, Control Center gates, and targeted MCP tests exist; keep deploy/live actions outside the plugin surface.
 
@@ -6330,7 +3079,7 @@ Next safe command: Design the next P7 plugin action only after risk model covera
 ```markdown
 # P7 Safe Write Tool Design
 
-Generated at: `2026-07-12T01:33:15+00:00`
+Generated at: `2026-07-15T14:15:53+00:00`
 Status: `implemented`
 Decision: `ready_for_dry_run_operation`
 
@@ -6372,7 +3121,7 @@ Next safe command: Run ctoai_evidence_pack_refresh with dry_run=true and verify 
 ```markdown
 # P7 Operator Brief
 
-Generated at: `2026-07-12T01:33:15+00:00`
+Generated at: `2026-07-15T14:15:53+00:00`
 Decision: `ready_for_p7_operator_workflow`
 Status: `ready`
 
@@ -6386,14 +3135,501 @@ Next safe command: Design the next P7 plugin action only after risk model covera
 - P7 workflow: `safe_write_ready` with `9` MCP tools and `5` safe-write tools.
 - P7 action readiness: `safe_write_tools_enabled` with `5/5` audited candidates and `5` MCP write tools.
 - P7 safe-write design: `implemented` for `ctoai_evidence_pack_refresh` with MCP enabled `True`.
-- P7 cockpit handoff: `ready`; smoke `14/14`; safe-write audits `5/5`; release files `35`; action audit records `135`.
+- P7 cockpit handoff: `ready`; smoke `14/14`; safe-write audits `5/5`; release files `35`; action audit records `151`.
 - OTClient helper: `blocked`; release gate `blocked`; module contract `passed` (32/32); sandbox queue `passed`; runtime `ready_for_readycheck`; first step `local_ready`.
-- BackgroundNoScreen: `blocked`; integrity `untrusted_pin`; capability `missing`; runtime `unknown`.
-- P9 Conditions shadow: `operational_acceptance_blocked`; contract `True`; fresh `True`; fixtures `passed`; runtime readiness `False`.
+- BackgroundNoScreen: `stale`; integrity `passed`; capability `fresh`; runtime `disarmed`.
+- Helper roadmap phase evidence: `p14_foundation_ready`; aligned `True`; P8/P9/P10/P11 `operational_acceptance_complete`/`operational_acceptance_complete`/`operational_acceptance_complete`/`operational_acceptance_complete`; P12 `complete`.
+- P9 Conditions shadow: `stale`; contract `True`; fresh `False`; fixtures `passed`; runtime readiness `False`.
+- P10 Equipment shadow: `stale`; contract `True`; fresh `False`; fixtures `passed`; rollback `ready`; runtime readiness `False`.
+- P10 Equipment acceptance: `invalid`; contract `False`; fresh `False`; report bound `True`; accepted `False`; P11 eligible `False`.
 - Roadmap generation: `ready`; docs `4/4`; doc sync `passed`; Plan 3 `passed`; P8-P16 `passed`.
 - Validation evidence: `16` commands from `2026-07-11T19:04:23+00:00`.
 - Hard blockers: `none`.
 - Warnings: `brain_doctor`, `diff_check`.
+```
+
+
+## `AI/generated/ROADMAP_STATE.json`
+
+```json
+{
+  "authority": {
+    "allowed_output_paths": [
+      "AI/generated/ROADMAP_STATE.json",
+      "AI/generated/ROADMAP_STATE.md",
+      "runtime/control-center/action-audit.jsonl"
+    ],
+    "control_center_mode": "read_only",
+    "live_authority": false,
+    "mcp_write_tool_enabled": false,
+    "p12_heal_friend_reopened": false,
+    "runtime_actions": false,
+    "runtime_executor_added": false
+  },
+  "blockers": [],
+  "control_center_preflight": {
+    "cockpit_handoff_status": "ready",
+    "hard_blockers": [],
+    "operator_brief_status": "ready",
+    "ready": true,
+    "roadmap_generation_status": "ready",
+    "status": "ready"
+  },
+  "freshness_status": "current",
+  "generated_at": "2026-07-15T13:25:55.553813Z",
+  "ledger": [
+    {
+      "age_seconds": 31548,
+      "attempt_count": null,
+      "bindings": [],
+      "blockers": [],
+      "created_at": "2026-07-15T04:40:07Z",
+      "decision_id": "p8-background-acceptance",
+      "decision_status": "accepted",
+      "dispatch_allowed": false,
+      "downstream_authority_granted": false,
+      "evidence_path": "runtime/solteria_helper_dev/background_status.json",
+      "evidence_schema_version": "ctoa.otclient-headless-status.v1",
+      "evidence_sha256": "97df52ac6064aa4bce7a736e2d580c5136c2c6b3138a262cff97a04a7bab5d51",
+      "evidence_status": "ready",
+      "execute_once_allowed": false,
+      "final_state": null,
+      "freshness_status": "immutable_terminal",
+      "integrity_status": "passed",
+      "intrusive_action_count": 0,
+      "lane": "background",
+      "live_promotion": false,
+      "ordinal": 8,
+      "phase": "P8",
+      "predecessor_ids": [],
+      "previous_evidence_sha256": "97df52ac6064aa4bce7a736e2d580c5136c2c6b3138a262cff97a04a7bab5d51",
+      "result_status": "operational_acceptance_complete",
+      "retry_scheduled": null,
+      "runtime_actions": false,
+      "terminal": true
+    },
+    {
+      "age_seconds": 67223,
+      "attempt_count": null,
+      "bindings": [
+        {
+          "actual_sha256": "795c2d4b1a130376335035d144be1cff609fe51ed826a75f46530571579ce0df",
+          "expected_sha256": "795c2d4b1a130376335035d144be1cff609fe51ed826a75f46530571579ce0df",
+          "mode": "canonical_json_sha256",
+          "path": "runtime/solteria_helper_dev/conditions_shadow_replay.json",
+          "role": "report",
+          "status": "passed"
+        }
+      ],
+      "blockers": [],
+      "created_at": "2026-07-14T18:45:31.632000Z",
+      "decision_id": "p9-conditions-shadow-acceptance",
+      "decision_status": "accepted",
+      "dispatch_allowed": false,
+      "downstream_authority_granted": false,
+      "evidence_path": "runtime/solteria_helper_dev/conditions_shadow_acceptance.json",
+      "evidence_schema_version": "ctoa.conditions-shadow-acceptance.v1",
+      "evidence_sha256": "cd251c883ca83e83769b5c1cd6721dd6062b1913c2614388070d04b560afde8a",
+      "evidence_status": "accepted",
+      "execute_once_allowed": false,
+      "final_state": null,
+      "freshness_status": "immutable_terminal",
+      "integrity_status": "passed",
+      "intrusive_action_count": 0,
+      "lane": "conditions",
+      "live_promotion": false,
+      "ordinal": 9,
+      "phase": "P9",
+      "predecessor_ids": [
+        "p8-background-acceptance"
+      ],
+      "previous_evidence_sha256": "cd251c883ca83e83769b5c1cd6721dd6062b1913c2614388070d04b560afde8a",
+      "result_status": "operational_acceptance_complete",
+      "retry_scheduled": null,
+      "runtime_actions": false,
+      "terminal": true
+    },
+    {
+      "age_seconds": 31544,
+      "attempt_count": null,
+      "bindings": [
+        {
+          "actual_sha256": "e3f9048a7432593ff010f5dee0229d0cc42d6c221ef9b4c8028523896bd5c16e",
+          "expected_sha256": "e3f9048a7432593ff010f5dee0229d0cc42d6c221ef9b4c8028523896bd5c16e",
+          "mode": "canonical_json_sha256",
+          "path": "runtime/solteria_helper_dev/equipment_shadow_replay.json",
+          "role": "report",
+          "status": "passed"
+        }
+      ],
+      "blockers": [],
+      "created_at": "2026-07-15T04:40:11.067000Z",
+      "decision_id": "p10-equipment-shadow-acceptance",
+      "decision_status": "accepted",
+      "dispatch_allowed": false,
+      "downstream_authority_granted": false,
+      "evidence_path": "runtime/solteria_helper_dev/equipment_shadow_acceptance.json",
+      "evidence_schema_version": "ctoa.equipment-shadow-acceptance.v1",
+      "evidence_sha256": "ca062e4ddc41029dbae059bae303e6b4a5b4a87a66442c7f846ae050a3fa9548",
+      "evidence_status": "accepted",
+      "execute_once_allowed": false,
+      "final_state": null,
+      "freshness_status": "immutable_terminal",
+      "integrity_status": "passed",
+      "intrusive_action_count": 0,
+      "lane": "equipment",
+      "live_promotion": false,
+      "ordinal": 10,
+      "phase": "P10",
+      "predecessor_ids": [
+        "p9-conditions-shadow-acceptance"
+      ],
+      "previous_evidence_sha256": "ca062e4ddc41029dbae059bae303e6b4a5b4a87a66442c7f846ae050a3fa9548",
+      "result_status": "operational_acceptance_complete",
+      "retry_scheduled": null,
+      "runtime_actions": false,
+      "terminal": true
+    },
+    {
+      "age_seconds": 28161,
+      "attempt_count": null,
+      "bindings": [
+        {
+          "actual_sha256": "b6d5f8e53c7e7354445ab9b134b4b04a7bda984df93c477ed2cbb2a57d575ed8",
+          "expected_sha256": "b6d5f8e53c7e7354445ab9b134b4b04a7bda984df93c477ed2cbb2a57d575ed8",
+          "mode": "canonical_json_sha256",
+          "path": "runtime/solteria_helper_dev/heal_friend_shadow_replay.json",
+          "role": "report",
+          "status": "passed"
+        }
+      ],
+      "blockers": [],
+      "created_at": "2026-07-15T05:36:33.724000Z",
+      "decision_id": "p11-heal-friend-shadow-acceptance",
+      "decision_status": "accepted",
+      "dispatch_allowed": false,
+      "downstream_authority_granted": false,
+      "evidence_path": "runtime/solteria_helper_dev/heal_friend_shadow_acceptance.json",
+      "evidence_schema_version": "ctoa.heal-friend-shadow-acceptance.v1",
+      "evidence_sha256": "9bce6d49dc9177aa962a9eec7d80ee61848eb9b8d0dbd3bc72cce71921cf0819",
+      "evidence_status": "accepted",
+      "execute_once_allowed": false,
+      "final_state": null,
+      "freshness_status": "immutable_terminal",
+      "integrity_status": "passed",
+      "intrusive_action_count": 0,
+      "lane": "heal_friend",
+      "live_promotion": false,
+      "ordinal": 11,
+      "phase": "P11",
+      "predecessor_ids": [
+        "p10-equipment-shadow-acceptance"
+      ],
+      "previous_evidence_sha256": "9bce6d49dc9177aa962a9eec7d80ee61848eb9b8d0dbd3bc72cce71921cf0819",
+      "result_status": "operational_acceptance_complete",
+      "retry_scheduled": null,
+      "runtime_actions": false,
+      "terminal": true
+    },
+    {
+      "age_seconds": 22863,
+      "attempt_count": 1,
+      "bindings": [
+        {
+          "actual_sha256": "67c27a26797b0b01e4f8dfccec4e02b0e5f454ca6818434709e4b55850f49810",
+          "expected_sha256": "67c27a26797b0b01e4f8dfccec4e02b0e5f454ca6818434709e4b55850f49810",
+          "mode": "field_match",
+          "path": "runtime/solteria_helper_dev/p12_conditions_execute_once_plan.json",
+          "role": "plan",
+          "status": "passed"
+        },
+        {
+          "actual_sha256": "6ce8a238169ffd4aa0762603cc1b1a1457072d8ce45005e5f8e34a549c94bfec",
+          "expected_sha256": "6ce8a238169ffd4aa0762603cc1b1a1457072d8ce45005e5f8e34a549c94bfec",
+          "mode": "canonical_json_sha256",
+          "path": "runtime/solteria_helper_dev/p12_conditions_session_approval.json",
+          "role": "approval",
+          "status": "passed"
+        },
+        {
+          "actual_sha256": "125af0ec0e73ca8015b50ee8b08392ab76fb3637145f272743cdb96b4851f69c",
+          "expected_sha256": "125af0ec0e73ca8015b50ee8b08392ab76fb3637145f272743cdb96b4851f69c",
+          "mode": "canonical_json_sha256",
+          "path": "runtime/solteria_helper_dev/p12_conditions_execute_once_trace.json",
+          "role": "trace",
+          "status": "passed"
+        }
+      ],
+      "blockers": [],
+      "created_at": "2026-07-15T07:04:51.648000Z",
+      "decision_id": "p12-conditions-execute-once",
+      "decision_status": "accepted",
+      "dispatch_allowed": false,
+      "downstream_authority_granted": false,
+      "evidence_path": "runtime/solteria_helper_dev/p12_conditions_execute_once_receipt.json",
+      "evidence_schema_version": "ctoa.p12-conditions-execute-once-receipt.v1",
+      "evidence_sha256": "ce9017f67a8efac96903fead66a925a3aa6e237352883ee9ac99e44da4e5fba8",
+      "evidence_status": "accepted",
+      "execute_once_allowed": false,
+      "final_state": "killed_and_disarmed",
+      "freshness_status": "immutable_terminal",
+      "integrity_status": "passed",
+      "intrusive_action_count": 1,
+      "lane": "conditions",
+      "live_promotion": false,
+      "ordinal": 12,
+      "phase": "P12",
+      "predecessor_ids": [
+        "p9-conditions-shadow-acceptance"
+      ],
+      "previous_evidence_sha256": "ce9017f67a8efac96903fead66a925a3aa6e237352883ee9ac99e44da4e5fba8",
+      "result_status": "operational_acceptance_complete",
+      "retry_scheduled": false,
+      "runtime_actions": false,
+      "terminal": true
+    },
+    {
+      "age_seconds": 10382,
+      "attempt_count": 1,
+      "bindings": [
+        {
+          "actual_sha256": "d041db806c6417b018c6ae390e3d384ccec9bead2a77e498a582093bf7c823e0",
+          "expected_sha256": "d041db806c6417b018c6ae390e3d384ccec9bead2a77e498a582093bf7c823e0",
+          "mode": "field_match",
+          "path": "runtime/solteria_helper_dev/p12_equipment_execute_once_plan.json",
+          "role": "plan",
+          "status": "passed"
+        },
+        {
+          "actual_sha256": "7a232baf0b87abdac05cf71998cd17962187b0e9eab25aa5ac6f169489821eec",
+          "expected_sha256": "7a232baf0b87abdac05cf71998cd17962187b0e9eab25aa5ac6f169489821eec",
+          "mode": "canonical_json_sha256",
+          "path": "runtime/solteria_helper_dev/p12_equipment_session_approval.json",
+          "role": "approval",
+          "status": "passed"
+        },
+        {
+          "actual_sha256": "a4352002e593779fe6809fceb52cda4c53a7530862ce9fdb969a0ed86ee45930",
+          "expected_sha256": "a4352002e593779fe6809fceb52cda4c53a7530862ce9fdb969a0ed86ee45930",
+          "mode": "canonical_json_sha256",
+          "path": "runtime/solteria_helper_dev/p12_equipment_execute_once_trace.json",
+          "role": "trace",
+          "status": "passed"
+        }
+      ],
+      "blockers": [],
+      "created_at": "2026-07-15T10:32:52.914000Z",
+      "decision_id": "p12-equipment-execute-once",
+      "decision_status": "accepted",
+      "dispatch_allowed": false,
+      "downstream_authority_granted": false,
+      "evidence_path": "runtime/solteria_helper_dev/p12_equipment_execute_once_receipt.json",
+      "evidence_schema_version": "ctoa.p12-equipment-execute-once-receipt.v1",
+      "evidence_sha256": "c36483f5da4ecefe9a5f7fb0be5c069999053e84b2040131b9a0f643b10cf635",
+      "evidence_status": "accepted",
+      "execute_once_allowed": false,
+      "final_state": "killed_and_disarmed",
+      "freshness_status": "immutable_terminal",
+      "integrity_status": "passed",
+      "intrusive_action_count": 1,
+      "lane": "equipment",
+      "live_promotion": false,
+      "ordinal": 13,
+      "phase": "P12",
+      "predecessor_ids": [
+        "p10-equipment-shadow-acceptance"
+      ],
+      "previous_evidence_sha256": "c36483f5da4ecefe9a5f7fb0be5c069999053e84b2040131b9a0f643b10cf635",
+      "result_status": "operational_acceptance_complete",
+      "retry_scheduled": false,
+      "runtime_actions": false,
+      "terminal": true
+    },
+    {
+      "age_seconds": 4675,
+      "attempt_count": 0,
+      "bindings": [
+        {
+          "actual_sha256": "aaf2b8fb7bcd6fe9f828bf41fb9a52c0e53ea0a7a062125f359bc6a72d612f21",
+          "expected_sha256": "aaf2b8fb7bcd6fe9f828bf41fb9a52c0e53ea0a7a062125f359bc6a72d612f21",
+          "mode": "raw_sha256",
+          "path": "runtime/solteria_helper_dev/p12_heal_friend_execute_once_plan.json",
+          "role": "plan",
+          "status": "passed"
+        },
+        {
+          "actual_sha256": "f6db26767ae5c5605d501c11b47d26813a0f808887ffb7b61109b8ddc49433fe",
+          "expected_sha256": "f6db26767ae5c5605d501c11b47d26813a0f808887ffb7b61109b8ddc49433fe",
+          "mode": "raw_sha256",
+          "path": "runtime/solteria_helper_dev/p12_heal_friend_session_approval.json",
+          "role": "approval",
+          "status": "passed"
+        },
+        {
+          "actual_sha256": "607aabf45e4bb417779af61cf91d826d3d82c0551f9a28b73ac0ecabb87a6a87",
+          "expected_sha256": "607aabf45e4bb417779af61cf91d826d3d82c0551f9a28b73ac0ecabb87a6a87",
+          "mode": "raw_sha256",
+          "path": "runtime/solteria_helper_dev/p12_heal_friend_execution_preflight.json",
+          "role": "preflight",
+          "status": "passed"
+        }
+      ],
+      "blockers": [],
+      "created_at": "2026-07-15T12:08:00.489000Z",
+      "decision_id": "p12-heal-friend-no-compatible-vocation",
+      "decision_status": "closed_no_action",
+      "dispatch_allowed": false,
+      "downstream_authority_granted": false,
+      "evidence_path": "runtime/solteria_helper_dev/p12_heal_friend_no_compatible_vocation_closure.json",
+      "evidence_schema_version": "ctoa.p12-heal-friend-no-compatible-vocation-closure.v1",
+      "evidence_sha256": "1290568c48439e3bd512754a21b75dcac6bc05e17d48c36c1edc56b3b3189d9b",
+      "evidence_status": "closed_blocked_no_compatible_vocation",
+      "execute_once_allowed": false,
+      "final_state": "disarmed",
+      "freshness_status": "immutable_terminal",
+      "integrity_status": "passed",
+      "intrusive_action_count": 0,
+      "lane": "heal_friend",
+      "live_promotion": false,
+      "ordinal": 14,
+      "phase": "P12",
+      "predecessor_ids": [
+        "p11-heal-friend-shadow-acceptance",
+        "p12-equipment-execute-once"
+      ],
+      "previous_evidence_sha256": "1290568c48439e3bd512754a21b75dcac6bc05e17d48c36c1edc56b3b3189d9b",
+      "result_status": "closed_blocked_no_compatible_vocation",
+      "retry_scheduled": false,
+      "runtime_actions": false,
+      "terminal": true
+    }
+  ],
+  "next_action": "Consume this P13 state read-only in Control Center; keep runtime, live authority, MCP writes, and the closed P12 Heal Friend lane unchanged.",
+  "next_phase": "P14",
+  "phase": "P13",
+  "phase_status": "runtime_evidence_ready",
+  "previous_state_sha256": "2ac9245d863d26343dad0a0a76abe4ee80c89d0d0152e9b70f4af33d11cf1610",
+  "schema_registry": {
+    "entry_count": 7,
+    "path": "schemas/ctoa-roadmap-schema-registry.v1.json",
+    "previous_sha256": "c3dd65689219229de0a5d5bcda50f7b60779ad8cc6ea0262dc73386c7ae17fb2",
+    "schema_path": "schemas/ctoa-roadmap-schema-registry.schema.json",
+    "schema_sha256": "e63f70b0443c5327a9bf2e597a30e6f49748ae5dee86c7e305ea3b4d28102dd6",
+    "schema_version": "ctoa.roadmap-schema-registry.v1",
+    "sha256": "c3dd65689219229de0a5d5bcda50f7b60779ad8cc6ea0262dc73386c7ae17fb2",
+    "status": "passed"
+  },
+  "schema_version": "ctoa.roadmap-state.v1",
+  "source_health": [
+    {
+      "age_seconds": null,
+      "contract_status": "passed",
+      "freshness_status": "timeless",
+      "load_status": "loaded",
+      "name": "feature_roadmap",
+      "path": "AI/FEATURE_ROADMAP.md",
+      "sha256": "c90cce6b8d345548b7d6e5ccb11905c941ad2f6c66598e613af8c3b7b91f4216"
+    },
+    {
+      "age_seconds": 11,
+      "contract_status": "passed",
+      "freshness_status": "current",
+      "load_status": "loaded",
+      "name": "engine_brain_manifest",
+      "path": "AI/generated/manifest.json",
+      "sha256": "42f0c1fe9ce9da5c9a0582c7088cd76a2c2baa8446844375497a3882eacdfb59"
+    },
+    {
+      "age_seconds": 11,
+      "contract_status": "passed",
+      "freshness_status": "current",
+      "load_status": "loaded",
+      "name": "operator_brief",
+      "path": "AI/generated/P7_OPERATOR_BRIEF.json",
+      "sha256": "58a9359fa4a6115b9084c2ee06b4e717878d6b68ff0c6cc0a3cbbc9b8c7d6c09"
+    },
+    {
+      "age_seconds": 389,
+      "contract_status": "passed",
+      "freshness_status": "current",
+      "load_status": "loaded",
+      "name": "helper_manifest",
+      "path": "runtime/solteria_helper_dev/manifest.json",
+      "sha256": "21ac5e73a18fe0d027c22608b95785d90e62c5e6c56f5245724fab8c8045c573"
+    },
+    {
+      "age_seconds": 7288,
+      "contract_status": "passed",
+      "freshness_status": "current",
+      "load_status": "loaded",
+      "name": "runtime_module_gates",
+      "path": "runtime/solteria_helper_dev/runtime_module_gates_sandbox_smoke.json",
+      "sha256": "6015c1da86590bf699d5e118176dd20984e49016282493ec67ee4541cfdf3a26"
+    }
+  ],
+  "state_sha256": "2aacaa7d3a3e30cec10822824f46239b5ef5ea80f879ade3286f1b6096495b99",
+  "status": "ready",
+  "summary": {
+    "accepted_count": 6,
+    "blocked_count": 0,
+    "closed_no_action_count": 1,
+    "ledger_count": 7,
+    "live_authority_count": 0,
+    "runtime_authority_count": 0,
+    "tampered_count": 0,
+    "total_attempt_count": 2
+  },
+  "tamper_status": "passed"
+}
+```
+
+
+## `AI/generated/ROADMAP_STATE.md`
+
+```markdown
+# CTOAi P13 Roadmap State
+
+Generated at: `2026-07-15T13:25:55.553813Z`
+State SHA-256: `2aacaa7d3a3e30cec10822824f46239b5ef5ea80f879ade3286f1b6096495b99`
+Status: `ready`
+Phase: `P13` / `runtime_evidence_ready`; next `P14`.
+Freshness: `current`; tamper: `passed`.
+
+## Authority Boundary
+
+- Control Center is read-only.
+- No runtime executor, runtime action, MCP write tool, or live authority is introduced.
+- P12 Heal Friend remains closed and is not reopened.
+
+## Decision / Result Ledger
+
+| Order | Decision | Phase | Lane | Decision | Result | Integrity | Freshness | Attempts | Final state |
+|---:|---|---|---|---|---|---|---|---:|---|
+| 8 | `p8-background-acceptance` | `P8` | `background` | `accepted` | `operational_acceptance_complete` | `passed` | `immutable_terminal` | - | `-` |
+| 9 | `p9-conditions-shadow-acceptance` | `P9` | `conditions` | `accepted` | `operational_acceptance_complete` | `passed` | `immutable_terminal` | - | `-` |
+| 10 | `p10-equipment-shadow-acceptance` | `P10` | `equipment` | `accepted` | `operational_acceptance_complete` | `passed` | `immutable_terminal` | - | `-` |
+| 11 | `p11-heal-friend-shadow-acceptance` | `P11` | `heal_friend` | `accepted` | `operational_acceptance_complete` | `passed` | `immutable_terminal` | - | `-` |
+| 12 | `p12-conditions-execute-once` | `P12` | `conditions` | `accepted` | `operational_acceptance_complete` | `passed` | `immutable_terminal` | 1 | `killed_and_disarmed` |
+| 13 | `p12-equipment-execute-once` | `P12` | `equipment` | `accepted` | `operational_acceptance_complete` | `passed` | `immutable_terminal` | 1 | `killed_and_disarmed` |
+| 14 | `p12-heal-friend-no-compatible-vocation` | `P12` | `heal_friend` | `closed_no_action` | `closed_blocked_no_compatible_vocation` | `passed` | `immutable_terminal` | 0 | `disarmed` |
+
+## Summary
+
+- Ledger entries: `7`; accepted: `6`; closed without action: `1`.
+- Blocked: `0`; tampered: `0`; total bounded attempts: `2`.
+- Runtime authority: `0`; live authority: `0`.
+
+## Source Health
+
+- `feature_roadmap`: contract `passed`, freshness `timeless`, source `AI/FEATURE_ROADMAP.md`.
+- `engine_brain_manifest`: contract `passed`, freshness `current`, source `AI/generated/manifest.json`.
+- `operator_brief`: contract `passed`, freshness `current`, source `AI/generated/P7_OPERATOR_BRIEF.json`.
+- `helper_manifest`: contract `passed`, freshness `current`, source `runtime/solteria_helper_dev/manifest.json`.
+- `runtime_module_gates`: contract `passed`, freshness `current`, source `runtime/solteria_helper_dev/runtime_module_gates_sandbox_smoke.json`.
+
+## Next Action
+
+Consume this P13 state read-only in Control Center; keep runtime, live authority, MCP writes, and the closed P12 Heal Friend lane unchanged.
 ```
 
 
@@ -6402,7 +3638,7 @@ Next safe command: Design the next P7 plugin action only after risk model covera
 ```markdown
 # Engine Brain File Tree
 
-Generated at: `2026-07-12T01:33:15+00:00`
+Generated at: `2026-07-15T14:15:53+00:00`
 
 Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 `node_modules`, `runtime`, `logs`, `data`, `.tmp`, build outputs.
@@ -6411,6 +3647,8 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 |---|---:|
 | `.ctoa-local/bootstrap-state.json` | 383 |
 | `.ctoa-local/daily/2026-06-23.md` | 3915 |
+| `.ctoa-local/otclient/equipment-shadow-capture-profile.json` | 394 |
+| `.ctoa-local/otclient/heal-friend-shadow-profile.json` | 768 |
 | `.ctoa-local/user-config.json` | 461 |
 | `.devcontainer/devcontainer-lock.json` | 1265 |
 | `.devcontainer/devcontainer.json` | 1526 |
@@ -6431,7 +3669,9 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `.github/ISSUE_TEMPLATE/ctoa-038-monitoring-alert-p0.md` | 740 |
 | `.github/prompts/pr-quality-build-gate-review.prompt.md` | 1729 |
 | `.github/prompts/sprint-wave1-readiness.prompt.md` | 1680 |
-| `.github/PULL_REQUEST_TEMPLATE/template.md` | 245 |
+| `.github/PULL_REQUEST_TEMPLATE/p8-background-noscreen.md` | 957 |
+| `.github/PULL_REQUEST_TEMPLATE/p9-conditions-shadow.md` | 1115 |
+| `.github/PULL_REQUEST_TEMPLATE/template.md` | 622 |
 | `.github/skills/ci-hotfix-workflow/SKILL.md` | 3039 |
 | `.github/workflows/browser-e2e-smoke.yml` | 1158 |
 | `.github/workflows/cd_bot.yml` | 7124 |
@@ -6451,13 +3691,14 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `.github/workflows/ctoa-weekly-report.yml` | 750 |
 | `.github/workflows/docker-build.yml` | 3569 |
 | `.github/workflows/main_ctoai.yml` | 3256 |
+| `.github/workflows/p14-independent-runner-contract.yml` | 2500 |
 | `.github/workflows/pr_quality.yml` | 1985 |
-| `.github/workflows/site-pages.yml` | 1537 |
+| `.github/workflows/site-pages.yml` | 423 |
 | `.github/workflows/vps-authorize-ctoa-key.yml` | 4091 |
 | `.github/workflows/vps-gs-cycle.yml` | 10161 |
 | `.github/workflows/vps-stack-deploy.yml` | 8308 |
 | `.luarc.json` | 268 |
-| `.pre-commit-config.yaml` | 784 |
+| `.pre-commit-config.yaml` | 888 |
 | `.vscode/extensions.json` | 155 |
 | `.vscode/launch.json` | 2063 |
 | `.vscode/settings.json` | 1277 |
@@ -6499,35 +3740,37 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `AI/CHECKPOINT_2026-07-08.md` | 10285 |
 | `AI/CLASS_INDEX.md` | 1815 |
 | `AI/CODEX_CAPABILITY_MAP.md` | 5237 |
-| `AI/ENGINE_BRAIN_STATUS.md` | 136806 |
+| `AI/ENGINE_BRAIN_STATUS.md` | 148910 |
 | `AI/ENGINE_MEMORY.md` | 2971 |
-| `AI/FEATURE_ROADMAP.md` | 63389 |
+| `AI/FEATURE_ROADMAP.md` | 77693 |
 | `AI/generated/DOC_SYNC.json` | 1164 |
 | `AI/generated/DOC_SYNC.md` | 681 |
-| `AI/generated/ENGINE_BRAIN_PACK.json` | 6441 |
-| `AI/generated/ENGINE_BRAIN_PACK.md` | 446562 |
-| `AI/generated/ENV_DOCTOR.json` | 6357 |
-| `AI/generated/ENV_DOCTOR.md` | 1259 |
-| `AI/generated/FILE_TREE.md` | 72095 |
+| `AI/generated/ENGINE_BRAIN_PACK.json` | 4135 |
+| `AI/generated/ENGINE_BRAIN_PACK.md` | 308491 |
+| `AI/generated/ENV_DOCTOR.json` | 7449 |
+| `AI/generated/ENV_DOCTOR.md` | 1264 |
+| `AI/generated/FILE_TREE.md` | 81474 |
 | `AI/generated/manifest.json` | 2062 |
-| `AI/generated/OWNERSHIP_MAP.json` | 16936 |
-| `AI/generated/OWNERSHIP_MAP.md` | 6581 |
+| `AI/generated/OWNERSHIP_MAP.json` | 17575 |
+| `AI/generated/OWNERSHIP_MAP.md` | 6872 |
 | `AI/generated/P6_CODEX_INTEGRATION_READINESS.json` | 11010 |
 | `AI/generated/P6_CODEX_INTEGRATION_READINESS.md` | 6915 |
 | `AI/generated/P7_ACTION_READINESS.json` | 4870 |
 | `AI/generated/P7_ACTION_READINESS.md` | 1142 |
-| `AI/generated/P7_OPERATOR_BRIEF.json` | 7308 |
-| `AI/generated/P7_OPERATOR_BRIEF.md` | 1645 |
+| `AI/generated/P7_OPERATOR_BRIEF.json` | 11945 |
+| `AI/generated/P7_OPERATOR_BRIEF.md` | 2116 |
 | `AI/generated/P7_OPERATOR_WORKFLOW.json` | 4690 |
 | `AI/generated/P7_OPERATOR_WORKFLOW.md` | 3015 |
 | `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.json` | 2705 |
 | `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.md` | 2024 |
-| `AI/generated/SYMBOL_MAP.md` | 286140 |
+| `AI/generated/ROADMAP_STATE.json` | 17137 |
+| `AI/generated/ROADMAP_STATE.md` | 2721 |
+| `AI/generated/SYMBOL_MAP.md` | 342351 |
 | `AI/KNOWN_BUGS.md` | 1384 |
 | `AI/LUA_INDEX.md` | 2874 |
 | `AI/OPERATIONS_AUDIT.md` | 5139 |
-| `AI/OTCLIENT_INDEX.md` | 3675 |
-| `AI/P8_P16_EXECUTION_ROADMAP.md` | 10391 |
+| `AI/OTCLIENT_INDEX.md` | 4204 |
+| `AI/P8_P16_EXECUTION_ROADMAP.md` | 40971 |
 | `AI/PACKET_INDEX.md` | 1405 |
 | `AI/PROJECT_CONTEXT.md` | 3648 |
 | `AI/README.md` | 2927 |
@@ -6585,13 +3828,17 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `config/client_profiles.json` | 2161 |
 | `config/ctoa-user-config.template.json` | 400 |
 | `config/otclient/conditions-shadow-profile.json` | 467 |
+| `config/otclient/equipment-shadow-capture-profile.template.json` | 446 |
 | `config/otclient/equipment-shadow-profile.json` | 454 |
+| `config/otclient/p8-p9-review-bundles.json` | 4210 |
 | `config/rosetta-presets.json` | 19137 |
+| `config/security/public-exposure-policy.json` | 1080 |
 | `conftest.py` | 121 |
 | `core/protected-files.txt` | 222 |
 | `core/runtime-freeze-policy.json` | 301 |
 | `ctoa-vps.ps1` | 547 |
-| `ctoa.ps1` | 34041 |
+| `ctoa.ps1` | 50130 |
+| `ctoa_client_capabilities.json` | 3702 |
 | `ctoa_ui_prefs.lua` | 397 |
 | `deploy/local/observability/grafana/provisioning/datasources/datasources.yml` | 224 |
 | `deploy/local/observability/loki-config.yml` | 539 |
@@ -6611,17 +3858,18 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `docs/AGENT_PROMPT_DEFINITIVE.md` | 4201 |
 | `docs/AGENT_TRAINING_MASTERPLAN.md` | 3605 |
 | `docs/ARCHITECTURE.md` | 21905 |
-| `docs/audits/CTOAI_FULL_WORKSPACE_AUDIT_2026-07-06.md` | 6986 |
+| `docs/audits/CTOAI_FULL_WORKSPACE_AUDIT_2026-07-06.md` | 6992 |
+| `docs/audits/CTOAI_PUBLIC_EXPOSURE_LOCKDOWN_2026-07-15.md` | 3687 |
 | `docs/audits/CTOAI_SECURITY_HARDENING_2026-07-06.md` | 114540 |
 | `docs/audits/CTOAI_WORKTREE_EXECUTION_PLAN_2026-07-11.md` | 8548 |
 | `docs/audits/CTOAI_WORKTREE_TRIAGE_2026-07-09.md` | 6985 |
 | `docs/azure-activity-log-validation-checklist.md` | 555 |
 | `docs/azure-alerts-automation-setup.md` | 4007 |
 | `docs/BUSINESS_STRATEGY.md` | 5029 |
-| `docs/CLIENT_DISTRIBUTION_MODEL.md` | 2928 |
-| `docs/COMMUNITY_ENGAGEMENT_PLAN.md` | 15939 |
+| `docs/CLIENT_DISTRIBUTION_MODEL.md` | 2985 |
+| `docs/COMMUNITY_ENGAGEMENT_PLAN.md` | 16234 |
 | `docs/CORE_GUARDRAILS.md` | 1090 |
-| `docs/CTOA_CLI.md` | 4205 |
+| `docs/CTOA_CLI.md` | 7772 |
 | `docs/CTOAI_COMMAND_RISK_MODEL.md` | 11804 |
 | `docs/CTOAI_CONTROL_CENTER_PHASE1.md` | 9084 |
 | `docs/CTOAI_FOUNDATION_CLEANUP.md` | 7779 |
@@ -6837,7 +4085,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `docs/history/sprints/SPRINT-069.md` | 1316 |
 | `docs/history/sprints/SPRINT_007_AGENT_EXECUTION_REPORT.md` | 4393 |
 | `docs/HYBRID_BOT_IMPLEMENTATION.md` | 12154 |
-| `docs/INDEX.md` | 4000 |
+| `docs/INDEX.md` | 4164 |
 | `docs/INFRASTRUCTURE_CANONICAL.md` | 2069 |
 | `docs/INFRASTRUCTURE_DECISION_LOG.md` | 2450 |
 | `docs/ISSUE_TRIAGE.md` | 1784 |
@@ -6847,47 +4095,55 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `docs/MARKET_ANALYSIS_2025.md` | 4947 |
 | `docs/MOBILE_CONSOLE.md` | 5749 |
 | `docs/operating-model.md` | 454 |
+| `docs/otclient/CTOA_ENCRYPTED_SERVER_PROFILE_DESIGN.md` | 3729 |
+| `docs/otclient/CTOA_EXCLUSIVE_PROJECT_LOADER_V1.md` | 5068 |
 | `docs/otclient/ctoai_runtime_2_execution_plan.md` | 5554 |
 | `docs/otclient/helper_redesign.md` | 7979 |
 | `docs/otclient/HELPER_RUNTIME_BRIDGE_V1.md` | 2578 |
 | `docs/otclient/HELPER_RUNTIME_MODULE_GATES_V1.md` | 4319 |
-| `docs/otclient/P9_CONDITIONS_SHADOW_ACCEPTANCE.md` | 3034 |
-| `docs/otclient/P9_CONDITIONS_SHADOW_REPLAY_DESIGN.md` | 6390 |
+| `docs/otclient/P10_EQUIPMENT_OPERATOR_REFRESH_RUN.md` | 4374 |
+| `docs/otclient/P10_EQUIPMENT_SHADOW_REPLAY_DESIGN.md` | 9926 |
+| `docs/otclient/P11_HEAL_FRIEND_SHADOW_REPLAY_DESIGN.md` | 2947 |
+| `docs/otclient/P14_INDEPENDENT_RUNNER_CONTRACT.md` | 3412 |
+| `docs/otclient/P8_P9_REVIEW_BOUNDARIES.md` | 1977 |
+| `docs/otclient/P9_CONDITIONS_SHADOW_ACCEPTANCE.md` | 3356 |
+| `docs/otclient/P9_CONDITIONS_SHADOW_REPLAY_DESIGN.md` | 6585 |
 | `docs/otclient/solteria_helper_development_plan.md` | 10485 |
 | `docs/otclient/solteria_helper_input_contracts.md` | 4430 |
 | `docs/otclient/solteria_helper_module_contract.md` | 4360 |
-| `docs/otclient/solteria_helper_module_workplan.md` | 12889 |
-| `docs/otclient/solteria_helper_next_modules_plan.md` | 18593 |
+| `docs/otclient/solteria_helper_module_workplan.md` | 12778 |
+| `docs/otclient/solteria_helper_next_modules_plan.md` | 20821 |
 | `docs/otclient/solteria_helper_sandbox_smoke_queue.md` | 10222 |
-| `docs/otclient/solteria_helper_shell_budget_plan.md` | 4261 |
+| `docs/otclient/solteria_helper_shell_budget_plan.md` | 4136 |
 | `docs/otclient/solteria_helper_supplemental_refactor_plan.md` | 27770 |
-| `docs/otclient/solteria_helper_test_env.md` | 29743 |
+| `docs/otclient/solteria_helper_test_env.md` | 30697 |
 | `docs/otclient/SOLTERIA_HELPER_V2_1_1_STYLE_MODERNIZATION_PLAN_2026-07-11.md` | 7950 |
 | `docs/otclient/SOLTERIA_HELPER_V2_1_1A_STABILIZATION_REFACTOR_PLAN_2026-07-11.md` | 2206 |
 | `docs/otclient/SOLTERIA_HELPER_V2_1_UX_PLAN_2026-07-11.md` | 1797 |
 | `docs/otclient/SOLTERIA_HELPER_V2_2_0_VOCATION_COMBAT_PLAN_2026-07-11.md` | 1741 |
 | `docs/otclient/SOLTERIA_HELPER_V2_EXECUTION_PLAN_2026-07-11.md` | 3394 |
+| `docs/otclient/solteria_safe_release.md` | 1627 |
 | `docs/otclient/tibia_control_center_helper_p0_plan.md` | 5553 |
 | `docs/otclient/VBOT_5_ARCHITECTURE_EXECUTION_PLAN_2026-07-11.md` | 5431 |
-| `docs/otclient/vbot_import_review.md` | 4989 |
+| `docs/otclient/vbot_import_review.md` | 5466 |
 | `docs/otclient/zerobot_reference.md` | 4707 |
-| `docs/OTCLIENT_INTEGRATION.md` | 13068 |
+| `docs/OTCLIENT_INTEGRATION.md` | 12887 |
 | `docs/OTCLIENT_QUICKSTART.md` | 2776 |
-| `docs/P7_ROADMAP_STATE_REFRESH_DESIGN.md` | 2988 |
+| `docs/P7_ROADMAP_STATE_REFRESH_DESIGN.md` | 3717 |
 | `docs/paper_extracted.txt` | 35869 |
 | `docs/pathing-spec.md` | 485 |
 | `docs/POST_GA_DELIVERY_TRAIN_BASELINE.md` | 1733 |
 | `docs/POST_GA_DELIVERY_TRAIN_CANDIDATE.yaml` | 496 |
-| `docs/PRODUCT_PORTFOLIO.md` | 2894 |
-| `docs/PRODUCT_PUBLIC_PRIVATE_ARCHITECTURE.md` | 4229 |
+| `docs/PRODUCT_PORTFOLIO.md` | 2871 |
+| `docs/PRODUCT_PUBLIC_PRIVATE_ARCHITECTURE.md` | 4890 |
 | `docs/PRODUCTIZATION_TRACK_C.md` | 4674 |
 | `docs/README_BOT.md` | 14155 |
 | `docs/README_INVENTORY.md` | 2172 |
 | `docs/REALTIME_MODULE_CREATION.md` | 3229 |
-| `docs/REPO_HYGIENE_POLICY.md` | 4830 |
+| `docs/REPO_HYGIENE_POLICY.md` | 5355 |
 | `docs/REPO_SCHEMA.md` | 10994 |
 | `docs/ROADMAP_V0.2.0_TO_V1.0.0.md` | 878 |
-| `docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md` | 8303 |
+| `docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md` | 10423 |
 | `docs/runbook-althea-enc3-reverseeng.md` | 3502 |
 | `docs/runbook-azure-activity-log-interpretation.md` | 2855 |
 | `docs/runbook-disk-emergency.md` | 2223 |
@@ -6914,16 +4170,21 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `mobile_console/services/ideas_service.py` | 1685 |
 | `mobile_console/static/app.js` | 30184 |
 | `mobile_console/static/dashboard_helpers.js` | 938 |
+| `mods/ctoa_chooser/ctoa_chooser.otmod` | 343 |
+| `mods/ctoa_chooser/ctoa_chooser_loader.lua` | 10558 |
+| `mods/ctoa_safe/ctoa_safe.otmod` | 303 |
+| `mods/ctoa_safe/ctoa_safe_helper.lua` | 99895 |
+| `mods/ctoa_safe/ctoa_safe_loader.lua` | 3078 |
 | `policies/ci-gate-policy.yaml` | 566 |
 | `product/ctoa-toolkit.manifest.json` | 325 |
-| `product/packages/core.manifest.json` | 680 |
-| `product/packages/pro.manifest.json` | 445 |
+| `product/packages/core.manifest.json` | 708 |
+| `product/packages/pro.manifest.json` | 480 |
 | `product/packages/studio.manifest.json` | 371 |
 | `prompts/braver-library.yaml` | 3632 |
 | `prompts/braver_templates.py` | 5238 |
 | `prompts/design-infra-playbook.yaml` | 1014 |
 | `prompts/mmo-lua-pack.yaml` | 4062 |
-| `README.md` | 6173 |
+| `README.md` | 6636 |
 | `releases/evidence/release-validation-dashboardsnapshot-2026-05-24.md` | 921 |
 | `releases/evidence/sprint-050/CTOA-260.md` | 578 |
 | `releases/evidence/sprint-050/CTOA-261.md` | 609 |
@@ -6962,7 +4223,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `releases/v1.1.1-release-notes.md` | 2210 |
 | `requirements-bot.txt` | 525 |
 | `requirements-dev.txt` | 126 |
-| `requirements.txt` | 550 |
+| `requirements.txt` | 577 |
 | `runner/__init__.py` | 112 |
 | `runner/agents/__init__.py` | 256 |
 | `runner/agents/activation_agent.py` | 9427 |
@@ -7021,7 +4282,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `runner/weekly_report.py` | 8409 |
 | `runtime_context.py` | 2934 |
 | `schemas/ci-gate-policy.schema.json` | 1426 |
-| `schemas/conditions-observation.schema.json` | 1759 |
+| `schemas/conditions-observation.schema.json` | 1776 |
 | `schemas/conditions-p8-proof.schema.json` | 2493 |
 | `schemas/conditions-recovery-proof.schema.json` | 1759 |
 | `schemas/conditions-recovery-trace.schema.json` | 1619 |
@@ -7030,15 +4291,39 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `schemas/conditions-shadow-replay-report.schema.json` | 4775 |
 | `schemas/conditions-shadow-scenario-pack.schema.json` | 1353 |
 | `schemas/conditions-shadow-trace.schema.json` | 2874 |
-| `schemas/ctoa-command-dictionary.json` | 3691 |
+| `schemas/ctoa-command-dictionary.json` | 6351 |
+| `schemas/ctoa-p14-runner-request.schema.json` | 9091 |
+| `schemas/ctoa-p14-runner-result.schema.json` | 4651 |
+| `schemas/ctoa-roadmap-schema-registry.schema.json` | 3617 |
+| `schemas/ctoa-roadmap-schema-registry.v1.json` | 9859 |
+| `schemas/ctoa-roadmap-state.schema.json` | 8966 |
+| `schemas/equipment-candidate-catalog.schema.json` | 5727 |
+| `schemas/equipment-capture-profile-change-plan.schema.json` | 12979 |
+| `schemas/equipment-capture-profile-doctor.schema.json` | 1514 |
+| `schemas/equipment-consumer-parity-report.schema.json` | 5914 |
+| `schemas/equipment-dependency-preflight.schema.json` | 9837 |
+| `schemas/equipment-observation-preview.schema.json` | 7189 |
+| `schemas/equipment-operator-readiness.schema.json` | 7963 |
+| `schemas/equipment-operator-refresh-run.schema.json` | 9308 |
+| `schemas/equipment-shadow-acceptance.schema.json` | 5591 |
+| `schemas/equipment-shadow-capture-profile.schema.json` | 1379 |
+| `schemas/equipment-shadow-observation.schema.json` | 2558 |
 | `schemas/equipment-shadow-profile.schema.json` | 1198 |
-| `schemas/equipment-shadow-replay-report.schema.json` | 1468 |
-| `schemas/equipment-shadow-scenario-pack.schema.json` | 1090 |
-| `schemas/equipment-shadow-snapshot.schema.json` | 2251 |
-| `schemas/equipment-shadow-trace.schema.json` | 1792 |
+| `schemas/equipment-shadow-replay-report.schema.json` | 3988 |
+| `schemas/equipment-shadow-scenario-pack.schema.json` | 1991 |
+| `schemas/equipment-shadow-snapshot-ingest.schema.json` | 1610 |
+| `schemas/equipment-shadow-snapshot.schema.json` | 2711 |
+| `schemas/equipment-shadow-trace.schema.json` | 5276 |
+| `schemas/heal-friend-observation.schema.json` | 2974 |
+| `schemas/heal-friend-scan.schema.json` | 2592 |
+| `schemas/heal-friend-shadow-profile.schema.json` | 2129 |
+| `schemas/heal-friend-shadow-replay-report.schema.json` | 3022 |
+| `schemas/heal-friend-shadow-scenario-pack.schema.json` | 1090 |
+| `schemas/heal-friend-shadow-trace.schema.json` | 3328 |
 | `schemas/intel-projects.schema.json` | 1136 |
 | `schemas/mobile_console_api_contract.snapshot.json` | 8456 |
 | `schemas/otclient-helper-config.schema.json` | 4451 |
+| `schemas/otclient-server-profile.schema.json` | 2310 |
 | `schemas/release-artifact.schema.json` | 1190 |
 | `scoring/tibia-tool-matrix.yaml` | 1508 |
 | `scoring/tool-advisor-rules.yaml` | 1083 |
@@ -7062,63 +4347,67 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/lua/event_logger.lua` | 2180 |
 | `scripts/lua/loot_filter.lua` | 1538 |
 | `scripts/lua/module_reporter.lua` | 1112 |
-| `scripts/lua/otclient/ctoa_ed_profile.lua` | 2453 |
-| `scripts/lua/otclient/ctoa_ek_profile.lua` | 7703 |
+| `scripts/lua/otclient/ctoa_ed_profile.lua` | 2505 |
+| `scripts/lua/otclient/ctoa_ek_profile.lua` | 7816 |
 | `scripts/lua/otclient/ctoa_helper_action_catalog.lua` | 8148 |
 | `scripts/lua/otclient/ctoa_helper_cavebot_observer.lua` | 3342 |
-| `scripts/lua/otclient/ctoa_helper_cavebot_runtime.lua` | 15629 |
-| `scripts/lua/otclient/ctoa_helper_client_reporter.lua` | 14575 |
+| `scripts/lua/otclient/ctoa_helper_cavebot_runtime.lua` | 21458 |
+| `scripts/lua/otclient/ctoa_helper_client_reporter.lua` | 28797 |
 | `scripts/lua/otclient/ctoa_helper_combat_observer.lua` | 5193 |
-| `scripts/lua/otclient/ctoa_helper_combat_runtime.lua` | 17810 |
-| `scripts/lua/otclient/ctoa_helper_conditions.lua` | 7172 |
+| `scripts/lua/otclient/ctoa_helper_combat_runtime.lua` | 18454 |
+| `scripts/lua/otclient/ctoa_helper_conditions.lua` | 8869 |
+| `scripts/lua/otclient/ctoa_helper_conditions_execute_once.lua` | 10970 |
 | `scripts/lua/otclient/ctoa_helper_conditions_runtime_gate.lua` | 4848 |
 | `scripts/lua/otclient/ctoa_helper_decision_pipeline.lua` | 6154 |
 | `scripts/lua/otclient/ctoa_helper_decision_trace.lua` | 3937 |
-| `scripts/lua/otclient/ctoa_helper_diagnostics.lua` | 19996 |
+| `scripts/lua/otclient/ctoa_helper_diagnostics.lua` | 20800 |
 | `scripts/lua/otclient/ctoa_helper_dispatch_guard.lua` | 4041 |
 | `scripts/lua/otclient/ctoa_helper_domain_contract.lua` | 5152 |
-| `scripts/lua/otclient/ctoa_helper_equipment.lua` | 10155 |
+| `scripts/lua/otclient/ctoa_helper_equipment.lua` | 11914 |
+| `scripts/lua/otclient/ctoa_helper_equipment_execute_once.lua` | 8892 |
+| `scripts/lua/otclient/ctoa_helper_equipment_family_registry.lua` | 8095 |
 | `scripts/lua/otclient/ctoa_helper_equipment_observer.lua` | 3333 |
-| `scripts/lua/otclient/ctoa_helper_equipment_runtime_gate.lua` | 5849 |
+| `scripts/lua/otclient/ctoa_helper_equipment_runtime_gate.lua` | 6159 |
 | `scripts/lua/otclient/ctoa_helper_feature_flags.lua` | 6789 |
-| `scripts/lua/otclient/ctoa_helper_heal_friend.lua` | 7450 |
+| `scripts/lua/otclient/ctoa_helper_heal_friend.lua` | 12343 |
+| `scripts/lua/otclient/ctoa_helper_heal_friend_execute_once.lua` | 11289 |
 | `scripts/lua/otclient/ctoa_helper_heal_friend_runtime_gate.lua` | 7677 |
-| `scripts/lua/otclient/ctoa_helper_hotkeys.lua` | 5811 |
+| `scripts/lua/otclient/ctoa_helper_hotkeys.lua` | 6384 |
 | `scripts/lua/otclient/ctoa_helper_hud.lua` | 3845 |
 | `scripts/lua/otclient/ctoa_helper_loot_observer.lua` | 3083 |
 | `scripts/lua/otclient/ctoa_helper_loot_runtime.lua` | 4304 |
-| `scripts/lua/otclient/ctoa_helper_modal.lua` | 5112 |
+| `scripts/lua/otclient/ctoa_helper_modal.lua` | 5267 |
 | `scripts/lua/otclient/ctoa_helper_module_status.lua` | 4789 |
-| `scripts/lua/otclient/ctoa_helper_modules.lua` | 16672 |
-| `scripts/lua/otclient/ctoa_helper_operator_summary.lua` | 5532 |
-| `scripts/lua/otclient/ctoa_helper_otclient_observation_adapter.lua` | 16143 |
+| `scripts/lua/otclient/ctoa_helper_modules.lua` | 18204 |
+| `scripts/lua/otclient/ctoa_helper_operator_summary.lua` | 6395 |
+| `scripts/lua/otclient/ctoa_helper_otclient_observation_adapter.lua` | 25857 |
 | `scripts/lua/otclient/ctoa_helper_plan_queue.lua` | 2684 |
 | `scripts/lua/otclient/ctoa_helper_planner.lua` | 5062 |
-| `scripts/lua/otclient/ctoa_helper_profile_persistence.lua` | 14272 |
-| `scripts/lua/otclient/ctoa_helper_profile_schema.lua` | 25417 |
+| `scripts/lua/otclient/ctoa_helper_profile_persistence.lua` | 16442 |
+| `scripts/lua/otclient/ctoa_helper_profile_schema.lua` | 28078 |
 | `scripts/lua/otclient/ctoa_helper_recovery_bridge.lua` | 9857 |
 | `scripts/lua/otclient/ctoa_helper_recovery_observer.lua` | 4249 |
-| `scripts/lua/otclient/ctoa_helper_recovery_runtime.lua` | 5768 |
-| `scripts/lua/otclient/ctoa_helper_route.lua` | 10784 |
+| `scripts/lua/otclient/ctoa_helper_recovery_runtime.lua` | 6142 |
+| `scripts/lua/otclient/ctoa_helper_route.lua` | 13192 |
 | `scripts/lua/otclient/ctoa_helper_runtime_core.lua` | 10804 |
 | `scripts/lua/otclient/ctoa_helper_runtime_module_gate.lua` | 4103 |
 | `scripts/lua/otclient/ctoa_helper_runtime_policy.lua` | 11127 |
 | `scripts/lua/otclient/ctoa_helper_runtime_readiness.lua` | 3844 |
 | `scripts/lua/otclient/ctoa_helper_sandbox_handoff.lua` | 4120 |
 | `scripts/lua/otclient/ctoa_helper_scripting.lua` | 2946 |
-| `scripts/lua/otclient/ctoa_helper_targeting.lua` | 8172 |
-| `scripts/lua/otclient/ctoa_helper_timer_runtime.lua` | 4056 |
-| `scripts/lua/otclient/ctoa_helper_ui.lua` | 95568 |
-| `scripts/lua/otclient/ctoa_helper_vocation_profiles.lua` | 3881 |
-| `scripts/lua/otclient/ctoa_ms_profile.lua` | 2412 |
+| `scripts/lua/otclient/ctoa_helper_targeting.lua` | 8464 |
+| `scripts/lua/otclient/ctoa_helper_timer_runtime.lua` | 4199 |
+| `scripts/lua/otclient/ctoa_helper_ui.lua` | 96274 |
+| `scripts/lua/otclient/ctoa_helper_vocation_profiles.lua` | 4056 |
+| `scripts/lua/otclient/ctoa_ms_profile.lua` | 2464 |
 | `scripts/lua/otclient/ctoa_native_combat.lua` | 18058 |
 | `scripts/lua/otclient/ctoa_native_heal.lua` | 9644 |
-| `scripts/lua/otclient/ctoa_native_helper.lua` | 181588 |
+| `scripts/lua/otclient/ctoa_native_helper.lua` | 195867 |
 | `scripts/lua/otclient/ctoa_native_loot.lua` | 11632 |
-| `scripts/lua/otclient/ctoa_otclient.otmod` | 253 |
-| `scripts/lua/otclient/ctoa_otclient_loader.lua` | 7548 |
-| `scripts/lua/otclient/ctoa_rp_profile.lua` | 2424 |
-| `scripts/lua/otclient/README.md` | 26673 |
+| `scripts/lua/otclient/ctoa_otclient.otmod` | 326 |
+| `scripts/lua/otclient/ctoa_otclient_loader.lua` | 8595 |
+| `scripts/lua/otclient/ctoa_rp_profile.lua` | 2476 |
+| `scripts/lua/otclient/README.md` | 25967 |
 | `scripts/lua/pathing_helper.lua` | 1361 |
 | `scripts/lua/proximity_watch.lua` | 797 |
 | `scripts/lua/safety_interrupt.lua` | 359 |
@@ -7142,68 +4431,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/ops/build-loader.ps1` | 556 |
 | `scripts/ops/capture_io_dense_live.py` | 12151 |
 | `scripts/ops/capture_loader_exec_aggressive.py` | 10262 |
-| `scripts/ops/capture_loader_exec_aggressive_live.py` | 10343 |
-| `scripts/ops/capture_loader_exec_burst.py` | 10993 |
-| `scripts/ops/capture_ntreadfile_stream.py` | 9444 |
-| `scripts/ops/capture_post_transform_mapview.py` | 6564 |
-| `scripts/ops/capture_post_transform_protect.py` | 6399 |
-| `scripts/ops/capture_runtime_crypto_decompress_live.py` | 14260 |
-| `scripts/ops/capture_runtime_loader_transform_live.py` | 41844 |
-| `scripts/ops/ci_executive_report.py` | 10673 |
-| `scripts/ops/client_profile_router.py` | 885 |
-| `scripts/ops/compare_eval_summaries.py` | 3647 |
-| `scripts/ops/control_center_p6_plugin_handoff_smoke.py` | 21273 |
-| `scripts/ops/control_center_p7_cockpit_smoke.py` | 21156 |
-| `scripts/ops/control_center_p7_evidence_review.py` | 15745 |
-| `scripts/ops/control_center_p7_safe_write_dry_run_smoke.py` | 17838 |
-| `scripts/ops/core_guard.py` | 3960 |
-| `scripts/ops/ctoa-vps.ps1` | 92112 |
-| `scripts/ops/ctoa_env_doctor.py` | 6218 |
-| `scripts/ops/ctoa_full_workspace_audit.py` | 32417 |
-| `scripts/ops/ctoa_helper_smoke_report.py` | 11016 |
-| `scripts/ops/ctoa_helper_ui_mockup_v4.py` | 6281 |
-| `scripts/ops/ctoa_helper_ui_preview.py` | 58270 |
-| `scripts/ops/ctoa_loader.py` | 16230 |
-| `scripts/ops/ctoa_otprofile_builder.py` | 15867 |
-| `scripts/ops/ctoa_product_bootstrap.py` | 7977 |
-| `scripts/ops/ctoa_tibia_source_ingest.py` | 2209 |
-| `scripts/ops/ctoa_update_gate.py` | 4419 |
-| `scripts/ops/depack_anchor_windows.py` | 9656 |
-| `scripts/ops/depack_io_assembled_focused.py` | 3260 |
-| `scripts/ops/depack_stream_compare.py` | 2780 |
-| `scripts/ops/depack_stream_focused.py` | 4554 |
-| `scripts/ops/depack_top_candidates.py` | 10352 |
-| `scripts/ops/depack_window_aware_focused.py` | 8002 |
-| `scripts/ops/engine_brain_doctor.py` | 19184 |
-| `scripts/ops/engine_brain_index.py` | 118719 |
-| `scripts/ops/engine_brain_pack.py` | 9730 |
-| `scripts/ops/evidence_retention.py` | 2057 |
-| `scripts/ops/git_exec.py` | 2142 |
-| `scripts/ops/gs-api-validator.py` | 6610 |
-| `scripts/ops/install-mythibia-autosync-task.ps1` | 1666 |
-| `scripts/ops/install-mythibia-watchdog-task.ps1` | 1594 |
-| `scripts/ops/install-mythibia-watcher-task.ps1` | 2664 |
-| `scripts/ops/install-phase5-morning-sync-task.ps1` | 1359 |
-| `scripts/ops/kv_attach_first_hit.py` | 2374 |
-| `scripts/ops/kv_first_hit_from_live_session.py` | 17152 |
-| `scripts/ops/kv_raw_init_probe.py` | 630 |
-| `scripts/ops/kv_smoke_diag.py` | 841 |
-| `scripts/ops/kv_smoke_min.py` | 428 |
-| `scripts/ops/lab003_mobile_proxy_smoke.ps1` | 4695 |
-| `scripts/ops/lab003_shift_guard.ps1` | 8887 |
-| `scripts/ops/lab003_shift_smoke_webhook.ps1` | 5375 |
-| `scripts/ops/lab003_validate_bundle.ps1` | 3687 |
-| `scripts/ops/launch_kamil_client_macro_studio.ps1` | 3766 |
-| `scripts/ops/link_check_docs.py` | 1438 |
-| `scripts/ops/night-report.py` | 8009 |
-| `scripts/ops/nightly_stability.py` | 11554 |
-| `scripts/ops/orchestrator-loop-worker.ps1` | 2613 |
-| `scripts/ops/orchestrator-loop.ps1` | 6161 |
-| `scripts/ops/otclient_conditions_shadow_acceptance.py` | 33276 |
-| `scripts/ops/otclient_conditions_shadow_replay.py` | 58656 |
-| `scripts/ops/otclient_equipment_shadow_replay.py` | 28763 |
-| `scripts/ops/otclient_external_bot_intake.py` | 14940 |
-| `scripts/ops/otclient_headless_e
+| `scripts/ops/capture_loa
 
 [truncated]
 ```
@@ -7214,7 +4442,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 ```markdown
 # Engine Brain Symbol Map
 
-Generated at: `2026-07-12T01:33:15+00:00`
+Generated at: `2026-07-15T14:15:53+00:00`
 
 This is a lightweight map for navigation, not a full source dump.
 
@@ -7665,47 +4893,58 @@ This is a lightweight map for navigation, not a full source dump.
 
 ## `ctoa.ps1`
 
-- L20: function Get-CliVpsHost
-- L31: function Get-PythonExe
-- L39: function Resolve-ControlCenterUrl
-- L91: function Invoke-FromRoot
-- L111: function Invoke-FromRootCapture
-- L141: function Get-CommandDictionary
-- L168: function Show-Help
-- L254: function Get-GitExe
-- L268: function Get-NpmExe
-- L279: function Get-WorktreeSummary
-- L301: function Show-Next
-- L324: function Open-ControlCenter
-- L379: function Resolve-Sprint
-- L393: function Invoke-ValidateSprint
-- L413: function Invoke-Nightly
-- L430: function Invoke-Up
-- L444: function Invoke-Test
-- L455: function Invoke-Doctor
-- L468: function Invoke-DevProfile
-- L473: function Invoke-OpsProfile
-- L478: function Invoke-ProdProfile
-- L488: function Invoke-VpsAction
-- L528: function Invoke-VpsActionCapture
-- L576: function Invoke-RunnerCommand
-- L588: function Invoke-ReportCommand
-- L601: function Invoke-MobileCommand
-- L613: function Invoke-LogsCommand
-- L627: function Invoke-StatusSnapshot
-- L707: function Invoke-DashboardSnapshot
-- L711: function Invoke-ReportNow
-- L715: function Invoke-OtProfileBuilder
-- L729: function Invoke-OtHelperPreview
-- L739: function Invoke-OtHelperMockup
-- L749: function Invoke-OtHelperDeploy
-- L770: function Invoke-OtTestLoop
-- L785: function Invoke-OtBackgroundStatus
-- L801: function Invoke-OtConditionsShadowReplay
-- L858: function Invoke-OtEquipmentShadowReplay
-- L882: function Invoke-EngineBrain
-- L913: function Get-ValueOrDefault
-- L925: function Show-Menu
+- L29: function Get-CliVpsHost
+- L40: function Get-PythonExe
+- L48: function Resolve-ControlCenterUrl
+- L100: function Invoke-FromRoot
+- L120: function Invoke-FromRootCapture
+- L150: function Get-CommandDictionary
+- L177: function Show-Help
+- L287: function Get-GitExe
+- L301: function Get-NpmExe
+- L312: function Get-WorktreeSummary
+- L334: function Show-Next
+- L357: function Open-ControlCenter
+- L412: function Resolve-Sprint
+- L426: function Invoke-ValidateSprint
+- L446: function Invoke-Nightly
+- L463: function Invoke-Up
+- L477: function Invoke-Test
+- L488: function Invoke-Doctor
+- L501: function Invoke-DevProfile
+- L506: function Invoke-OpsProfile
+- L511: function Invoke-ProdProfile
+- L521: function Invoke-VpsAction
+- L561: function Invoke-VpsActionCapture
+- L609: function Invoke-RunnerCommand
+- L621: function Invoke-ReportCommand
+- L634: function Invoke-MobileCommand
+- L646: function Invoke-LogsCommand
+- L660: function Invoke-StatusSnapshot
+- L740: function Invoke-DashboardSnapshot
+- L744: function Invoke-ReportNow
+- L748: function Invoke-OtProfileBuilder
+- L762: function Invoke-OtHelperPreview
+- L772: function Invoke-OtHelperMockup
+- L782: function Invoke-OtHelperDeploy
+- L803: function Invoke-OtTestLoop
+- L818: function Invoke-OtBackgroundStatus
+- L834: function Invoke-OtConditionsShadowReplay
+- L896: function Invoke-OtEquipmentShadowReplay
+- L966: function Invoke-OtEquipmentObservationPreview
+- L990: function Invoke-OtEquipmentCandidateCatalog
+- L1014: function Invoke-OtEquipmentCaptureProfileChangePlan
+- L1086: function Invoke-OtEquipmentCaptureProfileDoctor
+- L1105: function Invoke-OtEquipmentCaptureProfileApply
+- L1128: function Invoke-OtEquipmentDependencyPreflight
+- L1140: function Invoke-OtEquipmentOperatorReadiness
+- L1152: function Invoke-OtEquipmentOperatorRefresh
+- L1176: function Invoke-OtConditionsShadowAcceptance
+- L1193: function Invoke-OtEquipmentShadowAcceptance
+- L1210: function Invoke-OtHealFriendCandidateCatalog
+- L1222: function Invoke-EngineBrain
+- L1253: function Get-ValueOrDefault
+- L1265: function Show-Menu
 
 ## `ctoa_ui_prefs.lua`
 
@@ -7898,6 +5137,125 @@ This is a lightweight map for navigation, not a full source dump.
 
 - L2: symbol escapeHtml
 - L11: symbol badgeStatus
+
+## `mods/ctoa_chooser/ctoa_chooser_loader.lua`
+
+- L6: lua helper
+- L8: lua loader_paths
+- L12: lua safe
+- L14: lua loader_paths
+- L31: lua log
+- L43: lua removeScheduled
+- L49: lua fileExists
+- L59: lua resolvePath
+- L64: lua projectApi
+- L69: lua terminateProject
+- L77: lua terminateAllProjects
+- L85: lua Loader.isSelected
+- L92: lua destroyChooser
+- L97: lua createWidget
+- L122: lua setColor
+- L126: lua setBackground
+- L130: lua loadProjectFile
+- L149: lua Loader.activate
+- L173: lua showChooser
+- L213: lua onGameStart
+- L228: lua onGameEnd
+- L237: lua Loader.init
+- L253: lua Loader.terminate
+
+## `mods/ctoa_safe/ctoa_safe_helper.lua`
+
+- L38: lua healing
+- L58: lua rules
+- L66: lua combat
+- L78: lua exeta_spells
+- L84: lua target_rules
+- L85: lua rotation_spells
+- L94: lua conditions
+- L105: lua support
+- L107: lua rules
+- L109: lua timer
+- L120: lua deepCopy
+- L141: lua presets
+- L153: lua module_rows
+- L159: lua bound_keys
+- L166: lua nowMs
+- L174: lua isOnline
+- L180: lua safeProjectActive
+- L185: lua getPlayer
+- L191: lua getHpPercent
+- L200: lua getMpPercent
+- L209: lua getNearbyMonsterCount
+- L250: lua castSpell
+- L258: lua pressHotkey
+- L271: lua safeLog
+- L279: lua fileLog
+- L296: lua setStatus
+- L303: lua updateTitle
+- L320: lua clamp
+- L326: lua useInventoryItem
+- L343: lua randomizedThreshold
+- L350: lua ruleThreshold
+- L358: lua selectConfiguredTarget
+- L381: lua sameCreature
+- L392: lua cleanString
+- L399: lua cleanBoolean
+- L404: lua profilePath
+- L412: lua cleanStringList
+- L423: lua cleanExetaRotation
+- L442: lua cleanRotation
+- L465: lua cleanTargets
+- L482: lua cleanHealingRules
+- L496: lua cleanSupportRules
+- L519: lua detectVocation
+- L545: lua presetPath
+- L551: lua cleanPresetId
+- L558: lua keysAllowed
+- L568: lua healing
+- L569: lua combat
+- L570: lua conditions
+- L571: lua support
+- L575: lua healing
+- L576: lua rotation
+- L577: lua target
+- L578: lua exeta
+- L579: lua support
+- L582: lua validRuleList
+- L591: lua validPresetShape
+- L604: lua validLibrary
+- L618: lua findPreset
+- L626: lua applyPresetData
+- L693: lua currentPresetSnapshot
+- L700: lua healing
+- L712: lua combat
+- L722: lua conditions
+- L729: lua support
+- L730: lua timer
+- L736: lua loadProfile
+- L816: lua selectPreset
+- L825: lua createPreset
+- L837: lua deletePreset
+- L850: lua exportPreset
+- L863: lua importPreset
+- L880: lua markDirty
+- L884: lua scheduleAutosave
+- L900: lua mkWidget
+- L939: lua setColor
+- L945: lua setBg
+- L951: lua setFontScale
+- L960: lua applySafeBoot
+- L981: lua destroyEditPanel
+- ... 46 more symbols omitted
+
+## `mods/ctoa_safe/ctoa_safe_loader.lua`
+
+- L12: lua log
+- L24: lua selectionAuthorized
+- L31: lua fileExists
+- L41: lua resolveHelperPath
+- L47: lua Loader.init
+- L66: lua Loader.terminate
 
 ## `prompts/braver_templates.py`
 
@@ -8498,107 +5856,7 @@ This is a lightweight map for navigation, not a full source dump.
 
 ## `runner/process_safety.py`
 
-- L18: class ExecutableUnavailableError
-- L27: def _resolve_candidate(value)
-- L42: def resolve_executable(name)
-- L75: def resolve_git()
-- L81: def resolve_python()
-- L90: def run_trusted(command)
-- L97: def start_trusted(command)
-
-## `runner/queue_worker.py`
-
-- L29: def _redis_url_for_log(raw_url)
-- L55: def _parse_job_payload(payload_raw)
-- L65: def _setup_logging()
-- L77: def _run_action(action)
-- L100: def main()
-
-## `runner/response_guardrails.py`
-
-- L29: def validate_response(text)
-- L51: def is_response_compliant(text)
-- L55: def validate_operational_structure(text)
-- L68: def is_operational_structure_compliant(text)
-
-## `runner/runner.py`
-
-- L33: def _default_ci_artifacts_dir(root)
-- L71: def now_iso()
-- L75: def _atomic_temp_path(path)
-- L79: def _remove_temp_path(path)
-- L86: def load_yaml(path)
-- L94: def save_yaml(path, payload)
-- L107: def save_json(path, payload)
-- L123: def load_backlog()
-- L129: def init_state(backlog)
-- L161: def load_state(backlog)
-- L201: def status_rank(status)
-- L208: def priority_rank(priority)
-- L213: def transition_task(task, new_status, reason)
-- L233: def tick(backlog, state, invoke_agents)
-- L279: def approve_task(state, task_id)
-- L294: def execute_task_agent(task, backlog)
-- L322: def estimate_next_approval_eta_hours(tasks)
-- L341: def build_execution_summary(backlog, state)
-- L391: def build_report(backlog, state)
-- L501: def github_api(method, url, token, payload)
-- L523: def upsert_live_issue(markdown)
-- L561: def main()
-
-## `runner/status_sync.py`
-
-- L32: def parse_iso(ts)
-- L41: def load_state()
-- L51: def github_api(method, url, token, payload)
-- L73: def ensure_status_labels(base, token)
-- L92: def task_map(state)
-- L104: def backlog_issue_map(open_issues)
-- L115: def list_open_issues(base, token)
-- L132: def desired_status_label(task)
-- L137: def normalize_alert_mode(value)
-- L144: def sync_status_labels(base, token, tasks, issues)
-- L175: def build_sla_alert(tasks, issues, threshold_hours, alert_mode)
-- L241: def update_live_issue_sla_section(base, token, live_issue_number, body)
-- L276: def main()
-
-## `runner/tibia_sources.py`
-
-- L65: def utc_now()
-- L70: class CollectedSource
-- L81: class RawSnapshot
-- L95: class NormalizedRecord
-- L102: class UpdateEvent
-- L112: class SourceCollector
-- L113: def fetch(self, source_kind, cursor)
-- L117: class SourceParser
-- L118: def parse(self, snapshot)
-- L122: class ClientAdapter
-- L123: def detect(self)
-- L127: class HttpTibiaCollector
-- L130: def __init__(self)
-- L133: def fetch(self, source_kind, cursor)
-- L138: def _fetch(self, source_kind, url)
-- L213: class _AnchorParser
-- L214: def __init__(self)
-- L220: def handle_starttag(self, tag, attrs)
-- L229: def handle_data(self, data)
-- L233: def handle_endtag(self, tag)
-- L243: class LinkRecordParser
-- L246: def __init__(self, archive_root)
-- L249: def parse(self, snapshot)
-- L275: class SnapshotArchive
-- L276: def __init__(self, root)
-- L285: def ingest(self, collected, parser)
-- L357: def _record_diff_events(self, previous, current, records)
-- L413: def _records_for(self, snapshot)
-- L442: def latest(self, source_kind)
-- L450: def _diff_events(self, previous, current)
-- L492: def _append_events(self, events)
-- L502: def _write_inventory(self)
-- L587: def _latest_parser_error(self, source_kind)
-- L595: def _recent_events(self, limit)
-- L611: def source_definition(so
+-
 
 [truncated]
 ```

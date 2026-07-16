@@ -1,6 +1,6 @@
 # P6 Codex Integration Readiness
 
-Generated at: `2026-07-12T01:33:15+00:00`
+Generated at: `2026-07-15T17:14:27+00:00`
 Status: `ready_for_plugin_design`
 
 P6 allows only four read-only status/cockpit tools plus audited repo-hygiene, API-cost, evidence-pack, Engine Brain, and P7 cockpit-smoke safe-write refreshes. Do not add deploy/live shortcuts or bypass Control Center evidence gates.
@@ -43,7 +43,7 @@ Recommended next: Operate the plugin as four read-only status/cockpit tools plus
 | `ctoai_plugin_bounded_write_policy_contract` | `passed` | home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_self_check.py |
 | `ctoai_plugin_p7_cockpit_smoke_contract_tests` | `passed` | tests/test_engine_brain_index.py |
 | `ctoai_plugin_marketplace_entry` | `passed` | personal marketplace entry |
-| `ctoai_plugin_installed_cache` | `passed` | installed personal cache version 0.1.0+codex.20260711185848 |
+| `ctoai_plugin_installed_cache` | `passed` | installed personal cache version 0.1.0+codex.20260715104609 |
 | `control_center_evidence_contract` | `passed` | web/src/lib/controlCenterEvidence.ts |
 | `control_center_evidence_tests` | `passed` | web/src/lib/__tests__/controlCenterEvidence.test.ts |
 | `control_center_p7_cockpit_smoke_script` | `passed` | scripts/ops/control_center_p7_cockpit_smoke.py |

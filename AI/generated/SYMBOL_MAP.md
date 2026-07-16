@@ -1,6 +1,6 @@
 # Engine Brain Symbol Map
 
-Generated at: `2026-07-12T01:33:15+00:00`
+Generated at: `2026-07-15T17:14:27+00:00`
 
 This is a lightweight map for navigation, not a full source dump.
 
@@ -451,47 +451,58 @@ This is a lightweight map for navigation, not a full source dump.
 
 ## `ctoa.ps1`
 
-- L20: function Get-CliVpsHost
-- L31: function Get-PythonExe
-- L39: function Resolve-ControlCenterUrl
-- L91: function Invoke-FromRoot
-- L111: function Invoke-FromRootCapture
-- L141: function Get-CommandDictionary
-- L168: function Show-Help
-- L254: function Get-GitExe
-- L268: function Get-NpmExe
-- L279: function Get-WorktreeSummary
-- L301: function Show-Next
-- L324: function Open-ControlCenter
-- L379: function Resolve-Sprint
-- L393: function Invoke-ValidateSprint
-- L413: function Invoke-Nightly
-- L430: function Invoke-Up
-- L444: function Invoke-Test
-- L455: function Invoke-Doctor
-- L468: function Invoke-DevProfile
-- L473: function Invoke-OpsProfile
-- L478: function Invoke-ProdProfile
-- L488: function Invoke-VpsAction
-- L528: function Invoke-VpsActionCapture
-- L576: function Invoke-RunnerCommand
-- L588: function Invoke-ReportCommand
-- L601: function Invoke-MobileCommand
-- L613: function Invoke-LogsCommand
-- L627: function Invoke-StatusSnapshot
-- L707: function Invoke-DashboardSnapshot
-- L711: function Invoke-ReportNow
-- L715: function Invoke-OtProfileBuilder
-- L729: function Invoke-OtHelperPreview
-- L739: function Invoke-OtHelperMockup
-- L749: function Invoke-OtHelperDeploy
-- L770: function Invoke-OtTestLoop
-- L785: function Invoke-OtBackgroundStatus
-- L801: function Invoke-OtConditionsShadowReplay
-- L858: function Invoke-OtEquipmentShadowReplay
-- L882: function Invoke-EngineBrain
-- L913: function Get-ValueOrDefault
-- L925: function Show-Menu
+- L29: function Get-CliVpsHost
+- L40: function Get-PythonExe
+- L48: function Resolve-ControlCenterUrl
+- L100: function Invoke-FromRoot
+- L120: function Invoke-FromRootCapture
+- L150: function Get-CommandDictionary
+- L177: function Show-Help
+- L287: function Get-GitExe
+- L301: function Get-NpmExe
+- L312: function Get-WorktreeSummary
+- L334: function Show-Next
+- L357: function Open-ControlCenter
+- L412: function Resolve-Sprint
+- L426: function Invoke-ValidateSprint
+- L446: function Invoke-Nightly
+- L463: function Invoke-Up
+- L477: function Invoke-Test
+- L488: function Invoke-Doctor
+- L501: function Invoke-DevProfile
+- L506: function Invoke-OpsProfile
+- L511: function Invoke-ProdProfile
+- L521: function Invoke-VpsAction
+- L561: function Invoke-VpsActionCapture
+- L609: function Invoke-RunnerCommand
+- L621: function Invoke-ReportCommand
+- L634: function Invoke-MobileCommand
+- L646: function Invoke-LogsCommand
+- L660: function Invoke-StatusSnapshot
+- L740: function Invoke-DashboardSnapshot
+- L744: function Invoke-ReportNow
+- L748: function Invoke-OtProfileBuilder
+- L762: function Invoke-OtHelperPreview
+- L772: function Invoke-OtHelperMockup
+- L782: function Invoke-OtHelperDeploy
+- L803: function Invoke-OtTestLoop
+- L818: function Invoke-OtBackgroundStatus
+- L834: function Invoke-OtConditionsShadowReplay
+- L896: function Invoke-OtEquipmentShadowReplay
+- L966: function Invoke-OtEquipmentObservationPreview
+- L990: function Invoke-OtEquipmentCandidateCatalog
+- L1014: function Invoke-OtEquipmentCaptureProfileChangePlan
+- L1086: function Invoke-OtEquipmentCaptureProfileDoctor
+- L1105: function Invoke-OtEquipmentCaptureProfileApply
+- L1128: function Invoke-OtEquipmentDependencyPreflight
+- L1140: function Invoke-OtEquipmentOperatorReadiness
+- L1152: function Invoke-OtEquipmentOperatorRefresh
+- L1176: function Invoke-OtConditionsShadowAcceptance
+- L1193: function Invoke-OtEquipmentShadowAcceptance
+- L1210: function Invoke-OtHealFriendCandidateCatalog
+- L1222: function Invoke-EngineBrain
+- L1253: function Get-ValueOrDefault
+- L1265: function Show-Menu
 
 ## `ctoa_ui_prefs.lua`
 
@@ -684,6 +695,99 @@ This is a lightweight map for navigation, not a full source dump.
 
 - L2: symbol escapeHtml
 - L11: symbol badgeStatus
+
+## `mods/ctoa_safe/ctoa_safe_helper.lua`
+
+- L32: lua ek
+- L33: lua monk
+- L34: lua rp
+- L35: lua ms
+- L36: lua ed
+- L39: lua vocationUiContract
+- L53: lua healing
+- L73: lua potion_rules
+- L79: lua friend_names
+- L80: lua friend_rules
+- L86: lua rules
+- L90: lua spell_slots
+- L99: lua combat
+- L111: lua exeta_spells
+- L117: lua target_rules
+- L126: lua shooter_profiles
+- L127: lua Default
+- L128: lua spells
+- L136: lua runes
+- L143: lua rotation_spells
+- L152: lua conditions
+- L160: lua utamo
+- L166: lua support
+- L168: lua rules
+- L170: lua tools
+- L188: lua buff
+- L191: lua ammo_config
+- L205: lua amulet_config
+- L209: lua ring_config
+- L215: lua timer
+- L226: lua deepCopy
+- L247: lua presets
+- L261: lua module_rows
+- L268: lua tab_buttons
+- L271: lua bound_keys
+- L272: lua bound_up_keys
+- L279: lua nowMs
+- L287: lua isOnline
+- L293: lua safeProjectActive
+- L298: lua getPlayer
+- L304: lua getHpPercent
+- L313: lua getMpPercent
+- L322: lua getNearbyMonsterCount
+- L363: lua getVisiblePlayerByName
+- L383: lua getCreatureHealthPercent
+- L389: lua castSpell
+- L397: lua pressHotkey
+- L410: lua safeLog
+- L418: lua fileLog
+- L435: lua setStatus
+- L442: lua updateTitle
+- L459: lua clamp
+- L465: lua useInventoryItem
+- L482: lua randomizedThreshold
+- L489: lua ruleThreshold
+- L497: lua selectConfiguredTarget
+- L520: lua sameCreature
+- L531: lua cleanString
+- L538: lua cleanBoolean
+- L543: lua profilePath
+- L551: lua cleanStringList
+- L562: lua cleanExetaRotation
+- L581: lua cleanRotation
+- L604: lua cleanTargets
+- L621: lua cleanHealingRules
+- L635: lua cleanSupportRules
+- L658: lua cleanSpellSlots
+- L674: lua cleanPotionRules
+- L698: lua cleanFriendRules
+- L715: lua cleanEquipConfig
+- L734: lua cleanToggleConfig
+- L749: lua cleanShooterProfiles
+- L785: lua cleanTools
+- L823: lua detectVocation
+- L826: lua fromValue
+- L864: lua presetPath
+- L870: lua cleanPresetId
+- L877: lua keysAllowed
+- L887: lua healing
+- L888: lua combat
+- ... 128 more symbols omitted
+
+## `mods/ctoa_safe/ctoa_safe_loader.lua`
+
+- L12: lua log
+- L24: lua selectionAuthorized
+- L31: lua fileExists
+- L41: lua resolveHelperPath
+- L47: lua Loader.init
+- L66: lua Loader.terminate
 
 ## `prompts/braver_templates.py`
 
@@ -1490,6 +1594,32 @@ This is a lightweight map for navigation, not a full source dump.
 - L45: lua AutoHeal.shouldCast
 - L55: lua AutoHeal.nextAction
 
+## `scripts/lua/ctoa_chooser/ctoa_chooser_loader.lua`
+
+- L6: lua helper
+- L8: lua loader_paths
+- L12: lua safe
+- L14: lua loader_paths
+- L31: lua log
+- L43: lua removeScheduled
+- L49: lua fileExists
+- L59: lua resolvePath
+- L64: lua projectApi
+- L69: lua terminateProject
+- L77: lua terminateAllProjects
+- L85: lua Loader.isSelected
+- L92: lua destroyChooser
+- L97: lua createWidget
+- L122: lua setColor
+- L126: lua setBackground
+- L130: lua loadProjectFile
+- L149: lua Loader.activate
+- L173: lua showChooser
+- L213: lua onGameStart
+- L228: lua onGameEnd
+- L237: lua Loader.init
+- L253: lua Loader.terminate
+
 ## `scripts/lua/ctoa_hotkey_status.lua`
 
 - L7: lua appendLog
@@ -1553,18 +1683,19 @@ This is a lightweight map for navigation, not a full source dump.
 - L36: lua spell_rotation
 - L62: lua heal_friend
 - L69: lua friend_whitelist
-- L82: lua conditions
-- L99: lua equipment
-- L115: lua scripting
-- L127: lua tools
-- L144: lua friendly_summon_name_fragments
-- L151: lua ignored_names
-- L165: lua priority_names
-- L182: lua rotation_spells
-- L221: lua exeta_spells
-- L255: lua cavebot_waypoints
-- L256: lua feature_flags
-- L265: lua hud
+- L83: lua conditions
+- L100: lua equipment
+- L105: lua family_enabled
+- L117: lua scripting
+- L129: lua tools
+- L146: lua friendly_summon_name_fragments
+- L153: lua ignored_names
+- L167: lua priority_names
+- L184: lua rotation_spells
+- L223: lua exeta_spells
+- L257: lua cavebot_waypoints
+- L258: lua feature_flags
+- L267: lua hud
 
 ## `scripts/lua/otclient/ctoa_helper_action_catalog.lua`
 
@@ -1593,53 +1724,74 @@ This is a lightweight map for navigation, not a full source dump.
 
 - L6: lua boolValue
 - L10: lua numberValue
-- L18: lua runtimeBlockedReason
-- L40: lua CavebotRuntime.plan
-- L66: lua CavebotRuntime.summary
-- L76: lua CavebotRuntime.decisionText
-- L91: lua CavebotRuntime.adapterSummary
-- L110: lua CavebotRuntime.adapterStatusText
-- L118: lua CavebotRuntime.adapterStatusSummary
-- L123: lua CavebotRuntime.movementCapability
-- L146: lua CavebotRuntime.probeSnapshot
-- L162: lua CavebotRuntime.probeSummary
-- L176: lua CavebotRuntime.probeReport
-- L184: lua CavebotRuntime.pathText
-- L198: lua CavebotRuntime.movementBlockedReason
-- L215: lua CavebotRuntime.walkPreflight
-- L238: lua CavebotRuntime.testWalkPlan
-- L261: lua CavebotRuntime.walkingStatus
-- L270: lua data
-- L278: lua CavebotRuntime.retryDecision
-- L285: lua trace_data
-- L297: lua trace_data
-- L305: lua status_data
-- L311: lua CavebotRuntime.statusText
-- L384: lua CavebotRuntime.traceText
-- L423: lua CavebotRuntime.contract
+- L18: lua boolOrText
+- L25: lua textValue
+- L32: lua valueOr
+- L39: lua runtimeBlockedReason
+- L61: lua CavebotRuntime.plan
+- L87: lua CavebotRuntime.summary
+- L97: lua CavebotRuntime.decisionText
+- L112: lua CavebotRuntime.adapterSummary
+- L131: lua CavebotRuntime.adapterStatusText
+- L139: lua CavebotRuntime.adapterStatusSummary
+- L144: lua CavebotRuntime.movementCapability
+- L167: lua CavebotRuntime.probeMetadata
+- L176: lua capability
+- L190: lua api
+- L197: lua can_walk
+- L204: lua route
+- L216: lua path
+- L227: lua intrusive_actions_performed
+- L231: lua CavebotRuntime.probeSnapshot
+- L250: lua CavebotRuntime.probeSummary
+- L266: lua CavebotRuntime.probeReport
+- L279: lua intrusive_actions_performed
+- L283: lua CavebotRuntime.pathText
+- L297: lua CavebotRuntime.movementBlockedReason
+- L314: lua CavebotRuntime.walkPreflight
+- L337: lua CavebotRuntime.testWalkPlan
+- L360: lua CavebotRuntime.walkingStatus
+- L369: lua data
+- L377: lua CavebotRuntime.retryDecision
+- L384: lua trace_data
+- L396: lua trace_data
+- L404: lua status_data
+- L410: lua CavebotRuntime.statusText
+- L483: lua CavebotRuntime.traceText
+- L522: lua CavebotRuntime.cavebotRuntimeText
+- L538: lua CavebotRuntime.cavebotRetryBudgetExceeded
+- L545: lua CavebotRuntime.contract
 
 ## `scripts/lua/otclient/ctoa_helper_client_reporter.lua`
 
-- L22: lua oneOf
-- L34: lua validObservationId
-- L39: lua sanitizeConditionsObservation
-- L107: lua optionalConditionsObservation
-- L128: lua safeCall
-- L141: lua firstValue
-- L151: lua normalizedId
-- L163: lua sortedLoadedModules
-- L175: lua runtimeCoreSnapshot
-- L197: lua tasks
-- L201: lua jsonEscape
-- L213: lua isArray
-- L229: lua encodeJson
-- L263: lua Reporter.detect
-- L297: lua Reporter.snapshot
-- L312: lua resourceDir
-- L329: lua Reporter.resolvePath
-- L357: lua Reporter.writeSnapshot
-- L388: lua Reporter.intervalMs
-- L392: lua Reporter.contract
+- L45: lua oneOf
+- L57: lua validObservationId
+- L62: lua finiteInteger
+- L67: lua sanitizeConditionsObservation
+- L135: lua optionalConditionsObservation
+- L156: lua sanitizeEquipmentShadowObservation
+- L218: lua ring
+- L227: lua optionalEquipmentShadowObservation
+- L239: lua canonicalCreatureName
+- L246: lua sanitizeHealFriendScan
+- L325: lua optionalHealFriendScan
+- L338: lua safeCall
+- L351: lua firstValue
+- L361: lua normalizedId
+- L373: lua sortedLoadedModules
+- L385: lua runtimeCoreSnapshot
+- L407: lua tasks
+- L411: lua jsonEscape
+- L423: lua isArray
+- L439: lua encodeJson
+- L473: lua Reporter.detect
+- L507: lua Reporter.snapshot
+- L526: lua resourceDir
+- L543: lua Reporter.resolvePath
+- L571: lua Reporter.writeSnapshot
+- L602: lua Reporter.report
+- L636: lua Reporter.intervalMs
+- L640: lua Reporter.contract
 
 ## `scripts/lua/otclient/ctoa_helper_combat_observer.lua`
 
@@ -1671,15 +1823,16 @@ This is a lightweight map for navigation, not a full source dump.
 - L168: lua CombatRuntime.rotationSpellRows
 - L194: lua CombatRuntime.spellReadiness
 - L215: lua CombatRuntime.rotationSpell
-- L244: lua CombatRuntime.stanceAction
-- L262: lua CombatRuntime.offensiveAction
-- L308: lua CombatRuntime.actionStatusText
-- L341: lua CombatRuntime.targetingStatusText
-- L362: lua CombatRuntime.nextActionText
-- L380: lua CombatRuntime.waitReason
-- L425: lua CombatRuntime.decisionState
-- L445: lua CombatRuntime.decisionStateSummary
-- L464: lua CombatRuntime.contract
+- L244: lua CombatRuntime.selectRotationSpell
+- L259: lua CombatRuntime.stanceAction
+- L277: lua CombatRuntime.offensiveAction
+- L323: lua CombatRuntime.actionStatusText
+- L356: lua CombatRuntime.targetingStatusText
+- L377: lua CombatRuntime.nextActionText
+- L395: lua CombatRuntime.waitReason
+- L440: lua CombatRuntime.decisionState
+- L460: lua CombatRuntime.decisionStateSummary
+- L479: lua CombatRuntime.contract
 
 ## `scripts/lua/otclient/ctoa_helper_conditions.lua`
 
@@ -1687,12 +1840,33 @@ This is a lightweight map for navigation, not a full source dump.
 - L10: lua hasBitFlag
 - L23: lua collectNumericFlags
 - L33: lua Conditions.flagText
-- L53: lua Conditions.snapshot
-- L94: lua Conditions.apiProbe
-- L119: lua Conditions.observe
-- L133: lua Conditions.plan
-- L172: lua Conditions.summary
-- L188: lua Conditions.contract
+- L53: lua Conditions.paralyzeState
+- L67: lua Conditions.snapshot
+- L108: lua Conditions.apiProbe
+- L133: lua Conditions.observe
+- L147: lua Conditions.executeOnceObservation
+- L167: lua Conditions.plan
+- L206: lua Conditions.summary
+- L222: lua Conditions.contract
+
+## `scripts/lua/otclient/ctoa_helper_conditions_execute_once.lua`
+
+- L13: lua text
+- L17: lua number
+- L18: lua add
+- L19: lua sha
+- L20: lua call
+- L26: lua sandboxWorkDir
+- L35: lua Bridge.configure
+- L41: lua terminate
+- L49: lua Bridge.reset
+- L61: lua Bridge.kill
+- L67: lua Bridge.arm
+- L94: lua Bridge.preview
+- L136: lua Bridge.executeOnce
+- L171: lua Bridge.snapshot
+- L178: lua Bridge.controlExecuteOnce
+- L225: lua Bridge.contract
 
 ## `scripts/lua/otclient/ctoa_helper_conditions_runtime_gate.lua`
 
@@ -1736,36 +1910,37 @@ This is a lightweight map for navigation, not a full source dump.
 - L22: lua Diagnostics.hasApi
 - L26: lua Diagnostics.apiText
 - L30: lua Diagnostics.valueText
-- L43: lua unavailableRuntimeCoreSnapshot
-- L59: lua Diagnostics.runtimeCoreSnapshot
-- L73: lua Diagnostics.runtimeCoreText
-- L81: lua Diagnostics.apiSnapshotText
-- L91: lua Diagnostics.apiProbeSnapshot
-- L156: lua Diagnostics.apiProbeText
-- L170: lua Diagnostics.probeDeferredPlan
-- L191: lua Diagnostics.magicApiProbeText
-- L212: lua Diagnostics.featureFlagsText
-- L220: lua Diagnostics.appendLog
-- L251: lua Diagnostics.exportPath
-- L261: lua Diagnostics.bufferText
-- L266: lua Diagnostics.movementText
-- L271: lua Diagnostics.magicLootText
-- L277: lua Diagnostics.snapshotUiRows
-- L288: lua Diagnostics.snapshotUiValues
-- L298: lua Diagnostics.tableCount
-- L309: lua Diagnostics.firstTableValue
-- L319: lua Diagnostics.smokeCommandValue
-- L335: lua Diagnostics.smokeCommandExists
-- L357: lua Diagnostics.parseSmokeCommandText
-- L381: lua Diagnostics.smokeCommandTarget
-- L413: lua Diagnostics.smokeTabLabel
-- L424: lua Diagnostics.smokeTabStatusText
-- L428: lua Diagnostics.smokeCommandStatusText
-- L440: lua Diagnostics.smokeCommandBlockedText
-- L444: lua Diagnostics.smokeCommandFailedText
-- L448: lua Diagnostics.recordSnapshot
-- L474: lua Diagnostics.exportBuffer
-- L503: lua Diagnostics.contract
+- L43: lua Diagnostics.vocationProbeText
+- L50: lua unavailableRuntimeCoreSnapshot
+- L66: lua Diagnostics.runtimeCoreSnapshot
+- L80: lua Diagnostics.runtimeCoreText
+- L88: lua Diagnostics.apiSnapshotText
+- L98: lua Diagnostics.apiProbeSnapshot
+- L163: lua Diagnostics.apiProbeText
+- L177: lua Diagnostics.probeDeferredPlan
+- L198: lua Diagnostics.magicApiProbeText
+- L219: lua Diagnostics.featureFlagsText
+- L227: lua Diagnostics.appendLog
+- L258: lua Diagnostics.exportPath
+- L268: lua Diagnostics.bufferText
+- L273: lua Diagnostics.movementText
+- L278: lua Diagnostics.magicLootText
+- L284: lua Diagnostics.snapshotUiRows
+- L295: lua Diagnostics.snapshotUiValues
+- L305: lua Diagnostics.tableCount
+- L316: lua Diagnostics.firstTableValue
+- L326: lua Diagnostics.smokeCommandValue
+- L342: lua Diagnostics.smokeCommandExists
+- L364: lua Diagnostics.parseSmokeCommandText
+- L394: lua Diagnostics.smokeCommandTarget
+- L426: lua Diagnostics.smokeTabLabel
+- L437: lua Diagnostics.smokeTabStatusText
+- L441: lua Diagnostics.smokeCommandStatusText
+- L453: lua Diagnostics.smokeCommandBlockedText
+- L457: lua Diagnostics.smokeCommandFailedText
+- L461: lua Diagnostics.recordSnapshot
+- L487: lua Diagnostics.exportBuffer
+- L516: lua Diagnostics.contract
 
 ## `scripts/lua/otclient/ctoa_helper_dispatch_guard.lua`
 
@@ -1794,18 +1969,62 @@ This is a lightweight map for navigation, not a full source dump.
 
 ## `scripts/lua/otclient/ctoa_helper_equipment.lua`
 
-- L6: lua boolText
-- L10: lua Equipment.slotText
-- L45: lua Equipment.snapshot
-- L57: lua Equipment.apiProbe
-- L77: lua Equipment.observe
-- L91: lua Equipment.plan
-- L140: lua Equipment.shadowPlan
-- L146: lua validItemId
-- L149: lua validContainer
-- L179: lua intrusive_actions_performed
-- L183: lua Equipment.summary
-- L200: lua Equipment.contract
+- L7: lua boolText
+- L11: lua Equipment.slotText
+- L46: lua Equipment.snapshot
+- L58: lua Equipment.apiProbe
+- L78: lua Equipment.observe
+- L92: lua Equipment.plan
+- L151: lua Equipment.shadowPlan
+- L157: lua validItemId
+- L160: lua validContainer
+- L163: lua validContainerSlot
+- L202: lua intrusive_actions_performed
+- L206: lua Equipment.summary
+- L229: lua Equipment.contract
+
+## `scripts/lua/otclient/ctoa_helper_equipment_execute_once.lua`
+
+- L8: lua text
+- L9: lua number
+- L10: lua sha
+- L11: lua add
+- L12: lua call
+- L13: lua sandboxWorkDir
+- L15: lua terminate
+- L19: lua Bridge.configure
+- L20: lua Bridge.reset
+- L25: lua Bridge.kill
+- L27: lua Bridge.arm
+- L45: lua Bridge.preview
+- L73: lua Bridge.executeOnce
+- L87: lua Bridge.snapshot
+- L89: lua Bridge.controlExecuteOnce
+- L108: lua Bridge.contract
+
+## `scripts/lua/otclient/ctoa_helper_equipment_family_registry.lua`
+
+- L12: lua inventory_ids
+- L13: lua equipped_ids
+- L14: lua returned_ids
+- L22: lua inventory_ids
+- L23: lua equipped_ids
+- L24: lua returned_ids
+- L30: lua copy
+- L37: lua validId
+- L42: lua validateIds
+- L52: lua Registry.validateFamily
+- L66: lua Registry.validate
+- L79: lua Registry.families
+- L87: lua Registry.byKey
+- L94: lua contains
+- L99: lua Registry.match
+- L116: lua Registry.isEnabled
+- L121: lua Registry.setEnabled
+- L133: lua Registry.uiRows
+- L148: lua Registry.enabledFamily
+- L157: lua Registry.proposeTransition
+- L186: lua Registry.contract
 
 ## `scripts/lua/otclient/ctoa_helper_equipment_observer.lua`
 
@@ -1828,7 +2047,7 @@ This is a lightweight map for navigation, not a full source dump.
 - L49: lua EquipmentRuntimeGate.evaluate
 - L59: lua allowed_actions
 - L61: lua required_false
-- L111: lua EquipmentRuntimeGate.contract
+- L116: lua EquipmentRuntimeGate.contract
 
 ## `scripts/lua/otclient/ctoa_helper_feature_flags.lua`
 
@@ -1845,13 +2064,35 @@ This is a lightweight map for navigation, not a full source dump.
 ## `scripts/lua/otclient/ctoa_helper_heal_friend.lua`
 
 - L6: lua HealFriend.whitelistContainsName
-- L19: lua HealFriend.scan
-- L60: lua HealFriend.observe
-- L84: lua HealFriend.plan
-- L143: lua HealFriend.statusText
-- L156: lua HealFriend.decisionText
-- L167: lua HealFriend.summary
-- L182: lua HealFriend.contract
+- L22: lua HealFriend.scanExactTarget
+- L122: lua HealFriend.executeOnceObservation
+- L149: lua HealFriend.scan
+- L161: lua HealFriend.observe
+- L185: lua HealFriend.plan
+- L244: lua HealFriend.statusText
+- L257: lua HealFriend.decisionText
+- L268: lua HealFriend.summary
+- L283: lua HealFriend.contract
+
+## `scripts/lua/otclient/ctoa_helper_heal_friend_execute_once.lua`
+
+- L8: lua text
+- L9: lua number
+- L10: lua sha
+- L11: lua add
+- L12: lua call
+- L13: lua sandboxWorkDir
+- L14: lua exactTargetName
+- L19: lua terminate
+- L23: lua Bridge.configure
+- L24: lua Bridge.reset
+- L31: lua Bridge.kill
+- L33: lua Bridge.arm
+- L57: lua Bridge.preview
+- L90: lua Bridge.executeOnce
+- L108: lua Bridge.snapshot
+- L110: lua Bridge.controlExecuteOnce
+- L134: lua Bridge.contract
 
 ## `scripts/lua/otclient/ctoa_helper_heal_friend_runtime_gate.lua`
 
@@ -1876,9 +2117,12 @@ This is a lightweight map for navigation, not a full source dump.
 - L76: lua modifiers
 - L148: lua Hotkeys.isAllowed
 - L161: lua Hotkeys.bindingDecision
-- L191: lua Hotkeys.display
-- L199: lua Hotkeys.actionbarSlotText
-- L206: lua Hotkeys.contract
+- L191: lua Hotkeys.normalizeHelperHotkey
+- L195: lua Hotkeys.hotkeyBindingDecision
+- L199: lua Hotkeys.resolveActionbarSlot
+- L209: lua Hotkeys.display
+- L217: lua Hotkeys.actionbarSlotText
+- L224: lua Hotkeys.contract
 
 ## `scripts/lua/otclient/ctoa_helper_hud.lua`
 
@@ -1917,16 +2161,17 @@ This is a lightweight map for navigation, not a full source dump.
 - L15: lua trim
 - L22: lua actionText
 - L30: lua Modal.request
-- L50: lua Modal.isPending
-- L62: lua Modal.isExpired
-- L70: lua Modal.confirm
-- L81: lua Modal.cancel
-- L92: lua Modal.decision
-- L128: lua Modal.decisionText
-- L147: lua Modal.statusText
-- L158: lua Modal.buttonText
-- L169: lua Modal.contract
-- L177: lua guarded_actions
+- L50: lua Modal.modalRequest
+- L54: lua Modal.isPending
+- L66: lua Modal.isExpired
+- L74: lua Modal.confirm
+- L85: lua Modal.cancel
+- L96: lua Modal.decision
+- L132: lua Modal.decisionText
+- L151: lua Modal.statusText
+- L162: lua Modal.buttonText
+- L173: lua Modal.contract
+- L182: lua guarded_actions
 
 ## `scripts/lua/otclient/ctoa_helper_module_status.lua`
 
@@ -1942,19 +2187,21 @@ This is a lightweight map for navigation, not a full source dump.
 
 ## `scripts/lua/otclient/ctoa_helper_modules.lua`
 
-- L143: lua copyList
-- L151: lua Registry.getSupportModules
-- L164: lua Registry.validateSupportModules
-- L186: lua Registry.bootSnapshot
-- L231: lua Registry.bootSummary
-- L240: lua Registry.getModuleLanes
-- L244: lua Registry.getShortLabels
-- L248: lua Registry.laneEnabled
-- L274: lua Registry.laneRuntimeText
-- L292: lua Registry.registrySummary
-- L309: lua Registry.readinessTag
-- L329: lua Registry.readinessRow
-- L344: lua Registry.contract
+- L147: lua copyList
+- L155: lua Registry.getSupportModules
+- L168: lua Registry.validateSupportModules
+- L190: lua Registry.bootSnapshot
+- L235: lua Registry.bootSummary
+- L244: lua Registry.getModuleLanes
+- L248: lua Registry.rebuildModuleLaneIndex
+- L258: lua Registry.getShortLabels
+- L262: lua Registry.moduleTabVisible
+- L274: lua Registry.laneEnabled
+- L300: lua Registry.laneRuntimeText
+- L318: lua Registry.registrySummary
+- L335: lua Registry.readinessTag
+- L355: lua Registry.readinessRow
+- L370: lua Registry.contract
 
 ## `scripts/lua/otclient/ctoa_helper_operator_summary.lua`
 
@@ -1973,35 +2220,46 @@ This is a lightweight map for navigation, not a full source dump.
 - L91: lua OperatorSummary.profile
 - L104: lua OperatorSummary.ui
 - L109: lua OperatorSummary.bridgeText
-- L121: lua OperatorSummary.contract
+- L135: lua OperatorSummary.collect
+- L145: lua OperatorSummary.contract
 
 ## `scripts/lua/otclient/ctoa_helper_otclient_observation_adapter.lua`
 
-- L8: lua call
-- L23: lua boolCall
-- L32: lua hasMethod
-- L36: lua clockMillis
-- L46: lua distanceBetween
-- L56: lua targetSnapshot
-- L72: lua spectatorSnapshot
-- L96: lua cooldownActive
-- L105: lua triStateBooleanCall
-- L128: lua playerAliveState
-- L149: lua paralyzeState
-- L154: lua verifiedStateConstant
-- L181: lua spellCooldownState
-- L195: lua Adapter.conditionsSnapshot
-- L230: lua Adapter.combatSnapshot
-- L249: lua Adapter.recoverySnapshot
-- L268: lua Adapter.cavebotSnapshot
-- L290: lua Adapter.lootSnapshot
-- L316: lua inventorySlot
-- L329: lua Adapter.equipmentSnapshot
-- L337: lua slots
-- L347: lua Adapter.attach
-- L356: lua Adapter.attachAll
-- L390: lua Adapter.contract
-- L393: lua guarded_globals
+- L10: lua call
+- L25: lua boolCall
+- L34: lua hasMethod
+- L38: lua clockMillis
+- L48: lua distanceBetween
+- L58: lua targetSnapshot
+- L74: lua spectatorSnapshot
+- L98: lua normalizedName
+- L102: lua boundedPartyCandidates
+- L140: lua cooldownActive
+- L149: lua triStateBooleanCall
+- L172: lua playerAliveState
+- L193: lua hasBitFlag
+- L200: lua playerStates
+- L209: lua stateFlags
+- L225: lua speedSlowedState
+- L237: lua protectionZoneState
+- L252: lua paralyzeState
+- L277: lua spellCooldownState
+- L291: lua Adapter.conditionsSnapshot
+- L324: lua Adapter.combatSnapshot
+- L343: lua Adapter.recoverySnapshot
+- L362: lua Adapter.cavebotSnapshot
+- L384: lua Adapter.lootSnapshot
+- L410: lua inventorySlot
+- L424: lua boundedContainerItems
+- L460: lua Adapter.equipmentShadowObservation
+- L481: lua ring
+- L495: lua Adapter.healFriendScan
+- L531: lua Adapter.equipmentSnapshot
+- L539: lua slots
+- L549: lua Adapter.attach
+- L558: lua Adapter.attachAll
+- L592: lua Adapter.contract
+- L595: lua guarded_globals
 
 ## `scripts/lua/otclient/ctoa_helper_plan_queue.lua`
 
@@ -2026,37 +2284,42 @@ This is a lightweight map for navigation, not a full source dump.
 
 ## `scripts/lua/otclient/ctoa_helper_profile_persistence.lua`
 
-- L19: lua profile
-- L33: lua ui_prefs
-- L49: lua healing
-- L70: lua heal_friend
-- L90: lua conditions
-- L107: lua equipment
-- L123: lua scripting
-- L135: lua tools
-- L210: lua copyList
-- L218: lua copyTable
-- L229: lua saveDefaults
-- L233: lua exportSection
-- L245: lua ProfilePersistence.profileCandidates
-- L249: lua ProfilePersistence.uiPrefsCandidates
-- L253: lua ProfilePersistence.saveDefaults
-- L257: lua ProfilePersistence.resolveSavePath
-- L284: lua ProfilePersistence.fallbackSavePath
-- L293: lua ProfilePersistence.saveText
-- L298: lua ProfilePersistence.loadSuccessText
-- L305: lua ProfilePersistence.loadFailureText
-- L312: lua booleanPref
-- L316: lua nonEmptyText
-- L323: lua ProfilePersistence.uiPrefsPlan
-- L328: lua config_updates
-- L329: lua hud_updates
-- L330: lua helper_updates
-- L376: lua ProfilePersistence.dirtyState
-- L389: lua ProfilePersistence.exportProfile
-- L409: lua ProfilePersistence.exportUiPrefs
-- L421: lua hud
-- L429: lua ProfilePersistence.contract
+- L21: lua profile
+- L35: lua ui_prefs
+- L51: lua healing
+- L72: lua heal_friend
+- L93: lua conditions
+- L110: lua equipment
+- L127: lua scripting
+- L139: lua tools
+- L214: lua copyList
+- L222: lua copyTable
+- L233: lua saveDefaults
+- L237: lua exportSection
+- L249: lua profileExportDescriptors
+- L271: lua ProfilePersistence.profileExportDescriptors
+- L275: lua ProfilePersistence.profilePersistenceValue
+- L288: lua ProfilePersistence.profilePersistenceTable
+- L296: lua ProfilePersistence.profileCandidates
+- L300: lua ProfilePersistence.uiPrefsCandidates
+- L304: lua ProfilePersistence.saveDefaults
+- L308: lua mutableFileName
+- L321: lua ProfilePersistence.resolveSavePath
+- L340: lua ProfilePersistence.fallbackSavePath
+- L349: lua ProfilePersistence.saveText
+- L354: lua ProfilePersistence.loadSuccessText
+- L361: lua ProfilePersistence.loadFailureText
+- L368: lua booleanPref
+- L372: lua nonEmptyText
+- L379: lua ProfilePersistence.uiPrefsPlan
+- L384: lua config_updates
+- L385: lua hud_updates
+- L386: lua helper_updates
+- L432: lua ProfilePersistence.dirtyState
+- L445: lua ProfilePersistence.exportProfile
+- L467: lua ProfilePersistence.exportUiPrefs
+- L479: lua hud
+- L487: lua ProfilePersistence.contract
 
 ## `scripts/lua/otclient/ctoa_helper_profile_schema.lua`
 
@@ -2082,57 +2345,64 @@ This is a lightweight map for navigation, not a full source dump.
 - L113: lua healing
 - L134: lua modules
 - L148: lua heal_friend
-- L168: lua conditions
-- L185: lua equipment
-- L201: lua scripting
-- L213: lua tools
-- L286: lua hud
-- L287: lua rotation
-- L288: lua heal_spell
-- L289: lua waypoint
-- L290: lua feature_flags
-- L293: lua copyList
-- L301: lua copyTable
-- L312: lua isArrayTable
-- L316: lua ProfileSchema.mergeTable
-- L334: lua luaQuote
-- L338: lua nestedOrderForKey
-- L351: lua ProfileSchema.serializeLua
-- L394: lua shortValue
-- L403: lua ProfileSchema.requiredSections
-- L407: lua ProfileSchema.sectionOrder
-- L411: lua ProfileSchema.safeFalseKeys
-- L415: lua ProfileSchema.optionList
-- L419: lua ProfileSchema.rotationPresets
-- L423: lua ProfileSchema.keyOrder
-- L427: lua ProfileSchema.valueIndex
-- L436: lua ProfileSchema.cycleValue
-- L446: lua ProfileSchema.fieldGeometry
-- L463: lua ProfileSchema.stepValue
-- L474: lua profileVersion
-- L489: lua setPath
-- L507: lua ProfileSchema.currentVersion
-- L511: lua ProfileSchema.currentSchema
-- L515: lua ProfileSchema.profileVersion
-- L519: lua ProfileSchema.migrationPlan
-- L562: lua ProfileSchema.migrate
-- L593: lua ProfileSchema.summary
-- L602: lua ProfileSchema.profileSchemaSuffix
-- L610: lua ProfileSchema.autosaveLabel
-- L618: lua ProfileSchema.titleSummary
-- L629: lua ProfileSchema.healingSummary
-- L648: lua ProfileSchema.profileSummary
-- L666: lua ProfileSchema.rotationPresetIds
-- L676: lua ProfileSchema.rotationPresetLabel
-- L686: lua ProfileSchema.rotationSummary
-- L715: lua ProfileSchema.spellLabel
-- L733: lua ProfileSchema.potionLabel
-- L745: lua ProfileSchema.runeLabel
-- L758: lua ProfileSchema.healFriendPriorityLabel
-- L765: lua ProfileSchema.magicPriorityLabel
-- L772: lua ProfileSchema.themePresetLabel
-- L785: lua ProfileSchema.onOffLabel
-- L789: lua ProfileSchema.contract
+- L169: lua conditions
+- L186: lua equipment
+- L203: lua scripting
+- L215: lua tools
+- L288: lua hud
+- L289: lua rotation
+- L290: lua heal_spell
+- L291: lua waypoint
+- L292: lua family_enabled
+- L293: lua feature_flags
+- L305: lua copyList
+- L313: lua copyTable
+- L324: lua isArrayTable
+- L328: lua ProfileSchema.mergeTable
+- L346: lua luaQuote
+- L350: lua nestedOrderForKey
+- L363: lua ProfileSchema.serializeLua
+- L406: lua shortValue
+- L415: lua ProfileSchema.displayProfileName
+- L432: lua ProfileSchema.profileSchemaValue
+- L445: lua ProfileSchema.profileSchemaTable
+- L453: lua ProfileSchema.requiredSections
+- L457: lua ProfileSchema.sectionOrder
+- L461: lua ProfileSchema.safeFalseKeys
+- L465: lua ProfileSchema.optionList
+- L469: lua ProfileSchema.rotationPresets
+- L473: lua ProfileSchema.keyOrder
+- L477: lua ProfileSchema.profileExportDescriptors
+- L491: lua ProfileSchema.valueIndex
+- L500: lua ProfileSchema.cycleValue
+- L510: lua ProfileSchema.fieldGeometry
+- L527: lua ProfileSchema.stepValue
+- L538: lua profileVersion
+- L553: lua setPath
+- L571: lua ProfileSchema.currentVersion
+- L575: lua ProfileSchema.currentSchema
+- L579: lua ProfileSchema.profileVersion
+- L583: lua ProfileSchema.migrationPlan
+- L626: lua ProfileSchema.migrate
+- L657: lua ProfileSchema.summary
+- L666: lua ProfileSchema.profileSchemaSuffix
+- L674: lua ProfileSchema.autosaveLabel
+- L682: lua ProfileSchema.titleSummary
+- L693: lua ProfileSchema.healingSummary
+- L712: lua ProfileSchema.profileSummary
+- L730: lua ProfileSchema.rotationPresetIds
+- L740: lua ProfileSchema.rotationPresetLabel
+- L750: lua ProfileSchema.rotationPresetFormatter
+- L758: lua ProfileSchema.rotationSummary
+- L787: lua ProfileSchema.rotationSummaryText
+- L792: lua ProfileSchema.spellLabel
+- L810: lua ProfileSchema.potionLabel
+- L822: lua ProfileSchema.runeLabel
+- L835: lua ProfileSchema.healFriendPriorityLabel
+- L842: lua ProfileSchema.magicPriorityLabel
+- L849: lua ProfileSchema.themePresetLabel
+- L862: lua ProfileSchema.onOffLabel
+- L866: lua ProfileSchema.contract
 
 ## `scripts/lua/otclient/ctoa_helper_recovery_bridge.lua`
 
@@ -2180,32 +2450,36 @@ This is a lightweight map for navigation, not a full source dump.
 - L117: lua RecoveryRuntime.potionStatusText
 - L122: lua RecoveryRuntime.spellStatusText
 - L126: lua RecoveryRuntime.actionGap
-- L139: lua RecoveryRuntime.summary
-- L146: lua RecoveryRuntime.contract
+- L139: lua RecoveryRuntime.recoveryActionGap
+- L149: lua RecoveryRuntime.summary
+- L156: lua RecoveryRuntime.contract
 
 ## `scripts/lua/otclient/ctoa_helper_route.lua`
 
 - L6: lua clampIndex
-- L20: lua distanceChebyshev
-- L29: lua advanceIndex
-- L36: lua Route.position
-- L49: lua Route.label
-- L60: lua Route.posKey
-- L67: lua Route.add
-- L83: lua Route.clear
-- L92: lua Route.select
-- L106: lua Route.delete
-- L122: lua Route.move
-- L140: lua Route.editorAction
-- L168: lua Route.retryStatus
-- L175: lua Route.retryBlocked
-- L183: lua Route.progress
-- L208: lua Route.activeTarget
-- L255: lua Route.stats
-- L287: lua Route.selectedSummary
-- L299: lua Route.uiState
-- L312: lua Route.deleteRequest
-- L322: lua Route.contract
+- L20: lua Route.distanceChebyshev
+- L32: lua advanceIndex
+- L39: lua Route.position
+- L52: lua Route.label
+- L63: lua Route.posKey
+- L70: lua Route.positionText
+- L78: lua Route.probeTarget
+- L98: lua Route.probeMetadata
+- L125: lua Route.add
+- L141: lua Route.clear
+- L150: lua Route.select
+- L164: lua Route.delete
+- L180: lua Route.move
+- L198: lua Route.editorAction
+- L226: lua Route.retryStatus
+- L233: lua Route.retryBlocked
+- L241: lua Route.progress
+- L266: lua Route.activeTarget
+- L313: lua Route.stats
+- L345: lua Route.selectedSummary
+- L357: lua Route.uiState
+- L370: lua Route.deleteRequest
+- L380: lua Route.contract
 
 ## `scripts/lua/otclient/ctoa_helper_runtime_core.lua`
 
@@ -2305,18 +2579,20 @@ This is a lightweight map for navigation, not a full source dump.
 - L14: lua lowered
 - L21: lua Targeting.normalizedName
 - L36: lua Targeting.isIgnoredName
-- L50: lua Targeting.hasBlockingNpcIcon
-- L64: lua friendlySummonFragments
-- L72: lua Targeting.isFriendlySummonName
-- L90: lua Targeting.isFriendlySummonCandidate
-- L104: lua Targeting.priorityRank
-- L115: lua Targeting.scoreCandidate
-- L130: lua Targeting.bestCandidate
-- L143: lua Targeting.creatureTypeDecision
-- L163: lua Targeting.decision
-- L227: lua Targeting.summary
-- L237: lua Targeting.configSummary
-- L249: lua Targeting.contract
+- L50: lua Targeting.creatureHasBlockingNpcIcon
+- L58: lua Targeting.hasBlockingNpcIcon
+- L62: lua friendlySummonFragments
+- L70: lua Targeting.isFriendlySummonName
+- L88: lua Targeting.isFriendlySummonCandidate
+- L102: lua Targeting.priorityRank
+- L113: lua Targeting.scoreCandidate
+- L128: lua Targeting.targetCandidateScore
+- L136: lua Targeting.bestCandidate
+- L149: lua Targeting.creatureTypeDecision
+- L169: lua Targeting.decision
+- L233: lua Targeting.summary
+- L243: lua Targeting.configSummary
+- L255: lua Targeting.contract
 
 ## `scripts/lua/otclient/ctoa_helper_timer_runtime.lua`
 
@@ -2325,8 +2601,9 @@ This is a lightweight map for navigation, not a full source dump.
 - L18: lua runtimeBlockedReason
 - L39: lua TimerRuntime.plan
 - L72: lua TimerRuntime.summary
-- L81: lua TimerRuntime.dispatch
-- L118: lua TimerRuntime.contract
+- L81: lua TimerRuntime.probeSummary
+- L85: lua TimerRuntime.dispatch
+- L122: lua TimerRuntime.contract
 
 ## `scripts/lua/otclient/ctoa_helper_ui.lua`
 
@@ -2399,18 +2676,18 @@ This is a lightweight map for navigation, not a full source dump.
 - L1204: lua Ui.addToggleSettingRow
 - L1211: lua valueText
 - L1233: lua Ui.sectionBodyGeometry
-- L1242: lua Ui.sidebarTabs
-- L1260: lua Ui.sidebarGeometry
-- L1294: lua Ui.huntingSubtabs
-- L1302: lua Ui.subtabContentY
-- L1306: lua Ui.toolsSubtabs
-- L1318: lua Ui.toolsTableHeaders
-- L1327: lua Ui.cavebotDelayChoices
-- L1331: lua Ui.cavebotReachChoices
-- L1335: lua Ui.msText
-- L1339: lua Ui.cavebotActionSpecs
-- L1357: lua Ui.renderOverviewPanel
-- ... 14 more symbols omitted
+- L1242: lua Ui.mergePanelRendererContext
+- L1253: lua Ui.sidebarTabs
+- L1271: lua Ui.sidebarGeometry
+- L1305: lua Ui.huntingSubtabs
+- L1313: lua Ui.subtabContentY
+- L1317: lua Ui.toolsSubtabs
+- L1329: lua Ui.toolsTableHeaders
+- L1338: lua Ui.cavebotDelayChoices
+- L1342: lua Ui.cavebotReachChoices
+- L1346: lua Ui.msText
+- L1350: lua Ui.cavebotActionSpecs
+- ... 15 more symbols omitted
 
 ## `scripts/lua/otclient/ctoa_helper_vocation_profiles.lua`
 
@@ -2422,8 +2699,8 @@ This is a lightweight map for navigation, not a full source dump.
 - L78: lua VocationProfiles.label
 - L83: lua VocationProfiles.characterName
 - L87: lua VocationProfiles.candidates
-- L103: lua VocationProfiles.contract
-- L107: lua supported
+- L107: lua VocationProfiles.contract
+- L111: lua supported
 
 ## `scripts/lua/otclient/ctoa_ms_profile.lua`
 
@@ -2505,82 +2782,82 @@ This is a lightweight map for navigation, not a full source dump.
 - L36: lua spell_rotation
 - L49: lua heal_friend
 - L52: lua friend_whitelist
-- L57: lua conditions
-- L65: lua equipment
-- L73: lua scripting
-- L80: lua tools
-- L88: lua friendly_summon_name_fragments
-- L96: lua ignored_names
-- L101: lua priority_names
-- L120: lua last_spell_casts
-- L121: lua rotation_spells
-- L134: lua exeta_spells
-- L175: lua cavebot_waypoints
-- L176: lua feature_flags
-- L196: lua moduleCall
-- L206: lua moduleValue
-- L214: lua rebuildModuleLaneIndex
-- L215: lua MODULE_LANE_INDEX
-- L240: lua widgets
-- L241: lua sections
-- L294: lua classic
-- L317: lua graphite
-- L340: lua amber
-- L363: lua emerald
-- L484: lua displayProfileName
-- L519: lua profileSchemaValue
-- L527: lua profileSchemaTable
-- L535: lua profilePersistenceValue
-- L543: lua profilePersistenceTable
-- L548: lua normalizeHelperHotkey
-- L559: lua hotkeyBindingDecision
-- L574: lua helperNowMs
-- L586: lua modalRequest
-- L602: lua appendLog
-- L621: lua status
-- L633: lua mergeTable
-- L641: lua reportClientCapabilities
-- L689: lua loadProfile
-- L733: lua applySafeBootRuntimeGuard
-- L764: lua runtimeArmingBlockedReason
-- L771: lua requestRuntimeSessionArm
-- L780: lua loadUiPrefs
-- L822: lua applyThemePreset
-- L838: lua applyWindowPlacement
-- L855: lua applyUiPrefs
-- L861: lua setThemePreset
-- L868: lua setCompactMode
-- L875: lua serializeLua
-- L883: lua exportProfile
-- L896: lua exportUiPrefs
-- L941: lua getSmokeCommandPath
-- L960: lua getDiagnosticsExportPath
-- L974: lua removeSmokeCommand
-- L982: lua readSmokeCommand
-- L995: lua applySmokeCommand
-- L1082: lua processSmokeCommand
-- L1131: lua markProfileDirty
-- L1176: lua setLastPotionStatus
-- L1185: lua setHudText
-- L1191: lua throttledRuntimeStatus
-- L1204: lua defer
-- L1226: lua addToSection
-- L1238: lua setSectionVisible
-- L1245: lua createWidget
-- L1253: lua sendHotkey
-- L1268: lua resolveActionbarSlot
-- L1278: lua sendActionbarSlot
-- L1286: lua castSpell
-- L1294: lua hasAttackTarget
-- L1298: lua getAttackTarget
-- L1310: lua isGameOnline
-- L1320: lua getLocalPlayer
-- L1332: lua getThingPosition
-- L1344: lua distanceChebyshev
-- L1351: lua normalizedCreatureName
-- L1367: lua isIgnoredCreatureName
-- L1385: lua creatureHasBlockingNpcIcon
-- ... 125 more symbols omitted
+- L58: lua conditions
+- L66: lua equipment
+- L69: lua family_enabled
+- L75: lua scripting
+- L82: lua tools
+- L90: lua friendly_summon_name_fragments
+- L98: lua ignored_names
+- L103: lua priority_names
+- L122: lua last_spell_casts
+- L123: lua rotation_spells
+- L136: lua exeta_spells
+- L177: lua cavebot_waypoints
+- L178: lua feature_flags
+- L198: lua moduleCall
+- L208: lua moduleValue
+- L344: lua widgets
+- L345: lua sections
+- L398: lua classic
+- L421: lua graphite
+- L444: lua amber
+- L467: lua emerald
+- L616: lua helperNowMs
+- L628: lua appendLog
+- L647: lua status
+- L665: lua loadDataOnlyLua
+- L702: lua loadProfile
+- L749: lua applySafeBootRuntimeGuard
+- L780: lua runtimeArmingBlockedReason
+- L787: lua requestRuntimeSessionArm
+- L796: lua loadUiPrefs
+- L836: lua applyThemePreset
+- L852: lua applyWindowPlacement
+- L869: lua applyUiPrefs
+- L875: lua setThemePreset
+- L882: lua setCompactMode
+- L925: lua getSmokeCommandPath
+- L944: lua getDiagnosticsExportPath
+- L958: lua removeSmokeCommand
+- L966: lua readSmokeCommand
+- L988: lua applySmokeCommand
+- L1101: lua processSmokeCommand
+- L1152: lua markProfileDirty
+- L1197: lua setLastPotionStatus
+- L1206: lua setHudText
+- L1212: lua throttledRuntimeStatus
+- L1225: lua defer
+- L1247: lua addToSection
+- L1259: lua setSectionVisible
+- L1266: lua createWidget
+- L1274: lua sendHotkey
+- L1289: lua sendActionbarSlot
+- L1297: lua castSpell
+- L1305: lua hasAttackTarget
+- L1309: lua getAttackTarget
+- L1321: lua isGameOnline
+- L1331: lua getLocalPlayer
+- L1343: lua getThingPosition
+- L1355: lua normalizedCreatureName
+- L1371: lua isIgnoredCreatureName
+- L1391: lua creatureHasFriendlySummonFlag
+- L1413: lua isFriendlySummonCreature
+- L1423: lua pcallBool
+- L1448: lua pcallNumber
+- L1460: lua hasAnyState
+- L1477: lua anyPcallBool
+- L1486: lua isLocalPlayerInProtectionZone
+- L1523: lua isMonsterCreature
+- L1551: lua getSpectatorsInRange
+- L1574: lua countMonsters
+- L1594: lua scanCombatArea
+- L1604: lua by_range
+- L1605: lua directional_hits
+- L1638: lua targetReachable
+- L1651: lua isTargetInRange
+- L1660: lua getSafeAttackTarget
+- ... 100 more symbols omitted
 
 ## `scripts/lua/otclient/ctoa_native_loot.lua`
 
@@ -2613,21 +2890,20 @@ This is a lightweight map for navigation, not a full source dump.
 
 ## `scripts/lua/otclient/ctoa_otclient_loader.lua`
 
-- L7: lua modules
-- L16: lua bootLog
-- L33: lua log
-- L43: lua fileExists
-- L55: lua resolveModuleDir
-- L67: lua isOnline
-- L71: lua loadModule
-- L85: lua loadHelperFromFilesystem
-- L104: lua supportManifest
-- L121: lua loadSupportModules
-- L146: lua loadSupportModulesFromFilesystem
-- L185: lua loadHelperOnly
-- L218: lua scheduleHelperLoad
-- L231: lua onGameStart
-- L243: lua onGameEnd
+- L11: lua modules
+- L27: lua bootLog
+- L44: lua log
+- L60: lua fileExists
+- L72: lua resolveModuleDir
+- L86: lua loadModule
+- L100: lua loadHelperFromFilesystem
+- L119: lua supportManifest
+- L136: lua loadSupportModules
+- L161: lua loadSupportModulesFromFilesystem
+- L200: lua loadHelperOnly
+- L235: lua selectionAuthorized
+- L242: lua CTOA_OTCLIENT.init
+- L253: lua CTOA_OTCLIENT.terminate
 
 ## `scripts/lua/otclient/ctoa_rp_profile.lua`
 
@@ -3112,8 +3388,8 @@ This is a lightweight map for navigation, not a full source dump.
 - L430: def _audit_findings(inventory)
 - L481: def render_audit_markdown(inventory, validation_evidence)
 - L608: def render_plans_markdown(inventory)
-- L707: def parse_args()
-- L717: def main()
+- L712: def parse_args()
+- L722: def main()
 
 ## `scripts/ops/ctoa_helper_smoke_report.py`
 
@@ -3227,6 +3503,17 @@ This is a lightweight map for navigation, not a full source dump.
 - L119: def bootstrap()
 - L195: def main()
 
+## `scripts/ops/ctoa_public_exposure_audit.py`
+
+- L29: class ExposureAuditUnavailable
+- L33: def _load_json(path)
+- L40: def _run_json(argv)
+- L63: def _branch_map(gh, repository)
+- L82: def collect_snapshot(policy)
+- L188: def _check(name, passed, detail)
+- L192: def evaluate_snapshot(policy, snapshot)
+- L326: def main()
+
 ## `scripts/ops/ctoa_tibia_source_ingest.py`
 
 - L26: def parse_args()
@@ -3240,6 +3527,39 @@ This is a lightweight map for navigation, not a full source dump.
 - L48: def _parse_version(value)
 - L52: def run_gate(state_dir)
 - L116: def main()
+
+## `scripts/ops/ctoai_roadmap_state.py`
+
+- L74: class DuplicateKeyError
+- L79: class LoadedJson
+- L88: class LoadedText
+- L96: def _reject_duplicate_keys(pairs)
+- L105: def _canonical_sha256(value)
+- L110: def _raw_sha256(raw)
+- L114: def _fixed_path(root, relative)
+- L135: def _read_stable_bytes(root, relative, max_bytes)
+- L163: def _load_json(root, relative)
+- L178: def _load_text(root, relative)
+- L189: def _parse_datetime(value)
+- L207: def _artifact_datetime(payload, mtime_ns)
+- L217: def _age_seconds(value, now)
+- L223: def _schema_errors(schema, payload)
+- L235: def _source_health(root, now, cache)
+- L304: def _control_center_preflight(operator_brief)
+- L328: def _binding_result(root, primary, binding, cache)
+- L352: def _entry_created_at(payload, mtime_ns)
+- L357: def _build_ledger_entry(root, config, now, cache, previous, allow_p8_rebaseline)
+- L459: def build_state(root)
+- L634: def render_markdown(payload)
+- L684: def _sanitize_audit_text(value, max_length)
+- L692: def _timestamp_utc()
+- L696: def _audit_id(at)
+- L700: def _ensure_write_target(root, relative)
+- L715: def _atomic_write(path, raw)
+- L730: def _append_audit(root)
+- L771: def execute(root)
+- L881: def _parse_bool(value)
+- L890: def main(argv)
 
 ## `scripts/ops/depack_anchor_windows.py`
 
@@ -3328,67 +3648,68 @@ This is a lightweight map for navigation, not a full source dump.
 
 ## `scripts/ops/engine_brain_index.py`
 
-- L267: class FileEntry
-- L272: def rel(self)
-- L276: def _is_excluded(path)
-- L286: def iter_files()
-- L310: def python_symbols(path)
-- L336: def regex_symbols(path, pattern, label)
-- L352: def symbols_for(path)
-- L365: def render_file_tree(files, generated_at)
-- L383: def render_symbol_map(files, generated_at)
-- L410: def read_audit_inventory(audit_path)
-- L420: def top_level_owner(path_name)
-- L424: def build_ownership_payload(audit, generated_at)
-- L470: def render_ownership_map(payload)
-- L492: def build_doc_sync_payload(generated_at)
-- L519: def render_doc_sync(payload)
-- L538: def build_secret_guardrail_payload(generated_at, audit, generated_paths)
-- L574: def exact_path_appears(text, path_value)
-- L580: def render_secret_guardrail(payload)
-- L605: def read_validation_evidence(validation_path)
-- L617: def _path_check(name, path)
-- L626: def _source_needles_check(name, path, needles)
-- L647: def _local_codex_skill_check()
-- L659: def _local_plugin_file_check(name, relative_path)
-- L673: def _local_plugin_source_needles_check(name, relative_path, needles)
-- L699: def _read_local_plugin_manifest()
-- L710: def _installed_plugin_cache_check()
-- L766: def _plugin_mcp_absolute_script_check()
-- L817: def _personal_marketplace_plugin_check()
-- L859: def _validation_evidence_check(validation)
-- L889: def build_p6_readiness_payload(generated_at, manifest_payload, validation)
-- L1405: def render_p6_readiness(payload)
-- L1427: def _validation_statuses(validation)
-- L1443: def read_action_audit_summary(action_audit_path)
-- L1524: def read_json_object(path)
-- L1534: def read_roadmap_text(path)
-- L1545: def build_roadmap_generation_payload(generated_at, doc_sync_payload)
-- L1630: def read_release_evidence_summary(release_root, latest_path)
-- L1749: def read_p7_cockpit_smoke_summary(smoke_path)
-- L1774: def read_p7_evidence_review_summary(review_path)
-- L1806: def build_p7_cockpit_handoff_payload(action_readiness_payload, action_audit)
-- L1896: def _source_has_needles(relative_path, needles)
-- L1905: def build_p7_action_readiness_payload(generated_at, workflow_payload, action_audit, p7_evidence_review)
-- L2160: def render_p7_action_readiness(payload)
-- L2197: def build_p7_safe_write_tool_design_payload(generated_at, action_readiness_payload)
-- L2326: def render_p7_safe_write_tool_design(payload)
-- L2362: def build_p7_operator_brief_payload(generated_at, p6_payload, validation, workflow_payload, action_readiness_payload, safe_write_tool_design_payload, action_audit, roadmap_generation_payload)
-- L2589: def build_p7_operator_workflow_payload(generated_at, p6_payload)
-- L2709: def render_p7_operator_workflow(payload)
-- L2749: def render_p7_operator_brief(payload)
-- L2871: def display_path(path)
-- L2878: def build_indexes(out_dir)
-- L3026: def main()
+- L279: class FileEntry
+- L284: def rel(self)
+- L288: def _is_excluded(path)
+- L298: def iter_files()
+- L322: def python_symbols(path)
+- L348: def regex_symbols(path, pattern, label)
+- L364: def symbols_for(path)
+- L377: def render_file_tree(files, generated_at)
+- L395: def render_symbol_map(files, generated_at)
+- L422: def read_audit_inventory(audit_path)
+- L432: def top_level_owner(path_name)
+- L436: def build_ownership_payload(audit, generated_at)
+- L482: def render_ownership_map(payload)
+- L504: def build_doc_sync_payload(generated_at)
+- L531: def render_doc_sync(payload)
+- L550: def build_secret_guardrail_payload(generated_at, audit, generated_paths)
+- L586: def exact_path_appears(text, path_value)
+- L592: def render_secret_guardrail(payload)
+- L617: def read_validation_evidence(validation_path)
+- L629: def _path_check(name, path)
+- L638: def _source_needles_check(name, path, needles)
+- L659: def _local_codex_skill_check()
+- L671: def _local_plugin_file_check(name, relative_path)
+- L685: def _local_plugin_source_needles_check(name, relative_path, needles)
+- L711: def _read_local_plugin_manifest()
+- L722: def _installed_plugin_cache_check()
+- L778: def _plugin_mcp_absolute_script_check()
+- L829: def _personal_marketplace_plugin_check()
+- L871: def _validation_evidence_check(validation)
+- L901: def build_p6_readiness_payload(generated_at, manifest_payload, validation)
+- L1417: def render_p6_readiness(payload)
+- L1439: def _validation_statuses(validation)
+- L1455: def read_action_audit_summary(action_audit_path)
+- L1536: def read_json_object(path)
+- L1546: def read_roadmap_text(path)
+- L1557: def normalize_roadmap_marker_text(value)
+- L1562: def build_roadmap_generation_payload(generated_at, doc_sync_payload)
+- L1652: def read_release_evidence_summary(release_root, latest_path)
+- L1812: def read_p7_cockpit_smoke_summary(smoke_path)
+- L1837: def read_p7_evidence_review_summary(review_path)
+- L1869: def build_p7_cockpit_handoff_payload(action_readiness_payload, action_audit)
+- L1959: def _source_has_needles(relative_path, needles)
+- L1968: def build_p7_action_readiness_payload(generated_at, workflow_payload, action_audit, p7_evidence_review)
+- L2223: def render_p7_action_readiness(payload)
+- L2260: def build_p7_safe_write_tool_design_payload(generated_at, action_readiness_payload)
+- L2389: def render_p7_safe_write_tool_design(payload)
+- L2425: def build_p7_operator_brief_payload(generated_at, p6_payload, validation, workflow_payload, action_readiness_payload, safe_write_tool_design_payload, action_audit, roadmap_generation_payload)
+- L2652: def build_p7_operator_workflow_payload(generated_at, p6_payload)
+- L2772: def render_p7_operator_workflow(payload)
+- L2812: def render_p7_operator_brief(payload)
+- L2983: def display_path(path)
+- L2990: def build_indexes(out_dir)
+- L3138: def main()
 
 ## `scripts/ops/engine_brain_pack.py`
 
-- L149: def is_secretish_path(path)
-- L162: def read_text(path)
-- L166: def fence_for(path)
-- L183: def append_file_section(lines, rel_path)
-- L222: def build_pack(pack_path, manifest_path)
-- L279: def main()
+- L162: def is_secretish_path(path)
+- L175: def read_text(path)
+- L179: def fence_for(path)
+- L196: def append_file_section(lines, rel_path)
+- L235: def build_pack(pack_path, manifest_path)
+- L292: def main()
 
 ## `scripts/ops/evidence_retention.py`
 
@@ -3518,6 +3839,15 @@ This is a lightweight map for navigation, not a full source dump.
 - L163: function Show-Status
 - L175: function Get-LogTail
 
+## `scripts/ops/otclient_conditions_recovery_proof.py`
+
+- L61: def _ordered(values)
+- L65: def _age(timestamp, now_ms)
+- L71: def build_evidence()
+- L201: def _validate_output(path, expected)
+- L220: def _write_atomic(path, expected, payload)
+- L243: def main(argv)
+
 ## `scripts/ops/otclient_conditions_shadow_acceptance.py`
 
 - L143: class EvidencePaths
@@ -3532,19 +3862,19 @@ This is a lightweight map for navigation, not a full source dump.
 - L205: def _is_within(path, root)
 - L213: def _path_has_reparse_component(path, boundary)
 - L238: def _validate_output_path(path)
-- L254: def read_evidence(paths)
-- L282: def evidence_fingerprint(bundle)
-- L296: def _report_no_action_contract(payload)
-- L328: def _operational_inputs_fixture(bundle)
-- L342: def _canonical_operational_paths(paths)
-- L361: def _current_inputs_loaded(bundle)
-- L374: def _safe_input_hashes(trace)
-- L384: def _acceptance_basis(payload)
-- L401: def _receipt_contract_valid(payload)
-- L525: def evaluate_acceptance(paths)
-- L714: def write_accepted_receipt(path)
-- L815: def parse_args(argv)
-- L840: def main(argv)
+- L256: def read_evidence(paths)
+- L284: def evidence_fingerprint(bundle)
+- L298: def _report_no_action_contract(payload)
+- L330: def _operational_inputs_fixture(bundle)
+- L344: def _canonical_operational_paths(paths)
+- L363: def _current_inputs_loaded(bundle)
+- L376: def _safe_input_hashes(trace)
+- L386: def _acceptance_basis(payload)
+- L403: def _receipt_contract_valid(payload)
+- L527: def evaluate_acceptance(paths)
+- L716: def write_accepted_receipt(path)
+- L817: def parse_args(argv)
+- L842: def main(argv)
 
 ## `scripts/ops/otclient_conditions_shadow_replay.py`
 
@@ -3568,54 +3898,269 @@ This is a lightweight map for navigation, not a full source dump.
 - L389: def _load_blocker(prefix, status)
 - L406: def _profile_structurally_valid(payload)
 - L423: def _observation_structurally_valid(payload)
-- L456: def _p8_structurally_valid(payload)
-- L489: def _recovery_trace_structurally_valid(payload)
-- L512: def _recovery_proof_structurally_valid(payload)
-- L538: def _iso_to_unix_ms(value)
-- L550: def extract_embedded_observation(p8_document)
-- L603: def _raw_p8_no_action_contract(payload)
-- L647: def normalize_p8_proof(raw_document, observation_document)
-- L716: def _age_ms(timestamp, evaluated_at_unix_ms)
-- L722: def _sort_blockers(blockers)
-- L730: def _add_document_load_blocker(blockers, prefix, document)
-- L740: def _p8_acceptance_ready(payload)
-- L770: def evaluate_shadow()
-- L1093: def _scenario_expected_blockers_valid(value)
-- L1103: def _scenario_pack_valid(payload)
-- L1149: def _fixture_documents()
-- L1165: def _scenario_documents(mutation, evaluated_at_unix_ms)
-- L1308: def run_scenario_pack(scenario_document)
-- L1393: def _select_observation_document(raw_p8_document, explicit_observation_document)
-- L1408: def build_report()
-- L1457: def _same_path(left, right)
-- L1463: def _is_within(path, root)
-- L1471: def _validate_output_path(path)
-- L1485: def write_json_atomic(path, payload)
-- L1499: def parse_args(argv)
-- L1521: def main(argv)
+- L457: def _p8_structurally_valid(payload)
+- L490: def _recovery_trace_structurally_valid(payload)
+- L518: def _recovery_proof_structurally_valid(payload)
+- L549: def _iso_to_unix_ms(value)
+- L561: def extract_embedded_observation(p8_document)
+- L614: def _raw_p8_no_action_contract(payload)
+- L658: def normalize_p8_proof(raw_document, observation_document)
+- L727: def _age_ms(timestamp, evaluated_at_unix_ms)
+- L733: def _sort_blockers(blockers)
+- L741: def _add_document_load_blocker(blockers, prefix, document)
+- L751: def _p8_acceptance_ready(payload)
+- L781: def evaluate_shadow()
+- L1107: def _scenario_expected_blockers_valid(value)
+- L1117: def _scenario_pack_valid(payload)
+- L1163: def _fixture_documents()
+- L1179: def _scenario_documents(mutation, evaluated_at_unix_ms)
+- L1322: def run_scenario_pack(scenario_document)
+- L1407: def _select_observation_document(raw_p8_document, explicit_observation_document)
+- L1422: def build_report()
+- L1471: def _same_path(left, right)
+- L1477: def _is_within(path, root)
+- L1485: def _validate_output_path(path)
+- L1499: def write_json_atomic(path, payload)
+- L1513: def parse_args(argv)
+- L1535: def main(argv)
+
+## `scripts/ops/otclient_equipment_candidate_catalog.py`
+
+- L102: def _is_int(value)
+- L106: def _is_sha(value)
+- L114: def _ordered(values)
+- L121: def _read_preview()
+- L155: def _observation_valid(payload)
+- L201: def _preview_valid(payload)
+- L283: def _classify_groups(candidates)
+- L348: def build_catalog()
+- L428: def main(argv)
+
+## `scripts/ops/otclient_equipment_capture_profile_apply.py`
+
+- L58: def exact_confirmation(plan_sha256)
+- L62: def _load_schema(path)
+- L68: def _schema_valid(payload, path)
+- L72: def _strict_local_document(path)
+- L97: def _write_local_atomic(path, payload)
+- L134: def apply_plan()
+- L223: def main(argv)
+
+## `scripts/ops/otclient_equipment_capture_profile_change_plan.py`
+
+- L165: class CanonicalInputs
+- L170: def _is_int(value)
+- L174: def _is_sha256(value)
+- L182: def _same_path(left, right)
+- L188: def _status_document(status)
+- L194: def _read_fixed_runtime_document(path)
+- L222: def read_canonical_inputs()
+- L229: def _ordered(values)
+- L237: def _load_blocker(prefix, document)
+- L246: def _doctor_contract_valid(payload)
+- L285: def _observation_contract_valid(payload)
+- L337: def _preview_contract_valid(payload)
+- L427: def _parse_identifier(value)
+- L439: def _proposed_profile(identifiers)
+- L454: def evaluate_change_plan(inputs)
+- L822: def _validate_output(path)
+- L856: def write_report(payload)
+- L894: def main(argv)
+
+## `scripts/ops/otclient_equipment_capture_profile_doctor.py`
+
+- L34: def zero_id_skeleton()
+- L54: def _is_link_or_reparse(metadata)
+- L61: def _fixed_local_target()
+- L76: def _ensure_safe_parent(target)
+- L113: def _target_metadata(target)
+- L120: def _same_identity(left, right)
+- L124: def initialize_local_profile()
+- L226: def diagnose()
+- L278: def main(argv)
+
+## `scripts/ops/otclient_equipment_consumer_parity.py`
+
+- L47: class ArtifactSpec
+- L213: class DuplicateKeyError
+- L217: def _reject_duplicate_keys(pairs)
+- L226: def _read_json(path)
+- L250: def _schema_errors(schema_path, payload)
+- L271: def _field_divergences(payload, expected, prefix)
+- L281: def _lookup(payload)
+- L290: def _record_binding(divergences, payloads, hashes)
+- L306: def _artifact_chain_divergences(payloads, hashes)
+- L464: def _consumer_source_check(path)
+- L489: def build_report(dev_dir)
+- L646: def write_json_atomic(path, payload)
+- L663: def parse_args(argv)
+- L674: def main(argv)
+
+## `scripts/ops/otclient_equipment_dependency_preflight.py`
+
+- L178: class EvidenceBundle
+- L186: def _is_int(value)
+- L190: def _is_sha256(value)
+- L199: def _false_flags(payload)
+- L203: def _empty_ledger(payload)
+- L207: def _ordered(values)
+- L215: def _load_blocker(prefix, document)
+- L224: def _read(path)
+- L228: def read_canonical_evidence()
+- L238: def _doctor_contract_valid(payload)
+- L280: def _preview_observation_valid(payload)
+- L333: def _preview_contract_valid(payload)
+- L441: def _summary()
+- L475: def evaluate_preflight(evidence)
+- L937: def _same_path(left, right)
+- L943: def _validate_output(path)
+- L977: def write_report(payload)
+- L1008: def main(argv)
+
+## `scripts/ops/otclient_equipment_observation_preview.py`
+
+- L95: def _ordered(values)
+- L102: def _fixed_path(path, expected)
+- L108: def _read_background()
+- L142: def _observation_projection(payload)
+- L175: def _observation_hash(payload)
+- L181: def _observation_shape_valid(payload)
+- L196: def _write_atomic(path, expected, payload)
+- L254: def build_preview()
+- L372: def main(argv)
+
+## `scripts/ops/otclient_equipment_operator_readiness.py`
+
+- L159: class ArtifactState
+- L169: def _is_int(value)
+- L173: def _is_sha(value)
+- L181: def _safe(payload)
+- L190: def _ordered(values)
+- L198: def read_artifacts()
+- L205: def _dependency_contract_valid(payload)
+- L270: def _catalog_contract_valid(payload)
+- L300: def _change_plan_contract_valid(payload)
+- L349: def _state(source, document)
+- L439: def _category(state)
+- L451: def _instruction(source, category)
+- L470: def evaluate_readiness(artifacts)
+- L614: def main(argv)
+
+## `scripts/ops/otclient_equipment_operator_refresh.py`
+
+- L83: class StageSpec
+- L154: def _has_reparse_attribute(metadata)
+- L159: def _safe_regular_file(path)
+- L171: def _unsafe_existing_output(path)
+- L185: def _unsafe_existing_directory(path)
+- L199: def _artifact_token(path)
+- L218: def _display_path(path)
+- L225: def _parity_contract_errors(payload)
+- L255: def _validate_stage_contracts()
+- L285: def _run_stage(stage)
+- L389: def run_refresh()
+- L568: def parse_args(argv)
+- L573: def main(argv)
+
+## `scripts/ops/otclient_equipment_operator_refresh_run.py`
+
+- L72: class StageSpec
+- L186: class RefreshRunError
+- L189: def __init__(self, code, message)
+- L195: class ArtifactSnapshot
+- L205: def _now_ms()
+- L209: def _is_int(value)
+- L213: def _canonical_run_id(value)
+- L225: def _is_reparse(metadata)
+- L231: def _regular_lstat(path)
+- L249: def _ensure_dev_dir(dev_dir)
+- L286: def _fixed_path(dev_dir, name)
+- L299: def _write_atomic(path, payload)
+- L328: def _remove_regular(path)
+- L351: def _read_object(path)
+- L371: def _schema_errors(schema_path, payload)
+- L386: def _safety_payload()
+- L402: def _validate_safety(payload, expected)
+- L411: def _load_snapshot(stage)
+- L492: def _assert_fresh(snapshot)
+- L522: def _validate_receipt(receipt)
+- L582: def _validate_pending(payload)
+- L621: def _load_pending(dev_dir)
+- L628: def _verify_receipts(pending)
+- L662: def begin_run()
+- L711: def abort_run(run_id)
+- L747: def record_stage(stage_id, run_id)
+- L804: def _verify_parity_bindings(snapshots)
+- L834: def finalize_run(run_id)
+- L929: def _error_payload(error)
+- L939: def parse_args(argv)
+- L950: def main(argv)
+
+## `scripts/ops/otclient_equipment_shadow_acceptance.py`
+
+- L106: class EvidencePaths
+- L116: class EvidenceBundle
+- L127: def _is_int(value)
+- L131: def _is_sha(value)
+- L139: def _same_path(left, right)
+- L145: def _path_has_reparse(path, boundary)
+- L166: def _canonical_paths(paths)
+- L188: def _validate_output(path)
+- L206: def read_evidence(paths)
+- L222: def evidence_fingerprint(bundle)
+- L236: def _report_no_action(payload)
+- L268: def _current_inputs_loaded(bundle)
+- L282: def _operational_inputs_fixture(bundle)
+- L293: def _ordered(values)
+- L300: def _acceptance_basis(payload)
+- L323: def _receipt_contract(payload)
+- L436: def evaluate_acceptance(paths)
+- L616: def _write_atomic(path, payload)
+- L648: def write_accepted_receipt(path)
+- L678: def main(argv)
 
 ## `scripts/ops/otclient_equipment_shadow_replay.py`
 
-- L174: def _false_flags(payload)
-- L178: def _empty_ledger(payload)
-- L182: def _is_int(value)
-- L186: def _is_sha256(value)
-- L194: def _ordered(values)
-- L198: def _read(path, max_bytes)
-- L202: def _profile_valid(payload)
-- L233: def _snapshot_valid(payload)
-- L280: def _p9_trace_valid(payload)
-- L298: def _p9_receipt_structurally_valid(payload)
-- L314: def _p9_receipt_valid(payload)
-- L323: def evaluate_shadow()
-- L513: def _fixture_documents()
-- L525: def _scenario_documents(mutation, evaluated_at)
-- L575: def _scenario_pack_valid(payload)
-- L623: def run_scenario_pack(document)
-- L693: def build_report()
-- L727: def _validate_output(path)
-- L769: def _write_atomic(path, payload)
-- L785: def main(argv)
+- L196: def _false_flags(payload)
+- L200: def _empty_ledger(payload)
+- L204: def _is_int(value)
+- L208: def _is_sha256(value)
+- L216: def _ordered(values)
+- L220: def _read(path, max_bytes)
+- L224: def _profile_valid(payload)
+- L256: def _snapshot_valid(payload)
+- L307: def _p9_trace_valid(payload)
+- L325: def _p9_receipt_structurally_valid(payload)
+- L342: def _p9_receipt_valid(payload)
+- L351: def evaluate_shadow()
+- L567: def _fixture_documents()
+- L579: def _p9_trace_document(path)
+- L595: def _operational_documents()
+- L610: def _same_path(left, right)
+- L616: def _canonical_operational_paths()
+- L634: def _scenario_documents(mutation, evaluated_at)
+- L727: def _scenario_pack_valid(payload)
+- L781: def run_scenario_pack(document)
+- L853: def build_report()
+- L894: def _validate_output(path)
+- L936: def _write_atomic(path, payload)
+- L974: def main(argv)
+
+## `scripts/ops/otclient_equipment_shadow_snapshot.py`
+
+- L103: def resolve_capture_profile(explicit)
+- L131: def load_capture_profile(path, source)
+- L164: def _is_int(value)
+- L168: def _false_flags(value)
+- L172: def _ordered(values)
+- L176: def _capture_profile_valid(payload)
+- L210: def _observation_from_background(payload)
+- L220: def _observation_valid(payload)
+- L304: def _background_contract_valid(payload)
+- L328: def build_ingest()
+- L500: def _validate_output(path, expected)
+- L531: def _write_atomic(path, expected, payload)
+- L569: def main(argv)
 
 ## `scripts/ops/otclient_external_bot_intake.py`
 
@@ -3637,51 +4182,135 @@ This is a lightweight map for navigation, not a full source dump.
 - L354: def write_text_atomic(path, text)
 - L367: def main()
 
+## `scripts/ops/otclient_fork_capability_detector.py`
+
+- L17: class Signature
+- L39: def _safe_marker_text(root)
+- L56: def _exists(root, relative)
+- L61: def detect(root)
+- L108: def _write_atomic(path, payload)
+- L121: def main()
+
 ## `scripts/ops/otclient_headless_evidence.py`
 
-- L65: def _regular_file_lstat(path)
-- L79: def _same_file_identity(left, right)
-- L83: def read_bytes_bounded(path, max_bytes)
-- L108: def bounded_tail_text(path, max_bytes)
-- L135: def load_json_bounded(path, max_bytes)
-- L146: def parse_json_object_bytes(raw)
-- L167: def _json_object_without_duplicates(pairs)
-- L178: def _reject_json_non_finite(value)
-- L182: def _json_finite_float(value)
-- L189: def _json_shape_within_bounds(value)
-- L206: def current_session(log_text)
-- L213: def latest_api_probe(session_text)
-- L222: def latest_runtime_state(session_text)
-- L227: def _line_age_ms(line, now)
-- L244: def parse_api_probe(line, now)
-- L271: def summarize_log(path, now)
-- L290: def _normalized_conditions_observation(status, errors)
-- L323: def summarize_conditions_observation(value)
-- L439: def summarize_capability(payload, load_status, now_unix_ms)
+- L98: def _regular_file_lstat(path)
+- L112: def _same_file_identity(left, right)
+- L116: def read_bytes_bounded(path, max_bytes)
+- L141: def bounded_tail_text(path, max_bytes)
+- L168: def load_json_bounded(path, max_bytes)
+- L179: def parse_json_object_bytes(raw)
+- L200: def _json_object_without_duplicates(pairs)
+- L211: def _reject_json_non_finite(value)
+- L215: def _json_finite_float(value)
+- L222: def _json_shape_within_bounds(value)
+- L239: def current_session(log_text)
+- L246: def latest_api_probe(session_text)
+- L255: def latest_runtime_state(session_text)
+- L260: def _line_age_ms(line, now)
+- L277: def parse_api_probe(line, now)
+- L304: def summarize_log(path, now)
+- L323: def _normalized_conditions_observation(status, errors)
+- L356: def summarize_conditions_observation(value)
+- L476: def _normalized_equipment_shadow_observation(status, errors)
+- L507: def _bounded_int(value, minimum, maximum)
+- L515: def summarize_equipment_shadow_observation(value)
+- L644: def _normalized_heal_friend_scan(status, errors)
+- L659: def summarize_heal_friend_scan(value)
+- L757: def summarize_capability(payload, load_status, now_unix_ms)
 
 ## `scripts/ops/otclient_headless_status.py`
 
-- L79: def _utc_now()
-- L83: def _canonical_text(path)
-- L87: def _same_canonical_path(left, right)
-- L91: def _is_within(path, root)
-- L99: def _require_within(path, root, label)
-- L106: def _require_exact(path, expected, label)
-- L113: def _manifest_relative_path(value)
-- L138: def _same_file_identity(left, right)
-- L142: def _file_fingerprint(path, max_bytes)
-- L187: def _validated_manifest_entries(manifest)
-- L245: def validate_live_pin(live_manifest_path, live_promotion_path, client_root)
-- L361: def _pin_remediation(errors)
-- L397: def inspect_live_manifest(entries, pin, client_root)
-- L455: def _inspect_manifest_entries(entries, client_root)
-- L522: def _deterministic_capability_report(client_root, explicit)
-- L533: def _select_log(client_root)
-- L552: def _fingerprints_unchanged(before, client_root)
-- L571: def build_status()
-- L758: def write_json_atomic(path, payload)
-- L774: def parse_args(argv)
-- L807: def main(argv)
+- L81: def _utc_now()
+- L85: def _canonical_text(path)
+- L89: def _same_canonical_path(left, right)
+- L93: def _is_within(path, root)
+- L101: def _require_within(path, root, label)
+- L108: def _require_exact(path, expected, label)
+- L115: def _manifest_relative_path(value)
+- L140: def _same_file_identity(left, right)
+- L144: def _file_fingerprint(path, max_bytes)
+- L189: def _validated_manifest_entries(manifest)
+- L247: def validate_live_pin(live_manifest_path, live_promotion_path, client_root)
+- L363: def _pin_remediation(errors)
+- L399: def inspect_live_manifest(entries, pin, client_root)
+- L457: def _inspect_manifest_entries(entries, client_root)
+- L524: def _deterministic_capability_report(client_root, explicit)
+- L535: def _select_log(client_root)
+- L554: def _fingerprints_unchanged(before, client_root)
+- L573: def build_status()
+- L760: def write_json_atomic(path, payload)
+- L776: def parse_args(argv)
+- L809: def main(argv)
+
+## `scripts/ops/otclient_heal_friend_candidate_catalog.py`
+
+- L43: def _is_int(value)
+- L47: def build_catalog(background, now_unix_ms)
+- L118: def sandbox_capability_path(local_app_data)
+- L136: def build_sandbox_catalog(capability_path)
+- L169: def main(argv)
+
+## `scripts/ops/otclient_heal_friend_observation.py`
+
+- L37: def build_observation(profile, capability)
+- L156: def main(argv)
+
+## `scripts/ops/otclient_heal_friend_operational_replay.py`
+
+- L41: def observation_document(producer)
+- L59: def build_report(docs, evaluated_at)
+- L84: def canonical_documents()
+- L96: def main(argv)
+
+## `scripts/ops/otclient_heal_friend_profile_apply.py`
+
+- L35: def _write_profile_atomic(path, payload)
+- L39: def _plan_basis(payload)
+- L56: def validate_application(plan, catalog, p9_receipt, p10_receipt)
+- L103: def apply_profile(plan)
+- L144: def main(argv)
+
+## `scripts/ops/otclient_heal_friend_profile_change_plan.py`
+
+- L47: def normalize_name(value)
+- L51: def exact_confirmation(target_id, target_name)
+- L55: def build_profile(target_id, target_name)
+- L81: def _receipt_ready(document)
+- L99: def build_plan(catalog, p9_receipt, p10_receipt)
+- L184: def main(argv)
+
+## `scripts/ops/otclient_heal_friend_shadow_acceptance.py`
+
+- L36: def _report_no_action(payload)
+- L71: def _profile_receipt_valid(document, report)
+- L91: def _receipt_basis(payload)
+- L108: def build_acceptance()
+- L168: def main(argv)
+
+## `scripts/ops/otclient_heal_friend_shadow_replay.py`
+
+- L243: class FixtureDocuments
+- L252: def _is_int(value)
+- L256: def _is_sha(value)
+- L265: def _false_flags(value)
+- L271: def _ordered(values)
+- L278: def _normalize_name(value)
+- L282: def _load_blocker(prefix, status)
+- L294: def _read_fixture(path, expected, max_bytes)
+- L322: def _profile_valid(value)
+- L367: def _observation_valid(value)
+- L422: def _seal_recovery_trace(payload)
+- L428: def _seal_recovery_proof(payload)
+- L434: def _build_p9_fixture(evaluated_at)
+- L513: def _build_p10_fixture(evaluated_at, p9_report, p9_receipt)
+- L584: def fixture_documents(evaluated_at)
+- L597: def _validate_p9(report_doc, receipt_doc, blockers)
+- L645: def _validate_p10(docs, blockers)
+- L698: def evaluate_shadow(docs, evaluated_at)
+- L912: def _mutate_documents(base, mutation, evaluated_at)
+- L1061: def run_scenario_pack(document)
+- L1160: def _failed_report(total, scenario_sha)
+- L1186: def main(argv)
 
 ## `scripts/ops/otclient_helper_module_audit.py`
 
@@ -3701,28 +4330,28 @@ This is a lightweight map for navigation, not a full source dump.
 
 ## `scripts/ops/otclient_helper_module_contract.py`
 
-- L515: class ModuleContractItem
-- L528: class ModuleContractReport
-- L547: def write_json_atomic(path, payload)
-- L564: def write_text_atomic(path, text)
-- L582: def parse_loader_modules(loader_text)
-- L592: def parse_registry_lanes(registry_text)
-- L596: def forbidden_hits(source)
-- L604: def missing_functions(source, module_global, required)
-- L615: def build_report(otclient_dir, loader_path, registry_path)
-- L708: def render_markdown(report)
-- L758: def parse_args()
-- L769: def main()
+- L516: class ModuleContractItem
+- L529: class ModuleContractReport
+- L548: def write_json_atomic(path, payload)
+- L565: def write_text_atomic(path, text)
+- L583: def parse_loader_modules(loader_text)
+- L593: def parse_registry_lanes(registry_text)
+- L597: def forbidden_hits(source)
+- L605: def missing_functions(source, module_global, required)
+- L616: def build_report(otclient_dir, loader_path, registry_path)
+- L709: def render_markdown(report)
+- L759: def parse_args()
+- L770: def main()
 
 ## `scripts/ops/otclient_helper_next_modules_plan.py`
 
-- L21: class CandidateModule
-- L33: class SupplementalExecution
-- L257: def current_budget_priority()
-- L291: def write_text_atomic(path, text)
-- L309: def build_payload()
-- L385: def render_markdown(payload)
-- L461: def main()
+- L23: class CandidateModule
+- L35: class SupplementalExecution
+- L259: def current_budget_priority()
+- L285: def write_text_atomic(path, text)
+- L303: def build_payload()
+- L407: def render_markdown(payload)
+- L484: def main()
 
 ## `scripts/ops/otclient_helper_profile_audit.py`
 
@@ -3764,6 +4393,142 @@ This is a lightweight map for navigation, not a full source dump.
 - L265: def parse_args()
 - L274: def main()
 
+## `scripts/ops/otclient_p12_conditions_execute_once_plan.py`
+
+- L31: def _read(path)
+- L39: def _created_at(value)
+- L43: def _atomic_write(path, value)
+- L50: def build_plan(paths)
+- L163: def main()
+
+## `scripts/ops/otclient_p12_conditions_execute_once_receipt.py`
+
+- L26: def _sha(value)
+- L31: def build_receipt(plan, approval, trace)
+- L99: def main(argv)
+
+## `scripts/ops/otclient_p12_conditions_execution_approval.py`
+
+- L21: def build_execution_approval(plan, approval, confirmation)
+- L46: def main(argv)
+
+## `scripts/ops/otclient_p12_conditions_execution_preflight.py`
+
+- L26: def _load(path)
+- L34: def build_preflight(paths)
+- L146: def main()
+
+## `scripts/ops/otclient_p12_conditions_session_approval.py`
+
+- L24: def build_approval(plan, confirmation)
+- L59: def main(argv)
+
+## `scripts/ops/otclient_p12_equipment_execute_once_plan.py`
+
+- L51: def _load(path)
+- L59: def _atomic_write(path, value)
+- L68: def build_plan(paths)
+- L299: def main()
+
+## `scripts/ops/otclient_p12_equipment_execute_once_receipt.py`
+
+- L35: def _sha(value)
+- L40: def build_reconciled_trace(plan, capability, log_text)
+- L84: def build_receipt(plan, approval, trace)
+- L209: def main(argv)
+
+## `scripts/ops/otclient_p12_equipment_execution_approval.py`
+
+- L21: def build_execution_approval(plan, approval, confirmation)
+- L56: def main(argv)
+
+## `scripts/ops/otclient_p12_equipment_execution_preflight.py`
+
+- L27: def _load(path)
+- L35: def build_preflight(paths)
+- L205: def main()
+
+## `scripts/ops/otclient_p12_equipment_session_approval.py`
+
+- L23: def build_approval(plan, confirmation)
+- L65: def main(argv)
+
+## `scripts/ops/otclient_p12_heal_friend_execute_once_plan.py`
+
+- L35: def _canonical_sha(value)
+- L40: def _load(path)
+- L48: def _atomic_write(path, value)
+- L57: def build_plan(paths)
+- L237: def main()
+
+## `scripts/ops/otclient_p12_heal_friend_execute_once_receipt.py`
+
+- L33: def _sha(value)
+- L38: def build_reconciled_trace(plan, log_text)
+- L76: def build_receipt(plan, approval, trace)
+- L172: def main(argv)
+
+## `scripts/ops/otclient_p12_heal_friend_execution_approval.py`
+
+- L21: def build_execution_approval(plan, approval, confirmation)
+- L56: def main(argv)
+
+## `scripts/ops/otclient_p12_heal_friend_execution_preflight.py`
+
+- L29: def _load(path)
+- L37: def build_preflight(paths)
+- L245: def main()
+
+## `scripts/ops/otclient_p12_heal_friend_no_compatible_vocation_closure.py`
+
+- L37: def _load(path)
+- L45: def build_closure(paths, confirmation)
+- L152: def main(argv)
+
+## `scripts/ops/otclient_p12_heal_friend_session_approval.py`
+
+- L23: def build_approval(plan, confirmation)
+- L69: def main(argv)
+
+## `scripts/ops/otclient_p14_independent_runner.py`
+
+- L56: class ContractError
+- L60: def _reject_duplicate_keys(pairs)
+- L69: def _reject_constant(value)
+- L73: def canonical_bytes(value)
+- L83: def canonical_sha256(value)
+- L87: def raw_sha256(value)
+- L91: def _is_reparse(path)
+- L98: def _read_regular_file(path)
+- L116: def load_strict_json(path)
+- L131: def validate_schema(payload, schema_path)
+- L140: def _safe_relative_path(value)
+- L153: def _package_sources()
+- L188: def _helper_version()
+- L198: def _sanitize_helper_manifest()
+- L226: def _validate_roadmap_state(payload)
+- L266: def _embedded_artifact(name, schema_version, payload)
+- L280: def _git_state()
+- L306: def _signing_material()
+- L317: def _signature_value(payload, key)
+- L326: def _apply_signature(payload, key)
+- L330: def _verify_signature(payload, key, key_id)
+- L343: def build_request()
+- L429: def _artifact_map(request)
+- L452: def _validate_manifest_payload(payload, schema_version)
+- L484: def _rollback_replay(payload)
+- L497: def verify_request(request)
+- L628: def _utc_now()
+- L632: def _artifact_root(value)
+- L648: def _write_json_atomic(path, payload)
+- L674: def _print(payload)
+- L678: def _prepare(args)
+- L740: def _verify(args)
+- L770: def verify_result_bundle(request, result)
+- L799: def _verify_result(args)
+- L819: def parse_args()
+- L845: def main()
+
 ## `scripts/ops/otclient_recovery_bridge_sandbox_smoke.py`
 
 - L18: def load_json(path)
@@ -3778,7 +4543,7 @@ This is a lightweight map for navigation, not a full source dump.
 - L66: def manifest_binding_matches(report, manifest_sha256)
 - L75: def latest_smoke_all()
 - L80: def run_lua_fail_closed(online, alive, client_ready, outside_pz)
-- L241: def main()
+- L242: def main()
 
 ## `scripts/ops/phase5_nightly_checklist.py`
 
@@ -3845,55 +4610,76 @@ This is a lightweight map for navigation, not a full source dump.
 
 ## `scripts/ops/release_evidence_pack.py`
 
-- L348: def _now_iso()
-- L357: def _safe_filename(value)
-- L365: def build_release_evidence_pack()
-- L401: def write_release_evidence_pack(output_dir, pack)
-- L442: def _configured_path(env_name, fallback)
-- L447: def _safe_file_stat(path)
-- L457: def _safe_dir_stat(path)
-- L467: def _read_text_bounded(path, max_bytes)
-- L483: def _read_json(path)
-- L490: def _read_json_or_none(path)
-- L505: class _DuplicateJsonKeyError
-- L509: def _reject_duplicate_json_pairs(pairs)
-- L518: def _reject_json_constant(value)
-- L522: def _parse_finite_json_float(value)
-- L529: def _json_shape_within_bounds(value)
-- L546: def _read_json_strict_or_none(path)
-- L571: def _conditions_shadow_is_int(value)
-- L575: def _conditions_shadow_is_sha256(value)
-- L583: def _conditions_shadow_is_allowed(value, allowed)
-- L587: def _conditions_shadow_canonical_sha256(value)
-- L598: def _conditions_shadow_false_flags(payload)
-- L602: def _conditions_shadow_empty_ledger(payload)
-- L606: def _conditions_shadow_blockers_valid(value)
-- L617: def _conditions_shadow_unique_errors(errors)
-- L621: def _conditions_shadow_trace_errors(trace, generated_at_unix_ms)
-- L746: def _conditions_shadow_scenario_errors(pack)
-- L899: def _conditions_shadow_contract_errors(payload)
-- L961: def _conditions_shadow_summary(payload, path)
-- L1065: def _equipment_shadow_summary(payload, path)
-- L1130: def valid_sha(value)
-- L1137: def valid_trace(value)
-- L1196: def valid_scenario(value)
-- L1313: def _safe_nonnegative_int(value)
-- L1319: def _matches_exact_contract(value, expected)
-- L1330: def _background_pin_error_valid(value)
-- L1367: def _background_pin_remediation_valid(value)
-- L1399: def _background_diagnostic_parity_valid(value)
-- L1465: def _parse_utc_timestamp(value)
-- L1477: def _background_status_summary(payload, path)
-- L1801: def _count_jsonl_records(path)
-- L1826: def _find_latest_markdown(releases_dir)
-- L1848: def _count_markdown_files(releases_dir)
-- L1856: def _helper_status(helper_dev_dir)
-- L2090: def _p7_operator_brief_status(operator_brief_path)
-- L2223: def _list_release_sprints(releases_dir)
-- L2265: def build_evidence_pack(releases_dir, quality_path, cost_report_path, action_audit_path, helper_dev_dir, operator_brief_path)
-- L2395: def render_markdown(pack)
-- L2543: def _build_parser()
-- L2601: def main()
+- L501: def _now_iso()
+- L510: def _safe_filename(value)
+- L518: def build_release_evidence_pack()
+- L554: def write_release_evidence_pack(output_dir, pack)
+- L595: def _configured_path(env_name, fallback)
+- L600: def _safe_file_stat(path)
+- L610: def _safe_dir_stat(path)
+- L620: def _read_text_bounded(path, max_bytes)
+- L636: def _read_json(path)
+- L643: def _read_json_or_none(path)
+- L658: class _DuplicateJsonKeyError
+- L662: def _reject_duplicate_json_pairs(pairs)
+- L671: def _reject_json_constant(value)
+- L675: def _parse_finite_json_float(value)
+- L682: def _json_shape_within_bounds(value)
+- L699: def _read_json_strict_or_none(path)
+- L724: def _conditions_shadow_is_int(value)
+- L728: def _conditions_shadow_is_sha256(value)
+- L736: def _conditions_shadow_is_allowed(value, allowed)
+- L740: def _conditions_shadow_canonical_sha256(value)
+- L751: def _conditions_shadow_false_flags(payload)
+- L755: def _conditions_shadow_empty_ledger(payload)
+- L759: def _conditions_shadow_blockers_valid(value)
+- L770: def _conditions_shadow_unique_errors(errors)
+- L774: def _conditions_shadow_trace_errors(trace, generated_at_unix_ms)
+- L899: def _conditions_shadow_scenario_errors(pack)
+- L1052: def _conditions_shadow_contract_errors(payload)
+- L1114: def _conditions_shadow_summary(payload, path)
+- L1218: def _equipment_shadow_summary(payload, path)
+- L1284: def valid_sha(value)
+- L1291: def valid_trace(value)
+- L1381: def valid_scenario(value)
+- L1516: def _equipment_shadow_acceptance_summary(payload, path, equipment_report)
+- L1612: def _p12_plan_contract_valid(payload)
+- L1645: def _deterministic_receipt_matches(actual, expected, receipt_prefix)
+- L1661: def _p12_conditions_summary(plan, approval, trace, receipt)
+- L1718: def _p12_equipment_summary(current_plan, approval, trace, receipt)
+- L1848: def _heal_friend_acceptance_contract_valid(payload)
+- L1875: def _safe_raw_sha256(path)
+- L1901: def _p12_heal_friend_closure_summary(payload)
+- L1987: def _roadmap_state_contract_valid(payload)
+- L2081: def _roadmap_state_audit_binding(action_audit_path)
+- L2144: def _roadmap_state_summary(payload)
+- L2191: def _roadmap_phase_state_summary()
+- L2409: def _p14_foundation_summary(root)
+- L2440: def _equipment_operator_missing_document()
+- L2444: def _equipment_operator_read_document(path)
+- L2455: def _equipment_operator_artifact_path(artifact)
+- L2459: def _equipment_operator_cross_hashes_valid(source, payload, documents)
+- L2584: def _equipment_operator_contract_valid(source, document, documents)
+- L2632: def _equipment_operator_source_projection()
+- L2685: def _equipment_operator_readiness_summary(helper_dev_dir)
+- L2905: def _equipment_operator_refresh_run_summary(payload, path)
+- L2992: def _safe_nonnegative_int(value)
+- L2998: def _matches_exact_contract(value, expected)
+- L3009: def _background_pin_error_valid(value)
+- L3046: def _background_pin_remediation_valid(value)
+- L3078: def _background_diagnostic_parity_valid(value)
+- L3144: def _parse_utc_timestamp(value)
+- L3156: def _background_status_summary(payload, path)
+- L3480: def _count_jsonl_records(path)
+- L3505: def _find_latest_markdown(releases_dir)
+- L3527: def _count_markdown_files(releases_dir)
+- L3535: def _helper_status(helper_dev_dir)
+- L3976: def _p7_operator_brief_status(operator_brief_path)
+- L4109: def _list_release_sprints(releases_dir)
+- L4151: def build_evidence_pack(releases_dir, quality_path, cost_report_path, action_audit_path, helper_dev_dir, operator_brief_path, roadmap_state_path)
+- L4290: def render_markdown(pack)
+- L4517: def _build_parser()
+- L4575: def main()
 
 ## `scripts/ops/repo_hygiene_audit.py`
 
@@ -4721,8 +5507,8 @@ This is a lightweight map for navigation, not a full source dump.
 
 - L60: def _load_manifest(path)
 - L67: def _normalized_paths(values)
-- L73: def validate_package_boundaries(core_manifest, pro_manifest, studio_manifest)
-- L135: def main()
+- L75: def validate_package_boundaries(core_manifest, pro_manifest, studio_manifest)
+- L149: def main()
 
 ## `scripts/ops/validate_release_artifact_contract.py`
 
@@ -4788,69 +5574,84 @@ This is a lightweight map for navigation, not a full source dump.
 - L245: function Write-TextAtomic
 - L272: function Write-TestPrefs
 - L298: function Write-SmokeCommand
-- L323: function Sync-CtoaRuntimeFiles
-- L331: function Copy-CtoaRuntimeFile
-- L418: function Ensure-CtoaBootHook
-- L499: function Get-HelperVersion
-- L509: function Get-LiveClientSummary
-- L531: function Get-SourceClientProcessSummaries
-- L569: function Start-LiveClientAfterPromotion
-- L598: function Get-DevPackageFiles
-- L661: function Get-LiveRootFallbackFiles
-- L667: function Get-DevFileManifest
-- L685: function Write-DevChangelog
-- L743: function Write-ReleaseReadinessReport
-- L787: function Write-DevValidationReport
-- L807: function New-DevPackage
-- L917: function Invoke-DevValidation
-- L980: function Resolve-SmokeTab
-- L1007: function Initialize-Sandbox
-- L1056: function Invoke-SmokePreflight
-- L1137: function Start-SandboxClient
-- L1147: function Get-SandboxProcesses
-- L1164: function Get-SandboxProcessSummaries
-- L1211: function Stop-SandboxClient
-- L1225: function Set-LiveCtoaEnabled
-- L1335: function Set-LiveCtoaUiOnly
-- L1439: function New-LiveCtoaBackup
-- L1485: function Assert-LiveDeployApproved
-- L1491: function Assert-ReleaseGateForLivePromotion
-- L1507: function Get-VerifiedStagePromotionEntries
-- L1577: function Assert-LivePromotionMatchesStage
-- L1647: function Write-LiveManifestSnapshot
-- L1694: function Invoke-LivePromotion
-- L1784: function Invoke-LiveEmergencyRepair
-- L1848: function Capture-Screenshot
-- L1906: function Wait-ForSmokeTab
-- L1945: function Get-SmokeLogLineCount
-- L1953: function Test-AtCharacterSelect
-- L1962: function Invoke-SmokeStatus
-- L2040: function Invoke-HealFriendNoTargetSmoke
-- L2096: function Invoke-ConditionsObserverSmoke
-- L2155: function Invoke-EquipmentObserverSmoke
-- L2215: function Invoke-ScriptingPolicySmoke
-- L2275: function Invoke-PlannerStaticSmoke
-- L2325: function Invoke-RuntimePolicyStaticSmoke
-- L2380: function Invoke-DispatchGuardStaticSmoke
-- L2430: function Invoke-PlanQueueStaticSmoke
-- L2480: function Invoke-RuntimeReadinessStaticSmoke
-- L2531: function Invoke-ModuleStatusStaticSmoke
-- L2582: function Invoke-ActionCatalogStaticSmoke
-- L2637: function Invoke-DecisionTraceStaticSmoke
-- L2689: function Invoke-SandboxHandoffStaticSmoke
-- L2740: function Invoke-FeatureFlagsStaticSmoke
-- L2798: function Invoke-HudStaticSmoke
-- L2853: function Invoke-HotkeysStaticSmoke
-- L2907: function Invoke-ModalStaticSmoke
-- L2963: function Invoke-InputContractsStaticSmoke
-- L2985: function Invoke-RouteStaticSmoke
-- L3040: function Invoke-TargetingStaticSmoke
-- L3097: function Invoke-CombatRuntimeStaticSmoke
-- L3153: function Invoke-CavebotRuntimeStaticSmoke
-- L3209: function Invoke-LootRuntimeStaticSmoke
-- L3267: function Invoke-TimerRuntimeStaticSmoke
-- L3323: function Invoke-RecoveryRuntimeStaticSmoke
-- ... 43 more symbols omitted
+- L362: function Sync-CtoaRuntimeFiles
+- L374: function Copy-CtoaRuntimeFile
+- L478: function Ensure-CtoaBootHook
+- L562: function Get-HelperVersion
+- L572: function Get-LiveClientSummary
+- L594: function Get-SourceClientProcessSummaries
+- L632: function Start-LiveClientAfterPromotion
+- L661: function Get-DevPackageFiles
+- L729: function Get-LiveLegacyFiles
+- L755: function Copy-LegacyHelperUserState
+- L784: function Remove-LiveLegacyFiles
+- L799: function Get-DevFileManifest
+- L817: function Write-DevChangelog
+- L875: function Write-ReleaseReadinessReport
+- L919: function Write-DevValidationReport
+- L939: function New-DevPackage
+- L1076: function Invoke-DevValidation
+- L1247: function Resolve-SmokeTab
+- L1274: function Initialize-Sandbox
+- L1323: function Invoke-SmokePreflight
+- L1404: function Start-SandboxClient
+- L1414: function Get-SandboxProcesses
+- L1431: function Get-SandboxProcessSummaries
+- L1478: function Stop-SandboxClient
+- L1492: function Set-LiveCtoaEnabled
+- L1606: function Set-LiveCtoaUiOnly
+- L1714: function New-LiveCtoaBackup
+- L1760: function Assert-LiveDeployApproved
+- L1766: function Assert-ReleaseGateForLivePromotion
+- L1782: function Get-VerifiedStagePromotionEntries
+- L1852: function Assert-LivePromotionMatchesStage
+- L1922: function Write-LiveManifestSnapshot
+- L1969: function Invoke-LivePromotion
+- L2053: function Invoke-LiveEmergencyRepair
+- L2111: function Capture-Screenshot
+- L2169: function Wait-ForSmokeTab
+- L2208: function Get-SmokeLogLineCount
+- L2216: function Test-AtCharacterSelect
+- L2225: function Invoke-SmokeStatus
+- L2303: function Invoke-HealFriendNoTargetSmoke
+- L2359: function Invoke-ConditionsObserverSmoke
+- L2418: function Invoke-EquipmentObserverSmoke
+- L2478: function Invoke-ScriptingPolicySmoke
+- L2538: function Invoke-PlannerStaticSmoke
+- L2588: function Invoke-RuntimePolicyStaticSmoke
+- L2643: function Invoke-DispatchGuardStaticSmoke
+- L2693: function Invoke-PlanQueueStaticSmoke
+- L2743: function Invoke-RuntimeReadinessStaticSmoke
+- L2794: function Invoke-ModuleStatusStaticSmoke
+- L2845: function Invoke-ActionCatalogStaticSmoke
+- L2900: function Invoke-DecisionTraceStaticSmoke
+- L2952: function Invoke-SandboxHandoffStaticSmoke
+- L3003: function Invoke-FeatureFlagsStaticSmoke
+- L3061: function Invoke-HudStaticSmoke
+- L3116: function Invoke-HotkeysStaticSmoke
+- L3170: function Invoke-ModalStaticSmoke
+- L3226: function Invoke-InputContractsStaticSmoke
+- L3248: function Invoke-RouteStaticSmoke
+- L3303: function Invoke-TargetingStaticSmoke
+- L3360: function Invoke-CombatRuntimeStaticSmoke
+- L3416: function Invoke-CavebotRuntimeStaticSmoke
+- L3472: function Invoke-LootRuntimeStaticSmoke
+- ... 50 more symbols omitted
+
+## `scripts/windows/solteria_safe_release.ps1`
+
+- L13: function Get-RepoRoot
+- L17: function Get-OutRoot
+- L25: function Write-JsonAtomic
+- L34: function Get-SafeFiles
+- L46: function Get-SafeVersion
+- L54: function Get-FileEntries
+- L76: function Get-LiveProcessIds
+- L85: function Assert-LiveRoot
+- L98: function Invoke-ValidateSafe
+- L159: function Invoke-PackageSafe
+- L187: function Invoke-SafeStatus
+- L209: function Invoke-PromoteSafe
 
 ## `tests/conftest.py`
 
@@ -5213,6 +6014,26 @@ This is a lightweight map for navigation, not a full source dump.
 - L16: def test_doctor_reports_ok_when_checks_pass(monkeypatch)
 - L17: def fake_run_git(args)
 
+## `tests/test_ctoa_exclusive_project_loader.py`
+
+- L15: def test_only_neutral_project_loader_autoloads()
+- L30: def test_project_loaders_require_explicit_exclusive_selection()
+- L46: def test_safe_tree_is_independent_and_safe_booted()
+- L67: def test_safe_editors_expose_spells_rotations_support_and_ranges()
+- L144: def test_safe_imports_kingsvale_helper_json_contract_without_arming(tmp_path)
+- L204: def test_official_package_stages_only_the_neutral_root_loader()
+- L237: def test_lua_lifecycle_loads_exactly_one_project_per_login(tmp_path)
+- L323: def test_safe_cannot_arm_outside_selected_project(tmp_path)
+- L357: def test_safe_enable_uses_proven_bounded_spectator_signature(tmp_path)
+- L413: def test_safe_target_dispatch_is_idempotent_for_current_creature(tmp_path)
+- L455: def test_safe_support_is_default_off_ordered_and_interval_gated(tmp_path)
+- L499: def test_safe_support_item_mana_threshold_and_rotation_distance(tmp_path)
+- L547: def test_safe_json_profile_is_validated_and_never_persists_runtime_arm(tmp_path)
+- L625: def test_safe_v3_named_presets_export_and_strict_unknown_field_rejection(tmp_path)
+- L677: def test_safe_exeta_rotation_is_ordered_and_per_entry_cooldown_gated(tmp_path)
+- L722: def test_safe_v3_rejects_unknown_fields_fail_closed(tmp_path)
+- L756: def test_safe_keyboard_toggle_navigation_and_window_position_persistence(tmp_path)
+
 ## `tests/test_ctoa_full_workspace_audit.py`
 
 - L8: def test_full_workspace_audit_categories_keep_git_vendor_and_secrets_visible()
@@ -5254,13 +6075,24 @@ This is a lightweight map for navigation, not a full source dump.
 ## `tests/test_ctoa_helper_otclient_observation_adapter.py`
 
 - L17: def test_otclient_observation_adapter_is_read_only_and_loader_wired()
-- L57: def test_otclient_adapter_reads_mocked_state_and_attaches_disabled_task(tmp_path)
-- L243: def test_reporter_rebuilds_allowlisted_observation_and_omits_poisoned_adapters(tmp_path)
+- L30: def test_spectator_reads_use_confirmed_mehah_global_function_signature()
+- L65: def test_otclient_adapter_reads_mocked_state_and_attaches_disabled_task(tmp_path)
+- L334: def test_reporter_rebuilds_allowlisted_observation_and_omits_poisoned_adapters(tmp_path)
+
+## `tests/test_ctoa_helper_passive_runtime_probe_summaries.py`
+
+- L12: def test_vocation_probe_summary_is_owned_by_passive_diagnostics()
+- L25: def test_timer_probe_summary_is_owned_by_passive_timer_adapter()
+- L38: def test_probe_observations_and_runtime_mutation_remain_shell_owned()
 
 ## `tests/test_ctoa_helper_profile_migration.py`
 
-- L13: def test_profile_version_is_preserved_across_build_load_and_export()
-- L27: def test_versioned_profile_migration_is_safe_and_future_versions_fail_closed(tmp_path)
+- L17: def test_profile_version_is_preserved_across_build_load_and_export()
+- L36: def test_versioned_profile_migration_is_safe_and_future_versions_fail_closed(tmp_path)
+- L109: def test_extracted_profile_and_input_helpers_execute_in_support_modules(tmp_path)
+- L168: def test_profile_export_descriptors_cover_every_generated_section_with_fixture_parity(tmp_path)
+- L219: def test_profile_descriptor_modules_keep_loader_and_write_ownership_outside()
+- L227: def test_profile_and_ui_pref_writes_fail_closed_to_string_payloads()
 
 ## `tests/test_ctoa_helper_recovery_bridge.py`
 
@@ -5290,8 +6122,8 @@ This is a lightweight map for navigation, not a full source dump.
 
 - L24: def test_runtime_module_gates_are_separate_ordered_and_packaged()
 - L72: def test_runtime_module_gate_matrix_with_real_lua(tmp_path)
-- L209: def test_runtime_policy_requires_action_specific_gates_and_defers_high_risk(tmp_path)
-- L301: def test_runtime_module_sequence_is_synced_across_canonical_plans()
+- L210: def test_runtime_policy_requires_action_specific_gates_and_defers_high_risk(tmp_path)
+- L302: def test_runtime_module_sequence_is_synced_across_canonical_plans()
 
 ## `tests/test_ctoa_helper_smoke_report.py`
 
@@ -5316,14 +6148,14 @@ This is a lightweight map for navigation, not a full source dump.
 
 - L16: def _run_lua(tmp_path, source)
 - L31: def test_vocation_detection_routes_promoted_and_base_vocations(tmp_path)
-- L56: def test_shell_renders_detected_vocation_in_profile_hint()
-- L61: def test_live_promotion_manifest_includes_vocation_router_and_all_profiles()
-- L78: def test_ek_rotation_never_falls_back_to_single_target_in_large_pack(tmp_path)
-- L98: def test_ek_stance_selects_attack_for_small_pack_and_defense_for_large_pack(tmp_path)
-- L116: def test_targeting_rejects_unreachable_candidate_when_required(tmp_path)
-- L130: def test_profile_persistence_exports_modules_vocation_and_real_workdir_path()
-- L152: def test_profile_save_path_maps_virtual_resource_to_real_mod_file(tmp_path)
-- L169: def test_every_vocation_profile_passes_safe_migration_audit(profile_name)
+- L57: def test_shell_renders_detected_vocation_in_profile_hint()
+- L62: def test_live_promotion_manifest_includes_vocation_router_and_all_profiles()
+- L79: def test_ek_rotation_never_falls_back_to_single_target_in_large_pack(tmp_path)
+- L99: def test_ek_stance_selects_attack_for_small_pack_and_defense_for_large_pack(tmp_path)
+- L117: def test_targeting_rejects_unreachable_candidate_when_required(tmp_path)
+- L131: def test_profile_persistence_exports_modules_vocation_and_real_workdir_path()
+- L155: def test_profile_save_path_maps_packaged_resources_to_mutable_user_files(tmp_path)
+- L176: def test_every_vocation_profile_passes_safe_migration_audit(profile_name)
 
 ## `tests/test_ctoa_loader_process_safety.py`
 
@@ -5350,6 +6182,17 @@ This is a lightweight map for navigation, not a full source dump.
 - L57: def test_bootstrap_replaces_symlinked_local_json_without_touching_target(tmp_path)
 - L80: def test_product_bootstrap_source_uses_atomic_state_writer()
 
+## `tests/test_ctoa_public_exposure_audit.py`
+
+- L11: def _policy()
+- L15: def _snapshot()
+- L61: def test_private_first_snapshot_passes()
+- L68: def test_public_owned_source_fails()
+- L85: def test_divergent_public_fork_fails()
+- L104: def test_public_vercel_alias_or_auto_assignment_fails()
+- L119: def test_pages_publication_workflow_is_disabled()
+- L128: def test_private_repo_has_local_secret_scanner()
+
 ## `tests/test_ctoa_root_action_security.py`
 
 - L8: def _script_text()
@@ -5364,8 +6207,8 @@ This is a lightweight map for navigation, not a full source dump.
 ## `tests/test_ctoa_runtime_telemetry.py`
 
 - L14: def test_runtime_core_telemetry_is_wired_to_diagnostics_and_reporter()
-- L41: def test_runtime_telemetry_reports_disabled_deferred_and_failed_states_with_real_lua(tmp_path)
-- L135: def test_runtime_telemetry_remains_read_only()
+- L45: def test_runtime_telemetry_reports_disabled_deferred_and_failed_states_with_real_lua(tmp_path)
+- L139: def test_runtime_telemetry_remains_read_only()
 
 ## `tests/test_ctoa_update_gate.py`
 
@@ -5376,6 +6219,25 @@ This is a lightweight map for navigation, not a full source dump.
 - L55: def test_update_gate_rejects_oversized_bootstrap_state(tmp_path)
 - L68: def test_update_gate_rejects_invalid_version_or_schema(tmp_path)
 - L82: def test_update_gate_rejects_symlinked_bootstrap_state_before_read(tmp_path)
+
+## `tests/test_ctoai_roadmap_state.py`
+
+- L15: def _copy_inputs(destination)
+- L39: def _now()
+- L43: def test_committed_p13_contract_and_state_are_self_validating()
+- L70: def test_p13_state_schema_registry_and_ledger_are_complete(tmp_path)
+- L124: def test_dry_run_writes_only_sanitized_audit(tmp_path)
+- L146: def test_confirmed_refresh_writes_atomic_json_markdown_and_hash_audit(tmp_path)
+- L185: def test_confirmed_refresh_rejects_wrong_confirmation(tmp_path)
+- L206: def test_binding_tamper_blocks_heal_friend_closure(tmp_path)
+- L225: def test_previous_terminal_evidence_drift_is_reported_as_tamper(tmp_path)
+- L250: def test_exact_p8_rebaseline_confirmation_updates_only_the_valid_p8_drift(tmp_path)
+- L294: def test_p8_rebaseline_never_suppresses_an_additional_blocker(tmp_path)
+- L320: def test_registry_cannot_redirect_a_fixed_input_path(tmp_path)
+- L335: def test_registry_semantics_are_pinned_before_the_first_state(tmp_path)
+- L357: def test_schema_contracts_are_hash_pinned(tmp_path, relative, expected_blocker)
+- L374: def test_symlinked_output_is_rejected(tmp_path)
+- L397: def test_cli_has_no_caller_selected_output_path()
 
 ## `tests/test_desktop_console_url_security.py`
 
@@ -5465,30 +6327,31 @@ This is a lightweight map for navigation, not a full source dump.
 - L19: def _write_roadmap_generation_docs(root)
 - L26: def _roadmap_doc_sync_payload()
 - L46: def test_roadmap_generation_requires_all_doc_sync_gates(tmp_path, monkeypatch, overall_status, plan3_status, p8_p16_status, expected_blocker)
-- L73: def test_roadmap_generation_blocks_p8_contract_marker_drift(tmp_path, monkeypatch)
-- L101: def test_release_evidence_summary_exposes_helper_sandbox_queue(tmp_path)
-- L168: def test_engine_brain_index_writes_secret_safe_outputs(tmp_path)
-- L512: def test_source_needles_check_blocks_missing_contract_markers(tmp_path, monkeypatch)
-- L528: def test_p6_installed_plugin_cache_check_matches_local_manifest(tmp_path, monkeypatch)
-- L570: def test_p6_plugin_mcp_absolute_script_check_requires_runnable_absolute_arg(tmp_path, monkeypatch)
-- L610: def test_p6_plugin_status_script_reports_ready_for_current_workspace()
-- L652: def test_p6_plugin_self_check_reports_ready_for_current_workspace()
-- L714: def test_p7_operator_brief_reports_next_safe_step()
-- L833: def _write_plugin_roadmap_workspace(root)
-- L853: def _run_plugin_cockpit(workspace)
-- L865: def test_p6_plugin_cockpit_blocks_p8_contract_marker_drift(tmp_path)
-- L890: def test_p6_plugin_cockpit_requires_p8_doc_sync_status(tmp_path)
-- L903: def test_p6_control_center_cockpit_script_reports_read_only_status()
-- L990: def write_cockpit_preflight_fixture(root)
-- L1214: def test_p6_plugin_cockpit_blocks_bootstrap_only_dry_run_smoke(tmp_path)
-- L1249: def test_p6_plugin_mcp_server_exposes_expected_tools_and_audited_safe_write(tmp_path)
-- L1810: def test_p6_plugin_safe_write_blocks_without_cockpit_preflight(tmp_path)
+- L73: def test_roadmap_generation_blocks_current_phase_marker_drift(tmp_path, monkeypatch)
+- L103: def test_roadmap_generation_accepts_markdown_line_wrapping(tmp_path, monkeypatch)
+- L133: def test_release_evidence_summary_exposes_helper_sandbox_queue(tmp_path)
+- L264: def test_engine_brain_index_writes_secret_safe_outputs(tmp_path)
+- L610: def test_source_needles_check_blocks_missing_contract_markers(tmp_path, monkeypatch)
+- L626: def test_p6_installed_plugin_cache_check_matches_local_manifest(tmp_path, monkeypatch)
+- L668: def test_p6_plugin_mcp_absolute_script_check_requires_runnable_absolute_arg(tmp_path, monkeypatch)
+- L708: def test_p6_plugin_status_script_reports_ready_for_current_workspace()
+- L750: def test_p6_plugin_self_check_reports_ready_for_current_workspace()
+- L812: def test_p7_operator_brief_reports_next_safe_step()
+- L941: def _write_plugin_roadmap_workspace(root)
+- L961: def _run_plugin_cockpit(workspace)
+- L973: def test_p6_plugin_cockpit_blocks_current_phase_marker_drift(tmp_path)
+- L1000: def test_p6_plugin_cockpit_requires_p8_doc_sync_status(tmp_path)
+- L1013: def test_p6_control_center_cockpit_script_reports_read_only_status()
+- L1116: def write_cockpit_preflight_fixture(root)
+- L1363: def test_p6_plugin_cockpit_blocks_bootstrap_only_dry_run_smoke(tmp_path)
+- L1398: def test_p6_plugin_mcp_server_exposes_expected_tools_and_audited_safe_write(tmp_path)
+- L1959: def test_p6_plugin_safe_write_blocks_without_cockpit_preflight(tmp_path)
 
 ## `tests/test_engine_brain_pack.py`
 
 - L9: def test_engine_brain_pack_writes_manifest_and_markdown(tmp_path)
-- L49: def test_engine_brain_pack_can_include_generated_sections(tmp_path)
-- L62: def test_engine_brain_pack_supports_helper_profile(tmp_path)
+- L52: def test_engine_brain_pack_can_include_generated_sections(tmp_path)
+- L65: def test_engine_brain_pack_supports_helper_profile(tmp_path)
 
 ## `tests/test_evidence_retention_policy.py`
 
@@ -5973,29 +6836,38 @@ This is a lightweight map for navigation, not a full source dump.
 - L31: def test_orchestrator_loop_launcher_verifies_pid_owner_before_stop()
 - L44: def test_orchestrator_loop_worker_uses_literal_paths_and_inherited_env()
 
+## `tests/test_otclient_conditions_recovery_proof.py`
+
+- L13: def _observation()
+- L26: def _background()
+- L86: def _build(background)
+- L94: def test_ready_background_produces_hash_bound_no_action_recovery_evidence()
+- L115: def test_blocked_p8_and_unknown_observation_emit_blocked_not_missing_evidence()
+- L134: def test_output_boundary_rejects_noncanonical_path(tmp_path)
+
 ## `tests/test_otclient_conditions_shadow_acceptance.py`
 
 - L23: def _read_json(path)
 - L29: def _write_json(path, payload)
 - L34: def _ready_workspace(tmp_path, evaluated_at)
-- L162: def _allow_test_paths(monkeypatch)
-- L166: def _assert_no_action(receipt)
-- L173: def test_acceptance_schema_and_scenario_fixture_are_strict_and_closed()
-- L197: def test_ready_report_confirmation_matrix_is_fail_closed(tmp_path, monkeypatch, case)
-- L222: def test_noncanonical_paths_cannot_create_an_accepted_receipt(tmp_path)
-- L247: def test_report_mutations_never_accept(tmp_path, monkeypatch, mutation, expected_blocker)
-- L294: def test_future_or_stale_report_cannot_accept(tmp_path, monkeypatch, now_ms, expected_blocker)
-- L316: def test_duplicate_safe_or_unsafe_report_key_is_rejected(tmp_path, monkeypatch, duplicate_value)
-- L341: def test_fixture_operational_inputs_can_never_accept(tmp_path, monkeypatch)
-- L382: def test_changed_current_input_breaks_report_recomputation(tmp_path, monkeypatch)
-- L403: def test_only_contract_valid_accepted_receipt_can_be_written(tmp_path, monkeypatch)
-- L435: def test_forged_or_stale_receipt_cannot_cross_the_writer_boundary(tmp_path, monkeypatch)
-- L470: def test_accepted_receipt_rejects_resealed_basis_id_and_zero_hash_mutations(tmp_path, monkeypatch)
-- L500: def test_writer_rechecks_evidence_immediately_before_write(tmp_path, monkeypatch)
-- L512: def evaluate_with_late_change()
-- L534: def test_cli_writes_only_after_exact_confirmation(tmp_path, monkeypatch)
-- L577: def test_output_path_is_runtime_only_and_rejects_symlink(tmp_path, monkeypatch)
-- L598: def test_output_path_rejects_reparse_ancestor(tmp_path, monkeypatch)
+- L168: def _allow_test_paths(monkeypatch)
+- L172: def _assert_no_action(receipt)
+- L179: def test_acceptance_schema_and_scenario_fixture_are_strict_and_closed()
+- L203: def test_ready_report_confirmation_matrix_is_fail_closed(tmp_path, monkeypatch, case)
+- L228: def test_noncanonical_paths_cannot_create_an_accepted_receipt(tmp_path)
+- L253: def test_report_mutations_never_accept(tmp_path, monkeypatch, mutation, expected_blocker)
+- L300: def test_future_or_stale_report_cannot_accept(tmp_path, monkeypatch, now_ms, expected_blocker)
+- L322: def test_duplicate_safe_or_unsafe_report_key_is_rejected(tmp_path, monkeypatch, duplicate_value)
+- L347: def test_fixture_operational_inputs_can_never_accept(tmp_path, monkeypatch)
+- L388: def test_changed_current_input_breaks_report_recomputation(tmp_path, monkeypatch)
+- L409: def test_only_contract_valid_accepted_receipt_can_be_written(tmp_path, monkeypatch)
+- L441: def test_forged_or_stale_receipt_cannot_cross_the_writer_boundary(tmp_path, monkeypatch)
+- L476: def test_accepted_receipt_rejects_resealed_basis_id_and_zero_hash_mutations(tmp_path, monkeypatch)
+- L506: def test_writer_rechecks_evidence_immediately_before_write(tmp_path, monkeypatch)
+- L518: def evaluate_with_late_change()
+- L540: def test_cli_writes_only_after_exact_confirmation(tmp_path, monkeypatch)
+- L583: def test_output_path_is_runtime_only_and_rejects_symlink(tmp_path, monkeypatch)
+- L604: def test_output_path_rejects_reparse_ancestor(tmp_path, monkeypatch)
 
 ## `tests/test_otclient_conditions_shadow_consumers.py`
 
@@ -6024,48 +6896,261 @@ This is a lightweight map for navigation, not a full source dump.
 - L64: def test_data_only_profile_is_the_exact_safe_p9_contract()
 - L89: def test_all_p9_json_schemas_are_closed_draft_2020_12(schema_name)
 - L97: def test_flat_observation_fixture_matches_the_producer_contract_exactly()
-- L110: def test_observation_id_with_dot_is_rejected_like_the_passive_producer()
-- L123: def test_positive_fixture_is_deterministic_but_never_executes()
-- L136: def test_scenario_pack_covers_required_fail_closed_matrix_and_passes_twice()
-- L195: def test_scenario_pack_rejects_invalid_nested_shapes_without_exception(field, invalid_value)
-- L226: def test_strict_loader_rejects_duplicate_nonfinite_and_nonobject_json(tmp_path, contents, expected)
-- L235: def test_bounded_loader_rejects_oversize_symlink_and_non_regular(tmp_path)
-- L268: def test_each_input_surface_maps_unsafe_file_status_to_a_stable_blocker(index, prefix, load_status)
-- L291: def test_extra_fields_fail_closed_for_every_strict_input(index, expected)
-- L313: def test_p8_zero_hash_sentinels_are_structural_but_never_accepted(field)
-- L337: def test_untrusted_enum_shapes_fail_closed_without_type_errors(index, field, invalid_value, expected_blocker)
-- L353: def _valid_envelope()
-- L367: def test_embedded_sanitizer_envelope_is_strictly_projected_before_hashing()
-- L385: def test_raw_background_status_ignores_external_observation_override()
-- L405: def test_external_observation_without_strict_p8_proof_fails_closed()
-- L415: def test_replay_accepts_the_real_headless_sanitizer_envelope_contract()
-- L441: def test_embedded_sanitizer_envelope_fails_closed(kind)
-- L471: def test_raw_p8_status_shape_normalizes_to_unknown_without_type_error()
-- L488: def test_operational_mode_rejects_all_fixture_sources()
-- L500: def test_pz_and_cooldown_sources_must_prove_positive_states()
-- L514: def test_raw_p8_adapter_rejects_optional_execute_once_claim()
-- L562: def test_every_true_action_flag_fails_closed(flag, index, expected)
-- L575: def test_all_recovery_hash_bindings_are_independently_enforced()
-- L598: def test_blocker_order_is_canonical_and_independent_of_input_key_order()
-- L618: def test_current_real_p8_evidence_is_reported_as_operationally_blocked()
-- L638: def test_raw_background_status_blocked_is_not_promoted_by_a_passing_pack()
-- L737: def test_atomic_writer_is_confined_to_exact_runtime_output(tmp_path, monkeypatch)
-- L755: def test_cli_no_write_does_not_create_output(tmp_path, monkeypatch, capsys)
-- L793: def test_failed_scenario_pack_blocks_an_otherwise_ready_operational_trace()
-- L842: def test_default_source_has_no_client_or_process_interaction_primitives()
+- L110: def test_player_states_is_a_structurally_valid_proven_pz_source()
+- L117: def test_observation_id_with_dot_is_rejected_like_the_passive_producer()
+- L130: def test_positive_fixture_is_deterministic_but_never_executes()
+- L143: def test_scenario_pack_covers_required_fail_closed_matrix_and_passes_twice()
+- L202: def test_scenario_pack_rejects_invalid_nested_shapes_without_exception(field, invalid_value)
+- L233: def test_strict_loader_rejects_duplicate_nonfinite_and_nonobject_json(tmp_path, contents, expected)
+- L242: def test_bounded_loader_rejects_oversize_symlink_and_non_regular(tmp_path)
+- L275: def test_each_input_surface_maps_unsafe_file_status_to_a_stable_blocker(index, prefix, load_status)
+- L298: def test_extra_fields_fail_closed_for_every_strict_input(index, expected)
+- L320: def test_p8_zero_hash_sentinels_are_structural_but_never_accepted(field)
+- L344: def test_untrusted_enum_shapes_fail_closed_without_type_errors(index, field, invalid_value, expected_blocker)
+- L360: def _valid_envelope()
+- L374: def test_embedded_sanitizer_envelope_is_strictly_projected_before_hashing()
+- L392: def test_raw_background_status_ignores_external_observation_override()
+- L412: def test_external_observation_without_strict_p8_proof_fails_closed()
+- L422: def test_replay_accepts_the_real_headless_sanitizer_envelope_contract()
+- L448: def test_embedded_sanitizer_envelope_fails_closed(kind)
+- L478: def test_raw_p8_status_shape_normalizes_to_unknown_without_type_error()
+- L495: def test_operational_mode_rejects_all_fixture_sources()
+- L507: def test_pz_and_cooldown_sources_must_prove_positive_states()
+- L521: def test_raw_p8_adapter_rejects_optional_execute_once_claim()
+- L569: def test_every_true_action_flag_fails_closed(flag, index, expected)
+- L582: def test_all_recovery_hash_bindings_are_independently_enforced()
+- L605: def test_blocker_order_is_canonical_and_independent_of_input_key_order()
+- L625: def test_current_real_p8_evidence_is_reported_as_operationally_blocked()
+- L645: def test_raw_background_status_blocked_is_not_promoted_by_a_passing_pack()
+- L752: def test_atomic_writer_is_confined_to_exact_runtime_output(tmp_path, monkeypatch)
+- L770: def test_cli_no_write_does_not_create_output(tmp_path, monkeypatch, capsys)
+- L808: def test_failed_scenario_pack_blocks_an_otherwise_ready_operational_trace()
+- L865: def test_default_source_has_no_client_or_process_interaction_primitives()
+
+## `tests/test_otclient_equipment_candidate_catalog.py`
+
+- L21: def _observation(candidates)
+- L44: def _preview(candidates)
+- L81: def _build(payload)
+- L88: def _validate(report)
+- L94: def test_unique_catalog_is_deterministic_and_never_recommends()
+- L117: def test_exact_duplicates_and_ambiguous_positions_and_items_are_grouped_not_selected()
+- L140: def test_zero_ids_and_empty_candidates_fail_closed()
+- L159: def test_blocked_preview_is_bound_and_invalid_hash_is_reported()
+- L175: def test_catalog_rejects_unknown_preview_fields_and_cli_path_overrides()
+
+## `tests/test_otclient_equipment_capture_profile_apply.py`
+
+- L16: def _plan_payload()
+- L109: def _configure_paths(monkeypatch, tmp_path, plan, current)
+- L128: def test_apply_requires_plan_hash_bound_confirmation(monkeypatch, tmp_path)
+- L140: def test_apply_writes_only_local_profile_backup_and_no_action_receipt(monkeypatch, tmp_path)
+
+## `tests/test_otclient_equipment_capture_profile_change_plan.py`
+
+- L20: def _observation()
+- L51: def _background()
+- L78: def _doctor()
+- L98: def _inputs()
+- L110: def _evaluate(inputs)
+- L123: def _validate(report)
+- L129: def test_strict_schema_and_blocker_contract_are_closed()
+- L139: def test_no_arguments_fail_closed_and_explain_without_a_plan()
+- L154: def test_exact_preview_match_generates_only_hash_bound_plan_and_diff()
+- L188: def test_unique_candidate_item_id_auto_resolves_session_container_and_slot()
+- L207: def test_auto_location_rejects_ambiguous_candidate_item_id()
+- L242: def test_invalid_ids_distinctness_exact_match_and_confirmation_fail_closed(overrides, expected_blocker)
+- L253: def test_partial_arguments_are_explicitly_incomplete()
+- L266: def test_stale_preview_and_strict_input_tamper_fail_closed()
+- L284: def test_semantically_tampered_ready_preview_is_independently_rejected()
+- L299: def test_input_hashes_and_plan_hash_change_with_current_doctor_document()
+- L318: def test_cli_default_is_blocked_and_allow_blocked_is_explanatory(monkeypatch, capsys)
+- L327: def test_cli_exact_args_generate_plan_but_reject_input_path_overrides(monkeypatch, capsys)
+- L354: def test_cli_refresh_preview_builds_and_consumes_one_fresh_snapshot(monkeypatch, capsys)
+- L386: def test_writer_is_confined_to_runtime_and_preserves_local_profile(monkeypatch, tmp_path)
+
+## `tests/test_otclient_equipment_capture_profile_doctor.py`
+
+- L12: def _use_temporary_local_profile(monkeypatch, root)
+- L19: def test_doctor_blocks_tracked_unconfigured_template(monkeypatch, tmp_path)
+- L46: def test_doctor_accepts_only_exact_distinct_local_ids(monkeypatch, tmp_path)
+- L69: def test_initializer_exclusively_creates_exact_zero_id_profile(monkeypatch, tmp_path)
+- L97: def test_initializer_does_not_resolve_or_read_an_otclient(monkeypatch, tmp_path)
+- L100: def unexpected_profile_resolution()
+- L112: def test_initializer_rejects_symlink_parent(monkeypatch, tmp_path)
+- L127: def test_initializer_rejects_symlink_target(monkeypatch, tmp_path)
+- L143: def test_initializer_rejects_reparse_parent_without_following_it(monkeypatch, tmp_path)
+- L151: def lstat_with_reparse(path)
+- L166: def test_initializer_refuses_any_non_fixed_target(monkeypatch, tmp_path)
+- L178: def test_init_cli_succeeds_without_claiming_readiness(monkeypatch, tmp_path, capsys)
+- L200: def test_doctor_cli_can_allow_a_structurally_valid_blocked_report(monkeypatch, tmp_path)
+
+## `tests/test_otclient_equipment_consumer_parity.py`
+
+- L22: def _doctor()
+- L46: def _artifact_payloads()
+- L96: def _write_payloads(dev_dir, payloads)
+- L104: def _consumer_sources(root)
+- L130: def _build(tmp_path, payloads)
+- L141: def _validate(report)
+- L151: def test_six_artifact_chain_and_both_consumer_contracts_have_full_parity(tmp_path)
+- L176: def test_hash_divergence_is_detected_across_catalog_and_readiness(tmp_path)
+- L196: def test_status_and_blocker_divergence_fail_closed(tmp_path)
+- L209: def test_copied_upstream_blockers_must_equal_the_source_artifact(tmp_path)
+- L225: def test_no_action_and_eligibility_mutations_are_separate_failures(tmp_path)
+- L247: def test_python_or_web_contract_omission_blocks_parity(tmp_path)
+- L279: def test_duplicate_keys_and_missing_artifacts_are_not_consumed(tmp_path)
+- L300: def test_no_write_cli_never_creates_a_report(tmp_path)
+- L322: def test_report_is_deterministic_for_the_same_inputs(tmp_path)
+- L327: def portable(report)
+- L339: def test_validate_dev_runs_parity_before_independent_acceptance()
+
+## `tests/test_otclient_equipment_dependency_preflight.py`
+
+- L21: def _payload(path)
+- L27: def _write(path, payload)
+- L32: def _equipment_observation()
+- L63: def _ready_workspace(tmp_path)
+- L202: def _ready_bundle(tmp_path, monkeypatch)
+- L242: def test_strict_schema_and_blocker_contract_are_closed()
+- L251: def test_complete_nonfixture_chain_passes_without_changing_eligibility(tmp_path, monkeypatch)
+- L269: def test_accepted_p9_keeps_its_original_p8_binding_while_current_p8_advances(tmp_path, monkeypatch)
+- L304: def test_fixture_receipt_and_preview_never_pass(tmp_path, monkeypatch)
+- L329: def test_hash_binding_tamper_fails_closed(tmp_path, monkeypatch)
+- L349: def test_missing_preview_is_explicit_and_fail_closed(tmp_path, monkeypatch)
+
+## `tests/test_otclient_equipment_family_registry.py`
+
+- L19: def test_registry_is_packaged_profile_bound_and_checkbox_driven()
+- L50: def test_registry_matches_states_and_requires_review_for_unknown_transition(tmp_path)
+
+## `tests/test_otclient_equipment_observation_preview.py`
+
+- L20: def _observation()
+- L51: def _background(observation)
+- L78: def _build(payload, now)
+- L85: def _validate(report)
+- L91: def test_preview_is_profile_independent_and_projects_only_configuration_fields()
+- L118: def test_schema_validates_ready_and_blocked_previews()
+- L133: def test_stale_future_and_untrusted_provenance_are_explicit_blockers()
+- L156: def test_invalid_background_and_observation_fail_closed_without_leaking_raw_fields()
+- L174: def test_preview_does_not_accept_external_paths_or_write_in_no_write_mode(tmp_path)
+- L200: def test_preview_report_is_deterministic_for_same_background_and_time()
+
+## `tests/test_otclient_equipment_operator_readiness.py`
+
+- L19: def _doctor()
+- L39: def _preview()
+- L87: def _dependency()
+- L141: def _catalog(preview_sha)
+- L178: def _change_plan()
+- L217: def _ready_artifacts()
+- L230: def _schema()
+- L238: def test_schema_is_closed_and_blocker_categories_are_exact()
+- L247: def test_all_fixed_inputs_ready_only_explains_and_never_changes_eligibility()
+- L262: def test_missing_new_artifacts_fail_closed_with_ordered_safe_commands()
+- L280: def test_missing_invalid_stale_and_upstream_are_distinct()
+- L309: def test_dependency_upstream_maps_p9_actions_before_preflight_regeneration()
+
+## `tests/test_otclient_equipment_operator_refresh.py`
+
+- L23: class FakeEnvelope
+- L24: def __init__(self)
+- L31: def begin_run(self)
+- L38: def record_stage(self, stage_id, run_id)
+- L48: def finalize_run(self, run_id)
+- L60: def abort_run(self, run_id)
+- L69: def _parity_payload()
+- L85: class FakeRunner
+- L86: def __init__(self, dev_dir)
+- L100: def __call__(self, command)
+- L130: def test_stage_contract_is_fixed_ordered_and_has_no_action_inputs()
+- L167: def test_refresh_runs_all_fixed_stages_and_requires_real_parity_pass(tmp_path, monkeypatch)
+- L232: def test_refresh_fails_closed_when_parity_is_blocked(tmp_path, monkeypatch)
+- L255: def test_refresh_stops_before_downstream_stages_on_producer_error(tmp_path, monkeypatch)
+- L277: def test_refresh_rejects_stale_artifact_reuse(tmp_path, monkeypatch)
+- L307: def test_refresh_rejects_symlinked_fixed_output_before_spawning(tmp_path, monkeypatch)
+- L336: def test_cli_accepts_no_paths_ids_confirmations_or_acceptance_arguments()
+- L349: def test_refresh_fails_closed_when_envelope_record_or_finalize_fails(tmp_path, monkeypatch)
+- L378: def test_refresh_reports_abort_failure_without_touching_another_run(tmp_path, monkeypatch)
+- L396: def test_refresh_begin_failure_starts_no_stage_and_aborts_no_other_run(tmp_path, monkeypatch)
+- L416: def test_refresh_rejects_symlinked_runtime_root_before_begin_or_stage(tmp_path, monkeypatch)
+- L444: def test_cli_emits_only_the_sanitized_summary_and_maps_exit_status(monkeypatch, capsys)
+
+## `tests/test_otclient_equipment_operator_refresh_run.py`
+
+- L27: def _doctor()
+- L51: def _artifact_payloads()
+- L100: def _consumer_sources(root)
+- L126: def _write_payload(path, payload)
+- L133: def _write_parity(dev_dir, root)
+- L149: def _begin(tmp_path)
+- L160: def _record_six(dev_dir, payloads)
+- L177: def _record_parity(dev_dir, root)
+- L199: def _complete(tmp_path)
+- L211: def test_complete_envelope_binds_all_seven_stages_and_validates_schema(tmp_path)
+- L245: def test_stage_order_and_run_id_are_exact(tmp_path)
+- L275: def test_artifact_from_before_begin_is_rejected_as_mixed_run(tmp_path)
+- L294: def test_source_timestamp_from_before_begin_is_rejected(tmp_path)
+- L326: def test_prior_artifact_hash_mutation_breaks_the_next_receipt(tmp_path)
+- L353: def test_parity_must_bind_exact_six_artifact_hashes(tmp_path)
+- L373: def test_excess_artifact_skew_fails_closed(tmp_path, monkeypatch)
+- L390: def test_stale_run_and_incomplete_stage_chain_do_not_emit_final_output(tmp_path)
+- L412: def test_duplicate_json_and_unsafe_no_action_are_rejected(tmp_path)
+- L441: def test_begin_preserves_old_envelope_and_refuses_parallel_run(tmp_path)
+- L460: def test_abort_requires_exact_run_id_and_preserves_good_output(tmp_path)
+- L493: def test_begin_rejects_symlinked_runtime_ancestor_without_writing_pending(tmp_path)
+- L511: def test_abort_cli_cleans_only_matching_pending_run(tmp_path, monkeypatch, capsys)
+
+## `tests/test_otclient_equipment_shadow_acceptance.py`
+
+- L23: def _write(path, payload)
+- L28: def _accepted_p9_receipt(trace, report_sha, now_ms)
+- L52: def _fixture(tmp_path, monkeypatch)
+- L107: def test_p10_acceptance_requires_separate_exact_confirmation(tmp_path, monkeypatch)
+- L150: def test_p10_acceptance_recomputes_and_rejects_nested_tamper(tmp_path, monkeypatch)
+- L161: def test_p10_acceptance_binds_current_p9_report_and_rejects_fixture_source(tmp_path, monkeypatch)
+- L173: def test_p10_acceptance_writer_persists_only_after_three_stable_reads(tmp_path, monkeypatch)
+- L185: def test_equipment_acceptance_schema_is_closed()
+- L195: def test_equipment_acceptance_schema_enforces_accepted_semantics(tmp_path, monkeypatch)
+- L224: def test_release_evidence_binds_p10_receipt_to_current_report(tmp_path, monkeypatch)
+- L255: def test_release_evidence_accepts_fail_closed_operational_trace()
+- L279: def test_release_evidence_rejects_rebased_accepted_receipt_for_blocked_report(tmp_path, monkeypatch)
 
 ## `tests/test_otclient_equipment_shadow_replay.py`
 
-- L17: def _docs()
-- L21: def _no_action(payload)
-- L26: def test_positive_ring_plan_is_deterministic_and_data_only()
-- L53: def test_fixture_pack_covers_ring_only_negative_matrix()
-- L64: def test_operational_report_never_promotes_fixture_p9()
-- L73: def test_snapshot_extra_field_is_rejected()
-- L91: def test_p9_unknown_keys_and_malformed_scenario_pack_fail_closed()
-- L122: def test_release_evidence_rejects_nested_p10_tamper()
-- L137: def test_static_wrapper_confines_p10_evidence_to_canonical_runtime_dir()
-- L148: def test_equipment_schemas_are_closed_draft_2020_12()
+- L26: def _schema_registry()
+- L36: def _docs()
+- L40: def _no_action(payload)
+- L45: def test_positive_ring_plan_is_deterministic_and_data_only()
+- L72: def test_fixture_pack_covers_ring_only_negative_matrix()
+- L83: def test_operational_report_never_promotes_fixture_p9()
+- L97: def test_operational_replay_allows_only_bounded_post_snapshot_transport()
+- L135: def test_snapshot_extra_field_is_rejected()
+- L153: def test_p9_unknown_keys_and_malformed_scenario_pack_fail_closed()
+- L184: def test_release_evidence_rejects_nested_p10_tamper()
+- L199: def test_static_wrapper_confines_p10_evidence_to_canonical_runtime_dir()
+- L210: def test_equipment_schemas_are_closed_draft_2020_12()
+- L217: def test_strict_p10_schemas_validate_report_and_reject_nested_tamper()
+- L251: def test_cli_separates_fixture_success_from_operational_acceptance()
+- L270: def test_operational_cli_forbids_time_override_and_all_modes_fix_scenario_path(tmp_path)
+- L297: def test_fixture_cli_refuses_to_replace_canonical_operational_report()
+- L303: def test_operational_cli_rejects_noncanonical_or_fixture_paths()
+
+## `tests/test_otclient_equipment_shadow_snapshot.py`
+
+- L14: def _observation()
+- L45: def _background()
+- L69: def _profile()
+- L88: def _build(background, profile)
+- L96: def test_passive_background_observation_produces_hash_bound_snapshot()
+- L111: def test_unconfigured_profile_and_ambiguous_candidate_fail_closed()
+- L133: def test_stale_unsafe_or_nonready_background_never_produces_snapshot()
+- L169: def test_malformed_or_duplicate_nested_inventory_fails_closed_without_exception()
+- L185: def test_capture_and_ingest_schemas_are_closed()
+- L196: def test_default_capture_profile_is_explicitly_unconfigured()
+- L202: def test_capture_profile_resolution_prefers_only_fixed_ignored_local_override(monkeypatch, tmp_path)
+- L227: def test_tracked_template_cannot_be_turned_into_configured_operator_state(tmp_path)
 
 ## `tests/test_otclient_external_bot_intake.py`
 
@@ -6075,46 +7160,122 @@ This is a lightweight map for navigation, not a full source dump.
 - L67: def test_zip_intake_and_markdown_render(tmp_path)
 - L88: def test_write_text_atomic_outputs_json_and_markdown(tmp_path)
 
+## `tests/test_otclient_fork_capability_detector.py`
+
+- L15: def test_detects_redemption_from_bounded_primary_markers(tmp_path)
+- L38: def test_otcv8_specific_module_outweighs_base_copyright(tmp_path)
+- L49: def test_unknown_tree_fails_closed_without_guessing(tmp_path)
+- L57: def test_detector_never_reads_profile_or_environment_secret_files(tmp_path)
+
 ## `tests/test_otclient_headless_status.py`
 
-- L29: def _conditions_observation(observed_at_ms)
-- L51: def _sha256(path)
-- L55: def _write_json(path, payload)
-- L60: def _resign_promotion(dev, client)
-- L79: def _fixture(tmp_path)
-- L148: def _build(client, dev)
-- L167: def _mutate_capability(client, mutation)
-- L187: def _set_conditions_observation(client, value)
-- L194: def test_bounded_tail_and_session_parser_ignore_old_errors(tmp_path)
-- L212: def test_background_status_is_ready_only_from_trusted_live_evidence(tmp_path)
-- L250: def test_valid_conditions_observation_is_strictly_normalized_without_changing_p8(tmp_path)
-- L305: def test_conditions_observation_mutations_are_classified_by_p8_safety(tmp_path, mutation, expected_error, p8_unsafe)
-- L363: def test_conditions_observation_timestamp_bounds(timestamp, expected_status)
-- L375: def test_conditions_observation_id_rejects_dot()
-- L385: def test_conditions_observation_json_schema_matches_sanitizer_bounds()
-- L397: def test_present_observation_is_unbound_when_parent_timestamp_is_invalid(tmp_path)
-- L430: def test_bounded_json_rejects_duplicate_keys_and_non_finite_numbers(tmp_path, mutation)
-- L493: def test_heartbeat_contract_fails_closed(tmp_path, mutation, expected_status)
-- L506: def test_heartbeat_must_be_newer_than_process_and_no_more_than_15_seconds_old(tmp_path)
-- L533: def test_ready_requires_one_active_process_with_positive_start_time(tmp_path, process_count, process_start_unix_ms)
-- L552: def test_missing_or_untrusted_pin_blocks_and_observer_never_creates_one(tmp_path)
-- L591: def test_live_promotion_cross_check_is_strict(tmp_path, field, value, expected_error)
-- L607: def test_live_manifest_requires_official_origin_and_schema(tmp_path)
-- L623: def test_legacy_unbound_promotion_is_diagnosed_without_rebinding(tmp_path)
-- L670: def test_live_manifest_strict_parser_fails_closed(mutation, tmp_path)
-- L696: def test_untrusted_diagnostic_parity_exposes_profile_drift_without_acceptance(tmp_path)
-- L733: def test_manifest_scope_and_size_limits_fail_before_live_reads(tmp_path, invalid_kind)
-- L771: def test_live_file_hashing_stops_at_two_mib(tmp_path)
-- L783: def test_case_insensitive_manifest_alias_is_rejected(tmp_path)
-- L800: def test_executable_profile_drift_never_passes_parity(tmp_path)
-- L826: def test_actual_hashing_stops_at_remaining_aggregate_budget(tmp_path, monkeypatch)
-- L871: def test_only_deterministic_capability_path_is_accepted(tmp_path)
-- L889: def test_bounded_json_reader_rejects_oversize_and_symlink(tmp_path)
-- L904: def test_main_no_write_does_not_create_a_missing_pin(tmp_path, monkeypatch, capsys)
-- L937: def test_main_rejects_a_non_live_localappdata_root(tmp_path, monkeypatch)
-- L969: def test_main_requires_exact_repo_runtime_output(tmp_path, monkeypatch, invalid_target)
-- L1010: def test_background_wrapper_has_positive_allowlist_and_guarded_primitives()
-- L1078: def test_background_wrapper_publishes_only_after_external_invariants()
+- L38: def test_live_manifest_accepts_only_fixed_project_package_paths(relative)
+- L50: def test_live_manifest_rejects_paths_outside_fixed_project_package(relative)
+- L54: def _conditions_observation(observed_at_ms)
+- L76: def _equipment_observation(observed_at_ms)
+- L102: def _sha256(path)
+- L106: def _write_json(path, payload)
+- L111: def _resign_promotion(dev, client)
+- L130: def _fixture(tmp_path)
+- L199: def _build(client, dev)
+- L218: def _mutate_capability(client, mutation)
+- L238: def _set_conditions_observation(client, value)
+- L245: def _set_equipment_observation(client, value)
+- L252: def test_bounded_tail_and_session_parser_ignore_old_errors(tmp_path)
+- L270: def test_background_status_is_ready_only_from_trusted_live_evidence(tmp_path)
+- L308: def test_valid_conditions_observation_is_strictly_normalized_without_changing_p8(tmp_path)
+- L345: def test_valid_equipment_observation_is_bounded_and_does_not_authorize_p10(tmp_path)
+- L363: def test_equipment_observation_unknown_fields_duplicates_and_unsafe_flags_fail_closed(tmp_path)
+- L403: def test_conditions_observation_mutations_are_classified_by_p8_safety(tmp_path, mutation, expected_error, p8_unsafe)
+- L461: def test_conditions_observation_timestamp_bounds(timestamp, expected_status)
+- L473: def test_conditions_observation_id_rejects_dot()
+- L483: def test_conditions_observation_accepts_proven_player_states_source()
+- L495: def test_conditions_observation_json_schema_matches_sanitizer_bounds()
+- L507: def test_present_observation_is_unbound_when_parent_timestamp_is_invalid(tmp_path)
+- L540: def test_bounded_json_rejects_duplicate_keys_and_non_finite_numbers(tmp_path, mutation)
+- L603: def test_heartbeat_contract_fails_closed(tmp_path, mutation, expected_status)
+- L616: def test_heartbeat_must_be_newer_than_process_and_no_more_than_15_seconds_old(tmp_path)
+- L643: def test_ready_requires_one_active_process_with_positive_start_time(tmp_path, process_count, process_start_unix_ms)
+- L662: def test_missing_or_untrusted_pin_blocks_and_observer_never_creates_one(tmp_path)
+- L701: def test_live_promotion_cross_check_is_strict(tmp_path, field, value, expected_error)
+- L717: def test_live_manifest_requires_official_origin_and_schema(tmp_path)
+- L733: def test_legacy_unbound_promotion_is_diagnosed_without_rebinding(tmp_path)
+- L780: def test_live_manifest_strict_parser_fails_closed(mutation, tmp_path)
+- L806: def test_untrusted_diagnostic_parity_exposes_profile_drift_without_acceptance(tmp_path)
+- L843: def test_manifest_scope_and_size_limits_fail_before_live_reads(tmp_path, invalid_kind)
+- L881: def test_live_file_hashing_stops_at_two_mib(tmp_path)
+- L893: def test_case_insensitive_manifest_alias_is_rejected(tmp_path)
+- L910: def test_executable_profile_drift_never_passes_parity(tmp_path)
+- L936: def test_actual_hashing_stops_at_remaining_aggregate_budget(tmp_path, monkeypatch)
+- L981: def test_only_deterministic_capability_path_is_accepted(tmp_path)
+- L999: def test_bounded_json_reader_rejects_oversize_and_symlink(tmp_path)
+- L1014: def test_main_no_write_does_not_create_a_missing_pin(tmp_path, monkeypatch, capsys)
+- L1047: def test_main_rejects_a_non_live_localappdata_root(tmp_path, monkeypatch)
+- L1079: def test_main_requires_exact_repo_runtime_output(tmp_path, monkeypatch, invalid_target)
+- L1120: def test_background_wrapper_has_positive_allowlist_and_guarded_primitives()
+- L1190: def test_background_wrapper_publishes_only_after_external_invariants()
+
+## `tests/test_otclient_heal_friend_candidate_catalog.py`
+
+- L12: def _background()
+- L30: def test_catalog_lists_without_selecting_or_recommending()
+- L40: def test_catalog_fails_closed_for_stale_incomplete_or_unsafe_scan()
+- L57: def test_sandbox_catalog_uses_shared_capability_sanitizer(tmp_path)
+- L104: def test_sandbox_capability_path_is_fixed_to_codex_test_root()
+
+## `tests/test_otclient_heal_friend_observation.py`
+
+- L12: def _capability()
+- L34: def test_observation_uses_only_profile_exact_target()
+- L51: def test_observation_fails_closed_if_exact_target_is_not_party()
+
+## `tests/test_otclient_heal_friend_operational_replay.py`
+
+- L13: def test_operational_report_is_review_only_and_no_action()
+- L35: def test_producer_document_rejects_tampered_observation()
+
+## `tests/test_otclient_heal_friend_profile_apply.py`
+
+- L10: def _profile()
+- L14: def _plan(catalog_sha, p9_sha, p10_sha)
+- L40: def test_validate_application_binds_plan_confirmation_and_dependencies()
+- L52: def test_validate_application_fails_closed_for_changed_dependency()
+- L65: def test_apply_writes_only_profile_and_receipt(monkeypatch, tmp_path)
+
+## `tests/test_otclient_heal_friend_profile_change_plan.py`
+
+- L12: def _receipt(schema)
+- L17: def _catalog()
+- L37: def test_plan_is_hash_bound_and_never_applies(monkeypatch)
+- L58: def test_plan_fails_closed_for_self_or_confirmation_mismatch(monkeypatch)
+- L76: def test_receipt_validator_adapters_match_p9_and_p10_modules(monkeypatch)
+
+## `tests/test_otclient_heal_friend_scan.py`
+
+- L11: def _scan()
+- L49: def test_heal_friend_scan_is_strictly_normalized_without_selecting_a_target()
+- L59: def test_heal_friend_scan_rejects_extra_unsafe_and_noncanonical_data()
+- L82: def test_capability_marks_nested_heal_friend_action_claim_unsafe()
+
+## `tests/test_otclient_heal_friend_shadow_acceptance.py`
+
+- L8: def test_report_contract_accepts_current_no_action_shape()
+- L36: def test_profile_receipt_must_bind_profile_hash()
+
+## `tests/test_otclient_heal_friend_shadow_replay.py`
+
+- L32: def _assert_closed(value)
+- L43: def _registry()
+- L54: def test_positive_fixture_is_exact_single_target_and_never_ranks_or_casts()
+- L74: def test_fixture_pack_is_deterministic_and_explicitly_not_operational()
+- L96: def test_all_p11_schemas_are_closed_and_validate_positive_artifacts()
+- L120: def test_predecessor_receipts_bind_full_reports_and_each_other()
+- L162: def test_shared_strict_reader_rejects_malformed_fixture_json(tmp_path, contents, status)
+- L170: def test_reader_rejects_oversize_nonregular_and_symlink(tmp_path)
+- L187: def test_scenario_contract_rejects_unknown_duplicate_and_unsorted_content()
+- L203: def test_cli_requires_no_write_rejects_path_overrides_and_creates_no_runtime_artifact()
+- L223: def test_decision_hash_changes_for_any_input_value_but_not_json_key_order()
+- L251: def test_lua_exact_target_scan_refuses_ranking_and_ambiguous_matches(tmp_path)
 
 ## `tests/test_otclient_helper_diagnostics_ui.py`
 
@@ -6123,31 +7284,33 @@ This is a lightweight map for navigation, not a full source dump.
 ## `tests/test_otclient_helper_module_audit.py`
 
 - L12: def test_module_audit_tracks_remaining_function_modularization_pressure()
-- L38: def test_module_audit_maps_runtime_and_placeholder_lanes()
-- L72: def test_module_audit_defines_professional_extraction_map()
-- L104: def test_module_audit_defines_supplemental_runtime_refactor_plan()
-- L189: def test_module_audit_writes_atomic_json_and_plan(tmp_path)
-- L264: def test_module_workplan_markdown_lists_verification_commands()
-- L276: def test_module_audit_promotes_only_fresh_static_gate_evidence(tmp_path)
-- L298: def test_module_audit_promotes_healing_after_fresh_vitals_and_tab_evidence(tmp_path)
-- L318: def test_module_audit_promotes_combat_after_fresh_safety_and_magic_tab_evidence(tmp_path)
-- L338: def test_module_audit_promotes_cavebot_after_fresh_safety_and_tab_evidence(tmp_path)
-- L358: def test_module_audit_promotes_timer_after_fresh_passive_tick_and_tab_evidence(tmp_path)
-- L377: def test_module_audit_promotes_loot_after_fresh_read_only_probe_and_diag_evidence(tmp_path)
+- L37: def test_module_audit_maps_runtime_and_placeholder_lanes()
+- L71: def test_module_audit_defines_professional_extraction_map()
+- L103: def test_module_audit_defines_supplemental_runtime_refactor_plan()
+- L188: def test_module_audit_writes_atomic_json_and_plan(tmp_path)
+- L263: def test_module_workplan_markdown_lists_verification_commands()
+- L275: def test_module_audit_promotes_only_fresh_static_gate_evidence(tmp_path)
+- L297: def test_module_audit_promotes_healing_after_fresh_vitals_and_tab_evidence(tmp_path)
+- L317: def test_module_audit_promotes_combat_after_fresh_safety_and_magic_tab_evidence(tmp_path)
+- L337: def test_module_audit_promotes_cavebot_after_fresh_safety_and_tab_evidence(tmp_path)
+- L357: def test_module_audit_promotes_timer_after_fresh_passive_tick_and_tab_evidence(tmp_path)
+- L376: def test_module_audit_promotes_loot_after_fresh_read_only_probe_and_diag_evidence(tmp_path)
 
 ## `tests/test_otclient_helper_module_contract.py`
 
-- L13: def test_module_contract_passes_current_passive_modules()
-- L29: def test_module_contract_requires_loader_registry_global_and_return()
-- L733: def test_module_contract_blocks_forbidden_passive_actions(tmp_path)
-- L755: def test_module_contract_writes_json_and_markdown(tmp_path)
+- L15: def test_extracted_route_targeting_and_cavebot_helpers_and_guarded_fallbacks(tmp_path)
+- L98: def test_extracted_combat_recovery_registry_and_ui_helpers_with_fallbacks(tmp_path)
+- L187: def test_module_contract_passes_current_passive_modules()
+- L203: def test_module_contract_requires_loader_registry_global_and_return()
+- L1173: def test_module_contract_blocks_forbidden_passive_actions(tmp_path)
+- L1199: def test_module_contract_writes_json_and_markdown(tmp_path)
 
 ## `tests/test_otclient_helper_next_modules_plan.py`
 
 - L7: def test_next_modules_plan_is_safe_and_ordered()
-- L110: def test_vbot_import_review_keeps_source_required_contract()
-- L131: def test_next_modules_plan_markdown_calls_out_runtime_blockers()
-- L195: def test_next_modules_plan_writes_atomic_json_and_markdown(tmp_path)
+- L149: def test_vbot_import_review_keeps_capability_mapping_only_contract()
+- L172: def test_next_modules_plan_markdown_calls_out_runtime_blockers()
+- L259: def test_next_modules_plan_writes_atomic_json_and_markdown(tmp_path)
 
 ## `tests/test_otclient_helper_profile_audit.py`
 
@@ -6161,91 +7324,238 @@ This is a lightweight map for navigation, not a full source dump.
 ## `tests/test_otclient_helper_shell_budget_plan.py`
 
 - L7: def test_shell_budget_plan_measures_current_helper_pressure()
-- L27: def test_shell_budget_plan_has_ranked_domain_guidance()
-- L53: def test_shell_budget_plan_uses_lua_block_ends_not_next_function()
-- L81: def test_shell_budget_plan_writes_json_and_markdown(tmp_path)
+- L25: def test_shell_budget_plan_has_ranked_domain_guidance()
+- L51: def test_shell_budget_plan_uses_lua_block_ends_not_next_function()
+- L79: def test_shell_budget_plan_writes_json_and_markdown(tmp_path)
 
 ## `tests/test_otclient_helper_zerobot_shell.py`
 
 - L99: def test_zerobot_shell_sections_render_without_layout_issues()
 - L110: def test_helper_redesign_keeps_operator_layout_contract()
-- L185: def test_helper_client_reporter_is_passive_packaged_and_safe_by_default()
-- L222: def test_helper_redesign_phase3_summaries_are_wired()
-- L270: def test_helper_has_module_lane_registry_for_all_runtime_surfaces()
-- L373: def test_helper_ui_primitives_are_guarded_and_packaged()
-- L663: def test_helper_diagnostics_domain_is_passive_and_wired()
-- L826: def test_placeholder_modules_have_visible_preview_rows()
-- L835: def test_heal_friend_is_profiled_module_lane_without_runtime_casting()
-- L921: def test_coming_soon_sidebar_tabs_are_non_interactive()
-- L941: def test_conditions_is_read_only_profiled_module_lane()
-- L1021: def test_hud_domain_is_passive_and_packaged()
-- L1098: def test_hotkeys_domain_is_passive_and_packaged()
-- L1160: def test_modal_domain_is_passive_and_guards_destructive_actions()
-- L1211: def test_route_domain_is_passive_and_packaged()
-- L1292: def test_targeting_domain_is_passive_and_packaged()
-- L1379: def test_combat_runtime_adapter_is_passive_and_packaged()
-- L1506: def test_cavebot_runtime_adapter_is_passive_and_packaged()
-- L1635: def test_loot_runtime_adapter_is_passive_and_packaged()
-- L1681: def test_timer_runtime_adapter_is_passive_and_packaged()
-- L1712: def test_recovery_runtime_adapter_is_passive_and_consumed_by_shell()
-- L1763: def test_profile_schema_adapter_is_passive_and_packaged()
-- L1976: def test_feature_flags_adapter_is_passive_and_consumed_by_tools_summary()
-- L2025: def test_operator_summary_adapter_is_passive_and_packaged()
-- L2086: def test_planner_domain_is_passive_and_packaged()
-- L2122: def test_runtime_policy_is_passive_gatekeeper_and_packaged()
-- L2169: def test_dispatch_guard_is_passive_policy_handoff_and_packaged()
-- L2203: def test_plan_queue_is_passive_bounded_decision_queue_and_packaged()
-- L2239: def test_runtime_readiness_is_passive_bridge_status_and_packaged()
-- L2282: def test_equipment_is_read_only_profiled_module_lane()
-- L2368: def test_scripting_is_policy_shell_without_runtime_execution()
-- L2441: def test_cavebot_tab_is_interactive_waypoint_loop()
-- L2503: def test_cavebot_route_editor_does_not_trigger_movement()
-- L2549: def test_cavebot_runtime_has_guarded_retry_budget_before_looped_movement()
-- L2584: def test_smokeall_lists_every_zerobot_shell_view()
-- L2662: def test_solteria_dev_lane_packages_without_touching_live_client()
-- L3088: def test_solteria_sandbox_path_guard_rejects_live_client_aliases()
-- L3132: def test_solteria_updated_client_boot_hook_is_controlled()
-- L3174: def test_live_promotion_requires_explicit_approval_and_fresh_backup()
-- L3276: def test_live_promotion_launch_after_promote_is_explicit_and_non_restart()
-- L3308: def test_live_emergency_repair_is_audited_and_removes_root_fallback()
-- L3329: def test_helper_logs_subtab_smoke_markers()
-- L3336: def test_helper_supports_runtime_smoke_command_file()
-- L3379: def test_helper_otclient_architecture_hooks_are_registered()
-- L3398: def test_loader_is_helper_ui_only_and_loads_without_online_gate()
-- L3445: def test_helper_safe_boot_disables_runtime_automation()
-- L3470: def test_otprofile_builder_emits_safe_boot_profile_shape()
-- L3494: def test_helper_runtime_arming_has_pz_and_non_monster_guards()
-- L3534: def test_helper_targeting_on_executes_safe_monster_retarget()
-- L3593: def test_helper_blocks_npc_icons_and_known_npc_names_before_attack()
-- L3615: def test_runtime_modules_auto_arm_helper_runtime()
-- L3645: def test_healing_and_magic_cards_expose_actionbar_box_controls()
-- L3668: def test_actionbar_slots_are_the_runtime_source_for_potions_and_runes()
-- L3701: def test_rotation_debug_reports_runtime_decision_reasons()
-- L3765: def test_combat_action_selection_lives_in_passive_runtime_adapter()
-- L3797: def test_offensive_actions_are_pz_aware_and_rate_limited_at_execution()
-- L3841: def test_magic_v11b_has_safe_api_probe()
-- L3885: def test_helper_v11b_has_central_api_registry_probe()
-- L3924: def test_helper_v11b_exposes_api_snapshot_in_tools_ui()
-- L3939: def test_helper_tools_diag_tab_exposes_api_and_feature_flags()
-- L3984: def test_helper_bounded_diagnostics_export_is_wired()
-- L4022: def test_recovery_actions_do_not_hard_stop_targeting_or_rotation()
-- L4049: def test_timer_runtime_is_bounded_and_profile_persisted()
-- L4085: def test_standalone_heal_and_loot_are_profile_fed_and_passive()
-- L4110: def test_healing_spell_rotation_has_threshold_rules()
-- L4128: def test_helper_login_singleton_module_visibility_and_healing_jitter_contracts()
-- L4159: def test_healing_uses_real_local_player_vitals_before_percent_fallback()
-- L4191: def test_smoke_runner_supports_attach_without_restart()
-- L4223: def boot_graph_source()
-- L4231: def boot_graph_has_module(source, name, file_name)
+- L188: def test_helper_client_reporter_is_passive_packaged_and_safe_by_default()
+- L227: def test_helper_redesign_phase3_summaries_are_wired()
+- L275: def test_helper_has_module_lane_registry_for_all_runtime_surfaces()
+- L382: def test_helper_ui_primitives_are_guarded_and_packaged()
+- L674: def test_helper_diagnostics_domain_is_passive_and_wired()
+- L837: def test_placeholder_modules_have_visible_preview_rows()
+- L846: def test_heal_friend_is_profiled_module_lane_without_runtime_casting()
+- L943: def test_coming_soon_sidebar_tabs_are_non_interactive()
+- L963: def test_conditions_is_read_only_profiled_module_lane()
+- L1043: def test_hud_domain_is_passive_and_packaged()
+- L1120: def test_hotkeys_domain_is_passive_and_packaged()
+- L1187: def test_modal_domain_is_passive_and_guards_destructive_actions()
+- L1241: def test_route_domain_is_passive_and_packaged()
+- L1322: def test_targeting_domain_is_passive_and_packaged()
+- L1417: def test_combat_runtime_adapter_is_passive_and_packaged()
+- L1548: def test_cavebot_runtime_adapter_is_passive_and_packaged()
+- L1680: def test_loot_runtime_adapter_is_passive_and_packaged()
+- L1726: def test_timer_runtime_adapter_is_passive_and_packaged()
+- L1757: def test_recovery_runtime_adapter_is_passive_and_consumed_by_shell()
+- L1810: def test_profile_schema_adapter_is_passive_and_packaged()
+- L2096: def test_feature_flags_adapter_is_passive_and_consumed_by_tools_summary()
+- L2148: def test_operator_summary_adapter_is_passive_and_packaged()
+- L2211: def test_planner_domain_is_passive_and_packaged()
+- L2247: def test_runtime_policy_is_passive_gatekeeper_and_packaged()
+- L2294: def test_dispatch_guard_is_passive_policy_handoff_and_packaged()
+- L2328: def test_plan_queue_is_passive_bounded_decision_queue_and_packaged()
+- L2364: def test_runtime_readiness_is_passive_bridge_status_and_packaged()
+- L2407: def test_equipment_is_read_only_profiled_module_lane()
+- L2495: def test_scripting_is_policy_shell_without_runtime_execution()
+- L2568: def test_cavebot_tab_is_interactive_waypoint_loop()
+- L2636: def test_cavebot_route_editor_does_not_trigger_movement()
+- L2682: def test_cavebot_runtime_has_guarded_retry_budget_before_looped_movement()
+- L2723: def test_validate_dev_runs_p11_heal_friend_replay_without_writes()
+- L2733: def test_smokeall_lists_every_zerobot_shell_view()
+- L2811: def test_solteria_dev_lane_packages_without_touching_live_client()
+- L3237: def test_solteria_sandbox_path_guard_rejects_live_client_aliases()
+- L3281: def test_solteria_updated_client_boot_hook_is_controlled()
+- L3325: def test_live_promotion_requires_explicit_approval_and_fresh_backup()
+- L3427: def test_live_promotion_launch_after_promote_is_explicit_and_non_restart()
+- L3459: def test_live_emergency_repair_is_audited_and_removes_root_fallback()
+- L3480: def test_helper_logs_subtab_smoke_markers()
+- L3487: def test_helper_supports_runtime_smoke_command_file()
+- L3535: def test_helper_otclient_architecture_hooks_are_registered()
+- L3550: def test_profile_renderer_context_keeps_module_visibility_callback_after_extraction()
+- L3567: def test_loader_is_helper_ui_only_and_requires_neutral_loader_selection()
+- L3616: def test_helper_safe_boot_disables_runtime_automation()
+- L3647: def test_otprofile_builder_emits_safe_boot_profile_shape()
+- L3671: def test_helper_runtime_arming_has_pz_and_non_monster_guards()
+- L3711: def test_helper_targeting_on_executes_safe_monster_retarget()
+- L3773: def test_helper_blocks_npc_icons_and_known_npc_names_before_attack()
+- L3795: def test_runtime_modules_auto_arm_helper_runtime()
+- L3825: def test_healing_and_magic_cards_expose_actionbar_box_controls()
+- L3848: def test_actionbar_slots_are_the_runtime_source_for_potions_and_runes()
+- L3890: def test_rotation_debug_reports_runtime_decision_reasons()
+- L3957: def test_combat_action_selection_lives_in_passive_runtime_adapter()
+- L3992: def test_offensive_actions_are_pz_aware_and_rate_limited_at_execution()
+- L4039: def test_magic_v11b_has_safe_api_probe()
+- L4083: def test_helper_v11b_has_central_api_registry_probe()
+- L4122: def test_helper_v11b_exposes_api_snapshot_in_tools_ui()
+- L4137: def test_helper_tools_diag_tab_exposes_api_and_feature_flags()
+- L4182: def test_helper_bounded_diagnostics_export_is_wired()
+- L4220: def test_recovery_actions_do_not_hard_stop_targeting_or_rotation()
+- L4247: def test_timer_runtime_is_bounded_and_profile_persisted()
+- L4283: def test_standalone_heal_and_loot_are_profile_fed_and_passive()
+- L4308: def test_healing_spell_rotation_has_threshold_rules()
+- L4326: def test_helper_login_singleton_module_visibility_and_healing_jitter_contracts()
+- L4360: def test_healing_uses_real_local_player_vitals_before_percent_fallback()
+- L4392: def test_smoke_runner_supports_attach_without_restart()
+- L4424: def boot_graph_source()
+- L4432: def boot_graph_has_module(source, name, file_name)
 
 ## `tests/test_otclient_input_contract_fixtures.py`
 
 - L7: def test_input_contract_fixture_report_covers_hotkeys_and_modal_states()
 - L37: def test_input_contract_fixture_markdown_and_json_outputs(tmp_path)
 
+## `tests/test_otclient_loader_cross_fork.py`
+
+- L17: def test_otmod_uses_native_cross_fork_metadata_contract()
+- L29: def test_loader_has_no_focus_input_or_runtime_dispatch_surface()
+- L50: def test_native_helper_safe_start_is_hidden_and_message_mode_adaptive()
+- L67: def test_loader_lifecycle_is_idempotent_across_message_mode_variants(tmp_path, message_mode_key)
+- L135: def test_loader_rejects_start_without_neutral_loader_selection(tmp_path)
+- L162: def test_loader_prefers_native_module_resource_mount(tmp_path)
+- L210: def test_full_manifest_load_is_passive_across_fork_ui_shapes(tmp_path, ui_variant)
+- L279: def test_profile_data_loader_has_no_otclient_or_filesystem_authority(tmp_path)
+
+## `tests/test_otclient_p12_conditions_approval_receipt.py`
+
+- L9: def _plan()
+- L21: def test_session_approval_never_grants_execution()
+- L31: def test_session_approval_rejects_wrong_phrase()
+- L38: def test_execution_approval_is_separate_and_still_does_not_dispatch()
+- L52: def test_receipt_requires_execution_confirmation_and_terminal_disarm()
+- L77: def test_receipt_rejects_retry_or_nonterminal_state()
+
+## `tests/test_otclient_p12_conditions_execute_once.py`
+
+- L18: def test_p12_conditions_bridge_static_contract_and_registry()
+- L34: def test_p12_conditions_transport_is_hash_bound_and_live_excluded()
+- L53: def test_p12_conditions_bridge_executes_exactly_once_then_kills(tmp_path)
+- L98: def test_p12_conditions_bridge_never_calls_executor_on_stale_or_absent_condition(tmp_path)
+- L127: def test_p12_conditions_observation_detects_speed_slow_without_state_bit(tmp_path)
+- L169: def test_p12_conditions_control_path_is_sandbox_only_and_single_use(tmp_path)
+
+## `tests/test_otclient_p12_conditions_execute_once_plan.py`
+
+- L10: def _write(path, value)
+- L16: def _fixture(tmp_path)
+- L38: def test_plan_is_ready_but_never_armed_or_executed(tmp_path)
+- L55: def test_plan_fails_closed_on_manifest_drift(tmp_path)
+
+## `tests/test_otclient_p12_conditions_execution_preflight.py`
+
+- L9: def _write(path, value)
+- L13: def _paths(tmp_path)
+- L25: def test_preflight_ready_only_with_current_present_condition(tmp_path)
+- L35: def test_preflight_waits_without_consuming_attempt_when_paralyze_absent(tmp_path)
+- L43: def test_preflight_fails_closed_on_stale_heartbeat(tmp_path)
+- L49: def test_preflight_rechecks_domain_after_execution_approval(tmp_path)
+
+## `tests/test_otclient_p12_equipment_approval_receipt.py`
+
+- L14: def _plan()
+- L39: def _observation(ring_id)
+- L69: def test_separate_approvals_never_dispatch()
+- L83: def test_session_approval_binds_persisted_plan_not_rotating_heartbeat(tmp_path, monkeypatch)
+- L104: def test_preflight_requires_exact_current_ring_and_candidate_location(tmp_path)
+- L170: def test_preflight_rejects_family_selection_or_registry_drift(tmp_path)
+- L242: def test_receipt_requires_terminal_disarm_post_ring_and_rollback_location()
+- L288: def test_reconcile_captures_one_terminal_attempt_without_retry()
+
+## `tests/test_otclient_p12_equipment_execute_once.py`
+
+- L17: def test_equipment_bridge_static_contract_and_transport()
+- L47: def test_equipment_bridge_one_request_then_terminal_disarm(tmp_path)
+- L76: def test_equipment_bridge_guard_rejection_does_not_consume_attempt(tmp_path)
+
+## `tests/test_otclient_p12_equipment_execute_once_plan.py`
+
+- L10: def _write(path, value)
+- L16: def _fixture(tmp_path)
+- L117: def test_equipment_plan_binds_exact_current_ring_and_candidate(tmp_path)
+- L135: def test_equipment_plan_fails_closed_in_pz_or_on_duplicate_candidate(tmp_path)
+- L151: def test_equipment_plan_rejects_stale_capability(tmp_path)
+- L157: def test_equipment_plan_requires_exactly_secondary_family_selected(tmp_path)
+
+## `tests/test_otclient_p12_heal_friend_approval_receipt.py`
+
+- L11: def _plan()
+- L29: def _trace()
+- L58: def test_two_separate_approvals_never_dispatch()
+- L72: def test_receipt_requires_exact_target_and_terminal_disarm()
+- L91: def test_receipt_rejects_missing_execution_confirmation()
+- L99: def test_reconcile_captures_one_hash_bound_terminal_attempt()
+
+## `tests/test_otclient_p12_heal_friend_execute_once.py`
+
+- L18: def test_heal_friend_bridge_static_contract_and_transport()
+- L53: def test_heal_friend_bridge_one_exact_cast_then_terminal_disarm(tmp_path)
+- L92: def test_heal_friend_bridge_blocks_wrong_vocation_without_cast(tmp_path)
+
+## `tests/test_otclient_p12_heal_friend_execute_once_plan.py`
+
+- L10: def _write(path, value)
+- L16: def _fixture(tmp_path)
+- L114: def test_plan_binds_exact_p11_target_and_completed_equipment(tmp_path)
+- L131: def test_plan_rejects_unaccepted_equipment_predecessor(tmp_path)
+- L141: def test_plan_rejects_p11_canonical_report_drift(tmp_path)
+
+## `tests/test_otclient_p12_heal_friend_execution_preflight.py`
+
+- L12: def _write(path, value)
+- L18: def _paths(tmp_path)
+- L125: def test_preflight_ready_only_for_fresh_exact_ed_target(tmp_path)
+- L133: def test_preflight_hard_blocks_ek_even_when_target_matches(tmp_path)
+- L139: def test_preflight_waits_without_attempt_when_exact_target_absent(tmp_path)
+- L149: def test_preflight_blocks_non_party_target(tmp_path)
+
+## `tests/test_otclient_p12_heal_friend_no_compatible_vocation_closure.py`
+
+- L20: def _write(path, value)
+- L24: def _paths(tmp_path)
+- L80: def test_closes_ed_only_session_without_action(tmp_path)
+- L103: def test_rejects_closure_after_execution_or_attempt(tmp_path)
+- L126: def test_rejects_mismatched_confirmation_or_preflight_reason(tmp_path)
+
+## `tests/test_otclient_p14_independent_runner.py`
+
+- L26: def roadmap_state()
+- L49: def configure_sources(monkeypatch, tmp_path)
+- L72: def build_request(monkeypatch, tmp_path)
+- L79: def test_builds_schema_valid_signed_secret_safe_artifact_only_request(monkeypatch, tmp_path)
+- L111: def test_clean_matching_runner_emits_signed_passed_result_with_manifest_rollback(monkeypatch, tmp_path)
+- L147: def test_controller_rejects_result_rebound_to_another_request(monkeypatch, tmp_path)
+- L174: def test_runner_fails_closed_on_revision_or_clean_checkout_drift(monkeypatch, tmp_path, revision, clean, blocker)
+- L198: def test_signature_detects_payload_tamper(monkeypatch, tmp_path)
+- L208: def test_embedded_artifact_hash_detects_post_signature_payload_drift(monkeypatch, tmp_path)
+- L227: def test_source_manifest_rejects_path_escape(monkeypatch, tmp_path)
+- L240: def test_source_manifest_rejects_reparse_file(monkeypatch, tmp_path)
+- L256: def test_source_manifest_checks_reparse_before_regular_file_status(monkeypatch, tmp_path)
+- L272: def test_strict_json_rejects_duplicate_keys(tmp_path)
+- L280: def test_schema_files_are_valid_draft_2020_12()
+- L286: def test_tracked_source_derivation_matches_current_official_stage_manifest()
+- L299: def test_result_schema_rejects_any_runtime_or_live_authority(monkeypatch, tmp_path)
+- L319: def test_cli_has_no_request_controlled_command_or_live_promotion_surface()
+- L329: def test_workflow_separates_pr_and_trusted_self_hosted_execution()
+
+## `tests/test_otclient_p8_p9_review_boundaries.py`
+
+- L11: def _manifest()
+- L15: def test_review_bundle_manifest_is_closed_and_paths_exist()
+- L52: def test_shared_paths_require_hunk_selection_and_never_become_core()
+- L63: def test_pr_templates_preserve_blocked_no_action_boundaries()
+
 ## `tests/test_otclient_recovery_bridge_sandbox_smoke.py`
 
 - L9: def test_recovery_bridge_sandbox_smoke_is_bounded_and_wired()
+
+## `tests/test_otclient_route_cavebot_probe_contract.py`
+
+- L17: def test_probe_metadata_and_formatting_live_only_in_passive_adapters()
+- L78: def test_route_and_cavebot_probe_contract_is_normalized_and_non_mutating(tmp_path)
+- L174: def test_guarded_shell_still_owns_movement_mutation_and_arming_boundaries()
 
 ## `tests/test_otclient_runtime_module_gates_sandbox_smoke.py`
 
@@ -6254,9 +7564,15 @@ This is a lightweight map for navigation, not a full source dump.
 - L51: def test_runtime_module_gate_sandbox_smoke_uses_latest_runtime_marker()
 - L65: def test_runtime_module_gate_sandbox_smoke_accepts_current_manual_probe()
 
+## `tests/test_otclient_server_profile_schema.py`
+
+- L14: def _profile()
+- L27: def test_public_server_profile_schema_is_valid_and_accepts_no_secret_fields()
+- L39: def test_server_profile_fails_closed_on_unknown_adapter_or_unpinned_key()
+
 ## `tests/test_p7_roadmap_state_refresh_design.py`
 
-- L12: def test_next_p7_action_has_complete_design_but_is_not_enabled()
+- L12: def test_p13_cli_is_implemented_but_mcp_candidate_is_not_enabled()
 
 ## `tests/test_phase5_nightly_checklist.py`
 
@@ -6321,13 +7637,13 @@ This is a lightweight map for navigation, not a full source dump.
 - L71: def test_mobile_console_operator_docs_do_not_recommend_public_dev_bind()
 - L80: def test_ctoa_cli_uses_explicit_file_path_for_generated_helper_html()
 - L89: def test_ctoa_cli_uses_official_wrapper_for_helper_operations()
-- L114: def test_p9_shadow_command_is_in_shared_command_dictionary()
-- L122: def test_p10_shadow_command_is_in_shared_command_dictionary()
-- L131: def test_control_center_opener_rejects_traversal_urls_at_runtime()
-- L156: def test_control_center_opener_rejects_backslash_urls_at_runtime()
-- L181: def test_ctoa_cli_rejects_control_center_traversal_env_url_before_probe()
-- L204: def test_kamil_launcher_restricts_client_path_and_profile_override()
-- L217: def test_kamil_launcher_keeps_macro_studio_on_repo_local_python()
+- L209: def test_p9_shadow_command_is_in_shared_command_dictionary()
+- L217: def test_p10_shadow_command_is_in_shared_command_dictionary()
+- L264: def test_control_center_opener_rejects_traversal_urls_at_runtime()
+- L289: def test_control_center_opener_rejects_backslash_urls_at_runtime()
+- L314: def test_ctoa_cli_rejects_control_center_traversal_env_url_before_probe()
+- L337: def test_kamil_launcher_restricts_client_path_and_profile_override()
+- L350: def test_kamil_launcher_keeps_macro_studio_on_repo_local_python()
 
 ## `tests/test_process_safety.py`
 
@@ -6356,19 +7672,38 @@ This is a lightweight map for navigation, not a full source dump.
 
 - L13: def _load_module()
 - L21: def _background_payload(generated_at)
-- L77: def test_build_evidence_pack_handles_missing_artifacts(tmp_path)
-- L107: def test_background_status_expires_without_affecting_live_promotion(tmp_path)
-- L132: def test_background_status_accepts_consistent_untrusted_pin_as_blocked_evidence(tmp_path)
-- L203: def test_background_status_invalid_contract_and_counts_fail_closed(tmp_path)
-- L255: def test_background_status_full_no_action_contract_mutations_fail_closed(tmp_path, mutation, expected_error)
-- L337: def test_build_evidence_pack_reads_current_artifacts(tmp_path)
-- L702: def test_build_evidence_pack_uses_configured_defaults(tmp_path, monkeypatch)
-- L769: def test_build_evidence_pack_rejects_symlinked_configured_json_and_audit(tmp_path)
-- L811: def test_build_evidence_pack_ignores_symlinked_release_markdown(tmp_path)
-- L844: def test_build_evidence_pack_rejects_symlinked_p7_operator_brief(tmp_path)
-- L884: def test_helper_status_rejects_symlinked_helper_dev_dir(tmp_path)
-- L906: def test_helper_status_blocks_inconsistent_releasable_gate_with_pending_blocker(tmp_path)
-- L942: def test_helper_status_promoted_requires_durable_live_promotion_evidence(tmp_path)
+- L77: def _write_p10_payload(module, path, payload)
+- L84: def _write_blocked_p10_chain(module, helper_dev_dir, now_ms)
+- L229: def test_build_evidence_pack_handles_missing_artifacts(tmp_path)
+- L279: def test_p10_equipment_readiness_projects_strict_read_only_blocked_chain(tmp_path)
+- L348: def test_p10_equipment_readiness_rejects_schema_status_hash_path_and_action_tamper(tmp_path, artifact, mutation)
+- L400: def test_p10_equipment_readiness_expires_without_changing_release_eligibility(tmp_path)
+- L430: def test_background_status_expires_without_affecting_live_promotion(tmp_path)
+- L455: def test_background_status_accepts_consistent_untrusted_pin_as_blocked_evidence(tmp_path)
+- L526: def test_background_status_invalid_contract_and_counts_fail_closed(tmp_path)
+- L578: def test_background_status_full_no_action_contract_mutations_fail_closed(tmp_path, mutation, expected_error)
+- L660: def test_build_evidence_pack_reads_current_artifacts(tmp_path)
+- L1025: def test_build_evidence_pack_uses_configured_defaults(tmp_path, monkeypatch)
+- L1092: def test_build_evidence_pack_rejects_symlinked_configured_json_and_audit(tmp_path)
+- L1134: def test_build_evidence_pack_ignores_symlinked_release_markdown(tmp_path)
+- L1167: def test_build_evidence_pack_rejects_symlinked_p7_operator_brief(tmp_path)
+- L1207: def test_helper_status_rejects_symlinked_helper_dev_dir(tmp_path)
+- L1229: def test_helper_status_blocks_inconsistent_releasable_gate_with_pending_blocker(tmp_path)
+- L1265: def test_helper_status_promoted_requires_durable_live_promotion_evidence(tmp_path)
+- L1339: def test_equipment_operator_refresh_run_summary_fails_closed(tmp_path)
+
+## `tests/test_release_evidence_pack_roadmap_phase_state.py`
+
+- L17: def _p14_foundation_ready()
+- L33: def _safe_plan(basis)
+- L51: def _conditions_summary()
+- L107: def _heal_friend_closure_summary()
+- L126: def _equipment_documents()
+- L221: def _accepted_equipment_documents()
+- L291: def test_roadmap_phase_state_rejects_legacy_incomplete_p12_boundary(monkeypatch)
+- L338: def test_roadmap_phase_state_advances_accepted_p12_equipment(monkeypatch)
+- L390: def test_roadmap_phase_state_closes_p12_and_tracks_p13_read_only(monkeypatch)
+- L471: def test_roadmap_phase_state_fails_closed_on_approved_replacement_plan(monkeypatch)
 
 ## `tests/test_repo_hygiene_audit.py`
 
@@ -6383,8 +7718,8 @@ This is a lightweight map for navigation, not a full source dump.
 ## `tests/test_repo_hygiene_distribution.py`
 
 - L5: def test_classify_distribution_marks_raw_artifacts_private_studio()
-- L11: def test_classify_distribution_marks_mobile_console_as_pro_public()
-- L17: def test_classify_distribution_marks_src_as_core_public()
+- L11: def test_classify_distribution_marks_mobile_console_as_pro_private_source()
+- L17: def test_classify_distribution_marks_src_as_core_private_source()
 - L23: def test_build_plan_carries_visibility_and_package_tier()
 
 ## `tests/test_repo_hygiene_migration_plan.py`
@@ -6530,6 +7865,13 @@ This is a lightweight map for navigation, not a full source dump.
 - L283: def test_smoke_queue_rejects_invalid_attach_tabs(tmp_path)
 - L300: def test_render_markdown_includes_live_safety_and_queue(tmp_path)
 - L327: def test_write_text_atomic_outputs_queue_files(tmp_path)
+
+## `tests/test_solteria_safe_release.py`
+
+- L24: def test_safe_release_is_seven_file_scoped_and_requires_explicit_live_approval()
+- L40: def test_safe_release_validate_produces_passed_seven_file_manifest(tmp_path)
+- L72: def test_safe_release_package_contains_runtime_only(tmp_path)
+- L105: def test_safe_release_promote_refuses_without_approval(tmp_path)
 
 ## `tests/test_sprint029_ci_evidence.py`
 
@@ -7220,19 +8562,19 @@ This is a lightweight map for navigation, not a full source dump.
 ## `web/src/components/ControlCenterEvidencePanel.tsx`
 
 - L7: symbol EvidenceState
-- L47: symbol loadEvidence
-- L985: symbol MetricCard
-- L995: symbol placeholderSprints
-- L1002: symbol placeholderReleaseEvidenceFiles
-- L1008: symbol placeholderActionAuditRecords
-- L1025: symbol placeholderRecommendations
-- L1033: symbol placeholderArtifactChecks
-- L1043: symbol formatCheckName
-- L1047: symbol renderCountPills
-- L1067: symbol formatTimestamp
-- L1073: symbol formatBytes
-- L1080: symbol renderCostDrivers
-- L1124: symbol EvidenceLink
+- L50: symbol loadEvidence
+- L1217: symbol MetricCard
+- L1227: symbol placeholderSprints
+- L1234: symbol placeholderReleaseEvidenceFiles
+- L1240: symbol placeholderActionAuditRecords
+- L1257: symbol placeholderRecommendations
+- L1265: symbol placeholderArtifactChecks
+- L1275: symbol formatCheckName
+- L1279: symbol renderCountPills
+- L1299: symbol formatTimestamp
+- L1305: symbol formatBytes
+- L1312: symbol renderCostDrivers
+- L1356: symbol EvidenceLink
 
 ## `web/src/components/ControlCenterLegacyPanels.tsx`
 
@@ -7304,11 +8646,15 @@ This is a lightweight map for navigation, not a full source dump.
 
 ## `web/src/lib/__tests__/controlCenterEvidence.test.ts`
 
-- L53: symbol isolateEvidenceEnv
-- L96: symbol backgroundNoScreenPayload
-- L152: symbol testCanonicalValue
-- L159: symbol testCanonicalSha
-- L163: symbol conditionsShadowReplayPayload
+- L63: symbol isolateEvidenceEnv
+- L120: symbol backgroundNoScreenPayload
+- L176: symbol testCanonicalValue
+- L183: symbol testCanonicalSha
+- L187: symbol roadmapStatePayload
+- L304: symbol equipmentShadowReplayPayload
+- L341: symbol acceptedEquipmentReceipt
+- L406: symbol p10SixArtifactPayloads
+- L461: symbol conditionsShadowReplayPayload
 
 ## `web/src/lib/__tests__/requestOriginGuard.test.ts`
 
@@ -7406,60 +8752,70 @@ This is a lightweight map for navigation, not a full source dump.
 
 ## `web/src/lib/controlCenterEvidence.ts`
 
-- L8: symbol ControlCenterEvidence
-- L453: symbol ApiCostReportArtifact
-- L463: symbol ReleaseEvidenceFile
-- L712: symbol collectControlCenterEvidence
-- L826: symbol collectOperatorBriefCard
-- L915: symbol buildOperatorNextRecommendation
-- L1090: symbol isGuardedLiveCommand
-- L1094: symbol jsonHasDuplicateObjectKeys
-- L1189: symbol readStrictJsonIfExists
-- L1200: symbol readJsonIfExists
-- L1213: symbol readBoundedTextFileIfExists
-- L1241: symbol collectReleaseEvidenceDrilldown
-- L1302: symbol readMarkdownTitle
-- L1318: symbol collectReleaseComparison
-- L1376: symbol collectActionAuditDrilldown
-- L1478: symbol readBoundedControlCenterActionAuditLines
-- L1527: symbol countBy
-- L1536: symbol auditSummary
-- L1544: symbol sanitizeText
-- L1548: symbol collectArtifactHealth
-- L1739: symbol safeNonnegativeInteger
-- L1745: symbol matchesExactRecord
-- L1753: symbol isBackgroundPinError
-- L1766: symbol isBackgroundPinRemediation
-- L1794: symbol isBackgroundDiagnosticParity
-- L1838: symbol summarizeBackgroundStatus
-- L2072: symbol hasExactKeys
-- L2078: symbol hasConditionsShadowNoActionContract
-- L2086: symbol isConditionsShadowSha
-- L2090: symbol conditionsShadowCanonicalValue
-- L2100: symbol conditionsShadowCanonicalSha
-- L2105: symbol isConditionsShadowIdentifier
-- L2109: symbol isConditionsShadowAge
-- L2113: symbol conditionsShadowBlockers
-- L2127: symbol stringArraysEqual
-- L2131: symbol validateConditionsShadowTrace
-- L2195: symbol validateConditionsShadowScenarioPack
-- L2273: symbol summarizeConditionsShadowReplay
-- L2355: symbol collectOtclientHelperStatus
-- L2460: symbol collectP6PluginHandoff
-- L2525: symbol collectEngineBrainStatus
-- L2685: symbol collectP7CockpitSmokeStatus
-- L2728: symbol collectP7SafeWriteDryRunSmokeStatus
-- L2793: symbol collectLatestAuditRecordForAction
-- L2893: symbol isRecord
-- L2897: symbol sanitizeCountMap
-- L2909: symbol findGate
-- L2915: symbol sha256IfExists
-- L2928: symbol fileAgeMinutes
-- L2940: symbol statIfExists
-- L2949: symbol resolveEvidencePath
-- L2960: symbol findLatestReleaseEvidence
-- L2996: symbol countMarkdownFiles
-- L3014: symbol listReleaseSprints
+- L11: symbol EquipmentP10ArtifactSummary
+- L40: symbol ControlCenterEvidence
+- L613: symbol ApiCostReportArtifact
+- L623: symbol ReleaseEvidenceFile
+- L913: symbol EquipmentP10ArtifactSpec
+- L985: symbol collectControlCenterEvidence
+- L1117: symbol collectRoadmapState
+- L1334: symbol collectP14RunnerFoundation
+- L1409: symbol collectRoadmapStateAuditBinding
+- L1453: symbol collectOperatorBriefCard
+- L1542: symbol buildOperatorNextRecommendation
+- L1717: symbol isGuardedLiveCommand
+- L1721: symbol jsonHasDuplicateObjectKeys
+- L1816: symbol readStrictJsonIfExists
+- L1827: symbol readJsonIfExists
+- L1840: symbol readBoundedTextFileIfExists
+- L1868: symbol collectReleaseEvidenceDrilldown
+- L1929: symbol readMarkdownTitle
+- L1945: symbol collectReleaseComparison
+- L2003: symbol collectActionAuditDrilldown
+- L2105: symbol readBoundedControlCenterActionAuditLines
+- L2154: symbol countBy
+- L2163: symbol auditSummary
+- L2171: symbol sanitizeText
+- L2175: symbol collectArtifactHealth
+- L2366: symbol safeNonnegativeInteger
+- L2372: symbol matchesExactRecord
+- L2380: symbol isBackgroundPinError
+- L2393: symbol isBackgroundPinRemediation
+- L2421: symbol isBackgroundDiagnosticParity
+- L2465: symbol summarizeBackgroundStatus
+- L2699: symbol hasExactKeys
+- L2705: symbol hasConditionsShadowNoActionContract
+- L2713: symbol isConditionsShadowSha
+- L2717: symbol conditionsShadowCanonicalValue
+- L2727: symbol conditionsShadowCanonicalSha
+- L2732: symbol isConditionsShadowIdentifier
+- L2736: symbol isConditionsShadowAge
+- L2740: symbol conditionsShadowBlockers
+- L2754: symbol stringArraysEqual
+- L2758: symbol validateConditionsShadowTrace
+- L2822: symbol validateConditionsShadowScenarioPack
+- L2900: symbol summarizeConditionsShadowReplay
+- L2982: symbol summarizeEquipmentP10Artifact
+- L3067: symbol summarizeEquipmentShadowReplay
+- L3141: symbol validateEquipmentShadowAcceptance
+- L3213: symbol summarizeEquipmentShadowAcceptance
+- L3259: symbol summarizeEquipmentOperatorRefreshRun
+- L3294: symbol collectOtclientHelperStatus
+- L3491: symbol collectP6PluginHandoff
+- L3556: symbol collectEngineBrainStatus
+- L3716: symbol collectP7CockpitSmokeStatus
+- L3759: symbol collectP7SafeWriteDryRunSmokeStatus
+- L3824: symbol collectLatestAuditRecordForAction
+- L3924: symbol isRecord
+- L3928: symbol sanitizeCountMap
+- L3940: symbol findGate
+- L3946: symbol sha256IfExists
+- L3959: symbol fileAgeMinutes
+- L3971: symbol statIfExists
+- L3980: symbol resolveEvidencePath
+- L3991: symbol findLatestReleaseEvidence
+- L4027: symbol countMarkdownFiles
+- L4045: symbol listReleaseSprints
 
 ## `web/src/lib/controlCenterEvidenceAccess.ts`
 
@@ -7470,12 +8826,12 @@ This is a lightweight map for navigation, not a full source dump.
 ## `web/src/lib/controlCenterEvidenceConfig.ts`
 
 - L3: symbol ControlCenterEvidenceConfig
-- L36: symbol trimTrailingSeparators
-- L40: symbol getRepoRoot
-- L48: symbol resolveConfiguredPath
-- L53: symbol configuredPath
-- L57: symbol configuredPathFrom
-- L66: symbol getControlCenterEvidenceConfig
+- L46: symbol trimTrailingSeparators
+- L50: symbol getRepoRoot
+- L58: symbol resolveConfiguredPath
+- L63: symbol configuredPath
+- L67: symbol configuredPathFrom
+- L76: symbol getControlCenterEvidenceConfig
 
 ## `web/src/lib/controlCenterMarkdownReport.ts`
 

@@ -25,12 +25,15 @@ OUTPUT_JSON_PATH = Path("AI/generated/ROADMAP_STATE.json")
 OUTPUT_MD_PATH = Path("AI/generated/ROADMAP_STATE.md")
 AUDIT_PATH = Path("runtime/control-center/action-audit.jsonl")
 CONFIRMATION = "refresh roadmap state"
+P8_REBASELINE_CONFIRMATION = "zatwierdzam rebaseline P8 terminal evidence"
 ACTION_ID = "roadmap-state-refresh"
 MAX_JSON_BYTES = 2 * 1024 * 1024
 MAX_TEXT_BYTES = 256 * 1024
 MAX_SOURCE_AGE_SECONDS = 24 * 60 * 60
 REGISTRY_V1_SHA256 = "c3dd65689219229de0a5d5bcda50f7b60779ad8cc6ea0262dc73386c7ae17fb2"
-REGISTRY_SCHEMA_SHA256 = "e63f70b0443c5327a9bf2e597a30e6f49748ae5dee86c7e305ea3b4d28102dd6"
+REGISTRY_SCHEMA_SHA256 = (
+    "e63f70b0443c5327a9bf2e597a30e6f49748ae5dee86c7e305ea3b4d28102dd6"
+)
 STATE_SCHEMA_SHA256 = "3f2afa6a4a49407ecce6f8bcc71cf4d131c2e98507b6b1b4977f08c8f5067854"
 
 FIXED_ENTRY_PATHS = {
@@ -131,7 +134,9 @@ def _fixed_path(root: Path, relative: str | Path) -> tuple[Path | None, str | No
     return candidate, None
 
 
-def _read_stable_bytes(root: Path, relative: str | Path, max_bytes: int) -> tuple[str, bytes | None, int | None]:
+def _read_stable_bytes(
+    root: Path, relative: str | Path, max_bytes: int
+) -> tuple[str, bytes | None, int | None]:
     path, error = _fixed_path(root, relative)
     if error or path is None:
         return error or "outside_root", None, None
@@ -203,8 +208,15 @@ def _parse_datetime(value: Any) -> datetime | None:
     return parsed.astimezone(timezone.utc)
 
 
-def _artifact_datetime(payload: dict[str, Any], mtime_ns: int | None) -> datetime | None:
-    for field in ("created_at_unix_ms", "generated_at_utc", "generated_at", "created_at"):
+def _artifact_datetime(
+    payload: dict[str, Any], mtime_ns: int | None
+) -> datetime | None:
+    for field in (
+        "created_at_unix_ms",
+        "generated_at_utc",
+        "generated_at",
+        "created_at",
+    ):
         parsed = _parse_datetime(payload.get(field))
         if parsed is not None:
             return parsed
@@ -231,7 +243,9 @@ def _schema_errors(schema: dict[str, Any], payload: dict[str, Any]) -> list[str]
     ]
 
 
-def _source_health(root: Path, now: datetime, cache: dict[str, LoadedJson]) -> tuple[list[dict[str, Any]], list[str]]:
+def _source_health(
+    root: Path, now: datetime, cache: dict[str, LoadedJson]
+) -> tuple[list[dict[str, Any]], list[str]]:
     checks: list[dict[str, Any]] = []
     blockers: list[str] = []
     feature = _load_text(root, SOURCE_HEALTH_PATHS["feature_roadmap"])
@@ -262,26 +276,68 @@ def _source_health(root: Path, now: datetime, cache: dict[str, LoadedJson]) -> t
     if not feature_ok:
         blockers.append("feature_roadmap_contract")
 
-    for name in ("engine_brain_manifest", "operator_brief", "helper_manifest", "runtime_module_gates"):
+    for name in (
+        "engine_brain_manifest",
+        "operator_brief",
+        "helper_manifest",
+        "runtime_module_gates",
+    ):
         relative = SOURCE_HEALTH_PATHS[name]
         loaded = cache.setdefault(relative, _load_json(root, relative))
         payload = loaded.payload or {}
         created = _artifact_datetime(payload, loaded.mtime_ns)
         age = _age_seconds(created, now)
-        freshness = "current" if age is not None and age <= MAX_SOURCE_AGE_SECONDS else "stale"
+        freshness = (
+            "current" if age is not None and age <= MAX_SOURCE_AGE_SECONDS else "stale"
+        )
         contract_ok = loaded.status == "loaded"
         if name == "engine_brain_manifest":
-            contract_ok = contract_ok and payload.get("doc_sync_status") == "passed" and payload.get("secret_guardrail_status") == "passed"
+            contract_ok = (
+                contract_ok
+                and payload.get("doc_sync_status") == "passed"
+                and payload.get("secret_guardrail_status") == "passed"
+            )
         elif name == "operator_brief":
-            roadmap = payload.get("roadmap_generation") if isinstance(payload.get("roadmap_generation"), dict) else {}
-            handoff = payload.get("cockpit_handoff") if isinstance(payload.get("cockpit_handoff"), dict) else {}
-            contract_ok = contract_ok and payload.get("status") == "ready" and payload.get("hard_blockers") == [] and roadmap.get("status") == "ready" and handoff.get("status") == "ready"
+            roadmap = (
+                payload.get("roadmap_generation")
+                if isinstance(payload.get("roadmap_generation"), dict)
+                else {}
+            )
+            handoff = (
+                payload.get("cockpit_handoff")
+                if isinstance(payload.get("cockpit_handoff"), dict)
+                else {}
+            )
+            contract_ok = (
+                contract_ok
+                and payload.get("status") == "ready"
+                and payload.get("hard_blockers") == []
+                and roadmap.get("status") == "ready"
+                and handoff.get("status") == "ready"
+            )
         elif name == "helper_manifest":
-            contract_ok = contract_ok and payload.get("helper_version") == "v2.4.1" and isinstance(payload.get("files"), list)
+            contract_ok = (
+                contract_ok
+                and payload.get("helper_version") == "v2.4.1"
+                and isinstance(payload.get("files"), list)
+            )
         else:
-            manifest = cache.setdefault(SOURCE_HEALTH_PATHS["helper_manifest"], _load_json(root, SOURCE_HEALTH_PATHS["helper_manifest"]))
-            gate_manifest = payload.get("manifest") if isinstance(payload.get("manifest"), dict) else {}
-            contract_ok = contract_ok and payload.get("status") == "passed" and payload.get("failed") == [] and payload.get("observed", {}).get("runtime_state") == "disarmed" and gate_manifest.get("sha256") == manifest.sha256
+            manifest = cache.setdefault(
+                SOURCE_HEALTH_PATHS["helper_manifest"],
+                _load_json(root, SOURCE_HEALTH_PATHS["helper_manifest"]),
+            )
+            gate_manifest = (
+                payload.get("manifest")
+                if isinstance(payload.get("manifest"), dict)
+                else {}
+            )
+            contract_ok = (
+                contract_ok
+                and payload.get("status") == "passed"
+                and payload.get("failed") == []
+                and payload.get("observed", {}).get("runtime_state") == "disarmed"
+                and gate_manifest.get("sha256") == manifest.sha256
+            )
         if freshness == "stale":
             contract_ok = False
         checks.append(
@@ -290,7 +346,9 @@ def _source_health(root: Path, now: datetime, cache: dict[str, LoadedJson]) -> t
                 "path": relative,
                 "load_status": loaded.status,
                 "sha256": loaded.sha256,
-                "freshness_status": freshness if loaded.status == "loaded" else "blocked",
+                "freshness_status": freshness
+                if loaded.status == "loaded"
+                else "blocked",
                 "age_seconds": age,
                 "contract_status": "passed" if contract_ok else "blocked",
             }
@@ -302,9 +360,25 @@ def _source_health(root: Path, now: datetime, cache: dict[str, LoadedJson]) -> t
 
 def _control_center_preflight(operator_brief: LoadedJson) -> dict[str, Any]:
     payload = operator_brief.payload or {}
-    roadmap = payload.get("roadmap_generation") if isinstance(payload.get("roadmap_generation"), dict) else {}
-    handoff = payload.get("cockpit_handoff") if isinstance(payload.get("cockpit_handoff"), dict) else {}
-    hard_blockers = [str(item)[:200] for item in payload.get("hard_blockers", []) if str(item).strip()] if isinstance(payload.get("hard_blockers"), list) else ["operator_brief_hard_blockers_invalid"]
+    roadmap = (
+        payload.get("roadmap_generation")
+        if isinstance(payload.get("roadmap_generation"), dict)
+        else {}
+    )
+    handoff = (
+        payload.get("cockpit_handoff")
+        if isinstance(payload.get("cockpit_handoff"), dict)
+        else {}
+    )
+    hard_blockers = (
+        [
+            str(item)[:200]
+            for item in payload.get("hard_blockers", [])
+            if str(item).strip()
+        ]
+        if isinstance(payload.get("hard_blockers"), list)
+        else ["operator_brief_hard_blockers_invalid"]
+    )
     if operator_brief.status != "loaded":
         hard_blockers.append(f"operator_brief_{operator_brief.status}")
     if payload.get("status") != "ready":
@@ -324,7 +398,12 @@ def _control_center_preflight(operator_brief: LoadedJson) -> dict[str, Any]:
     }
 
 
-def _binding_result(root: Path, primary: dict[str, Any], binding: dict[str, Any], cache: dict[str, LoadedJson]) -> tuple[dict[str, Any], str | None]:
+def _binding_result(
+    root: Path,
+    primary: dict[str, Any],
+    binding: dict[str, Any],
+    cache: dict[str, LoadedJson],
+) -> tuple[dict[str, Any], str | None]:
     relative = str(binding["path"])
     loaded = cache.setdefault(relative, _load_json(root, relative))
     expected_value = primary.get(str(binding["target_field"]))
@@ -336,19 +415,27 @@ def _binding_result(root: Path, primary: dict[str, Any], binding: dict[str, Any]
             actual_value = _canonical_sha256(loaded.payload)
         else:
             actual_value = loaded.payload.get(str(binding.get("source_field") or ""))
-    passed = loaded.status == "loaded" and isinstance(expected_value, str) and expected_value == actual_value
+    passed = (
+        loaded.status == "loaded"
+        and isinstance(expected_value, str)
+        and expected_value == actual_value
+    )
     result = {
         "role": str(binding["role"]),
         "path": relative,
         "mode": str(binding["mode"]),
         "status": "passed" if passed else "blocked",
-        "expected_sha256": str(expected_value) if isinstance(expected_value, str) else None,
+        "expected_sha256": str(expected_value)
+        if isinstance(expected_value, str)
+        else None,
         "actual_sha256": str(actual_value) if isinstance(actual_value, str) else None,
     }
     return result, None if passed else f"binding_{binding['role']}_{loaded.status}"
 
 
-def _entry_created_at(payload: dict[str, Any], mtime_ns: int | None) -> tuple[str | None, datetime | None]:
+def _entry_created_at(
+    payload: dict[str, Any], mtime_ns: int | None
+) -> tuple[str | None, datetime | None]:
     parsed = _artifact_datetime(payload, mtime_ns)
     return (parsed.isoformat().replace("+00:00", "Z") if parsed else None, parsed)
 
@@ -359,6 +446,7 @@ def _build_ledger_entry(
     now: datetime,
     cache: dict[str, LoadedJson],
     previous: dict[str, Any] | None,
+    allow_p8_rebaseline: bool = False,
 ) -> dict[str, Any]:
     relative = str(config["path"])
     loaded = cache.setdefault(relative, _load_json(root, relative))
@@ -379,25 +467,59 @@ def _build_ledger_entry(
     for flag in config["required_true_flags"]:
         if payload.get(flag) is not True:
             blockers.append(f"required_{flag}_missing")
-    if config["expected_attempt_count"] is not None and payload.get("attempt_count") != config["expected_attempt_count"]:
+    if (
+        config["expected_attempt_count"] is not None
+        and payload.get("attempt_count") != config["expected_attempt_count"]
+    ):
         blockers.append("attempt_count_mismatch")
-    if config["expected_retry_scheduled"] is not None and payload.get("retry_scheduled") is not config["expected_retry_scheduled"]:
+    if (
+        config["expected_retry_scheduled"] is not None
+        and payload.get("retry_scheduled") is not config["expected_retry_scheduled"]
+    ):
         blockers.append("retry_state_mismatch")
-    if config["expected_final_state"] is not None and payload.get("final_state") != config["expected_final_state"]:
+    if (
+        config["expected_final_state"] is not None
+        and payload.get("final_state") != config["expected_final_state"]
+    ):
         blockers.append("final_state_mismatch")
     intrusive = payload.get("intrusive_actions_performed")
-    if not isinstance(intrusive, list) or len(intrusive) != config["expected_intrusive_action_count"]:
+    if (
+        not isinstance(intrusive, list)
+        or len(intrusive) != config["expected_intrusive_action_count"]
+    ):
         blockers.append("intrusive_action_count_mismatch")
     if config["decision_id"] == "p8-background-acceptance":
-        interaction = payload.get("interaction_contract") if isinstance(payload.get("interaction_contract"), dict) else {}
-        integrity = payload.get("integrity") if isinstance(payload.get("integrity"), dict) else {}
-        capability = payload.get("capability") if isinstance(payload.get("capability"), dict) else {}
-        if interaction.get("passive_reads_only") is not True or interaction.get("live_file_writes") is not False or interaction.get("gui_automation") is not False:
+        interaction = (
+            payload.get("interaction_contract")
+            if isinstance(payload.get("interaction_contract"), dict)
+            else {}
+        )
+        integrity = (
+            payload.get("integrity")
+            if isinstance(payload.get("integrity"), dict)
+            else {}
+        )
+        capability = (
+            payload.get("capability")
+            if isinstance(payload.get("capability"), dict)
+            else {}
+        )
+        if (
+            interaction.get("passive_reads_only") is not True
+            or interaction.get("live_file_writes") is not False
+            or interaction.get("gui_automation") is not False
+        ):
             blockers.append("p8_interaction_contract_unsafe")
-        if integrity.get("status") != "passed" or capability.get("runtime_state") != "disarmed":
+        if (
+            integrity.get("status") != "passed"
+            or capability.get("runtime_state") != "disarmed"
+        ):
             blockers.append("p8_integrity_or_runtime_state")
     if config["decision_id"] == "p12-heal-friend-no-compatible-vocation":
-        if payload.get("closure_reason") != "no_compatible_sandbox_vocation" or payload.get("required_vocation") != "ed":
+        if (
+            payload.get("closure_reason") != "no_compatible_sandbox_vocation"
+            or payload.get("required_vocation") != "ed"
+        ):
             blockers.append("heal_friend_closure_reason_mismatch")
 
     binding_results: list[dict[str, Any]] = []
@@ -411,12 +533,19 @@ def _build_ledger_entry(
     if isinstance(previous, dict):
         candidate = previous.get("evidence_sha256")
         previous_sha = candidate if isinstance(candidate, str) else None
-    tampered = bool(previous_sha and loaded.sha256 and previous_sha != loaded.sha256)
+    tamper_detected = bool(
+        previous_sha and loaded.sha256 and previous_sha != loaded.sha256
+    )
+    tampered = tamper_detected and not (
+        allow_p8_rebaseline and config["decision_id"] == "p8-background-acceptance"
+    )
     if tampered:
         blockers.append("terminal_evidence_changed_since_previous_state")
     created_at, created_dt = _entry_created_at(payload, loaded.mtime_ns)
     unique = list(dict.fromkeys(blockers))
-    integrity_status = "tampered" if tampered else ("passed" if not unique else "blocked")
+    integrity_status = (
+        "tampered" if tampered else ("passed" if not unique else "blocked")
+    )
     return {
         "decision_id": str(config["decision_id"]),
         "ordinal": int(config["ordinal"]),
@@ -425,18 +554,30 @@ def _build_ledger_entry(
         "decision_status": str(config["decision_status"]),
         "result_status": str(config["result_status"]),
         "evidence_path": relative,
-        "evidence_schema_version": payload.get("schema_version") if isinstance(payload.get("schema_version"), str) else None,
+        "evidence_schema_version": payload.get("schema_version")
+        if isinstance(payload.get("schema_version"), str)
+        else None,
         "evidence_sha256": loaded.sha256,
         "previous_evidence_sha256": previous_sha,
-        "evidence_status": payload.get("status") if isinstance(payload.get("status"), str) else None,
+        "evidence_status": payload.get("status")
+        if isinstance(payload.get("status"), str)
+        else None,
         "integrity_status": integrity_status,
-        "freshness_status": "immutable_terminal" if loaded.status == "loaded" else "blocked",
+        "freshness_status": "immutable_terminal"
+        if loaded.status == "loaded"
+        else "blocked",
         "created_at": created_at,
         "age_seconds": _age_seconds(created_dt, now),
         "terminal": True,
-        "attempt_count": payload.get("attempt_count") if isinstance(payload.get("attempt_count"), int) else None,
-        "retry_scheduled": payload.get("retry_scheduled") if isinstance(payload.get("retry_scheduled"), bool) else None,
-        "final_state": payload.get("final_state") if isinstance(payload.get("final_state"), str) else None,
+        "attempt_count": payload.get("attempt_count")
+        if isinstance(payload.get("attempt_count"), int)
+        else None,
+        "retry_scheduled": payload.get("retry_scheduled")
+        if isinstance(payload.get("retry_scheduled"), bool)
+        else None,
+        "final_state": payload.get("final_state")
+        if isinstance(payload.get("final_state"), str)
+        else None,
         "downstream_authority_granted": False,
         "dispatch_allowed": False,
         "runtime_actions": False,
@@ -449,7 +590,12 @@ def _build_ledger_entry(
     }
 
 
-def build_state(root: Path = ROOT, *, now: datetime | None = None) -> dict[str, Any]:
+def build_state(
+    root: Path = ROOT,
+    *,
+    now: datetime | None = None,
+    allow_p8_rebaseline: bool = False,
+) -> dict[str, Any]:
     current = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
     cache: dict[str, LoadedJson] = {}
     blockers: list[str] = []
@@ -501,7 +647,9 @@ def build_state(root: Path = ROOT, *, now: datetime | None = None) -> dict[str, 
         blockers.append("registry_binding_allowlist_mismatch")
 
     previous_loaded = _load_json(root, OUTPUT_JSON_PATH)
-    previous_payload = previous_loaded.payload if previous_loaded.status == "loaded" else None
+    previous_payload = (
+        previous_loaded.payload if previous_loaded.status == "loaded" else None
+    )
     if previous_loaded.status not in {"loaded", "missing"}:
         blockers.append(f"previous_state_{previous_loaded.status}")
     previous_ledger = {
@@ -512,7 +660,8 @@ def build_state(root: Path = ROOT, *, now: datetime | None = None) -> dict[str, 
     previous_registry = (previous_payload or {}).get("schema_registry")
     previous_registry_sha = (
         previous_registry.get("sha256")
-        if isinstance(previous_registry, dict) and isinstance(previous_registry.get("sha256"), str)
+        if isinstance(previous_registry, dict)
+        and isinstance(previous_registry.get("sha256"), str)
         else None
     )
     registry_tampered = bool(
@@ -533,6 +682,7 @@ def build_state(root: Path = ROOT, *, now: datetime | None = None) -> dict[str, 
             current,
             cache,
             previous_ledger.get(str(item.get("decision_id"))),
+            allow_p8_rebaseline=allow_p8_rebaseline,
         )
         for item in entries
         if isinstance(item, dict)
@@ -540,7 +690,9 @@ def build_state(root: Path = ROOT, *, now: datetime | None = None) -> dict[str, 
     if len(ledger) != 7:
         blockers.append("ledger_count_mismatch")
     for item in ledger:
-        blockers.extend(f"{item['decision_id']}:{blocker}" for blocker in item["blockers"])
+        blockers.extend(
+            f"{item['decision_id']}:{blocker}" for blocker in item["blockers"]
+        )
 
     source_health, source_blockers = _source_health(root, current, cache)
     blockers.extend(source_blockers)
@@ -549,7 +701,9 @@ def build_state(root: Path = ROOT, *, now: datetime | None = None) -> dict[str, 
         _load_json(root, SOURCE_HEALTH_PATHS["operator_brief"]),
     )
     preflight = _control_center_preflight(operator_brief)
-    blockers.extend(f"control_center_preflight:{item}" for item in preflight["hard_blockers"])
+    blockers.extend(
+        f"control_center_preflight:{item}" for item in preflight["hard_blockers"]
+    )
     unique_blockers = list(dict.fromkeys(blockers))
     tampered_count = sum(1 for item in ledger if item["integrity_status"] == "tampered")
     blocked_count = sum(1 for item in ledger if item["blockers"])
@@ -566,10 +720,18 @@ def build_state(root: Path = ROOT, *, now: datetime | None = None) -> dict[str, 
         "previous_state_sha256": previous_loaded.sha256,
         "control_center_preflight": preflight,
         "schema_registry": {
-            "status": "tampered" if registry_tampered else ("passed" if not registry_errors and registry.status == "loaded" else "blocked"),
+            "status": "tampered"
+            if registry_tampered
+            else (
+                "passed"
+                if not registry_errors and registry.status == "loaded"
+                else "blocked"
+            ),
             "path": REGISTRY_PATH.as_posix(),
             "schema_path": REGISTRY_SCHEMA_PATH.as_posix(),
-            "schema_version": registry.payload.get("schema_version") if registry.payload else None,
+            "schema_version": registry.payload.get("schema_version")
+            if registry.payload
+            else None,
             "entry_count": len(entries),
             "sha256": registry.sha256,
             "schema_sha256": registry_schema.sha256,
@@ -579,16 +741,29 @@ def build_state(root: Path = ROOT, *, now: datetime | None = None) -> dict[str, 
         "ledger": ledger,
         "summary": {
             "ledger_count": len(ledger),
-            "accepted_count": sum(1 for item in ledger if item["decision_status"] == "accepted" and not item["blockers"]),
-            "closed_no_action_count": sum(1 for item in ledger if item["decision_status"] == "closed_no_action" and not item["blockers"]),
+            "accepted_count": sum(
+                1
+                for item in ledger
+                if item["decision_status"] == "accepted" and not item["blockers"]
+            ),
+            "closed_no_action_count": sum(
+                1
+                for item in ledger
+                if item["decision_status"] == "closed_no_action"
+                and not item["blockers"]
+            ),
             "blocked_count": blocked_count,
             "tampered_count": tampered_count,
             "total_attempt_count": sum(item["attempt_count"] or 0 for item in ledger),
             "runtime_authority_count": 0,
             "live_authority_count": 0,
         },
-        "freshness_status": "blocked" if not ready and not stale else ("stale" if stale else "current"),
-        "tamper_status": "tampered" if registry_tampered or tampered_count else ("passed" if ready else "blocked"),
+        "freshness_status": "blocked"
+        if not ready and not stale
+        else ("stale" if stale else "current"),
+        "tamper_status": "tampered"
+        if registry_tampered or tampered_count
+        else ("passed" if ready else "blocked"),
         "authority": {
             "control_center_mode": "read_only",
             "runtime_executor_added": False,
@@ -606,15 +781,32 @@ def build_state(root: Path = ROOT, *, now: datetime | None = None) -> dict[str, 
         ),
     }
     payload = {**basis, "state_sha256": _canonical_sha256(basis)}
-    state_errors = _schema_errors(state_schema.payload, payload) if state_schema.payload else ["state_schema_missing"]
+    state_errors = (
+        _schema_errors(state_schema.payload, payload)
+        if state_schema.payload
+        else ["state_schema_missing"]
+    )
     if state_errors:
-        merged = list(dict.fromkeys([*payload["blockers"], *(f"state_validation:{item}" for item in state_errors)]))
+        merged = list(
+            dict.fromkeys(
+                [
+                    *payload["blockers"],
+                    *(f"state_validation:{item}" for item in state_errors),
+                ]
+            )
+        )
         payload["blockers"] = merged
         payload["status"] = "blocked"
         payload["phase_status"] = "blocked"
         payload["freshness_status"] = "blocked"
-        payload["tamper_status"] = "blocked" if payload["tamper_status"] == "passed" else payload["tamper_status"]
-        payload["state_sha256"] = _canonical_sha256({key: value for key, value in payload.items() if key != "state_sha256"})
+        payload["tamper_status"] = (
+            "blocked"
+            if payload["tamper_status"] == "passed"
+            else payload["tamper_status"]
+        )
+        payload["state_sha256"] = _canonical_sha256(
+            {key: value for key, value in payload.items() if key != "state_sha256"}
+        )
     return payload
 
 
@@ -670,14 +862,26 @@ def render_markdown(payload: dict[str, Any]) -> str:
 
 def _sanitize_audit_text(value: Any, max_length: int = 500) -> str:
     text = str(value or "")
-    text = re.sub(r"(?i)(token|password|secret|authorization)(\s*[:=]\s*)([^\s,;]+)", r"\1\2[redacted]", text)
+    text = re.sub(
+        r"(?i)(token|password|secret|authorization)(\s*[:=]\s*)([^\s,;]+)",
+        r"\1\2[redacted]",
+        text,
+    )
     text = re.sub(r"(?i)\b(?:sk|ghp|github_pat)-[A-Za-z0-9_-]+", "[redacted]", text)
     text = text.replace("\r", " ").replace("\n", " ").strip()
-    return text if len(text) <= max_length else f"{text[: max_length - 12].rstrip()} [truncated]"
+    return (
+        text
+        if len(text) <= max_length
+        else f"{text[: max_length - 12].rstrip()} [truncated]"
+    )
 
 
 def _timestamp_utc() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="microseconds").replace("+00:00", "Z")
+    return (
+        datetime.now(timezone.utc)
+        .isoformat(timespec="microseconds")
+        .replace("+00:00", "Z")
+    )
 
 
 def _audit_id(at: str) -> str:
@@ -723,6 +927,7 @@ def _append_audit(
     reason: str,
     output_hashes: dict[str, str],
     written_paths: list[str],
+    p8_rebaseline: dict[str, Any] | None = None,
 ) -> tuple[str, str]:
     at = _timestamp_utc()
     identifier = _audit_id(at)
@@ -745,6 +950,7 @@ def _append_audit(
         ),
         "output_hashes": output_hashes,
         "written_paths": written_paths,
+        "p8_terminal_rebaseline": p8_rebaseline,
     }
     with audit_path.open("a", encoding="utf-8", newline="\n") as handle:
         handle.write(json.dumps(record, sort_keys=True, separators=(",", ":")) + "\n")
@@ -758,22 +964,46 @@ def execute(
     *,
     dry_run: bool = True,
     confirmation: str = "",
+    p8_rebaseline_confirmation: str = "",
     reason: str = "",
     now: datetime | None = None,
 ) -> dict[str, Any]:
-    payload = build_state(root, now=now)
+    initial_payload = build_state(root, now=now)
+    expected_rebaseline_blocker = (
+        "p8-background-acceptance:terminal_evidence_changed_since_previous_state"
+    )
+    rebaseline_requested = bool(p8_rebaseline_confirmation)
+    rebaseline_authorized = p8_rebaseline_confirmation == P8_REBASELINE_CONFIRMATION
+    rebaseline_eligible = initial_payload["blockers"] == [expected_rebaseline_blocker]
+    apply_rebaseline = (
+        rebaseline_requested and rebaseline_authorized and rebaseline_eligible
+    )
+    payload = (
+        build_state(root, now=now, allow_p8_rebaseline=True)
+        if apply_rebaseline
+        else initial_payload
+    )
     json_raw = (json.dumps(payload, indent=2, sort_keys=True) + "\n").encode()
     markdown_raw = render_markdown(payload).encode()
     output_hashes = {
         OUTPUT_JSON_PATH.as_posix(): _raw_sha256(json_raw),
         OUTPUT_MD_PATH.as_posix(): _raw_sha256(markdown_raw),
     }
-    authorized = dry_run or confirmation == CONFIRMATION
+    authorized = dry_run or (
+        rebaseline_authorized if rebaseline_requested else confirmation == CONFIRMATION
+    )
     ok = payload["status"] == "ready" and authorized
     written_paths: list[str] = []
     failure_reason = reason
     if not authorized:
-        failure_reason = f"Confirmed execution requires confirmation={CONFIRMATION!r}."
+        required = P8_REBASELINE_CONFIRMATION if rebaseline_requested else CONFIRMATION
+        failure_reason = f"Confirmed execution requires confirmation={required!r}."
+    elif rebaseline_requested and not rebaseline_eligible:
+        ok = False
+        failure_reason = (
+            "P8 terminal rebaseline requires exactly one blocker: "
+            f"{expected_rebaseline_blocker}."
+        )
     elif payload["status"] != "ready":
         failure_reason = f"P13 state is blocked: {', '.join(payload['blockers'][:8]) or 'unknown blocker'}"
     elif not dry_run:
@@ -786,14 +1016,38 @@ def execute(
         except (OSError, ValueError) as exc:
             ok = False
             failure_reason = f"Roadmap output write failed: {exc}"
+    initial_p8 = next(
+        (
+            item
+            for item in initial_payload.get("ledger", [])
+            if item.get("decision_id") == "p8-background-acceptance"
+        ),
+        {},
+    )
+    p8_rebaseline = (
+        {
+            "authorized": True,
+            "previous_evidence_sha256": initial_p8.get("previous_evidence_sha256"),
+            "current_evidence_sha256": initial_p8.get("evidence_sha256"),
+            "sole_blocker_verified": True,
+        }
+        if apply_rebaseline
+        else None
+    )
     audit_identifier, audit_path = _append_audit(
         root,
         dry_run=dry_run,
         authorized=authorized,
         ok=ok,
-        reason=failure_reason or ("P13 roadmap-state dry run" if dry_run else "P13 roadmap-state confirmed refresh"),
+        reason=failure_reason
+        or (
+            "P13 roadmap-state dry run"
+            if dry_run
+            else "P13 roadmap-state confirmed refresh"
+        ),
         output_hashes=output_hashes if ok else {},
         written_paths=written_paths,
+        p8_rebaseline=p8_rebaseline,
     )
     return {
         "schema_version": 1,
@@ -811,6 +1065,7 @@ def execute(
         "written_paths": written_paths,
         "blockers": payload["blockers"],
         "authority": payload["authority"],
+        "p8_terminal_rebaseline": p8_rebaseline,
     }
 
 
@@ -827,12 +1082,14 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dry-run", type=_parse_bool, default=True)
     parser.add_argument("--confirmation", default="")
+    parser.add_argument("--rebaseline-p8-confirmation", default="")
     parser.add_argument("--reason", default="")
     args = parser.parse_args(argv)
     result = execute(
         ROOT,
         dry_run=args.dry_run,
         confirmation=args.confirmation,
+        p8_rebaseline_confirmation=args.rebaseline_p8_confirmation,
         reason=args.reason,
     )
     print(json.dumps(result, indent=2, sort_keys=True))

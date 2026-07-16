@@ -459,12 +459,17 @@ function Sync-CtoaRuntimeFiles {
         Copy-CtoaRuntimeFile -StageRelative "mods\ctoa_otclient\$name" -RepoRelative "scripts\lua\otclient\$name" -Destination (Join-Path $modDir $name)
     }
     foreach ($name in @("ctoa_chooser.otmod", "ctoa_chooser_loader.lua")) {
-        Copy-CtoaRuntimeFile -StageRelative "mods\ctoa_chooser\$name" -RepoRelative "mods\ctoa_chooser\$name" -Destination (Join-Path $chooserDir $name)
+        Copy-CtoaRuntimeFile -StageRelative "mods\ctoa_chooser\$name" -RepoRelative "scripts\lua\ctoa_chooser\$name" -Destination (Join-Path $chooserDir $name)
     }
     foreach ($name in @("ctoa_safe.otmod", "ctoa_safe_loader.lua", "ctoa_safe_helper.lua")) {
         Copy-CtoaRuntimeFile -StageRelative "mods\ctoa_safe\$name" -RepoRelative "mods\ctoa_safe\$name" -Destination (Join-Path $safeDir $name)
     }
-    Copy-CtoaRuntimeFile -StageRelative "ctoa_project_loader.lua" -RepoRelative "mods\ctoa_chooser\ctoa_chooser_loader.lua" -Destination (Join-Path $ClientDir "ctoa_project_loader.lua")
+    $safeStyles = Join-Path $safeDir "styles"
+    New-Item -ItemType Directory -Force -Path $safeStyles | Out-Null
+    foreach ($name in @("helper.otui", "spell.otui", "siolist.otui", "shooterPreset.otui")) {
+        Copy-CtoaRuntimeFile -StageRelative "mods\ctoa_safe\styles\$name" -RepoRelative "mods\ctoa_safe\styles\$name" -Destination (Join-Path $safeStyles $name)
+    }
+    Copy-CtoaRuntimeFile -StageRelative "ctoa_project_loader.lua" -RepoRelative "scripts\lua\ctoa_chooser\ctoa_chooser_loader.lua" -Destination (Join-Path $ClientDir "ctoa_project_loader.lua")
     foreach ($legacyRelative in Get-LiveLegacyFiles) {
         Remove-Item -LiteralPath (Join-Path $ClientDir $legacyRelative) -Force -ErrorAction SilentlyContinue
     }
@@ -1017,12 +1022,17 @@ function New-DevPackage {
         Copy-Item -LiteralPath (Join-Path $repo "scripts\lua\otclient\$name") -Destination (Join-Path $moduleDir $name) -Force
     }
     foreach ($name in @("ctoa_chooser.otmod", "ctoa_chooser_loader.lua")) {
-        Copy-Item -LiteralPath (Join-Path $repo "mods\ctoa_chooser\$name") -Destination (Join-Path $chooserDir $name) -Force
+        Copy-Item -LiteralPath (Join-Path $repo "scripts\lua\ctoa_chooser\$name") -Destination (Join-Path $chooserDir $name) -Force
     }
     foreach ($name in @("ctoa_safe.otmod", "ctoa_safe_loader.lua", "ctoa_safe_helper.lua")) {
         Copy-Item -LiteralPath (Join-Path $repo "mods\ctoa_safe\$name") -Destination (Join-Path $safeDir $name) -Force
     }
-    Copy-Item -LiteralPath (Join-Path $repo "mods\ctoa_chooser\ctoa_chooser_loader.lua") -Destination (Join-Path $stage "ctoa_project_loader.lua") -Force
+    $safeStyles = Join-Path $safeDir "styles"
+    New-Item -ItemType Directory -Force -Path $safeStyles | Out-Null
+    foreach ($name in @("helper.otui", "spell.otui", "siolist.otui", "shooterPreset.otui")) {
+        Copy-Item -LiteralPath (Join-Path $repo "mods\ctoa_safe\styles\$name") -Destination (Join-Path $safeStyles $name) -Force
+    }
+    Copy-Item -LiteralPath (Join-Path $repo "scripts\lua\ctoa_chooser\ctoa_chooser_loader.lua") -Destination (Join-Path $stage "ctoa_project_loader.lua") -Force
 
     $version = Get-HelperVersion
     $fileManifest = Get-DevFileManifest -Stage $stage

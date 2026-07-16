@@ -1,0 +1,10 @@
+Module
+  name: ctoa_safe
+  description: CTOA Safe - KingsVale Helper compatible local runtime
+  author: CTOA AI Toolkit
+  website: github.com/famatyyk/CTOAi
+  version: 3.3.0
+  autoload: false
+  scripts: [ ctoa_safe_loader ]
+  @onLoad: CTOA_SAFE_LOADER.init()
+  @onUnload: CTOA_SAFE_LOADER.terminate()

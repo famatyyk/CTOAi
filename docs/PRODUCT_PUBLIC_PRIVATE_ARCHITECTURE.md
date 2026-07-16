@@ -1,26 +1,29 @@
-# CTOA Product Architecture: Public vs Private
+# CTOA Product Architecture: Private Source vs Controlled Distribution
 
-This document defines which parts of CTOA are public product surface and which must remain private studio/operations assets.
+This document defines the private-first source model and the narrow conditions
+under which a sanitized CTOA artifact may leave the private environment.
 
 ## Product Goal
 
-Ship a reusable CTOA Toolkit that any customer can clone and configure for their own environment, without receiving CTOA internal credentials, internal infrastructure details, or training pipelines.
+Ship controlled CTOA packages to approved customers without exposing the
+canonical repository, Git history, internal credentials, infrastructure,
+training pipelines, or unreleased product logic.
 
 ## Product Layers
 
-### 1. Public Core: CTOA Toolkit
+### 1. Private Core: CTOA Toolkit
 
-Public distribution includes:
+The canonical Core source remains private. An approved customer export may include:
 
 - product code and UX surfaces
 - agent runtime definitions usable by customers
-- prompt updates intended for public delivery
+- prompt updates approved for controlled delivery
 - workflow specs, validators, release governance contracts
 - bootstrap/configuration wizard
 - mandatory update gate before launch
 - local configuration template and setup guidance
 
-Primary public paths:
+Primary Core source paths:
 
 - `agents/`
 - `prompts/`
@@ -36,7 +39,7 @@ Primary public paths:
 
 ### 2. Private Studio Overlay: CTOA Studio
 
-Private studio assets remain outside public distribution.
+Private studio assets remain outside every customer distribution.
 
 Private-only scope includes:
 
@@ -67,17 +70,17 @@ Not allowed for customers:
 
 ## Public/Private Boundaries
 
-### Public Repo Rules
+### Public Export Rules
 
-Public repo may contain:
+A separately created public artifact may contain:
 
 - sanitized examples
 - config templates
 - schemas and migrations
-- public product documentation
-- release packs for public versions
+- documentation prepared specifically for the export
+- release packs prepared specifically for external delivery
 
-Public repo must not contain:
+It must not contain:
 
 - real `.env` files
 - production credentials
@@ -85,6 +88,12 @@ Public repo must not contain:
 - internal experiment outputs
 - private infrastructure mappings
 - training source datasets
+- the canonical repository history
+- internal roadmaps, evidence packs, operator workflows, or unreleased Helper logic
+
+The export must be produced from an explicit allowlist, reviewed for secrets and
+intellectual-property boundaries, and approved by the owner. The canonical
+repository itself is never the public distribution channel.
 
 ### Local User State
 
@@ -111,10 +120,10 @@ Every product launch follows this sequence:
 
 ## Release Policy
 
-Public release train ships:
+Controlled customer release train ships:
 
 - toolkit runtime updates
-- prompt updates approved for public use
+- prompt updates approved for controlled use
 - sealed capability packs
 - compatibility updates for config/bootstrap schema
 
@@ -127,12 +136,14 @@ Private studio release train ships separately:
 
 ## Immediate Productization Roadmap
 
-### Phase 1: Foundation
+### Phase 1: Lockdown Foundation
 
-- public/private architecture defined
+- private-first architecture defined
 - tracked product manifest added
 - bootstrap script writes local config and local DB state
 - update gate enforced before launch
+- GitHub Pages and public deployment aliases disabled
+- live exposure audit enforced
 
 ### Phase 2: Repo Cleanup
 
@@ -142,10 +153,13 @@ Private studio release train ships separately:
 
 ### Phase 3: Distribution
 
-- package public toolkit by tier
+- package controlled customer exports by tier
 - add signed release/update manifest
 - add installer/bootstrap UX for non-technical customers
 
 ## Design Constraint
 
-CTOA Toolkit should feel like a product studio platform, not a dump of mixed internal assets. Public product code stays reusable, configurable, and auditable. Private CTOA intelligence, training, and operations remain sealed.
+CTOA Toolkit should feel like a product studio platform, not a dump of mixed
+internal assets. Customer packages stay reusable, configurable, and auditable;
+canonical CTOA source, intelligence, training, operations, and Git history stay
+sealed.

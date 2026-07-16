@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-12T01:33:15+00:00",
+  "generated_at": "2026-07-15T17:14:27+00:00",
   "decision": "ready_for_p7_operator_workflow",
   "status": "ready",
   "hard_blockers": [],
@@ -118,10 +118,10 @@
       "file_count": 35,
       "sprint_count": 7,
       "latest_path": "releases\\evidence\\sprint-056\\CTOA-299.md",
-      "release_evidence_generated_at": "2026-07-11T20:20:39+00:00",
+      "release_evidence_generated_at": "2026-07-15T14:01:11+00:00",
       "otclient_helper_status": "blocked",
       "otclient_helper_release_gate_status": "blocked",
-      "otclient_helper_next_action": "ModuleAttachSmoke is stale for the current dev manifest; rerun SmokeAttachModules after sandbox character is in-world.",
+      "otclient_helper_next_action": "SmokePreflight is stale for the current dev manifest; rerun SmokePreflight.",
       "otclient_helper_module_contract": {
         "status": "passed",
         "passed_count": 32,
@@ -129,19 +129,133 @@
         "forbidden_count": 0
       },
       "otclient_helper_background_status": {
-        "status": "blocked",
-        "integrity_status": "untrusted_pin",
-        "capability_status": "missing",
-        "runtime_state": "unknown",
+        "status": "stale",
+        "integrity_status": "passed",
+        "capability_status": "fresh",
+        "runtime_state": "disarmed",
         "safe_to_run_while_playing": true
       },
       "otclient_helper_conditions_shadow": {
-        "status": "operational_acceptance_blocked",
+        "status": "stale",
         "contract_valid": true,
-        "fresh": true,
+        "fresh": false,
         "fixture_validation_status": "passed",
         "fixture_only_validation_passed": true,
         "runtime_readiness_claimed": false
+      },
+      "otclient_helper_equipment_shadow": {
+        "status": "stale",
+        "contract_valid": true,
+        "fresh": false,
+        "fixture_validation_status": "passed",
+        "rollback_simulation": "ready",
+        "runtime_readiness_claimed": false
+      },
+      "otclient_helper_equipment_acceptance": {
+        "status": "invalid",
+        "contract_valid": false,
+        "fresh": false,
+        "report_hash_match": true,
+        "acceptance_granted": false,
+        "p11_predecessor_eligible": false,
+        "runtime_readiness_claimed": false
+      },
+      "otclient_helper_roadmap_phase_state": {
+        "status": "p14_foundation_ready",
+        "current_phase": "P14",
+        "next_phase": "P14",
+        "aligned_with_current_roadmap": true,
+        "p8": "operational_acceptance_complete",
+        "p9": "operational_acceptance_complete",
+        "p10": "operational_acceptance_complete",
+        "p11": "operational_acceptance_complete",
+        "p12": {
+          "status": "complete",
+          "conditions": {
+            "status": "operational_acceptance_complete",
+            "contract_valid": true,
+            "acceptance_granted": true,
+            "plan_sha256": "67c27a26797b0b01e4f8dfccec4e02b0e5f454ca6818434709e4b55850f49810",
+            "receipt_id": "p12-conditions-78a8b689653640af",
+            "attempt_count": 1,
+            "retry_scheduled": false,
+            "final_state": "killed_and_disarmed",
+            "downstream_authority_granted": false,
+            "blockers": []
+          },
+          "equipment": {
+            "status": "operational_acceptance_complete",
+            "receipt_status": "accepted",
+            "receipt_contract_valid": true,
+            "acceptance_granted": true,
+            "consumed_attempt": true,
+            "consumed_plan_sha256": "d041db806c6417b018c6ae390e3d384ccec9bead2a77e498a582093bf7c823e0",
+            "consumed_receipt_id": "p12-equipment-bdf7027cf48c438d",
+            "current_plan_status": "ready_for_sandbox_session_approval",
+            "current_plan_contract_valid": true,
+            "current_plan_safe": true,
+            "current_plan_sha256": "d041db806c6417b018c6ae390e3d384ccec9bead2a77e498a582093bf7c823e0",
+            "current_plan_blockers": [],
+            "replacement_plan_distinct": false,
+            "attempt_count": 1,
+            "session_approved": true,
+            "execution_approved": true,
+            "final_state": "killed_and_disarmed",
+            "downstream_authority_granted": false
+          },
+          "heal_friend": {
+            "status": "closed_blocked_no_compatible_vocation",
+            "contract_valid": true,
+            "closure_granted": true,
+            "closure_reason": "no_compatible_sandbox_vocation",
+            "attempt_count": 0,
+            "retry_scheduled": false,
+            "final_state": "disarmed",
+            "required_vocation": "ed",
+            "available_vocations": [
+              "sorcerer",
+              "knight"
+            ],
+            "downstream_authority_granted": false,
+            "runtime_actions": false,
+            "live_promotion": false,
+            "binding_status": "passed",
+            "blockers": []
+          }
+        },
+        "p13": {
+          "status": "runtime_evidence_ready",
+          "roadmap_state": {
+            "status": "runtime_evidence_ready",
+            "contract_valid": true,
+            "freshness_status": "current",
+            "tamper_status": "passed",
+            "audit_binding_status": "passed",
+            "audit_id": "20260715132555712981-roadmap-state-refresh",
+            "state_sha256": "2aacaa7d3a3e30cec10822824f46239b5ef5ea80f879ade3286f1b6096495b99",
+            "file_sha256": "c0f457006235f61f5d31bd13a69398513093c3ba3fb1b7a73d242cec090fb003",
+            "control_center_mode": "read_only",
+            "runtime_authority_count": 0,
+            "live_authority_count": 0,
+            "blockers": []
+          },
+          "control_center_mode": "read_only",
+          "runtime_authority_granted": false,
+          "live_authority_granted": false
+        },
+        "p14": {
+          "status": "foundation_ready",
+          "contract_version": "ctoa.p14-runner-request.v1",
+          "implementation_file_count": 6,
+          "required_file_count": 6,
+          "operational_runner_result": "missing",
+          "operational_ready": false,
+          "runtime_authority_granted": false,
+          "live_authority_granted": false,
+          "promotion_approved": false,
+          "mcp_write_tool_enabled": false,
+          "blockers": []
+        }
       },
       "sandbox_smoke_queue": {
         "status": "passed",
@@ -154,12 +268,12 @@
     },
     "action_audit": {
       "status": "ready",
-      "record_count": 135,
-      "latest_at": "2026-07-11T20:20:38.990730Z",
+      "record_count": 154,
+      "latest_at": "2026-07-15T17:14:01.853015Z",
       "invalid_record_count": 0,
       "risk_counts": {
         "read_only": 2,
-        "safe_write": 133
+        "safe_write": 152
       }
     },
     "recommended_tool_order": [

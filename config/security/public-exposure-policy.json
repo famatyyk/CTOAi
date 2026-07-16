@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "mode": "private_first",
+  "github": {
+    "owner": "famatyyk",
+    "all_owned_non_fork_repositories_must_be_private": true,
+    "all_owned_repository_pages_must_be_disabled": true,
+    "allowed_public_upstream_forks": [
+      {
+        "repository": "famatyyk/otclient",
+        "upstream": "edubart/otclient",
+        "require_all_branches_identical": true
+      },
+      {
+        "repository": "famatyyk/zerobot-docs",
+        "upstream": "Cjaker/zerobot-docs",
+        "require_all_branches_identical": true
+      }
+    ]
+  },
+  "vercel": {
+    "project": "ctoa-web",
+    "scope": "ctoa-i-s-projects",
+    "project_link_file": "web/.vercel/project.json",
+    "require_no_aliases": true,
+    "auto_assign_custom_domains": false,
+    "allowed_sso_deployment_types": [
+      "all_except_custom_domains",
+      "all"
+    ]
+  },
+  "distribution": {
+    "source_visibility": "private",
+    "public_release_requires_sanitized_export": true,
+    "public_release_requires_owner_approval": true,
+    "public_release_must_not_include_git_history": true
+  }
+}

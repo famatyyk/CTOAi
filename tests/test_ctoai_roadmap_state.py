@@ -55,7 +55,10 @@ def test_committed_p13_contract_and_state_are_self_validating() -> None:
     Draft202012Validator.check_schema(state_schema)
     Draft202012Validator(registry_schema).validate(registry)
     Draft202012Validator(state_schema).validate(state)
-    assert hashlib.sha256(registry_schema_raw).hexdigest() == roadmap.REGISTRY_SCHEMA_SHA256
+    assert (
+        hashlib.sha256(registry_schema_raw).hexdigest()
+        == roadmap.REGISTRY_SCHEMA_SHA256
+    )
     assert hashlib.sha256(registry_raw).hexdigest() == roadmap.REGISTRY_V1_SHA256
     assert hashlib.sha256(state_schema_raw).hexdigest() == roadmap.STATE_SCHEMA_SHA256
     assert state["phase"] == "P13"
@@ -168,12 +171,14 @@ def test_confirmed_refresh_writes_atomic_json_markdown_and_hash_audit(
     assert state["state_sha256"] in markdown
     assert "P12 Heal Friend remains closed" in markdown
     assert "No runtime executor" in markdown
-    assert result["output_hashes"][roadmap.OUTPUT_JSON_PATH.as_posix()] == hashlib.sha256(
-        json_path.read_bytes()
-    ).hexdigest()
-    assert result["output_hashes"][roadmap.OUTPUT_MD_PATH.as_posix()] == hashlib.sha256(
-        markdown_path.read_bytes()
-    ).hexdigest()
+    assert (
+        result["output_hashes"][roadmap.OUTPUT_JSON_PATH.as_posix()]
+        == hashlib.sha256(json_path.read_bytes()).hexdigest()
+    )
+    assert (
+        result["output_hashes"][roadmap.OUTPUT_MD_PATH.as_posix()]
+        == hashlib.sha256(markdown_path.read_bytes()).hexdigest()
+    )
     audit_record = json.loads(
         (tmp_path / roadmap.AUDIT_PATH).read_text(encoding="utf-8").splitlines()[-1]
     )
@@ -245,6 +250,77 @@ def test_previous_terminal_evidence_drift_is_reported_as_tamper(
     assert state["tamper_status"] == "tampered"
     assert p8_entry["integrity_status"] == "tampered"
     assert "terminal_evidence_changed_since_previous_state" in p8_entry["blockers"]
+
+
+def test_exact_p8_rebaseline_confirmation_updates_only_the_valid_p8_drift(
+    tmp_path: Path,
+) -> None:
+    _copy_inputs(tmp_path)
+    first = roadmap.execute(
+        tmp_path,
+        dry_run=False,
+        confirmation=roadmap.CONFIRMATION,
+        now=_now(),
+    )
+    assert first["ok"] is True
+    p8_path = tmp_path / roadmap.FIXED_ENTRY_PATHS["p8-background-acceptance"]
+    p8 = json.loads(p8_path.read_text(encoding="utf-8"))
+    p8["observed_at"] = "2026-07-15T12:21:00Z"
+    p8_path.write_text(json.dumps(p8), encoding="utf-8")
+
+    blocked = roadmap.execute(
+        tmp_path,
+        dry_run=False,
+        confirmation=roadmap.CONFIRMATION,
+        now=_now(),
+    )
+    assert blocked["ok"] is False
+
+    result = roadmap.execute(
+        tmp_path,
+        dry_run=False,
+        p8_rebaseline_confirmation=roadmap.P8_REBASELINE_CONFIRMATION,
+        now=_now(),
+    )
+
+    assert result["status"] == "completed"
+    assert result["blockers"] == []
+    assert result["p8_terminal_rebaseline"]["sole_blocker_verified"] is True
+    state = json.loads(
+        (tmp_path / roadmap.OUTPUT_JSON_PATH).read_text(encoding="utf-8")
+    )
+    assert state["status"] == "ready"
+    assert state["ledger"][0]["integrity_status"] == "passed"
+    assert (
+        state["ledger"][0]["previous_evidence_sha256"]
+        != state["ledger"][0]["evidence_sha256"]
+    )
+
+
+def test_p8_rebaseline_never_suppresses_an_additional_blocker(tmp_path: Path) -> None:
+    _copy_inputs(tmp_path)
+    first = roadmap.execute(
+        tmp_path,
+        dry_run=False,
+        confirmation=roadmap.CONFIRMATION,
+        now=_now(),
+    )
+    assert first["ok"] is True
+    p8_path = tmp_path / roadmap.FIXED_ENTRY_PATHS["p8-background-acceptance"]
+    p8 = json.loads(p8_path.read_text(encoding="utf-8"))
+    p8["status"] = "blocked"
+    p8_path.write_text(json.dumps(p8), encoding="utf-8")
+
+    result = roadmap.execute(
+        tmp_path,
+        dry_run=False,
+        p8_rebaseline_confirmation=roadmap.P8_REBASELINE_CONFIRMATION,
+        now=_now(),
+    )
+
+    assert result["ok"] is False
+    assert "p8-background-acceptance:status_mismatch" in result["blockers"]
+    assert result["p8_terminal_rebaseline"] is None
 
 
 def test_registry_cannot_redirect_a_fixed_input_path(tmp_path: Path) -> None:

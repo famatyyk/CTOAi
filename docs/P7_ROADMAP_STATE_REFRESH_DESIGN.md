@@ -51,6 +51,21 @@ Confirmed execution requires all of:
 
 No deploy or live-client command may be returned as `next_command`.
 
+### P8 terminal rebaseline recovery
+
+Routine refresh remains fail-closed when any terminal evidence hash changes.
+The CLI exposes one narrower recovery confirmation,
+`zatwierdzam rebaseline P8 terminal evidence`, for a freshly regenerated P8
+BackgroundNoScreen observation. It is accepted only when the sole state blocker
+is `p8-background-acceptance:terminal_evidence_changed_since_previous_state`.
+All P8 schema, ready status, empty source blockers, passive-interaction,
+integrity, disarmed-runtime, and false-authority checks must already pass.
+
+The recovery writes the same two fixed roadmap outputs and audit file. Its audit
+record binds the previous and current P8 SHA-256 values and records that the
+sole-blocker condition passed. It cannot suppress another blocker, redirect an
+input or output path, authorize runtime/live work, or rebaseline P9-P12.
+
 ## Control Center Gate
 
 Control Center consumes only the fixed JSON artifact. It validates the state
@@ -66,6 +81,9 @@ count remains unchanged.
 - output path confinement and symlink rejection;
 - dry-run produces zero artifact writes;
 - exact confirmation rejection/acceptance;
+- P8 rebaseline requires its separate exact confirmation and exactly one
+  eligible terminal-hash blocker;
+- P8 rebaseline cannot suppress an additional evidence blocker;
 - cockpit preflight failure is fail-closed;
 - atomic JSON/Markdown output parity;
 - sanitized audit record on dry-run, confirmed success, and failure;
