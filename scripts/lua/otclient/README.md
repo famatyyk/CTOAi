@@ -20,10 +20,11 @@ selection loads its UI but does not arm gameplay automation.
 
 | Module | Purpose | OTClient API Used |
 |----|----|----|
-| **ctoa_native_heal.lua** | Passive profile-fed recovery | `LocalPlayer.onHealthChanged`, `LocalPlayer.onManaChanged`, `cycleEvent()` |
-| **ctoa_native_combat.lua** | Guarded monster targeting | `g_game.attack()`, `g_game.setChaseMode()`, `g_map.getCreaturesInRange()` |
-| **ctoa_native_loot.lua** | Passive loot scanner | `Container.onOpen`, `Map.onItemAppear`, `g_game.getContainers()` |
+| **ctoa_native_heal.lua** | Local-only legacy recovery reference; not shipped or loaded | standalone source review only |
+| **ctoa_native_combat.lua** | Local-only legacy targeting reference; not shipped or loaded | standalone source review only |
+| **ctoa_native_loot.lua** | Local-only legacy loot reference; not shipped or loaded | standalone source review only |
 | **ctoa_helper_modules.lua** | Passive module lane registry | `_G.CTOA_HELPER_MODULES`, `getModuleLanes()`, `getShortLabels()` |
+| **ctoa_helper_ui_primitives.lua** | Passive shared widget/form primitives | `_G.CTOA_HELPER_UI_PRIMITIVES`, guarded widget basics, form geometry, bounded rule navigation; no gameplay callbacks |
 | **ctoa_helper_rule_engine.lua** | Pure typed action/condition validation and passive evaluation | `_G.CTOA_HELPER_RULE_ENGINE`, HP/MP/monster/distance/PZ/condition metrics, AND/OR, cooldown, hysteresis, bounded randomization; no dispatch |
 | **ctoa_helper_runtime_core.lua** | Passive runtime registry, event bus, and budgeted scheduler | `_G.CTOA_HELPER_RUNTIME_CORE`, disabled-by-default tasks, bounded ticks, failure backoff |
 | **ctoa_helper_combat_observer.lua** | Passive normalized combat/targeting observations | `_G.CTOA_HELPER_COMBAT_OBSERVER`, `ctoa.combat-observation.v1`, `combat.observed` |
@@ -239,7 +240,11 @@ Current helper logic includes:
 - loot scanner: passive valuable-item scoring, corpse/open-container scans, capacity guard, bounded item moves, and `experimental_loot` feature flag gating;
 - prototype lanes: Conditions state observer, Equipment slot observer, Heal Friend party/whitelist observer, and Scripting policy shell persist profile settings and show read-only runtime evidence. Conditions, Equipment, and Heal Friend now have separate ordered dry-run safety gates, but no new executor is enabled.
 
-Standalone modules (`ctoa_native_heal.lua`, `ctoa_native_combat.lua`, `ctoa_native_loot.lua`) read `_G.CTOA_Helper.config` when the helper is loaded. If they are loaded manually without the helper, their built-in defaults stay passive.
+Standalone legacy modules (`ctoa_native_heal.lua`, `ctoa_native_combat.lua`,
+`ctoa_native_loot.lua`) are retained only as local source references. The
+official Helper package, sandbox sync, loader manifest, P14 signed manifest,
+and live promotion surface exclude them. Their maintained replacements are the
+`ctoa_helper_*_runtime.lua`, observer, policy, and guarded bridge modules.
 
 ## ✅ Smoke Test (3 minutes)
 

@@ -1,4 +1,5 @@
 -- ctoa_native_loot.lua  [CTOA OTClient Native]
+-- LOCAL SOURCE ONLY: legacy standalone reference; not loaded or shipped by CTOAi Helper.
 -- Passive looting scanner with profile-fed rules and guarded OTClient calls.
 
 local LOOT_CONFIG = {

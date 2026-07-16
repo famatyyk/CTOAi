@@ -51,6 +51,13 @@ AUTHORITY = {
     "mcp_write_tool_enabled": False,
     "p12_reopened": False,
 }
+LOCAL_SOURCE_ONLY_HELPER_FILES = frozenset(
+    {
+        "ctoa_native_combat.lua",
+        "ctoa_native_heal.lua",
+        "ctoa_native_loot.lua",
+    }
+)
 
 
 class ContractError(ValueError):
@@ -171,6 +178,7 @@ def _package_sources() -> list[tuple[str, Path]]:
             path
             for path in HELPER_SOURCE_PATH.iterdir()
             if path.suffix.lower() in {".lua", ".otmod"}
+            and path.name not in LOCAL_SOURCE_ONLY_HELPER_FILES
         ),
         key=lambda path: path.name,
     )
@@ -267,8 +275,13 @@ def _validate_roadmap_state(payload: dict[str, Any]) -> None:
         ]
     ):
         raise ContractError("roadmap_state_refresh_boundary_invalid")
+    allowed_warnings = {
+        "runtime_module_gates_pending",
+        "p14_runner_preflight_pending",
+        "p14_runner_preflight_invalid",
+    }
     if (
-        any(item != "runtime_module_gates_pending" for item in warnings)
+        any(item not in allowed_warnings for item in warnings)
         or (payload.get("readiness_status") == "ready" and warnings)
         or (payload.get("readiness_status") == "awaiting_external" and not warnings)
     ):

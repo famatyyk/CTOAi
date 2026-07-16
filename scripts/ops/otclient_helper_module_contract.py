@@ -73,6 +73,29 @@ PASSIVE_MODULES = [
         ],
     },
     {
+        "id": "ui_primitives",
+        "loader_name": "ctoa_helper_ui_primitives",
+        "file": "ctoa_helper_ui_primitives.lua",
+        "global": "CTOA_HELPER_UI_PRIMITIVES",
+        "lane_id": "",
+        "required_functions": [
+            "shortText",
+            "fitText",
+            "setWidgetText",
+            "setWidgetChecked",
+            "getWidgetChecked",
+            "showWidget",
+            "createWidget",
+            "settingRowGeometry",
+            "metricCardGeometry",
+            "profileFieldGeometry",
+            "sectionBodyGeometry",
+            "mergeContext",
+            "ruleEditorNavigation",
+            "contract",
+        ],
+    },
+    {
         "id": "ui",
         "loader_name": "ctoa_helper_ui",
         "file": "ctoa_helper_ui.lua",
@@ -627,6 +650,8 @@ def missing_functions(source: str, module_global: str, required: list[str]) -> l
     local_name = module_global.removeprefix("CTOA_HELPER_").title().replace("_", "")
     if module_global == "CTOA_HELPER_MODULES":
         local_name = "Registry"
+    elif module_global == "CTOA_HELPER_UI_PRIMITIVES":
+        local_name = "Primitives"
     return [
         function_name
         for function_name in required
@@ -662,6 +687,8 @@ def build_report(
         return_present = f"return {global_name.removeprefix('CTOA_HELPER_').title().replace('_', '')}" in source
         if expected["id"] == "modules":
             return_present = "return Registry" in source
+        elif expected["id"] == "ui_primitives":
+            return_present = "return Primitives" in source
         forbidden = forbidden_hits(source)
         missing_required = missing_functions(
             source,

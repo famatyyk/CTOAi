@@ -10,6 +10,7 @@ from scripts.ops import ctoa_helper_ui_preview as preview
 ROOT = Path(__file__).resolve().parents[1]
 OTCLIENT_DIR = ROOT / "scripts" / "lua" / "otclient"
 UI = OTCLIENT_DIR / "ctoa_helper_ui.lua"
+UI_PRIMITIVES = OTCLIENT_DIR / "ctoa_helper_ui_primitives.lua"
 HUD = OTCLIENT_DIR / "ctoa_helper_hud.lua"
 MODULE_STATUS = OTCLIENT_DIR / "ctoa_helper_module_status.lua"
 HELPER = OTCLIENT_DIR / "ctoa_native_helper.lua"
@@ -27,9 +28,11 @@ def test_operator_states_and_rule_navigation_are_bounded_and_action_free(
     probe = tmp_path / "operator_feedback_probe.lua"
     probe.write_text(
         r'''
-local ui = dofile(arg[1])
-local hud = dofile(arg[2])
-local moduleStatus = dofile(arg[3])
+local primitives = dofile(arg[1])
+local ui = dofile(arg[2])
+local hud = dofile(arg[3])
+local moduleStatus = dofile(arg[4])
+assert(primitives.contract().runtime_actions == false)
 
 assert(ui.operatorRuntimeState({enabled = false}) == "disabled")
 assert(ui.operatorRuntimeState({enabled = true}) == "active")
@@ -92,7 +95,7 @@ assert(statusContract.runtime_actions == false and statusContract.dispatch_allow
         encoding="utf-8",
     )
     completed = subprocess.run(
-        [lua, str(probe), str(UI), str(HUD), str(MODULE_STATUS)],
+        [lua, str(probe), str(UI_PRIMITIVES), str(UI), str(HUD), str(MODULE_STATUS)],
         check=False,
         capture_output=True,
         text=True,

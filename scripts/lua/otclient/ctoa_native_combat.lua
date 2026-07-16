@@ -1,5 +1,6 @@
 -- ctoa_native_combat.lua  [CTOA OTClient Native]
 -- Auto-targeting layer fed by helper config; priorities inspired by ZeroBot/Validus target logic.
+-- LOCAL SOURCE ONLY: legacy standalone reference; not loaded or shipped by CTOAi Helper.
 
 local DEFAULT_COMBAT_CONFIG = {
     auto_attack = false,

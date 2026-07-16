@@ -103,7 +103,9 @@ local recovery = dofile(arg[1])
 local combat = dofile(arg[2])
 local schema = dofile(arg[3])
 local registry = dofile(arg[4])
-local ui = dofile(arg[5])
+local primitives = dofile(arg[5])
+local ui = dofile(arg[6])
+assert(primitives.contract().runtime_actions == false)
 
 local gap = recovery.recoveryActionGap(1200, {last_recovery_action_ms = 1000}, {recovery_action_gap_ms = 250})
 assert(gap.active == true and gap.until_ms == 1250 and gap.remaining_ms == 50)
@@ -157,6 +159,7 @@ assert(ui.contract().owns_panel_renderer_context_merge == true)
             str(OTCLIENT_DIR / "ctoa_helper_combat_runtime.lua"),
             str(OTCLIENT_DIR / "ctoa_helper_profile_schema.lua"),
             str(OTCLIENT_DIR / "ctoa_helper_modules.lua"),
+            str(OTCLIENT_DIR / "ctoa_helper_ui_primitives.lua"),
             str(OTCLIENT_DIR / "ctoa_helper_ui.lua"),
         ],
         check=False,
@@ -172,8 +175,8 @@ def test_module_contract_passes_current_passive_modules():
 
     assert report.name == "otclient-helper-module-contract"
     assert report.status == "passed"
-    assert report.expected_module_count == 34
-    assert report.passed_count == 34
+    assert report.expected_module_count == 35
+    assert report.passed_count == 35
     assert report.failed_count == 0
     assert report.registry_lane_count == 9
     assert report.registry_missing == []
@@ -1194,7 +1197,7 @@ def test_module_contract_writes_json_and_markdown(tmp_path: Path):
     markdown = plan_out.read_text(encoding="utf-8")
 
     assert payload["status"] == "passed"
-    assert payload["passed_count"] == 34
+    assert payload["passed_count"] == 35
     assert "# Solteria Helper Module Contract" in markdown
     assert "Passive helper modules may observe" in markdown
     assert "otclient_helper_module_contract.py" in markdown

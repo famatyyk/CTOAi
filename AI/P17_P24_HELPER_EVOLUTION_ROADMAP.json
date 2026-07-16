@@ -567,7 +567,7 @@
     {
       "id": "P24.2",
       "title": "Refresh current-revision independent runner and signed acceptance request",
-      "status": "not_started",
+      "status": "in_progress",
       "artifacts": [
         "docs/otclient/P14_INDEPENDENT_RUNNER_CONTRACT.md",
         "scripts/ops/otclient_p14_independent_runner.py",
@@ -580,6 +580,111 @@
         "signed self-hosted Windows result matches current source revision",
         "protected environment requires review and disables admin bypass",
         "acceptance request remains action-free and names all four P14 capabilities"
+      ],
+      "validation": {
+        "official_stage_file_count": 63,
+        "github_hosted_current_revision": true,
+        "self_hosted_runner_online": false,
+        "required_reviewer_configured": false,
+        "admin_bypass_disabled": false,
+        "acceptance_capabilities_proven": 0,
+        "acceptance_capabilities_required": 4,
+        "runtime_authority": false,
+        "promotion_allowed": false
+      }
+    },
+    {
+      "id": "P25.1",
+      "title": "Remove unloaded standalone runtimes from the Helper distribution",
+      "status": "complete",
+      "artifacts": [
+        "docs/otclient/P25_HELPER_PACKAGE_SURFACE.md",
+        "scripts/windows/solteria_helper_test_env.ps1",
+        "scripts/ops/otclient_p14_independent_runner.py",
+        "tests/test_helper_package_surface.py"
+      ],
+      "runtime_authority": false,
+      "entry_gate": "P23 product boundary complete; static refactor remains allowed while P24 acceptance is external",
+      "done_gates": [
+        "unloaded duplicate runtimes are absent from stage ZIP sandbox sync and signed manifests",
+        "legacy enabled and disabled copies are cleanup-only paths",
+        "local reference sources remain explicitly non-distributable",
+        "Safe and live client remain untouched"
+      ],
+      "validation": {
+        "package_files_before": 65,
+        "package_files_after": 62,
+        "local_only_runtime_references": 3,
+        "legacy_runtime_files_in_zip": 0,
+        "package_surface_tests_passed": 48,
+        "package_surface_tests_skipped": 1,
+        "runtime_authority": false,
+        "promotion_allowed": false
+      }
+    },
+    {
+      "id": "P25.2",
+      "title": "Derive wrapper module inventories from one package owner",
+      "status": "complete",
+      "runtime_authority": false,
+      "entry_gate": "P25.1 minimized package surface",
+      "done_gates": [
+        "stage sync enablement and promotion consume one canonical package inventory",
+        "local-only and legacy cleanup lists remain explicit and separate",
+        "manifest order and hashes stay deterministic",
+        "no live or sandbox runtime action is introduced"
+      ],
+      "validation": {
+        "canonical_package_inventory_functions": 1,
+        "derived_active_inventory_consumers": 4,
+        "repeated_active_inventory_arrays_removed": 4,
+        "legacy_cleanup_inventory_separate": true,
+        "runtime_authority": false,
+        "promotion_allowed": false
+      }
+    },
+    {
+      "id": "P26.1",
+      "title": "Extract shared UI form and rule editor primitives",
+      "status": "complete",
+      "artifacts": [
+        "scripts/lua/otclient/ctoa_helper_ui_primitives.lua",
+        "scripts/lua/otclient/ctoa_helper_ui.lua",
+        "tests/test_ctoa_helper_ui_primitives.py"
+      ],
+      "runtime_authority": false,
+      "entry_gate": "P25 canonical package surface complete",
+      "done_gates": [
+        "primitive module owns reusable labels fields selectors and rule navigation chrome",
+        "UI composition keeps tab ownership and profile callbacks explicit",
+        "programmatic OTCv8 widget path remains capability-proven",
+        "default and compact previews remain contained with zero layout issues"
+      ],
+      "validation": {
+        "official_stage_file_count": 63,
+        "primitive_module_lines": 174,
+        "ui_composition_lines_after": 2461,
+        "passive_module_contracts_passed": 35,
+        "focused_tests_passed": 97,
+        "official_validation_tests_passed": 162,
+        "preview_widgets": 208,
+        "preview_layout_issues": 0,
+        "smoke_preflight": "passed",
+        "runtime_authority": false,
+        "promotion_allowed": false
+      }
+    },
+    {
+      "id": "P26.2",
+      "title": "Separate tab composition from profile mutation callbacks",
+      "status": "not_started",
+      "runtime_authority": false,
+      "entry_gate": "P26.1 passive primitives complete",
+      "done_gates": [
+        "tab and section composition use declarative passive specifications",
+        "profile mutation callbacks stay explicit and product-local",
+        "rule editor rendering no longer owns unrelated panels",
+        "default and compact previews retain zero layout issues"
       ]
     }
   ],
@@ -686,6 +791,58 @@
         "targeting, spell state and profile migrations pass replay",
         "sandbox gameplay canaries are explicit and bounded",
         "live promotion remains a separate operator approval"
+      ]
+    },
+    {
+      "id": "P25",
+      "title": "Minimal Helper Distribution Surface",
+      "status": "complete",
+      "depends_on": ["P23", "P24 static contracts"],
+      "objective": "Ship only loader-reachable Helper code and keep local references, cleanup paths and product packages explicitly separate.",
+      "done_gates": [
+        "unloaded duplicate runtimes are absent from official artifacts",
+        "one package inventory owns stage sync enablement and promotion",
+        "local-only source is explicit and never enters P14 manifests",
+        "stale legacy copies are removed without touching Safe"
+      ]
+    },
+    {
+      "id": "P26",
+      "title": "UI Composition And Rule Editor Split",
+      "status": "in_progress",
+      "depends_on": ["P22", "P25"],
+      "objective": "Reduce the UI monolith while preserving the proven OTCv8 programmatic widget and bounded navigation contracts.",
+      "done_gates": [
+        "shared form and rule editor primitives have one owner",
+        "tab composition is separate from profile mutation callbacks",
+        "default and compact previews retain zero layout issues",
+        "no unproven OTUI widget or loader API is introduced"
+      ]
+    },
+    {
+      "id": "P27",
+      "title": "Portable Rule Presets And Explainability",
+      "status": "planned",
+      "depends_on": ["P18", "P19", "P21", "P26"],
+      "objective": "Make targeting spell and action rule sets portable and understandable without importing executable code or arming runtime.",
+      "done_gates": [
+        "preset import and export use strict versioned data schemas",
+        "unknown fields future versions and executable values fail closed",
+        "every rule exposes a deterministic why matched or blocked trace",
+        "migration and import never enable runtime"
+      ]
+    },
+    {
+      "id": "P28",
+      "title": "Independent Sandbox Acceptance And Rollback",
+      "status": "planned",
+      "depends_on": ["P24", "P25", "P26", "P27"],
+      "objective": "Execute visual in-world canary and rollback acceptance on an isolated current-revision Windows runner.",
+      "done_gates": [
+        "all four P14 acceptance capabilities have signed current evidence",
+        "bounded canary abort and rollback paths are exercised",
+        "Helper and Safe evidence remain independent",
+        "live promotion still requires a separate explicit approval"
       ]
     }
   ]

@@ -233,13 +233,43 @@ sandbox canaries define preconditions, actions, observations, abort conditions
 and rollback; none has been executed or authorized. The focused replay suite
 passes 61 tests and the sandbox queue/release-gate suite passes 47.
 
-P14 remains `externally_verified_stale`: the matching Windows runner is online
-and an earlier signed run passed, but it does not match the current revision,
-the four acceptance capabilities are unproven, environment review protection
-is incomplete, and the local stage manifest differs from tracked Helper source.
-The strict P14 suite passes 31, skips one and correctly retains one stale-stage
-failure. P24.2 must refresh stage and current-revision independent evidence;
-P24.1 grants no runtime, canary or promotion authority.
+P24.2 is in progress. The official stage now matches 63 distributable Helper
+files and the current-revision GitHub-hosted signed replay passes. The separate
+`CTOA-P14-VM` runner is offline, environment review protection remains
+incomplete, and visual/in-world/canary/rollback capabilities remain unproven.
+The operator workstation cannot substitute for the independent Windows runner.
+P24 grants no runtime, canary or promotion authority.
+
+## P25 — Minimal Helper Distribution Surface
+
+P25.1 is complete. The official Helper stage and ZIP dropped from 65 to 62
+files by excluding three loader-unreachable standalone runtimes:
+`ctoa_native_combat.lua`, `ctoa_native_heal.lua`, and
+`ctoa_native_loot.lua`. Their canonical domains already belong to the Helper
+runtime, observer, policy and guarded bridge modules. The files remain marked
+local-only references, while sandbox/live legacy cleanup removes old enabled
+or `.disabled` copies. The signed P14 source manifest uses the same boundary.
+
+P25.2 completes the phase. Four repeated active-module arrays were removed from
+the Windows wrapper. Stage creation, sandbox sync, live enablement and UI-only
+enablement now derive their filenames from one `Get-DevPackageFiles` owner;
+legacy cleanup remains intentionally separate. P26 next splits UI composition
+from rule-editor presentation, P27 adds strict data-only portable presets and
+explainability, and P28 executes isolated sandbox acceptance once P24 external
+controls pass.
+
+## P26 — UI Composition And Rule Editor Split
+
+P26.1 is complete. A new 174-line passive `ctoa_helper_ui_primitives.lua`
+module owns guarded widget basics, reusable form geometry, context merging and
+bounded rule navigation. `ctoa_helper_ui.lua` delegates those contracts and
+keeps panel composition plus explicit profile callbacks. The official stage is
+now 63 files, 35 passive module contracts pass, the official validation passes
+162 tests, and both the 208-widget preview and SmokePreflight remain clean.
+
+P26.2 is next: move tab and section composition behind declarative passive
+specifications while keeping mutation callbacks visible and product-local. It
+adds no runtime authority and does not satisfy the external P24 acceptance.
 
 ## Immediate Work Order
 
@@ -302,4 +332,18 @@ P24.1 grants no runtime, canary or promotion authority.
     replay lanes and four unexecuted canaries are machine-readable.
 22. P24.2: refresh the official stage, obtain a signed current-revision Windows
     runner result and prepare an action-free acceptance request for visual,
-    in-world, canary and rollback capabilities — next.
+    in-world, canary and rollback capabilities — in progress; stage and
+    GitHub-hosted replay pass, external runner and protections remain.
+23. P25.1: remove unloaded standalone runtimes from every distributable Helper
+    surface while preserving local reference source — complete; its 62-file
+    stage and ZIP contained zero legacy standalone runtimes (the later P26.1
+    primitive module brings the current stage to 63).
+24. P25.2: derive wrapper stage/sync/enable/promotion inventories from one
+    canonical package owner — complete; four repeated arrays were removed.
+25. P26.1: extract passive widget/form primitives and bounded rule navigation
+    from the UI monolith — complete; 97 focused tests and 162 official
+    validation tests pass with zero preview issues.
+26. P26.2: separate declarative tab/section composition from explicit profile
+    mutation callbacks — next.
+27. P27-P28: add strict portable rule presets and execute isolated signed
+    sandbox acceptance without weakening the P24/live gates.

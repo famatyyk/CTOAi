@@ -57,6 +57,35 @@ def roadmap_state() -> dict[str, object]:
     return {**basis, "state_sha256": p14.canonical_sha256(basis)}
 
 
+@pytest.mark.parametrize(
+    "warning",
+    [
+        "runtime_module_gates_pending",
+        "p14_runner_preflight_pending",
+        "p14_runner_preflight_invalid",
+    ],
+)
+def test_runner_accepts_only_bounded_roadmap_advisories(warning: str) -> None:
+    state = roadmap_state()
+    state["warnings"] = [warning]
+    state["state_sha256"] = p14.canonical_sha256(
+        {key: value for key, value in state.items() if key != "state_sha256"}
+    )
+
+    p14._validate_roadmap_state(state)
+
+
+def test_runner_rejects_unknown_roadmap_advisory() -> None:
+    state = roadmap_state()
+    state["warnings"] = ["private_unclassified_warning"]
+    state["state_sha256"] = p14.canonical_sha256(
+        {key: value for key, value in state.items() if key != "state_sha256"}
+    )
+
+    with pytest.raises(p14.ContractError, match="roadmap_state_readiness_invalid"):
+        p14._validate_roadmap_state(state)
+
+
 def configure_sources(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     helper_source = tmp_path / "scripts" / "lua" / "otclient"
     chooser_source = tmp_path / "mods" / "ctoa_chooser"
@@ -246,6 +275,18 @@ def test_source_manifest_rejects_path_escape(
 
     with pytest.raises(p14.ContractError, match="helper_path_invalid"):
         p14._sanitize_helper_manifest()
+
+
+def test_source_manifest_excludes_local_only_legacy_runtime_references() -> None:
+    package_names = {path.name for _, path in p14._package_sources()}
+
+    assert p14.LOCAL_SOURCE_ONLY_HELPER_FILES == {
+        "ctoa_native_combat.lua",
+        "ctoa_native_heal.lua",
+        "ctoa_native_loot.lua",
+    }
+    assert package_names.isdisjoint(p14.LOCAL_SOURCE_ONLY_HELPER_FILES)
+    assert all((p14.HELPER_SOURCE_PATH / name).is_file() for name in p14.LOCAL_SOURCE_ONLY_HELPER_FILES)
 
 
 def test_source_manifest_rejects_reparse_file(

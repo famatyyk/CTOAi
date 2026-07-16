@@ -404,70 +404,7 @@ function Sync-CtoaRuntimeFiles {
         }
     }
 
-    $moduleFiles = @(
-        "ctoa_otclient.otmod",
-        "ctoa_otclient_loader.lua",
-        "ctoa_helper_ui.lua",
-        "ctoa_helper_client_reporter.lua",
-        "ctoa_helper_diagnostics.lua",
-        "ctoa_helper_hotkeys.lua",
-        "ctoa_helper_modal.lua",
-        "ctoa_helper_route.lua",
-        "ctoa_helper_targeting.lua",
-        "ctoa_helper_combat_runtime.lua",
-        "ctoa_helper_spell_state_registry.lua",
-        "ctoa_helper_cavebot_runtime.lua",
-        "ctoa_helper_loot_runtime.lua",
-        "ctoa_helper_timer_runtime.lua",
-        "ctoa_helper_recovery_runtime.lua",
-        "ctoa_helper_recovery_bridge.lua",
-        "ctoa_helper_runtime_module_gate.lua",
-        "ctoa_helper_conditions_runtime_gate.lua",
-        "ctoa_helper_conditions_execute_once.lua",
-        "ctoa_helper_equipment_execute_once.lua",
-        "ctoa_helper_equipment_runtime_gate.lua",
-        "ctoa_helper_heal_friend_runtime_gate.lua",
-        "ctoa_helper_heal_friend_execute_once.lua",
-       "ctoa_helper_profile_schema.lua",
-        "ctoa_helper_vocation_profiles.lua",
-       "ctoa_helper_profile_persistence.lua",
-        "ctoa_helper_operator_summary.lua",
-        "ctoa_helper_planner.lua",
-        "ctoa_helper_runtime_policy.lua",
-        "ctoa_helper_dispatch_guard.lua",
-        "ctoa_helper_plan_queue.lua",
-        "ctoa_helper_runtime_readiness.lua",
-        "ctoa_helper_module_status.lua",
-        "ctoa_helper_action_catalog.lua",
-        "ctoa_helper_decision_trace.lua",
-        "ctoa_helper_decision_pipeline.lua",
-        "ctoa_helper_sandbox_handoff.lua",
-        "ctoa_helper_feature_flags.lua",
-        "ctoa_helper_hud.lua",
-        "ctoa_helper_conditions.lua",
-        "ctoa_helper_equipment_family_registry.lua",
-        "ctoa_helper_equipment.lua",
-        "ctoa_helper_scripting.lua",
-        "ctoa_helper_heal_friend.lua",
-        "ctoa_helper_modules.lua",
-        "ctoa_helper_domain_contract.lua",
-        "ctoa_helper_rule_engine.lua",
-        "ctoa_helper_runtime_core.lua",
-        "ctoa_helper_combat_observer.lua",
-        "ctoa_helper_recovery_observer.lua",
-        "ctoa_helper_cavebot_observer.lua",
-        "ctoa_helper_loot_observer.lua",
-        "ctoa_helper_equipment_observer.lua",
-        "ctoa_helper_otclient_observation_adapter.lua",
-        "ctoa_native_helper.lua",
-        "ctoa_native_combat.lua",
-        "ctoa_native_heal.lua",
-       "ctoa_native_loot.lua",
-        "ctoa_ek_profile.lua",
-        "ctoa_ms_profile.lua",
-        "ctoa_ed_profile.lua",
-        "ctoa_rp_profile.lua"
-    )
+    $moduleFiles = @(Get-DevModuleFileNames)
     foreach ($name in $moduleFiles) {
         Copy-CtoaRuntimeFile -StageRelative "mods\ctoa_otclient\$name" -RepoRelative "scripts\lua\otclient\$name" -Destination (Join-Path $modDir $name)
     }
@@ -670,6 +607,7 @@ function Get-DevPackageFiles {
         "mods/ctoa_chooser/ctoa_chooser_loader.lua",
         "mods/ctoa_otclient/ctoa_otclient.otmod",
         "mods/ctoa_otclient/ctoa_otclient_loader.lua",
+        "mods/ctoa_otclient/ctoa_helper_ui_primitives.lua",
         "mods/ctoa_otclient/ctoa_helper_ui.lua",
         "mods/ctoa_otclient/ctoa_helper_client_reporter.lua",
         "mods/ctoa_otclient/ctoa_helper_diagnostics.lua",
@@ -723,14 +661,31 @@ function Get-DevPackageFiles {
         "mods/ctoa_otclient/ctoa_helper_equipment_observer.lua",
         "mods/ctoa_otclient/ctoa_helper_otclient_observation_adapter.lua",
         "mods/ctoa_otclient/ctoa_native_helper.lua",
-        "mods/ctoa_otclient/ctoa_native_combat.lua",
-        "mods/ctoa_otclient/ctoa_native_heal.lua",
-        "mods/ctoa_otclient/ctoa_native_loot.lua",
         "mods/ctoa_otclient/ctoa_ek_profile.lua",
         "mods/ctoa_otclient/ctoa_ms_profile.lua",
         "mods/ctoa_otclient/ctoa_ed_profile.lua",
         "mods/ctoa_otclient/ctoa_rp_profile.lua"
     )
+}
+
+function Get-DevModuleFileNames {
+    $moduleNames = @(
+        foreach ($relative in Get-DevPackageFiles) {
+            $normalized = ([string]$relative).Replace("\\", "/")
+            if ($normalized.StartsWith("mods/ctoa_otclient/", [System.StringComparison]::Ordinal)) {
+                [System.IO.Path]::GetFileName($normalized)
+            }
+        }
+    )
+    $requiredPassiveModules = @("ctoa_helper_client_reporter.lua")
+    foreach ($required in $requiredPassiveModules) {
+        if ($required -notin $moduleNames) {
+            throw "Dev package is missing required passive module: $required"
+        }
+    }
+    foreach ($name in $moduleNames) {
+        $name
+    }
 }
 
 function Get-DevPackageSourcePath {
@@ -773,6 +728,12 @@ function Get-LiveLegacyFiles {
         "mods/ctoa_safe/ctoa_native_heal.lua",
         "mods/ctoa_safe/ctoa_native_loot.lua",
         "mods/ctoa_safe/ctoa_ek_profile.lua",
+        "mods/ctoa_otclient/ctoa_native_combat.lua",
+        "mods/ctoa_otclient/ctoa_native_combat.lua.disabled",
+        "mods/ctoa_otclient/ctoa_native_heal.lua",
+        "mods/ctoa_otclient/ctoa_native_heal.lua.disabled",
+        "mods/ctoa_otclient/ctoa_native_loot.lua",
+        "mods/ctoa_otclient/ctoa_native_loot.lua.disabled",
         "mods/ctoa_safe/ctoa_ms_profile.lua",
         "mods/ctoa_safe/ctoa_ed_profile.lua",
         "mods/ctoa_safe/ctoa_rp_profile.lua"
@@ -981,70 +942,7 @@ function New-DevPackage {
     New-Item -ItemType Directory -Force -Path $moduleDir | Out-Null
     New-Item -ItemType Directory -Force -Path $chooserDir | Out-Null
 
-    $moduleFiles = @(
-        "ctoa_otclient.otmod",
-        "ctoa_otclient_loader.lua",
-        "ctoa_helper_ui.lua",
-        "ctoa_helper_client_reporter.lua",
-        "ctoa_helper_diagnostics.lua",
-        "ctoa_helper_hotkeys.lua",
-        "ctoa_helper_modal.lua",
-        "ctoa_helper_route.lua",
-        "ctoa_helper_targeting.lua",
-        "ctoa_helper_combat_runtime.lua",
-        "ctoa_helper_spell_state_registry.lua",
-        "ctoa_helper_cavebot_runtime.lua",
-        "ctoa_helper_loot_runtime.lua",
-        "ctoa_helper_timer_runtime.lua",
-        "ctoa_helper_recovery_runtime.lua",
-        "ctoa_helper_recovery_bridge.lua",
-        "ctoa_helper_runtime_module_gate.lua",
-        "ctoa_helper_conditions_runtime_gate.lua",
-        "ctoa_helper_conditions_execute_once.lua",
-        "ctoa_helper_equipment_execute_once.lua",
-        "ctoa_helper_equipment_runtime_gate.lua",
-        "ctoa_helper_heal_friend_runtime_gate.lua",
-        "ctoa_helper_heal_friend_execute_once.lua",
-       "ctoa_helper_profile_schema.lua",
-        "ctoa_helper_vocation_profiles.lua",
-       "ctoa_helper_profile_persistence.lua",
-        "ctoa_helper_operator_summary.lua",
-        "ctoa_helper_planner.lua",
-        "ctoa_helper_runtime_policy.lua",
-        "ctoa_helper_dispatch_guard.lua",
-        "ctoa_helper_plan_queue.lua",
-        "ctoa_helper_runtime_readiness.lua",
-        "ctoa_helper_module_status.lua",
-        "ctoa_helper_action_catalog.lua",
-        "ctoa_helper_decision_trace.lua",
-        "ctoa_helper_decision_pipeline.lua",
-        "ctoa_helper_sandbox_handoff.lua",
-        "ctoa_helper_feature_flags.lua",
-        "ctoa_helper_hud.lua",
-        "ctoa_helper_conditions.lua",
-        "ctoa_helper_equipment_family_registry.lua",
-        "ctoa_helper_equipment.lua",
-        "ctoa_helper_scripting.lua",
-        "ctoa_helper_heal_friend.lua",
-        "ctoa_helper_modules.lua",
-        "ctoa_helper_domain_contract.lua",
-        "ctoa_helper_rule_engine.lua",
-        "ctoa_helper_runtime_core.lua",
-        "ctoa_helper_combat_observer.lua",
-        "ctoa_helper_recovery_observer.lua",
-        "ctoa_helper_cavebot_observer.lua",
-        "ctoa_helper_loot_observer.lua",
-        "ctoa_helper_equipment_observer.lua",
-        "ctoa_helper_otclient_observation_adapter.lua",
-        "ctoa_native_helper.lua",
-        "ctoa_native_combat.lua",
-        "ctoa_native_heal.lua",
-       "ctoa_native_loot.lua",
-        "ctoa_ek_profile.lua",
-        "ctoa_ms_profile.lua",
-        "ctoa_ed_profile.lua",
-        "ctoa_rp_profile.lua"
-    )
+    $moduleFiles = @(Get-DevModuleFileNames)
     foreach ($name in $moduleFiles) {
         Copy-Item -LiteralPath (Join-Path $repo "scripts\lua\otclient\$name") -Destination (Join-Path $moduleDir $name) -Force
     }
@@ -1535,70 +1433,7 @@ function Set-LiveCtoaEnabled {
     if (-not (Test-Path -LiteralPath $modDir)) {
         throw "CTOA module directory not found: $modDir"
     }
-    $files = @(
-        "ctoa_otclient.otmod",
-        "ctoa_otclient_loader.lua",
-        "ctoa_helper_ui.lua",
-        "ctoa_helper_client_reporter.lua",
-        "ctoa_helper_diagnostics.lua",
-        "ctoa_helper_hotkeys.lua",
-        "ctoa_helper_modal.lua",
-        "ctoa_helper_route.lua",
-        "ctoa_helper_targeting.lua",
-        "ctoa_helper_combat_runtime.lua",
-        "ctoa_helper_spell_state_registry.lua",
-        "ctoa_helper_cavebot_runtime.lua",
-        "ctoa_helper_loot_runtime.lua",
-        "ctoa_helper_timer_runtime.lua",
-        "ctoa_helper_recovery_runtime.lua",
-        "ctoa_helper_recovery_bridge.lua",
-        "ctoa_helper_runtime_module_gate.lua",
-        "ctoa_helper_conditions_runtime_gate.lua",
-        "ctoa_helper_conditions_execute_once.lua",
-        "ctoa_helper_equipment_execute_once.lua",
-        "ctoa_helper_equipment_runtime_gate.lua",
-        "ctoa_helper_heal_friend_runtime_gate.lua",
-        "ctoa_helper_heal_friend_execute_once.lua",
-       "ctoa_helper_profile_schema.lua",
-        "ctoa_helper_vocation_profiles.lua",
-       "ctoa_helper_profile_persistence.lua",
-        "ctoa_helper_operator_summary.lua",
-        "ctoa_helper_planner.lua",
-        "ctoa_helper_runtime_policy.lua",
-        "ctoa_helper_dispatch_guard.lua",
-        "ctoa_helper_plan_queue.lua",
-        "ctoa_helper_runtime_readiness.lua",
-        "ctoa_helper_module_status.lua",
-        "ctoa_helper_action_catalog.lua",
-        "ctoa_helper_decision_trace.lua",
-        "ctoa_helper_decision_pipeline.lua",
-        "ctoa_helper_sandbox_handoff.lua",
-        "ctoa_helper_feature_flags.lua",
-        "ctoa_helper_hud.lua",
-        "ctoa_helper_conditions.lua",
-        "ctoa_helper_equipment_family_registry.lua",
-        "ctoa_helper_equipment.lua",
-        "ctoa_helper_scripting.lua",
-        "ctoa_helper_heal_friend.lua",
-        "ctoa_helper_modules.lua",
-        "ctoa_helper_domain_contract.lua",
-        "ctoa_helper_rule_engine.lua",
-        "ctoa_helper_runtime_core.lua",
-        "ctoa_helper_combat_observer.lua",
-        "ctoa_helper_recovery_observer.lua",
-        "ctoa_helper_cavebot_observer.lua",
-        "ctoa_helper_loot_observer.lua",
-        "ctoa_helper_equipment_observer.lua",
-        "ctoa_helper_otclient_observation_adapter.lua",
-        "ctoa_native_helper.lua",
-        "ctoa_native_combat.lua",
-        "ctoa_native_heal.lua",
-       "ctoa_native_loot.lua",
-        "ctoa_ek_profile.lua",
-        "ctoa_ms_profile.lua",
-        "ctoa_ed_profile.lua",
-        "ctoa_rp_profile.lua"
-    )
+    $files = @(Get-DevModuleFileNames)
     foreach ($name in $files) {
         $enabledPath = Join-Path $modDir $name
         $disabledPath = "$enabledPath.disabled"
@@ -1651,64 +1486,7 @@ function Set-LiveCtoaUiOnly {
         throw "CTOA module directory not found: $modDir"
     }
 
-    $enableFiles = @(
-        "ctoa_otclient.otmod",
-        "ctoa_otclient_loader.lua",
-        "ctoa_helper_ui.lua",
-        "ctoa_helper_client_reporter.lua",
-        "ctoa_helper_diagnostics.lua",
-        "ctoa_helper_hotkeys.lua",
-        "ctoa_helper_modal.lua",
-        "ctoa_helper_route.lua",
-        "ctoa_helper_targeting.lua",
-        "ctoa_helper_combat_runtime.lua",
-        "ctoa_helper_spell_state_registry.lua",
-        "ctoa_helper_cavebot_runtime.lua",
-        "ctoa_helper_loot_runtime.lua",
-        "ctoa_helper_timer_runtime.lua",
-        "ctoa_helper_recovery_runtime.lua",
-        "ctoa_helper_recovery_bridge.lua",
-        "ctoa_helper_runtime_module_gate.lua",
-        "ctoa_helper_conditions_runtime_gate.lua",
-        "ctoa_helper_conditions_execute_once.lua",
-        "ctoa_helper_equipment_execute_once.lua",
-        "ctoa_helper_equipment_runtime_gate.lua",
-        "ctoa_helper_heal_friend_runtime_gate.lua",
-        "ctoa_helper_heal_friend_execute_once.lua",
-       "ctoa_helper_profile_schema.lua",
-        "ctoa_helper_vocation_profiles.lua",
-       "ctoa_helper_profile_persistence.lua",
-        "ctoa_helper_operator_summary.lua",
-        "ctoa_helper_planner.lua",
-        "ctoa_helper_runtime_policy.lua",
-        "ctoa_helper_dispatch_guard.lua",
-        "ctoa_helper_plan_queue.lua",
-        "ctoa_helper_runtime_readiness.lua",
-        "ctoa_helper_module_status.lua",
-        "ctoa_helper_action_catalog.lua",
-        "ctoa_helper_decision_trace.lua",
-        "ctoa_helper_decision_pipeline.lua",
-        "ctoa_helper_sandbox_handoff.lua",
-        "ctoa_helper_feature_flags.lua",
-        "ctoa_helper_hud.lua",
-        "ctoa_helper_conditions.lua",
-        "ctoa_helper_equipment_family_registry.lua",
-        "ctoa_helper_equipment.lua",
-        "ctoa_helper_scripting.lua",
-        "ctoa_helper_heal_friend.lua",
-        "ctoa_helper_modules.lua",
-        "ctoa_helper_domain_contract.lua",
-        "ctoa_helper_rule_engine.lua",
-        "ctoa_helper_runtime_core.lua",
-        "ctoa_helper_combat_observer.lua",
-        "ctoa_helper_recovery_observer.lua",
-        "ctoa_helper_cavebot_observer.lua",
-        "ctoa_helper_loot_observer.lua",
-        "ctoa_helper_equipment_observer.lua",
-        "ctoa_helper_otclient_observation_adapter.lua",
-        "ctoa_native_helper.lua",
-        "ctoa_ek_profile.lua"
-    )
+    $enableFiles = @(Get-DevModuleFileNames)
     $disableFiles = @(
         "ctoa_native_combat.lua",
         "ctoa_native_heal.lua",

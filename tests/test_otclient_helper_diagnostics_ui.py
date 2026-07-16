@@ -5,14 +5,17 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 DIAGNOSTICS = ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_diagnostics.lua"
 UI = ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_ui.lua"
+UI_PRIMITIVES = ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_ui_primitives.lua"
 RECOVERY = ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_recovery_runtime.lua"
 
 
 def test_diagnostics_values_and_ui_adapter_keep_snapshot_formatting_out_of_shell():
     probe = r'''
 local diagnostics = dofile(arg[1])
-local ui = dofile(arg[2])
-local recovery = dofile(arg[3])
+local primitives = dofile(arg[2])
+local ui = dofile(arg[3])
+local recovery = dofile(arg[4])
+assert(primitives.contract().runtime_actions == false)
 local values = diagnostics.snapshotUiValues(
   {version = "v-test", movement = "move", magic = "magic", loot = "loot"},
   {diagnostics = true},
@@ -50,7 +53,7 @@ assert(vitals.source == "real" and vitals.hp_percent == 80 and vitals.mana_perce
 print("diagnostics-ui-adapter=passed")
 '''
     completed = subprocess.run(
-        ["lua", "-", str(DIAGNOSTICS), str(UI), str(RECOVERY)],
+        ["lua", "-", str(DIAGNOSTICS), str(UI_PRIMITIVES), str(UI), str(RECOVERY)],
         input=probe,
         text=True,
         capture_output=True,

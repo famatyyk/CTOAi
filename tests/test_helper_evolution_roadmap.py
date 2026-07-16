@@ -36,6 +36,10 @@ def test_helper_evolution_roadmap_preserves_release_boundaries() -> None:
         "P22",
         "P23",
         "P24",
+        "P25",
+        "P26",
+        "P27",
+        "P28",
     ]
 
 
@@ -64,7 +68,10 @@ def test_roadmap_and_audit_record_confirmed_helper_debt() -> None:
     roadmap_text = ROADMAP_MD.read_text(encoding="utf-8")
     audit_text = AUDIT_MD.read_text(encoding="utf-8")
 
-    for marker in ("P17", "P18", "P19", "P20", "P21", "P22", "P23", "P24"):
+    for marker in (
+        "P17", "P18", "P19", "P20", "P21", "P22",
+        "P23", "P24", "P25", "P26", "P27", "P28",
+    ):
         assert marker in roadmap_text
 
     for marker in (
@@ -159,8 +166,35 @@ def test_p18_1_closes_versioned_rule_migration_without_runtime_authority() -> No
     p24 = next(item for item in roadmap["phases"] if item["id"] == "P24")
     p24_2 = next(item for item in roadmap["immediate_slices"] if item["id"] == "P24.2")
     assert p24["status"] == "in_progress"
-    assert p24_2["status"] == "not_started"
+    assert p24_2["status"] == "in_progress"
     assert p24_2["runtime_authority"] is False
+    assert p24_2["validation"]["official_stage_file_count"] == 63
+    assert p24_2["validation"]["github_hosted_current_revision"] is True
+    assert p24_2["validation"]["self_hosted_runner_online"] is False
+
+    p25 = next(item for item in roadmap["phases"] if item["id"] == "P25")
+    p25_1 = next(item for item in roadmap["immediate_slices"] if item["id"] == "P25.1")
+    p25_2 = next(item for item in roadmap["immediate_slices"] if item["id"] == "P25.2")
+    assert p25["status"] == "complete"
+    assert p25_1["status"] == "complete"
+    assert p25_1["runtime_authority"] is False
+    assert p25_1["validation"]["package_files_before"] == 65
+    assert p25_1["validation"]["package_files_after"] == 62
+    assert p25_1["validation"]["legacy_runtime_files_in_zip"] == 0
+    assert p25_2["status"] == "complete"
+    assert p25_2["runtime_authority"] is False
+    assert p25_2["validation"]["derived_active_inventory_consumers"] == 4
+
+    p26_1 = next(item for item in roadmap["immediate_slices"] if item["id"] == "P26.1")
+    p26_2 = next(item for item in roadmap["immediate_slices"] if item["id"] == "P26.2")
+    p26 = next(item for item in roadmap["phases"] if item["id"] == "P26")
+    assert p26["status"] == "in_progress"
+    assert p26_1["status"] == "complete"
+    assert p26_1["runtime_authority"] is False
+    assert p26_1["validation"]["official_stage_file_count"] == 63
+    assert p26_1["validation"]["preview_layout_issues"] == 0
+    assert p26_2["status"] == "not_started"
+    assert p26_2["runtime_authority"] is False
 
 
 def test_p19_1_opens_target_name_policy_without_runtime_authority() -> None:
