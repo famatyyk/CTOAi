@@ -293,10 +293,20 @@ switch plus safe boot. The current stage contains 66 files, 38 passive module
 contracts pass, official validation remains at 162 tests, the 208-widget preview
 has zero issues and SmokePreflight passes.
 
-P27.2 is next: expose stable, deterministic reason codes explaining why each
-Target, Spell and Combat Action rule matched or was blocked, using existing
-normalized observations without rescanning the client or gaining dispatch
-authority.
+P27.2 completes the phase. The new 107-line passive
+`ctoa_helper_rule_explanations.lua` owns the versioned trace envelope and native
+summary. Target, Spell and Combat Action reasons are produced inside the same
+loops that make the real selection, so there is no parallel decision engine.
+The live Helper footer consumes the passive trace and displays the selected or
+blocking reason. Unknown and stale observation states override a nominal match
+and fail closed visibly. The current stage contains 67 files, 39 passive module
+contracts pass, official validation remains at 162 tests, the 208-widget preview
+has zero issues and SmokePreflight passes. No runtime authority was added.
+
+P28.1 is waiting on P24.2: the isolated visual, in-world, canary and rollback
+acceptance needs a signed current-revision self-hosted Windows result plus the
+protected environment. Its execution remains sandbox-only and cannot authorize
+live promotion.
 
 ## Immediate Work Order
 
@@ -380,6 +390,7 @@ authority.
     import/export without arming runtime — complete; three rule lanes round-trip
     atomically and untrusted payloads fail closed.
 29. P27.2: add deterministic rule match/block explanations backed by normalized
-    observations and passive traces — next.
-30. P28: execute isolated signed sandbox acceptance without weakening the
-    P24/live gates.
+    observations and passive traces — complete; the same selection loops emit
+    stable reasons and the native footer consumes them.
+30. P28.1: execute isolated signed sandbox acceptance without weakening the
+    P24/live gates — waiting on the external P24.2 Windows runner and protection.

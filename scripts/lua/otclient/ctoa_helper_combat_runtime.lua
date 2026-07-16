@@ -7,6 +7,21 @@ local MAX_ROTATION_RULES = 16
 local MAX_COMBAT_ACTION_RULES = 16
 local MAX_SPELL_WORDS = 64
 
+local function explanation(lane, reason, status, values, rows, selectedIndex, state)
+    local owner = rawget(_G, "CTOA_HELPER_RULE_EXPLANATIONS")
+    if type(owner) ~= "table" or type(owner.trace) ~= "function" then return nil end
+    local env = type(state) == "table" and state or {}
+    return owner.trace(lane, reason, {
+        status = status,
+        selected_index = selectedIndex,
+        observation_status = env.observation_status or "current",
+        observed_at_ms = env.observed_at_ms,
+        now_ms = env.now_ms,
+        values = values,
+        rules = rows,
+    })
+end
+
 local function boolValue(value)
     return value == true
 end
@@ -360,30 +375,40 @@ function CombatRuntime.msLeftText(untilMs, now)
     return string.format("%.1fs", left / 1000)
 end
 
-function CombatRuntime.runeReady(tools, state, actionRule)
+local function runeBlockedReason(tools, state, actionRule)
     local cfg = tools or {}
     local env = state or {}
     local rule = type(actionRule) == "table" and actionRule or nil
     if not boolValue(cfg.rune_enabled) then
-        return false
+        return "runtime_disabled"
     end
     local requiresTarget = boolValue(cfg.rune_requires_target)
     if rule then requiresTarget = rule.require_target == true end
     if requiresTarget and not boolValue(env.target_present) then
-        return false
+        return "target_required"
     end
     local visible = tonumber(env.visible) or 0
-    if rule and (visible < rule.min_count or visible > rule.max_count) then
-        return false
+    if rule and visible < rule.min_count then
+        return "count_below_min"
+    end
+    if rule and visible > rule.max_count then
+        return "count_above_max"
     end
     if not rule and visible < (tonumber(cfg.rune_min_visible) or 1) then
-        return false
+        return "count_below_min"
     end
     local now = tonumber(env.now_ms) or 0
     if now < (tonumber(cfg.attack_action_lock_until_ms) or 0) then
-        return false
+        return "action_lock"
     end
-    return now - (tonumber(cfg.last_rune_ms) or 0) >= (tonumber(rule and rule.cooldown_ms or cfg.rune_cooldown_ms) or 1000)
+    if now - (tonumber(cfg.last_rune_ms) or 0) < (tonumber(rule and rule.cooldown_ms or cfg.rune_cooldown_ms) or 1000) then
+        return "cooldown"
+    end
+    return nil
+end
+
+function CombatRuntime.runeReady(tools, state, actionRule)
+    return runeBlockedReason(tools, state, actionRule) == nil
 end
 
 local function monsterCountForRange(scan, range)
@@ -483,29 +508,46 @@ function CombatRuntime.rotationSpell(spells, state)
     local env = state or {}
     local now = tonumber(env.now_ms) or 0
     if now < (tonumber(env.action_lock_until_ms) or 0) then
-        return nil
+        return nil, explanation("spell", "action_lock", "blocked", {now_ms = now}, {}, nil, env)
     end
     if now - (tonumber(env.last_attack_spell_ms) or 0) < (tonumber(env.rotation_interval_ms) or 1050) then
-        return nil
+        return nil, explanation("spell", "rotation_interval", "blocked", {now_ms = now}, {}, nil, env)
     end
     local rows = CombatRuntime.spellReadiness(spells, {
         now_ms = now,
         default_cooldown_ms = env.rotation_interval_ms or 1050,
     })
     local selected = nil
-    for _, spell in ipairs(rows) do
+    local selectedIndex = nil
+    local ruleRows = {}
+    for index, spell in ipairs(rows) do
         local mobCount = tonumber(spell.mob_count) or 0
         local minNearby = tonumber(spell.min_nearby) or 1
         local maxNearby = tonumber(spell.max_nearby) or 99
-        if spell.enabled ~= false and tostring(spell.words or "") ~= "" and mobCount >= minNearby and mobCount <= maxNearby and spell.ready == true then
+        local reason = nil
+        if spell.enabled == false then reason = "disabled"
+        elseif tostring(spell.words or "") == "" then reason = "missing_words"
+        elseif mobCount < minNearby then reason = "count_below_min"
+        elseif mobCount > maxNearby then reason = "count_above_max"
+        elseif spell.ready ~= true then reason = "cooldown" end
+        ruleRows[index] = {index = index, matched = reason == nil, reason_code = reason or "matched", values = {mob_count = mobCount}}
+        if reason == nil then
             if not selected then
                 selected = spell
+                selectedIndex = index
             elseif spell.directional == true and string.lower(tostring(selected.words or "")) == "exori" then
+                ruleRows[selectedIndex].reason_code = "matched_not_selected"
+                ruleRows[selectedIndex].matched = false
                 selected = spell
+                selectedIndex = index
             end
         end
     end
-    return selected
+    if selectedIndex then
+        ruleRows[selectedIndex].reason_code = "selected"
+        return selected, explanation("spell", "rule_selected", "matched", {now_ms = now}, ruleRows, selectedIndex, env)
+    end
+    return nil, explanation("spell", #rows > 0 and "no_spell_rule" or "no_rules", "blocked", {now_ms = now}, ruleRows, nil, env)
 end
 
 function CombatRuntime.selectRotationSpell(tools, scan, now)
@@ -526,35 +568,59 @@ end
 function CombatRuntime.stanceAction(tools, state)
     local cfg = tools or {}
     local env = state or {}
-    if cfg.auto_stance ~= true or env.target_present ~= true then return nil end
+    if cfg.auto_stance ~= true then return nil, explanation("combat_action", "stance_runtime_disabled", "blocked", {}, {}, nil, env) end
+    if env.target_present ~= true then return nil, explanation("combat_action", "target_required", "blocked", {}, {}, nil, env) end
     local now = tonumber(env.now_ms) or 0
     local monsters = tonumber(env.nearby) or 0
     local actionRules = CombatRuntime.sanitizeCombatActionRules(cfg.combat_action_rules)
     local stateDecisions = type(env.spell_state_decisions) == "table" and env.spell_state_decisions or {}
     if #actionRules > 0 then
+        local rows = {}
         for index, rule in ipairs(actionRules) do
             local stateAllowed = rule.state_id == "" or (type(stateDecisions[rule.state_id]) == "table" and stateDecisions[rule.state_id].allowed == true)
-            if rule.enabled and rule.kind == "stance" and rule.action_text ~= "" and stateAllowed and monsters >= rule.min_count and monsters <= rule.max_count and
-                now - (tonumber(cfg.last_stance_ms) or 0) >= rule.cooldown_ms then
-                return {kind = "stance", stance = rule.stance_mode, fight_mode = rule.stance_mode, spell = rule.action_text, action_index = index, state_id = rule.state_id}
+            local reason = nil
+            if not rule.enabled then reason = "disabled"
+            elseif rule.kind ~= "stance" then reason = "kind_mismatch"
+            elseif rule.action_text == "" then reason = "missing_action"
+            elseif not stateAllowed then reason = "state_blocked"
+            elseif monsters < rule.min_count then reason = "count_below_min"
+            elseif monsters > rule.max_count then reason = "count_above_max"
+            elseif now - (tonumber(cfg.last_stance_ms) or 0) < rule.cooldown_ms then reason = "cooldown" end
+            rows[index] = {index = index, matched = reason == nil, reason_code = reason or "selected", values = {monster_count = monsters}}
+            if reason == nil then
+                return {kind = "stance", stance = rule.stance_mode, fight_mode = rule.stance_mode, spell = rule.action_text, action_index = index, state_id = rule.state_id},
+                    explanation("combat_action", "rule_selected", "matched", {monster_count = monsters, kind = "stance"}, rows, index, env)
             end
         end
-        return nil
+        return nil, explanation("combat_action", "no_stance_rule", "blocked", {monster_count = monsters, kind = "stance"}, rows, nil, env)
     end
-    return nil
+    return nil, explanation("combat_action", "no_rules", "blocked", {kind = "stance"}, {}, nil, env)
 end
 
 function CombatRuntime.runeAction(tools, state)
     local cfg = tools or {}
     local env = state or {}
+    local rows = {}
     for index, rule in ipairs(CombatRuntime.sanitizeCombatActionRules(cfg.combat_action_rules)) do
-        if rule.enabled and rule.kind == "rune" and rule.action_text ~= "" and CombatRuntime.runeReady(cfg, env, rule) and (rule.pvp_safe == false or env.rune_target_safe ~= false) then
-            return {kind = "rune", rune_name = rule.action_text, hotkey = rule.hotkey, actionbar_slot = rule.hotkey, action_index = index}
+        local reason = nil
+        if not rule.enabled then reason = "disabled"
+        elseif rule.kind ~= "rune" then reason = "kind_mismatch"
+        elseif rule.action_text == "" then reason = "missing_action"
+        else reason = runeBlockedReason(cfg, env, rule) end
+        if reason == nil and rule.pvp_safe ~= false and env.rune_target_safe == false then reason = "pvp_unsafe" end
+        rows[index] = {index = index, matched = reason == nil, reason_code = reason or "selected", values = {monster_count = tonumber(env.visible) or 0}}
+        if reason == nil then
+            return {kind = "rune", rune_name = rule.action_text, hotkey = rule.hotkey, actionbar_slot = rule.hotkey, action_index = index},
+                explanation("combat_action", "rule_selected", "matched", {monster_count = tonumber(env.visible) or 0, kind = "rune"}, rows, index, env)
         end
     end
-    if type(cfg.combat_action_rules) == "table" and #cfg.combat_action_rules > 0 then return nil end
-    if CombatRuntime.runeReady(cfg, env) and env.rune_target_safe ~= false then return {kind = "rune"} end
-    return nil
+    if type(cfg.combat_action_rules) == "table" and #cfg.combat_action_rules > 0 then
+        return nil, explanation("combat_action", "no_rune_rule", "blocked", {kind = "rune"}, rows, nil, env)
+    end
+    local fallbackReason = runeBlockedReason(cfg, env)
+    if fallbackReason == nil and env.rune_target_safe == false then fallbackReason = "pvp_unsafe" end
+    if fallbackReason == nil then return {kind = "rune"}, explanation("combat_action", "legacy_rune_selected", "matched", {kind = "rune"}, {}, nil, env) end
+    return nil, explanation("combat_action", fallbackReason, "blocked", {kind = "rune"}, {}, nil, env)
 end
 
 function CombatRuntime.offensiveAction(tools, state)
@@ -575,8 +641,8 @@ function CombatRuntime.offensiveAction(tools, state)
         return nil
     end
 
-    local stance = CombatRuntime.stanceAction(cfg, env)
-    if stance then return stance end
+    local stance, stanceTrace = CombatRuntime.stanceAction(cfg, env)
+    if stance then return stance, stanceTrace end
 
     local visible = tonumber(env.visible) or 0
     if boolValue(cfg.auto_exeta) and targetPresent and visible >= (tonumber(cfg.exeta_min_visible) or 1) and now - (tonumber(cfg.last_exeta_ms) or 0) >= (tonumber(cfg.exeta_interval_ms) or 5000) then
@@ -587,9 +653,9 @@ function CombatRuntime.offensiveAction(tools, state)
     end
 
     local rotationSpell = env.rotation_spell
-    local runeAction = CombatRuntime.runeAction(cfg, env)
+    local runeAction, runeTrace = CombatRuntime.runeAction(cfg, env)
     if cfg.magic_priority == "rune" and runeAction then
-        return runeAction
+        return runeAction, runeTrace
     end
     if rotationSpell then
         return {
@@ -598,9 +664,9 @@ function CombatRuntime.offensiveAction(tools, state)
         }
     end
     if runeAction then
-        return runeAction
+        return runeAction, runeTrace
     end
-    return nil
+    return nil, runeTrace or stanceTrace
 end
 
 function CombatRuntime.dispatchDescriptor(action, tools)

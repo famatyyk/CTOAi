@@ -28,6 +28,7 @@ selection loads its UI but does not arm gameplay automation.
 | **ctoa_helper_ui_composition.lua** | Passive declarative UI composition | `_G.CTOA_HELPER_UI_COMPOSITION`, sidebar/subtab/table/action metadata; no profile mutation or gameplay callbacks |
 | **ctoa_helper_ui_rule_editors.lua** | Passive rule-editor presentation | `_G.CTOA_HELPER_UI_RULE_EDITORS`, shared chrome plus Target/Spell/Combat Action editors with injected callbacks; no gameplay APIs |
 | **ctoa_helper_rule_engine.lua** | Pure typed action/condition validation and passive evaluation | `_G.CTOA_HELPER_RULE_ENGINE`, HP/MP/monster/distance/PZ/condition metrics, AND/OR, cooldown, hysteresis, bounded randomization; no dispatch |
+| **ctoa_helper_rule_explanations.lua** | Passive deterministic rule traces | `_G.CTOA_HELPER_RULE_EXPLANATIONS`, stable Target/Spell/Combat Action match/block reasons and native summaries; no client scan or dispatch |
 | **ctoa_helper_runtime_core.lua** | Passive runtime registry, event bus, and budgeted scheduler | `_G.CTOA_HELPER_RUNTIME_CORE`, disabled-by-default tasks, bounded ticks, failure backoff |
 | **ctoa_helper_combat_observer.lua** | Passive normalized combat/targeting observations | `_G.CTOA_HELPER_COMBAT_OBSERVER`, `ctoa.combat-observation.v1`, `combat.observed` |
 | **ctoa_helper_recovery_observer.lua** | Passive normalized HP/MP/recovery observations | `_G.CTOA_HELPER_RECOVERY_OBSERVER`, `ctoa.recovery-observation.v1`, `recovery.observed` |

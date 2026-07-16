@@ -104,7 +104,7 @@ def test_p17_2_removes_proven_dead_native_locals() -> None:
     assert (
         roadmap["baseline"]["current_native_helper_lines"]
         == len(helper_text.splitlines())
-        == 3576
+        == 3593
     )
     assert roadmap["baseline"]["current_native_helper_functions"] == 102
     p17 = next(item for item in roadmap["phases"] if item["id"] == "P17")
@@ -187,7 +187,7 @@ def test_p18_1_closes_versioned_rule_migration_without_runtime_authority() -> No
     assert p24["status"] == "in_progress"
     assert p24_2["status"] == "in_progress"
     assert p24_2["runtime_authority"] is False
-    assert p24_2["validation"]["official_stage_file_count"] == 66
+    assert p24_2["validation"]["official_stage_file_count"] == 67
     assert p24_2["validation"]["github_hosted_current_revision"] is True
     assert p24_2["validation"]["self_hosted_runner_online"] is False
 
@@ -226,14 +226,23 @@ def test_p18_1_closes_versioned_rule_migration_without_runtime_authority() -> No
     p27 = next(item for item in roadmap["phases"] if item["id"] == "P27")
     p27_1 = next(item for item in roadmap["immediate_slices"] if item["id"] == "P27.1")
     p27_2 = next(item for item in roadmap["immediate_slices"] if item["id"] == "P27.2")
-    assert p27["status"] == "in_progress"
+    assert p27["status"] == "complete"
     assert p27_1["status"] == "complete"
     assert p27_1["runtime_authority"] is False
     assert p27_1["validation"]["schema_version"] == "ctoa-helper-rule-preset-v1"
     assert p27_1["validation"]["official_stage_file_count"] == 66
     assert p27_1["validation"]["passive_module_contracts_passed"] == 38
-    assert p27_2["status"] == "not_started"
+    assert p27_2["status"] == "complete"
     assert p27_2["runtime_authority"] is False
+    assert p27_2["validation"]["schema_version"] == "ctoa-helper-rule-explanation-v1"
+    assert p27_2["validation"]["official_stage_file_count"] == 67
+    assert p27_2["validation"]["passive_module_contracts_passed"] == 39
+
+    p28 = next(item for item in roadmap["phases"] if item["id"] == "P28")
+    p28_1 = next(item for item in roadmap["immediate_slices"] if item["id"] == "P28.1")
+    assert p28["status"] == "planned"
+    assert p28_1["status"] == "waiting_on_dependency"
+    assert p28_1["runtime_authority"] is False
 
 
 def test_p19_1_opens_target_name_policy_without_runtime_authority() -> None:

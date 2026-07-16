@@ -117,6 +117,7 @@ local externalModal = rawget(_G, "CTOA_HELPER_MODAL")
 local externalRoute = rawget(_G, "CTOA_HELPER_ROUTE")
 local externalTargeting = rawget(_G, "CTOA_HELPER_TARGETING")
 local externalCombatRuntime = rawget(_G, "CTOA_HELPER_COMBAT_RUNTIME")
+local externalRuleExplanations = rawget(_G, "CTOA_HELPER_RULE_EXPLANATIONS")
 local externalSpellStateRegistry = rawget(_G, "CTOA_HELPER_SPELL_STATE_REGISTRY")
 local externalCavebotRuntime = rawget(_G, "CTOA_HELPER_CAVEBOT_RUNTIME")
 local externalLootRuntime = rawget(_G, "CTOA_HELPER_LOOT_RUNTIME")
@@ -1142,6 +1143,7 @@ local function findBestAttackTarget(tools)
     for _, candidate in ipairs(candidates) do candidate.monster_count = #candidates end
 
     local best, decision = moduleValue(externalTargeting, "bestCandidate", candidates, tools)
+    Helper.last_target_rule_trace = type(decision) == "table" and decision.rule_explanation or nil
     if type(best) == "table" and best.ref then
         return best.ref, decision
     end
@@ -1393,14 +1395,16 @@ local function buildOffensiveAction(tools, target, scan, now)
     local visible = scan and scan.visible or 0
     local nearby = scan and scan.adjacent or 0
     local rotationSpell = nil
+    local rotationTrace = nil
     if tools.spell_rotation and target then
-        rotationSpell = moduleValue(externalCombatRuntime, "selectRotationSpell", tools, scan, now)
+        rotationSpell, rotationTrace = moduleValue(externalCombatRuntime, "selectRotationSpell", tools, scan, now)
     end
+    Helper.last_spell_rule_trace = rotationTrace
     local spellStateEvidence = moduleValue(externalSpellStateRegistry, "observeAll", getLocalPlayer(), tools.spell_state_families, now, {
         read_states = function(player) return pcallNumber(player, "getStates") end
     })
     local spellStateDecisions = moduleValue(externalSpellStateRegistry, "decisionMap", tools.spell_state_families, spellStateEvidence, now, tools.last_spell_state_casts)
-    local action = moduleValue(externalCombatRuntime, "offensiveAction", tools, {
+    local action, actionTrace = moduleValue(externalCombatRuntime, "offensiveAction", tools, {
             blocked_reason = combatBlockedReason(tools),
             target_present = target ~= nil,
             target_in_range = target and isTargetInRange(target, tools.attack_range or 7) or nil,
@@ -1412,6 +1416,14 @@ local function buildOffensiveAction(tools, target, scan, now)
             rune_target_safe = canUseRuneOnTarget(tools, target),
             spell_state_decisions = spellStateDecisions
     })
+    Helper.last_action_rule_trace = actionTrace
+    if type(action) == "table" and action.kind == "rotation" then
+        Helper.last_rule_trace = rotationTrace
+    elseif actionTrace then
+        Helper.last_rule_trace = actionTrace
+    else
+        Helper.last_rule_trace = Helper.last_target_rule_trace
+    end
     if type(action) == "table" then return action end
     return nil
 end
@@ -1475,6 +1487,11 @@ local function combatDecisionStateText(tools, target, scan, now, nextAction)
         rune_until_ms = (tools.last_rune_ms or 0) + (tools.rune_cooldown_ms or 1000),
         now_ms = now
     }, {eligible = target ~= nil, reason = target and "selected" or "no_target", name = target and "monster" or "none", score = 0})
+    local trace = Helper.last_rule_trace or Helper.last_target_rule_trace
+    local explanationText = moduleValue(externalRuleExplanations, "summary", trace)
+    if type(explanationText) == "string" and explanationText ~= "" then
+        text = tostring(text or nextAction or "idle") .. " | " .. explanationText
+    end
     if type(text) == "string" and text ~= "" then return fitText(text, UI_LAYOUT.content_w - 14, 0.78) end
     return tostring(nextAction or "idle") .. " | target=" .. (target and "monster" or "none")
 end

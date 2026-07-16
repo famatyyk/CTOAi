@@ -616,6 +616,7 @@ function Get-DevPackageFiles {
         "mods/ctoa_otclient/ctoa_helper_hotkeys.lua",
         "mods/ctoa_otclient/ctoa_helper_modal.lua",
         "mods/ctoa_otclient/ctoa_helper_route.lua",
+        "mods/ctoa_otclient/ctoa_helper_rule_explanations.lua",
         "mods/ctoa_otclient/ctoa_helper_targeting.lua",
         "mods/ctoa_otclient/ctoa_helper_combat_runtime.lua",
         "mods/ctoa_otclient/ctoa_helper_spell_state_registry.lua",

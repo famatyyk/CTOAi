@@ -73,6 +73,18 @@ PASSIVE_MODULES = [
         ],
     },
     {
+        "id": "rule_explanations",
+        "loader_name": "ctoa_helper_rule_explanations",
+        "file": "ctoa_helper_rule_explanations.lua",
+        "global": "CTOA_HELPER_RULE_EXPLANATIONS",
+        "lane_id": "",
+        "required_functions": [
+            "trace",
+            "summary",
+            "contract",
+        ],
+    },
+    {
         "id": "ui_primitives",
         "loader_name": "ctoa_helper_ui_primitives",
         "file": "ctoa_helper_ui_primitives.lua",

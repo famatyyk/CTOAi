@@ -31,7 +31,7 @@
   "baseline": {
     "initial_native_helper_lines": 4404,
     "initial_native_helper_functions": 130,
-    "current_native_helper_lines": 3576,
+    "current_native_helper_lines": 3593,
     "current_native_helper_functions": 102,
     "native_helper_line_budget": 4500,
     "native_helper_function_budget": 130,
@@ -582,7 +582,7 @@
         "acceptance request remains action-free and names all four P14 capabilities"
       ],
       "validation": {
-        "official_stage_file_count": 66,
+        "official_stage_file_count": 67,
         "github_hosted_current_revision": true,
         "self_hosted_runner_online": false,
         "required_reviewer_configured": false,
@@ -775,7 +775,14 @@
     {
       "id": "P27.2",
       "title": "Add deterministic rule match and block explanations",
-      "status": "not_started",
+      "status": "complete",
+      "artifacts": [
+        "scripts/lua/otclient/ctoa_helper_rule_explanations.lua",
+        "scripts/lua/otclient/ctoa_helper_targeting.lua",
+        "scripts/lua/otclient/ctoa_helper_combat_runtime.lua",
+        "scripts/lua/otclient/ctoa_native_helper.lua",
+        "tests/test_ctoa_helper_rule_explanations.py"
+      ],
       "runtime_authority": false,
       "entry_gate": "P27.1 strict preset boundary complete",
       "done_gates": [
@@ -783,6 +790,38 @@
         "explanations use normalized observations and never rescan the client",
         "UI consumes passive traces without dispatch authority",
         "unknown or stale observations fail closed visibly"
+      ],
+      "validation": {
+        "schema_version": "ctoa-helper-rule-explanation-v1",
+        "official_stage_file_count": 67,
+        "explanation_module_lines": 107,
+        "native_helper_lines": 3593,
+        "native_helper_functions": 102,
+        "rule_lanes": 3,
+        "stable_reason_code_tests": 3,
+        "focused_tests_passed": 129,
+        "focused_tests_skipped": 1,
+        "passive_module_contracts_passed": 39,
+        "official_validation_tests_passed": 162,
+        "preview_widgets": 208,
+        "preview_layout_issues": 0,
+        "module_static_gates_passed": 39,
+        "smoke_preflight": "passed",
+        "runtime_authority": false,
+        "promotion_allowed": false
+      }
+    },
+    {
+      "id": "P28.1",
+      "title": "Run signed isolated visual in-world canary and rollback acceptance",
+      "status": "waiting_on_dependency",
+      "runtime_authority": false,
+      "entry_gate": "P24.2 signed self-hosted Windows runner and protected environment complete",
+      "done_gates": [
+        "current revision runs on an independent Windows host",
+        "visual and in-world traces include P27 explanations",
+        "bounded canary abort and rollback are exercised",
+        "live promotion remains a separate explicit approval"
       ]
     }
   ],
@@ -920,7 +959,7 @@
     {
       "id": "P27",
       "title": "Portable Rule Presets And Explainability",
-      "status": "in_progress",
+      "status": "complete",
       "depends_on": ["P18", "P19", "P21", "P26"],
       "objective": "Make targeting spell and action rule sets portable and understandable without importing executable code or arming runtime.",
       "done_gates": [

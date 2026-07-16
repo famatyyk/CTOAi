@@ -12,6 +12,18 @@ local EDITABLE_NAME_POLICY_KEYS = {
     priority_names = true,
 }
 
+local function explanation(reason, status, values, rows, selectedIndex)
+    local owner = rawget(_G, "CTOA_HELPER_RULE_EXPLANATIONS")
+    if type(owner) ~= "table" or type(owner.trace) ~= "function" then return nil end
+    return owner.trace("target", reason, {
+        status = status,
+        selected_index = selectedIndex,
+        observation_status = "current",
+        values = values,
+        rules = rows,
+    })
+end
+
 local DEFAULT_FRIENDLY_SUMMON_NAME_FRAGMENTS = {
     " familiar ",
     " summon ",
@@ -141,28 +153,35 @@ function Targeting.moveTargetRule(tools, requestedIndex, delta)
     return target, targetEditorDecision(true, "target_rule_moved", target, #rules)
 end
 
-local function ruleMatchesCandidate(rule, candidate)
-    if rule.enabled == false then return false end
+local function targetRuleReason(rule, candidate)
+    if rule.enabled == false then return "disabled" end
     local name = Targeting.normalizedName(candidate.name or candidate)
-    if rule.name_pattern ~= "" and not string.find(name, rule.name_pattern, 1, true) then return false end
+    if rule.name_pattern ~= "" and not string.find(name, rule.name_pattern, 1, true) then return "name_mismatch" end
     local hp = tonumber(candidate.hp) or 100
     local distance = tonumber(candidate.distance) or 99
     local count = tonumber(candidate.monster_count) or 0
-    return hp >= rule.min_hp and hp <= rule.max_hp and
-        distance >= rule.min_distance and distance <= rule.max_distance and
-        count >= rule.min_count and count <= rule.max_count
+    if hp < rule.min_hp then return "hp_below_min" end
+    if hp > rule.max_hp then return "hp_above_max" end
+    if distance < rule.min_distance then return "distance_below_min" end
+    if distance > rule.max_distance then return "distance_above_max" end
+    if count < rule.min_count then return "count_below_min" end
+    if count > rule.max_count then return "count_above_max" end
+    return nil
 end
 
 function Targeting.matchTargetRule(candidate, rules)
     local sanitized = Targeting.sanitizeTargetRules(rules)
     local enabledCount = 0
+    local rows = {}
     for index, rule in ipairs(sanitized) do
         if rule.enabled ~= false then
             enabledCount = enabledCount + 1
-            if ruleMatchesCandidate(rule, candidate or {}) then return rule, index, enabledCount end
         end
+        local reason = targetRuleReason(rule, candidate or {})
+        rows[index] = {index = index, matched = reason == nil, reason_code = reason or "matched"}
+        if reason == nil then return rule, index, enabledCount, rows end
     end
-    return nil, nil, enabledCount
+    return nil, nil, enabledCount, rows
 end
 
 local function appendPolicyName(result, seen, value)
@@ -374,6 +393,7 @@ function Targeting.decision(candidate, tools)
             reason = "no_candidate",
             score = 99999999,
             summary = "target scorer idle",
+            rule_explanation = explanation("no_candidate", "blocked"),
         }
     end
     local cfg = tools or {}
@@ -384,6 +404,7 @@ function Targeting.decision(candidate, tools)
             reason = "missing_name",
             score = 99999999,
             summary = "target missing name",
+            rule_explanation = explanation("missing_name", "blocked"),
         }
     end
     if Targeting.isIgnoredName(name, cfg.ignored_names or {}) then
@@ -393,6 +414,7 @@ function Targeting.decision(candidate, tools)
             name = name,
             score = 99999999,
             summary = "ignored " .. name,
+            rule_explanation = explanation("ignored_name", "blocked", {name = name}),
         }
     end
     if Targeting.isFriendlySummonCandidate(candidate, cfg) then
@@ -402,6 +424,7 @@ function Targeting.decision(candidate, tools)
             name = name,
             score = 99999999,
             summary = "friendly summon/familiar " .. name,
+            rule_explanation = explanation("friendly_summon", "blocked", {name = name}),
         }
     end
     if cfg.require_reachable_target == true and candidate.reachable == false then
@@ -411,9 +434,16 @@ function Targeting.decision(candidate, tools)
             name = name,
             score = 99999999,
             summary = "unreachable " .. name,
+            rule_explanation = explanation("unreachable", "blocked", {name = name}),
         }
     end
-    local targetRule, targetRuleIndex, enabledRuleCount = Targeting.matchTargetRule(candidate, cfg.target_rules)
+    local targetRule, targetRuleIndex, enabledRuleCount, ruleRows = Targeting.matchTargetRule(candidate, cfg.target_rules)
+    local traceValues = {
+        name = name,
+        hp = tonumber(candidate.hp) or 100,
+        distance = tonumber(candidate.distance) or 99,
+        monster_count = tonumber(candidate.monster_count) or 0,
+    }
     if enabledRuleCount > 0 and not targetRule then
         return {
             eligible = false,
@@ -421,6 +451,7 @@ function Targeting.decision(candidate, tools)
             name = name,
             score = 99999999,
             summary = "no target rule for " .. name,
+            rule_explanation = explanation("no_target_rule", "blocked", traceValues, ruleRows),
         }
     end
     local rank = candidate.rank or Targeting.priorityRank(name, cfg.priority_names or {})
@@ -444,6 +475,7 @@ function Targeting.decision(candidate, tools)
         target_rule_priority = targetRule and targetRule.priority or nil,
         chase_policy = targetRule and targetRule.chase_policy or "inherit",
         summary = Targeting.summary(scored, cfg),
+        rule_explanation = explanation(targetRule and "rule_matched" or "scored_without_rules", "matched", traceValues, ruleRows, targetRuleIndex),
     }
 end
 
