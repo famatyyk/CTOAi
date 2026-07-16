@@ -11,6 +11,7 @@ TARGETING = OTCLIENT_DIR / "ctoa_helper_targeting.lua"
 SCHEMA = OTCLIENT_DIR / "ctoa_helper_profile_schema.lua"
 PERSISTENCE = OTCLIENT_DIR / "ctoa_helper_profile_persistence.lua"
 UI = OTCLIENT_DIR / "ctoa_helper_ui.lua"
+UI_COMPOSITION = OTCLIENT_DIR / "ctoa_helper_ui_composition.lua"
 HELPER = OTCLIENT_DIR / "ctoa_native_helper.lua"
 
 
@@ -95,7 +96,7 @@ assert(contract.target_rule_limit == 16 and contract.runtime_actions == false an
 
 
 def test_target_rule_editor_is_native_autosaved_and_applied_to_chase() -> None:
-    ui = UI.read_text(encoding="utf-8")
+    ui = UI.read_text(encoding="utf-8") + "\n" + UI_COMPOSITION.read_text(encoding="utf-8")
     helper = HELPER.read_text(encoding="utf-8")
 
     for widget_id in (
@@ -125,7 +126,7 @@ def test_target_rule_editor_is_native_autosaved_and_applied_to_chase() -> None:
 
 
 def test_rule_editors_share_chrome_and_settings_have_one_visible_owner() -> None:
-    ui = UI.read_text(encoding="utf-8")
+    ui = UI.read_text(encoding="utf-8") + "\n" + UI_COMPOSITION.read_text(encoding="utf-8")
 
     assert "function Ui.addRuleEditorChrome" in ui
     assert ui.count("Ui.addRuleEditorChrome(ctx, window, {") == 3
@@ -147,7 +148,7 @@ def test_rule_editors_share_chrome_and_settings_have_one_visible_owner() -> None
 
 
 def test_rune_and_stance_parameters_are_editable_separately_from_runtime_arming() -> None:
-    ui = UI.read_text(encoding="utf-8")
+    ui = UI.read_text(encoding="utf-8") + "\n" + UI_COMPOSITION.read_text(encoding="utf-8")
 
     for widget_id in (
         "ctoaHuntingActionsTab",

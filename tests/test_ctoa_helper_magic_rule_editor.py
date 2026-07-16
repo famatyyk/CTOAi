@@ -11,6 +11,7 @@ COMBAT = OTCLIENT_DIR / "ctoa_helper_combat_runtime.lua"
 SCHEMA = OTCLIENT_DIR / "ctoa_helper_profile_schema.lua"
 PERSISTENCE = OTCLIENT_DIR / "ctoa_helper_profile_persistence.lua"
 UI = OTCLIENT_DIR / "ctoa_helper_ui.lua"
+UI_COMPOSITION = OTCLIENT_DIR / "ctoa_helper_ui_composition.lua"
 HELPER = OTCLIENT_DIR / "ctoa_native_helper.lua"
 
 
@@ -113,7 +114,7 @@ assert(contract.runtime_actions == false and contract.attacks == false and contr
 
 
 def test_magic_rule_editor_replaces_fixed_ek_rows_and_autosaves() -> None:
-    ui = UI.read_text(encoding="utf-8")
+    ui = UI.read_text(encoding="utf-8") + "\n" + UI_COMPOSITION.read_text(encoding="utf-8")
     helper = HELPER.read_text(encoding="utf-8")
 
     for widget_id in (
