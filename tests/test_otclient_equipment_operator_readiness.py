@@ -66,7 +66,7 @@ def _preview() -> dict:
         "freshness": {
             "observed_at_unix_ms": NOW_MS - 1_000,
             "age_ms": 1_000,
-            "max_age_ms": 6_000,
+            "max_age_ms": preview.MAX_AGE_MS,
             "fresh": True,
         },
         "provenance": {
@@ -284,7 +284,9 @@ def test_missing_invalid_stale_and_upstream_are_distinct() -> None:
     invalid_preview["runtime_actions"] = True
     artifacts["observation_preview"] = documents.document_from_payload(invalid_preview)
     stale_dependency = _dependency()
-    stale_dependency["evaluated_at_unix_ms"] = NOW_MS - 6_001
+    stale_dependency["evaluated_at_unix_ms"] = (
+        NOW_MS - readiness.MAX_FRESH_AGE_MS - 1
+    )
     artifacts["dependency_preflight"] = documents.document_from_payload(stale_dependency)
     blocked_catalog = _catalog(artifacts["observation_preview"].sha256)
     blocked_catalog["status"] = "blocked"

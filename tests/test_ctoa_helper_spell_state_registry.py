@@ -4,6 +4,8 @@ import shutil
 import subprocess
 from pathlib import Path
 
+import pytest
+
 
 ROOT = Path(__file__).resolve().parents[1]
 OTCLIENT_DIR = ROOT / "scripts" / "lua" / "otclient"
@@ -111,9 +113,16 @@ def test_helper_uses_observed_haste_state_instead_of_timer_only_casting() -> Non
 
 
 def test_mehah_profile_evidence_for_haste_state_is_documented_in_source_contract() -> None:
-    player_lua = Path(r"C:\otclient\modules\gamelib\player.lua").read_text(encoding="utf-8")
-    lua_functions = Path(r"C:\otclient\src\client\luafunctions.cpp").read_text(encoding="utf-8")
-    local_player = Path(r"C:\otclient\src\client\localplayer.cpp").read_text(encoding="utf-8")
+    sources = (
+        Path(r"C:\otclient\modules\gamelib\player.lua"),
+        Path(r"C:\otclient\src\client\luafunctions.cpp"),
+        Path(r"C:\otclient\src\client\localplayer.cpp"),
+    )
+    if not all(path.is_file() for path in sources):
+        pytest.skip("external mehah source checkout is not available on this runner")
+    player_lua, lua_functions, local_player = (
+        path.read_text(encoding="utf-8") for path in sources
+    )
 
     assert "Haste = 64" in player_lua
     assert 'bindClassMemberFunction<LocalPlayer>("getStates"' in lua_functions

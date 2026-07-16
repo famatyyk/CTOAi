@@ -1,13 +1,21 @@
 from __future__ import annotations
 
 import json
+import re
+import shutil
 import subprocess
 import zipfile
 from pathlib import Path
 
+import pytest
+
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "windows" / "solteria_safe_release.ps1"
+POWERSHELL = shutil.which("powershell")
+SAFE_RELEASE_READY = bool(
+    POWERSHELL and (ROOT / ".venv/Scripts/python.exe").is_file()
+)
 
 
 RUNTIME_FILES = {
@@ -37,11 +45,15 @@ def test_safe_release_is_seven_file_scoped_and_requires_explicit_live_approval()
     assert "source_live_sha256_match" in source
 
 
+@pytest.mark.skipif(
+    not SAFE_RELEASE_READY,
+    reason="Windows PowerShell and the repo validation venv are required",
+)
 def test_safe_release_validate_produces_passed_seven_file_manifest(tmp_path: Path) -> None:
     out_dir = tmp_path / "safe-release"
     completed = subprocess.run(
         [
-            "powershell",
+            POWERSHELL,
             "-NoProfile",
             "-ExecutionPolicy",
             "Bypass",
@@ -62,18 +74,25 @@ def test_safe_release_validate_produces_passed_seven_file_manifest(tmp_path: Pat
     manifest = json.loads((out_dir / "manifest.json").read_text(encoding="utf-8-sig"))
     validation = json.loads((out_dir / "validation.json").read_text(encoding="utf-8-sig"))
     assert manifest["schema_version"] == "ctoa.safe-release-manifest.v1"
-    assert manifest["safe_version"] == "3.3.0"
+    module_text = (ROOT / "mods/ctoa_safe/ctoa_safe.otmod").read_text(encoding="utf-8")
+    version_match = re.search(r"(?m)^\s*version:\s*([0-9.]+)\s*$", module_text)
+    assert version_match is not None
+    assert manifest["safe_version"] == version_match.group(1)
     assert len(manifest["files"]) == 7
     assert {entry["path"] for entry in manifest["files"]} == RUNTIME_FILES
     assert validation["status"] == "passed"
     assert validation["live_client_touched"] is False
 
 
+@pytest.mark.skipif(
+    not SAFE_RELEASE_READY,
+    reason="Windows PowerShell and the repo validation venv are required",
+)
 def test_safe_release_package_contains_runtime_only(tmp_path: Path) -> None:
     out_dir = tmp_path / "safe-package"
     completed = subprocess.run(
         [
-            "powershell",
+            POWERSHELL,
             "-NoProfile",
             "-ExecutionPolicy",
             "Bypass",
@@ -102,10 +121,14 @@ def test_safe_release_package_contains_runtime_only(tmp_path: Path) -> None:
     assert names == RUNTIME_FILES
 
 
+@pytest.mark.skipif(
+    not SAFE_RELEASE_READY,
+    reason="Windows PowerShell and the repo validation venv are required",
+)
 def test_safe_release_promote_refuses_without_approval(tmp_path: Path) -> None:
     completed = subprocess.run(
         [
-            "powershell",
+            POWERSHELL,
             "-NoProfile",
             "-ExecutionPolicy",
             "Bypass",

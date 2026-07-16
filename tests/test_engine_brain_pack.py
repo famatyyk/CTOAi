@@ -156,8 +156,9 @@ def test_engine_brain_pack_supports_compact_control_central_profile(tmp_path):
     assert "Profile: `control-central`" in text
     assert "AI/generated/manifest.json" in text
     assert "AI/generated/P7_OPERATOR_BRIEF.md" in text
-    assert "AI/generated/FILE_TREE.md" not in text
-    assert "AI/generated/SYMBOL_MAP.md" not in text
+    included_paths = {section["path"] for section in compact["sections"]}
+    assert "AI/generated/FILE_TREE.md" not in included_paths
+    assert "AI/generated/SYMBOL_MAP.md" not in included_paths
     assert "AI/ENGINE_BRAIN_STATUS.md" not in text
     assert compact["included_count"] < full["included_count"]
     assert compact_path.stat().st_size < full_path.stat().st_size * 0.25
