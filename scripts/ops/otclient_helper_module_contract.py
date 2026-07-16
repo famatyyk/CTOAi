@@ -407,6 +407,20 @@ PASSIVE_MODULES = [
         ],
     },
     {
+        "id": "rule_presets",
+        "loader_name": "ctoa_helper_rule_presets",
+        "file": "ctoa_helper_rule_presets.lua",
+        "global": "CTOA_HELPER_RULE_PRESETS",
+        "lane_id": "",
+        "required_functions": [
+            "schemaVersion",
+            "validate",
+            "exportPreset",
+            "importPreset",
+            "contract",
+        ],
+    },
+    {
         "id": "operator_summary",
         "loader_name": "ctoa_helper_operator_summary",
         "file": "ctoa_helper_operator_summary.lua",

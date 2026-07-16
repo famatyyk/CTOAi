@@ -1,8 +1,8 @@
 # Solteria Helper Module Contract
 
 - Status: `passed`
-- Expected modules: `37`
-- Passed modules: `37`
+- Expected modules: `38`
+- Passed modules: `38`
 - Failed modules: `0`
 - Registry lanes: `9` / `9`
 - Forbidden passive hits: `0`
@@ -36,6 +36,7 @@ Passive helper modules may observe, format, plan, or expose UI state. They must 
 | `recovery_runtime` | `ctoa_helper_recovery_runtime.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
 | `profile_schema` | `ctoa_helper_profile_schema.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
 | `profile_persistence` | `ctoa_helper_profile_persistence.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
+| `rule_presets` | `ctoa_helper_rule_presets.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
 | `operator_summary` | `ctoa_helper_operator_summary.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
 | `planner` | `ctoa_helper_planner.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
 | `runtime_policy` | `ctoa_helper_runtime_policy.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |

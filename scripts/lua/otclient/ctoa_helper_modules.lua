@@ -35,6 +35,7 @@ local SUPPORT_MODULES = {
     {name = "ctoa_helper_profile_schema", file = "ctoa_helper_profile_schema.lua", phase = "profile", depends_on = {"ctoa_helper_rule_engine"}},
     {name = "ctoa_helper_vocation_profiles", file = "ctoa_helper_vocation_profiles.lua", phase = "profile", depends_on = {"ctoa_helper_profile_schema"}},
     {name = "ctoa_helper_profile_persistence", file = "ctoa_helper_profile_persistence.lua", phase = "profile", depends_on = {"ctoa_helper_profile_schema"}},
+    {name = "ctoa_helper_rule_presets", file = "ctoa_helper_rule_presets.lua", phase = "profile", depends_on = {"ctoa_helper_targeting", "ctoa_helper_combat_runtime"}},
     {name = "ctoa_helper_operator_summary", file = "ctoa_helper_operator_summary.lua", phase = "coordinate", depends_on = {"ctoa_helper_profile_schema"}},
     {name = "ctoa_helper_planner", file = "ctoa_helper_planner.lua", phase = "coordinate", depends_on = {}},
     {name = "ctoa_helper_runtime_policy", file = "ctoa_helper_runtime_policy.lua", phase = "guard", depends_on = {}},

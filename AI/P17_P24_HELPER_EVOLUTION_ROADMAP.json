@@ -582,7 +582,7 @@
         "acceptance request remains action-free and names all four P14 capabilities"
       ],
       "validation": {
-        "official_stage_file_count": 65,
+        "official_stage_file_count": 66,
         "github_hosted_current_revision": true,
         "self_hosted_runner_online": false,
         "required_reviewer_configured": false,
@@ -741,7 +741,11 @@
     {
       "id": "P27.1",
       "title": "Define strict portable rule preset schema and import export boundary",
-      "status": "not_started",
+      "status": "complete",
+      "artifacts": [
+        "scripts/lua/otclient/ctoa_helper_rule_presets.lua",
+        "tests/test_ctoa_helper_rule_presets.py"
+      ],
       "runtime_authority": false,
       "entry_gate": "P26 presentation ownership split complete",
       "done_gates": [
@@ -749,6 +753,36 @@
         "unknown fields executable values and future versions fail closed",
         "import preserves disabled safe boot and never dispatches actions",
         "target spell and combat action rules round trip deterministically"
+      ],
+      "validation": {
+        "schema_version": "ctoa-helper-rule-preset-v1",
+        "official_stage_file_count": 66,
+        "preset_module_lines": 240,
+        "rule_lanes": 3,
+        "maximum_rules_per_lane": 16,
+        "passive_module_contracts_passed": 38,
+        "focused_tests_passed": 35,
+        "focused_tests_skipped": 1,
+        "official_validation_tests_passed": 162,
+        "preview_widgets": 208,
+        "preview_layout_issues": 0,
+        "module_static_gates_passed": 39,
+        "smoke_preflight": "passed",
+        "runtime_authority": false,
+        "promotion_allowed": false
+      }
+    },
+    {
+      "id": "P27.2",
+      "title": "Add deterministic rule match and block explanations",
+      "status": "not_started",
+      "runtime_authority": false,
+      "entry_gate": "P27.1 strict preset boundary complete",
+      "done_gates": [
+        "target spell and combat action decisions expose stable reason codes",
+        "explanations use normalized observations and never rescan the client",
+        "UI consumes passive traces without dispatch authority",
+        "unknown or stale observations fail closed visibly"
       ]
     }
   ],

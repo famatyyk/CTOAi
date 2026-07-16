@@ -283,10 +283,20 @@ product-local and injected. The current stage contains 65 files, 37 passive
 module contracts and all 39 static gates pass; official validation remains at
 162 tests, the 208-widget preview has zero issues and SmokePreflight passes.
 
-P27.1 is next: define a strict, bounded and versioned data-only preset schema
-for deterministic Target, Spell and Combat Action rule import/export. Unknown
-fields, executable values and future versions must fail closed, and importing a
-preset must preserve disabled safe boot without dispatching actions.
+P27.1 is complete. The new 240-line passive
+`ctoa_helper_rule_presets.lua` owns `ctoa-helper-rule-preset-v1`: a strict,
+bounded and versioned data-only payload for deterministic Target, Spell and
+Combat Action rule import/export. It rejects unknown fields, executable values,
+sparse arrays, non-canonical values and future versions before any mutation.
+Import is atomic, changes only the three rule lists, and preserves every runtime
+switch plus safe boot. The current stage contains 66 files, 38 passive module
+contracts pass, official validation remains at 162 tests, the 208-widget preview
+has zero issues and SmokePreflight passes.
+
+P27.2 is next: expose stable, deterministic reason codes explaining why each
+Target, Spell and Combat Action rule matched or was blocked, using existing
+normalized observations without rescanning the client or gaining dispatch
+authority.
 
 ## Immediate Work Order
 
@@ -367,6 +377,9 @@ preset must preserve disabled safe boot without dispatching actions.
     retaining injected mutation callbacks — complete; the UI shell is 1953
     lines and the passive editor owner is covered by real Lua.
 28. P27.1: add a strict versioned data-only rule preset schema and deterministic
-    import/export without arming runtime — next.
-29. P27.2-P28: add deterministic rule explanations and execute isolated signed
-    sandbox acceptance without weakening the P24/live gates.
+    import/export without arming runtime — complete; three rule lanes round-trip
+    atomically and untrusted payloads fail closed.
+29. P27.2: add deterministic rule match/block explanations backed by normalized
+    observations and passive traces — next.
+30. P28: execute isolated signed sandbox acceptance without weakening the
+    P24/live gates.

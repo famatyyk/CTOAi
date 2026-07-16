@@ -47,6 +47,7 @@ selection loads its UI but does not arm gameplay automation.
 | **ctoa_helper_timer_runtime.lua** | Passive timer runtime adapter plan | `_G.CTOA_HELPER_TIMER_RUNTIME`, plan/summary/contract |
 | **ctoa_helper_profile_schema.lua** | Passive profile schema metadata | `_G.CTOA_HELPER_PROFILE_SCHEMA`, required sections, safe false keys, migration plan |
 | **ctoa_helper_profile_persistence.lua** | Passive profile persistence policy | `_G.CTOA_HELPER_PROFILE_PERSISTENCE`, load candidates, save headers, autosave metadata |
+| **ctoa_helper_rule_presets.lua** | Strict portable rule preset boundary | `_G.CTOA_HELPER_RULE_PRESETS`, versioned Target/Spell/Combat Action import/export; rule-list mutation only, never runtime arming |
 | **ctoa_helper_planner.lua** | Passive planner coordinator | `_G.CTOA_HELPER_PLANNER`, collect/best/summary/contract |
 | **ctoa_helper_runtime_policy.lua** | Passive runtime gate policy | `_G.CTOA_HELPER_RUNTIME_POLICY`, manifest/smoke/live approval gates |
 | **ctoa_helper_dispatch_guard.lua** | Passive dispatch allow/deny guard | `_G.CTOA_HELPER_DISPATCH_GUARD`, classify/decision/summary/contract |

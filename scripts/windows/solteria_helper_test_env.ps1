@@ -634,6 +634,7 @@ function Get-DevPackageFiles {
         "mods/ctoa_otclient/ctoa_helper_profile_schema.lua",
         "mods/ctoa_otclient/ctoa_helper_vocation_profiles.lua",
         "mods/ctoa_otclient/ctoa_helper_profile_persistence.lua",
+        "mods/ctoa_otclient/ctoa_helper_rule_presets.lua",
         "mods/ctoa_otclient/ctoa_helper_operator_summary.lua",
         "mods/ctoa_otclient/ctoa_helper_planner.lua",
         "mods/ctoa_otclient/ctoa_helper_runtime_policy.lua",
