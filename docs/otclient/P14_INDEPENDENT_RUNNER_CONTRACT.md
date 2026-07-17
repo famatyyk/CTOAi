@@ -1,6 +1,6 @@
 # P14 Independent Runner And Release Automation
 
-Status: `foundation_ready_operational_hardening_required`.
+Status: `protected_replay_ready_acceptance_pending`.
 
 P14 moves regression evidence away from the operator workstation. The first
 implementation slice is deliberately artifact-only: it does not launch a client,
@@ -56,9 +56,9 @@ artifacts stay on the protected evidence transport and are never returned by
 Control Central.
 
 `scripts/ops/otclient_p14_runner_preflight.py` is the bounded operational reader.
-It checks only the fixed workflow, matching runner labels and availability,
+It checks only the fixed workflow, protected GitHub-hosted capacity,
 environment protection metadata, secret-name and key-ID presence, branch policy,
-the latest self-hosted job, artifact expiry, and structural request/result binding.
+the latest protected job, artifact expiry, and structural request/result binding.
 Its compact snapshot contains status codes and booleans only: it does not persist
 signatures, keys, runner identity, URLs, commands, logs, or artifact payloads.
 
@@ -97,32 +97,23 @@ eligible for release promotion.
 This job is the pull-request gate. It runs on `windows-latest`, has read-only
 repository permissions, and checkout credentials are not persisted.
 
-## Self-hosted Windows replay
+## Protected GitHub-hosted Windows replay
 
 The second workflow job is intentionally limited to a trusted manual dispatch with
-`run_self_hosted=true`. It never runs for `pull_request` and does not use
-`pull_request_target`. The runner must be registered on a separate machine or VM
-with all four labels:
-
-- `self-hosted`
-- `Windows`
-- `X64`
-- `ctoa-p14`
+`run_protected_replay=true`. It never runs for `pull_request` and does not use
+`pull_request_target`. It uses the standard ephemeral `windows-latest` pool, which
+is free for this public repository and does not depend on an operator-managed VM.
 
 The job is also bound to the protected GitHub environment
 `p14-independent-runner`. That environment supplies the secret
 `CTOA_P14_RUNNER_SIGNING_KEY` and the non-secret variable
 `CTOA_P14_RUNNER_KEY_ID`. Environment approval should be required before the job
 can read the signing material. The job validates both values without printing the
-key, derives a schema-safe ID from `RUNNER_NAME`, performs a clean checkout without
+key, binds a provider-scoped schema-safe ID, performs a clean checkout without
 persisted GitHub credentials, and uploads a separately named seven-day artifact.
-
-The operator workstation must not be labeled `ctoa-p14` and cannot satisfy the
-independence gate. A matching Windows runner is now registered and online, and a
-manual self-hosted replay has completed successfully. The returned result is
-structurally valid, authority-safe, clean-checkout bound, rollback-replay passed,
-and was signature-verified inside the protected job. It is not current for the
-present repository revision, so it remains evidence rather than authorization.
+The GitHub-hosted VM is disposable, is never the operator workstation, and removes
+the persistent host-capacity blocker while retaining the required environment
+review and no-admin-bypass gate.
 
 The `ctoa.p14-runner-preflight.v2` preflight emits
 `ctoa.p14-remediation-plan.v1`: a bounded capability plan
@@ -134,20 +125,34 @@ action that is not ready. Control Central exposes only the minimized ordered ste
 it never exposes reviewer identity, runner identity, secret values, URLs, commands,
 signatures, or artifact payloads.
 
+The plan retains every known P14 capability action required by the observed
+state, up to the contract maximum of 11 actions: 10 recovery capabilities plus
+the fail-closed review fallback. Consumers reject oversized or substituted
+actions; they do not silently truncate a valid dependency chain such as canary
+followed by rollback.
+
+`ROADMAP_STATE` consumes the same fixed preflight artifact as an advisory source.
+When P13 remains operational but P14 requires external work, its `next_action`
+inherits the validated remediation action ID. Invalid or substituted plans fail
+to `review_p14_external_state`; they never change runtime or live authority.
+
 ## Current gate and next slice
 
 The foundation and independent-runner execution path are complete. The current
-operational preflight remains fail-closed on three bounded blocker codes:
+operational preflight remains fail-closed on these bounded blocker codes:
 
-- `p14_environment_required_reviewer_missing`
-- `p14_environment_admin_bypass_enabled`
 - `p14_self_hosted_result_revision_mismatch`
+- `p14_visual_regression_not_proven`
+- `p14_in_world_regression_not_proven`
+- `p14_canary_rehearsal_not_proven`
+- `p14_rollback_rehearsal_not_proven`
 
-The first two require an explicit repository-owner choice of reviewer and bypass
-policy; Control Central marks `harden_p14_environment` ready but cannot make that
-change automatically. It keeps `refresh_p14_independent_runner_evidence` blocked by
-`environment_protection` until the environment is hardened. The third blocker is
-then cleared only by a new manual self-hosted replay for the current clean revision.
+The environment is hardened and standard GitHub-hosted capacity requires no
+operator-managed machine. A new protected manual replay for the current clean
+revision must now provide visual, in-world, canary, and rollback evidence in
+dependency order. Legacy `p14_self_hosted_*` blocker identifiers remain stable for
+existing Control Central consumers; they now describe the protected replay result,
+not a dependency on a persistent self-hosted machine.
 P14 remains open until those controls pass, the signed acceptance request is
 completed by an isolated visual/in-world suite without operator-workstation
 focus/input, and the canary plus actual rollback transitions are independently

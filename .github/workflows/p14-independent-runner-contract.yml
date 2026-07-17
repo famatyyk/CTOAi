@@ -16,8 +16,8 @@ on:
       - "tests/test_otclient_p14_independent_runner.py"
   workflow_dispatch:
     inputs:
-      run_self_hosted:
-        description: Run the trusted P14 replay on the isolated Windows runner
+      run_protected_replay:
+        description: Run the trusted P14 replay on a protected GitHub-hosted Windows runner
         required: true
         default: false
         type: boolean
@@ -102,10 +102,10 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  self-hosted-artifact-replay:
-    name: Self-hosted Windows signed artifact replay
-    if: github.event_name == 'workflow_dispatch' && inputs.run_self_hosted == true
-    runs-on: [self-hosted, Windows, X64, ctoa-p14]
+  protected-artifact-replay:
+    name: Protected GitHub-hosted Windows signed artifact replay
+    if: github.event_name == 'workflow_dispatch' && inputs.run_protected_replay == true
+    runs-on: windows-latest
     environment:
       name: p14-independent-runner
     timeout-minutes: 15
@@ -144,19 +144,11 @@ jobs:
             throw "Protected CTOA_P14_RUNNER_KEY_ID environment variable is invalid."
           }
 
-      - name: Derive a safe evidence runner ID
+      - name: Bind provider-scoped evidence runner ID
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
-          $normalized = $env:RUNNER_NAME.ToLowerInvariant() -replace '[^a-z0-9._-]', '-'
-          $normalized = $normalized.Trim([char[]]'-_.')
-          if ($normalized.Length -lt 3) {
-            $normalized = "windows-runner"
-          }
-          if ($normalized.Length -gt 59) {
-            $normalized = $normalized.Substring(0, 59)
-          }
-          Add-Content -LiteralPath $env:GITHUB_ENV -Value "CTOA_P14_RUNNER_ID=p14-$normalized"
+          Add-Content -LiteralPath $env:GITHUB_ENV -Value "CTOA_P14_RUNNER_ID=p14-github-hosted-windows"
 
       - name: Run schema, tamper, and rollback contract tests
         run: >-
@@ -191,10 +183,10 @@ jobs:
           python scripts/ops/otclient_p14_acceptance_attestation.py verify-result
           --artifact-root runtime/p14_independent_runner
 
-      - name: Upload isolated contract evidence
+      - name: Upload protected contract evidence
         uses: actions/upload-artifact@v4
         with:
-          name: p14-self-hosted-contract-${{ github.run_id }}
+          name: p14-protected-contract-${{ github.run_id }}
           path: runtime/p14_independent_runner/*.json
           if-no-files-found: error
           retention-days: 7

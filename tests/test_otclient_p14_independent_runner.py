@@ -286,7 +286,10 @@ def test_source_manifest_excludes_local_only_legacy_runtime_references() -> None
         "ctoa_native_loot.lua",
     }
     assert package_names.isdisjoint(p14.LOCAL_SOURCE_ONLY_HELPER_FILES)
-    assert all((p14.HELPER_SOURCE_PATH / name).is_file() for name in p14.LOCAL_SOURCE_ONLY_HELPER_FILES)
+    assert all(
+        (p14.HELPER_SOURCE_PATH / name).is_file()
+        for name in p14.LOCAL_SOURCE_ONLY_HELPER_FILES
+    )
 
 
 def test_source_manifest_rejects_reparse_file(
@@ -335,6 +338,7 @@ def test_schema_files_are_valid_draft_2020_12() -> None:
         Draft202012Validator.check_schema(schema)
 
 
+@pytest.mark.workspace_state
 def test_tracked_source_derivation_matches_current_official_stage_manifest() -> None:
     runtime_manifest = ROOT / "runtime" / "solteria_helper_dev" / "manifest.json"
     if not runtime_manifest.exists():
@@ -379,19 +383,20 @@ def test_cli_has_no_request_controlled_command_or_live_promotion_surface() -> No
     assert '"promotion_approved": False' in source
 
 
-def test_workflow_separates_pr_and_trusted_self_hosted_execution() -> None:
+def test_workflow_separates_pr_and_protected_github_hosted_execution() -> None:
     source = WORKFLOW.read_text(encoding="utf-8")
 
     assert "runs-on: windows-latest" in source
-    assert "runs-on: [self-hosted, Windows, X64, ctoa-p14]" in source
+    assert "runs-on: [self-hosted" not in source
     assert (
         "if: github.event_name == 'workflow_dispatch' && "
-        "inputs.run_self_hosted == true" in source
+        "inputs.run_protected_replay == true" in source
     )
     assert "name: p14-independent-runner" in source
     assert "${{ secrets.CTOA_P14_RUNNER_SIGNING_KEY }}" in source
     assert "${{ vars.CTOA_P14_RUNNER_KEY_ID }}" in source
     assert "persist-credentials: false" in source
+    assert "name: p14-protected-contract-${{ github.run_id }}" in source
     assert "pull_request_target" not in source
 
 

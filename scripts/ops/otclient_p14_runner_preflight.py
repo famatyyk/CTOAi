@@ -22,12 +22,22 @@ DEFAULT_REPOSITORY = "famatyyk/CTOAi"
 WORKFLOW_PATH = ".github/workflows/p14-independent-runner-contract.yml"
 WORKFLOW_NAME = "P14 Independent Runner Contract"
 ENVIRONMENT_NAME = "p14-independent-runner"
-SELF_HOSTED_JOB = "Self-hosted Windows signed artifact replay"
+PROTECTED_JOB = "Protected GitHub-hosted Windows signed artifact replay"
+PROTECTED_ARTIFACT_PREFIX = "p14-protected-contract-"
+LEGACY_PROTECTED_JOB = "Self-hosted Windows signed artifact replay"
+LEGACY_ARTIFACT_PREFIX = "p14-self-hosted-contract-"
+PROTECTED_ARTIFACT_PREFIXES = (
+    PROTECTED_ARTIFACT_PREFIX,
+    LEGACY_ARTIFACT_PREFIX,
+)
+RUNNER_PROVIDER = "github_hosted"
+RUNNER_LABEL = "windows-latest"
+# Compatibility alias for consumers that import the old constant directly.
+SELF_HOSTED_JOB = PROTECTED_JOB
 VERIFY_STEP = "Verify signed result handoff"
 VERIFY_ACCEPTANCE_STEP = "Verify signed acceptance attestation"
 SECRET_NAME = "CTOA_P14_RUNNER_SIGNING_KEY"
 KEY_ID_VARIABLE = "CTOA_P14_RUNNER_KEY_ID"
-REQUIRED_LABELS = frozenset({"self-hosted", "Windows", "X64", "ctoa-p14"})
 AUTHORITY_FIELDS = (
     "live_authority",
     "mcp_write_tool_enabled",
@@ -164,10 +174,9 @@ REMEDIATION_RULES: tuple[dict[str, Any], ...] = (
         "priority": 20,
     },
 )
+MAX_REMEDIATION_ACTIONS = len(REMEDIATION_RULES) + 1
 KNOWN_REMEDIATION_BLOCKERS = frozenset(
-    blocker
-    for rule in REMEDIATION_RULES
-    for blocker in rule["blockers"]
+    blocker for rule in REMEDIATION_RULES for blocker in rule["blockers"]
 )
 
 
@@ -220,6 +229,12 @@ def _authority_safe(value: Any) -> bool:
     )
 
 
+def _disabled_authority() -> dict[str, bool]:
+    """Build the output authority boundary from the canonical field registry."""
+
+    return {key: False for key in AUTHORITY_FIELDS}
+
+
 def build_remediation_plan(blockers: list[str]) -> dict[str, Any]:
     """Derive a bounded capability plan without exposing external identities or values."""
     unique_blockers = list(dict.fromkeys(str(item) for item in blockers))
@@ -249,9 +264,7 @@ def build_remediation_plan(blockers: list[str]) -> dict[str, Any]:
 
     for rule in selected_rules:
         missing_requirements = sorted(
-            str(item)
-            for item in rule["requires"]
-            if item in missing_capabilities
+            str(item) for item in rule["requires"] if item in missing_capabilities
         )
         actions.append(
             {
@@ -260,17 +273,14 @@ def build_remediation_plan(blockers: list[str]) -> dict[str, Any]:
                 "status": "blocked" if missing_requirements else "ready",
                 "risk_class": str(rule["risk_class"]),
                 "interaction": str(rule["interaction"]),
-                "reason_codes": sorted(
-                    blocker_set.intersection(rule["blockers"])
-                )[:6],
+                "reason_codes": sorted(blocker_set.intersection(rule["blockers"]))[:6],
                 "blocked_by": missing_requirements[:5],
                 "auto_executable": False,
             }
         )
 
     priority = {
-        str(rule["action_id"]): int(rule["priority"])
-        for rule in REMEDIATION_RULES
+        str(rule["action_id"]): int(rule["priority"]) for rule in REMEDIATION_RULES
     }
     priority["review_p14_external_state"] = 110
     actions.sort(
@@ -284,7 +294,7 @@ def build_remediation_plan(blockers: list[str]) -> dict[str, Any]:
         (item for item in actions if item["status"] == "ready"),
         None,
     )
-    bounded_actions = actions[:6]
+    bounded_actions = actions[:MAX_REMEDIATION_ACTIONS]
     complete = not unique_blockers
     return {
         "schema_version": REMEDIATION_SCHEMA_VERSION,
@@ -314,6 +324,130 @@ def build_remediation_plan(blockers: list[str]) -> dict[str, Any]:
     }
 
 
+def remediation_plan_valid(value: Any) -> bool:
+    """Validate the minimized remediation graph without trusting its producer."""
+    if not isinstance(value, dict):
+        return False
+    actions = value.get("actions")
+    counts = (
+        value.get("action_count"),
+        value.get("ready_action_count"),
+        value.get("blocked_action_count"),
+        value.get("unknown_blocker_count"),
+    )
+    if (
+        value.get("schema_version") != REMEDIATION_SCHEMA_VERSION
+        or not isinstance(actions, list)
+        or len(actions) > MAX_REMEDIATION_ACTIONS
+        or any(type(item) is not int or item < 0 for item in counts)
+    ):
+        return False
+    action_count, ready_count, blocked_count, unknown_count = counts
+    if len(actions) != action_count or ready_count + blocked_count != action_count:
+        return False
+    if value.get("authority") not in (
+        None,
+        {
+            "auto_execute": False,
+            "live_mutation": False,
+            "authority_grant": False,
+        },
+    ):
+        return False
+    if value.get("status") == "complete":
+        return bool(
+            value.get("next_action") == "none"
+            and value.get("interaction") == "none"
+            and value.get("risk_class") == "read_only"
+            and counts == (0, 0, 0, 0)
+            and actions == []
+        )
+    if value.get("status") not in {"action_required", "review_required"}:
+        return False
+
+    contracts = {str(item["action_id"]): item for item in REMEDIATION_RULES}
+    capabilities = {
+        str(item.get("capability")) for item in actions if isinstance(item, dict)
+    }
+    seen: set[str] = set()
+    ready_actions: list[dict[str, Any]] = []
+    observed_blocked = 0
+    review_seen = False
+    for item in actions:
+        if not isinstance(item, dict):
+            return False
+        action_id = str(item.get("action_id") or "")
+        if not action_id or action_id in seen:
+            return False
+        seen.add(action_id)
+        blocked_by = item.get("blocked_by")
+        reason_codes = item.get("reason_codes")
+        if (
+            not isinstance(blocked_by, list)
+            or len(blocked_by) > 5
+            or len(set(blocked_by)) != len(blocked_by)
+            or not isinstance(reason_codes, list)
+            or not 1 <= len(reason_codes) <= 6
+            or len(set(reason_codes)) != len(reason_codes)
+            or item.get("auto_executable") is not False
+        ):
+            return False
+        if action_id == "review_p14_external_state":
+            review_seen = True
+            expected = {
+                "capability": "external_evidence_review",
+                "status": "ready",
+                "risk_class": "read_only",
+                "interaction": "operator_review",
+                "reason_codes": ["unclassified_blocker"],
+                "blocked_by": [],
+            }
+        else:
+            contract = contracts.get(action_id)
+            if contract is None or not set(reason_codes).issubset(contract["blockers"]):
+                return False
+            expected_blocked_by = sorted(
+                str(required)
+                for required in contract["requires"]
+                if required in capabilities
+            )[:5]
+            expected = {
+                "capability": str(contract["capability"]),
+                "status": "blocked" if expected_blocked_by else "ready",
+                "risk_class": str(contract["risk_class"]),
+                "interaction": str(contract["interaction"]),
+                "reason_codes": reason_codes,
+                "blocked_by": expected_blocked_by,
+            }
+        if any(
+            item.get(key) != expected_value for key, expected_value in expected.items()
+        ):
+            return False
+        if item.get("status") == "ready":
+            ready_actions.append(item)
+        else:
+            observed_blocked += 1
+
+    selected = next(
+        (
+            item
+            for item in ready_actions
+            if item.get("action_id") == value.get("next_action")
+        ),
+        None,
+    )
+    return bool(
+        selected
+        and len(ready_actions) == ready_count
+        and observed_blocked == blocked_count
+        and value.get("interaction") == selected.get("interaction")
+        and value.get("risk_class") == selected.get("risk_class")
+        and review_seen is (unknown_count > 0)
+        and value.get("status")
+        == ("review_required" if unknown_count else "action_required")
+    )
+
+
 def _step_passed(job: dict[str, Any], name: str) -> bool:
     return any(
         step.get("name") == name and step.get("conclusion") == "success"
@@ -321,9 +455,7 @@ def _step_passed(job: dict[str, Any], name: str) -> bool:
     )
 
 
-def _structural_result_valid(
-    request: dict[str, Any], result: dict[str, Any]
-) -> bool:
+def _structural_result_valid(request: dict[str, Any], result: dict[str, Any]) -> bool:
     checks = _rows(result.get("checks"))
     request_signature = _mapping(request.get("signature"))
     result_signature = _mapping(result.get("signature"))
@@ -438,10 +570,7 @@ def _acceptance_capability_valid(value: Any) -> tuple[str, bool] | None:
     proofs = _rows(capability.get("proofs"))
     if expected_proofs is None or len(proofs) != len(expected_proofs):
         return None
-    proof_map = {
-        str(item.get("proof_id") or ""): item
-        for item in proofs
-    }
+    proof_map = {str(item.get("proof_id") or ""): item for item in proofs}
     if len(proof_map) != len(proofs) or set(proof_map) != set(expected_proofs):
         return None
     for proof_id in expected_proofs:
@@ -508,7 +637,9 @@ def _acceptance_summary(
 
     capability_rows = _rows(acceptance_result.get("capabilities"))
     capability_states: dict[str, bool] = {}
-    capabilities_valid = bool(request_valid and len(capability_rows) == len(required or []))
+    capabilities_valid = bool(
+        request_valid and len(capability_rows) == len(required or [])
+    )
     if capabilities_valid:
         for row in capability_rows:
             normalized = _acceptance_capability_valid(row)
@@ -519,11 +650,15 @@ def _acceptance_summary(
         if set(capability_states) != set(required or []):
             capabilities_valid = False
 
-    expected_blockers = [
-        ACCEPTANCE_BLOCKERS[item]
-        for item in required or []
-        if capability_states.get(item) is not True
-    ] if capabilities_valid else []
+    expected_blockers = (
+        [
+            ACCEPTANCE_BLOCKERS[item]
+            for item in required or []
+            if capability_states.get(item) is not True
+        ]
+        if capabilities_valid
+        else []
+    )
     passed_count = sum(1 for value in capability_states.values() if value)
     expected_status = (
         "passed"
@@ -538,7 +673,8 @@ def _acceptance_summary(
         and capabilities_valid
         and acceptance_result.get("schema_version") == "ctoa.p14-acceptance-result.v1"
         and acceptance_result.get("request_id") == acceptance_request.get("request_id")
-        and acceptance_result.get("request_sha256") == canonical_sha256(acceptance_request)
+        and acceptance_result.get("request_sha256")
+        == canonical_sha256(acceptance_request)
         and acceptance_result.get("source_revision") == binding.get("source_revision")
         and acceptance_result.get("status") == expected_status
         and acceptance_result.get("blockers") == expected_blockers
@@ -580,7 +716,9 @@ def _acceptance_summary(
         "authority_safe": bool(
             _authority_safe(acceptance_request.get("authority"))
             and _authority_safe(acceptance_result.get("authority"))
-        ) if request_present and result_present else False,
+        )
+        if request_present and result_present
+        else False,
     }
 
 
@@ -603,6 +741,10 @@ def build_preflight(
     generated_at: dt.datetime | None = None,
 ) -> dict[str, Any]:
     """Build a fail-closed projection from already collected GitHub evidence."""
+    # Kept in the call contract so older callers can pass their runner snapshot.
+    # GitHub-hosted capacity is derived from the active workflow instead of a
+    # repository-level self-hosted runner registration.
+    del runners
     now = (generated_at or dt.datetime.now(dt.UTC)).astimezone(dt.UTC)
     blockers: list[str] = []
     warnings: list[str] = []
@@ -615,19 +757,7 @@ def build_preflight(
     if not workflow_active:
         blockers.append("p14_workflow_not_active")
 
-    matching_runners = []
-    for runner in _rows(runners.get("runners")):
-        labels = {
-            str(item.get("name") or "")
-            for item in _rows(runner.get("labels"))
-        }
-        if REQUIRED_LABELS.issubset(labels):
-            matching_runners.append(runner)
-    runner_online = any(item.get("status") == "online" for item in matching_runners)
-    if not matching_runners:
-        blockers.append("p14_required_runner_missing")
-    elif not runner_online:
-        blockers.append("p14_required_runner_offline")
+    runner_capacity_ready = workflow_active
 
     rules = _rows(environment.get("protection_rules"))
     reviewer_rules = [
@@ -667,18 +797,22 @@ def build_preflight(
         blockers.append("p14_environment_branch_policy_missing")
 
     jobs = _rows(run.get("jobs"))
-    self_hosted_job = next(
-        (item for item in jobs if item.get("name") == SELF_HOSTED_JOB), {}
+    protected_job = next(
+        (item for item in jobs if item.get("name") == PROTECTED_JOB), {}
     )
+    if not protected_job:
+        protected_job = next(
+            (item for item in jobs if item.get("name") == LEGACY_PROTECTED_JOB), {}
+        )
     run_success = bool(
         run.get("event") == "workflow_dispatch"
         and run.get("status") == "completed"
         and run.get("conclusion") == "success"
-        and self_hosted_job.get("conclusion") == "success"
+        and protected_job.get("conclusion") == "success"
     )
-    signature_verification_passed = _step_passed(self_hosted_job, VERIFY_STEP)
+    signature_verification_passed = _step_passed(protected_job, VERIFY_STEP)
     acceptance_signature_verification_passed = _step_passed(
-        self_hosted_job, VERIFY_ACCEPTANCE_STEP
+        protected_job, VERIFY_ACCEPTANCE_STEP
     )
     if not run_success:
         blockers.append("p14_self_hosted_run_not_successful")
@@ -686,16 +820,16 @@ def build_preflight(
         blockers.append("p14_workflow_signature_verification_missing")
 
     artifact_rows = _rows(artifacts.get("artifacts"))
-    self_hosted_artifact = next(
+    protected_artifact = next(
         (
             item
             for item in artifact_rows
-            if str(item.get("name") or "").startswith("p14-self-hosted-contract-")
+            if str(item.get("name") or "").startswith(PROTECTED_ARTIFACT_PREFIXES)
         ),
         {},
     )
-    artifact_present = bool(self_hosted_artifact)
-    artifact_unexpired = artifact_present and self_hosted_artifact.get("expired") is False
+    artifact_present = bool(protected_artifact)
+    artifact_unexpired = artifact_present and protected_artifact.get("expired") is False
     if not artifact_present:
         blockers.append("p14_self_hosted_artifact_missing")
     elif not artifact_unexpired:
@@ -707,7 +841,9 @@ def build_preflight(
 
     source = _mapping(request.get("source"))
     runner_result = _mapping(result.get("runner"))
-    result_revision = str(runner_result.get("source_revision") or source.get("revision") or "")
+    result_revision = str(
+        runner_result.get("source_revision") or source.get("revision") or ""
+    )
     source_revision_match = bool(
         re.fullmatch(r"[0-9a-f]{40}", current_head)
         and result_revision == current_head
@@ -736,7 +872,7 @@ def build_preflight(
     if run_success and not run_fresh:
         blockers.append("p14_self_hosted_result_stale")
 
-    expires_at = _timestamp(self_hosted_artifact.get("expires_at"))
+    expires_at = _timestamp(protected_artifact.get("expires_at"))
     expires_in_seconds = (
         _safe_seconds(expires_at - now)
         if expires_at is not None and expires_at >= now
@@ -770,6 +906,8 @@ def build_preflight(
         "warnings": warnings,
         "workflow": {
             "active": workflow_active,
+            "runner_provider": RUNNER_PROVIDER,
+            "protected_run_success": run_success,
             "self_hosted_run_success": run_success,
             "signature_verification_passed": signature_verification_passed,
             "acceptance_signature_verification_passed": (
@@ -779,9 +917,12 @@ def build_preflight(
             "run_age_seconds": run_age_seconds,
         },
         "runner": {
-            "matching_count": len(matching_runners),
-            "online": runner_online,
-            "required_labels_complete": bool(matching_runners),
+            "provider": RUNNER_PROVIDER,
+            "label": RUNNER_LABEL,
+            "ephemeral": True,
+            "matching_count": 1 if runner_capacity_ready else 0,
+            "online": runner_capacity_ready,
+            "required_labels_complete": runner_capacity_ready,
         },
         "environment": {
             "required_reviewer_configured": required_reviewer_configured,
@@ -800,19 +941,15 @@ def build_preflight(
             "status": str(result.get("status") or "missing")[:40],
             "structural_valid": structural_result_valid,
             "source_revision_match": source_revision_match,
-            "clean_checkout_proven": runner_result.get("clean_checkout_proven")
-            is True,
+            "clean_checkout_proven": runner_result.get("clean_checkout_proven") is True,
             "authority_safe": _authority_safe(result.get("authority")),
-            "rollback_status": str(_mapping(result.get("rollback")).get("status") or "missing")[:80],
+            "rollback_status": str(
+                _mapping(result.get("rollback")).get("status") or "missing"
+            )[:80],
         },
         "acceptance": acceptance,
         "remediation": remediation,
-        "authority": {
-            "runtime_actions": False,
-            "live_authority": False,
-            "promotion_approved": False,
-            "mcp_write_tool_enabled": False,
-        },
+        "authority": _disabled_authority(),
         "policy": "Read-only external preflight. Secret values, signatures, runner identity, URLs, commands, and artifact payloads are omitted.",
     }
 
@@ -876,7 +1013,10 @@ def _artifact_bundle(
                 raise PreflightError("artifact_members_invalid")
             values: dict[str, dict[str, Any]] = {}
             for name, member in members.items():
-                if member.file_size <= 0 or member.file_size > MAX_ARTIFACT_MEMBER_BYTES:
+                if (
+                    member.file_size <= 0
+                    or member.file_size > MAX_ARTIFACT_MEMBER_BYTES
+                ):
                     raise PreflightError("artifact_member_size_invalid")
                 payload = json.loads(archive.read(member))
                 if not isinstance(payload, dict):
@@ -899,11 +1039,7 @@ def collect_preflight(repository: str = DEFAULT_REPOSITORY) -> dict[str, Any]:
         ["gh", "workflow", "list", "--all", "--json", "name,path,state,id"]
     )
     workflow = next(
-        (
-            item
-            for item in _rows(workflow_rows)
-            if item.get("path") == WORKFLOW_PATH
-        ),
+        (item for item in _rows(workflow_rows) if item.get("path") == WORKFLOW_PATH),
         {},
     )
     runs = _json_command(
@@ -941,7 +1077,6 @@ def collect_preflight(repository: str = DEFAULT_REPOSITORY) -> dict[str, Any]:
             "databaseId,status,conclusion,event,headBranch,headSha,createdAt,updatedAt,jobs",
         ]
     )
-    runners = _json_command(["gh", "api", f"repos/{repository}/actions/runners"])
     environment = _json_command(
         ["gh", "api", f"repos/{repository}/environments/{ENVIRONMENT_NAME}"]
     )
@@ -973,14 +1108,14 @@ def collect_preflight(repository: str = DEFAULT_REPOSITORY) -> dict[str, Any]:
         (
             item
             for item in _rows(_mapping(artifacts).get("artifacts"))
-            if str(item.get("name") or "").startswith("p14-self-hosted-contract-")
+            if str(item.get("name") or "").startswith(PROTECTED_ARTIFACT_PREFIXES)
             and item.get("expired") is False
         ),
         {},
     )
     artifact_id = int(artifact.get("id") or 0)
     if artifact_id <= 0:
-        raise PreflightError("self_hosted_artifact_missing")
+        raise PreflightError("protected_artifact_missing")
     request, result, acceptance_request, acceptance_result = _artifact_bundle(
         repository, artifact_id
     )
@@ -989,7 +1124,7 @@ def collect_preflight(repository: str = DEFAULT_REPOSITORY) -> dict[str, Any]:
     return build_preflight(
         workflow=workflow,
         run=_mapping(run),
-        runners=_mapping(runners),
+        runners={},
         environment=_mapping(environment),
         secrets=_mapping(secrets),
         variables=_mapping(variables),
@@ -1015,12 +1150,7 @@ def unavailable_snapshot() -> dict[str, Any]:
         "hard_blockers": blockers,
         "warnings": [],
         "remediation": build_remediation_plan(blockers),
-        "authority": {
-            "runtime_actions": False,
-            "live_authority": False,
-            "promotion_approved": False,
-            "mcp_write_tool_enabled": False,
-        },
+        "authority": _disabled_authority(),
         "policy": "Read-only external preflight. Failure details and external data are omitted.",
     }
 
@@ -1034,7 +1164,9 @@ def _write_atomic(path: Path, payload: dict[str, Any]) -> None:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--workspace", type=Path, default=Path(__file__).resolve().parents[2])
+    parser.add_argument(
+        "--workspace", type=Path, default=Path(__file__).resolve().parents[2]
+    )
     parser.add_argument("--repository", default=DEFAULT_REPOSITORY)
     parser.add_argument("--no-write", action="store_true")
     return parser.parse_args()

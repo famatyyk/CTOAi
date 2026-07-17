@@ -153,7 +153,7 @@ def _inputs(
             "updatedAt": (now - dt.timedelta(hours=1)).isoformat(),
             "jobs": [
                 {
-                    "name": preflight.SELF_HOSTED_JOB,
+                    "name": preflight.PROTECTED_JOB,
                     "conclusion": "success",
                     "steps": [
                         {"name": preflight.VERIFY_STEP, "conclusion": "success"},
@@ -165,14 +165,7 @@ def _inputs(
                 }
             ],
         },
-        "runners": {
-            "runners": [
-                {
-                    "status": "online",
-                    "labels": [{"name": item} for item in preflight.REQUIRED_LABELS],
-                }
-            ]
-        },
+        "runners": {},
         "environment": {
             "name": preflight.ENVIRONMENT_NAME,
             "can_admins_bypass": not secure_environment,
@@ -188,7 +181,10 @@ def _inputs(
         "secrets": {"secrets": [{"name": preflight.SECRET_NAME}]},
         "variables": {
             "variables": [
-                {"name": preflight.KEY_ID_VARIABLE, "value": "independent-runner-prod-v1"}
+                {
+                    "name": preflight.KEY_ID_VARIABLE,
+                    "value": "independent-runner-prod-v1",
+                }
             ]
         },
         "branch_policies": {
@@ -197,7 +193,7 @@ def _inputs(
         "artifacts": {
             "artifacts": [
                 {
-                    "name": "p14-self-hosted-contract-1",
+                    "name": f"{preflight.PROTECTED_ARTIFACT_PREFIX}1",
                     "expired": False,
                     "expires_at": (now + dt.timedelta(days=5)).isoformat(),
                 }
@@ -239,6 +235,9 @@ def test_current_secure_external_result_is_operationally_ready():
         "policy": "Capability-derived external remediation. Unknown blockers fail to review; no action auto-executes or grants authority.",
     }
     assert payload["runner"] == {
+        "provider": "github_hosted",
+        "label": "windows-latest",
+        "ephemeral": True,
         "matching_count": 1,
         "online": True,
         "required_labels_complete": True,
@@ -248,12 +247,8 @@ def test_current_secure_external_result_is_operationally_ready():
     assert payload["result"]["structural_valid"] is True
     assert payload["acceptance"]["complete"] is True
     assert payload["acceptance"]["proven_capability_count"] == 4
-    assert payload["authority"] == {
-        "runtime_actions": False,
-        "live_authority": False,
-        "promotion_approved": False,
-        "mcp_write_tool_enabled": False,
-    }
+    assert payload["authority"] == AUTHORITY
+    assert preflight._authority_safe(payload["authority"]) is True
 
 
 def test_realistic_environment_gap_and_old_revision_fail_closed():
@@ -290,9 +285,38 @@ def test_realistic_environment_gap_and_old_revision_fail_closed():
         "refresh_p14_independent_runner_evidence"
     )
     assert remediation["actions"][1]["status"] == "blocked"
-    assert remediation["actions"][1]["blocked_by"] == [
-        "environment_protection"
+    assert remediation["actions"][1]["blocked_by"] == ["environment_protection"]
+
+
+def test_github_hosted_capacity_ignores_stale_self_hosted_runner_state():
+    values = _inputs(
+        secure_environment=False,
+        revision="b" * 40,
+        acceptance=False,
+    )
+    values["runners"] = {
+        "runners": [{"status": "offline", "labels": [{"name": "ctoa-p14"}]}]
+    }
+
+    payload = preflight.build_preflight(**values)
+
+    remediation = payload["remediation"]
+    assert payload["runner"]["provider"] == "github_hosted"
+    assert payload["runner"]["online"] is True
+    assert "p14_required_runner_offline" not in payload["hard_blockers"]
+    assert remediation["next_action"] == "harden_p14_environment"
+    assert remediation["action_count"] == 6
+    assert remediation["ready_action_count"] == 1
+    assert remediation["blocked_action_count"] == 5
+    assert [item["action_id"] for item in remediation["actions"]] == [
+        "harden_p14_environment",
+        "refresh_p14_independent_runner_evidence",
+        "collect_p14_visual_evidence",
+        "collect_p14_in_world_evidence",
+        "run_p14_canary_rehearsal",
+        "run_p14_rollback_rehearsal",
     ]
+    assert remediation["actions"][-1]["blocked_by"] == ["canary_attestation"]
 
 
 def test_tampered_result_is_never_promoted_to_external_attestation():
@@ -316,6 +340,8 @@ def test_unavailable_snapshot_does_not_echo_failure_details():
     assert payload["hard_blockers"] == ["p14_external_state_unavailable"]
     assert payload["remediation"]["next_action"] == "review_p14_external_state"
     assert payload["remediation"]["unknown_blocker_count"] == 1
+    assert payload["authority"] == AUTHORITY
+    assert preflight._authority_safe(payload["authority"]) is True
     assert "exception" not in serialized.lower()
     assert "token" not in serialized.lower()
 
