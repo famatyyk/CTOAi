@@ -37,12 +37,12 @@ jobs:
 
     steps:
       - name: Check out clean source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
           cache: pip
@@ -95,7 +95,7 @@ jobs:
           --artifact-root runtime/p14_independent_runner
 
       - name: Upload non-promotable contract evidence
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: p14-github-hosted-contract-${{ github.run_id }}
           path: runtime/p14_independent_runner/*.json
@@ -115,14 +115,14 @@ jobs:
 
     steps:
       - name: Check out clean source without persisted credentials
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           clean: true
           fetch-depth: 1
           persist-credentials: false
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
           cache: pip
@@ -184,7 +184,7 @@ jobs:
           --artifact-root runtime/p14_independent_runner
 
       - name: Upload protected contract evidence
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: p14-protected-contract-${{ github.run_id }}
           path: runtime/p14_independent_runner/*.json
