@@ -157,3 +157,34 @@ P14 remains open until those controls pass, the signed acceptance request is
 completed by an isolated visual/in-world suite without operator-workstation
 focus/input, and the canary plus actual rollback transitions are independently
 evidenced. Promotion approval remains outside plugin MCP actions.
+
+## Deterministic Windows VM capture
+
+The only supported workstation-independent client capture is
+`scripts/windows/otclient_p14_vm_capture.ps1`. It runs inside the logged-in guest
+desktop, launches the preinstalled client, waits for the passive Helper reporter to
+publish `online=true`, captures the guest display, and writes hashed evidence. It
+fails closed when the guest session, client root, or isolation context is missing;
+it never accepts a workstation screenshot or a manually supplied “ready” marker.
+
+The golden runner image must contain the complete Redemption client under
+`C:\P14Runner\client`, including `mods\ctoa_otclient`, its DAT/SPR pair, and a
+known-good graphics configuration. The image is restored from a clean snapshot
+before every run. The protected launcher sets these process-scoped values before
+calling the script:
+
+```powershell
+$env:CTOA_P14_ISOLATED_ENVIRONMENT = 'true'
+$env:CTOA_P14_CAPTURE_CONTEXT = 'guest'
+$env:CTOA_P14_OPERATOR_WORKSTATION_FOCUS_USED = 'false'
+$env:CTOA_P14_OPERATOR_WORKSTATION_INPUT_USED = 'false'
+$env:CTOA_P14_NETWORK_DISPATCH_USED = 'false'
+$env:CTOA_P14_LIVE_CLIENT_ACCESSED = 'false'
+$env:CTOA_P14_PROMOTION_ATTEMPTED = 'false'
+& C:\P14Runner\repo\scripts\windows\otclient_p14_vm_capture.ps1 `
+  -SourceRevision $env:GITHUB_SHA
+```
+
+The capture output is raw protected evidence. The acceptance report must be
+derived from its hashes and the independent canary/rollback manifests; no caller
+may edit the isolation flags or promote a capture whose marker timed out.
