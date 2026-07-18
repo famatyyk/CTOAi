@@ -12,13 +12,7 @@
         "web/src/app/api/control-center/",
         "web/src/components/ControlCenter*.tsx",
         "web/src/lib/controlCenter*.ts",
-        "schemas/ci-gate-policy.schema.json",
-        "schemas/ctoa-command-dictionary.json",
-        "schemas/ctoa-p14-acceptance-*.schema.json",
-        "schemas/ctoa-p14-runner-*.schema.json",
-        "schemas/ctoa-roadmap-schema-registry.*.json",
-        "schemas/ctoa-roadmap-state.schema.json",
-        "schemas/release-artifact.schema.json"
+        "schemas/"
       ],
       "exclude": [
         "runtime/",
