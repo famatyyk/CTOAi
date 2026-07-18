@@ -20,6 +20,8 @@ def test_vm_capture_is_guest_bound_and_fail_closed() -> None:
     assert "CopyFromScreen" in source
     assert "Start-Process -FilePath $client" in source
     assert "Stop-P14Capture('in_world_marker_timeout')" in source
+    assert "golden_vm_identity_missing" in source
+    assert "VirtualBox Guest Additions" in source
     assert "VBoxManage" not in source
 
 
