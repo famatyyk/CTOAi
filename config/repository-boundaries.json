@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "status": "transition",
+  "source_repository": "famatyyk/CTOAi",
+  "policy": "allowlist-first",
+  "repositories": {
+    "control_center": {
+      "name": "CTOAi-Control-Center",
+      "public_export": true,
+      "roots": [
+        "web/src/app/control-center/",
+        "web/src/app/api/control-center/",
+        "web/src/components/ControlCenter",
+        "web/src/lib/controlCenter",
+        "schemas/"
+      ],
+      "exclude": [
+        "runtime/",
+        "AI/generated/",
+        ".env*",
+        "*.db",
+        "*.log"
+      ]
+    },
+    "helper": {
+      "name": "CTOAi-Helper",
+      "public_export": true,
+      "roots": [
+        "scripts/lua/otclient/",
+        "mods/ctoa_safe/",
+        "tests/test_ctoa_helper_",
+        "tests/test_otclient_",
+        "docs/otclient/"
+      ],
+      "exclude": [
+        "runtime/",
+        "AI/generated/",
+        "scripts/ops/",
+        ".env*",
+        "*.db",
+        "*.log"
+      ],
+      "transition_note": "The observation adapter is extracted into the adapter repository before final packaging."
+    },
+    "adapter": {
+      "name": "CTOAi-Adapter",
+      "public_export": true,
+      "roots": [
+        "scripts/lua/otclient/ctoa_helper_otclient_observation_adapter.lua",
+        "scripts/ops/otclient_fork_capability_detector.py",
+        "schemas/conditions-observation.schema.json",
+        "schemas/conditions-p8-proof.schema.json",
+        "tests/test_otclient_helper_otclient_observation_adapter.py",
+        "tests/test_otclient_fork_capability_detector.py"
+      ],
+      "exclude": [
+        "runtime/",
+        "AI/",
+        "deploy/",
+        ".env*",
+        "*.db",
+        "*.log"
+      ]
+    },
+    "engine_brain_private": {
+      "name": "CTOAi-Engine-Brain-private",
+      "public_export": false,
+      "roots": [
+        "AI/",
+        "runtime/",
+        "scripts/ops/",
+        "deploy/",
+        "data/",
+        "evals/",
+        "training/"
+      ],
+      "destination": "private repository or dedicated server storage"
+    }
+  },
+  "gate": {
+    "required": [
+      "secret_scan",
+      "runtime_path_scan",
+      "database_scan",
+      "public_path_allowlist",
+      "product_tests",
+      "readme_status_review"
+    ],
+    "never": [
+      "git add -A for a mixed worktree",
+      "copy raw runtime evidence into a public repository",
+      "claim release readiness without signed evidence"
+    ]
+  }
+}
