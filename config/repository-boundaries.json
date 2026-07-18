@@ -10,8 +10,8 @@
       "roots": [
         "web/src/app/control-center/",
         "web/src/app/api/control-center/",
-        "web/src/components/ControlCenter*.tsx",
-        "web/src/lib/controlCenter*.ts",
+        "web/src/components/ControlCenter",
+        "web/src/lib/controlCenter",
         "schemas/"
       ],
       "exclude": [
@@ -28,8 +28,8 @@
       "roots": [
         "scripts/lua/otclient/",
         "mods/ctoa_safe/",
-        "tests/test_ctoa_helper_*.py",
-        "tests/test_otclient_*.py",
+        "tests/test_ctoa_helper_",
+        "tests/test_otclient_",
         "docs/otclient/"
       ],
       "exclude": [
@@ -50,7 +50,7 @@
         "scripts/ops/otclient_fork_capability_detector.py",
         "schemas/conditions-observation.schema.json",
         "schemas/conditions-p8-proof.schema.json",
-        "tests/test_ctoa_helper_otclient_observation_adapter.py",
+        "tests/test_otclient_helper_otclient_observation_adapter.py",
         "tests/test_otclient_fork_capability_detector.py"
       ],
       "exclude": [
