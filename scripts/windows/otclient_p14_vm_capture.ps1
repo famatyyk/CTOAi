@@ -64,8 +64,11 @@ if (-not [Environment]::UserInteractive) {
 # A process-scoped flag alone is not proof that this script runs in the golden
 # VM. Guest Additions are installed in the image and are absent from the
 # operator workstation; fail closed when the image identity cannot be proven.
-$guestService = 'C:\Program Files\Oracle\VirtualBox Guest Additions\VBoxService.exe'
-if (-not (Test-Path -LiteralPath $guestService -PathType Leaf)) {
+$guestServices = @(
+    'C:\Program Files\Oracle\VirtualBox Guest Additions\VBoxService.exe',
+    'C:\Windows\System32\VBoxService.exe'
+)
+if (-not ($guestServices | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf })) {
     Stop-P14Capture('golden_vm_identity_missing')
 }
 
