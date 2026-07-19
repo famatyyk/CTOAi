@@ -281,5 +281,5 @@ def test_workflow_tracks_acceptance_contract_and_prepares_only_a_request() -> No
     assert "schemas/ctoa-p14-acceptance-*.schema.json" in source
     assert "tests/test_otclient_p14_acceptance_attestation.py" in source
     assert "otclient_p14_acceptance_attestation.py prepare" in source
-    assert "otclient_p14_acceptance_attestation.py attest" not in source
-    assert "acceptance-report.json" not in source
+    assert "otclient_p14_acceptance_attestation.py attest" in source
+    assert "acceptance-report.json" in source

@@ -21,6 +21,11 @@ on:
         required: true
         default: false
         type: boolean
+      acceptance_report_b64:
+        description: Optional base64-encoded external isolated P14 acceptance report
+        required: false
+        default: ''
+        type: string
 
 permissions:
   contents: read
@@ -175,6 +180,23 @@ jobs:
       - name: Prepare capability-driven isolated acceptance request
         run: >-
           python scripts/ops/otclient_p14_acceptance_attestation.py prepare
+          --artifact-root runtime/p14_independent_runner
+
+      - name: Inject external isolated acceptance report
+        if: ${{ inputs.acceptance_report_b64 != '' }}
+        shell: pwsh
+        env:
+          CTOA_P14_ACCEPTANCE_REPORT_B64: ${{ inputs.acceptance_report_b64 }}
+        run: |
+          $ErrorActionPreference = "Stop"
+          $bytes = [Convert]::FromBase64String($env:CTOA_P14_ACCEPTANCE_REPORT_B64)
+          if ($bytes.Length -gt 32768) { throw "Acceptance report input is too large." }
+          [IO.File]::WriteAllBytes("runtime/p14_independent_runner/acceptance-report.json", $bytes)
+
+      - name: Sign isolated acceptance result
+        if: ${{ hashFiles('runtime/p14_independent_runner/acceptance-report.json') != '' }}
+        run: >-
+          python scripts/ops/otclient_p14_acceptance_attestation.py attest
           --artifact-root runtime/p14_independent_runner
 
       - name: Verify signed acceptance attestation
