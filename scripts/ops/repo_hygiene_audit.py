@@ -2,8 +2,8 @@
 """CTOA repo hygiene audit.
 
 Scans top-level repository entries and reports items that look like
-non-product clutter in a public product repository.
-Also classifies each finding by public/private visibility and package tier.
+non-product clutter in the private source repository.
+Also classifies each finding by controlled distribution tier.
 """
 
 from __future__ import annotations
@@ -47,6 +47,7 @@ TOP_LEVEL_ALLOWLIST = {
     "deploy-to-vps.sh",
     "docs",
     "mobile_console",
+    "mods",
     "desktop_console",
     "policies",
     "product",
@@ -109,6 +110,7 @@ FLAGGED_TOP_LEVEL_FILES = {
 LOCAL_ONLY_CANDIDATES = {
     ".agents",
     ".codex",
+    ".codex-tmp",
     ".ctoa-local",
     ".env",
     ".env.dev",
@@ -117,15 +119,19 @@ LOCAL_ONLY_CANDIDATES = {
     ".tmp",
     "Althea.log",
     "ctoa_local.log",
+    "ctoa_client_capabilities.json",
+    "ctoa_ui_prefs.lua",
     "MythibiaV2.log",
     "_local_archive",
     "build",
     "dist",
     "logs",
     "metrics",
+    "node_modules",
+    "outputs",
 }
 
-CORE_PUBLIC_PATHS = {
+CORE_DISTRIBUTION_PATHS = {
     ".github",
     ".vscode",
     "AI",
@@ -193,16 +199,16 @@ def classify_distribution(path: str) -> dict[str, str]:
 
     if name in PRO_PATHS:
         return {
-            "visibility": "public",
+            "visibility": "private",
             "package_tier": "Pro",
-            "surface_action": "keep-or-package-pro",
+            "surface_action": "package-controlled-pro",
         }
 
-    if name in CORE_PUBLIC_PATHS:
+    if name in CORE_DISTRIBUTION_PATHS:
         return {
-            "visibility": "public",
+            "visibility": "private",
             "package_tier": "Core",
-            "surface_action": "keep-public-core",
+            "surface_action": "package-controlled-core",
         }
 
     return {
@@ -263,7 +269,7 @@ def _scan_top_level() -> dict[str, Any]:
                 {
                     "path": name,
                     "reason": "top-level artifact/data tree outside product surface",
-                    "suggested_action": "move raw data outside public repo and keep only metadata",
+                    "suggested_action": "move raw data outside the source repo and keep only metadata",
                     **distribution,
                 }
             )

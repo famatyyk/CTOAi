@@ -37,6 +37,7 @@ function Hud.state(config, runtime)
         width = tonumber(hud.width) or DEFAULT_WIDTH,
         height = tonumber(hud.height) or DEFAULT_HEIGHT,
         profile = tostring(runtimeState.profile or "profile"),
+        runtime_state = tostring(runtimeState.runtime_state or "disabled"),
         decision = tostring(runtimeState.decision or "idle")
     }
 end
@@ -63,10 +64,11 @@ function Hud.runtimeText(options)
     local mp = tonumber(options.mp) or 0
     local nearby = tonumber(options.nearby) or 0
     local visible = tonumber(options.visible) or 0
+    local runtimeState = string.upper(tostring(options.runtime_state or "disabled"))
     local decision = tostring(options.decision or "idle")
     return "ZeroBot " .. version .. " | " .. profile ..
         "\nHP " .. tostring(hp) .. "% MP " .. tostring(mp) .. "% | Mobs " .. tostring(nearby) .. "/" .. tostring(visible) ..
-        "\n" .. decision
+        "\n" .. runtimeState .. " | " .. decision
 end
 
 function Hud.uiSummary(config, helpers)
@@ -105,6 +107,7 @@ function Hud.contract()
         owns_disarmed_text = true,
         owns_position = true,
         owns_runtime_text = true,
+        owns_runtime_state_text = true,
         owns_ui_summary = true,
         owns_operator_summary = true,
         runtime_actions = false,

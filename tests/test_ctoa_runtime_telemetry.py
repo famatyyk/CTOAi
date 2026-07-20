@@ -30,12 +30,16 @@ def test_runtime_core_telemetry_is_wired_to_diagnostics_and_reporter():
     assert "reports_runtime_core = true" in reporter
     assert "reports_optional_conditions_observation = true" in reporter
     assert "sanitizes_conditions_observation = true" in reporter
+    assert "reports_optional_heal_friend_scan = true" in reporter
+    assert "sanitizes_heal_friend_scan = true" in reporter
     assert (
         'local externalRuntimeCore = rawget(_G, "CTOA_HELPER_RUNTIME_CORE")' in helper
     )
     assert "runtime_core = externalRuntimeCore" in helper
-    assert "observation_adapter = externalObservationAdapter" in helper
-    assert 'modules = rawget(_G, "modules")' in helper
+    assert "function Reporter.report" in reporter
+    assert "observation_adapter = observationAdapter" in reporter
+    assert 'modules = rawget(_G, "modules")' in reporter
+    assert 'moduleValue(externalClientReporter, "report", Helper' in helper
 
 
 def test_runtime_telemetry_reports_disabled_deferred_and_failed_states_with_real_lua(

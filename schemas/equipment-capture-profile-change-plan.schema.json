@@ -1,0 +1,363 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ctoa.local/schemas/equipment-capture-profile-change-plan.schema.json",
+  "title": "CTOAi Equipment Capture Profile Change Plan v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "generated_at_unix_ms",
+    "status",
+    "mode",
+    "sources",
+    "input_status",
+    "input_sha256",
+    "input_binding_sha256",
+    "requested_identifiers",
+    "operator_confirmation",
+    "checks",
+    "observation_age_ms",
+    "blockers",
+    "plan",
+    "plan_sha256",
+    "explanation",
+    "operator_review_required",
+    "acceptance_granted",
+    "runtime_readiness_claimed",
+    "eligibility_changed",
+    "profile_write_performed",
+    "repo_report_write_only",
+    "live_file_writes",
+    "interaction_contract",
+    "dispatch_allowed",
+    "runtime_actions",
+    "executes_plan",
+    "execute_once_allowed",
+    "promotion_allowed",
+    "intrusive_actions_performed"
+  ],
+  "properties": {
+    "schema_version": {"const": "ctoa.equipment-capture-profile-change-plan.v1"},
+    "generated_at_unix_ms": {"type": "integer", "minimum": 1},
+    "status": {"enum": ["plan_generated", "blocked"]},
+    "mode": {"const": "repo_runtime_profile_change_plan"},
+    "sources": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["capture_doctor", "observation_preview", "target_profile"],
+      "properties": {
+        "capture_doctor": {"const": "runtime/solteria_helper_dev/equipment_capture_profile_doctor.json"},
+        "observation_preview": {"const": "runtime/solteria_helper_dev/equipment_observation_preview.json"},
+        "target_profile": {"const": ".ctoa-local/otclient/equipment-shadow-capture-profile.json"}
+      }
+    },
+    "input_status": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["capture_doctor", "observation_preview"],
+      "properties": {
+        "capture_doctor": {"$ref": "#/$defs/inputStatus"},
+        "observation_preview": {"$ref": "#/$defs/inputStatus"}
+      }
+    },
+    "input_sha256": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["capture_doctor", "capture_profile", "observation_preview", "observation"],
+      "properties": {
+        "capture_doctor": {"$ref": "#/$defs/sha256"},
+        "capture_profile": {"$ref": "#/$defs/nullableSha256"},
+        "observation_preview": {"$ref": "#/$defs/sha256"},
+        "observation": {"$ref": "#/$defs/nullableSha256"}
+      }
+    },
+    "input_binding_sha256": {"$ref": "#/$defs/sha256"},
+    "requested_identifiers": {"$ref": "#/$defs/identifiers"},
+    "operator_confirmation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required", "provided", "matched", "confirmation_sha256"],
+      "properties": {
+        "required": {"const": true},
+        "provided": {"type": "boolean"},
+        "matched": {"type": "boolean"},
+        "confirmation_sha256": {"$ref": "#/$defs/nullableSha256"}
+      }
+    },
+    "checks": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "inputs_loaded",
+        "capture_doctor_schema_valid",
+        "capture_doctor_no_action",
+        "capture_doctor_profile_valid",
+        "capture_doctor_local_override",
+        "observation_preview_schema_valid",
+        "observation_preview_no_action",
+        "observation_preview_ready",
+        "observation_preview_fresh",
+        "observation_operational",
+        "identifiers_complete",
+        "identifiers_valid",
+        "item_ids_distinct",
+        "equipped_item_exact_match_in_preview",
+        "candidate_exact_match_in_preview",
+        "operator_confirmation_matched"
+      ],
+      "properties": {
+        "inputs_loaded": {"type": "boolean"},
+        "capture_doctor_schema_valid": {"type": "boolean"},
+        "capture_doctor_no_action": {"type": "boolean"},
+        "capture_doctor_profile_valid": {"type": "boolean"},
+        "capture_doctor_local_override": {"type": "boolean"},
+        "observation_preview_schema_valid": {"type": "boolean"},
+        "observation_preview_no_action": {"type": "boolean"},
+        "observation_preview_ready": {"type": "boolean"},
+        "observation_preview_fresh": {"type": "boolean"},
+        "observation_operational": {"type": "boolean"},
+        "identifiers_complete": {"type": "boolean"},
+        "identifiers_valid": {"type": "boolean"},
+        "item_ids_distinct": {"type": "boolean"},
+        "equipped_item_exact_match_in_preview": {"type": "boolean"},
+        "candidate_exact_match_in_preview": {"type": "boolean"},
+        "operator_confirmation_matched": {"type": "boolean"}
+      }
+    },
+    "observation_age_ms": {"type": ["integer", "null"]},
+    "blockers": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "capture_doctor_missing",
+          "capture_doctor_malformed",
+          "capture_doctor_duplicate_keys",
+          "capture_doctor_oversize",
+          "capture_doctor_symlink_rejected",
+          "capture_doctor_not_regular",
+          "capture_doctor_changed_during_open",
+          "capture_doctor_unreadable",
+          "capture_doctor_not_object",
+          "capture_doctor_schema_invalid",
+          "capture_doctor_unsafe_contract",
+          "capture_doctor_profile_invalid",
+          "capture_doctor_not_local_override",
+          "observation_preview_missing",
+          "observation_preview_malformed",
+          "observation_preview_duplicate_keys",
+          "observation_preview_oversize",
+          "observation_preview_symlink_rejected",
+          "observation_preview_not_regular",
+          "observation_preview_changed_during_open",
+          "observation_preview_unreadable",
+          "observation_preview_not_object",
+          "observation_preview_schema_invalid",
+          "observation_preview_unsafe_contract",
+          "observation_preview_not_ready",
+          "observation_preview_future",
+          "observation_preview_stale",
+          "observation_preview_fixture_not_operational",
+          "explicit_identifiers_missing",
+          "explicit_identifiers_incomplete",
+          "explicit_identifiers_invalid",
+          "item_ids_not_distinct",
+          "equipped_item_preview_mismatch",
+          "candidate_exact_match_missing",
+          "candidate_exact_match_ambiguous",
+          "operator_confirmation_missing",
+          "operator_confirmation_mismatch"
+        ]
+      }
+    },
+    "plan": {
+      "anyOf": [
+        {"type": "null"},
+        {"$ref": "#/$defs/plan"}
+      ]
+    },
+    "plan_sha256": {"$ref": "#/$defs/nullableSha256"},
+    "explanation": {"type": "string", "minLength": 1},
+    "operator_review_required": {"const": true},
+    "acceptance_granted": {"const": false},
+    "runtime_readiness_claimed": {"const": false},
+    "eligibility_changed": {"const": false},
+    "profile_write_performed": {"const": false},
+    "repo_report_write_only": {"const": true},
+    "live_file_writes": {"const": false},
+    "interaction_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "gui_automation",
+        "mouse_keyboard_input",
+        "window_focus",
+        "screenshot_capture",
+        "client_launch",
+        "client_stop",
+        "local_profile_read",
+        "local_profile_write",
+        "live_file_writes",
+        "repo_runtime_reads_only",
+        "evidence_write_scope"
+      ],
+      "properties": {
+        "gui_automation": {"const": false},
+        "mouse_keyboard_input": {"const": false},
+        "window_focus": {"const": false},
+        "screenshot_capture": {"const": false},
+        "client_launch": {"const": false},
+        "client_stop": {"const": false},
+        "local_profile_read": {"const": false},
+        "local_profile_write": {"const": false},
+        "live_file_writes": {"const": false},
+        "repo_runtime_reads_only": {"const": true},
+        "evidence_write_scope": {"const": "runtime/solteria_helper_dev"}
+      }
+    },
+    "dispatch_allowed": {"const": false},
+    "runtime_actions": {"const": false},
+    "executes_plan": {"const": false},
+    "execute_once_allowed": {"const": false},
+    "promotion_allowed": {"const": false},
+    "intrusive_actions_performed": {"const": []}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "nullableSha256": {
+      "type": ["string", "null"],
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "inputStatus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["load_status", "schema_valid", "safe_contract"],
+      "properties": {
+        "load_status": {
+          "enum": [
+            "loaded",
+            "missing",
+            "malformed",
+            "duplicate_keys",
+            "oversize",
+            "symlink_rejected",
+            "not_regular",
+            "changed_during_open",
+            "unreadable",
+            "not_object"
+          ]
+        },
+        "schema_valid": {"type": "boolean"},
+        "safe_contract": {"type": "boolean"}
+      }
+    },
+    "identifier": {"type": ["integer", "null"], "minimum": 1, "maximum": 65535},
+    "identifiers": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "equipped_item_id",
+        "candidate_item_id",
+        "candidate_source_container_id",
+        "candidate_source_slot_index"
+      ],
+      "properties": {
+        "equipped_item_id": {"$ref": "#/$defs/identifier"},
+        "candidate_item_id": {"$ref": "#/$defs/identifier"},
+        "candidate_source_container_id": {"$ref": "#/$defs/identifier"},
+        "candidate_source_slot_index": {"$ref": "#/$defs/identifier"}
+      }
+    },
+    "captureProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "configured_by_operator",
+        "slot",
+        "equipped_item_id",
+        "candidate_item_id",
+        "candidate_source_container_id",
+        "candidate_source_slot_index",
+        "max_observation_age_ms",
+        "retry_budget",
+        "dispatch_allowed",
+        "runtime_actions",
+        "executes_plan",
+        "execute_once_allowed",
+        "promotion_allowed"
+      ],
+      "properties": {
+        "schema_version": {"const": "ctoa.equipment-shadow-capture-profile.v1"},
+        "configured_by_operator": {"const": true},
+        "slot": {"const": "ring"},
+        "equipped_item_id": {"type": "integer", "minimum": 1, "maximum": 65535},
+        "candidate_item_id": {"type": "integer", "minimum": 1, "maximum": 65535},
+        "candidate_source_container_id": {"type": "integer", "minimum": 1, "maximum": 65535},
+        "candidate_source_slot_index": {"type": "integer", "minimum": 1, "maximum": 65535},
+        "max_observation_age_ms": {"const": 6000},
+        "retry_budget": {"const": 0},
+        "dispatch_allowed": {"const": false},
+        "runtime_actions": {"const": false},
+        "executes_plan": {"const": false},
+        "execute_once_allowed": {"const": false},
+        "promotion_allowed": {"const": false}
+      }
+    },
+    "plan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "plan_id",
+        "target_profile",
+        "input_binding_sha256",
+        "expected_current_profile_sha256",
+        "proposed_profile_sha256",
+        "diff"
+      ],
+      "properties": {
+        "plan_id": {"type": "string", "pattern": "^equipment-capture-profile-plan-[0-9a-f]{16}$"},
+        "target_profile": {"const": ".ctoa-local/otclient/equipment-shadow-capture-profile.json"},
+        "input_binding_sha256": {"$ref": "#/$defs/sha256"},
+        "expected_current_profile_sha256": {"$ref": "#/$defs/sha256"},
+        "proposed_profile_sha256": {"$ref": "#/$defs/sha256"},
+        "diff": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["operation", "from_sha256", "to_sha256", "set"],
+          "properties": {
+            "operation": {"const": "replace_document_after_separate_operator_review"},
+            "from_sha256": {"$ref": "#/$defs/sha256"},
+            "to_sha256": {"$ref": "#/$defs/sha256"},
+            "set": {"$ref": "#/$defs/captureProfile"}
+          }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"status": {"const": "plan_generated"}}},
+      "then": {
+        "properties": {
+          "blockers": {"maxItems": 0},
+          "plan": {"$ref": "#/$defs/plan"},
+          "plan_sha256": {"$ref": "#/$defs/sha256"},
+          "operator_confirmation": {
+            "properties": {"provided": {"const": true}, "matched": {"const": true}}
+          }
+        }
+      }
+    },
+    {
+      "if": {"properties": {"status": {"const": "blocked"}}},
+      "then": {
+        "properties": {
+          "blockers": {"minItems": 1},
+          "plan": {"type": "null"},
+          "plan_sha256": {"type": "null"}
+        }
+      }
+    }
+  ]
+}

@@ -10,7 +10,7 @@ This file is the canonical map of what is considered a product in this repositor
   - `scripts/ops/ctoa-vps.ps1`
   - `deploy/vps/systemd/`
   - `docs/MOBILE_CONSOLE.md`
-- Public API highlights:
+- Operator API highlights:
   - `POST /api/agents/execution/run` (preferred; owner-only guarded write)
   - `POST /api/agents/intel/run` (scan/intel primary; owner-only guarded write)
   - guarded writes require `{"confirm": true, "reason": "<audit reason>"}`
@@ -34,27 +34,27 @@ This file is the canonical map of what is considered a product in this repositor
   - `runtime/experiments/`
   - `scripts/ops/sprint*_validate.py`
 
-  ## Packaging Tiers
+## Packaging Tiers
 
-  Public client distribution uses three tiers:
+Controlled client distribution uses three tiers:
 
   - Core: runtime engine, prompts, governance, schemas, bootstrap/update gate
   - Pro: Core plus customer-facing console/control-plane surface
   - Studio: internal-only overlay, private operations, lab/research and raw assets
 
-  Canonical tier definitions:
+Canonical tier definitions:
 
-  - `product/packages/core.manifest.json`
-  - `product/packages/pro.manifest.json`
-  - `product/packages/studio.manifest.json`
+- `product/packages/core.manifest.json`
+- `product/packages/pro.manifest.json`
+- `product/packages/studio.manifest.json`
 
-  Client distribution reference:
+Client distribution reference:
 
-  - `docs/CLIENT_DISTRIBUTION_MODEL.md`
+- `docs/CLIENT_DISTRIBUTION_MODEL.md`
 
 ## Legacy/Lab/Research Tracks (not product-facing)
 
-These tracks are valid for internal R&D but should not dominate the public product narrative:
+These tracks are valid for internal R&D but must not enter customer-facing exports:
 
 - reverse-engineering and unpacking helpers
 - temporary decrypt/decompile outputs
@@ -69,7 +69,7 @@ Examples currently present:
 
 External product naming should use neutral CTOA wording:
 
-- "Agent Execution" instead of domain-specific labels in public-facing docs/endpoints.
+- "Agent Execution" instead of domain-specific labels in external docs/endpoints.
 - Legacy aliases remain temporarily for backward compatibility.
 
 Migration status:
@@ -80,7 +80,7 @@ Migration status:
   `reason`; read-only report/metrics endpoints remain operator-accessible.
 
 
-## Definition of Product-Ready in Public Repo
+## Definition of Product-Ready in Private Source
 
 A component is product-ready when all are true:
 
@@ -88,4 +88,3 @@ A component is product-ready when all are true:
 2. It has at least one validation path (test/task/health check).
 3. It does not expose secrets or local-only data dumps.
 4. It is not a one-off forensic helper without product path.
-

@@ -30,3 +30,8 @@ repos:
     hooks:
       - id: pip-audit
         args: ["-r", "requirements.txt"]
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks-docker

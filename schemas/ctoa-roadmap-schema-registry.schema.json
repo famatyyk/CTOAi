@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ctoai.local/schemas/ctoa-roadmap-schema-registry.schema.json",
+  "title": "CTOAi P13 Roadmap Schema Registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "entries"],
+  "properties": {
+    "schema_version": {"const": "ctoa.roadmap-schema-registry.v1"},
+    "entries": {
+      "type": "array",
+      "minItems": 7,
+      "maxItems": 7,
+      "items": {"$ref": "#/$defs/entry"}
+    }
+  },
+  "$defs": {
+    "stringList": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "path", "mode", "target_field"],
+      "properties": {
+        "role": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+        "path": {"type": "string", "pattern": "^runtime/solteria_helper_dev/[a-z0-9_.-]+\\.json$"},
+        "mode": {"enum": ["raw_sha256", "canonical_json_sha256", "field_match"]},
+        "target_field": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+        "source_field": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"mode": {"const": "field_match"}}},
+          "then": {"required": ["source_field"]}
+        }
+      ]
+    },
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "decision_id",
+        "ordinal",
+        "phase",
+        "lane",
+        "path",
+        "expected_schema_version",
+        "expected_status",
+        "decision_status",
+        "result_status",
+        "terminal",
+        "freshness_policy",
+        "required_false_flags",
+        "required_true_flags",
+        "blocker_field",
+        "expected_attempt_count",
+        "expected_retry_scheduled",
+        "expected_final_state",
+        "expected_intrusive_action_count",
+        "predecessor_ids",
+        "bindings"
+      ],
+      "properties": {
+        "decision_id": {"type": "string", "pattern": "^p(?:8|9|10|11|12)-[a-z0-9-]+$"},
+        "ordinal": {"type": "integer", "minimum": 8, "maximum": 14},
+        "phase": {"enum": ["P8", "P9", "P10", "P11", "P12"]},
+        "lane": {"enum": ["background", "conditions", "equipment", "heal_friend"]},
+        "path": {"type": "string", "pattern": "^runtime/solteria_helper_dev/[a-z0-9_.-]+\\.json$"},
+        "expected_schema_version": {"type": "string", "pattern": "^ctoa\\..+\\.v1$"},
+        "expected_status": {"type": "string", "minLength": 2},
+        "decision_status": {"enum": ["accepted", "closed_no_action"]},
+        "result_status": {
+          "enum": ["operational_acceptance_complete", "closed_blocked_no_compatible_vocation"]
+        },
+        "terminal": {"const": true},
+        "freshness_policy": {"const": "immutable_terminal"},
+        "required_false_flags": {"$ref": "#/$defs/stringList"},
+        "required_true_flags": {"$ref": "#/$defs/stringList"},
+        "blocker_field": {"enum": ["blockers", "validation_blockers"]},
+        "expected_attempt_count": {"type": ["integer", "null"], "minimum": 0},
+        "expected_retry_scheduled": {"type": ["boolean", "null"]},
+        "expected_final_state": {"type": ["string", "null"]},
+        "expected_intrusive_action_count": {"type": "integer", "minimum": 0, "maximum": 1},
+        "predecessor_ids": {"$ref": "#/$defs/stringList"},
+        "bindings": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/binding"}
+        }
+      }
+    }
+  }
+}

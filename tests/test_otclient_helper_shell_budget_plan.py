@@ -8,16 +8,14 @@ def test_shell_budget_plan_measures_current_helper_pressure():
     budget = plan.build_plan()
 
     assert budget.name == "otclient-helper-shell-budget-plan"
-    assert budget.status == "needs_extraction"
+    assert budget.status == "within_budget"
     assert budget.helper_line_count <= budget.helper_line_budget
-    # Recovery Runtime Bridge v1 intentionally adds the bounded sandbox
-    # executor and operator controls while remaining below the 4500-line
-    # product budget. Keep this ratchet at the accepted post-bridge size.
-    assert budget.helper_line_count <= 4484
-    assert budget.helper_function_count > budget.helper_function_budget
-    assert budget.helper_function_count <= 163
+    # Keep the ratchet aligned with the current generated budget report while
+    # retaining the stricter product ceiling enforced above.
+    assert budget.helper_line_count <= 4404
+    assert budget.helper_function_count <= budget.helper_function_budget
     assert budget.over_line_budget_by == 0
-    assert budget.over_function_budget_by == budget.helper_function_count - budget.helper_function_budget
+    assert budget.over_function_budget_by == 0
     assert budget.under_hard_ceiling is True
     assert budget.top_domains
     assert budget.next_extraction_domains
@@ -89,7 +87,7 @@ def test_shell_budget_plan_writes_json_and_markdown(tmp_path):
     payload = json.loads(json_out.read_text(encoding="utf-8"))
     markdown = markdown_out.read_text(encoding="utf-8")
 
-    assert payload["status"] == "needs_extraction"
+    assert payload["status"] == "within_budget"
     assert payload["under_hard_ceiling"] is True
     assert payload["top_domains"]
     assert "# Solteria Helper Shell Budget Plan" in markdown

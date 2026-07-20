@@ -1,0 +1,11 @@
+Module
+  name: ctoa_chooser
+  description: CTOA exclusive project loader - choose Helper or Safe after login
+  author: CTOA AI Toolkit
+  website: github.com/famatyyk/CTOAi
+  version: 2.1.0
+  autoload: true
+  autoload-priority: 900
+  scripts: [ ctoa_chooser_loader ]
+  @onLoad: CTOA_CHOOSER.init()
+  @onUnload: CTOA_CHOOSER.terminate()

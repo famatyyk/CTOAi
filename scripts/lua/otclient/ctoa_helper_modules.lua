@@ -8,27 +8,35 @@ local Registry = rawget(_G, "CTOA_HELPER_MODULES") or {}
 local SUPPORT_MODULES = {
     {name = "ctoa_helper_runtime_core", file = "ctoa_helper_runtime_core.lua", phase = "core", depends_on = {}},
     {name = "ctoa_helper_domain_contract", file = "ctoa_helper_domain_contract.lua", phase = "core", depends_on = {"ctoa_helper_runtime_core"}},
+    {name = "ctoa_helper_rule_engine", file = "ctoa_helper_rule_engine.lua", phase = "core", depends_on = {"ctoa_helper_domain_contract"}},
+    {name = "ctoa_helper_rule_explanations", file = "ctoa_helper_rule_explanations.lua", phase = "core", depends_on = {}},
+    {name = "ctoa_helper_spell_state_registry", file = "ctoa_helper_spell_state_registry.lua", phase = "observe", depends_on = {"ctoa_helper_runtime_core"}},
     {name = "ctoa_helper_combat_observer", file = "ctoa_helper_combat_observer.lua", phase = "observe", depends_on = {"ctoa_helper_runtime_core"}},
     {name = "ctoa_helper_recovery_observer", file = "ctoa_helper_recovery_observer.lua", phase = "observe", depends_on = {"ctoa_helper_runtime_core"}},
     {name = "ctoa_helper_cavebot_observer", file = "ctoa_helper_cavebot_observer.lua", phase = "observe", depends_on = {"ctoa_helper_runtime_core"}},
     {name = "ctoa_helper_loot_observer", file = "ctoa_helper_loot_observer.lua", phase = "observe", depends_on = {"ctoa_helper_runtime_core"}},
     {name = "ctoa_helper_equipment_observer", file = "ctoa_helper_equipment_observer.lua", phase = "observe", depends_on = {"ctoa_helper_runtime_core"}},
+    {name = "ctoa_helper_equipment_family_registry", file = "ctoa_helper_equipment_family_registry.lua", phase = "domain", depends_on = {}},
     {name = "ctoa_helper_otclient_observation_adapter", file = "ctoa_helper_otclient_observation_adapter.lua", phase = "observe", depends_on = {"ctoa_helper_combat_observer", "ctoa_helper_recovery_observer"}},
-    {name = "ctoa_helper_ui", file = "ctoa_helper_ui.lua", phase = "present", depends_on = {}},
+    {name = "ctoa_helper_ui_primitives", file = "ctoa_helper_ui_primitives.lua", phase = "present", depends_on = {}},
+    {name = "ctoa_helper_ui_composition", file = "ctoa_helper_ui_composition.lua", phase = "present", depends_on = {"ctoa_helper_ui_primitives"}},
+    {name = "ctoa_helper_ui_rule_editors", file = "ctoa_helper_ui_rule_editors.lua", phase = "present", depends_on = {"ctoa_helper_ui_primitives", "ctoa_helper_ui_composition"}},
+    {name = "ctoa_helper_ui", file = "ctoa_helper_ui.lua", phase = "present", depends_on = {"ctoa_helper_ui_primitives", "ctoa_helper_ui_composition", "ctoa_helper_ui_rule_editors"}},
     {name = "ctoa_helper_client_reporter", file = "ctoa_helper_client_reporter.lua", phase = "present", depends_on = {}},
     {name = "ctoa_helper_diagnostics", file = "ctoa_helper_diagnostics.lua", phase = "present", depends_on = {}},
     {name = "ctoa_helper_hotkeys", file = "ctoa_helper_hotkeys.lua", phase = "present", depends_on = {}},
     {name = "ctoa_helper_modal", file = "ctoa_helper_modal.lua", phase = "present", depends_on = {}},
     {name = "ctoa_helper_route", file = "ctoa_helper_route.lua", phase = "domain", depends_on = {}},
-    {name = "ctoa_helper_targeting", file = "ctoa_helper_targeting.lua", phase = "domain", depends_on = {}},
-    {name = "ctoa_helper_combat_runtime", file = "ctoa_helper_combat_runtime.lua", phase = "domain", depends_on = {"ctoa_helper_targeting"}},
+    {name = "ctoa_helper_targeting", file = "ctoa_helper_targeting.lua", phase = "domain", depends_on = {"ctoa_helper_rule_explanations"}},
+    {name = "ctoa_helper_combat_runtime", file = "ctoa_helper_combat_runtime.lua", phase = "domain", depends_on = {"ctoa_helper_targeting", "ctoa_helper_rule_explanations"}},
     {name = "ctoa_helper_cavebot_runtime", file = "ctoa_helper_cavebot_runtime.lua", phase = "domain", depends_on = {"ctoa_helper_route"}},
     {name = "ctoa_helper_loot_runtime", file = "ctoa_helper_loot_runtime.lua", phase = "domain", depends_on = {"ctoa_helper_loot_observer"}},
     {name = "ctoa_helper_timer_runtime", file = "ctoa_helper_timer_runtime.lua", phase = "domain", depends_on = {"ctoa_helper_runtime_core"}},
     {name = "ctoa_helper_recovery_runtime", file = "ctoa_helper_recovery_runtime.lua", phase = "domain", depends_on = {"ctoa_helper_recovery_observer"}},
-    {name = "ctoa_helper_profile_schema", file = "ctoa_helper_profile_schema.lua", phase = "profile", depends_on = {}},
+    {name = "ctoa_helper_profile_schema", file = "ctoa_helper_profile_schema.lua", phase = "profile", depends_on = {"ctoa_helper_rule_engine"}},
     {name = "ctoa_helper_vocation_profiles", file = "ctoa_helper_vocation_profiles.lua", phase = "profile", depends_on = {"ctoa_helper_profile_schema"}},
     {name = "ctoa_helper_profile_persistence", file = "ctoa_helper_profile_persistence.lua", phase = "profile", depends_on = {"ctoa_helper_profile_schema"}},
+    {name = "ctoa_helper_rule_presets", file = "ctoa_helper_rule_presets.lua", phase = "profile", depends_on = {"ctoa_helper_targeting", "ctoa_helper_combat_runtime"}},
     {name = "ctoa_helper_operator_summary", file = "ctoa_helper_operator_summary.lua", phase = "coordinate", depends_on = {"ctoa_helper_profile_schema"}},
     {name = "ctoa_helper_planner", file = "ctoa_helper_planner.lua", phase = "coordinate", depends_on = {}},
     {name = "ctoa_helper_runtime_policy", file = "ctoa_helper_runtime_policy.lua", phase = "guard", depends_on = {}},
@@ -45,12 +53,15 @@ local SUPPORT_MODULES = {
     {name = "ctoa_helper_feature_flags", file = "ctoa_helper_feature_flags.lua", phase = "guard", depends_on = {"ctoa_helper_runtime_policy"}},
     {name = "ctoa_helper_hud", file = "ctoa_helper_hud.lua", phase = "feature", depends_on = {"ctoa_helper_ui"}},
     {name = "ctoa_helper_conditions", file = "ctoa_helper_conditions.lua", phase = "feature", depends_on = {"ctoa_helper_recovery_observer"}},
-    {name = "ctoa_helper_equipment", file = "ctoa_helper_equipment.lua", phase = "feature", depends_on = {"ctoa_helper_equipment_observer"}},
+    {name = "ctoa_helper_equipment", file = "ctoa_helper_equipment.lua", phase = "feature", depends_on = {"ctoa_helper_equipment_observer", "ctoa_helper_equipment_family_registry"}},
     {name = "ctoa_helper_scripting", file = "ctoa_helper_scripting.lua", phase = "feature", depends_on = {"ctoa_helper_runtime_policy"}},
     {name = "ctoa_helper_heal_friend", file = "ctoa_helper_heal_friend.lua", phase = "feature", depends_on = {"ctoa_helper_recovery_observer"}},
     {name = "ctoa_helper_conditions_runtime_gate", file = "ctoa_helper_conditions_runtime_gate.lua", phase = "guard", depends_on = {"ctoa_helper_runtime_module_gate", "ctoa_helper_conditions", "ctoa_helper_recovery_bridge"}},
+    {name = "ctoa_helper_conditions_execute_once", file = "ctoa_helper_conditions_execute_once.lua", phase = "guard", depends_on = {"ctoa_helper_conditions_runtime_gate", "ctoa_helper_dispatch_guard"}},
     {name = "ctoa_helper_equipment_runtime_gate", file = "ctoa_helper_equipment_runtime_gate.lua", phase = "guard", depends_on = {"ctoa_helper_runtime_module_gate", "ctoa_helper_equipment", "ctoa_helper_conditions_runtime_gate"}},
+    {name = "ctoa_helper_equipment_execute_once", file = "ctoa_helper_equipment_execute_once.lua", phase = "guard", depends_on = {"ctoa_helper_equipment_runtime_gate", "ctoa_helper_dispatch_guard"}},
     {name = "ctoa_helper_heal_friend_runtime_gate", file = "ctoa_helper_heal_friend_runtime_gate.lua", phase = "guard", depends_on = {"ctoa_helper_runtime_module_gate", "ctoa_helper_heal_friend", "ctoa_helper_equipment_runtime_gate"}},
+    {name = "ctoa_helper_heal_friend_execute_once", file = "ctoa_helper_heal_friend_execute_once.lua", phase = "guard", depends_on = {"ctoa_helper_heal_friend_runtime_gate", "ctoa_helper_dispatch_guard"}},
 }
 
 local MODULE_LANES = {
@@ -241,8 +252,30 @@ function Registry.getModuleLanes()
     return MODULE_LANES
 end
 
+function Registry.rebuildModuleLaneIndex(lanes)
+    local index = {}
+    for _, lane in ipairs(lanes or {}) do
+        if type(lane) == "table" and lane.id ~= nil then
+            index[lane.id] = lane
+        end
+    end
+    return index
+end
+
 function Registry.getShortLabels()
     return MODULE_SHORT_LABELS
+end
+
+function Registry.moduleTabVisible(moduleId, modulesConfig, smokeModuleId, coreModuleTabs)
+    if smokeModuleId == moduleId then
+        return true
+    end
+    local config = type(modulesConfig) == "table" and modulesConfig or {}
+    local core = type(coreModuleTabs) == "table" and coreModuleTabs or {}
+    if core[moduleId] then
+        return config[moduleId] ~= false
+    end
+    return config[moduleId] == true
 end
 
 function Registry.laneEnabled(lane, config)
@@ -349,6 +382,8 @@ function Registry.contract()
         validates_boot_dependencies = true,
         owns_boot_status = true,
         owns_lane_readiness = true,
+        owns_lane_index = true,
+        owns_module_tab_visibility = true,
         owns_lane_enabled = true,
         owns_lane_runtime_text = true,
         owns_registry_summary = true,

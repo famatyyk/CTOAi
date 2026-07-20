@@ -60,6 +60,88 @@ PASSIVE_MODULES = [
         ],
     },
     {
+        "id": "rule_engine",
+        "loader_name": "ctoa_helper_rule_engine",
+        "file": "ctoa_helper_rule_engine.lua",
+        "global": "CTOA_HELPER_RULE_ENGINE",
+        "lane_id": "",
+        "required_functions": [
+            "sanitizeCondition",
+            "sanitizeRule",
+            "evaluate",
+            "contract",
+        ],
+    },
+    {
+        "id": "rule_explanations",
+        "loader_name": "ctoa_helper_rule_explanations",
+        "file": "ctoa_helper_rule_explanations.lua",
+        "global": "CTOA_HELPER_RULE_EXPLANATIONS",
+        "lane_id": "",
+        "required_functions": [
+            "trace",
+            "summary",
+            "contract",
+        ],
+    },
+    {
+        "id": "ui_primitives",
+        "loader_name": "ctoa_helper_ui_primitives",
+        "file": "ctoa_helper_ui_primitives.lua",
+        "global": "CTOA_HELPER_UI_PRIMITIVES",
+        "lane_id": "",
+        "required_functions": [
+            "shortText",
+            "fitText",
+            "setWidgetText",
+            "setWidgetChecked",
+            "getWidgetChecked",
+            "showWidget",
+            "createWidget",
+            "settingRowGeometry",
+            "metricCardGeometry",
+            "profileFieldGeometry",
+            "sectionBodyGeometry",
+            "mergeContext",
+            "ruleEditorNavigation",
+            "contract",
+        ],
+    },
+    {
+        "id": "ui_composition",
+        "loader_name": "ctoa_helper_ui_composition",
+        "file": "ctoa_helper_ui_composition.lua",
+        "global": "CTOA_HELPER_UI_COMPOSITION",
+        "lane_id": "",
+        "required_functions": [
+            "sidebarTabs",
+            "sidebarGeometry",
+            "huntingSubtabs",
+            "subtabContentY",
+            "toolsSubtabs",
+            "toolsTableHeaders",
+            "cavebotDelayChoices",
+            "cavebotReachChoices",
+            "msText",
+            "cavebotActionSpecs",
+            "contract",
+        ],
+    },
+    {
+        "id": "ui_rule_editors",
+        "loader_name": "ctoa_helper_ui_rule_editors",
+        "file": "ctoa_helper_ui_rule_editors.lua",
+        "global": "CTOA_HELPER_UI_RULE_EDITORS",
+        "lane_id": "",
+        "required_functions": [
+            "addRuleEditorChrome",
+            "addTargetRuleEditor",
+            "addMagicRuleEditor",
+            "addCombatActionRuleEditor",
+            "contract",
+        ],
+    },
+    {
         "id": "ui",
         "loader_name": "ctoa_helper_ui",
         "file": "ctoa_helper_ui.lua",
@@ -156,6 +238,7 @@ PASSIVE_MODULES = [
             "hasApi",
             "apiText",
             "valueText",
+            "vocationProbeText",
             "apiSnapshotText",
             "apiProbeSnapshot",
             "apiProbeText",
@@ -216,6 +299,14 @@ PASSIVE_MODULES = [
         "required_functions": ["plan", "summary", "adapterSummary", "magicSummary", "msLeftText", "runeReady", "rotationSpellRows", "spellReadiness", "rotationSpell", "offensiveAction", "actionStatusText", "targetingStatusText", "nextActionText", "waitReason", "decisionState", "contract"],
     },
     {
+        "id": "spell_state_registry",
+        "loader_name": "ctoa_helper_spell_state_registry",
+        "file": "ctoa_helper_spell_state_registry.lua",
+        "global": "CTOA_HELPER_SPELL_STATE_REGISTRY",
+        "lane_id": "",
+        "required_functions": ["hasteFlag", "observeHaste", "hasteDecision", "summary", "contract"],
+    },
+    {
         "id": "cavebot_runtime",
         "loader_name": "ctoa_helper_cavebot_runtime",
         "file": "ctoa_helper_cavebot_runtime.lua",
@@ -256,7 +347,7 @@ PASSIVE_MODULES = [
         "file": "ctoa_helper_timer_runtime.lua",
         "global": "CTOA_HELPER_TIMER_RUNTIME",
         "lane_id": "",
-        "required_functions": ["plan", "summary", "dispatch", "contract"],
+        "required_functions": ["plan", "summary", "probeSummary", "dispatch", "contract"],
     },
     {
         "id": "recovery_runtime",
@@ -324,6 +415,20 @@ PASSIVE_MODULES = [
             "loadFailureText",
             "dirtyState",
             "exportProfile",
+            "contract",
+        ],
+    },
+    {
+        "id": "rule_presets",
+        "loader_name": "ctoa_helper_rule_presets",
+        "file": "ctoa_helper_rule_presets.lua",
+        "global": "CTOA_HELPER_RULE_PRESETS",
+        "lane_id": "",
+        "required_functions": [
+            "schemaVersion",
+            "validate",
+            "exportPreset",
+            "importPreset",
             "contract",
         ],
     },
@@ -485,7 +590,7 @@ PASSIVE_MODULES = [
         "file": "ctoa_helper_heal_friend.lua",
         "global": "CTOA_HELPER_HEAL_FRIEND",
         "lane_id": "heal_friend",
-        "required_functions": ["whitelistContainsName", "scan", "observe", "plan", "statusText", "decisionText", "summary", "contract"],
+        "required_functions": ["whitelistContainsName", "scan", "observe", "executeOnceObservation", "plan", "statusText", "decisionText", "summary", "contract"],
     },
 ]
 
@@ -605,6 +710,12 @@ def missing_functions(source: str, module_global: str, required: list[str]) -> l
     local_name = module_global.removeprefix("CTOA_HELPER_").title().replace("_", "")
     if module_global == "CTOA_HELPER_MODULES":
         local_name = "Registry"
+    elif module_global == "CTOA_HELPER_UI_PRIMITIVES":
+        local_name = "Primitives"
+    elif module_global == "CTOA_HELPER_UI_COMPOSITION":
+        local_name = "Composition"
+    elif module_global == "CTOA_HELPER_UI_RULE_EDITORS":
+        local_name = "RuleEditors"
     return [
         function_name
         for function_name in required
@@ -640,6 +751,12 @@ def build_report(
         return_present = f"return {global_name.removeprefix('CTOA_HELPER_').title().replace('_', '')}" in source
         if expected["id"] == "modules":
             return_present = "return Registry" in source
+        elif expected["id"] == "ui_primitives":
+            return_present = "return Primitives" in source
+        elif expected["id"] == "ui_composition":
+            return_present = "return Composition" in source
+        elif expected["id"] == "ui_rule_editors":
+            return_present = "return RuleEditors" in source
         forbidden = forbidden_hits(source)
         missing_required = missing_functions(
             source,

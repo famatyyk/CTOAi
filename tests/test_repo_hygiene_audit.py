@@ -5,6 +5,11 @@ from types import SimpleNamespace
 from scripts.ops import repo_hygiene_audit as module
 
 
+def test_product_allowlist_keeps_mod_sources_but_not_local_capability_snapshots():
+    assert "mods" in module.TOP_LEVEL_ALLOWLIST
+    assert "ctoa_client_capabilities.json" not in module.TOP_LEVEL_ALLOWLIST
+
+
 def test_tracked_top_level_entries_returns_top_level_names(monkeypatch):
     monkeypatch.setattr(
         module,
@@ -36,11 +41,26 @@ def test_tracked_top_level_entries_returns_empty_set_on_git_unavailable(monkeypa
 
 
 def test_scan_top_level_ignores_untracked_local_outputs_and_flags_unknowns(tmp_path: Path, monkeypatch):
-    for name in ["docs", "mobile_console", "src", "build", ".agents", ".codex", "_local_archive", "mystery_dir", "decompiled_sample"]:
+    for name in [
+        "docs",
+        "mobile_console",
+        "src",
+        "build",
+        ".agents",
+        ".codex",
+        ".codex-tmp",
+        "_local_archive",
+        "node_modules",
+        "outputs",
+        "mystery_dir",
+        "decompiled_sample",
+    ]:
         (tmp_path / name).mkdir(parents=True, exist_ok=True)
     (tmp_path / "analyze_enc3.py").write_text("print(1)\n", encoding="utf-8")
     (tmp_path / "AGENTS.md").write_text("# Repository Guidelines\n", encoding="utf-8")
     (tmp_path / ".env.kingsvale").write_text("SECRET=local\n", encoding="utf-8")
+    (tmp_path / "ctoa_client_capabilities.json").write_text("{}\n", encoding="utf-8")
+    (tmp_path / "ctoa_ui_prefs.lua").write_text("return {}\n", encoding="utf-8")
 
     monkeypatch.setattr(module, "ROOT", tmp_path)
     monkeypatch.setattr(module, "_tracked_top_level_entries", lambda: {"docs", "mobile_console", "analyze_enc3.py"})
@@ -54,8 +74,13 @@ def test_scan_top_level_ignores_untracked_local_outputs_and_flags_unknowns(tmp_p
     assert "src" not in paths
     assert ".agents" not in paths
     assert ".codex" not in paths
+    assert ".codex-tmp" not in paths
     assert "_local_archive" not in paths
     assert ".env.kingsvale" not in paths
+    assert "ctoa_client_capabilities.json" not in paths
+    assert "ctoa_ui_prefs.lua" not in paths
+    assert "node_modules" not in paths
+    assert "outputs" not in paths
     assert paths["mystery_dir"]["visibility"] == "review"
     assert paths["analyze_enc3.py"]["reason"] == "top-level one-off or research artifact file"
     assert paths["decompiled_sample"]["surface_action"] == "remove-from-public-surface"

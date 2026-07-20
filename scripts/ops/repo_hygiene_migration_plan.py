@@ -64,7 +64,7 @@ def classify(path: str, reason: str) -> dict[str, Any]:
             "action": "move-to-private-storage",
             "target": f"private-lab-storage/{path}",
             "priority": "critical",
-            "note": "raw artifact/data tree not suitable for public product repo",
+            "note": "raw artifact/data tree not suitable for the canonical source repo",
         }
 
     if lower.startswith("sprint-") or lower.startswith("sprint_") or lower == "stage_5_closure.md":

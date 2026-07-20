@@ -16,6 +16,15 @@ export type ControlCenterEvidenceConfig = {
   helperLivePromotionPath: string
   helperBackgroundStatusPath: string
   helperConditionsShadowReplayPath: string
+  helperEquipmentObservationPreviewPath: string
+  helperEquipmentCandidateCatalogPath: string
+  helperEquipmentCaptureProfileDoctorPath: string
+  helperEquipmentCaptureProfileChangePlanPath: string
+  helperEquipmentDependencyPreflightPath: string
+  helperEquipmentOperatorReadinessPath: string
+  helperEquipmentOperatorRefreshRunPath: string
+  helperEquipmentShadowReplayPath: string
+  helperEquipmentShadowAcceptancePath: string
   engineBrainManifestPath: string
   engineBrainP6ReadinessPath: string
   engineBrainP6PluginHandoffSmokePath: string
@@ -24,6 +33,7 @@ export type ControlCenterEvidenceConfig = {
   engineBrainDocSyncPath: string
   engineBrainSecretGuardrailPath: string
   engineBrainOperatorBriefPath: string
+  engineBrainRoadmapStatePath: string
   engineBrainP7CockpitSmokePath: string
   engineBrainP7SafeWriteDryRunSmokePath: string
   evidenceJsonPath: string
@@ -87,6 +97,42 @@ export function getControlCenterEvidenceConfig(): ControlCenterEvidenceConfig {
       "CTOA_HELPER_CONDITIONS_SHADOW_REPLAY_PATH",
       path.join(helperDevDir, "conditions_shadow_replay.json"),
     ),
+    helperEquipmentObservationPreviewPath: configuredPath(
+      "CTOA_HELPER_EQUIPMENT_OBSERVATION_PREVIEW_PATH",
+      path.join(helperDevDir, "equipment_observation_preview.json"),
+    ),
+    helperEquipmentCandidateCatalogPath: configuredPath(
+      "CTOA_HELPER_EQUIPMENT_CANDIDATE_CATALOG_PATH",
+      path.join(helperDevDir, "equipment_candidate_catalog.json"),
+    ),
+    helperEquipmentCaptureProfileDoctorPath: configuredPath(
+      "CTOA_HELPER_EQUIPMENT_CAPTURE_PROFILE_DOCTOR_PATH",
+      path.join(helperDevDir, "equipment_capture_profile_doctor.json"),
+    ),
+    helperEquipmentCaptureProfileChangePlanPath: configuredPath(
+      "CTOA_HELPER_EQUIPMENT_CAPTURE_PROFILE_CHANGE_PLAN_PATH",
+      path.join(helperDevDir, "equipment_capture_profile_change_plan.json"),
+    ),
+    helperEquipmentDependencyPreflightPath: configuredPath(
+      "CTOA_HELPER_EQUIPMENT_DEPENDENCY_PREFLIGHT_PATH",
+      path.join(helperDevDir, "equipment_dependency_preflight.json"),
+    ),
+    helperEquipmentOperatorReadinessPath: configuredPath(
+      "CTOA_HELPER_EQUIPMENT_OPERATOR_READINESS_PATH",
+      path.join(helperDevDir, "equipment_operator_readiness.json"),
+    ),
+    helperEquipmentOperatorRefreshRunPath: configuredPath(
+      "CTOA_HELPER_EQUIPMENT_OPERATOR_REFRESH_RUN_PATH",
+      path.join(helperDevDir, "equipment_operator_refresh_run.json"),
+    ),
+    helperEquipmentShadowReplayPath: configuredPath(
+      "CTOA_HELPER_EQUIPMENT_SHADOW_REPLAY_PATH",
+      path.join(helperDevDir, "equipment_shadow_replay.json"),
+    ),
+    helperEquipmentShadowAcceptancePath: configuredPath(
+      "CTOA_HELPER_EQUIPMENT_SHADOW_ACCEPTANCE_PATH",
+      path.join(helperDevDir, "equipment_shadow_acceptance.json"),
+    ),
     engineBrainManifestPath: configuredPath("CTOA_ENGINE_BRAIN_MANIFEST_PATH", "AI/generated/manifest.json"),
     engineBrainP6ReadinessPath: configuredPath("CTOA_ENGINE_BRAIN_P6_READINESS_PATH", "AI/generated/P6_CODEX_INTEGRATION_READINESS.json"),
     engineBrainP6PluginHandoffSmokePath: configuredPath(
@@ -98,6 +144,7 @@ export function getControlCenterEvidenceConfig(): ControlCenterEvidenceConfig {
     engineBrainDocSyncPath: configuredPath("CTOA_ENGINE_BRAIN_DOC_SYNC_PATH", "AI/generated/DOC_SYNC.json"),
     engineBrainSecretGuardrailPath: configuredPath("CTOA_ENGINE_BRAIN_SECRET_GUARDRAIL_PATH", "AI/generated/SECRET_GUARDRAIL.json"),
     engineBrainOperatorBriefPath: configuredPath("CTOA_ENGINE_BRAIN_OPERATOR_BRIEF_PATH", "AI/generated/P7_OPERATOR_BRIEF.json"),
+    engineBrainRoadmapStatePath: configuredPath("CTOA_ENGINE_BRAIN_ROADMAP_STATE_PATH", "AI/generated/ROADMAP_STATE.json"),
     engineBrainP7CockpitSmokePath: configuredPath("CTOA_ENGINE_BRAIN_P7_COCKPIT_SMOKE_PATH", "runtime/control-center/p7-cockpit-smoke.json"),
     engineBrainP7SafeWriteDryRunSmokePath: configuredPath(
       "CTOA_ENGINE_BRAIN_P7_SAFE_WRITE_DRY_RUN_SMOKE_PATH",

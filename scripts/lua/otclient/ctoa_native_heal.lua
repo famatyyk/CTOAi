@@ -1,4 +1,5 @@
 -- ctoa_native_heal.lua  [CTOA OTClient Native]
+-- LOCAL SOURCE ONLY: legacy standalone reference; not loaded or shipped by CTOAi Helper.
 -- Passive, profile-fed recovery module for OTClient.
 
 local DEFAULT_HEAL_SETTINGS = {

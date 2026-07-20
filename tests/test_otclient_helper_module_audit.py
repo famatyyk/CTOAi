@@ -14,10 +14,11 @@ def test_module_audit_tracks_remaining_function_modularization_pressure():
 
     assert result.name == "otclient-helper-module-audit"
     assert result.status == "ready"
-    assert result.helper_line_count <= result.helper_line_budget
+    assert result.helper_line_count <= 4000
+    assert result.helper_function_count <= 110
     assert result.helper_line_budget == 4500
     assert result.helper_function_budget == 130
-    assert result.helper_budget_status == "over_budget"
+    assert result.helper_budget_status == "within_budget"
     assert "UI composition" in result.helper_shell_target
     assert result.modularization_pressure == "medium"
     assert result.placeholder_count == 0
@@ -25,12 +26,14 @@ def test_module_audit_tracks_remaining_function_modularization_pressure():
     assert result.prototype_count >= 4
     assert result.registry_count == 9
     assert result.registry_missing == []
+    assert result.single_reference_local_candidates == []
+    assert result.duplicate_config_surfaces == []
+    assert result.rigid_behavior_findings == []
     assert result.next_extraction_id == ""
     assert result.next_supplemental_id == ""
     assert len(result.extraction_plan) == 6
     assert len(result.supplemental_refactor_plan) == 16
-    assert "P6-module-lane" in result.next_phase
-    assert "UI composition shell" in result.next_phase
+    assert result.next_phase == "Keep module gates current before adding new runtime actions."
     assert result.next_module_id == "conditions"
     assert "ConditionsRuntimeGate" in result.next_module_action
 
@@ -198,10 +201,15 @@ def test_module_audit_writes_atomic_json_and_plan(tmp_path: Path):
     plan = plan_out.read_text(encoding="utf-8")
 
     assert payload["status"] == "ready"
+    assert payload["helper_line_count"] <= 4000
+    assert payload["helper_function_count"] <= 110
+    assert payload["single_reference_local_candidates"] == []
+    assert payload["duplicate_config_surfaces"] == []
+    assert payload["rigid_behavior_findings"] == []
     assert payload["next_module_id"] == "conditions"
     assert payload["next_extraction_id"] == ""
     assert payload["next_supplemental_id"] == ""
-    assert payload["helper_budget_status"] == "over_budget"
+    assert payload["helper_budget_status"] == "within_budget"
     assert payload["extraction_plan"][0]["target_file"] == "ctoa_helper_modules.lua"
     assert payload["extraction_plan"][0]["status"] == "extracted"
     assert payload["extraction_plan"][1]["target_file"] == "ctoa_helper_diagnostics.lua"

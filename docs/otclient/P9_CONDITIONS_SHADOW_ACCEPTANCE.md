@@ -16,6 +16,15 @@ its recorded timestamp, verifies canonical hash parity, enforces a 30-second
 freshness window, rejects fixture operational inputs, and validates the full
 no-action scenario pack. Its default invocation is a read-only preflight:
 
+`ctoa.ps1 otp9` first creates the canonical passive Recovery trace/proof pair.
+That pair means only `evidence_ready_for_p9_replay`; it is not acceptance or
+runtime readiness. The operator shortcut for this separate boundary is:
+
+```powershell
+.\ctoa.ps1 otp9accept
+.\ctoa.ps1 otp9accept "accept P9 conditions shadow"
+```
+
 ```powershell
 python scripts/ops/otclient_conditions_shadow_acceptance.py
 ```

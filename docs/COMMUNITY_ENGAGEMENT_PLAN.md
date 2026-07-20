@@ -4,6 +4,10 @@
 
 ---
 
+> Status: archived and superseded by the private-first source policy. Do not
+> publish source, GitHub Pages, deployment aliases, modules, or repository links
+> from this plan without a separate sanitized export and explicit owner approval.
+
 ## đźŽŻ Mission Statement
 
 **Position CTOA as the leading legitimate Tibia automation solution** through:
@@ -76,7 +80,7 @@
   - Add "otclient", "tibia", "automation" topics
   - Create comprehensive issue templates
 - [ ] **Documentation Portal**:
-  - Host docs at GitHub Pages
+  - Do not host source-backed docs at GitHub Pages; use an approved sanitized facade
   - SEO optimization for "OTClient automation", "legitimate Tibia bot"
   - Multi-language support (EN/PL/ES/PT)
 
@@ -425,4 +429,3 @@
 
 **đź¤– CTOA AI Toolkit - Leading the legitimate automation revolution**  
 *Building tomorrow's game automation community today*
-

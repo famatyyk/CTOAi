@@ -1,24 +1,29 @@
 # CTOAi Three Development Plans
 
-Basis: full workspace audit with `42140` inventoried files and `1369` git-tracked files.
+Basis: full workspace audit with `47323` inventoried files and `1529` git-tracked files.
 
 ## Plan 1: Helper-First Productization
 
 Goal: turn the OTClient/Solteria Helper into a safe, repeatable product lane before broad expansion.
 
+Product split: Helper remains the primary full platform and owns P8-P16. CTOA Safe is a separate compact movable panel with fixed module labels and deep editing only inside supported modules. Safe has no CaveBot, movement/routes, generic Settings, arbitrary Lua, or authority to satisfy a Helper gate.
+
 ### 0-30 Days
 
 - Keep `scripts/lua/otclient/` canonical and keep live Solteria protected.
+- S0 source and staging are complete in candidate `v2.4.0`: the neutral chooser is the only CTOA autoload, requires a new Helper/Safe choice after every login, rejects direct project startup, and terminates the selected project on logout. Safe contains only its `.otmod`, explicit loader, and self-contained project; copied Helper runtime files, CaveBot, and generic Settings are absent.
+- Keep S0 operational acceptance pending until a fresh sandbox Safe selection plus ENABLE smoke passes without a client crash and the separately approved, manifest-bound promotion is verified. Staging evidence cannot claim the live crash fixed.
 - Require `PrepareDev`, `ValidateDev`, `SmokePreflight`, in-world `SmokeAttachAll`, and explicit live approval.
 - Expand `otclient_helper_profile_audit.py` from text checks toward schema-backed migration validation.
 - Keep Control Center Helper status read-only and backed by runtime artifacts.
-- Treat P8 `BackgroundNoScreen` as `implementation_complete` but `operational_acceptance_blocked`: keep it the default routine Helper evidence lane with no mouse/keyboard input, focus, screenshots, client launch/stop, or live-client writes; accept it only after an official promotion-bound trusted pin, a fresh capability heartbeat, and full no-action producer/consumer parity pass together. The current historical pin is `legacy_or_unbound_attestation`; its stable 57/58 diagnostic parity and one executable-profile drift are informational only and cannot be rebound into trust. P9 Conditions is offline/staging-complete and now has a strict separately confirmed data-only acceptance boundary, but current operational evidence writes no receipt and P10 remains blocked until accepted P8, real Conditions, and hash-bound Recovery proofs pass together.
+- Current Helper phase state: P8, P9, P10, and P11 are `operational_acceptance_complete`; P12 execute-once review is `closed_with_deferred_heal_friend_lane`. Conditions and Equipment are separately accepted, terminally disarmed, zero-retry, and grant no downstream authority. Heal Friend plan `964ff8f0c178c7b646a565380e96846a8b29780eb02a734a259713d9ccf023b3` is `closed_blocked_no_compatible_vocation`: its approved sandbox session reached a fresh ED-only blocked preflight, then `p12_heal_friend_no_compatible_vocation_closure.json` expired the approval because only sorcerer and knight are available. Attempt count is 0, execution approval and reuse are forbidden, and no cast, retry, downstream authority, or live promotion occurred. P13 Runtime Evidence And Machine-Readable Roadmap State is `runtime_evidence_ready`: its fixed seven-entry ledger, SHA-pinned schema registry, freshness/tamper validation, atomic generator, sanitized audit trail, read-only Control Center surface, and release-evidence consumer are implemented and tested. Exact confirmation `refresh roadmap state` authorized the fixed JSON/Markdown outputs and their hash-bound confirmed audit record. No runtime executor, MCP write tool, live authority, or P12 Heal Friend reopening is introduced. Keep BackgroundNoScreen as the default routine evidence lane with no mouse/keyboard input, focus, screenshots, client launch/stop, or live-client writes.
+- P14 Independent Runner And Release Automation is active as `foundation_in_progress`: signed artifact-only request/result schemas, tracked-source package manifest derivation, clean-checkout/revision binding, deterministic manifest rollback replay, Windows CI, Release Evidence, and a read-only Control Center card are implemented. A real second-machine/VM result, isolated visual/in-world suite, canary, and actual rollback rehearsal remain required; no promotion, runtime/live authority, or additional MCP tool exists.
 - Keep the post-Recovery runtime sequence fixed: Conditions paralyze-only gate, then Equipment ring-only rollback gate, then Heal Friend exact-whitelist gate. Require action-bound predecessor traces and current `RuntimeModuleGatesSandboxSmoke` evidence; Combat and CaveBot remain `deferred_high_risk` and may receive passive refactor work only.
 
 ### 31-60 Days
 
 - Split `ctoa_native_helper.lua` only along stable boundaries: config/schema, profile persistence, UI, runtime loops, diagnostics.
-- Preserve `ctoa_native_helper.lua` as the public loader entrypoint.
+- Preserve `ctoa_project_loader.lua` as the only public root loader; keep `ctoa_native_helper.lua` reachable only through an authorized Helper selection.
 - Add stable diagnostics export coverage for HP/MP, movement, combat, magic, container/loot, UI/resources.
 
 ### 61-90 Days

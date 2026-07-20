@@ -17,8 +17,11 @@ local function clampIndex(index, count)
     return math.floor(value)
 end
 
-local function distanceChebyshev(from_pos, to_pos)
+function Route.distanceChebyshev(from_pos, to_pos)
     if type(from_pos) ~= "table" or type(to_pos) ~= "table" then
+        return nil
+    end
+    if from_pos.z ~= to_pos.z then
         return nil
     end
     local dx = math.abs((tonumber(from_pos.x) or 0) - (tonumber(to_pos.x) or 0))
@@ -62,6 +65,61 @@ function Route.posKey(pos)
         return nil
     end
     return tostring(pos.x) .. ":" .. tostring(pos.y) .. ":" .. tostring(pos.z)
+end
+
+function Route.positionText(pos, fallback)
+    local value = Route.position(pos)
+    if not value then
+        return tostring(fallback or "nil")
+    end
+    return tostring(value.x) .. "," .. tostring(value.y) .. "," .. tostring(value.z)
+end
+
+function Route.probeTarget(tools)
+    local waypoints = type(tools) == "table" and type(tools.cavebot_waypoints) == "table" and tools.cavebot_waypoints or {}
+    local count = #waypoints
+    local index = clampIndex(type(tools) == "table" and tools.cavebot_index or 1, count)
+    local waypoint = count > 0 and waypoints[index] or nil
+    local target = Route.position(waypoint)
+    return {
+        waypoint_count = count,
+        selected_index = index,
+        has_waypoint = waypoint ~= nil,
+        target_valid = target ~= nil,
+        waypoint = waypoint,
+        target = target,
+        label = waypoint and Route.label(waypoint, index) or "no waypoint",
+        target_text = Route.positionText(target),
+        runtime_actions = false,
+        route_mutated = false,
+    }
+end
+
+function Route.probeMetadata(tools, current)
+    local selected = Route.probeTarget(tools)
+    local currentPosition = Route.position(current)
+    local target = selected.target
+    local sameFloor = currentPosition ~= nil and target ~= nil and currentPosition.z == target.z
+    return {
+        schema_version = "ctoa.route-probe-metadata.v1",
+        mode = "passive",
+        waypoint_count = selected.waypoint_count,
+        selected_index = selected.selected_index,
+        has_waypoint = selected.has_waypoint,
+        target_valid = selected.target_valid,
+        route_empty = selected.waypoint_count == 0,
+        label = selected.label,
+        current = currentPosition,
+        current_text = Route.positionText(currentPosition),
+        target = target,
+        target_text = selected.target_text,
+        same_floor = sameFloor,
+        distance = sameFloor and Route.distanceChebyshev(currentPosition, target) or nil,
+        runtime_actions = false,
+        movement_executed = false,
+        route_mutated = false,
+        arming_changed = false,
+    }
 end
 
 function Route.add(tools, pos)
@@ -165,6 +223,23 @@ function Route.editorAction(tools, action, options)
     }
 end
 
+function Route.editorBindings(apply)
+    if type(apply) ~= "function" then
+        return {}
+    end
+    return {
+        clear = function()
+            return apply("clear")
+        end,
+        select = function(delta)
+            return apply("select", {delta = delta})
+        end,
+        move = function(delta)
+            return apply("move", {delta = delta})
+        end,
+    }
+end
+
 function Route.retryStatus(tools)
     if type(tools) ~= "table" then
         return "retry unavailable"
@@ -223,19 +298,19 @@ function Route.activeTarget(tools, current, reach_distance)
         return {ok = false, status_event = "skip_invalid_waypoint"}
     end
 
-    local distance = distanceChebyshev(current, target)
+    local distance = Route.distanceChebyshev(current, target)
     local reach = tonumber(reach_distance) or 1
     local reached = distance == 0 or (distance and distance <= reach)
     if reached then
         tools.cavebot_index = advanceIndex(tools.cavebot_index, #waypoints)
         waypoint = waypoints[tools.cavebot_index]
         target = Route.position(waypoint)
-        distance = distanceChebyshev(current, target)
+        distance = Route.distanceChebyshev(current, target)
         if distance == 0 and #waypoints > 1 then
             tools.cavebot_index = advanceIndex(tools.cavebot_index, #waypoints)
             waypoint = waypoints[tools.cavebot_index]
             target = Route.position(waypoint)
-            distance = distanceChebyshev(current, target)
+            distance = Route.distanceChebyshev(current, target)
         end
     end
 
@@ -326,12 +401,19 @@ function Route.contract()
         owns_waypoint_mutation = true,
         owns_editor_state = true,
         owns_editor_action = true,
+        owns_editor_bindings = true,
+        owns_distance_chebyshev = true,
         owns_position_key = true,
+        owns_position_text = true,
+        owns_probe_target = true,
+        owns_probe_metadata = true,
         owns_retry_status = true,
         owns_progress_state = true,
         owns_target_selection = true,
         runtime_actions = false,
         movement_enabled = false,
+        probe_mutates_route = false,
+        probe_changes_arming = false,
         ui_widgets = false,
         pathfinding = false,
         requires_sandbox_attach = true,

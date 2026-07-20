@@ -22,6 +22,15 @@ const originalEnv = {
   CTOA_HELPER_LIVE_PROMOTION_PATH: process.env.CTOA_HELPER_LIVE_PROMOTION_PATH,
   CTOA_HELPER_BACKGROUND_STATUS_PATH: process.env.CTOA_HELPER_BACKGROUND_STATUS_PATH,
   CTOA_HELPER_CONDITIONS_SHADOW_REPLAY_PATH: process.env.CTOA_HELPER_CONDITIONS_SHADOW_REPLAY_PATH,
+  CTOA_HELPER_EQUIPMENT_OBSERVATION_PREVIEW_PATH: process.env.CTOA_HELPER_EQUIPMENT_OBSERVATION_PREVIEW_PATH,
+  CTOA_HELPER_EQUIPMENT_CANDIDATE_CATALOG_PATH: process.env.CTOA_HELPER_EQUIPMENT_CANDIDATE_CATALOG_PATH,
+  CTOA_HELPER_EQUIPMENT_CAPTURE_PROFILE_DOCTOR_PATH: process.env.CTOA_HELPER_EQUIPMENT_CAPTURE_PROFILE_DOCTOR_PATH,
+  CTOA_HELPER_EQUIPMENT_CAPTURE_PROFILE_CHANGE_PLAN_PATH: process.env.CTOA_HELPER_EQUIPMENT_CAPTURE_PROFILE_CHANGE_PLAN_PATH,
+  CTOA_HELPER_EQUIPMENT_DEPENDENCY_PREFLIGHT_PATH: process.env.CTOA_HELPER_EQUIPMENT_DEPENDENCY_PREFLIGHT_PATH,
+  CTOA_HELPER_EQUIPMENT_OPERATOR_READINESS_PATH: process.env.CTOA_HELPER_EQUIPMENT_OPERATOR_READINESS_PATH,
+  CTOA_HELPER_EQUIPMENT_OPERATOR_REFRESH_RUN_PATH: process.env.CTOA_HELPER_EQUIPMENT_OPERATOR_REFRESH_RUN_PATH,
+  CTOA_HELPER_EQUIPMENT_SHADOW_REPLAY_PATH: process.env.CTOA_HELPER_EQUIPMENT_SHADOW_REPLAY_PATH,
+  CTOA_HELPER_EQUIPMENT_SHADOW_ACCEPTANCE_PATH: process.env.CTOA_HELPER_EQUIPMENT_SHADOW_ACCEPTANCE_PATH,
   CTOA_ENGINE_BRAIN_MANIFEST_PATH: process.env.CTOA_ENGINE_BRAIN_MANIFEST_PATH,
   CTOA_ENGINE_BRAIN_P6_READINESS_PATH: process.env.CTOA_ENGINE_BRAIN_P6_READINESS_PATH,
   CTOA_ENGINE_BRAIN_P6_PLUGIN_HANDOFF_SMOKE_PATH: process.env.CTOA_ENGINE_BRAIN_P6_PLUGIN_HANDOFF_SMOKE_PATH,
@@ -30,6 +39,7 @@ const originalEnv = {
   CTOA_ENGINE_BRAIN_DOC_SYNC_PATH: process.env.CTOA_ENGINE_BRAIN_DOC_SYNC_PATH,
   CTOA_ENGINE_BRAIN_SECRET_GUARDRAIL_PATH: process.env.CTOA_ENGINE_BRAIN_SECRET_GUARDRAIL_PATH,
   CTOA_ENGINE_BRAIN_OPERATOR_BRIEF_PATH: process.env.CTOA_ENGINE_BRAIN_OPERATOR_BRIEF_PATH,
+  CTOA_ENGINE_BRAIN_ROADMAP_STATE_PATH: process.env.CTOA_ENGINE_BRAIN_ROADMAP_STATE_PATH,
   CTOA_ENGINE_BRAIN_P7_COCKPIT_SMOKE_PATH: process.env.CTOA_ENGINE_BRAIN_P7_COCKPIT_SMOKE_PATH,
   CTOA_ENGINE_BRAIN_P7_SAFE_WRITE_DRY_RUN_SMOKE_PATH: process.env.CTOA_ENGINE_BRAIN_P7_SAFE_WRITE_DRY_RUN_SMOKE_PATH,
   CTOA_EVIDENCE_JSON_PATH: process.env.CTOA_EVIDENCE_JSON_PATH,
@@ -74,6 +84,19 @@ function isolateEvidenceEnv(root: string) {
     "solteria_helper_dev",
     "conditions_shadow_replay.json",
   )
+  process.env.CTOA_HELPER_EQUIPMENT_OBSERVATION_PREVIEW_PATH = path.join(root, "runtime", "solteria_helper_dev", "equipment_observation_preview.json")
+  process.env.CTOA_HELPER_EQUIPMENT_CANDIDATE_CATALOG_PATH = path.join(root, "runtime", "solteria_helper_dev", "equipment_candidate_catalog.json")
+  process.env.CTOA_HELPER_EQUIPMENT_CAPTURE_PROFILE_DOCTOR_PATH = path.join(root, "runtime", "solteria_helper_dev", "equipment_capture_profile_doctor.json")
+  process.env.CTOA_HELPER_EQUIPMENT_CAPTURE_PROFILE_CHANGE_PLAN_PATH = path.join(root, "runtime", "solteria_helper_dev", "equipment_capture_profile_change_plan.json")
+  process.env.CTOA_HELPER_EQUIPMENT_DEPENDENCY_PREFLIGHT_PATH = path.join(root, "runtime", "solteria_helper_dev", "equipment_dependency_preflight.json")
+  process.env.CTOA_HELPER_EQUIPMENT_OPERATOR_READINESS_PATH = path.join(root, "runtime", "solteria_helper_dev", "equipment_operator_readiness.json")
+  process.env.CTOA_HELPER_EQUIPMENT_OPERATOR_REFRESH_RUN_PATH = path.join(root, "runtime", "solteria_helper_dev", "equipment_operator_refresh_run.json")
+  process.env.CTOA_HELPER_EQUIPMENT_SHADOW_REPLAY_PATH = path.join(
+    root, "runtime", "solteria_helper_dev", "equipment_shadow_replay.json",
+  )
+  process.env.CTOA_HELPER_EQUIPMENT_SHADOW_ACCEPTANCE_PATH = path.join(
+    root, "runtime", "solteria_helper_dev", "equipment_shadow_acceptance.json",
+  )
   process.env.CTOA_ENGINE_BRAIN_MANIFEST_PATH = path.join(root, "AI", "generated", "manifest.json")
   process.env.CTOA_ENGINE_BRAIN_P6_READINESS_PATH = path.join(root, "AI", "generated", "P6_CODEX_INTEGRATION_READINESS.json")
   process.env.CTOA_ENGINE_BRAIN_P6_PLUGIN_HANDOFF_SMOKE_PATH = path.join(root, "runtime", "control-center", "p6-plugin-handoff-smoke.json")
@@ -82,6 +105,7 @@ function isolateEvidenceEnv(root: string) {
   process.env.CTOA_ENGINE_BRAIN_DOC_SYNC_PATH = path.join(root, "AI", "generated", "DOC_SYNC.json")
   process.env.CTOA_ENGINE_BRAIN_SECRET_GUARDRAIL_PATH = path.join(root, "AI", "generated", "SECRET_GUARDRAIL.json")
   process.env.CTOA_ENGINE_BRAIN_OPERATOR_BRIEF_PATH = path.join(root, "AI", "generated", "P7_OPERATOR_BRIEF.json")
+  process.env.CTOA_ENGINE_BRAIN_ROADMAP_STATE_PATH = path.join(root, "AI", "generated", "ROADMAP_STATE.json")
   process.env.CTOA_ENGINE_BRAIN_P7_COCKPIT_SMOKE_PATH = path.join(root, "runtime", "control-center", "p7-cockpit-smoke.json")
   process.env.CTOA_ENGINE_BRAIN_P7_SAFE_WRITE_DRY_RUN_SMOKE_PATH = path.join(
     root,
@@ -158,6 +182,280 @@ function testCanonicalValue(value: unknown): unknown {
 
 function testCanonicalSha(value: unknown): string {
   return crypto.createHash("sha256").update(JSON.stringify(testCanonicalValue(value))).digest("hex")
+}
+
+function roadmapStatePayload() {
+  const decisions = [
+    ["p8-background-acceptance", "P8", "background", "accepted", "operational_acceptance_complete", null, "accepted"],
+    ["p9-conditions-shadow-acceptance", "P9", "conditions", "accepted", "operational_acceptance_complete", null, "accepted"],
+    ["p10-equipment-shadow-acceptance", "P10", "equipment", "accepted", "operational_acceptance_complete", null, "accepted"],
+    ["p11-heal-friend-shadow-acceptance", "P11", "heal_friend", "accepted", "operational_acceptance_complete", null, "accepted"],
+    ["p12-conditions-execute-once", "P12", "conditions", "accepted", "operational_acceptance_complete", 1, "killed_and_disarmed"],
+    ["p12-equipment-execute-once", "P12", "equipment", "accepted", "operational_acceptance_complete", 1, "killed_and_disarmed"],
+    ["p12-heal-friend-no-compatible-vocation", "P12", "heal_friend", "closed_no_action", "closed_blocked_no_compatible_vocation", 0, "closed_no_action"],
+  ] as const
+  const ledger = decisions.map(([decisionId, phase, lane, decisionStatus, resultStatus, attemptCount, finalState], index) => ({
+    decision_id: decisionId,
+    ordinal: index + 8,
+    phase,
+    lane,
+    decision_status: decisionStatus,
+    result_status: resultStatus,
+    evidence_path: `runtime/solteria_helper_dev/p13-test-${index}.json`,
+    evidence_schema_version: "test.v1",
+    evidence_sha256: "a".repeat(64),
+    previous_evidence_sha256: null,
+    evidence_status: decisionStatus,
+    integrity_status: "passed",
+    freshness_status: "immutable_terminal",
+    created_at: "2026-07-15T10:00:00Z",
+    age_seconds: 1,
+    terminal: true,
+    attempt_count: attemptCount,
+    retry_scheduled: false,
+    final_state: finalState,
+    downstream_authority_granted: false,
+    dispatch_allowed: false,
+    runtime_actions: false,
+    execute_once_allowed: false,
+    live_promotion: false,
+    intrusive_action_count: 0,
+    predecessor_ids: [],
+    bindings: [],
+    blockers: [],
+  }))
+  const basis = {
+    schema_version: "ctoa.roadmap-state.v1",
+    generated_at: "2026-07-15T10:00:00Z",
+    status: "ready",
+    phase: "P13",
+    phase_status: "runtime_evidence_ready",
+    next_phase: "P14",
+    previous_state_sha256: null,
+    control_center_preflight: {
+      status: "ready",
+      ready: true,
+      operator_brief_status: "ready",
+      roadmap_generation_status: "ready",
+      cockpit_handoff_status: "ready",
+      hard_blockers: [],
+    },
+    schema_registry: {
+      status: "passed",
+      path: "schemas/ctoa-roadmap-schema-registry.v1.json",
+      schema_path: "schemas/ctoa-roadmap-schema-registry.schema.json",
+      schema_version: "ctoa.roadmap-schema-registry.v1",
+      entry_count: 7,
+      sha256: "b".repeat(64),
+      schema_sha256: "c".repeat(64),
+      previous_sha256: null,
+    },
+    source_health: ["feature_roadmap", "engine_brain_manifest", "operator_brief"].map((name) => ({
+      name,
+      path: `AI/${name}.json`,
+      load_status: "loaded",
+      sha256: "d".repeat(64),
+      freshness_status: name === "feature_roadmap" ? "timeless" : "current",
+      age_seconds: name === "feature_roadmap" ? null : 1,
+      contract_status: "passed",
+    })),
+    ledger,
+    summary: {
+      ledger_count: 7,
+      accepted_count: 6,
+      closed_no_action_count: 1,
+      blocked_count: 0,
+      tampered_count: 0,
+      total_attempt_count: 2,
+      runtime_authority_count: 0,
+      live_authority_count: 0,
+    },
+    freshness_status: "current",
+    tamper_status: "passed",
+    authority: {
+      control_center_mode: "read_only",
+      runtime_executor_added: false,
+      runtime_actions: false,
+      live_authority: false,
+      p12_heal_friend_reopened: false,
+      mcp_write_tool_enabled: false,
+      allowed_output_paths: [
+        "AI/generated/ROADMAP_STATE.json",
+        "AI/generated/ROADMAP_STATE.md",
+        "runtime/control-center/action-audit.jsonl",
+      ],
+    },
+    blockers: [],
+    next_action: "Consume this P13 state read-only in Control Center without granting runtime or live authority.",
+  }
+  return { ...basis, state_sha256: testCanonicalSha(basis) }
+}
+
+const P10_MUTATIONS = [
+  "none", "inventory_ambiguous", "revision_drift", "missing_ring", "wrong_equipped_id",
+  "wrong_candidate_id", "missing_rollback", "wrong_container", "stale_snapshot", "future_snapshot",
+  "protection_zone", "cooldown_active", "p9_blocked", "p9_tampered", "unsafe_contract",
+  "player_offline", "player_dead", "protection_zone_unknown", "protection_zone_untrusted",
+  "candidate_zero", "rollback_wrong_id", "candidate_container_negative", "candidate_slot_zero",
+  "rollback_slot_mismatch", "cooldown_unknown", "cooldown_untrusted", "retry_nonzero",
+  "inventory_revision_zero", "rollback_revision_zero", "snapshot_extra_key",
+]
+
+function equipmentShadowReplayPayload(generatedAtUnixMs: number) {
+  const noAction = {
+    dispatch_allowed: false,
+    runtime_actions: false,
+    executes_plan: false,
+    execute_once_allowed: false,
+    promotion_allowed: false,
+    intrusive_actions_performed: [],
+  }
+  const hash = "a".repeat(64)
+  return {
+    schema_version: "ctoa.equipment-shadow-replay-report.v1",
+    generated_at_unix_ms: generatedAtUnixMs,
+    mode: "offline_equipment_shadow_replay",
+    operational_acceptance_status: "shadow_plan_ready_for_operator_review",
+    scenario_pack_status: "passed",
+    fixture_only_validation_passed: true,
+    runtime_readiness_claimed: false,
+    operational_trace: {
+      source: "operational",
+      status: "shadow_plan_ready",
+      decision: "would_plan_ring_swap",
+      rollback_simulation: "ready",
+      blockers: [],
+      input_sha256: { profile: hash, snapshot: hash, p9_trace: hash, p9_receipt: hash },
+      canonical_input_sha256: hash,
+      decision_sha256: hash,
+      ...noAction,
+    },
+    scenario_pack: {
+      status: "passed", scenario_pack_sha256: hash, total_count: 30, passed_count: 30,
+      failed_count: 0, cases: P10_MUTATIONS.map((mutation) => ({ mutation })), ...noAction,
+    },
+    ...noAction,
+  }
+}
+
+function acceptedEquipmentReceipt(report: Record<string, unknown>, createdAtUnixMs: number) {
+  const hash = "a".repeat(64)
+  const confirmationSha = crypto.createHash("sha256").update("accept P10 equipment shadow").digest("hex")
+  const reportSha = testCanonicalSha(report)
+  const receipt: Record<string, unknown> = {
+    schema_version: "ctoa.equipment-shadow-acceptance.v1",
+    receipt_id: "",
+    created_at_unix_ms: createdAtUnixMs,
+    mode: "data_only_operator_acceptance",
+    status: "accepted",
+    acceptance_granted: true,
+    operator_review_completed: true,
+    downstream_use_requires_separate_review: true,
+    confirmation_required: true,
+    confirmation_matched: true,
+    confirmation_sha256: confirmationSha,
+    receipt_persisted: true,
+    report_sha256: reportSha,
+    recomputed_report_sha256: reportSha,
+    report_generated_at_unix_ms: createdAtUnixMs - 1000,
+    report_age_ms: 1000,
+    operational_status: "shadow_plan_ready_for_operator_review",
+    scenario_pack_status: "passed",
+    fixture_only_validation_passed: true,
+    operational_inputs_fixture: false,
+    canonical_operational_paths: true,
+    action: "plan_ring_swap",
+    decision_sha256: hash,
+    input_sha256: { profile: hash, snapshot: hash, p9_trace: hash, p9_receipt: hash },
+    scenario_pack_sha256: hash,
+    blockers: [],
+    acceptance_basis_sha256: "",
+    runtime_readiness_claimed: false,
+    dispatch_allowed: false,
+    runtime_actions: false,
+    executes_plan: false,
+    execute_once_allowed: false,
+    promotion_allowed: false,
+    intrusive_actions_performed: [],
+  }
+  const basisSha = testCanonicalSha({
+    schema_version: receipt.schema_version,
+    created_at_unix_ms: receipt.created_at_unix_ms,
+    status: receipt.status,
+    report_sha256: receipt.report_sha256,
+    recomputed_report_sha256: receipt.recomputed_report_sha256,
+    report_generated_at_unix_ms: receipt.report_generated_at_unix_ms,
+    report_age_ms: receipt.report_age_ms,
+    operational_status: receipt.operational_status,
+    scenario_pack_status: receipt.scenario_pack_status,
+    fixture_only_validation_passed: receipt.fixture_only_validation_passed,
+    operational_inputs_fixture: receipt.operational_inputs_fixture,
+    canonical_operational_paths: receipt.canonical_operational_paths,
+    action: receipt.action,
+    decision_sha256: receipt.decision_sha256,
+    input_sha256: receipt.input_sha256,
+    scenario_pack_sha256: receipt.scenario_pack_sha256,
+    confirmation_sha256: receipt.confirmation_sha256,
+    blockers: receipt.blockers,
+  })
+  receipt.acceptance_basis_sha256 = basisSha
+  receipt.receipt_id = `equipment-shadow-acceptance-${basisSha.slice(0, 16)}`
+  return receipt
+}
+
+function p10SixArtifactPayloads(generatedAtUnixMs: number) {
+  const noAction = {
+    dispatch_allowed: false,
+    runtime_actions: false,
+    executes_plan: false,
+    execute_once_allowed: false,
+    promotion_allowed: false,
+    intrusive_actions_performed: [],
+  }
+  const hash = "a".repeat(64)
+  return {
+    equipment_observation_preview: {
+      schema_version: "ctoa.equipment-observation-preview.v1", generated_at_unix_ms: generatedAtUnixMs,
+      status: "preview_ready", source: "background_status", source_sha256: hash, observation_sha256: hash,
+      observation: {}, freshness: {}, provenance: {}, blockers: [], interaction_contract: {}, ...noAction,
+    },
+    equipment_candidate_catalog: {
+      schema_version: "ctoa.equipment-candidate-catalog.v1", generated_at_unix_ms: generatedAtUnixMs,
+      status: "catalog_ready", source: "equipment_observation_preview", preview_sha256: hash,
+      preview_status: "preview_ready", preview_blockers: [], selection_policy: "none", recommendation: null,
+      ring: null, groups: [], summary: {}, blockers: [], ...noAction,
+    },
+    equipment_capture_profile_doctor: {
+      schema_version: "ctoa.equipment-capture-profile-doctor.v1", status: "ready", source: "tracked_safe_template",
+      path: "runtime/solteria_helper_dev/equipment-shadow-capture-profile.template.json", sha256: hash,
+      configured_by_operator: false, slot: "finger", identifiers_present: false, candidate_slot_index_valid: true,
+      no_action_contract: true, blockers: [], next_action: "Run otp10doctor", runtime_actions: false,
+      live_file_writes: false, runtime_readiness_claimed: false,
+    },
+    equipment_capture_profile_change_plan: {
+      schema_version: "ctoa.equipment-capture-profile-change-plan.v1", generated_at_unix_ms: generatedAtUnixMs,
+      status: "blocked", mode: "repo_only_change_plan", sources: {}, input_status: {}, input_sha256: {},
+      input_binding_sha256: hash, requested_identifiers: {}, operator_confirmation: {}, checks: {}, observation_age_ms: null,
+      blockers: ["capture_doctor_blocked"], plan: null, plan_sha256: null, explanation: "blocked", operator_review_required: true,
+      acceptance_granted: false, runtime_readiness_claimed: false, eligibility_changed: false, profile_write_performed: false,
+      repo_report_write_only: true, live_file_writes: false, interaction_contract: {}, ...noAction,
+    },
+    equipment_dependency_preflight: {
+      schema_version: "ctoa.equipment-dependency-preflight.v1", mode: "repo_only_dependency_preflight",
+      evaluated_at_unix_ms: generatedAtUnixMs, status: "blocked", dependencies_satisfied: false, inputs: {}, input_sha256: {},
+      canonical_input_sha256: hash, checks: {}, upstream_blockers: {}, blockers: ["p9_report_missing"], decision_sha256: hash,
+      eligibility_changed: false, eligibility_state: "unchanged", operational_readiness_claimed: false,
+      operator_review_required: true, repo_report_write_only: true, live_file_writes: false, ...noAction,
+    },
+    equipment_operator_readiness: {
+      schema_version: "ctoa.equipment-operator-readiness.v1", mode: "repo_only_operator_explain",
+      generated_at_unix_ms: generatedAtUnixMs, status: "blocked", operator_inputs_ready: false, inputs: {}, input_sha256: {},
+      canonical_input_sha256: hash, blocker_counts: {missing: 1, invalid: 0, stale: 0, upstream: 0, total: 1},
+      blockers: ["capture_doctor_missing"], blocker_details: [], next_actions: [{order: 1, source: "capture_doctor", category: "missing", command: ".\\ctoa.ps1 otp10doctor", instruction: "Run doctor", changes_eligibility: false, action_scope: "passive_or_repo_only"}],
+      eligibility_changed: false, eligibility_state: "unchanged", operational_readiness_claimed: false, operator_review_required: true,
+      repo_report_write_only: true, live_file_writes: false, ...noAction,
+    },
+  }
 }
 
 function conditionsShadowReplayPayload(generatedAtUnixMs: number, ready = false) {
@@ -282,11 +580,30 @@ describe("Control Center evidence config", () => {
     expect(config.helperConditionsShadowReplayPath).toBe(
       path.join(repoRoot, "runtime", "solteria_helper_dev", "conditions_shadow_replay.json"),
     )
+    expect(config.helperEquipmentObservationPreviewPath).toBe(
+      path.join(repoRoot, "runtime", "solteria_helper_dev", "equipment_observation_preview.json"),
+    )
+    expect(config.helperEquipmentCandidateCatalogPath).toBe(
+      path.join(repoRoot, "runtime", "solteria_helper_dev", "equipment_candidate_catalog.json"),
+    )
+    expect(config.helperEquipmentCaptureProfileDoctorPath).toBe(
+      path.join(repoRoot, "runtime", "solteria_helper_dev", "equipment_capture_profile_doctor.json"),
+    )
+    expect(config.helperEquipmentCaptureProfileChangePlanPath).toBe(
+      path.join(repoRoot, "runtime", "solteria_helper_dev", "equipment_capture_profile_change_plan.json"),
+    )
+    expect(config.helperEquipmentDependencyPreflightPath).toBe(
+      path.join(repoRoot, "runtime", "solteria_helper_dev", "equipment_dependency_preflight.json"),
+    )
+    expect(config.helperEquipmentOperatorReadinessPath).toBe(
+      path.join(repoRoot, "runtime", "solteria_helper_dev", "equipment_operator_readiness.json"),
+    )
     expect(config.engineBrainManifestPath).toBe(path.join(repoRoot, "AI", "generated", "manifest.json"))
     expect(config.engineBrainP6ReadinessPath).toBe(path.join(repoRoot, "AI", "generated", "P6_CODEX_INTEGRATION_READINESS.json"))
     expect(config.engineBrainP6PluginHandoffSmokePath).toBe(path.join(repoRoot, "runtime", "control-center", "p6-plugin-handoff-smoke.json"))
     expect(config.engineBrainSecretGuardrailPath).toBe(path.join(repoRoot, "AI", "generated", "SECRET_GUARDRAIL.json"))
     expect(config.engineBrainOperatorBriefPath).toBe(path.join(repoRoot, "AI", "generated", "P7_OPERATOR_BRIEF.json"))
+    expect(config.engineBrainRoadmapStatePath).toBe(path.join(repoRoot, "AI", "generated", "ROADMAP_STATE.json"))
     expect(config.engineBrainP7CockpitSmokePath).toBe(path.join(repoRoot, "runtime", "control-center", "p7-cockpit-smoke.json"))
     expect(config.engineBrainP7SafeWriteDryRunSmokePath).toBe(
       path.join(repoRoot, "runtime", "control-center", "p7-safe-write-dry-run-smoke.json"),
@@ -1552,6 +1869,122 @@ describe("Control Center evidence config", () => {
     expect(duplicate.contractValid).toBe(false)
   })
 
+  it("binds P10 acceptance to the full receipt contract and current ready report", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "ctoa-equipment-acceptance-"))
+    isolateEvidenceEnv(root)
+    const helperDevDir = path.join(root, "runtime", "solteria_helper_dev")
+    const reportPath = path.join(helperDevDir, "equipment_shadow_replay.json")
+    const receiptPath = path.join(helperDevDir, "equipment_shadow_acceptance.json")
+    await mkdir(helperDevDir, { recursive: true })
+    const now = Date.now()
+    const report = equipmentShadowReplayPayload(now - 1000)
+    const receipt = acceptedEquipmentReceipt(report, now)
+    await writeFile(reportPath, JSON.stringify(report), "utf-8")
+    await writeFile(receiptPath, JSON.stringify(receipt), "utf-8")
+
+    const accepted = (await collectControlCenterEvidence()).otclientHelper.equipmentShadowAcceptance
+    expect(accepted).toMatchObject({
+      status: "accepted",
+      contractValid: true,
+      reportHashMatch: true,
+      acceptanceGranted: true,
+      p11PredecessorEligible: true,
+      runtimeReadinessClaimed: false,
+      dispatchAllowed: false,
+      runtimeActions: false,
+    })
+
+    const mutations = [
+      "extra", "basis", "receipt_id", "confirmation", "runtime", "fixture", "canonical", "report_hash", "accepted_blocker",
+    ] as const
+    for (const mutation of mutations) {
+      const changed = structuredClone(receipt)
+      if (mutation === "extra") changed.extra = false
+      else if (mutation === "basis") changed.acceptance_basis_sha256 = "b".repeat(64)
+      else if (mutation === "receipt_id") changed.receipt_id = "equipment-shadow-acceptance-0000000000000000"
+      else if (mutation === "confirmation") changed.confirmation_sha256 = "b".repeat(64)
+      else if (mutation === "runtime") changed.runtime_actions = true
+      else if (mutation === "fixture") changed.operational_inputs_fixture = true
+      else if (mutation === "canonical") changed.canonical_operational_paths = false
+      else if (mutation === "report_hash") changed.report_sha256 = "b".repeat(64)
+      else changed.blockers = ["report_stale"]
+      await writeFile(receiptPath, JSON.stringify(changed), "utf-8")
+      const summary = (await collectControlCenterEvidence()).otclientHelper.equipmentShadowAcceptance
+      expect(summary.status, mutation).toBe("invalid")
+      expect(summary.acceptanceGranted, mutation).toBe(false)
+      expect(summary.p11PredecessorEligible, mutation).toBe(false)
+      expect(summary.runtimeReadinessClaimed, mutation).toBe(false)
+      expect(summary.dispatchAllowed, mutation).toBe(false)
+      expect(summary.runtimeActions, mutation).toBe(false)
+    }
+
+    await writeFile(receiptPath, JSON.stringify(receipt), "utf-8")
+    report.operational_acceptance_status = "operational_acceptance_blocked"
+    const blockedTrace = report.operational_trace as Record<string, unknown>
+    blockedTrace.status = "operational_acceptance_blocked"
+    blockedTrace.decision = "hold"
+    blockedTrace.rollback_simulation = "blocked"
+    blockedTrace.blockers = ["p9_receipt_missing"]
+    await writeFile(reportPath, JSON.stringify(report), "utf-8")
+    const rebound = acceptedEquipmentReceipt(report, Date.now())
+    await writeFile(receiptPath, JSON.stringify(rebound), "utf-8")
+    const blockedReport = (await collectControlCenterEvidence()).otclientHelper.equipmentShadowAcceptance
+    expect(blockedReport.status).toBe("invalid")
+    expect(blockedReport.p11PredecessorEligible).toBe(false)
+
+    const fixtureReport = equipmentShadowReplayPayload(Date.now() - 1000)
+    ;(fixtureReport.operational_trace as Record<string, unknown>).source = "fixture"
+    await writeFile(reportPath, JSON.stringify(fixtureReport), "utf-8")
+    await writeFile(receiptPath, JSON.stringify(acceptedEquipmentReceipt(fixtureReport, Date.now())), "utf-8")
+    const fixtureSummary = (await collectControlCenterEvidence()).otclientHelper.equipmentShadowAcceptance
+    expect(fixtureSummary.status).toBe("invalid")
+    expect(fixtureSummary.p11PredecessorEligible).toBe(false)
+
+    const staleReport = equipmentShadowReplayPayload(Date.now() - 31_000)
+    await writeFile(reportPath, JSON.stringify(staleReport), "utf-8")
+    await writeFile(receiptPath, JSON.stringify(acceptedEquipmentReceipt(staleReport, Date.now())), "utf-8")
+    const staleSummary = (await collectControlCenterEvidence()).otclientHelper.equipmentShadowAcceptance
+    expect(staleSummary.status).toBe("invalid")
+    expect(staleSummary.p11PredecessorEligible).toBe(false)
+  })
+
+  it("projects all six P10 operator artifacts with fixed paths and fail-closed action flags", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "ctoa-equipment-six-artifacts-"))
+    isolateEvidenceEnv(root)
+    const helperDevDir = path.join(root, "runtime", "solteria_helper_dev")
+    await mkdir(helperDevDir, { recursive: true })
+    const now = Date.now()
+    const payloads = p10SixArtifactPayloads(now)
+    for (const [name, payload] of Object.entries(payloads)) {
+      await writeFile(path.join(helperDevDir, `${name}.json`), JSON.stringify(payload), "utf-8")
+    }
+
+    const evidence = await collectControlCenterEvidence()
+    expect(evidence.otclientHelper.equipmentObservationPreview).toMatchObject({
+      status: "preview_ready", reportedStatus: "preview_ready", contractValid: true, ready: true,
+      eligibilityChanged: null, dispatchAllowed: false, runtimeActions: false,
+    })
+    expect(evidence.otclientHelper.equipmentCandidateCatalog.status).toBe("catalog_ready")
+    expect(evidence.otclientHelper.equipmentCaptureProfileDoctor.status).toBe("ready")
+    expect(evidence.otclientHelper.equipmentCaptureProfileChangePlan).toMatchObject({
+      status: "blocked", eligibilityChanged: false, eligibilityState: "not_declared", dispatchAllowed: false,
+    })
+    expect(evidence.otclientHelper.equipmentDependencyPreflight).toMatchObject({
+      status: "blocked", eligibilityChanged: false, eligibilityState: "unchanged", runtimeActions: false,
+    })
+    expect(evidence.otclientHelper.equipmentOperatorReadiness).toMatchObject({
+      status: "blocked", eligibilityChanged: false, eligibilityState: "unchanged", nextActions: ["Run doctor"],
+    })
+
+    const malformed = { ...payloads.equipment_operator_readiness, unexpected: true }
+    await writeFile(path.join(helperDevDir, "equipment_operator_readiness.json"), JSON.stringify(malformed), "utf-8")
+    const invalid = (await collectControlCenterEvidence()).otclientHelper.equipmentOperatorReadiness
+    expect(invalid.status).toBe("invalid")
+    expect(invalid.contractValid).toBe(false)
+    expect(invalid.dispatchAllowed).toBe(false)
+    expect(invalid.runtimeActions).toBe(false)
+  })
+
   it("bounds oversized action audit drilldown to a redacted tail sample", async () => {
     const root = await mkdtemp(path.join(os.tmpdir(), "ctoa-action-audit-tail-"))
     isolateEvidenceEnv(root)
@@ -1913,5 +2346,176 @@ describe("Control Center evidence config", () => {
     expect(JSON.stringify(evidence)).not.toContain(root.replace(/\\/g, "/"))
     expect(JSON.stringify(evidence)).not.toContain(root)
     expect(JSON.stringify(evidence)).not.toContain("C:\\Users\\zycie")
+  })
+})
+describe("P10 equipment operator refresh run", () => {
+  it("fails closed for missing and malformed run envelopes", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "ctoa-refresh-run-"))
+    isolateEvidenceEnv(root)
+    const missing = (await collectControlCenterEvidence()).otclientHelper.equipmentOperatorRefreshRun
+    expect(missing).toMatchObject({ status: "missing", contractValid: false, dispatchAllowed: false, eligibilityChanged: false, readOnly: true })
+
+    const artifact = path.join(root, "runtime", "solteria_helper_dev", "equipment_operator_refresh_run.json")
+    await mkdir(path.dirname(artifact), { recursive: true })
+    await writeFile(artifact, JSON.stringify({ schema_version: "ctoa.equipment-operator-refresh-run.v1", status: "completed" }), "utf-8")
+    const invalid = (await collectControlCenterEvidence()).otclientHelper.equipmentOperatorRefreshRun
+    expect(invalid.status).toBe("invalid")
+    expect(invalid.contractValid).toBe(false)
+    expect(invalid.runId).toBe("")
+    expect(invalid.artifactHashes).toEqual({})
+    expect(invalid.noActionVerified).toBe(false)
+  })
+})
+
+describe("P13 roadmap state", () => {
+  it("consumes a fixed-path confirmed state as read-only evidence", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "ctoa-roadmap-state-"))
+    isolateEvidenceEnv(root)
+    const statePath = path.join(root, "AI", "generated", "ROADMAP_STATE.json")
+    const auditPath = path.join(root, "runtime", "control-center", "action-audit.jsonl")
+    await mkdir(path.dirname(statePath), { recursive: true })
+    await mkdir(path.dirname(auditPath), { recursive: true })
+
+    const payload = roadmapStatePayload()
+    const raw = `${JSON.stringify(payload, null, 2)}\n`
+    const fileSha256 = crypto.createHash("sha256").update(raw).digest("hex")
+    await writeFile(statePath, raw, "utf-8")
+    await writeFile(
+      auditPath,
+      `${JSON.stringify({
+        at: "2026-07-15T10:00:01Z",
+        audit_id: "p13-confirmed-test",
+        actor_role: "operator",
+        action: "roadmap-state-refresh",
+        target: "local",
+        risk_class: "safe_write",
+        dry_run: false,
+        authorized: true,
+        ok: true,
+        output_hashes: { "AI/generated/ROADMAP_STATE.json": fileSha256 },
+        written_paths: ["AI/generated/ROADMAP_STATE.json", "AI/generated/ROADMAP_STATE.md"],
+      })}\n`,
+      "utf-8",
+    )
+
+    const roadmap = (await collectControlCenterEvidence()).roadmapState
+
+    expect(roadmap).toMatchObject({
+      status: "ready",
+      reportedStatus: "ready",
+      schemaVersion: "ctoa.roadmap-state.v1",
+      phase: "P13",
+      phaseStatus: "runtime_evidence_ready",
+      nextPhase: "P14",
+      contractValid: true,
+      contractErrors: [],
+      freshnessStatus: "current",
+      tamperStatus: "passed",
+      summary: {
+        ledgerCount: 7,
+        acceptedCount: 6,
+        closedNoActionCount: 1,
+        totalAttemptCount: 2,
+        runtimeAuthorityCount: 0,
+        liveAuthorityCount: 0,
+      },
+      authority: {
+        controlCenterMode: "read_only",
+        runtimeExecutorAdded: false,
+        runtimeActions: false,
+        liveAuthority: false,
+        p12HealFriendReopened: false,
+        mcpWriteToolEnabled: false,
+      },
+      auditBinding: {
+        status: "passed",
+        auditId: "p13-confirmed-test",
+        expectedSha256: fileSha256,
+        actualSha256: fileSha256,
+      },
+      sourcePath: "[external]/ROADMAP_STATE.json",
+      readOnly: true,
+    })
+    expect(roadmap.ledger).toHaveLength(7)
+    expect(roadmap.ledger[6]).toMatchObject({
+      decisionId: "p12-heal-friend-no-compatible-vocation",
+      decisionStatus: "closed_no_action",
+      resultStatus: "closed_blocked_no_compatible_vocation",
+      attemptCount: 0,
+    })
+    expect("command" in roadmap).toBe(false)
+  })
+
+  it("keeps audit provenance separate and blocks an unaudited state", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "ctoa-roadmap-state-unaudited-"))
+    isolateEvidenceEnv(root)
+    const statePath = path.join(root, "AI", "generated", "ROADMAP_STATE.json")
+    await mkdir(path.dirname(statePath), { recursive: true })
+    await writeFile(statePath, `${JSON.stringify(roadmapStatePayload(), null, 2)}\n`, "utf-8")
+
+    const roadmap = (await collectControlCenterEvidence()).roadmapState
+
+    expect(roadmap.contractValid).toBe(true)
+    expect(roadmap.auditBinding.status).toBe("missing")
+    expect(roadmap.status).toBe("blocked")
+    expect(roadmap.readOnly).toBe(true)
+  })
+
+  it("surfaces the P14 independent-runner foundation read-only and fails closed on authority drift", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "ctoa-p14-runner-foundation-"))
+    isolateEvidenceEnv(root)
+    const evidencePath = path.join(root, "runtime", "evidence", "latest.json")
+    await mkdir(path.dirname(evidencePath), { recursive: true })
+    const foundation = {
+      status: "foundation_ready",
+      contract_version: "ctoa.p14-runner-request.v1",
+      implementation_file_count: 6,
+      required_file_count: 6,
+      operational_runner_result: "missing",
+      operational_ready: false,
+      runtime_authority_granted: false,
+      live_authority_granted: false,
+      promotion_approved: false,
+      mcp_write_tool_enabled: false,
+      blockers: [],
+    }
+    const payload = {
+      otclient_helper: {
+        roadmap_phase_state: {
+          status: "p14_foundation_ready",
+          current_phase: "P14",
+          next_phase: "P14",
+          aligned_with_current_roadmap: true,
+          p14: foundation,
+        },
+      },
+    }
+    await writeFile(evidencePath, JSON.stringify(payload), "utf-8")
+
+    const ready = (await collectControlCenterEvidence()).p14RunnerFoundation
+    expect(ready).toMatchObject({
+      status: "ready",
+      reportedStatus: "foundation_ready",
+      currentPhase: "P14",
+      nextPhase: "P14",
+      contractVersion: "ctoa.p14-runner-request.v1",
+      implementationFileCount: 6,
+      requiredFileCount: 6,
+      operationalRunnerResult: "missing",
+      operationalReady: false,
+      runtimeAuthorityGranted: false,
+      liveAuthorityGranted: false,
+      promotionApproved: false,
+      mcpWriteToolEnabled: false,
+      blockers: [],
+      readOnly: true,
+    })
+
+    foundation.live_authority_granted = true
+    await writeFile(evidencePath, JSON.stringify(payload), "utf-8")
+    const blocked = (await collectControlCenterEvidence()).p14RunnerFoundation
+    expect(blocked.status).toBe("blocked")
+    expect(blocked.liveAuthorityGranted).toBe(true)
+    expect(blocked.readOnly).toBe(true)
   })
 })

@@ -36,7 +36,7 @@ STUDIO_PRIVATE_INCLUDES = {
     "readable_pack",
 }
 
-PUBLIC_CORE_PATHS = {
+CORE_DISTRIBUTION_PATHS = {
     "agents",
     "config",
     "core",
@@ -67,7 +67,9 @@ def _load_manifest(path: Path) -> dict[str, Any]:
 def _normalized_paths(values: Any) -> set[str]:
     if not isinstance(values, list):
         return set()
-    return {str(value).strip().replace("\\", "/") for value in values if str(value).strip()}
+    return {
+        str(value).strip().replace("\\", "/") for value in values if str(value).strip()
+    }
 
 
 def validate_package_boundaries(
@@ -93,22 +95,34 @@ def validate_package_boundaries(
         issues.append("pro.manifest.json must declare tier=Pro")
     if str(studio.get("tier")) != "Studio":
         issues.append("studio.manifest.json must declare tier=Studio")
+    if str(core.get("visibility")) != "private":
+        issues.append("core.manifest.json must declare visibility=private")
+    if str(pro.get("visibility")) != "private":
+        issues.append("pro.manifest.json must declare visibility=private")
     if str(pro.get("extends")) != "Core":
         issues.append("pro.manifest.json must extend Core")
     if str(studio.get("visibility")) != "private":
         issues.append("studio.manifest.json must declare visibility=private")
 
-    missing_core_paths = sorted(PUBLIC_CORE_PATHS - core_includes)
+    missing_core_paths = sorted(CORE_DISTRIBUTION_PATHS - core_includes)
     if missing_core_paths:
-        issues.append("core.manifest.json is missing public core paths: " + ", ".join(missing_core_paths))
+        issues.append(
+            "core.manifest.json is missing public core paths: "
+            + ", ".join(missing_core_paths)
+        )
 
     missing_pro_paths = sorted(PRO_EXTRA_PATHS - pro_includes)
     if missing_pro_paths:
-        issues.append("pro.manifest.json is missing Pro paths: " + ", ".join(missing_pro_paths))
+        issues.append(
+            "pro.manifest.json is missing Pro paths: " + ", ".join(missing_pro_paths)
+        )
 
     missing_studio_paths = sorted(STUDIO_PRIVATE_INCLUDES - studio_includes)
     if missing_studio_paths:
-        issues.append("studio.manifest.json is missing private paths: " + ", ".join(missing_studio_paths))
+        issues.append(
+            "studio.manifest.json is missing private paths: "
+            + ", ".join(missing_studio_paths)
+        )
 
     if "mobile_console" in core_includes:
         issues.append("core.manifest.json must not include mobile_console")
@@ -133,7 +147,9 @@ def validate_package_boundaries(
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Validate Core/Pro/Studio package boundaries")
+    parser = argparse.ArgumentParser(
+        description="Validate Core/Pro/Studio package boundaries"
+    )
     parser.add_argument("--root", default=str(ROOT), help="Repository root")
     args = parser.parse_args()
 

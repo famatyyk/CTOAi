@@ -1,0 +1,239 @@
+{
+  "schema_version": "ctoa.roadmap-schema-registry.v1",
+  "entries": [
+    {
+      "decision_id": "p8-background-acceptance",
+      "ordinal": 8,
+      "phase": "P8",
+      "lane": "background",
+      "path": "runtime/solteria_helper_dev/background_status.json",
+      "expected_schema_version": "ctoa.otclient-headless-status.v1",
+      "expected_status": "ready",
+      "decision_status": "accepted",
+      "result_status": "operational_acceptance_complete",
+      "terminal": true,
+      "freshness_policy": "immutable_terminal",
+      "required_false_flags": ["dispatch_allowed", "runtime_actions", "promotion_allowed"],
+      "required_true_flags": ["advisory_only", "safe_to_run_while_playing"],
+      "blocker_field": "blockers",
+      "expected_attempt_count": null,
+      "expected_retry_scheduled": null,
+      "expected_final_state": null,
+      "expected_intrusive_action_count": 0,
+      "predecessor_ids": [],
+      "bindings": []
+    },
+    {
+      "decision_id": "p9-conditions-shadow-acceptance",
+      "ordinal": 9,
+      "phase": "P9",
+      "lane": "conditions",
+      "path": "runtime/solteria_helper_dev/conditions_shadow_acceptance.json",
+      "expected_schema_version": "ctoa.conditions-shadow-acceptance.v1",
+      "expected_status": "accepted",
+      "decision_status": "accepted",
+      "result_status": "operational_acceptance_complete",
+      "terminal": true,
+      "freshness_policy": "immutable_terminal",
+      "required_false_flags": ["dispatch_allowed", "runtime_actions", "execute_once_allowed", "promotion_allowed", "runtime_readiness_claimed"],
+      "required_true_flags": ["acceptance_granted"],
+      "blocker_field": "blockers",
+      "expected_attempt_count": null,
+      "expected_retry_scheduled": null,
+      "expected_final_state": null,
+      "expected_intrusive_action_count": 0,
+      "predecessor_ids": ["p8-background-acceptance"],
+      "bindings": [
+        {
+          "role": "report",
+          "path": "runtime/solteria_helper_dev/conditions_shadow_replay.json",
+          "mode": "canonical_json_sha256",
+          "target_field": "report_sha256"
+        }
+      ]
+    },
+    {
+      "decision_id": "p10-equipment-shadow-acceptance",
+      "ordinal": 10,
+      "phase": "P10",
+      "lane": "equipment",
+      "path": "runtime/solteria_helper_dev/equipment_shadow_acceptance.json",
+      "expected_schema_version": "ctoa.equipment-shadow-acceptance.v1",
+      "expected_status": "accepted",
+      "decision_status": "accepted",
+      "result_status": "operational_acceptance_complete",
+      "terminal": true,
+      "freshness_policy": "immutable_terminal",
+      "required_false_flags": ["dispatch_allowed", "runtime_actions", "execute_once_allowed", "promotion_allowed", "runtime_readiness_claimed"],
+      "required_true_flags": ["acceptance_granted"],
+      "blocker_field": "blockers",
+      "expected_attempt_count": null,
+      "expected_retry_scheduled": null,
+      "expected_final_state": null,
+      "expected_intrusive_action_count": 0,
+      "predecessor_ids": ["p9-conditions-shadow-acceptance"],
+      "bindings": [
+        {
+          "role": "report",
+          "path": "runtime/solteria_helper_dev/equipment_shadow_replay.json",
+          "mode": "canonical_json_sha256",
+          "target_field": "report_sha256"
+        }
+      ]
+    },
+    {
+      "decision_id": "p11-heal-friend-shadow-acceptance",
+      "ordinal": 11,
+      "phase": "P11",
+      "lane": "heal_friend",
+      "path": "runtime/solteria_helper_dev/heal_friend_shadow_acceptance.json",
+      "expected_schema_version": "ctoa.heal-friend-shadow-acceptance.v1",
+      "expected_status": "accepted",
+      "decision_status": "accepted",
+      "result_status": "operational_acceptance_complete",
+      "terminal": true,
+      "freshness_policy": "immutable_terminal",
+      "required_false_flags": ["dispatch_allowed", "runtime_actions", "execute_once_allowed", "promotion_allowed", "runtime_readiness_claimed", "casts", "talks"],
+      "required_true_flags": ["acceptance_granted"],
+      "blocker_field": "blockers",
+      "expected_attempt_count": null,
+      "expected_retry_scheduled": null,
+      "expected_final_state": null,
+      "expected_intrusive_action_count": 0,
+      "predecessor_ids": ["p10-equipment-shadow-acceptance"],
+      "bindings": [
+        {
+          "role": "report",
+          "path": "runtime/solteria_helper_dev/heal_friend_shadow_replay.json",
+          "mode": "canonical_json_sha256",
+          "target_field": "report_sha256"
+        }
+      ]
+    },
+    {
+      "decision_id": "p12-conditions-execute-once",
+      "ordinal": 12,
+      "phase": "P12",
+      "lane": "conditions",
+      "path": "runtime/solteria_helper_dev/p12_conditions_execute_once_receipt.json",
+      "expected_schema_version": "ctoa.p12-conditions-execute-once-receipt.v1",
+      "expected_status": "accepted",
+      "decision_status": "accepted",
+      "result_status": "operational_acceptance_complete",
+      "terminal": true,
+      "freshness_policy": "immutable_terminal",
+      "required_false_flags": ["dispatch_allowed", "runtime_actions", "execute_once_allowed", "live_promotion", "downstream_authority_granted", "retry_scheduled"],
+      "required_true_flags": ["acceptance_granted"],
+      "blocker_field": "blockers",
+      "expected_attempt_count": 1,
+      "expected_retry_scheduled": false,
+      "expected_final_state": "killed_and_disarmed",
+      "expected_intrusive_action_count": 1,
+      "predecessor_ids": ["p9-conditions-shadow-acceptance"],
+      "bindings": [
+        {
+          "role": "plan",
+          "path": "runtime/solteria_helper_dev/p12_conditions_execute_once_plan.json",
+          "mode": "field_match",
+          "target_field": "plan_sha256",
+          "source_field": "plan_sha256"
+        },
+        {
+          "role": "approval",
+          "path": "runtime/solteria_helper_dev/p12_conditions_session_approval.json",
+          "mode": "canonical_json_sha256",
+          "target_field": "approval_sha256"
+        },
+        {
+          "role": "trace",
+          "path": "runtime/solteria_helper_dev/p12_conditions_execute_once_trace.json",
+          "mode": "canonical_json_sha256",
+          "target_field": "trace_sha256"
+        }
+      ]
+    },
+    {
+      "decision_id": "p12-equipment-execute-once",
+      "ordinal": 13,
+      "phase": "P12",
+      "lane": "equipment",
+      "path": "runtime/solteria_helper_dev/p12_equipment_execute_once_receipt.json",
+      "expected_schema_version": "ctoa.p12-equipment-execute-once-receipt.v1",
+      "expected_status": "accepted",
+      "decision_status": "accepted",
+      "result_status": "operational_acceptance_complete",
+      "terminal": true,
+      "freshness_policy": "immutable_terminal",
+      "required_false_flags": ["dispatch_allowed", "runtime_actions", "execute_once_allowed", "live_promotion", "downstream_authority_granted", "retry_scheduled"],
+      "required_true_flags": ["acceptance_granted"],
+      "blocker_field": "blockers",
+      "expected_attempt_count": 1,
+      "expected_retry_scheduled": false,
+      "expected_final_state": "killed_and_disarmed",
+      "expected_intrusive_action_count": 1,
+      "predecessor_ids": ["p10-equipment-shadow-acceptance"],
+      "bindings": [
+        {
+          "role": "plan",
+          "path": "runtime/solteria_helper_dev/p12_equipment_execute_once_plan.json",
+          "mode": "field_match",
+          "target_field": "plan_sha256",
+          "source_field": "plan_sha256"
+        },
+        {
+          "role": "approval",
+          "path": "runtime/solteria_helper_dev/p12_equipment_session_approval.json",
+          "mode": "canonical_json_sha256",
+          "target_field": "approval_sha256"
+        },
+        {
+          "role": "trace",
+          "path": "runtime/solteria_helper_dev/p12_equipment_execute_once_trace.json",
+          "mode": "canonical_json_sha256",
+          "target_field": "trace_sha256"
+        }
+      ]
+    },
+    {
+      "decision_id": "p12-heal-friend-no-compatible-vocation",
+      "ordinal": 14,
+      "phase": "P12",
+      "lane": "heal_friend",
+      "path": "runtime/solteria_helper_dev/p12_heal_friend_no_compatible_vocation_closure.json",
+      "expected_schema_version": "ctoa.p12-heal-friend-no-compatible-vocation-closure.v1",
+      "expected_status": "closed_blocked_no_compatible_vocation",
+      "decision_status": "closed_no_action",
+      "result_status": "closed_blocked_no_compatible_vocation",
+      "terminal": true,
+      "freshness_policy": "immutable_terminal",
+      "required_false_flags": ["dispatch_allowed", "runtime_actions", "execute_once_allowed", "live_promotion", "downstream_authority_granted", "retry_scheduled", "execution_approval_permitted", "session_approval_reusable", "cast_performed", "talk_performed"],
+      "required_true_flags": ["closure_granted", "session_approval_expired"],
+      "blocker_field": "validation_blockers",
+      "expected_attempt_count": 0,
+      "expected_retry_scheduled": false,
+      "expected_final_state": "disarmed",
+      "expected_intrusive_action_count": 0,
+      "predecessor_ids": ["p11-heal-friend-shadow-acceptance", "p12-equipment-execute-once"],
+      "bindings": [
+        {
+          "role": "plan",
+          "path": "runtime/solteria_helper_dev/p12_heal_friend_execute_once_plan.json",
+          "mode": "raw_sha256",
+          "target_field": "plan_file_sha256"
+        },
+        {
+          "role": "approval",
+          "path": "runtime/solteria_helper_dev/p12_heal_friend_session_approval.json",
+          "mode": "raw_sha256",
+          "target_field": "approval_file_sha256"
+        },
+        {
+          "role": "preflight",
+          "path": "runtime/solteria_helper_dev/p12_heal_friend_execution_preflight.json",
+          "mode": "raw_sha256",
+          "target_field": "preflight_file_sha256"
+        }
+      ]
+    }
+  ]
+}

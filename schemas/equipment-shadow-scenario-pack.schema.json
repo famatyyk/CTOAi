@@ -2,14 +2,26 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://ctoa.local/schemas/equipment-shadow-scenario-pack.schema.json",
   "title": "CTOAi Equipment Shadow Scenario Pack v1",
-  "type": "object",
-  "additionalProperties": false,
+  "type": "object", "additionalProperties": false,
   "required": ["schema_version", "fixture_only", "operational_readiness_claimed", "evaluated_at_unix_ms", "scenarios"],
   "properties": {
     "schema_version": {"const": "ctoa.equipment-shadow-scenario-pack.v1"},
-    "fixture_only": {"const": true},
-    "operational_readiness_claimed": {"const": false},
+    "fixture_only": {"const": true}, "operational_readiness_claimed": {"const": false},
     "evaluated_at_unix_ms": {"type": "integer", "minimum": 1},
-    "scenarios": {"type": "array", "minItems": 1, "maxItems": 128, "items": {"type": "object", "additionalProperties": false, "required": ["name", "mutation", "expected_status", "expected_blockers"], "properties": {"name": {"type": "string", "minLength": 1}, "mutation": {"type": "string", "minLength": 1}, "expected_status": {"enum": ["shadow_plan_ready", "operational_acceptance_blocked"]}, "expected_blockers": {"type": "array", "items": {"type": "string"}}}}}
+    "scenarios": {"type": "array", "minItems": 30, "maxItems": 30, "uniqueItems": true, "items": {"$ref": "#/$defs/scenario"}}
+  },
+  "$defs": {
+    "mutation": {"enum": ["none", "inventory_ambiguous", "revision_drift", "missing_ring", "wrong_equipped_id", "wrong_candidate_id", "missing_rollback", "wrong_container", "stale_snapshot", "future_snapshot", "protection_zone", "cooldown_active", "p9_blocked", "p9_tampered", "unsafe_contract", "player_offline", "player_dead", "protection_zone_unknown", "protection_zone_untrusted", "candidate_zero", "rollback_wrong_id", "candidate_container_negative", "candidate_slot_zero", "rollback_slot_mismatch", "cooldown_unknown", "cooldown_untrusted", "retry_nonzero", "inventory_revision_zero", "rollback_revision_zero", "snapshot_extra_key"]},
+    "blocker": {"$ref": "equipment-shadow-trace.schema.json#/$defs/blocker"},
+    "scenario": {
+      "type": "object", "additionalProperties": false,
+      "required": ["name", "mutation", "expected_status", "expected_blockers"],
+      "properties": {
+        "name": {"type": "string", "pattern": "^[a-z0-9_]{1,80}$"},
+        "mutation": {"$ref": "#/$defs/mutation"},
+        "expected_status": {"enum": ["shadow_plan_ready", "operational_acceptance_blocked"]},
+        "expected_blockers": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/blocker"}}
+      }
+    }
   }
 }

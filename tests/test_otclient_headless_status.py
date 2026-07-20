@@ -26,6 +26,31 @@ NOW = datetime(2026, 7, 11, 16, 0, tzinfo=timezone.utc)
 NOW_MS = int(NOW.timestamp() * 1_000)
 
 
+@pytest.mark.parametrize(
+    "relative",
+    [
+        "ctoa_project_loader.lua",
+        "mods/ctoa_chooser/ctoa_chooser.otmod",
+        "mods/ctoa_otclient/ctoa_native_helper.lua",
+        "mods/ctoa_safe/ctoa_safe_helper.lua",
+    ],
+)
+def test_live_manifest_accepts_only_fixed_project_package_paths(relative: str):
+    assert status._manifest_relative_path(relative) == Path(relative)
+
+
+@pytest.mark.parametrize(
+    "relative",
+    [
+        "mods/arbitrary/injected.lua",
+        "mods/ctoa_safe/nested/injected.lua",
+        "../ctoa_project_loader.lua",
+    ],
+)
+def test_live_manifest_rejects_paths_outside_fixed_project_package(relative: str):
+    assert status._manifest_relative_path(relative) is None
+
+
 def _conditions_observation(observed_at_ms: int = NOW_MS - 1_000) -> dict[str, object]:
     return {
         "schema_version": evidence.CONDITIONS_OBSERVATION_SCHEMA,
@@ -37,6 +62,32 @@ def _conditions_observation(observed_at_ms: int = NOW_MS - 1_000) -> dict[str, o
         "protection_zone_source": "player_method",
         "condition_id": "paralyze",
         "condition_state": "present",
+        "cooldown": "ready",
+        "cooldown_source": "game_cooldown_group",
+        "producer_source": "fixture",
+        "dispatch_allowed": False,
+        "runtime_actions": False,
+        "executes_plan": False,
+        "execute_once_allowed": False,
+        "promotion_allowed": False,
+    }
+
+
+def _equipment_observation(observed_at_ms: int = NOW_MS - 1_000) -> dict[str, object]:
+    return {
+        "schema_version": evidence.EQUIPMENT_SHADOW_OBSERVATION_SCHEMA,
+        "observed_at_unix_ms": observed_at_ms,
+        "observation_id": f"equipment-{observed_at_ms}",
+        "online": "online",
+        "alive": "alive",
+        "protection_zone": "outside",
+        "protection_zone_source": "player_method",
+        "inventory_api_available": True,
+        "containers_complete": True,
+        "ring": {"present": True, "item_id": 3051, "count": 1},
+        "candidates": [
+            {"container_id": 2, "slot_index": 1, "item_id": 3048, "count": 1}
+        ],
         "cooldown": "ready",
         "cooldown_source": "game_cooldown_group",
         "producer_source": "fixture",
@@ -191,6 +242,13 @@ def _set_conditions_observation(client: Path, value: object) -> None:
     _write_json(path, payload)
 
 
+def _set_equipment_observation(client: Path, value: object) -> None:
+    path = client / "mods" / "ctoa_otclient" / "ctoa_client_capabilities.json"
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload["equipment_shadow_observation"] = value
+    _write_json(path, payload)
+
+
 def test_bounded_tail_and_session_parser_ignore_old_errors(tmp_path: Path):
     log = tmp_path / "client.log"
     log.write_text(
@@ -282,6 +340,46 @@ def test_valid_conditions_observation_is_strictly_normalized_without_changing_p8
         "validation_errors": [],
         "p9_blocker": None,
     }
+
+
+def test_valid_equipment_observation_is_bounded_and_does_not_authorize_p10(tmp_path: Path):
+    _, client, dev = _fixture(tmp_path)
+    _set_equipment_observation(client, _equipment_observation())
+
+    report = _build(client, dev)
+    observation = report["capability"]["equipment_shadow_observation"]
+
+    assert report["status"] == "ready"
+    assert observation["status"] == "valid"
+    assert observation["valid"] is True
+    assert observation["ring"] == {"present": True, "item_id": 3051, "count": 1}
+    assert observation["candidates"] == [
+        {"container_id": 2, "slot_index": 1, "item_id": 3048, "count": 1}
+    ]
+    assert observation["p10_blocker"] is None
+    assert all(observation[key] is False for key in evidence.CONDITIONS_ACTION_FLAGS)
+
+
+def test_equipment_observation_unknown_fields_duplicates_and_unsafe_flags_fail_closed(tmp_path: Path):
+    _, client, dev = _fixture(tmp_path)
+    value = _equipment_observation()
+    assert isinstance(value["candidates"], list)
+    value["candidates"].append(
+        {"container_id": 2, "slot_index": 1, "item_id": 9999, "count": 1}
+    )
+    _set_equipment_observation(client, value)
+    report = _build(client, dev)
+    observation = report["capability"]["equipment_shadow_observation"]
+    assert report["status"] == "ready"
+    assert observation["status"] == "invalid"
+    assert "candidate_order_or_duplicate" in observation["validation_errors"]
+
+    value = _equipment_observation()
+    value["runtime_actions"] = True
+    _set_equipment_observation(client, value)
+    report = _build(client, dev)
+    assert report["status"] == "blocked"
+    assert report["capability"]["status"] == "unsafe_runtime_claim"
 
 
 @pytest.mark.parametrize(
@@ -380,6 +478,18 @@ def test_conditions_observation_id_rejects_dot():
 
     assert normalized["status"] == "invalid"
     assert "observation_id" in normalized["validation_errors"]
+
+
+def test_conditions_observation_accepts_proven_player_states_source():
+    observation = _conditions_observation()
+    observation["protection_zone"] = "inside"
+    observation["protection_zone_source"] = "player_states"
+
+    normalized = evidence.summarize_conditions_observation(observation)
+
+    assert normalized["status"] == "valid"
+    assert normalized["valid"] is True
+    assert normalized["protection_zone_source"] == "player_states"
 
 
 def test_conditions_observation_json_schema_matches_sanitizer_bounds():
@@ -1057,7 +1167,9 @@ def test_background_wrapper_has_positive_allowlist_and_guarded_primitives():
         "Capture-Screenshot",
     ):
         start = wrapper.index(f"function {function_name}")
-        assert "Assert-InteractiveOperatorMode" in wrapper[start : start + 700]
+        next_function = wrapper.find("\nfunction ", start + len("function "))
+        function_body = wrapper[start : next_function if next_function >= 0 else None]
+        assert "Assert-InteractiveOperatorMode" in function_body
     assert "deterministic_work_dir_path = true" in reporter
     assert "no_screen_safe = true" in reporter
     assert "bounded_tail_text(log_path)" in smoke

@@ -22,6 +22,28 @@ def test_full_workspace_audit_categories_keep_git_vendor_and_secrets_visible():
     )
 
 
+def test_compact_summary_omits_file_inventory_rows():
+    summary = audit.build_compact_summary(
+        {
+            "schema_version": 1,
+            "generated_at_utc": "2026-07-16T00:00:00Z",
+            "root": "C:/repo",
+            "coverage": {"regular_file_count": 2},
+            "counts_by_category": {"tracked_source": 2},
+            "bytes_by_category": {"tracked_source": 20},
+            "audit_gate": {"status": "evidence_ready"},
+            "files": [{"path": "private/file.py"}],
+            "dirty_entries": ["private/file.py"],
+            "top_directories": {"private": {"files": 1}},
+        }
+    )
+
+    assert summary["coverage"] == {"regular_file_count": 2}
+    assert "files" not in summary
+    assert "dirty_entries" not in summary
+    assert "top_directories" not in summary
+
+
 def test_three_development_plans_render_expected_plan_names():
     markdown = audit.render_plans_markdown(
         {

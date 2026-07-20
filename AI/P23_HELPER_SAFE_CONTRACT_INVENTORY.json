@@ -1,0 +1,108 @@
+{
+  "schema_version": "ctoa.helper-safe-contract-inventory.v1",
+  "status": "p23_2_no_share_complete",
+  "generated_at": "2026-07-16",
+  "products": {
+    "helper": {
+      "role": "primary_product",
+      "source_root": "scripts/lua/otclient",
+      "profile_schema": "ctoa-helper-profile-v1",
+      "loader_owner": "ctoa_otclient_loader.lua"
+    },
+    "safe": {
+      "role": "separate_secondary_product",
+      "source_root": "mods/ctoa_safe",
+      "profile_schema": "ctoa-safe-profile-v3",
+      "loader_owner": "ctoa_safe_loader.lua"
+    }
+  },
+  "classification_policy": {
+    "share": "identical pure data semantics with no product identity, loader, runtime state or evidence authority",
+    "adapt": "same concept but product-specific schema names, limits or presentation require an explicit adapter",
+    "reject": "loader, mutable runtime, UI, persistence, acceptance evidence or promotion authority must remain product-owned"
+  },
+  "contracts": [
+    {
+      "id": "numeric_condition_operators",
+      "classification": "share",
+      "helper_owner": "scripts/lua/otclient/ctoa_helper_rule_engine.lua",
+      "safe_fixture_adapter": "tests/fixtures/lua/ctoa_safe_condition_contract.lua",
+      "semantics": ["<", "<=", "=", "!=", ">=", ">", "AND", "OR"],
+      "runtime_actions": false
+    },
+    {
+      "id": "condition_metric_names",
+      "classification": "adapt",
+      "helper_values": ["hp_percent", "mana_percent", "monster_count"],
+      "safe_values": ["hp", "mana", "monsters"],
+      "adapter": {"hp": "hp_percent", "mana": "mana_percent", "monsters": "monster_count"},
+      "runtime_actions": false
+    },
+    {
+      "id": "bounded_randomization",
+      "classification": "adapt",
+      "maximum": 20,
+      "deterministic_fixture_required": true,
+      "helper_lifecycle": "per_evaluation_injected_offset",
+      "safe_lifecycle": "cached_effective_threshold_until_successful_action_reset",
+      "runtime_parity": false,
+      "runtime_actions": false
+    },
+    {
+      "id": "hysteresis_cooldown_and_extended_metrics",
+      "classification": "adapt",
+      "helper_only": ["hysteresis", "cooldown_ms", "distance", "pz", "active_condition"],
+      "safe_policy": "unsupported fields remain absent until an explicit Safe product decision",
+      "runtime_actions": false
+    },
+    {
+      "id": "profile_schema_and_persistence",
+      "classification": "reject",
+      "reason": "Helper v1 and Safe v3 have different ownership, migration and persistence boundaries"
+    },
+    {
+      "id": "loader_and_lifecycle",
+      "classification": "reject",
+      "reason": "exclusive project loaders and teardown state cannot be shared"
+    },
+    {
+      "id": "mutable_runtime_state_and_dispatch",
+      "classification": "reject",
+      "reason": "cooldowns, armed state, events and native calls remain product-local"
+    },
+    {
+      "id": "ui_hud_and_widget_state",
+      "classification": "reject",
+      "reason": "Helper and Safe retain separate layouts, widgets and preference surfaces"
+    },
+    {
+      "id": "acceptance_evidence_and_promotion",
+      "classification": "reject",
+      "reason": "Safe evidence never satisfies Helper gates and promotion authority is product-specific"
+    }
+  ],
+  "parity_fixture": {
+    "path": "tests/fixtures/ctoa_helper_safe_condition_parity_v1.json",
+    "scope": ["numeric_metrics", "six_operators", "AND_OR", "one_shot_bounded_randomization"],
+    "role": "contract_probe_not_product_adapter",
+    "runtime_randomization_parity_evaluated": false,
+    "operational_acceptance_evaluated": false,
+    "runtime_actions": false,
+    "dispatch_allowed": false,
+    "promotion_allowed": false
+  },
+  "boundaries": {
+    "shared_runtime_files": [],
+    "shared_loaders": [],
+    "shared_mutable_state": [],
+    "shared_acceptance_receipts": [],
+    "safe_acceptance_satisfies_helper": false,
+    "helper_acceptance_satisfies_safe": false
+  },
+  "decision": {
+    "path": "AI/P23_2_CONDITION_CORE_DECISION.json",
+    "result": "no_shared_runtime_core",
+    "reason": "product-local condition lifecycles and independent package manifests outweigh the small code-level duplication"
+  },
+  "next_slice": "P24.1 independent replay matrix and canary specification"
+}

@@ -1,17 +1,27 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-12T01:33:15+00:00",
+  "generated_at": "2026-07-16T18:25:57+00:00",
   "source": "runtime\\audits\\ctoai-full-workspace-audit.json",
   "status": "ready",
   "areas": [
     {
+      "path": ".codex-tmp",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 8,
+      "bytes": 138470,
+      "categories": {
+        "untracked_local": 8
+      }
+    },
+    {
       "path": ".ctoa-local",
       "owner": "Local/uncategorized",
       "validation_gate": "manual review",
-      "files": 9,
-      "bytes": 45939,
+      "files": 12,
+      "bytes": 47490,
       "categories": {
-        "runtime_or_local_state": 9
+        "runtime_or_local_state": 12
       }
     },
     {
@@ -58,10 +68,10 @@
       "path": ".git",
       "owner": "Local/uncategorized",
       "validation_gate": "manual review",
-      "files": 474,
-      "bytes": 3585482143,
+      "files": 950,
+      "bytes": 3591429984,
       "categories": {
-        "git_internal": 474
+        "git_internal": 950
       }
     },
     {
@@ -78,10 +88,10 @@
       "path": ".github",
       "owner": "Local/uncategorized",
       "validation_gate": "manual review",
-      "files": 41,
-      "bytes": 145403,
+      "files": 44,
+      "bytes": 154086,
       "categories": {
-        "tracked_source": 41
+        "tracked_source": 44
       }
     },
     {
@@ -119,7 +129,7 @@
       "owner": "Local/uncategorized",
       "validation_gate": "manual review",
       "files": 1,
-      "bytes": 784,
+      "bytes": 888,
       "categories": {
         "tracked_source": 1
       }
@@ -129,7 +139,7 @@
       "owner": "Local/uncategorized",
       "validation_gate": "manual review",
       "files": 5,
-      "bytes": 180319,
+      "bytes": 243771,
       "categories": {
         "vendor_or_cache": 5
       }
@@ -139,7 +149,7 @@
       "owner": "Local/uncategorized",
       "validation_gate": "manual review",
       "files": 39,
-      "bytes": 42541,
+      "bytes": 47628,
       "categories": {
         "untracked_local": 39
       }
@@ -188,10 +198,11 @@
       "path": "AI",
       "owner": "Engine Brain",
       "validation_gate": "brain refresh; brain pack",
-      "files": 46,
-      "bytes": 1165681,
+      "files": 54,
+      "bytes": 1004346,
       "categories": {
-        "tracked_source": 46
+        "tracked_source": 48,
+        "untracked_source_candidate": 6
       }
     },
     {
@@ -239,7 +250,7 @@
       "owner": "Local/uncategorized",
       "validation_gate": "manual review",
       "files": 1,
-      "bytes": 6173,
+      "bytes": 6636,
       "categories": {
         "tracked_source": 1
       }
@@ -332,11 +343,11 @@
       "path": "config",
       "owner": "Local/uncategorized",
       "validation_gate": "manual review",
-      "files": 7,
-      "bytes": 28362,
+      "files": 11,
+      "bytes": 34552,
       "categories": {
         "local_secret_or_sensitive": 1,
-        "tracked_source": 6
+        "tracked_source": 10
       }
     },
     {
@@ -374,7 +385,17 @@
       "owner": "Local/uncategorized",
       "validation_gate": "manual review",
       "files": 1,
-      "bytes": 33019,
+      "bytes": 50145,
+      "categories": {
+        "tracked_source": 1
+      }
+    },
+    {
+      "path": "ctoa_client_capabilities.json",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 1,
+      "bytes": 3702,
       "categories": {
         "tracked_source": 1
       }
@@ -384,7 +405,7 @@
       "owner": "Local/uncategorized",
       "validation_gate": "manual review",
       "files": 1,
-      "bytes": 57879,
+      "bytes": 150920,
       "categories": {
         "untracked_local": 1
       }
@@ -445,7 +466,7 @@
       "owner": "Local/uncategorized",
       "validation_gate": "manual review",
       "files": 1,
-      "bytes": 1800,
+      "bytes": 1855,
       "categories": {
         "tracked_source": 1
       }
@@ -454,11 +475,11 @@
       "path": "docs",
       "owner": "Documentation",
       "validation_gate": "doc sync guard",
-      "files": 317,
-      "bytes": 4459314,
+      "files": 331,
+      "bytes": 4558239,
       "categories": {
-        "tracked_source": 311,
-        "untracked_source_candidate": 6
+        "tracked_source": 322,
+        "untracked_source_candidate": 9
       }
     },
     {
@@ -476,7 +497,7 @@
       "owner": "Local/uncategorized",
       "validation_gate": "manual review",
       "files": 3,
-      "bytes": 2336370,
+      "bytes": 2827880,
       "categories": {
         "runtime_or_local_state": 3
       }
@@ -485,10 +506,10 @@
       "path": "metrics",
       "owner": "Local/uncategorized",
       "validation_gate": "manual review",
-      "files": 25,
-      "bytes": 18800,
+      "files": 59,
+      "bytes": 43616,
       "categories": {
-        "runtime_or_local_state": 25
+        "runtime_or_local_state": 59
       }
     },
     {
@@ -503,6 +524,16 @@
       }
     },
     {
+      "path": "mods",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 7,
+      "bytes": 220799,
+      "categories": {
+        "tracked_source": 7
+      }
+    },
+    {
       "path": "node_modules",
       "owner": "Local/uncategorized",
       "validation_gate": "manual review",
@@ -510,6 +541,16 @@
       "bytes": 198,
       "categories": {
         "vendor_or_cache": 1
+      }
+    },
+    {
+      "path": "outputs",
+      "owner": "Local/uncategorized",
+      "validation_gate": "manual review",
+      "files": 1,
+      "bytes": 21031,
+      "categories": {
+        "untracked_local": 1
       }
     },
     {
@@ -527,7 +568,7 @@
       "owner": "Local/uncategorized",
       "validation_gate": "manual review",
       "files": 4,
-      "bytes": 1821,
+      "bytes": 1884,
       "categories": {
         "tracked_source": 4
       }
@@ -578,7 +619,7 @@
       "owner": "Local/uncategorized",
       "validation_gate": "manual review",
       "files": 1,
-      "bytes": 550,
+      "bytes": 577,
       "categories": {
         "tracked_source": 1
       }
@@ -598,10 +639,10 @@
       "path": "runtime",
       "owner": "Local/uncategorized",
       "validation_gate": "manual review",
-      "files": 2482,
-      "bytes": 908956410,
+      "files": 5408,
+      "bytes": 1487818144,
       "categories": {
-        "runtime_or_local_state": 2482
+        "runtime_or_local_state": 5408
       }
     },
     {
@@ -618,10 +659,11 @@
       "path": "schemas",
       "owner": "Contracts",
       "validation_gate": "schema consumers and pytest",
-      "files": 15,
-      "bytes": 46161,
+      "files": 47,
+      "bytes": 199828,
       "categories": {
-        "tracked_source": 15
+        "tracked_source": 44,
+        "untracked_source_candidate": 3
       }
     },
     {
@@ -639,11 +681,11 @@
       "path": "scripts",
       "owner": "Operator automation",
       "validation_gate": "pytest targeted script tests",
-      "files": 451,
-      "bytes": 6225947,
+      "files": 546,
+      "bytes": 8502646,
       "categories": {
-        "tracked_source": 270,
-        "untracked_source_candidate": 181
+        "tracked_source": 318,
+        "untracked_source_candidate": 228
       }
     },
     {
@@ -660,12 +702,12 @@
       "path": "tests",
       "owner": "Regression suite",
       "validation_gate": "pytest tests/ --ignore=tests/e2e",
-      "files": 534,
-      "bytes": 9262215,
+      "files": 678,
+      "bytes": 12445428,
       "categories": {
         "local_secret_or_sensitive": 2,
-        "tracked_source": 197,
-        "untracked_source_candidate": 335
+        "tracked_source": 252,
+        "untracked_source_candidate": 424
       }
     },
     {
@@ -693,12 +735,12 @@
       "path": "web",
       "owner": "Control Center",
       "validation_gate": "cd web; npm run lint; npm test",
-      "files": 32304,
-      "bytes": 1190199545,
+      "files": 33731,
+      "bytes": 1365329448,
       "categories": {
-        "local_secret_or_sensitive": 2,
-        "tracked_source": 98,
-        "untracked_source_candidate": 5419,
+        "local_secret_or_sensitive": 3,
+        "tracked_source": 96,
+        "untracked_source_candidate": 6847,
         "vendor_or_cache": 26785
       }
     },

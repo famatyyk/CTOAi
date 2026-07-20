@@ -136,6 +136,16 @@ function RecoveryRuntime.actionGap(now, lastActionMs, gapMs)
     }
 end
 
+function RecoveryRuntime.recoveryActionGap(now, healing, tools)
+    local heal = type(healing) == "table" and healing or {}
+    local cfg = type(tools) == "table" and tools or {}
+    return RecoveryRuntime.actionGap(
+        now,
+        heal.last_recovery_action_ms or 0,
+        cfg.recovery_action_gap_ms or 250
+    )
+end
+
 function RecoveryRuntime.summary(vitals)
     local data = vitals or {}
     return "Recovery vitals=" .. tostring(data.source or "none") ..
@@ -153,6 +163,7 @@ function RecoveryRuntime.contract()
         owns_threshold_jitter = true,
         owns_recovery_status_text = true,
         owns_recovery_action_gap = true,
+        owns_recovery_action_gap_bridge = true,
         runtime_actions = false,
         casts = false,
         uses_items = false,

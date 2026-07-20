@@ -1,272 +1,93 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-12T01:33:46+00:00",
+  "generated_at": "2026-07-16T18:27:20+00:00",
   "root": "C:\\Users\\zycie\\CTOAi",
   "pack_path": "AI\\generated\\ENGINE_BRAIN_PACK.md",
-  "profile": "helper",
+  "profile": "control-central",
   "include_generated": true,
   "max_chars_per_file": 45000,
   "sections": [
     {
       "path": "AI/README.md",
       "included": true,
-      "bytes": 2927,
+      "bytes": 3145,
       "truncated": false,
-      "reason": ""
-    },
-    {
-      "path": "AI/ENGINE_BRAIN_STATUS.md",
-      "included": true,
-      "bytes": 136806,
-      "truncated": true,
-      "reason": ""
-    },
-    {
-      "path": "AI/FEATURE_ROADMAP.md",
-      "included": true,
-      "bytes": 63389,
-      "truncated": true,
-      "reason": ""
-    },
-    {
-      "path": "AI/P8_P16_EXECUTION_ROADMAP.md",
-      "included": true,
-      "bytes": 10391,
-      "truncated": false,
-      "reason": ""
-    },
-    {
-      "path": "AI/LUA_INDEX.md",
-      "included": true,
-      "bytes": 2874,
-      "truncated": false,
-      "reason": ""
-    },
-    {
-      "path": "AI/OTCLIENT_INDEX.md",
-      "included": true,
-      "bytes": 3675,
-      "truncated": false,
-      "reason": ""
-    },
-    {
-      "path": "docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md",
-      "included": true,
-      "bytes": 8212,
-      "truncated": false,
-      "reason": ""
-    },
-    {
-      "path": "docs/otclient/P9_CONDITIONS_SHADOW_REPLAY_DESIGN.md",
-      "included": true,
-      "bytes": 6390,
-      "truncated": false,
-      "reason": ""
-    },
-    {
-      "path": "docs/otclient/P9_CONDITIONS_SHADOW_ACCEPTANCE.md",
-      "included": true,
-      "bytes": 3034,
-      "truncated": false,
-      "reason": ""
-    },
-    {
-      "path": "docs/otclient/solteria_helper_development_plan.md",
-      "included": true,
-      "bytes": 10485,
-      "truncated": false,
-      "reason": ""
-    },
-    {
-      "path": "docs/otclient/HELPER_RUNTIME_BRIDGE_V1.md",
-      "included": true,
-      "bytes": 2578,
-      "truncated": false,
-      "reason": ""
-    },
-    {
-      "path": "docs/otclient/HELPER_RUNTIME_MODULE_GATES_V1.md",
-      "included": true,
-      "bytes": 4319,
-      "truncated": false,
-      "reason": ""
-    },
-    {
-      "path": "docs/otclient/solteria_helper_test_env.md",
-      "included": true,
-      "bytes": 29743,
-      "truncated": false,
-      "reason": ""
-    },
-    {
-      "path": "docs/otclient/solteria_helper_module_workplan.md",
-      "included": true,
-      "bytes": 12889,
-      "truncated": false,
-      "reason": ""
-    },
-    {
-      "path": "docs/otclient/solteria_helper_module_contract.md",
-      "included": true,
-      "bytes": 4360,
-      "truncated": false,
-      "reason": ""
-    },
-    {
-      "path": "docs/otclient/solteria_helper_next_modules_plan.md",
-      "included": true,
-      "bytes": 18593,
-      "truncated": false,
-      "reason": ""
-    },
-    {
-      "path": "docs/otclient/ctoai_runtime_2_execution_plan.md",
-      "included": true,
-      "bytes": 5554,
-      "truncated": false,
-      "reason": ""
-    },
-    {
-      "path": "docs/otclient/solteria_helper_supplemental_refactor_plan.md",
-      "included": true,
-      "bytes": 27770,
-      "truncated": false,
-      "reason": ""
-    },
-    {
-      "path": "docs/otclient/solteria_helper_sandbox_smoke_queue.md",
-      "included": true,
-      "bytes": 10222,
-      "truncated": false,
-      "reason": ""
-    },
-    {
-      "path": "docs/otclient/zerobot_reference.md",
-      "included": true,
-      "bytes": 4707,
-      "truncated": false,
-      "reason": ""
-    },
-    {
-      "path": "docs/otclient/vbot_import_review.md",
-      "included": true,
-      "bytes": 4989,
-      "truncated": false,
-      "reason": ""
-    },
-    {
-      "path": "scripts/ops/otclient_external_bot_intake.py",
-      "included": true,
-      "bytes": 14940,
-      "truncated": false,
-      "reason": ""
-    },
-    {
-      "path": "scripts/ops/otclient_helper_module_contract.py",
-      "included": true,
-      "bytes": 27457,
-      "truncated": false,
-      "reason": ""
-    },
-    {
-      "path": "scripts/ops/solteria_helper_sandbox_smoke_queue.py",
-      "included": true,
-      "bytes": 12790,
-      "truncated": false,
-      "reason": ""
-    },
-    {
-      "path": "scripts/lua/AGENTS.md",
-      "included": true,
-      "bytes": 1183,
-      "truncated": false,
-      "reason": ""
+      "reason": "",
+      "critical_markers": []
     },
     {
       "path": "AI/generated/manifest.json",
       "included": true,
-      "bytes": 2006,
+      "bytes": 1991,
       "truncated": false,
-      "reason": ""
+      "reason": "",
+      "critical_markers": []
     },
     {
       "path": "AI/generated/ENV_DOCTOR.md",
       "included": true,
       "bytes": 1241,
       "truncated": false,
-      "reason": ""
-    },
-    {
-      "path": "AI/generated/OWNERSHIP_MAP.md",
-      "included": true,
-      "bytes": 6504,
-      "truncated": false,
-      "reason": ""
+      "reason": "",
+      "critical_markers": []
     },
     {
       "path": "AI/generated/DOC_SYNC.md",
       "included": true,
       "bytes": 667,
       "truncated": false,
-      "reason": ""
+      "reason": "",
+      "critical_markers": []
     },
     {
       "path": "AI/generated/SECRET_GUARDRAIL.md",
       "included": true,
       "bytes": 524,
       "truncated": false,
-      "reason": ""
+      "reason": "",
+      "critical_markers": []
     },
     {
       "path": "AI/generated/P6_CODEX_INTEGRATION_READINESS.md",
       "included": true,
-      "bytes": 6849,
+      "bytes": 11456,
       "truncated": false,
-      "reason": ""
+      "reason": "",
+      "critical_markers": []
     },
     {
       "path": "AI/generated/P7_OPERATOR_WORKFLOW.md",
       "included": true,
-      "bytes": 2973,
+      "bytes": 3186,
       "truncated": false,
-      "reason": ""
+      "reason": "",
+      "critical_markers": []
     },
     {
       "path": "AI/generated/P7_ACTION_READINESS.md",
       "included": true,
-      "bytes": 1120,
+      "bytes": 1148,
       "truncated": false,
-      "reason": ""
+      "reason": "",
+      "critical_markers": []
     },
     {
       "path": "AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.md",
       "included": true,
       "bytes": 1988,
       "truncated": false,
-      "reason": ""
+      "reason": "",
+      "critical_markers": []
     },
     {
       "path": "AI/generated/P7_OPERATOR_BRIEF.md",
       "included": true,
-      "bytes": 1621,
+      "bytes": 2034,
       "truncated": false,
-      "reason": ""
-    },
-    {
-      "path": "AI/generated/FILE_TREE.md",
-      "included": true,
-      "bytes": 70797,
-      "truncated": true,
-      "reason": ""
-    },
-    {
-      "path": "AI/generated/SYMBOL_MAP.md",
-      "included": true,
-      "bytes": 278550,
-      "truncated": true,
-      "reason": ""
+      "reason": "",
+      "critical_markers": []
     }
   ],
-  "included_count": 37,
-  "truncated_count": 4
+  "included_count": 10,
+  "truncated_count": 0
 }

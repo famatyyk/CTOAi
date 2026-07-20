@@ -14,6 +14,8 @@ import json
 import os
 import stat
 import sys
+import time
+import uuid
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -54,6 +56,9 @@ DEFAULT_SCENARIO_PACK = (
     ROOT / "tests" / "fixtures" / "otclient_equipment_shadow_replay" / "scenarios.json"
 )
 DEFAULT_OUTPUT = DEFAULT_DEV_DIR / "equipment_shadow_replay.json"
+DEFAULT_OPERATIONAL_SNAPSHOT = DEFAULT_DEV_DIR / "equipment_shadow_snapshot.json"
+DEFAULT_OPERATIONAL_P9_REPORT = DEFAULT_DEV_DIR / "conditions_shadow_replay.json"
+DEFAULT_OPERATIONAL_P9_RECEIPT = DEFAULT_DEV_DIR / "conditions_shadow_acceptance.json"
 
 PROFILE_SCHEMA = "ctoa.equipment-shadow-profile.v1"
 SNAPSHOT_SCHEMA = "ctoa.equipment-shadow-snapshot.v1"
@@ -66,6 +71,7 @@ P9_RECEIPT_SCHEMA = "ctoa.conditions-shadow-acceptance.v1"
 MAX_INPUT_BYTES = 128 * 1024
 MAX_SCENARIO_BYTES = 256 * 1024
 MAX_AGE_MS = 6000
+OPERATIONAL_REPLAY_TRANSPORT_ALLOWANCE_MS = 2500
 FALSE_FLAGS = (
     "dispatch_allowed",
     "runtime_actions",
@@ -114,6 +120,7 @@ BLOCKER_ORDER = (
     "snapshot_symlink_rejected",
     "snapshot_not_regular",
     "snapshot_schema_invalid",
+    "snapshot_fixture_not_operational",
     "snapshot_future",
     "snapshot_stale",
     "player_offline",
@@ -168,6 +175,21 @@ SCENARIO_MUTATIONS = {
     "p9_blocked",
     "p9_tampered",
     "unsafe_contract",
+    "player_offline",
+    "player_dead",
+    "protection_zone_unknown",
+    "protection_zone_untrusted",
+    "candidate_zero",
+    "rollback_wrong_id",
+    "candidate_container_negative",
+    "candidate_slot_zero",
+    "rollback_slot_mismatch",
+    "cooldown_unknown",
+    "cooldown_untrusted",
+    "retry_nonzero",
+    "inventory_revision_zero",
+    "rollback_revision_zero",
+    "snapshot_extra_key",
 }
 
 
@@ -222,7 +244,8 @@ def _profile_valid(payload: Any) -> bool:
         and payload.get("slot") == "ring"
         and payload.get("max_observation_age_ms") == MAX_AGE_MS
         and payload.get("cooldown_required") == "ready"
-        and payload.get("retry_budget") == 0
+        and _is_int(payload.get("retry_budget"))
+        and payload.get("retry_budget") >= 0
         and payload.get("requires_p9_acceptance") is True
         and payload.get("exact_item_ids") is True
         and payload.get("rollback_required") is True
@@ -238,6 +261,8 @@ def _snapshot_valid(payload: Any) -> bool:
             "schema_version",
             "observed_at_unix_ms",
             "observation_id",
+            "producer_source",
+            "source_report_sha256",
             "online",
             "alive",
             "protection_zone",
@@ -251,7 +276,9 @@ def _snapshot_valid(payload: Any) -> bool:
             "rollback_item_id",
             "rollback_inventory_revision",
             "candidate_source_container_id",
+            "candidate_source_slot_index",
             "rollback_destination_container_id",
+            "rollback_destination_slot_index",
             "cooldown",
             "cooldown_source",
             *FALSE_FLAGS,
@@ -261,17 +288,17 @@ def _snapshot_valid(payload: Any) -> bool:
         and _is_int(payload.get("observed_at_unix_ms"))
         and payload.get("observed_at_unix_ms") > 0
         and isinstance(payload.get("observation_id"), str)
-        and payload.get("online") is True
-        and payload.get("alive") is True
+        and payload.get("producer_source") in {"fixture", "otclient_guarded_adapter"}
+        and _is_sha256(payload.get("source_report_sha256"))
+        and isinstance(payload.get("online"), bool)
+        and isinstance(payload.get("alive"), bool)
         and payload.get("protection_zone") in {"outside", "inside", "unknown"}
         and isinstance(payload.get("protection_zone_source"), str)
-        and isinstance(payload.get("inventory_revision"), str)
-        and payload.get("inventory_revision") != ""
+        and _is_sha256(payload.get("inventory_revision"))
         and isinstance(payload.get("inventory_unambiguous"), bool)
         and isinstance(payload.get("slot_name"), str)
         and isinstance(payload.get("rollback_slot_name"), str)
-        and isinstance(payload.get("rollback_inventory_revision"), str)
-        and payload.get("rollback_inventory_revision") != ""
+        and _is_sha256(payload.get("rollback_inventory_revision"))
         and _false_flags(payload)
         and _empty_ledger(payload)
     )
@@ -298,6 +325,7 @@ def _p9_trace_valid(payload: Any) -> bool:
 def _p9_receipt_structurally_valid(payload: Any) -> bool:
     return (
         isinstance(payload, dict)
+        and p9_acceptance._receipt_contract_valid(payload)  # noqa: SLF001
         and set(payload) == P9_RECEIPT_KEYS
         and payload.get("schema_version") == P9_RECEIPT_SCHEMA
         and payload.get("status") in {"accepted", "blocked"}
@@ -358,10 +386,20 @@ def evaluate_shadow(
     snapshot_age = None
     if _snapshot_valid(snapshot_payload):
         snapshot_age = evaluated_at_unix_ms - snapshot_payload["observed_at_unix_ms"]
+        snapshot_age_limit = MAX_AGE_MS + (
+            OPERATIONAL_REPLAY_TRANSPORT_ALLOWANCE_MS
+            if source == "operational"
+            else 0
+        )
         if snapshot_age < 0:
             blockers.add("snapshot_future")
-        elif snapshot_age > MAX_AGE_MS:
+        elif snapshot_age > snapshot_age_limit:
             blockers.add("snapshot_stale")
+        if (
+            source == "operational"
+            and snapshot_payload.get("producer_source") != "otclient_guarded_adapter"
+        ):
+            blockers.add("snapshot_fixture_not_operational")
         if snapshot_payload["online"] is not True:
             blockers.add("player_offline")
         if snapshot_payload["alive"] is not True:
@@ -370,10 +408,15 @@ def evaluate_shadow(
             blockers.add("protection_zone_inside")
         elif snapshot_payload["protection_zone"] == "unknown":
             blockers.add("protection_zone_unknown")
-        elif snapshot_payload["protection_zone_source"] != "player_method":
+        elif snapshot_payload["protection_zone_source"] not in {
+            "player_method",
+            "player_states",
+        }:
             blockers.add("protection_zone_source_untrusted")
         if snapshot_payload["inventory_unambiguous"] is not True:
             blockers.add("inventory_ambiguous")
+        if snapshot_payload["inventory_revision"] == "0" * 64:
+            blockers.add("inventory_revision_missing")
         if (
             snapshot_payload["slot_name"].lower() != "ring"
             or snapshot_payload["rollback_slot_name"].lower() != "ring"
@@ -397,9 +440,18 @@ def evaluate_shadow(
         ):
             if not _is_int(snapshot_payload[key]) or snapshot_payload[key] < 0:
                 blockers.add("candidate_container_invalid")
+        if (
+            not _is_int(snapshot_payload["candidate_source_slot_index"])
+            or snapshot_payload["candidate_source_slot_index"] <= 0
+        ):
+            blockers.add("candidate_container_invalid")
         if snapshot_payload.get(
             "candidate_source_container_id"
         ) != snapshot_payload.get("rollback_destination_container_id"):
+            blockers.add("rollback_container_mismatch")
+        if snapshot_payload.get("candidate_source_slot_index") != snapshot_payload.get(
+            "rollback_destination_slot_index"
+        ):
             blockers.add("rollback_container_mismatch")
         if snapshot_payload.get("inventory_revision") != snapshot_payload.get(
             "rollback_inventory_revision"
@@ -467,7 +519,7 @@ def evaluate_shadow(
         }
     )
     plan = None
-    if _snapshot_valid(snapshot_payload):
+    if _snapshot_valid(snapshot_payload) and not ordered:
         plan = {
             "action": ACTION,
             "slot": "ring",
@@ -475,9 +527,11 @@ def evaluate_shadow(
             "candidate_item_id": snapshot_payload["candidate_item_id"],
             "rollback_item_id": snapshot_payload["rollback_item_id"],
             "source_container_id": snapshot_payload["candidate_source_container_id"],
+            "source_slot_index": snapshot_payload["candidate_source_slot_index"],
             "rollback_container_id": snapshot_payload[
                 "rollback_destination_container_id"
             ],
+            "rollback_slot_index": snapshot_payload["rollback_destination_slot_index"],
             "inventory_revision": snapshot_payload["inventory_revision"],
             "rollback_inventory_revision": snapshot_payload[
                 "rollback_inventory_revision"
@@ -522,6 +576,61 @@ def _fixture_documents() -> tuple[p9_replay.InputDocument, ...]:
     )
 
 
+def _p9_trace_document(path: Path) -> p9_replay.InputDocument:
+    """Read a direct P9 trace or extract the trace from the canonical replay report."""
+    document = _read(path)
+    payload = document.payload
+    if document.status != "loaded" or not isinstance(payload, dict):
+        return document
+    if payload.get("schema_version") == P9_TRACE_SCHEMA:
+        return document
+    if payload.get("schema_version") != "ctoa.conditions-shadow-replay-report.v1":
+        return p9_replay.document_from_payload(None, "malformed")
+    trace = payload.get("operational_trace")
+    if not isinstance(trace, dict):
+        return p9_replay.document_from_payload(None, "malformed")
+    return p9_replay.document_from_payload(trace)
+
+
+def _operational_documents(
+    *,
+    profile_path: Path = DEFAULT_PROFILE,
+    snapshot_path: Path = DEFAULT_OPERATIONAL_SNAPSHOT,
+    p9_trace_path: Path = DEFAULT_OPERATIONAL_P9_REPORT,
+    p9_receipt_path: Path = DEFAULT_OPERATIONAL_P9_RECEIPT,
+) -> tuple[p9_replay.InputDocument, ...]:
+    return (
+        _read(profile_path),
+        _read(snapshot_path),
+        _p9_trace_document(p9_trace_path),
+        _read(p9_receipt_path),
+    )
+
+
+def _same_path(left: Path, right: Path) -> bool:
+    return os.path.normcase(str(left.resolve(strict=False))) == os.path.normcase(
+        str(right.resolve(strict=False))
+    )
+
+
+def _canonical_operational_paths(
+    *,
+    profile_path: Path,
+    snapshot_path: Path,
+    p9_trace_path: Path,
+    p9_receipt_path: Path,
+) -> bool:
+    return all(
+        _same_path(actual, expected)
+        for actual, expected in (
+            (profile_path, DEFAULT_PROFILE),
+            (snapshot_path, DEFAULT_OPERATIONAL_SNAPSHOT),
+            (p9_trace_path, DEFAULT_OPERATIONAL_P9_REPORT),
+            (p9_receipt_path, DEFAULT_OPERATIONAL_P9_RECEIPT),
+        )
+    )
+
+
 def _scenario_documents(
     mutation: str, evaluated_at: int
 ) -> tuple[p9_replay.InputDocument, ...]:
@@ -538,7 +647,7 @@ def _scenario_documents(
     if mutation == "inventory_ambiguous":
         snapshot.payload["inventory_unambiguous"] = False
     elif mutation == "revision_drift":
-        snapshot.payload["inventory_revision"] = "inventory-r2"
+        snapshot.payload["inventory_revision"] = "3" * 64
     elif mutation == "missing_ring":
         snapshot.payload["slot_name"] = "amulet"
     elif mutation == "wrong_equipped_id":
@@ -559,11 +668,54 @@ def _scenario_documents(
         snapshot.payload["cooldown"] = "active"
     elif mutation == "p9_blocked":
         receipt.payload["acceptance_granted"] = False
+        receipt.payload["operator_review_completed"] = False
+        receipt.payload["receipt_persisted"] = False
         receipt.payload["status"] = "blocked"
+        receipt.payload["blockers"] = ["operational_status_not_ready"]
+        basis_sha = p9_replay.canonical_sha256(
+            p9_acceptance._acceptance_basis(receipt.payload)  # noqa: SLF001
+        )
+        receipt.payload["acceptance_basis_sha256"] = basis_sha
+        receipt.payload["receipt_id"] = f"conditions-shadow-acceptance-{basis_sha[:16]}"
     elif mutation == "p9_tampered":
-        receipt.payload["decision_sha256"] = "0" * 64
+        receipt.payload["decision_sha256"] = "c" * 64
+        basis_sha = p9_replay.canonical_sha256(
+            p9_acceptance._acceptance_basis(receipt.payload)  # noqa: SLF001
+        )
+        receipt.payload["acceptance_basis_sha256"] = basis_sha
+        receipt.payload["receipt_id"] = f"conditions-shadow-acceptance-{basis_sha[:16]}"
     elif mutation == "unsafe_contract":
         snapshot.payload["runtime_actions"] = True
+    elif mutation == "player_offline":
+        snapshot.payload["online"] = False
+    elif mutation == "player_dead":
+        snapshot.payload["alive"] = False
+    elif mutation == "protection_zone_unknown":
+        snapshot.payload["protection_zone"] = "unknown"
+    elif mutation == "protection_zone_untrusted":
+        snapshot.payload["protection_zone_source"] = "fixture_guess"
+    elif mutation == "candidate_zero":
+        snapshot.payload["candidate_item_id"] = 0
+    elif mutation == "rollback_wrong_id":
+        snapshot.payload["rollback_item_id"] = snapshot.payload["equipped_item_id"] + 1
+    elif mutation == "candidate_container_negative":
+        snapshot.payload["candidate_source_container_id"] = -1
+    elif mutation == "candidate_slot_zero":
+        snapshot.payload["candidate_source_slot_index"] = 0
+    elif mutation == "rollback_slot_mismatch":
+        snapshot.payload["rollback_destination_slot_index"] += 1
+    elif mutation == "cooldown_unknown":
+        snapshot.payload["cooldown"] = "unknown"
+    elif mutation == "cooldown_untrusted":
+        snapshot.payload["cooldown_source"] = "fixture_guess"
+    elif mutation == "retry_nonzero":
+        profile.payload["retry_budget"] = 1
+    elif mutation == "inventory_revision_zero":
+        snapshot.payload["inventory_revision"] = "0" * 64
+    elif mutation == "rollback_revision_zero":
+        snapshot.payload["rollback_inventory_revision"] = "0" * 64
+    elif mutation == "snapshot_extra_key":
+        snapshot.payload["unexpected"] = True
     elif mutation != "none":
         raise ValueError(f"unsupported scenario mutation: {mutation}")
     return tuple(
@@ -593,6 +745,7 @@ def _scenario_pack_valid(payload: Any) -> bool:
     ):
         return False
     seen: set[str] = set()
+    seen_mutations: set[str] = set()
     for scenario in scenarios:
         if not isinstance(scenario, dict) or set(scenario) != {
             "name",
@@ -608,6 +761,7 @@ def _scenario_pack_valid(payload: Any) -> bool:
             or not name
             or name in seen
             or scenario.get("mutation") not in SCENARIO_MUTATIONS
+            or scenario.get("mutation") in seen_mutations
             or scenario.get("expected_status")
             not in {"shadow_plan_ready", "operational_acceptance_blocked"}
             or not isinstance(blockers, list)
@@ -617,7 +771,11 @@ def _scenario_pack_valid(payload: Any) -> bool:
         ):
             return False
         seen.add(name)
-    return True
+        seen_mutations.add(scenario["mutation"])
+    return (
+        len(scenarios) == len(SCENARIO_MUTATIONS)
+        and seen_mutations == SCENARIO_MUTATIONS
+    )
 
 
 def run_scenario_pack(document: p9_replay.InputDocument) -> dict[str, Any]:
@@ -625,6 +783,7 @@ def run_scenario_pack(document: p9_replay.InputDocument) -> dict[str, Any]:
     if document.status != "loaded" or not _scenario_pack_valid(payload):
         return {
             "status": "failed",
+            "scenario_pack_sha256": document.sha256,
             "total_count": 0,
             "passed_count": 0,
             "failed_count": 1,
@@ -681,6 +840,7 @@ def run_scenario_pack(document: p9_replay.InputDocument) -> dict[str, Any]:
     passed_count = sum(case["passed"] is True for case in cases)
     return {
         "status": "passed" if passed_count == len(cases) else "failed",
+        "scenario_pack_sha256": document.sha256,
         "total_count": len(cases),
         "passed_count": passed_count,
         "failed_count": len(cases) - passed_count,
@@ -691,9 +851,16 @@ def run_scenario_pack(document: p9_replay.InputDocument) -> dict[str, Any]:
 
 
 def build_report(
-    *, evaluated_at_unix_ms: int, source: str = "operational"
+    *,
+    evaluated_at_unix_ms: int,
+    source: str = "operational",
+    documents: tuple[p9_replay.InputDocument, ...] | None = None,
+    scenario_pack_path: Path = DEFAULT_SCENARIO_PACK,
 ) -> dict[str, Any]:
-    documents = _fixture_documents()
+    if documents is None:
+        documents = (
+            _fixture_documents() if source == "fixture" else _operational_documents()
+        )
     trace = evaluate_shadow(
         profile=documents[0],
         snapshot=documents[1],
@@ -702,7 +869,7 @@ def build_report(
         evaluated_at_unix_ms=evaluated_at_unix_ms,
         source=source,
     )
-    scenario_pack = run_scenario_pack(_read(DEFAULT_SCENARIO_PACK, MAX_SCENARIO_BYTES))
+    scenario_pack = run_scenario_pack(_read(scenario_pack_path, MAX_SCENARIO_BYTES))
     status = (
         "shadow_plan_ready_for_operator_review"
         if trace["status"] == "shadow_plan_ready"
@@ -769,12 +936,34 @@ def _validate_output(path: Path) -> Path:
 def _write_atomic(path: Path, payload: dict[str, Any]) -> None:
     _validate_output(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    temporary = path.with_name(f".{path.name}.{os.getpid()}.{uuid.uuid4().hex}.tmp")
     try:
-        temporary.write_text(
-            json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        flags = (
+            os.O_WRONLY
+            | os.O_CREAT
+            | os.O_EXCL
+            | int(getattr(os, "O_BINARY", 0))
+            | int(getattr(os, "O_NOFOLLOW", 0))
         )
+        descriptor = os.open(temporary, flags, 0o600)
+        try:
+            with os.fdopen(descriptor, "wb", closefd=False) as handle:
+                handle.write(p9_replay.canonical_bytes(payload) + b"\n")
+                handle.flush()
+                os.fsync(handle.fileno())
+        finally:
+            os.close(descriptor)
+        metadata = temporary.lstat()
+        if stat.S_ISLNK(metadata.st_mode) or not stat.S_ISREG(metadata.st_mode):
+            raise ValueError("temporary replay identity invalid")
+        _validate_output(path)
         temporary.replace(path)
+        persisted = p9_replay.read_document(path)
+        if (
+            persisted.status != "loaded"
+            or persisted.sha256 != p9_replay.canonical_sha256(payload)
+        ):
+            raise ValueError("persisted replay verification failed")
     finally:
         try:
             temporary.unlink()
@@ -792,23 +981,86 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--source", choices=("operational", "fixture"), default="operational"
     )
+    parser.add_argument("--profile", type=Path, default=None)
+    parser.add_argument("--snapshot", type=Path, default=None)
+    parser.add_argument("--p9-trace", type=Path, default=None)
+    parser.add_argument("--p9-receipt", type=Path, default=None)
+    parser.add_argument("--scenario-pack", type=Path, default=DEFAULT_SCENARIO_PACK)
+    parser.add_argument("--json-out", type=Path, default=DEFAULT_OUTPUT)
+    parser.add_argument(
+        "--require-operational-acceptance",
+        action="store_true",
+        help="return non-zero unless the real operational trace is review-ready",
+    )
     parser.add_argument("--evaluated-at-unix-ms", type=int, default=None)
     args = parser.parse_args(argv)
+    if not _same_path(args.scenario_pack, DEFAULT_SCENARIO_PACK):
+        parser.error("scenario pack must use the fixed tracked P10 fixture path")
+    if args.source == "fixture":
+        if not args.no_write:
+            parser.error(
+                "fixture mode is no-write only and cannot replace operational evidence"
+            )
+        if any(
+            value is not None
+            for value in (args.profile, args.snapshot, args.p9_trace, args.p9_receipt)
+        ):
+            parser.error("fixture mode uses only the bounded repository fixture pack")
+        documents = _fixture_documents()
+    else:
+        if args.evaluated_at_unix_ms is not None:
+            parser.error(
+                "operational mode uses the current wall clock and forbids time overrides"
+            )
+        profile_path = args.profile or DEFAULT_PROFILE
+        snapshot_path = args.snapshot or DEFAULT_OPERATIONAL_SNAPSHOT
+        p9_trace_path = args.p9_trace or DEFAULT_OPERATIONAL_P9_REPORT
+        p9_receipt_path = args.p9_receipt or DEFAULT_OPERATIONAL_P9_RECEIPT
+        if not _canonical_operational_paths(
+            profile_path=profile_path,
+            snapshot_path=snapshot_path,
+            p9_trace_path=p9_trace_path,
+            p9_receipt_path=p9_receipt_path,
+        ):
+            parser.error(
+                "operational mode requires the canonical confined evidence paths"
+            )
+        documents = _operational_documents(
+            profile_path=profile_path,
+            snapshot_path=snapshot_path,
+            p9_trace_path=p9_trace_path,
+            p9_receipt_path=p9_receipt_path,
+        )
+    observed_times = [
+        doc.payload.get("observed_at_unix_ms", 1)
+        for doc in documents
+        if isinstance(doc.payload, dict)
+        and _is_int(doc.payload.get("observed_at_unix_ms"))
+    ]
     evaluated_at = (
         args.evaluated_at_unix_ms
-        or max(
-            doc.payload.get("observed_at_unix_ms", 1)
-            for doc in _fixture_documents()
-            if isinstance(doc.payload, dict)
-        )
-        + 1000
+        or (max(observed_times) + 1000 if observed_times else int(time.time() * 1000))
+        if args.source == "fixture"
+        else int(time.time() * 1000)
     )
-    report = build_report(evaluated_at_unix_ms=evaluated_at, source=args.source)
+    report = build_report(
+        evaluated_at_unix_ms=evaluated_at,
+        source=args.source,
+        documents=documents,
+        scenario_pack_path=args.scenario_pack,
+    )
     print(json.dumps(report, indent=2, sort_keys=True))
     if not args.no_write:
-        _write_atomic(DEFAULT_OUTPUT, report)
+        _write_atomic(args.json_out, report)
         print(f"P10 Equipment shadow replay: {report['operational_acceptance_status']}")
-    return 0 if report["scenario_pack_status"] == "passed" else 1
+    fixture_ok = report["scenario_pack_status"] == "passed"
+    operational_ok = (
+        report["operational_acceptance_status"]
+        == "shadow_plan_ready_for_operator_review"
+    )
+    if args.source == "operational" or args.require_operational_acceptance:
+        return 0 if fixture_ok and operational_ok else 1
+    return 0 if fixture_ok else 1
 
 
 if __name__ == "__main__":

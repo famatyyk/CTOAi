@@ -1,0 +1,31 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://ctoa.local/schemas/heal-friend-shadow-trace.schema.json",
+  "title":"CTOAi Heal Friend fixture shadow trace v1",
+  "type":"object",
+  "additionalProperties":false,
+  "required":["schema_version","trace_id","source","evaluated_at_unix_ms","mode","status","decision","action","spell","input_sha256","canonical_input_sha256","observation_age_ms","party_observation_age_ms","blockers","plan","decision_sha256","fixture_validation_only","operational_readiness_claimed","operator_review_required","dispatch_allowed","runtime_actions","executes_plan","execute_once_allowed","promotion_allowed","casts","talks","intrusive_actions_performed"],
+  "properties":{
+    "schema_version":{"const":"ctoa.heal-friend-shadow-trace.v1"},
+    "trace_id":{"type":"string","pattern":"^heal-friend-shadow-[0-9a-f]{16}$"},
+    "source":{"const":"fixture"},
+    "evaluated_at_unix_ms":{"type":"integer","minimum":1},
+    "mode":{"const":"shadow_only"},
+    "status":{"enum":["shadow_plan_ready","operational_acceptance_blocked"]},
+    "decision":{"enum":["would_plan_sio","hold"]},
+    "action":{"const":"plan_sio"},
+    "spell":{"const":"exura sio"},
+    "input_sha256":{"type":"object","additionalProperties":false,"required":["profile","observation","p9_report","p9_receipt","p10_report","p10_receipt"],"properties":{"profile":{"type":"string","pattern":"^[0-9a-f]{64}$"},"observation":{"type":"string","pattern":"^[0-9a-f]{64}$"},"p9_report":{"type":"string","pattern":"^[0-9a-f]{64}$"},"p9_receipt":{"type":"string","pattern":"^[0-9a-f]{64}$"},"p10_report":{"type":"string","pattern":"^[0-9a-f]{64}$"},"p10_receipt":{"type":"string","pattern":"^[0-9a-f]{64}$"}}},
+    "canonical_input_sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "observation_age_ms":{"type":["integer","null"]},
+    "party_observation_age_ms":{"type":["integer","null"]},
+    "blockers":{"type":"array","maxItems":64,"uniqueItems":true,"items":{"type":"string"}},
+    "plan":{"oneOf":[{"type":"null"},{"type":"object","additionalProperties":false,"required":["action","spell","target_id","target_name","whitelist_revision","hp_percent","hp_threshold","distance","max_range","dispatch_allowed","runtime_actions","casts","talks","retry_budget"],"properties":{"action":{"const":"plan_sio"},"spell":{"const":"exura sio"},"target_id":{"type":"integer","minimum":1},"target_name":{"type":"string"},"whitelist_revision":{"type":"string","pattern":"^[0-9a-f]{64}$"},"hp_percent":{"type":"integer","minimum":1,"maximum":100},"hp_threshold":{"type":"integer","minimum":1,"maximum":100},"distance":{"type":"integer","minimum":0},"max_range":{"const":7},"dispatch_allowed":{"const":false},"runtime_actions":{"const":false},"casts":{"const":false},"talks":{"const":false},"retry_budget":{"const":0}}}]},
+    "decision_sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "fixture_validation_only":{"const":true},
+    "operational_readiness_claimed":{"const":false},
+    "operator_review_required":{"const":false},
+    "dispatch_allowed":{"const":false},"runtime_actions":{"const":false},"executes_plan":{"const":false},"execute_once_allowed":{"const":false},"promotion_allowed":{"const":false},"casts":{"const":false},"talks":{"const":false},
+    "intrusive_actions_performed":{"const":[]}
+  }
+}

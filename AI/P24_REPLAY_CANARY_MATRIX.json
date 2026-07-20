@@ -1,0 +1,186 @@
+{
+  "schema_version": "ctoa.helper-replay-canary-matrix.v1",
+  "status": "p24_1_matrix_complete",
+  "generated_at": "2026-07-16",
+  "project": "CTOAi Helper",
+  "execution_policy": {
+    "sandbox_first": true,
+    "static_replay_grants_runtime_authority": false,
+    "fixture_evidence_satisfies_operational_acceptance": false,
+    "canary_execution_authorized": false,
+    "live_authorized": false,
+    "live_requires_separate_explicit_approval": true
+  },
+  "evidence_levels": {
+    "static_contract": "Source and schema assertions only; no runtime claim.",
+    "deterministic_lua_replay": "Real Lua or deterministic fixture replay; no client or dispatch claim.",
+    "sandbox_canary": "Manifest-bound sandbox observation with explicit preconditions and rollback.",
+    "independent_runner": "Signed current-revision result from the required self-hosted Windows runner.",
+    "live_promotion": "Separate approval plus stage/live hash parity; never inferred from earlier levels."
+  },
+  "external_runner_snapshot": {
+    "source_path": "runtime/control-center/p14-runner-preflight.json",
+    "source_required_for_static_validation": false,
+    "generated_at": "2026-07-16T16:28:22+00:00",
+    "status": "needs_attention",
+    "operational_result": "externally_verified_stale",
+    "runner_online": true,
+    "self_hosted_run_success": true,
+    "source_revision_match": false,
+    "acceptance_complete": false,
+    "hard_blockers": [
+      "p14_environment_required_reviewer_missing",
+      "p14_environment_admin_bypass_enabled",
+      "p14_self_hosted_result_revision_mismatch",
+      "p14_visual_regression_not_proven",
+      "p14_in_world_regression_not_proven",
+      "p14_canary_rehearsal_not_proven",
+      "p14_rollback_rehearsal_not_proven"
+    ]
+  },
+  "local_stage_snapshot": {
+    "source_path": "runtime/solteria_helper_dev/manifest.json",
+    "status": "stale",
+    "tracked_source_manifest_match": false,
+    "first_mismatch": {
+      "path": "mods/ctoa_otclient/ctoa_helper_hud.lua",
+      "tracked_source_bytes": 4071,
+      "staged_bytes": 3845
+    },
+    "promotion_allowed": false
+  },
+  "replay_lanes": [
+    {
+      "id": "P18-condition-engine",
+      "phase": "P18",
+      "evidence_level": "deterministic_lua_replay",
+      "tests": [
+        "tests/test_ctoa_helper_rule_engine.py",
+        "tests/test_ctoa_helper_profile_migration.py"
+      ],
+      "proves": ["six numeric operators", "AND_OR", "hysteresis", "cooldown", "bounded randomization", "safe-disabled migration"],
+      "does_not_prove": ["client integration", "dispatch", "operational acceptance"]
+    },
+    {
+      "id": "P19-targeting-magic",
+      "phase": "P19",
+      "evidence_level": "deterministic_lua_replay",
+      "tests": [
+        "tests/test_ctoa_helper_target_rule_editor.py",
+        "tests/test_ctoa_helper_magic_rule_editor.py"
+      ],
+      "proves": ["ordered target rules", "editable spell rules", "bounded add_remove_reorder", "profile-backed configuration"],
+      "does_not_prove": ["in-world target identity", "combat dispatch", "NPC guard canary"]
+    },
+    {
+      "id": "P20-spell-state",
+      "phase": "P20",
+      "evidence_level": "deterministic_lua_replay",
+      "tests": ["tests/test_ctoa_helper_spell_state_registry.py"],
+      "proves": ["state transition replay", "active-state recast block", "bounded unknown fallback"],
+      "does_not_prove": ["server condition icon mapping", "in-world PZ behavior", "spell dispatch"]
+    },
+    {
+      "id": "P21-profile-vocation",
+      "phase": "P21",
+      "evidence_level": "deterministic_lua_replay",
+      "tests": [
+        "tests/test_ctoa_helper_profile_migration.py",
+        "tests/test_ctoa_helper_vocation_profiles.py",
+        "tests/test_otclient_server_profile_schema.py"
+      ],
+      "proves": ["canonical profile ownership", "data-only vocation packs", "custom spell preservation", "migration does not arm runtime"],
+      "does_not_prove": ["live profile compatibility", "client-side persistence canary"]
+    },
+    {
+      "id": "P22-operator-ux",
+      "phase": "P22",
+      "evidence_level": "static_contract",
+      "tests": [
+        "tests/test_ctoa_helper_operator_feedback.py",
+        "tests/test_ctoa_helper_ui_preview_security.py",
+        "tests/test_helper_evolution_roadmap.py"
+      ],
+      "proves": ["distinct disabled_blocked_stale_active states", "contained rule navigation", "default and compact preview containment"],
+      "does_not_prove": ["native rendered pixels", "keyboard interaction", "sandbox visual acceptance"]
+    },
+    {
+      "id": "P23-product-boundary",
+      "phase": "P23",
+      "evidence_level": "deterministic_lua_replay",
+      "tests": ["tests/test_ctoa_helper_safe_contract_parity.py"],
+      "proves": ["numeric operator parity", "metric mapping", "product-local evaluator ownership", "no shared loader or evidence"],
+      "does_not_prove": ["equal randomization lifecycle", "Safe acceptance satisfies Helper", "runtime integration"]
+    }
+  ],
+  "sandbox_canaries": [
+    {
+      "id": "profile-migration-safe-boot",
+      "status": "specified_not_executed",
+      "max_dispatches": 0,
+      "requires_in_world_session": false,
+      "requires_explicit_session_approval": false,
+      "preconditions": ["fresh staged Helper manifest", "sandbox path containment proven", "live client path excluded", "runtime disabled before load"],
+      "operator_actions": ["load a copied legacy profile in sandbox", "open Profile and Settings surfaces", "save migrated profile to sandbox workdir only"],
+      "observations": ["schema becomes ctoa-helper-profile-v1", "enabled and runtime gates remain false", "custom spell and vocation data preserved"],
+      "abort_conditions": ["any runtime module arms", "write escapes sandbox", "profile loses unknown editable spell data"],
+      "rollback": ["stop sandbox only if running", "restore sandbox profile backup", "verify staged manifest hashes"]
+    },
+    {
+      "id": "target-identity-negative-guards",
+      "status": "specified_not_executed",
+      "max_dispatches": 0,
+      "requires_in_world_session": true,
+      "requires_explicit_session_approval": false,
+      "preconditions": ["sandbox character in-world", "runtime and dispatch guard disabled", "visible NPC player and Exercise Dummy test subjects identified by native type evidence"],
+      "operator_actions": ["collect passive candidate snapshots", "evaluate configured target rules without arming combat"],
+      "observations": ["NPC rejected", "player rejected", "Exercise Dummy rejected as combat target", "no attack target changes"],
+      "abort_conditions": ["attack target changes", "candidate type is ambiguous", "dispatch guard reports armed"],
+      "rollback": ["disarm Helper", "clear sandbox target profile", "stop sandbox only if it was started for this canary"]
+    },
+    {
+      "id": "spell-state-pz-and-anti-spam",
+      "status": "specified_not_executed",
+      "max_dispatches": 1,
+      "requires_in_world_session": true,
+      "requires_explicit_session_approval": true,
+      "preconditions": ["fresh current-revision independent runner result", "manifest-bound sandbox", "known PZ and non-PZ tiles", "one allowlisted harmless haste spell", "explicit canary session approval"],
+      "operator_actions": ["prove zero dispatch in PZ", "outside PZ arm only the allowlisted haste rule", "allow at most one cast", "observe active condition and bounded cooldown"],
+      "observations": ["PZ decision blocked", "first outside-PZ cast recorded once", "active-state recast blocked", "unknown state fails closed or uses configured bounded fallback"],
+      "abort_conditions": ["second cast while active", "any cast in PZ", "unrelated action dispatch", "condition identity ambiguous"],
+      "rollback": ["disarm Helper immediately", "kill scheduled sandbox events", "restore sandbox profile backup", "record final_state killed_and_disarmed"]
+    },
+    {
+      "id": "sandbox-package-rollback",
+      "status": "specified_not_executed",
+      "max_dispatches": 0,
+      "requires_in_world_session": false,
+      "requires_explicit_session_approval": false,
+      "preconditions": ["two manifest-bound sandbox package revisions", "backup path inside sandbox evidence root", "live root excluded"],
+      "operator_actions": ["stage newer package", "verify hashes", "restore previous sandbox package", "recompute hashes"],
+      "observations": ["restored files match previous manifest", "neutral loader remains exclusive", "safe boot remains disabled"],
+      "abort_conditions": ["live path resolves inside target set", "unmanifested file appears", "hash mismatch after restore"],
+      "rollback": ["retain failed sandbox evidence", "remove only verified temporary sandbox stage", "never mutate live"]
+    }
+  ],
+  "validation": {
+    "replay_matrix_tests": 4,
+    "p18_p23_replay_tests": 61,
+    "sandbox_queue_release_gate_tests": 47,
+    "p14_contract_tests_passed": 31,
+    "p14_contract_tests_skipped": 1,
+    "p14_expected_stale_stage_failures": 1,
+    "engine_brain_doc_sync": "passed",
+    "engine_brain_secret_guardrail": "passed",
+    "engine_brain_doctor": "warn",
+    "engine_brain_doctor_failures": 0,
+    "engine_brain_doctor_warnings": 3,
+    "engine_brain_pack_included": 10,
+    "engine_brain_pack_truncated": 0,
+    "runtime_authority": false,
+    "operational_acceptance_evaluated": false,
+    "canary_execution_authorized": false,
+    "promotion_allowed": false
+  },
+  "next_slice": "P24.2 refresh current-revision independent runner evidence and generate a signed acceptance request for the four required P14 capabilities"
+}

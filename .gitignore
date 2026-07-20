@@ -5,6 +5,8 @@ __pycache__/
 
 # Node
 node_modules/
+.codex-tmp/
+/outputs/
 web/.next/
 web/.turbo/
 web/out/
@@ -59,3 +61,5 @@ _local_archive/
 # OS
 .DS_Store
 Thumbs.db
+# Local OTClient capability snapshots are runtime evidence, not source.
+/ctoa_client_capabilities.json

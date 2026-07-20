@@ -8,15 +8,15 @@ def test_classify_distribution_marks_raw_artifacts_private_studio():
     assert result["package_tier"] == "Studio"
 
 
-def test_classify_distribution_marks_mobile_console_as_pro_public():
+def test_classify_distribution_marks_mobile_console_as_pro_private_source():
     result = classify_distribution("mobile_console")
-    assert result["visibility"] == "public"
+    assert result["visibility"] == "private"
     assert result["package_tier"] == "Pro"
 
 
-def test_classify_distribution_marks_src_as_core_public():
+def test_classify_distribution_marks_src_as_core_private_source():
     result = classify_distribution("src")
-    assert result["visibility"] == "public"
+    assert result["visibility"] == "private"
     assert result["package_tier"] == "Core"
 
 

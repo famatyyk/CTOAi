@@ -1,0 +1,263 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ctoa.local/schemas/equipment-dependency-preflight.schema.json",
+  "title": "CTOAi P9 to P10 Equipment Dependency Preflight v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "mode",
+    "evaluated_at_unix_ms",
+    "status",
+    "dependencies_satisfied",
+    "inputs",
+    "input_sha256",
+    "canonical_input_sha256",
+    "checks",
+    "upstream_blockers",
+    "blockers",
+    "decision_sha256",
+    "eligibility_changed",
+    "eligibility_state",
+    "operational_readiness_claimed",
+    "operator_review_required",
+    "repo_report_write_only",
+    "live_file_writes",
+    "dispatch_allowed",
+    "runtime_actions",
+    "executes_plan",
+    "execute_once_allowed",
+    "promotion_allowed",
+    "intrusive_actions_performed"
+  ],
+  "properties": {
+    "schema_version": {"const": "ctoa.equipment-dependency-preflight.v1"},
+    "mode": {"const": "repo_only_dependency_preflight"},
+    "evaluated_at_unix_ms": {"type": "integer", "minimum": 1},
+    "status": {"enum": ["passed", "blocked"]},
+    "dependencies_satisfied": {"type": "boolean"},
+    "inputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["p8_report", "p9_report", "p9_receipt", "capture_doctor", "observation_preview"],
+      "properties": {
+        "p8_report": {"$ref": "#/$defs/inputSummary"},
+        "p9_report": {"$ref": "#/$defs/inputSummary"},
+        "p9_receipt": {"$ref": "#/$defs/inputSummary"},
+        "capture_doctor": {"$ref": "#/$defs/inputSummary"},
+        "observation_preview": {"$ref": "#/$defs/inputSummary"}
+      }
+    },
+    "input_sha256": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["p8_report", "p9_report", "p9_receipt", "capture_doctor", "observation_preview"],
+      "properties": {
+        "p8_report": {"$ref": "#/$defs/sha256"},
+        "p9_report": {"$ref": "#/$defs/sha256"},
+        "p9_receipt": {"$ref": "#/$defs/sha256"},
+        "capture_doctor": {"$ref": "#/$defs/sha256"},
+        "observation_preview": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "canonical_input_sha256": {"$ref": "#/$defs/nonZeroSha256"},
+    "checks": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "p8_background_valid",
+        "p8_background_fresh",
+        "p9_report_ready",
+        "p9_receipt_accepted",
+        "p9_receipt_report_bound",
+        "p9_receipt_trace_bound",
+        "p9_bound_to_current_p8",
+        "capture_doctor_ready",
+        "observation_preview_ready",
+        "observation_preview_bound_to_current_p8",
+        "non_fixture_chain",
+        "no_action_chain"
+      ],
+      "properties": {
+        "p8_background_valid": {"type": "boolean"},
+        "p8_background_fresh": {"type": "boolean"},
+        "p9_report_ready": {"type": "boolean"},
+        "p9_receipt_accepted": {"type": "boolean"},
+        "p9_receipt_report_bound": {"type": "boolean"},
+        "p9_receipt_trace_bound": {"type": "boolean"},
+        "p9_bound_to_current_p8": {"type": "boolean"},
+        "capture_doctor_ready": {"type": "boolean"},
+        "observation_preview_ready": {"type": "boolean"},
+        "observation_preview_bound_to_current_p8": {"type": "boolean"},
+        "non_fixture_chain": {"type": "boolean"},
+        "no_action_chain": {"type": "boolean"}
+      }
+    },
+    "upstream_blockers": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["p8_report", "p9_report", "p9_receipt", "capture_doctor", "observation_preview"],
+      "properties": {
+        "p8_report": {"$ref": "#/$defs/upstreamBlockers"},
+        "p9_report": {"$ref": "#/$defs/upstreamBlockers"},
+        "p9_receipt": {"$ref": "#/$defs/upstreamBlockers"},
+        "capture_doctor": {"$ref": "#/$defs/upstreamBlockers"},
+        "observation_preview": {"$ref": "#/$defs/upstreamBlockers"}
+      }
+    },
+    "blockers": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "p8_report_missing",
+          "p8_report_malformed",
+          "p8_report_duplicate_keys",
+          "p8_report_oversize",
+          "p8_report_symlink_rejected",
+          "p8_report_not_regular",
+          "p8_report_unreadable",
+          "p8_report_not_object",
+          "p8_report_schema_invalid",
+          "p8_report_unsafe_contract",
+          "p8_report_not_ready",
+          "p8_report_future",
+          "p8_report_stale",
+          "p8_report_fixture_not_operational",
+          "p9_report_missing",
+          "p9_report_malformed",
+          "p9_report_duplicate_keys",
+          "p9_report_oversize",
+          "p9_report_symlink_rejected",
+          "p9_report_not_regular",
+          "p9_report_unreadable",
+          "p9_report_not_object",
+          "p9_report_schema_invalid",
+          "p9_report_unsafe_contract",
+          "p9_report_not_ready",
+          "p9_report_has_blockers",
+          "p9_report_fixture_not_operational",
+          "p9_receipt_missing",
+          "p9_receipt_malformed",
+          "p9_receipt_duplicate_keys",
+          "p9_receipt_oversize",
+          "p9_receipt_symlink_rejected",
+          "p9_receipt_not_regular",
+          "p9_receipt_unreadable",
+          "p9_receipt_not_object",
+          "p9_receipt_schema_invalid",
+          "p9_receipt_unsafe_contract",
+          "p9_receipt_not_accepted",
+          "p9_receipt_fixture_not_operational",
+          "p9_receipt_report_mismatch",
+          "p9_receipt_trace_mismatch",
+          "p9_p8_binding_mismatch",
+          "capture_doctor_missing",
+          "capture_doctor_malformed",
+          "capture_doctor_duplicate_keys",
+          "capture_doctor_oversize",
+          "capture_doctor_symlink_rejected",
+          "capture_doctor_not_regular",
+          "capture_doctor_unreadable",
+          "capture_doctor_not_object",
+          "capture_doctor_schema_invalid",
+          "capture_doctor_unsafe_contract",
+          "capture_doctor_blocked",
+          "capture_doctor_not_operator_override",
+          "observation_preview_missing",
+          "observation_preview_malformed",
+          "observation_preview_duplicate_keys",
+          "observation_preview_oversize",
+          "observation_preview_symlink_rejected",
+          "observation_preview_not_regular",
+          "observation_preview_unreadable",
+          "observation_preview_not_object",
+          "observation_preview_schema_invalid",
+          "observation_preview_unsafe_contract",
+          "observation_preview_blocked",
+          "observation_preview_not_ready",
+          "observation_preview_future",
+          "observation_preview_stale",
+          "observation_preview_fixture_not_operational",
+          "observation_preview_background_mismatch",
+          "unsafe_contract"
+        ]
+      }
+    },
+    "decision_sha256": {"$ref": "#/$defs/nonZeroSha256"},
+    "eligibility_changed": {"const": false},
+    "eligibility_state": {"const": "unchanged"},
+    "operational_readiness_claimed": {"const": false},
+    "operator_review_required": {"const": true},
+    "repo_report_write_only": {"const": true},
+    "live_file_writes": {"const": false},
+    "dispatch_allowed": {"const": false},
+    "runtime_actions": {"const": false},
+    "executes_plan": {"const": false},
+    "execute_once_allowed": {"const": false},
+    "promotion_allowed": {"const": false},
+    "intrusive_actions_performed": {"const": []}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "nonZeroSha256": {"type": "string", "pattern": "^(?!0{64}$)[0-9a-f]{64}$"},
+    "inputSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "load_status", "schema_version", "sha256", "valid", "ready", "operational", "fixture", "age_ms"],
+      "properties": {
+        "path": {"type": "string", "pattern": "^runtime/solteria_helper_dev/[a-z0-9_]+\\.json$"},
+        "load_status": {"enum": ["loaded", "missing", "malformed", "duplicate_keys", "oversize", "symlink_rejected", "not_regular", "unreadable", "not_object"]},
+        "schema_version": {"type": ["string", "null"]},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "valid": {"type": "boolean"},
+        "ready": {"type": "boolean"},
+        "operational": {"type": "boolean"},
+        "fixture": {"type": "boolean"},
+        "age_ms": {"type": ["integer", "null"]}
+      }
+    },
+    "upstreamBlockers": {
+      "type": "array",
+      "uniqueItems": true,
+      "maxItems": 256,
+      "items": {"type": "string", "pattern": "^[a-z0-9_]+$", "maxLength": 128}
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"status": {"const": "passed"}}},
+      "then": {
+        "properties": {
+          "dependencies_satisfied": {"const": true},
+          "blockers": {"maxItems": 0},
+          "checks": {
+            "properties": {
+              "p8_background_valid": {"const": true},
+              "p8_background_fresh": {"const": true},
+              "p9_report_ready": {"const": true},
+              "p9_receipt_accepted": {"const": true},
+              "p9_receipt_report_bound": {"const": true},
+              "p9_receipt_trace_bound": {"const": true},
+              "p9_bound_to_current_p8": {"const": true},
+              "capture_doctor_ready": {"const": true},
+              "observation_preview_ready": {"const": true},
+              "observation_preview_bound_to_current_p8": {"const": true},
+              "non_fixture_chain": {"const": true},
+              "no_action_chain": {"const": true}
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {"properties": {"status": {"const": "blocked"}}},
+      "then": {
+        "properties": {
+          "dependencies_satisfied": {"const": false},
+          "blockers": {"minItems": 1}
+        }
+      }
+    }
+  ]
+}

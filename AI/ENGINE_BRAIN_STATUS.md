@@ -1,6 +1,70 @@
 # Engine Brain Status
 
-Snapshot date: 2026-07-11 Europe/Warsaw
+Snapshot date: 2026-07-14 Europe/Warsaw
+
+Canonical product snapshot: Helper source and last verified live package are
+`v2.4.1`. Safe source candidate is `v2.9.0`; last separately verified live Safe
+is `v2.8.0`; neutral chooser is `2.1.0`. Historical release entries below do
+not override this snapshot.
+
+Current phase state (2026-07-15): P8, P9, P10, and P11 are `operational_acceptance_complete`.
+P8 closed with the official trusted pin,
+fresh `v2.4.1` heartbeat, `62/62` parity, and stable no-screen invariants. P9,
+P10, and P11 each have separate accepted, hash-bound, no-action receipts.
+
+P12 execute-once review is `closed_with_deferred_heal_friend_lane`. P12
+Conditions is `operational_acceptance_complete`:
+exactly one approved sandbox executor call
+ended `killed_and_disarmed`, retry remained false, and its accepted receipt
+grants no downstream authority. P12 Equipment is also
+`operational_acceptance_complete`. Registry v1 plan
+`d041db806c6417b018c6ae390e3d384ccec9bead2a77e498a582093bf7c823e0`
+was separately approved for its sandbox session and execution. The official
+wrapper made exactly one `3097 -> 3099` executor request, verified transformed
+rollback item `3093` in the source slot, scheduled no retry, and ended
+`killed_and_disarmed`. Receipt `p12-equipment-bdf7027cf48c438d` is `accepted`
+and grants no downstream or live authority.
+
+The first terminally disarmed rejected Equipment attempt remains historical and
+cannot be replayed. It exposed the server-specific `3096 -> 3093` and
+`3097 -> 3099` transformations that Registry v1 now models. P12 Heal Friend is
+`closed_blocked_no_compatible_vocation`. Plan
+`964ff8f0c178c7b646a565380e96846a8b29780eb02a734a259713d9ccf023b3`
+binds the accepted P11 and Equipment predecessors, exact target identity and
+whitelist revision, ED-only execution, HP `<= 70`, range `<= 7`, zero retry,
+and terminal KILL/disarm. Current 63-file manifest evidence passes `39/39`
+static, `4/4` module attach, `16/16` full attach, and `19/19` runtime gates.
+The sandbox session approval was granted, but its fresh preflight stopped on the
+single blocker `vocation_must_be_ed`. The operator has only sorcerer and knight,
+so `p12_heal_friend_no_compatible_vocation_closure.json` terminally expires the
+session approval without action. Execution approval and reuse are forbidden;
+attempt count remains `0`, retry false, final state `disarmed`, no cast occurred,
+and no downstream or live authority exists.
+
+P13 is `runtime_evidence_ready`: the fixed seven-entry
+decision/result ledger, stable schema registry with independent v1/schema
+SHA-256 pins, freshness/tamper checks, atomic
+`ROADMAP_STATE.json/md` generator, sanitized audit contract, read-only Control
+Center panel, and release-evidence phase consumer are implemented and tested.
+The exact confirmation `refresh roadmap state` authorized the fixed-output
+JSON/Markdown refresh and its raw output hashes are independently audit-bound.
+P13 introduces no runtime executor, MCP
+write tool, live authority, or P12 Heal Friend reopening. Historical compatibility marker: P12 is
+`in_progress`. P12 Heal Friend is `plan_ready_for_sandbox_session_approval`,
+`ready_for_sandbox_session_approval`, and P12 Heal Friend is `not_started` are
+superseded; they remain only for older read-only cockpit checks.
+
+P14 is active with status `foundation_ready_operational_hardening_required`. The versioned signed
+artifact-only request/result contract derives the official 63-file Helper
+manifest from tracked sources, binds a clean checkout and exact revision, rejects
+tamper/path drift, replays a deterministic manifest rollback, runs in a clean
+Windows CI contract job, and is exposed read-only through Release Evidence and
+Control Center. A matching second runner is online and returned structurally
+valid, signature-verified, clean-checkout, authority-safe rollback-replay evidence.
+The result targets an older revision; a required environment reviewer is missing
+and administrator bypass remains enabled. No current-revision result,
+visual/in-world suite, canary, actual rollback, promotion, runtime/live authority,
+or additional MCP tool is claimed; P15 remains closed.
 
 ## Completed In This Brain
 
@@ -18,9 +82,117 @@ Snapshot date: 2026-07-11 Europe/Warsaw
 - `.\ctoa.ps1 brain doctor` added as the one-command local operations audit.
 - `.\ctoa.ps1 brain pack` added as the one-command portable context packer.
 - Nested `AGENTS.md` added for `AI/` and `scripts/lua/`.
+- Canonical planning now distinguishes the primary full Helper P8-P16 mainline
+  from the bounded CTOA Safe S0-S4 companion lane. Safe is defined as a compact,
+  movable, fixed-label editor for supported healing/spell/Exeta/Conditions/Timer
+  behavior with portable data-only presets; CaveBot, movement/routes, generic
+  Settings, arbitrary Lua, and Helper-gate substitution are excluded.
+- Exclusive project-loader candidate `v2.4.0` is repo- and stage-complete. The
+  neutral chooser is the only CTOA autoload and requires a new Helper/Safe choice
+  after each login; both project loaders fail closed without authorization and
+  logout terminates the selected project. `PrepareDev` emits 62 manifest entries
+  with only `ctoa_project_loader.lua` at package root, and `SmokePreflight` proves
+  stage/sandbox parity. No live promotion or live crash-fix claim is made yet.
+- Safe `v2.0.1` removes an invalid zero-argument `g_map.getSpectators()` call
+  reached only after ENABLE. The replacement uses the detected fork's bounded
+  center-position signature, guarded fallback, and executable Lua coverage.
+  Fresh `ValidateDev` passed 145 tests and `SmokePreflight` passed; the sandbox
+  is not running, so operational no-crash acceptance remains pending.
+- Safe `v2.9.0` is now a repo-only candidate with an ordered per-entry Exeta
+  editor, strict named `ctoa-safe-profile-v3` preset libraries, one-way v2
+  migration, explicit fixed-path import/export, retained `.bak` recovery,
+  geometry clamping, and keyboard navigation. Safe boot remains disarmed and
+  the fixed module set remains Healing/Combat/Conditions/Support/Timer. This
+  candidate has no sandbox visual acceptance or live promotion yet.
 - Docker compose defaults hardened to loopback through `CTOA_BIND_HOST`,
   `CTOA_BOT_DASHBOARD_BIND_HOST`, and `CTOA_MONITOR_BIND_HOST`.
-- OTClient Helper `v2.2.1` is live-promoted. The official wrapper created a
+- OTClient Helper `v2.3.6` is live-promoted. The official wrapper created
+  `runtime/solteria_helper_dev/live_backup_20260712-121859`, verified 58/58
+  files, and kept `launch_after_promote=false`.
+- The v2.3.5 lane adds the canonical passive P9 Recovery pair producer,
+  `otp9accept`, fixed ignored P10 local override, exact container-slot binding,
+  and P10.1 strict Release Evidence/Control Center eligibility checks. P11 stays
+  closed until a fresh accepted non-fixture P10 report and matching receipt exist.
+- Helper v2.3.6 adds a passive exact-target
+  Heal Friend scan and a no-write P11 fixture replay with 55/55 deterministic
+  cases. The replay explicitly reports operational acceptance as `not_evaluated`;
+  it has no operational producer, receipt, Control Center unlock, dispatch, cast,
+  talk, execute-once path, or runtime-readiness claim.
+- Helper v2.3.7 is live-promoted. The official wrapper created
+  `runtime/solteria_helper_dev/live_backup_20260712-150157`, verified 58/58
+  stage/live hashes, and kept `launch_after_promote=false`. P10 now requires the
+  fixed 30-case scenario corpus and its SHA-256, uses wall-clock time for every
+  operational replay, and rejects caller-selected scenario paths and time.
+  Nested trace/plan/report schemas and both evidence consumers enforce the same
+  corpus. Privileged recovery/cavebot smoke commands cannot bypass disabled runtime.
+- Helper v2.3.8 is live-promoted. The official wrapper created
+  the latest `runtime/solteria_helper_dev/live_backup_20260712-163259`, verified 58/58
+  stage/live hashes, and kept `launch_after_promote=false`. Safe boot now resets
+  external enable state and persisted Recovery Bridge arms across init, reload,
+  disable, and terminate. Profile and UI-preference files are evaluated as
+  data-only chunks without OTClient or filesystem globals. Current-manifest
+  sandbox evidence passed 4/4 module attach, 16/16 full attach, and 19/19 runtime
+  module gates before promotion.
+- Helper v2.3.9 is live-promoted. The official wrapper created
+  the latest `runtime/solteria_helper_dev/live_backup_20260712-185148`, verified 58/58
+  stage/live hashes, and kept `launch_after_promote=false`. The main Helper
+  shell now meets its canonical hard gate at 130 named functions and 4308
+  lines. Pure logic moved behind guarded support modules while lifecycle,
+  runtime arming, OTClient API edges, and final dispatch remain in the shell.
+  A first sandbox attempt exposed `module_visible=nil` in the Profile renderer;
+  the callback adapter was restored, regression-tested, and the complete fresh
+  sandbox chain passed before promotion.
+- Helper v2.3.10 is live-promoted. The official wrapper created
+  `runtime/solteria_helper_dev/live_backup_20260712-192857`. Passive adapters now
+  own vocation/timer probe text, route/cavebot probe metadata and formatting,
+  profile export descriptors, and initial operator-summary collection. The
+  guarded shell retains native API sampling, profile/file mutations, movement,
+  arming, and dispatch at 4298 lines and 129 named functions. Sandbox testing
+  found and fixed both a nil UI-preference write payload and a native heap crash
+  caused by a generic `findPath` wrapper; the stable direct guarded `pcall` path
+  passed the complete fresh sandbox cycle before promotion. Final verification:
+  1666 Python tests, 127/127 ValidateDev, 39/39 static gates, 4/4 and 16/16
+  attach, and 19/19 runtime gates.
+- The six P10 operator artifacts are now consumed consistently by Python Release
+  Evidence and the web Control Center. A separate consumer-parity report binds
+  their strict schemas, hashes, downstream references, status/blocker copies,
+  freshness, no-action fields, and unchanged eligibility. ValidateDev runs this
+  read-only gate before the independent P10 acceptance boundary; Control Center
+  exposes no mutation or execution control for this evidence.
+- `ctoa.ps1 otp10refresh` now refreshes that complete repo-only chain in fixed
+  order and requires the final consumer-parity report to pass. Its successful
+  process status means refresh/parity success, not operator readiness; the
+  no-ID plan remains independently blocked and no acceptance or runtime action
+  is granted. The completed run envelope binds all seven stage hashes to one
+  UUID and matching failure cleanup preserves the last good receipt.
+  Release Evidence and Control Center consume that receipt read-only and fail
+  closed for missing, invalid, stale, mixed, or replayed evidence. The final
+  verification passed 1657 Python tests, 147 web tests, 127/127 ValidateDev,
+  39/39 static gates, 4/4 and 16/16 sandbox attach, and 19/19 runtime gates.
+- P10 capture-profile readiness now has a dedicated `otp10doctor` operator
+  command, strict JSON Schema, runbook, and ValidateDev no-action gate. The
+  current tracked zero-ID template correctly reports `blocked`; no real item or
+  container identifiers are inferred, persisted, or copied into evidence.
+- P10 operator evidence now includes exclusive zero-ID profile initialization,
+  a bounded sanitized Equipment observation preview, and a strict P9-to-P10
+  dependency preflight. The preflight binds P8, non-fixture P9 report/receipt,
+  doctor, and preview hashes while always preserving `eligibility_changed=false`
+  and false action/live flags. The current operational chain remains correctly
+  blocked; the tooling batch was promoted only after current-manifest sandbox
+  evidence passed 4/4, 16/16, and 19/19.
+- P10 profile changes have a separate `otp10plan` review boundary. It binds the
+  fixed capture doctor and observation preview hashes, requires exact ring and
+  candidate coordinates plus an exact planning confirmation, and emits only
+  `runtime/solteria_helper_dev/equipment_capture_profile_change_plan.json`.
+  The generator cannot read or write `.ctoa-local`, control OTClient, accept a
+  receipt, or claim runtime readiness.
+- P10 operator workflow now also has a deterministic candidate catalog with
+  `selection_policy=none`, plus consolidated `otp10ready` explanation across
+  doctor, preview, dependency preflight, catalog, and change plan. Missing,
+  invalid, stale, and upstream blockers remain distinct; every suggested next
+  action preserves unchanged eligibility and no runtime/live execution. The
+  latest tooling manifest passed the full sandbox chain before live promotion.
+- OTClient Helper `v2.3.4` was previously live-promoted. The official wrapper created a
   backup, verified 58/58 staged/live manifest hashes at promotion, completed the
   release gate and GoalStatus, and refreshed Control Center evidence. Later
   profile edits during play are mutable drift and do not redefine immutable
@@ -55,26 +227,14 @@ Snapshot date: 2026-07-11 Europe/Warsaw
   and live approval predates the current dev manifest. Those gates remain
   dry-run/no-dispatch; the current dev package was not promoted live, and runtime
   acceptance remains separate from any earlier package promotion.
-- P8 `BackgroundNoScreen` is `implementation_complete` and
-  `operational_acceptance_blocked`. It adds bounded passive heartbeat and log
-  readers, immutable live/manifest parity, an advisory-only
-  `background_status.json`, a positive wrapper allowlist, primitive GUI/input/
-  screenshot/start-stop/live-write guards, `ctoa.ps1 otbg`, and a read-only
-  Control Center status tile. It records process/screenshot stability and never
-  authorizes dispatch or promotion. The current live package is promoted only
-  through the explicit wrapper gate; the protected live client remains guarded
-  and the staged source version is tracked by the release manifest. Canonical
-  sequence: `AI/P8_P16_EXECUTION_ROADMAP.md`.
-- P8 operational acceptance is fail-closed and requires all three proofs: a
-  manifest with `official_live_promotion` provenance and matching SHA256 in
-  `live_promotion.json`, an explicit fresh online capability heartbeat newer than
-  exactly one canonical client process, and full producer/consumer parity for the
-  no-action contract. The observer cannot create that trusted pin.
-- The current historical P8 artifacts are classified
-  `legacy_or_unbound_attestation`. Read-only diagnostic parity safely inspects
-  all 58 entries and reports stable 57/58 parity with one executable-profile
-  drift, while `acceptance_allowed=false`. Release Evidence and Control Center
-  consume only allowlisted remediation and diagnostic fields.
+- P8 `BackgroundNoScreen` is `operational_acceptance_complete`. Its bounded
+  passive readers, positive wrapper allowlist, protected live-client boundary,
+  `ctoa.ps1 otbg`, Release Evidence, and Control Center consumers preserve the
+  no-action contract and never authorize dispatch or promotion. Acceptance used
+  official promotion provenance, a fresh heartbeat newer than one canonical
+  process, and full producer/consumer parity together. The observer cannot
+  create that trusted pin. Earlier `legacy_or_unbound_attestation` artifacts
+  remain historical diagnostic evidence only.
 - `ModuleAttachSmoke` 4/4, `SmokeAttachAll` 16/16, and
   `RuntimeModuleGatesSandboxSmoke` evidence are now manifest-hash-bound at
   production and at the release-gate consumers. Legacy complete artifacts
@@ -84,22 +244,36 @@ Snapshot date: 2026-07-11 Europe/Warsaw
   widget updates out of `ctoa_native_helper.lua` into the passive Diagnostics
   and UI adapters. It preserves safe-boot/runtime-action invariants and is
   covered by Lua-backed adapter tests plus the existing shell contract suite.
-- P9 Conditions is `offline_implementation_complete` and
-  `operational_acceptance_blocked`. The existing heartbeat now carries an
-  optional strict Conditions observation; the bounded sanitizer keeps missing
-  data compatible with P8 but rejects unsafe nested action claims. The data-only
-  replay has strict hash-bound P8/Recovery inputs, a 44-case deterministic
-  fixture pack, atomic runtime output, Release Evidence and Control Center
-  consumers, and `ctoa.ps1 otp9`. Fixture success does not claim runtime
-  readiness. P10 offline replay is complete, but P10 stays blocked operationally
-  until a fresh real P9 trace is reviewed under
-  accepted P8 and Recovery proofs. Canonical contract:
-  `docs/otclient/P9_CONDITIONS_SHADOW_REPLAY_DESIGN.md`.
+- P9 Conditions is `operational_acceptance_complete`. Its accepted receipt binds
+  the fresh real Conditions trace, accepted P8, and canonical Recovery proofs;
+  all dispatch, execute-once, promotion, and runtime-readiness fields remain
+  false. Fixture success still does not claim runtime readiness. Canonical
+  contract: `docs/otclient/P9_CONDITIONS_SHADOW_REPLAY_DESIGN.md`.
+- P10 Equipment shadow/replay is `operational_acceptance_complete`. Its real
+  passive input boundary was introduced in live-promoted Helper `v2.3.5`:
+  the guarded adapter reports a bounded inventory observation, the reporter
+  sanitizes it, and a repo-local producer combines it with an explicitly
+  configured ring/container profile into a canonical snapshot. Operational
+  replay rejects fixture provenance and noncanonical paths. A separate receipt
+  preflight replays current inputs, binds the accepted P9 receipt to its raw
+  report, requires exact confirmation, and never authorizes dispatch, runtime
+  readiness, or promotion. Release Evidence, P7, and Control Center report P10
+  replay and acceptance independently. The accepted P10 receipt binds real P9
+  evidence and exact ring/container/slot inputs but grants no item movement or
+  P12 execute-once authority.
+- Live-promoted Helper v2.3.6 retains the case-sensitive `.otmod` autoload metadata for
+  classic/mehah parsers, uses current and legacy console status enums, retains
+  one lifecycle subscription across duplicate loader authorities, tears down
+  idempotently, and starts hidden without window focus. P10 accepted semantics
+  are now bound into the receipt hash and enforced by Python, JSON Schema,
+  Release Evidence, and Control Center; snapshot/replay writers use confined
+  exclusive atomic writes. Those hardening invariants remain active after P10
+  and P11 acceptance.
 - P9 also has a separate data-only operator acceptance boundary. It strictly
   recomputes the current report and hashes, rejects fixtures/reparse paths and
   stale or changing evidence, requires exact confirmation for persistence, and
-  keeps all action flags false. The current preflight is blocked and no
-  `conditions_shadow_acceptance.json` receipt exists. Contract:
+  keeps all action flags false. The persisted
+  `conditions_shadow_acceptance.json` receipt is accepted. Contract:
   `docs/otclient/P9_CONDITIONS_SHADOW_ACCEPTANCE.md`.
 - Vocation-profile drift is visible as its own count but cannot satisfy parity:
   the current profile is executable Lua. A later schema-validated data-only
@@ -168,8 +342,9 @@ Snapshot date: 2026-07-11 Europe/Warsaw
   workspace audit and canonical docs.
 - Engine Brain indexing now prunes excluded volatile directories before
   traversal and tolerates disappearing build paths such as `web/.next/*`.
-- `brain pack` now supports context profiles: `all`, `helper`,
-  `control-center`, `infra`, and `security`.
+- `brain pack` now supports context profiles: `all`, `control-central`,
+  `helper`, `control-center`, `infra`, and `security`. `control-central` is the
+  minimal daily handoff and omits the large file-tree/symbol-map summaries.
 - Local Codex skill `ctoa-engine-brain` added under
   `C:\Users\zycie\.codex\skills\ctoa-engine-brain` and validated with the
   skill creator quick validator.
@@ -199,8 +374,15 @@ Snapshot date: 2026-07-11 Europe/Warsaw
   `AI/generated/P7_OPERATOR_BRIEF.json`, P7 cockpit smoke evidence, and bounded
   Control Center action-audit drilldown status without running refresh, deploy,
   or live-client actions.
+- The local plugin now includes token-efficient Control Central script
+  `scripts/ctoai_control_central.py`, exposed through MCP as
+  `ctoai_control_central`. Its compact default unifies `brain`,
+  `control-center`, `plugin-management`, and `sites`, reports the source/output
+  payload size and estimated token reduction, and includes raw drilldown only
+  for an explicitly selected lane with `detail=full`.
 - The local plugin now includes read-only MCP server
-  `scripts/ctoai_engine_brain_mcp.py`. It exposes four read-only tools
+  `scripts/ctoai_engine_brain_mcp.py`. It exposes the compact
+  `ctoai_control_central` entrypoint, four compatibility read-only tools
   (`ctoai_engine_brain_status`, `ctoai_engine_brain_self_check`,
   `ctoai_engine_brain_brief`, `ctoai_control_center_cockpit`) plus five
   dry-run-first safe-write refresh tools for repo hygiene, API cost, evidence
@@ -215,7 +397,7 @@ Snapshot date: 2026-07-11 Europe/Warsaw
   plugin MCP server to be loaded.
 - `brain refresh` now also generates `AI/generated/P7_OPERATOR_WORKFLOW.md` and
   `AI/generated/P7_OPERATOR_WORKFLOW.json` as the P7 risk gate. It reports
-  the allowed read-only cockpit/status tools, the five audited safe-write
+  the allowed Control Central and compatibility read-only tools, the five audited safe-write
   refresh tools, and blocked `guarded_write`, `dangerous`, and
   `forbidden_ui` action classes.
 - `brain refresh` now generates `AI/generated/P7_ACTION_READINESS.md` and

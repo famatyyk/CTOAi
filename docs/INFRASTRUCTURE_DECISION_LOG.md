@@ -9,7 +9,7 @@ Status: Execution authorized
 - VPS Host: 116.202.96.250
 - SSH User: ctoa
 - SSH Key File: ~/.ssh/ctoa_vps_ed25519
-- Docker Registry: docker.io/famatyyk/ctoa-toolkit
+- Docker Registry: ghcr.io/famatyyk/ctoa-toolkit
 - Go ahead: YES
 - CI policy: PR-only build/test, tag-based publish/deploy on `v*`
 
@@ -19,7 +19,7 @@ Status: Execution authorized
 - User: ctoa
 - Auth: SSH key only
 - Runtime: Docker-first
-- Registry namespace: docker.io/famatyyk/ctoa-toolkit
+- Registry namespace: ghcr.io/famatyyk/ctoa-toolkit
 
 ## Execution Sequence
 
@@ -41,7 +41,7 @@ Phase 3 - PR merge and tag release
 Phase 4 - VPS deployment
 
 - registry mode:
-  ./deploy-to-vps.sh 116.202.96.250 ctoa $HOME/.ssh/ctoa_vps_ed25519 v1.14.0 docker.io/famatyyk/ctoa-toolkit
+  ./deploy-to-vps.sh 116.202.96.250 ctoa $HOME/.ssh/ctoa_vps_ed25519 v1.14.0 ghcr.io/famatyyk/ctoa-toolkit
 - direct mode (no registry):
   ./deploy-to-vps.sh 116.202.96.250 ctoa $HOME/.ssh/ctoa_vps_ed25519
 

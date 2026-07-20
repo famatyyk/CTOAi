@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ctoa.local/schemas/heal-friend-scan.schema.json",
+  "title": "CTOAi passive Heal Friend candidate scan v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version","observed_at_unix_ms","party_observed_at_unix_ms","observation_id","online","alive","protection_zone","protection_zone_source","self_id","scan_complete","candidates","cooldown","cooldown_source","producer_source","dispatch_allowed","runtime_actions","executes_plan","execute_once_allowed","promotion_allowed","casts","talks"],
+  "properties": {
+    "schema_version": {"const":"ctoa.heal-friend-scan.v1"},
+    "observed_at_unix_ms": {"type":"integer","minimum":1},
+    "party_observed_at_unix_ms": {"type":"integer","minimum":1},
+    "observation_id": {"type":"string","pattern":"^[a-z0-9][a-z0-9_-]{0,63}$"},
+    "online": {"enum":["online","offline","unknown"]},
+    "alive": {"enum":["alive","dead","unknown"]},
+    "protection_zone": {"enum":["outside","inside","unknown"]},
+    "protection_zone_source": {"enum":["player_method","player_states","unavailable"]},
+    "self_id": {"type":"integer","minimum":0,"maximum":2147483647},
+    "scan_complete": {"type":"boolean"},
+    "candidates": {
+      "type":"array",
+      "maxItems":64,
+      "items": {
+        "type":"object",
+        "additionalProperties":false,
+        "required":["target_id","target_name","hp_percent","distance","target_is_player","target_is_self","target_party_member","target_visible","target_same_floor"],
+        "properties": {
+          "target_id":{"type":"integer","minimum":1,"maximum":2147483647},
+          "target_name":{"type":"string","pattern":"^[a-z][a-z0-9 ]{0,63}$"},
+          "hp_percent":{"type":"integer","minimum":0,"maximum":100},
+          "distance":{"type":"integer","minimum":0,"maximum":255},
+          "target_is_player":{"type":"boolean"},
+          "target_is_self":{"type":"boolean"},
+          "target_party_member":{"type":"boolean"},
+          "target_visible":{"type":"boolean"},
+          "target_same_floor":{"type":"boolean"}
+        }
+      }
+    },
+    "cooldown": {"enum":["ready","active","unknown"]},
+    "cooldown_source": {"enum":["game_cooldown_group","unavailable"]},
+    "producer_source": {"const":"otclient_guarded_adapter"},
+    "dispatch_allowed":{"const":false},
+    "runtime_actions":{"const":false},
+    "executes_plan":{"const":false},
+    "execute_once_allowed":{"const":false},
+    "promotion_allowed":{"const":false},
+    "casts":{"const":false},
+    "talks":{"const":false}
+  }
+}

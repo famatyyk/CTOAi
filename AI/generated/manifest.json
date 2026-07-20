@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-12T01:33:15+00:00",
+  "generated_at": "2026-07-16T18:25:57+00:00",
   "root": "C:\\Users\\zycie\\CTOAi",
-  "file_count": 1289,
+  "file_count": 1497,
   "outputs": {
     "file_tree": "AI\\generated\\FILE_TREE.md",
     "symbol_map": "AI\\generated\\SYMBOL_MAP.md",
@@ -25,11 +25,11 @@
   },
   "doc_sync_status": "passed",
   "secret_guardrail_status": "passed",
-  "p6_readiness_status": "ready_for_plugin_design",
-  "p7_operator_workflow_status": "safe_write_ready",
+  "p6_readiness_status": "blocked",
+  "p7_operator_workflow_status": "blocked",
   "p7_action_readiness_status": "safe_write_tools_enabled",
   "p7_safe_write_tool_design_status": "implemented",
-  "p7_operator_brief_status": "ready",
+  "p7_operator_brief_status": "needs_attention",
   "excluded_dirs": [
     ".git",
     ".hg",

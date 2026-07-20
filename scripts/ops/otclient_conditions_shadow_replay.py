@@ -338,10 +338,10 @@ def read_document(path: Path, max_bytes: int = MAX_INPUT_BYTES) -> InputDocument
         return InputDocument(None, "duplicate_keys", raw_hash)
     except (UnicodeError, ValueError, RecursionError):
         return InputDocument(None, "malformed", raw_hash)
-    if not isinstance(payload, dict):
-        return InputDocument(None, "not_object", raw_hash)
     if not _json_shape_within_bounds(payload):
         return InputDocument(None, "malformed", raw_hash)
+    if not isinstance(payload, dict):
+        return InputDocument(None, "not_object", raw_hash)
     return InputDocument(payload, "loaded", canonical_sha256(payload))
 
 
@@ -434,7 +434,8 @@ def _observation_structurally_valid(payload: dict[str, Any]) -> bool:
             payload.get("protection_zone"), {"outside", "inside", "unknown"}
         )
         and _is_allowed_string(
-            payload.get("protection_zone_source"), {"player_method", "unavailable"}
+            payload.get("protection_zone_source"),
+            {"player_method", "player_states", "unavailable"},
         )
         and isinstance(payload.get("condition_id"), str)
         and _is_allowed_string(
@@ -488,10 +489,15 @@ def _p8_structurally_valid(payload: dict[str, Any]) -> bool:
 
 def _recovery_trace_structurally_valid(payload: dict[str, Any]) -> bool:
     blockers = payload.get("blockers")
+    expected_trace_id = payload.get("trace_id")
+    if payload.get("source") == "recovery_shadow":
+        basis = {key: value for key, value in payload.items() if key != "trace_id"}
+        expected_trace_id = f"recovery-shadow-{canonical_sha256(basis)[:16]}"
     return bool(
         _exact_keys(payload, RECOVERY_TRACE_KEYS)
         and payload.get("schema_version") == RECOVERY_TRACE_SCHEMA
         and _valid_id(payload.get("trace_id"))
+        and payload.get("trace_id") == expected_trace_id
         and _is_int(payload.get("observed_at_unix_ms"))
         and payload["observed_at_unix_ms"] > 0
         and _is_allowed_string(payload.get("source"), {"recovery_shadow", "fixture"})
@@ -510,10 +516,15 @@ def _recovery_trace_structurally_valid(payload: dict[str, Any]) -> bool:
 
 
 def _recovery_proof_structurally_valid(payload: dict[str, Any]) -> bool:
+    expected_proof_id = payload.get("proof_id")
+    if payload.get("source") == "recovery_shadow":
+        basis = {key: value for key, value in payload.items() if key != "proof_id"}
+        expected_proof_id = f"conditions-recovery-{canonical_sha256(basis)[:16]}"
     return bool(
         _exact_keys(payload, RECOVERY_PROOF_KEYS)
         and payload.get("schema_version") == RECOVERY_PROOF_SCHEMA
         and _valid_id(payload.get("proof_id"))
+        and payload.get("proof_id") == expected_proof_id
         and _is_int(payload.get("observed_at_unix_ms"))
         and payload["observed_at_unix_ms"] > 0
         and _is_allowed_string(payload.get("status"), {"ready", "blocked", "unknown"})
@@ -851,7 +862,10 @@ def evaluate_shadow(
                 blockers.add("protection_zone_inside")
             elif observation.get("protection_zone") == "unknown":
                 blockers.add("protection_zone_unknown")
-            elif observation.get("protection_zone_source") != "player_method":
+            elif observation.get("protection_zone_source") not in {
+                "player_method",
+                "player_states",
+            }:
                 blockers.add("protection_zone_source_untrusted")
             if observation.get("condition_id") != CONDITION:
                 blockers.add("condition_mismatch")

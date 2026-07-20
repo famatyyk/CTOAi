@@ -1,0 +1,167 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ctoai.local/schemas/equipment-consumer-parity-report.schema.json",
+  "title": "CTOAi P10 Equipment Consumer Parity Report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "status",
+    "artifact_count",
+    "artifacts",
+    "consumer_contracts",
+    "checks",
+    "blockers",
+    "eligibility_changed",
+    "eligibility_state",
+    "operational_readiness_claimed",
+    "runtime_actions",
+    "dispatch_allowed",
+    "executes_plan",
+    "execute_once_allowed",
+    "promotion_allowed",
+    "live_file_writes",
+    "intrusive_actions_performed",
+    "live_safety"
+  ],
+  "properties": {
+    "schema_version": {"const": "ctoa.equipment-consumer-parity.v1"},
+    "status": {"enum": ["passed", "blocked"]},
+    "artifact_count": {"const": 6},
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "capture_profile_doctor",
+        "observation_preview",
+        "dependency_preflight",
+        "candidate_catalog",
+        "capture_profile_change_plan",
+        "operator_readiness"
+      ],
+      "properties": {
+        "capture_profile_doctor": {"$ref": "#/$defs/artifact"},
+        "observation_preview": {"$ref": "#/$defs/artifact"},
+        "dependency_preflight": {"$ref": "#/$defs/artifact"},
+        "candidate_catalog": {"$ref": "#/$defs/artifact"},
+        "capture_profile_change_plan": {"$ref": "#/$defs/artifact"},
+        "operator_readiness": {"$ref": "#/$defs/artifact"}
+      }
+    },
+    "consumer_contracts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["python", "web"],
+      "properties": {
+        "python": {"$ref": "#/$defs/consumer"},
+        "web": {"$ref": "#/$defs/consumer"}
+      }
+    },
+    "checks": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemas_valid",
+        "status_parity",
+        "blockers_parity",
+        "hash_parity",
+        "no_action_parity",
+        "eligibility_parity",
+        "consumer_contracts_valid"
+      ],
+      "properties": {
+        "schemas_valid": {"type": "boolean"},
+        "status_parity": {"type": "boolean"},
+        "blockers_parity": {"type": "boolean"},
+        "hash_parity": {"type": "boolean"},
+        "no_action_parity": {"type": "boolean"},
+        "eligibility_parity": {"type": "boolean"},
+        "consumer_contracts_valid": {"type": "boolean"}
+      }
+    },
+    "blockers": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "eligibility_changed": {"const": false},
+    "eligibility_state": {"const": "unchanged"},
+    "operational_readiness_claimed": {"const": false},
+    "runtime_actions": {"const": false},
+    "dispatch_allowed": {"const": false},
+    "executes_plan": {"const": false},
+    "execute_once_allowed": {"const": false},
+    "promotion_allowed": {"const": false},
+    "live_file_writes": {"const": false},
+    "intrusive_actions_performed": {"const": []},
+    "live_safety": {"type": "string", "minLength": 32}
+  },
+  "$defs": {
+    "nullableSha256": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"},
+    "stringList": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "filename",
+        "path",
+        "schema_path",
+        "load_status",
+        "schema_version",
+        "expected_schema_version",
+        "status",
+        "ready_status",
+        "blockers",
+        "sha256",
+        "schema_valid",
+        "schema_errors",
+        "status_blocker_parity",
+        "no_action_valid",
+        "eligibility_valid",
+        "hash_bindings_valid",
+        "divergences"
+      ],
+      "properties": {
+        "filename": {"type": "string", "pattern": "^equipment_.+\\.json$"},
+        "path": {"type": "string", "minLength": 1},
+        "schema_path": {"type": "string", "minLength": 1},
+        "load_status": {"enum": ["loaded", "missing", "symlink_rejected", "oversize", "duplicate_keys", "malformed", "not_object"]},
+        "schema_version": {"type": ["string", "null"]},
+        "expected_schema_version": {"type": "string", "pattern": "^ctoa\\.equipment-.+\\.v1$"},
+        "status": {"type": ["string", "null"]},
+        "ready_status": {"type": "string", "minLength": 1},
+        "blockers": {"$ref": "#/$defs/stringList"},
+        "sha256": {"$ref": "#/$defs/nullableSha256"},
+        "schema_valid": {"type": "boolean"},
+        "schema_errors": {"$ref": "#/$defs/stringList"},
+        "status_blocker_parity": {"type": "boolean"},
+        "no_action_valid": {"type": "boolean"},
+        "eligibility_valid": {"type": "boolean"},
+        "hash_bindings_valid": {"type": "boolean"},
+        "divergences": {"$ref": "#/$defs/stringList"}
+      }
+    },
+    "consumer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "marker_present",
+        "artifact_tokens_present",
+        "artifact_tokens_expected",
+        "missing_artifact_tokens",
+        "projection_fields_present",
+        "projection_fields_expected",
+        "missing_projection_fields",
+        "contract_valid"
+      ],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "marker_present": {"type": "boolean"},
+        "artifact_tokens_present": {"type": "integer", "minimum": 0},
+        "artifact_tokens_expected": {"type": "integer", "minimum": 1},
+        "missing_artifact_tokens": {"$ref": "#/$defs/stringList"},
+        "projection_fields_present": {"type": "integer", "minimum": 0},
+        "projection_fields_expected": {"type": "integer", "minimum": 1},
+        "missing_projection_fields": {"$ref": "#/$defs/stringList"},
+        "contract_valid": {"type": "boolean"}
+      }
+    }
+  }
+}

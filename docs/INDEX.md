@@ -13,13 +13,14 @@ the system changes:
 - [Repo Schema](REPO_SCHEMA.md): current repository map and ownership contract.
 - [Foundation Cleanup](CTOAI_FOUNDATION_CLEANUP.md): canonical surface cleanup plan.
 - [Product Portfolio](PRODUCT_PORTFOLIO.md): product ownership and product-ready definition.
-- [Repo Hygiene Policy](REPO_HYGIENE_POLICY.md): public repo hygiene and evidence placement rules.
+- [Repo Hygiene Policy](REPO_HYGIENE_POLICY.md): private-source hygiene, exposure, and evidence placement rules.
 - [Infrastructure Canonical](INFRASTRUCTURE_CANONICAL.md): production infrastructure source of truth.
 - [Sprint Governance](SPRINT_GOVERNANCE.md): sprint lifecycle, gates, and approval flow.
 - [Validation Checklist](VALIDATION_CHECKLIST.md): deployment and runtime validation checklist.
 - [README Inventory](README_INVENTORY.md): README cleanup guardrail and classification map.
 - [Full Workspace Audit](audits/CTOAI_FULL_WORKSPACE_AUDIT_2026-07-06.md): complete file inventory summary and current risk findings.
 - [Security Hardening Note](audits/CTOAI_SECURITY_HARDENING_2026-07-06.md): auth, CORS, self-registration, and release-evidence hardening record.
+- [Public Exposure Lockdown](audits/CTOAI_PUBLIC_EXPOSURE_LOCKDOWN_2026-07-15.md): private-first GitHub/Vercel lockdown evidence and residual limits.
 - [Three Development Plans](roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md): Helper, Control Center/evidence, and Engine Brain roadmap options.
 - [P8-P16 Execution Roadmap](../AI/P8_P16_EXECUTION_ROADMAP.md): BackgroundNoScreen foundation, independent low-risk replay lanes, separate-runner release automation, and deferred Combat/CaveBot twins.
 - [P9 Conditions Shadow Replay Design](otclient/P9_CONDITIONS_SHADOW_REPLAY_DESIGN.md): data-only profile, sanitized observation, deterministic replay, and the P8 acceptance boundary.

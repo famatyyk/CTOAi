@@ -1,13 +1,20 @@
-# Repo Hygiene Policy (Public Product Repo)
+# Repo Hygiene Policy (Private Source Repository)
 
-Goal: keep this repository focused on public CTOA products, while moving internal drafts, forensic artifacts, and raw dumps outside the product surface.
+Goal: keep the private CTOA source repository focused on product code while
+preventing accidental source, history, evidence, or deployment publication.
 
 ## Core Rules
 
-1. Public repo stores product code, product docs, validated workflows, and release evidence.
+1. The canonical source repository is private by default.
 2. Raw research artifacts and local forensic outputs must not be committed by default.
 3. Secrets/tokens are forbidden in history, files, and command snippets.
 4. New top-level files require explicit product relevance.
+5. Public releases are sanitized exports without Git history and require owner approval.
+6. GitHub Pages and public deployment aliases stay disabled unless a separate public facade is approved.
+
+Because GitHub-hosted secret scanning may be unavailable for private personal
+repositories, the tracked pre-commit configuration runs Gitleaks through the
+official container hook as a compensating local and CI guardrail.
 
 ## Data Placement Strategy
 
@@ -20,7 +27,7 @@ Goal: keep this repository focused on public CTOA products, while moving interna
 
 ## Naming and API Exposure
 
-- Public naming uses CTOA-neutral product terms.
+- External naming uses CTOA-neutral product terms.
 - Domain-specific legacy names can remain only as compatibility aliases.
 - New APIs/scripts must use neutral naming by default.
 
@@ -63,11 +70,17 @@ python scripts/ops/repo_hygiene_audit.py --fail-on-findings --json-out runtime/r
 
 Repo hygiene is package-aware:
 
-- Core: public-safe toolkit runtime and governance surface
-- Pro: public commercial add-ons such as console/control-plane surfaces
-- Studio: internal/private overlays that must not remain in public customer distribution
+- Core: private source that may be exported as a sanitized customer package
+- Pro: private commercial source distributed only through controlled packaging
+- Studio: internal/private overlays that never enter customer distribution
 
 Package manifests live under `product/packages/` and should be updated before major cleanup waves.
+
+Run the live exposure guardrail after GitHub or Vercel changes:
+
+```bash
+python scripts/ops/ctoa_public_exposure_audit.py
+```
 
 ## Sprint-050 Evidence Promotion Rules
 

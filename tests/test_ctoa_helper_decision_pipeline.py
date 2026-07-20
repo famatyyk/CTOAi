@@ -217,4 +217,5 @@ def test_engine_panel_exposes_boot_pipeline_and_blocker_status():
     assert "owns_engine_status_rows = true" in ui
     assert 'moduleValue(externalModules, "bootSnapshot", loaderState.modules or {})' in helper
     assert 'moduleValue(externalModules, "bootSummary", bootSnapshot or {})' in helper
-    assert 'moduleValue(externalDecisionPipeline, "summary", Helper.decision_pipeline_result or {})' in helper
+    assert "local pipelineResult = Helper.decision_pipeline_result or {}" in helper
+    assert 'moduleValue(externalDecisionPipeline, "summary", pipelineResult)' in helper

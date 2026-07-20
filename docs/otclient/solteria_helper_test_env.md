@@ -240,6 +240,22 @@ and absence of `castSpell`, actionbar sends, `g_game.talk`, `g_game.move`,
 `moveTo`, item use, or inventory-use calls in the Equipment observer slice. It
 does not launch, stop, move gear, use items, or overwrite any client.
 
+Validate the passive P10 operational boundary with three separate repo-only
+checks:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action EquipmentShadowSnapshotStaticSmoke
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action EquipmentShadowReplayStaticSmoke
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action EquipmentShadowAcceptanceStaticSmoke
+```
+
+The snapshot check consumes only sanitized `background_status.json` plus the
+explicit capture profile. The replay check rejects fixture provenance and
+noncanonical paths in operational mode. The acceptance check is a no-write
+preflight and must remain blocked until current accepted P9 evidence and exact
+ring/container IDs are present. None of these checks enables runtime readiness,
+dispatch, item movement, or live promotion.
+
 Run the static Scripting policy contract before enabling any command model,
 snippet, or runtime eval path:
 
@@ -461,6 +477,14 @@ runtime\solteria_helper_dev\live_backup_<timestamp>\backup_manifest.json
 runtime\solteria_helper_dev\latest\
 runtime\solteria_helper_dev\ctoa_otclient_<version>.zip
 ```
+
+The Helper development stage and ZIP contain only the neutral chooser plus the
+Helper project files listed in `manifest.json`. They intentionally exclude
+`mods/ctoa_safe`; Safe has its own source tree, seven-file release manifest,
+validation, and promotion workflow through `scripts/windows/solteria_safe_release.ps1`.
+Helper sandbox synchronization removes a stale `mods/ctoa_safe` directory only
+inside the verified separate sandbox root so Helper and Safe evidence cannot be
+mixed. It never removes or rewrites Safe in the live client.
 
 `manifest.json` contains the staged file list with SHA256 hashes and a snapshot
 of any running Solteria process. The release gate verifies those staged file

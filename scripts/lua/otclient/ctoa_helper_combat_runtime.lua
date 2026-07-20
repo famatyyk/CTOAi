@@ -3,8 +3,279 @@
 
 local CombatRuntime = rawget(_G, "CTOA_HELPER_COMBAT_RUNTIME") or {}
 
+local MAX_ROTATION_RULES = 16
+local MAX_COMBAT_ACTION_RULES = 16
+local MAX_SPELL_WORDS = 64
+
+local function explanation(lane, reason, status, values, rows, selectedIndex, state)
+    local owner = rawget(_G, "CTOA_HELPER_RULE_EXPLANATIONS")
+    if type(owner) ~= "table" or type(owner.trace) ~= "function" then return nil end
+    local env = type(state) == "table" and state or {}
+    return owner.trace(lane, reason, {
+        status = status,
+        selected_index = selectedIndex,
+        observation_status = env.observation_status or "current",
+        observed_at_ms = env.observed_at_ms,
+        now_ms = env.now_ms,
+        values = values,
+        rules = rows,
+    })
+end
+
 local function boolValue(value)
     return value == true
+end
+
+local function clampInteger(value, minimum, maximum, fallback)
+    local number = math.floor(tonumber(value) or fallback or minimum)
+    return math.max(minimum, math.min(maximum, number))
+end
+
+local function cleanWords(value)
+    local text = tostring(value or "")
+    text = string.gsub(text, "[%c]", " ")
+    text = string.gsub(text, "%s+", " ")
+    text = string.gsub(string.gsub(text, "^%s+", ""), "%s+$", "")
+    return string.sub(text, 1, MAX_SPELL_WORDS)
+end
+
+local function cleanStateId(value)
+    local text = string.lower(cleanWords(value))
+    text = string.gsub(text, "[^a-z0-9_%-]", "_")
+    return string.sub(text, 1, 48)
+end
+
+function CombatRuntime.sanitizeRotationRule(rule)
+    local source = type(rule) == "table" and rule or {}
+    local useMobCount = source.use_mob_count ~= false
+    local minimum = useMobCount and clampInteger(source.min_nearby, 1, 20, 1) or 0
+    local maximum = clampInteger(source.max_nearby, minimum, 99, 99)
+    local words = cleanWords(source.words)
+    return {
+        enabled = source.enabled ~= false and words ~= "",
+        words = words,
+        use_mob_count = useMobCount,
+        min_nearby = minimum,
+        max_nearby = maximum,
+        scan_range = clampInteger(source.scan_range, 1, 10, 1),
+        cooldown_ms = clampInteger(source.cooldown_ms, 250, 60000, 2000),
+        directional = source.directional == true,
+    }
+end
+
+function CombatRuntime.sanitizeRotationRules(rules)
+    local result = {}
+    for _, rule in ipairs(type(rules) == "table" and rules or {}) do
+        if #result >= MAX_ROTATION_RULES then
+            break
+        end
+        result[#result + 1] = CombatRuntime.sanitizeRotationRule(rule)
+    end
+    return result
+end
+
+
+local function editorDecision(allowed, reason, index, count)
+    return {
+        allowed = allowed == true,
+        reason = reason,
+        index = index,
+        count = count,
+        runtime_actions = false,
+        dispatch_allowed = false,
+    }
+end
+
+function CombatRuntime.rotationRuleState(tools, requestedIndex)
+    local cfg = type(tools) == "table" and tools or {}
+    local rules = CombatRuntime.sanitizeRotationRules(cfg.rotation_spells)
+    local count = #rules
+    local index = count > 0 and clampInteger(requestedIndex, 1, count, 1) or 0
+    local rule = index > 0 and rules[index] or nil
+    return {
+        index = index,
+        count = count,
+        rule = rule,
+        summary = count > 0 and (tostring(index) .. "/" .. tostring(count) .. " " .. tostring(rule.words ~= "" and rule.words or "new spell")) or "0/0 no spell rules",
+    }
+end
+
+function CombatRuntime.replaceRotationRules(tools, rules)
+    if type(tools) ~= "table" then
+        return nil, editorDecision(false, "tools_required", 0, 0)
+    end
+    tools.rotation_spells = CombatRuntime.sanitizeRotationRules(rules)
+    tools.rotation_preset = "custom"
+    return tools.rotation_spells, editorDecision(true, "rotation_rules_replaced", #tools.rotation_spells > 0 and 1 or 0, #tools.rotation_spells)
+end
+
+function CombatRuntime.addRotationRule(tools, draft)
+    if type(tools) ~= "table" then
+        return nil, editorDecision(false, "tools_required", 0, 0)
+    end
+    local rules = CombatRuntime.sanitizeRotationRules(tools.rotation_spells)
+    if #rules >= MAX_ROTATION_RULES then
+        return nil, editorDecision(false, "rotation_rule_limit", #rules, #rules)
+    end
+    local rule = CombatRuntime.sanitizeRotationRule(draft or {
+        enabled = false,
+        words = "",
+        use_mob_count = true,
+        min_nearby = 1,
+        max_nearby = 99,
+        scan_range = 1,
+        cooldown_ms = 2000,
+    })
+    rules[#rules + 1] = rule
+    tools.rotation_spells = rules
+    tools.rotation_preset = "custom"
+    return #rules, editorDecision(true, "rotation_rule_added", #rules, #rules)
+end
+
+function CombatRuntime.updateRotationRule(tools, requestedIndex, patch)
+    if type(tools) ~= "table" or type(patch) ~= "table" then
+        return nil, editorDecision(false, "rule_patch_required", 0, 0)
+    end
+    local rules = CombatRuntime.sanitizeRotationRules(tools.rotation_spells)
+    local index = clampInteger(requestedIndex, 1, math.max(1, #rules), 1)
+    local current = rules[index]
+    if not current then
+        return nil, editorDecision(false, "rotation_rule_missing", index, #rules)
+    end
+    local editable = {"enabled", "words", "use_mob_count", "min_nearby", "max_nearby", "scan_range", "cooldown_ms", "directional"}
+    for _, key in ipairs(editable) do
+        if patch[key] ~= nil then
+            current[key] = patch[key]
+        end
+    end
+    rules[index] = CombatRuntime.sanitizeRotationRule(current)
+    tools.rotation_spells = rules
+    tools.rotation_preset = "custom"
+    return rules[index], editorDecision(true, "rotation_rule_updated", index, #rules)
+end
+
+function CombatRuntime.removeRotationRule(tools, requestedIndex)
+    if type(tools) ~= "table" then
+        return nil, editorDecision(false, "tools_required", 0, 0)
+    end
+    local rules = CombatRuntime.sanitizeRotationRules(tools.rotation_spells)
+    local index = clampInteger(requestedIndex, 1, math.max(1, #rules), 1)
+    if not rules[index] then
+        return nil, editorDecision(false, "rotation_rule_missing", index, #rules)
+    end
+    table.remove(rules, index)
+    tools.rotation_spells = rules
+    tools.rotation_preset = "custom"
+    local nextIndex = #rules > 0 and math.min(index, #rules) or 0
+    return nextIndex, editorDecision(true, "rotation_rule_removed", nextIndex, #rules)
+end
+
+function CombatRuntime.moveRotationRule(tools, requestedIndex, delta)
+    if type(tools) ~= "table" then
+        return nil, editorDecision(false, "tools_required", 0, 0)
+    end
+    local rules = CombatRuntime.sanitizeRotationRules(tools.rotation_spells)
+    local index = clampInteger(requestedIndex, 1, math.max(1, #rules), 1)
+    local target = index + (tonumber(delta) and (tonumber(delta) < 0 and -1 or 1) or 0)
+    if not rules[index] or target < 1 or target > #rules or target == index then
+        return nil, editorDecision(false, "rotation_rule_move_blocked", index, #rules)
+    end
+    rules[index], rules[target] = rules[target], rules[index]
+    tools.rotation_spells = rules
+    tools.rotation_preset = "custom"
+    return target, editorDecision(true, "rotation_rule_moved", target, #rules)
+end
+
+function CombatRuntime.sanitizeCombatActionRule(rule)
+    local source = type(rule) == "table" and rule or {}
+    local kind = tostring(source.kind or "rune")
+    if kind ~= "stance" then kind = "rune" end
+    local minCount = clampInteger(source.min_count, 0, 20, kind == "stance" and 1 or 0)
+    local stanceMode = tostring(source.stance_mode or "offensive")
+    if stanceMode ~= "defensive" then stanceMode = "offensive" end
+    return {
+        enabled = source.enabled == true,
+        kind = kind,
+        action_text = cleanWords(source.action_text or source.rune_name or source.spell),
+        hotkey = string.sub(cleanWords(source.hotkey or source.actionbar_slot), 1, 16),
+        min_count = minCount,
+        max_count = clampInteger(source.max_count, minCount, 99, 99),
+        cooldown_ms = clampInteger(source.cooldown_ms, 250, 60000, kind == "stance" and 10000 or 1000),
+        stance_mode = stanceMode,
+        state_id = cleanStateId(source.state_id),
+        require_target = source.require_target ~= false,
+        pvp_safe = source.pvp_safe ~= false,
+    }
+end
+
+function CombatRuntime.sanitizeCombatActionRules(rules)
+    local result = {}
+    for _, rule in ipairs(type(rules) == "table" and rules or {}) do
+        if #result >= MAX_COMBAT_ACTION_RULES then break end
+        result[#result + 1] = CombatRuntime.sanitizeCombatActionRule(rule)
+    end
+    return result
+end
+
+
+function CombatRuntime.combatActionRuleState(tools, requestedIndex)
+    local cfg = type(tools) == "table" and tools or {}
+    local rules = CombatRuntime.sanitizeCombatActionRules(cfg.combat_action_rules)
+    local count = #rules
+    local index = count > 0 and clampInteger(requestedIndex, 1, count, 1) or 0
+    local rule = index > 0 and rules[index] or nil
+    local label = rule and (rule.action_text ~= "" and rule.action_text or ("new " .. rule.kind)) or "no action rules"
+    return {index = index, count = count, rule = rule, summary = tostring(index) .. "/" .. tostring(count) .. " " .. label}
+end
+
+function CombatRuntime.replaceCombatActionRules(tools, rules)
+    if type(tools) ~= "table" then return nil, editorDecision(false, "tools_required", 0, 0) end
+    tools.combat_action_rules = CombatRuntime.sanitizeCombatActionRules(rules)
+    return tools.combat_action_rules, editorDecision(true, "combat_action_rules_replaced", #tools.combat_action_rules > 0 and 1 or 0, #tools.combat_action_rules)
+end
+
+function CombatRuntime.addCombatActionRule(tools, draft)
+    if type(tools) ~= "table" then return nil, editorDecision(false, "tools_required", 0, 0) end
+    local rules = CombatRuntime.sanitizeCombatActionRules(tools.combat_action_rules)
+    if #rules >= MAX_COMBAT_ACTION_RULES then return nil, editorDecision(false, "combat_action_rule_limit", #rules, #rules) end
+    rules[#rules + 1] = CombatRuntime.sanitizeCombatActionRule(draft or {enabled = false, kind = "rune"})
+    tools.combat_action_rules = rules
+    return #rules, editorDecision(true, "combat_action_rule_added", #rules, #rules)
+end
+
+function CombatRuntime.updateCombatActionRule(tools, requestedIndex, patch)
+    if type(tools) ~= "table" or type(patch) ~= "table" then return nil, editorDecision(false, "rule_patch_required", 0, 0) end
+    local rules = CombatRuntime.sanitizeCombatActionRules(tools.combat_action_rules)
+    local index = clampInteger(requestedIndex, 1, math.max(1, #rules), 1)
+    if not rules[index] then return nil, editorDecision(false, "combat_action_rule_missing", index, #rules) end
+    for _, key in ipairs({"enabled", "kind", "action_text", "hotkey", "min_count", "max_count", "cooldown_ms", "stance_mode", "state_id", "require_target", "pvp_safe"}) do
+        if patch[key] ~= nil then rules[index][key] = patch[key] end
+    end
+    rules[index] = CombatRuntime.sanitizeCombatActionRule(rules[index])
+    tools.combat_action_rules = rules
+    return rules[index], editorDecision(true, "combat_action_rule_updated", index, #rules)
+end
+
+function CombatRuntime.removeCombatActionRule(tools, requestedIndex)
+    if type(tools) ~= "table" then return nil, editorDecision(false, "tools_required", 0, 0) end
+    local rules = CombatRuntime.sanitizeCombatActionRules(tools.combat_action_rules)
+    local index = clampInteger(requestedIndex, 1, math.max(1, #rules), 1)
+    if not rules[index] then return nil, editorDecision(false, "combat_action_rule_missing", index, #rules) end
+    table.remove(rules, index)
+    tools.combat_action_rules = rules
+    local nextIndex = #rules > 0 and math.min(index, #rules) or 0
+    return nextIndex, editorDecision(true, "combat_action_rule_removed", nextIndex, #rules)
+end
+
+function CombatRuntime.moveCombatActionRule(tools, requestedIndex, delta)
+    if type(tools) ~= "table" then return nil, editorDecision(false, "tools_required", 0, 0) end
+    local rules = CombatRuntime.sanitizeCombatActionRules(tools.combat_action_rules)
+    local index = clampInteger(requestedIndex, 1, math.max(1, #rules), 1)
+    local target = index + ((tonumber(delta) or 0) < 0 and -1 or 1)
+    if not rules[index] or target < 1 or target > #rules then return nil, editorDecision(false, "combat_action_rule_move_blocked", index, #rules) end
+    rules[index], rules[target] = rules[target], rules[index]
+    tools.combat_action_rules = rules
+    return target, editorDecision(true, "combat_action_rule_moved", target, #rules)
 end
 
 local function runtimeBlockedReason(tools, context)
@@ -91,6 +362,7 @@ function CombatRuntime.magicSummary(tools, helpers)
     local runeSlot = actionbarSlotText(resolveActionbarSlot(cfg.rune_actionbar_slot, cfg.rune_hotkey))
     return "Rotation " .. onOffText(cfg.spell_rotation == true) ..
         " | Preset " .. tostring(cfg.rotation_preset or "custom") ..
+        " | Rules " .. tostring(#CombatRuntime.sanitizeRotationRules(cfg.rotation_spells)) ..
         " | Rune " .. onOffText(cfg.rune_enabled == true) .. " " .. runeSlot ..
         " | Exeta " .. onOffText(cfg.auto_exeta == true)
 end
@@ -103,23 +375,40 @@ function CombatRuntime.msLeftText(untilMs, now)
     return string.format("%.1fs", left / 1000)
 end
 
-function CombatRuntime.runeReady(tools, state)
+local function runeBlockedReason(tools, state, actionRule)
     local cfg = tools or {}
     local env = state or {}
+    local rule = type(actionRule) == "table" and actionRule or nil
     if not boolValue(cfg.rune_enabled) then
-        return false
+        return "runtime_disabled"
     end
-    if boolValue(cfg.rune_requires_target) and not boolValue(env.target_present) then
-        return false
+    local requiresTarget = boolValue(cfg.rune_requires_target)
+    if rule then requiresTarget = rule.require_target == true end
+    if requiresTarget and not boolValue(env.target_present) then
+        return "target_required"
     end
-    if (tonumber(env.visible) or 0) < (tonumber(cfg.rune_min_visible) or 1) then
-        return false
+    local visible = tonumber(env.visible) or 0
+    if rule and visible < rule.min_count then
+        return "count_below_min"
+    end
+    if rule and visible > rule.max_count then
+        return "count_above_max"
+    end
+    if not rule and visible < (tonumber(cfg.rune_min_visible) or 1) then
+        return "count_below_min"
     end
     local now = tonumber(env.now_ms) or 0
     if now < (tonumber(cfg.attack_action_lock_until_ms) or 0) then
-        return false
+        return "action_lock"
     end
-    return now - (tonumber(cfg.last_rune_ms) or 0) >= (tonumber(cfg.rune_cooldown_ms) or 1000)
+    if now - (tonumber(cfg.last_rune_ms) or 0) < (tonumber(rule and rule.cooldown_ms or cfg.rune_cooldown_ms) or 1000) then
+        return "cooldown"
+    end
+    return nil
+end
+
+function CombatRuntime.runeReady(tools, state, actionRule)
+    return runeBlockedReason(tools, state, actionRule) == nil
 end
 
 local function monsterCountForRange(scan, range)
@@ -170,7 +459,7 @@ function CombatRuntime.rotationSpellRows(spells, state)
     local env = state or {}
     local scan = env.scan or {}
     local lastCasts = env.last_spell_casts or {}
-    for _, spell in ipairs(spells or {}) do
+    for _, spell in ipairs(CombatRuntime.sanitizeRotationRules(spells)) do
         local range = spell.scan_range or env.rotation_scan_range or 1
         local mobCount = monsterCountForRange(scan, range)
         local turnDirection = nil
@@ -184,6 +473,8 @@ function CombatRuntime.rotationSpellRows(spells, state)
             max_nearby = tonumber(spell.max_nearby) or 99,
             last_cast_ms = tonumber(lastCasts[spell.words]) or 0,
             cooldown_ms = spell.cooldown_ms,
+            enabled = spell.enabled ~= false,
+            use_mob_count = spell.use_mob_count ~= false,
             directional = directionalSpell(spell.words, spell),
             turn_direction = turnDirection,
         }
@@ -205,6 +496,7 @@ function CombatRuntime.spellReadiness(spells, state)
             max_nearby = tonumber(spell.max_nearby) or 99,
             ready = now - last >= cd,
             cooldown_until_ms = last + cd,
+            enabled = spell.enabled ~= false,
             directional = spell.directional == true,
             turn_direction = spell.turn_direction,
         }
@@ -216,47 +508,119 @@ function CombatRuntime.rotationSpell(spells, state)
     local env = state or {}
     local now = tonumber(env.now_ms) or 0
     if now < (tonumber(env.action_lock_until_ms) or 0) then
-        return nil
+        return nil, explanation("spell", "action_lock", "blocked", {now_ms = now}, {}, nil, env)
     end
     if now - (tonumber(env.last_attack_spell_ms) or 0) < (tonumber(env.rotation_interval_ms) or 1050) then
-        return nil
+        return nil, explanation("spell", "rotation_interval", "blocked", {now_ms = now}, {}, nil, env)
     end
     local rows = CombatRuntime.spellReadiness(spells, {
         now_ms = now,
         default_cooldown_ms = env.rotation_interval_ms or 1050,
     })
     local selected = nil
-    for _, spell in ipairs(rows) do
+    local selectedIndex = nil
+    local ruleRows = {}
+    for index, spell in ipairs(rows) do
         local mobCount = tonumber(spell.mob_count) or 0
         local minNearby = tonumber(spell.min_nearby) or 1
         local maxNearby = tonumber(spell.max_nearby) or 99
-        if mobCount >= minNearby and mobCount <= maxNearby and spell.ready == true then
+        local reason = nil
+        if spell.enabled == false then reason = "disabled"
+        elseif tostring(spell.words or "") == "" then reason = "missing_words"
+        elseif mobCount < minNearby then reason = "count_below_min"
+        elseif mobCount > maxNearby then reason = "count_above_max"
+        elseif spell.ready ~= true then reason = "cooldown" end
+        ruleRows[index] = {index = index, matched = reason == nil, reason_code = reason or "matched", values = {mob_count = mobCount}}
+        if reason == nil then
             if not selected then
                 selected = spell
+                selectedIndex = index
             elseif spell.directional == true and string.lower(tostring(selected.words or "")) == "exori" then
+                ruleRows[selectedIndex].reason_code = "matched_not_selected"
+                ruleRows[selectedIndex].matched = false
                 selected = spell
+                selectedIndex = index
             end
         end
     end
-    return selected
+    if selectedIndex then
+        ruleRows[selectedIndex].reason_code = "selected"
+        return selected, explanation("spell", "rule_selected", "matched", {now_ms = now}, ruleRows, selectedIndex, env)
+    end
+    return nil, explanation("spell", #rows > 0 and "no_spell_rule" or "no_rules", "blocked", {now_ms = now}, ruleRows, nil, env)
+end
+
+function CombatRuntime.selectRotationSpell(tools, scan, now)
+    local cfg = type(tools) == "table" and tools or {}
+    local spells = CombatRuntime.rotationSpellRows(cfg.rotation_spells or {}, {
+        scan = scan or {},
+        rotation_scan_range = cfg.rotation_scan_range,
+        last_spell_casts = cfg.last_spell_casts or {},
+    })
+    return CombatRuntime.rotationSpell(spells, {
+        now_ms = now,
+        action_lock_until_ms = cfg.attack_action_lock_until_ms,
+        last_attack_spell_ms = cfg.last_attack_spell_ms,
+        rotation_interval_ms = cfg.rotation_interval_ms,
+    })
 end
 
 function CombatRuntime.stanceAction(tools, state)
     local cfg = tools or {}
     local env = state or {}
-    if cfg.auto_stance ~= true or env.target_present ~= true then return nil end
+    if cfg.auto_stance ~= true then return nil, explanation("combat_action", "stance_runtime_disabled", "blocked", {}, {}, nil, env) end
+    if env.target_present ~= true then return nil, explanation("combat_action", "target_required", "blocked", {}, {}, nil, env) end
     local now = tonumber(env.now_ms) or 0
-    if now - (tonumber(cfg.last_stance_ms) or 0) < (tonumber(cfg.stance_cooldown_ms) or 10000) then
-        return nil
-    end
     local monsters = tonumber(env.nearby) or 0
-    if monsters >= (tonumber(cfg.defensive_min_monsters) or 4) then
-        return {kind="stance", stance="defensive", fight_mode="defensive", spell=cfg.defensive_buff_spell or "utamo tempo"}
+    local actionRules = CombatRuntime.sanitizeCombatActionRules(cfg.combat_action_rules)
+    local stateDecisions = type(env.spell_state_decisions) == "table" and env.spell_state_decisions or {}
+    if #actionRules > 0 then
+        local rows = {}
+        for index, rule in ipairs(actionRules) do
+            local stateAllowed = rule.state_id == "" or (type(stateDecisions[rule.state_id]) == "table" and stateDecisions[rule.state_id].allowed == true)
+            local reason = nil
+            if not rule.enabled then reason = "disabled"
+            elseif rule.kind ~= "stance" then reason = "kind_mismatch"
+            elseif rule.action_text == "" then reason = "missing_action"
+            elseif not stateAllowed then reason = "state_blocked"
+            elseif monsters < rule.min_count then reason = "count_below_min"
+            elseif monsters > rule.max_count then reason = "count_above_max"
+            elseif now - (tonumber(cfg.last_stance_ms) or 0) < rule.cooldown_ms then reason = "cooldown" end
+            rows[index] = {index = index, matched = reason == nil, reason_code = reason or "selected", values = {monster_count = monsters}}
+            if reason == nil then
+                return {kind = "stance", stance = rule.stance_mode, fight_mode = rule.stance_mode, spell = rule.action_text, action_index = index, state_id = rule.state_id},
+                    explanation("combat_action", "rule_selected", "matched", {monster_count = monsters, kind = "stance"}, rows, index, env)
+            end
+        end
+        return nil, explanation("combat_action", "no_stance_rule", "blocked", {monster_count = monsters, kind = "stance"}, rows, nil, env)
     end
-    if monsters >= 1 and monsters <= (tonumber(cfg.offensive_max_monsters) or 2) then
-        return {kind="stance", stance="offensive", fight_mode="offensive", spell=cfg.offensive_buff_spell or "utito tempo"}
+    return nil, explanation("combat_action", "no_rules", "blocked", {kind = "stance"}, {}, nil, env)
+end
+
+function CombatRuntime.runeAction(tools, state)
+    local cfg = tools or {}
+    local env = state or {}
+    local rows = {}
+    for index, rule in ipairs(CombatRuntime.sanitizeCombatActionRules(cfg.combat_action_rules)) do
+        local reason = nil
+        if not rule.enabled then reason = "disabled"
+        elseif rule.kind ~= "rune" then reason = "kind_mismatch"
+        elseif rule.action_text == "" then reason = "missing_action"
+        else reason = runeBlockedReason(cfg, env, rule) end
+        if reason == nil and rule.pvp_safe ~= false and env.rune_target_safe == false then reason = "pvp_unsafe" end
+        rows[index] = {index = index, matched = reason == nil, reason_code = reason or "selected", values = {monster_count = tonumber(env.visible) or 0}}
+        if reason == nil then
+            return {kind = "rune", rune_name = rule.action_text, hotkey = rule.hotkey, actionbar_slot = rule.hotkey, action_index = index},
+                explanation("combat_action", "rule_selected", "matched", {monster_count = tonumber(env.visible) or 0, kind = "rune"}, rows, index, env)
+        end
     end
-    return nil
+    if type(cfg.combat_action_rules) == "table" and #cfg.combat_action_rules > 0 then
+        return nil, explanation("combat_action", "no_rune_rule", "blocked", {kind = "rune"}, rows, nil, env)
+    end
+    local fallbackReason = runeBlockedReason(cfg, env)
+    if fallbackReason == nil and env.rune_target_safe == false then fallbackReason = "pvp_unsafe" end
+    if fallbackReason == nil then return {kind = "rune"}, explanation("combat_action", "legacy_rune_selected", "matched", {kind = "rune"}, {}, nil, env) end
+    return nil, explanation("combat_action", fallbackReason, "blocked", {kind = "rune"}, {}, nil, env)
 end
 
 function CombatRuntime.offensiveAction(tools, state)
@@ -277,8 +641,8 @@ function CombatRuntime.offensiveAction(tools, state)
         return nil
     end
 
-    local stance = CombatRuntime.stanceAction(cfg, env)
-    if stance then return stance end
+    local stance, stanceTrace = CombatRuntime.stanceAction(cfg, env)
+    if stance then return stance, stanceTrace end
 
     local visible = tonumber(env.visible) or 0
     if boolValue(cfg.auto_exeta) and targetPresent and visible >= (tonumber(cfg.exeta_min_visible) or 1) and now - (tonumber(cfg.last_exeta_ms) or 0) >= (tonumber(cfg.exeta_interval_ms) or 5000) then
@@ -289,9 +653,9 @@ function CombatRuntime.offensiveAction(tools, state)
     end
 
     local rotationSpell = env.rotation_spell
-    local runeIsReady = CombatRuntime.runeReady(cfg, env) and env.rune_target_safe ~= false
-    if cfg.magic_priority == "rune" and runeIsReady then
-        return {kind = "rune"}
+    local runeAction, runeTrace = CombatRuntime.runeAction(cfg, env)
+    if cfg.magic_priority == "rune" and runeAction then
+        return runeAction, runeTrace
     end
     if rotationSpell then
         return {
@@ -299,10 +663,48 @@ function CombatRuntime.offensiveAction(tools, state)
             spell = rotationSpell,
         }
     end
-    if runeIsReady then
-        return {kind = "rune"}
+    if runeAction then
+        return runeAction, runeTrace
     end
-    return nil
+    return nil, runeTrace or stanceTrace
+end
+
+function CombatRuntime.dispatchDescriptor(action, tools)
+    local item = type(action) == "table" and action or {}
+    local cfg = type(tools) == "table" and tools or {}
+    if item.kind == "stance" or item.kind == "exeta" then
+        return {kind = "spell", words = tostring(item.spell or ""), fight_mode = item.fight_mode}
+    end
+    if item.kind == "rotation" and type(item.spell) == "table" then
+        return {kind = "spell", words = tostring(item.spell.words or ""), turn_direction = item.spell.turn_direction}
+    end
+    if item.kind == "rune" then
+        return {kind = "actionbar", slot = item.actionbar_slot or cfg.rune_actionbar_slot, hotkey = item.hotkey or cfg.rune_hotkey}
+    end
+    return {kind = "none"}
+end
+
+function CombatRuntime.recordActionSuccess(tools, action, now)
+    local cfg = type(tools) == "table" and tools or {}
+    local item = type(action) == "table" and action or {}
+    local current = tonumber(now) or 0
+    if item.kind == "stance" then
+        cfg.last_stance_ms = current
+        cfg.active_stance = item.stance or "neutral"
+        cfg.last_spell_state_casts = type(cfg.last_spell_state_casts) == "table" and cfg.last_spell_state_casts or {}
+        if tostring(item.state_id or "") ~= "" then cfg.last_spell_state_casts[item.state_id] = current end
+    elseif item.kind == "exeta" then
+        cfg.last_exeta_ms = current
+        local count = type(cfg.exeta_spells) == "table" and #cfg.exeta_spells or 0
+        if count > 0 then cfg.exeta_index = ((tonumber(cfg.exeta_index) or 1) % count) + 1 end
+    elseif item.kind == "rotation" and type(item.spell) == "table" then
+        cfg.last_rotation_ms = current
+        cfg.last_spell_casts = type(cfg.last_spell_casts) == "table" and cfg.last_spell_casts or {}
+        cfg.last_spell_casts[tostring(item.spell.words or "")] = current
+    elseif item.kind == "rune" then
+        cfg.last_rune_ms = current
+    end
+    return cfg
 end
 
 function CombatRuntime.actionStatusText(action, state)
@@ -409,7 +811,7 @@ function CombatRuntime.waitReason(state)
         local mobCount = tonumber(spell.mob_count) or 0
         local minNearby = tonumber(spell.min_nearby) or 1
         local maxNearby = tonumber(spell.max_nearby) or 99
-        if mobCount >= minNearby and mobCount <= maxNearby then
+        if spell.enabled ~= false and mobCount >= minNearby and mobCount <= maxNearby then
             if spell.ready == true then
                 return "Next: " .. tostring(spell.words or "?") .. " (" .. tostring(mobCount) .. " mobs)"
             end
@@ -469,11 +871,19 @@ function CombatRuntime.contract()
         owns_adapter_summary = true,
         owns_magic_summary = true,
         owns_magic_summary_text = true,
+        owns_rotation_rule_editor = true,
+        owns_rotation_rule_sanitization = true,
+        rotation_rule_limit = MAX_ROTATION_RULES,
+        owns_combat_action_rule_editor = true,
+        owns_combat_action_rule_sanitization = true,
+        combat_action_rule_limit = MAX_COMBAT_ACTION_RULES,
         owns_cooldown_text = true,
         owns_rune_ready = true,
+        owns_rune_action_selection = true,
         owns_rotation_spell_rows = true,
         owns_spell_readiness = true,
         owns_rotation_spell_selection = true,
+        owns_select_rotation_spell = true,
         owns_stance_selection = true,
         owns_offensive_action_selection = true,
         owns_action_status_text = true,

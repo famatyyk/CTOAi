@@ -2,6 +2,92 @@
 -- Guarded UI primitives for the helper shell. This module does not run gameplay actions.
 
 local Ui = rawget(_G, "CTOA_HELPER_UI") or {}
+local Primitives = rawget(_G, "CTOA_HELPER_UI_PRIMITIVES") or {}
+local Composition = rawget(_G, "CTOA_HELPER_UI_COMPOSITION") or {}
+local RuleEditors = rawget(_G, "CTOA_HELPER_UI_RULE_EDITORS") or {}
+
+local DEFAULT_STYLE = {
+    text = "#ffffff",
+    muted = "#eeeeee",
+    accent = "#f0c56a",
+    accent_soft = "#dfbf72",
+    good = "#a6f08f",
+    off = "#c0c0c0",
+    panel = "#262626",
+    panel_dark = "#101010",
+    panel_subtle = "#2e2e2e",
+    panel_surface = "#1a1a1a",
+    panel_raised = "#383838",
+    border = "#737373",
+    divider = "#707070",
+    border_active = "#b58c42",
+    sidebar_fill = "#181818",
+    content_fill = "#171717",
+    row_fill = "#303030",
+    row_fill_active = "#3d3d3d",
+    value_fill = "#0d0d0d",
+    button_fill = "#474747",
+    button_fill_active = "#545454",
+}
+
+local THEMES = {
+    classic = {
+        text = "#ffffff", muted = "#eeeeee", accent = "#f0c56a", accent_soft = "#c8b16f",
+        good = "#93d987", off = "#a0a0a0", panel = "#262626", panel_dark = "#101010",
+        panel_subtle = "#2e2e2e", panel_surface = "#1a1a1a", panel_raised = "#383838",
+        border = "#737373", divider = "#707070", border_active = "#b58c42",
+        sidebar_fill = "#181818", content_fill = "#171717", row_fill = "#303030",
+        row_fill_active = "#3d3d3d", value_fill = "#0d0d0d", button_fill = "#474747",
+        button_fill_active = "#545454",
+    },
+    graphite = {
+        text = "#f0f2f5", muted = "#a8b0b8", accent = "#f0c36a", accent_soft = "#d7ae55",
+        good = "#9be7a0", off = "#8a9096", panel = "#23262b", panel_dark = "#1d2024",
+        panel_subtle = "#2a2f35", panel_surface = "#262b31", panel_raised = "#313843",
+        border = "#4f5964", divider = "#3f4750", border_active = "#f0c36a",
+        sidebar_fill = "#2a2f35", content_fill = "#252a30", row_fill = "#30353b",
+        row_fill_active = "#363c43", value_fill = "#22272c", button_fill = "#3d4650",
+        button_fill_active = "#495561",
+    },
+    amber = {
+        text = "#f8f0dd", muted = "#c9bfa8", accent = "#f0c36a", accent_soft = "#d7ae55",
+        good = "#b9e36d", off = "#aea28a", panel = "#2f291f", panel_dark = "#241f17",
+        panel_subtle = "#3a3125", panel_surface = "#2f291d", panel_raised = "#4a3920",
+        border = "#7a6644", divider = "#5b4a30", border_active = "#f0c36a",
+        sidebar_fill = "#322b1f", content_fill = "#312a20", row_fill = "#3a3125",
+        row_fill_active = "#433726", value_fill = "#292218", button_fill = "#56452d",
+        button_fill_active = "#6a5432",
+    },
+    emerald = {
+        text = "#ecfff0", muted = "#a7c2ab", accent = "#7fd7a8", accent_soft = "#69bd8e",
+        good = "#8ddf93", off = "#91a097", panel = "#1f2b23", panel_dark = "#18231c",
+        panel_subtle = "#243328", panel_surface = "#213126", panel_raised = "#2e4633",
+        border = "#4d7356", divider = "#38543f", border_active = "#7fd7a8",
+        sidebar_fill = "#243328", content_fill = "#223127", row_fill = "#28392d",
+        row_fill_active = "#2d4033", value_fill = "#1d2a20", button_fill = "#36503d",
+        button_fill_active = "#44664d",
+    },
+}
+
+local BASE_LAYOUT = {
+    outer_margin = 18, column_gap = 14, window_w = 690, window_h = 560,
+    base_x = 10, base_y = 10, base_w = 664, base_h = 524,
+    sheet_x = 28, sheet_y = 54, sheet_w = 634, sheet_h = 482,
+    inner_title_x = 38, inner_title_y = 64, inner_title_w = 614, inner_title_h = 18,
+    title_x = 14, title_y = 14, title_w = 658, title_h = 18,
+    sidebar_x = 44, sidebar_w = 122, content_x = 186, content_w = 466,
+    card_w = 466, value_w = 138, ui_value_row_w = 344,
+    profile_left_x = 204, profile_right_x = 378, profile_col_w = 216,
+    profile_block_w = 420, profile_status_w = 326,
+    profile_save_x = 676, profile_save_w = 78, profile_save_h = 24,
+    close_x = 586, close_w = 66, close_h = 24,
+}
+
+local function copyTable(source)
+    local result = {}
+    for key, value in pairs(source or {}) do result[key] = value end
+    return result
+end
 
 local COMPACT_LAYOUT = {
     overview_tab_y = 116,
@@ -122,28 +208,30 @@ function Ui.configureLayout(layout, compact)
     return target
 end
 
+function Ui.newStyle()
+    return copyTable(DEFAULT_STYLE)
+end
+
+function Ui.themes()
+    local result = {}
+    for id, theme in pairs(THEMES) do result[id] = copyTable(theme) end
+    return result
+end
+
+function Ui.newLayout()
+    return Ui.configureLayout(copyTable(BASE_LAYOUT), false)
+end
+
 function Ui.shortText(text, maxLen)
-    text = tostring(text or "")
-    maxLen = maxLen or 24
-    if #text <= maxLen then
-        return text
-    end
-    return string.sub(text, 1, maxLen - 3) .. "..."
+    return Primitives.shortText(text, maxLen)
 end
 
 function Ui.fitText(text, width, fontScale)
-    text = tostring(text or "")
-    width = tonumber(width) or 80
-    fontScale = tonumber(fontScale) or 0.9
-    local approxCharPx = math.max(4.2, 6.2 * fontScale)
-    local maxLen = math.max(4, math.floor(width / approxCharPx))
-    return Ui.shortText(text, maxLen)
+    return Primitives.fitText(text, width, fontScale)
 end
 
 function Ui.setWidgetText(widget, text)
-    if widget and widget.setText then
-        widget:setText(text)
-    end
+    return Primitives.setWidgetText(widget, text)
 end
 
 function Ui.styleWidget(widget, opts)
@@ -175,77 +263,19 @@ function Ui.styleWidget(widget, opts)
 end
 
 function Ui.setWidgetChecked(widget, checked)
-    if widget and widget.setChecked then
-        widget:setChecked(checked)
-    end
+    return Primitives.setWidgetChecked(widget, checked)
 end
 
 function Ui.getWidgetChecked(widget)
-    if widget and widget.isChecked then
-        return widget:isChecked()
-    end
-    return false
+    return Primitives.getWidgetChecked(widget)
 end
 
 function Ui.showWidget(widget, visible)
-    if not widget then
-        return
-    end
-    if visible and widget.show then
-        widget:show()
-    elseif not visible and widget.hide then
-        widget:hide()
-    end
+    return Primitives.showWidget(widget, visible)
 end
 
 function Ui.createWidget(kind, parent, id, text, x, y, width, height)
-    if not g_ui or not g_ui.createWidget then
-        return nil
-    end
-
-    local ok, widget = pcall(function()
-        return g_ui.createWidget(kind, parent)
-    end)
-    if not ok or not widget then
-        return nil
-    end
-
-    if id and widget.setId then
-        widget:setId(id)
-    end
-    Ui.setWidgetText(widget, text or "")
-
-    if widget.breakAnchors then
-        widget:breakAnchors()
-    end
-    if widget.addAnchor and AnchorLeft and AnchorTop then
-        widget:addAnchor(AnchorLeft, "parent", AnchorLeft)
-        widget:addAnchor(AnchorTop, "parent", AnchorTop)
-    end
-    if widget.setMarginLeft then
-        widget:setMarginLeft(x or 0)
-    end
-    if widget.setMarginTop then
-        widget:setMarginTop(y or 0)
-    elseif widget.setPosition then
-        widget:setPosition({x = x or 0, y = y or 0})
-    end
-    if widget.resize then
-        widget:resize(width or 120, height or 24)
-    elseif widget.setWidth then
-        widget:setWidth(width or 120)
-        if widget.setHeight then
-            widget:setHeight(height or 24)
-        end
-    end
-    if widget.setTextAutoResize then
-        widget:setTextAutoResize(false)
-    end
-    if kind == "Label" and widget.setPhantom then
-        widget:setPhantom(true)
-    end
-
-    return widget
+    return Primitives.createWidget(kind, parent, id, text, x, y, width, height)
 end
 
 function Ui.styleTabState(widget, active, style, alignLeft)
@@ -330,6 +360,7 @@ end
 function Ui.styleActionButton(widget, role, enabled, style, alignCenter)
     style = style or {}
     role = role == true and "primary" or role == false and "neutral" or role or "neutral"
+    if role == "danger" then role = "destructive" end
     enabled = enabled ~= false
     local background = style.button_fill
     local border = style.edge_shadow or style.divider
@@ -358,18 +389,61 @@ function Ui.styleActionButton(widget, role, enabled, style, alignCenter)
     })
 end
 
-function Ui.styleRuntimeBadge(widget, armed, blocked, style, alignCenter)
+function Ui.normalizeOperatorState(value)
+    local normalized = string.lower(tostring(value or "disabled"))
+    if normalized == "active" or normalized == "armed" or normalized == "ready" or normalized == "review_ready" or normalized == "on" or normalized == "passed" then
+        return "active"
+    end
+    if normalized == "blocked" or normalized == "missing" or normalized == "missing_components" or normalized == "failed" or normalized == "error" or normalized == "unavailable" then
+        return "blocked"
+    end
+    if normalized == "stale" or normalized == "unknown" or normalized == "pending" then
+        return "stale"
+    end
+    return "disabled"
+end
+
+function Ui.operatorRuntimeState(snapshot)
+    local item = snapshot or {}
+    local blockedReason = item.blocked_reason
+    if item.blocked == true or (type(blockedReason) == "string" and blockedReason ~= "") then
+        return "blocked"
+    end
+    if item.stale == true then
+        return "stale"
+    end
+    if item.enabled == true or item.active == true then
+        return "active"
+    end
+    return "disabled"
+end
+
+function Ui.styleOperatorState(widget, state, style, align)
     style = style or {}
-    local stateColor = blocked and (style.state_blocked or style.off) or (armed and (style.state_on or style.good) or style.off)
+    local normalized = Ui.normalizeOperatorState(state)
+    local stateColor = style.state_off or style.off
+    if normalized == "active" then
+        stateColor = style.state_on or style.good
+    elseif normalized == "blocked" then
+        stateColor = style.state_blocked or style.off
+    elseif normalized == "stale" then
+        stateColor = style.state_stale or style.accent or style.off
+    end
     Ui.styleWidget(widget, {
         color = stateColor,
         background = style.surface_inset or style.value_fill,
         border = stateColor,
         borderWidth = 1,
         opacity = 1.0,
-        align = alignCenter,
+        align = align,
         fontScale = 0.94
     })
+    return normalized
+end
+
+function Ui.styleRuntimeBadge(widget, armed, blocked, style, alignCenter)
+    local state = Ui.operatorRuntimeState({enabled = armed == true, blocked = blocked == true})
+    return Ui.styleOperatorState(widget, state, style, alignCenter)
 end
 
 function Ui.styleRuleCard(widget, style)
@@ -432,14 +506,27 @@ function Ui.styleSettingState(row, valueBack, valueLabel, active, style, alignCe
     })
 end
 
+function Ui.styleTextEdit(widget, style)
+    style = style or {}
+    Ui.styleWidget(widget, {
+        color = style.text or "#e5e7eb",
+        background = style.surface_inset or style.surface_low or "#171923",
+        border = style.edge_shadow or style.border or "#4b5563",
+        borderWidth = 1,
+        opacity = 1.0,
+    })
+end
+
 function Ui.styleStateValue(widget, state, style, alignCenter)
     style = style or {}
-    local normalized = tostring(state or "off")
+    local normalized = Ui.normalizeOperatorState(state)
     local color = style.state_off or style.off
-    if normalized == "on" then
+    if normalized == "active" then
         color = style.state_on or style.good
     elseif normalized == "blocked" then
         color = style.state_blocked or style.off
+    elseif normalized == "stale" then
+        color = style.state_stale or style.accent or style.off
     end
     Ui.styleWidget(widget, {
         color = color,
@@ -791,37 +878,11 @@ function Ui.styleControlName(widget, style)
 end
 
 function Ui.settingRowGeometry(x, width, layout)
-    layout = layout or {}
-    local valueWidth = math.max(92, (layout.value_w or 108))
-    local valueX = x + width - valueWidth - 12
-    return {
-        value_width = valueWidth,
-        value_x = valueX,
-        name_width = valueX - x - 16,
-        name_x = x + 8,
-        name_y_offset = 3,
-        value_back_y_offset = 2,
-        value_back_height = 18,
-        value_label_x_offset = 4,
-        value_label_y_offset = 3,
-        value_label_height = 15
-    }
+    return Primitives.settingRowGeometry(x, width, layout)
 end
 
 function Ui.metricCardGeometry(x, width)
-    local labelWidth = math.floor(width * 0.42)
-    local valueWidth = width - labelWidth - 18
-    return {
-        row_height = 23,
-        label_width = labelWidth,
-        value_width = valueWidth,
-        label_x = x + 8,
-        label_y_offset = 3,
-        label_height = 15,
-        value_x = x + labelWidth + 10,
-        value_y_offset = 3,
-        value_height = 15
-    }
+    return Primitives.metricCardGeometry(x, width)
 end
 
 function Ui.metricTextPlan(label, value, widget, width, layout)
@@ -855,17 +916,7 @@ function Ui.setMetricText(widget, label, value, width, layout)
 end
 
 function Ui.profileFieldGeometry(x, width)
-    local buttonWidth = 14
-    local valueWidth = math.min(122, math.max(76, math.floor(width * 0.46)))
-    local prevX = x + width - (buttonWidth * 2) - valueWidth - 10
-    return {
-        label_width = math.max(64, prevX - x - 14),
-        prev_x = prevX,
-        value_x = prevX + buttonWidth + 3,
-        next_x = prevX + buttonWidth + valueWidth + 6,
-        button_width = buttonWidth,
-        value_width = valueWidth
-    }
+    return Primitives.profileFieldGeometry(x, width)
 end
 
 function Ui.vectorStepGeometry(x, width)
@@ -1231,127 +1282,51 @@ function Ui.addToggleSettingRow(adapter, parent, id, label, getter, setter, x, y
 end
 
 function Ui.sectionBodyGeometry(panelX, bodyY, panelW, bodyH)
-    return {
-        x = panelX - 2,
-        y = bodyY,
-        width = panelW + 4,
-        height = bodyH
-    }
+    return Primitives.sectionBodyGeometry(panelX, bodyY, panelW, bodyH)
+end
+
+function Ui.mergePanelRendererContext(base, extra)
+    return Primitives.mergeContext(base, extra)
 end
 
 function Ui.sidebarTabs(layout)
-    layout = layout or {}
-    return {
-        {key = "overview_tab", id = "ctoaOverviewTab", text = "  Overview", y = layout.overview_tab_y, target = "overview"},
-        {key = "healing_tab", id = "ctoaHealingTab", text = "  Healing", y = layout.healing_tab_y, target = "healing"},
-        {key = "heal_friend_tab", id = "ctoaHealFriendTab", text = "  Heal Friend", y = layout.heal_friend_tab_y, target = "heal_friend"},
-        {key = "conditions_tab", id = "ctoaConditionsTab", text = "  Conditions", y = layout.conditions_tab_y, target = "conditions"},
-        {key = "hunting_tab", id = "ctoaHuntingTab", text = "  Targeting", y = layout.hunting_tab_y, target = "hunting", subtab = "targeting"},
-        {key = "magic_tab", id = "ctoaMagicTab", text = "  Magic Shooter", y = layout.magic_tab_y, target = "hunting", subtab = "magic"},
-        {key = "cavebot_tab", id = "ctoaCavebotTab", text = "  CaveBot", y = layout.cavebot_tab_y, target = "cavebot"},
-        {key = "equipment_tab", id = "ctoaEquipmentTab", text = "  Equipment", y = layout.equipment_tab_y, target = "equipment"},
-        {key = "tools_tab", id = "ctoaToolsTab", text = "  Helper", y = layout.tools_tab_y, target = "tools"},
-        {key = "scripting_tab", id = "ctoaScriptingTab", text = "  Scripting", y = layout.scripting_tab_y, target = "scripting"},
-        {key = "ui_tab", id = "ctoaUiTab", text = "  Engine", y = layout.ui_tab_y, target = "ui"},
-        {key = "profile_tab", id = "ctoaProfileTab", text = "  Settings", y = layout.profile_tab_y, target = "profile"}
-    }
+    return Composition.sidebarTabs(layout)
 end
 
 function Ui.sidebarGeometry(layout, visibleTabs)
-    layout = layout or {}
-    visibleTabs = visibleTabs or {}
-    local count = #visibleTabs
-    local dense = count > 10
-    local rowHeight = dense and 18 or 21
-    local gap = dense and 1 or 2
-    local step = rowHeight + gap
-    local top = layout.overview_tab_y or 120
-    local rows = {}
-    local utilityIndex = nil
-    for index, tab in ipairs(visibleTabs) do
-        if not utilityIndex and (tab.target == "ui" or tab.target == "profile") then
-            utilityIndex = index
-        end
-        rows[index] = {
-            y = top + ((index - 1) * step),
-            height = rowHeight,
-            dense = dense
-        }
-    end
-    return {
-        count = count,
-        dense = dense,
-        mode = dense and "dense_overflow" or "standard",
-        row_height = rowHeight,
-        gap = gap,
-        step = step,
-        rows = rows,
-        utility_index = utilityIndex,
-        utility_divider_y = utilityIndex and (rows[utilityIndex].y - math.max(1, gap)) or nil
-    }
+    return Composition.sidebarGeometry(layout, visibleTabs)
 end
 
 function Ui.huntingSubtabs(panelX, bodyY, panelW)
-    local tabW = math.floor((panelW - 8) / 2)
-    return {
-        {key = "hunting_targeting_tab", id = "ctoaHuntingTargetingTab", text = "Targeting", x = panelX, y = bodyY, width = tabW, target = "targeting"},
-        {key = "hunting_magic_tab", id = "ctoaHuntingMagicTab", text = "Magic Shooter", x = panelX + tabW + 8, y = bodyY, width = tabW, target = "magic"}
-    }
+    return Composition.huntingSubtabs(panelX, bodyY, panelW)
 end
 
 function Ui.subtabContentY(bodyY)
-    return bodyY + 26
+    return Composition.subtabContentY(bodyY)
 end
 
 function Ui.toolsSubtabs(panelX, bodyY, panelW)
-    local tabW = math.floor((panelW - 16) / 5)
-    local gap = 4
-    return {
-        {key = "tools_helper_tab", id = "ctoaToolsHelperTab", text = "Helper", x = panelX, y = bodyY, width = tabW, target = "helper"},
-        {key = "tools_pvp_tab", id = "ctoaToolsPvpTab", text = "PvP", x = panelX + tabW + gap, y = bodyY, width = tabW, target = "pvp"},
-        {key = "tools_hud_tab", id = "ctoaToolsHudTab", text = "HUD", x = panelX + (tabW + gap) * 2, y = bodyY, width = tabW, target = "hud"},
-        {key = "tools_timer_tab", id = "ctoaToolsTimerTab", text = "Timer", x = panelX + (tabW + gap) * 3, y = bodyY, width = tabW, target = "timer"},
-        {key = "tools_diag_tab", id = "ctoaToolsDiagTab", text = "Diag", x = panelX + (tabW + gap) * 4, y = bodyY, width = tabW, target = "diag"}
-    }
+    return Composition.toolsSubtabs(panelX, bodyY, panelW)
 end
 
 function Ui.toolsTableHeaders(panelX, contentY, panelW)
-    return {
-        {id = "ctoaToolsPvpHead", left = "PvP", right = "Value", x = panelX, y = contentY, width = panelW, section = "tools_pvp"},
-        {id = "ctoaToolsHudHead", left = "HUD", right = "Value", x = panelX, y = contentY, width = panelW, section = "tools_hud"},
-        {id = "ctoaToolsTimerHead", left = "Timer", right = "Value", x = panelX, y = contentY, width = panelW, section = "tools_timer"},
-        {id = "ctoaToolsDiagHead", left = "Diagnostics", right = "Snapshot", x = panelX, y = contentY, width = panelW, section = "tools_diag"}
-    }
+    return Composition.toolsTableHeaders(panelX, contentY, panelW)
 end
 
 function Ui.cavebotDelayChoices()
-    return {600, 900, 1200, 1600, 2200}
+    return Composition.cavebotDelayChoices()
 end
 
 function Ui.cavebotReachChoices()
-    return {0, 1, 2, 3}
+    return Composition.cavebotReachChoices()
 end
 
 function Ui.msText(value)
-    return tostring(value) .. " ms"
+    return Composition.msText(value)
 end
 
 function Ui.cavebotActionSpecs(panelX, panelW, layout, callbacks)
-    layout = layout or {}
-    callbacks = callbacks or {}
-    local actionW = math.floor((panelW - 18) / 4)
-    local actionY1 = layout.row_7_y + 28
-    local actionY2 = layout.row_7_y + 52
-    return actionW, {
-        {key = "cavebot_add", id = "ctoaCavebotAdd", text = "Add", x = panelX, y = actionY1, role = "primary", callback = callbacks.add},
-        {key = "cavebot_delete", id = "ctoaCavebotDelete", text = "Del", x = panelX + actionW + 6, y = actionY1, role = "destructive", callback = callbacks.delete},
-        {key = "cavebot_up", id = "ctoaCavebotUp", text = "Up", x = panelX + (actionW + 6) * 2, y = actionY1, role = "secondary", callback = callbacks.up},
-        {key = "cavebot_down", id = "ctoaCavebotDown", text = "Down", x = panelX + (actionW + 6) * 3, y = actionY1, role = "secondary", callback = callbacks.down},
-        {key = "cavebot_prev", id = "ctoaCavebotPrev", text = "Prev", x = panelX, y = actionY2, role = "neutral", callback = callbacks.prev},
-        {key = "cavebot_next", id = "ctoaCavebotNext", text = "Next", x = panelX + actionW + 6, y = actionY2, role = "neutral", callback = callbacks.next},
-        {key = "cavebot_clear", id = "ctoaCavebotClear", text = "Clear", x = panelX + (actionW + 6) * 2, y = actionY2, role = "destructive", callback = callbacks.clear},
-        {key = "cavebot_test_walk", id = "ctoaCavebotTestWalk", text = "Test", x = panelX + (actionW + 6) * 3, y = actionY2, role = "secondary", callback = callbacks.test_walk}
-    }
+    return Composition.cavebotActionSpecs(panelX, panelW, layout, callbacks)
 end
 
 function Ui.renderOverviewPanel(ctx)
@@ -1419,9 +1394,16 @@ function Ui.updateOverviewStats(ctx, snapshot)
     end
     if widgets.ui_boot_status and widgets.ui_boot_status.setText then
         widgets.ui_boot_status:setText(Ui.fitText(tostring(data.boot_status or "Boot status unavailable"), width - 14, 0.78))
+        Ui.styleOperatorState(widgets.ui_boot_status, data.boot_state, ctx.ui_style, ctx.align_left)
     end
     if widgets.ui_pipeline_status and widgets.ui_pipeline_status.setText then
         widgets.ui_pipeline_status:setText(Ui.fitText(tostring(data.pipeline_status or "Decision pipeline idle"), width - 14, 0.78))
+        Ui.styleOperatorState(widgets.ui_pipeline_status, data.pipeline_state, ctx.ui_style, ctx.align_left)
+    end
+    if widgets.enabled then
+        local runtimeState = Ui.normalizeOperatorState(data.runtime_state)
+        Ui.setWidgetText(widgets.enabled, string.upper(runtimeState))
+        Ui.styleOperatorState(widgets.enabled, runtimeState, ctx.ui_style, ctx.align_center)
     end
     return true
 end
@@ -1581,12 +1563,27 @@ function Ui.renderEquipmentPanel(ctx)
 
     ctx.add_section_scaffold(window, {section = "equipment", body_id = "ctoaEquipmentBody", header_id = "ctoaEquipmentHeader", title = "Equipment", subtitle = "slot observer / no swaps"}, panelX, ctx.body_y, panelW, ctx.body_h)
     ctx.widgets.equipment_summary = ctx.add_summary_strip(window, "ctoaEquipmentSummary", ctx.equipment_summary_text, panelX, ctx.body_y, panelW, "equipment")
-    ctx.add_toggle_content_rows(window, {
+    local rows = {
         {id = "ctoaEquipmentObserver", label = "Observer", getter = function() return equipment.enabled end, setter = function(value) equipment.enabled = value == true end, y = layout.row_2_y, section = "equipment"},
-        {id = "ctoaEquipmentSlots", label = "Read slots", getter = function() return equipment.observe_slots end, setter = function(value) equipment.observe_slots = value == true end, y = layout.row_3_y, section = "equipment"},
-        {id = "ctoaEquipmentRingPlan", label = "Ring plan", getter = function() return equipment.ring_swap end, setter = function(value) equipment.ring_swap = value == true end, y = layout.row_4_y, section = "equipment"},
-        {id = "ctoaEquipmentAmuletPlan", label = "Amulet plan", getter = function() return equipment.amulet_swap end, setter = function(value) equipment.amulet_swap = value == true end, y = layout.row_5_y, section = "equipment"}
-    }, panelX, panelW)
+        {id = "ctoaEquipmentSlots", label = "Read slots", getter = function() return equipment.observe_slots end, setter = function(value) equipment.observe_slots = value == true end, y = layout.row_3_y, section = "equipment"}
+    }
+    local familyYs = {layout.row_4_y, layout.row_5_y, layout.row_6_y}
+    for index, family in ipairs(ctx.equipment_family_rows or {}) do
+        if familyYs[index] then
+            local key = tostring(family.key or "")
+            rows[#rows + 1] = {
+                id = "ctoaEquipmentFamily" .. tostring(index),
+                label = tostring(family.label or "Equipment family"),
+                getter = function() return type(equipment.family_enabled) == "table" and equipment.family_enabled[key] == true end,
+                setter = function(value)
+                    if type(ctx.set_equipment_family_enabled) == "function" then ctx.set_equipment_family_enabled(key, value == true) end
+                end,
+                y = familyYs[index],
+                section = "equipment"
+            }
+        end
+    end
+    ctx.add_toggle_content_rows(window, rows, panelX, panelW)
     ctx.add_profile_cycle_row(window, "ctoaEquipmentWeaponSet", "Weapon set", function() return equipment.weapon_set end, function(value) equipment.weapon_set = value end, {"manual", "shield", "two_hand"}, panelX, layout.row_6_y, panelW, "equipment", tostring)
     ctx.add_profile_step_row(window, "ctoaEquipmentHp", "HP guard", function() return equipment.hp_threshold end, function(value) equipment.hp_threshold = value end, 5, 1, 100, panelX, layout.row_7_y, panelW, "equipment", ctx.percent_text)
     ctx.add_toggle_setting_row(window, "ctoaEquipmentApiProbe", "API probe", function() return equipment.api_probe_enabled ~= false end, function(value) equipment.api_probe_enabled = value == true end, panelX, layout.row_7_y + 26, panelW, "equipment")
@@ -1616,6 +1613,25 @@ function Ui.renderScriptingPanel(ctx)
     ctx.widgets.scripting_status = ctx.add_footer_strip(window, "ctoaScriptingStatus", "Status: " .. policyText(), panelX, layout.footer_y, panelW, "scripting")
 end
 
+function Ui.ruleEditorNavigation(count, index, delta)
+    return Primitives.ruleEditorNavigation(count, index, delta)
+end
+
+function Ui.addRuleEditorChrome(ctx, window, spec)
+    return RuleEditors.addRuleEditorChrome(Ui, ctx, window, spec)
+end
+
+function Ui.addTargetRuleEditor(ctx, window, tools, panelX, panelW, layout)
+    return RuleEditors.addTargetRuleEditor(Ui, ctx, window, tools, panelX, panelW, layout)
+end
+
+function Ui.addMagicRuleEditor(ctx, window, tools, panelX, panelW, layout)
+    return RuleEditors.addMagicRuleEditor(Ui, ctx, window, tools, panelX, panelW, layout)
+end
+
+function Ui.addCombatActionRuleEditor(ctx, window, tools, panelX, panelW, layout)
+    return RuleEditors.addCombatActionRuleEditor(Ui, ctx, window, tools, panelX, panelW, layout)
+end
 function Ui.renderHuntingPanel(ctx)
     if not ctx then
         return
@@ -1634,27 +1650,63 @@ function Ui.renderHuntingPanel(ctx)
     ctx.add_section_scaffold(window, {section = "hunting", body_id = "ctoaHuntingBody", header_id = "ctoaHuntingHeader", title = "Hunting", subtitle = "targeting / magic shooter"}, panelX, bodyY, panelW, bodyH)
     ctx.add_subtab_buttons(window, "huntingSubtabs", "hunting", panelX, bodyY, panelW)
     ctx.bind_click(ctx.widgets.hunting_targeting_tab, function() ctx.switch_hunting_subtab("targeting") end)
+    ctx.bind_click(ctx.widgets.hunting_target_rules_tab, function() ctx.switch_hunting_subtab("target_rules") end)
     ctx.bind_click(ctx.widgets.hunting_magic_tab, function() ctx.switch_hunting_subtab("magic") end)
+    ctx.bind_click(ctx.widgets.hunting_actions_tab, function() ctx.switch_hunting_subtab("actions") end)
+    ctx.bind_click(ctx.widgets.hunting_magic_runtime_tab, function() ctx.switch_hunting_subtab("magic_runtime") end)
 
     ctx.widgets.hunting_targeting_summary = ctx.add_summary_strip(window, "ctoaHuntingTargetingSummary", ctx.targeting_summary_text, panelX, contentY, panelW, "hunting_targeting")
     ctx.add_toggle_setting_row(window, "ctoaAutoAttack", "Targeting", function() return tools.auto_attack end, function(value) helper.setRuntimeModuleEnabled({"tools", "auto_attack"}, value, "targeting") end, panelX, layout.row_2_y, panelW, "hunting_targeting")
     ctx.add_toggle_setting_row(window, "ctoaChaseTargeting", "Chase", function() return tools.chase == true end, function(value) tools.chase = value == true end, panelX, layout.row_3_y, panelW, "hunting_targeting")
     ctx.add_toggle_setting_row(window, "ctoaHoldTarget", "Hold Target", function() return tools.hold_target end, function(value) tools.hold_target = value end, panelX, layout.row_4_y, panelW, "hunting_targeting")
     ctx.add_profile_cycle_row(window, "ctoaAttackRange", "Attack range", function() return tools.attack_range end, function(value) tools.attack_range = value end, ctx.tool_range_choices, panelX, layout.row_5_y, panelW, "hunting_targeting", ctx.profile_number_text)
-    ctx.add_profile_cycle_row(window, "ctoaTargetTimeoutHunting", "Target timeout", function() return tools.target_timeout_ms end, function(value) tools.target_timeout_ms = value end, ctx.tool_timeout_choices, panelX, layout.row_6_y, panelW, "hunting_targeting", function(value) return tostring(math.floor(value / 1000)) .. "s" end)
-    ctx.add_toggle_setting_row(window, "ctoaPreferLowHp", "Prefer low HP", function() return tools.prefer_low_hp end, function(value) tools.prefer_low_hp = value end, panelX, layout.row_7_y, panelW, "hunting_targeting")
-    ctx.widgets.monster_stats = ctx.add_footer_strip(window, "ctoaMonsterStats", "Target: none | nearby 0 / visible 0", panelX, layout.footer_y, panelW, "hunting_targeting")
+    local function addNamePolicyEditor(id, label, key, y)
+        local labelWidth = math.min(104, math.floor(panelW * 0.26))
+        local editorX = panelX + labelWidth + 8
+        local editorWidth = panelW - labelWidth - 8
+        local labelWidget = ctx.create_widget("Label", window, id .. "Label", label, panelX, y + 3, labelWidth, 18)
+        Ui.styleLabel(labelWidget, "muted", ctx.ui_style)
+        ctx.add_to_section("hunting_targeting", labelWidget)
+        local value = type(ctx.format_target_name_list) == "function" and ctx.format_target_name_list(key) or ""
+        local editor = ctx.create_widget("TextEdit", window, id, value, editorX, y, editorWidth, 22)
+        Ui.styleTextEdit(editor, ctx.ui_style)
+        if editor and editor.setMaxLength then
+            pcall(function() editor:setMaxLength(1024) end)
+        end
+        if editor then
+            editor.onTextChange = function(_, text)
+                if type(ctx.update_target_name_list) == "function" then
+                    ctx.update_target_name_list(key, text)
+                end
+            end
+        end
+        ctx.add_to_section("hunting_targeting", editor)
+        return editor
+    end
+    ctx.widgets.target_rule_editor_ignored = addNamePolicyEditor("ctoaTargetRuleEditorIgnored", "Ignored names", "ignored_names", layout.row_6_y)
+    ctx.widgets.target_rule_editor_priority = addNamePolicyEditor("ctoaTargetRuleEditorPriority", "Priority order", "priority_names", layout.row_7_y)
+    ctx.widgets.monster_stats = ctx.add_footer_strip(window, "ctoaMonsterStats", "Comma separated | priority order is left to right", panelX, layout.footer_y, panelW, "hunting_targeting")
+
+    ctx.widgets.hunting_target_rules_summary = ctx.add_summary_strip(window, "ctoaHuntingTargetRulesSummary", "Ordered filters | mandatory safety guards stay outside rules", panelX, contentY, panelW, "hunting_target_rules")
+    Ui.addTargetRuleEditor(ctx, window, tools, panelX, panelW, layout)
+    ctx.widgets.target_rules_footer = ctx.add_footer_strip(window, "ctoaTargetRulesFooter", "Profile data only | lower priority number wins", panelX, layout.footer_y + 10, panelW, "hunting_target_rules")
 
     ctx.widgets.hunting_magic_summary = ctx.add_summary_strip(window, "ctoaHuntingMagicSummary", ctx.magic_summary_text, panelX, contentY, panelW, "hunting_magic")
-    ctx.add_toggle_setting_row(window, "ctoaSpellRotation", "Spell Rotation", function() return tools.spell_rotation end, function(value) helper.setRuntimeModuleEnabled({"tools", "spell_rotation"}, value, "spell rotation") end, panelX, layout.row_2_y, panelW, "hunting_magic")
-    ctx.add_toggle_setting_row(window, "ctoaRuneShooter", "Rune Shooter", function() return tools.rune_enabled end, function(value) helper.setRuntimeModuleEnabled({"tools", "rune_enabled"}, value, "rune shooter") end, panelX, layout.row_3_y, panelW, "hunting_magic")
-    ctx.add_profile_cycle_row(window, "ctoaMagicPriority", "Priority", function() return tools.magic_priority or "rotation" end, function(value) tools.magic_priority = value end, ctx.magic_priority_choices, panelX, layout.row_4_y, panelW, "hunting_magic", ctx.magic_priority_text)
-    ctx.add_profile_step_row(window, "ctoaRotationGranMobs", "Gran mobs", function() return helper.getRotationMin("exori gran", 3) end, function(value) helper.setRotationMin("exori gran", value) end, 1, 1, 8, panelX, layout.row_5_y, panelW, "hunting_magic", ctx.profile_number_text)
-    ctx.add_profile_step_row(window, "ctoaRotationExoriMobs", "Exori mobs", function() return helper.getRotationMin("exori", 2) end, function(value) helper.setRotationMin("exori", value) end, 1, 1, 8, panelX, layout.row_6_y, panelW, "hunting_magic", ctx.profile_number_text)
-    ctx.add_profile_step_row(window, "ctoaRotationMinMobs", "Min mobs", function() return helper.getRotationMin("exori min", 2) end, function(value) helper.setRotationMin("exori min", value) end, 1, 1, 8, panelX, layout.row_7_y, panelW, "hunting_magic", ctx.profile_number_text)
-    ctx.add_profile_step_row(window, "ctoaRotationLockMs", "Spell lock", function() return tools.attack_action_lock_ms or 1050 end, function(value) tools.attack_action_lock_ms = value; tools.rotation_interval_ms = value end, 250, 750, 3000, panelX, layout.row_7_y + 26, panelW, "hunting_magic", function(value) return tostring(value) .. " ms" end)
-    ctx.add_profile_cycle_row(window, "ctoaRuneHotkeyMagic", "Rune box", function() return tools.rune_hotkey end, function(value) tools.rune_hotkey = value; tools.rune_actionbar_slot = value end, ctx.hotkey_choices, panelX, layout.row_7_y + 52, panelW, "hunting_magic", ctx.profile_number_text)
-    ctx.widgets.magic_footer = ctx.add_footer_strip(window, "ctoaMagicFooter", "Decision: waiting for runtime", panelX, layout.footer_y + 10, panelW, "hunting_magic")
+    Ui.addMagicRuleEditor(ctx, window, tools, panelX, panelW, layout)
+    ctx.widgets.magic_footer = ctx.add_footer_strip(window, "ctoaMagicFooter", "Profile data only | actions remain runtime-gated", panelX, layout.footer_y + 10, panelW, "hunting_magic")
+
+    ctx.widgets.hunting_actions_summary = ctx.add_summary_strip(window, "ctoaHuntingActionsSummary", "Ordered rune / stance rules | arbitrary server words", panelX, contentY, panelW, "hunting_actions")
+    Ui.addCombatActionRuleEditor(ctx, window, tools, panelX, panelW, layout)
+    ctx.widgets.hunting_actions_footer = ctx.add_footer_strip(window, "ctoaHuntingActionsFooter", "Profile data only | global activation remains on Runtime", panelX, layout.footer_y + 10, panelW, "hunting_actions")
+
+    ctx.widgets.hunting_magic_runtime_summary = ctx.add_summary_strip(window, "ctoaHuntingMagicRuntimeSummary", ctx.magic_summary_text, panelX, contentY, panelW, "hunting_magic_runtime")
+    ctx.add_toggle_setting_row(window, "ctoaSpellRotation", "Spell Rotation", function() return tools.spell_rotation end, function(value) helper.setRuntimeModuleEnabled({"tools", "spell_rotation"}, value, "spell rotation") end, panelX, layout.row_2_y, panelW, "hunting_magic_runtime")
+    ctx.add_toggle_setting_row(window, "ctoaRuneShooter", "Rune Shooter", function() return tools.rune_enabled end, function(value) helper.setRuntimeModuleEnabled({"tools", "rune_enabled"}, value, "rune shooter") end, panelX, layout.row_3_y, panelW, "hunting_magic_runtime")
+    ctx.add_toggle_setting_row(window, "ctoaAutoStanceMagic", "Auto stance", function() return tools.auto_stance end, function(value) helper.setRuntimeModuleEnabled({"tools", "auto_stance"}, value, "auto stance") end, panelX, layout.row_4_y, panelW, "hunting_magic_runtime")
+    ctx.add_profile_cycle_row(window, "ctoaMagicPriority", "Priority", function() return tools.magic_priority or "rotation" end, function(value) tools.magic_priority = value end, ctx.magic_priority_choices, panelX, layout.row_5_y, panelW, "hunting_magic_runtime", ctx.magic_priority_text)
+    ctx.add_profile_step_row(window, "ctoaRotationLockMs", "Spell lock", function() return tools.attack_action_lock_ms or 1050 end, function(value) tools.attack_action_lock_ms = value; tools.rotation_interval_ms = value end, 250, 750, 3000, panelX, layout.row_6_y, panelW, "hunting_magic_runtime", function(value) return tostring(value) .. " ms" end)
+    ctx.add_toggle_setting_row(window, "ctoaAutoExetaMagic", "Auto exeta", function() return tools.auto_exeta end, function(value) helper.setRuntimeModuleEnabled({"tools", "auto_exeta"}, value, "auto exeta") end, panelX, layout.row_7_y, panelW, "hunting_magic_runtime")
+    ctx.widgets.magic_runtime_footer = ctx.add_footer_strip(window, "ctoaMagicRuntimeFooter", "Decision: waiting for runtime", panelX, layout.footer_y, panelW, "hunting_magic_runtime")
 end
 
 function Ui.renderCavebotPanel(ctx)
@@ -1716,11 +1768,10 @@ function Ui.renderToolsPanel(ctx)
     local helper = ctx.helper or {}
     local featureFlags = tools.feature_flags or {}
 
-    ctx.add_section_scaffold(window, {section = "tools", body_id = "ctoaToolsBody", header_id = "ctoaToolsHeader", title = "Tools", subtitle = "helper / PvP / HUD / timer / diag"}, panelX, bodyY, panelW, bodyH)
+    ctx.add_section_scaffold(window, {section = "tools", body_id = "ctoaToolsBody", header_id = "ctoaToolsHeader", title = "Tools", subtitle = "helper / PvP / timer / diag"}, panelX, bodyY, panelW, bodyH)
     ctx.add_subtab_buttons(window, "toolsSubtabs", "tools", panelX, bodyY, panelW)
     ctx.bind_click(ctx.widgets.tools_helper_tab, function() ctx.switch_tools_subtab("helper") end)
     ctx.bind_click(ctx.widgets.tools_pvp_tab, function() ctx.switch_tools_subtab("pvp") end)
-    ctx.bind_click(ctx.widgets.tools_hud_tab, function() ctx.switch_tools_subtab("hud") end)
     ctx.bind_click(ctx.widgets.tools_timer_tab, function() ctx.switch_tools_subtab("timer") end)
     ctx.bind_click(ctx.widgets.tools_diag_tab, function() ctx.switch_tools_subtab("diag") end)
     ctx.add_table_headers(window, Ui.toolsTableHeaders(panelX, contentY, panelW))
@@ -1743,10 +1794,6 @@ function Ui.renderToolsPanel(ctx)
         {id = "ctoaRuneRequiresTargetPvp", label = "Rune needs target", getter = function() return tools.rune_requires_target end, setter = function(value) tools.rune_requires_target = value end, y = layout.row_5_y, section = "tools_pvp"}
     }, panelX, panelW)
     ctx.add_footer_strip(window, "ctoaToolsPvpFooter", "PvP guards protect shooter and targeting", panelX, layout.footer_y, panelW, "tools_pvp")
-
-    ctx.add_profile_cycle_row(window, "ctoaToolsHudEnabled", "HUD enabled", function() return cfg.hud and cfg.hud.enabled end, function(value) cfg.hud = cfg.hud or {}; cfg.hud.enabled = value; ctx.apply_hud_prefs() end, {false, true}, panelX, layout.row_2_y, panelW, "tools_hud", ctx.profile_bool_text, ctx.mark_ui_prefs_dirty)
-    ctx.add_vector_step_row(window, "ctoaToolsHudPos", "HUD position", function() return cfg.hud and cfg.hud.x or 22 end, function(value) cfg.hud = cfg.hud or {}; cfg.hud.x = value; ctx.apply_hud_prefs() end, function() return cfg.hud and cfg.hud.y or 170 end, function(value) cfg.hud = cfg.hud or {}; cfg.hud.y = value; ctx.apply_hud_prefs() end, 5, 0, 500, panelX, layout.row_3_y, layout.ui_value_row_w, "tools_hud", ctx.profile_number_text, ctx.profile_number_text, ctx.mark_ui_prefs_dirty)
-    ctx.add_footer_strip(window, "ctoaToolsHudFooter", "Shows profile, HP, mobs and next action", panelX, layout.footer_y, panelW, "tools_hud")
 
     ctx.add_toggle_setting_row(window, "ctoaToolsTimerEnabled", "Timer enabled", function() return tools.timer_enabled end, function(value) helper.setRuntimeModuleEnabled({"tools", "timer_enabled"}, value, "timer") end, panelX, layout.row_2_y, panelW, "tools_timer")
     ctx.add_profile_cycle_row(window, "ctoaToolsTimerInterval", "Interval", function() return tools.timer_interval_ms end, function(value) tools.timer_interval_ms = value end, ctx.timer_interval_choices, panelX, layout.row_3_y, panelW, "tools_timer", ctx.timer_interval_text)
@@ -1772,7 +1819,7 @@ function Ui.renderProfilePanel(ctx)
     local healing = cfg.healing or {}
     local modules = cfg.modules or {}
 
-    ctx.add_section_scaffold(window, {section = "profile", body_id = "ctoaProfileBody", header_id = "ctoaProfileHeader", title = "Settings", subtitle = "healing / visible modules"}, ctx.panel_x, ctx.body_y, ctx.panel_w, ctx.body_h)
+    ctx.add_section_scaffold(window, {section = "profile", body_id = "ctoaProfileBody", header_id = "ctoaProfileHeader", title = "Profile", subtitle = "healing / modules / presets"}, ctx.panel_x, ctx.body_y, ctx.panel_w, ctx.body_h)
     ctx.widgets.profile_summary = ctx.add_summary_strip(window, "ctoaProfileSummary", ctx.profile_summary_text, ctx.panel_x, ctx.body_y, ctx.panel_w, "profile")
     ctx.add_profile_cycle_row(window, "ctoaProfileSpell", "Heal spell", function() return healing.spell end, function(value) healing.spell = value end, ctx.spell_choices, ctx.profile_left_x, layout.profile_row_1_y, ctx.profile_col_w, "profile", ctx.spell_text)
     ctx.add_profile_step_row(window, "ctoaProfileSpellThreshold", "Spell HP", function() return healing.spell_threshold end, function(value) healing.spell_threshold = value end, 1, 1, 100, ctx.profile_left_x, layout.profile_row_2_y, ctx.profile_col_w, "profile", function(value) return "<= " .. tostring(value) .. "%" end)
@@ -1808,7 +1855,7 @@ function Ui.renderEnginePanel(ctx)
     local window = ctx.window
     local cfg = ctx.config or {}
 
-    ctx.add_section_scaffold(window, {section = "ui", body_id = "ctoaUiBody", header_id = "ctoaUiRuntimeHeader", title = "Engine", subtitle = "hotkey / HUD"}, ctx.panel_x, ctx.body_y, ctx.panel_w, ctx.body_h)
+    ctx.add_section_scaffold(window, {section = "ui", body_id = "ctoaUiBody", header_id = "ctoaUiRuntimeHeader", title = "Settings", subtitle = "hotkey / appearance / HUD"}, ctx.panel_x, ctx.body_y, ctx.panel_w, ctx.body_h)
     ctx.widgets.ui_summary = ctx.add_summary_strip(window, "ctoaUiSummary", ctx.ui_summary_text, ctx.panel_x, ctx.body_y, ctx.panel_w, "ui")
     ctx.add_profile_cycle_row(window, "ctoaUiHotkey", "Hotkey", function() return ctx.hotkey_display_text(cfg.hotkey) end, function(value) ctx.apply_hotkey_choice(value) end, ctx.ui_hotkey_choices, ctx.profile_left_x, layout.ui_runtime_row_1_y, ctx.profile_col_w, "ui", ctx.profile_number_text, ctx.mark_ui_prefs_dirty)
     ctx.add_profile_step_row(window, "ctoaUiAutoHide", "Hide", function() return cfg.auto_hide_ms end, function(value) cfg.auto_hide_ms = value; ctx.update_auto_hide_timer() end, 250, 0, 5000, ctx.profile_right_x, layout.ui_runtime_row_1_y, ctx.profile_col_w, "ui", ctx.auto_hide_text, ctx.mark_ui_prefs_dirty)
@@ -1833,15 +1880,26 @@ function Ui.contract()
         owns_widget_create_wrapper = true,
         owns_nav_style = true,
         owns_adaptive_sidebar_geometry = true,
+        owns_panel_renderer_context_merge = true,
         owns_utility_navigation_divider = true,
         owns_subtab_style = true,
         owns_button_style = true,
         owns_button_roles = true,
         owns_runtime_state_badge = true,
+        owns_four_state_operator_feedback = true,
+        owns_bounded_rule_editor_navigation = true,
         owns_state_value_colors = true,
         owns_rule_card_style = true,
+        delegates_rule_editor_presentation = true,
+        owns_single_settings_surface = true,
+        owns_magic_rule_editor = false,
+        owns_magic_runtime_subtab = true,
+        owns_target_rule_editor = false,
+        owns_action_parameter_editor = true,
+        owns_combat_action_rule_editor = false,
         owns_metric_style = true,
         owns_setting_state_style = true,
+        owns_text_edit_style = true,
         owns_profile_field_style = true,
         owns_vector_row_style = true,
         owns_section_style = true,
@@ -1875,6 +1933,7 @@ function Ui.contract()
         owns_heal_friend_panel_renderer = true,
         owns_conditions_panel_renderer = true,
         owns_hunting_panel_renderer = true,
+        owns_target_name_policy_editor = true,
         owns_equipment_panel_renderer = true,
         owns_profile_panel_renderer = true,
         owns_scripting_panel_renderer = true,
