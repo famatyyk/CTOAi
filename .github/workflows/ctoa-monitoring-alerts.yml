@@ -41,6 +41,7 @@ jobs:
           import datetime as dt
           import json
           import os
+          import time
           import urllib.error
           import urllib.parse
           import urllib.request
@@ -63,6 +64,10 @@ jobs:
               "X-GitHub-Api-Version": "2022-11-28",
           }
 
+          RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
+          MAX_REQUEST_ATTEMPTS = 4
+          MAX_RETRY_DELAY_SECONDS = 8
+
           def gh_request(method: str, path: str, payload=None):
               url = f"https://api.github.com{path}"
               body = None
@@ -70,14 +75,43 @@ jobs:
               if payload is not None:
                   body = json.dumps(payload).encode("utf-8")
                   req_headers["Content-Type"] = "application/json"
-              req = urllib.request.Request(url, data=body, headers=req_headers, method=method)
-              try:
-                  with urllib.request.urlopen(req, timeout=30) as resp:
-                      raw = resp.read().decode("utf-8")
-                      return json.loads(raw) if raw else {}
-              except urllib.error.HTTPError as exc:
-                  detail = exc.read().decode("utf-8", errors="replace")
-                  raise RuntimeError(f"GitHub API {method} {path} failed: {exc.code} {detail}")
+              last_error = None
+              for attempt in range(1, MAX_REQUEST_ATTEMPTS + 1):
+                  req = urllib.request.Request(url, data=body, headers=req_headers, method=method)
+                  try:
+                      with urllib.request.urlopen(req, timeout=30) as resp:
+                          raw = resp.read().decode("utf-8")
+                          return json.loads(raw) if raw else {}
+                  except urllib.error.HTTPError as exc:
+                      detail = exc.read().decode("utf-8", errors="replace")
+                      last_error = RuntimeError(
+                          f"GitHub API {method} {path} failed: {exc.code} {detail}"
+                      )
+                      if exc.code not in RETRYABLE_STATUS_CODES or attempt == MAX_REQUEST_ATTEMPTS:
+                          raise last_error
+                      retry_after = exc.headers.get("Retry-After", "")
+                      try:
+                          delay = max(0.0, min(float(retry_after), MAX_RETRY_DELAY_SECONDS))
+                      except (TypeError, ValueError):
+                          delay = min(2 ** (attempt - 1), MAX_RETRY_DELAY_SECONDS)
+                      print(
+                          f"Transient GitHub API {exc.code} for {method} {path}; "
+                          f"retrying in {delay:g}s ({attempt}/{MAX_REQUEST_ATTEMPTS - 1})."
+                      )
+                      time.sleep(delay)
+                  except urllib.error.URLError as exc:
+                      last_error = RuntimeError(
+                          f"GitHub API {method} {path} network failure: {exc.reason}"
+                      )
+                      if attempt == MAX_REQUEST_ATTEMPTS:
+                          raise last_error
+                      delay = min(2 ** (attempt - 1), MAX_RETRY_DELAY_SECONDS)
+                      print(
+                          f"Transient GitHub API network failure for {method} {path}; "
+                          f"retrying in {delay:g}s ({attempt}/{MAX_REQUEST_ATTEMPTS - 1})."
+                      )
+                      time.sleep(delay)
+              raise last_error
 
           def ensure_label(name_: str, color: str, desc: str):
               try:
