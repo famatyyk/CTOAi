@@ -338,7 +338,6 @@ def test_schema_files_are_valid_draft_2020_12() -> None:
         Draft202012Validator.check_schema(schema)
 
 
-@pytest.mark.workspace_state
 def test_tracked_source_derivation_matches_current_official_stage_manifest() -> None:
     runtime_manifest = ROOT / "runtime" / "solteria_helper_dev" / "manifest.json"
     if not runtime_manifest.exists():
