@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from scripts.ops import link_check_docs
 
 
@@ -44,4 +46,6 @@ def test_find_broken_links_handles_encoded_paths_titles_and_anchors(tmp_path: Pa
 
 
 def test_repository_markdown_links_are_valid():
+    if not (link_check_docs.ROOT / ".git").exists():
+        pytest.skip("repository-wide link validation requires a full git checkout")
     assert link_check_docs.find_broken_links(link_check_docs.ROOT) == []
