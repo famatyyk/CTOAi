@@ -1,6 +1,6 @@
 # Engine Brain File Tree
 
-Generated at: `2026-07-21T08:07:28+00:00`
+Generated at: `2026-07-21T08:27:41+00:00`
 
 Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 `node_modules`, `runtime`, `logs`, `data`, `.tmp`, build outputs.
@@ -43,7 +43,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `.github/PULL_REQUEST_TEMPLATE/template.md` | 245 |
 | `.github/skills/ci-hotfix-workflow/SKILL.md` | 3039 |
 | `.github/workflows/browser-e2e-smoke.yml` | 1158 |
-| `.github/workflows/cd_bot.yml` | 7670 |
+| `.github/workflows/cd_bot.yml` | 7972 |
 | `.github/workflows/ctoa-approval-watchdog.yml` | 3519 |
 | `.github/workflows/ctoa-ci-executive-weekly.yml` | 1068 |
 | `.github/workflows/ctoa-close-on-gate.yml` | 887 |
@@ -111,27 +111,27 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `AI/ENGINE_BRAIN_STATUS.md` | 132303 |
 | `AI/ENGINE_MEMORY.md` | 2971 |
 | `AI/FEATURE_ROADMAP.md` | 56235 |
-| `AI/generated/DOC_SYNC.json` | 1019 |
-| `AI/generated/DOC_SYNC.md` | 609 |
-| `AI/generated/ENGINE_BRAIN_PACK.json` | 3314 |
-| `AI/generated/ENGINE_BRAIN_PACK.md` | 229101 |
-| `AI/generated/ENV_DOCTOR.json` | 7776 |
-| `AI/generated/ENV_DOCTOR.md` | 640 |
-| `AI/generated/FILE_TREE.md` | 69170 |
-| `AI/generated/manifest.json` | 2062 |
-| `AI/generated/OWNERSHIP_MAP.json` | 17646 |
-| `AI/generated/OWNERSHIP_MAP.md` | 6845 |
-| `AI/generated/P6_CODEX_INTEGRATION_READINESS.json` | 11010 |
-| `AI/generated/P6_CODEX_INTEGRATION_READINESS.md` | 6915 |
-| `AI/generated/P7_ACTION_READINESS.json` | 4877 |
-| `AI/generated/P7_ACTION_READINESS.md` | 1142 |
-| `AI/generated/P7_OPERATOR_BRIEF.json` | 6552 |
-| `AI/generated/P7_OPERATOR_BRIEF.md` | 1374 |
-| `AI/generated/P7_OPERATOR_WORKFLOW.json` | 4690 |
-| `AI/generated/P7_OPERATOR_WORKFLOW.md` | 3015 |
-| `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.json` | 2708 |
-| `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.md` | 2024 |
-| `AI/generated/SYMBOL_MAP.md` | 261662 |
+| `AI/generated/DOC_SYNC.json` | 977 |
+| `AI/generated/DOC_SYNC.md` | 596 |
+| `AI/generated/ENGINE_BRAIN_PACK.json` | 3169 |
+| `AI/generated/ENGINE_BRAIN_PACK.md` | 224630 |
+| `AI/generated/ENV_DOCTOR.json` | 7546 |
+| `AI/generated/ENV_DOCTOR.md` | 626 |
+| `AI/generated/FILE_TREE.md` | 67913 |
+| `AI/generated/manifest.json` | 2006 |
+| `AI/generated/OWNERSHIP_MAP.json` | 16901 |
+| `AI/generated/OWNERSHIP_MAP.md` | 6765 |
+| `AI/generated/P6_CODEX_INTEGRATION_READINESS.json` | 10693 |
+| `AI/generated/P6_CODEX_INTEGRATION_READINESS.md` | 6849 |
+| `AI/generated/P7_ACTION_READINESS.json` | 4739 |
+| `AI/generated/P7_ACTION_READINESS.md` | 1120 |
+| `AI/generated/P7_OPERATOR_BRIEF.json` | 6365 |
+| `AI/generated/P7_OPERATOR_BRIEF.md` | 1352 |
+| `AI/generated/P7_OPERATOR_WORKFLOW.json` | 4588 |
+| `AI/generated/P7_OPERATOR_WORKFLOW.md` | 2973 |
+| `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.json` | 2660 |
+| `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.md` | 1988 |
+| `AI/generated/SYMBOL_MAP.md` | 254570 |
 | `AI/KNOWN_BUGS.md` | 1384 |
 | `AI/LUA_INDEX.md` | 2874 |
 | `AI/OPERATIONS_AUDIT.md` | 5139 |
@@ -218,7 +218,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `docs/AGENT_PROMPT_DEFINITIVE.md` | 4201 |
 | `docs/AGENT_TRAINING_MASTERPLAN.md` | 3605 |
 | `docs/ARCHITECTURE.md` | 14029 |
-| `docs/audits/CTOAI_FULL_WORKSPACE_AUDIT_2026-07-06.md` | 6399 |
+| `docs/audits/CTOAI_FULL_WORKSPACE_AUDIT_2026-07-06.md` | 6396 |
 | `docs/audits/CTOAI_SECURITY_HARDENING_2026-07-06.md` | 114540 |
 | `docs/audits/CTOAI_WORKTREE_EXECUTION_PLAN_2026-07-11.md` | 8548 |
 | `docs/audits/CTOAI_WORKTREE_TRIAGE_2026-07-09.md` | 6985 |
@@ -906,7 +906,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `tests/test_azure_activity_alerts.py` | 8850 |
 | `tests/test_azure_activity_listener_security.py` | 3003 |
 | `tests/test_azure_webapp_workflow_guard.py` | 415 |
-| `tests/test_bot_cd_disk_recovery.py` | 1575 |
+| `tests/test_bot_cd_disk_recovery.py` | 2046 |
 | `tests/test_bot_vps_bootstrap_security.py` | 1851 |
 | `tests/test_bot_vps_deploy_security.py` | 1976 |
 | `tests/test_control_center_p6_plugin_handoff_smoke.py` | 9258 |

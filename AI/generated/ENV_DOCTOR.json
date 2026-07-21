@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-21T08:06:53+00:00",
+  "generated_at": "2026-07-21T08:28:10+00:00",
   "root": "C:\\Users\\zycie\\CTOAi",
   "overall_status": "warn",
   "status_counts": {
@@ -14,16 +14,12 @@
       "git_path": "C:\\Program Files\\Git\\cmd\\git.EXE",
       "status": "ok",
       "root": "C:/Users/zycie/CTOAi",
-      "branch": "codex/azure-deploy-gate",
-      "head": "988aa80722b7c2574352eee77e4bae19da7fb8db",
-      "dirty_count": 28,
+      "branch": "codex/bot-image-disk-headroom",
+      "head": "1af28b2a79199a60c41b50a0bce9ebc1376e0998",
+      "dirty_count": 24,
       "dirty_sample": [
         "M AI/generated/DOC_SYNC.json",
         "M AI/generated/DOC_SYNC.md",
-        "M AI/generated/ENGINE_BRAIN_PACK.json",
-        "M AI/generated/ENGINE_BRAIN_PACK.md",
-        "M AI/generated/ENV_DOCTOR.json",
-        "M AI/generated/ENV_DOCTOR.md",
         "M AI/generated/FILE_TREE.md",
         "M AI/generated/OWNERSHIP_MAP.json",
         "M AI/generated/OWNERSHIP_MAP.md",
@@ -42,7 +38,10 @@
         "M AI/generated/SYMBOL_MAP.md",
         "M AI/generated/manifest.json",
         "M docs/audits/CTOAI_FULL_WORKSPACE_AUDIT_2026-07-06.md",
-        "M docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md"
+        "M docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md",
+        "?? .codex-tmp/",
+        "?? ctoa_client_capabilities.json",
+        "?? outputs/"
       ],
       "remotes": [
         "origin\thttps://github.com/famatyyk/CTOAi.git (fetch)",
@@ -69,22 +68,22 @@
         },
         {
           "name": "otbr-login-server-1",
-          "status": "Up 41 hours",
+          "status": "Up 42 hours",
           "ports": "192.168.56.1:8088->8088/tcp, 192.168.56.1:9090->9090/tcp"
         },
         {
           "name": "otbr-db-1",
-          "status": "Up 41 hours (healthy)",
+          "status": "Up 42 hours (healthy)",
           "ports": "3306/tcp"
         },
         {
           "name": "ctoa-api",
-          "status": "Up 41 hours",
+          "status": "Up 42 hours",
           "ports": "127.0.0.1:8001->8000/tcp"
         },
         {
           "name": "ctoa-postgres",
-          "status": "Up 41 hours (healthy)",
+          "status": "Up 42 hours (healthy)",
           "ports": "5432/tcp"
         }
       ],
@@ -178,8 +177,8 @@
           "name": "main"
         },
         "nameWithOwner": "famatyyk/CTOAi",
-        "pushedAt": "2026-07-21T07:55:44Z",
-        "updatedAt": "2026-07-21T07:54:32Z",
+        "pushedAt": "2026-07-21T08:15:38Z",
+        "updatedAt": "2026-07-21T08:16:09Z",
         "url": "https://github.com/famatyyk/CTOAi",
         "visibility": "PUBLIC"
       },
@@ -188,31 +187,10 @@
       "recent_run_count": 15,
       "failed_recent_runs": [
         {
-          "conclusion": "",
-          "createdAt": "2026-07-21T07:54:04Z",
-          "status": "waiting",
-          "url": "https://github.com/famatyyk/CTOAi/actions/runs/29812176031",
-          "workflowName": "CTOA Pipeline"
-        },
-        {
-          "conclusion": "failure",
-          "createdAt": "2026-07-21T07:54:04Z",
-          "status": "completed",
-          "url": "https://github.com/famatyyk/CTOAi/actions/runs/29812175952",
-          "workflowName": "Build and deploy Python app to Azure Web App - CTOAi"
-        },
-        {
-          "conclusion": "failure",
-          "createdAt": "2026-07-21T07:54:04Z",
-          "status": "completed",
-          "url": "https://github.com/famatyyk/CTOAi/actions/runs/29812175950",
-          "workflowName": "Bot CD \u2014 Deploy to VPS"
-        },
-        {
           "conclusion": "skipped",
-          "createdAt": "2026-07-21T07:53:34Z",
+          "createdAt": "2026-07-21T08:15:12Z",
           "status": "completed",
-          "url": "https://github.com/famatyyk/CTOAi/actions/runs/29812145737",
+          "url": "https://github.com/famatyyk/CTOAi/actions/runs/29813564693",
           "workflowName": "CTOA Close On Gate"
         }
       ]

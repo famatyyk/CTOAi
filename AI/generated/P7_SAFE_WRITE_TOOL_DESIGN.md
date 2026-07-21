@@ -1,6 +1,6 @@
 # P7 Safe Write Tool Design
 
-Generated at: `2026-07-21T08:07:28+00:00`
+Generated at: `2026-07-21T08:27:41+00:00`
 Status: `implemented`
 Decision: `ready_for_dry_run_operation`
 

@@ -6,6 +6,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW = ROOT / ".github" / "workflows" / "cd_bot.yml"
 COMPOSE = ROOT / "bot" / "infra" / "docker-compose.yml"
+DOCKERFILE = ROOT / "bot" / "infra" / "Dockerfile"
 
 
 def test_bot_cd_recovers_disk_without_deleting_named_volumes() -> None:
@@ -25,8 +26,10 @@ def test_bot_cd_recovers_disk_without_deleting_named_volumes() -> None:
     assert "docker compose build bot dashboard" not in source
     assert "docker compose pull prometheus grafana" not in source
     assert "docker compose up -d bot dashboard" in source
+    assert "Docker filesystem free after post-deploy cleanup" in source
     assert 'if [ "$FREE_MB" -ge 1536 ]' in source
-    assert "docker compose up -d prometheus grafana" in source
+    assert "docker compose up -d prometheus" in source
+    assert "docker compose up -d prometheus grafana" not in source
 
 
 def test_bot_and_dashboard_share_one_built_image() -> None:
@@ -37,3 +40,11 @@ def test_bot_and_dashboard_share_one_built_image() -> None:
     assert services["dashboard"]["image"] == "ctoa-bot:latest"
     assert "build" in services["bot"]
     assert "build" not in services["dashboard"]
+
+
+def test_bot_runtime_image_excludes_training_only_torch() -> None:
+    source = DOCKERFILE.read_text(encoding="utf-8")
+
+    assert "requirements-bot-no-torch.txt" in source
+    assert "download.pytorch.org" not in source
+    assert 'pip install --no-cache-dir --index-url' not in source
