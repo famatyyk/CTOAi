@@ -31,9 +31,9 @@ Out of scope:
 - Replacing manual owner approval
 
 ## Dependencies
-- [docs/experiments/decision-memo-template.md](docs/experiments/decision-memo-template.md)
-- [docs/VALIDATION_CHECKLIST.md](docs/VALIDATION_CHECKLIST.md)
-- [docs/SPRINT_GOVERNANCE.md](docs/SPRINT_GOVERNANCE.md)
+- [docs/experiments/decision-memo-template.md](../../docs/experiments/decision-memo-template.md)
+- [docs/VALIDATION_CHECKLIST.md](../../docs/VALIDATION_CHECKLIST.md)
+- [docs/SPRINT_GOVERNANCE.md](../../docs/SPRINT_GOVERNANCE.md)
 
 ## Acceptance Criteria
 - Promotion requires baseline comparison, scorecard evidence, green CI, QA signoff, and owner approval.

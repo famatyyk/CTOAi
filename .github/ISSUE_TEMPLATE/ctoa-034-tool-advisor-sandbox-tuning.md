@@ -30,9 +30,9 @@ Out of scope:
 - Large framework rewrites
 
 ## Dependencies
-- [scoring/tool-advisor-rules.yaml](scoring/tool-advisor-rules.yaml)
-- [docs/experiments/daily-experiment-scorecard.md](docs/experiments/daily-experiment-scorecard.md)
-- [docs/experiments/decision-memo-template.md](docs/experiments/decision-memo-template.md)
+- [scoring/tool-advisor-rules.yaml](../../scoring/tool-advisor-rules.yaml)
+- [docs/experiments/daily-experiment-scorecard.md](../../docs/experiments/daily-experiment-scorecard.md)
+- [docs/experiments/decision-memo-template.md](../../docs/experiments/decision-memo-template.md)
 
 ## Acceptance Criteria
 - At least one scoring change shows measurable lift on a representative task set.

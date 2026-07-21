@@ -12,7 +12,7 @@ This document verifies that all 4 platform integration components for the CTOA H
 
 ## Component 1: Screenshot Provider (mss/PIL) ✅
 
-**File**: [runner/hybrid_bot/screenshot_provider.py](runner/hybrid_bot/screenshot_provider.py)
+**File**: [screenshot_provider.py](screenshot_provider.py)
 
 **What it does**:
 - Captures game window screen frames for vision processing
@@ -43,7 +43,7 @@ provider.find_tibia_window()  # Auto-detect window
 
 ## Component 2: Command Executor (pynput) ✅
 
-**File**: [runner/hybrid_bot/command_executor.py](runner/hybrid_bot/command_executor.py)
+**File**: [command_executor.py](command_executor.py)
 
 **What it does**:
 - Sends keyboard and mouse commands to game
@@ -87,7 +87,7 @@ executor.execute("reconnect")   # Logout/login sequence
 
 ## Component 3: Template Library (Asset Management) ✅
 
-**File**: [runner/hybrid_bot/template_library.py](runner/hybrid_bot/template_library.py)
+**File**: [template_library.py](template_library.py)
 
 **What it does**:
 - Manages creature sprite templates for vision matching
@@ -147,7 +147,7 @@ TIBIA_COMMON_CREATURES = [
 
 ## Component 4: Integration Test Suite ✅
 
-**File**: [tests/test_integration_simple.py](tests/test_integration_simple.py)
+**File**: [tests/test_integration_simple.py](../../tests/test_integration_simple.py)
 
 **Test Classes**:
 

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-11T07:37:34+00:00",
+  "generated_at": "2026-07-21T07:37:01+00:00",
   "decision": "ready_for_p7_operator_workflow",
   "status": "ready",
   "hard_blockers": [],
@@ -14,8 +14,8 @@
     "blocked_checks": []
   },
   "validation": {
-    "generated_at_utc": "2026-07-07T04:15:56+00:00",
-    "count": 16,
+    "generated_at_utc": "2026-07-18T12:34:49Z",
+    "count": 11,
     "failed": [],
     "warn": [
       "brain_doctor",
@@ -106,7 +106,7 @@
       "checks": 14,
       "passed": 14,
       "blocked": 0,
-      "action_audit_line_count": 122,
+      "action_audit_line_count": 680,
       "hard_blockers": [],
       "warnings": [
         "release_evidence_operator_brief_timestamp_mismatch"
@@ -118,33 +118,33 @@
       "file_count": 35,
       "sprint_count": 7,
       "latest_path": "releases\\evidence\\sprint-056\\CTOA-299.md",
-      "release_evidence_generated_at": "2026-07-10T23:35:40+00:00",
-      "otclient_helper_status": "promoted",
-      "otclient_helper_release_gate_status": "passed",
-      "otclient_helper_next_action": "Live promotion is complete for the current staged package.",
+      "release_evidence_generated_at": "2026-07-18T12:37:52+00:00",
+      "otclient_helper_status": "blocked",
+      "otclient_helper_release_gate_status": "blocked",
+      "otclient_helper_next_action": "ModuleAttachSmoke manifest SHA256 does not match the current dev manifest; rerun SmokeAttachModules after sandbox character is in-world.",
       "otclient_helper_module_contract": {
         "status": "passed",
-        "passed_count": 30,
-        "check_count": 30,
+        "passed_count": 39,
+        "check_count": 39,
         "forbidden_count": 0
       },
       "sandbox_smoke_queue": {
-        "status": "passed",
-        "runtime_status": "ready_for_readycheck",
-        "next_action": "Refresh local package and static gates",
-        "required_count": 3,
-        "queued_count": 0,
-        "first_step": "local_ready"
+        "status": "ready_for_operator",
+        "runtime_status": "not_running",
+        "next_action": "Launch sandbox client and enter test character",
+        "required_count": 5,
+        "queued_count": 11,
+        "first_step": "launch_sandbox"
       }
     },
     "action_audit": {
       "status": "ready",
-      "record_count": 122,
-      "latest_at": "2026-07-08T00:12:34.350356Z",
+      "record_count": 689,
+      "latest_at": "2026-07-18T12:38:36.387571Z",
       "invalid_record_count": 0,
       "risk_counts": {
         "read_only": 2,
-        "safe_write": 120
+        "safe_write": 687
       }
     },
     "recommended_tool_order": [

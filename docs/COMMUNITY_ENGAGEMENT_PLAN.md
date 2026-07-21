@@ -410,10 +410,10 @@
 
 
 ### Week 1 Ops Bootstrap Status (2026-05-11)
-- [x] Created [runtime/ops/week1_kpi_log.csv](../runtime/ops/week1_kpi_log.csv)
-- [x] Created [runtime/ops/week1_smoke_test_log.csv](../runtime/ops/week1_smoke_test_log.csv)
-- [x] Created [runtime/ops/week1_snapshot.json](../runtime/ops/week1_snapshot.json)
-- [x] Created [runtime/ops/week1_owner_assignments.json](../runtime/ops/week1_owner_assignments.json)
+- [x] Created local runtime artifact `runtime/ops/week1_kpi_log.csv`
+- [x] Created local runtime artifact `runtime/ops/week1_smoke_test_log.csv`
+- [x] Created local runtime artifact `runtime/ops/week1_snapshot.json`
+- [x] Created local runtime artifact `runtime/ops/week1_owner_assignments.json`
 - [x] Replace TBD owners in week1_owner_assignments.json
 - [x] Replace baseline placeholders with live Day 1 metrics
 ### Minimalna zasada operacyjna
@@ -425,4 +425,3 @@
 
 **đź¤– CTOA AI Toolkit - Leading the legitimate automation revolution**  
 *Building tomorrow's game automation community today*
-

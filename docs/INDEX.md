@@ -11,6 +11,7 @@ the system changes:
 - [README](../README.md): current repo entry point and visible operating status.
 - [Changelog](../CHANGELOG.md): release history only, not current operating truth.
 - [Repo Schema](REPO_SCHEMA.md): current repository map and ownership contract.
+- [Architecture](ARCHITECTURE.md): canonical components, flows, trust boundaries, and extension rules.
 - [Foundation Cleanup](CTOAI_FOUNDATION_CLEANUP.md): canonical surface cleanup plan.
 - [Product Portfolio](PRODUCT_PORTFOLIO.md): product ownership and product-ready definition.
 - [Repo Hygiene Policy](REPO_HYGIENE_POLICY.md): public repo hygiene and evidence placement rules.
@@ -31,7 +32,6 @@ canonical docs above when there is a conflict:
 - [Local Setup](LOCAL_SETUP.md): local bootstrap and operator setup.
 - [Deployment](DEPLOYMENT.md): deployment procedures and rollback notes.
 - [Mobile Console](MOBILE_CONSOLE.md): legacy/API compatibility and mobile console operations.
-- [Architecture](ARCHITECTURE.md): deeper architecture notes.
 - [CTOA CLI](CTOA_CLI.md): command-line operator surface.
 - [Product Public/Private Architecture](PRODUCT_PUBLIC_PRIVATE_ARCHITECTURE.md): product boundary rationale.
 
@@ -56,8 +56,9 @@ should be linked from sprint or release docs rather than rewritten.
 
 ## Decision Rules
 
-1. If docs disagree, prefer `README.md` for current status.
-2. Prefer `docs/REPO_SCHEMA.md` for ownership and canonical surfaces.
-3. Prefer `docs/INFRASTRUCTURE_CANONICAL.md` for VPS, deploy, and production values.
-4. Treat `docs/ROADMAP_V0.2.0_TO_V1.0.0.md` and `docs/PRODUCTIZATION_TRACK_C.md` as historical snapshots.
-5. Add new docs only when they introduce a durable contract, runbook, or evidence artifact.
+1. If docs disagree, prefer `README.md` for current operating status.
+2. Prefer `docs/ARCHITECTURE.md` for component relationships, runtime flows, and trust boundaries.
+3. Prefer `docs/REPO_SCHEMA.md` for ownership and canonical surfaces.
+4. Prefer `docs/INFRASTRUCTURE_CANONICAL.md` for VPS, deploy, and production values.
+5. Treat `docs/ROADMAP_V0.2.0_TO_V1.0.0.md` and `docs/PRODUCTIZATION_TRACK_C.md` as historical snapshots.
+6. Add new docs only when they introduce a durable contract, runbook, or evidence artifact.

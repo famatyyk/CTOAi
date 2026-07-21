@@ -1,6 +1,6 @@
 # P7 Operator Brief
 
-Generated at: `2026-07-11T07:37:34+00:00`
+Generated at: `2026-07-21T07:37:01+00:00`
 Decision: `ready_for_p7_operator_workflow`
 Status: `ready`
 
@@ -14,9 +14,9 @@ Next safe command: Design the next P7 plugin action only after risk model covera
 - P7 workflow: `safe_write_ready` with `9` MCP tools and `5` safe-write tools.
 - P7 action readiness: `safe_write_tools_enabled` with `5/5` audited candidates and `5` MCP write tools.
 - P7 safe-write design: `implemented` for `ctoai_evidence_pack_refresh` with MCP enabled `True`.
-- P7 cockpit handoff: `ready`; smoke `14/14`; safe-write audits `5/5`; release files `35`; action audit records `122`.
-- OTClient helper: `promoted`; release gate `passed`; module contract `passed` (30/30); sandbox queue `passed`; runtime `ready_for_readycheck`; first step `local_ready`.
+- P7 cockpit handoff: `ready`; smoke `14/14`; safe-write audits `5/5`; release files `35`; action audit records `689`.
+- OTClient helper: `blocked`; release gate `blocked`; module contract `passed` (39/39); sandbox queue `ready_for_operator`; runtime `not_running`; first step `launch_sandbox`.
 - Roadmap generation: `ready`; docs `3/3`; doc sync `passed`.
-- Validation evidence: `16` commands from `2026-07-07T04:15:56+00:00`.
+- Validation evidence: `11` commands from `2026-07-18T12:34:49Z`.
 - Hard blockers: `none`.
 - Warnings: `brain_doctor`, `diff_check`.

@@ -2,7 +2,7 @@
 
 Status: refreshed on 2026-06-29.
 
-This document is the current repository map and foundation contract for CTOAi. It replaces the older schema that treated `mobile_console` and `desktop_console` as the main execution surfaces. The current direction is simpler:
+This document is the current repository ownership map and foundation contract for CTOAi. [Architecture](ARCHITECTURE.md) is the canonical description of component relationships, runtime flows, and trust boundaries. This schema replaces the older model that treated `mobile_console` and `desktop_console` as the main execution surfaces. The current direction is simpler:
 
 ```text
 One job, one canonical surface.

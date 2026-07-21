@@ -35,6 +35,9 @@ jobs:
       - name: Install tools
         shell: bash
         run: |
+          sudo apt-get update
+          sudo apt-get install -y lua5.4
+          sudo update-alternatives --install /usr/bin/lua lua-interpreter /usr/bin/lua5.4 100
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install numpy opencv-python-headless

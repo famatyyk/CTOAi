@@ -31,8 +31,8 @@ Out of scope:
 - Long-term trend dashboards
 
 ## Dependencies
-- [docs/experiments/daily-experiment-scorecard.md](docs/experiments/daily-experiment-scorecard.md)
-- [docs/experiments/decision-memo-template.md](docs/experiments/decision-memo-template.md)
+- [docs/experiments/daily-experiment-scorecard.md](../../docs/experiments/daily-experiment-scorecard.md)
+- [docs/experiments/decision-memo-template.md](../../docs/experiments/decision-memo-template.md)
 
 ## Acceptance Criteria
 - Every experiment can be scored on the same rubric.

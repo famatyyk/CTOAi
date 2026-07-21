@@ -30,9 +30,9 @@ Out of scope:
 - Rewriting agent prompt packs
 
 ## Dependencies
-- [agents/ctoa-agents.yaml](agents/ctoa-agents.yaml)
-- [agents/definitions.py](agents/definitions.py)
-- [docs/experiments/agent-experiment-week-plan.md](docs/experiments/agent-experiment-week-plan.md)
+- [agents/ctoa-agents.yaml](../../agents/ctoa-agents.yaml)
+- [agents/definitions.py](../../agents/definitions.py)
+- [docs/experiments/agent-experiment-week-plan.md](../../docs/experiments/agent-experiment-week-plan.md)
 
 ## Acceptance Criteria
 - Every experiment type has a lead agent and a reviewer agent.

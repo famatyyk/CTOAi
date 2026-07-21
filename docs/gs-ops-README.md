@@ -79,7 +79,7 @@ To wykona na VPS:
 
 ## GitHub Actions monitor
 
-Workflow [`.github/workflows/vps-gs-cycle.yml`](.github/workflows/vps-gs-cycle.yml)  
+Workflow [`.github/workflows/vps-gs-cycle.yml`](../.github/workflows/vps-gs-cycle.yml)
 odpala siÄ™ o **05:50 UTC** (10 min przed GS), aby:
 - potwierdziÄ‡ dostÄ™pnoĹ›Ä‡ VPS
 - wykonaÄ‡ `git reset --hard` (VPS pobiera nowe moduĹ‚y)
@@ -138,4 +138,3 @@ Layer 8: ctoa-agents-orchestrator.timer        â† orchestrator (co 10 min, 
 | `API_CHECK_URL` | `http://127.0.0.1:7777/api/health` | Endpoint health serwera MythibIA |
 | `API_CHECK_RETRIES` | `5` | Ile razy prĂłbowaÄ‡ API przed FAIL |
 | `MYTHIBIA_MOD_DIR` | `/opt/mythibia/modules` | Folder docelowy moduĹ‚Ăłw klienta |
-

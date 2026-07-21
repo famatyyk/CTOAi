@@ -337,6 +337,6 @@ sudo systemctl status ctoa-bot
 ## Support
 
 For issues or questions:
-- Check [README.md](README.md)
+- Check [README.md](../README.md)
 - Review logs in `./metrics/`
 - Run diagnostic: `python test_local.py --mode test`
