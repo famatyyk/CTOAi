@@ -1,6 +1,6 @@
 # Engine Brain Symbol Map
 
-Generated at: `2026-07-21T08:07:28+00:00`
+Generated at: `2026-07-21T08:27:41+00:00`
 
 This is a lightweight map for navigation, not a full source dump.
 
@@ -4847,8 +4847,9 @@ This is a lightweight map for navigation, not a full source dump.
 
 ## `tests/test_bot_cd_disk_recovery.py`
 
-- L11: def test_bot_cd_recovers_disk_without_deleting_named_volumes()
-- L32: def test_bot_and_dashboard_share_one_built_image()
+- L12: def test_bot_cd_recovers_disk_without_deleting_named_volumes()
+- L35: def test_bot_and_dashboard_share_one_built_image()
+- L45: def test_bot_runtime_image_excludes_training_only_torch()
 
 ## `tests/test_bot_vps_bootstrap_security.py`
 
