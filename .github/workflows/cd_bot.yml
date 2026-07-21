@@ -170,13 +170,18 @@ jobs:
             docker compose up -d bot dashboard
           }
 
+          # The running image is now referenced and safe. Drop build cache and
+          # dangling layers so the deployment leaves operational headroom.
+          docker builder prune -af || true
+          docker image prune -af || true
           FREE_MB=$(df -Pm /var/lib/docker 2>/dev/null | awk 'NR==2 {print $4}')
           if [ -z "$FREE_MB" ]; then
             FREE_MB=$(df -Pm / | awk 'NR==2 {print $4}')
           fi
+          echo "Docker filesystem free after post-deploy cleanup: ${FREE_MB} MB"
           if [ "$FREE_MB" -ge 1536 ]; then
-            docker compose up -d prometheus grafana || \
-              echo "Monitoring services could not be refreshed; Bot core remains deployed."
+            docker compose up -d prometheus || \
+              echo "Prometheus could not be refreshed; Bot core remains deployed."
           else
             echo "Skipping monitoring refresh: ${FREE_MB} MB free after core deployment."
           fi

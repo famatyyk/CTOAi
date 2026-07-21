@@ -12,9 +12,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements-bot.txt .
+# PyTorch is reserved for the separate training pipeline. The deployed Bot
+# runtime has no torch imports, so keeping it out of this image saves the VPS
+# hundreds of megabytes without changing runtime functionality.
 RUN awk '!/^torch([<>=~! ]|$)/ { print }' requirements-bot.txt > /tmp/requirements-bot-no-torch.txt \
-    && pip install --no-cache-dir -r /tmp/requirements-bot-no-torch.txt \
-    && pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu "torch>=2.2.0"
+    && pip install --no-cache-dir -r /tmp/requirements-bot-no-torch.txt
 
 COPY bot/ ./bot/
 RUN mkdir -p data
