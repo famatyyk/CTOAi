@@ -15,12 +15,18 @@ def test_bot_cd_recovers_disk_without_deleting_named_volumes() -> None:
     assert 'if [ "$FREE_MB" -lt 512 ]' in source
     assert 'if [ "$FREE_MB" -lt 256 ]' in source
     assert 'if [ "$FREE_MB" -lt 4096 ]' in source
-    assert "docker compose down --remove-orphans" in source
+    assert "docker compose down --remove-orphans" not in source
+    assert "docker compose stop bot dashboard" in source
+    assert "docker compose rm -f bot dashboard" in source
     assert "docker system prune -af" in source
     assert "docker system prune -af --volumes" not in source
     assert 'if [ "$FREE_MB" -lt 2048 ]' in source
     assert "docker compose build bot" in source
     assert "docker compose build bot dashboard" not in source
+    assert "docker compose pull prometheus grafana" not in source
+    assert "docker compose up -d bot dashboard" in source
+    assert 'if [ "$FREE_MB" -ge 1536 ]' in source
+    assert "docker compose up -d prometheus grafana" in source
 
 
 def test_bot_and_dashboard_share_one_built_image() -> None:

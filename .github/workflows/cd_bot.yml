@@ -78,9 +78,10 @@ jobs:
           docker system prune -af || true
           FREE_MB=$(df -Pm / | awk 'NR==2 {print $4}')
           if [ "$FREE_MB" -lt 512 ] && [ -f /opt/tibia-bot/bot/infra/docker-compose.yml ]; then
-            echo "Critical disk pressure; stopping Bot stack while preserving named volumes."
+            echo "Critical disk pressure; stopping only the rebuildable Bot services."
             cd /opt/tibia-bot/bot/infra
-            docker compose down --remove-orphans || true
+            docker compose stop bot dashboard || true
+            docker compose rm -f bot dashboard || true
             docker system prune -af || true
             FREE_MB=$(df -Pm / | awk 'NR==2 {print $4}')
           fi
@@ -132,12 +133,8 @@ jobs:
           set -e
           cd /opt/tibia-bot/bot/infra
 
-          # Pull latest images
-          docker compose pull prometheus grafana 2>/dev/null || true
-
-          # Reclaim safe Docker build space on VPS. If disk pressure is high,
-          # stop this stack first so its old images can be removed. Named
-          # volumes are intentionally preserved.
+          # Preserve running observability containers so their images remain
+          # referenced. Only the locally built core services are replaceable.
           docker builder prune -af || true
           docker image prune -af || true
           FREE_MB=$(df -Pm /var/lib/docker 2>/dev/null | awk 'NR==2 {print $4}')
@@ -146,8 +143,9 @@ jobs:
           fi
           echo "Docker filesystem free before build: ${FREE_MB} MB"
           if [ "$FREE_MB" -lt 4096 ]; then
-            echo "Low disk space; stopping Bot stack and pruning unused Docker data."
-            docker compose down --remove-orphans || true
+            echo "Low disk space; replacing only Bot core services and pruning unused data."
+            docker compose stop bot dashboard || true
+            docker compose rm -f bot dashboard || true
             docker system prune -af || true
             docker builder prune -af || true
             FREE_MB=$(df -Pm /var/lib/docker 2>/dev/null | awk 'NR==2 {print $4}')
@@ -164,12 +162,24 @@ jobs:
           # Bot and dashboard share one image, avoiding a duplicate build/export.
           docker compose build bot
 
-          # Restart stack with zero-downtime where possible
-          docker compose up -d --remove-orphans || {
-            echo "compose up failed once; retrying in 10s..."
+          # Bring the core back first. Monitoring is useful but must not make
+          # the Bot deployment fail when the VPS is under disk pressure.
+          docker compose up -d bot dashboard || {
+            echo "Core compose up failed once; retrying in 10s..."
             sleep 10
-            docker compose up -d --remove-orphans
+            docker compose up -d bot dashboard
           }
+
+          FREE_MB=$(df -Pm /var/lib/docker 2>/dev/null | awk 'NR==2 {print $4}')
+          if [ -z "$FREE_MB" ]; then
+            FREE_MB=$(df -Pm / | awk 'NR==2 {print $4}')
+          fi
+          if [ "$FREE_MB" -ge 1536 ]; then
+            docker compose up -d prometheus grafana || \
+              echo "Monitoring services could not be refreshed; Bot core remains deployed."
+          else
+            echo "Skipping monitoring refresh: ${FREE_MB} MB free after core deployment."
+          fi
 
           # Wait for dashboard health check
           sleep 5
