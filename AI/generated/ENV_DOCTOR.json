@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-11T07:10:44+00:00",
+  "generated_at": "2026-07-21T07:37:25+00:00",
   "root": "C:\\Users\\zycie\\CTOAi",
   "overall_status": "warn",
   "status_counts": {
@@ -14,10 +14,19 @@
       "git_path": "C:\\Program Files\\Git\\cmd\\git.EXE",
       "status": "ok",
       "root": "C:/Users/zycie/CTOAi",
-      "branch": "codex/control-center-guarded-actions",
-      "head": "098f3b4b9c2be835bab53f1698118691a8e4bea7",
-      "dirty_count": 44,
+      "branch": "codex/main-state-sync",
+      "head": "ee51a62a316a760cb6269d4ae8cb822f18c00185",
+      "dirty_count": 61,
       "dirty_sample": [
+        "M .github/ISSUE_TEMPLATE/ctoa-031-experiment-charter.md",
+        "M .github/ISSUE_TEMPLATE/ctoa-032-agent-capability-matrix.md",
+        "M .github/ISSUE_TEMPLATE/ctoa-033-braver-experiment-packs.md",
+        "M .github/ISSUE_TEMPLATE/ctoa-034-tool-advisor-sandbox-tuning.md",
+        "M .github/ISSUE_TEMPLATE/ctoa-035-agent-evaluation-scorecard.md",
+        "M .github/ISSUE_TEMPLATE/ctoa-036-daily-experiment-review-loop.md",
+        "M .github/ISSUE_TEMPLATE/ctoa-037-promotion-gate.md",
+        "M .github/workflows/cd_bot.yml",
+        "M .github/workflows/ctoa-copilot-ci.yml",
         "M AI/generated/DOC_SYNC.json",
         "M AI/generated/DOC_SYNC.md",
         "M AI/generated/ENGINE_BRAIN_PACK.json",
@@ -33,22 +42,11 @@
         "M AI/generated/P7_ACTION_READINESS.md",
         "M AI/generated/P7_OPERATOR_BRIEF.json",
         "M AI/generated/P7_OPERATOR_BRIEF.md",
-        "M AI/generated/P7_OPERATOR_WORKFLOW.json",
-        "M AI/generated/P7_OPERATOR_WORKFLOW.md",
-        "M AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.json",
-        "M AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.md",
-        "M AI/generated/SECRET_GUARDRAIL.json",
-        "M AI/generated/SECRET_GUARDRAIL.md",
-        "M AI/generated/SYMBOL_MAP.md",
-        "M AI/generated/manifest.json",
-        "M data/bot.db",
-        "M docs/otclient/solteria_helper_module_workplan.md"
+        "M AI/generated/P7_OPERATOR_WORKFLOW.json"
       ],
       "remotes": [
         "origin\thttps://github.com/famatyyk/CTOAi.git (fetch)",
-        "origin\thttps://github.com/famatyyk/CTOAi.git (push)",
-        "upstream\tgit@github.com:famatyyk/CTOAi.git (fetch)",
-        "upstream\tgit@github.com:famatyyk/CTOAi.git (push)"
+        "origin\thttps://github.com/famatyyk/CTOAi.git (push)"
       ]
     },
     "docker": {
@@ -56,17 +54,37 @@
       "docker_on_path": true,
       "version_ok": true,
       "daemon_ok": true,
-      "compose": "Docker Compose version v5.1.3",
-      "container_count": 2,
+      "compose": "Docker Compose version v5.3.0",
+      "container_count": 6,
       "containers": [
         {
+          "name": "ctoa-p14-tfs-1",
+          "status": "Up 22 hours",
+          "ports": "192.168.56.1:7271->7271/tcp, 192.168.56.1:7273-7274->7273-7274/tcp"
+        },
+        {
+          "name": "otbr-server-1",
+          "status": "Up 2 hours",
+          "ports": "192.168.56.1:7171-7175->7171-7175/tcp"
+        },
+        {
+          "name": "otbr-login-server-1",
+          "status": "Up 41 hours",
+          "ports": "192.168.56.1:8088->8088/tcp, 192.168.56.1:9090->9090/tcp"
+        },
+        {
+          "name": "otbr-db-1",
+          "status": "Up 41 hours (healthy)",
+          "ports": "3306/tcp"
+        },
+        {
           "name": "ctoa-api",
-          "status": "Up 35 hours",
+          "status": "Up 41 hours",
           "ports": "127.0.0.1:8001->8000/tcp"
         },
         {
           "name": "ctoa-postgres",
-          "status": "Up 35 hours (healthy)",
+          "status": "Up 41 hours (healthy)",
           "ports": "5432/tcp"
         }
       ],
@@ -74,12 +92,12 @@
       "configured_broad_binds": []
     },
     "vpn": {
-      "status": "ok",
+      "status": "warn",
       "warp_cli": "C:\\Program Files\\Cloudflare\\Cloudflare WARP\\warp-cli.exe",
-      "warp_connected": true,
+      "warp_connected": false,
       "warp_status": [
-        "Status update: Connected",
-        "Network: healthy"
+        "Status update: Disconnected",
+        "Reason: Manual Disconnection"
       ],
       "adapters": [
         {
@@ -93,8 +111,8 @@
           "Status": "Up"
         },
         {
-          "Name": "CloudflareWARP",
-          "InterfaceDescription": "Cloudflare WARP Interface Tunnel",
+          "Name": "Ethernet 2",
+          "InterfaceDescription": "VirtualBox Host-Only Ethernet Adapter",
           "Status": "Up"
         }
       ]
@@ -113,29 +131,28 @@
       }
     },
     "vscode": {
-      "status": "warn",
+      "status": "ok",
       "code_on_path": true,
       "active_openai_extensions": [
-        "openai.chatgpt@26.623.141536"
+        "openai.chatgpt@26.715.31925"
       ],
       "openai_extension_dirs": [
-        "openai.chatgpt-26.623.141536-win32-x64",
-        "openai.chatgpt-26.707.31123-win32-x64"
+        "openai.chatgpt-26.715.31925-win32-x64"
       ],
       "relevant_extensions": [
         "docker.docker@0.18.0",
         "github.codespaces@1.18.15",
         "github.remotehub@0.64.0",
-        "github.vscode-github-actions@0.32.1",
-        "github.vscode-pull-request-github@0.154.0",
-        "martinortiz.codex-stats@1.0.3",
+        "github.vscode-github-actions@0.32.3",
+        "github.vscode-pull-request-github@0.158.0",
+        "martinortiz.codex-stats@1.0.4",
         "ms-azuretools.vscode-azure-github-copilot@1.0.209",
         "ms-python.debugpy@2026.7.11831010",
         "ms-python.python@2026.4.0",
-        "ms-python.vscode-pylance@2026.2.107",
+        "ms-python.vscode-pylance@2026.2.109",
         "ms-python.vscode-python-envs@1.36.0",
         "ms-toolsai.vscode-ai-remote@1.4.8",
-        "ms-vscode-remote.remote-containers@0.464.0",
+        "ms-vscode-remote.remote-containers@0.467.0",
         "ms-vscode-remote.remote-ssh@0.124.0",
         "ms-vscode-remote.remote-ssh-edit@0.87.0",
         "ms-vscode-remote.remote-wsl@0.104.3",
@@ -143,7 +160,7 @@
         "ms-vscode.remote-explorer@0.5.0",
         "ms-vscode.remote-repositories@0.42.0",
         "ms-vscode.remote-server@1.5.3",
-        "openai.chatgpt@26.623.141536",
+        "openai.chatgpt@26.715.31925",
         "vinirossa.vscode-gitandgithub-pack@2.0.1",
         "ziyasal.vscode-open-in-github@1.3.6"
       ],
@@ -161,12 +178,12 @@
           "name": "main"
         },
         "nameWithOwner": "famatyyk/CTOAi",
-        "pushedAt": "2026-07-11T06:07:51Z",
-        "updatedAt": "2026-07-05T01:47:56Z",
+        "pushedAt": "2026-07-20T00:12:57Z",
+        "updatedAt": "2026-07-17T20:51:32Z",
         "url": "https://github.com/famatyyk/CTOAi",
         "visibility": "PUBLIC"
       },
-      "open_pr_count": 7,
+      "open_pr_count": 8,
       "dirty_prs": [
         {
           "isDraft": false,
@@ -175,14 +192,6 @@
           "reviewDecision": "",
           "title": "[WIP] Fix CTOA VPS Global Save Cycle failure",
           "url": "https://github.com/famatyyk/CTOAi/pull/184"
-        },
-        {
-          "isDraft": false,
-          "mergeStateStatus": "DIRTY",
-          "number": 183,
-          "reviewDecision": "REVIEW_REQUIRED",
-          "title": "[WIP] Fix CTOA VPS Global Save Cycle failure",
-          "url": "https://github.com/famatyyk/CTOAi/pull/183"
         },
         {
           "isDraft": false,
@@ -218,15 +227,7 @@
         }
       ],
       "recent_run_count": 15,
-      "failed_recent_runs": [
-        {
-          "conclusion": "skipped",
-          "createdAt": "2026-07-11T06:08:20Z",
-          "status": "completed",
-          "url": "https://github.com/famatyyk/CTOAi/actions/runs/29142334465",
-          "workflowName": "CTOA Close On Gate"
-        }
-      ]
+      "failed_recent_runs": []
     },
     "update_gate": {
       "status": "ok",

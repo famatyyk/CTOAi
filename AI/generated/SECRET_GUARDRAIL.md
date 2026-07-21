@@ -1,8 +1,8 @@
 # Engine Brain Secret Guardrail
 
-Generated at: `2026-07-11T07:37:34+00:00`
+Generated at: `2026-07-21T07:37:01+00:00`
 Status: `passed`
-Sensitive/local env path count in audit: `7`
+Sensitive/local env path count in audit: `8`
 
 Generated Engine Brain context must not include exact local sensitive/env paths or secret contents.
 

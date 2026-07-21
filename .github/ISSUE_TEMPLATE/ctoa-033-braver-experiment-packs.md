@@ -29,9 +29,9 @@ Out of scope:
 - Full evaluation infrastructure rollout
 
 ## Dependencies
-- [prompts/braver-library.yaml](prompts/braver-library.yaml)
-- [docs/experiments/daily-experiment-scorecard.md](docs/experiments/daily-experiment-scorecard.md)
-- [docs/experiments/decision-memo-template.md](docs/experiments/decision-memo-template.md)
+- [prompts/braver-library.yaml](../../prompts/braver-library.yaml)
+- [docs/experiments/daily-experiment-scorecard.md](../../docs/experiments/daily-experiment-scorecard.md)
+- [docs/experiments/decision-memo-template.md](../../docs/experiments/decision-memo-template.md)
 
 ## Acceptance Criteria
 - At least 3 prompt pack templates exist.

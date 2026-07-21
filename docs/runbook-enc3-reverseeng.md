@@ -17,7 +17,7 @@ Current verified baseline:
 
 Primary local references:
 - [scripts/ops/analyze-enc3.ps1](../scripts/ops/analyze-enc3.ps1)
-- [scripts/ops/enc3-analysis-report.txt](../scripts/ops/enc3-analysis-report.txt)
+- generated local report `scripts/ops/enc3-analysis-report.txt`
 
 ## Goal
 The objective is not to immediately build a packer. The objective is to prove the full decode path for one ENC3 file:
@@ -49,7 +49,7 @@ Safe operating assumptions:
 Required inputs:
 - Mythibia executable under `%APPDATA%\Mythibia\MythibiaV2\`
 - sample ENC3 files from `_tmp_unpack\`
-- current analyzer output from [scripts/ops/enc3-analysis-report.txt](../scripts/ops/enc3-analysis-report.txt)
+- current analyzer output from local `scripts/ops/enc3-analysis-report.txt`
 
 Recommended sample set:
 - `_tmp_unpack\init.lua`
@@ -89,7 +89,7 @@ Before opening any reversing tool:
 3. Copy one or more ENC3 sample files into a scratch folder.
 4. Record the exact binary filename and SHA256.
 5. Record the exact sample filenames and sizes.
-6. Keep [scripts/ops/enc3-analysis-report.txt](../scripts/ops/enc3-analysis-report.txt) open for side-by-side comparison.
+6. Keep local `scripts/ops/enc3-analysis-report.txt` open for side-by-side comparison.
 
 Record the target binary in `artifacts/enc3/enc3-target-binary.txt` using this template:
 
@@ -436,5 +436,5 @@ If you are starting now, do exactly this:
 
 ## References
 - [scripts/ops/analyze-enc3.ps1](../scripts/ops/analyze-enc3.ps1)
-- [scripts/ops/enc3-analysis-report.txt](../scripts/ops/enc3-analysis-report.txt)
+- generated local report `scripts/ops/enc3-analysis-report.txt`
 - [docs/runbook-disk-emergency.md](runbook-disk-emergency.md)

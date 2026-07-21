@@ -8,7 +8,14 @@ import pytest
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
-@pytest.fixture(params=[("066", ["CTOA-329", "CTOA-330", "CTOA-331"]), ("067", ["CTOA-332", "CTOA-333", "CTOA-334"])])
+@pytest.fixture(
+    params=[
+        ("066", ["CTOA-329", "CTOA-330", "CTOA-331"]),
+        ("067", ["CTOA-332", "CTOA-333", "CTOA-334"]),
+        ("068", ["CTOA-335", "CTOA-336", "CTOA-337"]),
+        ("069", ["CTOA-338", "CTOA-339", "CTOA-340"]),
+    ]
+)
 def validator_case(request):
     sprint, task_ids = request.param
     module_path = PROJECT_ROOT / 'scripts' / 'ops' / f'sprint{sprint}_validate.py'
@@ -27,7 +34,12 @@ def _write_validator_workspace(root: Path, sprint: str, task_ids: list[str]) -> 
     (root / '.vscode').mkdir(parents=True, exist_ok=True)
     (root / 'tests').mkdir(parents=True, exist_ok=True)
 
-    focus_line = 'Sprint-067 AI-layer consolidation + prompt/runtime governance' if sprint == '067' else 'Sprint-066 packaging + release hardening'
+    focus_line = {
+        '066': 'Sprint-066 packaging + release hardening',
+        '067': 'Sprint-067 AI-layer consolidation + prompt/runtime governance',
+        '068': 'Sprint-068 delivery/governance closure + validator CLI hardening',
+        '069': 'Sprint-069 delivery continuity + CLI contract alignment',
+    }[sprint]
     progress_lines = [f'Backlog: sprint-{sprint}', f'Source: workflows/backlog-sprint-{sprint}.yaml']
     if sprint == '066':
         progress_lines = ['# Sprint-066 Progress', '']

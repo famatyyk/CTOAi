@@ -1,18 +1,18 @@
-# CTOA AI Toolkit
+# CTOAi
 
-10-agent AI operating system for autonomous sprint delivery,
-BRAVE(R)-driven prompting, tool-advisor scoring,
-and auditable two-wave approvals.
+Operations platform combining a web Control Center, API surfaces, governed
+agent pipelines, bot runtimes, native OTClient integration, and auditable
+release automation.
 
 ## Command Center
 
-| Signal | Current State |
+| Signal | Canonical source |
 | --- | --- |
-| Baseline | v1.14.0 APPROVED |
-| Release Train | Sprint-059 RELEASED (Wave-1 evidence finalized) |
-| Delivery Mode | STRATEGOS (guarded autonomy) |
-| Validation | `pytest` + sprint validators + CI gate chain |
-| Next Action | Sprint-061 kickoff package active: 1 process KPI + 2 product KPIs |
+| Architecture | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) |
+| Ownership | [`docs/REPO_SCHEMA.md`](docs/REPO_SCHEMA.md) |
+| Generated readiness | [`AI/generated/manifest.json`](AI/generated/manifest.json) |
+| Delivery governance | [`docs/SPRINT_GOVERNANCE.md`](docs/SPRINT_GOVERNANCE.md) |
+| Validation | `pytest` + targeted sprint validators + CI gates |
 
 Primary governance sources:
 
@@ -31,17 +31,19 @@ Primary governance sources:
 
 ## Azure Activity Training Status
 
-- Active eval prompt: `azure-activity-fact-first` (confirmed by run-001, run-002, and run-003 3-variant comparisons)
+- Historical eval prompt: `azure-activity-fact-first`
 - Prompt variants: [evals/prompt-variants](evals/prompt-variants)
-- Run artifacts: [evals/runs/run-001](evals/runs/run-001), [evals/runs/run-002](evals/runs/run-002), [evals/runs/run-003](evals/runs/run-003)
+- Local/restored run artifact contract: `evals/runs/run-001`, `evals/runs/run-002`, `evals/runs/run-003`
 - Editable AI Toolkit registry: [agents/toolkit/editable_agents.json](agents/toolkit/editable_agents.json)
 - Aggregator: `python scripts/ops/aggregate_agent_eval.py evals/runs/run-003/results.<variant>.<model>.jsonl`
 - Comparator: `python scripts/ops/compare_eval_summaries.py evals/runs/run-003/*.summary.json`
 
 ## What This Repo Does
 
-- Orchestrates 10 specialized agents across analysis, generation,
-  validation, and release governance.
+- Orchestrates restartable discovery, ingestion, planning, generation,
+  validation, and publication stages.
+- Provides the Control Center and authenticated API surfaces for operators.
+- Runs guarded bot and hybrid-vision execution loops with telemetry.
 - Applies BRAVE(R) prompt templates for deterministic, policy-aware execution.
 - Scores tool choices using relevance/cost/risk signals before action.
 - Enforces release progression with explicit evidence and wave gates.
@@ -59,7 +61,7 @@ Primary governance sources:
   [runner](runner) + [agents](agents) + [prompts](prompts)
 - CTOA Release Governance:
   [workflows](workflows) + [policies](policies) +
-  [runtime/experiments](runtime/experiments)
+  [docs/experiments](docs/experiments)
 
 Product map and ownership list:
 
@@ -137,10 +139,8 @@ Recent approved milestones:
 - [Local Setup](docs/LOCAL_SETUP.md)
 - [Mobile Console](docs/MOBILE_CONSOLE.md)
 - [Validation Checklist](docs/VALIDATION_CHECKLIST.md)
-- [Discord Agent](docs/DISCORD_AGENT.md)
 - [Product Portfolio](docs/PRODUCT_PORTFOLIO.md)
 - [Repo Hygiene Policy](docs/REPO_HYGIENE_POLICY.md)
-- [Enhanced Top-3 Sprint Plan](docs/ENHANCED_TOP3_SPRINT_PLAN.md)
 - [Azure Alerts Automation Setup](docs/azure-alerts-automation-setup.md)
 - [Azure Activity Log Interpretation Runbook](docs/runbook-azure-activity-log-interpretation.md)
 - [Azure Agent Eval Dataset](evals/README-azure-agent-eval-dataset.md)

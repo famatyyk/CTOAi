@@ -4,7 +4,7 @@ This is a frozen historical snapshot. It is retained for traceability only and i
 
 Use these files for current state:
 
-- [README.md](../README.md)
+- [README.md](../../README.md)
 - [docs/history/sprints/SPRINT-056.md](sprints/SPRINT-056.md)
 - [docs/history/sprints/SPRINT-056-PROGRESS.md](sprints/SPRINT-056-PROGRESS.md)
 - [docs/SPRINT_GOVERNANCE.md](../SPRINT_GOVERNANCE.md)

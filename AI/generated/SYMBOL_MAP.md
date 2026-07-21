@@ -1,6 +1,6 @@
 # Engine Brain Symbol Map
 
-Generated at: `2026-07-11T07:37:34+00:00`
+Generated at: `2026-07-21T07:37:01+00:00`
 
 This is a lightweight map for navigation, not a full source dump.
 
@@ -76,59 +76,59 @@ This is a lightweight map for navigation, not a full source dump.
 - L369: def _utc_now_iso()
 - L373: def _atomic_write_json(path, payload)
 - L408: def _display_path(path_value)
-- L424: def _redact_release_evidence_text(value)
-- L438: def _public_release_evidence_value(value, key)
-- L455: def _public_audit_value(value, key)
-- L472: def _read_release_evidence_payload(path)
-- L488: def _hash_password(password)
-- L492: def _verify_password(password, hashed)
-- L499: def _sanitize_username(username)
-- L508: def _seed_password(env_name)
-- L515: def _seed_accounts()
-- L548: def _default_account_seed_blocked()
-- L552: def _read_auth_store_payload(path)
-- L571: def _load_auth_store()
-- L613: def _save_auth_store(store)
-- L617: def _append_activity(store)
-- L640: def _b64url_encode(data)
-- L644: def _b64url_decode(data)
-- L649: def _jwt_encode(payload)
-- L660: def _jwt_decode(token)
-- L685: def _issue_token(user)
-- L696: def _extract_bearer(authorization)
-- L709: def _first_forwarded_ip(value)
-- L719: def _client_ip_from_request(request)
-- L729: def _rate_limit_group(path)
-- L739: def _rate_limit_for_group(group)
-- L747: def _consume_rate_limit(ip, group, now_ts)
-- L792: def _audit_actor_from_request(request)
-- L806: def _append_audit_http(request, status, actor, meta)
-- L832: async def security_middleware(request, call_next)
-- L874: def _current_user(authorization)
-- L897: def _require_roles(user, allowed)
-- L902: def _select_models(req)
-- L975: async def _call_model(model_name, backend_url, backend_key, messages, temperature, max_tokens)
-- L1009: async def _execute_chat(req)
-- L1097: def _safe_chat_route_info(route_info)
-- L1113: def _require_chat_debug_route_user(user)
-- L1123: def health()
-- L1128: def status()
-- L1149: def bootstrap(req)
-- L1197: def register(req, authorization)
-- L1263: def login(req)
-- L1287: def me(authorization)
-- L1293: def create_invite(req, authorization)
-- L1330: def accept_invite(req, authorization)
-- L1378: def community_members(authorization)
-- L1398: def set_member_role(username, req, authorization)
-- L1439: def community_feed(authorization)
-- L1448: def community_invites(authorization)
-- L1459: def release_evidence()
-- L1540: async def chat(req, authorization)
-- L1559: async def chat_completions(req, authorization)
-- L1601: async def safety_metrics(authorization)
-- L1615: async def safety_telemetry(authorization)
-- L1624: async def safety_status()
+- L431: def _redact_release_evidence_text(value)
+- L445: def _public_release_evidence_value(value, key)
+- L462: def _public_audit_value(value, key)
+- L479: def _read_release_evidence_payload(path)
+- L495: def _hash_password(password)
+- L499: def _verify_password(password, hashed)
+- L506: def _sanitize_username(username)
+- L515: def _seed_password(env_name)
+- L522: def _seed_accounts()
+- L555: def _default_account_seed_blocked()
+- L559: def _read_auth_store_payload(path)
+- L578: def _load_auth_store()
+- L620: def _save_auth_store(store)
+- L624: def _append_activity(store)
+- L647: def _b64url_encode(data)
+- L651: def _b64url_decode(data)
+- L656: def _jwt_encode(payload)
+- L667: def _jwt_decode(token)
+- L692: def _issue_token(user)
+- L703: def _extract_bearer(authorization)
+- L716: def _first_forwarded_ip(value)
+- L726: def _client_ip_from_request(request)
+- L736: def _rate_limit_group(path)
+- L746: def _rate_limit_for_group(group)
+- L754: def _consume_rate_limit(ip, group, now_ts)
+- L799: def _audit_actor_from_request(request)
+- L813: def _append_audit_http(request, status, actor, meta)
+- L839: async def security_middleware(request, call_next)
+- L881: def _current_user(authorization)
+- L904: def _require_roles(user, allowed)
+- L909: def _select_models(req)
+- L982: async def _call_model(model_name, backend_url, backend_key, messages, temperature, max_tokens)
+- L1016: async def _execute_chat(req)
+- L1104: def _safe_chat_route_info(route_info)
+- L1120: def _require_chat_debug_route_user(user)
+- L1130: def health()
+- L1135: def status()
+- L1156: def bootstrap(req)
+- L1204: def register(req, authorization)
+- L1270: def login(req)
+- L1294: def me(authorization)
+- L1300: def create_invite(req, authorization)
+- L1337: def accept_invite(req, authorization)
+- L1385: def community_members(authorization)
+- L1405: def set_member_role(username, req, authorization)
+- L1446: def community_feed(authorization)
+- L1455: def community_invites(authorization)
+- L1466: def release_evidence()
+- L1547: async def chat(req, authorization)
+- L1566: async def chat_completions(req, authorization)
+- L1608: async def safety_metrics(authorization)
+- L1622: async def safety_telemetry(authorization)
+- L1631: async def safety_status()
 
 ## `api/startup_guard.py`
 
@@ -454,41 +454,41 @@ This is a lightweight map for navigation, not a full source dump.
 - L20: function Get-CliVpsHost
 - L31: function Get-PythonExe
 - L39: function Resolve-ControlCenterUrl
-- L85: function Invoke-FromRoot
-- L105: function Invoke-FromRootCapture
-- L135: function Get-CommandDictionary
-- L162: function Show-Help
-- L242: function Get-GitExe
-- L256: function Get-NpmExe
-- L267: function Get-WorktreeSummary
-- L289: function Show-Next
-- L312: function Open-ControlCenter
-- L367: function Resolve-Sprint
-- L381: function Invoke-ValidateSprint
-- L401: function Invoke-Nightly
-- L418: function Invoke-Up
-- L432: function Invoke-Test
-- L443: function Invoke-Doctor
-- L456: function Invoke-DevProfile
-- L461: function Invoke-OpsProfile
-- L466: function Invoke-ProdProfile
-- L476: function Invoke-VpsAction
-- L516: function Invoke-VpsActionCapture
-- L564: function Invoke-RunnerCommand
-- L576: function Invoke-ReportCommand
-- L589: function Invoke-MobileCommand
-- L601: function Invoke-LogsCommand
-- L615: function Invoke-StatusSnapshot
-- L695: function Invoke-DashboardSnapshot
-- L699: function Invoke-ReportNow
-- L703: function Invoke-OtProfileBuilder
-- L717: function Invoke-OtHelperPreview
-- L727: function Invoke-OtHelperMockup
-- L737: function Invoke-OtHelperDeploy
-- L758: function Invoke-OtTestLoop
-- L773: function Invoke-EngineBrain
-- L804: function Get-ValueOrDefault
-- L816: function Show-Menu
+- L91: function Invoke-FromRoot
+- L111: function Invoke-FromRootCapture
+- L141: function Get-CommandDictionary
+- L168: function Show-Help
+- L248: function Get-GitExe
+- L262: function Get-NpmExe
+- L273: function Get-WorktreeSummary
+- L295: function Show-Next
+- L318: function Open-ControlCenter
+- L373: function Resolve-Sprint
+- L387: function Invoke-ValidateSprint
+- L407: function Invoke-Nightly
+- L424: function Invoke-Up
+- L438: function Invoke-Test
+- L449: function Invoke-Doctor
+- L462: function Invoke-DevProfile
+- L467: function Invoke-OpsProfile
+- L472: function Invoke-ProdProfile
+- L482: function Invoke-VpsAction
+- L522: function Invoke-VpsActionCapture
+- L570: function Invoke-RunnerCommand
+- L582: function Invoke-ReportCommand
+- L595: function Invoke-MobileCommand
+- L607: function Invoke-LogsCommand
+- L621: function Invoke-StatusSnapshot
+- L701: function Invoke-DashboardSnapshot
+- L705: function Invoke-ReportNow
+- L709: function Invoke-OtProfileBuilder
+- L723: function Invoke-OtHelperPreview
+- L733: function Invoke-OtHelperMockup
+- L743: function Invoke-OtHelperDeploy
+- L764: function Invoke-OtTestLoop
+- L779: function Invoke-EngineBrain
+- L810: function Get-ValueOrDefault
+- L822: function Show-Menu
 
 ## `ctoa_ui_prefs.lua`
 
@@ -1558,10 +1558,10 @@ This is a lightweight map for navigation, not a full source dump.
 - L151: lua ignored_names
 - L165: lua priority_names
 - L182: lua rotation_spells
-- L220: lua exeta_spells
-- L254: lua cavebot_waypoints
-- L255: lua feature_flags
-- L264: lua hud
+- L221: lua exeta_spells
+- L255: lua cavebot_waypoints
+- L256: lua feature_flags
+- L265: lua hud
 
 ## `scripts/lua/otclient/ctoa_helper_action_catalog.lua`
 
@@ -1657,18 +1657,21 @@ This is a lightweight map for navigation, not a full source dump.
 - L98: lua CombatRuntime.msLeftText
 - L106: lua CombatRuntime.runeReady
 - L125: lua monsterCountForRange
-- L137: lua CombatRuntime.rotationSpellRows
-- L156: lua CombatRuntime.spellReadiness
-- L175: lua CombatRuntime.rotationSpell
-- L199: lua CombatRuntime.stanceAction
-- L217: lua CombatRuntime.offensiveAction
-- L263: lua CombatRuntime.actionStatusText
-- L296: lua CombatRuntime.targetingStatusText
-- L317: lua CombatRuntime.nextActionText
-- L335: lua CombatRuntime.waitReason
-- L380: lua CombatRuntime.decisionState
-- L400: lua CombatRuntime.decisionStateSummary
-- L419: lua CombatRuntime.contract
+- L137: lua directionalSpell
+- L142: lua CombatRuntime.bestDirectionalFacing
+- L158: lua CombatRuntime.recordDirectionalHit
+- L168: lua CombatRuntime.rotationSpellRows
+- L194: lua CombatRuntime.spellReadiness
+- L215: lua CombatRuntime.rotationSpell
+- L244: lua CombatRuntime.stanceAction
+- L262: lua CombatRuntime.offensiveAction
+- L308: lua CombatRuntime.actionStatusText
+- L341: lua CombatRuntime.targetingStatusText
+- L362: lua CombatRuntime.nextActionText
+- L380: lua CombatRuntime.waitReason
+- L425: lua CombatRuntime.decisionState
+- L445: lua CombatRuntime.decisionStateSummary
+- L464: lua CombatRuntime.contract
 
 ## `scripts/lua/otclient/ctoa_helper_conditions.lua`
 
@@ -2487,7 +2490,7 @@ This is a lightweight map for navigation, not a full source dump.
 - L1336: lua normalizedCreatureName
 - L1352: lua isIgnoredCreatureName
 - L1370: lua creatureHasBlockingNpcIcon
-- ... 124 more symbols omitted
+- ... 125 more symbols omitted
 
 ## `scripts/lua/otclient/ctoa_native_loot.lua`
 
@@ -3359,7 +3362,7 @@ This is a lightweight map for navigation, not a full source dump.
 - L27: function Assert-LocalApiBaseUrl
 - L61: function Assert-AlertWebhookUrl
 - L96: function Get-CurrentPowerShellPath
-- L113: function Resolve-OptionalValue
+- L117: function Resolve-OptionalValue
 
 ## `scripts/ops/lab003_validate_bundle.ps1`
 
@@ -3379,9 +3382,11 @@ This is a lightweight map for navigation, not a full source dump.
 
 ## `scripts/ops/link_check_docs.py`
 
-- L11: def is_ignored(link)
-- L20: def normalize_target(link)
-- L23: def main()
+- L38: def iter_markdown_files(root)
+- L47: def is_ignored(link)
+- L54: def normalize_target(link)
+- L64: def find_broken_links(root, files)
+- L85: def main()
 
 ## `scripts/ops/night-report.py`
 
@@ -3883,9 +3888,9 @@ This is a lightweight map for navigation, not a full source dump.
 
 - L47: def _run(cmd, cwd)
 - L53: def _quality_check(root, run_tests)
-- L72: def _config()
-- L89: def validate(root, run_tests)
-- L93: def main()
+- L77: def _config()
+- L94: def validate(root, run_tests)
+- L98: def main()
 
 ## `scripts/ops/sprint042_validate.py`
 
@@ -4239,65 +4244,55 @@ This is a lightweight map for navigation, not a full source dump.
 
 ## `scripts/ops/sprint066_validate.py`
 
-- L47: def _safe_yaml_load(path)
-- L51: def _check_required_files(root)
-- L56: def _check_syntax(root)
-- L68: def _check_backlog_contract(root)
-- L77: def _check_hooks(root)
-- L87: def _check_pipeline_gate(root)
-- L94: def _check_local_tasks(root)
-- L100: def _check_state_evidence_alignment(root)
-- L109: def _check_quality(run_tests)
-- L126: def build_report(root, run_tests)
-- L151: def main()
+- L29: def _check_quality(run_tests)
+- L33: def build_report(root, run_tests)
+- L37: def main()
 
 ## `scripts/ops/sprint067_validate.py`
 
-- L48: def _safe_yaml_load(path)
-- L52: def _check_required_files(root)
-- L61: def _check_syntax(root)
-- L73: def _check_backlog_contract(root)
-- L82: def _check_hooks(root)
-- L96: def _check_pipeline_gate(root)
-- L103: def _check_local_tasks(root)
-- L109: def _check_plan_scope(root)
-- L120: def _check_state_evidence_alignment(root)
-- L129: def _check_progress_alignment(root)
-- L139: def _check_quality(run_tests)
-- L156: def build_report(root, run_tests)
-- L183: def main()
+- L33: def _check_quality(run_tests)
+- L37: def build_report(root, run_tests)
+- L41: def main()
 
 ## `scripts/ops/sprint068_validate.py`
 
-- L48: def _safe_yaml_load(path)
-- L52: def _check_required_files(root)
-- L61: def _check_syntax(root)
-- L73: def _check_backlog_contract(root)
-- L82: def _check_hooks(root)
-- L96: def _check_pipeline_gate(root)
-- L103: def _check_local_tasks(root)
-- L109: def _check_plan_scope(root)
-- L120: def _check_state_evidence_alignment(root)
-- L129: def _check_progress_alignment(root)
-- L144: def _check_quality(run_tests)
-- L161: def build_report(root, run_tests)
-- L188: def main()
+- L33: def _check_quality(run_tests)
+- L37: def build_report(root, run_tests)
+- L41: def main()
 
 ## `scripts/ops/sprint069_validate.py`
 
-- L48: def _safe_yaml_load(path)
-- L52: def _check_required_files(root)
-- L61: def _check_syntax(root)
-- L73: def _check_backlog_contract(root)
-- L82: def _check_hooks(root)
-- L96: def _check_pipeline_gate(root)
-- L103: def _check_local_tasks(root)
-- L109: def _check_plan_scope(root)
-- L120: def _check_state_evidence_alignment(root)
-- L129: def _check_progress_alignment(root)
-- L144: def _check_quality(run_tests)
-- L161: def build_report(root, run_tests)
-- L188: def main()
+- L33: def _check_quality(run_tests)
+- L37: def build_report(root, run_tests)
+- L41: def main()
+
+## `scripts/ops/sprint_kickoff_validator.py`
+
+- L21: class ProcessSafety
+- L25: def resolve_python()
+- L28: def run_trusted(command)
+- L32: class SprintKickoffConfig
+- L40: def sprint_name(self)
+- L44: def sprint_title(self)
+- L48: def sprint_document_title(self)
+- L52: def required_files(self)
+- L61: def yaml_files(self)
+- L65: def required_task_labels(self)
+- L76: def required_workflow_snippets(self)
+- L88: def safe_yaml_load(path)
+- L93: def check_quality_regression(run_tests)
+- L125: def _file_check(root, config)
+- L134: def _syntax_checks(root, config)
+- L146: def _load_mapping(path)
+- L156: def _backlog_contract_check(root, config)
+- L171: def _hook_check(root, config)
+- L191: def _contains_check(root, rel_path, required, check_id, subject)
+- L204: def _pipeline_check(root, config)
+- L214: def _local_tasks_check(root, config)
+- L224: def _plan_scope_check(root, config)
+- L240: def _state_evidence_check(root, config)
+- L252: def _progress_alignment_check(root, config)
+- L269: def build_kickoff_report(root, config, quality_check, run_tests)
 
 ## `scripts/ops/sprint_state_sync.py`
 
@@ -4846,6 +4841,11 @@ This is a lightweight map for navigation, not a full source dump.
 - L63: def test_azure_alerts_runner_rejects_public_listener_before_start(tmp_path)
 - L98: def test_azure_alerts_docs_do_not_recommend_public_listener_without_secret()
 
+## `tests/test_bot_cd_disk_recovery.py`
+
+- L11: def test_bot_cd_recovers_disk_without_deleting_named_volumes()
+- L26: def test_bot_and_dashboard_share_one_built_image()
+
 ## `tests/test_bot_vps_bootstrap_security.py`
 
 - L8: def _script_text()
@@ -4947,6 +4947,11 @@ This is a lightweight map for navigation, not a full source dump.
 - L80: def test_timer_uses_the_canonical_catalog_action_name()
 - L91: def test_combat_and_loot_use_canonical_catalog_actions()
 - L107: def test_domain_protocol_and_planner_boundary_with_real_lua(tmp_path)
+
+## `tests/test_ctoa_helper_magic_shooter_direction.py`
+
+- L13: def test_exori_min_selects_best_facing_and_beats_exori_for_two_aligned_mobs(tmp_path)
+- L56: def test_magic_shooter_turns_before_directional_cast()
 
 ## `tests/test_ctoa_helper_otclient_observation_adapter.py`
 
@@ -5143,19 +5148,24 @@ This is a lightweight map for navigation, not a full source dump.
 
 ## `tests/test_engine_brain_index.py`
 
-- L11: def test_release_evidence_summary_exposes_helper_sandbox_queue(tmp_path)
-- L60: def test_engine_brain_index_writes_secret_safe_outputs(tmp_path)
-- L376: def test_source_needles_check_blocks_missing_contract_markers(tmp_path, monkeypatch)
-- L392: def test_p6_installed_plugin_cache_check_matches_local_manifest(tmp_path, monkeypatch)
-- L434: def test_p6_plugin_mcp_absolute_script_check_requires_runnable_absolute_arg(tmp_path, monkeypatch)
-- L473: def test_p6_plugin_status_script_reports_ready_for_current_workspace()
-- L514: def test_p6_plugin_self_check_reports_ready_for_current_workspace()
-- L575: def test_p7_operator_brief_reports_next_safe_step()
-- L697: def test_p6_control_center_cockpit_script_reports_read_only_status()
-- L778: def write_cockpit_preflight_fixture(root)
-- L1003: def test_p6_plugin_cockpit_blocks_bootstrap_only_dry_run_smoke(tmp_path)
-- L1037: def test_p6_plugin_mcp_server_exposes_expected_tools_and_audited_safe_write(tmp_path)
-- L1598: def test_p6_plugin_safe_write_blocks_without_cockpit_preflight(tmp_path)
+- L22: def _assert_ready_smoke(smoke, minimum_checks)
+- L33: def _value(payload, modern_key, legacy_key)
+- L38: def _assert_operator_brief_contract(payload)
+- L83: def _assert_cockpit_contract(payload)
+- L118: def _assert_safe_write_response(payload, action, dry_run)
+- L138: def test_release_evidence_summary_exposes_helper_sandbox_queue(tmp_path)
+- L187: def test_engine_brain_index_writes_secret_safe_outputs(tmp_path)
+- L507: def test_source_needles_check_blocks_missing_contract_markers(tmp_path, monkeypatch)
+- L523: def test_p6_installed_plugin_cache_check_matches_local_manifest(tmp_path, monkeypatch)
+- L565: def test_p6_plugin_mcp_absolute_script_check_requires_runnable_absolute_arg(tmp_path, monkeypatch)
+- L605: def test_p6_plugin_status_script_reports_ready_for_current_workspace()
+- L647: def test_p6_plugin_self_check_reports_ready_for_current_workspace()
+- L712: def test_p7_operator_brief_reports_next_safe_step()
+- L735: def test_p6_control_center_cockpit_script_reports_read_only_status()
+- L757: def write_cockpit_preflight_fixture(root)
+- L983: def test_p6_plugin_cockpit_blocks_bootstrap_only_dry_run_smoke(tmp_path)
+- L1019: def test_p6_plugin_mcp_server_exposes_expected_tools_and_audited_safe_write(tmp_path)
+- L1340: def test_p6_plugin_safe_write_blocks_without_cockpit_preflight(tmp_path)
 
 ## `tests/test_engine_brain_pack.py`
 
@@ -5359,6 +5369,13 @@ This is a lightweight map for navigation, not a full source dump.
 - L128: def test_lab003_mobile_proxy_rejects_remote_base_url_before_password_lookup()
 - L137: def test_lab003_webhook_smoke_rejects_remote_http_before_env_transfer()
 - L152: def test_lab003_validate_bundle_rejects_unsafe_base_url_before_child_process()
+
+## `tests/test_link_check_docs.py`
+
+- L6: def test_iter_markdown_files_excludes_runtime_and_dependency_trees(tmp_path)
+- L17: def test_find_broken_links_checks_relative_targets_and_ignores_uris(tmp_path)
+- L33: def test_find_broken_links_handles_encoded_paths_titles_and_anchors(tmp_path)
+- L46: def test_repository_markdown_links_are_valid()
 
 ## `tests/test_llm_provider_url_security.py`
 
@@ -5679,9 +5696,9 @@ This is a lightweight map for navigation, not a full source dump.
 ## `tests/test_otclient_helper_next_modules_plan.py`
 
 - L7: def test_next_modules_plan_is_safe_and_ordered()
-- L100: def test_vbot_import_review_keeps_source_required_contract()
-- L121: def test_next_modules_plan_markdown_calls_out_runtime_blockers()
-- L180: def test_next_modules_plan_writes_atomic_json_and_markdown(tmp_path)
+- L103: def test_vbot_import_review_keeps_source_required_contract()
+- L124: def test_next_modules_plan_markdown_calls_out_runtime_blockers()
+- L184: def test_next_modules_plan_writes_atomic_json_and_markdown(tmp_path)
 
 ## `tests/test_otclient_helper_profile_audit.py`
 
@@ -5834,17 +5851,17 @@ This is a lightweight map for navigation, not a full source dump.
 
 ## `tests/test_powershell_launcher_security.py`
 
-- L13: def test_control_center_opener_restricts_url_protocols()
-- L33: def test_ctoa_cli_control_center_restricts_url_before_probe_or_open()
-- L54: def test_ctoa_cli_up_binds_mobile_console_to_loopback()
-- L65: def test_mobile_console_operator_docs_do_not_recommend_public_dev_bind()
-- L75: def test_ctoa_cli_uses_explicit_file_path_for_generated_helper_html()
-- L84: def test_ctoa_cli_uses_official_wrapper_for_helper_operations()
-- L97: def test_control_center_opener_rejects_traversal_urls_at_runtime()
-- L121: def test_control_center_opener_rejects_backslash_urls_at_runtime()
-- L145: def test_ctoa_cli_rejects_control_center_traversal_env_url_before_probe()
-- L168: def test_kamil_launcher_restricts_client_path_and_profile_override()
-- L181: def test_kamil_launcher_keeps_macro_studio_on_repo_local_python()
+- L17: def test_control_center_opener_restricts_url_protocols()
+- L37: def test_ctoa_cli_control_center_restricts_url_before_probe_or_open()
+- L58: def test_ctoa_cli_up_binds_mobile_console_to_loopback()
+- L69: def test_mobile_console_operator_docs_do_not_recommend_public_dev_bind()
+- L79: def test_ctoa_cli_uses_explicit_file_path_for_generated_helper_html()
+- L88: def test_ctoa_cli_uses_official_wrapper_for_helper_operations()
+- L102: def test_control_center_opener_rejects_traversal_urls_at_runtime()
+- L127: def test_control_center_opener_rejects_backslash_urls_at_runtime()
+- L152: def test_ctoa_cli_rejects_control_center_traversal_env_url_before_probe()
+- L175: def test_kamil_launcher_restricts_client_path_and_profile_override()
+- L188: def test_kamil_launcher_keeps_macro_studio_on_repo_local_python()
 
 ## `tests/test_process_safety.py`
 
@@ -5907,14 +5924,14 @@ This is a lightweight map for navigation, not a full source dump.
 
 ## `tests/test_response_guardrails.py`
 
-- L20: def test_prompt_library_declares_response_guardrails()
-- L30: def test_agent_roster_declares_response_guardrails()
-- L40: def test_hidden_reasoning_markers_are_rejected()
-- L48: def test_empty_follow_up_is_rejected()
-- L55: def test_meta_correction_is_rejected()
-- L62: def test_direct_corrected_answer_passes()
-- L72: def test_operational_structure_missing_sections_is_rejected()
-- L80: def test_operational_structure_facts_inference_next_step_passes()
+- L18: def test_prompt_library_declares_response_guardrails()
+- L28: def test_agent_roster_declares_response_guardrails()
+- L38: def test_hidden_reasoning_markers_are_rejected()
+- L46: def test_empty_follow_up_is_rejected()
+- L53: def test_meta_correction_is_rejected()
+- L60: def test_direct_corrected_answer_passes()
+- L70: def test_operational_structure_missing_sections_is_rejected()
+- L78: def test_operational_structure_facts_inference_next_step_passes()
 
 ## `tests/test_runner_agent_db_security.py`
 
@@ -6140,13 +6157,13 @@ This is a lightweight map for navigation, not a full source dump.
 
 ## `tests/test_sprint_validator_contracts.py`
 
-- L12: def validator_case(request)
-- L22: def _write_validator_workspace(root, sprint, task_ids)
-- L86: def _failed_ids(report)
-- L94: def test_sprint_validators_pass_for_complete_workspace(tmp_path, monkeypatch, validator_case)
-- L105: def test_sprint_validators_flag_missing_local_tasks(tmp_path, monkeypatch, validator_case)
-- L117: def test_sprint066_quality_check_reports_pytest_failure(monkeypatch)
-- L138: def test_sprint066_main_writes_json_and_reports_fail(monkeypatch, tmp_path, capsys)
+- L19: def validator_case(request)
+- L29: def _write_validator_workspace(root, sprint, task_ids)
+- L98: def _failed_ids(report)
+- L106: def test_sprint_validators_pass_for_complete_workspace(tmp_path, monkeypatch, validator_case)
+- L117: def test_sprint_validators_flag_missing_local_tasks(tmp_path, monkeypatch, validator_case)
+- L129: def test_sprint066_quality_check_reports_pytest_failure(monkeypatch)
+- L150: def test_sprint066_main_writes_json_and_reports_fail(monkeypatch, tmp_path, capsys)
 
 ## `tests/test_static_security_scan_contract.py`
 

@@ -33,10 +33,10 @@ Out of scope:
 - Broad process redesign outside the experiment lane
 
 ## Dependencies
-- [docs/operating-model.md](docs/operating-model.md)
-- [docs/SPRINT_GOVERNANCE.md](docs/SPRINT_GOVERNANCE.md)
-- [docs/experiments/decision-memo-template.md](docs/experiments/decision-memo-template.md)
-- [docs/experiments/daily-experiment-scorecard.md](docs/experiments/daily-experiment-scorecard.md)
+- [docs/operating-model.md](../../docs/operating-model.md)
+- [docs/SPRINT_GOVERNANCE.md](../../docs/SPRINT_GOVERNANCE.md)
+- [docs/experiments/decision-memo-template.md](../../docs/experiments/decision-memo-template.md)
+- [docs/experiments/daily-experiment-scorecard.md](../../docs/experiments/daily-experiment-scorecard.md)
 
 ## Acceptance Criteria
 - Every experiment must declare hypothesis, owner, timebox, metric, and rollback path.

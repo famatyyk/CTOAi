@@ -1,6 +1,6 @@
 # 7-Day Agent Experiment Week Plan
 
-This plan uses the active 10-agent roster from [agents/ctoa-agents.yaml](agents/ctoa-agents.yaml). The goal is to run a bounded experiment week without weakening the delivery lane.
+This historical plan uses the roster defined in [agents/ctoa-agents.yaml](../../agents/ctoa-agents.yaml). The goal is to run a bounded experiment week without weakening the delivery lane.
 
 ## Week Rules
 1. Maximum 2 active experiments at the same time.

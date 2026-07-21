@@ -1,8 +1,8 @@
 # CTOAi Engine Brain Pack
 
-Generated at: `2026-07-11T07:10:44+00:00`
+Generated at: `2026-07-21T07:37:26+00:00`
 Repo root: `C:\Users\zycie\CTOAi`
-Profile: `helper`
+Profile: `control-center`
 
 This pack is curated and secret-safe. It excludes `.env*`, auth stores,
 runtime data, logs, local databases, tokens, credentials, and generated
@@ -1435,238 +1435,307 @@ Once available:
 ```
 
 
-## `AI/LUA_INDEX.md`
+## `AI/API_INDEX.md`
 
 ```markdown
-# Lua Index
+# API Index
 
-## Standalone Lua Modules
+## FastAPI Surface
 
-Source folder: `scripts/lua/`
+Source: `api/main.py`
 
-- `auto_heal.lua`: `AutoHeal.shouldCast`, `AutoHeal.nextAction`.
-- `event_logger.lua`: JSONL event shaping through `EventLogger`.
-- `loot_filter.lua`: allow/deny loot decision helpers.
-- `pathing_helper.lua`: route normalization, next waypoint, blocked retry.
-- `supply_manager.lua`: supply threshold checks and refill action.
-- `target_priority.lua`: target scoring and priority selection.
-- `safety_interrupt.lua`: critical-state interrupt action.
-- `telemetry_exporter.lua`: JSONL telemetry serialization.
-- `ctoa_hotkey_status.lua`: periodic hotkey status file/log emission.
-- `ctoa_path_probe.lua`: runtime path probe.
-- `module_reporter.lua`: periodic module status log.
-- `proximity_watch.lua`: player proximity alert.
-- `status_beacon.lua`: HP/mana status beacon.
-- `emergency_heal.lua`: simple emergency heal loop.
+Known endpoints:
 
-Standalone modules often assume a generic runtime API such as `Player`, `Game`,
-`Creature`, and `register("onThink", ...)`. Keep these separate from OTClient
-native modules unless an adapter layer is written.
+- `GET /health`
+- `GET /api/status`
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `GET /api/auth/me`
+- `POST /api/community/invite`
+- `POST /api/community/invite/accept`
+- `GET /api/community/members`
+- `POST /api/community/members/{username}/role`
+- `GET /api/community/feed`
+- `GET /api/community/invites`
+- `GET /api/release-evidence`
+- `POST /api/chat`
+- `POST /v1/chat/completions`
+- `GET /api/safety/metrics`
+- `GET /api/safety/telemetry`
+- `GET /api/safety/status`
 
-## OTClient Native Lua Modules
+## Request Models
 
-Source tree: `scripts/lua/otclient/`
+- `Message`
+- `ChatRequest`
+- `OpenAIChatRequest`
+- `RegisterRequest`
+- `LoginRequest`
+- `InviteRequest`
+- `AcceptInviteRequest`
+- `RoleUpdateRequest`
 
-- `ctoa_otclient_loader.lua`
-- `ctoa_native_helper.lua`
-- `ctoa_native_combat.lua`
-- `ctoa_native_heal.lua`
-- `ctoa_native_loot.lua`
-- `ctoa_ek_profile.lua`
+## Important Environment Variables
 
-Native modules use OTClient globals:
+- `CTOA_ENV`
+- `CTOA_LOCAL_MODEL_URL`
+- `CTOA_LOCAL_MODEL_NAME`
+- `CTOA_MODEL_SMALL`
+- `CTOA_MODEL_LARGE`
+- `CTOA_SMALL_MODEL_URL`
+- `CTOA_LARGE_MODEL_URL`
+- `CTOA_SMALL_API_KEY`
+- `CTOA_LARGE_API_KEY`
+- `CTOA_ROUTE_DEFAULT`
+- `CTOA_ROUTER_LONG_CHARS`
+- `CTOA_ROUTER_LONG_TURNS`
+- `CTOA_QUALITY_RETRY`
+- `CTOA_ROUTER_LOG`
+- `CTOA_RELEASE_EVIDENCE_FILE`
+- `CTOA_AUTH_STORE_FILE`
+- `CTOA_AUTH_REQUIRED`
+- `CTOA_API_SELF_REGISTER_ENABLED`
+- `CTOA_API_SELF_REGISTER_CODE`
+- `CTOA_JWT_SECRET`
+- `CTOA_JWT_TTL_SECONDS`
+- `CTOA_RATE_LIMIT_ENABLED`
+- `CTOA_TRUST_PROXY_HEADERS`
+- `CTOA_CHAT_RATE_LIMIT_PER_MIN`
+- `CTOA_AUTH_RATE_LIMIT_PER_MIN`
+- `CTOA_READ_RATE_LIMIT_PER_MIN`
+- `CTOA_AUDIT_LOG_FILE`
+- `CTOA_SAFETY_TELEMETRY_FILE`
+- `CTOA_SAFETY_ALERT_THRESHOLD`
 
-- `g_game`
-- `g_map`
-- `g_ui`
-- `g_keyboard`
-- `g_resources`
-- `g_clock`
-- `connect`
-- `cycleEvent`
-- `scheduleEvent`
-- `addEvent`
-- `removeEvent`
+## Behavior Rules
 
-## Helper Config Areas
+- Production must have a non-default `CTOA_JWT_SECRET`.
+- Production public member self-registration is disabled unless
+  `CTOA_API_SELF_REGISTER_ENABLED=true` and `CTOA_API_SELF_REGISTER_CODE` are
+  configured.
+- `/api/auth/register` cannot create `owner` or `operator` accounts without an
+  authenticated owner token, even when the auth store is empty.
+- Rate limiting is grouped by endpoint type.
+- Rate limiting and HTTP audit IP identity use the socket client by default.
+  `X-Forwarded-For` is trusted only when `CTOA_TRUST_PROXY_HEADERS=true`, and
+  then only the first syntactically valid forwarded IP is accepted.
+- Audit logging writes JSONL-style HTTP audit entries.
+- HTTP audit entries redact token/password/API-key/Bearer forms and collapse
+  local absolute paths in actor, IP, user-agent, request path, and nested meta
+  before writing `CTOA_AUDIT_LOG_FILE`.
+- Chat execution selects model/backend based on request complexity and route
+  settings.
+- Safety sanitizer records interventions and masks unsafe assistant claims.
+- Release evidence reads from `CTOA_RELEASE_EVIDENCE_FILE` or default
+  `runtime/release/latest-approval.json`, with bounded JSON reads,
+  display-safe `evidence_path`, recursive token/password/API-key redaction, and
+  local absolute path collapse before browser response.
 
-`HELPER_CONFIG` in `ctoa_native_helper.lua` owns:
+## Test Guidance
 
-- global enable state
-- safe boot runtime disable flag
-- helper hotkey
-- auto hide
-- window position
-- theme preset
-- compact mode
-- healing settings
-- combat/targeting settings
-- tools settings
-- cavebot waypoints and movement
-- HUD preferences
-- smoke tab/subtab state
+When touching `api/main.py`, prefer targeted API tests for:
 
-## Profile Files
-
-`ctoa_ek_profile.lua` is generated by `scripts/ops/ctoa_otprofile_builder.py`.
-The helper loads profile candidates from user/module paths and merges them into
-`HELPER_CONFIG`.
-
-Profile saves are ordered by:
-
-- `PROFILE_KEY_ORDER`
-- `UI_PREFS_KEY_ORDER`
-- `HEALING_KEY_ORDER`
-- `TOOLS_KEY_ORDER`
-- `HUD_KEY_ORDER`
-- `ROTATION_KEY_ORDER`
-- `HEAL_SPELL_KEY_ORDER`
-- `WAYPOINT_KEY_ORDER`
-
-Preserve this order when changing profile persistence.
-
-## Hook Patterns
-
-- Generic scripts: `register("onThink", onThink)`.
-- OTClient events: `connect(LocalPlayer, {...})`,
-  `connect(Creature, {...})`, `connect(Container, {...})`,
-  `connect(Map, {...})`, `connect(g_game, {...})`.
-- Periodic OTClient loops: `cycleEvent(onThink, interval_ms)`.
-
-## Validation
-
-Minimum checks:
-
-- Syntax parse with `luac -p` when available.
-- Fallback bracket/sanity checks when `luac` is not available.
-- Manual OTClient load smoke for helper/UI/hotkey work.
-- Fresh `ctoa_local.log` lines for loader/helper changes.
+- auth required vs disabled
+- role checks
+- rate limit groups
+- audit logging side effects
+- chat model route selection
+- safety sanitizer output
+- release evidence missing/invalid/valid states
 ```
 
 
-## `AI/OTCLIENT_INDEX.md`
+## `AI/ARCHITECTURE_INDEX.md`
 
 ```markdown
-# OTClient Index
+# Architecture Index
 
-## Package Contents
+## High-Level Flow
 
-`scripts/lua/otclient/` contains the canonical helper source files:
+```mermaid
+flowchart LR
+  Sources["Server/game data"] --> Ingest["runner/agents/ingest_agent.py"]
+  Ingest --> DB["runner/agents/db.py"]
+  DB --> Brain["runner/agents/brain_v2.py"]
+  Brain --> Generator["runner/agents/generator_agent.py"]
+  Generator --> Validator["runner/agents/validator_agent.py"]
+  Validator --> Publisher["runner/agents/publisher_agent.py"]
+  Publisher --> Artifacts["Generated Lua/Python artifacts"]
+  API["api/main.py"] --> Chat["local/OpenAI-compatible model routing"]
+  Web["web Control Center"] --> API
+  OTClient["scripts/lua/otclient/"] --> Helper["ctoa_native_helper.lua"]
+```
 
-- `ctoa_otclient.otmod`
-- `ctoa_otclient_loader.lua`
-- `ctoa_native_helper.lua`
-- `ctoa_native_combat.lua`
-- `ctoa_native_heal.lua`
-- `ctoa_native_loot.lua`
-- `ctoa_ek_profile.lua`
-- `README.md`
+## Main Subsystems
 
-## Module Definition
+### API and Control Plane
 
-`ctoa_otclient.otmod`:
+- `api/main.py` is the main FastAPI app.
+- It owns auth, chat routing, community endpoints, safety telemetry, release
+  evidence, and OpenAI-compatible chat completion compatibility.
+- Web Control Center helpers are under `web/src/lib/`.
 
-- name: `ctoa_otclient`
-- description: `CTOA OTClient helper and native automation modules`
-- version: `1.1b`
-- `autoLoad: true`
-- `autoLoadPriority: 1000`
-- script: `ctoa_otclient_loader`
+### Agent Pipeline
 
-## Loader
+- Catalog discovers candidate servers.
+- Ingest stores server/game data.
+- Brain plans modules.
+- Generator renders modules.
+- Validator checks syntax and quality.
+- Publisher moves validated output to delivery surfaces.
 
-`ctoa_otclient_loader.lua`:
+### Local Bot Runtime
 
-- Creates/reuses `_G.CTOA_OTCLIENT`.
-- Version: `1.1b`.
-- Main helper module: `ctoa_native_helper.lua`.
-- Load delay: `1500 ms`.
-- Resolves helper from resource/workdir candidate paths.
-- Connects to `g_game.onGameStart` and `g_game.onGameEnd`.
-- Schedules helper load through `scheduleEvent` or `addEvent` fallback.
-- Logs through game console when available.
-- Runtime modules are skipped by loader; helper UI is loaded first.
+- Perception: screen/window/memory parsing.
+- Action: movement, combat, loot, spell rotation.
+- Safety: scheduler/session/humanizer.
+- Overlay: runtime status and macro UI.
 
-## Helper
+### Hybrid Bot Runtime
 
-`ctoa_native_helper.lua`:
+- Higher-level gameplay loop with vision, templates, pathfinding, command
+  execution, and metrics.
+- Intended to bridge manual, hybrid, and autonomous modes.
 
-- Owns `HELPER_CONFIG`, `Helper`, UI style/theme/layout tables, widgets, and
-  runtime state.
-- Loads `ctoa_ek_profile.lua` from candidate user/module paths.
-- Applies safe boot by disabling runtime action modules unless profile opts out.
-- Builds helper window, tabs, settings rows, tools panels, HUD, and profile UI.
-- Binds helper hotkey, default `Ctrl+J`.
-- Uses `cycleEvent(onThink, HELPER_CONFIG.tick_ms)`.
-- Exposes:
-  - `Helper.showTab(tab)`
-  - `Helper.onThink(self)`
-  - `Helper.reloadProfile()`
-  - `Helper.runMovementApiProbe()`
-  - `Helper.runMagicApiProbe()`
-  - `Helper.runApiProbe()`
-  - `Helper.setEnabled(enabled)`
-- Current helper version: `v1.1b`.
-- API v1.1b adds a central safe API registry probe for core, player/vitals,
-  movement/pathing, combat, magic/runes, UI/resources, and container/loot APIs.
-- Magic v1.1b keeps the safe API probe, versioned HUD/footer text, and a Magic
-  tab `Rune box` actionbar selector.
-- Ensures `_G.CTOA_Manager` exists and registers module `helper`.
+### OTClient Native Runtime
 
-## Combat
+- Loader only loads the helper by default.
+- Helper owns config, UI, HUD, profile save/load, runtime toggles, and manager
+  registration.
+- Native combat/heal/loot modules provide direct OTClient event/API examples.
 
-`ctoa_native_combat.lua`:
+## Integration Points
 
-- Config: `DEFAULT_COMBAT_CONFIG`.
-- Runtime state: `Combat`.
-- Guards offline, disabled, PZ, no local player, invalid targets.
-- Finds targets through `g_map.getSpectatorsInRange` or
-  `g_map.getCreaturesInRange`.
-- Scores by priority names, distance, and validity.
-- Uses `g_game.attack(target)` and optional `g_game.follow(target)`.
-- Clears with `cancelAttack`, `stopAttack`, `attack(nil)`, `follow(nil)` where
-  available.
-- Uses `cycleEvent(onThink, 100)`.
-- Connects `Creature.onDeath`.
+- `scripts/lua/otclient/` is the canonical OTClient helper source tree.
+- `scripts/lua/*.lua` contains small standalone generated/runtime Lua modules.
+- `prompts/mmo-lua-pack.yaml` defines prompt quality expectations for MMO Lua.
+- `runner/agents/generator_agent.py` emits Lua templates.
+- `runner/agents/validator_agent.py` validates generated Lua/Python output.
 
-## Heal
+## Trust Boundaries
 
-`ctoa_native_heal.lua`:
+- Local secrets: `.env`, runtime auth store, JWT secret, local DB state.
+- External model backends: configured through `CTOA_*MODEL*` environment
+  variables.
+- OTClient native API: not uniform across forks; always guard calls.
+- TFS protocol: unknown until source is provided.
+```
 
-- Config: `HEAL_SETTINGS`.
-- Cooldown: `HEAL_COOLDOWN = 1000`.
-- Uses `g_game.talk(spell)` for heal/mana spells.
-- Connects `LocalPlayer.onHealthChanged` and `LocalPlayer.onManaChanged`.
 
-## Loot
+## `docs/CTOA_CLI.md`
 
-`ctoa_native_loot.lua`:
+```markdown
+# CTOAi CLI (MVP)
 
-- Config: `LOOT_CONFIG`.
-- Uses `VALUABLE_LOOT` item id map.
-- Connects `Container.onOpen` and `Map.onItemAppear`.
-- Scans container/item events and moves valuable items when supported.
+Single entrypoint for day-to-day operations using short commands.
 
-## Profile
+## Entry point
 
-`ctoa_ek_profile.lua`:
+Run from repository root:
 
-- Generated by `scripts/ops/ctoa_otprofile_builder.py`.
-- Default hotkey: `Ctrl+J`.
-- Potion hotkey: `F1`.
-- Mana potion hotkey: `F2`.
-- Rune hotkey: `F5`.
-- Contains healing, combat, tools, rune, and profile settings for EK use.
+```powershell
+.\ctoa.ps1 help
+```
 
-## Manual Smoke
+## Command legend
 
-1. Put package files under the OTClient module/user directory.
-2. Ensure loader is called by OTClient module autoload or `init.lua`.
-3. Start OTClient.
-4. Confirm `[CTOA-OTC]` or helper log line appears.
-5. Toggle helper with configured hotkey.
-6. Confirm runtime remains disabled in safe boot unless explicitly enabled.
-7. Check fresh `ctoa_local.log` lines.
+- `menu` (`m`) - interactive command picker for the most common workflows
+- `next` (`nx`) - show the recommended next step and current review lane
+- `cc` (`control-center`) - open the visual Control Center and start web dev if needed
+- `dev` - developer profile; starts mobile console in dev mode
+- `ops` - operator profile; runs core/risk/sprint health checks
+- `prod` - production profile; runs update gate and sprint-029 validation
+- `status` (`s`) - combined snapshot: local guards + VPS services + dashboard health
+- `up` - start mobile console in dev mode (`uvicorn` on port `8787`)
+- `test` (`t`) - run local test suite (excludes `tests/e2e`)
+- `val <sprint>` (`v`) - run sprint validator and write CI artifact JSON
+- `nightly [sprint]` (`n`) - run nightly stability batch for sprint (default `029`)
+- `doctor` (`d`) - run core guard + runtime freeze guard + sprint-029 validator
+- `vps <action>` - run VPS operation via `scripts/ops/ctoa-vps.ps1 -Action <action>`
+- `runner <status|restart|logs>` - runner service shortcuts
+- `report <status|restart|now|logs>` - report service shortcuts
+- `mobile <status|restart|logs>` - mobile service shortcuts
+- `logs <runner|health|agents|report|mobile>` - logs shortcuts
+- `dash snap` - VPS dashboard snapshot
+- `report now` - publish report via service environment
+- `otprofile "<opis profilu EK>"` - generate and deploy an OTClient EK profile
+- `otpreview` - render and open the helper UI preview
+- `otmockup` - render and open the helper UI mockup
+- `otdeploy approve-live` - promote the staged Helper through the official wrapper after all release gates pass
+- `otest` - run `ValidateDev` through the official wrapper and open the local preview; never touches live
+- `brain refresh` - regenerate secret-safe Engine Brain file tree and symbol map
+- `brain doctor` - run secret-safe Engine Brain environment audit
+- `brain pack [all|helper|control-center|infra|security]` - build a portable secret-safe Engine Brain markdown pack
+
+## Practical examples
+
+```powershell
+# Interactive start
+.\ctoa.ps1 next
+.\ctoa.ps1 cc
+.\ctoa.ps1 menu
+
+# Profiles
+.\ctoa.ps1 dev
+.\ctoa.ps1 ops
+.\ctoa.ps1 prod
+
+# Unified status snapshot
+.\ctoa.ps1 status
+
+# Quick startup
+.\ctoa.ps1 up
+
+# Fast validation loop
+.\ctoa.ps1 t
+.\ctoa.ps1 v 029
+
+# Daily health check
+.\ctoa.ps1 d
+
+# VPS operations
+.\ctoa.ps1 runner status
+.\ctoa.ps1 report restart
+.\ctoa.ps1 mobile logs
+.\ctoa.ps1 logs health
+.\ctoa.ps1 vps ValidateServices
+.\ctoa.ps1 dash snap
+.\ctoa.ps1 report now
+.\ctoa.ps1 otprofile "EK monk, bez aoe na 1, exeta od 2 visible, potion F1 heal 80"
+.\ctoa.ps1 otest
+.\ctoa.ps1 otdeploy approve-live
+.\ctoa.ps1 brain refresh
+.\ctoa.ps1 brain doctor
+.\ctoa.ps1 brain pack
+.\ctoa.ps1 brain pack helper
+```
+
+## Rule for adding aliases
+
+If you run any command manually more than 2 times, add a dedicated alias to `ctoa.ps1`.
+
+This keeps operations centralized and reduces context switching across scripts/tasks/web UIs.
+
+## Shared command vocabulary (CLI + Web)
+
+Command dictionary source:
+
+- `schemas/ctoa-command-dictionary.json`
+
+Web/API exposure:
+
+- `GET /api/commands/dictionary`
+
+This keeps dashboard/web and CLI aligned to the same command names and meanings.
+
+## Suggested daily usage
+
+- Start with `menu` if you do not remember the command.
+- Start with `next` if you are overloaded and need one concrete recommendation.
+- Use `cc` when you need the visual cockpit instead of reading code or scripts; it starts web dev if port 3000 is not responding.
+- Use `dev` when you are building locally.
+- Use `ops` when you want a quick operational snapshot.
+- Use `prod` before release-facing work.
 ```
 
 
@@ -1675,7 +1744,7 @@ Minimum checks:
 ```markdown
 # CTOAi Three Development Plans
 
-Basis: full workspace audit with `41791` inventoried files and `1392` git-tracked files.
+Basis: full workspace audit with `48323` inventoried files and `1325` git-tracked files.
 
 ## Plan 1: Helper-First Productization
 
@@ -1763,3529 +1832,14 @@ Goal: make `AI/` the local, secret-safe planning/context layer and evolve it int
 ```
 
 
-## `docs/otclient/solteria_helper_development_plan.md`
-
-```markdown
-# Solteria Helper Development Plan
-
-## Objective
-
-Build new Helper features in an isolated lane first, then promote them to the
-live Solteria client only after static validation, sandbox smoke, and log
-evidence pass.
-
-## Non-Interference Rule
-
-The active play client under:
-
-```text
-C:\Users\zycie\AppData\Local\Solteria\client
-```
-
-must not be restarted, stopped, or overwritten during normal development work.
-Development work uses:
-
-```text
-runtime\solteria_helper_dev
-C:\Users\zycie\AppData\Local\SolteriaCodexTest\client
-```
-
-Sandbox operations must keep `SandboxClient` under `%LOCALAPPDATA%` with
-separator-aware path containment, and `SandboxClient` must not equal or sit
-inside `SourceClient`. This prevents manual smoke/status/stop commands from
-aliasing the live Solteria client.
-
-Use `PrepareDev` and `ValidateDev` first. Use live copy only when the user
-explicitly asks to deploy to the active play client.
-
-## Environment Commands
-
-Prepare a package and manifest without launching a client:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action PrepareDev
-```
-
-Run static validation without touching the live client:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action ValidateDev
-```
-
-Prepare the sandbox client without touching the live client:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action Setup
-```
-
-Verify sandbox files match the staged dev package without launching a client:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokePreflight
-```
-
-Inspect sandbox smoke readiness without launching or stopping a client:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeStatus
-```
-
-Refresh and print the full development goal status without launching or stopping
-a client:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action GoalStatus
-```
-
-Only the sandbox client should be launched for interactive smoke:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action Launch
-```
-
-## Promotion Gates
-
-1. `PrepareDev` writes a fresh package under `runtime\solteria_helper_dev`.
-2. `PrepareDev` writes `manifest.json`, `CHANGELOG.md`, `validation.json`, and
-   a versioned ZIP without touching the live client.
-3. `ValidateDev` passes helper/API/report tests, static UI preview, and API
-   catalog refresh.
-4. `SmokePreflight` verifies sandbox files match the staged dev package.
-5. Sandbox launch loads the Helper and writes fresh `ctoa_local.log` evidence.
-6. `SmokeAttachAll` passes after a sandbox test character is in-world.
-7. Only then copy to the active client with
-   `PromoteLiveCtoa -ApproveLiveDeploy`.
-
-## Feature Roadmap
-
-### P0: Development Lane
-
-- Keep `PrepareDev` and `ValidateDev` green.
-- Keep package manifest evidence current.
-  Status: the release gate verifies every staged file listed in
-  `manifest.json` still exists under `latest` and matches its SHA256.
-- Keep `CHANGELOG.md` and `validation.json` attached to every dev package.
-- Never use active play-client restart as the first validation step.
-
-### P1: Runtime Observability
-
-- Add an in-client diagnostics tab that renders the last API probe snapshot.
-  Status: `Tools / Diag` added in source; validate through `ValidateDev`.
-- Add bounded log export for HP/MP, movement, combat, magic, and container APIs.
-  Status: bounded diagnostics buffer and `ctoa_diag_export.lua` export added in
-  source; validate through `ValidateDev`.
-- Add feature flags for experimental modules.
-  Status: profile-backed flags added for diagnostics, cavebot, loot, and combat.
-
-### P2: Healing And Mana
-
-- Use real `LocalPlayer:getHealth/getMaxHealth/getMana/getMaxMana` reads first.
-  Status: `readPlayerVitals()` added in source; percent APIs are fallback only.
-- Keep spell rotation by HP thresholds.
-- Keep potion/rune selection actionbar-compatible: choose item/actionbar slot in
-  the same model as the client actionbar assignment flow.
-  Status: HP/MP/rune box selectors remain actionbar-slot backed, and runtime
-  item actions resolve `*_actionbar_slot` before legacy hotkey fields.
-
-### P3: CaveBot
-
-- Keep movement disabled separately from route editing.
-- Route editor first: add/current/delete/reorder waypoints without movement.
-  Status: add/delete/select/reorder controls added; editor functions only mutate
-  route/profile state and do not call movement APIs.
-- Movement execution only through `LocalPlayer:autoWalk(destination, retry)`.
-- Add stuck detection, retry budget, and PZ/offline guards before looped movement.
-  Status: movement runtime now checks offline/PZ/player-position guards, tracks
-  same-position retries, passes the retry flag into `LocalPlayer:autoWalk`, and
-  disables movement after the retry budget is reached while keeping the edited
-  route intact.
-
-### P4: Combat And Magic
-
-- Keep monster-only targeting guards.
-  Status: targeting clears non-monster/unsafe targets and retargets only
-  monster candidates inside configured range.
-- Add visible decision state for spell rotation, exeta, rune, and target lock.
-  Status: magic footer and HUD render the next action with target, action-lock,
-  exeta cooldown, and rune readiness/cooldown state.
-- Keep all offensive actions rate-limited and PZ-aware.
-  Status: offensive action execution rechecks PZ/runtime block, action lock, and
-  recovery gap before casting exeta, rotation spells, or rune actions.
-
-### P5: Packaging And Release
-
-- Build a versioned zip from canonical source files.
-  Status: `PrepareDev` stages canonical OTClient files and creates
-  `ctoa_otclient_<version>.zip` with SHA256 manifest evidence. The release gate
-  verifies the ZIP exists and its SHA256 matches `release_readiness.json`.
-- Generate a changelog from manifest + validation evidence.
-  Status: `ValidateDev` refreshes `CHANGELOG.md`, `validation.json`, and
-  `release_readiness.json` after tests, UI preview, and API audit pass. It also
-  writes `release_gate.json`, which stays `blocked` until `SmokePreflight`
-  passes, in-world `SmokeAttachAll` evidence exists, and live
-  approval/promotion evidence exists. The gate auto-discovers only
-  `solteria-helper-smokeall-inworld-*.json` reports, ignores modal-limited
-  coverage reports, and verifies that the report contains every expected helper
-  view with an existing screenshot file.
-- Promote to live only with explicit approval and fresh backup.
-  Status: live promotion is a separate `PromoteLiveCtoa` action that refuses to
-  run without `-ApproveLiveDeploy`, checks the existing strict `release_gate`
-  for the current staged package without regenerating the manifest, then writes
-  a fresh `live_backup_<timestamp>` with `backup_manifest.json`, copies staged
-  files without stopping, restarting, or launching the live client by default,
-  and records `live_promotion.json` as durable post-promotion evidence. A live
-  client launch after promotion is available only through the explicit
-  `-LaunchAfterPromote` switch; it starts the live executable when it is not
-  already running and never restarts an existing live client.
-- Prepare sandbox smoke without interfering with live play.
-  Status: `SmokePreflight` uses the latest staged package, creates one only
-  when it is missing, runs sandbox setup, verifies staged package hashes against
-  sandbox files, writes the current manifest fingerprint into
-  `smoke_preflight.json`, and does not launch, stop, or overwrite the live
-  client. The release gate blocks stale preflight evidence after a new manifest
-  is generated.
-- Inspect sandbox smoke state without changing client state.
-  Status: `SmokeStatus` writes `smoke_status.json` from existing sandbox
-  process/log state and does not launch, stop, or overwrite any client. It also
-  rejects a `SandboxClient` path that aliases `SourceClient`.
-- Inspect full goal state without changing client state.
-  Status: `GoalStatus` refreshes `release_gate.json` and `goal_audit.json`,
-  writes `goal_status.json`, prints P0-P5 status and the next command when a
-  next gate exists, and does not launch, stop, or overwrite any client.
-
-### P6: Module Lane And New Features
-
-- Keep the generated module workplan current before adding new helper behavior.
-  Status: `scripts/ops/otclient_helper_module_audit.py` writes
-  `runtime/solteria_helper_dev/module_audit.json` and
-  `docs/otclient/solteria_helper_module_workplan.md`.
-- Treat the 5k-line helper as a module host, not as the default place for new
-  behavior. New features must enter through a named lane with profile keys,
-  safe boot defaults, tests, sandbox smoke evidence, and release-gate evidence.
-- Extract or isolate shared domains before extending runtime behavior:
-  recovery/vitals, target guards, actionbar actions, diagnostics, and module
-  registry.
-- Convert placeholders in order: Heal Friend, Conditions diagnostics,
-  Equipment safe swaps, then Scripting policy shell.
-- Do not implement arbitrary scripting or live-client actions until the risk
-  model, audit logging, Control Center evidence, and targeted tests exist.
-  Status: this remains a planning lane; runtime enablement is blocked until the
-  module-specific gates in `solteria_helper_module_workplan.md` pass.
-
-### P7: Next Module Design Queue
-
-- Keep the supplemental next-module plan current after the extraction map is
-  complete.
-  Status: `scripts/ops/otclient_helper_next_modules_plan.py` writes
-  `runtime/solteria_helper_dev/next_modules_plan.json` and
-  `docs/otclient/solteria_helper_next_modules_plan.md`.
-- Treat local ZeroBot material as a capability/API reference, not as a visual
-  or runtime copy target.
-- Treat vBot or other external bot logic as `source_required` until the actual
-  source/archive is present, reviewed for provenance, and mapped into CTOAi
-  safe-boot gates.
-- Build the next functions in this order unless sandbox evidence changes the
-  priority: HUD overlay domain, hotkey normalization, confirmation modal
-  lifecycle, route engine split, target scorer split, then external vBot import
-  review.
-```
-
-
-## `docs/otclient/solteria_helper_test_env.md`
-
-```markdown
-# Solteria Helper Test Environment
-
-This sandbox runs a separate Solteria client from:
-
-```text
-C:\Users\zycie\AppData\Local\SolteriaCodexTest\client
-```
-
-It keeps mutable CTOA files, logs, and UI preferences separate from the normal play client:
-
-```text
-C:\Users\zycie\AppData\Local\Solteria\client
-```
-
-Large data folders/packages are linked to avoid duplicating the full client. The executable files are copied, not hardlinked, so the sandbox can run next to the normal client.
-
-## Commands
-
-Prepare a development package and manifest without launching, stopping, or
-overwriting the live play client:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action PrepareDev
-```
-
-Run static validation for the current development package without touching the
-live play client:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action ValidateDev
-```
-
-Prepare sandbox files:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action Setup -Tab healing
-```
-
-Verify sandbox files match the staged dev package without launching a client:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokePreflight
-```
-
-`SmokePreflight` uses the latest staged package and only creates a fresh one
-when the staged package is missing, so it does not reset a freshly passed
-`ValidateDev` report.
-
-Inspect current sandbox smoke readiness without launching or stopping a client:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeStatus
-```
-
-`SmokeStatus` writes `next_action` and `next_command` into
-`runtime\solteria_helper_dev\smoke_status.json` so the next safe operator step
-is explicit. The report is written atomically and uses simple process summaries
-so a blocked or closed sandbox does not leave a partial JSON file.
-
-Refresh the full development goal status without launching or stopping a
-client:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action GoalStatus
-```
-
-`GoalStatus` refreshes `release_gate.json` and `goal_audit.json`, writes
-`runtime\solteria_helper_dev\goal_status.json`, and prints P0-P5 status,
-current blockers, and the next safe command when a next gate still exists. It
-does not launch, stop, or overwrite any client.
-
-Emergency-disable CTOA modules in the normal live Solteria client when login is
-unstable:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action DisableLiveCtoa
-```
-
-Re-enable them after testing:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action EnableLiveCtoa
-```
-
-Launch the sandbox manually:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action Launch -Tab healing
-```
-
-Capture the current sandbox window without restarting or changing helper tabs:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action Snapshot
-```
-
-Check whether the sandbox is ready for in-world attach smoke:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action ReadyCheck
-```
-
-`ReadyCheck` writes `runtime\solteria_helper_dev\ready_check.json` for both
-success and blocker states. If the sandbox window is missing, or if the Select
-Character modal/helper-offline state blocks tab switching, the JSON records the
-status, latest smoke marker, screenshot path when available, and next safe
-command.
-
-Verify real HP/MP observation while the sandbox runtime is disarmed:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action HealingVitalsSmoke
-```
-
-This writes `runtime\solteria_helper_dev\healing_vitals_smoke.json`. It reads
-only the sandbox `ctoa_local.log`, requires a real bounded HP/mana API sample,
-and fails closed unless the latest runtime state is disarmed. It never casts,
-uses potions, arms runtime, launches a client, or touches the live client. After
-it passes, capture newer visual evidence with `SmokeAttach -Tab healing`.
-
-Verify the passive Combat/PZ/NPC safety lane with a fresh manual API probe:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action CombatSafetySmoke
-```
-
-This writes `runtime\solteria_helper_dev\combat_safety_smoke.json`. It combines
-the targeting and combat-runtime static reports with a fresh read-only sandbox
-probe, requires no active target, and requires runtime to be disarmed before and
-throughout the probe. It does not attack, follow, cast, use runes/items, or touch
-the live client. After it passes, refresh Hunting and Hunting/Magic evidence
-with `SmokeAttachAll`.
-
-Verify the CaveBot planner without walking or pathfinding:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action CavebotSafetySmoke
-```
-
-Verify one passive Timer planning tick while Timer and runtime remain disabled:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action TimerSafetySmoke
-```
-
-Verify read-only container capabilities while experimental Loot remains off:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action LootSafetySmoke
-```
-
-These reports require current static gates and disarmed runtime. CaveBot records
-capabilities and route guards only, Timer must return `hold_timer_disabled`,
-and Loot must return `hold_feature_flag_disabled` with zero planned items.
-Refresh their evidence with `SmokeAttach -Tab cavebot`,
-`SmokeAttach -Tab tools_timer`, and `SmokeAttach -Tab tools_diag`.
-
-Run the static Heal Friend no-target contract before enabling any sio path:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action HealFriendNoTargetSmoke
-```
-
-This writes `runtime\solteria_helper_dev\heal_friend_no_target_smoke.json` and
-checks the read-only observer, safe boot profile defaults, whitelist guard, and
-absence of `castSpell`, actionbar sends, and `g_game.talk` in the Heal Friend
-observer slice. It does not launch, stop, or overwrite any client.
-
-Run the static Conditions observer contract before enabling any condition
-recovery action:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action ConditionsObserverSmoke
-```
-
-This writes `runtime\solteria_helper_dev\conditions_observer_smoke.json` and
-checks the read-only state/API observer, safe boot profile defaults, and absence
-of `castSpell`, actionbar sends, and `g_game.talk` in the Conditions observer
-slice. It does not launch, stop, or overwrite any client.
-
-Run the static Equipment observer contract before enabling any ring, amulet, or
-weapon swap path:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action EquipmentObserverSmoke
-```
-
-This writes `runtime\solteria_helper_dev\equipment_observer_smoke.json` and
-checks the read-only inventory slot/API observer, safe boot profile defaults,
-and absence of `castSpell`, actionbar sends, `g_game.talk`, `g_game.move`,
-`moveTo`, item use, or inventory-use calls in the Equipment observer slice. It
-does not launch, stop, move gear, use items, or overwrite any client.
-
-Run the static Scripting policy contract before enabling any command model,
-snippet, or runtime eval path:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action ScriptingPolicySmoke
-```
-
-This writes `runtime\solteria_helper_dev\scripting_policy_smoke.json` and
-checks the deny-all profile defaults, forced-off runtime flags, blocked unsafe
-status text, and absence of `loadstring`, `dofile`, `require`, runtime calls,
-talk, casts, or actionbar sends in the Scripting policy slice. It does not
-launch, stop, evaluate snippets, run files, talk, cast, or overwrite any client.
-
-Run every static prototype-module gate with one command:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action ModuleStaticGates
-```
-
-This writes `runtime\solteria_helper_dev\module_static_gates.json` after running
-`HealFriendNoTargetSmoke`, `ConditionsObserverSmoke`,
-`EquipmentObserverSmoke`, and `ScriptingPolicySmoke`. It is repo-only evidence:
-it does not launch, stop, attach to, promote, or overwrite any client.
-
-Run the complete local readiness pipeline before opening the sandbox client:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action LocalReady
-```
-
-This runs `ValidateDev`, `SmokePreflight`, `ModuleStaticGates`, `GoalStatus`,
-and `SmokeQueue` in order, then writes
-`runtime\solteria_helper_dev\local_ready.json`. A
-`ready_for_sandbox` result means local packaging, static validation, staged
-sandbox files, and prototype-module static gates are current; it still does not
-launch, stop, attach to, promote, or overwrite any live client.
-
-Run a UI smoke and capture a screenshot from the sandbox window:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action Smoke -Tab healing
-```
-
-Run all ZeroBot-like helper tabs/subtabs:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAll -DismissDialogs
-```
-
-Covered views:
-
-```text
-overview, healing, heal_friend, conditions, hunting, hunting_magic,
-cavebot, equipment, tools, tools_pvp, tools_hud, tools_timer,
-tools_diag, scripting, profile, ui
-```
-
-Build a machine-readable coverage report from the screenshots:
-
-```powershell
-python scripts\ops\ctoa_helper_smoke_report.py --run-id 20260705-035
-```
-
-Expected result:
-
-```text
-Coverage: 16/16
-```
-
-The report includes a `ZeroBot Mapping` section that maps every captured view
-to the expected ZeroBot-like module surface. If the report says
-`blocked_by_character_modal`, it is only a routing/screenshot proof, not final
-in-world visual acceptance.
-
-The reporter also writes an HTML visual review gallery next to the JSON/MD
-artifacts. Open `solteria-helper-smokeall-coverage-<run-id>.html` for a compact
-contact sheet of every ZeroBot-like view.
-
-## Post-login Attach Smoke
-
-Use this when the sandbox client is already running and a character is inside
-the game world. This avoids restarting the client and avoids the Select
-Character modal covering the helper.
-
-1. Launch the sandbox:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action Launch
-```
-
-2. Log in with a test character.
-3. Optionally confirm the sandbox is in-world:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action ReadyCheck
-```
-
-4. Switch a helper tab without restarting the client:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttach -Tab hunting_magic
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttach -Tab tools_pvp
-```
-
-Run every view in the already-logged-in client:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttachModules
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttachAll
-```
-
-`SmokeAttachModules` is the focused in-world gate for the prototype module tabs:
-`heal_friend`, `conditions`, `equipment`, and `scripting`. It writes
-`runtime/solteria_helper_dev/module_attach_smoke.json` and routes to
-`SmokeAttachAll` only when all four module tabs capture successfully.
-
-Use a stable run id when you want repeatable artifact names:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttachAll -RunId 20260705-0430
-```
-
-`SmokeAttachAll` automatically builds an in-world coverage report with:
-
-```powershell
-python scripts\ops\ctoa_helper_smoke_report.py --run-id <run-id> --prefix solteria-helper-attach --in-world
-```
-
-Attach smoke writes `ctoa_smoke_command.lua`; the helper consumes it during
-runtime, switches tabs, logs `Smoke tab visible: <tab>/<subtab>`, captures a
-screenshot, and then generates the coverage report.
-
-Attach smoke requires a fresh `Smoke tab visible: ...` marker written after the
-command file is created. If the client is still on `Select Character`, attach
-smoke fails with an instruction to enter the character first instead of
-accepting an old log marker.
-
-If the client is stopped at the character list, the `Select Character` modal can cover the helper. This is expected and means the screenshot is only a partial runtime proof. You can attempt to dismiss startup dialogs:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action Smoke -Tab overview -DismissDialogs
-```
-
-Stop only the sandbox client:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action Stop
-```
-
-## Tab Persistence
-
-The smoke writes `ctoa_ui_prefs.lua` with:
-
-```lua
-active_tab = "healing"
-```
-
-The helper loads it through `ctoa_native_helper.lua`, switches to that tab on `buildUi()`, and exposes:
-
-```lua
-CTOA_Helper.showTab("healing")
-```
-
-Use this for targeted screenshots:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action Smoke -Tab ui
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action Smoke -Tab hunting
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action Smoke -Tab hunting_magic
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action Smoke -Tab tools_pvp
-```
-
-## Logs And Screenshots
-
-Sandbox logs:
-
-```text
-C:\Users\zycie\AppData\Local\SolteriaCodexTest\client\otclient.log
-C:\Users\zycie\AppData\Local\SolteriaCodexTest\client\ctoa_local.log
-```
-
-Screenshots:
-
-```text
-runtime\otclient_ui_preview\solteria-helper-testenv-<tab>-<timestamp>.png
-```
-
-Development package artifacts:
-
-```text
-runtime\solteria_helper_dev\manifest.json
-runtime\solteria_helper_dev\CHANGELOG.md
-runtime\solteria_helper_dev\validation.json
-runtime\solteria_helper_dev\release_readiness.json
-runtime\solteria_helper_dev\release_gate.json
-runtime\solteria_helper_dev\goal_audit.json
-runtime\solteria_helper_dev\goal_status.json
-runtime\solteria_helper_dev\smoke_preflight.json
-runtime\solteria_helper_dev\smoke_status.json
-runtime\solteria_helper_dev\ready_check.json
-runtime\solteria_helper_dev\live_promotion.json
-runtime\solteria_helper_dev\live_backup_<timestamp>\backup_manifest.json
-runtime\solteria_helper_dev\latest\
-runtime\solteria_helper_dev\ctoa_otclient_<version>.zip
-```
-
-`manifest.json` contains the staged file list with SHA256 hashes and a snapshot
-of any running Solteria process. The release gate verifies those staged file
-hashes against `latest` before promotion. `validation.json` is `pending` after
-`PrepareDev` and becomes `passed` only after `ValidateDev` completes all gates.
-`release_readiness.json` keeps the promotion gates explicit: static validation
-can pass while sandbox launch, `SmokeAttachModules`, `SmokeAttachAll`, and live approval remain
-pending.
-`release_gate.json` is the strict audit result. It remains `blocked` until
-`smoke_preflight.json` is `passed`, fresh `SmokeAttachModules` evidence exists,
-a complete in-world SmokeAttachAll report is present, and explicit live approval
-or durable `live_promotion.json` evidence is present. It also writes
-`next_action` and `next_command` for the next safe gate step. The preflight
-report includes the current manifest fingerprint, so the gate blocks stale
-preflight evidence after a new package is generated. The gate also verifies the
-versioned ZIP SHA256 against `release_readiness.json` before allowing
-promotion. After promotion, `live_promotion.json` must be newer than the current
-manifest and the live client files must match the current manifest hashes before
-`live_approval` remains `passed`.
-When `ModuleAttachSmoke` or `SmokeAttachAll` is the active blocker, the gate reads
-`smoke_status.json` and `ready_check.json` to choose the next safe command:
-`Launch` when the sandbox is not running, `ReadyCheck` when the sandbox needs an
-in-world readiness check, `SmokeAttachModules` first after `ReadyCheck` reports
-`ready`, and `SmokeAttachAll` only after module attach evidence has passed. A
-fresh `SmokeStatus` blocker such as `not_running`,
-`character_modal`, or `helper_log_missing` takes precedence over older
-`ready_check.json` evidence.
-`goal_audit.json` summarizes the full development plan state and repeats the
-current blockers plus the next command from the release gate when one exists.
-It also lists the P0-P5 roadmap phases so the remaining incomplete phase is
-visible. `goal_audit.html` is generated from that same audit as a local,
-read-only dashboard with the release state, next command, roadmap, blockers,
-and evidence inventory; its path is included in `goal_status.json`.
-`goal_status.json` is the operator-facing read-only summary generated by
-`GoalStatus`: it repeats the audit/gate state, P0-P5 roadmap statuses, live
-process snapshot, blockers, and next safe command when one exists. It refreshes
-`SmokeStatus` first, so the next command reflects the current sandbox process,
-window, helper log, and character-modal state before release-gate routing runs.
-`GOAL_HANDOFF.md` is generated from the same status payload as a one-screen
-operator checklist with current state, P0-P5 roadmap, blockers, next safe
-command, module workplan summary, and the live-promotion completion rule. When
-`runtime\solteria_helper_dev\module_audit.json` exists, `GoalStatus` also adds
-module status, modularization pressure, registry coverage, and each lane's next
-step to both `goal_status.json` and `GOAL_HANDOFF.md`. The module audit also
-selects `next_module_id` and `next_module_action`, so the handoff separates the
-next safe smoke command from the next helper-module development move. When
-`heal_friend_no_target_smoke.json` is `passed`, `GoalStatus` advances the
-module recommendation to grouped in-world `SmokeAttachModules` evidence and
-adds `next_module_command`: `HealFriendNoTargetSmoke` before static evidence,
-`Launch` or `ReadyCheck` while the sandbox is not ready, and
-`SmokeAttachModules` once `ReadyCheck` reports `ready`.
-The same prototype-gate pattern is now available for `conditions` through
-`ConditionsObserverSmoke`, with in-world visual acceptance captured later by
-`SmokeAttach -Tab conditions`.
-`EquipmentObserverSmoke` applies the same rule to `equipment`; it only accepts
-read-only inventory observation and leaves ring/amulet/weapon swaps blocked
-until sandbox evidence exists.
-`ScriptingPolicySmoke` applies the same rule to `scripting`; it only accepts a
-deny-all policy shell and leaves snippets, eval, and command execution blocked.
-`GoalStatus` aggregates these prototype gates as `static_gate_summary` in
-`goal_status.json` and as a `Static gates: passed/total` block in
-`GOAL_HANDOFF.md`, so the operator can see which local module gates are ready
-before starting sandbox attach smoke. `ModuleStaticGates` refreshes all four
-prototype gate reports and writes `module_static_gates.json`; run `GoalStatus`
-after it to route the next release step. The release gate also requires a fresh
-passed `module_static_gates.json` and a fresh passed
-`module_attach_smoke.json` before it routes to final in-world `SmokeAttachAll`,
-so new prototype-module risk cannot be skipped during packaging.
-`LocalReady` wraps the local half of this flow and should be the first command
-when the operator wants one current handoff before opening the sandbox client.
-`release_gate.json`, `goal_audit.json`, `goal_status.json`, and
-`GOAL_HANDOFF.md` are written atomically, so readers do not observe partial
-outputs while `GoalStatus` refreshes the audit.
-Neither action copies files into the live play client.
-
-Generate the read-only sandbox smoke queue after `LocalReady` when the release
-gate is waiting on attach evidence:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeQueue
-.\.venv\Scripts\python.exe scripts\ops\solteria_helper_sandbox_smoke_queue.py
-```
-
-This writes `runtime\solteria_helper_dev\sandbox_smoke_queue.json` and
-`docs\otclient\solteria_helper_sandbox_smoke_queue.md` from the current
-manifest, release gate, smoke status, and goal status. It only plans the
-operator sequence; it does not launch, attach to, promote, stop, or overwrite
-any client.
-
-You can run the gate audit directly:
-
-```powershell
-python scripts\ops\solteria_helper_release_gate.py --dev-dir runtime\solteria_helper_dev --allow-blocked
-```
-
-If `--smoke-report` is not provided, the gate looks for the latest
-`runtime\otclient_ui_preview\solteria-helper-smokeall-inworld-*.json` report.
-It intentionally ignores modal-limited `solteria-helper-smokeall-coverage-*.json`
-reports. An in-world report must include every expected helper view and each
-listed screenshot file must exist on disk.
-
-Live promotion is intentionally separate:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action BackupLiveCtoa
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action PromoteLiveCtoa -ApproveLiveDeploy
-```
-
-`PromoteLiveCtoa` refuses to run without `-ApproveLiveDeploy`, then checks the
-existing strict release gate for the current staged package with approval. It
-does not run `ValidateDev`, run `SmokePreflight`, regenerate the manifest, or
-change the staged package after in-world `SmokeAttachAll` has passed. It will
-still refuse to copy files until `SmokePreflight` and in-world `SmokeAttachAll`
-are passed. After the gate passes, it writes a fresh
-`live_backup_<timestamp>\backup_manifest.json`, copies staged files into the
-live client without stopping, restarting, or launching it by default, and
-records `live_promotion.json` as durable post-promotion evidence.
-
-If the operator wants the live client opened immediately after a successful
-promotion, make that explicit:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action PromoteLiveCtoa -ApproveLiveDeploy -LaunchAfterPromote
-```
-
-`-LaunchAfterPromote` starts `SourceClient\solteria-client.exe` only when that
-exact live client is not already running. It records `launched`,
-`already_running`, or `failed` in `live_promotion.json`; it never stops or
-restarts the live client.
-
-If needed, pass a specific in-world smoke report:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action PromoteLiveCtoa -ApproveLiveDeploy -SmokeReport runtime\otclient_ui_preview\solteria-helper-smokeall-inworld-<run-id>.json
-```
-
-The Helper can also export its bounded runtime diagnostics buffer from the
-sandbox/live module directory as:
-
-```text
-ctoa_diag_export.lua
-```
-
-Use the smoke command action `diag_export` or the in-client
-`CTOA_Helper.exportDiagnostics()` entrypoint after the sandbox Helper has
-collected samples. The export contains only bounded passive snapshots for
-HP/MP, movement, combat, magic, and container APIs.
-
-## Test Account
-
-For live in-game UI/runtime checks, use a separate low-risk test character in the sandbox. Keep the main play client logged in normally. The sandbox should be used for:
-
-- helper UI screenshots,
-- tab persistence checks,
-- combat/healing log validation,
-- PZ/NPC/targeting regression tests,
-- actionbar potion/rune behavior checks.
-
-Full visual acceptance for all tabs requires the sandbox to enter the game world with a separate test character. Before login, the character selection modal is above helper widgets and can obscure screenshots even when `CTOA_Helper.showTab("<tab>")` succeeds.
-
-Static geometry/layout acceptance is covered by:
-
-```powershell
-python scripts\ops\ctoa_helper_ui_preview.py
-```
-
-Expected result:
-
-```text
-issues: none
-```
-
-Regression tests for the ZeroBot-like shell contract:
-
-```powershell
-python -m pytest tests\test_otclient_helper_zerobot_shell.py -q
-```
-
-Expected result:
-
-```text
-4 passed
-```
-
-## PZ / NPC Targeting Regression
-
-The helper combat runtime must not attack NPCs or run offensive actions in PZ.
-Use this after changing targeting, magic shooter, rune shooter, or auto exeta.
-
-Live/sandbox steps:
-
-1. Enter the game world with a test character.
-2. Stand in PZ or near an NPC such as `Taskmaster Liora`.
-3. Keep `Targeting` enabled for 30-60 seconds.
-4. Inspect `ctoa_local.log`.
-
-Passing log pattern:
-
-```text
-[CTOA-OTC-COMBAT] Combat paused: no valid monster target
-```
-
-Failing log pattern:
-
-```text
-[CTOA-OTC-COMBAT] Auto target: Taskmaster Liora
-```
-
-If a bad target still appears, inspect the probe line. It logs the client-side
-creature methods used by the guard:
-
-```text
-[CTOA-OTC-COMBAT] Target probe: <name> id=<id> reason=<reason> isNpc=<...> isMonster=<...> isPlayer=<...> isAttackable=<...> canBeAttacked=<...> isTargetable=<...>
-```
-
-Current guard behavior:
-
-- `pause_in_pz=true` blocks targeting, rune shooter, spell rotation, and auto exeta.
-- NPC/player/ignored names are rejected before attack.
-- Unknown creature types are treated as non-monsters.
-- The helper HUD and combat module share the same valid-target rules.
-```
-
-
-## `docs/otclient/solteria_helper_module_workplan.md`
-
-```markdown
-# Solteria Helper Module Workplan
-
-## Current Decision
-
-- Status: `ready`
-- Helper lines: `4349`
-- Helper functions: `159`
-- Helper line budget: `4500`
-- Helper function budget: `130`
-- Helper budget status: `over_budget`
-- Helper shell target: UI composition, profile persistence, and guarded dispatch only; registry/domain logic belongs in helper modules/adapters.
-- Modularization pressure: `medium`
-- Placeholder modules: `0`
-- Implemented modules: `31`
-- Prototype modules: `0`
-- Registry coverage: `9` / `9`
-- Next extraction: `none`
-- Next supplemental split: `none`
-- Next phase: P6-module-lane: keep the main helper as UI composition shell; move runtime adapters behind static contracts and sandbox gates.
-- Next module action: `` - Keep module gates current before adding new runtime actions.
-
-## Operating Rule
-
-New behavior must enter through a named module lane with profile keys, safe boot defaults, static tests, sandbox smoke evidence, and release-gate evidence. Do not add broad runtime logic directly to the main helper without updating this workplan and the module audit.
-
-The helper Overview must expose module readiness from `ctoa_helper_modules.lua` so operators can see implemented, prototype, armed, gated, and experimental lanes without enabling runtime actions.
-
-## Module Lanes
-
-| Module | Status | Target | Next step | Gate |
-|---|---:|---|---|---|
-| `healing` / Healing and recovery | `static_gated` | `ctoa_native_heal.lua` | Keep runtime logic mirrored in standalone passive recovery module and add sandbox HP/MP log smoke. | ValidateDev plus in-world HP/MP sandbox log evidence. |
-| `combat` / Targeting and magic shooter | `static_gated` | `ctoa_native_combat.lua` | Extract shared target scoring/guards into a reusable helper runtime domain before adding more attacks. | PZ/NPC regression log plus SmokeAttachAll hunting and hunting_magic views. |
-| `cavebot` / CaveBot route and movement | `static_gated` | `ctoa_native_helper.lua` | Split route editing from movement execution into separate domain blocks before adding waypoint actions. | Route editor static tests plus sandbox autoWalk retry-budget evidence. |
-| `loot` / Loot scanner | `static_gated` | `ctoa_native_loot.lua` | Promote loot from experimental flag only after in-world container scan evidence exists. | ValidateDev plus bounded ctoa_local.log loot scan evidence in sandbox. |
-| `timer` / Timer action | `static_gated` | `ctoa_native_helper.lua` | Keep timer as a small bounded action; do not add arbitrary scripting through timer message. | Static contract and sandbox log evidence for one timer tick. |
-| `heal_friend` / Heal Friend | `static_gated` | `ctoa_helper_heal_friend.lua` | Run HealFriendNoTargetSmoke, then capture grouped in-world SmokeAttachModules evidence before any sio cast path. | No runtime sio cast until whitelist UI, profile persistence, HealFriendNoTargetSmoke, ModuleStaticGates, and ModuleAttachSmoke evidence exist. |
-| `conditions` / Conditions | `static_gated` | `ctoa_helper_conditions.lua` | Run ConditionsObserverSmoke, then capture grouped in-world SmokeAttachModules state evidence before any recovery action. | No condition recovery action until API probe evidence, passive plan contract, ConditionsObserverSmoke, ModuleStaticGates, and ModuleAttachSmoke pass. |
-| `equipment` / Equipment | `static_gated` | `ctoa_helper_equipment.lua` | Run EquipmentObserverSmoke, then capture grouped in-world SmokeAttachModules inventory evidence before any swap path. | No runtime swap before inventory API probe output, passive plan contract, profile persistence, EquipmentObserverSmoke, ModuleStaticGates, and ModuleAttachSmoke. |
-| `scripting` / Scripting | `static_gated` | `ctoa_helper_scripting.lua` | Run ScriptingPolicySmoke, then capture grouped in-world SmokeAttachModules policy shell evidence; keep eval and user snippets blocked. | No user snippet execution until passive plan contract, security review, denylist tests, audit logging, ScriptingPolicySmoke, ModuleStaticGates, and ModuleAttachSmoke pass. |
-
-## Extraction Map
-
-| Order | Domain | Target | Status | Gate |
-|---:|---|---|---:|---|
-| 1 | `module_registry` / MODULE_LANES, module lane lookup, readiness text | `ctoa_helper_modules.lua` | `extracted` | Registry parity test plus Overview readiness smoke. |
-| 2 | `diagnostics` / log helpers, API probes, status snapshots, module evidence formatting | `ctoa_helper_diagnostics.lua` | `extracted` | ValidateDev, UI preview, and no secret/runtime path leakage in generated evidence. |
-| 3 | `heal_friend` / heal friend profile defaults, whitelist matching, observer sampling, UI summary | `ctoa_helper_heal_friend.lua` | `extracted` | HealFriendNoTargetSmoke, ModuleStaticGates, and ModuleAttachSmoke before any sio runtime arm. |
-| 4 | `conditions` / condition state API probes, read-only observer rows, passive recovery planner, profile defaults | `ctoa_helper_conditions.lua` | `extracted` | ConditionsObserverSmoke, passive plan contract, ModuleStaticGates, and ModuleAttachSmoke before any recovery action. |
-| 5 | `equipment` / inventory slot probes, passive ring/amulet swap planner, read-only UI summary | `ctoa_helper_equipment.lua` | `extracted` | EquipmentObserverSmoke, passive plan contract, ModuleStaticGates, and ModuleAttachSmoke before any use/move action. |
-| 6 | `scripting` / policy shell, deny-all snippet planner, audit metadata | `ctoa_helper_scripting.lua` | `extracted` | ScriptingPolicySmoke, passive plan contract, ModuleStaticGates, and ModuleAttachSmoke; eval remains blocked. |
-
-## Supplemental Refactor Plan
-
-This is the next wave after the passive helper modules are contracted. It exists because the main helper is still over budget and should become a composition shell instead of absorbing more runtime logic.
-
-| Order | Split | Target | Status | Gate |
-|---:|---|---|---:|---|
-| 1 | `combat_runtime_adapter` / combat arming, monster scan adapter, attack/cast execution guards | `ctoa_helper_combat_runtime.lua` | `extracted` | Combat runtime static contract, target scorer contract, monster-only regressions, PZ/NPC smoke, SmokeAttachAll hunting tabs. |
-| 2 | `cavebot_runtime_adapter` / movement execution, path probe, retry budget, PZ/offline movement guards | `ctoa_helper_cavebot_runtime.lua` | `extracted` | Route contract, cavebot static tests, in-world retry-budget evidence, SmokeAttachAll cavebot tab. |
-| 3 | `loot_runtime_adapter` / corpse/container scan orchestration, item move bounds, capacity guard | `ctoa_helper_loot_runtime.lua` | `extracted` | Container API probe, experimental_loot remains false by default, bounded sandbox loot log evidence. |
-| 4 | `timer_runtime_adapter` / bounded timer message/cast action, interval guard, action lock | `ctoa_helper_timer_runtime.lua` | `extracted` | Static no-eval contract, one-tick sandbox log evidence, no scripting bridge. |
-| 5 | `profile_schema_adapter` / profile defaults, migration keys, rotation preset metadata, profile dirty reasons, profile UI persistence | `ctoa_helper_profile_schema.lua` | `extracted` | Profile audit, schema snapshot, safe migration and rotation-summary tests, no key-order churn. |
-| 6 | `operator_summary_bridge` / operator title, domain summary text, profile/UI summary bridge, and no-widget text composition | `ctoa_helper_operator_summary.lua` | `extracted` | OperatorSummary static contract, profile schema and domain summary parity, ModuleStaticGates, UI preview, and sandbox SmokeAttachModules before any runtime bridge can consume summaries. |
-| 7 | `planner_coordinator` / passive plan collection, ranking, summary, and no-execution contract | `ctoa_helper_planner.lua` | `extracted` | Planner static contract, module planner regressions, ModuleStaticGates, and sandbox SmokeAttachModules before any runtime dispatcher wiring. |
-| 8 | `runtime_policy_guard` / shared runtime gate evaluation, manifest freshness, sandbox smoke, and live approval policy | `ctoa_helper_runtime_policy.lua` | `extracted` | RuntimePolicy static contract, ModuleStaticGates, current manifest, ModuleAttachSmoke, SmokeAttachAll, and explicit live approval before any dispatcher executes a plan. |
-| 9 | `dispatch_guard_coordinator` / ranked plan classification, runtime policy handoff, and dispatch allow/deny reasons | `ctoa_helper_dispatch_guard.lua` | `extracted` | DispatchGuard static contract, RuntimePolicy ready decision, sandbox attach evidence, and explicit live approval before any dispatcher bridge is wired. |
-| 10 | `plan_queue_coordinator` / bounded guarded-decision queue, review summaries, and no-execution handoff state | `ctoa_helper_plan_queue.lua` | `extracted` | PlanQueue static contract, DispatchGuard decision evidence, bounded queue tests, sandbox attach evidence, and explicit live approval before queued plans can feed any dispatcher bridge. |
-| 11 | `runtime_readiness_status` / component readiness, gate readiness, queued-plan review status, and no-execution runtime bridge summary | `ctoa_helper_runtime_readiness.lua` | `extracted` | RuntimeReadiness static contract, required component/gate coverage, current manifest, sandbox attach evidence, SmokeAttachAll, and explicit live approval before any runtime bridge is considered ready. |
-| 12 | `module_status_board` / module readiness rows, status counts, blocker summary, and no-execution evidence board | `ctoa_helper_module_status.lua` | `extracted` | ModuleStatus static contract, module contract coverage, ModuleStaticGates, sandbox attach evidence, and explicit live approval before status can support runtime enablement. |
-| 13 | `action_catalog_policy` / runtime action capability names, domain mapping, risk class, required gates, and no-execution dispatch metadata | `ctoa_helper_action_catalog.lua` | `extracted` | ActionCatalog static contract, action risk coverage, RuntimePolicy gate parity, ModuleStaticGates, sandbox attach evidence, and explicit live approval before any action can be dispatched. |
-| 14 | `decision_trace_review` / plan/policy/guard/queue decision traces, missing gate summaries, and no-write review metadata | `ctoa_helper_decision_trace.lua` | `extracted` | DecisionTrace static contract, policy/guard reason coverage, bounded queue trace, ModuleStaticGates, sandbox attach evidence, and explicit live approval before any trace informs runtime dispatch. |
-| 15 | `sandbox_handoff_checklist` / operator sandbox smoke checklist, required runtime gates, next-step summary, and no-launch/no-promote handoff metadata | `ctoa_helper_sandbox_handoff.lua` | `extracted` | SandboxHandoff static contract, Launch/ReadyCheck/SmokeAttachModules/SmokeAttachAll/ApproveLiveDeploy sequence coverage, ModuleStaticGates, and explicit live approval before live promotion. |
-| 16 | `feature_flag_matrix` / safe false runtime flags, feature domains, required gates, and no-toggle profile audit metadata | `ctoa_helper_feature_flags.lua` | `extracted` | FeatureFlags static contract, safe-default coverage, profile audit parity, ModuleStaticGates, SmokeAttachAll, and explicit live approval before runtime flags can be enabled. |
-
-## P6 Module Lane
-
-1. Freeze the current helper UI contract with `ValidateDev`, `ctoa_helper_ui_preview.py`, and `SmokePreflight`.
-2. Extract domains in the `Extraction Map` order and keep the main helper as the UI composition shell.
-3. Execute the `Supplemental Refactor Plan` one adapter at a time; adapter files may plan or dispatch guarded actions only after static contracts exist.
-4. Convert prototype modules in order: Heal Friend observation, Conditions diagnostics, Equipment safe swaps, Scripting policy shell.
-5. For each module, add profile schema keys, safe boot defaults, tests, README/docs, `ModuleStaticGates`, and `SmokeAttachModules` before runtime enablement.
-6. Keep live promotion separate and require `PromoteLiveCtoa -ApproveLiveDeploy` after in-world `SmokeAttachAll` evidence.
-
-## Verification Commands
-
-```powershell
-.\.venv\Scripts\python.exe scripts\ops\otclient_helper_module_audit.py --json-out runtime\solteria_helper_dev\module_audit.json
-.\.venv\Scripts\python.exe -m pytest tests\test_otclient_helper_module_audit.py tests\test_otclient_helper_zerobot_shell.py tests\test_otclient_helper_profile_audit.py tests\test_ctoa_helper_smoke_report.py -q
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action ValidateDev
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokePreflight
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action ModuleStaticGates
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttachModules
-```
-```
-
-
-## `docs/otclient/solteria_helper_module_contract.md`
-
-```markdown
-# Solteria Helper Module Contract
-
-- Status: `passed`
-- Expected modules: `32`
-- Passed modules: `32`
-- Failed modules: `0`
-- Registry lanes: `9` / `9`
-- Forbidden passive hits: `0`
-- Next action: Run ModuleStaticGates, then sandbox SmokeAttachModules.
-
-## Rule
-
-Passive helper modules may observe, format, plan, or expose UI state. They must not cast spells, use items, walk, execute snippets, or load arbitrary files. Runtime actions stay in the guarded native helper domains and still require sandbox evidence.
-
-## Modules
-
-| Module | File | Status | Loader | Registry | Global | Return | Missing functions | Forbidden |
-|---|---|---:|---:|---:|---:|---:|---|---|
-| `modules` | `ctoa_helper_modules.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `domain_contract` | `ctoa_helper_domain_contract.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `ui` | `ctoa_helper_ui.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `diagnostics` | `ctoa_helper_diagnostics.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `hotkeys` | `ctoa_helper_hotkeys.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `modal` | `ctoa_helper_modal.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `route` | `ctoa_helper_route.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `targeting` | `ctoa_helper_targeting.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `combat_runtime` | `ctoa_helper_combat_runtime.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `cavebot_runtime` | `ctoa_helper_cavebot_runtime.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `loot_runtime` | `ctoa_helper_loot_runtime.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `timer_runtime` | `ctoa_helper_timer_runtime.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `recovery_runtime` | `ctoa_helper_recovery_runtime.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `profile_schema` | `ctoa_helper_profile_schema.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `profile_persistence` | `ctoa_helper_profile_persistence.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `operator_summary` | `ctoa_helper_operator_summary.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `planner` | `ctoa_helper_planner.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `runtime_policy` | `ctoa_helper_runtime_policy.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `dispatch_guard` | `ctoa_helper_dispatch_guard.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `plan_queue` | `ctoa_helper_plan_queue.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `runtime_readiness` | `ctoa_helper_runtime_readiness.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `module_status` | `ctoa_helper_module_status.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `action_catalog` | `ctoa_helper_action_catalog.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `decision_trace` | `ctoa_helper_decision_trace.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `decision_pipeline` | `ctoa_helper_decision_pipeline.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `sandbox_handoff` | `ctoa_helper_sandbox_handoff.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `feature_flags` | `ctoa_helper_feature_flags.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `hud` | `ctoa_helper_hud.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `conditions` | `ctoa_helper_conditions.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `equipment` | `ctoa_helper_equipment.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `scripting` | `ctoa_helper_scripting.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-| `heal_friend` | `ctoa_helper_heal_friend.lua` | `passed` | `yes` | `yes` | `yes` | `yes` | none | none |
-
-## Verification
-
-```powershell
-.\.venv\Scripts\python.exe scripts\ops\otclient_helper_module_contract.py
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action ModuleStaticGates
-```
-```
-
-
-## `docs/otclient/solteria_helper_next_modules_plan.md`
-
-```markdown
-# Solteria Helper Next Modules Plan
-
-## Decision
-
-- Status: `ready_for_sandbox_then_next_module_design`
-- Current extraction map: complete.
-- Budget priority source: `runtime\solteria_helper_dev\helper_shell_budget_plan.json`.
-- Budget top non-shell domain: `runtime_cavebot`.
-- Budget next extraction domains: `runtime_cavebot, runtime_combat, diagnostics_smoke, ui_builder, profile_persistence`.
-- Runtime evidence: in-world `SmokeAttachModules` and fresh `SmokeAttachAll` are current for v2.1.1a; runtime execution remains blocked by module-specific action gates and explicit live approval.
-- External vBot source: `source_required`; do not claim vBot-derived implementation until source/provenance is present.
-
-## Source Policy
-
-- ZeroBot reference: `docs/otclient/zerobot_reference.md`
-- vBot: `source_required`
-- External bot intake: `scripts/ops/otclient_external_bot_intake.py`
-- External bot import gate: import_gate.runtime_import_allowed must remain false until mapped module gates and sandbox evidence pass
-- Rule: Use external bots as capability checklists and naming references only; no direct copy without provenance review; keep CTOAi safe boot, gates, and tests.
-
-## Prerequisites
-
-- Run SmokeAttachModules after sandbox character is in-world.
-- Run SmokeAttachAll for the current dev manifest before enabling runtime actions.
-- Keep PromoteLiveCtoa behind -ApproveLiveDeploy.
-
-## Candidate Modules
-
-| Order | Module | Status | Source basis | Target | First slice | Gate | Blocked until |
-|---:|---|---:|---|---|---|---|---|
-| 0 | `ui_primitives` / Guarded UI primitives split | `static_gated` | Current UI composition shell plus passive UI adapter; corrected budget keeps it below cavebot/combat pressure | `ctoa_helper_ui.lua` | Move text fitting, widget styling, checkbox state helpers, visibility helpers, guarded createWidget wrapper, nav/subtab style functions, button/card style descriptors, metric row styling, setting/profile/vector row styling, section/table/strip styling, priority badge styling, label styling, window chrome styling, toggle/checkbox/sidebar-card styling, overview avatar/equipment styling, control-name styling, row geometry, and tab metadata behind CTOA_HELPER_UI. | ModuleContract, UI preview, HelperShellBudgetPlanStaticSmoke, ModuleStaticGates, and current LocalReady. | Further UI builder extraction waits for sandbox SmokeAttachModules so visual regressions can be checked in-world. |
-| 1 | `hud` / HUD overlay domain | `static_gated` | ZeroBot HUD wrapper reference plus current Tools/HUD controls | `ctoa_helper_hud.lua` | Extract HUD state formatting and visibility/draggable summary without adding new overlay actions. | HUD static contract, UI preview, ModuleStaticGates, and in-world SmokeAttach -Tab tools_hud. | Current sandbox SmokeAttachModules and fresh SmokeAttachAll evidence exist. |
-| 2 | `hotkeys` / Hotkey normalization domain | `static_gated` | ZeroBot hotkeymanager reference plus current Ctrl+H binding | `ctoa_helper_hotkeys.lua` | Add parser/normalizer tests for modifier strings; keep runtime binding unchanged. | Parser unit tests, safe boot check, UI preview, and no automatic new key bindings during loader init. | HUD extraction has tests and sandbox attach evidence. |
-| 3 | `modal_confirm` / Confirmation modal domain | `static_gated` | ZeroBot custom modal wrapper reference plus helper profile/reset workflows | `ctoa_helper_modal.lua` | Create a passive modal lifecycle wrapper for destructive helper commands; no live-client action shortcuts. | Static lifecycle tests, UI preview, no PromoteLiveCtoa bypass, and explicit approval path retained. | Hotkey parser is isolated and profile commands remain guarded. |
-| 4 | `route_engine` / Cavebot route engine split | `static_gated` | Route engine is static-gated; current shell budget now points remaining runtime pressure at combat/cavebot adapters | `ctoa_helper_route.lua` | Move route labels, waypoint mutation, active target advancement, and retry-budget status into a domain module; keep autoWalk gated. | Route editor static tests, SmokeAttach -Tab cavebot, PZ/offline guard evidence, and no movement at loader init. | Sandbox SmokeAttachModules proves current cavebot tab state in-world. |
-| 5 | `target_scorer` / Combat target scorer split | `static_gated` | Current monster-only target guards plus bot decision scoring concepts | `ctoa_helper_targeting.lua` | Extract candidate scoring and ignored-name checks; keep attack/cast execution in existing guarded runtime. | Monster-only regression tests, PZ/NPC smoke evidence, and SmokeAttachAll hunting/hunting_magic screenshots. | Route engine extraction is stable and combat runtime evidence is fresh. |
-| 6 | `combat_runtime` / Combat runtime planner split | `static_gated` | Current guarded combat runtime plus target scorer and passive adapter plan | `ctoa_helper_combat_runtime.lua` | Keep passive combat planning, wait-reason text, decision-state text, and cooldown text in the runtime adapter; keep attack, cast, rune, and exeta execution in guarded helper runtime. | Combat runtime static contract, SmokeAttach -Tab hunting_magic, PZ/offline/target-required plan evidence, and no loader-time combat actions. | Target scorer static gate is stable and sandbox combat tabs have fresh attach evidence. |
-| 7 | `cavebot_runtime` / Cavebot runtime planner split | `static_gated` | Current guarded autoWalk retry loop plus route engine and passive cavebot adapter plan | `ctoa_helper_cavebot_runtime.lua` | Keep passive cavebot planning, movement decision text, movement blocked-reason/status/trace/path result text, and movement API probe summary text in the runtime adapter; keep autoWalk/findPath execution in guarded helper runtime. | Cavebot runtime static contract, SmokeAttach -Tab cavebot, PZ/offline/empty-route/retry plan evidence, and no loader-time movement. | Route engine static gate is stable and sandbox cavebot tab has fresh attach evidence. |
-| 8 | `loot_runtime` / Loot runtime planner split | `static_gated` | Current loot feature flag, API probe, and passive loot adapter plan | `ctoa_helper_loot_runtime.lua` | Use a passive loot runtime planner for diagnostics text; keep container scan/open/move/use behavior outside loader init and guarded by feature flags. | Loot runtime static contract, SmokeAttach -Tab tools_diag, feature-flag/offline/container plan evidence, and no loader-time loot actions. | Experimental loot stays feature-flagged and sandbox diagnostics have fresh attach evidence. |
-| 9 | `timer_runtime` / Timer runtime planner split | `static_gated` | Current guarded timer loop plus passive timer adapter plan | `ctoa_helper_timer_runtime.lua` | Use a passive timer runtime planner for timer decision/status text; keep talk/cast execution in the guarded helper runtime. | Timer runtime static contract, SmokeAttach -Tab tools_timer, disabled/PZ/offline/message plan evidence, and no loader-time timer actions. | Timer remains disabled by default and sandbox tools timer tab has fresh attach evidence. |
-| 10 | `profile_schema` / Profile schema, persistence policy, rotation metadata, and migration metadata | `static_gated` | Current EK profile defaults plus passive profile schema adapter plan | `ctoa_helper_profile_schema.lua + ctoa_helper_profile_persistence.lua` | Use passive profile schema metadata for required sections, safe false keys, rotation preset labels/summaries, migration readiness, load candidate lists, save path policy, generated save headers, load/save status text, and autosave metadata; keep file reads/writes in existing guarded profile audit/persistence shell paths. | Profile schema static contract, profile audit parity, safe-boot false-key coverage, rotation-summary coverage, key-order preservation, and no loader-time profile writes. | Profile audit and ModuleStaticGates stay current for the staged helper manifest. |
-| 11 | `vbot_import` / External vBot/vBot-like import lane | `source_required` | source_required: no vBot source is present in this checkout | `docs/otclient/vbot_import_review.md` | If a vBot source tree is provided, run otclient_external_bot_intake.py and require its import_gate before capability mapping; no direct copy without license/source notes. | Intake import_gate, source provenance note, secret scan, license/provenance review, runtime_gate_mapping, and mapping into existing module gates. | User provides the actual vBot source or a reviewed local archive. |
-
-## Supplemental Execution Plan
-
-P6 evidence progression: `healing_recovery` is now `static_gated` from
-`RecoveryRuntimeStaticSmoke`, bounded real-player `HealingVitalsSmoke`, current
-module gates, a disarmed sandbox, and a newer Healing-tab attachment. Spell and
-potion execution remains in the guarded helper runtime. The evidence-aware
-module audit now advances the next prototype lane to `combat`.
-
-`combat`, `cavebot`, `timer`, and `loot` are now also `static_gated`.
-Combat reports no active target; CaveBot proves capability and route guards
-without walking or pathfinding; Timer returns `hold_timer_disabled`; and Loot
-returns `hold_feature_flag_disabled` with zero planned items. Each dedicated
-report has current module gates, ReadyCheck, a newer in-world screenshot, and
-disarmed-runtime proof. The evidence-aware audit now reports all nine module
-lanes `static_gated`; no runtime bridge is enabled by this completion.
-
-| Order | Workstream | Status | Current slice | Next slice | Gate |
-|---:|---|---:|---|---|---|
-| 0 | `ui_primitives` | `in_progress_static_gated` | ctoa_helper_ui.lua owns text fit, widget style, checkbox state, visibility, guarded createWidget, nav/subtab style, button/card style, metric row/value style, setting/profile/vector row style, section/table/header strip style, priority badge style, label style, window chrome style, toggle/checkbox/sidebar-card style, overview avatar/equipment slot style, control-name style primitives, setting/profile/vector/section row geometry, sidebar/subtab metadata, section scaffold metadata, subtab content offsets, tools table-header metadata, CaveBot action/choice metadata, interactive profile/vector row builders, the passive Hunting targeting/magic panel renderer, the passive CaveBot editor renderer, the passive Tools helper/PvP/HUD/timer/diag panel renderer, the passive Settings/Profile renderer, and the passive Engine/HUD/layout renderer; helper shell now delegates all direct styleWidget calls, row geometry, tab metadata, repeated body/header scaffolding, subtab button creation, cavebot waypoint editor composition/action metadata, tools table headers, hunting targeting/magic composition, tools helper/PvP/HUD/timer/diag composition, profile/settings composition, Engine/HUD/layout composition, and profile cycle/step/vector row construction through UI functions with guarded shell adapters. | Extract remaining runtime probe summaries into passive runtime adapters while keeping value getters/setters, route mutation, and runtime arming in guarded shell adapters. | ModuleContract, UI preview, HelperShellBudgetPlanStaticSmoke, ModuleStaticGates, current LocalReady, then SmokeAttachModules for in-world visual evidence. |
-| 1 | `target_scorer` | `in_progress_static_gated` | Targeting owns bestCandidate ranking; helper now builds OTClient candidate snapshots and delegates best-target choice to ctoa_helper_targeting.lua. | Move the remaining PZ/NPC reason summaries into targeting/combat runtime adapters before adding any new combat feature. | TargetingStaticSmoke, ModuleStaticGates, current LocalReady, then SmokeAttach hunting and hunting_magic tabs in sandbox before runtime enablement. |
-| 2 | `route_engine` | `in_progress_static_gated` | Route labels, waypoint mutation, active target advancement, retry status, progress state, retryBlocked, selected summary, passive CaveBot editor panel, cavebot runtime decision text, movement blocked-reason/status/trace/path result text, and movement API probe summary text are module/UI-owned. | Move the next cavebot route/probe metadata slice into route/cavebot runtime adapters while keeping movement execution in guarded runtime. | RouteStaticSmoke, ModuleStaticGates, current LocalReady, then SmokeAttach cavebot tab in sandbox. |
-| 3 | `heal_friend_observer` | `static_gated` | ctoa_helper_heal_friend.lua owns whitelist matching, visible-player scan, observer updates, runtime plan, status text, decision text, and summary text; fresh HealFriendNoTargetSmoke and in-world attach evidence are recorded. | Keep sio execution unavailable; next review is whitelist persistence and an explicit runtime bridge design. | Current HealFriendNoTargetSmoke, ModuleStaticGates, LocalReady, SmokeAttach heal_friend, SmokeAttachAll, and live approval before any sio runtime bridge. |
-| 4 | `conditions_observer` | `static_gated` | ctoa_helper_conditions.lua owns condition flag text, state snapshots, API probe text, observer sampling, passive recovery plan, and summary text; fresh observer and in-world attach evidence are recorded. | Keep condition recovery actions unavailable until a separate guarded runtime bridge is designed and approved. | Current ConditionsObserverSmoke, ModuleStaticGates, LocalReady, SmokeAttach conditions, SmokeAttachAll, and live approval before any condition recovery bridge. |
-| 5 | `equipment_observer` | `static_gated` | ctoa_helper_equipment.lua owns slot text, equipment snapshots, inventory API probe text, observer sampling, passive swap plan, and summary text; fresh inventory observer and attach evidence are recorded. | Keep ring/amulet swaps unavailable until a bounded swap bridge and rollback policy are designed and approved. | Current EquipmentObserverSmoke, ModuleStaticGates, LocalReady, SmokeAttach equipment, SmokeAttachAll, and live approval before any equipment bridge. |
-| 6 | `scripting_policy` | `static_gated` | ctoa_helper_scripting.lua owns policy snapshots, deny-all planning, and summary text; fresh deny-all policy and attach evidence are recorded. | Keep snippets, eval and arbitrary file execution blocked; no runtime scripting bridge belongs to this phase. | Current ScriptingPolicySmoke, ModuleStaticGates, LocalReady, SmokeAttach scripting, SmokeAttachAll, security review, audit logging, and live approval. |
-| 7 | `operator_summary_bridge` | `in_progress_static_gated` | ctoa_helper_operator_summary.lua owns title/domain/profile/UI summary composition; helper shell now only passes local context and renders returned text. | Move any remaining operator-facing summary branches into the module before adding new runtime features, keeping summaries passive and widget-free. | Operator summary static contract, OperatorSummaryStaticSmoke, ModuleStaticGates, UI preview, current LocalReady, then SmokeAttachModules in sandbox before summaries can inform runtime bridge decisions. |
-| 8 | `input_contracts` | `in_progress_static_gated` | ctoa_helper_hotkeys.lua owns passive binding decisions, ctoa_helper_modal.lua owns passive confirmation decision text, and otclient_input_contract_fixtures.py now records behavior fixtures for parser and modal states. | Expand fixture cases whenever a new keyboard shortcut, destructive helper action, or external bot command mapping is proposed; keep actual binding and execution inside guarded helper shell paths. | InputContractsStaticSmoke, HotkeysStaticSmoke, ModalStaticSmoke, ModuleStaticGates, current LocalReady, and no loader-time key binding beyond the existing guarded helper toggle. |
-| 9 | `profile_persistence` | `in_progress_static_gated` | ctoa_helper_profile_schema.lua owns key order, serializer, labels, summaries, and schema metadata; ctoa_helper_profile_persistence.lua now owns passive load candidates, save path fallback policy, generated save headers, load/save status text, and autosave delay metadata. The helper shell still owns every dofile, io.open, dirty flag mutation, and save execution path. | Move profile export field grouping into schema/persistence descriptors once profile audit parity has fixtures for every generated section; keep actual profile writes in guarded shell paths. | Profile schema contract, ProfileSchemaStaticSmoke, module contract, profile audit parity, HelperShellBudgetPlanStaticSmoke, ModuleStaticGates, and current LocalReady. |
-| 10 | `runtime_bridge_review` | `awaiting_live_approval` | All nine module lanes, runtime policy, dispatch guard, queue, readiness, action catalog, decision trace, sandbox handoff, ModuleAttachSmoke, and SmokeAttachAll are static-gated with fresh sandbox evidence. | Keep runtime passive through v2.1.1a; after explicit live promotion, open a separate bounded bridge review. | No runtime bridge until explicit PromoteLiveCtoa -ApproveLiveDeploy and a new reviewed action-specific plan. |
-
-## Operator Sequence
-
-1. Preserve the completed 9/9 sandbox evidence set for the current package.
-2. Keep the new module as passive/read-only unless its gate explicitly allows runtime action.
-3. Add profile keys, safe boot defaults, module registry entry, package copy, README note, static smoke, and release-gate evidence for every new module.
-4. Promote a module from `contracted` to `static_gated` only after its dedicated static smoke is included in `ModuleStaticGates`.
-5. Maintain the supplemental status-board lane (`ctoa_helper_module_status.lua`) so module readiness, blockers, and static-only modules remain visible before any runtime bridge work.
-6. Maintain the supplemental action-catalog lane (`ctoa_helper_action_catalog.lua`) so future features declare action names, risk class, and required gates before any dispatcher can consume them.
-7. Maintain the supplemental decision-trace lane (`ctoa_helper_decision_trace.lua`) so runtime policy and dispatch guard reasons are visible before any queued plan is reviewed.
-8. Maintain the supplemental sandbox-handoff lane (`ctoa_helper_sandbox_handoff.lua`) so Launch, ReadyCheck, SmokeAttachModules, SmokeAttachAll, and PromoteLiveCtoa approval remain one explicit operator sequence.
-9. Maintain the supplemental feature-flag lane (`ctoa_helper_feature_flags.lua`) so every future feature declares default disabled state, domain, and required gate before runtime code can consume it.
-10. Only then consider runtime enablement, and only in sandbox first.
-```
-
-
-## `docs/otclient/ctoai_runtime_2_execution_plan.md`
-
-```markdown
-# CTOAi Runtime 2 Execution Plan
-
-## Decision
-
-CTOAi Runtime 2 will adapt the lightweight event-driven execution model observed in the reviewed vBot 5.0 source without importing its global-state architecture wholesale. CTOAi remains the policy, planning, evidence, and operator layer. OTClient Lua remains the low-latency observation and execution layer.
-
-Runtime actions remain disabled by default. Existing `ctoa_helper_runtime_policy.lua` and `ctoa_helper_dispatch_guard.lua` contracts remain authoritative for future execution.
-
-## Target Flow
-
-1. OTClient adapters collect bounded observations.
-2. Domain observers publish normalized events.
-3. Passive planners produce candidate plans.
-4. Runtime policy and dispatch guard classify each plan.
-5. A future executor may act only after sandbox, manifest, smoke, and live-approval gates pass.
-6. Bounded telemetry reports results to the Helper and Control Center surfaces.
-
-## Migration Principles
-
-- Adapt behavior and domain boundaries; do not copy unreviewed external code.
-- Keep OTClient globals behind guarded adapters.
-- Keep UI, observation, planning, policy, and execution separate.
-- Use one budgeted scheduler instead of adding independent high-frequency loops.
-- New tasks are passive and disabled by default.
-- A scheduler overrun defers work; it never expands the tick budget.
-- A failed task receives bounded backoff and cannot stop other domains.
-- Capability reports must distinguish registered, enabled, healthy, deferred, and failed states.
-
-## Execution Sequence
-
-### P0 — Runtime Core
-
-- Add a runtime module registry separate from the descriptive Helper lane registry.
-- Add a synchronous, failure-isolated event bus.
-- Add a budgeted cooperative scheduler with per-task interval and failure backoff.
-- Expose passive snapshots and counters for diagnostics.
-- Keep every task disabled by default.
-
-Evidence: static contract tests, scheduler behavior tests, loader wiring, safe-boot assertions.
-
-### P1 — Passive Combat/Targeting Adapter
-
-- Normalize target, spectator, protection-zone, cooldown, and latency observations.
-- Publish observation events without calling attack, talk, use, walk, or cast APIs.
-- Feed the existing passive combat planner and decision trace.
-- Report plan and guard status through existing capability telemetry.
-
-Evidence: fixture-based observation tests, no-action static scan, malformed-API fallbacks.
-
-### P2 — Tick Budget and Telemetry Integration
-
-- Route the first observer through Runtime Core.
-- Add deferred-task, execution-time, failure, and backoff counters.
-- Surface a compact scheduler snapshot in Helper diagnostics and the client reporter.
-
-Evidence: deterministic clock tests and bounded diagnostic snapshot tests.
-
-### P3 — Domain Migration
-
-Migrate in order: targeting/combat, recovery/healing, cavebot/pathing, loot, equipment. Each domain must pass observer-only tests before an executor is designed.
-
-### P4 — Guarded Executor
-
-Design an executor only after current sandbox attach, SmokeAttachAll, manifest, release-gate, and explicit live-approval evidence is present. The executor must consume only dispatch-guard-approved plans and must add action-specific cooldown and protection-zone checks.
-
-## Current Status
-
-- P0 implementation: complete repo-side; registry, event bus, budgeted scheduler,
-  Lua behavior probe, loader wiring, and safe-default tests pass.
-- P1 implementation: complete repo-side with a normalized passive
-  combat/targeting observer and guarded OTClient snapshot provider. Loader
-  attachment registers the observer task disabled by default.
-- P2 implementation: complete repo-side. Runtime Core status now reaches Helper
-  diagnostics, bounded diagnostic exports, and the additive `runtime_core`
-  section of the v1 capability report with disabled/deferred/failed counters.
-- P3 implementation: complete repo-side for targeting/combat, recovery/healing,
-  cavebot/pathing, loot, and equipment observers. All five are attached to
-  guarded OTClient providers; Runtime Core reports five registered tasks and
-  zero enabled tasks after safe boot.
-- P4: blocked by current evidence. The latest goal audit verifies 14/19 checks
-  after the official `GoalStatus` refresh and now reports only the genuine
-  in-world ModuleAttachSmoke, SmokeAttachAll, and live-approval blockers. The
-  earlier static freshness mismatch came from running the goal audit without
-  first regenerating `release_gate.json` through `GoalStatus`.
-- The sandbox packaging contract now includes Runtime Core, all five observers,
-  and the guarded OTClient observation adapter in runtime sync, dev manifest,
-  stage construction, and enable/disable lists. A full PrepareDev/ValidateDev
-  rebuild passes 114 tests; the sandbox must log in and rerun attach smoke.
-- The smoke-command resolver now converts virtual `/ctoa_ui_prefs.lua` state to
-  the real sandbox work-directory `ctoa_smoke_command.lua` path before `io.open`.
-  This fixes the repeated `Smoke command failed: nil` loop caused by mixing the
-  resource filesystem with the host filesystem. The rebuilt sandbox is waiting
-  at saved-credential login before the in-world verification can run.
-- Runtime action enablement: prohibited until P4 evidence is complete.
-```
-
-
-## `docs/otclient/solteria_helper_supplemental_refactor_plan.md`
-
-```markdown
-# Solteria Helper Supplemental Refactor Plan
-
-## Current State
-
-- Static helper pack: `passed`.
-- Module static gates: `passed (31/31)`.
-- Local ready: `ready_for_sandbox`.
-- Sandbox queue: `ready_for_operator`.
-- Helper shell budget: `needs_extraction`, `4222` lines and `165` functions.
-- Live status: not ready for live promotion.
-
-The current refactor keeps runtime execution in the guarded helper shell. Passive
-policy, planning, summary, and UI responsibilities should continue moving into
-named modules with static contracts before any runtime bridge is expanded.
-
-## Completed In Current Slice
-
-- Runtime policy now owns protection-zone policy metadata and the final PZ
-  decision.
-- The native helper shell now collects guarded OTClient observations and asks
-  `CTOA_HELPER_RUNTIME_POLICY.protectionZoneDecision(...)` for the block result.
-- Module contract now records runtime-policy ownership for PZ policy and PZ
-  decision.
-- Helper shell PZ logic is smaller while still failing closed when the policy
-  module is unavailable or errors.
-- Profile persistence now owns passive profile export grouping through
-  `ProfilePersistence.exportProfile(...)`; the shell keeps save execution,
-  autosave scheduling, and fallback-only profile assembly.
-- Targeting now owns passive creature-type decisions through
-  `Targeting.creatureTypeDecision(...)`; the shell keeps guarded OTClient
-  method reads and attack execution.
-- Timer runtime now owns passive timer dispatch/status decisions through
-  `TimerRuntime.dispatch(...)`; the shell keeps guarded `castSpell(...)`,
-  `last_timer_ms`, and runtime execution.
-- Static smoke checks now require the new timer dispatch contract and the
-  combat adapter's current `adapter_text` handoff rather than stale shell-only
-  suffix strings.
-- Cavebot runtime now owns passive adapter summary, movement capability
-  normalization, and movement probe snapshot normalization through
-  `CavebotRuntime.adapterSummary(...)`,
-  `CavebotRuntime.movementCapability(...)`, and
-  `CavebotRuntime.probeSnapshot(...)`.
-- Cavebot runtime now owns the passive adapter summary-to-status pipeline
-  through `CavebotRuntime.adapterStatusSummary(...)`; the native shell still
-  supplies guarded online/PZ/route context and only fits the returned status for
-  UI display.
-- Cavebot runtime now owns the full passive movement probe report assembly
-  through `CavebotRuntime.probeReport(...)`; the native shell still reads
-  guarded OTClient movement APIs and only sends the report text to status.
-- The native helper shell still performs guarded OTClient reads, `findPath`, and
-  `autoWalk`, but no longer builds cavebot adapter-summary callbacks inside the
-  runtime loop.
-- Route now owns passive CaveBot editor state and delete-confirm request
-  metadata through `Route.uiState(...)` and `Route.deleteRequest(...)`; the
-  native shell still renders widgets and executes guarded modal confirmation.
-- Combat runtime now owns passive spell cooldown/readiness row normalization
-  through `CombatRuntime.spellReadiness(...)`; the shell still performs guarded
-  creature scanning and spell mob-count observation, while attack/cast execution
-  remains in the guarded helper runtime.
-- Combat runtime now owns passive combat adapter summary assembly through
-  `CombatRuntime.adapterSummary(...)`; the shell passes guarded online/PZ/target
-  observations and only fits the returned text for UI display.
-- Combat runtime now owns passive decision-state summary shaping through
-  `CombatRuntime.decisionStateSummary(...)`; the native shell still reads
-  guarded online/PZ/rune state and performs the final UI text fitting, while
-  attack, cast, rune, and exeta execution remain shell-owned.
-- Diagnostics now owns central API probe status/detail text assembly through
-  `Diagnostics.apiProbeText(...)`; the shell still performs guarded OTClient API
-  reads, retry scheduling, snapshot recording, and UI refresh.
-- Diagnostics now owns passive API/magic probe deferred-retry decisions through
-  `Diagnostics.probeDeferredPlan(...)`; the shell still owns `delay(...)`,
-  startup retry scheduling, guarded OTClient reads, snapshot recording, and UI
-  refresh.
-- Diagnostics now owns passive diagnostics snapshot UI row descriptors through
-  `Diagnostics.snapshotUiRows(...)`; the shell still owns widget existence
-  checks, `fitText(...)`, and `setText(...)`.
-- Cavebot runtime now owns passive movement-reset trace text through
-  `CavebotRuntime.traceText("movement_reset", ...)`; the shell still resets
-  retry/stuck state and only emits the module-owned status message.
-- Cavebot runtime now owns the movement probe report handoff through
-  `CavebotRuntime.probeReport(...)`; the shell no longer orchestrates separate
-  `probeSnapshot` and `probeSummary` calls.
-- Cavebot runtime now owns path-result status text through
-  `CavebotRuntime.pathText(...)`; the shell still performs the guarded
-  `g_map.findPath` read and only passes the passive result snapshot with
-  fallback `n/a`.
-- Cavebot runtime now owns passive movement status/trace prose for walk
-  attempts, test walks, retry-budget blocks, and walk-failed blocks through
-  `CavebotRuntime.statusText(...)` and `CavebotRuntime.traceText(...)`; the
-  native shell still mutates retry state and performs guarded `player:autoWalk`.
-- Cavebot runtime now owns passive walking-status assembly through
-  `CavebotRuntime.walkingStatus(...)`; the native shell still resolves the
-  current route label/retry snapshot and performs guarded `player:autoWalk`.
-- Diagnostics now owns passive smoke-command parsing, tab/subtab target
-  normalization, and smoke status text through
-  `Diagnostics.parseSmokeCommandText(...)`,
-  `Diagnostics.smokeCommandTarget(...)`, and
-  `Diagnostics.smokeTabStatusText(...)`; the native shell still reads/removes
-  the command file, focuses widgets, and executes the guarded smoke action.
-- Route now owns passive CaveBot editor action dispatch through
-  `Route.editorAction(...)`; the native shell still reads the player position,
-  preserves the delete confirmation modal, marks profiles dirty only from the
-  route-owned result, and never moves/pathfinds from the route module.
-- Combat runtime now owns passive rotation spell selection through
-  `CombatRuntime.rotationSpell(...)`; the native shell still observes nearby
-  monsters, builds spell rows from guarded scan results, and keeps all
-  `castSpell(...)` execution inside the guarded helper runtime.
-- Combat runtime now owns passive offensive action status text through
-  `CombatRuntime.actionStatusText(...)`; the native shell still enforces PZ,
-  action-lock, recovery-gap, cast, and rune execution guards.
-- Combat runtime now owns passive targeting status text through
-  `CombatRuntime.targetingStatusText(...)`; the native shell still performs
-  guarded target scanning, target clearing, chase mode, and `g_game.attack`.
-- Combat runtime now owns passive next-action label formatting through
-  `CombatRuntime.nextActionText(...)`; the native shell still computes the
-  guarded action and fallback wait reason.
-- The native helper shell now calls diagnostics, route, combat runtime, and
-  cavebot runtime adapters through one shared guarded `moduleValue(...)`
-  invoker, reducing repeated `pcall` scaffolding while keeping all guarded
-  scans, file command handling, widget rendering, modal confirmation,
-  profile-dirty marking, `autoWalk`, `findPath`, casts, rune use, and attacks
-  shell-owned.
-- Combat decision-state and adapter-summary handoffs now rely only on the
-  shared `moduleValue(externalCombatRuntime, ...)` guard; the shell no longer
-  carries duplicate `externalCombatRuntime.*` preflight branches for those
-  passive text paths.
-- Combat runtime now owns passive rotation spell row normalization through
-  `CombatRuntime.rotationSpellRows(...)`; the native shell still supplies only
-  guarded scan snapshots and last-cast state, while spell selection, readiness
-  rows, and target/status prose remain behind
-  `moduleValue(externalCombatRuntime, ...)`.
-- Module contract and static smoke now require `CombatRuntime.targetingStatusText(...)`
-  and `owns_targeting_status_text = true`, matching the existing shell handoff
-  for blocked/no-target/friendly-summon/auto-target runtime status text.
-- Diagnostics now owns passive smoke-command status text through
-  `Diagnostics.smokeCommandStatusText(...)`; the native shell still reads and
-  removes the smoke command file, switches helper tabs, and executes only the
-  existing guarded probe/action paths.
-- The native helper shell now calls smoke-command parsing, target selection,
-  and status text directly through `moduleValue(externalDiagnostics, ...)`,
-  removing the remaining local smoke-command wrapper functions while keeping
-  tab switching, command-file removal, probe execution, export, and cavebot
-  action dispatch shell-owned.
-- The native helper shell now calls diagnostics formatter/probe/export helpers
-  through the shared `moduleValue(externalDiagnostics, ...)` invoker while
-  keeping OTClient reads, file command handling, and smoke execution
-  shell-owned.
-- The native helper shell now calls cavebot runtime adapter summary and movement
-  probe report helpers directly through
-  `moduleValue(externalCavebotRuntime, ...)`, removing extra shell wrapper
-  functions while keeping `autoWalk`, `findPath`, retry mutation, and status
-  emission shell-owned.
-- The native helper shell now calls cavebot adapter status text directly through
-  `moduleValue(externalCavebotRuntime, "adapterStatusText", ...)`, removing
-  the last adapter-status wrapper while keeping status display and all movement
-  execution in the guarded shell.
-- Cavebot movement capability now keeps only the guarded `player:canWalk(true)`
-  read in the shell; `CavebotRuntime.movementCapability(...)` owns the passive
-  capability decision, and the shell fallback is reduced to a minimal
-  module-unavailable path.
-- Cavebot movement blocked-reason fallback now reuses the same online/player/
-  position/PZ context passed to `CavebotRuntime.movementBlockedReason(...)`,
-  avoiding repeated shell-side state checks while keeping movement execution
-  and `autoWalk` guarded in the native shell.
-- Cavebot runtime now owns passive adapter status text through
-  `CavebotRuntime.adapterStatusText(...)`; the native shell still resolves the
-  active route target, gathers guarded route context, mutates retry state, and
-  executes only the existing guarded `player:autoWalk(...)` path.
-- The native helper shell now calls cavebot path-result and walking-status
-  adapters directly through `moduleValue(externalCavebotRuntime, ...)`,
-  removing the remaining one-off shell wrappers for those passive cavebot texts
-  while keeping `g_map.findPath`, route label resolution, retry mutation, and
-  `player:autoWalk(...)` shell-owned.
-- The native helper shell now calls combat adapter summary directly through
-  `moduleValue(externalCombatRuntime, "adapterSummary", ...)`, removing the one-off
-  `combatRuntimeAdapterSummary(...)` wrapper while keeping guarded online/PZ
-  observation, target presence, text fitting, creature scans, casts, rune use,
-  and attacks shell-owned.
-- Loot runtime now owns passive adapter summary assembly through
-  `LootRuntime.adapterSummary(...)`; the native shell no longer carries the
-  `lootRuntimeAdapterSummary(...)` wrapper or a one-off
-  `pcall(externalLootRuntime.adapterSummary, ...)` branch and only passes
-  guarded online/PZ context plus container-count probe data for diagnostics
-  text through `moduleValue(externalLootRuntime, "adapterSummary", ...)`.
-- Cavebot runtime now owns passive retry-budget decisions through
-  `CavebotRuntime.retryDecision(...)`; the native shell still mutates
-  `cavebot_movement_enabled` and retry counters, emits module-owned status and
-  trace text, and keeps every guarded `player:autoWalk(...)` call shell-owned.
-- Cavebot runtime now owns the passive "no player position" waypoint-editor
-  status through `CavebotRuntime.statusText("no_player_position")`; the native
-  shell still performs the guarded local-player position read and refuses to add
-  a waypoint when no position is available.
-- Diagnostics now owns passive smoke-command file existence probing through
-  `Diagnostics.smokeCommandExists(...)`; the native shell still chooses the
-  smoke command path, reads/parses the command, deletes the command file, and
-  executes every smoke action in guarded shell code.
-- Profile persistence now owns the full profile export field grouping through
-  `ProfilePersistence.exportProfile(...)`; the native shell keeps only a
-  minimal module-unavailable fallback plus the guarded save execution path.
-- Profile persistence also owns the UI preferences export shape through
-  `ProfilePersistence.exportUiPrefs(...)`; the native shell keeps the guarded
-  save path, serializer call, and minimal module-unavailable fallback.
-- Profile persistence now owns passive UI preferences normalization through
-  `ProfilePersistence.uiPrefsPlan(...)`; the native shell still owns
-  `dofile(...)`, guarded config/helper mutation, status emission, and the
-  selected `Helper.ui_path`.
-- Diagnostics now owns movement API probe deferral decisions through the shared
-  `Diagnostics.probeDeferredPlan(...)`; the native shell still owns delayed
-  scheduling, guarded movement/API reads, path probing, and status emission.
-- The profile schema, profile persistence, and hotkey shell adapters now reuse
-  the generic `moduleValue(...)` protected invoker instead of carrying separate
-  per-domain `pcall(...)` branches.
-- Diagnostics formatter/counting bridge calls now share one
-  `diagnosticsText(...)` shell adapter, and unused shell-only `apiText`,
-  `valueText`, `boolText`, `posText`, `tableCount`, and `firstTableValue`
-  wrappers were removed; the diagnostics module still owns the passive text,
-  table-count, and first-value decisions.
-- Operator summary, scripting policy snapshot, modal request/status, and
-  targeting score/best-candidate handoffs now reuse the shared
-  `moduleValue(...)` guarded invoker instead of one-off `pcall(...)` branches;
-  the shell still owns UI rendering, modal confirmation execution, guarded
-  creature scans, target choice fallback, and all attack/cast execution.
-- Cavebot status and trace formatting now share one
-  `cavebotRuntimeText(...)` bridge into `CavebotRuntime.statusText(...)` and
-  `CavebotRuntime.traceText(...)`, replacing separate shell wrappers while
-  keeping `g_map.findPath`, retry mutation, and every `player:autoWalk(...)`
-  call in the guarded native shell.
-- Combat action and targeting status formatting now share one
-  `combatRuntimeText(...)` bridge into `CombatRuntime.actionStatusText(...)`
-  and `CombatRuntime.targetingStatusText(...)`, replacing separate shell
-  wrappers while keeping guarded target scans, spell casts, rune actionbar use,
-  action locks, and `g_game.attack(...)` execution in the native shell.
-- HUD start/disarmed/runtime text and passive position lookup now route through
-  direct `moduleValue(externalHud, ...)` calls instead of per-HUD `pcall(...)`
-  wrappers or a shell-owned HUD text bridge; `ctoa_helper_hud.lua` still owns
-  passive text and geometry defaults, while the shell keeps widget creation,
-  movement, visibility, and all OTClient UI calls.
-- Protection-zone policy resolution and final PZ decision now use the shared
-  `moduleValue(externalRuntimePolicy, ...)` bridge instead of two local
-  runtime-policy `pcall(...)` wrappers; the shell still performs guarded
-  `g_game` / `g_map` observation because the policy module remains passive and
-  does not call OTClient globals.
-- The native shell no longer carries a duplicate protection-zone policy fallback
-  table; if `ctoa_helper_runtime_policy.lua` is unavailable, PZ-sensitive
-  runtime gates now fail closed by treating the player as protected instead of
-  reconstructing policy metadata in the shell.
-- Module registry summary/readiness shell calls now use the shared
-  `moduleValue(externalModules, ...)` bridge for lane enabled/runtime text,
-  registry summary, short labels, and readiness rows; `ctoa_helper_modules.lua`
-  stays the owner of registry/readiness semantics while the native helper keeps
-  only overview widget wiring.
-- Operator summary calls now share one table-driven bridge map for
-  title/domain/profile/UI summaries; `ctoa_helper_operator_summary.lua` owns
-  summary formatting plus `bridgeText(...)` fallback dispatch, while the shell
-  keeps only context assembly, widget refresh calls, and guarded module
-  invocation through `moduleValue(...)`.
-- Profile label callbacks now share one table-driven `profileLabelText(...)`
-  bridge into `ctoa_helper_profile_schema.lua` for spell, potion, rune,
-  priority, and theme labels; the UI-facing callback names remain stable while
-  duplicate shell wrapper functions are removed.
-- Recovery runtime now owns passive vitals normalization, healing spell
-  selection, recovery action-gap planning, and recovery status text through
-  `ctoa_helper_recovery_runtime.lua`; the native shell still performs guarded
-  player API reads, actionbar potion sends, spell casts, cooldown mutation, and
-  UI/status emission.
-- UI now owns passive metric-card geometry and metric text update planning
-  through `Ui.metricCardGeometry(...)` and `Ui.metricTextPlan(...)`; the native
-  shell still creates widgets, assigns sections, and calls guarded OTClient UI
-  APIs, while the unused placeholder-module shell helper has been removed.
-- The native shell no longer carries the obsolete toggle-button registry path
-  (`setToggleText`, `addToggleButton`, and `Helper.toggles`); current row
-  toggles remain owned by the guarded UI row builders and profile/UI adapters.
-- UI now owns active panel renderers for `healing`, `heal_friend`,
-  `conditions`, `equipment`, and `scripting`; the native shell passes guarded
-  callbacks/config context and keeps runtime execution, OTClient API calls, and
-  arming decisions in the shell.
-- UI now owns operator-summary refresh and setting-row builders
-  (`Ui.refreshOperatorSummaries`, `Ui.addSettingRow`,
-  `Ui.addToggleSettingRow`); the native shell remains the source of summary
-  data and dirty/sync callbacks but no longer manually updates each summary
-  widget or lays out setting rows.
-- The native shell no longer carries dead coming-soon tab configuration or
-  one-shot UI wrapper functions for section bodies, sidebar profile card, and
-  overview rendering; active tabs remain bound directly and overview rendering
-  delegates to the UI module inline.
-- The native shell also removed the remaining one-shot table/toggle row wrapper
-  names; panel renderers now receive inline guarded context callbacks, and the
-  UI module contract no longer exposes unused inactive/disabled nav styles.
-- Profile schema now owns one more passive text bridge (`onOffLabel`) and the
-  native shell consumes schema option lists and profile labels directly from
-  the module instead of carrying local profile option/list/label adapters.
-- UI builder delegation is leaner: tab, subtab, and action-button styling now
-  calls `CTOA_HELPER_UI` directly through `styleUi(...)`; the shell no longer
-  carries local style wrapper functions for those controls.
-- Muted/accent sidebar and section labels now use `addLabel(...)` plus direct
-  UI style calls instead of named shell wrappers, leaving the UI module as the
-  styling owner while preserving the same rendered labels.
-- Priority badges follow the same pattern: panel renderers receive an inline
-  guarded context callback, so the shell no longer carries a named
-  `addPriorityBadge(...)` wrapper.
-- Footer and summary strips now follow the same renderer-context pattern. The
-  shell no longer carries named `addFooterStrip(...)` or `addSummaryStrip(...)`
-  wrappers, while panel renderers still receive guarded callbacks with the same
-  widget styling and section registration.
-- Table headers now use the renderer context directly as well: the shell no
-  longer carries a named `addTableHeader(...)` wrapper, and batch table headers
-  call the same guarded context callback.
-- Section bands and subtab buttons now use renderer-context callbacks instead
-  of named shell wrappers. `addSectionScaffold(...)` remains shell-owned because
-  it creates the guarded OTClient body container, while section header and
-  subtab widget composition no longer add shell function pressure.
-- Diagnostics text formatting now bypasses shell forwarding wrappers. The shell
-  calls `ctoa_helper_diagnostics.lua` through `moduleValue(...)` for boolean,
-  position, API snapshot, feature flag, movement, magic/loot, and export-buffer
-  text; the smoke commands and runtime sampling remain guarded shell-owned.
-- Operator summary bridge calls now bypass the last shell-owned dispatch
-  wrapper. `ctoa_helper_operator_summary.lua` owns `bridgeText(...)` fallback
-  dispatch, while the shell still owns context assembly and widget refresh
-  calls.
-- Heal Friend fallback status text now uses the shared
-  `moduleValue(externalHealFriend, "statusText", ...)` adapter. The shell no
-  longer has a one-off `externalHealFriend.statusText` pcall branch, while
-  observation scans and all runtime execution gates remain shell-owned.
-- Scripting policy snapshot no longer has a named shell wrapper. The scripting
-  panel renderer receives a guarded callback that calls
-  `ctoa_helper_scripting.lua` through `moduleValue(...)`, while the module
-  still owns passive policy text and blocked unsafe-state wording.
-- Module registry overview data now bypasses four shell wrappers
-  (`moduleLaneEnabled`, `moduleLaneRuntimeText`, `moduleRegistrySummaryText`,
-  and `moduleReadinessRowText`). Overview refresh calls
-  `ctoa_helper_modules.lua` through `moduleValue(...)` directly for registry
-  summary and readiness rows, while the UI module still owns rendering.
-- Profile step rows no longer use the single-call `profileSchemaNumber(...)`
-  shell wrapper. The row adapter calls `ProfileSchema.stepValue(...)` through
-  `profileSchemaValue(...)` directly and keeps the same numeric fallback.
-- Protection-zone state checks no longer use the single-call `pcallWithArg(...)`
-  wrapper. `hasAnyState(...)` keeps the same guarded `pcall` behavior inline,
-  returning false on unavailable methods or protected-call failures.
-- Actionbar slot display text no longer has a shell-owned
-  `actionbarSlotText(...)` wrapper. Runtime potion/rune status and operator
-  summaries call `ctoa_helper_hotkeys.lua` through `moduleValue(...)` or pass
-  the module formatter directly, while `sendActionbarSlot(...)` remains the
-  guarded shell-owned execution path.
-- Hotkey display and module forwarding now bypass the shell-owned
-  `hotkeyValue(...)` and `hotkeyDisplayText(...)` wrappers. The helper shell
-  still keeps guarded hotkey bind fallback logic, while passive normalize,
-  display, and binding decisions are owned by `ctoa_helper_hotkeys.lua`.
-- Modal confirmation flow no longer uses shell-owned `modalValue(...)` or
-  `modalStatusText(...)` wrappers. The shell calls `ctoa_helper_modal.lua`
-  directly through `moduleValue(...)` for request, pending, and status text,
-  while cavebot delete execution and confirmation fallback remain shell-owned.
-- HUD runtime/start/disarmed text no longer uses the shell-owned
-  `hudText(...)` wrapper. The shell calls `ctoa_helper_hud.lua` directly
-  through `moduleValue(...)`, while HUD widget creation, positioning, and
-  visibility remain shell-owned and guarded.
-- Profile schema text formatting no longer uses the shell-owned
-  `profileSchemaText(...)` wrapper. On/off labels, autosave labels, rotation
-  preset labels, and rotation summary now call `ProfileSchema` directly through
-  `profileSchemaValue(...)` with local fallbacks at each use site.
-- Profile number formatting no longer keeps a shell-owned `profileNumberText`
-  alias. UI renderer contexts receive `tostring` directly for passive numeric
-  display text.
-- Profile field geometry now reuses `profileSchemaTable("fieldGeometry", ...)`
-  directly from the UI row adapter instead of unpacking and rebuilding the same
-  table in the shell; `ctoa_helper_profile_schema.lua` remains the passive
-  geometry owner while OTClient widget construction stays shell-owned.
-- The obsolete shell-owned `profileFieldGeometry(...)` wrapper is removed; the
-  static profile-schema gate now requires direct UI/profile row delegation.
-- Operator-summary panel setup no longer carries per-domain
-  `*SummaryText = function()` wrappers. Initial panel summary text is captured
-  as a string snapshot during `rebuildUi(...)`, while
-  `refreshOperatorSummaries(...)` still refreshes live widgets through
-  `ctoa_helper_operator_summary.lua` and the shared guarded `moduleValue(...)`
-  bridge.
-
-## Non-Negotiable Gates
-
-- Do not promote live until sandbox `SmokeAttachModules`, fresh
-  `SmokeAttachAll`, release gate, and explicit
-  `PromoteLiveCtoa -ApproveLiveDeploy` are current.
-- Do not enable combat, movement, rune casting, timer, healing, loot, or eval at
-  loader initialization.
-- Keep external bot sources as references only until provenance, license, secret
-  scan, import gate, and mapped module gates pass.
-- Keep vBot-derived implementation claims blocked until a reviewed source tree
-  or archive is present in this checkout.
-
-## Next Work Order
-
-| Order | Workstream | Goal | First action | Required gate |
-|---:|---|---|---|---|
-| 1 | `runtime_cavebot` | Continue reducing cavebot runtime shell pressure without moving movement execution. | Move remaining movement preflight/status labels into cavebot runtime adapters; keep `autoWalk` and `findPath` shell-owned. | CavebotRuntimeStaticSmoke, RouteStaticSmoke, sandbox cavebot attach evidence. |
-| 2 | `runtime_combat` | Keep attack/cast guarded while extracting remaining passive readiness labels. | Move remaining combat wait/decision-state input shaping into combat runtime/targeting adapters; keep creature scans and casts shell-owned. | CombatRuntimeStaticSmoke, TargetingStaticSmoke, sandbox hunting and hunting_magic attach evidence. |
-| 3 | `diagnostics_smoke` | Keep smoke evidence formatting module-owned. | Move any remaining smoke report/static result labels into diagnostics helpers; keep smoke command execution shell-owned. | Diagnostics contract checks, ModuleStaticGates, LocalReady. |
-| 4 | `ui_builder` | Reduce shell-only UI builder pressure before adding new tabs. | Continue moving repeated section, row, and metric metadata into passive UI descriptor tables; metric-card geometry/text planning is already module-owned. | UI preview, ModuleStaticGates, no layout overlap evidence. |
-| 5 | `runtime_recovery` | Prepare healing/recovery metadata without enabling new actions. | Continue mirroring potion/spell blocked-reason labels in passive recovery metadata; vitals, spell selection, status text, and action-gap planning are already module-owned. | Safe-boot false-key coverage, recovery targeted tests, sandbox evidence. |
-| 6 | `sandbox_runtime_review` | Decide whether any passive plan can become a guarded dispatcher input. | Run Launch, ReadyCheck, SmokeAttachModules, SmokeAttachAll for the current manifest. | Release gate current and live promotion still explicit. |
-
-## Operator Sequence
-
-1. Run `ValidateDev` after source changes so manifest, ZIP hash, smoke preflight,
-   and release-readiness evidence are synchronized.
-2. Run `ModuleStaticGates` and `LocalReady`.
-3. Launch the sandbox client and enter a test character.
-4. Run `SmokeAttachModules`, then `SmokeAttachAll`.
-5. Only after those pass, review runtime bridge candidates.
-6. Use the official live wrapper only when the release gate is current and the
-   user explicitly approves live deployment.
-```
-
-
-## `docs/otclient/solteria_helper_sandbox_smoke_queue.md`
-
-```markdown
-# Solteria Helper Sandbox Smoke Queue
-
-## Decision
-
-- Status: `passed`
-- Helper version: `v2.0.0`
-- Runtime status: `ready_for_readycheck`
-- Release gate: `passed`
-- Next action: Refresh local package and static gates
-- Live safety: read-only plan; live promotion still requires `-ApproveLiveDeploy`.
-
-## Queue
-
-| Order | Step | Status | Command | Evidence | Reason |
-|---:|---|---:|---|---|---|
-| 1 | `local_ready` / Refresh local package and static gates | `required` | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action LocalReady` | `C:\Users\zycie\CTOAi\runtime\solteria_helper_dev\local_ready.json` | Local package, SmokePreflight, ModuleStaticGates, and GoalStatus should be current before attach. |
-| 2 | `launch_sandbox` / Launch sandbox client and enter test character | `required` | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action Launch` | `C:\Users\zycie\CTOAi\runtime\solteria_helper_dev\smoke_status.json` | Run ReadyCheck, then SmokeAttachModules when the test character is in-world. |
-| 3 | `ready_check` / Confirm helper is attached in-world | `required` | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action ReadyCheck` | `C:\Users\zycie\CTOAi\runtime\solteria_helper_dev\ready_check.json` | Run after the sandbox character is in-world; character-select screens are not enough. |
-| 4 | `module_attach_group` / Capture grouped prototype module tab evidence | `passed` | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttachModules` | `C:\Users\zycie\CTOAi\runtime\solteria_helper_dev\module_attach_smoke.json` | Prototype module tabs need grouped in-world evidence. |
-| 5 | `attach_heal_friend` / Attach module tab: heal_friend | `passed` | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttach -Tab heal_friend` | `runtime\solteria_helper_dev\module_attach_smoke.json` | Static gate is passed; in-world tab evidence is still required. |
-| 6 | `attach_conditions` / Attach module tab: conditions | `passed` | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttach -Tab conditions` | `runtime\solteria_helper_dev\module_attach_smoke.json` | Static gate is passed; in-world tab evidence is still required. |
-| 7 | `attach_equipment` / Attach module tab: equipment | `passed` | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttach -Tab equipment` | `runtime\solteria_helper_dev\module_attach_smoke.json` | Static gate is passed; in-world tab evidence is still required. |
-| 8 | `attach_scripting` / Attach module tab: scripting | `passed` | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttach -Tab scripting` | `runtime\solteria_helper_dev\module_attach_smoke.json` | Static gate is passed; in-world tab evidence is still required. |
-| 9 | `attach_hud` / Attach module tab: hud | `passed` | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttach -Tab tools_hud` | `runtime\solteria_helper_dev\module_attach_smoke.json` | Static gate is passed; in-world tab evidence is still required. |
-| 10 | `attach_route` / Attach module tab: route | `passed` | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttach -Tab cavebot` | `runtime\solteria_helper_dev\module_attach_smoke.json` | Static gate is passed; in-world tab evidence is still required. |
-| 11 | `attach_targeting` / Attach module tab: targeting | `passed` | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttach -Tab hunting` | `runtime\solteria_helper_dev\module_attach_smoke.json` | Static gate is passed; in-world tab evidence is still required. |
-| 12 | `attach_combat_runtime` / Attach module tab: combat_runtime | `passed` | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttach -Tab hunting_magic` | `runtime\solteria_helper_dev\module_attach_smoke.json` | Static gate is passed; in-world tab evidence is still required. |
-| 13 | `attach_cavebot_runtime` / Attach module tab: cavebot_runtime | `passed` | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttach -Tab cavebot` | `runtime\solteria_helper_dev\module_attach_smoke.json` | Static gate is passed; in-world tab evidence is still required. |
-| 14 | `attach_loot_runtime` / Attach module tab: loot_runtime | `passed` | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttach -Tab tools_diag` | `runtime\solteria_helper_dev\module_attach_smoke.json` | Static gate is passed; in-world tab evidence is still required. |
-| 15 | `attach_timer_runtime` / Attach module tab: timer_runtime | `passed` | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttach -Tab tools_timer` | `runtime\solteria_helper_dev\module_attach_smoke.json` | Static gate is passed; in-world tab evidence is still required. |
-| 16 | `smoke_attach_all` / Capture full in-world helper acceptance | `passed` | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttachAll` | `C:\Users\zycie\CTOAi\runtime\otclient_ui_preview\solteria-helper-smokeall-inworld-20260711-0131.json` | Fresh full attach report is required for the current manifest. |
-| 17 | `promote_live_approval` / Promote only after explicit live approval | `passed` | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action PromoteLiveCtoa -ApproveLiveDeploy -SmokeReport <fresh-smokeattachall-json>` | `C:\Users\zycie\CTOAi\runtime\solteria_helper_dev\live_promotion.json` | Live promotion remains gated by explicit approval. |
-
-## Static-Only Modules
-
-| Module | Status | Evidence | Reason |
-|---|---:|---|---|
-| `planner` | `passed` | `C:\Users\zycie\CTOAi\runtime\solteria_helper_dev\planner_static_smoke.json` | No dedicated UI tab; covered by static gate report and grouped module attach context. |
-| `runtime_policy` | `passed` | `C:\Users\zycie\CTOAi\runtime\solteria_helper_dev\runtime_policy_static_smoke.json` | No dedicated UI tab; covered by static gate report and grouped module attach context. |
-| `dispatch_guard` | `passed` | `C:\Users\zycie\CTOAi\runtime\solteria_helper_dev\dispatch_guard_static_smoke.json` | No dedicated UI tab; covered by static gate report and grouped module attach context. |
-| `plan_queue` | `passed` | `C:\Users\zycie\CTOAi\runtime\solteria_helper_dev\plan_queue_static_smoke.json` | No dedicated UI tab; covered by static gate report and grouped module attach context. |
-| `runtime_readiness` | `passed` | `C:\Users\zycie\CTOAi\runtime\solteria_helper_dev\runtime_readiness_static_smoke.json` | No dedicated UI tab; covered by static gate report and grouped module attach context. |
-| `module_status` | `passed` | `C:\Users\zycie\CTOAi\runtime\solteria_helper_dev\module_status_static_smoke.json` | No dedicated UI tab; covered by static gate report and grouped module attach context. |
-| `action_catalog` | `passed` | `C:\Users\zycie\CTOAi\runtime\solteria_helper_dev\action_catalog_static_smoke.json` | No dedicated UI tab; covered by static gate report and grouped module attach context. |
-| `decision_trace` | `passed` | `C:\Users\zycie\CTOAi\runtime\solteria_helper_dev\decision_trace_static_smoke.json` | No dedicated UI tab; covered by static gate report and grouped module attach context. |
-| `sandbox_handoff` | `passed` | `C:\Users\zycie\CTOAi\runtime\solteria_helper_dev\sandbox_handoff_static_smoke.json` | No dedicated UI tab; covered by static gate report and grouped module attach context. |
-| `feature_flags` | `passed` | `C:\Users\zycie\CTOAi\runtime\solteria_helper_dev\feature_flags_static_smoke.json` | No dedicated UI tab; covered by static gate report and grouped module attach context. |
-| `hotkeys` | `passed` | `C:\Users\zycie\CTOAi\runtime\solteria_helper_dev\hotkeys_static_smoke.json` | No dedicated UI tab; covered by static gate report and grouped module attach context. |
-| `modal` | `passed` | `C:\Users\zycie\CTOAi\runtime\solteria_helper_dev\modal_static_smoke.json` | No dedicated UI tab; covered by static gate report and grouped module attach context. |
-| `input_contracts` | `passed` | `C:\Users\zycie\CTOAi\runtime\solteria_helper_dev\input_contract_fixtures.json` | No dedicated UI tab; covered by static gate report and grouped module attach context. |
-| `profile_schema` | `passed` | `C:\Users\zycie\CTOAi\runtime\solteria_helper_dev\profile_schema_static_smoke.json` | No dedicated UI tab; covered by static gate report and grouped module attach context. |
-| `operator_summary` | `passed` | `C:\Users\zycie\CTOAi\runtime\solteria_helper_dev\operator_summary_static_smoke.json` | No dedicated UI tab; covered by static gate report and grouped module attach context. |
-| `external_bot_import_gate` | `passed` | `C:\Users\zycie\CTOAi\runtime\solteria_helper_dev\external_bot_import_gate_static_smoke.json` | No dedicated UI tab; covered by static gate report and grouped module attach context. |
-| `helper_shell_budget` | `passed` | `C:\Users\zycie\CTOAi\runtime\solteria_helper_dev\helper_shell_budget_static_smoke.json` | No dedicated UI tab; covered by static gate report and grouped module attach context. |
-| `helper_shell_budget_plan` | `passed` | `C:\Users\zycie\CTOAi\runtime\solteria_helper_dev\helper_shell_budget_plan.json` | No dedicated UI tab; covered by static gate report and grouped module attach context. |
-
-## Operator Rule
-
-Run this queue from top to bottom. If any attach step reports character-select, offline helper, stale manifest, or failed screenshot evidence, stop and refresh `LocalReady` before continuing.
-```
-
-
-## `docs/otclient/zerobot_reference.md`
-
-```markdown
-# ZeroBot / ZeroLauncher Reference
-
-## Purpose
-
-This note captures what is actually useful from the local `ZeroLauncher` package for CTOAi OTClient work.
-
-Source inspected:
-
-- `C:\Users\zycie\Downloads\ZeroLauncher (1).zip`
-- `C:\Users\zycie\Downloads\ZeroLauncher`
-- `C:\Users\zycie\Downloads\ZeroLauncher\data\core.zip`
-
-This is not product documentation. It is a binary launcher package with a Lua runtime layer and client patch metadata.
-
-## What The Package Contains
-
-Top-level package contents:
-
-- `ZeroBot.exe`
-- `ZeroBotLauncher.exe`
-- `ZeroBotLauncher64.exe`
-- `data/core.zip`
-- `data/sounds.zip`
-- `data/ZeroBot-*.dll`
-- `versions.txt`
-- `patch_addresses.txt`
-- `version_addresses.txt`
-
-Practical reading:
-
-- the package is useful for behavior and API patterns
-- the package is not useful as a clean visual reference for the current helper panel
-- the package does not provide a ready-made OTClient UI skin we should copy
-
-## Lua Runtime Inventory
-
-The main technical value sits in `data/core.zip`.
-
-Relevant files:
-
-- `hud.lua`
-- `custom_modal_window.lua`
-- `hotkeymanager.lua`
-- `game.lua`
-- `player.lua`
-- `inventory.lua`
-- `map.lua`
-- `spells.lua`
-- `cavebot.lua`
-- `engine.lua`
-
-These files describe the wrapper layer ZeroBot exposes to scripts.
-
-## Useful Capabilities To Reuse Conceptually
-
-### HUD wrapper
-
-`hud.lua` exposes a structured HUD object with:
-
-- creation of text, item, spell-icon, and outfit HUD nodes
-- explicit `setPos`, `show`, `hide`, `setDraggable`
-- visual controls such as `setColor`, `setFontSize`, `setScale`, `setOpacity`, `setZIndex`
-- click callbacks with `setCallback`
-
-Why this matters for CTOAi:
-
-- our helper already has HUD behavior, but the ZeroBot wrapper is cleaner as an API surface
-- it suggests separating panel UI from overlay HUD concerns
-- it confirms that HUD state should be treated as a first-class subsystem, not just a couple of booleans in a larger panel
-
-### Custom modal wrapper
-
-`custom_modal_window.lua` exposes:
-
-- modal creation
-- caption and description setters
-- button creation
-- click callback registration
-- explicit destroy lifecycle
-
-Why this matters for CTOAi:
-
-- confirms a good pattern for confirmation UI
-- useful later if we want profile import/export confirmation, reset actions, or runtime warnings
-- this is a logic/API reference, not a visual reference
-
-### Hotkey parsing
-
-`hotkeymanager.lua` exposes:
-
-- string-to-keycode mapping
-- parsing for combinations like `Ctrl+H`
-- a normalization point for keyboard modifiers
-
-Why this matters for CTOAi:
-
-- our helper already binds hotkeys, but this file is a good reference if we later want stricter parsing or validation
-- it suggests keeping hotkey parsing isolated from panel layout logic
-
-### Runtime domain modules
-
-The package also has focused runtime modules such as:
-
-- player state
-- map access
-- inventory access
-- cavebot orchestration
-- spell helpers
-
-Why this matters for CTOAi:
-
-- these files are useful for capability mapping and naming conventions
-- they are not a reason to change the current helper UI layout directly
-
-## What Is Not Worth Copying
-
-Do not copy from ZeroLauncher:
-
-- launcher aesthetics inferred from the binaries
-- old-school bot UX conventions with dense technical labeling everywhere
-- modal-heavy workflows as the default interaction model
-- version patch tables and address metadata
-- opaque monolithic wrappers without a clean separation between domain state and presentation
-
-## Direct Comparison With Current CTOAi Helper
-
-Current CTOAi helper implementation:
-
-- [ctoa_native_helper.lua](../../scripts/lua/otclient/ctoa_native_helper.lua)
-
-Current CTOAi helper strengths:
-
-- runtime/profile/UI prefs are already separated conceptually
-- helper supports profile save/load and UI prefs persistence
-- helper has explicit sections for healing, tools, profile, and UI
-- helper already exposes HUD toggles and window placement
-
-Current CTOAi helper weaknesses:
-
-- layout is widget-heavy and visually noisy
-- too many bordered boxes compete for attention
-- labels, values, and controls do not produce a clear visual hierarchy
-- the panel reads like a debug tool rather than a polished in-client operator surface
-
-## Recommended Use Of ZeroLauncher Material
-
-Use ZeroLauncher as:
-
-- an API reference
-- a behavior reference
-- a capability checklist
-
-Do not use ZeroLauncher as:
-
-- the visual blueprint for the helper panel
-- the design language for spacing, typography, or control composition
-
-## Actionable Follow-Up
-
-The right next step is not reverse-engineering more binaries. The right next step is rebuilding the helper panel around a quieter information architecture.
-
-Companion design note:
-
-- [helper_redesign.md](helper_redesign.md)
-```
-
-
-## `docs/otclient/vbot_import_review.md`
-
-```markdown
-# vBot Import Review
-
-## Decision
-
-- Status: `source_required`.
-- No vBot source tree or reviewed local archive is present in this checkout.
-- Do not claim vBot-derived implementation until source provenance, license
-  notes, secret scan, and module mapping are recorded here.
-- External bot projects may be used as capability checklists and naming
-  references only. Do not directly copy code into CTOAi helper modules without
-  explicit source and license review.
-
-## Intake Requirements
-
-A valid vBot or vBot-like source handoff must include:
-
-1. Source path or archive name.
-2. Origin URL or owner-provided provenance note.
-3. License text or explicit permission note.
-4. SHA256 for the archive or source snapshot.
-5. Secret scan result for tokens, accounts, server IPs, and local runtime state.
-6. File inventory grouped by capability: healing, targeting, cavebot, looting,
-   HUD, hotkeys, conditions, equipment, scripting, and diagnostics.
-7. Risk notes for every runtime action path: movement, attack, spell cast, rune,
-   item use, chat/talk, filesystem write, and profile migration.
-
-Use the checked intake command before reviewing code manually:
-
-```powershell
-.\.venv\Scripts\python.exe scripts\ops\otclient_external_bot_intake.py <source-path-or-zip> --origin "<origin-or-owner-note>" --license-note "<license-or-permission-note>"
-```
-
-The generated report is an intake gate, not an import approval. Any warnings
-for movement, attack, spell cast, item use, keyboard binding, filesystem write,
-or dynamic code still need mapping into passive CTOAi helper modules first.
-The report must include `import_gate`, and `import_gate.runtime_import_allowed`
-must stay `false` until the matching CTOAi module gates and sandbox evidence
-prove the behavior.
-
-## Import Gate Contract
-
-The intake gate converts external bot findings into a CTOAi decision:
-
-- `source_required`: no source was provided, so no import work can claim vBot
-  behavior.
-- `review_required`: source exists, but provenance, license, secret, or review
-  blockers remain.
-- `capability_mapping_only`: source can be reviewed as a checklist, but runtime
-  import is still blocked.
-
-`import_gate.direct_copy_allowed` is always `false`. Detected runtime actions
-must appear in `runtime_gate_mapping` and point at existing CTOAi gates such as
-`combat_runtime`, `cavebot_runtime`, `loot_runtime`, `hotkeys`,
-`profile_schema`, or `scripting`.
-
-## Mapping Policy
-
-Map external bot behavior into existing CTOAi helper domains instead of adding
-new runtime shortcuts:
-
-| External capability | CTOAi target | Import rule |
-|---|---|---|
-| HUD text/overlay helpers | `ctoa_helper_hud.lua` | Keep passive text/position formatting only. |
-| Hotkey parsing/manager | `ctoa_helper_hotkeys.lua` | Keep parser/display helpers only; binding stays in helper shell. |
-| Confirmation modals | `ctoa_helper_modal.lua` | Keep request/expiry/status lifecycle only; execution stays guarded. |
-| Cavebot route editor | `ctoa_helper_route.lua` | Keep waypoint labels and mutations only; `autoWalk` stays gated in helper shell. |
-| Target selection/scoring | `ctoa_helper_targeting.lua` | Keep score and ignored-name rules only; `g_game.attack` stays guarded in helper shell. |
-| Heal friend/sio | `ctoa_helper_heal_friend.lua` | Observer and whitelist first; no cast until sandbox whitelist smoke exists. |
-| Conditions | `ctoa_helper_conditions.lua` | Read-only state observer first; no recovery action until condition smoke exists. |
-| Equipment | `ctoa_helper_equipment.lua` | Read-only slot observer first; no item move/use until inventory smoke exists. |
-| Scripting/macros | `ctoa_helper_scripting.lua` | Deny-all policy shell first; no eval/snippets without security review. |
-
-## Required Evidence Before Import
-
-Before any external logic changes runtime behavior:
-
-1. Add or update a named helper module file.
-2. Add package copy coverage in `scripts/windows/solteria_helper_test_env.ps1`.
-3. Add static contracts in `tests/test_otclient_helper_zerobot_shell.py`.
-4. Update `scripts/lua/otclient/README.md`.
-5. Regenerate `docs/otclient/solteria_helper_next_modules_plan.md`.
-6. Run `ValidateDev`, `SmokePreflight`, and `ModuleStaticGates`.
-7. Run `SmokeAttachModules` and fresh `SmokeAttachAll` after sandbox character
-   is in-world.
-8. Keep `PromoteLiveCtoa` behind `-ApproveLiveDeploy`.
-
-## Current Source Review
-
-No vBot source is available in the repository as of this review. The current
-safe basis is:
-
-- `docs/otclient/zerobot_reference.md` as a local capability/API reference.
-- CTOAi helper modules already extracted into passive domains.
-- Runtime gates from `scripts/windows/solteria_helper_test_env.ps1`.
-
-## Next Operator Step
-
-If a vBot archive is provided, place it outside runtime client state, record its
-path and hash here, run `scripts/ops/otclient_external_bot_intake.py`, then
-review it as a capability checklist. Keep all imported behavior passive until
-its matching CTOAi module gate and sandbox evidence pass.
-```
-
-
-## `scripts/ops/otclient_external_bot_intake.py`
-
-```python
-"""Inspect external OTClient bot sources before CTOAi helper import."""
-
-from __future__ import annotations
-
-import argparse
-import hashlib
-import json
-import os
-import re
-import zipfile
-from dataclasses import asdict, dataclass
-from datetime import datetime
-from pathlib import Path
-from typing import Iterable
-
-
-ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_JSON = ROOT / "runtime" / "solteria_helper_dev" / "external_bot_intake.json"
-DEFAULT_MARKDOWN = ROOT / "docs" / "otclient" / "vbot_import_intake.md"
-
-TEXT_SUFFIXES = {
-    ".lua",
-    ".otui",
-    ".otmod",
-    ".json",
-    ".yml",
-    ".yaml",
-    ".txt",
-    ".md",
-    ".cfg",
-    ".conf",
-    ".ini",
-}
-LICENSE_NAMES = {"license", "license.md", "license.txt", "copying", "copying.txt", "notice", "notice.txt"}
-MAX_SCAN_BYTES = 512_000
-
-CAPABILITY_PATTERNS = {
-    "healing": re.compile(r"\b(heal|sio|uh|mana|health|hp|mp)\b", re.IGNORECASE),
-    "targeting": re.compile(r"\b(target|attack|monster|creature|priority)\b", re.IGNORECASE),
-    "cavebot": re.compile(r"\b(cavebot|waypoint|walk|route|path|label)\b", re.IGNORECASE),
-    "looting": re.compile(r"\b(loot|container|corpse|pickup)\b", re.IGNORECASE),
-    "hud": re.compile(r"\b(hud|overlay|label|widget|panel)\b", re.IGNORECASE),
-    "hotkeys": re.compile(r"\b(hotkey|bindKey|keyboard|shortcut)\b", re.IGNORECASE),
-    "conditions": re.compile(r"\b(condition|haste|paralyze|poison|burn|curse)\b", re.IGNORECASE),
-    "equipment": re.compile(r"\b(equip|slot|ring|amulet|weapon|armor)\b", re.IGNORECASE),
-    "scripting": re.compile(r"\b(macro|script|eval|loadstring|scheduleEvent|cycleEvent)\b", re.IGNORECASE),
-    "diagnostics": re.compile(r"\b(log|debug|trace|diagnostic|export)\b", re.IGNORECASE),
-}
-
-RUNTIME_ACTION_PATTERNS = {
-    "movement": re.compile(r"\b(autoWalk|walk|findPath|goto|moveTo)\b"),
-    "attack": re.compile(r"\b(g_game\.attack|attack\(|setTarget)\b"),
-    "spell_cast": re.compile(r"\b(say|talk|cast|exori|exura|utani|utevo|exeta)\b", re.IGNORECASE),
-    "rune_or_item_use": re.compile(r"\b(useInventoryItem|useWith|g_game\.use|useItem|useRune)\b"),
-    "item_move": re.compile(r"\b(moveItem|g_game\.move|moveToParentContainer)\b"),
-    "keyboard_binding": re.compile(r"\b(bindKey|g_keyboard|pressKey)\b"),
-    "filesystem_write": re.compile(r"\b(io\.open|writefile|save|g_resources\.writeFileContents)\b"),
-    "dynamic_code": re.compile(r"\b(loadstring|dofile|require|assert\(load)\b"),
-}
-
-SECRET_PATTERNS = {
-    "token_like": re.compile(r"(?i)\b(token|secret|api[_-]?key)\b\s*[:=]\s*['\"]?[A-Za-z0-9_\-]{16,}"),
-    "password_like": re.compile(r"(?i)\b(pass|password)\b\s*[:=]\s*['\"]?[^'\"\s]{6,}"),
-    "bearer": re.compile(r"(?i)\bbearer\s+[A-Za-z0-9_\-.]{20,}"),
-    "ipv4": re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b"),
-}
-
-CAPABILITY_TARGETS = {
-    "healing": "ctoa_helper_heal_friend.lua",
-    "targeting": "ctoa_helper_targeting.lua",
-    "cavebot": "ctoa_helper_route.lua",
-    "looting": "ctoa_helper_loot_runtime.lua",
-    "hud": "ctoa_helper_hud.lua",
-    "hotkeys": "ctoa_helper_hotkeys.lua",
-    "conditions": "ctoa_helper_conditions.lua",
-    "equipment": "ctoa_helper_equipment.lua",
-    "scripting": "ctoa_helper_scripting.lua",
-    "diagnostics": "ctoa_helper_diagnostics.lua",
-}
-
-RUNTIME_ACTION_GATES = {
-    "movement": "cavebot_runtime",
-    "attack": "combat_runtime",
-    "spell_cast": "combat_runtime",
-    "rune_or_item_use": "combat_runtime",
-    "item_move": "loot_runtime",
-    "keyboard_binding": "hotkeys",
-    "filesystem_write": "profile_schema",
-    "dynamic_code": "scripting",
-}
-
-
-@dataclass(frozen=True)
-class SourceFileReport:
-    path: str
-    bytes: int
-    sha256: str
-    capabilities: list[str]
-    runtime_actions: list[str]
-    secret_hits: list[str]
-
-
-def _sha256_bytes(data: bytes) -> str:
-    return hashlib.sha256(data).hexdigest()
-
-
-def _read_limited(path: Path) -> bytes:
-    with path.open("rb") as handle:
-        return handle.read(MAX_SCAN_BYTES + 1)
-
-
-def _is_text_candidate(path: str) -> bool:
-    return Path(path).suffix.lower() in TEXT_SUFFIXES or Path(path).name.lower() in LICENSE_NAMES
-
-
-def _decode(data: bytes) -> str:
-    return data[:MAX_SCAN_BYTES].decode("utf-8", errors="replace")
-
-
-def _matches(patterns: dict[str, re.Pattern[str]], haystack: str) -> list[str]:
-    return [name for name, pattern in patterns.items() if pattern.search(haystack)]
-
-
-def _directory_snapshot_sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    for file_path in sorted(item for item in path.rglob("*") if item.is_file()):
-        rel = file_path.relative_to(path).as_posix()
-        digest.update(rel.encode("utf-8"))
-        digest.update(b"\0")
-        with file_path.open("rb") as handle:
-            for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-                digest.update(chunk)
-        digest.update(b"\0")
-    return digest.hexdigest()
-
-
-def _zip_text_entries(path: Path) -> Iterable[tuple[str, bytes]]:
-    with zipfile.ZipFile(path) as archive:
-        for info in archive.infolist():
-            if info.is_dir() or not _is_text_candidate(info.filename):
-                continue
-            with archive.open(info) as handle:
-                yield info.filename, handle.read(MAX_SCAN_BYTES + 1)
-
-
-def _directory_text_entries(path: Path) -> Iterable[tuple[str, bytes]]:
-    for file_path in sorted(item for item in path.rglob("*") if item.is_file()):
-        rel = file_path.relative_to(path).as_posix()
-        if _is_text_candidate(rel):
-            yield rel, _read_limited(file_path)
-
-
-def _source_entries(path: Path) -> Iterable[tuple[str, bytes]]:
-    if path.is_dir():
-        return _directory_text_entries(path)
-    if zipfile.is_zipfile(path):
-        return _zip_text_entries(path)
-    if _is_text_candidate(path.name):
-        return [(path.name, _read_limited(path))]
-    return []
-
-
-def _source_sha256(path: Path) -> str:
-    if path.is_dir():
-        return _directory_snapshot_sha256(path)
-    return _sha256_bytes(path.read_bytes())
-
-
-def inspect_source_file(name: str, data: bytes) -> SourceFileReport:
-    text = _decode(data)
-    haystack = f"{name}\n{text}"
-    return SourceFileReport(
-        path=name,
-        bytes=len(data),
-        sha256=_sha256_bytes(data),
-        capabilities=_matches(CAPABILITY_PATTERNS, haystack),
-        runtime_actions=_matches(RUNTIME_ACTION_PATTERNS, haystack),
-        secret_hits=_matches(SECRET_PATTERNS, haystack),
-    )
-
-
-def build_import_gate(report: dict) -> dict:
-    """Convert intake findings into an explicit CTOAi import decision."""
-    if report.get("status") == "source_missing":
-        decision = "source_required"
-    elif report.get("blockers"):
-        decision = "review_required"
-    else:
-        decision = "capability_mapping_only"
-
-    capability_mapping = {}
-    for capability, paths in report.get("capability_inventory", {}).items():
-        if paths:
-            capability_mapping[capability] = {
-                "target_module": CAPABILITY_TARGETS.get(capability, "manual_review_required"),
-                "source_files": sorted(paths),
-                "import_rule": "map concepts only; no direct code copy; runtime behavior remains gated",
-            }
-
-    runtime_gate_mapping = {}
-    for action, paths in report.get("runtime_action_inventory", {}).items():
-        if paths:
-            runtime_gate_mapping[action] = {
-                "required_gate": RUNTIME_ACTION_GATES.get(action, "manual_review_required"),
-                "source_files": sorted(paths),
-                "allowed_now": False,
-            }
-
-    blockers = list(report.get("blockers") or [])
-    if decision == "capability_mapping_only" and runtime_gate_mapping:
-        blockers.append("runtime actions detected; map as passive module plans before any execution path")
-
-    return {
-        "decision": decision,
-        "runtime_import_allowed": False,
-        "direct_copy_allowed": False,
-        "capability_mapping": capability_mapping,
-        "runtime_gate_mapping": runtime_gate_mapping,
-        "blockers": blockers,
-        "next_action": (
-            "Provide vBot source with origin and license notes."
-            if decision == "source_required"
-            else "Resolve provenance, license, secret, and review blockers."
-            if decision == "review_required"
-            else "Map detected capabilities into CTOAi passive module contracts and sandbox gates."
-        ),
-    }
-
-
-def build_report(source: Path, *, origin: str = "", license_note: str = "") -> dict:
-    source = source.expanduser()
-    generated_at = datetime.now().replace(microsecond=0).isoformat()
-    if not source.exists():
-        report = {
-            "schema_version": 1,
-            "generated_at": generated_at,
-            "source": str(source),
-            "status": "source_missing",
-            "blockers": ["source path does not exist"],
-            "warnings": [],
-            "source_sha256": "",
-            "origin": origin,
-            "license_note": license_note,
-            "files": [],
-            "capability_inventory": {},
-            "runtime_action_inventory": {},
-            "secret_scan_status": "not_run",
-        }
-        report["import_gate"] = build_import_gate(report)
-        return report
-
-    files = [inspect_source_file(name, data) for name, data in _source_entries(source)]
-    capability_inventory = {
-        capability: sorted(report.path for report in files if capability in report.capabilities)
-        for capability in CAPABILITY_PATTERNS
-    }
-    runtime_action_inventory = {
-        action: sorted(report.path for report in files if action in report.runtime_actions)
-        for action in RUNTIME_ACTION_PATTERNS
-    }
-    secret_files = sorted(report.path for report in files if report.secret_hits)
-    license_files = sorted(report.path for report in files if Path(report.path).name.lower() in LICENSE_NAMES)
-
-    blockers: list[str] = []
-    warnings: list[str] = []
-    if not origin:
-        blockers.append("origin/provenance note missing")
-    if not license_note and not license_files:
-        blockers.append("license note or license file missing")
-    if secret_files:
-        blockers.append("secret-like values require review")
-    if not files:
-        blockers.append("no scan-compatible text files found")
-    for action, action_files in runtime_action_inventory.items():
-        if action_files:
-            warnings.append(f"runtime action path detected: {action}")
-
-    status = "ready_for_capability_mapping" if not blockers else "review_required"
-    report = {
-        "schema_version": 1,
-        "generated_at": generated_at,
-        "source": str(source),
-        "status": status,
-        "blockers": blockers,
-        "warnings": warnings,
-        "source_sha256": _source_sha256(source),
-        "origin": origin,
-        "license_note": license_note,
-        "license_files": license_files,
-        "files": [asdict(report) for report in files],
-        "capability_inventory": capability_inventory,
-        "runtime_action_inventory": runtime_action_inventory,
-        "secret_scan_status": "needs_review" if secret_files else "passed",
-        "secret_files": secret_files,
-    }
-    report["import_gate"] = build_import_gate(report)
-    return report
-
-
-def render_markdown(report: dict) -> str:
-    lines = [
-        "# External Bot Intake Report",
-        "",
-        "## Decision",
-        "",
-        f"- Status: `{report['status']}`",
-        f"- Source: `{report['source']}`",
-        f"- Source SHA256: `{report['source_sha256'] or 'missing'}`",
-        f"- Secret scan: `{report['secret_scan_status']}`",
-        "",
-        "## Blockers",
-        "",
-    ]
-    blockers = report.get("blockers") or ["none"]
-    lines.extend(f"- {item}" for item in blockers)
-    lines.extend(["", "## Runtime Action Warnings", ""])
-    warnings = report.get("warnings") or ["none"]
-    lines.extend(f"- {item}" for item in warnings)
-    lines.extend(["", "## Capability Inventory", ""])
-    for capability, paths in report.get("capability_inventory", {}).items():
-        value = ", ".join(paths[:20]) if paths else "none"
-        suffix = " ..." if len(paths) > 20 else ""
-        lines.append(f"- `{capability}`: {value}{suffix}")
-    gate = report.get("import_gate", {})
-    lines.extend(
-        [
-            "",
-            "## CTOAi Import Gate",
-            "",
-            f"- Decision: `{gate.get('decision', 'unknown')}`",
-            f"- Runtime import allowed: `{str(gate.get('runtime_import_allowed', False)).lower()}`",
-            f"- Direct copy allowed: `{str(gate.get('direct_copy_allowed', False)).lower()}`",
-            f"- Next action: {gate.get('next_action', 'Review source before import.')}",
-            "",
-            "## Runtime Gate Mapping",
-            "",
-        ]
-    )
-    runtime_gate_mapping = gate.get("runtime_gate_mapping") or {}
-    if runtime_gate_mapping:
-        for action, item in runtime_gate_mapping.items():
-            lines.append(
-                f"- `{action}` -> `{item['required_gate']}`: {', '.join(item['source_files'][:20])}"
-            )
-    else:
-        lines.append("- none")
-    lines.extend(["", "## Import Rule", ""])
-    lines.append(
-        "Use this report as a capability checklist only. Runtime behavior must still be mapped into passive CTOAi helper modules and proven by sandbox smoke before live promotion."
-    )
-    return "\n".join(lines) + "\n"
-
-
-def write_text_atomic(path: Path, text: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_name(f".{path.name}.{os.getpid()}.{id(text)}.tmp")
-    try:
-        tmp.write_text(text if text.endswith("\n") else f"{text}\n", encoding="utf-8", newline="\n")
-        tmp.replace(path)
-    finally:
-        try:
-            tmp.unlink()
-        except FileNotFoundError:
-            pass
-
-
-def main() -> int:
-    parser = argparse.ArgumentParser(description="Inspect external OTClient bot sources before helper import")
-    parser.add_argument("source", type=Path)
-    parser.add_argument("--origin", default="", help="Origin URL or owner-provided provenance note")
-    parser.add_argument("--license-note", default="", help="License text reference or explicit permission note")
-    parser.add_argument("--json-out", type=Path, default=DEFAULT_JSON)
-    parser.add_argument("--markdown-out", type=Path, default=DEFAULT_MARKDOWN)
-    args = parser.parse_args()
-
-    report = build_report(args.source, origin=args.origin, license_note=args.license_note)
-    write_text_atomic(args.json_out, json.dumps(report, indent=2))
-    write_text_atomic(args.markdown_out, render_markdown(report))
-    print(f"[otclient-external-bot-intake] JSON: {args.json_out}")
-    print(f"[otclient-external-bot-intake] Markdown: {args.markdown_out}")
-    print(f"[otclient-external-bot-intake] Status: {report['status']}")
-    return 0 if report["status"] != "source_missing" else 2
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
-```
-
-
-## `scripts/ops/otclient_helper_module_contract.py`
-
-```python
-#!/usr/bin/env python3
-"""Validate OTClient helper passive module contracts before sandbox attach."""
-
-from __future__ import annotations
-
-import argparse
-from datetime import datetime
-import json
-import os
-import re
-import uuid
-from dataclasses import asdict, dataclass
-from pathlib import Path
-
-
-ROOT = Path(__file__).resolve().parents[2]
-OTCLIENT_DIR = ROOT / "scripts" / "lua" / "otclient"
-DEFAULT_LOADER = OTCLIENT_DIR / "ctoa_otclient_loader.lua"
-DEFAULT_REGISTRY = OTCLIENT_DIR / "ctoa_helper_modules.lua"
-DEFAULT_JSON_OUT = ROOT / "runtime" / "solteria_helper_dev" / "module_contract.json"
-DEFAULT_PLAN_OUT = ROOT / "docs" / "otclient" / "solteria_helper_module_contract.md"
-
-PASSIVE_MODULES = [
-    {
-        "id": "modules",
-        "loader_name": "ctoa_helper_modules",
-        "file": "ctoa_helper_modules.lua",
-        "global": "CTOA_HELPER_MODULES",
-        "lane_id": "",
-        "required_functions": [
-            "getModuleLanes",
-            "getShortLabels",
-            "getSupportModules",
-            "validateSupportModules",
-            "bootSnapshot",
-            "bootSummary",
-            "laneEnabled",
-            "laneRuntimeText",
-            "registrySummary",
-            "readinessTag",
-            "readinessRow",
-            "contract",
-        ],
-    },
-    {
-        "id": "domain_contract",
-        "loader_name": "ctoa_helper_domain_contract",
-        "file": "ctoa_helper_domain_contract.lua",
-        "global": "CTOA_HELPER_DOMAIN_CONTRACT",
-        "lane_id": "",
-        "required_functions": [
-            "schemaVersion",
-            "lanes",
-            "lane",
-            "observationEnvelope",
-            "planEnvelope",
-            "summaryEnvelope",
-            "validateEnvelope",
-            "contract",
-        ],
-    },
-    {
-        "id": "ui",
-        "loader_name": "ctoa_helper_ui",
-        "file": "ctoa_helper_ui.lua",
-        "global": "CTOA_HELPER_UI",
-        "lane_id": "",
-        "required_functions": [
-            "shortText",
-            "configureLayout",
-            "fitText",
-            "setWidgetText",
-            "styleWidget",
-            "setWidgetChecked",
-            "getWidgetChecked",
-            "showWidget",
-            "createWidget",
-            "styleTabState",
-            "styleSubtabState",
-            "styleMiniButton",
-            "styleActionButton",
-            "styleRuleCard",
-            "styleMetricRow",
-            "styleMetricLabel",
-            "styleMetricValue",
-            "styleSettingState",
-            "styleProfileField",
-            "styleVectorRow",
-            "styleSectionBody",
-            "styleTableHeader",
-            "styleTableHeaderLabel",
-            "styleFooterStrip",
-            "styleFooterStripLabel",
-            "styleSummaryStrip",
-            "styleSummaryStripLabel",
-            "styleSectionBandTitle",
-            "styleSectionBandSubtitle",
-            "styleSectionBandDivider",
-            "stylePriorityBadge",
-            "styleLabel",
-            "styleWindowRoot",
-            "styleWindowFrame",
-            "styleWindowTitleLabel",
-            "styleToggleButton",
-            "styleCheckBox",
-            "styleSidebarCard",
-            "styleOverviewAvatarFrame",
-            "styleOverviewAvatar",
-            "styleOverviewAvatarName",
-            "styleOverviewHpBar",
-            "styleOverviewEquipSlot",
-            "styleControlName",
-            "settingRowGeometry",
-            "metricCardGeometry",
-            "metricTextPlan",
-            "profileFieldGeometry",
-            "vectorStepGeometry",
-            "addSettingRow",
-            "addToggleSettingRow",
-            "addProfileCycleRow",
-            "addProfileStepRow",
-            "addVectorStepRow",
-            "sectionBodyGeometry",
-            "sidebarTabs",
-            "huntingSubtabs",
-            "subtabContentY",
-            "toolsSubtabs",
-            "toolsTableHeaders",
-            "cavebotDelayChoices",
-            "cavebotReachChoices",
-            "msText",
-            "cavebotActionSpecs",
-            "refreshOperatorSummaries",
-            "renderConditionsPanel",
-            "renderEquipmentPanel",
-            "renderCavebotPanel",
-            "renderEnginePanel",
-            "renderHealingPanel",
-            "renderHealFriendPanel",
-            "renderHuntingPanel",
-            "renderProfilePanel",
-            "renderScriptingPanel",
-            "renderToolsPanel",
-            "contract",
-        ],
-    },
-    {
-        "id": "diagnostics",
-        "loader_name": "ctoa_helper_diagnostics",
-        "file": "ctoa_helper_diagnostics.lua",
-        "global": "CTOA_HELPER_DIAGNOSTICS",
-        "lane_id": "",
-        "required_functions": [
-            "boolText",
-            "posText",
-            "hasApi",
-            "apiText",
-            "valueText",
-            "apiSnapshotText",
-            "apiProbeSnapshot",
-            "apiProbeText",
-            "magicApiProbeText",
-            "featureFlagsText",
-            "bufferText",
-            "movementText",
-            "magicLootText",
-            "tableCount",
-            "firstTableValue",
-            "parseSmokeCommandText",
-            "smokeCommandTarget",
-            "smokeTabStatusText",
-            "smokeCommandStatusText",
-            "recordSnapshot",
-            "exportBuffer",
-            "contract",
-        ],
-    },
-    {
-        "id": "hotkeys",
-        "loader_name": "ctoa_helper_hotkeys",
-        "file": "ctoa_helper_hotkeys.lua",
-        "global": "CTOA_HELPER_HOTKEYS",
-        "lane_id": "",
-        "required_functions": ["normalizeKeyName", "parse", "normalize", "isAllowed", "bindingDecision", "display", "contract"],
-    },
-    {
-        "id": "modal",
-        "loader_name": "ctoa_helper_modal",
-        "file": "ctoa_helper_modal.lua",
-        "global": "CTOA_HELPER_MODAL",
-        "lane_id": "",
-        "required_functions": ["request", "confirm", "cancel", "isExpired", "decision", "decisionText", "contract"],
-    },
-    {
-        "id": "route",
-        "loader_name": "ctoa_helper_route",
-        "file": "ctoa_helper_route.lua",
-        "global": "CTOA_HELPER_ROUTE",
-        "lane_id": "",
-        "required_functions": ["position", "label", "add", "clear", "select", "delete", "move", "editorAction", "retryBlocked", "progress", "activeTarget", "selectedSummary", "stats", "uiState", "deleteRequest", "contract"],
-    },
-    {
-        "id": "targeting",
-        "loader_name": "ctoa_helper_targeting",
-        "file": "ctoa_helper_targeting.lua",
-        "global": "CTOA_HELPER_TARGETING",
-        "lane_id": "",
-        "required_functions": ["normalizedName", "isIgnoredName", "hasBlockingNpcIcon", "creatureTypeDecision", "priorityRank", "scoreCandidate", "bestCandidate", "decision", "summary", "configSummary", "contract"],
-    },
-    {
-        "id": "combat_runtime",
-        "loader_name": "ctoa_helper_combat_runtime",
-        "file": "ctoa_helper_combat_runtime.lua",
-        "global": "CTOA_HELPER_COMBAT_RUNTIME",
-        "lane_id": "",
-        "required_functions": ["plan", "summary", "adapterSummary", "magicSummary", "msLeftText", "runeReady", "rotationSpellRows", "spellReadiness", "rotationSpell", "offensiveAction", "actionStatusText", "targetingStatusText", "nextActionText", "waitReason", "decisionState", "contract"],
-    },
-    {
-        "id": "cavebot_runtime",
-        "loader_name": "ctoa_helper_cavebot_runtime",
-        "file": "ctoa_helper_cavebot_runtime.lua",
-        "global": "CTOA_HELPER_CAVEBOT_RUNTIME",
-        "lane_id": "",
-        "required_functions": [
-            "plan",
-            "summary",
-            "decisionText",
-            "adapterSummary",
-            "adapterStatusText",
-            "movementCapability",
-            "probeSnapshot",
-            "probeSummary",
-            "probeReport",
-            "pathText",
-            "movementBlockedReason",
-            "walkPreflight",
-            "testWalkPlan",
-            "walkingStatus",
-            "retryDecision",
-            "statusText",
-            "traceText",
-            "contract",
-        ],
-    },
-    {
-        "id": "loot_runtime",
-        "loader_name": "ctoa_helper_loot_runtime",
-        "file": "ctoa_helper_loot_runtime.lua",
-        "global": "CTOA_HELPER_LOOT_RUNTIME",
-        "lane_id": "",
-        "required_functions": ["plan", "summary", "adapterSummary", "contract"],
-    },
-    {
-        "id": "timer_runtime",
-        "loader_name": "ctoa_helper_timer_runtime",
-        "file": "ctoa_helper_timer_runtime.lua",
-        "global": "CTOA_HELPER_TIMER_RUNTIME",
-        "lane_id": "",
-        "required_functions": ["plan", "summary", "dispatch", "contract"],
-    },
-    {
-        "id": "recovery_runtime",
-        "loader_name": "ctoa_helper_recovery_runtime",
-        "file": "ctoa_helper_recovery_runtime.lua",
-        "global": "CTOA_HELPER_RECOVERY_RUNTIME",
-        "lane_id": "",
-        "required_functions": ["normalizeVitals", "selectHealingSpell", "potionStatusText", "spellStatusText", "actionGap", "summary", "contract"],
-    },
-    {
-        "id": "profile_schema",
-        "loader_name": "ctoa_helper_profile_schema",
-        "file": "ctoa_helper_profile_schema.lua",
-        "global": "CTOA_HELPER_PROFILE_SCHEMA",
-        "lane_id": "",
-        "required_functions": [
-            "requiredSections",
-            "sectionOrder",
-            "safeFalseKeys",
-            "optionList",
-            "rotationPresets",
-            "keyOrder",
-            "valueIndex",
-            "cycleValue",
-            "fieldGeometry",
-            "stepValue",
-            "currentVersion",
-            "currentSchema",
-            "profileVersion",
-            "migrationPlan",
-            "migrate",
-            "summary",
-            "profileSchemaSuffix",
-            "rotationPresetIds",
-            "rotationPresetLabel",
-            "rotationSummary",
-            "spellLabel",
-            "potionLabel",
-            "runeLabel",
-            "healFriendPriorityLabel",
-            "magicPriorityLabel",
-            "themePresetLabel",
-            "onOffLabel",
-            "autosaveLabel",
-            "titleSummary",
-            "healingSummary",
-            "profileSummary",
-            "contract",
-        ],
-    },
-    {
-        "id": "profile_persistence",
-        "loader_name": "ctoa_helper_profile_persistence",
-        "file": "ctoa_helper_profile_persistence.lua",
-        "global": "CTOA_HELPER_PROFILE_PERSISTENCE",
-        "lane_id": "",
-        "required_functions": [
-            "profileCandidates",
-            "uiPrefsCandidates",
-            "saveDefaults",
-            "resolveSavePath",
-            "fallbackSavePath",
-            "saveText",
-            "loadSuccessText",
-            "loadFailureText",
-            "dirtyState",
-            "exportProfile",
-            "contract",
-        ],
-    },
-    {
-        "id": "operator_summary",
-        "loader_name": "ctoa_helper_operator_summary",
-        "file": "ctoa_helper_operator_summary.lua",
-        "global": "CTOA_HELPER_OPERATOR_SUMMARY",
-        "lane_id": "",
-        "required_functions": [
-            "title",
-            "healing",
-            "healFriend",
-            "conditions",
-            "equipment",
-            "scripting",
-            "targeting",
-            "magic",
-            "tools",
-            "profile",
-            "ui",
-            "bridgeText",
-            "contract",
-        ],
-    },
-    {
-        "id": "planner",
-        "loader_name": "ctoa_helper_planner",
-        "file": "ctoa_helper_planner.lua",
-        "global": "CTOA_HELPER_PLANNER",
-        "lane_id": "",
-        "required_functions": ["collect", "best", "summary", "summaryEnvelope", "contract"],
-    },
-    {
-        "id": "runtime_policy",
-        "loader_name": "ctoa_helper_runtime_policy",
-        "file": "ctoa_helper_runtime_policy.lua",
-        "global": "CTOA_HELPER_RUNTIME_POLICY",
-        "lane_id": "",
-        "required_functions": ["requiredGates", "protectionZonePolicy", "resolvedProtectionZonePolicy", "protectionZoneDecision", "snapshot", "decision", "summary", "contract"],
-    },
-    {
-        "id": "dispatch_guard",
-        "loader_name": "ctoa_helper_dispatch_guard",
-        "file": "ctoa_helper_dispatch_guard.lua",
-        "global": "CTOA_HELPER_DISPATCH_GUARD",
-        "lane_id": "",
-        "required_functions": ["classify", "decision", "summary", "contract"],
-    },
-    {
-        "id": "plan_queue",
-        "loader_name": "ctoa_helper_plan_queue",
-        "file": "ctoa_helper_plan_queue.lua",
-        "global": "CTOA_HELPER_PLAN_QUEUE",
-        "lane_id": "",
-        "required_functions": ["normalize", "enqueue", "trim", "summary", "contract"],
-    },
-    {
-        "id": "runtime_readiness",
-        "loader_name": "ctoa_helper_runtime_readiness",
-        "file": "ctoa_helper_runtime_readiness.lua",
-        "global": "CTOA_HELPER_RUNTIME_READINESS",
-        "lane_id": "",
-        "required_functions": ["requiredComponents", "requiredGates", "snapshot", "decision", "summary", "contract"],
-    },
-    {
-        "id": "module_status",
-        "loader_name": "ctoa_helper_module_status",
-        "file": "ctoa_helper_module_status.lua",
-        "global": "CTOA_HELPER_MODULE_STATUS",
-        "lane_id": "",
-        "required_functions": ["defaultOrder", "normalize", "snapshot", "summary", "contract"],
-    },
-    {
-        "id": "action_catalog",
-        "loader_name": "ctoa_helper_action_catalog",
-        "file": "ctoa_helper_action_catalog.lua",
-        "global": "CTOA_HELPER_ACTION_CATALOG",
-        "lane_id": "",
-        "required_functions": ["requiredGates", "all", "domains", "byAction", "classify", "summary", "contract"],
-    },
-    {
-        "id": "decision_trace",
-        "loader_name": "ctoa_helper_decision_trace",
-        "file": "ctoa_helper_decision_trace.lua",
-        "global": "CTOA_HELPER_DECISION_TRACE",
-        "lane_id": "",
-        "required_functions": ["record", "queue", "summary", "contract"],
-    },
-    {
-        "id": "decision_pipeline",
-        "loader_name": "ctoa_helper_decision_pipeline",
-        "file": "ctoa_helper_decision_pipeline.lua",
-        "global": "CTOA_HELPER_DECISION_PIPELINE",
-        "lane_id": "",
-        "required_functions": ["components", "evaluate", "summary", "blockers", "contract"],
-    },
-    {
-        "id": "sandbox_handoff",
-        "loader_name": "ctoa_helper_sandbox_handoff",
-        "file": "ctoa_helper_sandbox_handoff.lua",
-        "global": "CTOA_HELPER_SANDBOX_HANDOFF",
-        "lane_id": "",
-        "required_functions": ["steps", "snapshot", "next", "summary", "contract"],
-    },
-    {
-        "id": "feature_flags",
-        "loader_name": "ctoa_helper_feature_flags",
-        "file": "ctoa_helper_feature_flags.lua",
-        "global": "CTOA_HELPER_FEATURE_FLAGS",
-        "lane_id": "",
-        "required_functions": ["all", "safeFalseKeys", "byKey", "audit", "summary", "toolsSummary", "contract"],
-    },
-    {
-        "id": "hud",
-        "loader_name": "ctoa_helper_hud",
-        "file": "ctoa_helper_hud.lua",
-        "global": "CTOA_HELPER_HUD",
-        "lane_id": "",
-        "required_functions": [
-            "startText",
-            "disarmedText",
-            "position",
-            "state",
-            "visibilityText",
-            "runtimeText",
-            "uiSummary",
-            "operatorSummary",
-            "contract",
-        ],
-    },
-    {
-        "id": "conditions",
-        "loader_name": "ctoa_helper_conditions",
-        "file": "ctoa_helper_conditions.lua",
-        "global": "CTOA_HELPER_CONDITIONS",
-        "lane_id": "conditions",
-        "required_functions": ["flagText", "snapshot", "apiProbe", "observe", "plan", "summary", "contract"],
-    },
-    {
-        "id": "equipment",
-        "loader_name": "ctoa_helper_equipment",
-        "file": "ctoa_helper_equipment.lua",
-        "global": "CTOA_HELPER_EQUIPMENT",
-        "lane_id": "equipment",
-        "required_functions": ["slotText", "snapshot", "apiProbe", "observe", "plan", "summary", "contract"],
-    },
-    {
-        "id": "scripting",
-        "loader_name": "ctoa_helper_scripting",
-        "file": "ctoa_helper_scripting.lua",
-        "global": "CTOA_HELPER_SCRIPTING",
-        "lane_id": "scripting",
-        "required_functions": ["policySnapshot", "plan", "summary", "contract"],
-    },
-    {
-        "id": "heal_friend",
-        "loader_name": "ctoa_helper_heal_friend",
-        "file": "ctoa_helper_heal_friend.lua",
-        "global": "CTOA_HELPER_HEAL_FRIEND",
-        "lane_id": "heal_friend",
-        "required_functions": ["whitelistContainsName", "scan", "observe", "plan", "statusText", "decisionText", "summary", "contract"],
-    },
-]
-
-FORBIDDEN_PASSIVE_PATTERNS = {
-    "spell_cast": re.compile(r"\bcastSpell\s*\(|\bg_game\.talk\s*\(|\bsay\s*\("),
-    "item_use": re.compile(
-        r"\bg_game\.use(?:InventoryItem|InventoryItemWith)?\s*\(|\buseWith\s*\("
-    ),
-    "movement": re.compile(r"\bautoWalk\s*\(|\bg_game\.walk\s*\("),
-    "snippet_eval": re.compile(r"\bloadstring\s*\(|\bload\s*\(|\bdofile\s*\("),
-}
-
-REQUIRED_LANES = {
-    "healing",
-    "combat",
-    "cavebot",
-    "loot",
-    "timer",
-    "heal_friend",
-    "conditions",
-    "equipment",
-    "scripting",
-}
-
-
-@dataclass(frozen=True)
-class ModuleContractItem:
-    id: str
-    file: str
-    status: str
-    loader_present: bool
-    registry_present: bool
-    global_present: bool
-    return_present: bool
-    missing_functions: list[str]
-    forbidden_hits: list[str]
-
-
-@dataclass(frozen=True)
-class ModuleContractReport:
-    name: str
-    created_at: str
-    status: str
-    loader_path: str
-    registry_path: str
-    expected_module_count: int
-    check_count: int
-    passed_count: int
-    failed_count: int
-    registry_lane_count: int
-    registry_missing: list[str]
-    loader_missing: list[str]
-    forbidden_count: int
-    modules: list[ModuleContractItem]
-    next_action: str
-    live_safety: str
-
-
-def write_json_atomic(path: Path, payload: dict) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_name(f".{path.name}.{os.getpid()}.{uuid.uuid4().hex}.tmp")
-    try:
-        with tmp.open("w", encoding="utf-8") as handle:
-            json.dump(payload, handle, indent=2)
-            handle.write("\n")
-            handle.flush()
-            os.fsync(handle.fileno())
-        tmp.replace(path)
-    finally:
-        try:
-            tmp.unlink()
-        except FileNotFoundError:
-            pass
-
-
-def write_text_atomic(path: Path, text: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_name(f".{path.name}.{os.getpid()}.{uuid.uuid4().hex}.tmp")
-    try:
-        with tmp.open("w", encoding="utf-8", newline="\n") as handle:
-            handle.write(text)
-            if not text.endswith("\n"):
-                handle.write("\n")
-            handle.flush()
-            os.fsync(handle.fileno())
-        tmp.replace(path)
-    finally:
-        try:
-            tmp.unlink()
-        except FileNotFoundError:
-            pass
-
-
-def parse_loader_modules(loader_text: str) -> dict[str, str]:
-    return {
-        match.group("name"): match.group("file")
-        for match in re.finditer(
-            r'\{name\s*=\s*"(?P<name>[^"]+)",\s*file\s*=\s*"(?P<file>[^"]+)"[^}]*\}',
-            loader_text,
-        )
-    }
-
-
-def parse_registry_lanes(registry_text: str) -> set[str]:
-    return set(re.findall(r'id\s*=\s*"([^"]+)"', registry_text))
-
-
-def forbidden_hits(source: str) -> list[str]:
-    hits: list[str] = []
-    for name, pattern in FORBIDDEN_PASSIVE_PATTERNS.items():
-        if pattern.search(source):
-            hits.append(name)
-    return hits
-
-
-def missing_functions(source: str, module_global: str, required: list[str]) -> list[str]:
-    local_name = module_global.removeprefix("CTOA_HELPER_").title().replace("_", "")
-    if module_global == "CTOA_HELPER_MODULES":
-        local_name = "Registry"
-    return [
-        function_name
-        for function_name in required
-        if f"function {local_name}.{function_name}" not in source
-    ]
-
-
-def build_report(
-    otclient_dir: Path = OTCLIENT_DIR,
-    loader_path: Path = DEFAULT_LOADER,
-    registry_path: Path = DEFAULT_REGISTRY,
-) -> ModuleContractReport:
-    loader_text = loader_path.read_text(encoding="utf-8")
-    registry_text = registry_path.read_text(encoding="utf-8")
-    # The loader owns the registry bootstrap; the registry owns the ordered
-    # support-module graph. Validate both sources as one boot contract.
-    loader_modules = parse_loader_modules(loader_text + "\n" + registry_text)
-    registry_lanes = parse_registry_lanes(registry_text)
-    registry_missing = sorted(REQUIRED_LANES - registry_lanes)
-    modules: list[ModuleContractItem] = []
-
-    for expected in PASSIVE_MODULES:
-        source_path = otclient_dir / str(expected["file"])
-        source = source_path.read_text(encoding="utf-8") if source_path.is_file() else ""
-        loader_present = loader_modules.get(str(expected["loader_name"])) == expected["file"]
-        lane_id = str(expected["lane_id"])
-        registry_present = not lane_id or lane_id in registry_lanes
-        global_name = str(expected["global"])
-        global_present = (
-            f'rawget(_G, "{global_name}")' in source
-            and f"_G.{global_name}" in source
-        )
-        return_present = f"return {global_name.removeprefix('CTOA_HELPER_').title().replace('_', '')}" in source
-        if expected["id"] == "modules":
-            return_present = "return Registry" in source
-        forbidden = forbidden_hits(source)
-        missing_required = missing_functions(
-            source,
-            global_name,
-            [str(item) for item in expected.get("required_functions", [])],
-        )
-        status = (
-            "passed"
-            if source_path.is_file()
-            and loader_present
-            and registry_present
-            and global_present
-            and return_present
-            and not missing_required
-            and not forbidden
-            else "failed"
-        )
-        modules.append(
-            ModuleContractItem(
-                id=str(expected["id"]),
-                file=str(expected["file"]),
-                status=status,
-                loader_present=loader_present,
-                registry_present=registry_present,
-                global_present=global_present,
-                return_present=return_present,
-                missing_functions=missing_required,
-                forbidden_hits=forbidden,
-            )
-        )
-
-    failed = [item for item in modules if item.status != "passed"]
-    loader_missing = sorted(
-        str(item["loader_name"])
-        for item in PASSIVE_MODULES
-        if loader_modules.get(str(item["loader_name"])) != item["file"]
-    )
-    forbidden_count = sum(len(item.forbidden_hits) for item in modules)
-    status = "passed" if not failed and not registry_missing else "failed"
-    return ModuleContractReport(
-        name="otclient-helper-module-contract",
-        created_at=datetime.now().replace(microsecond=0).isoformat(),
-        status=status,
-        loader_path=str(loader_path),
-        registry_path=str(registry_path),
-        expected_module_count=len(PASSIVE_MODULES),
-        check_count=len(PASSIVE_MODULES),
-        passed_count=sum(1 for item in modules if item.status == "passed"),
-        failed_count=len(failed),
-        registry_lane_count=len(registry_lanes & REQUIRED_LANES),
-        registry_missing=registry_missing,
-        loader_missing=loader_missing,
-        forbidden_count=forbidden_count,
-        modules=modules,
-        next_action=(
-            "Run ModuleStaticGates, then sandbox SmokeAttachModules."
-            if status == "passed"
-            else "Fix loader, registry, passive globals, or forbidden passive module actions before sandbox attach."
-        ),
-        live_safety=(
-            "ModuleContract is repo-only static analysis; it does not launch, stop, attach to, promote, or overwrite any client."
-        ),
-    )
-
-
-def render_markdown(report: ModuleContractReport) -> str:
-    lines = [
-        "# Solteria Helper Module Contract",
-        "",
-        f"- Status: `{report.status}`",
-        f"- Expected modules: `{report.expected_module_count}`",
-        f"- Passed modules: `{report.passed_count}`",
-        f"- Failed modules: `{report.failed_count}`",
-        f"- Registry lanes: `{report.registry_lane_count}` / `{len(REQUIRED_LANES)}`",
-        f"- Forbidden passive hits: `{report.forbidden_count}`",
-        f"- Next action: {report.next_action}",
-        "",
-        "## Rule",
-        "",
-        "Passive helper modules may observe, format, plan, or expose UI state. They must not cast spells, use items, walk, execute snippets, or load arbitrary files. Runtime actions stay in the guarded native helper domains and still require sandbox evidence.",
-        "",
-        "## Modules",
-        "",
-        "| Module | File | Status | Loader | Registry | Global | Return | Missing functions | Forbidden |",
-        "|---|---|---:|---:|---:|---:|---:|---|---|",
-    ]
-    for item in report.modules:
-        lines.append(
-            "| `{}` | `{}` | `{}` | `{}` | `{}` | `{}` | `{}` | {} | {} |".format(
-                item.id,
-                item.file,
-                item.status,
-                "yes" if item.loader_present else "no",
-                "yes" if item.registry_present else "no",
-                "yes" if item.global_present else "no",
-                "yes" if item.return_present else "no",
-                ", ".join(item.missing_functions) if item.missing_functions else "none",
-                ", ".join(item.forbidden_hits) if item.forbidden_hits else "none",
-            )
-        )
-    lines.extend(
-        [
-            "",
-            "## Verification",
-            "",
-            "```powershell",
-            ".\\.venv\\Scripts\\python.exe scripts\\ops\\otclient_helper_module_contract.py",
-            "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\\windows\\solteria_helper_test_env.ps1 -Action ModuleStaticGates",
-            "```",
-            "",
-        ]
-    )
-    return "\n".join(lines)
-
-
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--otclient-dir", type=Path, default=OTCLIENT_DIR)
-    parser.add_argument("--loader", type=Path, default=DEFAULT_LOADER)
-    parser.add_argument("--registry", type=Path, default=DEFAULT_REGISTRY)
-    parser.add_argument("--json-out", type=Path, default=DEFAULT_JSON_OUT)
-    parser.add_argument("--plan-out", type=Path, default=DEFAULT_PLAN_OUT)
-    parser.add_argument("--no-plan-write", action="store_true")
-    return parser.parse_args()
-
-
-def main() -> int:
-    args = parse_args()
-    report = build_report(
-        args.otclient_dir.resolve(),
-        args.loader.resolve(),
-        args.registry.resolve(),
-    )
-    write_json_atomic(args.json_out.resolve(), asdict(report))
-    if not args.no_plan_write:
-        write_text_atomic(args.plan_out.resolve(), render_markdown(report))
-    print(f"[otclient-helper-module-contract] JSON: {args.json_out}")
-    if not args.no_plan_write:
-        print(f"[otclient-helper-module-contract] Plan: {args.plan_out}")
-    print(
-        "[otclient-helper-module-contract] Status: "
-        f"{report.status} ({report.passed_count}/{report.expected_module_count})"
-    )
-    return 0 if report.status == "passed" else 1
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
-```
-
-
-## `scripts/ops/solteria_helper_sandbox_smoke_queue.py`
-
-```python
-"""Generate the sandbox smoke queue for the Solteria OTClient helper."""
-
-from __future__ import annotations
-
-import argparse
-import json
-import os
-import re
-from dataclasses import asdict, dataclass
-from datetime import datetime
-from pathlib import Path
-from typing import Any
-
-
-ROOT = Path(__file__).resolve().parents[2]
-DEV_DIR = ROOT / "runtime" / "solteria_helper_dev"
-DEFAULT_JSON = DEV_DIR / "sandbox_smoke_queue.json"
-DEFAULT_PLAN = ROOT / "docs" / "otclient" / "solteria_helper_sandbox_smoke_queue.md"
-SMOKE_ENV_SCRIPT = ROOT / "scripts" / "windows" / "solteria_helper_test_env.ps1"
-SMOKE_SCRIPT = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\\windows\\solteria_helper_test_env.ps1"
-
-
-@dataclass(frozen=True)
-class SmokeQueueStep:
-    order: int
-    step_id: str
-    label: str
-    status: str
-    command: str
-    evidence: str
-    reason: str
-
-
-def read_json(path: Path) -> dict[str, Any]:
-    if not path.exists():
-        return {}
-    return json.loads(path.read_text(encoding="utf-8"))
-
-
-def _gate_status(release_gate: dict[str, Any], name: str) -> tuple[str, str, str]:
-    for gate in release_gate.get("gates", []):
-        if gate.get("name") == name:
-            return str(gate.get("status", "missing")), str(gate.get("evidence", "")), str(gate.get("reason", ""))
-    return "missing", "", "gate not found"
-
-
-def _fresh_status(status: str) -> str:
-    if status == "passed":
-        return "passed"
-    if status in {"pending", "blocked", "missing"}:
-        return "required"
-    return status or "required"
-
-
-def _valid_attach_tabs(script_path: Path = SMOKE_ENV_SCRIPT) -> set[str]:
-    if not script_path.is_file():
-        return set()
-    source = script_path.read_text(encoding="utf-8")
-    match = re.search(
-        r'\[ValidateSet\((?P<values>"overview".*?)\)\]\s*\n\s*\[string\]\$Tab',
-        source,
-        flags=re.DOTALL,
-    )
-    if not match:
-        return set()
-    return set(re.findall(r'"([^"]+)"', match.group("values")))
-
-
-def _attach_tab(command: str) -> str:
-    match = re.search(r"(?:^|\s)-Tab\s+([A-Za-z0-9_]+)(?:\s|$)", command)
-    return match.group(1) if match else ""
-
-
-def _static_module_steps(
-    goal_status: dict[str, Any],
-    valid_tabs: set[str],
-) -> tuple[list[SmokeQueueStep], list[dict[str, str]]]:
-    module_audit = goal_status.get("module_audit") or {}
-    summary = module_audit.get("static_gate_summary") or []
-    steps: list[SmokeQueueStep] = []
-    static_only: list[dict[str, str]] = []
-    for item in summary:
-        module = str(item.get("module", "")).strip()
-        if not module:
-            continue
-        attach_command = str(item.get("attach_command") or "").strip()
-        attach_tab = _attach_tab(attach_command)
-        if not attach_command:
-            static_only.append(
-                {
-                    "module": module,
-                    "status": str(item.get("status", "unknown")),
-                    "report_path": str(item.get("report_path", "")),
-                    "reason": "No dedicated UI tab; covered by static gate report and grouped module attach context.",
-                }
-            )
-            continue
-        if attach_tab and attach_tab not in valid_tabs:
-            static_only.append(
-                {
-                    "module": module,
-                    "status": str(item.get("status", "unknown")),
-                    "report_path": str(item.get("report_path", "")),
-                    "reason": f"Invalid attach tab `{attach_tab}`; covered by static gate report and grouped module attach context.",
-                }
-            )
-            continue
-        steps.append(
-            SmokeQueueStep(
-                order=0,
-                step_id=f"attach_{module}",
-                label=f"Attach module tab: {module}",
-                status="queued",
-                command=attach_command,
-                evidence="runtime\\solteria_helper_dev\\module_attach_smoke.json",
-                reason=f"Static gate is {item.get('status', 'unknown')}; in-world tab evidence is still required.",
-            )
-        )
-    return steps, static_only
-
-
-def build_queue(dev_dir: Path = DEV_DIR) -> dict[str, Any]:
-    manifest = read_json(dev_dir / "manifest.json")
-    release_gate = read_json(dev_dir / "release_gate.json")
-    smoke_status = read_json(dev_dir / "smoke_status.json")
-    goal_status = read_json(dev_dir / "goal_status.json")
-
-    preflight_status, preflight_evidence, preflight_reason = _gate_status(release_gate, "SmokePreflight")
-    static_status, static_evidence, static_reason = _gate_status(release_gate, "ModuleStaticGates")
-    module_attach_status, module_attach_evidence, module_attach_reason = _gate_status(release_gate, "ModuleAttachSmoke")
-    smoke_all_status, smoke_all_evidence, smoke_all_reason = _gate_status(release_gate, "SmokeAttachAll")
-    live_status, live_evidence, live_reason = _gate_status(release_gate, "live_approval")
-    smoke_runtime_status = str(smoke_status.get("status", "missing"))
-
-    steps = [
-        SmokeQueueStep(
-            1,
-            "local_ready",
-            "Refresh local package and static gates",
-            "passed" if goal_status.get("status") in {"blocked", "passed"} and preflight_status == "passed" else "required",
-            f"{SMOKE_SCRIPT} -Action LocalReady",
-            str(dev_dir / "local_ready.json"),
-            "Local package, SmokePreflight, ModuleStaticGates, and GoalStatus should be current before attach.",
-        ),
-        SmokeQueueStep(
-            2,
-            "launch_sandbox",
-            "Launch sandbox client and enter test character",
-            "required" if smoke_runtime_status != "running" else "passed",
-            f"{SMOKE_SCRIPT} -Action Launch",
-            str(dev_dir / "smoke_status.json"),
-            str(smoke_status.get("next_action") or "Sandbox client must be running in-world before attach smoke."),
-        ),
-        SmokeQueueStep(
-            3,
-            "ready_check",
-            "Confirm helper is attached in-world",
-            "required" if smoke_runtime_status != "running" else "queued",
-            f"{SMOKE_SCRIPT} -Action ReadyCheck",
-            str(dev_dir / "ready_check.json"),
-            "Run after the sandbox character is in-world; character-select screens are not enough.",
-        ),
-        SmokeQueueStep(
-            4,
-            "module_attach_group",
-            "Capture grouped prototype module tab evidence",
-            _fresh_status(module_attach_status),
-            f"{SMOKE_SCRIPT} -Action SmokeAttachModules",
-            module_attach_evidence,
-            module_attach_reason or "Prototype module tabs need grouped in-world evidence.",
-        ),
-    ]
-
-    module_steps, static_only_modules = _static_module_steps(goal_status, _valid_attach_tabs())
-    for index, step in enumerate(module_steps, start=5):
-        steps.append(
-            SmokeQueueStep(
-                index,
-                step.step_id,
-                step.label,
-                step.status if module_attach_status != "passed" else "passed",
-                step.command,
-                step.evidence,
-                step.reason,
-            )
-        )
-
-    next_order = 5 + len(module_steps)
-    steps.extend(
-        [
-            SmokeQueueStep(
-                next_order,
-                "smoke_attach_all",
-                "Capture full in-world helper acceptance",
-                _fresh_status(smoke_all_status),
-                f"{SMOKE_SCRIPT} -Action SmokeAttachAll",
-                smoke_all_evidence,
-                smoke_all_reason or "Fresh full attach report is required for the current manifest.",
-            ),
-            SmokeQueueStep(
-                next_order + 1,
-                "promote_live_approval",
-                "Promote only after explicit live approval",
-                _fresh_status(live_status),
-                f"{SMOKE_SCRIPT} -Action PromoteLiveCtoa -ApproveLiveDeploy -SmokeReport <fresh-smokeattachall-json>",
-                live_evidence,
-                live_reason or "Live promotion remains gated by explicit approval.",
-            ),
-        ]
-    )
-
-    queue_status = "ready_for_operator" if preflight_status == "passed" and static_status == "passed" else "refresh_required"
-    if module_attach_status == "passed" and smoke_all_status == "passed" and live_status == "passed":
-        queue_status = "passed"
-
-    return {
-        "schema_version": 1,
-        "generated_at": datetime.now().replace(microsecond=0).isoformat(),
-        "status": queue_status,
-        "helper_version": manifest.get("helper_version", ""),
-        "manifest_created_at": manifest.get("created_at", ""),
-        "runtime_status": smoke_runtime_status,
-        "release_gate_status": release_gate.get("status", "missing"),
-        "preflight_status": preflight_status,
-        "module_static_gates_status": static_status,
-        "module_attach_status": module_attach_status,
-        "smoke_attach_all_status": smoke_all_status,
-        "live_approval_status": live_status,
-        "next_action": next((step.label for step in steps if step.status in {"required", "queued", "blocked"}), "none"),
-        "steps": [asdict(step) for step in steps],
-        "static_only_modules": static_only_modules,
-        "live_safety": "This queue is read-only planning evidence; it does not launch, attach to, promote, stop, or overwrite any client.",
-        "source_evidence": {
-            "manifest": str(dev_dir / "manifest.json"),
-            "release_gate": str(dev_dir / "release_gate.json"),
-            "smoke_status": str(dev_dir / "smoke_status.json"),
-            "goal_status": str(dev_dir / "goal_status.json"),
-            "preflight": preflight_evidence,
-            "static_gates": static_evidence or static_reason,
-        },
-    }
-
-
-def render_markdown(queue: dict[str, Any]) -> str:
-    lines = [
-        "# Solteria Helper Sandbox Smoke Queue",
-        "",
-        "## Decision",
-        "",
-        f"- Status: `{queue['status']}`",
-        f"- Helper version: `{queue['helper_version']}`",
-        f"- Runtime status: `{queue['runtime_status']}`",
-        f"- Release gate: `{queue['release_gate_status']}`",
-        f"- Next action: {queue['next_action']}",
-        "- Live safety: read-only plan; live promotion still requires `-ApproveLiveDeploy`.",
-        "",
-        "## Queue",
-        "",
-        "| Order | Step | Status | Command | Evidence | Reason |",
-        "|---:|---|---:|---|---|---|",
-    ]
-    for step in queue["steps"]:
-        lines.append(
-            f"| {step['order']} | `{step['step_id']}` / {step['label']} | `{step['status']}` | `{step['command']}` | `{step['evidence']}` | {step['reason']} |"
-        )
-    static_only = queue.get("static_only_modules") or []
-    if static_only:
-        lines.extend(
-            [
-                "",
-                "## Static-Only Modules",
-                "",
-                "| Module | Status | Evidence | Reason |",
-                "|---|---:|---|---|",
-            ]
-        )
-        for item in static_only:
-            lines.append(
-                f"| `{item['module']}` | `{item['status']}` | `{item['report_path']}` | {item['reason']} |"
-            )
-    lines.extend(
-        [
-            "",
-            "## Operator Rule",
-            "",
-            "Run this queue from top to bottom. If any attach step reports character-select, offline helper, stale manifest, or failed screenshot evidence, stop and refresh `LocalReady` before continuing.",
-        ]
-    )
-    return "\n".join(lines) + "\n"
-
-
-def write_text_atomic(path: Path, text: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_name(f".{path.name}.{os.getpid()}.{id(text)}.tmp")
-    try:
-        tmp.write_text(text if text.endswith("\n") else f"{text}\n", encoding="utf-8", newline="\n")
-        tmp.replace(path)
-    finally:
-        try:
-            tmp.unlink()
-        except FileNotFoundError:
-            pass
-
-
-def main() -> int:
-    parser = argparse.ArgumentParser(description="Generate Solteria Helper sandbox smoke queue")
-    parser.add_argument("--dev-dir", type=Path, default=DEV_DIR)
-    parser.add_argument("--json-out", type=Path, default=DEFAULT_JSON)
-    parser.add_argument("--plan-out", type=Path, default=DEFAULT_PLAN)
-    args = parser.parse_args()
-
-    queue = build_queue(args.dev_dir.resolve())
-    write_text_atomic(args.json_out, json.dumps(queue, indent=2))
-    write_text_atomic(args.plan_out, render_markdown(queue))
-    print(f"[solteria-helper-sandbox-smoke-queue] JSON: {args.json_out}")
-    print(f"[solteria-helper-sandbox-smoke-queue] Plan: {args.plan_out}")
-    print(f"[solteria-helper-sandbox-smoke-queue] Status: {queue['status']}")
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
-```
-
-
-## `scripts/lua/AGENTS.md`
-
-```markdown
-# Lua And OTClient Instructions
-
-This folder contains standalone CTOAi Lua modules and the OTClient helper
-package/source.
-
-## Rules
-
-- Keep standalone runtime scripts and OTClient-native scripts separate unless an
-  adapter is explicitly added.
-- For OTClient files, guard native globals such as `g_game`, `g_map`, `g_ui`,
-  `g_keyboard`, `g_resources`, and `g_clock`.
-- Preserve safe boot defaults. Do not enable combat, cavebot movement, rune
-  casting, auto haste, exeta, timer, or healing during loader initialization.
-- Use `connect(...)` for supported OTClient events and `cycleEvent` for bounded
-  loops.
-- Use `scheduleEvent` for delayed boot work; `addEvent` is only a fallback.
-- Keep cooldowns, bounded retries, and explicit early exits in `onThink` logic.
-- Preserve profile/UI key order when changing helper persistence.
-
-## Validation
-
-Run the narrowest available check:
-
-```powershell
-.\ctoa.ps1 brain refresh
-.\.venv\Scripts\python.exe -m pytest tests\test_otclient_helper_zerobot_shell.py tests\test_ctoa_helper_smoke_report.py -q
-```
-
-For manual OTClient UI changes, also load the helper in the client and verify
-fresh `ctoa_local.log` lines plus safe boot state.
-```
-
-
 ## `AI/generated/manifest.json`
 
 ```json
 {
   "schema_version": 1,
-  "generated_at": "2026-07-11T07:10:18+00:00",
+  "generated_at": "2026-07-21T07:37:01+00:00",
   "root": "C:\\Users\\zycie\\CTOAi",
-  "file_count": 1230,
+  "file_count": 1247,
   "outputs": {
     "file_tree": "AI\\generated\\FILE_TREE.md",
     "symbol_map": "AI\\generated\\SYMBOL_MAP.md",
@@ -5346,23 +1900,22 @@ fresh `ctoa_local.log` lines plus safe boot state.
 ```markdown
 # Engine Brain Environment Doctor
 
-Generated at: `2026-07-11T07:10:44+00:00`
+Generated at: `2026-07-21T07:37:25+00:00`
 Overall status: `warn`
 
 | Check | Status | Key evidence |
 |---|---|---|
-| `git` | `ok` | branch=codex/control-center-guarded-actions; dirty=44; path=C:\Program Files\Git\cmd\git.EXE |
-| `docker` | `ok` | containers=2; running_broad=0; configured_broad=0 |
-| `vpn` | `ok` | warp_connected=True |
+| `git` | `ok` | branch=codex/main-state-sync; dirty=61; path=C:\Program Files\Git\cmd\git.EXE |
+| `docker` | `ok` | containers=6; running_broad=0; configured_broad=0 |
+| `vpn` | `warn` | warp_connected=False |
 | `vercel` | `ok` | version=54.10.3; project=ctoa-web |
-| `vscode` | `warn` | openai=['openai.chatgpt@26.623.141536']; old_dirs=2 |
-| `github` | `warn` | open_prs=7; dirty_prs=6; failed_runs=1 |
+| `vscode` | `ok` | openai=['openai.chatgpt@26.715.31925']; old_dirs=1 |
+| `github` | `warn` | open_prs=8; dirty_prs=5; failed_runs=0 |
 | `update_gate` | `ok` | gate=ok; product=CTOA Toolkit; version=1.1.1 |
 
 ## GitHub Dirty PRs
 
 - `#184` [WIP] Fix CTOA VPS Global Save Cycle failure - https://github.com/famatyyk/CTOAi/pull/184
-- `#183` [WIP] Fix CTOA VPS Global Save Cycle failure - https://github.com/famatyyk/CTOAi/pull/183
 - `#160` test(copilot-instructions): expand conformance coverage to all seven sections - https://github.com/famatyyk/CTOAi/pull/160
 - `#157` feat: add /analyze-prompt Copilot slash command - https://github.com/famatyyk/CTOAi/pull/157
 - `#153` docs: add alternative LLM model recommendations to copilot instructions and .env.example - https://github.com/famatyyk/CTOAi/pull/153
@@ -5375,26 +1928,27 @@ Overall status: `warn`
 ```markdown
 # Engine Brain Ownership Map
 
-Generated at: `2026-07-11T07:10:18+00:00`
+Generated at: `2026-07-21T07:37:01+00:00`
 Source audit: `runtime\audits\ctoai-full-workspace-audit.json`
 Status: `ready`
 
 | Path | Owner | Validation gate | Files | Categories |
 |---|---|---|---:|---|
-| `.ctoa-local` | Local/uncategorized | `manual review` | 9 | runtime_or_local_state:9 |
+| `.codex-tmp` | Local/uncategorized | `manual review` | 10 | untracked_local:10 |
+| `.ctoa-local` | Local/uncategorized | `manual review` | 12 | runtime_or_local_state:12 |
 | `.devcontainer` | Local/uncategorized | `manual review` | 2 | tracked_source:2 |
 | `.dockerignore` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `.env.example` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `.foundry` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
-| `.git` | Local/uncategorized | `manual review` | 730 | git_internal:730 |
+| `.git` | Local/uncategorized | `manual review` | 438 | git_internal:438 |
 | `.gitattributes` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
-| `.github` | Local/uncategorized | `manual review` | 40 | tracked_source:40 |
+| `.github` | Local/uncategorized | `manual review` | 41 | tracked_source:41 |
 | `.gitignore` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `.gitmodules` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `.luarc.json` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `.pre-commit-config.yaml` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `.pytest_cache` | Local/uncategorized | `manual review` | 5 | vendor_or_cache:5 |
-| `.ruff_cache` | Local/uncategorized | `manual review` | 17 | untracked_local:17 |
+| `.ruff_cache` | Local/uncategorized | `manual review` | 39 | untracked_local:39 |
 | `.tmp` | Local/uncategorized | `manual review` | 105 | runtime_or_local_state:105 |
 | `.venv` | Local/uncategorized | `manual review` | 4543 | vendor_or_cache:4543 |
 | `.vscode` | Local/uncategorized | `manual review` | 4 | tracked_source:4 |
@@ -5418,6 +1972,7 @@ Status: `ready`
 | `core` | Local/uncategorized | `manual review` | 3 | tracked_source:3 |
 | `ctoa-vps.ps1` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `ctoa.ps1` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
+| `ctoa_client_capabilities.json` | Local/uncategorized | `manual review` | 1 | untracked_local:1 |
 | `ctoa_local.log` | Local/uncategorized | `manual review` | 1 | untracked_local:1 |
 | `ctoa_ui_prefs.lua` | Local/uncategorized | `manual review` | 1 | untracked_local:1 |
 | `data` | Local/uncategorized | `manual review` | 5 | runtime_or_local_state:5 |
@@ -5425,12 +1980,13 @@ Status: `ready`
 | `desktop_console` | Local/uncategorized | `manual review` | 16 | tracked_source:6, untracked_source_candidate:10 |
 | `docker` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `docker-compose.yml` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
-| `docs` | Documentation | `doc sync guard` | 314 | tracked_source:308, untracked_source_candidate:6 |
+| `docs` | Documentation | `doc sync guard` | 312 | tracked_source:306, untracked_source_candidate:6 |
 | `evals` | Local/uncategorized | `manual review` | 6 | tracked_source:6 |
 | `logs` | Local/uncategorized | `manual review` | 3 | runtime_or_local_state:3 |
-| `metrics` | Local/uncategorized | `manual review` | 2 | runtime_or_local_state:2 |
+| `metrics` | Local/uncategorized | `manual review` | 82 | runtime_or_local_state:82 |
 | `mobile_console` | Mobile console | `pytest tests/ --ignore=tests/e2e` | 20 | tracked_source:9, untracked_source_candidate:11 |
 | `node_modules` | Local/uncategorized | `manual review` | 1 | vendor_or_cache:1 |
+| `outputs` | Local/uncategorized | `manual review` | 1 | untracked_local:1 |
 | `policies` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `product` | Local/uncategorized | `manual review` | 4 | tracked_source:4 |
 | `prompts` | Local/uncategorized | `manual review` | 6 | tracked_source:4, untracked_source_candidate:2 |
@@ -5439,15 +1995,16 @@ Status: `ready`
 | `requirements-dev.txt` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `requirements.txt` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `runner` | Runner runtime | `pytest tests/ --ignore=tests/e2e` | 154 | tracked_source:57, untracked_source_candidate:97 |
-| `runtime` | Local/uncategorized | `manual review` | 1922 | runtime_or_local_state:1922 |
+| `runtime` | Local/uncategorized | `manual review` | 7413 | runtime_or_local_state:7413 |
+| `runtime_context.py` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `schemas` | Contracts | `schema consumers and pytest` | 6 | tracked_source:6 |
-| `scoring` | Local/uncategorized | `manual review` | 6 | tracked_source:4, untracked_source_candidate:2 |
-| `scripts` | Operator automation | `pytest targeted script tests` | 429 | tracked_source:253, untracked_source_candidate:176 |
-| `tests` | Regression suite | `pytest tests/ --ignore=tests/e2e` | 496 | local_secret_or_sensitive:2, tracked_source:177, untracked_source_candidate:317 |
-| `tools` | Local/uncategorized | `manual review` | 76 | tracked_source:76 |
+| `scoring` | Local/uncategorized | `manual review` | 5 | tracked_source:3, untracked_source_candidate:2 |
+| `scripts` | Operator automation | `pytest targeted script tests` | 489 | tracked_source:259, untracked_source_candidate:230 |
+| `src` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
+| `tests` | Regression suite | `pytest tests/ --ignore=tests/e2e` | 610 | local_secret_or_sensitive:2, tracked_source:180, untracked_source_candidate:428 |
 | `training` | Local/uncategorized | `manual review` | 8 | tracked_source:5, untracked_source_candidate:3 |
 | `up` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
-| `web` | Control Center | `cd web; npm run lint; npm test` | 32304 | local_secret_or_sensitive:2, tracked_source:98, untracked_source_candidate:5419, vendor_or_cache:26785 |
+| `web` | Control Center | `cd web; npm run lint; npm test` | 33422 | local_secret_or_sensitive:3, tracked_source:98, untracked_source_candidate:6536, vendor_or_cache:26785 |
 | `workflows` | Sprint workflows | `sprint validators` | 89 | tracked_source:89 |
 ```
 
@@ -5457,7 +2014,7 @@ Status: `ready`
 ```markdown
 # Engine Brain Doc Sync
 
-Generated at: `2026-07-11T07:10:18+00:00`
+Generated at: `2026-07-21T07:37:01+00:00`
 Status: `passed`
 
 | Check | Path | Status | Missing |
@@ -5476,9 +2033,9 @@ Status: `passed`
 ```markdown
 # Engine Brain Secret Guardrail
 
-Generated at: `2026-07-11T07:10:18+00:00`
+Generated at: `2026-07-21T07:37:01+00:00`
 Status: `passed`
-Sensitive/local env path count in audit: `7`
+Sensitive/local env path count in audit: `8`
 
 Generated Engine Brain context must not include exact local sensitive/env paths or secret contents.
 
@@ -5498,7 +2055,7 @@ Generated Engine Brain context must not include exact local sensitive/env paths 
 ```markdown
 # P6 Codex Integration Readiness
 
-Generated at: `2026-07-11T07:10:18+00:00`
+Generated at: `2026-07-21T07:37:01+00:00`
 Status: `ready_for_plugin_design`
 
 P6 allows only four read-only status/cockpit tools plus audited repo-hygiene, API-cost, evidence-pack, Engine Brain, and P7 cockpit-smoke safe-write refreshes. Do not add deploy/live shortcuts or bypass Control Center evidence gates.
@@ -5541,7 +2098,7 @@ Recommended next: Operate the plugin as four read-only status/cockpit tools plus
 | `ctoai_plugin_bounded_write_policy_contract` | `passed` | home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_self_check.py |
 | `ctoai_plugin_p7_cockpit_smoke_contract_tests` | `passed` | tests/test_engine_brain_index.py |
 | `ctoai_plugin_marketplace_entry` | `passed` | personal marketplace entry |
-| `ctoai_plugin_installed_cache` | `passed` | installed personal cache version 0.1.0+codex.20260708000418 |
+| `ctoai_plugin_installed_cache` | `passed` | installed personal cache version 0.1.0+codex.20260717215814 |
 | `control_center_evidence_contract` | `passed` | web/src/lib/controlCenterEvidence.ts |
 | `control_center_evidence_tests` | `passed` | web/src/lib/__tests__/controlCenterEvidence.test.ts |
 | `control_center_p7_cockpit_smoke_script` | `passed` | scripts/ops/control_center_p7_cockpit_smoke.py |
@@ -5570,7 +2127,7 @@ Recommended next: Operate the plugin as four read-only status/cockpit tools plus
 ```markdown
 # P7 Operator Workflow
 
-Generated at: `2026-07-11T07:10:18+00:00`
+Generated at: `2026-07-21T07:37:01+00:00`
 Status: `safe_write_ready`
 Decision: `allow_bounded_safe_write_tools`
 
@@ -5618,14 +2175,14 @@ Next safe command: Use ctoai_repo_hygiene_refresh, ctoai_api_cost_refresh, ctoai
 ```markdown
 # P7 Action Readiness
 
-Generated at: `2026-07-11T07:10:18+00:00`
+Generated at: `2026-07-21T07:37:01+00:00`
 Status: `safe_write_tools_enabled`
 Decision: `monitor_enabled_safe_write_tools`
 
 P7 action readiness is evidence-only. MCP write tools stay disabled until every candidate has audit evidence and explicit enablement.
 
 Risk model: `docs/CTOAI_COMMAND_RISK_MODEL.md`
-Action audit: `runtime\control-center\action-audit.jsonl` with `122` records.
+Action audit: `runtime\control-center\action-audit.jsonl` with `689` records.
 MCP write tools: `5`
 Next safe command: Design the next P7 plugin action only after risk model coverage, audit logging, Control Center gates, and targeted MCP tests exist; keep deploy/live actions outside the plugin surface.
 
@@ -5646,7 +2203,7 @@ Next safe command: Design the next P7 plugin action only after risk model covera
 ```markdown
 # P7 Safe Write Tool Design
 
-Generated at: `2026-07-11T07:10:18+00:00`
+Generated at: `2026-07-21T07:37:01+00:00`
 Status: `implemented`
 Decision: `ready_for_dry_run_operation`
 
@@ -5688,7 +2245,7 @@ Next safe command: Run ctoai_evidence_pack_refresh with dry_run=true and verify 
 ```markdown
 # P7 Operator Brief
 
-Generated at: `2026-07-11T07:10:18+00:00`
+Generated at: `2026-07-21T07:37:01+00:00`
 Decision: `ready_for_p7_operator_workflow`
 Status: `ready`
 
@@ -5702,10 +2259,10 @@ Next safe command: Design the next P7 plugin action only after risk model covera
 - P7 workflow: `safe_write_ready` with `9` MCP tools and `5` safe-write tools.
 - P7 action readiness: `safe_write_tools_enabled` with `5/5` audited candidates and `5` MCP write tools.
 - P7 safe-write design: `implemented` for `ctoai_evidence_pack_refresh` with MCP enabled `True`.
-- P7 cockpit handoff: `ready`; smoke `14/14`; safe-write audits `5/5`; release files `35`; action audit records `122`.
-- OTClient helper: `promoted`; release gate `passed`; module contract `passed` (30/30); sandbox queue `passed`; runtime `ready_for_readycheck`; first step `local_ready`.
+- P7 cockpit handoff: `ready`; smoke `14/14`; safe-write audits `5/5`; release files `35`; action audit records `689`.
+- OTClient helper: `blocked`; release gate `blocked`; module contract `passed` (39/39); sandbox queue `ready_for_operator`; runtime `not_running`; first step `launch_sandbox`.
 - Roadmap generation: `ready`; docs `3/3`; doc sync `passed`.
-- Validation evidence: `16` commands from `2026-07-07T04:15:56+00:00`.
+- Validation evidence: `11` commands from `2026-07-18T12:34:49Z`.
 - Hard blockers: `none`.
 - Warnings: `brain_doctor`, `diff_check`.
 ```
@@ -5716,15 +2273,26 @@ Next safe command: Design the next P7 plugin action only after risk model covera
 ```markdown
 # Engine Brain File Tree
 
-Generated at: `2026-07-11T07:10:18+00:00`
+Generated at: `2026-07-21T07:37:01+00:00`
 
 Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 `node_modules`, `runtime`, `logs`, `data`, `.tmp`, build outputs.
 
 | Path | Bytes |
 |---|---:|
+| `.codex-tmp/p14-self-hosted-29446706550/request.json` | 49702 |
+| `.codex-tmp/p14-self-hosted-29446706550/result.json` | 2428 |
+| `.codex-tmp/p17-7-module-audit.json` | 16131 |
+| `.codex-tmp/p17-7-shell-budget-after.json` | 11980 |
+| `.codex-tmp/p17-7-shell-budget.json` | 11962 |
+| `.codex-tmp/p19-module-audit.json` | 18174 |
+| `.codex-tmp/p20/module-audit.json` | 16131 |
+| `.codex-tmp/p20/shell-budget.json` | 11962 |
+| `.codex-tmp/pr192-body.md` | 2685 |
 | `.ctoa-local/bootstrap-state.json` | 383 |
 | `.ctoa-local/daily/2026-06-23.md` | 3915 |
+| `.ctoa-local/otclient/equipment-shadow-capture-profile.json` | 394 |
+| `.ctoa-local/otclient/heal-friend-shadow-profile.json` | 768 |
 | `.ctoa-local/user-config.json` | 461 |
 | `.devcontainer/devcontainer-lock.json` | 1265 |
 | `.devcontainer/devcontainer.json` | 1526 |
@@ -5735,30 +2303,30 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `.github/instructions/ops-powershell-safety.instructions.md` | 1889 |
 | `.github/instructions/runner-governance.instructions.md` | 1744 |
 | `.github/ISSUE_TEMPLATE/config.yml` | 475 |
-| `.github/ISSUE_TEMPLATE/ctoa-031-experiment-charter.md` | 1949 |
-| `.github/ISSUE_TEMPLATE/ctoa-032-agent-capability-matrix.md` | 1640 |
-| `.github/ISSUE_TEMPLATE/ctoa-033-braver-experiment-packs.md` | 1617 |
-| `.github/ISSUE_TEMPLATE/ctoa-034-tool-advisor-sandbox-tuning.md` | 1574 |
-| `.github/ISSUE_TEMPLATE/ctoa-035-agent-evaluation-scorecard.md` | 1555 |
-| `.github/ISSUE_TEMPLATE/ctoa-036-daily-experiment-review-loop.md` | 1612 |
-| `.github/ISSUE_TEMPLATE/ctoa-037-promotion-gate.md` | 1621 |
+| `.github/ISSUE_TEMPLATE/ctoa-031-experiment-charter.md` | 1973 |
+| `.github/ISSUE_TEMPLATE/ctoa-032-agent-capability-matrix.md` | 1658 |
+| `.github/ISSUE_TEMPLATE/ctoa-033-braver-experiment-packs.md` | 1635 |
+| `.github/ISSUE_TEMPLATE/ctoa-034-tool-advisor-sandbox-tuning.md` | 1592 |
+| `.github/ISSUE_TEMPLATE/ctoa-035-agent-evaluation-scorecard.md` | 1567 |
+| `.github/ISSUE_TEMPLATE/ctoa-036-daily-experiment-review-loop.md` | 1630 |
+| `.github/ISSUE_TEMPLATE/ctoa-037-promotion-gate.md` | 1639 |
 | `.github/ISSUE_TEMPLATE/ctoa-038-monitoring-alert-p0.md` | 740 |
 | `.github/prompts/pr-quality-build-gate-review.prompt.md` | 1729 |
 | `.github/prompts/sprint-wave1-readiness.prompt.md` | 1680 |
 | `.github/PULL_REQUEST_TEMPLATE/template.md` | 245 |
 | `.github/skills/ci-hotfix-workflow/SKILL.md` | 3039 |
 | `.github/workflows/browser-e2e-smoke.yml` | 1158 |
-| `.github/workflows/cd_bot.yml` | 4935 |
+| `.github/workflows/cd_bot.yml` | 7124 |
 | `.github/workflows/ctoa-approval-watchdog.yml` | 3519 |
 | `.github/workflows/ctoa-ci-executive-weekly.yml` | 1068 |
 | `.github/workflows/ctoa-close-on-gate.yml` | 887 |
-| `.github/workflows/ctoa-copilot-ci.yml` | 9123 |
+| `.github/workflows/ctoa-copilot-ci.yml` | 9288 |
 | `.github/workflows/ctoa-daily-ci-health.yml` | 4820 |
 | `.github/workflows/ctoa-daily-insights.yml` | 941 |
 | `.github/workflows/ctoa-issue-sync.yml` | 687 |
 | `.github/workflows/ctoa-monitoring-alerts.yml` | 14232 |
-| `.github/workflows/ctoa-pipeline.yml` | 30243 |
-| `.github/workflows/ctoa-runtime-smoke-e2e-8001.yml` | 2121 |
+| `.github/workflows/ctoa-pipeline.yml` | 30466 |
+| `.github/workflows/ctoa-runtime-smoke-e2e-8001.yml` | 2546 |
 | `.github/workflows/ctoa-smoke-must-pass.yml` | 949 |
 | `.github/workflows/ctoa-status-sync.yml` | 980 |
 | `.github/workflows/ctoa-vps-hygiene-weekly.yml` | 3891 |
@@ -5769,7 +2337,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `.github/workflows/site-pages.yml` | 1537 |
 | `.github/workflows/vps-authorize-ctoa-key.yml` | 4091 |
 | `.github/workflows/vps-gs-cycle.yml` | 10161 |
-| `.github/workflows/vps-stack-deploy.yml` | 8480 |
+| `.github/workflows/vps-stack-deploy.yml` | 8308 |
 | `.luarc.json` | 268 |
 | `.pre-commit-config.yaml` | 784 |
 | `.vscode/extensions.json` | 155 |
@@ -5818,25 +2386,25 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `AI/FEATURE_ROADMAP.md` | 56235 |
 | `AI/generated/DOC_SYNC.json` | 1019 |
 | `AI/generated/DOC_SYNC.md` | 609 |
-| `AI/generated/ENGINE_BRAIN_PACK.json` | 5583 |
-| `AI/generated/ENGINE_BRAIN_PACK.md` | 412233 |
-| `AI/generated/ENV_DOCTOR.json` | 8345 |
-| `AI/generated/ENV_DOCTOR.md` | 1368 |
-| `AI/generated/FILE_TREE.md` | 68186 |
+| `AI/generated/ENGINE_BRAIN_PACK.json` | 3315 |
+| `AI/generated/ENGINE_BRAIN_PACK.md` | 229697 |
+| `AI/generated/ENV_DOCTOR.json` | 8353 |
+| `AI/generated/ENV_DOCTOR.md` | 1236 |
+| `AI/generated/FILE_TREE.md` | 69116 |
 | `AI/generated/manifest.json` | 2062 |
-| `AI/generated/OWNERSHIP_MAP.json` | 16701 |
-| `AI/generated/OWNERSHIP_MAP.md` | 6492 |
+| `AI/generated/OWNERSHIP_MAP.json` | 17646 |
+| `AI/generated/OWNERSHIP_MAP.md` | 6845 |
 | `AI/generated/P6_CODEX_INTEGRATION_READINESS.json` | 11010 |
 | `AI/generated/P6_CODEX_INTEGRATION_READINESS.md` | 6915 |
-| `AI/generated/P7_ACTION_READINESS.json` | 4870 |
+| `AI/generated/P7_ACTION_READINESS.json` | 4877 |
 | `AI/generated/P7_ACTION_READINESS.md` | 1142 |
-| `AI/generated/P7_OPERATOR_BRIEF.json` | 6464 |
-| `AI/generated/P7_OPERATOR_BRIEF.md` | 1373 |
+| `AI/generated/P7_OPERATOR_BRIEF.json` | 6552 |
+| `AI/generated/P7_OPERATOR_BRIEF.md` | 1374 |
 | `AI/generated/P7_OPERATOR_WORKFLOW.json` | 4690 |
 | `AI/generated/P7_OPERATOR_WORKFLOW.md` | 3015 |
-| `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.json` | 2705 |
+| `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.json` | 2708 |
 | `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.md` | 2024 |
-| `AI/generated/SYMBOL_MAP.md` | 260612 |
+| `AI/generated/SYMBOL_MAP.md` | 261541 |
 | `AI/KNOWN_BUGS.md` | 1384 |
 | `AI/LUA_INDEX.md` | 2874 |
 | `AI/OPERATIONS_AUDIT.md` | 5139 |
@@ -5851,16 +2419,16 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `AI/TECH_DEBT.md` | 1803 |
 | `alembic/env.py` | 1412 |
 | `alembic/versions/20260521_0001_sprint0_baseline.py` | 445 |
-| `api/__init__.py` | 2 |
-| `api/main.py` | 54572 |
+| `api/__init__.py` | 1 |
+| `api/main.py` | 54986 |
 | `api/startup_guard.py` | 1328 |
 | `bot/__init__.py` | 1 |
 | `bot/action/__init__.py` | 2631 |
-| `bot/action/combat.py` | 1677 |
-| `bot/action/input_backend.py` | 3022 |
+| `bot/action/combat.py` | 1616 |
+| `bot/action/input_backend.py` | 3021 |
 | `bot/action/loot.py` | 315 |
 | `bot/action/movement.py` | 2988 |
-| `bot/action/spell_rotation.py` | 6741 |
+| `bot/action/spell_rotation.py` | 6620 |
 | `bot/config/__init__.py` | 42 |
 | `bot/config/runtime_profile.py` | 5961 |
 | `bot/connection/__init__.py` | 1 |
@@ -5872,7 +2440,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `bot/decision/hunt_strategy.py` | 2683 |
 | `bot/decision/ml_model.py` | 7980 |
 | `bot/decision/rules.py` | 2199 |
-| `bot/infra/docker-compose.yml` | 865 |
+| `bot/infra/docker-compose.yml` | 848 |
 | `bot/infra/grafana/dashboards/tibia_bot.json` | 4684 |
 | `bot/infra/grafana/provisioning/dashboards/default.yaml` | 175 |
 | `bot/infra/grafana/provisioning/datasources/prometheus.yaml` | 159 |
@@ -5902,7 +2470,8 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `core/protected-files.txt` | 222 |
 | `core/runtime-freeze-policy.json` | 301 |
 | `ctoa-vps.ps1` | 547 |
-| `ctoa.ps1` | 29733 |
+| `ctoa.ps1` | 30034 |
+| `ctoa_client_capabilities.json` | 3702 |
 | `ctoa_ui_prefs.lua` | 397 |
 | `deploy/local/observability/grafana/provisioning/datasources/datasources.yml` | 224 |
 | `deploy/local/observability/loki-config.yml` | 539 |
@@ -5921,8 +2490,8 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `docs/adr/ADR-001-shared-clock-hybrid-modules.md` | 1201 |
 | `docs/AGENT_PROMPT_DEFINITIVE.md` | 4201 |
 | `docs/AGENT_TRAINING_MASTERPLAN.md` | 3605 |
-| `docs/ARCHITECTURE.md` | 21905 |
-| `docs/audits/CTOAI_FULL_WORKSPACE_AUDIT_2026-07-06.md` | 6889 |
+| `docs/ARCHITECTURE.md` | 14029 |
+| `docs/audits/CTOAI_FULL_WORKSPACE_AUDIT_2026-07-06.md` | 6399 |
 | `docs/audits/CTOAI_SECURITY_HARDENING_2026-07-06.md` | 114540 |
 | `docs/audits/CTOAI_WORKTREE_EXECUTION_PLAN_2026-07-11.md` | 8548 |
 | `docs/audits/CTOAI_WORKTREE_TRIAGE_2026-07-09.md` | 6985 |
@@ -5930,7 +2499,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `docs/azure-alerts-automation-setup.md` | 4007 |
 | `docs/BUSINESS_STRATEGY.md` | 5029 |
 | `docs/CLIENT_DISTRIBUTION_MODEL.md` | 2928 |
-| `docs/COMMUNITY_ENGAGEMENT_PLAN.md` | 15939 |
+| `docs/COMMUNITY_ENGAGEMENT_PLAN.md` | 15874 |
 | `docs/CORE_GUARDRAILS.md` | 1090 |
 | `docs/CTOA_CLI.md` | 3810 |
 | `docs/CTOAI_COMMAND_RISK_MODEL.md` | 10206 |
@@ -5938,7 +2507,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `docs/CTOAI_FOUNDATION_CLEANUP.md` | 7779 |
 | `docs/CTOAI_LEGACY_FEATURE_INVENTORY.md` | 8857 |
 | `docs/CTOAI_SURFACE_CONSOLIDATION.md` | 3282 |
-| `docs/DEPLOYMENT.md` | 6848 |
+| `docs/DEPLOYMENT.md` | 6851 |
 | `docs/evidence/azure-activity-log-manual-validation-2026-05-23.md` | 584 |
 | `docs/evidence/vps-worktree-hygiene/ctoa-237-20260515T135557Z/preupdate-gate-20260515T135557Z.txt` | 1132 |
 | `docs/evidence/vps-worktree-hygiene/ctoa-237-20260515T135557Z/preupdate-status-20260515T135557Z.txt` | 709 |
@@ -6058,7 +2627,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `docs/evidence/vps-worktree-hygiene/phase5-nightly-checklist.md` | 1454 |
 | `docs/evidence/vps-worktree-hygiene/README.md` | 5847 |
 | `docs/examples/azure-activity-log-samples.json` | 2059 |
-| `docs/experiments/agent-experiment-week-plan.md` | 7880 |
+| `docs/experiments/agent-experiment-week-plan.md` | 7888 |
 | `docs/experiments/ci-executive-weekly-template.md` | 984 |
 | `docs/experiments/ci-remediation-plan-7d.md` | 2182 |
 | `docs/experiments/ctoa-031-037-issue-bodies.md` | 6217 |
@@ -6083,7 +2652,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `docs/experiments/exp-002-archived-findings-2026-03-20.md` | 1524 |
 | `docs/experiments/exp-next-cycle-routing-micro-hypothesis.md` | 2077 |
 | `docs/gs-ops-README.md` | 5665 |
-| `docs/history/ARCHIVED_CURRENT_PRIORITY_MAP_2026-03-19.md` | 872 |
+| `docs/history/ARCHIVED_CURRENT_PRIORITY_MAP_2026-03-19.md` | 875 |
 | `docs/history/sprints/SPRINT-002.md` | 2357 |
 | `docs/history/sprints/SPRINT-003.md` | 3386 |
 | `docs/history/sprints/SPRINT-004.md` | 4441 |
@@ -6148,12 +2717,12 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `docs/history/sprints/SPRINT-069.md` | 1316 |
 | `docs/history/sprints/SPRINT_007_AGENT_EXECUTION_REPORT.md` | 4393 |
 | `docs/HYBRID_BOT_IMPLEMENTATION.md` | 12154 |
-| `docs/INDEX.md` | 3421 |
+| `docs/INDEX.md` | 3571 |
 | `docs/INFRASTRUCTURE_CANONICAL.md` | 2069 |
 | `docs/INFRASTRUCTURE_DECISION_LOG.md` | 2450 |
 | `docs/ISSUE_TRIAGE.md` | 1784 |
 | `docs/LAB003_10H_WORK_SHIFT_PLAN.md` | 2605 |
-| `docs/LOCAL_SETUP.md` | 7359 |
+| `docs/LOCAL_SETUP.md` | 7385 |
 | `docs/loot-target-spec.md` | 507 |
 | `docs/MARKET_ANALYSIS_2025.md` | 4947 |
 | `docs/MOBILE_CONSOLE.md` | 5749 |
@@ -6191,13 +2760,13 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `docs/README_INVENTORY.md` | 2172 |
 | `docs/REALTIME_MODULE_CREATION.md` | 3229 |
 | `docs/REPO_HYGIENE_POLICY.md` | 4830 |
-| `docs/REPO_SCHEMA.md` | 10994 |
+| `docs/REPO_SCHEMA.md` | 11138 |
 | `docs/ROADMAP_V0.2.0_TO_V1.0.0.md` | 878 |
-| `docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md` | 6491 |
+| `docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md` | 6578 |
 | `docs/runbook-althea-enc3-reverseeng.md` | 3502 |
 | `docs/runbook-azure-activity-log-interpretation.md` | 2855 |
 | `docs/runbook-disk-emergency.md` | 2223 |
-| `docs/runbook-enc3-reverseeng.md` | 13429 |
+| `docs/runbook-enc3-reverseeng.md` | 13324 |
 | `docs/runbook-phase5-alerts-incident.md` | 2514 |
 | `docs/runbook-vps-agent-outputs.md` | 5948 |
 | `docs/runbook-vps-mobile-console.md` | 2576 |
@@ -6229,7 +2798,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `prompts/braver_templates.py` | 5238 |
 | `prompts/design-infra-playbook.yaml` | 1014 |
 | `prompts/mmo-lua-pack.yaml` | 4062 |
-| `README.md` | 5711 |
+| `README.md` | 5732 |
 | `releases/evidence/release-validation-dashboardsnapshot-2026-05-24.md` | 921 |
 | `releases/evidence/sprint-050/CTOA-260.md` | 578 |
 | `releases/evidence/sprint-050/CTOA-261.md` | 609 |
@@ -6265,7 +2834,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `releases/evidence/sprint-056/CTOA-297.md` | 514 |
 | `releases/evidence/sprint-056/CTOA-298.md` | 778 |
 | `releases/evidence/sprint-056/CTOA-299.md` | 838 |
-| `releases/v1.1.1-release-notes.md` | 2210 |
+| `releases/v1.1.1-release-notes.md` | 2169 |
 | `requirements-bot.txt` | 525 |
 | `requirements-dev.txt` | 126 |
 | `requirements.txt` | 550 |
@@ -6299,7 +2868,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `runner/hybrid_bot/command_executor.py` | 14571 |
 | `runner/hybrid_bot/file_safety.py` | 2070 |
 | `runner/hybrid_bot/gameplay_engine.py` | 11632 |
-| `runner/hybrid_bot/INTEGRATION_COMPLETE.md` | 14231 |
+| `runner/hybrid_bot/INTEGRATION_COMPLETE.md` | 14129 |
 | `runner/hybrid_bot/interactive_mode.py` | 11148 |
 | `runner/hybrid_bot/metrics.py` | 15053 |
 | `runner/hybrid_bot/pathfinding.py` | 11395 |
@@ -6355,13 +2924,13 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/lua/loot_filter.lua` | 1538 |
 | `scripts/lua/module_reporter.lua` | 1112 |
 | `scripts/lua/otclient/ctoa_ed_profile.lua` | 2453 |
-| `scripts/lua/otclient/ctoa_ek_profile.lua` | 7667 |
+| `scripts/lua/otclient/ctoa_ek_profile.lua` | 7703 |
 | `scripts/lua/otclient/ctoa_helper_action_catalog.lua` | 6301 |
 | `scripts/lua/otclient/ctoa_helper_cavebot_observer.lua` | 3342 |
 | `scripts/lua/otclient/ctoa_helper_cavebot_runtime.lua` | 15629 |
 | `scripts/lua/otclient/ctoa_helper_client_reporter.lua` | 8294 |
 | `scripts/lua/otclient/ctoa_helper_combat_observer.lua` | 5193 |
-| `scripts/lua/otclient/ctoa_helper_combat_runtime.lua` | 16020 |
+| `scripts/lua/otclient/ctoa_helper_combat_runtime.lua` | 17810 |
 | `scripts/lua/otclient/ctoa_helper_conditions.lua` | 7172 |
 | `scripts/lua/otclient/ctoa_helper_decision_pipeline.lua` | 6154 |
 | `scripts/lua/otclient/ctoa_helper_decision_trace.lua` | 3937 |
@@ -6384,7 +2953,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/lua/otclient/ctoa_helper_plan_queue.lua` | 2684 |
 | `scripts/lua/otclient/ctoa_helper_planner.lua` | 5062 |
 | `scripts/lua/otclient/ctoa_helper_profile_persistence.lua` | 14272 |
-| `scripts/lua/otclient/ctoa_helper_profile_schema.lua` | 25357 |
+| `scripts/lua/otclient/ctoa_helper_profile_schema.lua` | 25417 |
 | `scripts/lua/otclient/ctoa_helper_recovery_observer.lua` | 4249 |
 | `scripts/lua/otclient/ctoa_helper_recovery_runtime.lua` | 4956 |
 | `scripts/lua/otclient/ctoa_helper_route.lua` | 10784 |
@@ -6400,7 +2969,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/lua/otclient/ctoa_ms_profile.lua` | 2412 |
 | `scripts/lua/otclient/ctoa_native_combat.lua` | 18058 |
 | `scripts/lua/otclient/ctoa_native_heal.lua` | 9644 |
-| `scripts/lua/otclient/ctoa_native_helper.lua` | 178789 |
+| `scripts/lua/otclient/ctoa_native_helper.lua` | 180090 |
 | `scripts/lua/otclient/ctoa_native_loot.lua` | 11632 |
 | `scripts/lua/otclient/ctoa_otclient.otmod` | 253 |
 | `scripts/lua/otclient/ctoa_otclient_loader.lua` | 7548 |
@@ -6414,10 +2983,10 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/lua/target_priority.lua` | 1955 |
 | `scripts/lua/telemetry_exporter.lua` | 399 |
 | `scripts/ops/aggregate_agent_eval.py` | 2402 |
-| `scripts/ops/analyze-enc3.ps1` | 3809 |
+| `scripts/ops/analyze-enc3.ps1` | 3923 |
 | `scripts/ops/api_cost_report.py` | 19017 |
 | `scripts/ops/assemble_by_handle_offset.py` | 6315 |
-| `scripts/ops/assemble_io_dense_stream.py` | 1817 |
+| `scripts/ops/assemble_io_dense_stream.py` | 1816 |
 | `scripts/ops/assemble_overlap_graph_variants.py` | 11610 |
 | `scripts/ops/assemble_window_aware_variants.py` | 5674 |
 | `scripts/ops/auto_trainer.py` | 7488 |
@@ -6473,15 +3042,15 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/ops/install-phase5-morning-sync-task.ps1` | 1359 |
 | `scripts/ops/kv_attach_first_hit.py` | 2374 |
 | `scripts/ops/kv_first_hit_from_live_session.py` | 17152 |
-| `scripts/ops/kv_raw_init_probe.py` | 643 |
-| `scripts/ops/kv_smoke_diag.py` | 857 |
-| `scripts/ops/kv_smoke_min.py` | 434 |
+| `scripts/ops/kv_raw_init_probe.py` | 630 |
+| `scripts/ops/kv_smoke_diag.py` | 841 |
+| `scripts/ops/kv_smoke_min.py` | 428 |
 | `scripts/ops/lab003_mobile_proxy_smoke.ps1` | 4695 |
 | `scripts/ops/lab003_shift_guard.ps1` | 8887 |
-| `scripts/ops/lab003_shift_smoke_webhook.ps1` | 5320 |
+| `scripts/ops/lab003_shift_smoke_webhook.ps1` | 5375 |
 | `scripts/ops/lab003_validate_bundle.ps1` | 3687 |
 | `scripts/ops/launch_kamil_client_macro_studio.ps1` | 3766 |
-| `scripts/ops/link_check_docs.py` | 1438 |
+| `scripts/ops/link_check_docs.py` | 2904 |
 | `scripts/ops/night-report.py` | 8009 |
 | `scripts/ops/nightly_stability.py` | 11554 |
 | `scripts/ops/orchestrator-loop-worker.ps1` | 2613 |
@@ -6489,7 +3058,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/ops/otclient_external_bot_intake.py` | 14940 |
 | `scripts/ops/otclient_helper_module_audit.py` | 32156 |
 | `scripts/ops/otclient_helper_module_contract.py` | 27457 |
-| `scripts/ops/otclient_helper_next_modules_plan.py` | 29044 |
+| `scripts/ops/otclient_helper_next_modules_plan.py` | 29072 |
 | `scripts/ops/otclient_helper_profile_audit.py` | 5236 |
 | `scripts/ops/otclient_helper_shell_budget_plan.py` | 12627 |
 | `scripts/ops/otclient_input_contract_fixtures.py` | 13415 |
@@ -6504,25 +3073,12 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/ops/repo_hygiene_audit.py` | 8244 |
 | `scripts/ops/repo_hygiene_migration_plan.py` | 7540 |
 | `scripts/ops/rosetta_bundle.py` | 7981 |
-| `scripts/ops/run-ghidra-enc3-analysis.ps1` | 1142 |
-| `scripts/ops/run-ghidra-enc3-context.ps1` | 1184 |
+| `scripts/ops/run-ghidra-enc3-analysis.ps1` | 1176 |
+| `scripts/ops/run-ghidra-enc3-context.ps1` | 1220 |
 | `scripts/ops/run-phase5-morning-sync.ps1` | 1246 |
 | `scripts/ops/run-x64dbg-enc3-dynamic-pass.py` | 10370 |
 | `scripts/ops/run_validator_with_preflight.py` | 1451 |
-| `scripts/ops/runtime_path_guard.py` | 2780 |
-| `scripts/ops/runtime_smoke_e2e_8001.py` | 1965 |
-| `scripts/ops/smoke_must_pass.py` | 2644 |
-| `scripts/ops/solteria_api_audit.py` | 9873 |
-| `scripts/ops/solteria_helper_goal_audit.py` | 17499 |
-| `scripts/ops/solteria_helper_release_gate.py` | 22463 |
-| `scripts/ops/solteria_helper_sandbox_smoke_queue.py` | 12790 |
-| `scripts/ops/sprint027_validate.py` | 8791 |
-| `scripts/ops/sprint028_validate.py` | 11765 |
-| `scripts/ops/sprint029_validate.py` | 5367 |
-| `scripts/ops/sprint030_validate.py` | 5367 |
-| `scripts/ops/sprint031_validate.py` | 5367 |
-| `scripts/ops/sprint032_validate.py` | 5367 |
-| `scripts/ops/s
+| `scripts/ops/runtime_pat
 
 [truncated]
 ```
@@ -6533,7 +3089,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 ```markdown
 # Engine Brain Symbol Map
 
-Generated at: `2026-07-11T07:10:18+00:00`
+Generated at: `2026-07-21T07:37:01+00:00`
 
 This is a lightweight map for navigation, not a full source dump.
 
@@ -6609,59 +3165,59 @@ This is a lightweight map for navigation, not a full source dump.
 - L369: def _utc_now_iso()
 - L373: def _atomic_write_json(path, payload)
 - L408: def _display_path(path_value)
-- L424: def _redact_release_evidence_text(value)
-- L438: def _public_release_evidence_value(value, key)
-- L455: def _public_audit_value(value, key)
-- L472: def _read_release_evidence_payload(path)
-- L488: def _hash_password(password)
-- L492: def _verify_password(password, hashed)
-- L499: def _sanitize_username(username)
-- L508: def _seed_password(env_name)
-- L515: def _seed_accounts()
-- L548: def _default_account_seed_blocked()
-- L552: def _read_auth_store_payload(path)
-- L571: def _load_auth_store()
-- L613: def _save_auth_store(store)
-- L617: def _append_activity(store)
-- L640: def _b64url_encode(data)
-- L644: def _b64url_decode(data)
-- L649: def _jwt_encode(payload)
-- L660: def _jwt_decode(token)
-- L685: def _issue_token(user)
-- L696: def _extract_bearer(authorization)
-- L709: def _first_forwarded_ip(value)
-- L719: def _client_ip_from_request(request)
-- L729: def _rate_limit_group(path)
-- L739: def _rate_limit_for_group(group)
-- L747: def _consume_rate_limit(ip, group, now_ts)
-- L792: def _audit_actor_from_request(request)
-- L806: def _append_audit_http(request, status, actor, meta)
-- L832: async def security_middleware(request, call_next)
-- L874: def _current_user(authorization)
-- L897: def _require_roles(user, allowed)
-- L902: def _select_models(req)
-- L975: async def _call_model(model_name, backend_url, backend_key, messages, temperature, max_tokens)
-- L1009: async def _execute_chat(req)
-- L1097: def _safe_chat_route_info(route_info)
-- L1113: def _require_chat_debug_route_user(user)
-- L1123: def health()
-- L1128: def status()
-- L1149: def bootstrap(req)
-- L1197: def register(req, authorization)
-- L1263: def login(req)
-- L1287: def me(authorization)
-- L1293: def create_invite(req, authorization)
-- L1330: def accept_invite(req, authorization)
-- L1378: def community_members(authorization)
-- L1398: def set_member_role(username, req, authorization)
-- L1439: def community_feed(authorization)
-- L1448: def community_invites(authorization)
-- L1459: def release_evidence()
-- L1540: async def chat(req, authorization)
-- L1559: async def chat_completions(req, authorization)
-- L1601: async def safety_metrics(authorization)
-- L1615: async def safety_telemetry(authorization)
-- L1624: async def safety_status()
+- L431: def _redact_release_evidence_text(value)
+- L445: def _public_release_evidence_value(value, key)
+- L462: def _public_audit_value(value, key)
+- L479: def _read_release_evidence_payload(path)
+- L495: def _hash_password(password)
+- L499: def _verify_password(password, hashed)
+- L506: def _sanitize_username(username)
+- L515: def _seed_password(env_name)
+- L522: def _seed_accounts()
+- L555: def _default_account_seed_blocked()
+- L559: def _read_auth_store_payload(path)
+- L578: def _load_auth_store()
+- L620: def _save_auth_store(store)
+- L624: def _append_activity(store)
+- L647: def _b64url_encode(data)
+- L651: def _b64url_decode(data)
+- L656: def _jwt_encode(payload)
+- L667: def _jwt_decode(token)
+- L692: def _issue_token(user)
+- L703: def _extract_bearer(authorization)
+- L716: def _first_forwarded_ip(value)
+- L726: def _client_ip_from_request(request)
+- L736: def _rate_limit_group(path)
+- L746: def _rate_limit_for_group(group)
+- L754: def _consume_rate_limit(ip, group, now_ts)
+- L799: def _audit_actor_from_request(request)
+- L813: def _append_audit_http(request, status, actor, meta)
+- L839: async def security_middleware(request, call_next)
+- L881: def _current_user(authorization)
+- L904: def _require_roles(user, allowed)
+- L909: def _select_models(req)
+- L982: async def _call_model(model_name, backend_url, backend_key, messages, temperature, max_tokens)
+- L1016: async def _execute_chat(req)
+- L1104: def _safe_chat_route_info(route_info)
+- L1120: def _require_chat_debug_route_user(user)
+- L1130: def health()
+- L1135: def status()
+- L1156: def bootstrap(req)
+- L1204: def register(req, authorization)
+- L1270: def login(req)
+- L1294: def me(authorization)
+- L1300: def create_invite(req, authorization)
+- L1337: def accept_invite(req, authorization)
+- L1385: def community_members(authorization)
+- L1405: def set_member_role(username, req, authorization)
+- L1446: def community_feed(authorization)
+- L1455: def community_invites(authorization)
+- L1466: def release_evidence()
+- L1547: async def chat(req, authorization)
+- L1566: async def chat_completions(req, authorization)
+- L1608: async def safety_metrics(authorization)
+- L1622: async def safety_telemetry(authorization)
+- L1631: async def safety_status()
 
 ## `api/startup_guard.py`
 
@@ -6987,41 +3543,41 @@ This is a lightweight map for navigation, not a full source dump.
 - L20: function Get-CliVpsHost
 - L31: function Get-PythonExe
 - L39: function Resolve-ControlCenterUrl
-- L85: function Invoke-FromRoot
-- L105: function Invoke-FromRootCapture
-- L135: function Get-CommandDictionary
-- L162: function Show-Help
-- L242: function Get-GitExe
-- L256: function Get-NpmExe
-- L267: function Get-WorktreeSummary
-- L289: function Show-Next
-- L312: function Open-ControlCenter
-- L367: function Resolve-Sprint
-- L381: function Invoke-ValidateSprint
-- L401: function Invoke-Nightly
-- L418: function Invoke-Up
-- L432: function Invoke-Test
-- L443: function Invoke-Doctor
-- L456: function Invoke-DevProfile
-- L461: function Invoke-OpsProfile
-- L466: function Invoke-ProdProfile
-- L476: function Invoke-VpsAction
-- L516: function Invoke-VpsActionCapture
-- L564: function Invoke-RunnerCommand
-- L576: function Invoke-ReportCommand
-- L589: function Invoke-MobileCommand
-- L601: function Invoke-LogsCommand
-- L615: function Invoke-StatusSnapshot
-- L695: function Invoke-DashboardSnapshot
-- L699: function Invoke-ReportNow
-- L703: function Invoke-OtProfileBuilder
-- L717: function Invoke-OtHelperPreview
-- L727: function Invoke-OtHelperMockup
-- L737: function Invoke-OtHelperDeploy
-- L758: function Invoke-OtTestLoop
-- L773: function Invoke-EngineBrain
-- L804: function Get-ValueOrDefault
-- L816: function Show-Menu
+- L91: function Invoke-FromRoot
+- L111: function Invoke-FromRootCapture
+- L141: function Get-CommandDictionary
+- L168: function Show-Help
+- L248: function Get-GitExe
+- L262: function Get-NpmExe
+- L273: function Get-WorktreeSummary
+- L295: function Show-Next
+- L318: function Open-ControlCenter
+- L373: function Resolve-Sprint
+- L387: function Invoke-ValidateSprint
+- L407: function Invoke-Nightly
+- L424: function Invoke-Up
+- L438: function Invoke-Test
+- L449: function Invoke-Doctor
+- L462: function Invoke-DevProfile
+- L467: function Invoke-OpsProfile
+- L472: function Invoke-ProdProfile
+- L482: function Invoke-VpsAction
+- L522: function Invoke-VpsActionCapture
+- L570: function Invoke-RunnerCommand
+- L582: function Invoke-ReportCommand
+- L595: function Invoke-MobileCommand
+- L607: function Invoke-LogsCommand
+- L621: function Invoke-StatusSnapshot
+- L701: function Invoke-DashboardSnapshot
+- L705: function Invoke-ReportNow
+- L709: function Invoke-OtProfileBuilder
+- L723: function Invoke-OtHelperPreview
+- L733: function Invoke-OtHelperMockup
+- L743: function Invoke-OtHelperDeploy
+- L764: function Invoke-OtTestLoop
+- L779: function Invoke-EngineBrain
+- L810: function Get-ValueOrDefault
+- L822: function Show-Menu
 
 ## `ctoa_ui_prefs.lua`
 

@@ -30,9 +30,9 @@ Out of scope:
 - Adding large governance overhead
 
 ## Dependencies
-- [docs/experiments/daily-experiment-scorecard.md](docs/experiments/daily-experiment-scorecard.md)
-- [docs/experiments/decision-memo-template.md](docs/experiments/decision-memo-template.md)
-- [docs/experiments/agent-experiment-week-plan.md](docs/experiments/agent-experiment-week-plan.md)
+- [docs/experiments/daily-experiment-scorecard.md](../../docs/experiments/daily-experiment-scorecard.md)
+- [docs/experiments/decision-memo-template.md](../../docs/experiments/decision-memo-template.md)
+- [docs/experiments/agent-experiment-week-plan.md](../../docs/experiments/agent-experiment-week-plan.md)
 
 ## Acceptance Criteria
 - Every running experiment gets a daily status.
