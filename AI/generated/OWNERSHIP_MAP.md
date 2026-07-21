@@ -1,6 +1,6 @@
 # Engine Brain Ownership Map
 
-Generated at: `2026-07-21T07:37:01+00:00`
+Generated at: `2026-07-21T08:07:28+00:00`
 Source audit: `runtime\audits\ctoai-full-workspace-audit.json`
 Status: `ready`
 
@@ -12,7 +12,7 @@ Status: `ready`
 | `.dockerignore` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `.env.example` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `.foundry` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
-| `.git` | Local/uncategorized | `manual review` | 438 | git_internal:438 |
+| `.git` | Local/uncategorized | `manual review` | 417 | git_internal:417 |
 | `.gitattributes` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `.github` | Local/uncategorized | `manual review` | 41 | tracked_source:41 |
 | `.gitignore` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
@@ -67,13 +67,13 @@ Status: `ready`
 | `requirements-dev.txt` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `requirements.txt` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `runner` | Runner runtime | `pytest tests/ --ignore=tests/e2e` | 154 | tracked_source:57, untracked_source_candidate:97 |
-| `runtime` | Local/uncategorized | `manual review` | 7413 | runtime_or_local_state:7413 |
+| `runtime` | Local/uncategorized | `manual review` | 7414 | runtime_or_local_state:7414 |
 | `runtime_context.py` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `schemas` | Contracts | `schema consumers and pytest` | 6 | tracked_source:6 |
 | `scoring` | Local/uncategorized | `manual review` | 5 | tracked_source:3, untracked_source_candidate:2 |
-| `scripts` | Operator automation | `pytest targeted script tests` | 489 | tracked_source:259, untracked_source_candidate:230 |
+| `scripts` | Operator automation | `pytest targeted script tests` | 489 | tracked_source:260, untracked_source_candidate:229 |
 | `src` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
-| `tests` | Regression suite | `pytest tests/ --ignore=tests/e2e` | 610 | local_secret_or_sensitive:2, tracked_source:180, untracked_source_candidate:428 |
+| `tests` | Regression suite | `pytest tests/ --ignore=tests/e2e` | 612 | local_secret_or_sensitive:2, tracked_source:183, untracked_source_candidate:427 |
 | `training` | Local/uncategorized | `manual review` | 8 | tracked_source:5, untracked_source_candidate:3 |
 | `up` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `web` | Control Center | `cd web; npm run lint; npm test` | 33422 | local_secret_or_sensitive:3, tracked_source:98, untracked_source_candidate:6536, vendor_or_cache:26785 |

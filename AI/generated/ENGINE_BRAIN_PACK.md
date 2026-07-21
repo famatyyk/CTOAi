@@ -1,6 +1,6 @@
 # CTOAi Engine Brain Pack
 
-Generated at: `2026-07-21T07:37:26+00:00`
+Generated at: `2026-07-21T08:06:53+00:00`
 Repo root: `C:\Users\zycie\CTOAi`
 Profile: `control-center`
 
@@ -1744,7 +1744,7 @@ This keeps dashboard/web and CLI aligned to the same command names and meanings.
 ```markdown
 # CTOAi Three Development Plans
 
-Basis: full workspace audit with `48323` inventoried files and `1325` git-tracked files.
+Basis: full workspace audit with `48305` inventoried files and `1329` git-tracked files.
 
 ## Plan 1: Helper-First Productization
 
@@ -1837,9 +1837,9 @@ Goal: make `AI/` the local, secret-safe planning/context layer and evolve it int
 ```json
 {
   "schema_version": 1,
-  "generated_at": "2026-07-21T07:37:01+00:00",
+  "generated_at": "2026-07-21T08:06:24+00:00",
   "root": "C:\\Users\\zycie\\CTOAi",
-  "file_count": 1247,
+  "file_count": 1248,
   "outputs": {
     "file_tree": "AI\\generated\\FILE_TREE.md",
     "symbol_map": "AI\\generated\\SYMBOL_MAP.md",
@@ -1900,26 +1900,18 @@ Goal: make `AI/` the local, secret-safe planning/context layer and evolve it int
 ```markdown
 # Engine Brain Environment Doctor
 
-Generated at: `2026-07-21T07:37:25+00:00`
+Generated at: `2026-07-21T08:06:53+00:00`
 Overall status: `warn`
 
 | Check | Status | Key evidence |
 |---|---|---|
-| `git` | `ok` | branch=codex/main-state-sync; dirty=61; path=C:\Program Files\Git\cmd\git.EXE |
+| `git` | `ok` | branch=codex/azure-deploy-gate; dirty=28; path=C:\Program Files\Git\cmd\git.EXE |
 | `docker` | `ok` | containers=6; running_broad=0; configured_broad=0 |
 | `vpn` | `warn` | warp_connected=False |
 | `vercel` | `ok` | version=54.10.3; project=ctoa-web |
 | `vscode` | `ok` | openai=['openai.chatgpt@26.715.31925']; old_dirs=1 |
-| `github` | `warn` | open_prs=8; dirty_prs=5; failed_runs=0 |
+| `github` | `warn` | open_prs=1; dirty_prs=0; failed_runs=4 |
 | `update_gate` | `ok` | gate=ok; product=CTOA Toolkit; version=1.1.1 |
-
-## GitHub Dirty PRs
-
-- `#184` [WIP] Fix CTOA VPS Global Save Cycle failure - https://github.com/famatyyk/CTOAi/pull/184
-- `#160` test(copilot-instructions): expand conformance coverage to all seven sections - https://github.com/famatyyk/CTOAi/pull/160
-- `#157` feat: add /analyze-prompt Copilot slash command - https://github.com/famatyyk/CTOAi/pull/157
-- `#153` docs: add alternative LLM model recommendations to copilot instructions and .env.example - https://github.com/famatyyk/CTOAi/pull/153
-- `#152` Enable workspace-level Python trace logging in VS Code - https://github.com/famatyyk/CTOAi/pull/152
 ```
 
 
@@ -1928,7 +1920,7 @@ Overall status: `warn`
 ```markdown
 # Engine Brain Ownership Map
 
-Generated at: `2026-07-21T07:37:01+00:00`
+Generated at: `2026-07-21T08:06:24+00:00`
 Source audit: `runtime\audits\ctoai-full-workspace-audit.json`
 Status: `ready`
 
@@ -1940,7 +1932,7 @@ Status: `ready`
 | `.dockerignore` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `.env.example` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `.foundry` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
-| `.git` | Local/uncategorized | `manual review` | 438 | git_internal:438 |
+| `.git` | Local/uncategorized | `manual review` | 417 | git_internal:417 |
 | `.gitattributes` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `.github` | Local/uncategorized | `manual review` | 41 | tracked_source:41 |
 | `.gitignore` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
@@ -1995,13 +1987,13 @@ Status: `ready`
 | `requirements-dev.txt` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `requirements.txt` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `runner` | Runner runtime | `pytest tests/ --ignore=tests/e2e` | 154 | tracked_source:57, untracked_source_candidate:97 |
-| `runtime` | Local/uncategorized | `manual review` | 7413 | runtime_or_local_state:7413 |
+| `runtime` | Local/uncategorized | `manual review` | 7414 | runtime_or_local_state:7414 |
 | `runtime_context.py` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `schemas` | Contracts | `schema consumers and pytest` | 6 | tracked_source:6 |
 | `scoring` | Local/uncategorized | `manual review` | 5 | tracked_source:3, untracked_source_candidate:2 |
-| `scripts` | Operator automation | `pytest targeted script tests` | 489 | tracked_source:259, untracked_source_candidate:230 |
+| `scripts` | Operator automation | `pytest targeted script tests` | 489 | tracked_source:260, untracked_source_candidate:229 |
 | `src` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
-| `tests` | Regression suite | `pytest tests/ --ignore=tests/e2e` | 610 | local_secret_or_sensitive:2, tracked_source:180, untracked_source_candidate:428 |
+| `tests` | Regression suite | `pytest tests/ --ignore=tests/e2e` | 612 | local_secret_or_sensitive:2, tracked_source:183, untracked_source_candidate:427 |
 | `training` | Local/uncategorized | `manual review` | 8 | tracked_source:5, untracked_source_candidate:3 |
 | `up` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `web` | Control Center | `cd web; npm run lint; npm test` | 33422 | local_secret_or_sensitive:3, tracked_source:98, untracked_source_candidate:6536, vendor_or_cache:26785 |
@@ -2014,7 +2006,7 @@ Status: `ready`
 ```markdown
 # Engine Brain Doc Sync
 
-Generated at: `2026-07-21T07:37:01+00:00`
+Generated at: `2026-07-21T08:06:24+00:00`
 Status: `passed`
 
 | Check | Path | Status | Missing |
@@ -2033,7 +2025,7 @@ Status: `passed`
 ```markdown
 # Engine Brain Secret Guardrail
 
-Generated at: `2026-07-21T07:37:01+00:00`
+Generated at: `2026-07-21T08:06:24+00:00`
 Status: `passed`
 Sensitive/local env path count in audit: `8`
 
@@ -2055,7 +2047,7 @@ Generated Engine Brain context must not include exact local sensitive/env paths 
 ```markdown
 # P6 Codex Integration Readiness
 
-Generated at: `2026-07-21T07:37:01+00:00`
+Generated at: `2026-07-21T08:06:24+00:00`
 Status: `ready_for_plugin_design`
 
 P6 allows only four read-only status/cockpit tools plus audited repo-hygiene, API-cost, evidence-pack, Engine Brain, and P7 cockpit-smoke safe-write refreshes. Do not add deploy/live shortcuts or bypass Control Center evidence gates.
@@ -2127,7 +2119,7 @@ Recommended next: Operate the plugin as four read-only status/cockpit tools plus
 ```markdown
 # P7 Operator Workflow
 
-Generated at: `2026-07-21T07:37:01+00:00`
+Generated at: `2026-07-21T08:06:24+00:00`
 Status: `safe_write_ready`
 Decision: `allow_bounded_safe_write_tools`
 
@@ -2175,7 +2167,7 @@ Next safe command: Use ctoai_repo_hygiene_refresh, ctoai_api_cost_refresh, ctoai
 ```markdown
 # P7 Action Readiness
 
-Generated at: `2026-07-21T07:37:01+00:00`
+Generated at: `2026-07-21T08:06:24+00:00`
 Status: `safe_write_tools_enabled`
 Decision: `monitor_enabled_safe_write_tools`
 
@@ -2203,7 +2195,7 @@ Next safe command: Design the next P7 plugin action only after risk model covera
 ```markdown
 # P7 Safe Write Tool Design
 
-Generated at: `2026-07-21T07:37:01+00:00`
+Generated at: `2026-07-21T08:06:24+00:00`
 Status: `implemented`
 Decision: `ready_for_dry_run_operation`
 
@@ -2245,7 +2237,7 @@ Next safe command: Run ctoai_evidence_pack_refresh with dry_run=true and verify 
 ```markdown
 # P7 Operator Brief
 
-Generated at: `2026-07-21T07:37:01+00:00`
+Generated at: `2026-07-21T08:06:24+00:00`
 Decision: `ready_for_p7_operator_workflow`
 Status: `ready`
 
@@ -2273,7 +2265,7 @@ Next safe command: Design the next P7 plugin action only after risk model covera
 ```markdown
 # Engine Brain File Tree
 
-Generated at: `2026-07-21T07:37:01+00:00`
+Generated at: `2026-07-21T08:06:24+00:00`
 
 Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 `node_modules`, `runtime`, `logs`, `data`, `.tmp`, build outputs.
@@ -2316,7 +2308,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `.github/PULL_REQUEST_TEMPLATE/template.md` | 245 |
 | `.github/skills/ci-hotfix-workflow/SKILL.md` | 3039 |
 | `.github/workflows/browser-e2e-smoke.yml` | 1158 |
-| `.github/workflows/cd_bot.yml` | 7124 |
+| `.github/workflows/cd_bot.yml` | 7670 |
 | `.github/workflows/ctoa-approval-watchdog.yml` | 3519 |
 | `.github/workflows/ctoa-ci-executive-weekly.yml` | 1068 |
 | `.github/workflows/ctoa-close-on-gate.yml` | 887 |
@@ -2332,7 +2324,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `.github/workflows/ctoa-vps-hygiene-weekly.yml` | 3891 |
 | `.github/workflows/ctoa-weekly-report.yml` | 750 |
 | `.github/workflows/docker-build.yml` | 3569 |
-| `.github/workflows/main_ctoai.yml` | 3256 |
+| `.github/workflows/main_ctoai.yml` | 3475 |
 | `.github/workflows/pr_quality.yml` | 1985 |
 | `.github/workflows/site-pages.yml` | 1537 |
 | `.github/workflows/vps-authorize-ctoa-key.yml` | 4091 |
@@ -2386,11 +2378,11 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `AI/FEATURE_ROADMAP.md` | 56235 |
 | `AI/generated/DOC_SYNC.json` | 1019 |
 | `AI/generated/DOC_SYNC.md` | 609 |
-| `AI/generated/ENGINE_BRAIN_PACK.json` | 3315 |
-| `AI/generated/ENGINE_BRAIN_PACK.md` | 229697 |
-| `AI/generated/ENV_DOCTOR.json` | 8353 |
-| `AI/generated/ENV_DOCTOR.md` | 1236 |
-| `AI/generated/FILE_TREE.md` | 69116 |
+| `AI/generated/ENGINE_BRAIN_PACK.json` | 3314 |
+| `AI/generated/ENGINE_BRAIN_PACK.md` | 229101 |
+| `AI/generated/ENV_DOCTOR.json` | 7690 |
+| `AI/generated/ENV_DOCTOR.md` | 640 |
+| `AI/generated/FILE_TREE.md` | 69170 |
 | `AI/generated/manifest.json` | 2062 |
 | `AI/generated/OWNERSHIP_MAP.json` | 17646 |
 | `AI/generated/OWNERSHIP_MAP.md` | 6845 |
@@ -2404,7 +2396,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `AI/generated/P7_OPERATOR_WORKFLOW.md` | 3015 |
 | `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.json` | 2708 |
 | `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.md` | 2024 |
-| `AI/generated/SYMBOL_MAP.md` | 261541 |
+| `AI/generated/SYMBOL_MAP.md` | 261662 |
 | `AI/KNOWN_BUGS.md` | 1384 |
 | `AI/LUA_INDEX.md` | 2874 |
 | `AI/OPERATIONS_AUDIT.md` | 5139 |
@@ -3078,7 +3070,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `scripts/ops/run-phase5-morning-sync.ps1` | 1246 |
 | `scripts/ops/run-x64dbg-enc3-dynamic-pass.py` | 10370 |
 | `scripts/ops/run_validator_with_preflight.py` | 1451 |
-| `scripts/ops/runtime_pat
+| `scripts/ops/runtime_path
 
 [truncated]
 ```
@@ -3089,7 +3081,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 ```markdown
 # Engine Brain Symbol Map
 
-Generated at: `2026-07-21T07:37:01+00:00`
+Generated at: `2026-07-21T08:06:24+00:00`
 
 This is a lightweight map for navigation, not a full source dump.
 
