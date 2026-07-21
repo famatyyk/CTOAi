@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-21T07:37:25+00:00",
+  "generated_at": "2026-07-21T08:06:53+00:00",
   "root": "C:\\Users\\zycie\\CTOAi",
   "overall_status": "warn",
   "status_counts": {
@@ -14,19 +14,10 @@
       "git_path": "C:\\Program Files\\Git\\cmd\\git.EXE",
       "status": "ok",
       "root": "C:/Users/zycie/CTOAi",
-      "branch": "codex/main-state-sync",
-      "head": "ee51a62a316a760cb6269d4ae8cb822f18c00185",
-      "dirty_count": 61,
+      "branch": "codex/azure-deploy-gate",
+      "head": "988aa80722b7c2574352eee77e4bae19da7fb8db",
+      "dirty_count": 28,
       "dirty_sample": [
-        "M .github/ISSUE_TEMPLATE/ctoa-031-experiment-charter.md",
-        "M .github/ISSUE_TEMPLATE/ctoa-032-agent-capability-matrix.md",
-        "M .github/ISSUE_TEMPLATE/ctoa-033-braver-experiment-packs.md",
-        "M .github/ISSUE_TEMPLATE/ctoa-034-tool-advisor-sandbox-tuning.md",
-        "M .github/ISSUE_TEMPLATE/ctoa-035-agent-evaluation-scorecard.md",
-        "M .github/ISSUE_TEMPLATE/ctoa-036-daily-experiment-review-loop.md",
-        "M .github/ISSUE_TEMPLATE/ctoa-037-promotion-gate.md",
-        "M .github/workflows/cd_bot.yml",
-        "M .github/workflows/ctoa-copilot-ci.yml",
         "M AI/generated/DOC_SYNC.json",
         "M AI/generated/DOC_SYNC.md",
         "M AI/generated/ENGINE_BRAIN_PACK.json",
@@ -42,7 +33,16 @@
         "M AI/generated/P7_ACTION_READINESS.md",
         "M AI/generated/P7_OPERATOR_BRIEF.json",
         "M AI/generated/P7_OPERATOR_BRIEF.md",
-        "M AI/generated/P7_OPERATOR_WORKFLOW.json"
+        "M AI/generated/P7_OPERATOR_WORKFLOW.json",
+        "M AI/generated/P7_OPERATOR_WORKFLOW.md",
+        "M AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.json",
+        "M AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.md",
+        "M AI/generated/SECRET_GUARDRAIL.json",
+        "M AI/generated/SECRET_GUARDRAIL.md",
+        "M AI/generated/SYMBOL_MAP.md",
+        "M AI/generated/manifest.json",
+        "M docs/audits/CTOAI_FULL_WORKSPACE_AUDIT_2026-07-06.md",
+        "M docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md"
       ],
       "remotes": [
         "origin\thttps://github.com/famatyyk/CTOAi.git (fetch)",
@@ -178,56 +178,44 @@
           "name": "main"
         },
         "nameWithOwner": "famatyyk/CTOAi",
-        "pushedAt": "2026-07-20T00:12:57Z",
-        "updatedAt": "2026-07-17T20:51:32Z",
+        "pushedAt": "2026-07-21T07:55:44Z",
+        "updatedAt": "2026-07-21T07:54:32Z",
         "url": "https://github.com/famatyyk/CTOAi",
         "visibility": "PUBLIC"
       },
-      "open_pr_count": 8,
-      "dirty_prs": [
-        {
-          "isDraft": false,
-          "mergeStateStatus": "DIRTY",
-          "number": 184,
-          "reviewDecision": "",
-          "title": "[WIP] Fix CTOA VPS Global Save Cycle failure",
-          "url": "https://github.com/famatyyk/CTOAi/pull/184"
-        },
-        {
-          "isDraft": false,
-          "mergeStateStatus": "DIRTY",
-          "number": 160,
-          "reviewDecision": "REVIEW_REQUIRED",
-          "title": "test(copilot-instructions): expand conformance coverage to all seven sections",
-          "url": "https://github.com/famatyyk/CTOAi/pull/160"
-        },
-        {
-          "isDraft": true,
-          "mergeStateStatus": "DIRTY",
-          "number": 157,
-          "reviewDecision": "REVIEW_REQUIRED",
-          "title": "feat: add /analyze-prompt Copilot slash command",
-          "url": "https://github.com/famatyyk/CTOAi/pull/157"
-        },
-        {
-          "isDraft": false,
-          "mergeStateStatus": "DIRTY",
-          "number": 153,
-          "reviewDecision": "REVIEW_REQUIRED",
-          "title": "docs: add alternative LLM model recommendations to copilot instructions and .env.example",
-          "url": "https://github.com/famatyyk/CTOAi/pull/153"
-        },
-        {
-          "isDraft": false,
-          "mergeStateStatus": "DIRTY",
-          "number": 152,
-          "reviewDecision": "REVIEW_REQUIRED",
-          "title": "Enable workspace-level Python trace logging in VS Code",
-          "url": "https://github.com/famatyyk/CTOAi/pull/152"
-        }
-      ],
+      "open_pr_count": 1,
+      "dirty_prs": [],
       "recent_run_count": 15,
-      "failed_recent_runs": []
+      "failed_recent_runs": [
+        {
+          "conclusion": "",
+          "createdAt": "2026-07-21T07:54:04Z",
+          "status": "waiting",
+          "url": "https://github.com/famatyyk/CTOAi/actions/runs/29812176031",
+          "workflowName": "CTOA Pipeline"
+        },
+        {
+          "conclusion": "failure",
+          "createdAt": "2026-07-21T07:54:04Z",
+          "status": "completed",
+          "url": "https://github.com/famatyyk/CTOAi/actions/runs/29812175952",
+          "workflowName": "Build and deploy Python app to Azure Web App - CTOAi"
+        },
+        {
+          "conclusion": "failure",
+          "createdAt": "2026-07-21T07:54:04Z",
+          "status": "completed",
+          "url": "https://github.com/famatyyk/CTOAi/actions/runs/29812175950",
+          "workflowName": "Bot CD \u2014 Deploy to VPS"
+        },
+        {
+          "conclusion": "skipped",
+          "createdAt": "2026-07-21T07:53:34Z",
+          "status": "completed",
+          "url": "https://github.com/famatyyk/CTOAi/actions/runs/29812145737",
+          "workflowName": "CTOA Close On Gate"
+        }
+      ]
     },
     "update_gate": {
       "status": "ok",

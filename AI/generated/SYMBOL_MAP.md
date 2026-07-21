@@ -1,6 +1,6 @@
 # Engine Brain Symbol Map
 
-Generated at: `2026-07-21T07:37:01+00:00`
+Generated at: `2026-07-21T08:07:28+00:00`
 
 This is a lightweight map for navigation, not a full source dump.
 
@@ -4841,10 +4841,14 @@ This is a lightweight map for navigation, not a full source dump.
 - L63: def test_azure_alerts_runner_rejects_public_listener_before_start(tmp_path)
 - L98: def test_azure_alerts_docs_do_not_recommend_public_listener_without_secret()
 
+## `tests/test_azure_webapp_workflow_guard.py`
+
+- L8: def test_azure_deploy_requires_explicit_repository_variable()
+
 ## `tests/test_bot_cd_disk_recovery.py`
 
 - L11: def test_bot_cd_recovers_disk_without_deleting_named_volumes()
-- L26: def test_bot_and_dashboard_share_one_built_image()
+- L32: def test_bot_and_dashboard_share_one_built_image()
 
 ## `tests/test_bot_vps_bootstrap_security.py`
 
@@ -5372,10 +5376,10 @@ This is a lightweight map for navigation, not a full source dump.
 
 ## `tests/test_link_check_docs.py`
 
-- L6: def test_iter_markdown_files_excludes_runtime_and_dependency_trees(tmp_path)
-- L17: def test_find_broken_links_checks_relative_targets_and_ignores_uris(tmp_path)
-- L33: def test_find_broken_links_handles_encoded_paths_titles_and_anchors(tmp_path)
-- L46: def test_repository_markdown_links_are_valid()
+- L8: def test_iter_markdown_files_excludes_runtime_and_dependency_trees(tmp_path)
+- L19: def test_find_broken_links_checks_relative_targets_and_ignores_uris(tmp_path)
+- L35: def test_find_broken_links_handles_encoded_paths_titles_and_anchors(tmp_path)
+- L48: def test_repository_markdown_links_are_valid()
 
 ## `tests/test_llm_provider_url_security.py`
 

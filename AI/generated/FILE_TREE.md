@@ -1,6 +1,6 @@
 # Engine Brain File Tree
 
-Generated at: `2026-07-21T07:37:01+00:00`
+Generated at: `2026-07-21T08:07:28+00:00`
 
 Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 `node_modules`, `runtime`, `logs`, `data`, `.tmp`, build outputs.
@@ -43,7 +43,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `.github/PULL_REQUEST_TEMPLATE/template.md` | 245 |
 | `.github/skills/ci-hotfix-workflow/SKILL.md` | 3039 |
 | `.github/workflows/browser-e2e-smoke.yml` | 1158 |
-| `.github/workflows/cd_bot.yml` | 7124 |
+| `.github/workflows/cd_bot.yml` | 7670 |
 | `.github/workflows/ctoa-approval-watchdog.yml` | 3519 |
 | `.github/workflows/ctoa-ci-executive-weekly.yml` | 1068 |
 | `.github/workflows/ctoa-close-on-gate.yml` | 887 |
@@ -59,7 +59,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `.github/workflows/ctoa-vps-hygiene-weekly.yml` | 3891 |
 | `.github/workflows/ctoa-weekly-report.yml` | 750 |
 | `.github/workflows/docker-build.yml` | 3569 |
-| `.github/workflows/main_ctoai.yml` | 3256 |
+| `.github/workflows/main_ctoai.yml` | 3475 |
 | `.github/workflows/pr_quality.yml` | 1985 |
 | `.github/workflows/site-pages.yml` | 1537 |
 | `.github/workflows/vps-authorize-ctoa-key.yml` | 4091 |
@@ -113,11 +113,11 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `AI/FEATURE_ROADMAP.md` | 56235 |
 | `AI/generated/DOC_SYNC.json` | 1019 |
 | `AI/generated/DOC_SYNC.md` | 609 |
-| `AI/generated/ENGINE_BRAIN_PACK.json` | 3315 |
-| `AI/generated/ENGINE_BRAIN_PACK.md` | 229697 |
-| `AI/generated/ENV_DOCTOR.json` | 8353 |
-| `AI/generated/ENV_DOCTOR.md` | 1236 |
-| `AI/generated/FILE_TREE.md` | 69116 |
+| `AI/generated/ENGINE_BRAIN_PACK.json` | 3314 |
+| `AI/generated/ENGINE_BRAIN_PACK.md` | 229101 |
+| `AI/generated/ENV_DOCTOR.json` | 7776 |
+| `AI/generated/ENV_DOCTOR.md` | 640 |
+| `AI/generated/FILE_TREE.md` | 69170 |
 | `AI/generated/manifest.json` | 2062 |
 | `AI/generated/OWNERSHIP_MAP.json` | 17646 |
 | `AI/generated/OWNERSHIP_MAP.md` | 6845 |
@@ -131,7 +131,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `AI/generated/P7_OPERATOR_WORKFLOW.md` | 3015 |
 | `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.json` | 2708 |
 | `AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.md` | 2024 |
-| `AI/generated/SYMBOL_MAP.md` | 261541 |
+| `AI/generated/SYMBOL_MAP.md` | 261662 |
 | `AI/KNOWN_BUGS.md` | 1384 |
 | `AI/LUA_INDEX.md` | 2874 |
 | `AI/OPERATIONS_AUDIT.md` | 5139 |
@@ -905,7 +905,8 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `tests/test_atomic_state_writes_security.py` | 1660 |
 | `tests/test_azure_activity_alerts.py` | 8850 |
 | `tests/test_azure_activity_listener_security.py` | 3003 |
-| `tests/test_bot_cd_disk_recovery.py` | 1219 |
+| `tests/test_azure_webapp_workflow_guard.py` | 415 |
+| `tests/test_bot_cd_disk_recovery.py` | 1575 |
 | `tests/test_bot_vps_bootstrap_security.py` | 1851 |
 | `tests/test_bot_vps_deploy_security.py` | 1976 |
 | `tests/test_control_center_p6_plugin_handoff_smoke.py` | 9258 |
@@ -954,7 +955,7 @@ Excluded: `.env*`, secrets/tokens/credentials, `.git`, `.venv`,
 | `tests/test_integration_simple.py` | 9490 |
 | `tests/test_issue_sync.py` | 1123 |
 | `tests/test_lab003_operator_url_security.py` | 5343 |
-| `tests/test_link_check_docs.py` | 1721 |
+| `tests/test_link_check_docs.py` | 1873 |
 | `tests/test_llm_provider_url_security.py` | 3168 |
 | `tests/test_mobile_console_api_contract_snapshot.py` | 4354 |
 | `tests/test_mobile_console_capability_gate.py` | 2497 |
