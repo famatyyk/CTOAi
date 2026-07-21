@@ -12,8 +12,12 @@ on:
       - "scripts/lua/otclient/**"
       - "scripts/ops/otclient_p14_acceptance_attestation.py"
       - "scripts/ops/otclient_p14_independent_runner.py"
+      - "scripts/ops/otclient_p14_runner_preflight.py"
+      - "scripts/windows/otclient_p14_vm_capture.ps1"
       - "tests/test_otclient_p14_acceptance_attestation.py"
       - "tests/test_otclient_p14_independent_runner.py"
+      - "tests/test_otclient_p14_runner_preflight.py"
+      - "tests/test_otclient_p14_vm_capture.py"
   workflow_dispatch:
     inputs:
       run_protected_replay:
@@ -59,7 +63,9 @@ jobs:
         run: >-
           python -m pytest
           tests/test_otclient_p14_independent_runner.py
-          tests/test_otclient_p14_acceptance_attestation.py -q
+          tests/test_otclient_p14_acceptance_attestation.py
+          tests/test_otclient_p14_runner_preflight.py
+          tests/test_otclient_p14_vm_capture.py -q
 
       - name: Create job-scoped signing material
         shell: python
@@ -159,7 +165,9 @@ jobs:
         run: >-
           python -m pytest
           tests/test_otclient_p14_independent_runner.py
-          tests/test_otclient_p14_acceptance_attestation.py -q
+          tests/test_otclient_p14_acceptance_attestation.py
+          tests/test_otclient_p14_runner_preflight.py
+          tests/test_otclient_p14_vm_capture.py -q
 
       - name: Prepare request from the trusted clean checkout
         run: >-

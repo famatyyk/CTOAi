@@ -59,12 +59,14 @@ artifact-only request/result contract derives the official 63-file Helper
 manifest from tracked sources, binds a clean checkout and exact revision, rejects
 tamper/path drift, replays a deterministic manifest rollback, runs in a clean
 Windows CI contract job, and is exposed read-only through Release Evidence and
-Control Center. A matching second runner is online and returned structurally
-valid, signature-verified, clean-checkout, authority-safe rollback-replay evidence.
-The result targets an older revision; a required environment reviewer is missing
-and administrator bypass remains enabled. No current-revision result,
-visual/in-world suite, canary, actual rollback, promotion, runtime/live authority,
-or additional MCP tool is claimed; P15 remains closed.
+Control Center. The current bounded status source is
+`runtime/control-center/p14-runner-preflight.json`: it records an online
+GitHub-hosted Windows runner, configured required review, and disabled
+administrator bypass. It still fails closed because the current source branch is
+outside the protected-environment branch policy and the signed result is stale and
+targets an older revision. No current-revision result, visual/in-world suite,
+canary, actual rollback, promotion, runtime/live authority, or additional MCP tool
+is claimed; P15 remains closed.
 
 ## Completed In This Brain
 

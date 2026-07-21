@@ -1003,6 +1003,11 @@ def _artifact_bundle(
             allowed_names = required_names | {
                 "acceptance-request.json",
                 "acceptance-result.json",
+                # This is an isolated-runner input which can contain free-form
+                # evidence. Its signed, minimized derivative is
+                # acceptance-result.json; never load the report into this
+                # public preflight projection.
+                "acceptance-report.json",
             }
             if (
                 not required_names.issubset(names)
@@ -1013,6 +1018,8 @@ def _artifact_bundle(
                 raise PreflightError("artifact_members_invalid")
             values: dict[str, dict[str, Any]] = {}
             for name, member in members.items():
+                if name == "acceptance-report.json":
+                    continue
                 if (
                     member.file_size <= 0
                     or member.file_size > MAX_ARTIFACT_MEMBER_BYTES

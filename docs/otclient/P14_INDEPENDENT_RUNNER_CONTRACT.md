@@ -2,6 +2,42 @@
 
 Status: `protected_replay_ready_acceptance_pending`.
 
+## Integration annotation — 2026-07-21
+
+This annotation starts P14 as the next CTOAi integration candidate. It records
+the review and evidence handoff only; it does not mark P14 merged, accepted, or
+authorised to perform a runtime, release, or promotion action.
+
+### Current merge boundary
+
+A local dry run of `codex/p14-independent-runner` into the current `main`
+found conflicts in generated Engine Brain evidence and a small number of CI and
+test files. Therefore P14 must be ported through a dedicated integration branch
+based on current `main`; it must not be merged directly from its historical
+branch tip. Resolve source, workflow, and test conflicts first, then regenerate
+the `AI/generated` evidence from the merged source. Generated artifacts are
+evidence, not hand-merged source of truth.
+
+- P14 must be reviewed as the complete `codex/p14-independent-runner` lineage.
+  P8 is already an ancestor of that lineage, so it must not be integrated as a
+  competing or separately promoted implementation.
+- Before source integration, validate the P14 contract, runner preflight,
+  acceptance-attestation, and VM-capture test surfaces, then require the
+  GitHub-hosted contract workflow for the reviewed revision.
+- After source integration, regenerate the bounded Engine Brain and Control
+  Center evidence, then run `otclient_p14_runner_preflight.py` against the
+  current protected environment. The preflight result—not this annotation—is
+  the authority for any external configuration or evidence-collection step.
+- The next operational evidence remains ordered and explicit: protected
+  foundation replay, visual and in-world attestations, canary rehearsal, then
+  rollback rehearsal. A missing, expired, partial, or revision-mismatched
+  result remains fail-closed.
+
+Environment approval, signing-material configuration, runner operation, visual
+capture, in-world checks, canary execution, rollback, and any release promotion
+remain external actions. They require their own approved workflow and cannot be
+triggered by this documentation change, an MCP call, or a Control Center read.
+
 P14 moves regression evidence away from the operator workstation. The first
 implementation slice is deliberately artifact-only: it does not launch a client,
 capture the user's screen, send input, dispatch network or game actions, promote a

@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import datetime as dt
+import io
+import json
+import zipfile
 
 from scripts.ops import otclient_p14_runner_preflight as preflight
 
@@ -403,3 +406,43 @@ def test_unknown_blocker_fails_to_bounded_review_without_echoing_input():
         "live_mutation": False,
         "authority_grant": False,
     }
+
+
+def test_artifact_bundle_ignores_acceptance_report_without_reading_or_projecting_it(
+    monkeypatch,
+):
+    request = _request()
+    result = _result(request)
+    acceptance_request, acceptance_result = _acceptance_bundle(request, result)
+    archive_bytes = io.BytesIO()
+    with zipfile.ZipFile(archive_bytes, "w") as archive:
+        archive.writestr("request.json", json.dumps(request))
+        archive.writestr("result.json", json.dumps(result))
+        archive.writestr("acceptance-request.json", json.dumps(acceptance_request))
+        archive.writestr("acceptance-result.json", json.dumps(acceptance_result))
+        archive.writestr(
+            "acceptance-report.json",
+            b'{"free_form_detail":"must-never-be-read-or-projected"}',
+        )
+
+    monkeypatch.setattr(
+        preflight,
+        "_run",
+        lambda *_args, **_kwargs: archive_bytes.getvalue(),
+    )
+    original_read = zipfile.ZipFile.read
+    read_members: list[str] = []
+
+    def guarded_read(archive, member, *args, **kwargs):
+        name = member.filename if isinstance(member, zipfile.ZipInfo) else member
+        assert name != "acceptance-report.json"
+        read_members.append(name)
+        return original_read(archive, member, *args, **kwargs)
+
+    monkeypatch.setattr(preflight.zipfile.ZipFile, "read", guarded_read)
+
+    bundle = preflight._artifact_bundle("famatyyk/CTOAi", 1)
+
+    assert bundle == (request, result, acceptance_request, acceptance_result)
+    assert "acceptance-report.json" not in read_members
+    assert "must-never-be-read-or-projected" not in str(bundle)

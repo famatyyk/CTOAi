@@ -8,6 +8,12 @@ ROOT = Path(__file__).resolve().parents[1]
 ROADMAP_JSON = ROOT / "AI" / "P17_P24_HELPER_EVOLUTION_ROADMAP.json"
 ROADMAP_MD = ROOT / "AI" / "P17_P24_HELPER_EVOLUTION_ROADMAP.md"
 AUDIT_MD = ROOT / "docs" / "otclient" / "HELPER_SIMPLIFICATION_AUDIT_2026-07-16.md"
+P14_STATUS_DOCS = (
+    ROOT / "AI" / "FEATURE_ROADMAP.md",
+    ROOT / "AI" / "ENGINE_BRAIN_STATUS.md",
+    ROOT / "AI" / "P8_P16_EXECUTION_ROADMAP.md",
+    ROADMAP_MD,
+)
 NATIVE_HELPER = ROOT / "scripts" / "lua" / "otclient" / "ctoa_native_helper.lua"
 HELPER_UI = ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_ui.lua"
 HELPER_UI_RULE_EDITORS = (
@@ -95,6 +101,24 @@ def test_roadmap_and_audit_record_confirmed_helper_debt() -> None:
         "Auto Haste",
     ):
         assert marker in audit_text
+
+
+def test_p14_status_docs_reference_current_preflight_without_erasing_blockers() -> None:
+    stale_claims = (
+        "required environment reviewer is missing",
+        "reviewers are not configured",
+        "lacks a required reviewer",
+        "administrator bypass remains enabled",
+        "environment review protection remains incomplete",
+    )
+
+    for path in P14_STATUS_DOCS:
+        text = " ".join(path.read_text(encoding="utf-8").lower().split())
+        assert "runtime/control-center/p14-runner-preflight.json" in text
+        assert "administrator bypass" in text
+        assert "branch policy" in text
+        assert "stale" in text
+        assert not any(claim in text for claim in stale_claims)
 
 
 def test_p17_2_removes_proven_dead_native_locals() -> None:
@@ -190,6 +214,18 @@ def test_p18_1_closes_versioned_rule_migration_without_runtime_authority() -> No
     assert p24_2["validation"]["official_stage_file_count"] == 67
     assert p24_2["validation"]["github_hosted_current_revision"] is True
     assert p24_2["validation"]["self_hosted_runner_online"] is False
+    assert (
+        p24_2["validation"]["external_status_source"]
+        == "runtime/control-center/p14-runner-preflight.json"
+    )
+    assert p24_2["validation"]["external_status"] == "externally_verified_stale"
+    assert p24_2["validation"]["runner_provider"] == "github_hosted"
+    assert p24_2["validation"]["runner_online"] is True
+    assert p24_2["validation"]["required_reviewer_configured"] is True
+    assert p24_2["validation"]["admin_bypass_disabled"] is True
+    assert p24_2["validation"]["branch_policy_allows_current_source"] is False
+    assert p24_2["validation"]["external_result_current_revision"] is False
+    assert p24_2["validation"]["promotion_allowed"] is False
 
     p25 = next(item for item in roadmap["phases"] if item["id"] == "P25")
     p25_1 = next(item for item in roadmap["immediate_slices"] if item["id"] == "P25.1")

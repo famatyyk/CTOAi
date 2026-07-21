@@ -634,12 +634,13 @@ partial capability evidence, derives only bounded blocker codes, binds every res
 to the runner request/result hashes, and exports only status/count projections to
 Control Central; the workflow prepares a request but never fabricates an acceptance
 report or result.
-A matching second runner is online and has returned structurally valid,
-signature-verified, clean-checkout and rollback-replay evidence. Its result targets
-an older revision; the protected environment also lacks a required reviewer and
-still permits administrator bypass. P14 remains open until those controls pass, a
-current signed replay returns, and isolated visual/in-world plus actual
-canary/rollback rehearsals complete.
+The current bounded status source is
+`runtime/control-center/p14-runner-preflight.json`. It records an online
+GitHub-hosted Windows runner, configured required review, and disabled
+administrator bypass. P14 remains open because the current source branch is not
+allowed by the protected-environment branch policy, the signed replay is stale and
+targets an older revision, and isolated visual/in-world plus actual canary/rollback
+rehearsals remain unproven.
 
 Deliverables: second-machine/VM runner contract, artifact-only handoff, CI schema and
 replay checks, signed manifest/evidence bundle, canary/rollback evidence, and explicit

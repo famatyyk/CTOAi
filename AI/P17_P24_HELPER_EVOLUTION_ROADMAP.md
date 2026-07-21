@@ -233,12 +233,14 @@ sandbox canaries define preconditions, actions, observations, abort conditions
 and rollback; none has been executed or authorized. The focused replay suite
 passes 61 tests and the sandbox queue/release-gate suite passes 47.
 
-P24.2 is in progress. The official stage now matches 64 distributable Helper
-files and the current-revision GitHub-hosted signed replay passes. The separate
-`CTOA-P14-VM` runner is offline, environment review protection remains
-incomplete, and visual/in-world/canary/rollback capabilities remain unproven.
-The operator workstation cannot substitute for the independent Windows runner.
-P24 grants no runtime, canary or promotion authority.
+P24.2 is in progress. The current bounded P14 status source is
+`runtime/control-center/p14-runner-preflight.json`: an online GitHub-hosted Windows
+runner is available, required review is configured, and administrator bypass is
+disabled. The current source branch is outside the protected-environment branch
+policy, the signed result is stale and targets an older revision, and
+visual/in-world/canary/rollback capabilities remain unproven. The operator
+workstation cannot substitute for the independent Windows runner. P24 grants no
+runtime, canary or promotion authority.
 
 ## P25 — Minimal Helper Distribution Surface
 

@@ -21,6 +21,131 @@ requires_engine_brain_plugin = pytest.mark.skipif(
 )
 
 
+def _load_plugin_module(name, path):
+    script_dir = str(path.parent)
+    if script_dir not in sys.path:
+        sys.path.insert(0, script_dir)
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return module
+
+
+def _write_roadmap_generation_docs(root):
+    for config in engine_brain_index.ROADMAP_GENERATION_DOCS.values():
+        path = root / str(config["path"])
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("\n".join(config["needles"]) + "\n", encoding="utf-8")
+
+
+def _roadmap_doc_sync_payload(
+    *, overall_status="passed", plan3_status="passed", p8_p16_status="passed"
+):
+    return {
+        "status": overall_status,
+        "checks": [
+            {"name": "roadmap_plan3", "status": plan3_status},
+            {"name": "roadmap_p8_p16", "status": p8_p16_status},
+        ],
+    }
+
+
+@pytest.mark.parametrize(
+    ("overall_status", "plan3_status", "p8_p16_status", "expected_blocker"),
+    [
+        ("blocked", "passed", "passed", "doc_sync_status"),
+        ("passed", "blocked", "passed", "doc_sync:roadmap_plan3"),
+        ("passed", "passed", "blocked", "doc_sync:roadmap_p8_p16"),
+    ],
+)
+def test_roadmap_generation_requires_all_doc_sync_gates(
+    tmp_path,
+    monkeypatch,
+    overall_status,
+    plan3_status,
+    p8_p16_status,
+    expected_blocker,
+):
+    _write_roadmap_generation_docs(tmp_path)
+    monkeypatch.setattr(engine_brain_index, "ROOT", tmp_path)
+
+    payload = engine_brain_index.build_roadmap_generation_payload(
+        "2099-01-01T00:00:00+00:00",
+        _roadmap_doc_sync_payload(
+            overall_status=overall_status,
+            plan3_status=plan3_status,
+            p8_p16_status=p8_p16_status,
+        ),
+    )
+
+    assert payload["status"] == "blocked"
+    assert expected_blocker in payload["hard_blockers"]
+    assert payload["doc_sync_status"] == overall_status
+    assert payload["doc_sync_roadmap_plan3_status"] == plan3_status
+    assert payload["doc_sync_roadmap_p8_p16_status"] == p8_p16_status
+
+
+def test_roadmap_generation_blocks_current_phase_marker_drift(tmp_path, monkeypatch):
+    _write_roadmap_generation_docs(tmp_path)
+    monkeypatch.setattr(engine_brain_index, "ROOT", tmp_path)
+    roadmap_path = tmp_path / "AI" / "P8_P16_EXECUTION_ROADMAP.md"
+    required_marker = (
+        "Conditions and Equipment lanes are `operational_acceptance_complete`"
+    )
+    roadmap_path.write_text(
+        roadmap_path.read_text(encoding="utf-8").replace(
+            required_marker, "Conditions and Equipment lanes remain under review"
+        ),
+        encoding="utf-8",
+    )
+
+    payload = engine_brain_index.build_roadmap_generation_payload(
+        "2099-01-01T00:00:00+00:00", _roadmap_doc_sync_payload()
+    )
+
+    assert payload["status"] == "blocked"
+    assert (
+        f"missing_marker:AI/P8_P16_EXECUTION_ROADMAP.md:{required_marker}"
+        in payload["hard_blockers"]
+    )
+    p8_doc = next(
+        item for item in payload["docs"] if item["name"] == "p8_p16_execution_roadmap"
+    )
+    assert p8_doc["status"] == "blocked"
+    assert required_marker in p8_doc["missing_markers"]
+
+
+def test_roadmap_generation_accepts_markdown_line_wrapping(tmp_path, monkeypatch):
+    _write_roadmap_generation_docs(tmp_path)
+    monkeypatch.setattr(engine_brain_index, "ROOT", tmp_path)
+
+    status_path = tmp_path / "AI" / "ENGINE_BRAIN_STATUS.md"
+    status_path.write_text(
+        status_path.read_text(encoding="utf-8").replace(
+            "session and execution approvals remain false",
+            "session and execution\napprovals remain false",
+        ),
+        encoding="utf-8",
+    )
+    roadmap_path = tmp_path / "AI" / "P8_P16_EXECUTION_ROADMAP.md"
+    roadmap_path.write_text(
+        roadmap_path.read_text(encoding="utf-8").replace(
+            "no sandbox client process is running",
+            "no sandbox client process\nis running",
+        ),
+        encoding="utf-8",
+    )
+
+    payload = engine_brain_index.build_roadmap_generation_payload(
+        "2099-01-01T00:00:00+00:00", _roadmap_doc_sync_payload()
+    )
+
+    assert payload["status"] == "ready"
+    assert payload["hard_blockers"] == []
+    assert payload["ready_doc_count"] == payload["doc_count"]
+
+
 def _assert_ready_smoke(smoke: dict[str, Any], minimum_checks: int) -> None:
     """Accept additive smoke checks while requiring every published check to pass."""
     check_count = int(smoke.get("check_count", smoke.get("checks", 0)))

@@ -57,13 +57,14 @@
   clean-checkout/revision binding, tamper/path tests, deterministic manifest
   rollback replay, Windows CI contract job, Release Evidence phase state, and
   read-only Control Center card and bounded external preflight are implemented.
-  A matching runner is online and a self-hosted clean-checkout replay returned a
-  structurally valid, signature-verified, authority-safe result with deterministic
-  rollback replay. That result targets an older revision. Required environment
-  reviewers are not configured and administrator bypass remains enabled, so P14
-  fails closed on those three explicit codes. Visual/in-world evidence, canary,
-  actual rollback, promotion, runtime, live, and MCP-write authority remain
-  unclaimed; P15 stays closed.
+  The current bounded status source is
+  `runtime/control-center/p14-runner-preflight.json`. It records an online
+  GitHub-hosted Windows runner, configured required review, and disabled
+  administrator bypass. The current source branch is not allowed by the
+  protected-environment branch policy, and the signed replay is stale and targets
+  an older revision. P14 therefore remains fail-closed on those external blockers
+  plus the unproven visual/in-world, canary, and rollback capabilities; promotion,
+  runtime, live, and MCP-write authority remain unclaimed and P15 stays closed.
 - The post-P16 continuation is now explicit in
   `AI/P17_P24_HELPER_EVOLUTION_ROADMAP.md` and its machine-readable JSON
   companion. P17 static ownership/reachability work may proceed during P14;
