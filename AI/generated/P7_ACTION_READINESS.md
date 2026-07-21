@@ -20,3 +20,4 @@ Next safe command: Design the next P7 plugin action only after risk model covera
 | `evidence-pack-refresh` | `True` | `True` | `True` | `True` | `none` |
 | `engine-brain-refresh` | `True` | `True` | `True` | `True` | `none` |
 | `p7-cockpit-smoke-refresh` | `True` | `True` | `True` | `True` | `none` |
+| `roadmap-state-refresh` | `True` | `True` | `True` | `True` | `none` |

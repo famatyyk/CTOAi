@@ -1,0 +1,17 @@
+{
+  "schema_version": "ctoa.conditions-shadow-profile.v1",
+  "mode": "shadow_only",
+  "action": "plan_paralyze_recovery",
+  "condition": "paralyze",
+  "spell": "exura",
+  "max_observation_age_ms": 6000,
+  "cooldown_required": "ready",
+  "retry_budget": 0,
+  "requires_p8_ready": true,
+  "requires_recovery_trace": true,
+  "dispatch_allowed": false,
+  "runtime_actions": false,
+  "executes_plan": false,
+  "execute_once_allowed": false,
+  "promotion_allowed": false
+}

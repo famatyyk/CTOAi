@@ -12,6 +12,7 @@ local moduleOrder = RuntimeCore.module_order or {}
 local subscribers = RuntimeCore.subscribers or {}
 local tasks = RuntimeCore.tasks or {}
 local taskOrder = RuntimeCore.task_order or {}
+local schedulerCursor = tonumber(RuntimeCore.scheduler_cursor) or 1
 local metrics = RuntimeCore.metrics or {
     ticks = 0,
     tasks_run = 0,
@@ -210,13 +211,18 @@ function RuntimeCore.runDue(nowMs, options)
     local result = {ran = {}, deferred = {}, failures = {}, budget_ms = budgetMs}
 
     metrics.ticks = metrics.ticks + 1
-    for _, id in ipairs(taskOrder) do
+    local taskCount = #taskOrder
+    local firstDeferredIndex = nil
+    for offset = 0, taskCount - 1 do
+        local index = ((schedulerCursor + offset - 1) % taskCount) + 1
+        local id = taskOrder[index]
         local task = tasks[id]
         if task.enabled and now >= task.next_run_ms then
             local elapsed = safeNow(nowFn) - tickStarted
             if #result.ran >= maxTasks or elapsed >= budgetMs then
                 result.deferred[#result.deferred + 1] = id
                 metrics.tasks_deferred = metrics.tasks_deferred + 1
+                firstDeferredIndex = firstDeferredIndex or index
             else
                 local started = safeNow(nowFn)
                 local ok, err = pcall(task.run, {now_ms = now, task_id = id, observer_only = task.observer_only})
@@ -235,6 +241,10 @@ function RuntimeCore.runDue(nowMs, options)
                 end
             end
         end
+    end
+    if taskCount > 0 then
+        schedulerCursor = firstDeferredIndex or ((schedulerCursor % taskCount) + 1)
+        RuntimeCore.scheduler_cursor = schedulerCursor
     end
     metrics.last_tick_elapsed_ms = math.max(0, safeNow(nowFn) - tickStarted)
     result.elapsed_ms = metrics.last_tick_elapsed_ms
@@ -285,6 +295,7 @@ function RuntimeCore.statusSnapshot()
         task_failures = metrics.task_failures,
         handler_failures = metrics.handler_failures,
         last_tick_elapsed_ms = metrics.last_tick_elapsed_ms,
+        scheduler_cursor = schedulerCursor,
         tasks = taskStates,
     }
 end
@@ -302,6 +313,7 @@ function RuntimeCore.contract()
         owns_module_registry = true,
         owns_event_bus = true,
         owns_budgeted_scheduler = true,
+        scheduler_fairness = "round_robin",
         owns_status_snapshot = true,
         default_tick_budget_ms = DEFAULT_TICK_BUDGET_MS,
         default_max_tasks_per_tick = DEFAULT_MAX_TASKS_PER_TICK,
@@ -314,6 +326,7 @@ RuntimeCore.module_order = moduleOrder
 RuntimeCore.subscribers = subscribers
 RuntimeCore.tasks = tasks
 RuntimeCore.task_order = taskOrder
+RuntimeCore.scheduler_cursor = schedulerCursor
 RuntimeCore.metrics = metrics
 
 _G.CTOA_HELPER_RUNTIME_CORE = RuntimeCore

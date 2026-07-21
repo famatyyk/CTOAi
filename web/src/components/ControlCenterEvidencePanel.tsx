@@ -13,6 +13,9 @@ const statusTone: Record<string, string> = {
   PASS: "border-cyan-300/30 bg-cyan-300/10 text-cyan-100",
   passed: "border-cyan-300/30 bg-cyan-300/10 text-cyan-100",
   ready: "border-cyan-300/30 bg-cyan-300/10 text-cyan-100",
+  current: "border-cyan-300/30 bg-cyan-300/10 text-cyan-100",
+  runtime_evidence_ready: "border-cyan-300/30 bg-cyan-300/10 text-cyan-100",
+  immutable_terminal: "border-cyan-300/30 bg-cyan-300/10 text-cyan-100",
   ready_for_plugin_design: "border-cyan-300/30 bg-cyan-300/10 text-cyan-100",
   ready_for_p7_operator_workflow: "border-cyan-300/30 bg-cyan-300/10 text-cyan-100",
   ready_to_design_first_safe_write_tool: "border-cyan-300/30 bg-cyan-300/10 text-cyan-100",
@@ -20,6 +23,7 @@ const statusTone: Record<string, string> = {
   first_safe_write_enabled: "border-cyan-300/30 bg-cyan-300/10 text-cyan-100",
   safe_write_tools_enabled: "border-cyan-300/30 bg-cyan-300/10 text-cyan-100",
   design_ready: "border-cyan-300/30 bg-cyan-300/10 text-cyan-100",
+  shadow_plan_ready_for_operator_review: "border-cyan-300/30 bg-cyan-300/10 text-cyan-100",
   implemented: "border-cyan-300/30 bg-cyan-300/10 text-cyan-100",
   releasable: "border-cyan-300/30 bg-cyan-300/10 text-cyan-100",
   promoted: "border-cyan-300/30 bg-cyan-300/10 text-cyan-100",
@@ -32,6 +36,8 @@ const statusTone: Record<string, string> = {
   needs_attention: "border-amber-300/30 bg-amber-300/10 text-amber-100",
   warn: "border-amber-300/30 bg-amber-300/10 text-amber-100",
   blocked: "border-pink-300/30 bg-pink-300/10 text-pink-100",
+  operational_acceptance_blocked: "border-pink-300/30 bg-pink-300/10 text-pink-100",
+  invalid: "border-pink-300/30 bg-pink-300/10 text-pink-100",
   FAIL: "border-pink-300/30 bg-pink-300/10 text-pink-100",
 }
 
@@ -95,6 +101,58 @@ export default function ControlCenterEvidencePanel() {
     : evidence?.actionAuditDrilldown.latestAt
       ? `Latest ${formatTimestamp(evidence.actionAuditDrilldown.latestAt)}`
       : "No audit records found."
+  const helperBackgroundStatus = evidence?.otclientHelper.backgroundStatus
+  const helperBackgroundDetail = !helperBackgroundStatus
+    ? "Waiting for passive background evidence."
+    : !helperBackgroundStatus.contractValid
+      ? `Contract blocked: ${helperBackgroundStatus.contractErrors.slice(0, 2).join(", ") || "invalid artifact"}.`
+      : !helperBackgroundStatus.fresh
+        ? `Snapshot stale after ${helperBackgroundStatus.maxAgeSeconds}s; collect a new passive sample.`
+        : helperBackgroundStatus.status === "ready"
+          ? `${helperBackgroundStatus.integrityStatus} · ${helperBackgroundStatus.runtimeState} · advisory only; promotion and dispatch disabled.`
+          : helperBackgroundStatus.integrityStatus === "untrusted_pin"
+            ? `${helperBackgroundStatus.pinClassification} · diagnostic ${helperBackgroundStatus.diagnosticParityStatus}${helperBackgroundStatus.diagnosticParityAttempted ? ` / profile drift ${helperBackgroundStatus.diagnosticProfileDriftCount}` : ""} · current gated official promotion required; historical rebinding forbidden.`
+          : helperBackgroundStatus.blockers[0]
+            ? `Blocked: ${helperBackgroundStatus.blockers[0]}.`
+            : `Passive evidence: ${helperBackgroundStatus.status}.`
+  const helperConditionsShadow = evidence?.otclientHelper.conditionsShadowReplay
+  const helperConditionsShadowDetail = !helperConditionsShadow
+    ? "Waiting for the data-only Conditions replay report."
+    : !helperConditionsShadow.contractValid
+      ? `Contract blocked: ${helperConditionsShadow.contractErrors.slice(0, 2).join(", ") || "invalid artifact"}.`
+      : !helperConditionsShadow.fresh
+        ? `Replay stale after ${helperConditionsShadow.maxAgeSeconds}s; run a new bounded replay.`
+        : helperConditionsShadow.status === "shadow_plan_ready_for_operator_review"
+          ? `${helperConditionsShadow.scenarioPassedCount}/${helperConditionsShadow.scenarioTotalCount} deterministic fixtures; operator review required, all actions disabled.`
+          : helperConditionsShadow.blockers[0]
+            ? `Blocked: ${helperConditionsShadow.blockers[0]}; fixture pack ${helperConditionsShadow.scenarioPackStatus}.`
+            : `Conditions replay: ${helperConditionsShadow.status}.`
+  const helperEquipmentShadow = evidence?.otclientHelper.equipmentShadowReplay
+  const helperEquipmentAcceptance = evidence?.otclientHelper.equipmentShadowAcceptance
+  const helperEquipmentDetail = !helperEquipmentShadow
+    ? "Waiting for the data-only Equipment replay report."
+    : !helperEquipmentShadow.contractValid
+      ? `Contract blocked: ${helperEquipmentShadow.contractErrors.slice(0, 2).join(", ") || "invalid artifact"}.`
+      : !helperEquipmentShadow.fresh
+        ? `Replay stale after ${helperEquipmentShadow.maxAgeSeconds}s; collect a new passive snapshot.`
+        : `${helperEquipmentShadow.scenarioPassedCount}/${helperEquipmentShadow.scenarioTotalCount} fixtures · rollback ${helperEquipmentShadow.rollbackSimulation} · all actions disabled.`
+  const helperEquipmentAcceptanceDetail = !helperEquipmentAcceptance
+    ? "Waiting for a separate P10 acceptance preflight."
+    : helperEquipmentAcceptance.acceptanceGranted
+      ? "Hash-bound P10 receipt accepted; P11 predecessor evidence eligible for separate review."
+      : helperEquipmentAcceptance.blockers[0]
+        ? `Blocked: ${helperEquipmentAcceptance.blockers[0]}.`
+        : `P10 receipt ${helperEquipmentAcceptance.status}; P11 remains blocked.`
+  const p10Artifacts = evidence
+    ? [
+        ["Capture profile doctor", evidence.otclientHelper.equipmentCaptureProfileDoctor],
+        ["Observation preview", evidence.otclientHelper.equipmentObservationPreview],
+        ["Dependency preflight", evidence.otclientHelper.equipmentDependencyPreflight],
+        ["Candidate catalog", evidence.otclientHelper.equipmentCandidateCatalog],
+        ["Capture profile plan", evidence.otclientHelper.equipmentCaptureProfileChangePlan],
+        ["Operator readiness", evidence.otclientHelper.equipmentOperatorReadiness],
+      ] as const
+    : []
 
   return (
     <article className="rounded-3xl border border-white/10 bg-[#151b33] p-6">
@@ -274,6 +332,187 @@ export default function ControlCenterEvidencePanel() {
       <section className="mt-6 rounded-3xl border border-white/10 bg-[#0e1327] p-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
+            <p className="text-sm font-black">P13 ledger and P14 independent runner</p>
+            <p className="mt-1 text-sm text-slate-400">
+              Terminal roadmap evidence plus the read-only, artifact-only independent-runner foundation boundary.
+            </p>
+          </div>
+          <span className="w-fit rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-xs font-bold text-cyan-100">
+            read only · no action
+          </span>
+        </div>
+
+        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+          <MetricCard
+            label="Roadmap state"
+            value={evidence?.roadmapState.status || "loading"}
+            detail={
+              evidence
+                ? `${evidence.roadmapState.phase} ${evidence.roadmapState.phaseStatus}; next ${evidence.roadmapState.nextPhase}`
+                : "Waiting for the bounded P13 artifact."
+            }
+            tone={statusTone[evidence?.roadmapState.status || "missing"] || statusTone.missing}
+          />
+          <MetricCard
+            label="Decision ledger"
+            value={evidence ? String(evidence.roadmapState.summary.ledgerCount) : "loading"}
+            detail={
+              evidence
+                ? `${evidence.roadmapState.summary.acceptedCount} accepted; ${evidence.roadmapState.summary.closedNoActionCount} closed without action; ${evidence.roadmapState.summary.totalAttemptCount} bounded attempts`
+                : "Waiting for terminal decision records."
+            }
+            tone={statusTone[evidence?.roadmapState.contractValid ? "ready" : "blocked"]}
+          />
+          <MetricCard
+            label="Freshness / tamper"
+            value={evidence ? `${evidence.roadmapState.freshnessStatus} / ${evidence.roadmapState.tamperStatus}` : "loading"}
+            detail={
+              evidence
+                ? `contract ${evidence.roadmapState.contractValid ? "valid" : "blocked"}; errors ${evidence.roadmapState.contractErrors.length}`
+                : "Waiting for contract validation."
+            }
+            tone={statusTone[evidence?.roadmapState.contractValid ? "ready" : "blocked"]}
+          />
+          <MetricCard
+            label="Confirmed audit binding"
+            value={evidence?.roadmapState.auditBinding.status || "loading"}
+            detail={
+              evidence?.roadmapState.auditBinding.auditId
+                ? evidence.roadmapState.auditBinding.auditId
+                : "No confirmed fixed-output audit record loaded."
+            }
+            tone={statusTone[evidence?.roadmapState.auditBinding.status || "missing"] || statusTone.missing}
+          />
+          <MetricCard
+            label="Authority"
+            value={evidence?.roadmapState.authority.controlCenterMode || "loading"}
+            detail={
+              evidence
+                ? `runtime ${evidence.roadmapState.summary.runtimeAuthorityCount}; live ${evidence.roadmapState.summary.liveAuthorityCount}; P12 reopened ${String(evidence.roadmapState.authority.p12HealFriendReopened)}`
+                : "Runtime and live authority remain disabled."
+            }
+            tone={statusTone[evidence?.roadmapState.authority.controlCenterMode === "read_only" ? "ready" : "blocked"]}
+          />
+        </div>
+
+        <div className="mt-4 grid gap-4 md:grid-cols-3">
+          <MetricCard
+            label="P14 runner foundation"
+            value={evidence?.p14RunnerFoundation.status || "loading"}
+            detail={
+              evidence
+                ? `${evidence.p14RunnerFoundation.currentPhase}; ${evidence.p14RunnerFoundation.implementationFileCount}/${evidence.p14RunnerFoundation.requiredFileCount} contract files`
+                : "Waiting for read-only P14 foundation evidence."
+            }
+            tone={statusTone[evidence?.p14RunnerFoundation.status || "missing"] || statusTone.missing}
+          />
+          <MetricCard
+            label="Independent runner result"
+            value={evidence?.p14RunnerFoundation.operationalRunnerResult || "loading"}
+            detail={
+              evidence
+                ? `operational ready ${String(evidence.p14RunnerFoundation.operationalReady)}; next ${evidence.p14RunnerFoundation.nextPhase}`
+                : "No second-machine result loaded."
+            }
+            tone={statusTone[evidence?.p14RunnerFoundation.operationalReady ? "ready" : "missing"]}
+          />
+          <MetricCard
+            label="P14 authority boundary"
+            value="read only"
+            detail={
+              evidence
+                ? `runtime ${String(evidence.p14RunnerFoundation.runtimeAuthorityGranted)}; live ${String(evidence.p14RunnerFoundation.liveAuthorityGranted)}; promotion ${String(evidence.p14RunnerFoundation.promotionApproved)}; MCP ${String(evidence.p14RunnerFoundation.mcpWriteToolEnabled)}`
+                : "No runtime, live, promotion or MCP authority."
+            }
+            tone={
+              statusTone[
+                evidence &&
+                !evidence.p14RunnerFoundation.runtimeAuthorityGranted &&
+                !evidence.p14RunnerFoundation.liveAuthorityGranted &&
+                !evidence.p14RunnerFoundation.promotionApproved &&
+                !evidence.p14RunnerFoundation.mcpWriteToolEnabled
+                  ? "ready"
+                  : "blocked"
+              ]
+            }
+          />
+        </div>
+
+        <div className="mt-5 overflow-x-auto rounded-2xl border border-white/10 bg-white/[0.04]">
+          <table className="w-full min-w-[900px] text-left text-xs text-slate-300">
+            <thead className="border-b border-white/10 text-slate-500">
+              <tr>
+                <th className="px-4 py-3">Decision</th>
+                <th className="px-4 py-3">Phase / lane</th>
+                <th className="px-4 py-3">Decision / result</th>
+                <th className="px-4 py-3">Integrity / freshness</th>
+                <th className="px-4 py-3">Attempts / final</th>
+              </tr>
+            </thead>
+            <tbody>
+              {evidence?.roadmapState.ledger.map((entry) => (
+                <tr key={entry.decisionId} className="border-b border-white/5 last:border-0">
+                  <td className="px-4 py-3 font-mono text-cyan-100">{entry.decisionId}</td>
+                  <td className="px-4 py-3">{entry.phase} / {entry.lane}</td>
+                  <td className="px-4 py-3">{entry.decisionStatus} / {entry.resultStatus}</td>
+                  <td className="px-4 py-3">{entry.integrityStatus} / {entry.freshnessStatus}</td>
+                  <td className="px-4 py-3">{entry.attemptCount ?? "-"} / {entry.finalState || "-"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {!evidence?.roadmapState.ledger.length ? (
+            <p className="p-4 text-sm text-slate-400">No validated P13 ledger is available yet.</p>
+          ) : null}
+        </div>
+
+        <p className="mt-4 text-sm leading-6 text-slate-300">
+          {evidence?.roadmapState.nextAction || "Generate the audited P13 state; this panel cannot execute or refresh it."}
+        </p>
+      </section>
+
+      <section className="mt-6 rounded-3xl border border-white/10 bg-[#0e1327] p-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-sm font-black">P10 read-only operator evidence</p>
+            <p className="mt-1 text-sm text-slate-400">
+              Fixed-path doctor, preview, preflight, catalog, change-plan and readiness artifacts. No artifact can alter eligibility or dispatch an item action.
+            </p>
+          </div>
+          <span className="w-fit rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-xs font-bold text-cyan-100">no action</span>
+        </div>
+        <div className="mt-5 grid gap-4 lg:grid-cols-2">
+          {p10Artifacts.map(([label, artifact]) => (
+            <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-semibold text-white">{label}</p>
+                <span className={`rounded-full border px-2 py-1 text-xs font-bold ${statusTone[artifact.status] || statusTone[artifact.ready ? "ready" : artifact.contractValid ? "warn" : "missing"]}`}>
+                  {artifact.status}
+                </span>
+              </div>
+              <p className="mt-3 text-xs text-slate-400">
+                {artifact.ready ? "ready" : artifact.contractValid ? (artifact.fresh ? "review required" : "stale") : "contract blocked"}
+                {artifact.operatorInputsReady === true ? " · operator inputs ready" : ""}
+                {artifact.eligibilityChanged === false ? " · eligibility unchanged" : " · eligibility unchanged/not declared"}
+                {` · actions ${artifact.dispatchAllowed || artifact.runtimeActions || artifact.executesPlan ? "not safe" : "disabled"}`}
+              </p>
+              {artifact.blockers.length ? (
+                <p className="mt-2 text-sm leading-6 text-amber-100">Blocked: {artifact.blockers.slice(0, 3).join(", ")}</p>
+              ) : null}
+              {artifact.contractErrors.length ? (
+                <p className="mt-2 text-sm leading-6 text-amber-100">Contract: {artifact.contractErrors.slice(0, 3).join(", ")}</p>
+              ) : null}
+              <p className="mt-2 text-sm leading-6 text-slate-300">Next: {artifact.nextAction}</p>
+              <p className="mt-2 overflow-x-auto font-mono text-xs text-slate-500">{artifact.path}</p>
+            </div>
+          ))}
+          {!p10Artifacts.length ? <p className="text-sm text-slate-400">Waiting for P10 operator artifacts.</p> : null}
+        </div>
+      </section>
+
+      <section className="mt-6 rounded-3xl border border-white/10 bg-[#0e1327] p-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
             <p className="text-sm font-black">Operator next</p>
             <p className="mt-1 text-sm text-slate-400">
               One read-only recommendation selected from the current gates; guarded live actions are not exposed as a command here.
@@ -316,7 +555,7 @@ export default function ControlCenterEvidencePanel() {
           </span>
         </div>
 
-        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-7">
           <MetricCard
             label="Helper version"
             value={evidence?.otclientHelper.helperVersion || "loading"}
@@ -356,6 +595,30 @@ export default function ControlCenterEvidencePanel() {
             value={evidence?.otclientHelper.smokePreflightStatus || "loading"}
             detail={`Sandbox status: ${evidence?.otclientHelper.smokeStatus || "missing"}`}
             tone={statusTone[evidence?.otclientHelper.smokePreflightStatus || "missing"] || statusTone.missing}
+          />
+          <MetricCard
+            label="BackgroundNoScreen"
+            value={helperBackgroundStatus?.status || "loading"}
+            detail={helperBackgroundDetail}
+            tone={statusTone[helperBackgroundStatus?.status || "missing"] || statusTone.missing}
+          />
+          <MetricCard
+            label="P9 Conditions shadow"
+            value={helperConditionsShadow?.status || "loading"}
+            detail={helperConditionsShadowDetail}
+            tone={statusTone[helperConditionsShadow?.status || "missing"] || statusTone.missing}
+          />
+          <MetricCard
+            label="P10 Equipment shadow"
+            value={helperEquipmentShadow?.status || "loading"}
+            detail={helperEquipmentDetail}
+            tone={statusTone[helperEquipmentShadow?.status || "missing"] || statusTone.missing}
+          />
+          <MetricCard
+            label="P10 acceptance"
+            value={helperEquipmentAcceptance?.status || "loading"}
+            detail={helperEquipmentAcceptanceDetail}
+            tone={statusTone[helperEquipmentAcceptance?.status || "missing"] || statusTone.missing}
           />
         </div>
 
@@ -926,10 +1189,22 @@ export default function ControlCenterEvidencePanel() {
             <EvidenceLink label="Helper release gate" path={evidence?.otclientHelper.sourcePaths.releaseGate || "runtime/solteria_helper_dev/release_gate.json"} />
             <EvidenceLink label="Helper manifest" path={evidence?.otclientHelper.sourcePaths.manifest || "runtime/solteria_helper_dev/manifest.json"} />
             <EvidenceLink label="Helper live promotion" path={evidence?.otclientHelper.sourcePaths.livePromotion || "runtime/solteria_helper_dev/live_promotion.json"} />
+            <EvidenceLink label="Helper BackgroundNoScreen" path={evidence?.otclientHelper.sourcePaths.backgroundStatus || "runtime/solteria_helper_dev/background_status.json"} />
+            <EvidenceLink label="Helper P9 Conditions shadow" path={evidence?.otclientHelper.sourcePaths.conditionsShadowReplay || "runtime/solteria_helper_dev/conditions_shadow_replay.json"} />
+            <EvidenceLink label="Helper P10 observation preview" path={evidence?.otclientHelper.sourcePaths.equipmentObservationPreview || "runtime/solteria_helper_dev/equipment_observation_preview.json"} />
+            <EvidenceLink label="Helper P10 candidate catalog" path={evidence?.otclientHelper.sourcePaths.equipmentCandidateCatalog || "runtime/solteria_helper_dev/equipment_candidate_catalog.json"} />
+            <EvidenceLink label="Helper P10 profile doctor" path={evidence?.otclientHelper.sourcePaths.equipmentCaptureProfileDoctor || "runtime/solteria_helper_dev/equipment_capture_profile_doctor.json"} />
+            <EvidenceLink label="Helper P10 profile change plan" path={evidence?.otclientHelper.sourcePaths.equipmentCaptureProfileChangePlan || "runtime/solteria_helper_dev/equipment_capture_profile_change_plan.json"} />
+            <EvidenceLink label="Helper P10 dependency preflight" path={evidence?.otclientHelper.sourcePaths.equipmentDependencyPreflight || "runtime/solteria_helper_dev/equipment_dependency_preflight.json"} />
+            <EvidenceLink label="Helper P10 operator readiness" path={evidence?.otclientHelper.sourcePaths.equipmentOperatorReadiness || "runtime/solteria_helper_dev/equipment_operator_readiness.json"} />
+            <EvidenceLink label="Helper P10 refresh run" path={evidence?.otclientHelper.sourcePaths.equipmentOperatorRefreshRun || "runtime/solteria_helper_dev/equipment_operator_refresh_run.json"} />
+            <EvidenceLink label="Helper P10 Equipment shadow" path={evidence?.otclientHelper.sourcePaths.equipmentShadowReplay || "runtime/solteria_helper_dev/equipment_shadow_replay.json"} />
+            <EvidenceLink label="Helper P10 acceptance" path={evidence?.otclientHelper.sourcePaths.equipmentShadowAcceptance || "runtime/solteria_helper_dev/equipment_shadow_acceptance.json"} />
             <EvidenceLink label="Engine Brain manifest" path={evidence?.engineBrain.sourcePaths.manifest || "AI/generated/manifest.json"} />
             <EvidenceLink label="Engine Brain guardrail" path={evidence?.engineBrain.sourcePaths.secretGuardrail || "AI/generated/SECRET_GUARDRAIL.json"} />
             <EvidenceLink label="P6 plugin handoff smoke" path={evidence?.engineBrain.sourcePaths.p6PluginHandoffSmoke || "runtime/control-center/p6-plugin-handoff-smoke.json"} />
             <EvidenceLink label="P7 operator brief" path={evidence?.engineBrain.sourcePaths.operatorBrief || "AI/generated/P7_OPERATOR_BRIEF.json"} />
+            <EvidenceLink label="P13 roadmap state" path={evidence?.roadmapState.sourcePath || "AI/generated/ROADMAP_STATE.json"} />
             <EvidenceLink label="P7 cockpit smoke" path={evidence?.engineBrain.sourcePaths.p7CockpitSmoke || "runtime/control-center/p7-cockpit-smoke.json"} />
             <EvidenceLink label="P7 safe-write dry-run smoke" path={evidence?.engineBrain.sourcePaths.p7SafeWriteDryRunSmoke || "runtime/control-center/p7-safe-write-dry-run-smoke.json"} />
           </div>

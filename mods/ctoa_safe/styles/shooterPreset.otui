@@ -1,0 +1,10 @@
+CTOASafeShooterRow < Panel
+  height: 27
+  background-color: #292929
+
+CTOASafePresetEdit < TextEdit
+  height: 22
+  background-color: #161616
+  color: #eeeeee
+  border-width: 1
+  border-color: #6e5b36

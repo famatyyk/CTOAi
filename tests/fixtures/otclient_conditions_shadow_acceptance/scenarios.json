@@ -1,0 +1,31 @@
+{
+  "schema_version": "ctoa.conditions-shadow-acceptance-scenarios.v1",
+  "fixture_only": true,
+  "operational_acceptance_claimed": false,
+  "cases": [
+    {
+      "name": "ready_without_confirmation",
+      "confirmation": null,
+      "write_requested": false,
+      "expected_status": "ready_for_operator_review"
+    },
+    {
+      "name": "exact_confirmation_no_write",
+      "confirmation": "accept P9 conditions shadow",
+      "write_requested": false,
+      "expected_status": "ready_for_operator_review"
+    },
+    {
+      "name": "exact_confirmation_persisted",
+      "confirmation": "accept P9 conditions shadow",
+      "write_requested": true,
+      "expected_status": "accepted"
+    },
+    {
+      "name": "wrong_confirmation",
+      "confirmation": "accept p9 conditions shadow",
+      "write_requested": true,
+      "expected_status": "blocked"
+    }
+  ]
+}

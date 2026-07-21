@@ -1,6 +1,7 @@
 # CTOA Client Distribution Model
 
-This document defines how CTOA product surfaces are packaged for clients and how private studio assets are kept out of the public distribution path.
+This document defines how private CTOA source surfaces are packaged for approved
+clients without publishing the canonical repository or its Git history.
 
 ## Product Tiers
 
@@ -8,9 +9,9 @@ This document defines how CTOA product surfaces are packaged for clients and how
 
 Audience:
 
-- self-hosted users
-- technical customers
-- developer customers integrating the public toolkit
+- approved self-hosted customers
+- approved technical customers
+- developer customers receiving a controlled toolkit export
 
 Includes:
 
@@ -18,7 +19,7 @@ Includes:
 - scoring and schemas
 - bootstrap and update gate
 - release governance and validated workflows
-- public documentation and configuration templates
+- customer-safe documentation and configuration templates
 
 Excludes:
 
@@ -73,8 +74,8 @@ Studio assets must not define the public product narrative or leak into customer
 - `schemas/`
 - `policies/`
 - `workflows/`
-- `tests/` relevant to public product behavior
-- `scripts/ops/` public-safe setup, validation, and release scripts
+- `tests/` relevant to exported product behavior
+- `scripts/ops/` export-safe setup, validation, and release scripts
 - `config/`
 - `product/`
 
@@ -93,9 +94,9 @@ Studio assets must not define the public product narrative or leak into customer
 - customer-specific or internal datasets
 - internal-only runtime storage
 
-## Cleanup Priority for Public Distribution
+## Cleanup Priority for Controlled Distribution
 
-1. Remove Studio-only raw artifact trees from public repo surface.
+1. Keep Studio-only raw artifact trees out of every export.
 2. Move one-off research tools under clearly archived/internal paths or private storage.
 3. Reduce top-level clutter so only product paths remain obvious.
 4. Keep package manifests current so every path has an explicit distribution tier.
@@ -104,13 +105,15 @@ Studio assets must not define the public product narrative or leak into customer
 
 Customer clone flow:
 
-1. clone repository or download packaged build
+1. receive an approved, sanitized package without repository history
 2. pass mandatory update gate
 3. run bootstrap to create local config/state
 4. launch only the tier they are licensed/configured for
 
 ## Enforcement
 
-Package manifests under `product/packages/` define which paths belong to Core, Pro, and Studio.
+Package manifests under `product/packages/` define which private source paths may
+enter Core or Pro exports and which remain Studio-only.
 
-Repo hygiene audit uses those rules to classify findings and suggest whether content should stay public, move private, or become Studio-only.
+Repo hygiene and public-exposure audits enforce those boundaries before any
+external delivery.

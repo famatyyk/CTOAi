@@ -1,6 +1,8 @@
 param(
-    [ValidateSet("PrepareDev", "ValidateDev", "Setup", "SmokePreflight", "SmokeStatus", "SmokeQueue", "GoalStatus", "LocalReady", "Launch", "Smoke", "SmokeAll", "SmokeAttach", "SmokeAttachModules", "SmokeAttachAll", "ThemeSnapshotMatrix", "HealingVitalsSmoke", "CombatSafetySmoke", "CavebotSafetySmoke", "TimerSafetySmoke", "LootSafetySmoke", "HealFriendNoTargetSmoke", "ConditionsObserverSmoke", "EquipmentObserverSmoke", "ScriptingPolicySmoke", "PlannerStaticSmoke", "RuntimePolicyStaticSmoke", "DispatchGuardStaticSmoke", "PlanQueueStaticSmoke", "RuntimeReadinessStaticSmoke", "ModuleStatusStaticSmoke", "ActionCatalogStaticSmoke", "DecisionTraceStaticSmoke", "DecisionPipelineStaticSmoke", "SandboxHandoffStaticSmoke", "FeatureFlagsStaticSmoke", "HudStaticSmoke", "HotkeysStaticSmoke", "ModalStaticSmoke", "InputContractsStaticSmoke", "RouteStaticSmoke", "TargetingStaticSmoke", "CombatRuntimeStaticSmoke", "CavebotRuntimeStaticSmoke", "LootRuntimeStaticSmoke", "TimerRuntimeStaticSmoke", "RecoveryRuntimeStaticSmoke", "ProfileSchemaStaticSmoke", "OperatorSummaryStaticSmoke", "ExternalBotImportGateStaticSmoke", "HelperShellBudgetStaticSmoke", "HelperShellBudgetPlanStaticSmoke", "ModuleContract", "ModuleAudit", "ModuleStaticGates", "Snapshot", "ReadyCheck", "BackupLiveCtoa", "PromoteLiveCtoa", "EmergencyRepairLiveCtoa", "DisableLiveCtoa", "EnableLiveCtoa", "EnableLiveCtoaUiOnly", "Stop")]
+    [ValidateSet("PrepareDev", "ValidateDev", "Setup", "SmokePreflight", "SmokeStatus", "SmokeQueue", "GoalStatus", "BackgroundStatus", "LocalReady", "Launch", "Smoke", "SmokeAll", "SmokeAttach", "SmokeAttachModules", "SmokeAttachAll", "ThemeSnapshotMatrix", "HealingVitalsSmoke", "CombatSafetySmoke", "CavebotSafetySmoke", "TimerSafetySmoke", "LootSafetySmoke", "HealFriendNoTargetSmoke", "ConditionsObserverSmoke", "EquipmentObserverSmoke", "ScriptingPolicySmoke", "PlannerStaticSmoke", "RuntimePolicyStaticSmoke", "DispatchGuardStaticSmoke", "PlanQueueStaticSmoke", "RuntimeReadinessStaticSmoke", "ModuleStatusStaticSmoke", "ActionCatalogStaticSmoke", "DecisionTraceStaticSmoke", "DecisionPipelineStaticSmoke", "SandboxHandoffStaticSmoke", "FeatureFlagsStaticSmoke", "HudStaticSmoke", "HotkeysStaticSmoke", "ModalStaticSmoke", "InputContractsStaticSmoke", "RouteStaticSmoke", "TargetingStaticSmoke", "CombatRuntimeStaticSmoke", "CavebotRuntimeStaticSmoke", "LootRuntimeStaticSmoke", "TimerRuntimeStaticSmoke", "RecoveryRuntimeStaticSmoke", "RecoveryBridgeStaticSmoke", "ConditionsRuntimeGateStaticSmoke", "EquipmentRuntimeGateStaticSmoke", "HealFriendRuntimeGateStaticSmoke", "RuntimeModuleGatesSandboxSmoke", "RecoveryBridgeSandboxSmoke", "RecoveryBridgeActionSmoke", "P12ConditionsExecuteOnce", "P12EquipmentExecuteOnce", "P12HealFriendExecuteOnce", "ProfileSchemaStaticSmoke", "OperatorSummaryStaticSmoke", "ExternalBotImportGateStaticSmoke", "HelperShellBudgetStaticSmoke", "HelperShellBudgetPlanStaticSmoke", "ModuleContract", "ModuleAudit", "ModuleStaticGates", "EquipmentShadowSnapshotStaticSmoke", "EquipmentShadowReplayStaticSmoke", "EquipmentShadowAcceptanceStaticSmoke", "Snapshot", "ReadyCheck", "BackupLiveCtoa", "PromoteLiveCtoa", "EmergencyRepairLiveCtoa", "DisableLiveCtoa", "EnableLiveCtoa", "EnableLiveCtoaUiOnly", "Stop")]
     [string]$Action = "Smoke",
+    [ValidateSet("Interactive", "BackgroundNoScreen")]
+    [string]$OperatorMode = "Interactive",
     [ValidateSet("overview", "healing", "heal_friend", "conditions", "hunting", "hunting_magic", "cavebot", "equipment", "tools", "tools_pvp", "tools_hud", "tools_timer", "tools_diag", "profile", "ui", "scripting")]
     [string]$Tab = "overview",
     [string]$SourceClient = "$env:LOCALAPPDATA\Solteria\client",
@@ -18,6 +20,35 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+$script:BackgroundNoScreen = $OperatorMode -eq "BackgroundNoScreen"
+$script:InheritedBackgroundNoScreen = $env:CTOA_OPERATOR_MODE -eq "background_no_screen"
+
+function Get-BackgroundAllowedActions {
+    return @("BackgroundStatus")
+}
+
+function Assert-InteractiveOperatorMode {
+    param([Parameter(Mandatory = $true)][string]$Operation)
+    if ($script:BackgroundNoScreen -or $script:InheritedBackgroundNoScreen) {
+        throw "BackgroundNoScreen forbids interactive operation: $Operation"
+    }
+}
+
+function Assert-OperatorModeAction {
+    if ($script:InheritedBackgroundNoScreen -and -not $script:BackgroundNoScreen) {
+        throw "CTOA_OPERATOR_MODE=background_no_screen cannot be downgraded by a child process."
+    }
+    if (-not $script:BackgroundNoScreen) {
+        return
+    }
+    $env:CTOA_OPERATOR_MODE = "background_no_screen"
+    if ($ApproveLiveDeploy -or $LaunchAfterPromote -or $ToggleHelper -or $DismissDialogs) {
+        throw "BackgroundNoScreen rejects live approval, launch, toggle, and dialog parameters."
+    }
+    if ($Action -notin (Get-BackgroundAllowedActions)) {
+        throw "BackgroundNoScreen forbids action '$Action'. Use BackgroundStatus or an allowlisted static action."
+    }
+}
 
 function Get-RepoRoot {
     return (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
@@ -63,6 +94,43 @@ function Assert-UnderLocalAppData {
         throw "Refusing to operate outside LOCALAPPDATA: $full"
     }
     return $full
+}
+
+function Assert-ExactLiveClientPath {
+    param([Parameter(Mandatory = $true)][string]$Path)
+    $full = (Assert-UnderLocalAppData -Path $Path).TrimEnd([char[]]@('\', '/'))
+    $expected = [System.IO.Path]::GetFullPath(
+        (Join-Path $env:LOCALAPPDATA "Solteria\client")
+    ).TrimEnd([char[]]@('\', '/'))
+    if (-not $full.Equals($expected, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "BackgroundNoScreen requires the canonical live client path: $expected"
+    }
+    return $full
+}
+
+function Assert-ExactBackgroundOutputPath {
+    param(
+        [Parameter(Mandatory = $true)][string]$RepoRoot,
+        [Parameter(Mandatory = $true)][string]$Candidate
+    )
+    $runtimeRoot = [System.IO.Path]::GetFullPath((Join-Path $RepoRoot "runtime"))
+    $expected = [System.IO.Path]::GetFullPath(
+        (Join-Path $runtimeRoot "solteria_helper_dev")
+    ).TrimEnd([char[]]@('\', '/'))
+    $full = [System.IO.Path]::GetFullPath($Candidate).TrimEnd([char[]]@('\', '/'))
+    if (-not $full.Equals($expected, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "BackgroundNoScreen output must be exactly: $expected"
+    }
+    foreach ($directory in @($runtimeRoot, $expected)) {
+        if (-not (Test-Path -LiteralPath $directory -PathType Container)) {
+            throw "BackgroundNoScreen output directory is missing: $directory"
+        }
+        $item = Get-Item -LiteralPath $directory -Force
+        if (($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+            throw "BackgroundNoScreen rejects reparse output directory: $directory"
+        }
+    }
+    return $expected
 }
 
 function Assert-SandboxClientPath {
@@ -233,8 +301,28 @@ function Write-SmokeCommand {
         [string]$ActiveTab,
         [string]$SmokeSubtab = "",
         [string]$CommandAction = "",
-        [string]$Theme = ""
+        [string]$Theme = "",
+        [switch]$Confirm,
+        [string]$SessionId = "",
+        [string]$PlanSha256 = "",
+        [string]$P9ReceiptSha256 = "",
+        [string]$P10ReceiptSha256 = "",
+        [string]$P11ReceiptSha256 = "",
+        [string]$P12EquipmentReceiptSha256 = "",
+        [Nullable[int]]$BeforeItemId = $null,
+        [Nullable[int]]$CandidateItemId = $null,
+        [Nullable[int]]$SourceContainerId = $null,
+        [Nullable[int]]$SourceSlotIndex = $null,
+        [Nullable[int]]$TargetId = $null,
+        [string]$TargetName = "",
+        [string]$WhitelistRevision = "",
+        [Nullable[int]]$HpThreshold = $null,
+        [Nullable[int]]$MaxRange = $null,
+        [Nullable[int]]$RetryBudget = $null,
+        [switch]$SessionApproved,
+        [switch]$ExecutionApproved
     )
+    Assert-InteractiveOperatorMode -Operation "write smoke command"
     $modDir = Join-Path $ClientDir "mods\ctoa_otclient"
     New-Item -ItemType Directory -Force -Path $modDir | Out-Null
     $lines = @("tab=$ActiveTab", "subtab=$SmokeSubtab")
@@ -244,6 +332,28 @@ function Write-SmokeCommand {
     if (-not [string]::IsNullOrWhiteSpace($Theme)) {
         $lines += "theme=$Theme"
     }
+    if ($Confirm) { $lines += "confirm=true" }
+    if (-not [string]::IsNullOrWhiteSpace($SessionId)) { $lines += "session_id=$SessionId" }
+    if (-not [string]::IsNullOrWhiteSpace($PlanSha256)) { $lines += "plan_sha256=$PlanSha256" }
+    if (-not [string]::IsNullOrWhiteSpace($P9ReceiptSha256)) { $lines += "p9_receipt_sha256=$P9ReceiptSha256" }
+    if (-not [string]::IsNullOrWhiteSpace($P10ReceiptSha256)) { $lines += "p10_receipt_sha256=$P10ReceiptSha256" }
+    if (-not [string]::IsNullOrWhiteSpace($P11ReceiptSha256)) { $lines += "p11_receipt_sha256=$P11ReceiptSha256" }
+    if (-not [string]::IsNullOrWhiteSpace($P12EquipmentReceiptSha256)) { $lines += "p12_equipment_receipt_sha256=$P12EquipmentReceiptSha256" }
+    if ($null -ne $BeforeItemId) { $lines += "before_item_id=$BeforeItemId" }
+    if ($null -ne $CandidateItemId) { $lines += "candidate_item_id=$CandidateItemId" }
+    if ($null -ne $SourceContainerId) { $lines += "source_container_id=$SourceContainerId" }
+    if ($null -ne $SourceSlotIndex) { $lines += "source_slot_index=$SourceSlotIndex" }
+    if ($null -ne $TargetId) { $lines += "target_id=$TargetId" }
+    if (-not [string]::IsNullOrWhiteSpace($TargetName)) {
+        if ($TargetName -match '[\r\n"]') { throw "TargetName contains an unsafe command character." }
+        $lines += "target_name=`"$TargetName`""
+    }
+    if (-not [string]::IsNullOrWhiteSpace($WhitelistRevision)) { $lines += "whitelist_revision=$WhitelistRevision" }
+    if ($null -ne $HpThreshold) { $lines += "hp_threshold=$HpThreshold" }
+    if ($null -ne $MaxRange) { $lines += "max_range=$MaxRange" }
+    if ($null -ne $RetryBudget) { $lines += "retry_budget=$RetryBudget" }
+    if ($SessionApproved) { $lines += "session_approved=true" }
+    if ($ExecutionApproved) { $lines += "execution_approved=true" }
     $commandText = ($lines -join "`n") + "`n"
     Write-TextAtomic -Text $commandText -Path (Join-Path $modDir "ctoa_smoke_command.lua")
     Write-TextAtomic -Text $commandText -Path (Join-Path $ClientDir "ctoa_smoke_command.lua")
@@ -251,10 +361,26 @@ function Write-SmokeCommand {
 
 function Sync-CtoaRuntimeFiles {
     param([string]$ClientDir)
+    Assert-InteractiveOperatorMode -Operation "sync runtime files"
+    $ClientDir = Assert-SandboxClientPath -SandboxPath $ClientDir -SourcePath $SourceClient
     $repo = Get-RepoRoot
     $stageRoot = Join-Path (Join-Path $repo $DevDir) "latest"
     $modDir = Join-Path $ClientDir "mods\ctoa_otclient"
+    $chooserDir = Join-Path $ClientDir "mods\ctoa_chooser"
+    $safeDir = [System.IO.Path]::GetFullPath((Join-Path $ClientDir "mods\ctoa_safe"))
+    $clientPrefix = $ClientDir.TrimEnd([char[]]@('\', '/')) + [System.IO.Path]::DirectorySeparatorChar
+    if (-not $safeDir.StartsWith($clientPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "Refusing to remove Safe outside the verified Helper sandbox: $safeDir"
+    }
+    if (Test-Path -LiteralPath $safeDir) {
+        $safeItem = Get-Item -LiteralPath $safeDir -Force
+        if (($safeItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+            throw "Refusing to remove reparse-point Safe directory from Helper sandbox: $safeDir"
+        }
+        Remove-Item -LiteralPath $safeDir -Recurse -Force
+    }
     New-Item -ItemType Directory -Force -Path $modDir | Out-Null
+    New-Item -ItemType Directory -Force -Path $chooserDir | Out-Null
 
     function Copy-CtoaRuntimeFile {
         param(
@@ -278,64 +404,17 @@ function Sync-CtoaRuntimeFiles {
         }
     }
 
-    $moduleFiles = @(
-        "ctoa_otclient.otmod",
-        "ctoa_otclient_loader.lua",
-        "ctoa_helper_ui.lua",
-        "ctoa_helper_client_reporter.lua",
-        "ctoa_helper_diagnostics.lua",
-        "ctoa_helper_hotkeys.lua",
-        "ctoa_helper_modal.lua",
-        "ctoa_helper_route.lua",
-        "ctoa_helper_targeting.lua",
-        "ctoa_helper_combat_runtime.lua",
-        "ctoa_helper_cavebot_runtime.lua",
-        "ctoa_helper_loot_runtime.lua",
-        "ctoa_helper_timer_runtime.lua",
-        "ctoa_helper_recovery_runtime.lua",
-       "ctoa_helper_profile_schema.lua",
-        "ctoa_helper_vocation_profiles.lua",
-       "ctoa_helper_profile_persistence.lua",
-        "ctoa_helper_operator_summary.lua",
-        "ctoa_helper_planner.lua",
-        "ctoa_helper_runtime_policy.lua",
-        "ctoa_helper_dispatch_guard.lua",
-        "ctoa_helper_plan_queue.lua",
-        "ctoa_helper_runtime_readiness.lua",
-        "ctoa_helper_module_status.lua",
-        "ctoa_helper_action_catalog.lua",
-        "ctoa_helper_decision_trace.lua",
-        "ctoa_helper_decision_pipeline.lua",
-        "ctoa_helper_sandbox_handoff.lua",
-        "ctoa_helper_feature_flags.lua",
-        "ctoa_helper_hud.lua",
-        "ctoa_helper_conditions.lua",
-        "ctoa_helper_equipment.lua",
-        "ctoa_helper_scripting.lua",
-        "ctoa_helper_heal_friend.lua",
-        "ctoa_helper_modules.lua",
-        "ctoa_helper_domain_contract.lua",
-        "ctoa_helper_runtime_core.lua",
-        "ctoa_helper_combat_observer.lua",
-        "ctoa_helper_recovery_observer.lua",
-        "ctoa_helper_cavebot_observer.lua",
-        "ctoa_helper_loot_observer.lua",
-        "ctoa_helper_equipment_observer.lua",
-        "ctoa_helper_otclient_observation_adapter.lua",
-        "ctoa_native_helper.lua",
-        "ctoa_native_combat.lua",
-        "ctoa_native_heal.lua",
-       "ctoa_native_loot.lua",
-        "ctoa_ek_profile.lua",
-        "ctoa_ms_profile.lua",
-        "ctoa_ed_profile.lua",
-        "ctoa_rp_profile.lua"
-    )
+    $moduleFiles = @(Get-DevModuleFileNames)
     foreach ($name in $moduleFiles) {
         Copy-CtoaRuntimeFile -StageRelative "mods\ctoa_otclient\$name" -RepoRelative "scripts\lua\otclient\$name" -Destination (Join-Path $modDir $name)
     }
-    Copy-CtoaRuntimeFile -StageRelative "ctoa_otclient_loader.lua" -RepoRelative "scripts\lua\otclient\ctoa_otclient_loader.lua" -Destination (Join-Path $ClientDir "ctoa_otclient_loader.lua")
-    Copy-CtoaRuntimeFile -StageRelative "ctoa_ek_profile.lua" -RepoRelative "scripts\lua\otclient\ctoa_ek_profile.lua" -Destination (Join-Path $ClientDir "ctoa_ek_profile.lua")
+    foreach ($name in @("ctoa_chooser.otmod", "ctoa_chooser_loader.lua")) {
+        Copy-CtoaRuntimeFile -StageRelative "mods\ctoa_chooser\$name" -RepoRelative "scripts\lua\ctoa_chooser\$name" -Destination (Join-Path $chooserDir $name)
+    }
+    Copy-CtoaRuntimeFile -StageRelative "ctoa_project_loader.lua" -RepoRelative "scripts\lua\ctoa_chooser\ctoa_chooser_loader.lua" -Destination (Join-Path $ClientDir "ctoa_project_loader.lua")
+    foreach ($legacyRelative in Get-LiveLegacyFiles) {
+        Remove-Item -LiteralPath (Join-Path $ClientDir $legacyRelative) -Force -ErrorAction SilentlyContinue
+    }
 }
 
 function Ensure-CtoaBootHook {
@@ -375,13 +454,16 @@ local function ctoaBootLog(msg)
     end
 end
 
-local function ctoaSafeBoot()
-    local loader = '/ctoa_otclient_loader.lua'
+local function ctoaNeutralBoot()
+    local loader = '/ctoa_project_loader.lua'
     ctoaBootLog('init reached; loader_resource=' .. loader)
     if g_resources and g_resources.fileExists and g_resources.fileExists(loader) then
         ctoaBootLog('trying resource loader: ' .. loader)
         local ok, err = pcall(function()
             dofile(loader)
+            if CTOA_PROJECT_LOADER and type(CTOA_PROJECT_LOADER.init) == 'function' then
+                CTOA_PROJECT_LOADER.init()
+            end
         end)
         if ok then
             ctoaBootLog('loader executed')
@@ -397,11 +479,11 @@ if type(loadModules) == 'function' then
     local ctoaOriginalLoadModules = loadModules
     loadModules = function(...)
         local result = ctoaOriginalLoadModules(...)
-        ctoaSafeBoot()
+        ctoaNeutralBoot()
         return result
     end
 else
-    ctoaSafeBoot()
+    ctoaNeutralBoot()
 end
 -- CTOA-BOOT-END
 
@@ -409,7 +491,7 @@ end
 
     $needle = "-- run updater, must use data.zip"
     if ($content.Contains($needle)) {
-        $content = $content.Replace($needle, $hook + $needle)
+        $content = $content.Replace($needle, "`r`n" + $hook + "`r`n" + $needle)
     } else {
         if (-not $content.EndsWith("`n")) {
             $content += "`r`n"
@@ -473,9 +555,16 @@ function Get-SourceClientProcessSummaries {
         } catch {
             continue
         }
+        $startUnixMs = 0
+        try {
+            $startUnixMs = ([DateTimeOffset]$item.CreationDate).ToUnixTimeMilliseconds()
+        } catch {
+            $startUnixMs = 0
+        }
         $summaries += [pscustomobject]@{
             id = [int]$item.ProcessId
             start_time = [string]$item.CreationDate
+            start_unix_ms = $startUnixMs
             path = $fullPath
         }
     }
@@ -483,6 +572,7 @@ function Get-SourceClientProcessSummaries {
 }
 
 function Start-LiveClientAfterPromotion {
+    Assert-InteractiveOperatorMode -Operation "start live client"
     $sourceRoot = Assert-UnderLocalAppData -Path $SourceClient
     $exe = [System.IO.Path]::GetFullPath((Join-Path $sourceRoot "solteria-client.exe"))
     if (-not (Test-Path -LiteralPath $exe)) {
@@ -512,25 +602,40 @@ function Start-LiveClientAfterPromotion {
 
 function Get-DevPackageFiles {
     return @(
-        "ctoa_otclient_loader.lua",
-        "ctoa_ek_profile.lua",
+        "ctoa_project_loader.lua",
+        "mods/ctoa_chooser/ctoa_chooser.otmod",
+        "mods/ctoa_chooser/ctoa_chooser_loader.lua",
         "mods/ctoa_otclient/ctoa_otclient.otmod",
         "mods/ctoa_otclient/ctoa_otclient_loader.lua",
+        "mods/ctoa_otclient/ctoa_helper_ui_primitives.lua",
+        "mods/ctoa_otclient/ctoa_helper_ui_composition.lua",
+        "mods/ctoa_otclient/ctoa_helper_ui_rule_editors.lua",
         "mods/ctoa_otclient/ctoa_helper_ui.lua",
         "mods/ctoa_otclient/ctoa_helper_client_reporter.lua",
         "mods/ctoa_otclient/ctoa_helper_diagnostics.lua",
         "mods/ctoa_otclient/ctoa_helper_hotkeys.lua",
         "mods/ctoa_otclient/ctoa_helper_modal.lua",
         "mods/ctoa_otclient/ctoa_helper_route.lua",
+        "mods/ctoa_otclient/ctoa_helper_rule_explanations.lua",
         "mods/ctoa_otclient/ctoa_helper_targeting.lua",
         "mods/ctoa_otclient/ctoa_helper_combat_runtime.lua",
+        "mods/ctoa_otclient/ctoa_helper_spell_state_registry.lua",
         "mods/ctoa_otclient/ctoa_helper_cavebot_runtime.lua",
         "mods/ctoa_otclient/ctoa_helper_loot_runtime.lua",
         "mods/ctoa_otclient/ctoa_helper_timer_runtime.lua",
         "mods/ctoa_otclient/ctoa_helper_recovery_runtime.lua",
+        "mods/ctoa_otclient/ctoa_helper_recovery_bridge.lua",
+        "mods/ctoa_otclient/ctoa_helper_runtime_module_gate.lua",
+        "mods/ctoa_otclient/ctoa_helper_conditions_runtime_gate.lua",
+        "mods/ctoa_otclient/ctoa_helper_conditions_execute_once.lua",
+        "mods/ctoa_otclient/ctoa_helper_equipment_execute_once.lua",
+        "mods/ctoa_otclient/ctoa_helper_equipment_runtime_gate.lua",
+        "mods/ctoa_otclient/ctoa_helper_heal_friend_runtime_gate.lua",
+        "mods/ctoa_otclient/ctoa_helper_heal_friend_execute_once.lua",
         "mods/ctoa_otclient/ctoa_helper_profile_schema.lua",
         "mods/ctoa_otclient/ctoa_helper_vocation_profiles.lua",
         "mods/ctoa_otclient/ctoa_helper_profile_persistence.lua",
+        "mods/ctoa_otclient/ctoa_helper_rule_presets.lua",
         "mods/ctoa_otclient/ctoa_helper_operator_summary.lua",
         "mods/ctoa_otclient/ctoa_helper_planner.lua",
         "mods/ctoa_otclient/ctoa_helper_runtime_policy.lua",
@@ -545,11 +650,13 @@ function Get-DevPackageFiles {
         "mods/ctoa_otclient/ctoa_helper_feature_flags.lua",
         "mods/ctoa_otclient/ctoa_helper_hud.lua",
         "mods/ctoa_otclient/ctoa_helper_conditions.lua",
+        "mods/ctoa_otclient/ctoa_helper_equipment_family_registry.lua",
         "mods/ctoa_otclient/ctoa_helper_equipment.lua",
         "mods/ctoa_otclient/ctoa_helper_scripting.lua",
         "mods/ctoa_otclient/ctoa_helper_heal_friend.lua",
         "mods/ctoa_otclient/ctoa_helper_modules.lua",
         "mods/ctoa_otclient/ctoa_helper_domain_contract.lua",
+        "mods/ctoa_otclient/ctoa_helper_rule_engine.lua",
         "mods/ctoa_otclient/ctoa_helper_runtime_core.lua",
         "mods/ctoa_otclient/ctoa_helper_combat_observer.lua",
         "mods/ctoa_otclient/ctoa_helper_recovery_observer.lua",
@@ -558,9 +665,6 @@ function Get-DevPackageFiles {
         "mods/ctoa_otclient/ctoa_helper_equipment_observer.lua",
         "mods/ctoa_otclient/ctoa_helper_otclient_observation_adapter.lua",
         "mods/ctoa_otclient/ctoa_native_helper.lua",
-        "mods/ctoa_otclient/ctoa_native_combat.lua",
-        "mods/ctoa_otclient/ctoa_native_heal.lua",
-        "mods/ctoa_otclient/ctoa_native_loot.lua",
         "mods/ctoa_otclient/ctoa_ek_profile.lua",
         "mods/ctoa_otclient/ctoa_ms_profile.lua",
         "mods/ctoa_otclient/ctoa_ed_profile.lua",
@@ -568,10 +672,120 @@ function Get-DevPackageFiles {
     )
 }
 
-function Get-LiveRootFallbackFiles {
-    return @(
-        "ctoa_native_helper.lua"
+function Get-DevModuleFileNames {
+    $moduleNames = @(
+        foreach ($relative in Get-DevPackageFiles) {
+            $normalized = ([string]$relative).Replace("\\", "/")
+            if ($normalized.StartsWith("mods/ctoa_otclient/", [System.StringComparison]::Ordinal)) {
+                [System.IO.Path]::GetFileName($normalized)
+            }
+        }
     )
+    $requiredPassiveModules = @("ctoa_helper_client_reporter.lua")
+    foreach ($required in $requiredPassiveModules) {
+        if ($required -notin $moduleNames) {
+            throw "Dev package is missing required passive module: $required"
+        }
+    }
+    foreach ($name in $moduleNames) {
+        $name
+    }
+}
+
+function Get-DevPackageSourcePath {
+    param(
+        [Parameter(Mandatory = $true)][string]$Repo,
+        [Parameter(Mandatory = $true)][string]$Relative
+    )
+
+    $normalized = $Relative.Replace("\", "/")
+    $name = [System.IO.Path]::GetFileName($normalized)
+    if ($normalized -eq "ctoa_project_loader.lua") {
+        return (Join-Path $Repo "scripts\lua\ctoa_chooser\ctoa_chooser_loader.lua")
+    }
+    if ($normalized.StartsWith("mods/ctoa_chooser/", [System.StringComparison]::Ordinal)) {
+        return (Join-Path $Repo ("scripts\lua\ctoa_chooser\{0}" -f $name))
+    }
+    if ($normalized.StartsWith("mods/ctoa_otclient/", [System.StringComparison]::Ordinal)) {
+        return (Join-Path $Repo ("scripts\lua\otclient\{0}" -f $name))
+    }
+    throw "No tracked source mapping for staged file: $Relative"
+}
+
+function Get-LiveLegacyFiles {
+    return @(
+        "ctoa_native_helper.lua",
+        "ctoa_otclient_loader.lua",
+        "ctoa_chooser_prefs.lua",
+        "ctoa_loader_pref.lua",
+        "ctoa_ek_profile.lua",
+        "ctoa_ms_profile.lua",
+        "ctoa_ed_profile.lua",
+        "ctoa_rp_profile.lua",
+        "ctoa_ui_prefs.lua",
+        "mods/ctoa_safe/ctoa_helper_modules.lua",
+        "mods/ctoa_safe/ctoa_helper_profile_persistence.lua",
+        "mods/ctoa_safe/ctoa_helper_profile_schema.lua",
+        "mods/ctoa_safe/ctoa_helper_runtime_core.lua",
+        "mods/ctoa_safe/ctoa_helper_vocation_profiles.lua",
+        "mods/ctoa_safe/ctoa_native_combat.lua",
+        "mods/ctoa_safe/ctoa_native_heal.lua",
+        "mods/ctoa_safe/ctoa_native_loot.lua",
+        "mods/ctoa_safe/ctoa_ek_profile.lua",
+        "mods/ctoa_otclient/ctoa_native_combat.lua",
+        "mods/ctoa_otclient/ctoa_native_combat.lua.disabled",
+        "mods/ctoa_otclient/ctoa_native_heal.lua",
+        "mods/ctoa_otclient/ctoa_native_heal.lua.disabled",
+        "mods/ctoa_otclient/ctoa_native_loot.lua",
+        "mods/ctoa_otclient/ctoa_native_loot.lua.disabled",
+        "mods/ctoa_safe/ctoa_ms_profile.lua",
+        "mods/ctoa_safe/ctoa_ed_profile.lua",
+        "mods/ctoa_safe/ctoa_rp_profile.lua"
+    )
+}
+
+function Copy-LegacyHelperUserState {
+    param([string]$ClientDir)
+    Assert-UnderLocalAppData -Path $ClientDir | Out-Null
+    $migrated = @()
+    $items = @(
+        @{ destination = "ctoa_user_ek_profile.lua"; candidates = @("mods/ctoa_otclient/ctoa_ek_profile.lua", "ctoa_ek_profile.lua") },
+        @{ destination = "ctoa_user_ms_profile.lua"; candidates = @("mods/ctoa_otclient/ctoa_ms_profile.lua", "ctoa_ms_profile.lua") },
+        @{ destination = "ctoa_user_ed_profile.lua"; candidates = @("mods/ctoa_otclient/ctoa_ed_profile.lua", "ctoa_ed_profile.lua") },
+        @{ destination = "ctoa_user_rp_profile.lua"; candidates = @("mods/ctoa_otclient/ctoa_rp_profile.lua", "ctoa_rp_profile.lua") },
+        @{ destination = "ctoa_user_ui_prefs.lua"; candidates = @("mods/ctoa_otclient/ctoa_ui_prefs.lua", "ctoa_ui_prefs.lua") }
+    )
+    foreach ($item in $items) {
+        $destinationPath = Join-Path $ClientDir $item.destination
+        if (Test-Path -LiteralPath $destinationPath) {
+            continue
+        }
+        foreach ($candidate in $item.candidates) {
+            $sourcePath = Join-Path $ClientDir $candidate
+            if (Test-Path -LiteralPath $sourcePath) {
+                Copy-Item -LiteralPath $sourcePath -Destination $destinationPath
+                $migrated += [pscustomobject]@{ source = $candidate; destination = $item.destination }
+                Write-Host "[solteria-helper-test-env] Preserved Helper user state: $candidate -> $($item.destination)"
+                break
+            }
+        }
+    }
+    return $migrated
+}
+
+function Remove-LiveLegacyFiles {
+    param([string]$ClientDir)
+    Assert-UnderLocalAppData -Path $ClientDir | Out-Null
+    $removed = @()
+    foreach ($relative in Get-LiveLegacyFiles) {
+        $legacyPath = Join-Path $ClientDir $relative
+        if (Test-Path -LiteralPath $legacyPath) {
+            Remove-Item -LiteralPath $legacyPath -Force
+            $removed += $relative
+            Write-Host "[solteria-helper-test-env] Removed stale CTOA file: $relative"
+        }
+    }
+    return $removed
 }
 
 function Get-DevFileManifest {
@@ -718,67 +932,28 @@ function New-DevPackage {
     $repo = Get-RepoRoot
     $outRoot = Join-Path $repo $DevDir
     $stage = Join-Path $outRoot "latest"
+    $stageFull = [System.IO.Path]::GetFullPath($stage)
+    $outRootFull = [System.IO.Path]::GetFullPath($outRoot).TrimEnd([char[]]@('\', '/'))
+    $outRootPrefix = $outRootFull + [System.IO.Path]::DirectorySeparatorChar
+    if (-not $stageFull.StartsWith($outRootPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "Refusing to rebuild stage outside the dev output root: $stageFull"
+    }
+    if (Test-Path -LiteralPath $stageFull) {
+        Remove-Item -LiteralPath $stageFull -Recurse -Force
+    }
     $moduleDir = Join-Path $stage "mods\ctoa_otclient"
+    $chooserDir = Join-Path $stage "mods\ctoa_chooser"
     New-Item -ItemType Directory -Force -Path $moduleDir | Out-Null
+    New-Item -ItemType Directory -Force -Path $chooserDir | Out-Null
 
-    $moduleFiles = @(
-        "ctoa_otclient.otmod",
-        "ctoa_otclient_loader.lua",
-        "ctoa_helper_ui.lua",
-        "ctoa_helper_client_reporter.lua",
-        "ctoa_helper_diagnostics.lua",
-        "ctoa_helper_hotkeys.lua",
-        "ctoa_helper_modal.lua",
-        "ctoa_helper_route.lua",
-        "ctoa_helper_targeting.lua",
-        "ctoa_helper_combat_runtime.lua",
-        "ctoa_helper_cavebot_runtime.lua",
-        "ctoa_helper_loot_runtime.lua",
-        "ctoa_helper_timer_runtime.lua",
-        "ctoa_helper_recovery_runtime.lua",
-       "ctoa_helper_profile_schema.lua",
-        "ctoa_helper_vocation_profiles.lua",
-       "ctoa_helper_profile_persistence.lua",
-        "ctoa_helper_operator_summary.lua",
-        "ctoa_helper_planner.lua",
-        "ctoa_helper_runtime_policy.lua",
-        "ctoa_helper_dispatch_guard.lua",
-        "ctoa_helper_plan_queue.lua",
-        "ctoa_helper_runtime_readiness.lua",
-        "ctoa_helper_module_status.lua",
-        "ctoa_helper_action_catalog.lua",
-        "ctoa_helper_decision_trace.lua",
-        "ctoa_helper_decision_pipeline.lua",
-        "ctoa_helper_sandbox_handoff.lua",
-        "ctoa_helper_feature_flags.lua",
-        "ctoa_helper_hud.lua",
-        "ctoa_helper_conditions.lua",
-        "ctoa_helper_equipment.lua",
-        "ctoa_helper_scripting.lua",
-        "ctoa_helper_heal_friend.lua",
-        "ctoa_helper_modules.lua",
-        "ctoa_helper_domain_contract.lua",
-        "ctoa_helper_runtime_core.lua",
-        "ctoa_helper_combat_observer.lua",
-        "ctoa_helper_recovery_observer.lua",
-        "ctoa_helper_cavebot_observer.lua",
-        "ctoa_helper_loot_observer.lua",
-        "ctoa_helper_equipment_observer.lua",
-        "ctoa_helper_otclient_observation_adapter.lua",
-        "ctoa_native_helper.lua",
-        "ctoa_native_combat.lua",
-        "ctoa_native_heal.lua",
-       "ctoa_native_loot.lua",
-        "ctoa_ek_profile.lua",
-        "ctoa_ms_profile.lua",
-        "ctoa_ed_profile.lua",
-        "ctoa_rp_profile.lua"
-    )
+    $moduleFiles = @(Get-DevModuleFileNames)
     foreach ($name in $moduleFiles) {
         Copy-Item -LiteralPath (Join-Path $repo "scripts\lua\otclient\$name") -Destination (Join-Path $moduleDir $name) -Force
     }
-    Copy-Item -LiteralPath (Join-Path $repo "scripts\lua\otclient\ctoa_otclient_loader.lua") -Destination (Join-Path $stage "ctoa_otclient_loader.lua") -Force
-    Copy-Item -LiteralPath (Join-Path $repo "scripts\lua\otclient\ctoa_ek_profile.lua") -Destination (Join-Path $stage "ctoa_ek_profile.lua") -Force
+    foreach ($name in @("ctoa_chooser.otmod", "ctoa_chooser_loader.lua")) {
+        Copy-Item -LiteralPath (Join-Path $repo "scripts\lua\ctoa_chooser\$name") -Destination (Join-Path $chooserDir $name) -Force
+    }
+    Copy-Item -LiteralPath (Join-Path $repo "scripts\lua\ctoa_chooser\ctoa_chooser_loader.lua") -Destination (Join-Path $stage "ctoa_project_loader.lua") -Force
 
     $version = Get-HelperVersion
     $fileManifest = Get-DevFileManifest -Stage $stage
@@ -834,12 +1009,128 @@ function Invoke-DevValidation {
     }
     $checks += [pscustomobject]@{ name = "profile_audit"; status = "passed"; evidence = "runtime/solteria_helper_dev/profile_audit.json" }
     Write-Output "[solteria-helper-test-env] Validate: pytest helper/API contracts"
-    & python -m pytest tests\test_otclient_helper_zerobot_shell.py tests\test_solteria_api_audit.py tests\test_ctoa_helper_smoke_report.py tests\test_solteria_helper_release_gate.py tests\test_solteria_helper_goal_audit.py -q
+    & python -m pytest tests\test_ctoa_exclusive_project_loader.py tests\test_otclient_loader_cross_fork.py tests\test_otclient_helper_zerobot_shell.py tests\test_solteria_api_audit.py tests\test_ctoa_helper_smoke_report.py tests\test_solteria_helper_release_gate.py tests\test_solteria_helper_goal_audit.py -q
     if ($LASTEXITCODE -ne 0) {
         Write-DevValidationReport -OutRoot $outRoot -Version $version -Status "failed" -Checks $checks | Out-Null
         throw "Pytest validation failed"
     }
     $checks += [pscustomobject]@{ name = "pytest"; status = "passed"; evidence = "tests/test_otclient_helper_zerobot_shell.py tests/test_solteria_api_audit.py tests/test_ctoa_helper_smoke_report.py tests/test_solteria_helper_release_gate.py tests/test_solteria_helper_goal_audit.py" }
+    Write-Output "[solteria-helper-test-env] Validate: P10 Equipment shadow replay fixture gate"
+    $equipmentShadowScript = Join-Path $repo "scripts\ops\otclient_equipment_shadow_replay.py"
+    & python $equipmentShadowScript --no-write --source fixture | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        Write-DevValidationReport -OutRoot $outRoot -Version $version -Status "failed" -Checks $checks | Out-Null
+        throw "Equipment shadow replay fixture gate failed"
+    }
+    $checks += [pscustomobject]@{ name = "equipment_shadow_replay"; status = "passed"; evidence = "scripts/ops/otclient_equipment_shadow_replay.py --no-write --source fixture" }
+    Write-Output "[solteria-helper-test-env] Validate: P10 passive snapshot producer fail-closed gate"
+    & python scripts\ops\otclient_equipment_shadow_snapshot.py --no-write --allow-blocked | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        Write-DevValidationReport -OutRoot $outRoot -Version $version -Status "failed" -Checks $checks | Out-Null
+        throw "Equipment shadow snapshot producer gate failed"
+    }
+    $checks += [pscustomobject]@{ name = "equipment_shadow_snapshot"; status = "passed"; evidence = "scripts/ops/otclient_equipment_shadow_snapshot.py --no-write --allow-blocked" }
+    Write-Output "[solteria-helper-test-env] Validate: P10 capture-profile doctor contract"
+    & python scripts\ops\otclient_equipment_capture_profile_doctor.py | Out-Null
+    if ($LASTEXITCODE -notin @(0, 1)) {
+        Write-DevValidationReport -OutRoot $outRoot -Version $version -Status "failed" -Checks $checks | Out-Null
+        throw "Equipment capture-profile doctor returned an unexpected status"
+    }
+    $doctorReport = Get-Content -LiteralPath (Join-Path $outRoot "equipment_capture_profile_doctor.json") -Raw | ConvertFrom-Json
+    if ($doctorReport.runtime_actions -ne $false -or $doctorReport.live_file_writes -ne $false -or $doctorReport.no_action_contract -ne $true) {
+        Write-DevValidationReport -OutRoot $outRoot -Version $version -Status "failed" -Checks $checks | Out-Null
+        throw "Equipment capture-profile doctor violated its no-action contract"
+    }
+    $checks += [pscustomobject]@{ name = "equipment_capture_profile_doctor"; status = "passed"; evidence = "runtime/solteria_helper_dev/equipment_capture_profile_doctor.json" }
+    Write-Output "[solteria-helper-test-env] Validate: P10 bounded observation preview"
+    & python scripts\ops\otclient_equipment_observation_preview.py --allow-blocked | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        Write-DevValidationReport -OutRoot $outRoot -Version $version -Status "failed" -Checks $checks | Out-Null
+        throw "Equipment observation preview contract failed"
+    }
+    $previewReport = Get-Content -LiteralPath (Join-Path $outRoot "equipment_observation_preview.json") -Raw | ConvertFrom-Json
+    if ($previewReport.runtime_actions -ne $false -or $previewReport.promotion_allowed -ne $false -or @($previewReport.intrusive_actions_performed).Count -ne 0) {
+        Write-DevValidationReport -OutRoot $outRoot -Version $version -Status "failed" -Checks $checks | Out-Null
+        throw "Equipment observation preview violated its no-action contract"
+    }
+    $checks += [pscustomobject]@{ name = "equipment_observation_preview"; status = "passed"; evidence = "runtime/solteria_helper_dev/equipment_observation_preview.json" }
+    Write-Output "[solteria-helper-test-env] Validate: P10 P9-to-P10 dependency preflight"
+    & python scripts\ops\otclient_equipment_dependency_preflight.py --allow-blocked | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        Write-DevValidationReport -OutRoot $outRoot -Version $version -Status "failed" -Checks $checks | Out-Null
+        throw "Equipment dependency preflight contract failed"
+    }
+    $dependencyReport = Get-Content -LiteralPath (Join-Path $outRoot "equipment_dependency_preflight.json") -Raw | ConvertFrom-Json
+    if ($dependencyReport.eligibility_changed -ne $false -or $dependencyReport.runtime_actions -ne $false -or $dependencyReport.promotion_allowed -ne $false -or @($dependencyReport.intrusive_actions_performed).Count -ne 0) {
+        Write-DevValidationReport -OutRoot $outRoot -Version $version -Status "failed" -Checks $checks | Out-Null
+        throw "Equipment dependency preflight violated its no-action or unchanged-eligibility contract"
+    }
+    $checks += [pscustomobject]@{ name = "equipment_dependency_preflight"; status = "passed"; evidence = "runtime/solteria_helper_dev/equipment_dependency_preflight.json" }
+    Write-Output "[solteria-helper-test-env] Validate: P10 candidate catalog has no selection policy"
+    & python scripts\ops\otclient_equipment_candidate_catalog.py --allow-blocked | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        Write-DevValidationReport -OutRoot $outRoot -Version $version -Status "failed" -Checks $checks | Out-Null
+        throw "Equipment candidate catalog contract failed"
+    }
+    $catalogReport = Get-Content -LiteralPath (Join-Path $outRoot "equipment_candidate_catalog.json") -Raw | ConvertFrom-Json
+    if ($catalogReport.selection_policy -ne "none" -or $null -ne $catalogReport.recommendation -or $catalogReport.runtime_actions -ne $false -or $catalogReport.promotion_allowed -ne $false) {
+        Write-DevValidationReport -OutRoot $outRoot -Version $version -Status "failed" -Checks $checks | Out-Null
+        throw "Equipment candidate catalog selected/recommended an item or violated no-action"
+    }
+    $checks += [pscustomobject]@{ name = "equipment_candidate_catalog"; status = "passed"; evidence = "runtime/solteria_helper_dev/equipment_candidate_catalog.json" }
+    Write-Output "[solteria-helper-test-env] Validate: P10 profile change plan remains write-free by default"
+    & python scripts\ops\otclient_equipment_capture_profile_change_plan.py --allow-blocked | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        Write-DevValidationReport -OutRoot $outRoot -Version $version -Status "failed" -Checks $checks | Out-Null
+        throw "Equipment capture-profile change plan contract failed"
+    }
+    $changePlanReport = Get-Content -LiteralPath (Join-Path $outRoot "equipment_capture_profile_change_plan.json") -Raw | ConvertFrom-Json
+    if ($changePlanReport.profile_write_performed -ne $false -or $changePlanReport.acceptance_granted -ne $false -or $changePlanReport.eligibility_changed -ne $false -or $changePlanReport.runtime_actions -ne $false) {
+        Write-DevValidationReport -OutRoot $outRoot -Version $version -Status "failed" -Checks $checks | Out-Null
+        throw "Equipment capture-profile change plan violated its review-only contract"
+    }
+    $checks += [pscustomobject]@{ name = "equipment_capture_profile_change_plan"; status = "passed"; evidence = "runtime/solteria_helper_dev/equipment_capture_profile_change_plan.json" }
+    Write-Output "[solteria-helper-test-env] Validate: P10 consolidated operator readiness"
+    & python scripts\ops\otclient_equipment_operator_readiness.py --allow-blocked | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        Write-DevValidationReport -OutRoot $outRoot -Version $version -Status "failed" -Checks $checks | Out-Null
+        throw "Equipment operator readiness contract failed"
+    }
+    $readinessReport = Get-Content -LiteralPath (Join-Path $outRoot "equipment_operator_readiness.json") -Raw | ConvertFrom-Json
+    if ($readinessReport.eligibility_changed -ne $false -or $readinessReport.operational_readiness_claimed -ne $false -or $readinessReport.runtime_actions -ne $false -or $readinessReport.promotion_allowed -ne $false) {
+        Write-DevValidationReport -OutRoot $outRoot -Version $version -Status "failed" -Checks $checks | Out-Null
+        throw "Equipment operator readiness violated unchanged-eligibility/no-action"
+    }
+    $checks += [pscustomobject]@{ name = "equipment_operator_readiness"; status = "passed"; evidence = "runtime/solteria_helper_dev/equipment_operator_readiness.json" }
+    Write-Output "[solteria-helper-test-env] Validate: P10 Python/web consumer parity"
+    $equipmentParityScript = Join-Path $repo "scripts\ops\otclient_equipment_consumer_parity.py"
+    $equipmentParityOutput = Join-Path $outRoot "equipment_consumer_parity.json"
+    & python $equipmentParityScript --dev-dir $outRoot --output $equipmentParityOutput | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        Write-DevValidationReport -OutRoot $outRoot -Version $version -Status "failed" -Checks $checks | Out-Null
+        throw "Equipment Python/web consumer parity gate failed"
+    }
+    $equipmentParityReport = Get-Content -LiteralPath $equipmentParityOutput -Raw | ConvertFrom-Json
+    if ($equipmentParityReport.status -ne "passed" -or $equipmentParityReport.eligibility_changed -ne $false -or $equipmentParityReport.operational_readiness_claimed -ne $false -or $equipmentParityReport.runtime_actions -ne $false -or $equipmentParityReport.promotion_allowed -ne $false -or $equipmentParityReport.live_file_writes -ne $false) {
+        Write-DevValidationReport -OutRoot $outRoot -Version $version -Status "failed" -Checks $checks | Out-Null
+        throw "Equipment Python/web consumer parity violated passed/no-action contract"
+    }
+    $checks += [pscustomobject]@{ name = "equipment_consumer_parity"; status = "passed"; evidence = "runtime/solteria_helper_dev/equipment_consumer_parity.json" }
+    Write-Output "[solteria-helper-test-env] Validate: P10 acceptance remains independent and fail-closed"
+    & python scripts\ops\otclient_equipment_shadow_acceptance.py --no-write | Out-Null
+    if ($LASTEXITCODE -ne 1) {
+        Write-DevValidationReport -OutRoot $outRoot -Version $version -Status "failed" -Checks $checks | Out-Null
+        throw "Equipment shadow acceptance preflight returned an unexpected status"
+    }
+    $checks += [pscustomobject]@{ name = "equipment_shadow_acceptance"; status = "passed"; evidence = "blocked preflight without exact confirmation" }
+    Write-Output "[solteria-helper-test-env] Validate: P11 Heal Friend exact-target fixture replay gate"
+    $healFriendShadowScript = Join-Path $repo "scripts\ops\otclient_heal_friend_shadow_replay.py"
+    & python $healFriendShadowScript --no-write | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        Write-DevValidationReport -OutRoot $outRoot -Version $version -Status "failed" -Checks $checks | Out-Null
+        throw "Heal Friend shadow replay fixture gate failed"
+    }
+    $checks += [pscustomobject]@{ name = "heal_friend_shadow_replay"; status = "passed"; evidence = "scripts/ops/otclient_heal_friend_shadow_replay.py --no-write (55/55 fixture-only cases)" }
     Write-Output "[solteria-helper-test-env] Validate: static helper UI preview"
     & python scripts\ops\ctoa_helper_ui_preview.py
     if ($LASTEXITCODE -ne 0) {
@@ -902,6 +1193,7 @@ function Resolve-SmokeTab {
 }
 
 function Initialize-Sandbox {
+    Assert-InteractiveOperatorMode -Operation "initialize sandbox"
     $sandboxRoot = Assert-SandboxClientPath -SandboxPath $SandboxClient -SourcePath $SourceClient
     if (-not (Test-Path -LiteralPath $SourceClient)) {
         throw "Source client does not exist: $SourceClient"
@@ -934,7 +1226,7 @@ function Initialize-Sandbox {
         New-Item -ItemType Directory -Force -Path $modsTarget | Out-Null
     }
     if (Test-Path -LiteralPath (Join-Path $SourceClient "mods")) {
-        robocopy (Join-Path $SourceClient "mods") $modsTarget /MIR /XD ctoa_otclient /NFL /NDL /NJH /NJS /NP | Out-Null
+        robocopy (Join-Path $SourceClient "mods") $modsTarget /MIR /XD ctoa_otclient ctoa_chooser ctoa_safe /NFL /NDL /NJH /NJS /NP | Out-Null
         if ($LASTEXITCODE -gt 7) {
             throw "robocopy mods failed with exit code $LASTEXITCODE"
         }
@@ -963,7 +1255,27 @@ function Invoke-SmokePreflight {
             }
         }
     }
-    if ($missingPackage) {
+    $packageStale = $missingPackage
+    if (-not $packageStale) {
+        foreach ($relative in Get-DevPackageFiles) {
+            $sourcePath = Get-DevPackageSourcePath -Repo $repo -Relative $relative
+            $stagePath = Join-Path $stage $relative
+            if (
+                -not (Test-Path -LiteralPath $sourcePath) -or
+                -not (Test-Path -LiteralPath $stagePath)
+            ) {
+                $packageStale = $true
+                break
+            }
+            $sourceHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath).Hash
+            $stageHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $stagePath).Hash
+            if ($sourceHash -ne $stageHash) {
+                $packageStale = $true
+                break
+            }
+        }
+    }
+    if ($packageStale) {
         New-DevPackage
     }
 
@@ -1031,6 +1343,7 @@ function Invoke-SmokePreflight {
 }
 
 function Start-SandboxClient {
+    Assert-InteractiveOperatorMode -Operation "start sandbox client"
     $sandboxRoot = Assert-SandboxClientPath -SandboxPath $SandboxClient -SourcePath $SourceClient
     $exe = Join-Path $sandboxRoot "solteria-client.exe"
     if (-not (Test-Path -LiteralPath $exe)) {
@@ -1104,6 +1417,7 @@ function Get-SandboxProcessSummaries {
 }
 
 function Stop-SandboxClient {
+    Assert-InteractiveOperatorMode -Operation "stop sandbox client"
     Get-SandboxProcesses | ForEach-Object {
         Stop-Process -Id $_.Id -Force
     }
@@ -1118,63 +1432,12 @@ function Stop-SandboxClient {
 
 function Set-LiveCtoaEnabled {
     param([bool]$Enabled)
+    Assert-InteractiveOperatorMode -Operation "change live helper enablement"
     $modDir = Join-Path $SourceClient "mods\ctoa_otclient"
     if (-not (Test-Path -LiteralPath $modDir)) {
         throw "CTOA module directory not found: $modDir"
     }
-    $files = @(
-        "ctoa_otclient.otmod",
-        "ctoa_otclient_loader.lua",
-        "ctoa_helper_ui.lua",
-        "ctoa_helper_client_reporter.lua",
-        "ctoa_helper_diagnostics.lua",
-        "ctoa_helper_hotkeys.lua",
-        "ctoa_helper_modal.lua",
-        "ctoa_helper_route.lua",
-        "ctoa_helper_targeting.lua",
-        "ctoa_helper_combat_runtime.lua",
-        "ctoa_helper_cavebot_runtime.lua",
-        "ctoa_helper_loot_runtime.lua",
-        "ctoa_helper_timer_runtime.lua",
-        "ctoa_helper_recovery_runtime.lua",
-       "ctoa_helper_profile_schema.lua",
-        "ctoa_helper_vocation_profiles.lua",
-       "ctoa_helper_profile_persistence.lua",
-        "ctoa_helper_operator_summary.lua",
-        "ctoa_helper_planner.lua",
-        "ctoa_helper_runtime_policy.lua",
-        "ctoa_helper_dispatch_guard.lua",
-        "ctoa_helper_plan_queue.lua",
-        "ctoa_helper_runtime_readiness.lua",
-        "ctoa_helper_module_status.lua",
-        "ctoa_helper_action_catalog.lua",
-        "ctoa_helper_decision_trace.lua",
-        "ctoa_helper_decision_pipeline.lua",
-        "ctoa_helper_sandbox_handoff.lua",
-        "ctoa_helper_feature_flags.lua",
-        "ctoa_helper_hud.lua",
-        "ctoa_helper_conditions.lua",
-        "ctoa_helper_equipment.lua",
-        "ctoa_helper_scripting.lua",
-        "ctoa_helper_heal_friend.lua",
-        "ctoa_helper_modules.lua",
-        "ctoa_helper_domain_contract.lua",
-        "ctoa_helper_runtime_core.lua",
-        "ctoa_helper_combat_observer.lua",
-        "ctoa_helper_recovery_observer.lua",
-        "ctoa_helper_cavebot_observer.lua",
-        "ctoa_helper_loot_observer.lua",
-        "ctoa_helper_equipment_observer.lua",
-        "ctoa_helper_otclient_observation_adapter.lua",
-        "ctoa_native_helper.lua",
-        "ctoa_native_combat.lua",
-        "ctoa_native_heal.lua",
-       "ctoa_native_loot.lua",
-        "ctoa_ek_profile.lua",
-        "ctoa_ms_profile.lua",
-        "ctoa_ed_profile.lua",
-        "ctoa_rp_profile.lua"
-    )
+    $files = @(Get-DevModuleFileNames)
     foreach ($name in $files) {
         $enabledPath = Join-Path $modDir $name
         $disabledPath = "$enabledPath.disabled"
@@ -1221,58 +1484,13 @@ function Set-LiveCtoaEnabled {
 }
 
 function Set-LiveCtoaUiOnly {
+    Assert-InteractiveOperatorMode -Operation "change live helper UI-only state"
     $modDir = Join-Path $SourceClient "mods\ctoa_otclient"
     if (-not (Test-Path -LiteralPath $modDir)) {
         throw "CTOA module directory not found: $modDir"
     }
 
-    $enableFiles = @(
-        "ctoa_otclient.otmod",
-        "ctoa_otclient_loader.lua",
-        "ctoa_helper_ui.lua",
-        "ctoa_helper_client_reporter.lua",
-        "ctoa_helper_diagnostics.lua",
-        "ctoa_helper_hotkeys.lua",
-        "ctoa_helper_modal.lua",
-        "ctoa_helper_route.lua",
-        "ctoa_helper_targeting.lua",
-        "ctoa_helper_combat_runtime.lua",
-        "ctoa_helper_cavebot_runtime.lua",
-        "ctoa_helper_loot_runtime.lua",
-        "ctoa_helper_timer_runtime.lua",
-        "ctoa_helper_recovery_runtime.lua",
-       "ctoa_helper_profile_schema.lua",
-        "ctoa_helper_vocation_profiles.lua",
-       "ctoa_helper_profile_persistence.lua",
-        "ctoa_helper_operator_summary.lua",
-        "ctoa_helper_planner.lua",
-        "ctoa_helper_runtime_policy.lua",
-        "ctoa_helper_dispatch_guard.lua",
-        "ctoa_helper_plan_queue.lua",
-        "ctoa_helper_runtime_readiness.lua",
-        "ctoa_helper_module_status.lua",
-        "ctoa_helper_action_catalog.lua",
-        "ctoa_helper_decision_trace.lua",
-        "ctoa_helper_decision_pipeline.lua",
-        "ctoa_helper_sandbox_handoff.lua",
-        "ctoa_helper_feature_flags.lua",
-        "ctoa_helper_hud.lua",
-        "ctoa_helper_conditions.lua",
-        "ctoa_helper_equipment.lua",
-        "ctoa_helper_scripting.lua",
-        "ctoa_helper_heal_friend.lua",
-        "ctoa_helper_modules.lua",
-        "ctoa_helper_domain_contract.lua",
-        "ctoa_helper_runtime_core.lua",
-        "ctoa_helper_combat_observer.lua",
-        "ctoa_helper_recovery_observer.lua",
-        "ctoa_helper_cavebot_observer.lua",
-        "ctoa_helper_loot_observer.lua",
-        "ctoa_helper_equipment_observer.lua",
-        "ctoa_helper_otclient_observation_adapter.lua",
-        "ctoa_native_helper.lua",
-        "ctoa_ek_profile.lua"
-    )
+    $enableFiles = @(Get-DevModuleFileNames)
     $disableFiles = @(
         "ctoa_native_combat.lua",
         "ctoa_native_heal.lua",
@@ -1319,6 +1537,7 @@ function Set-LiveCtoaUiOnly {
 }
 
 function New-LiveCtoaBackup {
+    Assert-InteractiveOperatorMode -Operation "create live client backup"
     Assert-UnderLocalAppData -Path $SourceClient | Out-Null
     if (-not (Test-Path -LiteralPath $SourceClient)) {
         throw "Source client does not exist: $SourceClient"
@@ -1331,7 +1550,7 @@ function New-LiveCtoaBackup {
     New-Item -ItemType Directory -Force -Path $backupRoot | Out-Null
 
     $items = @()
-    foreach ($relative in @("init.lua") + (Get-DevPackageFiles) + (Get-LiveRootFallbackFiles)) {
+    foreach ($relative in @("init.lua") + (Get-DevPackageFiles) + (Get-LiveLegacyFiles)) {
         $sourcePath = Join-Path $SourceClient $relative
         if (-not (Test-Path -LiteralPath $sourcePath)) {
             continue
@@ -1385,34 +1604,195 @@ function Assert-ReleaseGateForLivePromotion {
     }
 }
 
-function Assert-LivePromotionMatchesStage {
+function Get-VerifiedStagePromotionEntries {
     param(
         [Parameter(Mandatory = $true)]
-        [string]$Stage,
-        [Parameter(Mandatory = $true)]
-        [string]$LiveClient
+        [string]$Stage
     )
-    $verified = 0
-    foreach ($relative in Get-DevPackageFiles) {
+    $maxFiles = 128
+    $maxFileBytes = 2MB
+    $maxTotalBytes = 16MB
+    $relativeFiles = @(Get-DevPackageFiles)
+    if ($relativeFiles.Count -eq 0 -or $relativeFiles.Count -gt $maxFiles) {
+        throw "Promotion verification failed: package file count must be 1..$maxFiles."
+    }
+    $seen = @{}
+    $totalBytes = [long]0
+    $verifiedEntries = New-Object System.Collections.Generic.List[object]
+    foreach ($relativeValue in $relativeFiles) {
+        $relative = ([string]$relativeValue).Replace('\', '/')
+        if (
+            [string]::IsNullOrWhiteSpace($relative) -or
+            [System.IO.Path]::IsPathRooted($relative) -or
+            $relative -match '(^|/)\.\.?($|/)'
+        ) {
+            throw "Promotion verification failed: invalid package path: $relative"
+        }
+        $caseKey = $relative.ToLowerInvariant()
+        if ($seen.ContainsKey($caseKey)) {
+            throw "Promotion verification failed: duplicate case-insensitive package path: $relative"
+        }
+        $seen[$caseKey] = $true
+
         $sourcePath = Join-Path $Stage $relative
-        $destPath = Join-Path $LiveClient $relative
         if (-not (Test-Path -LiteralPath $sourcePath)) {
             throw "Promotion verification failed: staged file is missing: $sourcePath"
         }
+        $sourceInfo = Get-Item -LiteralPath $sourcePath -Force
+        if (($sourceInfo.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+            throw "Promotion verification failed: reparse stage file is forbidden: $($sourceInfo.FullName)"
+        }
+        if ($sourceInfo.PSIsContainer) {
+            throw "Promotion verification failed: staged package entry is not a file: $($sourceInfo.FullName)"
+        }
+        if ([long]$sourceInfo.Length -gt $maxFileBytes) {
+            throw "Promotion verification failed: stage file exceeds 2 MiB: $($sourceInfo.FullName)"
+        }
+        $sourceBytes = [long]$sourceInfo.Length
+        $sourceWriteTicks = [long]$sourceInfo.LastWriteTimeUtc.Ticks
+        if ($totalBytes + $sourceBytes -gt $maxTotalBytes) {
+            throw "Promotion verification failed: stage package exceeds 16 MiB total."
+        }
+        $totalBytes += $sourceBytes
+
+        $sourceHash = (Get-FileHash -LiteralPath $sourcePath -Algorithm SHA256).Hash.ToLowerInvariant()
+        $sourceAfter = Get-Item -LiteralPath $sourcePath -Force
+        if (
+            ($sourceAfter.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0 -or
+            $sourceAfter.PSIsContainer -or
+            [long]$sourceAfter.Length -ne $sourceBytes -or
+            [long]$sourceAfter.LastWriteTimeUtc.Ticks -ne $sourceWriteTicks
+        ) {
+            throw "Promotion verification failed: stage file changed during hashing: $relative"
+        }
+        $verifiedEntries.Add([pscustomobject][ordered]@{
+            path = $relative
+            sha256 = $sourceHash
+            bytes = $sourceBytes
+        })
+    }
+    return @($verifiedEntries.ToArray())
+}
+
+function Assert-LivePromotionMatchesStage {
+    param(
+        [Parameter(Mandatory = $true)]
+        [object[]]$StageEntries,
+        [Parameter(Mandatory = $true)]
+        [string]$LiveClient
+    )
+    if ($StageEntries.Count -eq 0 -or $StageEntries.Count -gt 128) {
+        throw "Promotion verification failed: verified stage entry count must be 1..128."
+    }
+    $seen = @{}
+    $totalBytes = [long]0
+    $verifiedEntries = New-Object System.Collections.Generic.List[object]
+    foreach ($entry in $StageEntries) {
+        $relative = ([string]$entry.path).Replace('\', '/')
+        $caseKey = $relative.ToLowerInvariant()
+        if ($seen.ContainsKey($caseKey)) {
+            throw "Promotion verification failed: duplicate case-insensitive verified path: $relative"
+        }
+        $seen[$caseKey] = $true
+        $expectedBytes = [long]$entry.bytes
+        $expectedHash = ([string]$entry.sha256).ToLowerInvariant()
+        if ($expectedBytes -lt 0 -or $expectedBytes -gt 2MB) {
+            throw "Promotion verification failed: verified entry exceeds 2 MiB: $relative"
+        }
+        if ($expectedHash -notmatch '^[0-9a-f]{64}$') {
+            throw "Promotion verification failed: invalid verified SHA256: $relative"
+        }
+        $totalBytes += $expectedBytes
+        if ($totalBytes -gt 16MB) {
+            throw "Promotion verification failed: verified entries exceed 16 MiB total."
+        }
+
+        $destPath = Join-Path $LiveClient $relative
         if (-not (Test-Path -LiteralPath $destPath)) {
             throw "Promotion verification failed: live file is missing: $destPath"
         }
-        $sourceHash = (Get-FileHash -LiteralPath $sourcePath -Algorithm SHA256).Hash
-        $destHash = (Get-FileHash -LiteralPath $destPath -Algorithm SHA256).Hash
-        if ($sourceHash -ne $destHash) {
+        $destInfo = Get-Item -LiteralPath $destPath -Force
+        if (($destInfo.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+            throw "Promotion verification failed: live reparse file is forbidden: $($destInfo.FullName)"
+        }
+        if ($destInfo.PSIsContainer) {
+            throw "Promotion verification failed: live package entry is not a file: $($destInfo.FullName)"
+        }
+        if ([long]$destInfo.Length -ne $expectedBytes) {
+            throw "Promotion verification failed: byte-size mismatch for $relative"
+        }
+        $destWriteTicks = [long]$destInfo.LastWriteTimeUtc.Ticks
+        $destHash = (Get-FileHash -LiteralPath $destPath -Algorithm SHA256).Hash.ToLowerInvariant()
+        if ($destHash -ne $expectedHash) {
             throw "Promotion verification failed: SHA256 mismatch for $relative"
         }
-        $verified += 1
+        $destAfter = Get-Item -LiteralPath $destPath -Force
+        if (
+            ($destAfter.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0 -or
+            $destAfter.PSIsContainer -or
+            [long]$destAfter.Length -ne $expectedBytes -or
+            [long]$destAfter.LastWriteTimeUtc.Ticks -ne $destWriteTicks
+        ) {
+            throw "Promotion verification failed: live file changed during hashing: $relative"
+        }
+        $verifiedEntries.Add([pscustomobject][ordered]@{
+            path = $relative
+            sha256 = $destHash
+            bytes = $expectedBytes
+        })
     }
-    return $verified
+    return @($verifiedEntries.ToArray())
+}
+
+function Write-LiveManifestSnapshot {
+    param(
+        [Parameter(Mandatory = $true)][string]$OutRoot,
+        [Parameter(Mandatory = $true)][string]$CreatedAt,
+        [Parameter(Mandatory = $true)][string]$Origin,
+        [Parameter(Mandatory = $true)][string]$HelperVersion,
+        [Parameter(Mandatory = $true)][object[]]$VerifiedEntries
+    )
+    if ($VerifiedEntries.Count -eq 0 -or $VerifiedEntries.Count -gt 128) {
+        throw "Cannot snapshot live manifest outside the 1..128 file limit."
+    }
+    $totalBytes = [long]0
+    $seen = @{}
+    $files = @()
+    foreach ($entry in $VerifiedEntries) {
+        $relative = ([string]$entry.path).Replace('\', '/')
+        $caseKey = $relative.ToLowerInvariant()
+        if ($seen.ContainsKey($caseKey)) {
+            throw "Cannot snapshot duplicate case-insensitive path: $relative"
+        }
+        $seen[$caseKey] = $true
+        $bytes = [long]$entry.bytes
+        if ($bytes -lt 0 -or $bytes -gt 2MB) {
+            throw "Cannot snapshot file outside the 2 MiB limit: $relative"
+        }
+        $totalBytes += $bytes
+        if ($totalBytes -gt 16MB) {
+            throw "Cannot snapshot package above the 16 MiB total limit."
+        }
+        $files += [pscustomobject][ordered]@{
+            path = $relative
+            sha256 = ([string]$entry.sha256).ToLowerInvariant()
+            bytes = $bytes
+        }
+    }
+    $snapshot = [ordered]@{
+        schema_version = "ctoa.solteria-live-manifest.v1"
+        generated_at_utc = $CreatedAt
+        origin = $Origin
+        helper_version = $HelperVersion
+        files = @($files)
+    }
+    $path = Join-Path $OutRoot "live_manifest.json"
+    Write-JsonAtomic -InputObject $snapshot -Path $path -Depth 8
+    return [System.IO.Path]::GetFullPath($path)
 }
 
 function Invoke-LivePromotion {
+    Assert-InteractiveOperatorMode -Operation "promote live helper"
     Assert-LiveDeployApproved
     Assert-UnderLocalAppData -Path $SourceClient | Out-Null
 
@@ -1425,8 +1805,11 @@ function Invoke-LivePromotion {
 
     Write-Output "[solteria-helper-test-env] Checking existing release gate for staged package before live promotion."
     Assert-ReleaseGateForLivePromotion -OutRoot $outRoot
+    $stageEntries = @(Get-VerifiedStagePromotionEntries -Stage $stage)
     $backupRoot = New-LiveCtoaBackup
-    foreach ($relative in Get-DevPackageFiles) {
+    $migratedUserState = @(Copy-LegacyHelperUserState -ClientDir $SourceClient)
+    foreach ($entry in $stageEntries) {
+        $relative = [string]$entry.path
         $sourcePath = Join-Path $stage $relative
         if (-not (Test-Path -LiteralPath $sourcePath)) {
             throw "Staged package is missing required file: $sourcePath"
@@ -1435,16 +1818,9 @@ function Invoke-LivePromotion {
         New-Item -ItemType Directory -Force -Path (Split-Path -Parent $destPath) | Out-Null
         Copy-Item -LiteralPath $sourcePath -Destination $destPath -Force
     }
-    $verifiedFileCount = Assert-LivePromotionMatchesStage -Stage $stage -LiveClient $SourceClient
-    $removedRootFallbacks = @()
-    foreach ($relative in Get-LiveRootFallbackFiles) {
-        $fallbackPath = Join-Path $SourceClient $relative
-        if (Test-Path -LiteralPath $fallbackPath) {
-            Remove-Item -LiteralPath $fallbackPath -Force
-            $removedRootFallbacks += $relative
-            Write-Output "[solteria-helper-test-env] Removed stale root fallback: $relative"
-        }
-    }
+    $verifiedEntries = @(Assert-LivePromotionMatchesStage -StageEntries $stageEntries -LiveClient $SourceClient)
+    $helperVersion = Get-HelperVersion
+    $removedLegacyFiles = @(Remove-LiveLegacyFiles -ClientDir $SourceClient)
     Ensure-CtoaBootHook -ClientDir $SourceClient
 
     $launchResult = [pscustomobject]@{
@@ -1469,23 +1845,29 @@ function Invoke-LivePromotion {
         }
     }
 
+    $promotionCreatedAt = (Get-Date).ToString("s")
+    $liveManifestPath = Write-LiveManifestSnapshot -OutRoot $outRoot -CreatedAt $promotionCreatedAt -Origin "official_live_promotion" -HelperVersion $helperVersion -VerifiedEntries $verifiedEntries
+    $liveManifestSha256 = (Get-FileHash -LiteralPath $liveManifestPath -Algorithm SHA256).Hash.ToLowerInvariant()
     $report = [pscustomobject]@{
         name = "solteria-helper-live-promotion"
-        created_at = (Get-Date).ToString("s")
-        helper_version = (Get-HelperVersion)
+        created_at = $promotionCreatedAt
+        helper_version = $helperVersion
         source_stage = [System.IO.Path]::GetFullPath($stage)
         live_client = [System.IO.Path]::GetFullPath($SourceClient)
         backup = [System.IO.Path]::GetFullPath($backupRoot)
         approval_switch = "ApproveLiveDeploy"
-        verified_file_count = $verifiedFileCount
+        verified_file_count = $verifiedEntries.Count
         verification = "stage_live_sha256_match"
+        live_manifest = $liveManifestPath
+        live_manifest_sha256 = $liveManifestSha256
         launch_after_promote = $LaunchAfterPromote.IsPresent
         launch_result = $launchResult
-        removed_root_fallbacks = $removedRootFallbacks
-        note = "Promotion copied staged helper files, removed stale root fallback helper files, and ensured the CTOA boot hook; it does not stop or restart the live client. Use -LaunchAfterPromote to launch the live client after promotion when it is not already running."
+        migrated_user_state = $migratedUserState
+        removed_legacy_files = $removedLegacyFiles
+        note = "Promotion preserved legacy Helper user settings when needed, copied staged project files, removed stale loaders/preferences/Safe helper copies, and ensured the single neutral CTOA boot hook; it does not stop or restart the live client. Use -LaunchAfterPromote to launch the live client after promotion when it is not already running."
     }
     $reportPath = Join-Path $outRoot "live_promotion.json"
-    $report | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $reportPath -Encoding ASCII
+    Write-JsonAtomic -InputObject $report -Path $reportPath -Depth 8
     Write-Output "[solteria-helper-test-env] Live promotion complete: $SourceClient"
     Write-Output "[solteria-helper-test-env] Promotion report: $reportPath"
     if (-not [string]::IsNullOrWhiteSpace($launchError)) {
@@ -1494,6 +1876,7 @@ function Invoke-LivePromotion {
 }
 
 function Invoke-LiveEmergencyRepair {
+    Assert-InteractiveOperatorMode -Operation "repair live helper"
     Assert-UnderLocalAppData -Path $SourceClient | Out-Null
 
     $repo = Get-RepoRoot
@@ -1515,6 +1898,7 @@ function Invoke-LiveEmergencyRepair {
     }
 
     $backupRoot = New-LiveCtoaBackup
+    $migratedUserState = @(Copy-LegacyHelperUserState -ClientDir $SourceClient)
     $copied = @()
     foreach ($relative in Get-DevPackageFiles) {
         $sourcePath = Join-Path $stage $relative
@@ -1524,15 +1908,7 @@ function Invoke-LiveEmergencyRepair {
         $copied += $relative
     }
 
-    $removedRootFallbacks = @()
-    foreach ($relative in Get-LiveRootFallbackFiles) {
-        $fallbackPath = Join-Path $SourceClient $relative
-        if (Test-Path -LiteralPath $fallbackPath) {
-            Remove-Item -LiteralPath $fallbackPath -Force
-            $removedRootFallbacks += $relative
-            Write-Output "[solteria-helper-test-env] Removed stale root fallback: $relative"
-        }
-    }
+    $removedLegacyFiles = @(Remove-LiveLegacyFiles -ClientDir $SourceClient)
     Ensure-CtoaBootHook -ClientDir $SourceClient
 
     $report = [pscustomobject]@{
@@ -1546,9 +1922,10 @@ function Invoke-LiveEmergencyRepair {
         release_gate_bypassed = $true
         reason = "Emergency repair approved by operator because live client had stale root helper files and sandbox in-world smoke was blocked by client/protocol state."
         copied_files = $copied
-        removed_root_fallbacks = $removedRootFallbacks
+        migrated_user_state = $migratedUserState
+        removed_legacy_files = $removedLegacyFiles
         live_processes = (Get-LiveClientSummary).running_processes
-        note = "Emergency repair copied the current staged helper package, removed stale root helper fallback files, and ensured the CTOA boot hook. It does not stop or restart the live client."
+        note = "Emergency repair preserved legacy Helper user settings when needed, copied the staged projects, removed stale loaders/preferences/Safe helper copies, and ensured the single neutral CTOA boot hook. It does not stop or restart the live client."
     }
     $reportPath = Join-Path $outRoot "live_emergency_repair.json"
     $report | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $reportPath -Encoding ASCII
@@ -1561,6 +1938,7 @@ function Capture-Screenshot {
         [string]$Name,
         [IntPtr]$WindowHandle = [IntPtr]::Zero
     )
+    Assert-InteractiveOperatorMode -Operation "capture screenshot"
     Add-Type -AssemblyName System.Windows.Forms,System.Drawing
     $repo = Get-RepoRoot
     $outDir = Join-Path $repo $ScreenshotDir
@@ -1747,6 +2125,23 @@ function Invoke-SmokeStatus {
     }
 }
 
+function Test-HelperModuleConfigured {
+    param(
+        [Parameter(Mandatory = $true)][string]$Repo,
+        [Parameter(Mandatory = $true)][string]$HelperSource,
+        [Parameter(Mandatory = $true)][string]$ModuleName
+    )
+    $schemaPath = Join-Path $Repo "scripts\lua\otclient\ctoa_helper_profile_schema.lua"
+    if (-not (Test-Path -LiteralPath $schemaPath -PathType Leaf)) {
+        return $false
+    }
+    $schemaSource = Get-Content -LiteralPath $schemaPath -Raw
+    return (
+        $HelperSource.Contains("pcall(externalProfileSchema.defaultProfile)") -and
+        $schemaSource.Contains("$ModuleName = {")
+    )
+}
+
 function Invoke-HealFriendNoTargetSmoke {
     $repo = Get-RepoRoot
     $outRoot = Join-Path $repo $DevDir
@@ -1764,13 +2159,13 @@ function Invoke-HealFriendNoTargetSmoke {
         $adapterSource = $helper.Substring($adapterStart, $adapterEnd - $adapterStart)
     }
     $checks = @(
-        [pscustomobject]@{ name = "module_configured"; status = if ($helper.Contains("heal_friend = {")) { "passed" } else { "failed" }; evidence = "helper heal_friend config exists" },
+        [pscustomobject]@{ name = "module_configured"; status = if (Test-HelperModuleConfigured -Repo $repo -HelperSource $helper -ModuleName "heal_friend") { "passed" } else { "failed" }; evidence = "profile schema owns heal_friend config and helper loads defaultProfile" },
         [pscustomobject]@{ name = "observer_module_present"; status = if ($module.Contains("function HealFriend.scan") -and $module.Contains("function HealFriend.observe") -and $module.Contains("function HealFriend.statusText") -and $module.Contains("function HealFriend.decisionText") -and $helper.Contains('moduleValue(externalHealFriend, "observe", healFriend, now, {') -and -not $helper.Contains("pcall(externalHealFriend.observe")) { "passed" } else { "failed" }; evidence = "module owns scan/observe/status/decision text and helper delegates observer context through guarded moduleValue" },
         [pscustomobject]@{ name = "profile_safe_boot"; status = if ($profile.Contains("heal_friend = {") -and $profile.Contains("runtime_enabled = false") -and $profile.Contains("friend_whitelist = {}")) { "passed" } else { "failed" }; evidence = "profile keeps runtime disabled and empty whitelist" },
         [pscustomobject]@{ name = "no_cast_in_observer"; status = if (-not $module.Contains("castSpell(") -and -not $adapterSource.Contains("castSpell(")) { "passed" } else { "failed" }; evidence = "observer module and helper adapter have no castSpell" },
         [pscustomobject]@{ name = "no_actionbar_in_observer"; status = if (-not $module.Contains("sendActionbarSlot(") -and -not $adapterSource.Contains("sendActionbarSlot(")) { "passed" } else { "failed" }; evidence = "observer module and helper adapter have no actionbar send" },
         [pscustomobject]@{ name = "no_talk_in_observer"; status = if (-not $module.Contains("g_game.talk") -and -not $adapterSource.Contains("g_game.talk")) { "passed" } else { "failed" }; evidence = "observer module and helper adapter have no g_game.talk" },
-        [pscustomobject]@{ name = "whitelist_guard_present"; status = if ($module.Contains("function HealFriend.whitelistContainsName") -and $module.Contains("require_whitelist") -and $module.Contains("owns_whitelist_matching = true")) { "passed" } else { "failed" }; evidence = "module owns whitelist guard" },
+        [pscustomobject]@{ name = "exact_target_guard_present"; status = if ($module.Contains("function HealFriend.whitelistContainsName") -and $module.Contains("friend_target_id") -and $module.Contains('scan_policy = "single_exact_target_id_and_name"') -and $module.Contains("requires_party_membership = true") -and $module.Contains("requires_visibility = true") -and $module.Contains("requires_same_floor = true")) { "passed" } else { "failed" }; evidence = "module owns exact stable ID/name, party, visibility, and floor guards" },
         [pscustomobject]@{ name = "status_is_read_only"; status = if ($module.Contains("read-only pending; no sio cast until sandbox whitelist smoke passes") -and $module.Contains("owns_status_text = true") -and $module.Contains("owns_decision_text = true") -and $helper.Contains('moduleValue(externalHealFriend, "statusText", healFriend)') -and -not $helper.Contains("externalHealFriend.statusText")) { "passed" } else { "failed" }; evidence = "module owns gated sio status and decision text while helper only renders it" }
     )
     $failed = @($checks | Where-Object { $_.status -ne "passed" })
@@ -1822,7 +2217,7 @@ function Invoke-ConditionsObserverSmoke {
         $adapterSource = $helper.Substring($adapterStart, $adapterEnd - $adapterStart)
     }
     $checks = @(
-        [pscustomobject]@{ name = "module_configured"; status = if ($helper.Contains("conditions = {")) { "passed" } else { "failed" }; evidence = "helper conditions config exists" },
+        [pscustomobject]@{ name = "module_configured"; status = if (Test-HelperModuleConfigured -Repo $repo -HelperSource $helper -ModuleName "conditions") { "passed" } else { "failed" }; evidence = "profile schema owns conditions config and helper loads defaultProfile" },
         [pscustomobject]@{ name = "observer_module_present"; status = if ($module.Contains("function Conditions.snapshot") -and $module.Contains("function Conditions.apiProbe") -and $module.Contains("function Conditions.observe") -and $helper.Contains('moduleValue(externalConditions, "observe", conditions, now, {') -and -not $helper.Contains("pcall(externalConditions.observe")) { "passed" } else { "failed" }; evidence = "module owns condition snapshot/api probe/observe and helper delegates context through guarded moduleValue" },
         [pscustomobject]@{ name = "profile_safe_boot"; status = if ($profile.Contains("conditions = {") -and $profile.Contains("runtime_enabled = false") -and $profile.Contains("observe_states = true")) { "passed" } else { "failed" }; evidence = "profile keeps runtime disabled while allowing state observation" },
         [pscustomobject]@{ name = "state_api_probe_present"; status = if ($module.Contains("player.hasState=") -and $module.Contains("player.getStates=") -and $module.Contains("state.manaShield=") -and $module.Contains("owns_api_probe = true")) { "passed" } else { "failed" }; evidence = "module reports state API availability" },
@@ -1881,7 +2276,7 @@ function Invoke-EquipmentObserverSmoke {
         $adapterSource = $helper.Substring($adapterStart, $adapterEnd - $adapterStart)
     }
     $checks = @(
-        [pscustomobject]@{ name = "module_configured"; status = if ($helper.Contains("equipment = {")) { "passed" } else { "failed" }; evidence = "helper equipment config exists" },
+        [pscustomobject]@{ name = "module_configured"; status = if (Test-HelperModuleConfigured -Repo $repo -HelperSource $helper -ModuleName "equipment") { "passed" } else { "failed" }; evidence = "profile schema owns equipment config and helper loads defaultProfile" },
         [pscustomobject]@{ name = "observer_module_present"; status = if ($module.Contains("function Equipment.snapshot") -and $module.Contains("function Equipment.apiProbe") -and $module.Contains("function Equipment.observe") -and $helper.Contains('moduleValue(externalEquipment, "observe", equipment, now, {') -and -not $helper.Contains("pcall(externalEquipment.observe")) { "passed" } else { "failed" }; evidence = "module owns equipment snapshot/api probe/observe and helper delegates context through guarded moduleValue" },
         [pscustomobject]@{ name = "profile_safe_boot"; status = if ($profile.Contains("equipment = {") -and $profile.Contains("runtime_enabled = false") -and $profile.Contains("ring_swap = false") -and $profile.Contains("amulet_swap = false")) { "passed" } else { "failed" }; evidence = "profile keeps runtime and swaps disabled" },
         [pscustomobject]@{ name = "inventory_api_probe_present"; status = if ($module.Contains("player.getInventoryItem=") -and $module.Contains("slot.ring=") -and $module.Contains("slot.amulet=") -and $module.Contains("owns_api_probe = true")) { "passed" } else { "failed" }; evidence = "module reports inventory slot API availability" },
@@ -1941,7 +2336,7 @@ function Invoke-ScriptingPolicySmoke {
         $policySource = $helper.Substring($policyStart, $policyEnd - $policyStart)
     }
     $checks = @(
-        [pscustomobject]@{ name = "module_configured"; status = if ($helper.Contains("scripting = {")) { "passed" } else { "failed" }; evidence = "helper scripting config exists" },
+        [pscustomobject]@{ name = "module_configured"; status = if (Test-HelperModuleConfigured -Repo $repo -HelperSource $helper -ModuleName "scripting") { "passed" } else { "failed" }; evidence = "profile schema owns scripting config and helper loads defaultProfile" },
         [pscustomobject]@{ name = "policy_shell_present"; status = if (-not $helper.Contains("function buildScriptingPolicySnapshot()") -and $helper.Contains("build_scripting_policy_snapshot = function()") -and $helper.Contains('moduleValue(externalScripting, "policySnapshot", scripting)') -and -not $helper.Contains("pcall(externalScripting.policySnapshot") -and $helper.Contains("OPERATOR_SUMMARY_BRIDGES.scripting") -and $helper.Contains('scripting = moduleValue(externalOperatorSummary, "bridgeText", "scripting", OPERATOR_SUMMARY_BRIDGES)') -and $helper.Contains("scripting_summary_text = operatorSummaries.scripting")) { "passed" } else { "failed" }; evidence = "policy shell delegates passive snapshot through shared guarded renderer callback" },
         [pscustomobject]@{ name = "profile_safe_boot"; status = if ($profile.Contains("scripting = {") -and $profile.Contains('policy_mode = "deny_all"') -and $profile.Contains("allow_user_snippets = false") -and $profile.Contains("allow_runtime_eval = false") -and $profile.Contains('command_model = "none"')) { "passed" } else { "failed" }; evidence = "profile blocks snippets, eval, and command model" },
         [pscustomobject]@{ name = "runtime_flags_forced_off"; status = if ($helper.Contains("HELPER_CONFIG.scripting.runtime_enabled = false") -and $helper.Contains("HELPER_CONFIG.scripting.allow_user_snippets = false") -and $helper.Contains("HELPER_CONFIG.scripting.allow_runtime_eval = false")) { "passed" } else { "failed" }; evidence = "loader forces unsafe scripting flags off" },
@@ -2049,6 +2444,8 @@ function Invoke-RuntimePolicyStaticSmoke {
         [pscustomobject]@{ name = "global_contract"; status = if ($policy.Contains('rawget(_G, "CTOA_HELPER_RUNTIME_POLICY")') -and $policy.Contains("_G.CTOA_HELPER_RUNTIME_POLICY = RuntimePolicy") -and $policy.Contains("return RuntimePolicy")) { "passed" } else { "failed" }; evidence = "runtime policy keeps a guarded global and returns module table" },
         [pscustomobject]@{ name = "policy_functions"; status = if ($policy.Contains("function RuntimePolicy.requiredGates") -and $policy.Contains("function RuntimePolicy.snapshot") -and $policy.Contains("function RuntimePolicy.decision") -and $policy.Contains("function RuntimePolicy.summary") -and $policy.Contains("function RuntimePolicy.contract")) { "passed" } else { "failed" }; evidence = "runtime policy exposes required gates, snapshot, decision, summary, and contract" },
         [pscustomobject]@{ name = "required_gates"; status = if ($policy.Contains('"manifest_current"') -and $policy.Contains('"module_static_gates"') -and $policy.Contains('"module_attach_smoke"') -and $policy.Contains('"smoke_attach_all"') -and $policy.Contains('"live_approval"')) { "passed" } else { "failed" }; evidence = "policy requires manifest, static, attach, full smoke, and live approval gates" },
+        [pscustomobject]@{ name = "action_bound_runtime_classification"; status = if ($policy.Contains("function actionGateAccepted") -and $policy.Contains("runtime_action_classified_by_policy = true") -and $policy.Contains('append(reasons, "unknown_action")') -and $policy.Contains('append(reasons, "action_not_approved_v1")')) { "passed" } else { "failed" }; evidence = "policy classifies actions internally, binds accepted traces to the exact action, and blocks unknown or out-of-scope actions" },
+        [pscustomobject]@{ name = "v1_exact_allowlist"; status = if ($policy.Contains('plan_paralyze_recovery = "conditions_runtime_gate"') -and $policy.Contains('plan_ring_swap = "equipment_runtime_gate"') -and $policy.Contains('plan_sio = "heal_friend_runtime_gate"') -and -not $policy.Contains('plan_poison_recovery = "conditions_runtime_gate"') -and -not $policy.Contains('plan_amulet_swap = "equipment_runtime_gate"')) { "passed" } else { "failed" }; evidence = "v1 module gates cover only paralyze, ring, and sio" },
         [pscustomobject]@{ name = "passive_contract"; status = if ($policy.Contains('mode = "passive"') -and $policy.Contains("runtime_actions = false") -and $policy.Contains("executes_plans = false") -and $policy.Contains("casts = false") -and $policy.Contains("talks = false") -and $policy.Contains("uses_items = false") -and $policy.Contains("walks = false")) { "passed" } else { "failed" }; evidence = "contract declares passive policy and no execution" },
         [pscustomobject]@{ name = "helper_uses_runtime_policy_bridge"; status = if ($helper.Contains('moduleValue(externalRuntimePolicy, "resolvedProtectionZonePolicy")') -and $helper.Contains('if type(policy) ~= "table" then') -and $helper.Contains('moduleValue(externalRuntimePolicy, "protectionZoneDecision", observation)') -and -not $helper.Contains("local function runtimePolicyProtectionZonePolicy()") -and -not $helper.Contains("local function runtimePolicyProtectionZoneDecision(observation)") -and -not $helper.Contains("player_methods = {`"isInPz`"")) { "passed" } else { "failed" }; evidence = "native helper observes OTClient state locally, delegates PZ policy resolution/decision through the shared guarded runtime policy bridge, and blocks conservatively if policy is unavailable" },
         [pscustomobject]@{ name = "no_otclient_globals"; status = if (-not $policy.Contains("g_game") -and -not $policy.Contains("g_map") -and -not $policy.Contains("g_ui") -and -not $policy.Contains("g_keyboard") -and -not $policy.Contains("g_resources")) { "passed" } else { "failed" }; evidence = "runtime policy does not call native OTClient globals" },
@@ -2305,6 +2702,7 @@ function Invoke-ActionCatalogStaticSmoke {
         [pscustomobject]@{ name = "catalog_functions"; status = if ($catalog.Contains("function ActionCatalog.requiredGates") -and $catalog.Contains("function ActionCatalog.all") -and $catalog.Contains("function ActionCatalog.domains") -and $catalog.Contains("function ActionCatalog.byAction") -and $catalog.Contains("function ActionCatalog.classify") -and $catalog.Contains("function ActionCatalog.summary") -and $catalog.Contains("function ActionCatalog.contract")) { "passed" } else { "failed" }; evidence = "action catalog exposes gates, catalog, lookup, classifier, summary, and contract" },
         [pscustomobject]@{ name = "action_coverage"; status = if ($catalog.Contains('"plan_attack"') -and $catalog.Contains('"plan_walk"') -and $catalog.Contains('"plan_loot"') -and $catalog.Contains('"plan_sio"') -and $catalog.Contains('"plan_ring_swap"') -and $catalog.Contains('"audit_only"')) { "passed" } else { "failed" }; evidence = "action catalog covers combat, cavebot, loot, heal friend, equipment, and passive scripting actions" },
         [pscustomobject]@{ name = "gate_parity"; status = if ($catalog.Contains('"manifest_current"') -and $catalog.Contains('"module_static_gates"') -and $catalog.Contains('"module_attach_smoke"') -and $catalog.Contains('"smoke_attach_all"') -and $catalog.Contains('"live_approval"') -and $policy.Contains('"manifest_current"') -and $policy.Contains('"smoke_attach_all"') -and $policy.Contains('"live_approval"')) { "passed" } else { "failed" }; evidence = "action catalog required gates match runtime policy gate vocabulary" },
+        [pscustomobject]@{ name = "v1_exact_action_gates"; status = if ($catalog.Contains('plan_paralyze_recovery = "conditions_runtime_gate"') -and $catalog.Contains('plan_ring_swap = "equipment_runtime_gate"') -and $catalog.Contains('plan_sio = "heal_friend_runtime_gate"') -and -not $catalog.Contains('plan_poison_recovery = "conditions_runtime_gate"') -and -not $catalog.Contains('plan_amulet_swap = "equipment_runtime_gate"') -and $catalog.Contains('DEFERRED_MODULE_SCOPE')) { "passed" } else { "failed" }; evidence = "catalog binds v1 gates to exact actions and marks other module actions deferred" },
         [pscustomobject]@{ name = "passive_contract"; status = if ($catalog.Contains('mode = "passive"') -and $catalog.Contains("runtime_actions = false") -and $catalog.Contains("executes_plans = false") -and $catalog.Contains("dispatch_allowed = false") -and $catalog.Contains("casts = false") -and $catalog.Contains("talks = false") -and $catalog.Contains("uses_items = false") -and $catalog.Contains("walks = false") -and $catalog.Contains("attacks = false")) { "passed" } else { "failed" }; evidence = "contract declares passive action catalog and no execution" },
         [pscustomobject]@{ name = "risk_contract"; status = if ($catalog.Contains("catalogs_action_risk = true") -and $catalog.Contains('"runtime_combat"') -and $catalog.Contains('"runtime_movement"') -and $catalog.Contains('"runtime_equipment"') -and $catalog.Contains('"passive_policy"')) { "passed" } else { "failed" }; evidence = "action catalog assigns risk classes to runtime and passive actions" },
         [pscustomobject]@{ name = "no_otclient_globals"; status = if (-not $catalog.Contains("g_game") -and -not $catalog.Contains("g_map") -and -not $catalog.Contains("g_ui") -and -not $catalog.Contains("g_keyboard") -and -not $catalog.Contains("g_resources")) { "passed" } else { "failed" }; evidence = "action catalog does not call native OTClient globals" },
@@ -2467,7 +2865,7 @@ function Invoke-FeatureFlagsStaticSmoke {
         [pscustomobject]@{ name = "profile_schema_parity"; status = if ($schema.Contains('"tools.auto_haste"') -and $schema.Contains('"tools.cavebot_movement_enabled"') -and $schema.Contains('"tools.feature_flags.experimental_loot"') -and $flags.Contains('"tools.auto_haste"') -and $flags.Contains('"tools.cavebot_movement_enabled"') -and $flags.Contains('"tools.feature_flags.experimental_loot"')) { "passed" } else { "failed" }; evidence = "feature flags align with profile schema safe false vocabulary" },
         [pscustomobject]@{ name = "passive_contract"; status = if ($flags.Contains('mode = "passive"') -and $flags.Contains("runtime_actions = false") -and $flags.Contains("executes_plans = false") -and $flags.Contains("dispatch_allowed = false") -and $flags.Contains("toggles_flags = false") -and $flags.Contains("writes_profile = false")) { "passed" } else { "failed" }; evidence = "contract declares passive no-toggle no-profile-write feature matrix" },
         [pscustomobject]@{ name = "safe_default_contract"; status = if ($flags.Contains("owns_safe_defaults = true") -and $flags.Contains("owns_tools_summary = true") -and $flags.Contains("requires_profile_audit = true") -and $flags.Contains("requires_module_static_gates = true") -and $flags.Contains("requires_smoke_attach_all = true")) { "passed" } else { "failed" }; evidence = "feature flags owns safe defaults/tools summary and requires profile audit, static gates, and SmokeAttachAll" },
-        [pscustomobject]@{ name = "helper_uses_feature_flags_adapter"; status = if ($helper.Contains('rawget(_G, "CTOA_HELPER_FEATURE_FLAGS")') -and $helper.Contains("OPERATOR_SUMMARY_BRIDGES.tools") -and $helper.Contains('tools = moduleValue(externalOperatorSummary, "bridgeText", "tools", OPERATOR_SUMMARY_BRIDGES)') -and $helper.Contains("tools_summary_text = operatorSummaries.tools") -and $helper.Contains("featureFlags = externalFeatureFlags") -and $helper.Contains("profile = exportProfile()") -and $flags.Contains("function FeatureFlags.audit") -and $flags.Contains("function FeatureFlags.toolsSummary")) { "passed" } else { "failed" }; evidence = "helper shell consumes feature flag audit and full tools summary through the operator summary adapter" },
+        [pscustomobject]@{ name = "helper_uses_feature_flags_adapter"; status = if ($helper.Contains('rawget(_G, "CTOA_HELPER_FEATURE_FLAGS")') -and $helper.Contains("OPERATOR_SUMMARY_BRIDGES.tools") -and $helper.Contains('tools = moduleValue(externalOperatorSummary, "bridgeText", "tools", OPERATOR_SUMMARY_BRIDGES)') -and $helper.Contains("tools_summary_text = operatorSummaries.tools") -and $helper.Contains("featureFlags = externalFeatureFlags") -and $helper.Contains('profile = moduleValue(externalProfilePersistence, "exportProfile", HELPER_CONFIG') -and $flags.Contains("function FeatureFlags.audit") -and $flags.Contains("function FeatureFlags.toolsSummary")) { "passed" } else { "failed" }; evidence = "helper shell consumes feature flag audit and guarded support-owned profile export through the operator summary adapter" },
         [pscustomobject]@{ name = "no_otclient_globals"; status = if (-not $flags.Contains("g_game") -and -not $flags.Contains("g_map") -and -not $flags.Contains("g_ui") -and -not $flags.Contains("g_keyboard") -and -not $flags.Contains("g_resources")) { "passed" } else { "failed" }; evidence = "feature flags does not call native OTClient globals" },
         [pscustomobject]@{ name = "no_runtime_actions"; status = if (-not $flags.Contains("autoWalk") -and -not $flags.Contains("castSpell") -and -not $flags.Contains("g_game.talk") -and -not $flags.Contains("sendActionbarSlot") -and -not $flags.Contains("useInventoryItem") -and -not $flags.Contains("g_game.attack")) { "passed" } else { "failed" }; evidence = "feature flags does not walk, cast, talk, use items, or attack" },
         [pscustomobject]@{ name = "loader_present"; status = if ((Test-CtoaHelperBootGraphModule -Source $loader -Name "ctoa_helper_feature_flags" -File "ctoa_helper_feature_flags.lua")) { "passed" } else { "failed" }; evidence = "loader stages feature flags with support modules" },
@@ -2521,7 +2919,7 @@ function Invoke-HudStaticSmoke {
         [pscustomobject]@{ name = "passive_contract"; status = if ($hud.Contains('mode = "passive"') -and $hud.Contains("creates_widgets = false") -and $hud.Contains("owns_start_text = true") -and $hud.Contains("owns_disarmed_text = true") -and $hud.Contains("owns_position = true") -and $hud.Contains("owns_runtime_text = true") -and $hud.Contains("owns_ui_summary = true") -and $hud.Contains("owns_operator_summary = true") -and $hud.Contains("runtime_actions = false")) { "passed" } else { "failed" }; evidence = "HUD contract declares passive text, position, UI/operator summary ownership and no-widget no-runtime-action behavior" },
         [pscustomobject]@{ name = "safe_defaults"; status = if ($hud.Contains("local DEFAULT_X = 22") -and $hud.Contains("local DEFAULT_Y = 170") -and $hud.Contains("local DEFAULT_WIDTH = 210") -and $hud.Contains("local DEFAULT_HEIGHT = 54")) { "passed" } else { "failed" }; evidence = "HUD owns stable default geometry for UI preview and operator attach smoke" },
         [pscustomobject]@{ name = "state_summary"; status = if ($hud.Contains("visible draggable") -and $hud.Contains("visible locked") -and $hud.Contains("ZeroBot ") -and $hud.Contains("HUD ")) { "passed" } else { "failed" }; evidence = "HUD summarizes visibility, runtime text, and UI state without creating UI" },
-        [pscustomobject]@{ name = "helper_uses_hud_bridge"; status = if ($helper.Contains("OPERATOR_SUMMARY_BRIDGES.ui") -and $helper.Contains('ui = moduleValue(externalOperatorSummary, "bridgeText", "ui", OPERATOR_SUMMARY_BRIDGES)') -and $helper.Contains("ui_summary_text = operatorSummaries.ui") -and $helper.Contains("hud = externalHud") -and $helper.Contains("hotkeyDisplayText = externalHotkeys and externalHotkeys.display") -and $helper.Contains("themePresetText = themePresetText") -and -not $helper.Contains("local function hudText(functionName, fallback, options)") -and $helper.Contains('moduleValue(externalHud, "startText")') -and $helper.Contains('moduleValue(externalHud, "disarmedText")') -and $helper.Contains('moduleValue(externalHud, "runtimeText", {') -and $helper.Contains('moduleValue(externalHud, "position", HELPER_CONFIG.hud or {})') -and -not $helper.Contains("local function hudStartText()") -and -not $helper.Contains("local function hudDisarmedText()") -and -not $helper.Contains("local function hudPosition()") -and -not $helper.Contains("local function hudRuntimeText(") -and -not $helper.Contains("local function hotkeyDisplayText(")) { "passed" } else { "failed" }; evidence = "native helper delegates operator UI summary and HUD text/position through guarded HUD adapters without duplicate shell wrappers" },
+        [pscustomobject]@{ name = "helper_uses_hud_bridge"; status = if ($helper.Contains("OPERATOR_SUMMARY_BRIDGES.ui") -and $helper.Contains('ui = moduleValue(externalOperatorSummary, "bridgeText", "ui", OPERATOR_SUMMARY_BRIDGES)') -and $helper.Contains("ui_summary_text = operatorSummaries.ui") -and $helper.Contains("hud = externalHud") -and $helper.Contains('hotkey_display_text = type(externalHotkeys) == "table"') -and $helper.Contains("themePresetText = themePresetText") -and -not $helper.Contains("local function hudText(functionName, fallback, options)") -and $helper.Contains('moduleValue(externalHud, "startText")') -and $helper.Contains('moduleValue(externalHud, "disarmedText")') -and $helper.Contains('moduleValue(externalHud, "runtimeText", {') -and $helper.Contains('moduleValue(externalHud, "position", HELPER_CONFIG.hud or {})') -and -not $helper.Contains("local function hudStartText()") -and -not $helper.Contains("local function hudDisarmedText()") -and -not $helper.Contains("local function hudPosition()") -and -not $helper.Contains("local function hudRuntimeText(") -and -not $helper.Contains("local function hotkeyDisplayText(")) { "passed" } else { "failed" }; evidence = "native helper delegates operator UI summary and HUD text/position through guarded HUD adapters without duplicate shell wrappers" },
         [pscustomobject]@{ name = "no_otclient_globals"; status = if (-not $hud.Contains("g_game") -and -not $hud.Contains("g_map") -and -not $hud.Contains("g_ui") -and -not $hud.Contains("g_keyboard") -and -not $hud.Contains("g_resources")) { "passed" } else { "failed" }; evidence = "HUD does not call native OTClient globals" },
         [pscustomobject]@{ name = "no_runtime_actions"; status = if (-not $hud.Contains("autoWalk") -and -not $hud.Contains("castSpell") -and -not $hud.Contains("g_game.talk") -and -not $hud.Contains("sendActionbarSlot") -and -not $hud.Contains("useInventoryItem") -and -not $hud.Contains("g_game.attack")) { "passed" } else { "failed" }; evidence = "HUD does not walk, cast, talk, use items, or attack" },
         [pscustomobject]@{ name = "loader_present"; status = if ((Test-CtoaHelperBootGraphModule -Source $loader -Name "ctoa_helper_hud" -File "ctoa_helper_hud.lua")) { "passed" } else { "failed" }; evidence = "loader stages HUD with support modules" },
@@ -2572,13 +2970,13 @@ function Invoke-HotkeysStaticSmoke {
     $checks = @(
         [pscustomobject]@{ name = "module_exists"; status = if (Test-Path -LiteralPath $hotkeysPath) { "passed" } else { "failed" }; evidence = "ctoa_helper_hotkeys.lua exists" },
         [pscustomobject]@{ name = "global_contract"; status = if ($hotkeys.Contains('rawget(_G, "CTOA_HELPER_HOTKEYS")') -and $hotkeys.Contains("_G.CTOA_HELPER_HOTKEYS = Hotkeys") -and $hotkeys.Contains("return Hotkeys")) { "passed" } else { "failed" }; evidence = "hotkeys keeps a guarded global and returns module table" },
-        [pscustomobject]@{ name = "parser_functions"; status = if ($hotkeys.Contains("function Hotkeys.trim") -and $hotkeys.Contains("function Hotkeys.normalizeKeyName") -and $hotkeys.Contains("function Hotkeys.parse") -and $hotkeys.Contains("function Hotkeys.normalize") -and $hotkeys.Contains("function Hotkeys.isAllowed") -and $hotkeys.Contains("function Hotkeys.bindingDecision") -and $hotkeys.Contains("function Hotkeys.display") -and $hotkeys.Contains("function Hotkeys.actionbarSlotText") -and $hotkeys.Contains("function Hotkeys.contract")) { "passed" } else { "failed" }; evidence = "hotkeys exposes parser, normalizer, allow-list, binding decision, display, actionbar label, and contract helpers" },
+        [pscustomobject]@{ name = "parser_functions"; status = if ($hotkeys.Contains("function Hotkeys.trim") -and $hotkeys.Contains("function Hotkeys.normalizeKeyName") -and $hotkeys.Contains("function Hotkeys.parse") -and $hotkeys.Contains("function Hotkeys.normalize") -and $hotkeys.Contains("function Hotkeys.isAllowed") -and $hotkeys.Contains("function Hotkeys.bindingDecision") -and $hotkeys.Contains("function Hotkeys.normalizeHelperHotkey") -and $hotkeys.Contains("function Hotkeys.hotkeyBindingDecision") -and $hotkeys.Contains("function Hotkeys.resolveActionbarSlot") -and $hotkeys.Contains("function Hotkeys.display") -and $hotkeys.Contains("function Hotkeys.actionbarSlotText") -and $hotkeys.Contains("function Hotkeys.contract")) { "passed" } else { "failed" }; evidence = "hotkeys exposes parser, normalization/binding bridges, actionbar resolution, display, and contract helpers" },
         [pscustomobject]@{ name = "modifier_contract"; status = if ($hotkeys.Contains('local MODIFIER_ORDER = {"Ctrl", "Alt", "Shift", "Meta"}') -and $hotkeys.Contains('ctrl = "Ctrl"') -and $hotkeys.Contains('command = "Meta"') -and $hotkeys.Contains('windows = "Meta"')) { "passed" } else { "failed" }; evidence = "hotkeys owns stable modifier order and alias vocabulary" },
         [pscustomobject]@{ name = "invalid_reason_contract"; status = if ($hotkeys.Contains('reason = "empty"') -and $hotkeys.Contains('reason = "invalid_key"') -and $hotkeys.Contains('reason = "multiple_keys"') -and $hotkeys.Contains('reason = "missing_key"') -and $hotkeys.Contains('reason = "reserved_key"') -and $hotkeys.Contains('reason = "ok"')) { "passed" } else { "failed" }; evidence = "hotkeys parser reports explicit failure reasons" },
-        [pscustomobject]@{ name = "passive_contract"; status = if ($hotkeys.Contains('mode = "passive"') -and $hotkeys.Contains("owns_actionbar_slot_text = true") -and $hotkeys.Contains("owns_binding_decision = true") -and $hotkeys.Contains("binds_keys = false") -and $hotkeys.Contains("sends_keys = false") -and $hotkeys.Contains("runtime_actions = false")) { "passed" } else { "failed" }; evidence = "hotkeys contract declares passive actionbar label/binding-decision ownership and no-bind no-send behavior" },
+        [pscustomobject]@{ name = "passive_contract"; status = if ($hotkeys.Contains('mode = "passive"') -and $hotkeys.Contains("owns_actionbar_slot_text = true") -and $hotkeys.Contains("owns_binding_decision = true") -and $hotkeys.Contains("owns_hotkey_normalization = true") -and $hotkeys.Contains("owns_actionbar_slot_resolution = true") -and $hotkeys.Contains("binds_keys = false") -and $hotkeys.Contains("sends_keys = false") -and $hotkeys.Contains("runtime_actions = false")) { "passed" } else { "failed" }; evidence = "hotkeys contract owns passive normalization, binding decisions, and actionbar resolution with no-bind no-send behavior" },
         [pscustomobject]@{ name = "no_runtime_bindings"; status = if (-not $hotkeys.Contains("g_keyboard") -and -not $hotkeys.Contains("bindKeyDown") -and -not $hotkeys.Contains("unbindKeyDown") -and -not $hotkeys.Contains("pressKey")) { "passed" } else { "failed" }; evidence = "hotkeys module does not bind, unbind, or send keys" },
         [pscustomobject]@{ name = "no_otclient_actions"; status = if (-not $hotkeys.Contains("g_game") -and -not $hotkeys.Contains("autoWalk") -and -not $hotkeys.Contains("castSpell") -and -not $hotkeys.Contains("sendActionbarSlot") -and -not $hotkeys.Contains("useInventoryItem") -and -not $hotkeys.Contains("createWidget")) { "passed" } else { "failed" }; evidence = "hotkeys module does not walk, cast, use items, or create widgets" },
-        [pscustomobject]@{ name = "helper_runtime_binding_unchanged"; status = if (-not $helper.Contains("local function hotkeyValue") -and -not $helper.Contains("local function hotkeyDisplayText(") -and $helper.Contains("local function hotkeyBindingDecision") -and $helper.Contains('moduleValue(externalHotkeys, "bindingDecision", value, currentValue, allowed)') -and $helper.Contains('moduleValue(externalHotkeys, "normalize", value)') -and $helper.Contains("g_keyboard.bindKeyDown(normalizedHotkey, Helper.toggleWindow or toggleWindow)")) { "passed" } else { "failed" }; evidence = "existing helper runtime binding remains in the guarded shell, while binding decision delegates to hotkeys" },
+        [pscustomobject]@{ name = "helper_runtime_binding_unchanged"; status = if (-not $helper.Contains("local function hotkeyValue") -and -not $helper.Contains("local function hotkeyDisplayText(") -and -not $helper.Contains("local function hotkeyBindingDecision") -and -not $helper.Contains("local function normalizeHelperHotkey") -and $helper.Contains('moduleValue(externalHotkeys, "hotkeyBindingDecision", hotkey, Helper.bound_hotkey or HELPER_CONFIG.hotkey)') -and $helper.Contains('type(externalHotkeys.normalizeHelperHotkey) == "function"') -and $helper.Contains("g_keyboard.bindKeyDown(normalizedHotkey, Helper.toggleWindow or toggleWindow)")) { "passed" } else { "failed" }; evidence = "runtime key binding stays in the guarded shell while pure normalization and binding decisions live in hotkeys" },
         [pscustomobject]@{ name = "loader_present"; status = if ((Test-CtoaHelperBootGraphModule -Source $loader -Name "ctoa_helper_hotkeys" -File "ctoa_helper_hotkeys.lua")) { "passed" } else { "failed" }; evidence = "loader stages hotkeys with support modules" },
         [pscustomobject]@{ name = "packaged"; status = if ($script.Contains("ctoa_helper_hotkeys.lua") -and $script.Contains("mods/ctoa_otclient/ctoa_helper_hotkeys.lua")) { "passed" } else { "failed" }; evidence = "dev package copies hotkeys into mods/ctoa_otclient" }
     )
@@ -2626,13 +3024,13 @@ function Invoke-ModalStaticSmoke {
     $checks = @(
         [pscustomobject]@{ name = "module_exists"; status = if (Test-Path -LiteralPath $modalPath) { "passed" } else { "failed" }; evidence = "ctoa_helper_modal.lua exists" },
         [pscustomobject]@{ name = "global_contract"; status = if ($modal.Contains('rawget(_G, "CTOA_HELPER_MODAL")') -and $modal.Contains("_G.CTOA_HELPER_MODAL = Modal") -and $modal.Contains("return Modal")) { "passed" } else { "failed" }; evidence = "modal keeps a guarded global and returns module table" },
-        [pscustomobject]@{ name = "lifecycle_functions"; status = if ($modal.Contains("function Modal.request") -and $modal.Contains("function Modal.isPending") -and $modal.Contains("function Modal.isExpired") -and $modal.Contains("function Modal.confirm") -and $modal.Contains("function Modal.cancel") -and $modal.Contains("function Modal.decision") -and $modal.Contains("function Modal.decisionText") -and $modal.Contains("function Modal.statusText") -and $modal.Contains("function Modal.buttonText") -and $modal.Contains("function Modal.contract")) { "passed" } else { "failed" }; evidence = "modal exposes request, pending, expiry, confirm, cancel, decision, decision text, and contract helpers" },
+        [pscustomobject]@{ name = "lifecycle_functions"; status = if ($modal.Contains("function Modal.request") -and $modal.Contains("function Modal.modalRequest") -and $modal.Contains("function Modal.isPending") -and $modal.Contains("function Modal.isExpired") -and $modal.Contains("function Modal.confirm") -and $modal.Contains("function Modal.cancel") -and $modal.Contains("function Modal.decision") -and $modal.Contains("function Modal.decisionText") -and $modal.Contains("function Modal.statusText") -and $modal.Contains("function Modal.buttonText") -and $modal.Contains("function Modal.contract")) { "passed" } else { "failed" }; evidence = "modal exposes extracted request bridge, pending, expiry, confirm, cancel, decision, text, and contract helpers" },
         [pscustomobject]@{ name = "guarded_actions"; status = if ($modal.Contains("local GUARDED_ACTIONS = {") -and $modal.Contains("cavebot_delete = true") -and $modal.Contains("cavebot_clear = true") -and $modal.Contains("profile_reset = true") -and $modal.Contains("ui_reset = true") -and $modal.Contains("promote_live = true")) { "passed" } else { "failed" }; evidence = "modal guards destructive helper commands and live promotion intent" },
         [pscustomobject]@{ name = "decision_reasons"; status = if ($modal.Contains('reason = "unguarded_action"') -and $modal.Contains('reason = "confirmed"') -and $modal.Contains('reason = "expired"') -and $modal.Contains('reason = "confirmation_required"')) { "passed" } else { "failed" }; evidence = "modal decision path emits explicit allow/deny reasons" },
-        [pscustomobject]@{ name = "passive_contract"; status = if ($modal.Contains('mode = "passive"') -and $modal.Contains("creates_widgets = false") -and $modal.Contains("live_shortcuts = false") -and $modal.Contains("runtime_actions = false") -and $modal.Contains("owns_decision_text = true")) { "passed" } else { "failed" }; evidence = "modal contract declares passive no-widget no-live-shortcut decision-text behavior" },
+        [pscustomobject]@{ name = "passive_contract"; status = if ($modal.Contains('mode = "passive"') -and $modal.Contains("creates_widgets = false") -and $modal.Contains("live_shortcuts = false") -and $modal.Contains("runtime_actions = false") -and $modal.Contains("owns_modal_request = true") -and $modal.Contains("owns_decision_text = true")) { "passed" } else { "failed" }; evidence = "modal contract owns passive request/decision helpers with no widgets or live shortcuts" },
         [pscustomobject]@{ name = "ttl_contract"; status = if ($modal.Contains("local DEFAULT_TTL_MS = 4500") -and $modal.Contains("expires_at_ms = now + ttl")) { "passed" } else { "failed" }; evidence = "modal owns bounded confirmation TTL" },
-        [pscustomobject]@{ name = "helper_uses_modal_adapter"; status = if ($helper.Contains('rawget(_G, "CTOA_HELPER_MODAL")') -and -not $helper.Contains("local function modalValue") -and -not $helper.Contains("local function modalStatusText") -and -not $helper.Contains(("pcall(externalModal" + "[functionName]")) -and $helper.Contains('moduleValue(externalModal, "request", action, context, now, ttlMs)') -and $helper.Contains('moduleValue(externalModal, "isPending", Helper.pending_confirm, "cavebot_delete", helperNowMs())') -and $helper.Contains('moduleValue(externalModal, "statusText", Helper.pending_confirm)')) { "passed" } else { "failed" }; evidence = "native helper delegates modal request, pending, and status text logic through the shared guarded module adapter" },
-        [pscustomobject]@{ name = "helper_guarded_shell"; status = if ($helper.Contains("pending_confirm = nil") -and $helper.Contains('moduleValue(externalRoute, "deleteRequest"') -and $helper.Contains('modalRequest("cavebot_delete", request.label, request.timeout_ms)') -and $helper.Contains("deleteCurrentCavebotWaypoint(command.confirm == true)")) { "passed" } else { "failed" }; evidence = "destructive helper workflow stays in guarded shell with explicit confirm flag and route-owned request metadata" },
+        [pscustomobject]@{ name = "helper_uses_modal_adapter"; status = if ($helper.Contains('rawget(_G, "CTOA_HELPER_MODAL")') -and -not $helper.Contains("local function modalRequest") -and -not $helper.Contains("local function modalValue") -and -not $helper.Contains("local function modalStatusText") -and $helper.Contains('moduleValue(externalModal, "modalRequest", "cavebot_delete", request.label, request.timeout_ms, helperNowMs())') -and $helper.Contains('moduleValue(externalModal, "isPending", Helper.pending_confirm, "cavebot_delete", helperNowMs())') -and $helper.Contains('moduleValue(externalModal, "statusText", Helper.pending_confirm)')) { "passed" } else { "failed" }; evidence = "native helper delegates pure request construction to modal through a guarded fallback while retaining pending/status integration" },
+        [pscustomobject]@{ name = "helper_guarded_shell"; status = if ($helper.Contains("pending_confirm = nil") -and $helper.Contains('moduleValue(externalRoute, "deleteRequest"') -and $helper.Contains('moduleValue(externalModal, "modalRequest", "cavebot_delete", request.label, request.timeout_ms, helperNowMs())') -and $helper.Contains("deleteCurrentCavebotWaypoint(command.confirm == true)")) { "passed" } else { "failed" }; evidence = "destructive execution stays in the guarded shell with explicit confirm flag and route-owned request metadata" },
         [pscustomobject]@{ name = "no_widgets_or_otclient_globals"; status = if (-not $modal.Contains("createWidget") -and -not $modal.Contains("showWidget") -and -not $modal.Contains("g_ui") -and -not $modal.Contains("g_keyboard") -and -not $modal.Contains("g_resources")) { "passed" } else { "failed" }; evidence = "modal module does not create widgets or call native UI globals" },
         [pscustomobject]@{ name = "no_runtime_actions"; status = if (-not $modal.Contains("g_game") -and -not $modal.Contains("autoWalk") -and -not $modal.Contains("castSpell") -and -not $modal.Contains("sendActionbarSlot") -and -not $modal.Contains("useInventoryItem") -and -not $modal.Contains("PromoteLiveCtoa")) { "passed" } else { "failed" }; evidence = "modal module does not walk, cast, use items, or bypass live promotion" },
         [pscustomobject]@{ name = "loader_present"; status = if ((Test-CtoaHelperBootGraphModule -Source $loader -Name "ctoa_helper_modal" -File "ctoa_helper_modal.lua")) { "passed" } else { "failed" }; evidence = "loader stages modal with support modules" },
@@ -2704,11 +3102,11 @@ function Invoke-RouteStaticSmoke {
     $checks = @(
         [pscustomobject]@{ name = "module_exists"; status = if (Test-Path -LiteralPath $routePath) { "passed" } else { "failed" }; evidence = "ctoa_helper_route.lua exists" },
         [pscustomobject]@{ name = "global_contract"; status = if ($route.Contains('rawget(_G, "CTOA_HELPER_ROUTE")') -and $route.Contains("_G.CTOA_HELPER_ROUTE = Route") -and $route.Contains("return Route")) { "passed" } else { "failed" }; evidence = "route keeps a guarded global and returns module table" },
-        [pscustomobject]@{ name = "route_functions"; status = if ($route.Contains("function Route.position") -and $route.Contains("function Route.label") -and $route.Contains("function Route.posKey") -and $route.Contains("function Route.add") -and $route.Contains("function Route.clear") -and $route.Contains("function Route.select") -and $route.Contains("function Route.delete") -and $route.Contains("function Route.move") -and $route.Contains("function Route.editorAction") -and $route.Contains("function Route.retryStatus") -and $route.Contains("function Route.retryBlocked") -and $route.Contains("function Route.progress") -and $route.Contains("function Route.activeTarget") -and $route.Contains("function Route.stats") -and $route.Contains("function Route.selectedSummary") -and $route.Contains("function Route.uiState") -and $route.Contains("function Route.deleteRequest") -and $route.Contains("function Route.contract")) { "passed" } else { "failed" }; evidence = "route exposes waypoint, position-key, selection, mutation, editor action, retry, progress, active target, stats, summary, editor state/delete request, and contract helpers" },
+        [pscustomobject]@{ name = "route_functions"; status = if ($route.Contains("function Route.distanceChebyshev") -and $route.Contains("function Route.position") -and $route.Contains("function Route.label") -and $route.Contains("function Route.posKey") -and $route.Contains("function Route.positionText") -and $route.Contains("function Route.probeTarget") -and $route.Contains("function Route.probeMetadata") -and $route.Contains("function Route.add") -and $route.Contains("function Route.clear") -and $route.Contains("function Route.select") -and $route.Contains("function Route.delete") -and $route.Contains("function Route.move") -and $route.Contains("function Route.editorAction") -and $route.Contains("function Route.retryStatus") -and $route.Contains("function Route.retryBlocked") -and $route.Contains("function Route.progress") -and $route.Contains("function Route.activeTarget") -and $route.Contains("function Route.stats") -and $route.Contains("function Route.selectedSummary") -and $route.Contains("function Route.uiState") -and $route.Contains("function Route.deleteRequest") -and $route.Contains("function Route.contract")) { "passed" } else { "failed" }; evidence = "route exposes Chebyshev distance, waypoint, non-mutating probe metadata, selection, guarded mutation, retry, active target, stats, editor state and contract helpers" },
         [pscustomobject]@{ name = "waypoint_mutation"; status = if ($route.Contains("tools.cavebot_waypoints = tools.cavebot_waypoints or {}") -and $route.Contains("table.remove(waypoints, index)") -and $route.Contains("waypoints[index], waypoints[target] = waypoints[target], waypoints[index]") -and $route.Contains('return true, "route cleared"')) { "passed" } else { "failed" }; evidence = "route owns bounded waypoint add/delete/move/clear mutations" },
         [pscustomobject]@{ name = "retry_status"; status = if ($route.Contains("function Route.retryStatus") -and $route.Contains("function Route.retryBlocked") -and $route.Contains("function Route.progress") -and $route.Contains("function Route.activeTarget") -and $route.Contains('return "retry " .. tostring(tools.cavebot_retry_attempts or 0)') -and $route.Contains("retry_blocked = retry_attempts >= retry_limit") -and $route.Contains("owns_position_key = true") -and $route.Contains("owns_progress_state = true") -and $route.Contains("owns_target_selection = true")) { "passed" } else { "failed" }; evidence = "route reports retry attempts, position keys, progress state, active target selection, and blocked status without moving" },
-        [pscustomobject]@{ name = "passive_contract"; status = if ($route.Contains('mode = "passive"') -and $route.Contains("owns_waypoint_mutation = true") -and $route.Contains("owns_editor_state = true") -and $route.Contains("owns_editor_action = true") -and $route.Contains("owns_position_key = true") -and $route.Contains("owns_retry_status = true") -and $route.Contains("owns_target_selection = true") -and $route.Contains("runtime_actions = false") -and $route.Contains("movement_enabled = false") -and $route.Contains("pathfinding = false")) { "passed" } else { "failed" }; evidence = "route contract declares passive route editing, editor state/action, active target selection, position-key formatting, and no movement/pathfinding" },
-        [pscustomobject]@{ name = "helper_uses_route_domain"; status = if ($helper.Contains("local function moduleValue(module, functionName, ...)") -and $helper.Contains('moduleValue(externalRoute, "editorAction"') -and $helper.Contains('moduleValue(externalRoute, "posKey"') -and $helper.Contains('moduleValue(externalRoute, "progress"') -and $helper.Contains('moduleValue(externalRoute, "activeTarget"') -and $helper.Contains('moduleValue(externalRoute, "uiState"') -and $helper.Contains('moduleValue(externalRoute, "deleteRequest"') -and $helper.Contains('moduleValue(externalRoute, "retryBlocked"') -and $helper.Contains('moduleValue(externalRoute, "retryStatus", tools)') -and -not $helper.Contains("local function routeRetryStatus")) { "passed" } else { "failed" }; evidence = "helper shell delegates route editing through guarded moduleValue plus editor state/delete request, position-key, progress, active target selection, retry, and status to route domain" },
+        [pscustomobject]@{ name = "passive_contract"; status = if ($route.Contains('mode = "passive"') -and $route.Contains("owns_waypoint_mutation = true") -and $route.Contains("owns_editor_state = true") -and $route.Contains("owns_editor_action = true") -and $route.Contains("owns_distance_chebyshev = true") -and $route.Contains("owns_position_key = true") -and $route.Contains("owns_position_text = true") -and $route.Contains("owns_probe_target = true") -and $route.Contains("owns_probe_metadata = true") -and $route.Contains("owns_retry_status = true") -and $route.Contains("owns_target_selection = true") -and $route.Contains("runtime_actions = false") -and $route.Contains("movement_enabled = false") -and $route.Contains("probe_mutates_route = false") -and $route.Contains("probe_changes_arming = false") -and $route.Contains("pathfinding = false")) { "passed" } else { "failed" }; evidence = "route contract declares passive non-mutating probe metadata, distance/editing/target helpers, and no movement/pathfinding" },
+        [pscustomobject]@{ name = "helper_uses_route_domain"; status = if ($helper.Contains("local function moduleValue(module, functionName, ...)") -and $helper.Contains('moduleValue(externalRoute, "probeMetadata", tools, current)') -and $helper.Contains('moduleValue(externalRoute, "editorAction"') -and $helper.Contains('moduleValue(externalRoute, "distanceChebyshev"') -and $helper.Contains('moduleValue(externalRoute, "posKey"') -and $helper.Contains('moduleValue(externalRoute, "progress"') -and $helper.Contains('moduleValue(externalRoute, "activeTarget"') -and $helper.Contains('moduleValue(externalRoute, "uiState"') -and $helper.Contains('moduleValue(externalRoute, "deleteRequest"') -and $helper.Contains('moduleValue(externalRoute, "retryStatus", tools)') -and -not $helper.Contains("local function distanceChebyshev") -and -not $helper.Contains("function posKey(pos)") -and -not $helper.Contains("local function routeRetryStatus")) { "passed" } else { "failed" }; evidence = "helper shell delegates passive probe metadata plus distance/editing/progress/target helpers through guarded route calls" },
         [pscustomobject]@{ name = "no_otclient_globals"; status = if (-not $route.Contains("g_game") -and -not $route.Contains("g_map") -and -not $route.Contains("g_ui") -and -not $route.Contains("g_keyboard") -and -not $route.Contains("g_resources")) { "passed" } else { "failed" }; evidence = "route module does not call native OTClient globals" },
         [pscustomobject]@{ name = "no_movement_or_runtime_actions"; status = if (-not $route.Contains("autoWalk") -and -not $route.Contains("findPath") -and -not $route.Contains("castSpell") -and -not $route.Contains("sendActionbarSlot") -and -not $route.Contains("useInventoryItem") -and -not $route.Contains("createWidget")) { "passed" } else { "failed" }; evidence = "route module does not walk, pathfind, cast, use items, or create widgets" },
         [pscustomobject]@{ name = "loader_present"; status = if ((Test-CtoaHelperBootGraphModule -Source $loader -Name "ctoa_helper_route" -File "ctoa_helper_route.lua")) { "passed" } else { "failed" }; evidence = "loader stages route with support modules" },
@@ -2759,12 +3157,12 @@ function Invoke-TargetingStaticSmoke {
     $checks = @(
         [pscustomobject]@{ name = "module_exists"; status = if (Test-Path -LiteralPath $targetingPath) { "passed" } else { "failed" }; evidence = "ctoa_helper_targeting.lua exists" },
         [pscustomobject]@{ name = "global_contract"; status = if ($targeting.Contains('rawget(_G, "CTOA_HELPER_TARGETING")') -and $targeting.Contains("_G.CTOA_HELPER_TARGETING = Targeting") -and $targeting.Contains("return Targeting")) { "passed" } else { "failed" }; evidence = "targeting keeps a guarded global and returns module table" },
-        [pscustomobject]@{ name = "targeting_functions"; status = if ($targeting.Contains("function Targeting.normalizedName") -and $targeting.Contains("function Targeting.isIgnoredName") -and $targeting.Contains("function Targeting.hasBlockingNpcIcon") -and $targeting.Contains("function Targeting.isFriendlySummonName") -and $targeting.Contains("function Targeting.isFriendlySummonCandidate") -and $targeting.Contains("function Targeting.priorityRank") -and $targeting.Contains("function Targeting.scoreCandidate") -and $targeting.Contains("function Targeting.bestCandidate") -and $targeting.Contains("function Targeting.decision") -and $targeting.Contains("function Targeting.summary") -and $targeting.Contains("function Targeting.configSummary") -and $targeting.Contains("function Targeting.contract")) { "passed" } else { "failed" }; evidence = "targeting exposes name normalization, ignore checks, NPC icon guard, friendly summon/familiar checks, priority, scoring, best-candidate decision, summary, config summary, and contract helpers" },
+        [pscustomobject]@{ name = "targeting_functions"; status = if ($targeting.Contains("function Targeting.normalizedName") -and $targeting.Contains("function Targeting.isIgnoredName") -and $targeting.Contains("function Targeting.hasBlockingNpcIcon") -and $targeting.Contains("function Targeting.creatureHasBlockingNpcIcon") -and $targeting.Contains("function Targeting.isFriendlySummonName") -and $targeting.Contains("function Targeting.isFriendlySummonCandidate") -and $targeting.Contains("function Targeting.priorityRank") -and $targeting.Contains("function Targeting.scoreCandidate") -and $targeting.Contains("function Targeting.targetCandidateScore") -and $targeting.Contains("function Targeting.bestCandidate") -and $targeting.Contains("function Targeting.decision") -and $targeting.Contains("function Targeting.summary") -and $targeting.Contains("function Targeting.configSummary") -and $targeting.Contains("function Targeting.contract")) { "passed" } else { "failed" }; evidence = "targeting exposes name normalization, ignore checks, pure NPC icon guard, friendly summon checks, target score bridge, priority, best-candidate decisions, summaries, and contract helpers" },
         [pscustomobject]@{ name = "scoring_logic"; status = if ($targeting.Contains("rank * 10000 + hp * 100 + distance") -and $targeting.Contains("rank * 10000 + distance * 100 + hp") -and $targeting.Contains("prefer_low_hp") -and $targeting.Contains('reason = "scored"')) { "passed" } else { "failed" }; evidence = "targeting owns deterministic rank/distance/hp score decisions" },
         [pscustomobject]@{ name = "ignored_name_policy"; status = if ($targeting.Contains("function Targeting.isIgnoredName") -and $targeting.Contains("string.find(normalized, needle, 1, true)") -and $targeting.Contains('reason = "ignored_name"') -and $targeting.Contains("score = 99999999")) { "passed" } else { "failed" }; evidence = "targeting owns ignored-name rejection before runtime attack code" },
         [pscustomobject]@{ name = "friendly_summon_policy"; status = if ($targeting.Contains("function Targeting.isFriendlySummonName") -and $targeting.Contains("function Targeting.isFriendlySummonCandidate") -and $targeting.Contains('reason = "friendly_summon"') -and $targeting.Contains("owns_friendly_summon_guard = true") -and $helper.Contains("isFriendlySummonCreature(target, getLocalPlayer())") -and $helper.Contains('clearUnsafeCurrentTarget("friendly summon/familiar target", now, true)')) { "passed" } else { "failed" }; evidence = "targeting/helper block friendly summons or familiars before runtime attack code" },
-        [pscustomobject]@{ name = "passive_contract"; status = if ($targeting.Contains('mode = "passive"') -and $targeting.Contains("owns_target_score = true") -and $targeting.Contains("owns_best_candidate = true") -and $targeting.Contains("owns_ignored_names = true") -and $targeting.Contains("owns_npc_icon_guard = true") -and $targeting.Contains("owns_config_summary = true") -and $targeting.Contains("owns_targeting_summary_text = true") -and $targeting.Contains("runtime_actions = false") -and $targeting.Contains("attacks = false") -and $targeting.Contains("casts = false") -and $targeting.Contains("creature_scan = false")) { "passed" } else { "failed" }; evidence = "targeting contract declares passive scoring/config summary and no attacks/casts/scan" },
-        [pscustomobject]@{ name = "helper_uses_targeting_domain"; status = if ($helper.Contains('moduleValue(externalTargeting, "normalizedName", creature)') -and $helper.Contains('moduleValue(externalTargeting, "isIgnoredName", name, HELPER_CONFIG.tools.ignored_names or {})') -and $helper.Contains('moduleValue(externalTargeting, "isFriendlySummonName", name, HELPER_CONFIG.tools)') -and $helper.Contains('moduleValue(externalTargeting, "hasBlockingNpcIcon", creature, HELPER_CONFIG.tools)') -and $helper.Contains('moduleValue(externalTargeting, "scoreCandidate", candidate, tools)') -and $helper.Contains('moduleValue(externalTargeting, "bestCandidate", candidates, tools)') -and -not $helper.Contains("pcall(externalTargeting.bestCandidate, candidates, tools)") -and -not $helper.Contains("pcall(externalTargeting.normalizedName") -and -not $helper.Contains("pcall(externalTargeting.isIgnoredName") -and -not $helper.Contains("pcall(externalTargeting.isFriendlySummonName") -and -not $helper.Contains("pcall(externalTargeting.hasBlockingNpcIcon") -and $helper.Contains("OPERATOR_SUMMARY_BRIDGES.targeting") -and $helper.Contains('targeting = moduleValue(externalOperatorSummary, "bridgeText", "targeting", OPERATOR_SUMMARY_BRIDGES)') -and $helper.Contains("targeting_summary_text = operatorSummaries.targeting") -and $helper.Contains("targeting = externalTargeting")) { "passed" } else { "failed" }; evidence = "helper shell delegates name normalization, ignored-name policy, NPC-icon guard, friendly summon/familiar policy, scoring, best-candidate choice, and config summary through guarded targeting/operator adapters" },
+        [pscustomobject]@{ name = "passive_contract"; status = if ($targeting.Contains('mode = "passive"') -and $targeting.Contains("owns_target_score = true") -and $targeting.Contains("owns_target_candidate_score = true") -and $targeting.Contains("owns_best_candidate = true") -and $targeting.Contains("owns_ignored_names = true") -and $targeting.Contains("owns_npc_icon_guard = true") -and $targeting.Contains("owns_blocking_npc_icon_value = true") -and $targeting.Contains("owns_friendly_summon_name = true") -and $targeting.Contains("owns_config_summary = true") -and $targeting.Contains("owns_targeting_summary_text = true") -and $targeting.Contains("runtime_actions = false") -and $targeting.Contains("attacks = false") -and $targeting.Contains("casts = false") -and $targeting.Contains("creature_scan = false")) { "passed" } else { "failed" }; evidence = "targeting contract declares passive icon, summon-name, scoring/config summary ownership and no attacks/casts/scan" },
+        [pscustomobject]@{ name = "helper_uses_targeting_domain"; status = if ($helper.Contains('moduleValue(externalTargeting, "normalizedName", creature)') -and $helper.Contains('moduleValue(externalTargeting, "isIgnoredName", name, HELPER_CONFIG.tools.ignored_names or {})') -and $helper.Contains('moduleValue(externalTargeting, "isFriendlySummonName", normalizedCreatureName(creature), HELPER_CONFIG.tools)') -and $helper.Contains('moduleValue(externalTargeting, "creatureHasBlockingNpcIcon", npcIcon, HELPER_CONFIG.tools)') -and $helper.Contains('moduleValue(externalTargeting, "bestCandidate", candidates, tools)') -and -not $helper.Contains('moduleValue(externalTargeting, "targetCandidateScore", candidate, tools)') -and -not $helper.Contains("local bestScore = nil") -and $helper.Contains("pcall(creature.getIcon, creature)") -and -not $helper.Contains("local function creatureHasBlockingNpcIcon") -and -not $helper.Contains("local function isFriendlySummonName") -and -not $helper.Contains("local function targetCandidateScore") -and $helper.Contains("OPERATOR_SUMMARY_BRIDGES.targeting") -and $helper.Contains('targeting = moduleValue(externalOperatorSummary, "bridgeText", "targeting", OPERATOR_SUMMARY_BRIDGES)') -and $helper.Contains("targeting_summary_text = operatorSummaries.targeting") -and $helper.Contains("targeting = externalTargeting")) { "passed" } else { "failed" }; evidence = "helper shell delegates normalized names, ignore policy, icon/summon guards, and best-candidate ranking to the required targeting module; missing module output fails closed" },
         [pscustomobject]@{ name = "runtime_execution_stays_in_helper"; status = if ($helper.Contains("pcall(function() g_game.attack(target) end)") -and -not $targeting.Contains("g_game.attack") -and -not $targeting.Contains("g_game.follow")) { "passed" } else { "failed" }; evidence = "targeting module scores only; guarded attack execution remains in helper runtime" },
         [pscustomobject]@{ name = "no_otclient_globals"; status = if (-not $targeting.Contains("g_game") -and -not $targeting.Contains("g_map") -and -not $targeting.Contains("g_ui") -and -not $targeting.Contains("g_keyboard") -and -not $targeting.Contains("g_resources")) { "passed" } else { "failed" }; evidence = "targeting module does not call native OTClient globals" },
         [pscustomobject]@{ name = "no_runtime_actions"; status = if (-not $targeting.Contains("castSpell") -and -not $targeting.Contains("sendActionbarSlot") -and -not $targeting.Contains("useInventoryItem") -and -not $targeting.Contains("autoWalk") -and -not $targeting.Contains("findPath") -and -not $targeting.Contains("createWidget")) { "passed" } else { "failed" }; evidence = "targeting module does not attack, cast, use items, walk, pathfind, or create widgets" },
@@ -2816,12 +3214,12 @@ function Invoke-CombatRuntimeStaticSmoke {
     $checks = @(
         [pscustomobject]@{ name = "module_exists"; status = if (Test-Path -LiteralPath $combatPath) { "passed" } else { "failed" }; evidence = "ctoa_helper_combat_runtime.lua exists" },
         [pscustomobject]@{ name = "global_contract"; status = if ($combat.Contains('rawget(_G, "CTOA_HELPER_COMBAT_RUNTIME")') -and $combat.Contains("_G.CTOA_HELPER_COMBAT_RUNTIME = CombatRuntime") -and $combat.Contains("return CombatRuntime")) { "passed" } else { "failed" }; evidence = "combat runtime keeps a guarded global and returns module table" },
-        [pscustomobject]@{ name = "combat_runtime_functions"; status = if ($combat.Contains("function CombatRuntime.plan") -and $combat.Contains("function CombatRuntime.summary") -and $combat.Contains("function CombatRuntime.adapterSummary") -and $combat.Contains("function CombatRuntime.magicSummary") -and $combat.Contains("function CombatRuntime.msLeftText") -and $combat.Contains("function CombatRuntime.runeReady") -and $combat.Contains("function CombatRuntime.rotationSpellRows") -and $combat.Contains("function CombatRuntime.spellReadiness") -and $combat.Contains("function CombatRuntime.rotationSpell") -and $combat.Contains("function CombatRuntime.offensiveAction") -and $combat.Contains("function CombatRuntime.actionStatusText") -and $combat.Contains("function CombatRuntime.targetingStatusText") -and $combat.Contains("function CombatRuntime.nextActionText") -and $combat.Contains("function CombatRuntime.waitReason") -and $combat.Contains("function CombatRuntime.decisionState") -and $combat.Contains("function CombatRuntime.decisionStateSummary") -and $combat.Contains("function CombatRuntime.contract")) { "passed" } else { "failed" }; evidence = "combat runtime exposes plan, summary, adapter summary, magic summary, cooldown, rune readiness, rotation spell row normalization, spell readiness, rotation spell selection, action selection, action status, targeting status, next action, wait reason, decision state, decision-state summary, and contract helpers" },
+        [pscustomobject]@{ name = "combat_runtime_functions"; status = if ($combat.Contains("function CombatRuntime.plan") -and $combat.Contains("function CombatRuntime.summary") -and $combat.Contains("function CombatRuntime.adapterSummary") -and $combat.Contains("function CombatRuntime.magicSummary") -and $combat.Contains("function CombatRuntime.msLeftText") -and $combat.Contains("function CombatRuntime.runeReady") -and $combat.Contains("function CombatRuntime.rotationSpellRows") -and $combat.Contains("function CombatRuntime.spellReadiness") -and $combat.Contains("function CombatRuntime.rotationSpell") -and $combat.Contains("function CombatRuntime.selectRotationSpell") -and $combat.Contains("function CombatRuntime.offensiveAction") -and $combat.Contains("function CombatRuntime.actionStatusText") -and $combat.Contains("function CombatRuntime.targetingStatusText") -and $combat.Contains("function CombatRuntime.nextActionText") -and $combat.Contains("function CombatRuntime.waitReason") -and $combat.Contains("function CombatRuntime.decisionState") -and $combat.Contains("function CombatRuntime.decisionStateSummary") -and $combat.Contains("function CombatRuntime.contract")) { "passed" } else { "failed" }; evidence = "combat runtime exposes passive rune readiness, normalized rotation selection, action/status decisions and contract helpers" },
         [pscustomobject]@{ name = "blocked_reasons"; status = if ($combat.Contains('return "runtime_disabled"') -and $combat.Contains('return "protection_zone"') -and $combat.Contains('return "offline"') -and $combat.Contains('return "target_required"')) { "passed" } else { "failed" }; evidence = "combat runtime planner owns disabled/PZ/offline/target-required decisions" },
         [pscustomobject]@{ name = "plan_actions"; status = if ($combat.Contains('action = "target"') -and $combat.Contains('action = "plan_spell"') -and $combat.Contains('action = "plan_rune"') -and $combat.Contains('next_action = "hold"')) { "passed" } else { "failed" }; evidence = "combat runtime returns target, canonical spell/rune, or hold plans without executing them" },
-        [pscustomobject]@{ name = "passive_contract"; status = if ($combat.Contains('mode = "passive"') -and $combat.Contains("owns_runtime_plan = true") -and $combat.Contains("owns_adapter_summary = true") -and $combat.Contains("owns_magic_summary = true") -and $combat.Contains("owns_magic_summary_text = true") -and $combat.Contains("owns_cooldown_text = true") -and $combat.Contains("owns_rotation_spell_rows = true") -and $combat.Contains("owns_rotation_spell_selection = true") -and $combat.Contains("owns_action_status_text = true") -and $combat.Contains("owns_targeting_status_text = true") -and $combat.Contains("owns_next_action_text = true") -and $combat.Contains("owns_wait_reason_text = true") -and $combat.Contains("owns_decision_state_text = true") -and $combat.Contains("owns_decision_state_summary = true") -and $combat.Contains("runtime_actions = false") -and $combat.Contains("scans_creatures = false") -and $combat.Contains("attacks = false") -and $combat.Contains("casts = false") -and $combat.Contains("uses_items = false") -and $combat.Contains("requires_target_scorer = true")) { "passed" } else { "failed" }; evidence = "combat runtime contract declares passive planning/adapter-summary/cooldown/rotation row normalization/rotation selection/action-status/targeting-status/next-action/wait/decision text/decision summary and no attack/cast/item execution" },
-        [pscustomobject]@{ name = "helper_uses_combat_runtime_adapter"; status = if ($helper.Contains('rawget(_G, "CTOA_HELPER_COMBAT_RUNTIME")') -and $helper.Contains("local function moduleValue(module, functionName, ...)") -and -not $helper.Contains("local function combatRuntimeAdapterSummary") -and $helper.Contains('moduleValue(externalCombatRuntime, "decisionStateSummary", tools') -and $helper.Contains("OPERATOR_SUMMARY_BRIDGES.magic") -and $helper.Contains('magic = moduleValue(externalOperatorSummary, "bridgeText", "magic", OPERATOR_SUMMARY_BRIDGES)') -and $helper.Contains("magic_summary_text = operatorSummaries.magic") -and $helper.Contains("combatRuntime = externalCombatRuntime") -and -not $helper.Contains("local function msLeftText") -and -not $helper.Contains("local function monsterCountForSpell") -and $helper.Contains('moduleValue(externalCombatRuntime, "runeReady", tools') -and $helper.Contains('moduleValue(externalCombatRuntime, "rotationSpellRows", tools.rotation_spells') -and $helper.Contains('moduleValue(externalCombatRuntime, "spellReadiness", spells') -and $helper.Contains('moduleValue(externalCombatRuntime, "rotationSpell", spells') -and $helper.Contains('moduleValue(externalCombatRuntime, "offensiveAction", tools') -and $helper.Contains("local function combatRuntimeText(functionName, eventOrAction, data, fallback)") -and $helper.Contains("moduleValue(externalCombatRuntime, functionName, eventOrAction, data or {})") -and -not $helper.Contains("local function combatActionStatusText") -and -not $helper.Contains("local function combatTargetingStatusText") -and $helper.Contains('combatRuntimeText("targetingStatusText", "friendly_summon"') -and $helper.Contains('combatRuntimeText("actionStatusText", action') -and $helper.Contains('moduleValue(externalCombatRuntime, "nextActionText", action, fallback)') -and $helper.Contains('moduleValue(externalCombatRuntime, "waitReason", {') -and -not $helper.Contains('moduleValue(externalCombatRuntime, "decisionState", {') -and -not $helper.Contains("adapter_text = adapterText") -and -not $helper.Contains('"Auto exeta: " .. action.spell') -and -not $helper.Contains('"Rotation: " .. action.spell.words') -and -not $helper.Contains('"Rune: " .. (tools.rune_name or "rune")') -and -not $helper.Contains('"Next: rune/AoE"')) { "passed" } else { "failed" }; evidence = "helper shell consumes combat runtime decision-state summary, magic summary, cooldown, rune readiness, rotation spell row normalization, spell readiness, rotation selection, action selection, action/targeting status, next action, and wait reason through shared guarded invokers; runtime execution stays shell-owned" },
-        [pscustomobject]@{ name = "runtime_execution_stays_in_helper"; status = if ($helper.Contains("local function executeOffensiveAction") -and $helper.Contains("castSpell(action.spell.words)") -and $helper.Contains("sendActionbarSlot(tools.rune_actionbar_slot, tools.rune_hotkey)") -and -not $combat.Contains("castSpell") -and -not $combat.Contains("sendActionbarSlot") -and -not $combat.Contains("g_game.attack")) { "passed" } else { "failed" }; evidence = "combat runtime plans only; guarded attack/cast/rune execution remains in helper runtime" },
+        [pscustomobject]@{ name = "passive_contract"; status = if ($combat.Contains('mode = "passive"') -and $combat.Contains("owns_runtime_plan = true") -and $combat.Contains("owns_adapter_summary = true") -and $combat.Contains("owns_magic_summary = true") -and $combat.Contains("owns_magic_summary_text = true") -and $combat.Contains("owns_cooldown_text = true") -and $combat.Contains("owns_rotation_spell_rows = true") -and $combat.Contains("owns_rotation_spell_selection = true") -and $combat.Contains("owns_select_rotation_spell = true") -and $combat.Contains("owns_action_status_text = true") -and $combat.Contains("owns_targeting_status_text = true") -and $combat.Contains("owns_next_action_text = true") -and $combat.Contains("owns_wait_reason_text = true") -and $combat.Contains("owns_decision_state_text = true") -and $combat.Contains("owns_decision_state_summary = true") -and $combat.Contains("runtime_actions = false") -and $combat.Contains("scans_creatures = false") -and $combat.Contains("attacks = false") -and $combat.Contains("casts = false") -and $combat.Contains("uses_items = false") -and $combat.Contains("requires_target_scorer = true")) { "passed" } else { "failed" }; evidence = "combat runtime contract owns passive normalized rotation selection and no attack/cast/item execution" },
+        [pscustomobject]@{ name = "helper_uses_combat_runtime_adapter"; status = if ($helper.Contains('rawget(_G, "CTOA_HELPER_COMBAT_RUNTIME")') -and $helper.Contains("local function moduleValue(module, functionName, ...)") -and -not $helper.Contains("local function combatRuntimeAdapterSummary") -and $helper.Contains('moduleValue(externalCombatRuntime, "decisionStateSummary", tools') -and $helper.Contains("OPERATOR_SUMMARY_BRIDGES.magic") -and $helper.Contains('magic = moduleValue(externalOperatorSummary, "bridgeText", "magic", OPERATOR_SUMMARY_BRIDGES)') -and $helper.Contains("magic_summary_text = operatorSummaries.magic") -and $helper.Contains("combatRuntime = externalCombatRuntime") -and -not $helper.Contains("local function msLeftText") -and -not $helper.Contains("local function monsterCountForSpell") -and -not $helper.Contains("local function runeReady") -and -not $helper.Contains("local function selectRotationSpell") -and $helper.Contains('moduleValue(externalCombatRuntime, "runeReady", tools') -and $helper.Contains('moduleValue(externalCombatRuntime, "selectRotationSpell", tools, scan, now)') -and $helper.Contains('moduleValue(externalCombatRuntime, "rotationSpellRows", tools.rotation_spells') -and $helper.Contains('moduleValue(externalCombatRuntime, "spellReadiness", spells') -and $helper.Contains('moduleValue(externalCombatRuntime, "offensiveAction", tools') -and $helper.Contains("local combatRuntimeText") -and $helper.Contains("combatRuntimeText = function(functionName, eventOrAction, data, fallback)") -and $helper.IndexOf("local combatRuntimeText") -lt $helper.IndexOf("local function retargetSafeMonster") -and $helper.Contains("moduleValue(externalCombatRuntime, functionName, eventOrAction, data or {})") -and -not $helper.Contains("local function combatActionStatusText") -and -not $helper.Contains("local function combatTargetingStatusText") -and $helper.Contains('combatRuntimeText("targetingStatusText", "friendly_summon"') -and $helper.Contains('combatRuntimeText("actionStatusText", action') -and $helper.Contains('moduleValue(externalCombatRuntime, "nextActionText", action, fallback)') -and $helper.Contains('moduleValue(externalCombatRuntime, "waitReason", {') -and -not $helper.Contains('moduleValue(externalCombatRuntime, "decisionState", {') -and -not $helper.Contains("adapter_text = adapterText") -and -not $helper.Contains('"Auto exeta: " .. action.spell') -and -not $helper.Contains('"Rotation: " .. action.spell.words') -and -not $helper.Contains('"Rune: " .. (tools.rune_name or "rune")') -and -not $helper.Contains('"Next: rune/AoE"')) { "passed" } else { "failed" }; evidence = "helper shell consumes pure rune/rotation decisions while runtime execution remains shell-owned" },
+        [pscustomobject]@{ name = "runtime_execution_stays_in_helper"; status = if ($helper.Contains("local function executeOffensiveAction") -and $helper.Contains('moduleValue(externalCombatRuntime, "dispatchDescriptor", action, tools)') -and $helper.Contains("castSpell(descriptor.words)") -and $helper.Contains("sendActionbarSlot(descriptor.slot, descriptor.hotkey)") -and $combat.Contains("function CombatRuntime.dispatchDescriptor") -and -not $combat.Contains("castSpell") -and -not $combat.Contains("sendActionbarSlot") -and -not $combat.Contains("g_game.attack")) { "passed" } else { "failed" }; evidence = "combat runtime returns passive dispatch descriptors; guarded attack/cast/rune execution remains in helper runtime" },
         [pscustomobject]@{ name = "no_otclient_globals"; status = if (-not $combat.Contains("g_game") -and -not $combat.Contains("g_map") -and -not $combat.Contains("g_ui") -and -not $combat.Contains("g_keyboard") -and -not $combat.Contains("g_resources")) { "passed" } else { "failed" }; evidence = "combat runtime module does not call native OTClient globals" },
         [pscustomobject]@{ name = "no_runtime_actions"; status = if (-not $combat.Contains("castSpell") -and -not $combat.Contains("sendActionbarSlot") -and -not $combat.Contains("useInventoryItem") -and -not $combat.Contains("autoWalk") -and -not $combat.Contains("findPath") -and -not $combat.Contains("createWidget")) { "passed" } else { "failed" }; evidence = "combat runtime module does not cast, use items, walk, pathfind, or create widgets" },
         [pscustomobject]@{ name = "loader_present"; status = if ((Test-CtoaHelperBootGraphModule -Source $loader -Name "ctoa_helper_combat_runtime" -File "ctoa_helper_combat_runtime.lua")) { "passed" } else { "failed" }; evidence = "loader stages combat runtime with support modules" },
@@ -2872,12 +3270,12 @@ function Invoke-CavebotRuntimeStaticSmoke {
     $checks = @(
         [pscustomobject]@{ name = "module_exists"; status = if (Test-Path -LiteralPath $cavebotPath) { "passed" } else { "failed" }; evidence = "ctoa_helper_cavebot_runtime.lua exists" },
         [pscustomobject]@{ name = "global_contract"; status = if ($cavebot.Contains('rawget(_G, "CTOA_HELPER_CAVEBOT_RUNTIME")') -and $cavebot.Contains("_G.CTOA_HELPER_CAVEBOT_RUNTIME = CavebotRuntime") -and $cavebot.Contains("return CavebotRuntime")) { "passed" } else { "failed" }; evidence = "cavebot runtime keeps a guarded global and returns module table" },
-        [pscustomobject]@{ name = "cavebot_runtime_functions"; status = if ($cavebot.Contains("function CavebotRuntime.plan") -and $cavebot.Contains("function CavebotRuntime.summary") -and $cavebot.Contains("function CavebotRuntime.decisionText") -and $cavebot.Contains("function CavebotRuntime.adapterSummary") -and $cavebot.Contains("function CavebotRuntime.adapterStatusText") -and $cavebot.Contains("function CavebotRuntime.adapterStatusSummary") -and $cavebot.Contains("function CavebotRuntime.movementCapability") -and $cavebot.Contains("function CavebotRuntime.probeSnapshot") -and $cavebot.Contains("function CavebotRuntime.probeSummary") -and $cavebot.Contains("function CavebotRuntime.probeReport") -and $cavebot.Contains("function CavebotRuntime.pathText") -and $cavebot.Contains("function CavebotRuntime.movementBlockedReason") -and $cavebot.Contains("function CavebotRuntime.walkPreflight") -and $cavebot.Contains("function CavebotRuntime.testWalkPlan") -and $cavebot.Contains("function CavebotRuntime.walkingStatus") -and $cavebot.Contains("function CavebotRuntime.retryDecision") -and $cavebot.Contains("function CavebotRuntime.statusText") -and $cavebot.Contains("function CavebotRuntime.traceText") -and $cavebot.Contains("function CavebotRuntime.contract")) { "passed" } else { "failed" }; evidence = "cavebot runtime exposes plan, summary, decision text, adapter summary/status text/status summary, movement capability, probe snapshot, probe summary/report, path result text, blocked-reason text, walk preflight, test walk plan, walking status, retry decision, status text, trace text, and contract helpers" },
+        [pscustomobject]@{ name = "cavebot_runtime_functions"; status = if ($cavebot.Contains("function CavebotRuntime.plan") -and $cavebot.Contains("function CavebotRuntime.summary") -and $cavebot.Contains("function CavebotRuntime.decisionText") -and $cavebot.Contains("function CavebotRuntime.adapterSummary") -and $cavebot.Contains("function CavebotRuntime.adapterStatusText") -and $cavebot.Contains("function CavebotRuntime.adapterStatusSummary") -and $cavebot.Contains("function CavebotRuntime.movementCapability") -and $cavebot.Contains("function CavebotRuntime.probeMetadata") -and $cavebot.Contains("function CavebotRuntime.probeSnapshot") -and $cavebot.Contains("function CavebotRuntime.probeSummary") -and $cavebot.Contains("function CavebotRuntime.probeReport") -and $cavebot.Contains("function CavebotRuntime.pathText") -and $cavebot.Contains("function CavebotRuntime.movementBlockedReason") -and $cavebot.Contains("function CavebotRuntime.walkPreflight") -and $cavebot.Contains("function CavebotRuntime.testWalkPlan") -and $cavebot.Contains("function CavebotRuntime.walkingStatus") -and $cavebot.Contains("function CavebotRuntime.retryDecision") -and $cavebot.Contains("function CavebotRuntime.statusText") -and $cavebot.Contains("function CavebotRuntime.traceText") -and $cavebot.Contains("function CavebotRuntime.cavebotRuntimeText") -and $cavebot.Contains("function CavebotRuntime.cavebotRetryBudgetExceeded") -and $cavebot.Contains("function CavebotRuntime.contract")) { "passed" } else { "failed" }; evidence = "cavebot runtime exposes canonical passive probe metadata/report, plan, status/trace, retry, preflight and contract helpers" },
         [pscustomobject]@{ name = "blocked_reasons"; status = if ($cavebot.Contains('return "movement_disabled"') -and $cavebot.Contains('return "protection_zone"') -and $cavebot.Contains('return "offline"') -and $cavebot.Contains('return "empty_route"') -and $cavebot.Contains('return "retry_budget_exhausted"')) { "passed" } else { "failed" }; evidence = "cavebot runtime planner owns movement/PZ/offline/empty-route/retry-blocked decisions" },
         [pscustomobject]@{ name = "plan_actions"; status = if ($cavebot.Contains('next_action = "hold"') -and $cavebot.Contains('next_action = "plan_walk"') -and $cavebot.Contains("waypoint_index = selected > 0 and selected or 1") -and $cavebot.Contains("retry_budget = numberValue(cfg.max_retries, 3)")) { "passed" } else { "failed" }; evidence = "cavebot runtime returns hold or plan_walk decisions without executing movement" },
-        [pscustomobject]@{ name = "passive_contract"; status = if ($cavebot.Contains('mode = "passive"') -and $cavebot.Contains("owns_runtime_plan = true") -and $cavebot.Contains("owns_decision_text = true") -and $cavebot.Contains("owns_adapter_summary = true") -and $cavebot.Contains("owns_adapter_status_text = true") -and $cavebot.Contains("owns_adapter_status_summary = true") -and $cavebot.Contains("owns_probe_summary_text = true") -and $cavebot.Contains("owns_path_text = true") -and $cavebot.Contains("owns_blocked_reason_text = true") -and $cavebot.Contains("owns_walk_preflight = true") -and $cavebot.Contains("owns_test_walk_plan = true") -and $cavebot.Contains("owns_walking_status = true") -and $cavebot.Contains("owns_retry_decision = true") -and $cavebot.Contains("owns_status_text = true") -and $cavebot.Contains("owns_trace_text = true") -and $cavebot.Contains("runtime_actions = false") -and $cavebot.Contains("movement_enabled = false") -and $cavebot.Contains("pathfinding = false") -and $cavebot.Contains("uses_map = false") -and $cavebot.Contains("walks = false") -and $cavebot.Contains("requires_route_engine = true")) { "passed" } else { "failed" }; evidence = "cavebot runtime contract declares passive planning/adapter/probe/path/preflight/walking-status/retry/status/trace text and no walking/pathfinding/map calls" },
-        [pscustomobject]@{ name = "helper_uses_cavebot_runtime_adapter"; status = if ($helper.Contains('rawget(_G, "CTOA_HELPER_CAVEBOT_RUNTIME")') -and $helper.Contains("local function moduleValue(module, functionName, ...)") -and -not $helper.Contains("function cavebotRuntimeAdapterSummary") -and -not $helper.Contains("function cavebotRuntimeAdapterStatusText") -and $helper.Contains('moduleValue(externalCavebotRuntime, "adapterStatusSummary"') -and -not $helper.Contains('moduleValue(externalCavebotRuntime, "adapterSummary"') -and $helper.Contains('moduleValue(externalCavebotRuntime, "movementCapability"') -and $helper.Contains('moduleValue(externalCavebotRuntime, "probeReport"') -and -not $helper.Contains("externalCavebotRuntime.probeSnapshot") -and -not $helper.Contains("externalCavebotRuntime.probeSummary") -and $helper.Contains('moduleValue(externalCavebotRuntime, "pathText"') -and $cavebot.Contains('"dirs=" .. tostring(data.dirs_count)') -and $cavebot.Contains('"non-table result=" .. tostring(data.value)') -and -not $helper.Contains('"dirs=" .. tostring(#first)') -and -not $helper.Contains('"non-table result=" .. tostring(first)') -and $helper.Contains('moduleValue(externalCavebotRuntime, "movementBlockedReason"') -and $helper.Contains('moduleValue(externalCavebotRuntime, "walkPreflight"') -and $helper.Contains('moduleValue(externalCavebotRuntime, "testWalkPlan"') -and $helper.Contains('moduleValue(externalCavebotRuntime, "walkingStatus"') -and $helper.Contains('moduleValue(externalCavebotRuntime, "retryDecision"') -and $helper.Contains("function cavebotRuntimeText(functionName, event, data, fallback)") -and $helper.Contains("moduleValue(externalCavebotRuntime, functionName, event, data or {})") -and -not $helper.Contains("function cavebotRuntimeStatusText") -and -not $helper.Contains("function cavebotRuntimeTraceText") -and $helper.Contains('cavebotRuntimeText("traceText", "movement_reset"') -and $cavebot.Contains('kind == "movement_reset"') -and $cavebot.Contains("CavebotRuntime.walkingStatus(item)") -and -not $helper.Contains("Cavebot movement target=") -and -not $helper.Contains("Test walk target=") -and -not $helper.Contains("Test walk blocked") -and -not $helper.Contains("Cavebot movement disabled: retry budget reached") -and -not $helper.Contains("Cavebot movement disabled: walk failed retry budget") -and -not $helper.Contains('setCavebotStatus("adapter " .. adapterText)') -and $helper.Contains("setCavebotStatus(fitText(adapterStatus")) { "passed" } else { "failed" }; evidence = "helper shell consumes cavebot runtime through shared guarded moduleValue invokers and one cavebot text adapter for status/trace text; runtime execution stays shell-owned" },
-        [pscustomobject]@{ name = "runtime_execution_stays_in_helper"; status = if ($helper.Contains("function autoWalkTo(pos)") -and $helper.Contains("return player:autoWalk(pos, retry)") -and $helper.Contains("function movementPathProbeText(current, target)") -and $helper.Contains("g_map.findPath(current, target, 200, 0)") -and -not $cavebot.Contains("autoWalk") -and -not $cavebot.Contains("findPath") -and -not $cavebot.Contains("g_map")) { "passed" } else { "failed" }; evidence = "cavebot runtime plans only; guarded autoWalk/path probes remain in helper runtime" },
+        [pscustomobject]@{ name = "passive_contract"; status = if ($cavebot.Contains('mode = "passive"') -and $cavebot.Contains("owns_runtime_plan = true") -and $cavebot.Contains("owns_decision_text = true") -and $cavebot.Contains("owns_adapter_summary = true") -and $cavebot.Contains("owns_adapter_status_text = true") -and $cavebot.Contains("owns_adapter_status_summary = true") -and $cavebot.Contains("owns_probe_metadata = true") -and $cavebot.Contains("owns_probe_summary_text = true") -and $cavebot.Contains("owns_path_text = true") -and $cavebot.Contains("owns_blocked_reason_text = true") -and $cavebot.Contains("owns_walk_preflight = true") -and $cavebot.Contains("owns_test_walk_plan = true") -and $cavebot.Contains("owns_walking_status = true") -and $cavebot.Contains("owns_retry_decision = true") -and $cavebot.Contains("owns_status_text = true") -and $cavebot.Contains("owns_trace_text = true") -and $cavebot.Contains("owns_runtime_text_bridge = true") -and $cavebot.Contains("owns_retry_budget = true") -and $cavebot.Contains("runtime_actions = false") -and $cavebot.Contains("movement_enabled = false") -and $cavebot.Contains("probe_executes_movement = false") -and $cavebot.Contains("probe_mutates_route = false") -and $cavebot.Contains("probe_changes_arming = false") -and $cavebot.Contains("pathfinding = false") -and $cavebot.Contains("uses_map = false") -and $cavebot.Contains("walks = false") -and $cavebot.Contains("requires_route_engine = true")) { "passed" } else { "failed" }; evidence = "cavebot runtime contract declares passive probe metadata/formatting and no movement, mutation, arming, pathfinding or map calls" },
+        [pscustomobject]@{ name = "helper_uses_cavebot_runtime_adapter"; status = if ($helper.Contains('rawget(_G, "CTOA_HELPER_CAVEBOT_RUNTIME")') -and $helper.Contains("local function moduleValue(module, functionName, ...)") -and -not $helper.Contains("function cavebotRuntimeAdapterSummary") -and -not $helper.Contains("function cavebotRuntimeAdapterStatusText") -and $helper.Contains('moduleValue(externalCavebotRuntime, "adapterStatusSummary"') -and $helper.Contains('moduleValue(externalCavebotRuntime, "movementCapabilityForPlayer"') -and $helper.Contains('moduleValue(externalCavebotRuntime, "probeReport"') -and $helper.Contains('moduleValue(externalCavebotRuntime, "pathText"') -and $helper.Contains('moduleCall(externalCavebotRuntime, "movementBlockedReason"') -and $helper.Contains('moduleValue(externalCavebotRuntime, "walkPreflight"') -and $helper.Contains('moduleValue(externalCavebotRuntime, "testWalkPlan"') -and $helper.Contains('moduleValue(externalCavebotRuntime, "walkingStatus"') -and $helper.Contains('moduleValue(externalCavebotRuntime, "retryDecision"') -and $helper.Contains('moduleValue(externalCavebotRuntime, "cavebotRuntimeText"') -and $helper.Contains('moduleValue(externalCavebotRuntime, "cavebotRetryBudgetExceeded"') -and -not $helper.Contains("function cavebotRuntimeText(functionName, event, data, fallback)") -and -not $helper.Contains("function cavebotRetryBudgetExceeded(tools)") -and $cavebot.Contains('kind == "movement_reset"') -and $cavebot.Contains("CavebotRuntime.walkingStatus(item)") -and -not $helper.Contains("Cavebot movement target=") -and -not $helper.Contains("Test walk target=") -and -not $helper.Contains("Test walk blocked") -and -not $helper.Contains("Cavebot movement disabled: retry budget reached") -and -not $helper.Contains("Cavebot movement disabled: walk failed retry budget") -and $helper.Contains("setCavebotStatus(fitText(adapterStatus")) { "passed" } else { "failed" }; evidence = "helper shell consumes cavebot runtime through guarded module calls while runtime execution stays shell-owned" },
+        [pscustomobject]@{ name = "runtime_execution_stays_in_helper"; status = if ($helper.Contains("function autoWalkTo(pos)") -and $helper.Contains("return player:autoWalk(pos, retry)") -and -not $helper.Contains("function movementPathProbeText") -and $helper.Contains('safeCall(player, "canWalk", true)') -and $helper.Contains('return g_map.findPath(current, target, 200, 0)') -and -not $cavebot.Contains("autoWalk") -and -not $cavebot.Contains("findPath") -and -not $cavebot.Contains("g_map")) { "passed" } else { "failed" }; evidence = "cavebot runtime formats passive metadata only; guarded canWalk/findPath/autoWalk calls remain in helper runtime" },
         [pscustomobject]@{ name = "no_otclient_globals"; status = if (-not $cavebot.Contains("g_game") -and -not $cavebot.Contains("g_map") -and -not $cavebot.Contains("g_ui") -and -not $cavebot.Contains("g_keyboard") -and -not $cavebot.Contains("g_resources")) { "passed" } else { "failed" }; evidence = "cavebot runtime module does not call native OTClient globals" },
         [pscustomobject]@{ name = "no_runtime_actions"; status = if (-not $cavebot.Contains("autoWalk") -and -not $cavebot.Contains("findPath") -and -not $cavebot.Contains("castSpell") -and -not $cavebot.Contains("sendActionbarSlot") -and -not $cavebot.Contains("useInventoryItem") -and -not $cavebot.Contains("createWidget")) { "passed" } else { "failed" }; evidence = "cavebot runtime module does not walk, pathfind, cast, use items, or create widgets" },
         [pscustomobject]@{ name = "loader_present"; status = if ((Test-CtoaHelperBootGraphModule -Source $loader -Name "ctoa_helper_cavebot_runtime" -File "ctoa_helper_cavebot_runtime.lua")) { "passed" } else { "failed" }; evidence = "loader stages cavebot runtime with support modules" },
@@ -2935,7 +3333,7 @@ function Invoke-LootRuntimeStaticSmoke {
         [pscustomobject]@{ name = "plan_actions"; status = if ($loot.Contains('next_action = "plan_loot"') -and $loot.Contains('lootOperation = "scan"') -and $loot.Contains('lootOperation = "open"') -and $loot.Contains('lootOperation = "move"') -and $loot.Contains('next_action = "hold"')) { "passed" } else { "failed" }; evidence = "loot runtime returns canonical plan_loot with scan/open/move detail without executing loot actions" },
         [pscustomobject]@{ name = "passive_contract"; status = if ($loot.Contains('mode = "passive"') -and $loot.Contains("owns_runtime_plan = true") -and $loot.Contains("owns_adapter_summary = true") -and $loot.Contains("runtime_actions = false") -and $loot.Contains("scans_containers = false") -and $loot.Contains("opens_containers = false") -and $loot.Contains("moves_items = false") -and $loot.Contains("uses_items = false") -and $loot.Contains("requires_experimental_flag = true")) { "passed" } else { "failed" }; evidence = "loot runtime contract declares passive planning/adapter summary and no scan/open/move/use execution" },
         [pscustomobject]@{ name = "helper_uses_loot_runtime_adapter"; status = if ($helper.Contains('rawget(_G, "CTOA_HELPER_LOOT_RUNTIME")') -and -not $helper.Contains("function lootRuntimeAdapterSummary") -and $helper.Contains('moduleValue(externalLootRuntime, "adapterSummary"') -and -not $helper.Contains("pcall(externalLootRuntime.adapterSummary") -and -not $helper.Contains("pcall(externalLootRuntime.plan") -and -not $helper.Contains("pcall(externalLootRuntime.summary") -and $diagnostics.Contains('" adapter=" .. tostring(data.loot_adapter_text')) { "passed" } else { "failed" }; evidence = "helper shell consumes loot runtime adapter summary for diagnostics only through the shared guarded moduleValue invoker and module-owned passive adapter" },
-        [pscustomobject]@{ name = "runtime_execution_stays_out_of_helper_adapter"; status = if ($helper.Contains('safeGlobalCall(g_game, "getContainers")') -and $diagnostics.Contains('Diagnostics.apiText(game, "move")') -and -not $loot.Contains("g_game.move") -and -not $loot.Contains("useInventoryItem") -and -not $loot.Contains("openContainer(") -and -not $loot.Contains("g_game.open")) { "passed" } else { "failed" }; evidence = "loot runtime plans only; helper adapter reads API probe state without moving or using items" },
+        [pscustomobject]@{ name = "runtime_execution_stays_out_of_helper_adapter"; status = if ($helper.Contains("loot_adapter_text = function") -and $helper.Contains("game = g_game") -and $diagnostics.Contains('Diagnostics.safeGlobalCall(ctx.game, "getContainers")') -and $diagnostics.Contains('Diagnostics.apiText(game, "move")') -and -not $loot.Contains("g_game.move") -and -not $loot.Contains("useInventoryItem") -and -not $loot.Contains("openContainer(") -and -not $loot.Contains("g_game.open")) { "passed" } else { "failed" }; evidence = "loot runtime plans only; diagnostics controller reads API probe state through the injected game dependency without moving or using items" },
         [pscustomobject]@{ name = "no_otclient_globals"; status = if (-not $loot.Contains("g_game") -and -not $loot.Contains("g_map") -and -not $loot.Contains("g_ui") -and -not $loot.Contains("g_keyboard") -and -not $loot.Contains("g_resources")) { "passed" } else { "failed" }; evidence = "loot runtime module does not call native OTClient globals" },
         [pscustomobject]@{ name = "no_runtime_actions"; status = if (-not $loot.Contains("useInventoryItem") -and -not $loot.Contains("openContainer(") -and -not $loot.Contains("g_game.open") -and -not $loot.Contains("g_game.move") -and -not $loot.Contains("autoWalk") -and -not $loot.Contains("findPath") -and -not $loot.Contains("createWidget")) { "passed" } else { "failed" }; evidence = "loot runtime module does not use items, open containers, move items, walk, pathfind, or create widgets" },
         [pscustomobject]@{ name = "loader_present"; status = if ((Test-CtoaHelperBootGraphModule -Source $loader -Name "ctoa_helper_loot_runtime" -File "ctoa_helper_loot_runtime.lua")) { "passed" } else { "failed" }; evidence = "loader stages loot runtime with support modules" },
@@ -2986,11 +3384,11 @@ function Invoke-TimerRuntimeStaticSmoke {
     $checks = @(
         [pscustomobject]@{ name = "module_exists"; status = if (Test-Path -LiteralPath $timerPath) { "passed" } else { "failed" }; evidence = "ctoa_helper_timer_runtime.lua exists" },
         [pscustomobject]@{ name = "global_contract"; status = if ($timer.Contains('rawget(_G, "CTOA_HELPER_TIMER_RUNTIME")') -and $timer.Contains("_G.CTOA_HELPER_TIMER_RUNTIME = TimerRuntime") -and $timer.Contains("return TimerRuntime")) { "passed" } else { "failed" }; evidence = "timer runtime keeps a guarded global and returns module table" },
-        [pscustomobject]@{ name = "timer_runtime_functions"; status = if ($timer.Contains("function TimerRuntime.plan") -and $timer.Contains("function TimerRuntime.summary") -and $timer.Contains("function TimerRuntime.dispatch") -and $timer.Contains("function TimerRuntime.contract")) { "passed" } else { "failed" }; evidence = "timer runtime exposes plan, summary, dispatch, and contract helpers" },
+        [pscustomobject]@{ name = "timer_runtime_functions"; status = if ($timer.Contains("function TimerRuntime.plan") -and $timer.Contains("function TimerRuntime.summary") -and $timer.Contains("function TimerRuntime.probeSummary") -and $timer.Contains("function TimerRuntime.dispatch") -and $timer.Contains("function TimerRuntime.contract")) { "passed" } else { "failed" }; evidence = "timer runtime exposes plan, passive probe summary, dispatch, and contract helpers" },
         [pscustomobject]@{ name = "blocked_reasons"; status = if ($timer.Contains('return "timer_disabled"') -and $timer.Contains('return "protection_zone"') -and $timer.Contains('return "offline"') -and $timer.Contains('return "missing_message"') -and $timer.Contains('return "cast_bridge_blocked"')) { "passed" } else { "failed" }; evidence = "timer runtime planner owns disabled/PZ/offline/message/cast-bridge decisions" },
         [pscustomobject]@{ name = "plan_actions"; status = if ($timer.Contains('next_action = "hold"') -and $timer.Contains('next_action = "plan_timer"') -and $timer.Contains("message_preview") -and $timer.Contains("due_in_ms")) { "passed" } else { "failed" }; evidence = "timer runtime returns hold or canonical plan_timer decisions without executing timer actions" },
-        [pscustomobject]@{ name = "passive_contract"; status = if ($timer.Contains('mode = "passive"') -and $timer.Contains("owns_runtime_plan = true") -and $timer.Contains("owns_dispatch_decision = true") -and $timer.Contains("runtime_actions = false") -and $timer.Contains("talks = false") -and $timer.Contains("casts = false") -and $timer.Contains("evaluates = false") -and $timer.Contains("loads_files = false") -and $timer.Contains("requires_sandbox_attach = true")) { "passed" } else { "failed" }; evidence = "timer runtime contract declares passive planning/dispatch and no talk/cast/eval/load execution" },
-        [pscustomobject]@{ name = "helper_uses_timer_runtime_adapter"; status = if ($helper.Contains('rawget(_G, "CTOA_HELPER_TIMER_RUNTIME")') -and $helper.Contains('moduleValue(externalTimerRuntime, "plan", tools, context)') -and $helper.Contains('moduleValue(externalTimerRuntime, "summary", runtimePlan)') -and $helper.Contains('moduleValue(externalTimerRuntime, "dispatch", plan, tools, {') -and -not $helper.Contains("pcall(externalTimerRuntime.plan") -and -not $helper.Contains("pcall(externalTimerRuntime.summary") -and -not $helper.Contains("pcall(externalTimerRuntime.dispatch") -and $helper.Contains("dispatch.status_text")) { "passed" } else { "failed" }; evidence = "helper shell consumes timer runtime plan/summary/dispatch through guarded moduleValue for operator status and gating" },
+        [pscustomobject]@{ name = "passive_contract"; status = if ($timer.Contains('mode = "passive"') -and $timer.Contains("owns_runtime_plan = true") -and $timer.Contains("owns_probe_summary_text = true") -and $timer.Contains("owns_dispatch_decision = true") -and $timer.Contains("runtime_actions = false") -and $timer.Contains("talks = false") -and $timer.Contains("casts = false") -and $timer.Contains("evaluates = false") -and $timer.Contains("loads_files = false") -and $timer.Contains("requires_sandbox_attach = true")) { "passed" } else { "failed" }; evidence = "timer runtime contract declares passive planning/probe summary/dispatch and no talk/cast/eval/load execution" },
+        [pscustomobject]@{ name = "helper_uses_timer_runtime_adapter"; status = if ($helper.Contains('rawget(_G, "CTOA_HELPER_TIMER_RUNTIME")') -and $helper.Contains('moduleValue(externalTimerRuntime, "plan", tools, context)') -and $helper.Contains('moduleValue(externalTimerRuntime, "summary", runtimePlan)') -and $helper.Contains('moduleValue(externalTimerRuntime, "probeSummary", plan)') -and $helper.Contains('moduleValue(externalTimerRuntime, "dispatch", plan, tools, {') -and -not $helper.Contains('status("Timer probe: "') -and -not $helper.Contains("pcall(externalTimerRuntime.plan") -and -not $helper.Contains("pcall(externalTimerRuntime.summary") -and -not $helper.Contains("pcall(externalTimerRuntime.dispatch") -and $helper.Contains("dispatch.status_text")) { "passed" } else { "failed" }; evidence = "helper shell keeps timer observations and consumes module-owned passive probe/decision text through guarded moduleValue" },
         [pscustomobject]@{ name = "runtime_execution_stays_in_helper"; status = if ($helper.Contains("function maybeRunTimer(now)") -and $helper.Contains("castSpell(message)") -and $helper.Contains("tools.last_timer_ms = now") -and -not $timer.Contains("castSpell") -and -not $timer.Contains("g_game.talk") -and -not $timer.Contains("say(")) { "passed" } else { "failed" }; evidence = "timer runtime plans only; guarded timer cast remains in helper runtime" },
         [pscustomobject]@{ name = "no_otclient_globals"; status = if (-not $timer.Contains("g_game") -and -not $timer.Contains("g_map") -and -not $timer.Contains("g_ui") -and -not $timer.Contains("g_keyboard") -and -not $timer.Contains("g_resources")) { "passed" } else { "failed" }; evidence = "timer runtime module does not call native OTClient globals" },
         [pscustomobject]@{ name = "no_runtime_actions"; status = if (-not $timer.Contains("castSpell") -and -not $timer.Contains("g_game.talk") -and -not $timer.Contains("say(") -and -not $timer.Contains("loadfile") -and -not $timer.Contains("dofile") -and -not $timer.Contains("createWidget")) { "passed" } else { "failed" }; evidence = "timer runtime module does not cast, talk, eval/load files, or create widgets" },
@@ -3042,9 +3440,9 @@ function Invoke-RecoveryRuntimeStaticSmoke {
     $checks = @(
         [pscustomobject]@{ name = "module_exists"; status = if (Test-Path -LiteralPath $recoveryPath) { "passed" } else { "failed" }; evidence = "ctoa_helper_recovery_runtime.lua exists" },
         [pscustomobject]@{ name = "global_contract"; status = if ($recovery.Contains('rawget(_G, "CTOA_HELPER_RECOVERY_RUNTIME")') -and $recovery.Contains("_G.CTOA_HELPER_RECOVERY_RUNTIME = RecoveryRuntime") -and $recovery.Contains("return RecoveryRuntime")) { "passed" } else { "failed" }; evidence = "recovery runtime keeps a guarded global and returns module table" },
-        [pscustomobject]@{ name = "recovery_runtime_functions"; status = if ($recovery.Contains("function RecoveryRuntime.normalizeVitals") -and $recovery.Contains("function RecoveryRuntime.jitterThreshold") -and $recovery.Contains("function RecoveryRuntime.selectHealingSpell") -and $recovery.Contains("function RecoveryRuntime.potionStatusText") -and $recovery.Contains("function RecoveryRuntime.spellStatusText") -and $recovery.Contains("function RecoveryRuntime.actionGap") -and $recovery.Contains("function RecoveryRuntime.summary") -and $recovery.Contains("function RecoveryRuntime.contract")) { "passed" } else { "failed" }; evidence = "recovery runtime exposes vitals normalization, bounded threshold jitter, spell selection, status text, action gap, summary, and contract helpers" },
-        [pscustomobject]@{ name = "passive_contract"; status = if ($recovery.Contains('mode = "passive"') -and $recovery.Contains("owns_vitals_normalization = true") -and $recovery.Contains("owns_healing_spell_selection = true") -and $recovery.Contains("owns_recovery_status_text = true") -and $recovery.Contains("owns_recovery_action_gap = true") -and $recovery.Contains("runtime_actions = false") -and $recovery.Contains("casts = false") -and $recovery.Contains("uses_items = false") -and $recovery.Contains("reads_otclient = false") -and $recovery.Contains("creates_widgets = false")) { "passed" } else { "failed" }; evidence = "recovery runtime contract declares passive vitals/spell/status/action-gap ownership and no OTClient/runtime/widget behavior" },
-        [pscustomobject]@{ name = "helper_uses_recovery_runtime_adapter"; status = if ($helper.Contains('rawget(_G, "CTOA_HELPER_RECOVERY_RUNTIME")') -and $helper.Contains('moduleValue(externalRecoveryRuntime, "normalizeVitals", snapshot)') -and $helper.Contains('moduleValue(externalRecoveryRuntime, "jitterThreshold"') -and $helper.Contains('moduleValue(externalRecoveryRuntime, "selectHealingSpell", healing, hp, nonce)') -and $helper.Contains('moduleValue(externalRecoveryRuntime, "potionStatusText"') -and $helper.Contains('moduleValue(externalRecoveryRuntime, "spellStatusText", spell, hp)') -and $helper.Contains('moduleValue(externalRecoveryRuntime, "actionGap", now, lastActionMs, gapMs)')) { "passed" } else { "failed" }; evidence = "helper shell delegates vitals normalization, bounded threshold jitter, spell selection, status text, and action-gap decisions to recovery runtime adapter" },
+        [pscustomobject]@{ name = "recovery_runtime_functions"; status = if ($recovery.Contains("function RecoveryRuntime.normalizeVitals") -and $recovery.Contains("function RecoveryRuntime.readVitals") -and $recovery.Contains("function RecoveryRuntime.jitterThreshold") -and $recovery.Contains("function RecoveryRuntime.selectHealingSpell") -and $recovery.Contains("function RecoveryRuntime.potionStatusText") -and $recovery.Contains("function RecoveryRuntime.spellStatusText") -and $recovery.Contains("function RecoveryRuntime.actionGap") -and $recovery.Contains("function RecoveryRuntime.recoveryActionGap") -and $recovery.Contains("function RecoveryRuntime.summary") -and $recovery.Contains("function RecoveryRuntime.contract")) { "passed" } else { "failed" }; evidence = "recovery runtime exposes passive vitals, spell selection, status and configured action-gap helpers" },
+        [pscustomobject]@{ name = "passive_contract"; status = if ($recovery.Contains('mode = "passive"') -and $recovery.Contains("owns_vitals_normalization = true") -and $recovery.Contains("owns_vitals_read = true") -and $recovery.Contains("owns_healing_spell_selection = true") -and $recovery.Contains("owns_recovery_status_text = true") -and $recovery.Contains("owns_recovery_action_gap = true") -and $recovery.Contains("owns_recovery_action_gap_bridge = true") -and $recovery.Contains("runtime_actions = false") -and $recovery.Contains("casts = false") -and $recovery.Contains("uses_items = false") -and $recovery.Contains("reads_otclient = false") -and $recovery.Contains("creates_widgets = false")) { "passed" } else { "failed" }; evidence = "recovery runtime owns configured action-gap decisions and no OTClient/runtime/widget behavior" },
+        [pscustomobject]@{ name = "helper_uses_recovery_runtime_adapter"; status = if ($helper.Contains('rawget(_G, "CTOA_HELPER_RECOVERY_RUNTIME")') -and $helper.Contains('moduleValue(externalRecoveryRuntime, "readVitals", player)') -and $helper.Contains('moduleValue(externalRecoveryRuntime, "normalizeVitals", {})') -and $helper.Contains('moduleValue(externalRecoveryRuntime, "jitterThreshold"') -and $helper.Contains('moduleValue(externalRecoveryRuntime, "selectHealingSpell", healing, hp, nonce)') -and $helper.Contains('moduleValue(externalRecoveryRuntime, "potionStatusText"') -and $helper.Contains('moduleValue(externalRecoveryRuntime, "spellStatusText", spell, hp)') -and $helper.Contains('moduleValue(externalRecoveryRuntime, "recoveryActionGap", now, HELPER_CONFIG.healing, HELPER_CONFIG.tools)') -and -not $helper.Contains("local function recoveryActionGap") -and -not $helper.Contains("local function selectHealingSpell")) { "passed" } else { "failed" }; evidence = "helper shell delegates vitals, spell selection, status and action-gap decisions through guarded recovery calls" },
         [pscustomobject]@{ name = "runtime_execution_stays_in_helper"; status = if ($helper.Contains("sendActionbarSlot(healing.potion_actionbar_slot, healing.potion_hotkey)") -and $helper.Contains("sendActionbarSlot(healing.mana_potion_actionbar_slot, healing.mana_potion_hotkey)") -and $helper.Contains("castSpell(spell)") -and -not $recovery.Contains("sendActionbarSlot") -and -not $recovery.Contains("castSpell")) { "passed" } else { "failed" }; evidence = "recovery runtime plans/formats only; guarded potion and spell execution remains in helper runtime" },
         [pscustomobject]@{ name = "no_otclient_globals"; status = if (-not $recovery.Contains("g_game") -and -not $recovery.Contains("g_map") -and -not $recovery.Contains("g_ui") -and -not $recovery.Contains("g_keyboard") -and -not $recovery.Contains("g_resources") -and -not $recovery.Contains("getLocalPlayer")) { "passed" } else { "failed" }; evidence = "recovery runtime module does not call native OTClient globals or local-player APIs" },
         [pscustomobject]@{ name = "no_runtime_actions"; status = if (-not $recovery.Contains("castSpell") -and -not $recovery.Contains("sendActionbarSlot") -and -not $recovery.Contains("useInventoryItem") -and -not $recovery.Contains("autoWalk") -and -not $recovery.Contains("createWidget") -and -not $recovery.Contains("dofile")) { "passed" } else { "failed" }; evidence = "recovery runtime does not cast, use items, walk, create widgets, or load files" },
@@ -3078,6 +3476,491 @@ function Invoke-RecoveryRuntimeStaticSmoke {
     if ($failed.Count -gt 0) {
         throw "Recovery runtime static smoke failed"
     }
+}
+
+function Invoke-RecoveryBridgeStaticSmoke {
+    $repo = Get-RepoRoot
+    $outRoot = Join-Path $repo $DevDir
+    New-Item -ItemType Directory -Force -Path $outRoot | Out-Null
+    $bridgePath = Join-Path $repo "scripts\lua\otclient\ctoa_helper_recovery_bridge.lua"
+    $testPath = Join-Path $repo "tests\test_ctoa_helper_recovery_bridge.py"
+    $bridge = if (Test-Path -LiteralPath $bridgePath) { Get-Content -LiteralPath $bridgePath -Raw } else { "" }
+    $loader = Get-CtoaHelperBootGraphSource -RepoRoot $repo
+    $script = Get-Content -LiteralPath $PSCommandPath -Raw
+    & (Join-Path $repo ".venv\Scripts\python.exe") -m pytest $testPath -q
+    $pytestExitCode = $LASTEXITCODE
+    $checks = @(
+        [pscustomobject]@{ name = "module_exists"; status = if (Test-Path -LiteralPath $bridgePath) { "passed" } else { "failed" }; evidence = "ctoa_helper_recovery_bridge.lua exists" },
+        [pscustomobject]@{ name = "safe_defaults"; status = if ($bridge.Contains("default_armed = false") -and $bridge.Contains("default_dry_run = true") -and $bridge.Contains('mode = "sandbox_only"')) { "passed" } else { "failed" }; evidence = "bridge defaults to disarmed sandbox dry-run" },
+        [pscustomobject]@{ name = "bounded_controls"; status = if ($bridge.Contains("function RecoveryBridge.arm") -and $bridge.Contains("function RecoveryBridge.kill") -and $bridge.Contains("cooldown_active") -and $bridge.Contains("retry_budget_exhausted") -and $bridge.Contains("armed_session_mismatch")) { "passed" } else { "failed" }; evidence = "session arm, kill switch, cooldown, retry budget, and session match are present" },
+        [pscustomobject]@{ name = "trace_contract"; status = if ($bridge.Contains('ctoa.recovery-bridge-trace.v1') -and $bridge.Contains('result = "dry_run"')) { "passed" } else { "failed" }; evidence = "decision guard action result trace is explicit" },
+        [pscustomobject]@{ name = "no_direct_otclient_calls"; status = if (-not $bridge.Contains("g_game.") -and -not $bridge.Contains("g_map.") -and -not $bridge.Contains("castSpell(") -and -not $bridge.Contains("sendActionbarSlot(")) { "passed" } else { "failed" }; evidence = "bridge requires an injected executor and has no direct OTClient action calls" },
+        [pscustomobject]@{ name = "loader_present"; status = if ((Test-CtoaHelperBootGraphModule -Source $loader -Name "ctoa_helper_recovery_bridge" -File "ctoa_helper_recovery_bridge.lua")) { "passed" } else { "failed" }; evidence = "boot graph stages the bridge after its dependencies" },
+        [pscustomobject]@{ name = "packaged"; status = if ($script.Contains("ctoa_helper_recovery_bridge.lua") -and $script.Contains("mods/ctoa_otclient/ctoa_helper_recovery_bridge.lua")) { "passed" } else { "failed" }; evidence = "dev package copies the bridge" },
+        [pscustomobject]@{ name = "real_lua_tests"; status = if ($pytestExitCode -eq 0) { "passed" } else { "failed" }; evidence = "recovery bridge pytest and real-Lua probes pass" }
+    )
+    $failed = @($checks | Where-Object { $_.status -ne "passed" })
+    $report = [pscustomobject]@{
+        name = "solteria-helper-recovery-bridge-static-smoke"
+        created_at = (Get-Date).ToString("s")
+        status = if ($failed.Count -eq 0) { "passed" } else { "failed" }
+        module = "recovery_bridge"
+        mode = "sandbox_only_dry_run_first"
+        bridge_path = [System.IO.Path]::GetFullPath($bridgePath)
+        check_count = $checks.Count
+        passed_count = @($checks | Where-Object { $_.status -eq "passed" }).Count
+        failed_count = $failed.Count
+        checks = $checks
+        next_action = if ($failed.Count -eq 0) { "Run PrepareDev, ValidateDev, and SmokePreflight before sandbox attach." } else { "Fix failed Recovery Bridge contract checks." }
+        next_command = if ($failed.Count -eq 0) { "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action PrepareDev" } else { "" }
+        live_safety = "RecoveryBridgeStaticSmoke reads repo sources and runs local tests only; it does not launch, attach, cast, promote, or overwrite a live client."
+    }
+    $path = Join-Path $outRoot "recovery_bridge_static_smoke.json"
+    Write-JsonAtomic -InputObject $report -Path $path -Depth 8
+    Write-Output "[solteria-helper-test-env] Recovery bridge static smoke: $path"
+    Write-Output "[solteria-helper-test-env] Recovery bridge static status: $($report.status)"
+    if ($failed.Count -gt 0) { throw "Recovery bridge static smoke failed" }
+}
+
+function Invoke-RuntimeModuleGateStaticSmoke {
+    param(
+        [Parameter(Mandatory = $true)][string]$ModuleId,
+        [Parameter(Mandatory = $true)][string]$ModuleFile,
+        [Parameter(Mandatory = $true)][string]$GateId,
+        [Parameter(Mandatory = $true)][string]$Phase,
+        [Parameter(Mandatory = $true)][string]$AllowedAction,
+        [Parameter(Mandatory = $true)][string]$ReportFile
+    )
+    $repo = Get-RepoRoot
+    $outRoot = Join-Path $repo $DevDir
+    New-Item -ItemType Directory -Force -Path $outRoot | Out-Null
+    $enginePath = Join-Path $repo "scripts\lua\otclient\ctoa_helper_runtime_module_gate.lua"
+    $gatePath = Join-Path $repo ("scripts\lua\otclient\" + $ModuleFile)
+    $testPath = Join-Path $repo "tests\test_ctoa_helper_runtime_module_gates.py"
+    $engine = if (Test-Path -LiteralPath $enginePath) { Get-Content -LiteralPath $enginePath -Raw } else { "" }
+    $gate = if (Test-Path -LiteralPath $gatePath) { Get-Content -LiteralPath $gatePath -Raw } else { "" }
+    $loader = Get-CtoaHelperBootGraphSource -RepoRoot $repo
+    $script = Get-Content -LiteralPath $PSCommandPath -Raw
+    & (Join-Path $repo ".venv\Scripts\python.exe") -m pytest $testPath -q
+    $pytestExitCode = $LASTEXITCODE
+    $checks = @(
+        [pscustomobject]@{ name = "gate_engine_exists"; status = if (Test-Path -LiteralPath $enginePath) { "passed" } else { "failed" }; evidence = "shared runtime module gate exists" },
+        [pscustomobject]@{ name = "module_exists"; status = if (Test-Path -LiteralPath $gatePath) { "passed" } else { "failed" }; evidence = "$ModuleFile exists" },
+        [pscustomobject]@{ name = "separate_gate_identity"; status = if ($gate.Contains(('gate_id = "' + $GateId + '"')) -and $gate.Contains(('phase = "' + $Phase + '"'))) { "passed" } else { "failed" }; evidence = "$GateId owns phase $Phase" },
+        [pscustomobject]@{ name = "bounded_action"; status = if ($gate.Contains(('allowed_actions = {"' + $AllowedAction + '"}'))) { "passed" } else { "failed" }; evidence = "gate allowlists only $AllowedAction" },
+        [pscustomobject]@{ name = "safe_contract"; status = if ($gate.Contains('mode = "sandbox_dry_run_gate"') -and $gate.Contains("default_closed = true") -and $gate.Contains("dispatch_allowed = false") -and $gate.Contains("runtime_actions = false") -and $gate.Contains("live_promotion = false") -and $gate.Contains("combat_deferred = true") -and $gate.Contains("cavebot_deferred = true")) { "passed" } else { "failed" }; evidence = "gate is default-closed dry-run and keeps high-risk lanes deferred" },
+        [pscustomobject]@{ name = "no_direct_otclient_calls"; status = if (-not $gate.Contains("g_game.") -and -not $gate.Contains("g_map.") -and -not $gate.Contains("castSpell(") -and -not $gate.Contains("sendActionbarSlot(") -and -not $gate.Contains("autoWalk(")) { "passed" } else { "failed" }; evidence = "gate cannot execute OTClient actions" },
+        [pscustomobject]@{ name = "loader_present"; status = if ((Test-CtoaHelperBootGraphModule -Source $loader -Name $ModuleId -File $ModuleFile)) { "passed" } else { "failed" }; evidence = "boot graph stages the action-specific gate" },
+        [pscustomobject]@{ name = "packaged"; status = if ($script.Contains($ModuleFile) -and $script.Contains(("mods/ctoa_otclient/" + $ModuleFile))) { "passed" } else { "failed" }; evidence = "dev package copies the action-specific gate" },
+        [pscustomobject]@{ name = "real_lua_tests"; status = if ($pytestExitCode -eq 0) { "passed" } else { "failed" }; evidence = "gate matrix and runtime policy tests pass in real Lua" }
+    )
+    $failed = @($checks | Where-Object { $_.status -ne "passed" })
+    $report = [pscustomobject]@{
+        schema_version = "ctoa.runtime-module-safety-gate-report.v1"
+        created_at = (Get-Date).ToString("o")
+        status = if ($failed.Count -eq 0) { "passed" } else { "failed" }
+        module = $ModuleId
+        gate_id = $GateId
+        phase = $Phase
+        mode = "sandbox_dry_run_gate_static_acceptance"
+        check_count = $checks.Count
+        passed_count = @($checks | Where-Object { $_.status -eq "passed" }).Count
+        failed_count = $failed.Count
+        checks = $checks
+        dispatch_allowed = $false
+        runtime_actions = $false
+        live_promotion = $false
+        next_action = if ($failed.Count -eq 0) { "Refresh package and sandbox evidence; do not enable execution through this gate." } else { "Fix failed action-specific runtime gate checks." }
+        live_safety = "This static gate reads repo sources and runs local tests only; it does not launch, attach, execute, promote, or overwrite a live client."
+    }
+    $path = Join-Path $outRoot $ReportFile
+    Write-JsonAtomic -InputObject $report -Path $path -Depth 8
+    Write-Output "[solteria-helper-test-env] Runtime module gate: $path"
+    Write-Output "[solteria-helper-test-env] Runtime module gate status: $($report.status) ($($report.passed_count)/$($report.check_count))"
+    if ($failed.Count -gt 0) { throw "$GateId static smoke failed" }
+}
+
+function Invoke-ConditionsRuntimeGateStaticSmoke {
+    Invoke-RuntimeModuleGateStaticSmoke -ModuleId "ctoa_helper_conditions_runtime_gate" -ModuleFile "ctoa_helper_conditions_runtime_gate.lua" -GateId "conditions_runtime_gate" -Phase "conditions_first" -AllowedAction "plan_paralyze_recovery" -ReportFile "conditions_runtime_gate_static_smoke.json"
+}
+
+function Invoke-EquipmentRuntimeGateStaticSmoke {
+    Invoke-RuntimeModuleGateStaticSmoke -ModuleId "ctoa_helper_equipment_runtime_gate" -ModuleFile "ctoa_helper_equipment_runtime_gate.lua" -GateId "equipment_runtime_gate" -Phase "equipment_after_conditions" -AllowedAction "plan_ring_swap" -ReportFile "equipment_runtime_gate_static_smoke.json"
+}
+
+function Invoke-HealFriendRuntimeGateStaticSmoke {
+    Invoke-RuntimeModuleGateStaticSmoke -ModuleId "ctoa_helper_heal_friend_runtime_gate" -ModuleFile "ctoa_helper_heal_friend_runtime_gate.lua" -GateId "heal_friend_runtime_gate" -Phase "heal_friend_after_equipment_conditions" -AllowedAction "plan_sio" -ReportFile "heal_friend_runtime_gate_static_smoke.json"
+}
+
+function Invoke-RecoveryBridgeActionSmoke {
+    $repo = Get-RepoRoot
+    $outRoot = Join-Path $repo $DevDir
+    New-Item -ItemType Directory -Force -Path $outRoot | Out-Null
+    $sandboxFull = Assert-SandboxClientPath -SandboxPath $SandboxClient -SourcePath $SourceClient
+    $logPath = Join-Path $sandboxFull "ctoa_local.log"
+    if (-not (Test-Path -LiteralPath $logPath)) { throw "Sandbox log is required for RecoveryBridgeActionSmoke" }
+
+    function Send-And-WaitRecoveryBridgeCommand {
+        param([string]$CommandAction, [string]$Needle, [switch]$Confirm)
+        $before = @(Get-Content -LiteralPath $logPath -ErrorAction SilentlyContinue).Count
+        Write-SmokeCommand -ClientDir $sandboxFull -ActiveTab "healing" -CommandAction $CommandAction -Confirm:$Confirm
+        $deadline = (Get-Date).AddSeconds(12)
+        while ((Get-Date) -lt $deadline) {
+            $lines = @(Get-Content -LiteralPath $logPath -ErrorAction SilentlyContinue)
+            $fresh = if ($lines.Count -gt $before) { @($lines[$before..($lines.Count - 1)]) } else { @() }
+            if ($fresh -match [regex]::Escape($Needle)) { return $true }
+            Start-Sleep -Milliseconds 200
+        }
+        return $false
+    }
+
+    $dryRun = Send-And-WaitRecoveryBridgeCommand -CommandAction "recovery_bridge_dry_run" -Needle "Recovery bridge dry-run: ready / dry_run"
+    $armRequest = Send-And-WaitRecoveryBridgeCommand -CommandAction "recovery_bridge_arm" -Needle "click ARM again to confirm"
+    Start-Sleep -Milliseconds 750
+    $armed = Send-And-WaitRecoveryBridgeCommand -CommandAction "recovery_bridge_arm" -Needle "Recovery bridge armed: sandbox Healing session"
+    $executed = Send-And-WaitRecoveryBridgeCommand -CommandAction "recovery_bridge_execute_once" -Needle "Recovery bridge execute-once: executed / success" -Confirm
+    $killed = Send-And-WaitRecoveryBridgeCommand -CommandAction "recovery_bridge_kill" -Needle "Recovery bridge KILL: runtime disarmed"
+    $checks = [ordered]@{ dry_run = $dryRun; arm_request = $armRequest; armed = $armed; executed_once = $executed; kill_switch = $killed }
+    $failed = @($checks.GetEnumerator() | Where-Object { $_.Value -ne $true } | ForEach-Object { $_.Key })
+    $report = [pscustomobject]@{
+        schema_version = "ctoa.recovery-bridge-action-smoke.v1"
+        created_at = (Get-Date).ToString("o")
+        status = if ($failed.Count -eq 0) { "passed" } else { "blocked" }
+        mode = "sandbox_single_healing_action"
+        checks = $checks
+        passed_count = @($checks.GetEnumerator() | Where-Object { $_.Value -eq $true }).Count
+        check_count = $checks.Count
+        failed = $failed
+        final_state = if ($killed) { "killed_and_disarmed" } else { "unknown" }
+        live_promotion = $false
+        next_action = if ($failed.Count -eq 0) { "Review evidence; do not promote live through this action." } else { "Inspect sandbox log and repair failed bridge step." }
+    }
+    $path = Join-Path $outRoot "recovery_bridge_action_smoke.json"
+    Write-JsonAtomic -InputObject $report -Path $path -Depth 8
+    Write-Output "[solteria-helper-test-env] Recovery bridge action smoke: $path"
+    Write-Output "[solteria-helper-test-env] Recovery bridge action status: $($report.status) ($($report.passed_count)/$($report.check_count))"
+    if ($failed.Count -gt 0) { throw "Recovery bridge action smoke failed: $($failed -join ', ')" }
+}
+
+function Invoke-P12ConditionsExecuteOnce {
+    $repo = Get-RepoRoot
+    $outRoot = Join-Path $repo $DevDir
+    $planPath = Join-Path $outRoot "p12_conditions_execute_once_plan.json"
+    $approvalPath = Join-Path $outRoot "p12_conditions_session_approval.json"
+    $tracePath = Join-Path $outRoot "p12_conditions_execute_once_trace.json"
+    $python = Join-Path $repo ".venv\Scripts\python.exe"
+    $planTool = Join-Path $repo "scripts\ops\otclient_p12_conditions_execute_once_plan.py"
+    $preflightTool = Join-Path $repo "scripts\ops\otclient_p12_conditions_execution_preflight.py"
+    $receiptTool = Join-Path $repo "scripts\ops\otclient_p12_conditions_execute_once_receipt.py"
+    & $python $planTool | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "P12 Conditions current plan is blocked." }
+    if (-not (Test-Path -LiteralPath $approvalPath -PathType Leaf)) { throw "P12 Conditions session and execution approvals are required." }
+    $plan = Get-Content -LiteralPath $planPath -Raw | ConvertFrom-Json
+    $approval = Get-Content -LiteralPath $approvalPath -Raw | ConvertFrom-Json
+    if ([string]$plan.status -ne "ready_for_sandbox_session_approval" -or @($plan.blockers).Count -ne 0) { throw "P12 Conditions plan is not ready." }
+    if ([string]$approval.status -ne "approved" -or $approval.session_approved -ne $true -or $approval.execution_approved -ne $true) { throw "P12 Conditions requires both separate approvals." }
+    if ([string]$approval.plan_sha256 -ne [string]$plan.plan_sha256 -or [string]$approval.p9_receipt_sha256 -ne [string]$plan.p9_receipt_sha256) { throw "P12 Conditions approval binding mismatch." }
+    & $python $preflightTool | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "P12 Conditions execution preflight is blocked; no attempt was sent." }
+    $executionPreflight = Get-Content -LiteralPath (Join-Path $outRoot "p12_conditions_execution_preflight.json") -Raw | ConvertFrom-Json
+    if ([string]$executionPreflight.status -ne "ready_for_execution_approval" -or $executionPreflight.execution_approved -ne $true -or @($executionPreflight.blockers).Count -ne 0) { throw "P12 Conditions current domain state is not execution-ready; no attempt was sent." }
+    if ([string]$executionPreflight.plan_sha256 -ne [string]$plan.plan_sha256 -or [string]$executionPreflight.approval_id -ne [string]$approval.approval_id) { throw "P12 Conditions execution-preflight binding mismatch." }
+
+    $sandboxFull = Assert-SandboxClientPath -SandboxPath $SandboxClient -SourcePath $SourceClient
+    $processes = @(Get-SandboxProcessSummaries)
+    if ($processes.Count -ne 1) { throw "P12 Conditions requires exactly one running sandbox process." }
+    $moduleRelative = "mods\ctoa_otclient\ctoa_helper_conditions_execute_once.lua"
+    $stageModule = Join-Path (Join-Path $outRoot "latest") $moduleRelative
+    $sandboxModule = Join-Path $sandboxFull $moduleRelative
+    if (-not (Test-Path -LiteralPath $stageModule -PathType Leaf) -or -not (Test-Path -LiteralPath $sandboxModule -PathType Leaf)) { throw "P12 Conditions module is missing from stage or sandbox." }
+    $stageHash = (Get-FileHash -LiteralPath $stageModule -Algorithm SHA256).Hash.ToLowerInvariant()
+    $sandboxHash = (Get-FileHash -LiteralPath $sandboxModule -Algorithm SHA256).Hash.ToLowerInvariant()
+    if ($stageHash -ne [string]$plan.source_sha256 -or $sandboxHash -ne $stageHash) { throw "P12 Conditions sandbox/module hash parity failed." }
+
+    $logPath = Join-Path $sandboxFull "ctoa_local.log"
+    if (-not (Test-Path -LiteralPath $logPath -PathType Leaf)) { throw "P12 Conditions sandbox log is required." }
+    $before = @(Get-Content -LiteralPath $logPath -ErrorAction SilentlyContinue)
+    $runtimeStates = @($before | Where-Object { [string]$_ -match "Runtime (armed|disarmed)$" })
+    if ($runtimeStates.Count -eq 0 -or [string]$runtimeStates[-1] -notmatch "Runtime disarmed$") { throw "P12 Conditions requires the global runtime to be disarmed." }
+
+    $sessionId = [string]$approval.approval_id
+    Write-SmokeCommand -ClientDir $sandboxFull -ActiveTab "conditions" -CommandAction "p12_conditions_execute_once" -Confirm -SessionId $sessionId -PlanSha256 ([string]$plan.plan_sha256) -P9ReceiptSha256 ([string]$plan.p9_receipt_sha256) -RetryBudget 0 -SessionApproved -ExecutionApproved
+    $deadline = (Get-Date).AddSeconds(12)
+    $fresh = @()
+    $line = ""
+    while ((Get-Date) -lt $deadline) {
+        $all = @(Get-Content -LiteralPath $logPath -ErrorAction SilentlyContinue)
+        $fresh = if ($all.Count -gt $before.Count) { @($all[$before.Count..($all.Count - 1)]) } else { @() }
+        $line = [string](@($fresh | Where-Object { [string]$_ -match "P12 Conditions execute-once:" } | Select-Object -Last 1) | Select-Object -First 1)
+        if (-not [string]::IsNullOrWhiteSpace($line)) { break }
+        Start-Sleep -Milliseconds 200
+    }
+    $pattern = 'status=(\w+) result=(\w+) attempt=(\d+) final=([\w_]+) retry=(true|false) armed=(true|false) killed=(true|false) consumed=(true|false) plan=([0-9a-f]{64}) p9=([0-9a-f]{64})'
+    $terminalMatch = [regex]::Match($line, $pattern)
+    if (-not $terminalMatch.Success) { throw "P12 Conditions did not emit a complete terminal trace." }
+    if (@($fresh | Where-Object { [string]$_ -match "Runtime armed$" }).Count -gt 0) { throw "P12 Conditions unexpectedly armed the global runtime." }
+    $groups = $terminalMatch.Groups
+    $trace = [ordered]@{
+        schema_version = "ctoa.p12-conditions-execute-once-trace.v1"
+        created_at = (Get-Date).ToString("o")
+        status = $groups[1].Value
+        result = $groups[2].Value
+        vocation = "ek"
+        action = "cast_exura_ico"
+        spell = "exura ico"
+        attempt_count = [int]$groups[3].Value
+        retry_budget = 0
+        executor_called = ($groups[1].Value -in @("executed", "failed"))
+        retry_scheduled = ($groups[5].Value -eq "true")
+        final_state = $groups[4].Value
+        live_promotion = $false
+        plan_sha256 = $groups[9].Value
+        p9_receipt_sha256 = $groups[10].Value
+        terminal_snapshot = [ordered]@{
+            armed = ($groups[6].Value -eq "true")
+            killed = ($groups[7].Value -eq "true")
+            consumed = ($groups[8].Value -eq "true")
+            attempt_count = [int]$groups[3].Value
+        }
+    }
+    Write-JsonAtomic -InputObject $trace -Path $tracePath -Depth 8
+    & $python $receiptTool --trace $tracePath
+    if ($LASTEXITCODE -ne 0) { throw "P12 Conditions terminal receipt was rejected." }
+    Write-Output "[solteria-helper-test-env] P12 Conditions execute-once completed and terminally disarmed. Live client untouched."
+}
+
+function Invoke-P12EquipmentExecuteOnce {
+    $repo = Get-RepoRoot
+    $outRoot = Join-Path $repo $DevDir
+    $planPath = Join-Path $outRoot "p12_equipment_execute_once_plan.json"
+    $approvalPath = Join-Path $outRoot "p12_equipment_session_approval.json"
+    $tracePath = Join-Path $outRoot "p12_equipment_execute_once_trace.json"
+    $python = Join-Path $repo ".venv\Scripts\python.exe"
+    $preflightTool = Join-Path $repo "scripts\ops\otclient_p12_equipment_execution_preflight.py"
+    $receiptTool = Join-Path $repo "scripts\ops\otclient_p12_equipment_execute_once_receipt.py"
+    if (-not (Test-Path -LiteralPath $planPath -PathType Leaf)) { throw "P12 Equipment approved plan is required." }
+    if (-not (Test-Path -LiteralPath $approvalPath -PathType Leaf)) { throw "P12 Equipment session and execution approvals are required." }
+    $plan = Get-Content -LiteralPath $planPath -Raw | ConvertFrom-Json
+    $approval = Get-Content -LiteralPath $approvalPath -Raw | ConvertFrom-Json
+    if ([string]$plan.status -ne "ready_for_sandbox_session_approval" -or @($plan.blockers).Count -ne 0) { throw "P12 Equipment plan is not ready." }
+    if ([string]$approval.status -ne "approved" -or $approval.session_approved -ne $true -or $approval.execution_approved -ne $true) { throw "P12 Equipment requires both separate approvals." }
+    if ([string]$approval.plan_sha256 -ne [string]$plan.plan_sha256 -or [string]$approval.p10_receipt_sha256 -ne [string]$plan.p10_receipt_sha256) { throw "P12 Equipment approval binding mismatch." }
+    & $python $preflightTool | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "P12 Equipment execution preflight is blocked; no attempt was sent." }
+    $executionPreflight = Get-Content -LiteralPath (Join-Path $outRoot "p12_equipment_execution_preflight.json") -Raw | ConvertFrom-Json
+    if ([string]$executionPreflight.status -ne "ready_for_execution_approval" -or $executionPreflight.execution_approved -ne $true -or @($executionPreflight.blockers).Count -ne 0) { throw "P12 Equipment current domain state is not execution-ready; no attempt was sent." }
+    if ([string]$executionPreflight.plan_sha256 -ne [string]$plan.plan_sha256 -or [string]$executionPreflight.approval_id -ne [string]$approval.approval_id) { throw "P12 Equipment execution-preflight binding mismatch." }
+
+    $sandboxFull = Assert-SandboxClientPath -SandboxPath $SandboxClient -SourcePath $SourceClient
+    $processes = @(Get-SandboxProcessSummaries)
+    if ($processes.Count -ne 1) { throw "P12 Equipment requires exactly one running sandbox process." }
+    $liveBefore = @((Get-SourceClientProcessSummaries) | Sort-Object id)
+    $liveBeforeJson = ConvertTo-Json -InputObject @($liveBefore) -Compress -Depth 6
+    $moduleRelative = "mods\ctoa_otclient\ctoa_helper_equipment_execute_once.lua"
+    $stageModule = Join-Path (Join-Path $outRoot "latest") $moduleRelative
+    $sandboxModule = Join-Path $sandboxFull $moduleRelative
+    if (-not (Test-Path -LiteralPath $stageModule -PathType Leaf) -or -not (Test-Path -LiteralPath $sandboxModule -PathType Leaf)) { throw "P12 Equipment module is missing from stage or sandbox." }
+    $stageHash = (Get-FileHash -LiteralPath $stageModule -Algorithm SHA256).Hash.ToLowerInvariant()
+    $sandboxHash = (Get-FileHash -LiteralPath $sandboxModule -Algorithm SHA256).Hash.ToLowerInvariant()
+    if ($stageHash -ne [string]$plan.source_sha256 -or $sandboxHash -ne $stageHash) { throw "P12 Equipment sandbox/module hash parity failed." }
+
+    $logPath = Join-Path $sandboxFull "ctoa_local.log"
+    $capabilityPath = Join-Path $sandboxFull "mods\ctoa_otclient\ctoa_client_capabilities.json"
+    if (-not (Test-Path -LiteralPath $logPath -PathType Leaf) -or -not (Test-Path -LiteralPath $capabilityPath -PathType Leaf)) { throw "P12 Equipment sandbox log and capability evidence are required." }
+    $before = @(Get-Content -LiteralPath $logPath -ErrorAction SilentlyContinue)
+    $runtimeStates = @($before | Where-Object { [string]$_ -match "Runtime (armed|disarmed)$" })
+    if ($runtimeStates.Count -eq 0 -or [string]$runtimeStates[-1] -notmatch "Runtime disarmed$") { throw "P12 Equipment requires the global runtime to be disarmed." }
+
+    $commandStartedAt = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+    $sessionId = [string]$approval.approval_id
+    Write-SmokeCommand -ClientDir $sandboxFull -ActiveTab "equipment" -CommandAction "p12_equipment_execute_once" -Confirm -SessionId $sessionId -PlanSha256 ([string]$plan.plan_sha256) -P10ReceiptSha256 ([string]$plan.p10_receipt_sha256) -BeforeItemId ([int]$plan.before_item_id) -CandidateItemId ([int]$plan.candidate_item_id) -SourceContainerId ([int]$plan.source_container_id) -SourceSlotIndex ([int]$plan.source_slot_index) -RetryBudget 0 -SessionApproved -ExecutionApproved
+    $deadline = (Get-Date).AddSeconds(12)
+    $fresh = @()
+    $line = ""
+    while ((Get-Date) -lt $deadline) {
+        $all = @(Get-Content -LiteralPath $logPath -ErrorAction SilentlyContinue)
+        $fresh = if ($all.Count -gt $before.Count) { @($all[$before.Count..($all.Count - 1)]) } else { @() }
+        $line = [string](@($fresh | Where-Object { [string]$_ -match "P12 Equipment execute-once:" } | Select-Object -Last 1) | Select-Object -First 1)
+        if (-not [string]::IsNullOrWhiteSpace($line)) { break }
+        Start-Sleep -Milliseconds 200
+    }
+    $pattern = 'status=(\w+) result=(\w+) attempt=(\d+) final=([\w_]+) retry=(true|false) armed=(true|false) killed=(true|false) consumed=(true|false) plan=([0-9a-f]{64}) p10=([0-9a-f]{64})'
+    $terminalMatch = [regex]::Match($line, $pattern)
+    if (-not $terminalMatch.Success) { throw "P12 Equipment did not emit a complete terminal trace." }
+    if (@($fresh | Where-Object { [string]$_ -match "Runtime armed$" }).Count -gt 0) { throw "P12 Equipment unexpectedly armed the global runtime." }
+
+    $postCapability = $null
+    while ((Get-Date) -lt $deadline) {
+        try {
+            $candidate = Get-Content -LiteralPath $capabilityPath -Raw | ConvertFrom-Json
+            $observation = $candidate.equipment_shadow_observation
+            if ([long]$candidate.observed_at_unix_ms -ge $commandStartedAt -and $candidate.runtime_state -eq "disarmed" -and $candidate.runtime_enabled -eq $false -and $null -ne $observation -and [int]$observation.ring.item_id -eq [int]$plan.requires_post_action_ring_id) {
+                $postCapability = $candidate
+                break
+            }
+        } catch {
+            # The reporter writes atomically, but tolerate a transient read boundary.
+        }
+        Start-Sleep -Milliseconds 200
+    }
+    if ($null -eq $postCapability) { throw "P12 Equipment did not prove the requested ring as equipped; no retry was attempted." }
+    $liveAfter = @((Get-SourceClientProcessSummaries) | Sort-Object id)
+    $liveAfterJson = ConvertTo-Json -InputObject @($liveAfter) -Compress -Depth 6
+    if ($liveAfterJson -ne $liveBeforeJson) { throw "P12 Equipment detected a live-client process change; receipt refused." }
+
+    $groups = $terminalMatch.Groups
+    $trace = [ordered]@{
+        schema_version = "ctoa.p12-equipment-execute-once-trace.v1"
+        created_at = (Get-Date).ToString("o")
+        status = $groups[1].Value
+        result = $groups[2].Value
+        action = "move_ring_candidate_to_equipment_slot"
+        before_item_id = [int]$plan.before_item_id
+        candidate_item_id = [int]$plan.candidate_item_id
+        source_container_id = [int]$plan.source_container_id
+        source_slot_index = [int]$plan.source_slot_index
+        attempt_count = [int]$groups[3].Value
+        retry_budget = 0
+        executor_called = ($groups[1].Value -in @("dispatched", "failed"))
+        retry_scheduled = ($groups[5].Value -eq "true")
+        final_state = $groups[4].Value
+        live_promotion = $false
+        live_processes_before = @($liveBefore)
+        live_processes_after = @($liveAfter)
+        plan_sha256 = $groups[9].Value
+        p10_receipt_sha256 = $groups[10].Value
+        post_action_observation = $postCapability.equipment_shadow_observation
+        post_action_capability = [ordered]@{
+            observed_at_unix_ms = $postCapability.observed_at_unix_ms
+            online = $postCapability.online
+            runtime_state = $postCapability.runtime_state
+            runtime_enabled = $postCapability.runtime_enabled
+        }
+        terminal_snapshot = [ordered]@{
+            armed = ($groups[6].Value -eq "true")
+            killed = ($groups[7].Value -eq "true")
+            consumed = ($groups[8].Value -eq "true")
+            attempt_count = [int]$groups[3].Value
+        }
+    }
+    Write-JsonAtomic -InputObject $trace -Path $tracePath -Depth 12
+    & $python $receiptTool --trace $tracePath
+    if ($LASTEXITCODE -ne 0) { throw "P12 Equipment terminal receipt was rejected; no retry was attempted." }
+    Write-Output "[solteria-helper-test-env] P12 Equipment execute-once completed and terminally disarmed. Live client untouched."
+}
+
+function Invoke-P12HealFriendExecuteOnce {
+    $repo = Get-RepoRoot
+    $outRoot = Join-Path $repo $DevDir
+    $planPath = Join-Path $outRoot "p12_heal_friend_execute_once_plan.json"
+    $approvalPath = Join-Path $outRoot "p12_heal_friend_session_approval.json"
+    $tracePath = Join-Path $outRoot "p12_heal_friend_execute_once_trace.json"
+    $python = Join-Path $repo ".venv\Scripts\python.exe"
+    $preflightTool = Join-Path $repo "scripts\ops\otclient_p12_heal_friend_execution_preflight.py"
+    $receiptTool = Join-Path $repo "scripts\ops\otclient_p12_heal_friend_execute_once_receipt.py"
+    if (-not (Test-Path -LiteralPath $planPath -PathType Leaf)) { throw "P12 Heal Friend approved plan is required." }
+    if (-not (Test-Path -LiteralPath $approvalPath -PathType Leaf)) { throw "P12 Heal Friend session and execution approvals are required." }
+    $plan = Get-Content -LiteralPath $planPath -Raw | ConvertFrom-Json
+    $approval = Get-Content -LiteralPath $approvalPath -Raw | ConvertFrom-Json
+    if ([string]$plan.status -ne "ready_for_sandbox_session_approval" -or @($plan.blockers).Count -ne 0) { throw "P12 Heal Friend plan is not ready." }
+    if ([string]$approval.status -ne "approved" -or $approval.session_approved -ne $true -or $approval.execution_approved -ne $true) { throw "P12 Heal Friend requires both separate approvals." }
+    if ([string]$approval.plan_sha256 -ne [string]$plan.plan_sha256 -or [string]$approval.p11_receipt_sha256 -ne [string]$plan.p11_receipt_sha256 -or [string]$approval.p12_equipment_receipt_sha256 -ne [string]$plan.p12_equipment_receipt_sha256) { throw "P12 Heal Friend approval binding mismatch." }
+    & $python $preflightTool | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "P12 Heal Friend execution preflight is blocked; no cast was sent." }
+    $executionPreflight = Get-Content -LiteralPath (Join-Path $outRoot "p12_heal_friend_execution_preflight.json") -Raw | ConvertFrom-Json
+    if ([string]$executionPreflight.status -ne "ready_for_execution_approval" -or $executionPreflight.execution_approved -ne $true -or @($executionPreflight.blockers).Count -ne 0) { throw "P12 Heal Friend current exact-target state is not execution-ready; no cast was sent." }
+    if ([string]$executionPreflight.plan_sha256 -ne [string]$plan.plan_sha256 -or [string]$executionPreflight.approval_id -ne [string]$approval.approval_id) { throw "P12 Heal Friend execution-preflight binding mismatch." }
+
+    $sandboxFull = Assert-SandboxClientPath -SandboxPath $SandboxClient -SourcePath $SourceClient
+    $processes = @(Get-SandboxProcessSummaries)
+    if ($processes.Count -ne 1) { throw "P12 Heal Friend requires exactly one running sandbox process." }
+    $liveBefore = @((Get-SourceClientProcessSummaries) | Sort-Object id)
+    $liveBeforeJson = ConvertTo-Json -InputObject @($liveBefore) -Compress -Depth 6
+    $moduleRelative = "mods\ctoa_otclient\ctoa_helper_heal_friend_execute_once.lua"
+    $stageModule = Join-Path (Join-Path $outRoot "latest") $moduleRelative
+    $sandboxModule = Join-Path $sandboxFull $moduleRelative
+    if (-not (Test-Path -LiteralPath $stageModule -PathType Leaf) -or -not (Test-Path -LiteralPath $sandboxModule -PathType Leaf)) { throw "P12 Heal Friend module is missing from stage or sandbox." }
+    $stageHash = (Get-FileHash -LiteralPath $stageModule -Algorithm SHA256).Hash.ToLowerInvariant()
+    $sandboxHash = (Get-FileHash -LiteralPath $sandboxModule -Algorithm SHA256).Hash.ToLowerInvariant()
+    if ($stageHash -ne [string]$plan.source_sha256 -or $sandboxHash -ne $stageHash) { throw "P12 Heal Friend sandbox/module hash parity failed." }
+
+    $logPath = Join-Path $sandboxFull "ctoa_local.log"
+    $capabilityPath = Join-Path $sandboxFull "mods\ctoa_otclient\ctoa_client_capabilities.json"
+    if (-not (Test-Path -LiteralPath $logPath -PathType Leaf) -or -not (Test-Path -LiteralPath $capabilityPath -PathType Leaf)) { throw "P12 Heal Friend sandbox log and capability evidence are required." }
+    $before = @(Get-Content -LiteralPath $logPath -ErrorAction SilentlyContinue)
+    $runtimeStates = @($before | Where-Object { [string]$_ -match "Runtime (armed|disarmed)$" })
+    if ($runtimeStates.Count -eq 0 -or [string]$runtimeStates[-1] -notmatch "Runtime disarmed$") { throw "P12 Heal Friend requires the global runtime to be disarmed." }
+
+    $commandStartedAt = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+    $sessionId = [string]$approval.approval_id
+    Write-SmokeCommand -ClientDir $sandboxFull -ActiveTab "heal_friend" -CommandAction "p12_heal_friend_execute_once" -Confirm -SessionId $sessionId -PlanSha256 ([string]$plan.plan_sha256) -P11ReceiptSha256 ([string]$plan.p11_receipt_sha256) -P12EquipmentReceiptSha256 ([string]$plan.p12_equipment_receipt_sha256) -TargetId ([int]$plan.target_id) -TargetName ([string]$plan.target_name) -WhitelistRevision ([string]$plan.whitelist_revision) -HpThreshold ([int]$plan.hp_threshold) -MaxRange ([int]$plan.max_range) -RetryBudget 0 -SessionApproved -ExecutionApproved
+    $deadline = (Get-Date).AddSeconds(12)
+    $fresh = @()
+    $line = ""
+    while ((Get-Date) -lt $deadline) {
+        $all = @(Get-Content -LiteralPath $logPath -ErrorAction SilentlyContinue)
+        $fresh = if ($all.Count -gt $before.Count) { @($all[$before.Count..($all.Count - 1)]) } else { @() }
+        $line = [string](@($fresh | Where-Object { [string]$_ -match "P12 Heal Friend execute-once:" } | Select-Object -Last 1) | Select-Object -First 1)
+        if (-not [string]::IsNullOrWhiteSpace($line)) { break }
+        Start-Sleep -Milliseconds 200
+    }
+    $pattern = 'status=(\w+) result=(\w+) attempt=(\d+) final=([\w_]+) retry=(true|false) armed=(true|false) killed=(true|false) consumed=(true|false) target=(\d+) plan=([0-9a-f]{64}) p11=([0-9a-f]{64}) p12e=([0-9a-f]{64})'
+    $terminalMatch = [regex]::Match($line, $pattern)
+    if (-not $terminalMatch.Success) { throw "P12 Heal Friend did not emit a complete terminal trace." }
+    if (@($fresh | Where-Object { [string]$_ -match "Runtime armed$" }).Count -gt 0) { throw "P12 Heal Friend unexpectedly armed the global runtime." }
+
+    $postCapability = $null
+    while ((Get-Date) -lt $deadline) {
+        try {
+            $candidate = Get-Content -LiteralPath $capabilityPath -Raw | ConvertFrom-Json
+            if ([long]$candidate.observed_at_unix_ms -ge $commandStartedAt -and $candidate.runtime_state -eq "disarmed" -and $candidate.runtime_enabled -eq $false -and $candidate.online -eq $true) {
+                $postCapability = $candidate
+                break
+            }
+        } catch {
+            # Tolerate an atomic reporter write boundary.
+        }
+        Start-Sleep -Milliseconds 200
+    }
+    if ($null -eq $postCapability) { throw "P12 Heal Friend did not prove a fresh terminally disarmed capability; no retry was attempted." }
+    $liveAfter = @((Get-SourceClientProcessSummaries) | Sort-Object id)
+    $liveAfterJson = ConvertTo-Json -InputObject @($liveAfter) -Compress -Depth 6
+    if ($liveAfterJson -ne $liveBeforeJson) { throw "P12 Heal Friend detected a live-client process change; receipt refused." }
+
+    $groups = $terminalMatch.Groups
+    $trace = [ordered]@{
+        schema_version = "ctoa.p12-heal-friend-execute-once-trace.v1"
+        created_at_unix_ms = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+        status = $groups[1].Value
+        result = $groups[2].Value
+        action = "cast_exura_sio_exact_target"
+        spell = "exura sio"
+        vocation = "ed"
+        target_id = [int]$groups[9].Value
+        target_name_sha256 = [string]$plan.target_name_sha256
+        whitelist_revision = [string]$plan.whitelist_revision
+        attempt_count = [int]$groups[3].Value
+        retry_budget = 0
+        executor_called = ($groups[1].Value -in @("executed", "failed"))
+        retry_scheduled = ($groups[5].Value -eq "true")
+        final_state = $groups[4].Value
+        live_promotion = $false
+        live_processes_before = @($liveBefore)
+        live_processes_after = @($liveAfter)
+        plan_sha256 = $groups[10].Value
+        p11_receipt_sha256 = $groups[11].Value
+        p12_equipment_receipt_sha256 = $groups[12].Value
+        terminal_snapshot = [ordered]@{
+            armed = ($groups[6].Value -eq "true")
+            killed = ($groups[7].Value -eq "true")
+            consumed = ($groups[8].Value -eq "true")
+            attempt_count = [int]$groups[3].Value
+        }
+    }
+    Write-JsonAtomic -InputObject $trace -Path $tracePath -Depth 12
+    & $python $receiptTool --trace $tracePath
+    if ($LASTEXITCODE -ne 0) { throw "P12 Heal Friend terminal receipt was rejected; no retry was attempted." }
+    Write-Output "[solteria-helper-test-env] P12 Heal Friend execute-once completed and terminally disarmed. Live client untouched."
 }
 
 function Invoke-HealingVitalsSmoke {
@@ -3483,21 +4366,21 @@ function Invoke-ProfileSchemaStaticSmoke {
         [pscustomobject]@{ name = "persistence_module_exists"; status = if (Test-Path -LiteralPath $persistencePath) { "passed" } else { "failed" }; evidence = "ctoa_helper_profile_persistence.lua exists" },
         [pscustomobject]@{ name = "global_contract"; status = if ($schema.Contains('rawget(_G, "CTOA_HELPER_PROFILE_SCHEMA")') -and $schema.Contains("_G.CTOA_HELPER_PROFILE_SCHEMA = ProfileSchema") -and $schema.Contains("return ProfileSchema")) { "passed" } else { "failed" }; evidence = "profile schema keeps a guarded global and returns module table" },
         [pscustomobject]@{ name = "persistence_global_contract"; status = if ($persistence.Contains('rawget(_G, "CTOA_HELPER_PROFILE_PERSISTENCE")') -and $persistence.Contains("_G.CTOA_HELPER_PROFILE_PERSISTENCE = ProfilePersistence") -and $persistence.Contains("return ProfilePersistence")) { "passed" } else { "failed" }; evidence = "profile persistence keeps a guarded global and returns module table" },
-        [pscustomobject]@{ name = "schema_functions"; status = if ($schema.Contains("function ProfileSchema.requiredSections") -and $schema.Contains("function ProfileSchema.sectionOrder") -and $schema.Contains("function ProfileSchema.safeFalseKeys") -and $schema.Contains("function ProfileSchema.optionList") -and $schema.Contains("function ProfileSchema.rotationPresets") -and $schema.Contains("function ProfileSchema.keyOrder") -and $schema.Contains("function ProfileSchema.valueIndex") -and $schema.Contains("function ProfileSchema.cycleValue") -and $schema.Contains("function ProfileSchema.fieldGeometry") -and $schema.Contains("function ProfileSchema.stepValue") -and $schema.Contains("function ProfileSchema.mergeTable") -and $schema.Contains("function ProfileSchema.serializeLua") -and $schema.Contains("function ProfileSchema.currentVersion") -and $schema.Contains("function ProfileSchema.currentSchema") -and $schema.Contains("function ProfileSchema.profileVersion") -and $schema.Contains("function ProfileSchema.migrationPlan") -and $schema.Contains("function ProfileSchema.migrate") -and $schema.Contains("function ProfileSchema.summary") -and $schema.Contains("function ProfileSchema.profileSchemaSuffix") -and $schema.Contains("function ProfileSchema.rotationPresetIds") -and $schema.Contains("function ProfileSchema.rotationPresetLabel") -and $schema.Contains("function ProfileSchema.rotationSummary") -and $schema.Contains("function ProfileSchema.spellLabel") -and $schema.Contains("function ProfileSchema.potionLabel") -and $schema.Contains("function ProfileSchema.runeLabel") -and $schema.Contains("function ProfileSchema.healFriendPriorityLabel") -and $schema.Contains("function ProfileSchema.magicPriorityLabel") -and $schema.Contains("function ProfileSchema.themePresetLabel") -and $schema.Contains("function ProfileSchema.onOffLabel") -and $schema.Contains("function ProfileSchema.autosaveLabel") -and $schema.Contains("function ProfileSchema.titleSummary") -and $schema.Contains("function ProfileSchema.healingSummary") -and $schema.Contains("function ProfileSchema.profileSummary") -and $schema.Contains("function ProfileSchema.contract")) { "passed" } else { "failed" }; evidence = "profile schema exposes version parsing, bounded migration, sections, order, safe defaults, serialization, summaries, and contract" },
+        [pscustomobject]@{ name = "schema_functions"; status = if ($schema.Contains("function ProfileSchema.requiredSections") -and $schema.Contains("function ProfileSchema.sectionOrder") -and $schema.Contains("function ProfileSchema.safeFalseKeys") -and $schema.Contains("function ProfileSchema.optionList") -and $schema.Contains("function ProfileSchema.rotationPresets") -and $schema.Contains("function ProfileSchema.keyOrder") -and $schema.Contains("function ProfileSchema.valueIndex") -and $schema.Contains("function ProfileSchema.cycleValue") -and $schema.Contains("function ProfileSchema.fieldGeometry") -and $schema.Contains("function ProfileSchema.stepValue") -and $schema.Contains("function ProfileSchema.displayProfileName") -and $schema.Contains("function ProfileSchema.profileSchemaValue") -and $schema.Contains("function ProfileSchema.profileSchemaTable") -and $schema.Contains("function ProfileSchema.mergeTable") -and $schema.Contains("function ProfileSchema.serializeLua") -and $schema.Contains("function ProfileSchema.currentVersion") -and $schema.Contains("function ProfileSchema.currentSchema") -and $schema.Contains("function ProfileSchema.profileVersion") -and $schema.Contains("function ProfileSchema.migrationPlan") -and $schema.Contains("function ProfileSchema.migrate") -and $schema.Contains("function ProfileSchema.summary") -and $schema.Contains("function ProfileSchema.profileSchemaSuffix") -and $schema.Contains("function ProfileSchema.rotationPresetIds") -and $schema.Contains("function ProfileSchema.rotationPresetLabel") -and $schema.Contains("function ProfileSchema.rotationPresetFormatter") -and $schema.Contains("function ProfileSchema.rotationSummary") -and $schema.Contains("function ProfileSchema.rotationSummaryText") -and $schema.Contains("function ProfileSchema.spellLabel") -and $schema.Contains("function ProfileSchema.potionLabel") -and $schema.Contains("function ProfileSchema.runeLabel") -and $schema.Contains("function ProfileSchema.healFriendPriorityLabel") -and $schema.Contains("function ProfileSchema.magicPriorityLabel") -and $schema.Contains("function ProfileSchema.themePresetLabel") -and $schema.Contains("function ProfileSchema.onOffLabel") -and $schema.Contains("function ProfileSchema.autosaveLabel") -and $schema.Contains("function ProfileSchema.titleSummary") -and $schema.Contains("function ProfileSchema.healingSummary") -and $schema.Contains("function ProfileSchema.profileSummary") -and $schema.Contains("function ProfileSchema.contract")) { "passed" } else { "failed" }; evidence = "profile schema exposes extracted display, formatter, rotation-summary, migration, metadata and serialization helpers" },
         [pscustomobject]@{ name = "required_sections"; status = if ($schema.Contains('"schema_version"') -and $schema.Contains('"name"') -and $schema.Contains('"enabled"') -and $schema.Contains('"safe_boot_runtime_disabled"') -and $schema.Contains('"tick_ms"') -and $schema.Contains('"healing"') -and $schema.Contains('"tools"') -and $schema.Contains('"hud"')) { "passed" } else { "failed" }; evidence = "profile schema declares version and required core profile sections" },
         [pscustomobject]@{ name = "safe_false_keys"; status = if ($schema.Contains('"tools.auto_attack"') -and $schema.Contains('"tools.auto_exeta"') -and $schema.Contains('"tools.auto_haste"') -and $schema.Contains('"tools.spell_rotation"') -and $schema.Contains('"tools.rune_enabled"') -and $schema.Contains('"tools.cavebot_movement_enabled"') -and $schema.Contains('"tools.timer_enabled"') -and $schema.Contains('"tools.feature_flags.experimental_loot"')) { "passed" } else { "failed" }; evidence = "profile schema owns safe false keys for runtime-dangerous toggles" },
         [pscustomobject]@{ name = "migration_plan_contract"; status = if ($schema.Contains('local CURRENT_PROFILE_SCHEMA = "ctoa-helper-profile-v1"') -and $schema.Contains('reason = "future_schema_version"') -and $schema.Contains('reason = "invalid_schema_version"') -and $schema.Contains('steps[#steps + 1] = "enforce_safe_defaults"') -and $schema.Contains("function ProfileSchema.migrate") -and $schema.Contains("migrated.safe_boot_runtime_disabled = true") -and $schema.Contains("preserves_key_order = true") -and $schema.Contains("runtime_actions = false")) { "passed" } else { "failed" }; evidence = "profile schema versions migrations, rejects future/invalid profiles, and enforces safe in-memory defaults without mutating files" },
-        [pscustomobject]@{ name = "passive_contract"; status = if ($schema.Contains('mode = "passive"') -and $schema.Contains("owns_schema_metadata = true") -and $schema.Contains("owns_versioned_migration_plan = true") -and $schema.Contains("owns_safe_profile_migration = true") -and $schema.Contains("owns_key_order_metadata = true") -and $schema.Contains("owns_merge_table = true") -and $schema.Contains("owns_lua_serializer = true") -and $schema.Contains("owns_rotation_metadata = true") -and $schema.Contains("owns_profile_labels = true") -and $schema.Contains("owns_profile_summaries = true") -and $schema.Contains("runtime_actions = false") -and $schema.Contains("loads_files = false") -and $schema.Contains("saves_files = false") -and $schema.Contains("migrates_files = false") -and $schema.Contains("requires_profile_audit = true") -and $schema.Contains("requires_safe_boot_defaults = true")) { "passed" } else { "failed" }; evidence = "profile schema contract declares passive in-memory versioned migration and no file migration" },
-        [pscustomobject]@{ name = "helper_uses_profile_schema_adapter"; status = if ($helper.Contains('rawget(_G, "CTOA_HELPER_PROFILE_SCHEMA")') -and $helper.Contains("local function profileSchemaValue(functionName, fallback, ...)") -and -not $helper.Contains("function profileSchemaText(functionName, fallback, ...)") -and $helper.Contains("local function profileSchemaTable(functionName, fallback, ...)") -and $helper.Contains("moduleValue(externalProfileSchema, functionName") -and -not $helper.Contains(("pcall(externalProfileSchema" + "[functionName]")) -and $helper.Contains("profileSchema = externalProfileSchema")) { "passed" } else { "failed" }; evidence = "helper shell consumes profile schema through the shared guarded module adapter and operator summary context" },
-        [pscustomobject]@{ name = "helper_uses_profile_cycle_adapter"; status = if ($helper.Contains('profileSchemaValue("cycleValue", current, options, current, direction)') -and -not $helper.Contains("local function profileValueIndex")) { "passed" } else { "failed" }; evidence = "native helper delegates profile option cycle decisions to profile schema adapter without duplicate helper-side index logic" },
-        [pscustomobject]@{ name = "helper_uses_profile_row_decision_adapter"; status = if (-not $helper.Contains("function profileSchemaNumber(functionName, fallback, ...)") -and -not $helper.Contains("function profileFieldGeometry(x, width)") -and $helper.Contains('profileSchemaTable("fieldGeometry", styleUi("profileFieldGeometry", x, width), x, width)') -and $helper.Contains("return geometry.label_width and geometry or nil") -and $helper.Contains('styleUi("addProfileStepRow"') -and $helper.Contains('profileSchemaValue("stepValue", value, value, 0, minValue, maxValue)') -and $helper.Contains('if type(stepValue) == "number" then')) { "passed" } else { "failed" }; evidence = "native helper delegates UI/profile row geometry and step clamping decisions directly to passive adapters with fallback and no duplicate shell geometry wrapper" },
-        [pscustomobject]@{ name = "helper_uses_rotation_schema_adapter"; status = if ($helper.Contains('local SPELL_CHOICES = profileSchemaTable("optionList", {}, "spell")') -and $helper.Contains('local ROTATION_PRESETS = profileSchemaTable("rotationPresets", {})') -and $helper.Contains('profileSchemaTable("rotationPresetIds", {}, ROTATION_PRESETS)') -and $helper.Contains('profileSchemaValue("rotationPresetLabel", fallback, ROTATION_PRESETS, value)') -and $helper.Contains('"rotationSummary"') -and -not $helper.Contains("profileSchemaText(")) { "passed" } else { "failed" }; evidence = "native helper delegates passive profile option metadata, rotation preset labels, and summary text to profile schema adapter with fallbacks" },
-        [pscustomobject]@{ name = "helper_uses_profile_schema_serializer"; status = if ($helper.Contains('moduleValue(externalProfileSchema, "mergeTable", base, override)') -and -not $helper.Contains("pcall(externalProfileSchema.mergeTable") -and $helper.Contains('moduleValue(externalProfileSchema, "serializeLua", value, rootKey, 0)') -and -not $helper.Contains("pcall(externalProfileSchema.serializeLua") -and $helper.Contains('local serializedProfile = serializeLua(exportProfile(), "profile")') -and $helper.Contains('local serializedPrefs = serializeLua(exportUiPrefs(), "ui_prefs")') -and -not $helper.Contains("local function profileKeyOrder(key)") -and -not $helper.Contains("local PROFILE_KEY_ORDER = profileKeyOrder") -and -not $helper.Contains("local function luaQuote(value)") -and -not $helper.Contains("local function serializeLua(value, indent, order)")) { "passed" } else { "failed" }; evidence = "native helper delegates profile merge and Lua serialization through guarded profile schema moduleValue adapter" },
-        [pscustomobject]@{ name = "helper_uses_profile_label_adapter"; status = if ($helper.Contains("externalProfileSchema.spellLabel") -and $helper.Contains("externalProfileSchema.potionLabel") -and $helper.Contains("externalProfileSchema.runeLabel") -and $helper.Contains("externalProfileSchema.healFriendPriorityLabel") -and $helper.Contains("externalProfileSchema.magicPriorityLabel") -and $helper.Contains("externalProfileSchema.themePresetLabel") -and $helper.Contains('profileSchemaValue("onOffLabel", fallback, value)') -and -not $helper.Contains("local PROFILE_LABEL_BRIDGES = {") -and -not $helper.Contains("local function profileLabelText(labelName, value)")) { "passed" } else { "failed" }; evidence = "native helper delegates spell, potion, rune, priority, theme, and on/off labels directly to profile schema adapter" },
-        [pscustomobject]@{ name = "helper_uses_profile_summary_adapter"; status = if ($helper.Contains('profileSchemaValue("autosaveLabel", fallback, {') -and $helper.Contains('title = {fallback = "profile summary unavailable"') -and $helper.Contains('healing = {fallback = "healing summary unavailable"') -and $helper.Contains("OPERATOR_SUMMARY_BRIDGES.profile") -and $helper.Contains("profileSchema = externalProfileSchema")) { "passed" } else { "failed" }; evidence = "native helper delegates autosave to profile schema and title/healing/profile summaries through operator summary with profile schema context" },
-        [pscustomobject]@{ name = "persistence_functions"; status = if ($persistence.Contains("function ProfilePersistence.profileCandidates") -and $persistence.Contains("function ProfilePersistence.uiPrefsCandidates") -and $persistence.Contains("function ProfilePersistence.saveDefaults") -and $persistence.Contains("function ProfilePersistence.resolveSavePath") -and $persistence.Contains("function ProfilePersistence.fallbackSavePath") -and $persistence.Contains("function ProfilePersistence.saveText") -and $persistence.Contains("function ProfilePersistence.loadSuccessText") -and $persistence.Contains("function ProfilePersistence.loadFailureText") -and $persistence.Contains("function ProfilePersistence.dirtyState") -and $persistence.Contains("function ProfilePersistence.contract")) { "passed" } else { "failed" }; evidence = "profile persistence exposes passive candidates, save policy, status text, dirty state, and contract helpers" },
-        [pscustomobject]@{ name = "persistence_passive_contract"; status = if ($persistence.Contains('mode = "passive"') -and $persistence.Contains("owns_load_candidates = true") -and $persistence.Contains("owns_save_path_policy = true") -and $persistence.Contains("owns_save_headers = true") -and $persistence.Contains("owns_autosave_metadata = true") -and $persistence.Contains("runtime_actions = false") -and $persistence.Contains("loads_files = false") -and $persistence.Contains("saves_files = false") -and $persistence.Contains("writes_profile = false") -and $persistence.Contains("touches_otclient_globals = false") -and $persistence.Contains("preserves_key_order = true")) { "passed" } else { "failed" }; evidence = "profile persistence contract declares passive no-file no-global save policy behavior" },
-        [pscustomobject]@{ name = "helper_uses_profile_persistence_adapter"; status = if ($helper.Contains('rawget(_G, "CTOA_HELPER_PROFILE_PERSISTENCE")') -and $helper.Contains("local function profilePersistenceValue(functionName, fallback, ...)") -and $helper.Contains('profilePersistenceTable("profileCandidates"') -and $helper.Contains('profilePersistenceTable("uiPrefsCandidates"') -and $helper.Contains('profilePersistenceValue("resolveSavePath"') -and $helper.Contains('profilePersistenceValue("saveText"') -and $helper.Contains('profilePersistenceTable("dirtyState"')) { "passed" } else { "failed" }; evidence = "native helper delegates load candidates, save policy, save text, and dirty state to profile persistence adapter" },
+        [pscustomobject]@{ name = "passive_contract"; status = if ($schema.Contains('mode = "passive"') -and $schema.Contains("owns_schema_metadata = true") -and $schema.Contains("owns_versioned_migration_plan = true") -and $schema.Contains("owns_safe_profile_migration = true") -and $schema.Contains("owns_key_order_metadata = true") -and $schema.Contains("owns_merge_table = true") -and $schema.Contains("owns_lua_serializer = true") -and $schema.Contains("owns_display_profile_name = true") -and $schema.Contains("owns_schema_value_bridge = true") -and $schema.Contains("owns_schema_table_bridge = true") -and $schema.Contains("owns_rotation_metadata = true") -and $schema.Contains("owns_profile_labels = true") -and $schema.Contains("owns_profile_summaries = true") -and $schema.Contains("owns_rotation_preset_formatter = true") -and $schema.Contains("owns_rotation_summary_text = true") -and $schema.Contains("runtime_actions = false") -and $schema.Contains("loads_files = false") -and $schema.Contains("saves_files = false") -and $schema.Contains("migrates_files = false") -and $schema.Contains("requires_profile_audit = true") -and $schema.Contains("requires_safe_boot_defaults = true")) { "passed" } else { "failed" }; evidence = "profile schema contract owns pure formatter/summary helpers and passive in-memory migration" },
+        [pscustomobject]@{ name = "helper_uses_profile_schema_adapter"; status = if ($helper.Contains('rawget(_G, "CTOA_HELPER_PROFILE_SCHEMA")') -and -not $helper.Contains("local function profileSchemaValue(functionName, fallback, ...)") -and -not $helper.Contains("local function profileSchemaTable(functionName, fallback, ...)") -and -not $helper.Contains("local profileSchemaValue = externalProfileSchema.profileSchemaValue") -and -not $helper.Contains("local profileSchemaTable = externalProfileSchema.profileSchemaTable") -and -not $helper.Contains("local profileDisplayName = externalProfileSchema.displayProfileName") -and $helper.Contains('moduleValue(externalProfileSchema, "profileSchemaValue"') -and $helper.Contains('moduleValue(externalProfileSchema, "profileSchemaTable"') -and $helper.Contains('moduleValue(externalProfileSchema, "displayProfileName"') -and $helper.Contains("profileSchema = externalProfileSchema")) { "passed" } else { "failed" }; evidence = "helper shell consumes schema/display helpers through guarded calls with fail-closed standalone fallbacks" },
+        [pscustomobject]@{ name = "helper_uses_profile_cycle_adapter"; status = if ($helper.Contains('moduleValue(externalProfileSchema, "profileSchemaValue", "cycleValue", current, options, current, direction)') -and -not $helper.Contains("local function profileValueIndex")) { "passed" } else { "failed" }; evidence = "native helper delegates profile option cycle decisions through the guarded schema adapter" },
+        [pscustomobject]@{ name = "helper_uses_profile_row_decision_adapter"; status = if (-not $helper.Contains("function profileSchemaNumber(functionName, fallback, ...)") -and -not $helper.Contains("function profileFieldGeometry(x, width)") -and $helper.Contains('moduleValue(externalProfileSchema, "profileSchemaTable", "fieldGeometry", styleUi("profileFieldGeometry", x, width), x, width)') -and $helper.Contains("return geometry.label_width and geometry or nil") -and $helper.Contains('styleUi("addProfileStepRow"') -and $helper.Contains('moduleValue(externalProfileSchema, "profileSchemaValue", "stepValue", value, value, 0, minValue, maxValue)') -and $helper.Contains('if type(stepValue) == "number" then')) { "passed" } else { "failed" }; evidence = "native helper delegates UI/profile row geometry and step clamping through guarded passive adapters" },
+        [pscustomobject]@{ name = "helper_uses_rotation_schema_adapter"; status = if ($helper.Contains('local SPELL_CHOICES = moduleValue(externalProfileSchema, "profileSchemaTable", "optionList", {}, "spell")') -and $helper.Contains('local ROTATION_PRESETS = moduleValue(externalProfileSchema, "profileSchemaTable", "rotationPresets", {})') -and $helper.Contains('moduleValue(externalProfileSchema, "profileSchemaTable", "rotationPresetIds", {}, ROTATION_PRESETS)') -and $helper.Contains('moduleValue(externalProfileSchema, "rotationPresetFormatter", ROTATION_PRESETS)') -and $helper.Contains('moduleValue(externalProfileSchema, "rotationSummaryText"') -and -not $helper.Contains("local function formatter") -and -not $helper.Contains("function rotationSummaryText()") -and -not $helper.Contains("profileSchemaText(")) { "passed" } else { "failed" }; evidence = "native helper delegates rotation formatter and summary text through guarded schema calls" },
+        [pscustomobject]@{ name = "helper_uses_profile_schema_serializer"; status = if ($helper.Contains('moduleValue(externalProfileSchema, "mergeTable", HELPER_CONFIG, migrated)') -and $helper.Contains('moduleValue(externalProfileSchema, "serializeLua"') -and $helper.Contains('moduleValue(externalProfilePersistence, "exportProfile", HELPER_CONFIG') -and $helper.Contains('moduleValue(externalProfilePersistence, "exportUiPrefs", HELPER_CONFIG, Helper)') -and -not $helper.Contains("local function mergeTable(base, override)") -and -not $helper.Contains("local function serializeLua(value, rootKey)") -and -not $helper.Contains("local function exportProfile()") -and -not $helper.Contains("local function exportUiPrefs()") -and -not $helper.Contains("local function profileKeyOrder(key)") -and -not $helper.Contains("local PROFILE_KEY_ORDER = profileKeyOrder") -and -not $helper.Contains("local function luaQuote(value)")) { "passed" } else { "failed" }; evidence = "native helper delegates merge, serialization, and export through guarded passive support calls" },
+        [pscustomobject]@{ name = "helper_uses_profile_label_adapter"; status = if ($helper.Contains("externalProfileSchema.spellLabel") -and $helper.Contains("externalProfileSchema.potionLabel") -and $helper.Contains("externalProfileSchema.runeLabel") -and $helper.Contains("externalProfileSchema.healFriendPriorityLabel") -and $helper.Contains("externalProfileSchema.magicPriorityLabel") -and $helper.Contains("externalProfileSchema.themePresetLabel") -and $helper.Contains('moduleValue(externalProfileSchema, "profileSchemaValue", "onOffLabel", fallback, value)') -and -not $helper.Contains("local PROFILE_LABEL_BRIDGES = {") -and -not $helper.Contains("local function profileLabelText(labelName, value)")) { "passed" } else { "failed" }; evidence = "native helper delegates labels through type-guarded schema references and calls" },
+        [pscustomobject]@{ name = "helper_uses_profile_summary_adapter"; status = if ($helper.Contains('moduleValue(externalProfileSchema, "profileSchemaValue", "autosaveLabel", fallback, {') -and $helper.Contains('title = {fallback = "profile summary unavailable"') -and $helper.Contains('healing = {fallback = "healing summary unavailable"') -and $helper.Contains("OPERATOR_SUMMARY_BRIDGES.profile") -and $helper.Contains("profileSchema = externalProfileSchema")) { "passed" } else { "failed" }; evidence = "native helper delegates autosave through guarded schema calls and summaries through operator context" },
+        [pscustomobject]@{ name = "persistence_functions"; status = if ($persistence.Contains("function ProfilePersistence.profileCandidates") -and $persistence.Contains("function ProfilePersistence.uiPrefsCandidates") -and $persistence.Contains("function ProfilePersistence.profilePersistenceValue") -and $persistence.Contains("function ProfilePersistence.profilePersistenceTable") -and $persistence.Contains("function ProfilePersistence.saveDefaults") -and $persistence.Contains("function ProfilePersistence.resolveSavePath") -and $persistence.Contains("function ProfilePersistence.fallbackSavePath") -and $persistence.Contains("function ProfilePersistence.saveText") -and $persistence.Contains("function ProfilePersistence.loadSuccessText") -and $persistence.Contains("function ProfilePersistence.loadFailureText") -and $persistence.Contains("function ProfilePersistence.exportProfile") -and $persistence.Contains("function ProfilePersistence.exportUiPrefs") -and $persistence.Contains("function ProfilePersistence.dirtyState") -and $persistence.Contains("function ProfilePersistence.contract")) { "passed" } else { "failed" }; evidence = "profile persistence exposes extracted value/table bridges, export, candidates, save policy, status, dirty state, and contract helpers" },
+        [pscustomobject]@{ name = "persistence_passive_contract"; status = if ($persistence.Contains('mode = "passive"') -and $persistence.Contains("owns_load_candidates = true") -and $persistence.Contains("owns_save_path_policy = true") -and $persistence.Contains("owns_save_headers = true") -and $persistence.Contains("owns_autosave_metadata = true") -and $persistence.Contains("owns_persistence_value_bridge = true") -and $persistence.Contains("owns_persistence_table_bridge = true") -and $persistence.Contains("owns_export_profile = true") -and $persistence.Contains("owns_export_ui_prefs = true") -and $persistence.Contains("runtime_actions = false") -and $persistence.Contains("loads_files = false") -and $persistence.Contains("saves_files = false") -and $persistence.Contains("writes_profile = false") -and $persistence.Contains("touches_otclient_globals = false") -and $persistence.Contains("preserves_key_order = true")) { "passed" } else { "failed" }; evidence = "profile persistence owns pure bridges/exports and declares passive no-file no-global behavior" },
+        [pscustomobject]@{ name = "helper_uses_profile_persistence_adapter"; status = if ($helper.Contains('rawget(_G, "CTOA_HELPER_PROFILE_PERSISTENCE")') -and -not $helper.Contains("local function profilePersistenceValue(functionName, fallback, ...)") -and -not $helper.Contains("local function profilePersistenceTable(functionName, fallback, ...)") -and -not $helper.Contains("local profilePersistenceValue = externalProfilePersistence.profilePersistenceValue") -and -not $helper.Contains("local profilePersistenceTable = externalProfilePersistence.profilePersistenceTable") -and $helper.Contains('moduleValue(externalProfilePersistence, "profilePersistenceTable", "profileCandidates"') -and $helper.Contains('moduleValue(externalProfilePersistence, "profilePersistenceTable", "uiPrefsCandidates"') -and $helper.Contains('moduleValue(externalProfilePersistence, "profilePersistenceValue", "resolveSavePath"') -and $helper.Contains('moduleValue(externalProfilePersistence, "profilePersistenceValue", "saveText"') -and $helper.Contains('moduleValue(externalProfilePersistence, "profilePersistenceTable", "dirtyState"')) { "passed" } else { "failed" }; evidence = "native helper consumes persistence bridges through guarded calls with standalone fallbacks" },
         [pscustomobject]@{ name = "profile_defaults_parity"; status = if ($profile.Contains("safe_boot_runtime_disabled = true") -and $profile.Contains("enabled = false") -and $profile.Contains("timer_enabled = false") -and $profile.Contains("cavebot_movement_enabled = false") -and $helper.Contains("HELPER_CONFIG.enabled = false") -and $helper.Contains("HELPER_CONFIG.tools.timer_enabled = false")) { "passed" } else { "failed" }; evidence = "profile defaults and helper loader keep safe boot runtime toggles disabled" },
         [pscustomobject]@{ name = "no_file_or_runtime_actions"; status = if (-not $schema.Contains("g_resources") -and -not $schema.Contains("io.open") -and -not $schema.Contains("dofile") -and -not $schema.Contains("loadfile") -and -not $schema.Contains("loadstring") -and -not $schema.Contains("castSpell") -and -not $schema.Contains("autoWalk") -and -not $schema.Contains("g_game.attack") -and -not $schema.Contains("createWidget(")) { "passed" } else { "failed" }; evidence = "profile schema module does not read/write files, eval/load snippets, cast, walk, attack, or create widgets" },
         [pscustomobject]@{ name = "persistence_no_file_or_runtime_actions"; status = if (-not $persistence.Contains("g_resources") -and -not $persistence.Contains("io.open") -and -not $persistence.Contains("dofile") -and -not $persistence.Contains("loadfile") -and -not $persistence.Contains("loadstring") -and -not $persistence.Contains("castSpell") -and -not $persistence.Contains("autoWalk") -and -not $persistence.Contains("g_game.attack") -and -not $persistence.Contains("createWidget(")) { "passed" } else { "failed" }; evidence = "profile persistence module does not read/write files, eval/load snippets, cast, walk, attack, or create widgets" },
@@ -3613,7 +4496,7 @@ function Invoke-ExternalBotImportGateStaticSmoke {
         [pscustomobject]@{ name = "runtime_gate_mapping"; status = if ($intake.Contains("RUNTIME_ACTION_GATES") -and $intake.Contains('"attack": "combat_runtime"') -and $intake.Contains('"movement": "cavebot_runtime"') -and $intake.Contains('"item_move": "loot_runtime"') -and $intake.Contains('"dynamic_code": "scripting"')) { "passed" } else { "failed" }; evidence = "runtime action findings map to existing CTOAi gates" },
         [pscustomobject]@{ name = "report_always_includes_gate"; status = if ($intake.Contains('report["import_gate"] = build_import_gate(report)') -and $test.Contains('report["import_gate"]["decision"] == "source_required"')) { "passed" } else { "failed" }; evidence = "missing-source and scanned-source reports include import_gate" },
         [pscustomobject]@{ name = "review_contract"; status = if ($review.Contains("## Import Gate Contract") -and $review.Contains('`import_gate.runtime_import_allowed`') -and $review.Contains('`runtime_gate_mapping`') -and $review.Contains('`capability_mapping_only`')) { "passed" } else { "failed" }; evidence = "vBot review documents source-required, review-required, and capability-only gate states" },
-        [pscustomobject]@{ name = "next_modules_plan_contract"; status = if ($plan.Contains("External bot import gate: import_gate.runtime_import_allowed must remain false") -and $plan.Contains("require its import_gate before capability mapping") -and $plan.Contains("runtime_gate_mapping") -and $planScript.Contains('"external_bot_import_gate"')) { "passed" } else { "failed" }; evidence = "next module plan keeps vBot lane gated by import_gate" },
+        [pscustomobject]@{ name = "next_modules_plan_contract"; status = if ($plan.Contains('External vBot source: `capability_mapping_only`') -and $plan.Contains("External bot import gate: import_gate.runtime_import_allowed must remain false") -and $plan.Contains("require its import_gate before expanding the mapping") -and $plan.Contains("runtime_gate_mapping") -and $planScript.Contains('"external_bot_import_gate"')) { "passed" } else { "failed" }; evidence = "next module plan keeps capability mapping separate from direct copy/runtime import and gated by import_gate" },
         [pscustomobject]@{ name = "test_coverage"; status = if ($test.Contains("capability_mapping_only") -and $test.Contains("runtime_import_allowed") -and $test.Contains("runtime_gate_mapping") -and $modulePlanTest.Contains("external_bot_import_gate")) { "passed" } else { "failed" }; evidence = "pytest coverage protects import gate and plan policy" },
         [pscustomobject]@{ name = "static_only"; status = if ($script.Contains("ExternalBotImportGateStaticSmoke") -and -not $script.Contains(("SmokeAttach -Tab " + "external_bot_import_gate"))) { "passed" } else { "failed" }; evidence = "external bot import gate is static-only and has no attach tab" }
     )
@@ -3652,29 +4535,36 @@ function Invoke-HelperShellBudgetStaticSmoke {
     $outRoot = Join-Path $repo $DevDir
     New-Item -ItemType Directory -Force -Path $outRoot | Out-Null
     $helperPath = Join-Path $repo "scripts\lua\otclient\ctoa_native_helper.lua"
+    $planScript = Join-Path $repo "scripts\ops\otclient_helper_shell_budget_plan.py"
+    $planJsonPath = Join-Path $outRoot "helper_shell_budget_plan.json"
     $auditPath = Join-Path $repo "scripts\ops\otclient_helper_module_audit.py"
     $workplanPath = Join-Path $repo "docs\otclient\solteria_helper_module_workplan.md"
     $testPath = Join-Path $repo "tests\test_otclient_helper_module_audit.py"
     $scriptPath = $PSCommandPath
-    $helper = if (Test-Path -LiteralPath $helperPath) { Get-Content -LiteralPath $helperPath -Raw } else { "" }
     $audit = if (Test-Path -LiteralPath $auditPath) { Get-Content -LiteralPath $auditPath -Raw } else { "" }
     $workplan = if (Test-Path -LiteralPath $workplanPath) { Get-Content -LiteralPath $workplanPath -Raw } else { "" }
     $test = if (Test-Path -LiteralPath $testPath) { Get-Content -LiteralPath $testPath -Raw } else { "" }
     $script = Get-Content -LiteralPath $scriptPath -Raw
-    $lineCount = if ([string]::IsNullOrEmpty($helper)) { 0 } else { @($helper -split "`r?`n").Count }
-    $functionCount = ([regex]::Matches($helper, "\bfunction\b")).Count
-    $lineBudget = 4500
-    $functionBudget = 130
-    $hardLineCeiling = 7000
-    $hardFunctionCeiling = 700
+    & python $planScript --json-out $planJsonPath --no-plan-write
+    if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $planJsonPath -PathType Leaf)) {
+        throw "Canonical helper shell budget measurement failed"
+    }
+    $budgetPlan = Get-Content -LiteralPath $planJsonPath -Raw | ConvertFrom-Json
+    $lineCount = [int]$budgetPlan.helper_line_count
+    $functionCount = [int]$budgetPlan.helper_function_count
+    $lineBudget = [int]$budgetPlan.helper_line_budget
+    $functionBudget = [int]$budgetPlan.helper_function_budget
+    $hardLineCeiling = [int]$budgetPlan.hard_line_ceiling
+    $hardFunctionCeiling = [int]$budgetPlan.hard_function_ceiling
     $checks = @(
         [pscustomobject]@{ name = "helper_exists"; status = if (Test-Path -LiteralPath $helperPath) { "passed" } else { "failed" }; evidence = "ctoa_native_helper.lua exists" },
         [pscustomobject]@{ name = "line_budget_declared"; status = if ($audit.Contains("helper_line_budget") -and $audit.Contains("4500") -and $test.Contains("helper_line_budget == 4500")) { "passed" } else { "failed" }; evidence = "module audit declares the target shell line budget" },
         [pscustomobject]@{ name = "function_budget_declared"; status = if ($audit.Contains("helper_function_budget") -and $audit.Contains("130") -and $test.Contains("helper_function_budget == 130")) { "passed" } else { "failed" }; evidence = "module audit declares the target shell function budget" },
-        [pscustomobject]@{ name = "line_count_under_hard_ceiling"; status = if ($lineCount -gt 0 -and $lineCount -le $hardLineCeiling) { "passed" } else { "failed" }; evidence = ("helper lines {0}; hard ceiling {1}; target budget {2}" -f $lineCount, $hardLineCeiling, $lineBudget) },
-        [pscustomobject]@{ name = "function_count_under_hard_ceiling"; status = if ($functionCount -gt 0 -and $functionCount -le $hardFunctionCeiling) { "passed" } else { "failed" }; evidence = ("helper function tokens {0}; hard ceiling {1}; target budget {2}" -f $functionCount, $hardFunctionCeiling, $functionBudget) },
+        [pscustomobject]@{ name = "canonical_budget_status"; status = if ([string]$budgetPlan.status -eq "within_budget") { "passed" } else { "failed" }; evidence = ("canonical generator status {0}" -f $budgetPlan.status) },
+        [pscustomobject]@{ name = "line_count_within_budget"; status = if ($lineCount -gt 0 -and $lineCount -le $lineBudget) { "passed" } else { "failed" }; evidence = ("helper lines {0}; target budget {1}; hard ceiling {2}" -f $lineCount, $lineBudget, $hardLineCeiling) },
+        [pscustomobject]@{ name = "function_count_within_budget"; status = if ($functionCount -gt 0 -and $functionCount -le $functionBudget) { "passed" } else { "failed" }; evidence = ("helper named functions {0}; target budget {1}; hard ceiling {2}" -f $functionCount, $functionBudget, $hardFunctionCeiling) },
         [pscustomobject]@{ name = "shell_target_documented"; status = if ($audit.Contains("UI composition, profile persistence, and guarded dispatch only") -and $workplan.Contains("Helper shell target")) { "passed" } else { "failed" }; evidence = "module workplan keeps the main helper as a UI composition shell" },
-        [pscustomobject]@{ name = "modularization_pressure_visible"; status = if ($workplan.Contains('Helper budget status: `over_budget`') -and $workplan.Contains("P6 Module Lane") -and $workplan.Contains("Supplemental Refactor Plan")) { "passed" } else { "failed" }; evidence = "operator docs keep over-budget pressure and extraction lanes visible" },
+        [pscustomobject]@{ name = "modularization_pressure_visible"; status = if ($workplan.Contains("Helper budget status:") -and $workplan.Contains("P6 Module Lane") -and $workplan.Contains("Supplemental Refactor Plan")) { "passed" } else { "failed" }; evidence = "operator docs keep shell budget and extraction lanes visible" },
         [pscustomobject]@{ name = "next_runtime_step_not_hidden"; status = if ($workplan.Contains("SmokeAttachModules") -and $workplan.Contains("PromoteLiveCtoa -ApproveLiveDeploy")) { "passed" } else { "failed" }; evidence = "budget gate does not hide sandbox and explicit live approval requirements" },
         [pscustomobject]@{ name = "module_static_gate_registered"; status = if ($script.Contains("HelperShellBudgetStaticSmoke") -and $script.Contains("helper_shell_budget_static_smoke.json") -and $script.Contains('module = "helper_shell_budget"')) { "passed" } else { "failed" }; evidence = "helper shell budget is included in ModuleStaticGates and GoalStatus summaries" },
         [pscustomobject]@{ name = "static_only"; status = if ($script.Contains("HelperShellBudgetStaticSmoke") -and -not $script.Contains(("SmokeAttach -Tab " + "helper_shell_budget"))) { "passed" } else { "failed" }; evidence = "helper shell budget is static-only and has no attach tab" }
@@ -3697,7 +4587,7 @@ function Invoke-HelperShellBudgetStaticSmoke {
         passed_count = @($checks | Where-Object { $_.status -eq "passed" }).Count
         failed_count = $failed.Count
         checks = $checks
-        next_action = if ($failed.Count -eq 0) { "Keep extracting helper domains; runtime sandbox evidence is still required before live promotion." } else { "Reduce helper shell growth or refresh module workplan before sandbox attach smoke." }
+        next_action = if ($failed.Count -eq 0) { "Keep the shell at or below the canonical target; runtime sandbox evidence is still required before live promotion." } else { "Reduce helper shell to the canonical target before sandbox attach smoke." }
         next_command = if ($failed.Count -eq 0) { "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action ModuleStaticGates" } else { "" }
         live_safety = "HelperShellBudgetStaticSmoke reads repo helper, audit, docs, tests, and this script only; it does not launch, stop, attach to, promote, or overwrite any client."
     }
@@ -3730,8 +4620,8 @@ function Invoke-HelperShellBudgetPlanStaticSmoke {
     if (-not [string]::IsNullOrWhiteSpace($report.next_action)) {
         Write-Output "[solteria-helper-test-env] Next action: $($report.next_action)"
     }
-    if ($report.under_hard_ceiling -ne $true) {
-        throw "Helper shell budget plan static smoke failed"
+    if ([string]$report.status -ne "within_budget" -or $report.over_line_budget_by -ne 0 -or $report.over_function_budget_by -ne 0) {
+        throw "Helper shell budget plan static smoke requires canonical within_budget status"
     }
 }
 
@@ -3769,9 +4659,9 @@ function Invoke-ModuleStaticGates {
     New-Item -ItemType Directory -Force -Path $outRoot | Out-Null
     $steps = @(
         [pscustomobject]@{ module = "module_contract"; action = "ModuleContract"; report = "module_contract.json"; attach_command = "" },
-        [pscustomobject]@{ module = "heal_friend"; action = "HealFriendNoTargetSmoke"; report = "heal_friend_no_target_smoke.json"; attach_command = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttach -Tab heal_friend" },
         [pscustomobject]@{ module = "conditions"; action = "ConditionsObserverSmoke"; report = "conditions_observer_smoke.json"; attach_command = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttach -Tab conditions" },
         [pscustomobject]@{ module = "equipment"; action = "EquipmentObserverSmoke"; report = "equipment_observer_smoke.json"; attach_command = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttach -Tab equipment" },
+        [pscustomobject]@{ module = "heal_friend"; action = "HealFriendNoTargetSmoke"; report = "heal_friend_no_target_smoke.json"; attach_command = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttach -Tab heal_friend" },
         [pscustomobject]@{ module = "scripting"; action = "ScriptingPolicySmoke"; report = "scripting_policy_smoke.json"; attach_command = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttach -Tab scripting" },
         [pscustomobject]@{ module = "planner"; action = "PlannerStaticSmoke"; report = "planner_static_smoke.json"; attach_command = "" },
         [pscustomobject]@{ module = "runtime_policy"; action = "RuntimePolicyStaticSmoke"; report = "runtime_policy_static_smoke.json"; attach_command = "" },
@@ -3795,6 +4685,13 @@ function Invoke-ModuleStaticGates {
         [pscustomobject]@{ module = "loot_runtime"; action = "LootRuntimeStaticSmoke"; report = "loot_runtime_static_smoke.json"; attach_command = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttach -Tab tools_diag" },
         [pscustomobject]@{ module = "timer_runtime"; action = "TimerRuntimeStaticSmoke"; report = "timer_runtime_static_smoke.json"; attach_command = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttach -Tab tools_timer" },
         [pscustomobject]@{ module = "recovery_runtime"; action = "RecoveryRuntimeStaticSmoke"; report = "recovery_runtime_static_smoke.json"; attach_command = "" },
+        [pscustomobject]@{ module = "recovery_bridge"; action = "RecoveryBridgeStaticSmoke"; report = "recovery_bridge_static_smoke.json"; attach_command = "" },
+        [pscustomobject]@{ module = "conditions_runtime_gate"; action = "ConditionsRuntimeGateStaticSmoke"; report = "conditions_runtime_gate_static_smoke.json"; attach_command = "" },
+        [pscustomobject]@{ module = "equipment_runtime_gate"; action = "EquipmentRuntimeGateStaticSmoke"; report = "equipment_runtime_gate_static_smoke.json"; attach_command = "" },
+        [pscustomobject]@{ module = "equipment_shadow_snapshot"; action = "EquipmentShadowSnapshotStaticSmoke"; report = "equipment_shadow_snapshot_static_smoke.json"; attach_command = "" },
+        [pscustomobject]@{ module = "equipment_shadow_replay"; action = "EquipmentShadowReplayStaticSmoke"; report = "equipment_shadow_replay_static_smoke.json"; attach_command = "" },
+        [pscustomobject]@{ module = "equipment_shadow_acceptance"; action = "EquipmentShadowAcceptanceStaticSmoke"; report = "equipment_shadow_acceptance_static_smoke.json"; attach_command = "" },
+        [pscustomobject]@{ module = "heal_friend_runtime_gate"; action = "HealFriendRuntimeGateStaticSmoke"; report = "heal_friend_runtime_gate_static_smoke.json"; attach_command = "" },
         [pscustomobject]@{ module = "profile_schema"; action = "ProfileSchemaStaticSmoke"; report = "profile_schema_static_smoke.json"; attach_command = "" },
         [pscustomobject]@{ module = "operator_summary"; action = "OperatorSummaryStaticSmoke"; report = "operator_summary_static_smoke.json"; attach_command = "" },
         [pscustomobject]@{ module = "external_bot_import_gate"; action = "ExternalBotImportGateStaticSmoke"; report = "external_bot_import_gate_static_smoke.json"; attach_command = "" },
@@ -3806,9 +4703,9 @@ function Invoke-ModuleStaticGates {
         try {
             switch ([string]$step.action) {
                 "ModuleContract" { Invoke-ModuleContract }
-                "HealFriendNoTargetSmoke" { Invoke-HealFriendNoTargetSmoke }
                 "ConditionsObserverSmoke" { Invoke-ConditionsObserverSmoke }
                 "EquipmentObserverSmoke" { Invoke-EquipmentObserverSmoke }
+                "HealFriendNoTargetSmoke" { Invoke-HealFriendNoTargetSmoke }
                 "ScriptingPolicySmoke" { Invoke-ScriptingPolicySmoke }
                 "PlannerStaticSmoke" { Invoke-PlannerStaticSmoke }
                 "RuntimePolicyStaticSmoke" { Invoke-RuntimePolicyStaticSmoke }
@@ -3832,6 +4729,10 @@ function Invoke-ModuleStaticGates {
                 "LootRuntimeStaticSmoke" { Invoke-LootRuntimeStaticSmoke }
                 "TimerRuntimeStaticSmoke" { Invoke-TimerRuntimeStaticSmoke }
                 "RecoveryRuntimeStaticSmoke" { Invoke-RecoveryRuntimeStaticSmoke }
+                "RecoveryBridgeStaticSmoke" { Invoke-RecoveryBridgeStaticSmoke }
+                "ConditionsRuntimeGateStaticSmoke" { Invoke-ConditionsRuntimeGateStaticSmoke }
+                "EquipmentRuntimeGateStaticSmoke" { Invoke-EquipmentRuntimeGateStaticSmoke }
+                "HealFriendRuntimeGateStaticSmoke" { Invoke-HealFriendRuntimeGateStaticSmoke }
                 "ProfileSchemaStaticSmoke" { Invoke-ProfileSchemaStaticSmoke }
                 "OperatorSummaryStaticSmoke" { Invoke-OperatorSummaryStaticSmoke }
                 "ExternalBotImportGateStaticSmoke" { Invoke-ExternalBotImportGateStaticSmoke }
@@ -3859,7 +4760,7 @@ function Invoke-ModuleStaticGates {
                 if ($report.PSObject.Properties.Name -contains "check_count") {
                     $checkCount = [int]$report.check_count
                 }
-                if ([string]$_.module -eq "helper_shell_budget_plan" -and $status -eq "needs_extraction" -and $report.under_hard_ceiling -eq $true) {
+                if ([string]$_.module -eq "helper_shell_budget_plan" -and $status -eq "within_budget" -and $report.over_line_budget_by -eq 0 -and $report.over_function_budget_by -eq 0) {
                     $status = "passed"
                     $passedCount = 1
                     $checkCount = 1
@@ -4173,72 +5074,58 @@ function Read-ModuleAuditSummary {
         $moduleEvidencePath = ""
         $moduleEvidenceStatus = ""
         $nextModuleCommand = ""
-        if ($nextModuleId -eq "heal_friend") {
-            $healFriendSmokePath = Join-Path $DevRoot "heal_friend_no_target_smoke.json"
-            if (Test-Path -LiteralPath $healFriendSmokePath) {
+        $runtimeGateRoutes = @{
+            conditions = [pscustomobject]@{
+                report = "conditions_observer_smoke.json"
+                static_action = "ConditionsObserverSmoke"
+                accepted_action = "Review the action-bound paralyze-only dry-run trace; Equipment remains blocked until this gate is accepted."
+            }
+            equipment = [pscustomobject]@{
+                report = "equipment_observer_smoke.json"
+                static_action = "EquipmentObserverSmoke"
+                accepted_action = "Review the ring-only rollback trace; Heal Friend remains blocked until Conditions and Equipment are accepted."
+            }
+            heal_friend = [pscustomobject]@{
+                report = "heal_friend_no_target_smoke.json"
+                static_action = "HealFriendNoTargetSmoke"
+                accepted_action = "Review the exact-whitelist Heal Friend dry-run; Combat and CaveBot remain deferred_high_risk."
+            }
+        }
+        if ($runtimeGateRoutes.ContainsKey($nextModuleId)) {
+            $route = $runtimeGateRoutes[$nextModuleId]
+            $evidencePath = Join-Path $DevRoot ([string]$route.report)
+            if (Test-Path -LiteralPath $evidencePath) {
                 try {
-                    $healFriendSmoke = Get-Content -LiteralPath $healFriendSmokePath -Raw | ConvertFrom-Json
-                    $moduleEvidencePath = [System.IO.Path]::GetFullPath($healFriendSmokePath)
-                    $moduleEvidenceStatus = [string]$healFriendSmoke.status
-                    if ($moduleEvidenceStatus -eq "passed") {
-                        $nextModuleAction = "Capture in-world SmokeAttachModules evidence for prototype module tabs before any sio cast path."
-                    }
+                    $evidence = Get-Content -LiteralPath $evidencePath -Raw | ConvertFrom-Json
+                    $moduleEvidencePath = [System.IO.Path]::GetFullPath($evidencePath)
+                    $moduleEvidenceStatus = [string]$evidence.status
                 } catch {
-                    $moduleEvidencePath = [System.IO.Path]::GetFullPath($healFriendSmokePath)
+                    $moduleEvidencePath = [System.IO.Path]::GetFullPath($evidencePath)
                     $moduleEvidenceStatus = "invalid"
                 }
             }
             if ($moduleEvidenceStatus -ne "passed") {
-                $nextModuleCommand = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action HealFriendNoTargetSmoke"
+                $nextModuleCommand = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action $([string]$route.static_action)"
             } else {
-                $nextModuleAction = "Capture in-world SmokeAttachModules evidence for prototype module tabs before any sio cast path."
-                $smokeStatusPath = Join-Path $DevRoot "smoke_status.json"
-                $readyCheckPath = Join-Path $DevRoot "ready_check.json"
-                $smokeStatusValue = ""
-                $smokeNextCommand = ""
-                $readyCheckStatus = ""
-                if (Test-Path -LiteralPath $smokeStatusPath) {
+                $runtimeGateEvidencePath = Join-Path $DevRoot "runtime_module_gates_sandbox_smoke.json"
+                $runtimeGateEvidenceStatus = ""
+                if (Test-Path -LiteralPath $runtimeGateEvidencePath) {
                     try {
-                        $smokeStatus = Get-Content -LiteralPath $smokeStatusPath -Raw | ConvertFrom-Json
-                        $smokeStatusValue = [string]$smokeStatus.status
-                        $smokeNextCommand = [string]$smokeStatus.next_command
+                        $runtimeGateEvidence = Get-Content -LiteralPath $runtimeGateEvidencePath -Raw | ConvertFrom-Json
+                        $runtimeGateEvidenceStatus = [string]$runtimeGateEvidence.status
                     } catch {
-                        $smokeStatusValue = "invalid"
+                        $runtimeGateEvidenceStatus = "invalid"
                     }
                 }
-                if (Test-Path -LiteralPath $readyCheckPath) {
-                    try {
-                        $readyCheck = Get-Content -LiteralPath $readyCheckPath -Raw | ConvertFrom-Json
-                        $readyCheckStatus = [string]$readyCheck.status
-                    } catch {
-                        $readyCheckStatus = "invalid"
-                    }
-                }
-                $blockingSmokeStatuses = @("not_running", "running_without_window", "character_modal", "helper_log_missing", "invalid")
-                if ($blockingSmokeStatuses -contains $smokeStatusValue) {
-                    if (-not [string]::IsNullOrWhiteSpace($smokeNextCommand)) {
-                        $nextModuleCommand = $smokeNextCommand
-                    } elseif ($smokeStatusValue -eq "not_running") {
-                        $nextModuleCommand = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action Launch"
-                    } else {
-                        $nextModuleCommand = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action ReadyCheck"
-                    }
-                } elseif ($readyCheckStatus -eq "ready") {
-                    $nextModuleCommand = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttachModules"
-                } elseif (-not [string]::IsNullOrWhiteSpace($smokeNextCommand)) {
-                    $nextModuleCommand = $smokeNextCommand
+                if ($runtimeGateEvidenceStatus -eq "passed") {
+                    $nextModuleAction = [string]$route.accepted_action
                 } else {
-                    $nextModuleCommand = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action ReadyCheck"
+                    $nextModuleAction = "Capture ordered Conditions -> Equipment -> Heal Friend fail-closed sandbox evidence before reviewing this lane."
+                    $nextModuleCommand = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action RuntimeModuleGatesSandboxSmoke"
                 }
             }
         }
         $staticGateSpecs = @(
-            [pscustomobject]@{
-                module = "heal_friend"
-                report = "heal_friend_no_target_smoke.json"
-                static_command = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action HealFriendNoTargetSmoke"
-                attach_command = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttach -Tab heal_friend"
-            },
             [pscustomobject]@{
                 module = "conditions"
                 report = "conditions_observer_smoke.json"
@@ -4250,6 +5137,12 @@ function Read-ModuleAuditSummary {
                 report = "equipment_observer_smoke.json"
                 static_command = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action EquipmentObserverSmoke"
                 attach_command = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttach -Tab equipment"
+            },
+            [pscustomobject]@{
+                module = "heal_friend"
+                report = "heal_friend_no_target_smoke.json"
+                static_command = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action HealFriendNoTargetSmoke"
+                attach_command = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttach -Tab heal_friend"
             },
             [pscustomobject]@{
                 module = "scripting"
@@ -4425,7 +5318,7 @@ function Read-ModuleAuditSummary {
                     if ($report.PSObject.Properties.Name -contains "check_count") {
                         $checkCount = [int]$report.check_count
                     }
-                    if ([string]$_.module -eq "helper_shell_budget_plan" -and $status -eq "needs_extraction" -and $report.under_hard_ceiling -eq $true) {
+                    if ([string]$_.module -eq "helper_shell_budget_plan" -and $status -eq "within_budget" -and $report.over_line_budget_by -eq 0 -and $report.over_function_budget_by -eq 0) {
                         $status = "passed"
                         $passedCount = 1
                         $checkCount = 1
@@ -4820,6 +5713,11 @@ function Invoke-SmokeAttachAll {
     if ([string]::IsNullOrWhiteSpace($attachRunId)) {
         $attachRunId = Get-Date -Format "yyyyMMdd-HHmm"
     }
+    $repoRoot = Get-RepoRoot
+    $manifestPath = Join-Path (Join-Path $repoRoot $DevDir) "manifest.json"
+    if (-not (Test-Path -LiteralPath $manifestPath -PathType Leaf)) {
+        throw "SmokeAttachAll requires the current dev manifest: $manifestPath"
+    }
     Write-Output "[solteria-helper-test-env] Attach run id: $attachRunId"
     $tabs = @(
         "overview",
@@ -4859,9 +5757,8 @@ function Invoke-SmokeAttachAll {
         }
     }
     if (-not $NoReport) {
-        $repoRoot = Get-RepoRoot
         $reportScript = Join-Path $repoRoot "scripts\ops\ctoa_helper_smoke_report.py"
-        & python $reportScript --run-id $attachRunId --prefix solteria-helper-attach --in-world --screenshot-dir (Join-Path $repoRoot $ScreenshotDir)
+        & python $reportScript --run-id $attachRunId --prefix solteria-helper-attach --in-world --screenshot-dir (Join-Path $repoRoot $ScreenshotDir) --manifest-path $manifestPath
         if ($LASTEXITCODE -ne 0) {
             throw "Attach smoke coverage report failed for run id: $attachRunId"
         }
@@ -4876,9 +5773,16 @@ function Invoke-SmokeAttachModules {
     $repo = Get-RepoRoot
     $outRoot = Join-Path $repo $DevDir
     New-Item -ItemType Directory -Force -Path $outRoot | Out-Null
+    $manifestPath = Join-Path $outRoot "manifest.json"
+    if (-not (Test-Path -LiteralPath $manifestPath -PathType Leaf)) {
+        throw "Module attach smoke requires the current dev manifest: $manifestPath"
+    }
+    $manifestDocument = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
+    $manifestSha256 = (Get-FileHash -LiteralPath $manifestPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    $manifestCreatedAt = [string]$manifestDocument.created_at
     Write-Output "[solteria-helper-test-env] Module attach run id: $attachRunId"
 
-    $moduleTabs = @("heal_friend", "conditions", "equipment", "scripting")
+    $moduleTabs = @("conditions", "equipment", "heal_friend", "scripting")
     $modules = New-Object System.Collections.Generic.List[object]
     foreach ($tabName in $moduleTabs) {
         Write-Output "[solteria-helper-test-env] Module attach smoke tab: $tabName"
@@ -4922,7 +5826,13 @@ function Invoke-SmokeAttachModules {
         module_count = $moduleArray.Count
         passed_count = @($moduleArray | Where-Object { $_.status -eq "passed" }).Count
         failed_count = $failed.Count
+        manifest = [pscustomobject]@{
+            path = [System.IO.Path]::GetFullPath($manifestPath)
+            created_at = $manifestCreatedAt
+            sha256 = $manifestSha256
+        }
         modules = $moduleArray
+        required_sequence = @("conditions", "equipment", "heal_friend")
         next_action = if ($failed.Count -eq 0) { "Run SmokeAttachAll for final in-world visual acceptance." } else { "Enter the sandbox test character, run ReadyCheck, then rerun SmokeAttachModules." }
         next_command = if ($failed.Count -eq 0) { "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action SmokeAttachAll" } else { "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action ReadyCheck" }
         live_safety = "SmokeAttachModules attaches only to an already-running sandbox client and switches prototype module tabs; it does not launch, stop, promote, overwrite live files, cast, talk, or enable runtime automation."
@@ -4954,6 +5864,7 @@ function Invoke-ThemeSnapshotMatrix {
     New-Item -ItemType Directory -Force -Path $devRoot | Out-Null
     $themes = @("classic", "graphite", "amber", "emerald")
     $tabs = @("overview", "profile", "cavebot", "healing", "ui")
+    $helperVersion = Get-HelperVersion
     $shots = New-Object System.Collections.Generic.List[object]
 
     foreach ($theme in $themes) {
@@ -4962,7 +5873,7 @@ function Invoke-ThemeSnapshotMatrix {
             $lineCount = Get-SmokeLogLineCount
             Write-SmokeCommand -ClientDir $sandboxRoot -ActiveTab $resolved.Active -SmokeSubtab $resolved.Subtab -CommandAction "theme_set" -Theme $theme
             Wait-ForSmokeTab -ActiveTab $resolved.Active -SmokeSubtab $resolved.Subtab -Required -AfterLineCount $lineCount | Out-Null
-            $name = "solteria-helper-v2.2.1-theme-$theme-$tabName.png"
+            $name = "solteria-helper-$helperVersion-theme-$theme-$tabName.png"
             $path = Capture-Screenshot -Name $name -WindowHandle $proc.MainWindowHandle
             $shots.Add([pscustomobject]@{ theme = $theme; tab = $tabName; path = $path })
             Write-Output "[solteria-helper-test-env] Theme snapshot: $theme/$tabName -> $path"
@@ -4975,7 +5886,7 @@ function Invoke-ThemeSnapshotMatrix {
     $report = [pscustomobject]@{
         name = "solteria-helper-theme-snapshot-matrix"
         created_at = (Get-Date).ToString("s")
-        helper_version = "v2.2.1"
+        helper_version = $helperVersion
         status = if ($shots.Count -eq 20) { "passed" } else { "failed" }
         screenshot_count = $shots.Count
         expected_count = 20
@@ -5116,6 +6027,215 @@ function Invoke-SmokeAll {
     }
 }
 
+function Get-BackgroundProcessSample {
+    $items = @(Get-SourceClientProcessSummaries | Sort-Object id)
+    $tokens = @($items | ForEach-Object { "{0}|{1}" -f $_.id, $_.start_time })
+    $startUnixMs = 0
+    if ($items.Count -eq 1) {
+        $startUnixMs = [long]$items[0].start_unix_ms
+    }
+    return [pscustomobject]@{
+        count = $items.Count
+        signature = ($tokens -join ";")
+        start_unix_ms = $startUnixMs
+    }
+}
+
+function Get-BackgroundScreenshotCount {
+    $repo = Get-RepoRoot
+    $root = Join-Path $repo $ScreenshotDir
+    if (-not (Test-Path -LiteralPath $root)) {
+        return 0
+    }
+    return @(Get-ChildItem -LiteralPath $root -Filter "*.png" -File -ErrorAction SilentlyContinue).Count
+}
+
+function Invoke-BackgroundStatus {
+    $repo = Get-RepoRoot
+    $sourceRoot = Assert-ExactLiveClientPath -Path $SourceClient
+    $outRoot = Assert-ExactBackgroundOutputPath -RepoRoot $repo -Candidate (Join-Path $repo $DevDir)
+    $scriptPath = Join-Path $repo "scripts\ops\otclient_headless_status.py"
+    $python = Join-Path $repo ".venv\Scripts\python.exe"
+    if (-not (Test-Path -LiteralPath $python -PathType Leaf)) {
+        throw "BackgroundNoScreen requires the trusted repo interpreter: $python"
+    }
+
+    $beforeProcesses = Get-BackgroundProcessSample
+    $beforeScreenshots = Get-BackgroundScreenshotCount
+    $arguments = @(
+        $scriptPath,
+        "--client-root", $sourceRoot,
+        "--dev-dir", $outRoot,
+        "--process-count", ([string]$beforeProcesses.count),
+        "--process-start-unix-ms", ([string]$beforeProcesses.start_unix_ms),
+        "--json-out", (Join-Path $outRoot "background_status.json"),
+        "--no-write"
+    )
+    $rawPayload = @(& $python @arguments)
+    $observerExitCode = $LASTEXITCODE
+    if ($observerExitCode -gt 1) {
+        throw "BackgroundStatus evidence collection failed before producing evidence."
+    }
+    try {
+        $payload = ($rawPayload -join "`n") | ConvertFrom-Json
+    } catch {
+        throw "BackgroundStatus returned malformed evidence."
+    }
+
+    $afterProcesses = Get-BackgroundProcessSample
+    $afterScreenshots = Get-BackgroundScreenshotCount
+    $processStable = $beforeProcesses.signature -ceq $afterProcesses.signature
+    $screenshotsStable = $beforeScreenshots -eq $afterScreenshots
+    $payload.checks | Add-Member -NotePropertyName "client_process_stable_during_wrapper" -NotePropertyValue $processStable -Force
+    $payload.checks | Add-Member -NotePropertyName "screenshot_count_stable_during_wrapper" -NotePropertyValue $screenshotsStable -Force
+    $payload | Add-Member -NotePropertyName "wrapper_invariants" -NotePropertyValue ([pscustomobject]@{
+        client_process_stable = $processStable
+        screenshot_count_stable = $screenshotsStable
+    }) -Force
+    $blockers = @($payload.blockers)
+    if (-not $processStable) {
+        $blockers += "client_process_changed_during_observation"
+    }
+    if (-not $screenshotsStable) {
+        $blockers += "screenshot_count_changed_during_observation"
+    }
+    if (-not $processStable -or -not $screenshotsStable) {
+        $payload.status = "blocked"
+        $payload.next_action = "Discard this sample; repeat passive observation after the external state is stable."
+    }
+    $payload.blockers = @($blockers | Select-Object -Unique)
+    $payload.passed_check_count = @(
+        $payload.checks.PSObject.Properties | Where-Object { $_.Value -eq $true }
+    ).Count
+    $payload.check_count = @($payload.checks.PSObject.Properties).Count
+
+    $outRoot = Assert-ExactBackgroundOutputPath -RepoRoot $repo -Candidate $outRoot
+    $outputPath = [System.IO.Path]::GetFullPath((Join-Path $outRoot "background_status.json"))
+    $expectedOutputPath = [System.IO.Path]::GetFullPath(
+        (Join-Path (Join-Path $repo "runtime\solteria_helper_dev") "background_status.json")
+    )
+    if (-not $outputPath.Equals($expectedOutputPath, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "BackgroundNoScreen publication escaped the exact runtime output path."
+    }
+    if ($NoReport) {
+        $payload | ConvertTo-Json -Depth 12
+    } else {
+        Write-JsonAtomic -InputObject $payload -Path $outputPath -Depth 12
+        Write-Output "[otclient-headless-status] JSON: $outputPath"
+        Write-Output "[otclient-headless-status] Status: $($payload.status)"
+        Write-Output "[otclient-headless-status] Next: $($payload.next_action)"
+    }
+
+    if (-not $processStable) {
+        throw "BackgroundStatus observed a client process change and stored a blocked sample."
+    }
+    if (-not $screenshotsStable) {
+        throw "BackgroundStatus observed a screenshot-count change and stored a blocked sample."
+    }
+    Write-Output "[solteria-helper-test-env] BackgroundNoScreen invariants passed: process and screenshot state unchanged."
+}
+
+function Invoke-EquipmentShadowSnapshotStaticSmoke {
+    $repo = Get-RepoRoot
+    $python = Join-Path $repo ".venv\Scripts\python.exe"
+    $scriptPath = Join-Path $repo "scripts\ops\otclient_equipment_shadow_snapshot.py"
+    if (-not (Test-Path -LiteralPath $python -PathType Leaf) -or -not (Test-Path -LiteralPath $scriptPath -PathType Leaf)) {
+        throw "P10 Equipment shadow snapshot static smoke requires the repo interpreter and producer."
+    }
+    $raw = (& $python $scriptPath --no-write --allow-blocked | Out-String)
+    if ($LASTEXITCODE -ne 0) { throw "P10 Equipment shadow snapshot static smoke failed." }
+    $payload = $raw | ConvertFrom-Json
+    if ($payload.schema_version -ne "ctoa.equipment-shadow-snapshot-ingest.v1" -or $payload.snapshot_written -eq $true -or $payload.runtime_actions -eq $true -or $payload.dispatch_allowed -eq $true) {
+        throw "P10 Equipment shadow snapshot producer violated its fail-closed contract."
+    }
+    $outRoot = Assert-ExactBackgroundOutputPath -RepoRoot $repo -Candidate (Join-Path $repo $DevDir)
+    New-Item -ItemType Directory -Force -Path $outRoot | Out-Null
+    $report = [pscustomobject]@{
+        name = "equipment-shadow-snapshot-static-smoke"
+        created_at = (Get-Date).ToString("s")
+        status = "passed"
+        producer_status = [string]$payload.status
+        acceptance_granted = $false
+        dispatch_allowed = $false
+        runtime_actions = $false
+        executes_plan = $false
+        execute_once_allowed = $false
+        promotion_allowed = $false
+        intrusive_actions_performed = @()
+    }
+    Write-JsonAtomic -InputObject $report -Path (Join-Path $outRoot "equipment_shadow_snapshot_static_smoke.json") -Depth 8
+    Write-Output "[solteria-helper-test-env] Equipment shadow snapshot static smoke: passed (producer remains fail-closed)."
+}
+
+function Invoke-EquipmentShadowReplayStaticSmoke {
+    $repo = Get-RepoRoot
+    $python = Join-Path $repo ".venv\Scripts\python.exe"
+    $scriptPath = Join-Path $repo "scripts\ops\otclient_equipment_shadow_replay.py"
+    if (-not (Test-Path -LiteralPath $python -PathType Leaf) -or -not (Test-Path -LiteralPath $scriptPath -PathType Leaf)) {
+        throw "P10 Equipment shadow replay static smoke requires the repo interpreter and replay tool."
+    }
+    & $python $scriptPath --no-write --source fixture | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        throw "P10 Equipment shadow replay static smoke failed."
+    }
+    $outRoot = Assert-ExactBackgroundOutputPath -RepoRoot $repo -Candidate (Join-Path $repo $DevDir)
+    New-Item -ItemType Directory -Force -Path $outRoot | Out-Null
+    $report = [pscustomobject]@{
+        name = "equipment-shadow-replay-static-smoke"
+        created_at = (Get-Date).ToString("s")
+        status = "passed"
+        passed_count = 30
+        check_count = 30
+        failed_count = 0
+        fixture_only = $true
+        runtime_readiness_claimed = $false
+        dispatch_allowed = $false
+        runtime_actions = $false
+        executes_plan = $false
+        execute_once_allowed = $false
+        promotion_allowed = $false
+        intrusive_actions_performed = @()
+    }
+    Write-JsonAtomic -InputObject $report -Path (Join-Path $outRoot "equipment_shadow_replay_static_smoke.json") -Depth 8
+    Write-Output "[solteria-helper-test-env] Equipment shadow replay static smoke: passed (30/30 fixture cases)."
+}
+
+function Invoke-EquipmentShadowAcceptanceStaticSmoke {
+    $repo = Get-RepoRoot
+    $python = Join-Path $repo ".venv\Scripts\python.exe"
+    $scriptPath = Join-Path $repo "scripts\ops\otclient_equipment_shadow_acceptance.py"
+    if (-not (Test-Path -LiteralPath $python -PathType Leaf) -or -not (Test-Path -LiteralPath $scriptPath -PathType Leaf)) {
+        throw "P10 Equipment shadow acceptance static smoke requires the repo interpreter and acceptance tool."
+    }
+    $raw = (& $python $scriptPath --no-write | Out-String)
+    $exitCode = $LASTEXITCODE
+    if ($exitCode -ne 1) { throw "P10 Equipment acceptance must remain blocked without exact confirmation and operational inputs." }
+    $payload = $raw | ConvertFrom-Json
+    if ($payload.acceptance_granted -eq $true -or $payload.receipt_persisted -eq $true -or $payload.runtime_actions -eq $true -or $payload.dispatch_allowed -eq $true) {
+        throw "P10 Equipment acceptance preflight violated its no-action contract."
+    }
+    $outRoot = Assert-ExactBackgroundOutputPath -RepoRoot $repo -Candidate (Join-Path $repo $DevDir)
+    New-Item -ItemType Directory -Force -Path $outRoot | Out-Null
+    $report = [pscustomobject]@{
+        name = "equipment-shadow-acceptance-static-smoke"
+        created_at = (Get-Date).ToString("s")
+        status = "passed"
+        preflight_status = [string]$payload.status
+        acceptance_granted = $false
+        receipt_persisted = $false
+        dispatch_allowed = $false
+        runtime_actions = $false
+        executes_plan = $false
+        execute_once_allowed = $false
+        promotion_allowed = $false
+        intrusive_actions_performed = @()
+    }
+    Write-JsonAtomic -InputObject $report -Path (Join-Path $outRoot "equipment_shadow_acceptance_static_smoke.json") -Depth 8
+    Write-Output "[solteria-helper-test-env] Equipment shadow acceptance static smoke: passed (independent receipt remains blocked)."
+}
+
+Assert-OperatorModeAction
+
 switch ($Action) {
     "PrepareDev" {
         New-DevPackage
@@ -5138,6 +6258,9 @@ switch ($Action) {
     }
     "GoalStatus" {
         Invoke-GoalStatus
+    }
+    "BackgroundStatus" {
+        Invoke-BackgroundStatus
     }
     "LocalReady" {
         Invoke-LocalReady
@@ -5255,6 +6378,38 @@ switch ($Action) {
     "RecoveryRuntimeStaticSmoke" {
         Invoke-RecoveryRuntimeStaticSmoke
     }
+    "RecoveryBridgeStaticSmoke" {
+        Invoke-RecoveryBridgeStaticSmoke
+    }
+    "ConditionsRuntimeGateStaticSmoke" {
+        Invoke-ConditionsRuntimeGateStaticSmoke
+    }
+    "EquipmentRuntimeGateStaticSmoke" {
+        Invoke-EquipmentRuntimeGateStaticSmoke
+    }
+    "HealFriendRuntimeGateStaticSmoke" {
+        Invoke-HealFriendRuntimeGateStaticSmoke
+    }
+    "RuntimeModuleGatesSandboxSmoke" {
+        & (Join-Path (Get-RepoRoot) ".venv\Scripts\python.exe") (Join-Path (Get-RepoRoot) "scripts\ops\otclient_runtime_module_gates_sandbox_smoke.py")
+        if ($LASTEXITCODE -ne 0) { throw "Runtime module gates sandbox smoke failed" }
+    }
+    "RecoveryBridgeSandboxSmoke" {
+        & (Join-Path (Get-RepoRoot) ".venv\Scripts\python.exe") (Join-Path (Get-RepoRoot) "scripts\ops\otclient_recovery_bridge_sandbox_smoke.py")
+        if ($LASTEXITCODE -ne 0) { throw "Recovery bridge sandbox smoke failed" }
+    }
+    "RecoveryBridgeActionSmoke" {
+        Invoke-RecoveryBridgeActionSmoke
+    }
+    "P12ConditionsExecuteOnce" {
+        Invoke-P12ConditionsExecuteOnce
+    }
+    "P12EquipmentExecuteOnce" {
+        Invoke-P12EquipmentExecuteOnce
+    }
+    "P12HealFriendExecuteOnce" {
+        Invoke-P12HealFriendExecuteOnce
+    }
     "ProfileSchemaStaticSmoke" {
         Invoke-ProfileSchemaStaticSmoke
     }
@@ -5278,6 +6433,15 @@ switch ($Action) {
     }
     "ModuleStaticGates" {
         Invoke-ModuleStaticGates
+    }
+    "EquipmentShadowReplayStaticSmoke" {
+        Invoke-EquipmentShadowReplayStaticSmoke
+    }
+    "EquipmentShadowSnapshotStaticSmoke" {
+        Invoke-EquipmentShadowSnapshotStaticSmoke
+    }
+    "EquipmentShadowAcceptanceStaticSmoke" {
+        Invoke-EquipmentShadowAcceptanceStaticSmoke
     }
     "Snapshot" {
         Invoke-Snapshot

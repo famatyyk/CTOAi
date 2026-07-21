@@ -1,0 +1,95 @@
+{
+  "schema_version": "ctoa.otclient-review-bundles.v1",
+  "bundles": [
+    {
+      "id": "p8-background-noscreen",
+      "depends_on": [],
+      "implementation_status": "implementation_complete",
+      "operational_acceptance": "blocked_pending_promotion_bound_proof",
+      "core_paths": [
+        "scripts/ops/otclient_headless_status.py",
+        "scripts/ops/otclient_headless_evidence.py",
+        "scripts/lua/otclient/ctoa_helper_client_reporter.lua",
+        "tests/test_otclient_headless_status.py"
+      ],
+      "integration_paths": [
+        "ctoa.ps1",
+        "docs/CTOA_CLI.md",
+        "docs/OTCLIENT_INTEGRATION.md",
+        "schemas/ctoa-command-dictionary.json",
+        "scripts/ops/release_evidence_pack.py",
+        "web/src/components/ControlCenterEvidencePanel.tsx",
+        "web/src/lib/controlCenterEvidence.ts",
+        "web/src/lib/controlCenterEvidenceConfig.ts",
+        "web/src/lib/__tests__/controlCenterEvidence.test.ts"
+      ],
+      "required_commands": [
+        ".\\.venv\\Scripts\\python.exe -m pytest tests\\test_otclient_headless_status.py tests\\test_release_evidence_pack.py tests\\test_powershell_launcher_security.py -q",
+        "npm --prefix web test"
+      ]
+    },
+    {
+      "id": "p9-conditions-shadow",
+      "depends_on": [
+        "p8-background-noscreen"
+      ],
+      "implementation_status": "offline_implementation_complete",
+      "operational_acceptance": "blocked_by_p8_operational_acceptance",
+      "core_paths": [
+        "config/otclient/conditions-shadow-profile.json",
+        "docs/otclient/P9_CONDITIONS_SHADOW_ACCEPTANCE.md",
+        "docs/otclient/P9_CONDITIONS_SHADOW_REPLAY_DESIGN.md",
+        "schemas/conditions-observation.schema.json",
+        "schemas/conditions-p8-proof.schema.json",
+        "schemas/conditions-recovery-proof.schema.json",
+        "schemas/conditions-recovery-trace.schema.json",
+        "schemas/conditions-shadow-acceptance.schema.json",
+        "schemas/conditions-shadow-profile.schema.json",
+        "schemas/conditions-shadow-replay-report.schema.json",
+        "schemas/conditions-shadow-scenario-pack.schema.json",
+        "schemas/conditions-shadow-trace.schema.json",
+        "scripts/ops/otclient_conditions_recovery_proof.py",
+        "scripts/ops/otclient_conditions_shadow_acceptance.py",
+        "scripts/ops/otclient_conditions_shadow_replay.py",
+        "tests/fixtures/otclient_conditions_shadow_acceptance/scenarios.json",
+        "tests/fixtures/otclient_conditions_shadow_replay/positive-observation.json",
+        "tests/fixtures/otclient_conditions_shadow_replay/positive-p8-proof.json",
+        "tests/fixtures/otclient_conditions_shadow_replay/positive-recovery-proof.json",
+        "tests/fixtures/otclient_conditions_shadow_replay/positive-recovery-trace.json",
+        "tests/fixtures/otclient_conditions_shadow_replay/scenarios.json",
+        "tests/test_otclient_conditions_recovery_proof.py",
+        "tests/test_otclient_conditions_shadow_acceptance.py",
+        "tests/test_otclient_conditions_shadow_consumers.py",
+        "tests/test_otclient_conditions_shadow_replay.py"
+      ],
+      "integration_paths": [
+        "ctoa.ps1",
+        "docs/CTOA_CLI.md",
+        "schemas/ctoa-command-dictionary.json",
+        "scripts/ops/release_evidence_pack.py",
+        "web/src/components/ControlCenterEvidencePanel.tsx",
+        "web/src/lib/controlCenterEvidence.ts",
+        "web/src/lib/__tests__/controlCenterEvidence.test.ts"
+      ],
+      "required_commands": [
+        ".\\.venv\\Scripts\\python.exe -m pytest tests\\test_otclient_conditions_recovery_proof.py tests\\test_otclient_conditions_shadow_replay.py tests\\test_otclient_conditions_shadow_acceptance.py tests\\test_otclient_conditions_shadow_consumers.py tests\\test_release_evidence_pack.py -q",
+        "npm --prefix web test"
+      ]
+    }
+  ],
+  "hunk_selection_required_for_integration_paths": true,
+  "excluded_path_markers": [
+    "equipment",
+    "heal_friend",
+    "p10_",
+    "p11_",
+    "mods/ctoa_safe",
+    "solteria_safe"
+  ],
+  "policy": {
+    "runtime_artifacts_are_local_only": true,
+    "dispatch_allowed": false,
+    "promotion_allowed": false,
+    "live_client_actions_allowed": false
+  }
+}

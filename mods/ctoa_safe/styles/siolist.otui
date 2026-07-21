@@ -1,0 +1,10 @@
+CTOASafeSioRow < Panel
+  height: 26
+  background-color: #292929
+
+CTOASafeSioName < TextEdit
+  height: 22
+  background-color: #161616
+  color: #eeeeee
+  border-width: 1
+  border-color: #5a5a5a

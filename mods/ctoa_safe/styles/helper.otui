@@ -1,0 +1,33 @@
+CTOASafeWindow < HeadlessWindow
+  image-source: /images/ui/window_headless
+  image-border: 5
+  padding: 5
+  color: #dfdfdf
+
+CTOASafePage < Panel
+  background-color: #252525
+
+CTOASafeSection < Label
+  background-color: #161616
+  color: #e3c06b
+  text-offset: 5 2
+
+CTOASafeItem < Item
+  size: 30 30
+  padding: 1
+  image-source: /images/ui/item
+  selectable: true
+  editable: true
+  draggable: true
+  focusable: true
+
+CTOASafeTab < Button
+  color: #eeeeee
+
+CTOASafeTab:pressed
+  color: #f0c56a
+
+CTOASafeSpellSelector < HeadlessWindow
+  image-source: /images/ui/window_headless
+  image-border: 5
+  padding: 5

@@ -1,67 +1,16 @@
-name: site-pages
+name: site-pages-disabled-private-first
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "docs/site/**"
-      - ".github/workflows/site-pages.yml"
   workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: site-pages
-  cancel-in-progress: true
 
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  publication-disabled:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Preflight site validation
-        shell: bash
+      - name: Explain private-first publication policy
         run: |
-          set -euo pipefail
-
-          test -d docs/site
-          test -f docs/site/index.html
-          test -f docs/site/style.css
-          test -f docs/site/script.js
-
-          if ! grep -q "<title>" docs/site/index.html; then
-            echo "Missing <title> in docs/site/index.html"
-            exit 1
-          fi
-
-          if ! grep -q "Build:" docs/site/index.html; then
-            echo "Missing build strip marker in docs/site/index.html"
-            exit 1
-          fi
-
-          if [ ! -s docs/site/style.css ] || [ ! -s docs/site/script.js ]; then
-            echo "Site assets are empty."
-            exit 1
-          fi
-
-          echo "Site preflight passed."
-
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload docs/site artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: docs/site
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          echo "GitHub Pages publication is disabled by the CTOAi private-first policy."
+          echo "Publish only a separately reviewed, sanitized export without repository history."

@@ -118,6 +118,81 @@
       "description": "Run official ValidateDev and open the local Helper preview"
     },
     {
+      "command": "otbg",
+      "aliases": [],
+      "description": "Collect passive BackgroundNoScreen Helper evidence without client interaction"
+    },
+    {
+      "command": "otp9",
+      "aliases": [],
+      "description": "Refresh bounded BackgroundNoScreen evidence and run the no-action Conditions shadow replay"
+    },
+    {
+      "command": "otp9accept",
+      "aliases": [],
+      "description": "Independently accept the P9 Conditions shadow receipt with exact operator confirmation"
+    },
+    {
+      "command": "otp10doctor",
+      "aliases": [],
+      "description": "Diagnose or exclusively initialize the fixed zero-ID data-only P10 Equipment capture profile without OTClient interaction"
+    },
+    {
+      "command": "otp10preview",
+      "aliases": [],
+      "description": "Render a bounded, sanitized, no-action Equipment observation preview from canonical BackgroundNoScreen evidence"
+    },
+    {
+      "command": "otp10catalog",
+      "aliases": [],
+      "description": "Classify exact Equipment item/container/slot candidates from the fixed preview without selecting or recommending an item"
+    },
+    {
+      "command": "otp10plan",
+      "aliases": [],
+      "description": "Generate a hash-bound data-only capture-profile plan and diff without reading or writing the local profile, granting acceptance, or claiming readiness"
+    },
+    {
+      "command": "otp10autoplan",
+      "aliases": [],
+      "description": "Refresh canonical BackgroundNoScreen evidence and the fixed passive preview, then generate the same no-action P10 plan from exact item IDs while resolving session-scoped container and slot from exactly one fresh operational candidate match"
+    },
+    {
+      "command": "otp10apply",
+      "aliases": [],
+      "description": "Apply one reviewed hash-bound P10 plan only to the fixed ignored local profile with exact confirmation atomic backup and a no-action receipt"
+    },
+    {
+      "command": "otp10preflight",
+      "aliases": [],
+      "description": "Evaluate the canonical repo-only P8/P9 to P10 dependency chain without changing eligibility or performing runtime/live actions"
+    },
+    {
+      "command": "otp10ready",
+      "aliases": [],
+      "description": "Explain fixed P10 operator readiness blockers and ordered safe next commands without changing eligibility or performing runtime/live actions"
+    },
+    {
+      "command": "otp10refresh",
+      "aliases": [],
+      "description": "Refresh the fixed repo-only P10 doctor-to-consumer-parity chain without IDs, confirmation, acceptance, replay, client control, or local-profile writes"
+    },
+    {
+      "command": "otp10",
+      "aliases": [],
+      "description": "Produce the passive Equipment snapshot and run the operational ring shadow replay"
+    },
+    {
+      "command": "otp10accept",
+      "aliases": [],
+      "description": "Independently accept the P10 Equipment shadow receipt with exact operator confirmation"
+    },
+    {
+      "command": "otp11catalog",
+      "aliases": [],
+      "description": "List sanitized passive P11 party candidates without selecting, ranking, casting, or changing eligibility"
+    },
+    {
       "command": "brain",
       "aliases": [],
       "description": "Engine Brain helpers: refresh|doctor|pack [all|helper|control-center|infra|security]"

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ctoa.local/schemas/equipment-shadow-capture-profile.schema.json",
+  "title": "CTOAi Equipment Shadow Capture Profile v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "configured_by_operator", "slot", "equipped_item_id", "candidate_item_id", "candidate_source_container_id", "candidate_source_slot_index", "max_observation_age_ms", "retry_budget", "dispatch_allowed", "runtime_actions", "executes_plan", "execute_once_allowed", "promotion_allowed"],
+  "properties": {
+    "schema_version": {"const": "ctoa.equipment-shadow-capture-profile.v1"},
+    "configured_by_operator": {"type": "boolean"},
+    "slot": {"const": "ring"},
+    "equipped_item_id": {"type": "integer", "minimum": 0, "maximum": 65535},
+    "candidate_item_id": {"type": "integer", "minimum": 0, "maximum": 65535},
+    "candidate_source_container_id": {"type": "integer", "minimum": 0, "maximum": 65535},
+    "candidate_source_slot_index": {"type": "integer", "minimum": 0, "maximum": 65535},
+    "max_observation_age_ms": {"const": 6000},
+    "retry_budget": {"const": 0},
+    "dispatch_allowed": {"const": false},
+    "runtime_actions": {"const": false},
+    "executes_plan": {"const": false},
+    "execute_once_allowed": {"const": false},
+    "promotion_allowed": {"const": false}
+  }
+}

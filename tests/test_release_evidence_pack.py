@@ -1,4 +1,5 @@
 import importlib.util
+import datetime as dt
 import json
 from pathlib import Path
 
@@ -15,6 +16,214 @@ def _load_module():
     assert spec.loader is not None
     spec.loader.exec_module(module)
     return module
+
+
+def _background_payload(generated_at: str) -> dict[str, object]:
+    return {
+        "schema_version": "ctoa.otclient-headless-status.v1",
+        "status": "ready",
+        "mode": "background_no_screen",
+        "generated_at_utc": generated_at,
+        "advisory_only": True,
+        "safe_to_run_while_playing": True,
+        "promotion_allowed": False,
+        "dispatch_allowed": False,
+        "runtime_actions": False,
+        "process_state": "running",
+        "interaction_contract": {
+            "gui_automation": False,
+            "mouse_keyboard_input": False,
+            "window_focus": False,
+            "screenshot_capture": False,
+            "client_launch": False,
+            "client_stop": False,
+            "live_file_writes": False,
+            "passive_reads_only": True,
+            "evidence_write_scope": "runtime/solteria_helper_dev",
+        },
+        "checks": {
+            "no_screen_contract": True,
+            "client_process_stable_during_wrapper": True,
+            "screenshot_count_stable_during_wrapper": True,
+        },
+        "wrapper_invariants": {
+            "client_process_stable": True,
+            "screenshot_count_stable": True,
+        },
+        "intrusive_actions_performed": [],
+        "integrity": {
+            "status": "passed",
+            "matched_file_count": 58,
+            "manifest_file_count": 58,
+            "mutable_drift_count": 0,
+            "profile_drift_count": 0,
+            "mismatch_count": 0,
+            "missing_count": 0,
+            "invalid_path_count": 0,
+            "oversize_count": 0,
+            "live_files_unchanged_during_observation": True,
+        },
+        "capability": {
+            "status": "fresh",
+            "fresh": True,
+            "runtime_state": "disarmed",
+            "runtime_actions": False,
+            "runtime_core_actions": False,
+        },
+        "blockers": [],
+    }
+
+
+def _write_p10_payload(module, path: Path, payload: dict[str, object]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(
+        module.equipment_operator_readiness.documents.canonical_bytes(payload) + b"\n"
+    )
+
+
+def _write_blocked_p10_chain(module, helper_dev_dir: Path, now_ms: int) -> None:
+    readiness = module.equipment_operator_readiness
+    documents = readiness.documents
+    preview = readiness.observation_preview
+    dependency = readiness.dependency_preflight
+    catalog = readiness.candidate_catalog
+    change_plan = readiness.change_plan
+
+    observation = {
+        "status": "valid",
+        "present": True,
+        "valid": True,
+        "schema_version": preview.OBSERVATION_SCHEMA,
+        "observed_at_unix_ms": now_ms - 1_000,
+        "observation_id": "equipment-release-evidence-1",
+        "online": "online",
+        "alive": "alive",
+        "protection_zone": "outside",
+        "protection_zone_source": "player_method",
+        "inventory_api_available": True,
+        "containers_complete": True,
+        "ring": {"present": True, "item_id": 3051, "count": 1},
+        "candidates": [
+            {"container_id": 2, "slot_index": 1, "item_id": 3048, "count": 1}
+        ],
+        "cooldown": "ready",
+        "cooldown_source": "game_cooldown_group",
+        "producer_source": "otclient_guarded_adapter",
+        "dispatch_allowed": False,
+        "runtime_actions": False,
+        "executes_plan": False,
+        "execute_once_allowed": False,
+        "promotion_allowed": False,
+        "validation_errors": [],
+        "p10_blocker": None,
+    }
+    background = {
+        "schema_version": preview.BACKGROUND_SCHEMA,
+        "mode": "background_no_screen",
+        "status": "blocked",
+        "advisory_only": True,
+        "safe_to_run_while_playing": True,
+        "dispatch_allowed": False,
+        "runtime_actions": False,
+        "promotion_allowed": False,
+        "intrusive_actions_performed": [],
+        "interaction_contract": dict(preview.INTERACTION_CONTRACT),
+        "wrapper_invariants": {
+            "client_process_stable": True,
+            "screenshot_count_stable": True,
+        },
+        "capability": {
+            "fresh": True,
+            "contract_valid": True,
+            "version_match": True,
+            "runtime_actions": False,
+            "runtime_core_actions": False,
+            "equipment_shadow_observation": observation,
+        },
+        "blockers": ["waiting_for_p8_refresh"],
+    }
+    background_path = helper_dev_dir / "background_status.json"
+    _write_p10_payload(module, background_path, background)
+    background_document = documents.read_document(background_path)
+
+    doctor = {
+        "schema_version": "ctoa.equipment-capture-profile-doctor.v1",
+        "status": "ready",
+        "source": "local_operator_override",
+        "path": str(
+            ROOT / ".ctoa-local" / "otclient" / "equipment-shadow-capture-profile.json"
+        ),
+        "sha256": "a" * 64,
+        "configured_by_operator": True,
+        "slot": "ring",
+        "identifiers_present": True,
+        "candidate_slot_index_valid": True,
+        "no_action_contract": True,
+        "blockers": [],
+        "next_action": "Run the separate P10 dependency preflight.",
+        "runtime_actions": False,
+        "live_file_writes": False,
+        "runtime_readiness_claimed": False,
+    }
+    doctor_path = helper_dev_dir / "equipment_capture_profile_doctor.json"
+    _write_p10_payload(module, doctor_path, doctor)
+    doctor_document = documents.read_document(doctor_path)
+
+    preview_payload = preview.build_preview(
+        background=background_document,
+        generated_at_unix_ms=now_ms,
+    )
+    preview_path = helper_dev_dir / "equipment_observation_preview.json"
+    _write_p10_payload(module, preview_path, preview_payload)
+    preview_document = documents.read_document(preview_path)
+
+    missing = documents.document_from_payload(None, "missing")
+    dependency_payload = dependency.evaluate_preflight(
+        dependency.EvidenceBundle(
+            p8_report=background_document,
+            p9_report=missing,
+            p9_receipt=missing,
+            capture_doctor=doctor_document,
+            observation_preview=preview_document,
+        ),
+        evaluated_at_unix_ms=now_ms,
+    )
+    dependency_path = helper_dev_dir / "equipment_dependency_preflight.json"
+    _write_p10_payload(module, dependency_path, dependency_payload)
+
+    catalog_payload = catalog.build_catalog(
+        preview_document=preview_document,
+        generated_at_unix_ms=now_ms,
+    )
+    catalog_path = helper_dev_dir / "equipment_candidate_catalog.json"
+    _write_p10_payload(module, catalog_path, catalog_payload)
+
+    plan_payload = change_plan.evaluate_change_plan(
+        change_plan.CanonicalInputs(
+            capture_doctor=doctor_document,
+            observation_preview=preview_document,
+        ),
+        generated_at_unix_ms=now_ms,
+    )
+    plan_path = helper_dev_dir / "equipment_capture_profile_change_plan.json"
+    _write_p10_payload(module, plan_path, plan_payload)
+
+    source_documents = {
+        "capture_doctor": documents.read_document(doctor_path),
+        "observation_preview": documents.read_document(preview_path),
+        "dependency_preflight": documents.read_document(dependency_path),
+        "candidate_catalog": documents.read_document(catalog_path),
+        "change_plan": documents.read_document(plan_path),
+    }
+    readiness_payload = readiness.evaluate_readiness(
+        source_documents,
+        generated_at_unix_ms=now_ms,
+    )
+    _write_p10_payload(
+        module,
+        helper_dev_dir / "equipment_operator_readiness.json",
+        readiness_payload,
+    )
 
 
 def test_build_evidence_pack_handles_missing_artifacts(tmp_path: Path):
@@ -34,6 +243,31 @@ def test_build_evidence_pack_handles_missing_artifacts(tmp_path: Path):
     assert pack["api_cost_report"]["status"] == "missing"
     assert pack["control_center_audit"]["record_count"] == 0
     assert pack["otclient_helper"]["status"] == "missing"
+    assert pack["otclient_helper"]["background_status"]["status"] == "missing"
+    assert pack["otclient_helper"]["background_status"]["contract_valid"] is False
+    assert pack["otclient_helper"]["background_status"]["fresh"] is False
+    equipment_operator = pack["otclient_helper"]["equipment_operator_readiness"]
+    assert (
+        equipment_operator["schema_version"]
+        == module.P10_EQUIPMENT_CONSUMER_PARITY_SCHEMA
+    )
+    assert equipment_operator["status"] == "missing"
+    assert equipment_operator["reported_status"] == "missing"
+    assert equipment_operator["contract_valid"] is False
+
+
+    assert equipment_operator["operator_inputs_ready"] is False
+    assert equipment_operator["eligibility_changed"] is False
+    assert equipment_operator["eligibility_state"] == "unchanged"
+    assert equipment_operator["acceptance_granted"] is False
+    assert equipment_operator["read_only"] is True
+    assert set(equipment_operator["artifacts"]) == set(
+        module.EQUIPMENT_OPERATOR_ARTIFACT_FILES
+    )
+    assert all(
+        artifact["status"] == "missing"
+        for artifact in equipment_operator["artifacts"].values()
+    )
     assert pack["p7_operator_brief"]["status"] == "missing"
     assert pack["p7_operator_brief"]["roadmap_generation"]["status"] == "missing"
     assert (
@@ -44,8 +278,422 @@ def test_build_evidence_pack_handles_missing_artifacts(tmp_path: Path):
     assert any("api_cost_report" in item for item in pack["recommendations"])
 
 
+def test_evidence_pack_binds_preallocated_audit_and_self_hashes(tmp_path: Path):
+    module = _load_module()
+    source_audit_id = "20260716153000123456-evidence-pack-refresh"
+
+    pack = module.build_evidence_pack(
+        tmp_path / "releases" / "evidence",
+        tmp_path / "runtime" / "repo-hygiene" / "local-pr-quality.json",
+        tmp_path / "runtime" / "api-cost" / "latest.json",
+        tmp_path / "runtime" / "control-center" / "action-audit.jsonl",
+        tmp_path / "runtime" / "solteria_helper_dev",
+        tmp_path / "AI" / "generated" / "P7_OPERATOR_BRIEF.json",
+        source_audit_id=source_audit_id,
+    )
+
+    provenance = pack["provenance"]
+    basis = {
+        **pack,
+        "provenance": {
+            key: value
+            for key, value in provenance.items()
+            if key != "content_sha256"
+        },
+    }
+    assert pack["schema_version"] == module.EVIDENCE_SCHEMA_VERSION
+    assert provenance["source_audit_id"] == source_audit_id
+    assert provenance["binding_status"] == "bound"
+    assert provenance["content_sha256"] == module._canonical_json_sha256(basis)
+
+    with pytest.raises(ValueError, match="source_audit_id"):
+        module.build_evidence_pack(source_audit_id="private/path")
+
+
+def test_p10_equipment_readiness_projects_strict_read_only_blocked_chain(
+    tmp_path: Path,
+):
+    module = _load_module()
+    helper_dev_dir = tmp_path / "runtime" / "solteria_helper_dev"
+    now = dt.datetime(2026, 7, 12, 12, 0, tzinfo=dt.UTC)
+    now_ms = int(now.timestamp() * 1_000)
+    _write_blocked_p10_chain(module, helper_dev_dir, now_ms)
+
+    summary = module._equipment_operator_readiness_summary(
+        helper_dev_dir,
+        helper_dir_safe=True,
+        now=now,
+    )
+
+    assert summary["status"] == "blocked"
+    assert summary["schema_version"] == module.P10_EQUIPMENT_CONSUMER_PARITY_SCHEMA
+    assert summary["reported_status"] == "blocked"
+    assert summary["contract_valid"] is True
+    assert summary["fresh"] is True
+    assert summary["operator_inputs_ready"] is False
+    assert summary["eligibility_changed"] is False
+    assert summary["eligibility_state"] == "unchanged"
+    assert summary["acceptance_granted"] is False
+    assert summary["operational_readiness_claimed"] is False
+    assert summary["read_only"] is True
+    assert summary["blockers"]
+    assert summary["next_actions"]
+    assert all(
+        action["changes_eligibility"] is False for action in summary["next_actions"]
+    )
+    assert all(
+        summary[key] is False
+        for key in (
+            "live_file_writes",
+            "dispatch_allowed",
+            "runtime_actions",
+            "executes_plan",
+            "execute_once_allowed",
+            "promotion_allowed",
+        )
+    )
+    assert summary["intrusive_actions_performed"] == []
+    assert set(summary["artifacts"]) == set(module.EQUIPMENT_OPERATOR_ARTIFACT_FILES)
+    for artifact, projection in summary["artifacts"].items():
+        assert projection["path"] == (
+            "runtime/solteria_helper_dev/"
+            + module.EQUIPMENT_OPERATOR_ARTIFACT_FILES[artifact]
+        )
+        assert projection["load_status"] == "loaded"
+        assert (
+            projection["schema_version"]
+            == (module.EQUIPMENT_OPERATOR_EXPECTED_SCHEMAS[artifact])
+        )
+        assert len(projection["sha256"]) == 64
+        assert projection["contract_valid"] is True
+        assert projection["fresh"] is True
+
+
+@pytest.mark.parametrize(
+    ("artifact", "mutation"),
+    [
+        ("equipment_capture_profile_doctor", "schema"),
+        ("equipment_observation_preview", "status"),
+        ("equipment_candidate_catalog", "hash"),
+        ("equipment_capture_profile_change_plan", "path"),
+        ("equipment_dependency_preflight", "no_action"),
+    ],
+)
+def test_p10_equipment_readiness_rejects_schema_status_hash_path_and_action_tamper(
+    tmp_path: Path,
+    artifact: str,
+    mutation: str,
+):
+    module = _load_module()
+    helper_dev_dir = tmp_path / "runtime" / "solteria_helper_dev"
+    now = dt.datetime(2026, 7, 12, 12, 0, tzinfo=dt.UTC)
+    now_ms = int(now.timestamp() * 1_000)
+    _write_blocked_p10_chain(module, helper_dev_dir, now_ms)
+    path = helper_dev_dir / module.EQUIPMENT_OPERATOR_ARTIFACT_FILES[artifact]
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if mutation == "schema":
+        payload["schema_version"] = "ctoa.equipment-capture-profile-doctor.v2"
+    elif mutation == "status":
+        payload["status"] = "ready_to_dispatch"
+    elif mutation == "hash":
+        payload["preview_sha256"] = "f" * 64
+    elif mutation == "path":
+        payload["sources"]["capture_doctor"] = "runtime/override/doctor.json"
+    else:
+        payload["runtime_actions"] = True
+    _write_p10_payload(module, path, payload)
+
+    summary = module._equipment_operator_readiness_summary(
+        helper_dev_dir,
+        helper_dir_safe=True,
+        now=now,
+    )
+
+    assert summary["status"] == "invalid"
+    assert summary["contract_valid"] is False
+    assert summary["operator_inputs_ready"] is False
+    assert summary["eligibility_changed"] is False
+    assert summary["acceptance_granted"] is False
+    assert summary["artifacts"][artifact]["status"] == "invalid"
+    assert summary["artifacts"][artifact]["contract_valid"] is False
+    commands = [action["command"] for action in summary["next_actions"]]
+    expected_source_commands = {
+        "equipment_capture_profile_doctor": ".\\ctoa.ps1 otp10doctor",
+        "equipment_observation_preview": ".\\ctoa.ps1 otp10preview",
+        "equipment_dependency_preflight": ".\\ctoa.ps1 otp10preflight",
+        "equipment_candidate_catalog": ".\\ctoa.ps1 otp10catalog",
+        "equipment_capture_profile_change_plan": ".\\ctoa.ps1 otp10plan",
+    }
+    assert expected_source_commands[artifact] in commands
+    assert commands[-1] == ".\\ctoa.ps1 otp10ready"
+    assert all(
+        action["changes_eligibility"] is False for action in summary["next_actions"]
+    )
+
+
+def test_p10_equipment_readiness_expires_without_changing_release_eligibility(
+    tmp_path: Path,
+):
+    module = _load_module()
+    helper_dev_dir = tmp_path / "runtime" / "solteria_helper_dev"
+    generated_at = dt.datetime(2026, 7, 12, 12, 0, tzinfo=dt.UTC)
+    _write_blocked_p10_chain(
+        module,
+        helper_dev_dir,
+        int(generated_at.timestamp() * 1_000),
+    )
+
+    summary = module._equipment_operator_readiness_summary(
+        helper_dev_dir,
+        helper_dir_safe=True,
+        now=generated_at
+        + dt.timedelta(milliseconds=module.EQUIPMENT_OPERATOR_MAX_AGE_MS + 1),
+    )
+
+    assert summary["status"] == "stale"
+    assert summary["reported_status"] == "blocked"
+    assert summary["contract_valid"] is True
+    assert summary["fresh"] is False
+    assert summary["operator_inputs_ready"] is False
+    assert summary["eligibility_changed"] is False
+    assert summary["eligibility_state"] == "unchanged"
+    assert summary["acceptance_granted"] is False
+    assert any(blocker.endswith("_stale") for blocker in summary["blockers"])
+
+
+def test_background_status_expires_without_affecting_live_promotion(tmp_path: Path):
+    module = _load_module()
+    helper_dev_dir = tmp_path / "runtime" / "solteria_helper_dev"
+    helper_dev_dir.mkdir(parents=True)
+    generated_at = (
+        dt.datetime.now(dt.UTC)
+        - dt.timedelta(seconds=module.BACKGROUND_STATUS_MAX_AGE_SECONDS + 1)
+    ).isoformat()
+    (helper_dev_dir / "background_status.json").write_text(
+        json.dumps(_background_payload(generated_at)), encoding="utf-8"
+    )
+
+    helper = module._helper_status(helper_dev_dir)
+    background = helper["background_status"]
+
+    assert background["reported_status"] == "ready"
+    assert background["status"] == "stale"
+    assert background["contract_valid"] is True
+    assert background["fresh"] is False
+    assert background["promotion_allowed"] is False
+    assert background["dispatch_allowed"] is False
+    assert helper["live_promoted"] is False
+    assert helper["releasable_to_live"] is False
+
+
+def test_background_status_accepts_consistent_untrusted_pin_as_blocked_evidence(
+    tmp_path: Path,
+):
+    module = _load_module()
+    payload = _background_payload(dt.datetime.now(dt.UTC).isoformat())
+    payload["status"] = "blocked"
+    payload["blockers"] = ["live_manifest_pin_untrusted"]
+    integrity = payload["integrity"]
+    capability = payload["capability"]
+    assert isinstance(integrity, dict)
+    assert isinstance(capability, dict)
+    integrity["status"] = "untrusted_pin"
+    integrity["matched_file_count"] = 0
+    integrity["live_files_unchanged_during_observation"] = False
+    integrity["pin_errors"] = [
+        "live_manifest_origin_invalid",
+        "live_promotion_manifest_path_mismatch",
+        "live_promotion_manifest_sha256_mismatch",
+        "live_promotion_timestamp_mismatch",
+    ]
+    integrity["pin_remediation"] = {
+        "classification": "legacy_or_unbound_attestation",
+        "required_action": "refresh_official_live_promotion_after_current_gates",
+        "observer_can_write_trust_anchor": False,
+        "historical_rebinding_allowed": False,
+        "requires_current_release_gate": True,
+        "requires_explicit_live_approval": True,
+    }
+    integrity["diagnostic_parity"] = {
+        "attempted": True,
+        "status": "failed",
+        "manifest_file_count": 58,
+        "matched_file_count": 57,
+        "mismatch_count": 0,
+        "mutable_drift_count": 1,
+        "profile_drift_count": 1,
+        "missing_count": 0,
+        "invalid_path_count": 0,
+        "oversize_count": 0,
+        "actual_total_bytes": 1000,
+        "stable_during_observation": True,
+        "acceptance_allowed": False,
+    }
+    capability["status"] = "missing"
+    capability["fresh"] = False
+
+    summary = module._background_status_summary(
+        payload,
+        tmp_path / "background_status.json",
+        artifact_present=True,
+    )
+
+    assert summary["status"] == "blocked"
+    assert summary["contract_valid"] is True
+    assert summary["fresh"] is True
+    assert summary["integrity_status"] == "untrusted_pin"
+    assert summary["blockers"] == ["live_manifest_pin_untrusted"]
+    assert summary["pin_errors"] == integrity["pin_errors"]
+    assert summary["pin_classification"] == "legacy_or_unbound_attestation"
+    assert summary["pin_required_action"] == (
+        "refresh_official_live_promotion_after_current_gates"
+    )
+    assert summary["pin_historical_rebinding_allowed"] is False
+    assert summary["pin_requires_explicit_live_approval"] is True
+    assert summary["diagnostic_parity_status"] == "failed"
+    assert summary["diagnostic_parity_attempted"] is True
+    assert summary["diagnostic_profile_drift_count"] == 1
+    assert summary["diagnostic_stable_during_observation"] is True
+    assert summary["diagnostic_acceptance_allowed"] is False
+
+
+def test_background_status_invalid_contract_and_counts_fail_closed(tmp_path: Path):
+    module = _load_module()
+    helper_dev_dir = tmp_path / "runtime" / "solteria_helper_dev"
+    helper_dev_dir.mkdir(parents=True)
+    payload = _background_payload(dt.datetime.now(dt.UTC).isoformat())
+    payload["promotion_allowed"] = True
+    payload["blockers"] = "not-a-list"
+    integrity = payload["integrity"]
+    assert isinstance(integrity, dict)
+    integrity["matched_file_count"] = "not-a-number"
+    (helper_dev_dir / "background_status.json").write_text(
+        json.dumps(payload), encoding="utf-8"
+    )
+
+    background = module._helper_status(helper_dev_dir)["background_status"]
+
+    assert background["status"] == "blocked"
+    assert background["contract_valid"] is False
+    assert background["fresh"] is False
+    assert background["matched_file_count"] == 0
+    assert background["blockers"] == []
+    assert {"promotion_allowed", "blockers", "matched_file_count"}.issubset(
+        background["contract_errors"]
+    )
+
+
+@pytest.mark.parametrize(
+    ("mutation", "expected_error"),
+    [
+        ("interaction_input", "interaction_contract"),
+        ("interaction_numeric", "interaction_contract"),
+        ("interaction_extra", "interaction_contract"),
+        ("wrapper_process", "wrapper_invariants"),
+        ("no_screen_check", "checks_no_screen_contract"),
+        (
+            "wrapper_process_check",
+            "checks_client_process_stable_during_wrapper",
+        ),
+        (
+            "wrapper_screenshot_check",
+            "checks_screenshot_count_stable_during_wrapper",
+        ),
+        ("intrusive_action", "intrusive_actions_performed"),
+        ("status_type", "status"),
+        ("count_overflow", "integrity_count_consistency"),
+        ("drift_alias", "integrity_drift_consistency"),
+        ("passed_with_mismatch", "integrity_status_consistency"),
+        ("pin_errors_shape", "pin_errors"),
+        ("pin_rebinding", "pin_remediation"),
+        ("diagnostic_acceptance", "diagnostic_parity"),
+    ],
+)
+def test_background_status_full_no_action_contract_mutations_fail_closed(
+    tmp_path: Path, mutation: str, expected_error: str
+):
+    module = _load_module()
+    payload = _background_payload(dt.datetime.now(dt.UTC).isoformat())
+
+    interaction = payload["interaction_contract"]
+    wrapper = payload["wrapper_invariants"]
+    status_checks = payload["checks"]
+    integrity = payload["integrity"]
+    assert isinstance(interaction, dict)
+    assert isinstance(wrapper, dict)
+    assert isinstance(status_checks, dict)
+    assert isinstance(integrity, dict)
+
+    if mutation == "interaction_input":
+        interaction["mouse_keyboard_input"] = True
+    elif mutation == "interaction_numeric":
+        interaction["mouse_keyboard_input"] = 0
+    elif mutation == "interaction_extra":
+        interaction["unvalidated_action"] = False
+    elif mutation == "wrapper_process":
+        wrapper["client_process_stable"] = False
+    elif mutation == "no_screen_check":
+        status_checks["no_screen_contract"] = False
+    elif mutation == "wrapper_process_check":
+        status_checks["client_process_stable_during_wrapper"] = False
+    elif mutation == "wrapper_screenshot_check":
+        status_checks["screenshot_count_stable_during_wrapper"] = False
+    elif mutation == "intrusive_action":
+        payload["intrusive_actions_performed"] = ["screenshot_capture"]
+    elif mutation == "status_type":
+        payload["status"] = []
+    elif mutation == "count_overflow":
+        integrity["mismatch_count"] = 1
+    elif mutation == "drift_alias":
+        integrity["profile_drift_count"] = 1
+    elif mutation == "passed_with_mismatch":
+        integrity["matched_file_count"] = 57
+        integrity["mismatch_count"] = 1
+    elif mutation == "pin_errors_shape":
+        integrity["pin_errors"] = [{"unexpected": "shape"}]
+    elif mutation == "pin_rebinding":
+        integrity["pin_remediation"] = {
+            "classification": "legacy_or_unbound_attestation",
+            "required_action": "refresh_official_live_promotion_after_current_gates",
+            "observer_can_write_trust_anchor": False,
+            "historical_rebinding_allowed": True,
+            "requires_current_release_gate": True,
+            "requires_explicit_live_approval": True,
+        }
+    elif mutation == "diagnostic_acceptance":
+        integrity["diagnostic_parity"] = {
+            "attempted": True,
+            "status": "passed",
+            "manifest_file_count": 58,
+            "matched_file_count": 58,
+            "mismatch_count": 0,
+            "mutable_drift_count": 0,
+            "profile_drift_count": 0,
+            "missing_count": 0,
+            "invalid_path_count": 0,
+            "oversize_count": 0,
+            "actual_total_bytes": 1000,
+            "stable_during_observation": True,
+            "acceptance_allowed": True,
+        }
+    else:  # pragma: no cover - the parametrization is exhaustive
+        raise AssertionError(f"unsupported mutation: {mutation}")
+
+    summary = module._background_status_summary(
+        payload,
+        tmp_path / "background_status.json",
+        artifact_present=True,
+    )
+
+    assert summary["status"] == "blocked"
+    assert summary["contract_valid"] is False
+    assert summary["fresh"] is False
+    assert expected_error in summary["contract_errors"]
+
+
 def test_build_evidence_pack_reads_current_artifacts(tmp_path: Path):
     module = _load_module()
+    background_generated_at = dt.datetime.now(dt.UTC).replace(microsecond=0).isoformat()
 
     releases_dir = tmp_path / "releases" / "evidence"
     sprint_dir = releases_dir / "sprint-056"
@@ -155,6 +803,10 @@ def test_build_evidence_pack_reads_current_artifacts(tmp_path: Path):
     )
     (helper_dev_dir / "smoke_status.json").write_text(
         json.dumps({"status": "not_running"}), encoding="utf-8"
+    )
+    (helper_dev_dir / "background_status.json").write_text(
+        json.dumps(_background_payload(background_generated_at)),
+        encoding="utf-8",
     )
     (helper_dev_dir / "goal_status.json").write_text(
         json.dumps(
@@ -288,16 +940,59 @@ def test_build_evidence_pack_reads_current_artifacts(tmp_path: Path):
     assert pack["otclient_helper"]["module_contract"]["check_count"] == 16
     assert pack["otclient_helper"]["module_contract"]["forbidden_count"] == 0
     assert pack["otclient_helper"]["module_audit"]["status"] == "needs_modularization"
-    assert pack["otclient_helper"]["module_audit"]["helper_budget_status"] == "over_budget"
+    assert (
+        pack["otclient_helper"]["module_audit"]["helper_budget_status"] == "over_budget"
+    )
     assert pack["otclient_helper"]["module_audit"]["helper_line_count"] == 5100
     assert pack["otclient_helper"]["module_audit"]["helper_line_budget"] == 4500
     assert pack["otclient_helper"]["module_audit"]["next_supplemental_id"] == ""
     assert pack["otclient_helper"]["module_audit"]["next_module_id"] == "heal_friend"
     assert pack["otclient_helper"]["package_sha256"] == "abc123"
-    assert pack["otclient_helper"]["sandbox_smoke_queue"]["status"] == "ready_for_operator"
+    assert (
+        pack["otclient_helper"]["sandbox_smoke_queue"]["status"] == "ready_for_operator"
+    )
     assert pack["otclient_helper"]["sandbox_smoke_queue"]["required_count"] == 5
     assert pack["otclient_helper"]["sandbox_smoke_queue"]["queued_count"] == 4
-    assert pack["otclient_helper"]["sandbox_smoke_queue"]["next_steps"][0]["step_id"] == "launch_sandbox"
+    assert (
+        pack["otclient_helper"]["sandbox_smoke_queue"]["next_steps"][0]["step_id"]
+        == "launch_sandbox"
+    )
+    assert pack["otclient_helper"]["background_status"] == {
+        "status": "ready",
+        "reported_status": "ready",
+        "mode": "background_no_screen",
+        "generated_at_utc": background_generated_at,
+        "max_age_seconds": 30,
+        "age_seconds": pytest.approx(0, abs=2),
+        "fresh": True,
+        "contract_valid": True,
+        "contract_errors": [],
+        "advisory_only": True,
+        "safe_to_run_while_playing": True,
+        "promotion_allowed": False,
+        "dispatch_allowed": False,
+        "runtime_actions": False,
+        "process_state": "running",
+        "integrity_status": "passed",
+        "pin_errors": [],
+        "pin_classification": "unknown",
+        "pin_required_action": "none",
+        "pin_historical_rebinding_allowed": False,
+        "pin_requires_explicit_live_approval": False,
+        "diagnostic_parity_status": "unknown",
+        "diagnostic_parity_attempted": False,
+        "diagnostic_profile_drift_count": 0,
+        "diagnostic_stable_during_observation": False,
+        "diagnostic_acceptance_allowed": False,
+        "matched_file_count": 58,
+        "manifest_file_count": 58,
+        "mutable_drift_count": 0,
+        "capability_status": "fresh",
+        "capability_fresh": True,
+        "runtime_state": "disarmed",
+        "blockers": [],
+        "path": str(helper_dev_dir / "background_status.json").replace("\\", "/"),
+    }
     assert pack["p7_operator_brief"]["status"] == "ready"
     assert pack["p7_operator_brief"]["decision"] == "ready_for_p7_operator_workflow"
     assert pack["p7_operator_brief"]["warning_count"] == 2
@@ -344,8 +1039,7 @@ def test_build_evidence_pack_reads_current_artifacts(tmp_path: Path):
     assert pack["p7_operator_brief"]["safe_write_tool_design"]["mcp_enabled"] is True
     assert pack["p7_operator_brief"]["roadmap_generation"]["status"] == "ready"
     assert (
-        pack["p7_operator_brief"]["roadmap_generation"]["doc_sync_status"]
-        == "passed"
+        pack["p7_operator_brief"]["roadmap_generation"]["doc_sync_status"] == "passed"
     )
     assert pack["p7_operator_brief"]["roadmap_generation"]["ready_doc_count"] == 3
     assert pack["p7_operator_brief"]["roadmap_generation"]["doc_count"] == 3
@@ -636,7 +1330,7 @@ def test_helper_status_promoted_requires_durable_live_promotion_evidence(
                     {
                         "name": "live_approval",
                         "status": "passed",
-                        "evidence": "runtime/solteria_helper_dev/live_promotion.json",
+                        "evidence": "-ApproveLiveDeploy",
                     },
                 ],
             }
@@ -653,7 +1347,10 @@ def test_helper_status_promoted_requires_durable_live_promotion_evidence(
         json.dumps(
             {
                 "created_at": "2026-07-06T11:06:46",
+                "helper_version": "v1.1b",
                 "approval_switch": "ApproveLiveDeploy",
+                "verification": "stage_live_sha256_match",
+                "verified_file_count": 1,
                 "live_client": "C:/Users/zycie/AppData/Local/Solteria/client",
                 "backup": "runtime/solteria_helper_dev/live_backup_20260706-110646",
             }
@@ -669,4 +1366,25 @@ def test_helper_status_promoted_requires_durable_live_promotion_evidence(
     assert status["live_promotion_status"] == "promoted"
     assert status["live_promotion_created_at"] == "2026-07-06T11:06:46"
     assert status["next_command"] == ""
+    assert status["equipment_operator_readiness"]["status"] == "missing"
+    assert status["equipment_operator_readiness"]["eligibility_state"] == "unchanged"
+    assert status["equipment_operator_readiness"]["acceptance_granted"] is False
     assert status["paths"]["live_promotion"].endswith("live_promotion.json")
+def test_equipment_operator_refresh_run_summary_fails_closed(tmp_path: Path) -> None:
+    module = _load_module()
+    artifact = tmp_path / "equipment_operator_refresh_run.json"
+    missing = module._equipment_operator_refresh_run_summary(None, artifact, artifact_present=False)
+    assert missing["status"] == "missing"
+    assert missing["contract_valid"] is False
+    assert missing["dispatch_allowed"] is False
+    assert missing["eligibility_changed"] is False
+
+    invalid = module._equipment_operator_refresh_run_summary(
+        {"schema_version": module.P10_EQUIPMENT_OPERATOR_REFRESH_RUN_SCHEMA, "status": "completed"},
+        artifact,
+        artifact_present=True,
+    )
+    assert invalid["status"] == "invalid"
+    assert invalid["run_id"] == ""
+    assert invalid["artifact_hashes"] == {}
+    assert invalid["no_action_verified"] is False

@@ -124,24 +124,83 @@ CTOAi/
 
 | Endpoint | Purpose | Risk class |
 | --- | --- | --- |
-| `GET /api/control-center` | Backend reachability probe | Read-only |
-| `GET /api/control-center/ops` | VPS disk, Docker, bot runtime and GitHub CI details | Read-only |
-| `GET /api/control-center/evidence` | Release evidence, local quality, cost report and action audit summary | Read-only |
-| `GET /api/control-center/legacy` | Read-only migration panel for old console capabilities | Read-only |
+| `GET /api/control-center` | Minimal backend reachability and aggregated runtime counts | Read-only, operator |
+| `GET /api/control-center/ops?view=summary` | Capability manifest and minimized status tiles | Read-only, operator |
+| `GET /api/control-center/ops?view=detail&capability=<id>` | One role-scoped capability projection loaded on demand | Read-only, operator |
+| `GET /api/control-center/evidence` | Deprecated compatibility contract; points callers to scoped capability projections and returns no evidence payload | Read-only, operator |
+| `GET /api/control-center/legacy` | Retired compatibility contract (`410`); performs no backend probes and returns no paths, logs, or raw payloads | Read-only, operator |
 | `POST /api/chat` | Chat completion route used by `ChatWindow` | User-initiated chat |
 
-## Current ops probes
+The `/control-center` page verifies the operator session before rendering the
+cockpit. An unauthenticated request renders only the identity gateway and does
+not load operational components or metadata.
 
-| Tile/panel | Probe |
+## Control Center capability model
+
+| Capability | Default projection |
 | --- | --- |
-| VPS disk | `ssh df -h /` and `ssh df -B1 /` |
-| Docker store | `docker system df` on VPS |
-| Docker images | `docker images --format '{{json .}}'` |
-| Bot runtime | `docker ps` filtered by `infra-bot` |
-| Bot logs preview | `docker logs --tail 40 infra-bot-1` |
-| GitHub CI | `gh run list --repo famatyyk/CTOAi` |
+| `operator-next` | Evidence-backed decision without shell command or source path |
+| `repo-hygiene` | Finding and classification counts |
+| `release-evidence` | Sprint/file freshness without filesystem paths |
+| `engine-brain` | P6/P7, pack, smoke and guardrail aggregates |
+| `api-cost` | Token, cost, anomaly and dataset counts |
+| `control-center-audit` | Aggregate outcomes and minimized recent records without actor or audit IDs |
 
-These probes are read-only. Write operations such as restart, rebuild, cleanup or deploy need explicit guarded actions before they appear in the UI.
+The capability registry is the UI and API discovery contract. Summary responses
+never include the full `details` object or source paths. Detail responses expose
+only one registered capability and omit raw commands, audit actors, audit IDs,
+reasons and output previews. Client polling is centralized, pauses while the page
+is hidden and applies bounded backoff after failures. Runtime failures are typed
+as `auth_required`, `forbidden`, `service_unavailable`, `timeout`,
+`invalid_response` or `request_failed` instead of being labeled generically as
+an ops probe failure.
+
+Server-side collection is scoped as well as projection. A detail request passes
+exactly one capability ID to `controlCenterCapabilityRuntime.ts`, which requests
+only that typed evidence slice. Summary collection requests the six registered
+slices once and shares memoized repo, cost, audit, Engine Brain and operator-next
+dependencies within the request. The legacy `collectControlCenterEvidence()` and
+`collectControlCenterOps()` aggregates remain compatibility internals but are not
+on the canonical `/api/control-center/ops` request path. Collector failures return
+a generic typed `503 service_unavailable` response without filesystem paths or
+upstream error text.
+
+Evidence ingestion has two explicit boundaries. `controlCenterEvidenceIo.ts` is
+the only bounded JSON and audit-log reader: it rejects symlinks, oversized files,
+duplicate JSON keys, short reads and files changed while being read.
+`controlCenterEvidenceAdapters.ts` converts trusted internal evidence into the
+smallest capability-specific shape before it reaches the route. These adapters
+remove filesystem paths, identities, audit IDs, reasons, command output and prompt
+names. Release evidence is collected in one traversal capped at 64 sprint folders
+and 256 Markdown files; capability responses retain only six recent records. The
+six-tile summary has a tested 10 KB serialized response budget.
+
+The Engine Brain plugin follows the same boundary. Its public cockpit is an
+allowlisted schema-v2 projection; commands, paths, identities, audit IDs,
+reasons, output previews and row-level evidence never enter the MCP response.
+Workspace audit status consumes the compact
+`runtime/audits/ctoai-full-workspace-audit-summary.json` artifact instead of the
+full file inventory. Plugin-management marks an installation ready only when
+required source and installed-cache files have matching SHA-256 digests.
+
+Confirmed `evidence-pack-refresh` actions preallocate their audit identifier and
+pass it into `release_evidence_pack.py`. The generated JSON self-hashes its
+canonical payload, while the action-audit record stores SHA-256 digests for the
+declared JSON and Markdown outputs. Control Central reports only the verification
+state and fails its evidence-integrity gate when the self-hash, audit binding, or
+artifact digest does not match; identifiers and digests remain local.
+
+Freshness is evaluated independently from integrity. The bounded workspace
+policy in `AI/control-central-freshness-policy.json` defines per-artifact age
+windows, while severity and hard maximums remain enforced by the plugin. Brain
+and cockpit collectors share the same parser, clock-skew guard and aging
+threshold. Missing, naive, far-future or expired timestamps cannot remain
+silently green. Public responses contain only policy revision, status and
+counts; raw timestamps stay in local drilldown evidence.
+
+All Control Center reads remain read-only. Write operations such as restart,
+rebuild, cleanup or deploy require separate guarded actions and explicit audit
+contracts before they can appear in the UI.
 
 ## Delivery and governance flow
 

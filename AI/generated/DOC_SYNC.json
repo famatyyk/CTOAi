@@ -38,6 +38,12 @@
       "path": "docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md",
       "status": "passed",
       "missing": []
+    },
+    {
+      "name": "roadmap_p8_p16",
+      "path": "AI/P8_P16_EXECUTION_ROADMAP.md",
+      "status": "passed",
+      "missing": []
     }
   ]
 }

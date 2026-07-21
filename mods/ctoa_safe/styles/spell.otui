@@ -1,0 +1,13 @@
+CTOASafeSpellSelector < HeadlessWindow
+  background-color: #232323
+  border-width: 1
+  border-color: #8d7749
+
+CTOASafeSpellRow < Button
+  height: 29
+  background-color: #191919
+  color: #eeeeee
+  text-align: left
+
+CTOASafeSpellRow:hover
+  background-color: #3d3423

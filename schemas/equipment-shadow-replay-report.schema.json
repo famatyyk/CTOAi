@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ctoa.local/schemas/equipment-shadow-replay-report.schema.json",
+  "title": "CTOAi Equipment Shadow Replay Report v1",
+  "type": "object", "additionalProperties": false,
+  "required": ["schema_version", "generated_at_unix_ms", "mode", "operational_acceptance_status", "scenario_pack_status", "fixture_only_validation_passed", "runtime_readiness_claimed", "operational_trace", "scenario_pack", "dispatch_allowed", "runtime_actions", "executes_plan", "execute_once_allowed", "promotion_allowed", "intrusive_actions_performed"],
+  "properties": {
+    "schema_version": {"const": "ctoa.equipment-shadow-replay-report.v1"},
+    "generated_at_unix_ms": {"type": "integer", "minimum": 1},
+    "mode": {"const": "offline_equipment_shadow_replay"},
+    "operational_acceptance_status": {"enum": ["shadow_plan_ready_for_operator_review", "operational_acceptance_blocked"]},
+    "scenario_pack_status": {"enum": ["passed", "failed"]},
+    "fixture_only_validation_passed": {"type": "boolean"},
+    "runtime_readiness_claimed": {"const": false},
+    "operational_trace": {"$ref": "equipment-shadow-trace.schema.json"},
+    "scenario_pack": {"$ref": "#/$defs/scenario_result"},
+    "dispatch_allowed": {"const": false}, "runtime_actions": {"const": false},
+    "executes_plan": {"const": false}, "execute_once_allowed": {"const": false},
+    "promotion_allowed": {"const": false}, "intrusive_actions_performed": {"const": []}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "case": {
+      "type": "object", "additionalProperties": false,
+      "required": ["name", "mutation", "expected_status", "actual_status", "expected_blockers", "blockers", "decision_sha256", "deterministic", "passed", "dispatch_allowed", "runtime_actions", "executes_plan", "execute_once_allowed", "promotion_allowed", "intrusive_actions_performed"],
+      "properties": {
+        "name": {"type": "string", "pattern": "^[a-z0-9_]{1,80}$"},
+        "mutation": {"$ref": "equipment-shadow-scenario-pack.schema.json#/$defs/mutation"},
+        "expected_status": {"enum": ["shadow_plan_ready", "operational_acceptance_blocked"]},
+        "actual_status": {"enum": ["shadow_plan_ready", "operational_acceptance_blocked"]},
+        "expected_blockers": {"type": "array", "uniqueItems": true, "items": {"$ref": "equipment-shadow-trace.schema.json#/$defs/blocker"}},
+        "blockers": {"type": "array", "uniqueItems": true, "items": {"$ref": "equipment-shadow-trace.schema.json#/$defs/blocker"}},
+        "decision_sha256": {"$ref": "#/$defs/sha256"}, "deterministic": {"type": "boolean"}, "passed": {"type": "boolean"},
+        "dispatch_allowed": {"const": false}, "runtime_actions": {"const": false}, "executes_plan": {"const": false},
+        "execute_once_allowed": {"const": false}, "promotion_allowed": {"const": false}, "intrusive_actions_performed": {"const": []}
+      }
+    },
+    "scenario_result": {
+      "type": "object", "additionalProperties": false,
+      "required": ["status", "scenario_pack_sha256", "total_count", "passed_count", "failed_count", "cases", "dispatch_allowed", "runtime_actions", "executes_plan", "execute_once_allowed", "promotion_allowed", "intrusive_actions_performed"],
+      "properties": {
+        "status": {"enum": ["passed", "failed"]}, "scenario_pack_sha256": {"$ref": "#/$defs/sha256"},
+        "total_count": {"type": "integer", "minimum": 0, "maximum": 30},
+        "passed_count": {"type": "integer", "minimum": 0, "maximum": 30},
+        "failed_count": {"type": "integer", "minimum": 0, "maximum": 30},
+        "cases": {"type": "array", "maxItems": 30, "items": {"$ref": "#/$defs/case"}},
+        "dispatch_allowed": {"const": false}, "runtime_actions": {"const": false}, "executes_plan": {"const": false},
+        "execute_once_allowed": {"const": false}, "promotion_allowed": {"const": false}, "intrusive_actions_performed": {"const": []}
+      }
+    }
+  }
+}

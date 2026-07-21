@@ -1,0 +1,16 @@
+{
+  "schema_version": "ctoa.equipment-shadow-capture-profile.v1",
+  "configured_by_operator": false,
+  "slot": "ring",
+  "equipped_item_id": 0,
+  "candidate_item_id": 0,
+  "candidate_source_container_id": 0,
+  "candidate_source_slot_index": 0,
+  "max_observation_age_ms": 6000,
+  "retry_budget": 0,
+  "dispatch_allowed": false,
+  "runtime_actions": false,
+  "executes_plan": false,
+  "execute_once_allowed": false,
+  "promotion_allowed": false
+}

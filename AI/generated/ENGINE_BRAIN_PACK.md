@@ -53,6 +53,16 @@ needed for a task instead of relying on one long prompt.
 - `PACKET_INDEX.md`: protocol/packet status and known gaps.
 - `CLASS_INDEX.md`: important Python/Lua classes and tables.
 - `FEATURE_ROADMAP.md`: next implementation lanes.
+- `P8_P16_EXECUTION_ROADMAP.md`: background-first post-P7 phase sequence and
+  evidence gates through design-only Combat/CaveBot work.
+- `P17_P24_HELPER_EVOLUTION_ROADMAP.md` and `.json`: post-P16 Helper
+  simplification, typed rules, configurable combat surfaces, spell-state
+  correctness, unified UX, shared pure contracts, and canary/rollback plan.
+- `../docs/otclient/P9_CONDITIONS_SHADOW_REPLAY_DESIGN.md`: review-ready P9
+  data-only observation/replay contract, still blocked by P8 operational acceptance.
+- `../docs/otclient/P9_CONDITIONS_SHADOW_ACCEPTANCE.md`: strict current-evidence
+  recomputation and explicit data-only operator receipt boundary; it does not
+  unlock P10 or runtime actions.
 - `KNOWN_BUGS.md`: known risks and suspected defects.
 - `TECH_DEBT.md`: cleanup backlog.
 - `SPECIALIZED_PROMPTS.md`: project-aware task personas.
@@ -1862,11 +1872,11 @@ Goal: make `AI/` the local, secret-safe planning/context layer and evolve it int
   },
   "doc_sync_status": "passed",
   "secret_guardrail_status": "passed",
-  "p6_readiness_status": "ready_for_plugin_design",
-  "p7_operator_workflow_status": "safe_write_ready",
+  "p6_readiness_status": "blocked",
+  "p7_operator_workflow_status": "blocked",
   "p7_action_readiness_status": "safe_write_tools_enabled",
   "p7_safe_write_tool_design_status": "implemented",
-  "p7_operator_brief_status": "ready",
+  "p7_operator_brief_status": "needs_attention",
   "excluded_dirs": [
     ".git",
     ".hg",
@@ -2017,6 +2027,7 @@ Status: `passed`
 | `command_dictionary_otclient` | `schemas/ctoa-command-dictionary.json` | `passed` | - |
 | `docs_index_plan3_artifacts` | `docs/INDEX.md` | `passed` | - |
 | `roadmap_plan3` | `docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md` | `passed` | - |
+| `roadmap_p8_p16` | `AI/P8_P16_EXECUTION_ROADMAP.md` | `passed` | - |
 ```
 
 
@@ -2050,29 +2061,59 @@ Generated Engine Brain context must not include exact local sensitive/env paths 
 Generated at: `2026-07-21T08:27:41+00:00`
 Status: `ready_for_plugin_design`
 
-P6 allows only four read-only status/cockpit tools plus audited repo-hygiene, API-cost, evidence-pack, Engine Brain, and P7 cockpit-smoke safe-write refreshes. Do not add deploy/live shortcuts or bypass Control Center evidence gates.
+P6 allows only five read-only Control Central/status/cockpit tools plus audited repo-hygiene, API-cost, evidence-pack, Engine Brain, P7 cockpit-smoke, and adaptive roadmap-state safe-write refreshes. Do not add deploy/live shortcuts or bypass Control Center evidence gates.
 
-Recommended next: Operate the plugin as four read-only status/cockpit tools plus audited repo-hygiene, API-cost, evidence-pack, Engine Brain, and P7 cockpit-smoke safe-write refreshes.
+Recommended next: Fix blocked readiness checks before creating a CTOAi plugin.
 
 | Check | Status | Evidence |
 |---|---|---|
 | `ai_agents_instruction` | `passed` | AI/AGENTS.md |
+| `control_central_freshness_policy` | `passed` | AI/control-central-freshness-policy.json |
 | `lua_agents_instruction` | `passed` | scripts/lua/AGENTS.md |
 | `engine_brain_skill_source` | `passed` | codex_home/skills/ctoa-engine-brain/SKILL.md |
 | `ctoai_plugin_manifest` | `passed` | home/plugins/ctoai-engine-brain/.codex-plugin/plugin.json |
 | `ctoai_plugin_brief_script` | `passed` | home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_brief.py |
+| `ctoai_plugin_control_central_script` | `passed` | home/plugins/ctoai-engine-brain/scripts/ctoai_control_central.py |
 | `ctoai_plugin_mcp_config` | `passed` | home/plugins/ctoai-engine-brain/.mcp.json |
 | `ctoai_plugin_mcp_absolute_script` | `passed` | absolute MCP script path is runnable |
 | `ctoai_plugin_mcp_server` | `passed` | home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_mcp.py |
 | `ctoai_plugin_operator_skill` | `passed` | home/plugins/ctoai-engine-brain/skills/ctoai-engine-brain-operator/SKILL.md |
 | `ctoai_plugin_status_script` | `passed` | home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_status.py |
 | `ctoai_plugin_control_center_cockpit_script` | `passed` | home/plugins/ctoai-engine-brain/scripts/ctoai_control_center_cockpit.py |
+| `ctoai_plugin_evidence_io` | `passed` | home/plugins/ctoai-engine-brain/scripts/ctoai_evidence_io.py |
+| `ctoai_plugin_freshness` | `passed` | home/plugins/ctoai-engine-brain/scripts/ctoai_freshness.py |
+| `ctoai_plugin_helper_readiness` | `passed` | home/plugins/ctoai-engine-brain/scripts/ctoai_helper_readiness.py |
+| `ctoai_plugin_operator_decision` | `passed` | home/plugins/ctoai-engine-brain/scripts/ctoai_operator_decision.py |
 | `ctoai_plugin_self_check_script` | `passed` | home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_self_check.py |
 | `ctoai_plugin_p7_workflow_status_contract` | `passed` | home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_status.py |
 | `ctoai_plugin_p7_workflow_brief_contract` | `passed` | home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_brief.py |
 | `ctoai_plugin_operator_brief_cockpit_handoff_contract` | `passed` | home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_brief.py |
 | `ctoai_plugin_control_center_cockpit_mcp_contract` | `passed` | home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_mcp.py |
+| `ctoai_plugin_public_cockpit_projection` | `passed` | home/plugins/ctoai-engine-brain/scripts/ctoai_control_center_cockpit.py |
+| `control_center_evidence_provenance_contract` | `passed` | scripts/ops/release_evidence_pack.py |
+| `ctoai_plugin_evidence_artifact_hash_contract` | `passed` | home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_mcp.py |
+| `ctoai_plugin_evidence_integrity_gate` | `passed` | home/plugins/ctoai-engine-brain/scripts/ctoai_control_center_cockpit.py |
+| `control_center_evidence_integrity_tests` | `passed` | tests/test_ctoai_control_central.py |
+| `ctoai_plugin_public_cockpit_tests` | `passed` | tests/test_ctoai_control_central.py |
+| `ctoai_plugin_public_projection_contract` | `passed` | home/plugins/ctoai-engine-brain/scripts/ctoai_public_projection.py |
+| `ctoai_plugin_control_central_contract` | `passed` | home/plugins/ctoai-engine-brain/scripts/ctoai_control_central.py |
+| `ctoai_plugin_control_central_fault_isolation_tests` | `passed` | tests/test_ctoai_control_central.py |
+| `ctoai_plugin_control_central_mcp_contract` | `passed` | home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_mcp.py |
 | `ctoai_plugin_control_center_cockpit_drilldown_contract` | `passed` | home/plugins/ctoai-engine-brain/scripts/ctoai_control_center_cockpit.py |
+| `ctoai_plugin_bounded_evidence_io_contract` | `passed` | home/plugins/ctoai-engine-brain/scripts/ctoai_evidence_io.py |
+| `ctoai_plugin_freshness_contract` | `passed` | home/plugins/ctoai-engine-brain/scripts/ctoai_freshness.py |
+| `ctoai_plugin_freshness_status_gate` | `passed` | home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_status.py |
+| `ctoai_plugin_freshness_cockpit_gate` | `passed` | home/plugins/ctoai-engine-brain/scripts/ctoai_control_center_cockpit.py |
+| `control_central_freshness_tests` | `passed` | tests/test_ctoai_freshness.py |
+| `ctoai_plugin_helper_readiness_contract` | `passed` | home/plugins/ctoai-engine-brain/scripts/ctoai_helper_readiness.py |
+| `ctoai_plugin_helper_recovery_projection` | `passed` | home/plugins/ctoai-engine-brain/scripts/ctoai_control_center_cockpit.py |
+| `ctoai_plugin_operator_decision_contract` | `passed` | home/plugins/ctoai-engine-brain/scripts/ctoai_operator_decision.py |
+| `control_central_helper_readiness_tests` | `passed` | tests/test_ctoai_helper_readiness.py |
+| `control_central_operator_decision_tests` | `passed` | tests/test_ctoai_operator_decision.py |
+| `ctoai_plugin_cache_hash_parity` | `passed` | home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_self_check.py |
+| `ctoai_plugin_compact_audit_status` | `passed` | home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_status.py |
+| `full_workspace_audit_compact_summary` | `passed` | scripts/ops/ctoa_full_workspace_audit.py |
+| `ctoai_plugin_bounded_evidence_io_tests` | `passed` | tests/test_ctoai_evidence_io.py |
 | `ctoai_plugin_control_center_cockpit_self_check_contract` | `passed` | home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_self_check.py |
 | `ctoai_plugin_p7_action_readiness_status_contract` | `passed` | home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_status.py |
 | `ctoai_plugin_p7_action_readiness_brief_contract` | `passed` | home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_brief.py |
@@ -2083,6 +2124,7 @@ Recommended next: Operate the plugin as four read-only status/cockpit tools plus
 | `ctoai_plugin_api_cost_refresh_mcp_contract` | `passed` | home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_mcp.py |
 | `ctoai_plugin_engine_brain_refresh_mcp_contract` | `passed` | home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_mcp.py |
 | `ctoai_plugin_p7_cockpit_smoke_refresh_mcp_contract` | `passed` | home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_mcp.py |
+| `ctoai_plugin_roadmap_state_refresh_mcp_contract` | `passed` | home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_mcp.py |
 | `ctoai_plugin_p6_handoff_smoke_status_contract` | `passed` | home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_status.py |
 | `ctoai_plugin_p6_handoff_smoke_cockpit_contract` | `passed` | home/plugins/ctoai-engine-brain/scripts/ctoai_control_center_cockpit.py |
 | `ctoai_plugin_p6_handoff_smoke_brief_contract` | `passed` | home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_brief.py |
@@ -2102,11 +2144,22 @@ Recommended next: Operate the plugin as four read-only status/cockpit tools plus
 | `control_center_p6_plugin_handoff_smoke_script` | `passed` | scripts/ops/control_center_p6_plugin_handoff_smoke.py |
 | `control_center_p6_plugin_handoff_smoke_tests` | `passed` | tests/test_control_center_p6_plugin_handoff_smoke.py |
 | `control_center_safe_write_action_catalog` | `passed` | web/src/lib/controlCenterActions.ts |
+| `control_center_dry_run_first_action_engine` | `passed` | web/src/lib/controlCenterActions.ts |
+| `control_center_action_capability_api` | `passed` | web/src/app/api/control-center/actions/route.ts |
+| `control_center_action_capability_ui` | `passed` | web/src/components/ControlCenterActionPanel.tsx |
+| `control_center_action_capability_tests` | `passed` | web/src/lib/__tests__/controlCenterActions.test.ts |
 | `control_center_p7_operator_brief_config` | `passed` | web/src/lib/controlCenterEvidenceConfig.ts |
-| `control_center_p7_operator_brief_payload` | `passed` | web/src/lib/controlCenterEvidence.ts |
+| `control_center_p7_operator_brief_payload` | `passed` | web/src/lib/controlCenterEngineBrainEvidence.ts |
 | `control_center_p7_operator_brief_ops` | `passed` | web/src/lib/controlCenterOps.ts |
-| `control_center_p7_operator_brief_ui` | `passed` | web/src/components/ControlCenterEvidencePanel.tsx |
+| `control_center_p7_operator_brief_ui` | `passed` | web/src/lib/controlCenterCapabilities.ts |
 | `control_center_p7_operator_brief_detail_ui` | `passed` | web/src/components/ControlCenterDetailPanels.tsx |
+| `control_center_scoped_capability_runtime` | `passed` | web/src/lib/controlCenterCapabilityRuntime.ts |
+| `control_center_scoped_evidence_slices` | `passed` | web/src/lib/controlCenterEvidence.ts |
+| `control_center_evidence_bounded_io` | `passed` | web/src/lib/controlCenterEvidenceIo.ts |
+| `control_center_evidence_domain_adapters` | `passed` | web/src/lib/controlCenterEvidenceAdapters.ts |
+| `control_center_capability_adapter_tests` | `passed` | web/src/lib/__tests__/controlCenterEvidenceAdapters.test.ts |
+| `control_center_engine_brain_evidence_adapter` | `passed` | web/src/lib/controlCenterEngineBrainEvidence.ts |
+| `control_center_evidence_adapter_tests` | `passed` | web/src/lib/__tests__/controlCenterEngineBrainEvidence.test.ts |
 | `release_evidence_pack` | `passed` | scripts/ops/release_evidence_pack.py |
 | `release_evidence_p7_operator_brief` | `passed` | scripts/ops/release_evidence_pack.py |
 | `full_workspace_validation_evidence` | `passed` | runtime\audits\ctoai-full-workspace-validation.json |
@@ -2123,15 +2176,16 @@ Generated at: `2026-07-21T08:27:41+00:00`
 Status: `safe_write_ready`
 Decision: `allow_bounded_safe_write_tools`
 
-P7 operator workflow allows five audited safe_write evidence/context refresh tools. Deploy/live actions stay blocked.
+P7 operator workflow allows six audited safe_write evidence/context refresh tools. Deploy/live actions stay blocked.
 
 Risk model: `docs/CTOAI_COMMAND_RISK_MODEL.md`
-Next safe command: Use ctoai_repo_hygiene_refresh, ctoai_api_cost_refresh, ctoai_evidence_pack_refresh, ctoai_engine_brain_refresh, and ctoai_p7_cockpit_smoke_refresh with dry_run=true before any confirmed refresh.
+Next safe command: Fix P6 readiness before exposing the P7 operator workflow.
 
 ## Allowed MCP Tools
 
 | Tool | Risk | Purpose |
 |---|---|---|
+| `ctoai_control_central` | `read_only` | Return token-efficient brain, Control Center, plugin-management, and sites status with lane-specific drilldown. |
 | `ctoai_engine_brain_status` | `read_only` | Summarize generated Engine Brain, validation, doctor, and pack status. |
 | `ctoai_engine_brain_self_check` | `read_only` | Verify plugin install state and generated workspace evidence. |
 | `ctoai_engine_brain_brief` | `read_only` | Return the generated P7 operator decision and next safe command. |
@@ -2141,6 +2195,7 @@ Next safe command: Use ctoai_repo_hygiene_refresh, ctoai_api_cost_refresh, ctoai
 | `ctoai_evidence_pack_refresh` | `safe_write` | Dry-run-first refresh of release evidence with Control Center-compatible audit logging. |
 | `ctoai_engine_brain_refresh` | `safe_write` | Dry-run-first refresh of Engine Brain generated context with Control Center-compatible audit logging. |
 | `ctoai_p7_cockpit_smoke_refresh` | `safe_write` | Dry-run-first refresh of P7 cockpit smoke evidence with Control Center-compatible audit logging. |
+| `ctoai_roadmap_state_refresh` | `safe_write` | Native dry-run-first refresh of the adaptive roadmap state with fixed inputs, fixed outputs, and hash-bound audit logging. |
 
 ## Blocked Action Classes
 
@@ -2154,7 +2209,7 @@ Next safe command: Use ctoai_repo_hygiene_refresh, ctoai_api_cost_refresh, ctoai
 
 - Every plugin tool must have a stable risk class from docs/CTOAI_COMMAND_RISK_MODEL.md.
 - Every write-capable tool must be represented in Control Center action audit before enablement.
-- Only ctoai_repo_hygiene_refresh, ctoai_api_cost_refresh, ctoai_evidence_pack_refresh, ctoai_engine_brain_refresh, and ctoai_p7_cockpit_smoke_refresh may be exposed as safe_write in this wave.
+- Only ctoai_repo_hygiene_refresh, ctoai_api_cost_refresh, ctoai_evidence_pack_refresh, ctoai_engine_brain_refresh, ctoai_p7_cockpit_smoke_refresh, and ctoai_roadmap_state_refresh may be exposed as safe_write in this wave.
 - Every safe-write MCP tool must default to dry-run and append runtime/control-center/action-audit.jsonl.
 - No tool may bypass PromoteLiveCtoa -ApproveLiveDeploy for Solteria Helper live promotion.
 - No tool may read .env, logs, databases, runtime client state, or private Solteria client data into generated context.
@@ -2187,6 +2242,7 @@ Next safe command: Design the next P7 plugin action only after risk model covera
 | `evidence-pack-refresh` | `True` | `True` | `True` | `True` | `none` |
 | `engine-brain-refresh` | `True` | `True` | `True` | `True` | `none` |
 | `p7-cockpit-smoke-refresh` | `True` | `True` | `True` | `True` | `none` |
+| `roadmap-state-refresh` | `True` | `True` | `True` | `True` | `none` |
 ```
 
 
@@ -2241,15 +2297,15 @@ Generated at: `2026-07-21T08:27:41+00:00`
 Decision: `ready_for_p7_operator_workflow`
 Status: `ready`
 
-Generated operator brief. Only audited repo-hygiene, API-cost, evidence-pack, Engine Brain, and P7 cockpit-smoke safe_write tools are allowed; deploy/live actions remain blocked.
+Generated operator brief. Only audited repo-hygiene, API-cost, evidence-pack, Engine Brain, P7 cockpit-smoke, and roadmap-state safe_write tools are allowed; deploy/live actions remain blocked.
 
-Next safe command: Design the next P7 plugin action only after risk model coverage, audit logging, Control Center gates, and targeted MCP tests exist; keep deploy/live actions outside the plugin surface.
+Next safe command: Fix hard_blockers before expanding P7 operator workflow.
 
 ## Evidence
 
-- P6 readiness: `ready_for_plugin_design` with `55` checks.
-- P7 workflow: `safe_write_ready` with `9` MCP tools and `5` safe-write tools.
-- P7 action readiness: `safe_write_tools_enabled` with `5/5` audited candidates and `5` MCP write tools.
+- P6 readiness: `blocked` with `97` checks.
+- P7 workflow: `blocked` with `11` MCP tools and `6` safe-write tools.
+- P7 action readiness: `safe_write_tools_enabled` with `6/6` audited candidates and `6` MCP write tools.
 - P7 safe-write design: `implemented` for `ctoai_evidence_pack_refresh` with MCP enabled `True`.
 - P7 cockpit handoff: `ready`; smoke `14/14`; safe-write audits `5/5`; release files `35`; action audit records `689`.
 - OTClient helper: `blocked`; release gate `blocked`; module contract `passed` (39/39); sandbox queue `ready_for_operator`; runtime `not_running`; first step `launch_sandbox`.

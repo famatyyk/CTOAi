@@ -9,24 +9,49 @@ HELPER = ROOT / "scripts" / "lua" / "otclient" / "ctoa_native_helper.lua"
 LOADER = ROOT / "scripts" / "lua" / "otclient" / "ctoa_otclient_loader.lua"
 MODULE_REGISTRY = ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_modules.lua"
 UI_HELPERS = ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_ui.lua"
-CLIENT_REPORTER = ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_client_reporter.lua"
+UI_COMPOSITION = (
+    ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_ui_composition.lua"
+)
+UI_RULE_EDITORS = (
+    ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_ui_rule_editors.lua"
+)
+CLIENT_REPORTER = (
+    ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_client_reporter.lua"
+)
 DIAGNOSTICS = ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_diagnostics.lua"
 HOTKEYS = ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_hotkeys.lua"
 MODAL = ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_modal.lua"
 ROUTE = ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_route.lua"
 TARGETING = ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_targeting.lua"
-COMBAT_RUNTIME = ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_combat_runtime.lua"
-CAVEBOT_RUNTIME = ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_cavebot_runtime.lua"
+COMBAT_RUNTIME = (
+    ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_combat_runtime.lua"
+)
+CAVEBOT_RUNTIME = (
+    ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_cavebot_runtime.lua"
+)
 LOOT_RUNTIME = ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_loot_runtime.lua"
 TIMER_RUNTIME = ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_timer_runtime.lua"
-RECOVERY_RUNTIME = ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_recovery_runtime.lua"
-PROFILE_SCHEMA = ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_profile_schema.lua"
-OPERATOR_SUMMARY = ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_operator_summary.lua"
+RECOVERY_RUNTIME = (
+    ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_recovery_runtime.lua"
+)
+PROFILE_SCHEMA = (
+    ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_profile_schema.lua"
+)
+DEFAULT_PROFILE_SOURCE = PROFILE_SCHEMA.read_text(encoding="utf-8")
+OPERATOR_SUMMARY = (
+    ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_operator_summary.lua"
+)
 PLANNER = ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_planner.lua"
-RUNTIME_POLICY = ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_runtime_policy.lua"
-DISPATCH_GUARD = ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_dispatch_guard.lua"
+RUNTIME_POLICY = (
+    ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_runtime_policy.lua"
+)
+DISPATCH_GUARD = (
+    ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_dispatch_guard.lua"
+)
 PLAN_QUEUE = ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_plan_queue.lua"
-RUNTIME_READINESS = ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_runtime_readiness.lua"
+RUNTIME_READINESS = (
+    ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_runtime_readiness.lua"
+)
 FEATURE_FLAGS = ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_feature_flags.lua"
 HUD = ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_hud.lua"
 CONDITIONS = ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_conditions.lua"
@@ -49,7 +74,6 @@ EXPECTED_SECTIONS = {
     "tools",
     "tools_helper",
     "tools_pvp",
-    "tools_hud",
     "tools_timer",
     "tools_diag",
     "scripting",
@@ -80,7 +104,9 @@ SMOKE_ALL_TABS = {
 
 def test_zerobot_shell_sections_render_without_layout_issues():
     source = HELPER.read_text(encoding="utf-8")
-    ui_module = UI_HELPERS.read_text(encoding="utf-8")
+    ui_module = UI_HELPERS.read_text(encoding="utf-8") + UI_RULE_EDITORS.read_text(
+        encoding="utf-8"
+    )
     window = preview.extract_window(source)
     widgets = preview.extract_widgets(source + "\n" + ui_module)
 
@@ -91,41 +117,69 @@ def test_zerobot_shell_sections_render_without_layout_issues():
 
 def test_helper_redesign_keeps_operator_layout_contract():
     source = HELPER.read_text(encoding="utf-8")
+    ui_module = UI_HELPERS.read_text(encoding="utf-8") + UI_RULE_EDITORS.read_text(
+        encoding="utf-8"
+    )
+    composition = UI_COMPOSITION.read_text(encoding="utf-8")
 
-    assert "sidebar_w = 122" in source
-    assert "window_w = 690" in source
-    assert "content_w = 466" in source
-    assert "value_w = 138" in source
+    assert 'moduleValue(externalUi, "newLayout")' in source
+    assert 'moduleValue(externalUi, "newStyle")' in source
+    assert 'moduleValue(externalUi, "themes")' in source
+    assert "sidebar_w = 122" in ui_module
+    assert "window_w = 690" in ui_module
+    assert "content_w = 466" in ui_module
+    assert "value_w = 138" in ui_module
     assert '"CTOA Helper"' in source
     assert '"Operator workspace"' in source
-    assert 'HELPPER_VERSION .. " | " .. displayProfileName()' not in source
-    assert 'HELPER_VERSION .. " | " .. displayProfileName()' in source
-    assert 'local titleLabel = createWidget("Label", window, "ctoaWindowTitleLabel", "CTOA Helper"' in source
-    assert 'local innerTitleText = createWidget("Label", window, "ctoaInnerTitleText", "Operator workspace"' in source
-    ui_module = UI_HELPERS.read_text(encoding="utf-8")
-    assert 'function styleTabState(widget, active)' not in source
-    assert 'function styleSubtabState(widget, active)' not in source
+    assert 'HELPPER_VERSION .. " | " .. profileDisplayName(' not in source
+    assert (
+        'HELPER_VERSION .. " | " .. moduleValue(externalProfileSchema, "displayProfileName", Helper.profile_name, shortText)'
+        in source
+    )
+    assert (
+        'local titleLabel = createWidget("Label", window, "ctoaWindowTitleLabel", "CTOA Helper"'
+        in source
+    )
+    assert (
+        'local innerTitleText = createWidget("Label", window, "ctoaInnerTitleText", "Operator workspace"'
+        in source
+    )
+    assert "function styleTabState(widget, active)" not in source
+    assert "function styleSubtabState(widget, active)" not in source
     assert "for _, nav in ipairs(Helper.sidebar_tabs or {}) do" in source
-    assert 'styleUi("styleTabState", Helper.widgets[nav.key], active, UI_STYLE, AlignLeft)' in source
-    assert 'styleUi("styleTabRail", Helper.widgets[nav.key .. "_rail"], active, UI_STYLE)' in source
-    assert 'styleUi("styleSubtabState", Helper.widgets.tools_helper_tab, Helper.active_tools_tab == "helper", UI_STYLE, AlignCenter)' in source
+    assert (
+        'styleUi("styleTabState", Helper.widgets[nav.key], active, UI_STYLE, AlignLeft)'
+        in source
+    )
+    assert (
+        'styleUi("styleTabRail", Helper.widgets[nav.key .. "_rail"], active, UI_STYLE)'
+        in source
+    )
+    assert (
+        'styleUi("styleSubtabState", Helper.widgets.tools_helper_tab, Helper.active_tools_tab == "helper", UI_STYLE, AlignCenter)'
+        in source
+    )
     assert "style.surface_raised or style.row_fill_active" in ui_module
     assert "style.edge_highlight or style.border_active" in ui_module
-    assert 'background = active and style.row_fill_active or style.content_fill' in ui_module
+    assert (
+        "background = active and style.row_fill_active or style.content_fill"
+        in ui_module
+    )
     assert "function Ui.styleSectionBody" in ui_module
     assert "function Ui.stylePriorityBadge" in ui_module
     assert "function Ui.styleWindowFrame" in ui_module
-    assert 'theme_preset = "graphite"' in source
+    assert 'theme_preset = "graphite"' in DEFAULT_PROFILE_SOURCE
     assert 'UI_THEMES[presetId or "graphite"] or UI_THEMES.graphite' in source
-    graphite = source[source.index("graphite = {"):source.index("amber = {")]
+    graphite = ui_module[ui_module.index("graphite = {") : ui_module.index("amber = {")]
     assert 'accent = "#f0c36a"' in graphite
     assert 'border_active = "#f0c36a"' in graphite
     assert "function Ui.sidebarGeometry" in ui_module
-    assert "local dense = count > 10" in ui_module
-    assert "local rowHeight = dense and 18 or 21" in ui_module
-    assert "local gap = dense and 1 or 2" in ui_module
-    assert 'mode = dense and "dense_overflow" or "standard"' in ui_module
-    assert 'utility_divider_y = utilityIndex and' in ui_module
+    assert "return Composition.sidebarGeometry" in ui_module
+    assert "local dense = count > 10" in composition
+    assert "local rowHeight = dense and 18 or 21" in composition
+    assert "local gap = dense and 1 or 2" in composition
+    assert 'mode = dense and "dense_overflow" or "standard"' in composition
+    assert "utility_divider_y = utilityIndex and" in composition
     assert 'createWidget("Button", window, "ctoaHelperEnabled"' in source
     assert 'styleUi("styleRuntimeBadge"' in source
     assert 'role = "destructive"' in ui_module
@@ -135,14 +189,17 @@ def test_helper_redesign_keeps_operator_layout_contract():
     assert 'action == "theme_set"' in source
     assert 'status("Smoke theme visible: " .. tostring(theme))' in source
     diagnostics = DIAGNOSTICS.read_text(encoding="utf-8")
-    assert '{"action", "tab", "subtab", "theme"}' in diagnostics
+    assert (
+        '{"action", "tab", "subtab", "theme", "session_id", "plan_sha256", "p9_receipt_sha256", "p10_receipt_sha256", "p11_receipt_sha256", "p12_equipment_receipt_sha256", "retry_budget", "before_item_id", "candidate_item_id", "source_container_id", "source_slot_index", "target_id", "target_name", "whitelist_revision", "hp_threshold", "max_range"}'
+        in diagnostics
+    )
     assert "theme = theme" in diagnostics
     smoke = SMOKE_SCRIPT.read_text(encoding="utf-8")
     assert '"ThemeSnapshotMatrix"' in smoke
     assert "function Invoke-ThemeSnapshotMatrix" in smoke
     assert '$themes = @("classic", "graphite", "amber", "emerald")' in smoke
     assert '$tabs = @("overview", "profile", "cavebot", "healing", "ui")' in smoke
-    assert 'expected_count = 20' in smoke
+    assert "expected_count = 20" in smoke
     assert 'restored_theme = "graphite"' in smoke
 
 
@@ -153,26 +210,34 @@ def test_helper_client_reporter_is_passive_packaged_and_safe_by_default():
     smoke = SMOKE_SCRIPT.read_text(encoding="utf-8")
 
     assert 'rawget(_G, "CTOA_HELPER_CLIENT_REPORTER")' in source
-    assert 'rawget(_G, "g_app")' in source
-    assert 'rawget(_G, "g_game")' in source
-    assert 'rawget(_G, "g_resources")' in source
+    assert 'rawget(_G, "g_app")' in reporter
+    assert 'rawget(_G, "g_game")' in reporter
+    assert 'rawget(_G, "g_resources")' in reporter
     assert "function Reporter.detect" in reporter
     assert "function Reporter.snapshot" in reporter
     assert "function Reporter.resolvePath" in reporter
     assert "function Reporter.writeSnapshot" in reporter
+    assert "function Reporter.report" in reporter
+    assert "owns_report_lifecycle = true" in reporter
     assert 'local SCHEMA_VERSION = "ctoa-client-capabilities-v1"' in reporter
     assert "schema_version = SCHEMA_VERSION" in reporter
-    assert 'protocol_status = protocolReady and "ready" or "pending_protocol_source"' in reporter
+    assert (
+        'protocol_status = protocolReady and "ready" or "pending_protocol_source"'
+        in reporter
+    )
     assert "safe_fallback = not protocolReady" in reporter
     assert "runtime_actions = false" in reporter
     assert "g_game.attack" not in reporter
     assert "autoWalk" not in reporter
     assert "castSpell" not in reporter
-    assert boot_graph_has_module(loader, "ctoa_helper_client_reporter", "ctoa_helper_client_reporter.lua")
+    assert boot_graph_has_module(
+        loader, "ctoa_helper_client_reporter", "ctoa_helper_client_reporter.lua"
+    )
     assert '"ctoa_helper_client_reporter.lua"' in smoke
     package_files = smoke[
-        smoke.index("function Get-DevPackageFiles"):
-        smoke.index("function Get-LiveRootFallbackFiles")
+        smoke.index("function Get-DevPackageFiles") : smoke.index(
+            "function Get-LiveLegacyFiles"
+        )
     ]
     assert '"mods/ctoa_otclient/ctoa_helper_client_reporter.lua"' in package_files
 
@@ -198,8 +263,12 @@ def test_helper_redesign_phase3_summaries_are_wired():
         assert helper not in source
     assert "function addSummaryStrip" not in source
     assert "function addFooterStrip" not in source
-    assert "add_summary_strip = function(parent, id, text, x, y, width, section)" in source
-    assert "add_footer_strip = function(parent, id, text, x, y, width, section)" in source
+    assert (
+        "add_summary_strip = function(parent, id, text, x, y, width, section)" in source
+    )
+    assert (
+        "add_footer_strip = function(parent, id, text, x, y, width, section)" in source
+    )
 
     for widget_id in [
         "ctoaHealingSummary",
@@ -213,7 +282,10 @@ def test_helper_redesign_phase3_summaries_are_wired():
     assert "ctoaUiSummary" in ui_module
 
     assert "Helper.widgets.title_state = titleState" in source
-    assert 'title = moduleValue(externalOperatorSummary, "bridgeText", "title", OPERATOR_SUMMARY_BRIDGES)' in source
+    assert (
+        'title = moduleValue(externalOperatorSummary, "bridgeText", "title", OPERATOR_SUMMARY_BRIDGES)'
+        in source
+    )
     assert 'styleUi("refreshOperatorSummaries"' in source
     assert "function Ui.refreshOperatorSummaries" in ui_module
 
@@ -225,16 +297,20 @@ def test_helper_has_module_lane_registry_for_all_runtime_surfaces():
 
     assert "local MODULE_LANES = {}" in source
     assert "local MODULE_LANE_INDEX = {}" in source
-    assert "local function rebuildModuleLaneIndex(lanes)" in source
+    assert "local function rebuildModuleLaneIndex(lanes)" not in source
     assert 'rawget(_G, "CTOA_HELPER_MODULES")' in source
     assert "_G.CTOA_HELPER_MODULES = Registry" in registry
     assert "function Registry.getModuleLanes()" in registry
+    assert "function Registry.rebuildModuleLaneIndex" in registry
     assert "function Registry.getShortLabels()" in registry
+    assert "function Registry.moduleTabVisible" in registry
     assert "function Registry.laneEnabled" in registry
     assert "function Registry.registrySummary" in registry
     assert "function Registry.readinessTag" in registry
     assert "function Registry.readinessRow" in registry
     assert "owns_lane_readiness = true" in registry
+    assert "owns_lane_index = true" in registry
+    assert "owns_module_tab_visibility = true" in registry
     assert "owns_lane_enabled = true" in registry
     assert "owns_lane_runtime_text = true" in registry
     assert "owns_registry_summary = true" in registry
@@ -242,17 +318,32 @@ def test_helper_has_module_lane_registry_for_all_runtime_surfaces():
     assert "local function moduleRegistrySummaryText()" not in source
     assert "local function moduleLaneEnabled(lane)" not in source
     assert "local function moduleLaneRuntimeText(lane)" not in source
-    assert 'moduleValue(externalModules, "registrySummary", MODULE_LANES, HELPER_CONFIG)' in source
+    assert (
+        'moduleValue(externalModules, "registrySummary", MODULE_LANES, HELPER_CONFIG)'
+        in source
+    )
     assert "local function moduleReadinessRowText(stage)" not in source
-    assert 'local MODULE_SHORT_LABELS = moduleValue(externalModules, "getShortLabels") or {}' in source
-    assert 'moduleValue(externalModules, "readinessRow", "implemented", MODULE_LANES, HELPER_CONFIG, MODULE_SHORT_LABELS)' in source
-    assert 'moduleValue(externalModules, "readinessRow", "prototype", MODULE_LANES, HELPER_CONFIG, MODULE_SHORT_LABELS)' in source
+    assert (
+        'local MODULE_SHORT_LABELS = moduleValue(externalModules, "getShortLabels") or {}'
+        in source
+    )
+    assert (
+        'moduleValue(externalModules, "readinessRow", "implemented", MODULE_LANES, HELPER_CONFIG, MODULE_SHORT_LABELS)'
+        in source
+    )
+    assert (
+        'moduleValue(externalModules, "readinessRow", "prototype", MODULE_LANES, HELPER_CONFIG, MODULE_SHORT_LABELS)'
+        in source
+    )
     assert "pcall(externalModules.registrySummary" not in source
     assert "pcall(externalModules.readinessTag" not in source
     assert "pcall(externalModules.readinessRow" not in source
     assert "local function moduleLaneReadinessTag" not in source
     assert "module_summary = moduleSummaryText" in source
-    assert 'ctx.set_metric_text(widgets.overview_modules, "Modules", tostring(data.module_summary or "modules unavailable"), width)' in ui_module
+    assert (
+        'ctx.set_metric_text(widgets.overview_modules, "Modules", tostring(data.module_summary or "modules unavailable"), width)'
+        in ui_module
+    )
     assert '"ctoaOverviewReadinessRuntime", "Runtime: pending"' in ui_module
     assert '"ctoaOverviewReadinessPrototype", "Prototype: pending"' in ui_module
     assert "runtime_readiness = runtimeReadinessText" in source
@@ -285,9 +376,15 @@ def test_helper_has_module_lane_registry_for_all_runtime_surfaces():
     assert 'if lane.id == "healing" then' not in registry_source
     assert 'if lane.id == "combat" then' not in registry_source
     assert 'if lane.id == "cavebot" then' not in registry_source
-    assert 'HELPER_CONFIG.tools.auto_attack == true' not in registry_source
-    assert 'return tostring(implemented) .. " impl / " .. tostring(prototypes) .. " proto / " .. tostring(armed) .. " armed"' not in registry_source
-    assert 'parts[#parts + 1] = tostring(label) .. ":" .. moduleLaneReadinessTag(lane)' not in registry_source
+    assert "HELPER_CONFIG.tools.auto_attack == true" not in registry_source
+    assert (
+        'return tostring(implemented) .. " impl / " .. tostring(prototypes) .. " proto / " .. tostring(armed) .. " armed"'
+        not in registry_source
+    )
+    assert (
+        'parts[#parts + 1] = tostring(label) .. ":" .. moduleLaneReadinessTag(lane)'
+        not in registry_source
+    )
     assert 'return table.concat(parts, "  ")' not in registry_source
     assert "runtime_enabled = true" not in registry_source
     assert "castSpell(" not in registry_source
@@ -325,14 +422,14 @@ def test_helper_ui_primitives_are_guarded_and_packaged():
         "styleGroupedFrame",
         "styleSubtabState",
         "styleMiniButton",
-            "styleActionButton",
-            "styleRuntimeBadge",
+        "styleActionButton",
+        "styleRuntimeBadge",
         "styleRuleCard",
         "styleMetricRow",
         "styleMetricLabel",
         "styleMetricValue",
-            "styleSettingState",
-            "styleStateValue",
+        "styleSettingState",
+        "styleStateValue",
         "styleSectionBody",
         "styleTableHeader",
         "styleTableHeaderLabel",
@@ -365,8 +462,8 @@ def test_helper_ui_primitives_are_guarded_and_packaged():
         "addSettingRow",
         "addToggleSettingRow",
         "sectionBodyGeometry",
-            "sidebarTabs",
-            "sidebarGeometry",
+        "sidebarTabs",
+        "sidebarGeometry",
         "huntingSubtabs",
         "subtabContentY",
         "toolsSubtabs",
@@ -395,9 +492,17 @@ def test_helper_ui_primitives_are_guarded_and_packaged():
     assert "local fitText = externalUi and externalUi.fitText or shortText" in source
     assert "pcall(externalUi.shortText" not in source
     assert "pcall(externalUi.fitText" not in source
-    for ui_adapter in ["setWidgetText", "setWidgetChecked", "getWidgetChecked", "showWidget"]:
+    for ui_adapter in [
+        "setWidgetText",
+        "setWidgetChecked",
+        "getWidgetChecked",
+        "showWidget",
+    ]:
         assert f"externalUi and externalUi.{ui_adapter}" in source
-    assert 'moduleValue(externalUi, "createWidget", kind, parent, id, text, x, y, width, height)' in source
+    assert (
+        'moduleValue(externalUi, "createWidget", kind, parent, id, text, x, y, width, height)'
+        in source
+    )
     for ui_direct_pcall in [
         "pcall(externalUi.setWidgetText",
         "pcall(externalUi.styleWidget",
@@ -450,7 +555,10 @@ def test_helper_ui_primitives_are_guarded_and_packaged():
     assert "function Ui.styleProfileField" in ui_module
     assert "function Ui.styleVectorRow" in ui_module
     assert "function Ui.configureLayout" in ui_module
-    assert 'moduleValue(externalUi, "configureLayout", UI_LAYOUT, HELPER_CONFIG.compact_mode == true)' in source
+    assert (
+        'moduleValue(externalUi, "configureLayout", UI_LAYOUT, HELPER_CONFIG.compact_mode == true)'
+        in source
+    )
     assert "pcall(externalUi.configureLayout" not in source
     assert "UI_LAYOUT.overview_tab_y = 116" not in source
     assert "UI_LAYOUT.overview_tab_y = 120" not in source
@@ -461,7 +569,10 @@ def test_helper_ui_primitives_are_guarded_and_packaged():
         "profileFieldGeometry",
         "sectionBodyGeometry",
     ]:
-        assert f'styleUi("{delegated_geometry}"' in source or f"Ui.{delegated_geometry}(" in ui_module
+        assert (
+            f'styleUi("{delegated_geometry}"' in source
+            or f"Ui.{delegated_geometry}(" in ui_module
+        )
     for delegated_builder in [
         "addProfileCycleRow",
         "addProfileStepRow",
@@ -475,9 +586,14 @@ def test_helper_ui_primitives_are_guarded_and_packaged():
     assert "owns_setting_row_builders = true" in ui_module
     assert "owns_interactive_row_builders = true" in ui_module
     assert "owns_section_scaffold = true" in ui_module
+    assert "function Ui.mergePanelRendererContext" in ui_module
+    assert "owns_panel_renderer_context_merge = true" in ui_module
     assert "function addSectionScaffold" in source
     assert "function addSectionBand" not in source
-    assert "add_section_band = function(parent, id, title, subtitle, x, y, width, section)" in source
+    assert (
+        "add_section_band = function(parent, id, title, subtitle, x, y, width, section)"
+        in source
+    )
     for delegated_metadata in [
         "sidebarTabs",
         "subtabContentY",
@@ -493,8 +609,14 @@ def test_helper_ui_primitives_are_guarded_and_packaged():
     assert 'styleUi("renderConditionsPanel"' in source
     assert 'styleUi("renderEquipmentPanel"' in source
     assert 'styleUi("renderScriptingPanel"' in source
-    assert 'ctx.add_subtab_buttons(window, "huntingSubtabs", "hunting", panelX, bodyY, panelW)' in ui_module
-    assert 'ctx.add_subtab_buttons(window, "toolsSubtabs", "tools", panelX, bodyY, panelW)' in ui_module
+    assert (
+        'ctx.add_subtab_buttons(window, "huntingSubtabs", "hunting", panelX, bodyY, panelW)'
+        in ui_module
+    )
+    assert (
+        'ctx.add_subtab_buttons(window, "toolsSubtabs", "tools", panelX, bodyY, panelW)'
+        in ui_module
+    )
     assert 'styleUi("renderProfilePanel"' in source
     assert "owns_tab_metadata = true" in ui_module
     assert "owns_subtab_content_metadata = true" in ui_module
@@ -513,17 +635,21 @@ def test_helper_ui_primitives_are_guarded_and_packaged():
     assert "owns_scripting_panel_renderer = true" in ui_module
     assert "owns_tools_panel_renderer = true" in ui_module
     assert "function addSubtabButtons" not in source
-    assert "add_subtab_buttons = function(parent, provider, section, panelX, bodyY, panelW)" in source
+    assert (
+        "add_subtab_buttons = function(parent, provider, section, panelX, bodyY, panelW)"
+        in source
+    )
     assert "function addTableHeader" not in source
     assert "function addTableHeaders" not in source
     assert "function addToggleContentRows" not in source
     assert "panel_renderer_base.add_table_headers = function(parent, specs)" in source
     assert "add_toggle_content_rows = function(parent, specs, x, width)" in source
-    assert 'ctx.add_toggle_content_rows(window, {' in ui_module
+    assert "ctx.add_toggle_content_rows(window, {" in ui_module
     direct_style_calls = [
         line
         for line in source.splitlines()
-        if "styleWidget(" in line and not line.strip().startswith("function styleWidget")
+        if "styleWidget(" in line
+        and not line.strip().startswith("function styleWidget")
     ]
     assert direct_style_calls == []
     assert "runtime_actions = false" in ui_module
@@ -560,7 +686,7 @@ def test_helper_ui_primitives_are_guarded_and_packaged():
     assert "sendActionbarSlot" not in ui_module
     assert boot_graph_has_module(loader, "ctoa_helper_ui", "ctoa_helper_ui.lua")
     assert "ctoa_helper_ui.lua" in script
-    assert 'mods/ctoa_otclient/ctoa_helper_ui.lua' in script
+    assert "mods/ctoa_otclient/ctoa_helper_ui.lua" in script
 
 
 def test_helper_diagnostics_domain_is_passive_and_wired():
@@ -570,6 +696,12 @@ def test_helper_diagnostics_domain_is_passive_and_wired():
     assert 'rawget(_G, "CTOA_HELPER_DIAGNOSTICS")' in source
     assert "_G.CTOA_HELPER_DIAGNOSTICS = Diagnostics" in diagnostics
     assert "function Diagnostics.appendLog" in diagnostics
+    assert "g_resources.getWorkDir()" in diagnostics
+    assert '"ctoa_local.log"' in diagnostics
+    assert diagnostics.index("g_resources.getWorkDir()") < diagnostics.index(
+        "g_resources.getUserDir()"
+    )
+    assert "owns_workdir_log_path = true" in diagnostics
     assert "function Diagnostics.exportPath" in diagnostics
     assert "function Diagnostics.boolText" in diagnostics
     assert "function Diagnostics.posText" in diagnostics
@@ -591,10 +723,12 @@ def test_helper_diagnostics_domain_is_passive_and_wired():
     assert "function Diagnostics.movementText" in diagnostics
     assert "function Diagnostics.magicLootText" in diagnostics
     assert "function Diagnostics.snapshotUiRows" in diagnostics
+    assert "function Diagnostics.snapshotUiValues" in diagnostics
     assert "function Diagnostics.tableCount" in diagnostics
     assert "function Diagnostics.firstTableValue" in diagnostics
     assert "function Diagnostics.recordSnapshot" in diagnostics
     assert "function Diagnostics.exportBuffer" in diagnostics
+    assert "function Diagnostics.createController" in diagnostics
     assert "function Diagnostics.contract" in diagnostics
     assert "owns_bool_text = true" in diagnostics
     assert "owns_pos_text = true" in diagnostics
@@ -610,6 +744,7 @@ def test_helper_diagnostics_domain_is_passive_and_wired():
     assert "owns_movement_text = true" in diagnostics
     assert "owns_magic_loot_text = true" in diagnostics
     assert "owns_snapshot_ui_rows = true" in diagnostics
+    assert "owns_snapshot_ui_values = true" in diagnostics
     assert "owns_table_count = true" in diagnostics
     assert "owns_first_table_value = true" in diagnostics
     assert "owns_smoke_command_exists = true" in diagnostics
@@ -619,35 +754,29 @@ def test_helper_diagnostics_domain_is_passive_and_wired():
     assert "owns_smoke_command_status_text = true" in diagnostics
     assert "owns_record_snapshot = true" in diagnostics
     assert "owns_export_buffer = true" in diagnostics
-    assert 'moduleValue(externalDiagnostics, "apiSnapshotText"' in source
-    assert 'moduleValue(externalDiagnostics, "featureFlagsText"' in source
-    assert 'function diagnosticsText(functionName, fallback, ...)' not in source
+    assert 'moduleValue(externalDiagnostics, "createController"' in source
+    assert "diagnosticsController.runApiProbe" in source
+    assert "diagnosticsController.refresh" in source
+    assert "diagnosticsController.export" in source
+    assert "function diagnosticsText(functionName, fallback, ...)" not in source
     assert 'diagnosticsText("boolText"' not in source
     assert 'diagnosticsText("posText"' not in source
-    assert 'moduleValue(externalDiagnostics, "boolText"' in source
+    assert 'moduleValue(externalDiagnostics, "boolText"' not in source
     assert 'moduleValue(externalDiagnostics, "posText"' in source
-    assert 'moduleValue(externalDiagnostics, "movementText"' in source
-    assert 'moduleValue(externalDiagnostics, "magicLootText"' in source
-    assert 'moduleValue(externalDiagnostics, "snapshotUiRows"' in source
     assert 'moduleValue(externalDiagnostics, "tableCount"' in source
-    assert 'moduleValue(externalDiagnostics, "firstTableValue"' in source
-    assert 'moduleValue(externalDiagnostics, "recordSnapshot"' in source
-    assert 'moduleValue(externalDiagnostics, "exportBuffer"' in source
-    assert 'moduleValue(externalDiagnostics, "apiProbeText"' in source
     assert 'moduleValue(externalDiagnostics, "probeDeferredPlan"' in source
     assert 'moduleValue(externalDiagnostics, "magicApiProbeText"' in source
     assert 'moduleValue(externalDiagnostics, "smokeCommandExists"' in source
-    assert 'moduleValue(externalDiagnostics, "parseSmokeCommandText"' in source
+    assert 'moduleValue(externalDiagnostics, "readSmokeCommand"' in source
+    assert "return Diagnostics.parseSmokeCommandText(text)" in diagnostics
     assert 'moduleValue(externalDiagnostics, "smokeCommandTarget"' in source
     assert 'moduleValue(externalDiagnostics, "smokeCommandStatusText"' in source
     assert "local function parseSmokeCommandText" not in source
     assert "local function smokeCommandTarget" not in source
     assert "function smokeCommandStatusText(event, data, fallback)" not in source
-    assert "Diagnostics module unavailable | API pending" in source
     assert "Diagnostics module unavailable | flags pending" in source
     assert "Diagnostics module unavailable | export gated" in source
-    assert "Diagnostics module unavailable | movement pending" in source
-    assert "Diagnostics module unavailable | magic/loot pending" in source
+    assert "function Diagnostics.createController" in diagnostics
     assert "ctoa_diag_export.lua" in diagnostics
     assert "castSpell(" not in diagnostics
     assert "sendActionbarSlot(" not in diagnostics
@@ -659,34 +788,58 @@ def test_helper_diagnostics_domain_is_passive_and_wired():
     assert "function diagnosticsBufferText()" not in source
     assert "function diagnosticsMovementText()" not in source
     assert "function diagnosticsMagicLootText()" not in source
-    diagnostics_slice = source[source.index("function refreshApiSnapshotUi()"):source.index("function runApiProbe(reason)")]
+    diagnostics_slice = diagnostics[
+        diagnostics.index("function Diagnostics.createController") : diagnostics.index(
+            "function Diagnostics.contract"
+        )
+    ]
     assert "api = function()" not in diagnostics_slice
     assert "flags = function()" not in diagnostics_slice
     assert "movement = function()" not in diagnostics_slice
     assert "magic_loot = function()" not in diagnostics_slice
     assert "buffer = function()" not in diagnostics_slice
-    assert "Generated by ctoa_native_helper.lua diagnostics export" not in diagnostics_slice
+    assert (
+        "Generated by ctoa_native_helper.lua diagnostics export"
+        not in diagnostics_slice
+    )
     assert "table.remove(buffer, 1)" not in diagnostics_slice
     assert '"Flags: diag="' not in diagnostics_slice
     assert '"Move: " .. tostring(snapshot.movement' not in diagnostics_slice
     assert '"Magic: " .. tostring(snapshot.magic' not in diagnostics_slice
-    assert "for _, row in ipairs(rows) do" in diagnostics_slice
+    assert "Diagnostics.snapshotUiValues(" in diagnostics_slice
+    assert "for _, row in ipairs(rows) do" not in diagnostics_slice
     assert "Helper.widgets.tools_diag_magic:setText" not in diagnostics_slice
-    assert 'moduleValue(externalDiagnostics, "apiProbeSnapshot"' in source
+    assert "Diagnostics.apiProbeSnapshot(" in diagnostics_slice
     assert "API probe detail:" in diagnostics
     assert "API probe detail:" not in source
-    smoke_slice = source[source.index("local function readSmokeCommand"):source.index("local function applySmokeCommand")]
+    smoke_slice = diagnostics[
+        diagnostics.index("function Diagnostics.readSmokeCommand") : diagnostics.index(
+            "function Diagnostics.parseSmokeCommandText"
+        )
+    ]
     assert 'escaped .. "%s*=%s*"' not in smoke_slice
     assert 'action == "magic_probe"' not in smoke_slice
     assert 'action == "api_probe"' not in smoke_slice
-    apply_smoke_slice = source[source.index("local function applySmokeCommand"):source.index("local function processSmokeCommand")]
+    apply_smoke_slice = source[
+        source.index("local function applySmokeCommand") : source.index(
+            "local function processSmokeCommand"
+        )
+    ]
     assert "externalDiagnostics.smokeTabStatusText" not in apply_smoke_slice
     assert "externalDiagnostics.smokeCommandBlockedText" not in apply_smoke_slice
     assert '"Smoke command blocked: " .. blocked' not in apply_smoke_slice
-    process_smoke_slice = source[source.index("local function processSmokeCommand"):source.index("flushUiPrefsSave = function")]
+    process_smoke_slice = source[
+        source.index("local function processSmokeCommand") : source.index(
+            "flushUiPrefsSave = function"
+        )
+    ]
     assert "externalDiagnostics.smokeCommandFailedText" not in process_smoke_slice
     assert '"Smoke command failed: " .. tostring(command)' not in process_smoke_slice
-    formatter_slice = source[source.index("function setCavebotStatus(text)"):source.index("function refreshApiSnapshotUi()")]
+    formatter_slice = source[
+        source.index("function setCavebotStatus(text)") : source.index(
+            "local diagnosticsController"
+        )
+    ]
     assert "function boolText(value)" not in formatter_slice
     assert "function posText(pos)" not in formatter_slice
     assert "function tableCount(value)" not in formatter_slice
@@ -710,9 +863,11 @@ def test_heal_friend_is_profiled_module_lane_without_runtime_casting():
     source = HELPER.read_text(encoding="utf-8")
     ui_module = UI_HELPERS.read_text(encoding="utf-8")
     heal_friend = HEAL_FRIEND.read_text(encoding="utf-8")
-    profile = (ROOT / "scripts" / "lua" / "otclient" / "ctoa_ek_profile.lua").read_text(encoding="utf-8")
+    profile = (ROOT / "scripts" / "lua" / "otclient" / "ctoa_ek_profile.lua").read_text(
+        encoding="utf-8"
+    )
 
-    assert "heal_friend = {" in source
+    assert "heal_friend = {" in DEFAULT_PROFILE_SOURCE
     assert 'rawget(_G, "CTOA_HELPER_HEAL_FRIEND")' in source
     assert "_G.CTOA_HELPER_HEAL_FRIEND = HealFriend" in heal_friend
     assert "function HealFriend.whitelistContainsName" in heal_friend
@@ -735,8 +890,19 @@ def test_heal_friend_is_profiled_module_lane_without_runtime_casting():
     assert "requires_whitelist = true" in heal_friend
     assert "requires_sandbox_attach = true" in heal_friend
     assert 'next_action = "plan_sio"' in heal_friend
+    assert "function HealFriend.scanExactTarget" in heal_friend
+    assert 'selection_policy = "single_exact_target"' in heal_friend
+    assert 'scan_policy = "single_exact_target_id_and_name"' in heal_friend
+    assert "ranking_applied = false" in heal_friend
+    assert "requires_party_membership = true" in heal_friend
+    assert "requires_visibility = true" in heal_friend
+    assert "requires_same_floor = true" in heal_friend
+    assert 'result.reason = "exact_target_ambiguous"' in heal_friend
     assert "healFriendSummaryText = function()" not in source
-    assert 'heal_friend = moduleValue(externalOperatorSummary, "bridgeText", "healFriend", OPERATOR_SUMMARY_BRIDGES)' in source
+    assert (
+        'heal_friend = moduleValue(externalOperatorSummary, "bridgeText", "healFriend", OPERATOR_SUMMARY_BRIDGES)'
+        in source
+    )
     assert "local function maybeObserveHealFriend(now)" in source
     assert "local function scanHealFriendCandidates()" not in source
     assert "local function whitelistContainsName(" not in source
@@ -746,16 +912,24 @@ def test_heal_friend_is_profiled_module_lane_without_runtime_casting():
     assert '"ctoaHealFriendObserveParty", "Observe party"' in ui_module
     assert '"ctoaHealFriendSpell", "Sio spell"' in ui_module
     assert '"ctoaHealFriendThreshold", "Friend HP"' in ui_module
-    assert "Status: read-only pending; no sio cast until sandbox whitelist smoke passes" in ui_module
+    assert (
+        "Status: read-only pending; no sio cast until sandbox whitelist smoke passes"
+        in ui_module
+    )
     assert "HELPER_CONFIG.heal_friend.runtime_enabled = false" in source
     assert "heal_friend = HELPER_CONFIG.heal_friend" not in source
-    persistence = (ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_profile_persistence.lua").read_text(encoding="utf-8")
+    persistence = (
+        ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_profile_persistence.lua"
+    ).read_text(encoding="utf-8")
     assert "heal_friend = {" in persistence
+    assert '"friend_target_id"' in persistence
     assert "\n    heal_friend = {" in profile
+    assert "friend_target_id = 0" in profile
+    assert 'priority = "single_exact_target"' in profile
     assert "friend_scan_range = 7" in profile
     assert "observed_count = 0" in profile
     assert "runtime_enabled = false" in profile
-    assert 'castSpell(HELPER_CONFIG.heal_friend.sio_spell)' not in source
+    assert "castSpell(HELPER_CONFIG.heal_friend.sio_spell)" not in source
     assert "g_game.talk(HELPER_CONFIG.heal_friend.sio_spell)" not in source
     assert "castSpell(" not in heal_friend
     assert "sendActionbarSlot(" not in heal_friend
@@ -765,9 +939,14 @@ def test_heal_friend_is_profiled_module_lane_without_runtime_casting():
     observer_end = source.index("local function buildTargetCandidate")
     observer_source = source[observer_start:observer_end]
     assert "getSpectatorsInRange" in observer_source
-    assert 'moduleValue(externalHealFriend, "observe", healFriend, now, {' in observer_source
+    assert (
+        'moduleValue(externalHealFriend, "observe", healFriend, now, {'
+        in observer_source
+    )
     assert "pcall(externalHealFriend.observe" not in observer_source
-    assert 'moduleValue(externalHealFriend, "statusText", healFriend)' in observer_source
+    assert (
+        'moduleValue(externalHealFriend, "statusText", healFriend)' in observer_source
+    )
     assert "externalHealFriend.statusText" not in observer_source
     assert "pcall(externalHealFriend.statusText" not in observer_source
     assert "whitelistContainsName" not in observer_source
@@ -781,21 +960,29 @@ def test_coming_soon_sidebar_tabs_are_non_interactive():
     source = HELPER.read_text(encoding="utf-8")
     ui_module = UI_HELPERS.read_text(encoding="utf-8")
 
-    assert 'Helper.configureComingSoonTab(Helper.widgets.scripting_tab, "Scripting")' not in source
+    assert (
+        'Helper.configureComingSoonTab(Helper.widgets.scripting_tab, "Scripting")'
+        not in source
+    )
     assert "Helper.configureComingSoonTab = function" not in source
     assert "Scripting (Wkrótce / Coming Soon)" not in source
     assert "function Ui.styleInactiveNav" not in ui_module
     assert "function Ui.styleDisabledNav" not in ui_module
     assert "widget.onClick = nil" not in source
     assert "widget.onMouseRelease = nil" not in source
-    assert 'bindClick(Helper.widgets.scripting_tab, function() switchTab("scripting") end)' in source
+    assert (
+        'bindClick(Helper.widgets.scripting_tab, function() switchTab("scripting") end)'
+        in source
+    )
 
 
 def test_conditions_is_read_only_profiled_module_lane():
     source = HELPER.read_text(encoding="utf-8")
     ui_module = UI_HELPERS.read_text(encoding="utf-8")
     conditions_module = CONDITIONS.read_text(encoding="utf-8")
-    profile = (ROOT / "scripts" / "lua" / "otclient" / "ctoa_ek_profile.lua").read_text(encoding="utf-8")
+    profile = (ROOT / "scripts" / "lua" / "otclient" / "ctoa_ek_profile.lua").read_text(
+        encoding="utf-8"
+    )
 
     assert "conditions = {" in source
     assert 'rawget(_G, "CTOA_HELPER_CONDITIONS")' in source
@@ -821,7 +1008,10 @@ def test_conditions_is_read_only_profiled_module_lane():
     assert "uses_items = false" in conditions_module
     assert "requires_sandbox_attach = true" in conditions_module
     assert "conditionsSummaryText = function()" not in source
-    assert 'conditions = moduleValue(externalOperatorSummary, "bridgeText", "conditions", OPERATOR_SUMMARY_BRIDGES)' in source
+    assert (
+        'conditions = moduleValue(externalOperatorSummary, "bridgeText", "conditions", OPERATOR_SUMMARY_BRIDGES)'
+        in source
+    )
     assert "function maybeSampleConditions(now)" in source
     assert "local function buildConditionsApiProbeSnapshot()" not in source
     assert "local function buildConditionSnapshot()" not in source
@@ -832,10 +1022,16 @@ def test_conditions_is_read_only_profiled_module_lane():
     assert '"ctoaConditionsStates", label = "Read states"' in ui_module
     assert '"ctoaConditionsApiProbe", "API probe"' in ui_module
     assert '"ctoaConditionsStatus", "Status: read-only pending"' in ui_module
-    assert 'bindClick(Helper.widgets.conditions_tab, function() switchTab("conditions") end)' in source
-    assert 'Helper.configureComingSoonTab(Helper.widgets.conditions_tab, "Conditions")' not in source
+    assert (
+        'bindClick(Helper.widgets.conditions_tab, function() switchTab("conditions") end)'
+        in source
+    )
+    assert (
+        'Helper.configureComingSoonTab(Helper.widgets.conditions_tab, "Conditions")'
+        not in source
+    )
     assert "HELPER_CONFIG.conditions.runtime_enabled = false" in source
-    assert "api_probe_enabled = true" in source
+    assert "api_probe_enabled = true" in DEFAULT_PROFILE_SOURCE
     assert "\n    conditions = {" in profile
     assert "api_probe_enabled = true" in profile
     assert 'api_probe_status = "pending"' in profile
@@ -847,7 +1043,10 @@ def test_conditions_is_read_only_profiled_module_lane():
     observer_start = source.index("function maybeSampleConditions(now)")
     observer_end = source.index("function maybeSampleEquipment(now)")
     observer_source = source[observer_start:observer_end]
-    assert 'moduleValue(externalConditions, "observe", conditions, now, {' in observer_source
+    assert (
+        'moduleValue(externalConditions, "observe", conditions, now, {'
+        in observer_source
+    )
     assert "pcall(externalConditions.observe" not in observer_source
     assert "conditions module unavailable" in observer_source
     assert "player.hasState=" not in observer_source
@@ -884,17 +1083,32 @@ def test_hud_domain_is_passive_and_packaged():
     assert "HUD module unavailable | starting" in source
     assert "HUD module unavailable | runtime disarmed" in source
     assert "HUD module unavailable | runtime gated" in source
-    assert 'OPERATOR_SUMMARY_BRIDGES.ui' in source
-    assert 'ui = moduleValue(externalOperatorSummary, "bridgeText", "ui", OPERATOR_SUMMARY_BRIDGES)' in source
+    assert "OPERATOR_SUMMARY_BRIDGES.ui" in source
+    assert (
+        'ui = moduleValue(externalOperatorSummary, "bridgeText", "ui", OPERATOR_SUMMARY_BRIDGES)'
+        in source
+    )
     assert "hud = externalHud" in source
     ui_summary_start = source.index("OPERATOR_SUMMARY_BRIDGES.ui")
     ui_summary_end = source.index("refreshOperatorSummaries = function()")
     ui_summary_source = source[ui_summary_start:ui_summary_end]
-    assert '"Hotkey " .. hotkeyDisplayText(HELPER_CONFIG.hotkey)' not in ui_summary_source
-    assert '" | Compact " .. onOffText(HELPER_CONFIG.compact_mode == true)' not in ui_summary_source
-    assert '" | Theme " .. themePresetText(HELPER_CONFIG.theme_preset or "classic")' not in ui_summary_source
+    assert (
+        '"Hotkey " .. hotkeyDisplayText(HELPER_CONFIG.hotkey)' not in ui_summary_source
+    )
+    assert (
+        '" | Compact " .. onOffText(HELPER_CONFIG.compact_mode == true)'
+        not in ui_summary_source
+    )
+    assert (
+        '" | Theme " .. themePresetText(HELPER_CONFIG.theme_preset or "classic")'
+        not in ui_summary_source
+    )
     assert "externalHud.uiSummary" not in ui_summary_source
-    hud_slice = source[source.index("local function throttledRuntimeStatus("):source.index("local setWidgetText =")]
+    hud_slice = source[
+        source.index("local function throttledRuntimeStatus(") : source.index(
+            "local setWidgetText ="
+        )
+    ]
     assert "local function hudText(functionName, fallback, options)" not in source
     assert "local function hudStartText()" not in source
     assert "local function hudDisarmedText()" not in source
@@ -916,7 +1130,7 @@ def test_hud_domain_is_passive_and_packaged():
     assert "g_game.attack" not in hud_module
     assert boot_graph_has_module(loader, "ctoa_helper_hud", "ctoa_helper_hud.lua")
     assert "ctoa_helper_hud.lua" in script
-    assert 'mods/ctoa_otclient/ctoa_helper_hud.lua' in script
+    assert "mods/ctoa_otclient/ctoa_helper_hud.lua" in script
 
 
 def test_hotkeys_domain_is_passive_and_packaged():
@@ -932,29 +1146,46 @@ def test_hotkeys_domain_is_passive_and_packaged():
     assert "function Hotkeys.normalize" in hotkeys_module
     assert "function Hotkeys.isAllowed" in hotkeys_module
     assert "function Hotkeys.bindingDecision" in hotkeys_module
+    assert "function Hotkeys.normalizeHelperHotkey" in hotkeys_module
+    assert "function Hotkeys.hotkeyBindingDecision" in hotkeys_module
+    assert "function Hotkeys.resolveActionbarSlot" in hotkeys_module
     assert "function Hotkeys.display" in hotkeys_module
     assert "function Hotkeys.actionbarSlotText" in hotkeys_module
     assert "function Hotkeys.contract" in hotkeys_module
     assert "owns_actionbar_slot_text = true" in hotkeys_module
     assert "owns_binding_decision = true" in hotkeys_module
+    assert "owns_hotkey_normalization = true" in hotkeys_module
+    assert "owns_actionbar_slot_resolution = true" in hotkeys_module
     assert 'reason = "not_allowed"' in hotkeys_module
-    assert 'reason = previous == parsed.normalized and "unchanged" or "changed"' in hotkeys_module
+    assert (
+        'reason = previous == parsed.normalized and "unchanged" or "changed"'
+        in hotkeys_module
+    )
     assert 'reason = "multiple_keys"' in hotkeys_module
     assert 'reason = "missing_key"' in hotkeys_module
     assert 'reason = "reserved_key"' in hotkeys_module
     assert "binds_keys = false" in hotkeys_module
     assert "sends_keys = false" in hotkeys_module
     assert "runtime_actions = false" in hotkeys_module
-    assert "local function normalizeHelperHotkey" in source
+    assert "local function normalizeHelperHotkey" not in source
     assert "local function hotkeyValue" not in source
-    assert "local function hotkeyBindingDecision" in source
-    assert 'moduleValue(externalHotkeys, "bindingDecision", value, currentValue, allowed)' in source
+    assert "local function hotkeyBindingDecision" not in source
+    assert (
+        'moduleValue(externalHotkeys, "hotkeyBindingDecision", hotkey, Helper.bound_hotkey or HELPER_CONFIG.hotkey)'
+        in source
+    )
     assert "local function hotkeyDisplayText" not in source
-    assert 'moduleValue(externalHotkeys, "normalize", value)' in source
-    assert "hotkey_display_text = externalHotkeys and externalHotkeys.display or tostring" in source
+    assert 'type(externalHotkeys.normalizeHelperHotkey) == "function"' in source
+    assert (
+        'hotkey_display_text = type(externalHotkeys) == "table" and type(externalHotkeys.display) == "function" and externalHotkeys.display or tostring'
+        in source
+    )
     assert '"actionbar " .. tostring(slot)' in hotkeys_module
-    assert "local decision = hotkeyBindingDecision(hotkey, Helper.bound_hotkey or HELPER_CONFIG.hotkey)" in source
-    assert "decision.allowed ~= true or decision.normalized == \"\"" in source
+    assert (
+        'local decision = moduleValue(externalHotkeys, "hotkeyBindingDecision", hotkey, Helper.bound_hotkey or HELPER_CONFIG.hotkey)'
+        in source
+    )
+    assert 'decision.allowed ~= true or decision.normalized == ""' in source
     assert "g_keyboard" not in hotkeys_module
     assert "bindKeyDown" not in hotkeys_module
     assert "unbindKeyDown" not in hotkeys_module
@@ -962,9 +1193,11 @@ def test_hotkeys_domain_is_passive_and_packaged():
     assert "g_game.talk" not in hotkeys_module
     assert "castSpell(" not in hotkeys_module
     assert "createWidget(" not in hotkeys_module
-    assert boot_graph_has_module(loader, "ctoa_helper_hotkeys", "ctoa_helper_hotkeys.lua")
+    assert boot_graph_has_module(
+        loader, "ctoa_helper_hotkeys", "ctoa_helper_hotkeys.lua"
+    )
     assert "ctoa_helper_hotkeys.lua" in script
-    assert 'mods/ctoa_otclient/ctoa_helper_hotkeys.lua' in script
+    assert "mods/ctoa_otclient/ctoa_helper_hotkeys.lua" in script
 
 
 def test_modal_domain_is_passive_and_guards_destructive_actions():
@@ -976,6 +1209,7 @@ def test_modal_domain_is_passive_and_guards_destructive_actions():
     assert 'rawget(_G, "CTOA_HELPER_MODAL")' in source
     assert "_G.CTOA_HELPER_MODAL" in modal_module
     assert "function Modal.request" in modal_module
+    assert "function Modal.modalRequest" in modal_module
     assert "function Modal.confirm" in modal_module
     assert "function Modal.cancel" in modal_module
     assert "function Modal.isExpired" in modal_module
@@ -987,19 +1221,26 @@ def test_modal_domain_is_passive_and_guards_destructive_actions():
     assert "function Modal.contract" in modal_module
     assert "live_shortcuts = false" in modal_module
     assert "runtime_actions = false" in modal_module
+    assert "owns_modal_request = true" in modal_module
     assert "owns_decision_text = true" in modal_module
     assert "confirmation_required" in modal_module
     assert "promote_live" in modal_module
     assert "local function modalValue" not in source
     assert "local function modalStatusText" not in source
     assert "pcall(externalModal[functionName]" not in source
-    assert 'moduleValue(externalModal, "request", action, context, now, ttlMs)' in source
-    assert 'moduleValue(externalModal, "isPending", Helper.pending_confirm, "cavebot_delete", helperNowMs())' in source
+    assert "local function modalRequest" not in source
+    assert (
+        'moduleValue(externalModal, "isPending", Helper.pending_confirm, "cavebot_delete", helperNowMs())'
+        in source
+    )
     assert 'moduleValue(externalModal, "statusText", Helper.pending_confirm)' in source
     assert "pending_confirm = nil" in source
     assert 'moduleValue(externalRoute, "deleteRequest"' in source
-    assert 'modalRequest("cavebot_delete", request.label, request.timeout_ms)' in source
-    assert 'deleteCurrentCavebotWaypoint(command.confirm == true)' in source
+    assert (
+        'moduleValue(externalModal, "modalRequest", "cavebot_delete", request.label, request.timeout_ms, helperNowMs())'
+        in source
+    )
+    assert "deleteCurrentCavebotWaypoint(command.confirm == true)" in source
     assert 'applyCavebotEditorAction("delete")' in source
     assert "createWidget(" not in modal_module
     assert "showWidget(" not in modal_module
@@ -1010,7 +1251,7 @@ def test_modal_domain_is_passive_and_guards_destructive_actions():
     assert "PromoteLiveCtoa" not in modal_module
     assert boot_graph_has_module(loader, "ctoa_helper_modal", "ctoa_helper_modal.lua")
     assert "ctoa_helper_modal.lua" in script
-    assert 'mods/ctoa_otclient/ctoa_helper_modal.lua' in script
+    assert "mods/ctoa_otclient/ctoa_helper_modal.lua" in script
 
 
 def test_route_domain_is_passive_and_packaged():
@@ -1021,6 +1262,7 @@ def test_route_domain_is_passive_and_packaged():
 
     assert 'rawget(_G, "CTOA_HELPER_ROUTE")' in source
     assert "_G.CTOA_HELPER_ROUTE" in route_module
+    assert "function Route.distanceChebyshev" in route_module
     assert "function Route.position" in route_module
     assert "function Route.label" in route_module
     assert "function Route.posKey" in route_module
@@ -1041,6 +1283,7 @@ def test_route_domain_is_passive_and_packaged():
     assert 'mode = "passive"' in route_module
     assert "owns_editor_state = true" in route_module
     assert "owns_editor_action = true" in route_module
+    assert "owns_distance_chebyshev = true" in route_module
     assert "owns_position_key = true" in route_module
     assert "owns_progress_state = true" in route_module
     assert "owns_target_selection = true" in route_module
@@ -1052,7 +1295,7 @@ def test_route_domain_is_passive_and_packaged():
     assert 'moduleValue(externalRoute, "posKey"' in source
     assert 'moduleValue(externalRoute, "progress"' in source
     assert 'moduleValue(externalRoute, "activeTarget"' in source
-    assert 'moduleValue(externalRoute, "retryBlocked"' in source
+    assert 'moduleValue(externalCavebotRuntime, "cavebotRetryBudgetExceeded"' in source
     assert 'moduleValue(externalRoute, "uiState"' in source
     assert 'moduleValue(externalRoute, "deleteRequest"' in source
     assert 'moduleValue(externalRoute, "retryStatus", tools)' in source
@@ -1060,17 +1303,26 @@ def test_route_domain_is_passive_and_packaged():
     assert "local function getWaypointPosition" not in source
     assert "local function waypointLabel" not in source
     assert "local x = tonumber(waypoint.x)" not in source
-    assert "return \"retry \" .. tostring(tools and tools.cavebot_retry_attempts or 0)" not in source
+    assert (
+        'return "retry " .. tostring(tools and tools.cavebot_retry_attempts or 0)'
+        not in source
+    )
     assert 'modalRequest("cavebot_delete", label, 4500)' not in source
-    editor_slice = source[source.index("local function applyCavebotEditorAction"):source.index("function resetCavebotMovementState")]
+    editor_slice = source[
+        source.index("local function applyCavebotEditorAction") : source.index(
+            "function autoWalkTo(pos)"
+        )
+    ]
     assert 'moduleValue(externalRoute, "editorAction"' in editor_slice
     assert "externalRoute.add" not in editor_slice
     assert "externalRoute.clear" not in editor_slice
     assert "externalRoute.select" not in editor_slice
     assert "externalRoute.delete(" not in editor_slice
     assert "externalRoute.move" not in editor_slice
-    pos_key_slice = source[source.index("function posKey(pos)"):source.index("function hasApi(owner, methodName)")]
-    assert 'moduleValue(externalRoute, "posKey", pos)' in pos_key_slice
+    assert "function posKey(pos)" not in source
+    assert "local function distanceChebyshev" not in source
+    assert 'moduleValue(externalRoute, "posKey", current)' in source
+    assert 'moduleValue(externalRoute, "distanceChebyshev"' in source
     assert "autoWalk" not in route_module
     assert "findPath" not in route_module
     assert "g_map" not in route_module
@@ -1080,7 +1332,7 @@ def test_route_domain_is_passive_and_packaged():
     assert "castSpell(" not in route_module
     assert boot_graph_has_module(loader, "ctoa_helper_route", "ctoa_helper_route.lua")
     assert "ctoa_helper_route.lua" in script
-    assert 'mods/ctoa_otclient/ctoa_helper_route.lua' in script
+    assert "mods/ctoa_otclient/ctoa_helper_route.lua" in script
 
 
 def test_targeting_domain_is_passive_and_packaged():
@@ -1094,11 +1346,13 @@ def test_targeting_domain_is_passive_and_packaged():
     assert "function Targeting.normalizedName" in targeting_module
     assert "function Targeting.isIgnoredName" in targeting_module
     assert "function Targeting.hasBlockingNpcIcon" in targeting_module
+    assert "function Targeting.creatureHasBlockingNpcIcon" in targeting_module
     assert "function Targeting.isFriendlySummonName" in targeting_module
     assert "function Targeting.isFriendlySummonCandidate" in targeting_module
     assert "function Targeting.creatureTypeDecision" in targeting_module
     assert "function Targeting.priorityRank" in targeting_module
     assert "function Targeting.scoreCandidate" in targeting_module
+    assert "function Targeting.targetCandidateScore" in targeting_module
     assert "function Targeting.bestCandidate" in targeting_module
     assert "function Targeting.decision" in targeting_module
     assert "function Targeting.summary" in targeting_module
@@ -1107,7 +1361,10 @@ def test_targeting_domain_is_passive_and_packaged():
     assert "owns_best_candidate = true" in targeting_module
     assert "owns_creature_type_decision = true" in targeting_module
     assert "owns_npc_icon_guard = true" in targeting_module
+    assert "owns_blocking_npc_icon_value = true" in targeting_module
     assert "owns_friendly_summon_guard = true" in targeting_module
+    assert "owns_friendly_summon_name = true" in targeting_module
+    assert "owns_target_candidate_score = true" in targeting_module
     assert 'mode = "passive"' in targeting_module
     assert "owns_config_summary = true" in targeting_module
     assert "owns_targeting_summary_text = true" in targeting_module
@@ -1117,25 +1374,50 @@ def test_targeting_domain_is_passive_and_packaged():
     assert "creature_scan = false" in targeting_module
     assert 'reason = "ignored_name"' in targeting_module
     assert 'reason = "friendly_summon"' in targeting_module
-    assert 'moduleValue(externalTargeting, "scoreCandidate", candidate, tools)' in source
-    assert 'moduleValue(externalTargeting, "bestCandidate", candidates, tools)' in source
+    assert (
+        'moduleValue(externalTargeting, "targetCandidateScore", candidate, tools)'
+        not in source
+    )
+    assert (
+        'moduleValue(externalTargeting, "bestCandidate", candidates, tools)' in source
+    )
     assert "pcall(externalTargeting.bestCandidate, candidates, tools)" not in source
     assert "externalTargeting.creatureTypeDecision" in source
     assert 'moduleValue(externalTargeting, "normalizedName", creature)' in source
-    assert 'moduleValue(externalTargeting, "isIgnoredName", name, HELPER_CONFIG.tools.ignored_names or {})' in source
-    assert 'moduleValue(externalTargeting, "isFriendlySummonName", name, HELPER_CONFIG.tools)' in source
+    assert (
+        'moduleValue(externalTargeting, "isIgnoredName", name, HELPER_CONFIG.tools.ignored_names or {})'
+        in source
+    )
+    assert (
+        'moduleValue(externalTargeting, "isFriendlySummonName", normalizedCreatureName(creature), HELPER_CONFIG.tools)'
+        in source
+    )
+    assert "local function isFriendlySummonName" not in source
+    assert "local function targetCandidateScore" not in source
+    assert "local bestScore = nil" not in source
+    assert "string.find(name, needle, 1, true)" not in source
     assert "pcall(externalTargeting.normalizedName" not in source
     assert "pcall(externalTargeting.isIgnoredName" not in source
     assert "pcall(externalTargeting.isFriendlySummonName" not in source
-    assert 'OPERATOR_SUMMARY_BRIDGES.targeting' in source
-    assert 'targeting = moduleValue(externalOperatorSummary, "bridgeText", "targeting", OPERATOR_SUMMARY_BRIDGES)' in source
+    assert "OPERATOR_SUMMARY_BRIDGES.targeting" in source
+    assert (
+        'targeting = moduleValue(externalOperatorSummary, "bridgeText", "targeting", OPERATOR_SUMMARY_BRIDGES)'
+        in source
+    )
     assert "targeting = externalTargeting" in source
     targeting_summary_start = source.index("OPERATOR_SUMMARY_BRIDGES.targeting")
     targeting_summary_end = source.index("OPERATOR_SUMMARY_BRIDGES.magic")
     targeting_summary_source = source[targeting_summary_start:targeting_summary_end]
-    assert '"Targeting " .. onOffText(tools.auto_attack)' not in targeting_summary_source
-    assert '" | Chase " .. onOffText(tools.chase == true)' not in targeting_summary_source
-    assert '" | PZ guard " .. onOffText(tools.pause_in_pz == true)' not in targeting_summary_source
+    assert (
+        '"Targeting " .. onOffText(tools.auto_attack)' not in targeting_summary_source
+    )
+    assert (
+        '" | Chase " .. onOffText(tools.chase == true)' not in targeting_summary_source
+    )
+    assert (
+        '" | PZ guard " .. onOffText(tools.pause_in_pz == true)'
+        not in targeting_summary_source
+    )
     assert "g_game.attack(target)" in source
     assert "g_game.attack" not in targeting_module
     assert "g_game" not in targeting_module
@@ -1143,9 +1425,11 @@ def test_targeting_domain_is_passive_and_packaged():
     assert "castSpell(" not in targeting_module
     assert "sendActionbarSlot" not in targeting_module
     assert "createWidget(" not in targeting_module
-    assert boot_graph_has_module(loader, "ctoa_helper_targeting", "ctoa_helper_targeting.lua")
+    assert boot_graph_has_module(
+        loader, "ctoa_helper_targeting", "ctoa_helper_targeting.lua"
+    )
     assert "ctoa_helper_targeting.lua" in script
-    assert 'mods/ctoa_otclient/ctoa_helper_targeting.lua' in script
+    assert "mods/ctoa_otclient/ctoa_helper_targeting.lua" in script
 
 
 def test_combat_runtime_adapter_is_passive_and_packaged():
@@ -1164,6 +1448,7 @@ def test_combat_runtime_adapter_is_passive_and_packaged():
     assert "function CombatRuntime.rotationSpellRows" in adapter
     assert "function CombatRuntime.spellReadiness" in adapter
     assert "function CombatRuntime.rotationSpell" in adapter
+    assert "function CombatRuntime.selectRotationSpell" in adapter
     assert "function CombatRuntime.offensiveAction" in adapter
     assert "function CombatRuntime.actionStatusText" in adapter
     assert "function CombatRuntime.targetingStatusText" in adapter
@@ -1179,6 +1464,7 @@ def test_combat_runtime_adapter_is_passive_and_packaged():
     assert "owns_rotation_spell_rows = true" in adapter
     assert "owns_spell_readiness = true" in adapter
     assert "owns_rotation_spell_selection = true" in adapter
+    assert "owns_select_rotation_spell = true" in adapter
     assert "owns_offensive_action_selection = true" in adapter
     assert "owns_action_status_text = true" in adapter
     assert "owns_targeting_status_text = true" in adapter
@@ -1197,36 +1483,72 @@ def test_combat_runtime_adapter_is_passive_and_packaged():
     assert "sendActionbarSlot" not in adapter
     assert "createWidget(" not in adapter
     assert "getSpectatorsInRange" not in adapter
-    assert boot_graph_has_module(loader, "ctoa_helper_combat_runtime", "ctoa_helper_combat_runtime.lua")
+    assert boot_graph_has_module(
+        loader, "ctoa_helper_combat_runtime", "ctoa_helper_combat_runtime.lua"
+    )
     assert "ctoa_helper_combat_runtime.lua" in script
-    assert 'mods/ctoa_otclient/ctoa_helper_combat_runtime.lua' in script
+    assert "mods/ctoa_otclient/ctoa_helper_combat_runtime.lua" in script
     assert 'rawget(_G, "CTOA_HELPER_COMBAT_RUNTIME")' in source
     assert "local function moduleValue(module, functionName, ...)" in source
     assert "local function combatRuntimeAdapterSummary(tools, target)" not in source
     assert 'moduleValue(externalCombatRuntime, "decisionStateSummary", tools' in source
-    combat_summary_source = source[source.index("local function combatDecisionStateText"):source.index("function readPlayerVitals")]
-    assert "pcall(externalCombatRuntime.plan, tools, context, targetDecision)" not in combat_summary_source
+    combat_summary_source = source[
+        source.index("local function combatDecisionStateText") : source.index(
+            "function readPlayerVitals"
+        )
+    ]
+    assert (
+        "pcall(externalCombatRuntime.plan, tools, context, targetDecision)"
+        not in combat_summary_source
+    )
     assert "pcall(externalCombatRuntime.summary, plan)" not in combat_summary_source
     assert "adapter_text = adapterText" not in combat_summary_source
-    assert 'OPERATOR_SUMMARY_BRIDGES.magic' in source
-    assert 'magic = moduleValue(externalOperatorSummary, "bridgeText", "magic", OPERATOR_SUMMARY_BRIDGES)' in source
+    assert "OPERATOR_SUMMARY_BRIDGES.magic" in source
+    assert (
+        'magic = moduleValue(externalOperatorSummary, "bridgeText", "magic", OPERATOR_SUMMARY_BRIDGES)'
+        in source
+    )
     assert "combatRuntime = externalCombatRuntime" in source
     assert 'moduleValue(externalCombatRuntime, "msLeftText"' not in source
     assert 'moduleValue(externalCombatRuntime, "runeReady", tools' in source
-    assert 'moduleValue(externalCombatRuntime, "rotationSpellRows", tools.rotation_spells' in source
+    assert "local function runeReady" not in source
+    assert (
+        'moduleValue(externalCombatRuntime, "selectRotationSpell", tools, scan, now)'
+        in source
+    )
     assert 'moduleValue(externalCombatRuntime, "spellReadiness", spells' in source
-    assert 'moduleValue(externalCombatRuntime, "rotationSpell", spells' in source
+    assert 'moduleValue(externalCombatRuntime, "rotationSpell", spells' not in source
+    assert "local function selectRotationSpell" not in source
     assert 'moduleValue(externalCombatRuntime, "offensiveAction", tools' in source
-    assert "local function combatRuntimeText(functionName, eventOrAction, data, fallback)" in source
-    assert "moduleValue(externalCombatRuntime, functionName, eventOrAction, data or {})" in source
+    assert "local combatRuntimeText" in source
+    assert (
+        "combatRuntimeText = function(functionName, eventOrAction, data, fallback)"
+        in source
+    )
+    assert source.index("local combatRuntimeText") < source.index(
+        "local function retargetSafeMonster"
+    )
+    assert source.index("local combatRuntimeText") < source.index(
+        "clearUnsafeCurrentTarget = function"
+    )
+    assert (
+        "moduleValue(externalCombatRuntime, functionName, eventOrAction, data or {})"
+        in source
+    )
     assert "local function combatActionStatusText" not in source
     assert "local function combatTargetingStatusText" not in source
-    assert 'moduleValue(externalCombatRuntime, "nextActionText", action, fallback)' in source
+    assert (
+        'moduleValue(externalCombatRuntime, "nextActionText", action, fallback)'
+        in source
+    )
     assert 'moduleValue(externalCombatRuntime, "decisionState", {' not in source
     magic_summary_start = source.index("OPERATOR_SUMMARY_BRIDGES.magic")
     magic_summary_end = source.index("OPERATOR_SUMMARY_BRIDGES.tools")
     magic_summary_source = source[magic_summary_start:magic_summary_end]
-    assert "local runeSlot = actionbarSlotText(resolveActionbarSlot" not in magic_summary_source
+    assert (
+        "local runeSlot = actionbarSlotText(resolveActionbarSlot"
+        not in magic_summary_source
+    )
     assert '"Rotation " .. onOffText(tools.spell_rotation)' not in magic_summary_source
     assert '" | Rune " .. onOffText(tools.rune_enabled)' not in magic_summary_source
     assert "adapter_text = adapterText" not in source
@@ -1266,8 +1588,13 @@ def test_cavebot_runtime_adapter_is_passive_and_packaged():
     assert "function CavebotRuntime.retryDecision" in adapter
     assert "function CavebotRuntime.statusText" in adapter
     assert "function CavebotRuntime.traceText" in adapter
+    assert "function CavebotRuntime.cavebotRuntimeText" in adapter
+    assert "function CavebotRuntime.cavebotRetryBudgetExceeded" in adapter
     assert 'kind == "movement_reset"' in adapter
-    assert '"Cavebot movement state reset: " .. tostring(item.reason or "manual")' in adapter
+    assert (
+        '"Cavebot movement state reset: " .. tostring(item.reason or "manual")'
+        in adapter
+    )
     assert "function CavebotRuntime.contract" in adapter
     assert "owns_decision_text = true" in adapter
     assert "owns_adapter_summary = true" in adapter
@@ -1284,6 +1611,8 @@ def test_cavebot_runtime_adapter_is_passive_and_packaged():
     assert "owns_retry_decision = true" in adapter
     assert "owns_status_text = true" in adapter
     assert "owns_trace_text = true" in adapter
+    assert "owns_runtime_text_bridge = true" in adapter
+    assert "owns_retry_budget = true" in adapter
     assert 'mode = "passive"' in adapter
     assert "runtime_actions = false" in adapter
     assert "movement_enabled = false" in adapter
@@ -1297,45 +1626,63 @@ def test_cavebot_runtime_adapter_is_passive_and_packaged():
     assert "g_map" not in adapter
     assert "g_game" not in adapter
     assert "createWidget(" not in adapter
-    assert boot_graph_has_module(loader, "ctoa_helper_cavebot_runtime", "ctoa_helper_cavebot_runtime.lua")
+    assert boot_graph_has_module(
+        loader, "ctoa_helper_cavebot_runtime", "ctoa_helper_cavebot_runtime.lua"
+    )
     assert "ctoa_helper_cavebot_runtime.lua" in script
-    assert 'mods/ctoa_otclient/ctoa_helper_cavebot_runtime.lua' in script
+    assert "mods/ctoa_otclient/ctoa_helper_cavebot_runtime.lua" in script
     assert 'rawget(_G, "CTOA_HELPER_CAVEBOT_RUNTIME")' in source
     assert "local function moduleValue(module, functionName, ...)" in source
-    assert "function cavebotRuntimeMovementCapability(player)" in source
+    assert "function cavebotRuntimeMovementCapability(player)" not in source
+    assert "function CavebotRuntime.movementCapabilityForPlayer" in adapter
     assert 'moduleValue(externalCavebotRuntime, "adapterStatusSummary"' in source
     assert 'moduleValue(externalCavebotRuntime, "adapterSummary"' not in source
     assert "function cavebotRuntimeAdapterStatusText(adapterText)" not in source
     assert '"adapter " .. adapterText' not in source
     assert '"adapter " .. text' in adapter
-    adapter_summary_source = source[source.index('moduleValue(externalCavebotRuntime, "adapterStatusSummary"'):source.index('if type(adapterStatus) == "string"')]
-    assert "pcall(externalCavebotRuntime.decisionText, plan)" not in adapter_summary_source
+    adapter_summary_source = source[
+        source.index(
+            'moduleValue(externalCavebotRuntime, "adapterStatusSummary"'
+        ) : source.index('if type(adapterStatus) == "string"')
+    ]
+    assert (
+        "pcall(externalCavebotRuntime.decisionText, plan)" not in adapter_summary_source
+    )
     assert "externalCavebotRuntime.plan" not in adapter_summary_source
-    assert 'moduleValue(externalCavebotRuntime, "movementCapability"' in source
+    assert 'moduleValue(externalCavebotRuntime, "movementCapabilityForPlayer"' in source
     assert 'moduleValue(externalCavebotRuntime, "probeReport"' in source
-    probe_wrapper_source = source[source.index('moduleValue(externalCavebotRuntime, "probeReport"'):source.index("function runMagicApiProbe")]
+    probe_wrapper_source = source[
+        source.index(
+            'moduleValue(externalCavebotRuntime, "probeReport"'
+        ) : source.index("function runMagicApiProbe")
+    ]
     assert "externalCavebotRuntime.probeSnapshot" not in probe_wrapper_source
     assert "externalCavebotRuntime.probeSummary" not in probe_wrapper_source
     assert 'moduleValue(externalCavebotRuntime, "probeReport"' in probe_wrapper_source
     assert 'moduleValue(externalCavebotRuntime, "pathText"' in source
     assert "function cavebotRuntimePathText" not in source
-    path_probe_source = source[source.index("function movementPathProbeText"):source.index("function cavebotMovementBlockedReason")]
-    assert 'moduleValue(externalCavebotRuntime, "pathText"' in path_probe_source
-    assert '"dirs=" .. tostring(#dirs)' not in path_probe_source
-    assert '"non-table result=" .. tostring(dirs)' not in path_probe_source
-    assert '"error:" .. tostring(dirs)' not in path_probe_source
+    assert "function movementPathProbeText" not in source
+    assert 'safeGlobalCall(g_map, "findPath"' in source
+    assert '"dirs=" .. tostring(#dirs)' not in source
+    assert '"non-table result=" .. tostring(dirs)' not in source
+    assert '"error:" .. tostring(dirs)' not in source
     assert '"dirs=" .. tostring(data.dirs_count)' in adapter
     assert '"non-table result=" .. tostring(data.value)' in adapter
-    assert 'moduleValue(externalCavebotRuntime, "movementBlockedReason"' in source
+    assert 'moduleCall(externalCavebotRuntime, "movementBlockedReason"' in source
     assert 'moduleValue(externalCavebotRuntime, "walkPreflight"' in source
     assert 'moduleValue(externalCavebotRuntime, "testWalkPlan"' in source
     assert 'moduleValue(externalCavebotRuntime, "walkingStatus"' in source
     assert "function cavebotRuntimeWalkingStatus" not in source
-    assert 'function cavebotRuntimeText(functionName, event, data, fallback)' in source
-    assert 'moduleValue(externalCavebotRuntime, functionName, event, data or {})' in source
+    assert (
+        "function cavebotRuntimeText(functionName, event, data, fallback)" not in source
+    )
+    assert 'moduleValue(externalCavebotRuntime, "cavebotRuntimeText"' in source
     assert "function cavebotRuntimeStatusText" not in source
     assert "function cavebotRuntimeTraceText" not in source
-    assert 'cavebotRuntimeText("traceText", "movement_reset"' in source
+    assert (
+        'moduleValue(externalCavebotRuntime, "cavebotRuntimeText", "traceText", "movement_reset"'
+        in source
+    )
     assert "CavebotRuntime.walkingStatus(item)" in adapter
     assert '"walking " .. tostring(label)' in adapter
     assert '"walking " .. tostring(item.label' not in adapter
@@ -1377,16 +1724,22 @@ def test_loot_runtime_adapter_is_passive_and_packaged():
     assert "move(" not in adapter
     assert "useWith" not in adapter
     assert "createWidget(" not in adapter
-    assert boot_graph_has_module(loader, "ctoa_helper_loot_runtime", "ctoa_helper_loot_runtime.lua")
+    assert boot_graph_has_module(
+        loader, "ctoa_helper_loot_runtime", "ctoa_helper_loot_runtime.lua"
+    )
     assert "ctoa_helper_loot_runtime.lua" in script
-    assert 'mods/ctoa_otclient/ctoa_helper_loot_runtime.lua' in script
+    assert "mods/ctoa_otclient/ctoa_helper_loot_runtime.lua" in script
     assert 'rawget(_G, "CTOA_HELPER_LOOT_RUNTIME")' in source
     assert "function lootRuntimeAdapterSummary(tools, containers)" not in source
     assert 'moduleValue(externalLootRuntime, "adapterSummary"' in source
     assert "pcall(externalLootRuntime.adapterSummary" not in source
-    assert "pcall(externalLootRuntime.plan, plannerTools, context, snapshot)" not in source
+    assert (
+        "pcall(externalLootRuntime.plan, plannerTools, context, snapshot)" not in source
+    )
     assert "pcall(externalLootRuntime.summary, plan)" not in source
-    assert '" adapter=" .. tostring(data.loot_adapter_text' in DIAGNOSTICS.read_text(encoding="utf-8")
+    assert '" adapter=" .. tostring(data.loot_adapter_text' in DIAGNOSTICS.read_text(
+        encoding="utf-8"
+    )
 
 
 def test_timer_runtime_adapter_is_passive_and_packaged():
@@ -1413,9 +1766,11 @@ def test_timer_runtime_adapter_is_passive_and_packaged():
     assert "loadstring" not in adapter
     assert "dofile" not in adapter
     assert "createWidget(" not in adapter
-    assert boot_graph_has_module(loader, "ctoa_helper_timer_runtime", "ctoa_helper_timer_runtime.lua")
+    assert boot_graph_has_module(
+        loader, "ctoa_helper_timer_runtime", "ctoa_helper_timer_runtime.lua"
+    )
     assert "ctoa_helper_timer_runtime.lua" in script
-    assert 'mods/ctoa_otclient/ctoa_helper_timer_runtime.lua' in script
+    assert "mods/ctoa_otclient/ctoa_helper_timer_runtime.lua" in script
 
 
 def test_recovery_runtime_adapter_is_passive_and_consumed_by_shell():
@@ -1427,19 +1782,23 @@ def test_recovery_runtime_adapter_is_passive_and_consumed_by_shell():
     assert "_G.CTOA_HELPER_RECOVERY_RUNTIME" in adapter
     for function_name in [
         "normalizeVitals",
+        "readVitals",
         "jitterThreshold",
         "selectHealingSpell",
         "potionStatusText",
         "spellStatusText",
         "actionGap",
+        "recoveryActionGap",
         "summary",
         "contract",
     ]:
         assert f"function RecoveryRuntime.{function_name}" in adapter
     assert 'mode = "passive"' in adapter
     assert "owns_vitals_normalization = true" in adapter
+    assert "owns_vitals_read = true" in adapter
     assert "owns_healing_spell_selection = true" in adapter
     assert "owns_recovery_status_text = true" in adapter
+    assert "owns_recovery_action_gap_bridge = true" in adapter
     assert "runtime_actions = false" in adapter
     assert "casts = false" in adapter
     assert "uses_items = false" in adapter
@@ -1449,19 +1808,29 @@ def test_recovery_runtime_adapter_is_passive_and_consumed_by_shell():
     assert "castSpell" not in adapter
     assert "sendActionbarSlot" not in adapter
     assert "createWidget(" not in adapter
-    assert boot_graph_has_module(loader, "ctoa_helper_recovery_runtime", "ctoa_helper_recovery_runtime.lua")
+    assert boot_graph_has_module(
+        loader, "ctoa_helper_recovery_runtime", "ctoa_helper_recovery_runtime.lua"
+    )
     assert "ctoa_helper_recovery_runtime.lua" in script
-    assert 'mods/ctoa_otclient/ctoa_helper_recovery_runtime.lua' in script
+    assert "mods/ctoa_otclient/ctoa_helper_recovery_runtime.lua" in script
     assert 'rawget(_G, "CTOA_HELPER_RECOVERY_RUNTIME")' in source
-    assert 'moduleValue(externalRecoveryRuntime, "normalizeVitals", snapshot)' in source
-    assert 'moduleValue(externalRecoveryRuntime, "selectHealingSpell", healing, hp, nonce)' in source
+    assert 'moduleValue(externalRecoveryRuntime, "readVitals", player)' in source
+    assert 'moduleValue(externalRecoveryRuntime, "normalizeVitals", {})' in source
+    assert (
+        'moduleValue(externalRecoveryRuntime, "selectHealingSpell", healing, hp, nonce)'
+        in source
+    )
     assert 'moduleValue(externalRecoveryRuntime, "potionStatusText"' in source
-    assert 'moduleValue(externalRecoveryRuntime, "spellStatusText", spell, hp)' in source
+    assert (
+        'moduleValue(externalRecoveryRuntime, "spellStatusText", spell, hp)' in source
+    )
 
 
 def test_profile_schema_adapter_is_passive_and_packaged():
     adapter = PROFILE_SCHEMA.read_text(encoding="utf-8")
-    persistence = (ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_profile_persistence.lua").read_text(encoding="utf-8")
+    persistence = (
+        ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_profile_persistence.lua"
+    ).read_text(encoding="utf-8")
     loader = boot_graph_source()
     script = SMOKE_SCRIPT.read_text(encoding="utf-8")
     source = HELPER.read_text(encoding="utf-8")
@@ -1477,6 +1846,9 @@ def test_profile_schema_adapter_is_passive_and_packaged():
     assert "function ProfileSchema.cycleValue" in adapter
     assert "function ProfileSchema.fieldGeometry" in adapter
     assert "function ProfileSchema.stepValue" in adapter
+    assert "function ProfileSchema.displayProfileName" in adapter
+    assert "function ProfileSchema.profileSchemaValue" in adapter
+    assert "function ProfileSchema.profileSchemaTable" in adapter
     assert "function ProfileSchema.mergeTable" in adapter
     assert "function ProfileSchema.serializeLua" in adapter
     assert "function ProfileSchema.currentVersion" in adapter
@@ -1488,7 +1860,9 @@ def test_profile_schema_adapter_is_passive_and_packaged():
     assert "function ProfileSchema.profileSchemaSuffix" in adapter
     assert "function ProfileSchema.rotationPresetIds" in adapter
     assert "function ProfileSchema.rotationPresetLabel" in adapter
+    assert "function ProfileSchema.rotationPresetFormatter" in adapter
     assert "function ProfileSchema.rotationSummary" in adapter
+    assert "function ProfileSchema.rotationSummaryText" in adapter
     assert "function ProfileSchema.spellLabel" in adapter
     assert "function ProfileSchema.potionLabel" in adapter
     assert "function ProfileSchema.runeLabel" in adapter
@@ -1505,12 +1879,17 @@ def test_profile_schema_adapter_is_passive_and_packaged():
     assert "owns_key_order_metadata = true" in adapter
     assert "owns_merge_table = true" in adapter
     assert "owns_lua_serializer = true" in adapter
+    assert "owns_display_profile_name = true" in adapter
+    assert "owns_schema_value_bridge = true" in adapter
+    assert "owns_schema_table_bridge = true" in adapter
     assert "owns_rotation_metadata = true" in adapter
     assert "owns_profile_labels = true" in adapter
     assert "owns_profile_summaries = true" in adapter
     assert "owns_title_summary = true" in adapter
     assert "owns_healing_summary = true" in adapter
     assert "owns_rotation_summary = true" in adapter
+    assert "owns_rotation_preset_formatter = true" in adapter
+    assert "owns_rotation_summary_text = true" in adapter
     assert "owns_versioned_migration_plan = true" in adapter
     assert "owns_safe_profile_migration = true" in adapter
     assert "runtime_actions = false" in adapter
@@ -1525,98 +1904,212 @@ def test_profile_schema_adapter_is_passive_and_packaged():
     assert "loadstring" not in adapter
     assert "write" not in adapter
     assert "createWidget(" not in adapter
-    assert boot_graph_has_module(loader, "ctoa_helper_profile_schema", "ctoa_helper_profile_schema.lua")
-    assert boot_graph_has_module(loader, "ctoa_helper_profile_persistence", "ctoa_helper_profile_persistence.lua")
+    assert boot_graph_has_module(
+        loader, "ctoa_helper_profile_schema", "ctoa_helper_profile_schema.lua"
+    )
+    assert boot_graph_has_module(
+        loader, "ctoa_helper_profile_persistence", "ctoa_helper_profile_persistence.lua"
+    )
     assert "ctoa_helper_profile_schema.lua" in script
     assert "ctoa_helper_profile_persistence.lua" in script
-    assert 'mods/ctoa_otclient/ctoa_helper_profile_schema.lua' in script
-    assert 'mods/ctoa_otclient/ctoa_helper_profile_persistence.lua' in script
+    assert "mods/ctoa_otclient/ctoa_helper_profile_schema.lua" in script
+    assert "mods/ctoa_otclient/ctoa_helper_profile_persistence.lua" in script
     assert 'rawget(_G, "CTOA_HELPER_PROFILE_SCHEMA")' in source
-    assert 'OPERATOR_SUMMARY_BRIDGES.profile' in source
-    assert 'profile = moduleValue(externalOperatorSummary, "bridgeText", "profile", OPERATOR_SUMMARY_BRIDGES)' in source
+    assert "OPERATOR_SUMMARY_BRIDGES.profile" in source
+    assert (
+        'profile = moduleValue(externalOperatorSummary, "bridgeText", "profile", OPERATOR_SUMMARY_BRIDGES)'
+        in source
+    )
     assert "profileSchema = externalProfileSchema" in source
-    assert "local function profileSchemaValue(functionName, fallback, ...)" in source
+    assert (
+        "local function profileSchemaValue(functionName, fallback, ...)" not in source
+    )
+    assert (
+        "local profileSchemaValue = externalProfileSchema.profileSchemaValue"
+        not in source
+    )
     assert "function profileSchemaText(functionName, fallback, ...)" not in source
-    assert "local function profileSchemaTable(functionName, fallback, ...)" in source
-    assert "moduleValue(externalProfileSchema, functionName" in source
+    assert (
+        "local function profileSchemaTable(functionName, fallback, ...)" not in source
+    )
+    assert (
+        "local profileSchemaTable = externalProfileSchema.profileSchemaTable"
+        not in source
+    )
+    assert "moduleValue(externalProfileSchema, functionName" not in source
     assert "function profileOptionList(key)" not in source
     assert 'profileSchemaTable("optionList", {}, key)' not in source
-    assert 'profileSchemaValue("cycleValue", current, options, current, direction)' in source
+    assert (
+        'moduleValue(externalProfileSchema, "profileSchemaValue", "cycleValue", current, options, current, direction)'
+        in source
+    )
     assert "local function profileValueIndex" not in source
     assert "function profileSchemaNumber(functionName, fallback, ...)" not in source
     assert "function profileFieldGeometry(x, width)" not in source
-    assert 'profileSchemaTable("fieldGeometry", styleUi("profileFieldGeometry", x, width), x, width)' in source
-    assert 'return geometry.label_width and geometry or nil' in source
-    assert 'profileSchemaValue("stepValue", value, value, 0, minValue, maxValue)' in source
+    assert (
+        'moduleValue(externalProfileSchema, "profileSchemaTable", "fieldGeometry", styleUi("profileFieldGeometry", x, width), x, width)'
+        in source
+    )
+    assert "return geometry.label_width and geometry or nil" in source
+    assert (
+        'moduleValue(externalProfileSchema, "profileSchemaValue", "stepValue", value, value, 0, minValue, maxValue)'
+        in source
+    )
     assert 'if type(stepValue) == "number" then' in source
     assert "function Ui.addProfileStepRow" in UI_HELPERS.read_text(encoding="utf-8")
-    assert 'local ROTATION_PRESETS = profileSchemaTable("rotationPresets", {})' in source
-    assert 'moduleValue(externalProfileSchema, "mergeTable", base, override)' in source
+    assert (
+        'local ROTATION_PRESETS = moduleValue(externalProfileSchema, "profileSchemaTable", "rotationPresets", {})'
+        in source
+    )
+    assert "local function mergeTable(base, override)" not in source
+    assert (
+        'moduleValue(externalProfileSchema, "mergeTable", HELPER_CONFIG, migrated)'
+        in source
+    )
     assert "pcall(externalProfileSchema.mergeTable" not in source
-    assert 'moduleValue(externalProfileSchema, "serializeLua", value, rootKey, 0)' in source
+    assert "local function serializeLua(value, rootKey)" not in source
+    assert 'moduleValue(externalProfileSchema, "serializeLua"' in source
     assert "pcall(externalProfileSchema.serializeLua" not in source
     assert 'rawget(_G, "CTOA_HELPER_PROFILE_PERSISTENCE")' in source
-    assert "local function profilePersistenceValue(functionName, fallback, ...)" in source
-    assert 'profilePersistenceTable("profileCandidates"' in source
-    assert 'profilePersistenceTable("uiPrefsCandidates"' in source
-    assert 'profilePersistenceValue("resolveSavePath"' in source
-    assert 'profilePersistenceValue("saveText"' in source
-    assert 'profilePersistenceTable("uiPrefsPlan"' in source
-    assert 'profilePersistenceTable("dirtyState"' in source
-    assert 'profilePersistenceValue("exportProfile"' in source
-    assert 'profilePersistenceValue("exportUiPrefs"' in source
+    assert "function ProfilePersistence.profilePersistenceValue" in persistence
+    assert "function ProfilePersistence.profilePersistenceTable" in persistence
+    assert (
+        "local function profilePersistenceValue(functionName, fallback, ...)"
+        not in source
+    )
+    assert (
+        "local profilePersistenceValue = externalProfilePersistence.profilePersistenceValue"
+        not in source
+    )
+    assert (
+        "local profilePersistenceTable = externalProfilePersistence.profilePersistenceTable"
+        not in source
+    )
+    assert (
+        'moduleValue(externalProfilePersistence, "profilePersistenceTable", "profileCandidates"'
+        in source
+    )
+    assert (
+        'moduleValue(externalProfilePersistence, "profilePersistenceTable", "uiPrefsCandidates"'
+        in source
+    )
+    assert (
+        'moduleValue(externalProfilePersistence, "profilePersistenceValue", "resolveSavePath"'
+        in source
+    )
+    assert (
+        'moduleValue(externalProfilePersistence, "profilePersistenceValue", "saveText"'
+        in source
+    )
+    assert (
+        'moduleValue(externalProfilePersistence, "profilePersistenceTable", "uiPrefsPlan"'
+        in source
+    )
+    assert (
+        'moduleValue(externalProfilePersistence, "profilePersistenceTable", "dirtyState"'
+        in source
+    )
+    assert "local function exportProfile()" not in source
+    assert "local function exportUiPrefs()" not in source
+    assert (
+        'moduleValue(externalProfilePersistence, "exportProfile", HELPER_CONFIG'
+        in source
+    )
+    assert (
+        'moduleValue(externalProfilePersistence, "exportUiPrefs", HELPER_CONFIG, Helper)'
+        in source
+    )
     assert "function ProfilePersistence.exportProfile" in persistence
     assert "function ProfilePersistence.exportUiPrefs" in persistence
     assert "function ProfilePersistence.uiPrefsPlan" in persistence
     assert "owns_ui_prefs_plan = true" in persistence
     assert "owns_export_ui_prefs = true" in persistence
     assert "owns_export_profile = true" in persistence
+    assert "owns_persistence_value_bridge = true" in persistence
+    assert "owns_persistence_table_bridge = true" in persistence
     assert "local function profileKeyOrder(key)" not in source
     assert "local PROFILE_KEY_ORDER = profileKeyOrder" not in source
     assert 'local PROFILE_KEY_ORDER = {"name"' not in source
-    assert 'local TOOLS_KEY_ORDER = {' not in source
+    assert "local TOOLS_KEY_ORDER = {" not in source
     assert "local function luaQuote(value)" not in source
     assert "local function serializeLua(value, indent, order)" not in source
     assert "local function isArrayTable(value)" not in source
-    assert 'local SPELL_CHOICES = profileSchemaTable("optionList", {}, "spell")' in source
+    assert (
+        'local SPELL_CHOICES = moduleValue(externalProfileSchema, "profileSchemaTable", "optionList", {}, "spell")'
+        in source
+    )
     assert "local SPELL_CHOICES = {" not in source
     assert '"rotationPresetIds"' in source
-    assert 'profileSchemaTable("rotationPresetIds", {}, ROTATION_PRESETS)' in source
-    assert '"rotationPresetLabel"' in source
-    assert 'profileSchemaValue("rotationPresetLabel", fallback, ROTATION_PRESETS, value)' in source
-    assert '"rotationSummary"' in source
-    assert 'profileSchemaText(' not in source
+    assert (
+        'moduleValue(externalProfileSchema, "profileSchemaTable", "rotationPresetIds", {}, ROTATION_PRESETS)'
+        in source
+    )
+    assert '"rotationPresetFormatter"' in source
+    assert (
+        'moduleValue(externalProfileSchema, "rotationPresetFormatter", ROTATION_PRESETS)'
+        in source
+    )
+    assert '"rotationSummaryText"' in source
+    assert "profileSchemaText(" not in source
     assert "externalProfileSchema.spellLabel" in source
     assert "local PROFILE_LABEL_BRIDGES = {" not in source
-    assert 'spellText = (externalProfileSchema and externalProfileSchema.spellLabel) or tostring' in source
-    assert 'potionText = (externalProfileSchema and externalProfileSchema.potionLabel) or tostring' in source
-    assert 'runeText = (externalProfileSchema and externalProfileSchema.runeLabel) or tostring' in source
-    assert 'local function profileLabelText(labelName, value)' not in source
-    assert 'spellText = function(value) return profileLabelText("spell", value) end' not in source
+    assert (
+        'spellText = type(externalProfileSchema) == "table" and type(externalProfileSchema.spellLabel) == "function" and externalProfileSchema.spellLabel or tostring'
+        in source
+    )
+    assert (
+        'potionText = type(externalProfileSchema) == "table" and type(externalProfileSchema.potionLabel) == "function" and externalProfileSchema.potionLabel or tostring'
+        in source
+    )
+    assert (
+        'runeText = type(externalProfileSchema) == "table" and type(externalProfileSchema.runeLabel) == "function" and externalProfileSchema.runeLabel or tostring'
+        in source
+    )
+    assert "local function profileLabelText(labelName, value)" not in source
+    assert (
+        'spellText = function(value) return profileLabelText("spell", value) end'
+        not in source
+    )
     assert "externalProfileSchema.potionLabel" in source
     assert "externalProfileSchema.runeLabel" in source
     assert "externalProfileSchema.healFriendPriorityLabel" in source
     assert "externalProfileSchema.magicPriorityLabel" in source
     assert "externalProfileSchema.themePresetLabel" in source
     assert '"autosaveLabel"' in source
-    assert 'profileSchemaValue("onOffLabel", fallback, value)' in source
-    assert 'profileSchemaValue("autosaveLabel", fallback, {' in source
+    assert (
+        'moduleValue(externalProfileSchema, "profileSchemaValue", "onOffLabel", fallback, value)'
+        in source
+    )
+    assert (
+        'moduleValue(externalProfileSchema, "profileSchemaValue", "autosaveLabel", fallback, {'
+        in source
+    )
     summary_start = source.index("local OPERATOR_SUMMARY_BRIDGES = {")
     summary_end = source.index("refreshOperatorSummaries = function()")
     summary_source = source[summary_start:summary_end]
-    assert 'profile = moduleValue(externalOperatorSummary, "bridgeText", "profile", OPERATOR_SUMMARY_BRIDGES)' in source
+    assert (
+        'profile = moduleValue(externalOperatorSummary, "bridgeText", "profile", OPERATOR_SUMMARY_BRIDGES)'
+        in source
+    )
     assert "pcall(externalOperatorSummary[functionName]" not in source
-    assert 'HELPER_VERSION .. " | " .. displayProfileName() .. " | " .. autosaveText()' not in summary_source
+    assert (
+        'HELPER_VERSION .. " | " .. displayProfileName() .. " | " .. autosaveText()'
+        not in summary_source
+    )
     assert '" | HP spell " .. onOffText(healing.spell_enabled)' not in summary_source
     assert '" | Spell " .. spellText(healing.spell or "?")' not in summary_source
-    assert '" | Rotation " .. tostring(tools.rotation_preset or "custom")' not in summary_source
+    assert (
+        '" | Rotation " .. tostring(tools.rotation_preset or "custom")'
+        not in summary_source
+    )
 
-    rotation_start = source.index("function rotationSummaryText()")
-    rotation_end = source.index("Helper.findRotationSpell = function(words)")
-    rotation_source = source[rotation_start:rotation_end]
-    assert "local pieces = {}" not in rotation_source
-    assert 'pieces[#pieces + 1] = "..."' not in rotation_source
-    assert '"Rotation: " .. shortText(table.concat(pieces, " | "), 52)' not in rotation_source
+    assert "function rotationSummaryText()" not in source
+    assert 'moduleValue(externalProfileSchema, "rotationSummaryText"' in source
+    assert "local function formatter(value)" not in source
+    assert (
+        'moduleValue(externalProfileSchema, "rotationPresetFormatter", ROTATION_PRESETS)'
+        in source
+    )
 
 
 def test_feature_flags_adapter_is_passive_and_consumed_by_tools_summary():
@@ -1639,24 +2132,36 @@ def test_feature_flags_adapter_is_passive_and_consumed_by_tools_summary():
     assert "autoWalk" not in adapter
     assert "castSpell" not in adapter
     assert "createWidget(" not in adapter
-    assert boot_graph_has_module(loader, "ctoa_helper_feature_flags", "ctoa_helper_feature_flags.lua")
+    assert boot_graph_has_module(
+        loader, "ctoa_helper_feature_flags", "ctoa_helper_feature_flags.lua"
+    )
     assert "ctoa_helper_feature_flags.lua" in script
-    assert 'mods/ctoa_otclient/ctoa_helper_feature_flags.lua' in script
+    assert "mods/ctoa_otclient/ctoa_helper_feature_flags.lua" in script
     assert 'rawget(_G, "CTOA_HELPER_FEATURE_FLAGS")' in source
-    assert 'OPERATOR_SUMMARY_BRIDGES.tools' in source
-    assert 'tools = moduleValue(externalOperatorSummary, "bridgeText", "tools", OPERATOR_SUMMARY_BRIDGES)' in source
+    assert "OPERATOR_SUMMARY_BRIDGES.tools" in source
+    assert (
+        'tools = moduleValue(externalOperatorSummary, "bridgeText", "tools", OPERATOR_SUMMARY_BRIDGES)'
+        in source
+    )
     assert "featureFlags = externalFeatureFlags" in source
-    assert "profile = exportProfile()" in source
+    assert (
+        'profile = moduleValue(externalProfilePersistence, "exportProfile", HELPER_CONFIG'
+        in source
+    )
     assert "externalFeatureFlags.audit" not in source
     assert "externalFeatureFlags.toolsSummary" not in source
     tools_summary_start = source.index("OPERATOR_SUMMARY_BRIDGES.tools")
     tools_summary_end = source.index("OPERATOR_SUMMARY_BRIDGES.profile")
     tools_summary_source = source[tools_summary_start:tools_summary_end]
     assert '" | " .. summary' not in tools_summary_source
-    assert '" | Flags " .. tostring(audit.status or "unknown")' not in tools_summary_source
+    assert (
+        '" | Flags " .. tostring(audit.status or "unknown")' not in tools_summary_source
+    )
     assert '"Haste " .. onOffText(tools.auto_haste)' not in tools_summary_source
     assert '" | Exeta " .. onOffText(tools.auto_exeta)' not in tools_summary_source
-    assert '" | Diagnostics " .. onOffText(tools.feature_flags' not in tools_summary_source
+    assert (
+        '" | Diagnostics " .. onOffText(tools.feature_flags' not in tools_summary_source
+    )
 
 
 def test_operator_summary_adapter_is_passive_and_packaged():
@@ -1695,9 +2200,11 @@ def test_operator_summary_adapter_is_passive_and_packaged():
     assert "autoWalk" not in adapter
     assert "castSpell" not in adapter
     assert "createWidget(" not in adapter
-    assert boot_graph_has_module(loader, "ctoa_helper_operator_summary", "ctoa_helper_operator_summary.lua")
+    assert boot_graph_has_module(
+        loader, "ctoa_helper_operator_summary", "ctoa_helper_operator_summary.lua"
+    )
     assert "ctoa_helper_operator_summary.lua" in script
-    assert 'mods/ctoa_otclient/ctoa_helper_operator_summary.lua' in script
+    assert "mods/ctoa_otclient/ctoa_helper_operator_summary.lua" in script
     assert 'rawget(_G, "CTOA_HELPER_OPERATOR_SUMMARY")' in source
     assert "function operatorSummaryText" not in source
     assert 'moduleValue(externalOperatorSummary, "bridgeText"' in source
@@ -1705,14 +2212,22 @@ def test_operator_summary_adapter_is_passive_and_packaged():
     assert "local function operatorSummaryBridgeText" not in source
     assert "titleSummaryText = function()" not in source
     assert "uiSummaryText = function()" not in source
-    assert "local operatorSummaries = {" in source
+    assert (
+        'local operatorSummaries = moduleValue(externalOperatorSummary, "collect"'
+        in source
+    )
     assert "function OperatorSummary.bridgeText" in adapter
     assert "owns_bridge_dispatch = true" in adapter
+    assert "function OperatorSummary.collect" in adapter
+    assert "owns_summary_collection = true" in adapter
     assert 'title = {fallback = "profile summary unavailable"' in source
-    assert 'healFriend = {fallback = "Heal Friend module unavailable | runtime gated"' in source
-    assert 'OPERATOR_SUMMARY_BRIDGES.tools' in source
-    assert 'OPERATOR_SUMMARY_BRIDGES.profile' in source
-    assert 'OPERATOR_SUMMARY_BRIDGES.ui' in source
+    assert (
+        'healFriend = {fallback = "Heal Friend module unavailable | runtime gated"'
+        in source
+    )
+    assert "OPERATOR_SUMMARY_BRIDGES.tools" in source
+    assert "OPERATOR_SUMMARY_BRIDGES.profile" in source
+    assert "OPERATOR_SUMMARY_BRIDGES.ui" in source
 
 
 def test_planner_domain_is_passive_and_packaged():
@@ -1726,9 +2241,9 @@ def test_planner_domain_is_passive_and_packaged():
     assert "function Planner.best" in planner
     assert "function Planner.summary" in planner
     assert "function Planner.contract" in planner
-    assert 'plan_sio = 2' in planner
-    assert 'plan_ring_swap = 2' in planner
-    assert 'plan_attack = 3' in planner
+    assert "plan_sio = 2" in planner
+    assert "plan_ring_swap = 2" in planner
+    assert "plan_attack = 3" in planner
     assert 'reason = "planner_error"' in planner
     assert 'reason = "missing_plan"' in planner
     assert 'mode = "passive"' in planner
@@ -1744,9 +2259,11 @@ def test_planner_domain_is_passive_and_packaged():
     assert "autoWalk" not in planner
     assert "castSpell(" not in planner
     assert "dofile" not in planner
-    assert boot_graph_has_module(loader, "ctoa_helper_planner", "ctoa_helper_planner.lua")
+    assert boot_graph_has_module(
+        loader, "ctoa_helper_planner", "ctoa_helper_planner.lua"
+    )
     assert "ctoa_helper_planner.lua" in script
-    assert 'mods/ctoa_otclient/ctoa_helper_planner.lua' in script
+    assert "mods/ctoa_otclient/ctoa_helper_planner.lua" in script
 
 
 def test_runtime_policy_is_passive_gatekeeper_and_packaged():
@@ -1785,10 +2302,15 @@ def test_runtime_policy_is_passive_gatekeeper_and_packaged():
     assert "castSpell(" not in policy
     assert "g_game.talk" not in policy
     assert "dofile" not in policy
-    assert 'local externalRuntimePolicy = rawget(_G, "CTOA_HELPER_RUNTIME_POLICY")' in HELPER.read_text(encoding="utf-8")
-    assert boot_graph_has_module(loader, "ctoa_helper_runtime_policy", "ctoa_helper_runtime_policy.lua")
+    assert (
+        'local externalRuntimePolicy = rawget(_G, "CTOA_HELPER_RUNTIME_POLICY")'
+        in HELPER.read_text(encoding="utf-8")
+    )
+    assert boot_graph_has_module(
+        loader, "ctoa_helper_runtime_policy", "ctoa_helper_runtime_policy.lua"
+    )
     assert "ctoa_helper_runtime_policy.lua" in script
-    assert 'mods/ctoa_otclient/ctoa_helper_runtime_policy.lua' in script
+    assert "mods/ctoa_otclient/ctoa_helper_runtime_policy.lua" in script
 
 
 def test_dispatch_guard_is_passive_policy_handoff_and_packaged():
@@ -1818,9 +2340,11 @@ def test_dispatch_guard_is_passive_policy_handoff_and_packaged():
     assert "castSpell(" not in guard
     assert "g_game.talk" not in guard
     assert "dofile" not in guard
-    assert boot_graph_has_module(loader, "ctoa_helper_dispatch_guard", "ctoa_helper_dispatch_guard.lua")
+    assert boot_graph_has_module(
+        loader, "ctoa_helper_dispatch_guard", "ctoa_helper_dispatch_guard.lua"
+    )
     assert "ctoa_helper_dispatch_guard.lua" in script
-    assert 'mods/ctoa_otclient/ctoa_helper_dispatch_guard.lua' in script
+    assert "mods/ctoa_otclient/ctoa_helper_dispatch_guard.lua" in script
 
 
 def test_plan_queue_is_passive_bounded_decision_queue_and_packaged():
@@ -1852,9 +2376,11 @@ def test_plan_queue_is_passive_bounded_decision_queue_and_packaged():
     assert "castSpell(" not in queue
     assert "g_game.talk" not in queue
     assert "dofile" not in queue
-    assert boot_graph_has_module(loader, "ctoa_helper_plan_queue", "ctoa_helper_plan_queue.lua")
+    assert boot_graph_has_module(
+        loader, "ctoa_helper_plan_queue", "ctoa_helper_plan_queue.lua"
+    )
     assert "ctoa_helper_plan_queue.lua" in script
-    assert 'mods/ctoa_otclient/ctoa_helper_plan_queue.lua' in script
+    assert "mods/ctoa_otclient/ctoa_helper_plan_queue.lua" in script
 
 
 def test_runtime_readiness_is_passive_bridge_status_and_packaged():
@@ -1872,7 +2398,13 @@ def test_runtime_readiness_is_passive_bridge_status_and_packaged():
     assert "function RuntimeReadiness.contract" in readiness
     for token in ['"planner"', '"runtime_policy"', '"dispatch_guard"', '"plan_queue"']:
         assert token in readiness
-    for token in ['"manifest_current"', '"module_static_gates"', '"module_attach_smoke"', '"smoke_attach_all"', '"live_approval"']:
+    for token in [
+        '"manifest_current"',
+        '"module_static_gates"',
+        '"module_attach_smoke"',
+        '"smoke_attach_all"',
+        '"live_approval"',
+    ]:
         assert token in readiness
     assert 'mode = "passive"' in readiness
     assert "runtime_actions = false" in readiness
@@ -1887,16 +2419,20 @@ def test_runtime_readiness_is_passive_bridge_status_and_packaged():
     assert "castSpell(" not in readiness
     assert "g_game.talk" not in readiness
     assert "dofile" not in readiness
-    assert boot_graph_has_module(loader, "ctoa_helper_runtime_readiness", "ctoa_helper_runtime_readiness.lua")
+    assert boot_graph_has_module(
+        loader, "ctoa_helper_runtime_readiness", "ctoa_helper_runtime_readiness.lua"
+    )
     assert "ctoa_helper_runtime_readiness.lua" in script
-    assert 'mods/ctoa_otclient/ctoa_helper_runtime_readiness.lua' in script
+    assert "mods/ctoa_otclient/ctoa_helper_runtime_readiness.lua" in script
 
 
 def test_equipment_is_read_only_profiled_module_lane():
     source = HELPER.read_text(encoding="utf-8")
     ui_module = UI_HELPERS.read_text(encoding="utf-8")
     equipment_module = EQUIPMENT.read_text(encoding="utf-8")
-    profile = (ROOT / "scripts" / "lua" / "otclient" / "ctoa_ek_profile.lua").read_text(encoding="utf-8")
+    profile = (ROOT / "scripts" / "lua" / "otclient" / "ctoa_ek_profile.lua").read_text(
+        encoding="utf-8"
+    )
 
     assert "equipment = {" in source
     assert 'rawget(_G, "CTOA_HELPER_EQUIPMENT")' in source
@@ -1924,7 +2460,10 @@ def test_equipment_is_read_only_profiled_module_lane():
     assert "moves_items = false" in equipment_module
     assert "requires_sandbox_attach = true" in equipment_module
     assert "equipmentSummaryText = function()" not in source
-    assert 'equipment = moduleValue(externalOperatorSummary, "bridgeText", "equipment", OPERATOR_SUMMARY_BRIDGES)' in source
+    assert (
+        'equipment = moduleValue(externalOperatorSummary, "bridgeText", "equipment", OPERATOR_SUMMARY_BRIDGES)'
+        in source
+    )
     assert "function maybeSampleEquipment(now)" in source
     assert "local function buildEquipmentApiProbeSnapshot()" not in source
     assert "local function buildEquipmentSnapshot()" not in source
@@ -1933,13 +2472,24 @@ def test_equipment_is_read_only_profiled_module_lane():
     assert 'styleUi("renderEquipmentPanel"' in source
     assert '"ctoaEquipmentObserver", label = "Observer"' in ui_module
     assert '"ctoaEquipmentSlots", label = "Read slots"' in ui_module
-    assert '"ctoaEquipmentRingPlan", label = "Ring plan"' in ui_module
+    assert 'id = "ctoaEquipmentFamily" .. tostring(index)' in ui_module
+    assert "equipment_family_rows" in source
+    assert "set_equipment_family_enabled" in source
     assert '"ctoaEquipmentApiProbe", "API probe"' in ui_module
-    assert '"ctoaEquipmentStatus", "Status: read-only pending; swap runtime gated"' in ui_module
-    assert 'bindClick(Helper.widgets.equipment_tab, function() switchTab("equipment") end)' in source
-    assert 'Helper.configureComingSoonTab(Helper.widgets.equipment_tab, "Equipment")' not in source
+    assert (
+        '"ctoaEquipmentStatus", "Status: read-only pending; swap runtime gated"'
+        in ui_module
+    )
+    assert (
+        'bindClick(Helper.widgets.equipment_tab, function() switchTab("equipment") end)'
+        in source
+    )
+    assert (
+        'Helper.configureComingSoonTab(Helper.widgets.equipment_tab, "Equipment")'
+        not in source
+    )
     assert "HELPER_CONFIG.equipment.runtime_enabled = false" in source
-    assert "api_probe_enabled = true" in source
+    assert "api_probe_enabled = true" in DEFAULT_PROFILE_SOURCE
     assert "\n    equipment = {" in profile
     assert "api_probe_enabled = true" in profile
     assert 'api_probe_status = "pending"' in profile
@@ -1949,7 +2499,9 @@ def test_equipment_is_read_only_profiled_module_lane():
     observer_start = source.index("function maybeSampleEquipment(now)")
     observer_end = source.index("function maybeRunTimer(now)")
     observer_source = source[observer_start:observer_end]
-    assert 'moduleValue(externalEquipment, "observe", equipment, now, {' in observer_source
+    assert (
+        'moduleValue(externalEquipment, "observe", equipment, now, {' in observer_source
+    )
     assert "pcall(externalEquipment.observe" not in observer_source
     assert "equipment module unavailable" in observer_source
     assert "player.getInventoryItem=" not in observer_source
@@ -1966,7 +2518,9 @@ def test_scripting_is_policy_shell_without_runtime_execution():
     source = HELPER.read_text(encoding="utf-8")
     ui_module = UI_HELPERS.read_text(encoding="utf-8")
     scripting_module = SCRIPTING.read_text(encoding="utf-8")
-    profile = (ROOT / "scripts" / "lua" / "otclient" / "ctoa_ek_profile.lua").read_text(encoding="utf-8")
+    profile = (ROOT / "scripts" / "lua" / "otclient" / "ctoa_ek_profile.lua").read_text(
+        encoding="utf-8"
+    )
 
     assert "scripting = {" in source
     assert 'rawget(_G, "CTOA_HELPER_SCRIPTING")' in source
@@ -1989,7 +2543,10 @@ def test_scripting_is_policy_shell_without_runtime_execution():
     assert "requires_security_review = true" in scripting_module
     assert "requires_sandbox_attach = true" in scripting_module
     assert "scriptingSummaryText = function()" not in source
-    assert 'scripting = moduleValue(externalOperatorSummary, "bridgeText", "scripting", OPERATOR_SUMMARY_BRIDGES)' in source
+    assert (
+        'scripting = moduleValue(externalOperatorSummary, "bridgeText", "scripting", OPERATOR_SUMMARY_BRIDGES)'
+        in source
+    )
     assert "function buildScriptingPolicySnapshot()" not in source
     assert "build_scripting_policy_snapshot = function()" in source
     assert 'moduleValue(externalScripting, "policySnapshot", scripting)' in source
@@ -2001,8 +2558,14 @@ def test_scripting_is_policy_shell_without_runtime_execution():
     assert '"ctoaScriptingSnippets", "Snippets"' in ui_module
     assert '"ctoaScriptingEval", "Runtime eval"' in ui_module
     assert '"ctoaScriptingStatus", "Status: " .. policyText()' in ui_module
-    assert 'bindClick(Helper.widgets.scripting_tab, function() switchTab("scripting") end)' in source
-    assert 'Helper.configureComingSoonTab(Helper.widgets.scripting_tab, "Scripting")' not in source
+    assert (
+        'bindClick(Helper.widgets.scripting_tab, function() switchTab("scripting") end)'
+        in source
+    )
+    assert (
+        'Helper.configureComingSoonTab(Helper.widgets.scripting_tab, "Scripting")'
+        not in source
+    )
     assert "HELPER_CONFIG.scripting.runtime_enabled = false" in source
     assert "HELPER_CONFIG.scripting.allow_user_snippets = false" in source
     assert "HELPER_CONFIG.scripting.allow_runtime_eval = false" in source
@@ -2015,7 +2578,9 @@ def test_scripting_is_policy_shell_without_runtime_execution():
     assert "g_game.talk" not in scripting_source
     assert "castSpell(" not in scripting_source
     fallback_source = source[
-        source.index("build_scripting_policy_snapshot = function()") : source.index('styleUi("renderProfilePanel"')
+        source.index("build_scripting_policy_snapshot = function()") : source.index(
+            'styleUi("renderProfilePanel"'
+        )
     ]
     assert "unsafe scripting flag" not in fallback_source
     assert "runtime scripting disabled" not in fallback_source
@@ -2025,8 +2590,12 @@ def test_scripting_is_policy_shell_without_runtime_execution():
 def test_cavebot_tab_is_interactive_waypoint_loop():
     source = HELPER.read_text(encoding="utf-8")
     ui_module = UI_HELPERS.read_text(encoding="utf-8")
+    composition = UI_COMPOSITION.read_text(encoding="utf-8")
 
-    assert 'bindClick(Helper.widgets.cavebot_tab, function() switchTab("cavebot") end)' in source
+    assert (
+        'bindClick(Helper.widgets.cavebot_tab, function() switchTab("cavebot") end)'
+        in source
+    )
     assert 'styleUi("renderCavebotPanel"' in source
     assert "cavebot_delay_choices = {600, 900, 1200, 1600, 2200}" not in source
     assert "cavebot_reach_choices = {0, 1, 2, 3}" not in source
@@ -2035,16 +2604,22 @@ def test_cavebot_tab_is_interactive_waypoint_loop():
     assert "Ui.cavebotReachChoices()" in ui_module
     assert 'ctx.add_toggle_setting_row(window, "ctoaCavebotEnabled"' in ui_module
     assert 'ctx.add_toggle_setting_row(window, "ctoaCavebotMovement"' in ui_module
-    assert 'id = "ctoaCavebotAdd", text = "Add"' in ui_module
-    assert 'id = "ctoaCavebotTestWalk", text = "Test"' in ui_module
-    assert 'id = "ctoaCavebotDelete", text = "Del"' in ui_module
-    assert 'id = "ctoaCavebotUp", text = "Up"' in ui_module
-    assert 'id = "ctoaCavebotDown", text = "Down"' in ui_module
-    assert 'id = "ctoaCavebotPrev", text = "Prev"' in ui_module
-    assert 'id = "ctoaCavebotNext", text = "Next"' in ui_module
-    assert "function selectCavebotWaypoint(delta)" in source
+    assert 'id = "ctoaCavebotAdd", text = "Add"' in composition
+    assert 'id = "ctoaCavebotTestWalk", text = "Test"' in composition
+    assert 'id = "ctoaCavebotDelete", text = "Del"' in composition
+    assert 'id = "ctoaCavebotUp", text = "Up"' in composition
+    assert 'id = "ctoaCavebotDown", text = "Down"' in composition
+    assert 'id = "ctoaCavebotPrev", text = "Prev"' in composition
+    assert 'id = "ctoaCavebotNext", text = "Next"' in composition
+    assert (
+        'moduleValue(externalRoute, "editorBindings", applyCavebotEditorAction)'
+        in source
+    )
+    assert "select_cavebot_waypoint = Helper.cavebot_editor_bindings.select" in source
     assert "function deleteCurrentCavebotWaypoint(confirm)" in source
-    assert "function moveCurrentCavebotWaypoint(delta)" in source
+    assert (
+        "move_current_cavebot_waypoint = Helper.cavebot_editor_bindings.move" in source
+    )
     assert 'action == "cavebot_delete"' in source
     assert 'action == "cavebot_move_up"' in source
     assert 'action == "cavebot_move_down"' in source
@@ -2054,24 +2629,35 @@ def test_cavebot_tab_is_interactive_waypoint_loop():
     assert "function testCavebotAutoWalk()" in source
     assert "return player:autoWalk(target, false)" in source
     assert 'moduleValue(externalCavebotRuntime, "testWalkPlan"' in source
-    assert 'function maybeRunCavebot(now)' in source
+    assert "function maybeRunCavebot(now)" in source
     assert "cavebot_movement_enabled = false" in source
-    assert 'cavebotRuntimeText("statusText", "movement_disabled"' in source
+    assert (
+        'moduleValue(externalCavebotRuntime, "cavebotRuntimeText", "statusText", "movement_disabled"'
+        in source
+    )
     assert "g_game.autoWalk(" not in source
     assert "g_game.walk(" not in source
-    assert 'cavebotRuntimeText("traceText", "movement_attempt"' in source
+    assert (
+        'moduleValue(externalCavebotRuntime, "cavebotRuntimeText", "traceText", "movement_attempt"'
+        in source
+    )
     assert "runMovementApiProbe" in source
     assert 'label = "Move API"' in source
     assert "Helper.movement_api_probe_attempts <= 120" not in source
-    assert "g_map.findPath(current, target, 200, 0)" in source
-    assert "cavebot_retry_limit = 3" in source
-    assert "cavebotMovementBlockedReason(player, current)" in source
+    assert 'safeGlobalCall(g_map, "findPath", current, target, 200, 0)' in source
+    assert "cavebot_retry_limit = 3" in DEFAULT_PROFILE_SOURCE
+    assert 'moduleCall(externalCavebotRuntime, "movementBlockedReason"' in source
     assert "isLocalPlayerInProtectionZone()" in source
     assert "return player:autoWalk(pos, retry)" in source
-    assert 'tools.cavebot_movement_enabled = false' in source
+    assert "tools.cavebot_movement_enabled = false" in source
     assert 'moduleValue(externalCavebotRuntime, "retryDecision"' in source
-    assert 'trace_event = "retry_budget_disabled"' in CAVEBOT_RUNTIME.read_text(encoding="utf-8")
-    assert 'setCavebotStatus(cavebotRuntimeText("statusText", "no_player_position"))' in source
+    assert 'trace_event = "retry_budget_disabled"' in CAVEBOT_RUNTIME.read_text(
+        encoding="utf-8"
+    )
+    assert (
+        'setCavebotStatus(moduleValue(externalCavebotRuntime, "cavebotRuntimeText", "statusText", "no_player_position"))'
+        in source
+    )
     assert 'setCavebotStatus("no player position")' not in source
     assert 'kind == "no_player_position"' in CAVEBOT_RUNTIME.read_text(encoding="utf-8")
 
@@ -2080,22 +2666,46 @@ def test_cavebot_route_editor_does_not_trigger_movement():
     source = HELPER.read_text(encoding="utf-8")
     route_module = ROUTE.read_text(encoding="utf-8")
 
-    editor_start = source.index("function selectCavebotWaypoint(delta)")
+    editor_start = source.index("local function applyCavebotEditorAction")
     editor_end = source.index("function autoWalkTo(pos)")
     editor_source = source[editor_start:editor_end]
 
     assert "table.remove(waypoints, index)" in route_module
-    assert "waypoints[index], waypoints[target] = waypoints[target], waypoints[index]" in route_module
+    assert (
+        "waypoints[index], waypoints[target] = waypoints[target], waypoints[index]"
+        in route_module
+    )
     assert "table.remove(waypoints, index)" not in editor_source
-    assert "waypoints[index], waypoints[target] = waypoints[target], waypoints[index]" not in editor_source
-    assert 'applyCavebotEditorAction("select"' in editor_source
+    assert (
+        "waypoints[index], waypoints[target] = waypoints[target], waypoints[index]"
+        not in editor_source
+    )
+    assert 'return apply("select", {delta = delta})' in route_module
     assert 'applyCavebotEditorAction("delete"' in editor_source
-    assert 'applyCavebotEditorAction("move"' in editor_source
+    assert 'return apply("move", {delta = delta})' in route_module
+    assert (
+        'moduleValue(externalRoute, "editorBindings", applyCavebotEditorAction)'
+        in source
+    )
     assert "markProfileDirty(result.dirty_reason)" in source
     assert 'dirtyReason = "cavebot_delete"' in route_module
     assert 'dirtyReason = "cavebot_reorder"' in route_module
-    assert "refreshCavebotUi()" in source[source.index("local function applyCavebotEditorAction"):source.index("function addCurrentCavebotWaypoint")]
-    assert "setCavebotStatus(" in source[source.index("local function applyCavebotEditorAction"):source.index("function addCurrentCavebotWaypoint")]
+    assert (
+        "refreshCavebotUi()"
+        in source[
+            source.index("local function applyCavebotEditorAction") : source.index(
+                "function addCurrentCavebotWaypoint"
+            )
+        ]
+    )
+    assert (
+        "setCavebotStatus("
+        in source[
+            source.index("local function applyCavebotEditorAction") : source.index(
+                "function addCurrentCavebotWaypoint"
+            )
+        ]
+    )
     assert "autoWalkTo(" not in editor_source
     assert ":autoWalk(" not in editor_source
     assert "g_game.autoWalk(" not in editor_source
@@ -2104,31 +2714,58 @@ def test_cavebot_route_editor_does_not_trigger_movement():
 
 def test_cavebot_runtime_has_guarded_retry_budget_before_looped_movement():
     source = HELPER.read_text(encoding="utf-8")
+    adapter = CAVEBOT_RUNTIME.read_text(encoding="utf-8")
+    route_module = ROUTE.read_text(encoding="utf-8")
 
-    runtime_start = source.index("function resetCavebotMovementState(reason)")
+    runtime_start = source.index("function autoWalkTo(pos)")
     runtime_end = source.index("function maybeManaPotion(now, vitals)")
     runtime_source = source[runtime_start:runtime_end]
 
-    assert 'return "offline"' in runtime_source
-    assert 'return "PZ guard"' in runtime_source
-    assert "noteCavebotProgress(tools, current, target, now)" in runtime_source
-    assert "cavebotRetryBudgetExceeded(tools)" in runtime_source
-    assert "tools.cavebot_retry_attempts = (tools.cavebot_retry_attempts or 0) + 1" in runtime_source
+    assert 'return "offline"' in adapter
+    assert 'return "PZ guard"' in adapter
+    assert 'moduleValue(externalRoute, "progress"' in runtime_source
+    assert (
+        'moduleValue(externalCavebotRuntime, "cavebotRetryBudgetExceeded", tools)'
+        in runtime_source
+    )
+    assert (
+        "tools.cavebot_retry_attempts = (tools.cavebot_retry_attempts or 0) + 1"
+        in route_module
+    )
     assert "tools.cavebot_movement_enabled = false" in runtime_source
-    assert "resetCavebotMovementState(\"waypoint reached\")" in runtime_source
-    assert 'cavebotRuntimeText("traceText", "movement_reset"' in runtime_source
+    assert (
+        'moduleValue(externalCavebotRuntime, "resetMovementState", tools)'
+        in runtime_source
+    )
+    assert (
+        'moduleValue(externalCavebotRuntime, "cavebotRuntimeText", "traceText", "movement_reset"'
+        in runtime_source
+    )
     assert "Cavebot movement state reset:" not in runtime_source
     assert "Cavebot movement target=" not in runtime_source
     assert "Test walk target=" not in runtime_source
     assert "Cavebot movement disabled: retry budget reached" not in runtime_source
     assert "Cavebot movement disabled: walk failed retry budget" not in runtime_source
-    assert "local retry = (HELPER_CONFIG.tools.cavebot_retry_attempts or 0) > 0" in runtime_source
+    assert (
+        "local retry = (HELPER_CONFIG.tools.cavebot_retry_attempts or 0) > 0"
+        in runtime_source
+    )
     assert 'moduleValue(externalCavebotRuntime, "walkPreflight"' in runtime_source
     assert 'moduleValue(externalCavebotRuntime, "walkingStatus"' in runtime_source
     assert 'moduleValue(externalCavebotRuntime, "retryDecision"' in runtime_source
     assert "player:autoWalk(pos, retry)" in runtime_source
     assert "g_game.autoWalk(" not in runtime_source
     assert "g_game.walk(" not in runtime_source
+
+
+def test_validate_dev_runs_p11_heal_friend_replay_without_writes():
+    script = SMOKE_SCRIPT.read_text(encoding="utf-8")
+
+    assert "P11 Heal Friend exact-target fixture replay gate" in script
+    assert "scripts\\ops\\otclient_heal_friend_shadow_replay.py" in script
+    assert "& python $healFriendShadowScript --no-write | Out-Null" in script
+    assert 'name = "heal_friend_shadow_replay"; status = "passed"' in script
+    assert "55/55 fixture-only cases" in script
 
 
 def test_smokeall_lists_every_zerobot_shell_view():
@@ -2140,7 +2777,70 @@ def test_smokeall_lists_every_zerobot_shell_view():
     assert '"TimerSafetySmoke"' in script
     assert '"LootSafetySmoke"' in script
 
-    for action in ["PrepareDev", "ValidateDev", "Setup", "SmokePreflight", "SmokeStatus", "SmokeQueue", "GoalStatus", "LocalReady", "Launch", "Smoke", "SmokeAll", "SmokeAttach", "SmokeAttachModules", "SmokeAttachAll", "HealFriendNoTargetSmoke", "ConditionsObserverSmoke", "EquipmentObserverSmoke", "ScriptingPolicySmoke", "PlannerStaticSmoke", "RuntimePolicyStaticSmoke", "DispatchGuardStaticSmoke", "PlanQueueStaticSmoke", "RuntimeReadinessStaticSmoke", "ModuleStatusStaticSmoke", "ActionCatalogStaticSmoke", "DecisionTraceStaticSmoke", "SandboxHandoffStaticSmoke", "FeatureFlagsStaticSmoke", "HudStaticSmoke", "HotkeysStaticSmoke", "ModalStaticSmoke", "InputContractsStaticSmoke", "RouteStaticSmoke", "TargetingStaticSmoke", "CombatRuntimeStaticSmoke", "CavebotRuntimeStaticSmoke", "LootRuntimeStaticSmoke", "TimerRuntimeStaticSmoke", "ProfileSchemaStaticSmoke", "OperatorSummaryStaticSmoke", "ExternalBotImportGateStaticSmoke", "HelperShellBudgetStaticSmoke", "HelperShellBudgetPlanStaticSmoke", "ModuleContract", "ModuleAudit", "ModuleStaticGates", "Snapshot", "ReadyCheck", "BackupLiveCtoa", "PromoteLiveCtoa", "EmergencyRepairLiveCtoa", "DisableLiveCtoa", "EnableLiveCtoa", "EnableLiveCtoaUiOnly", "Stop"]:
+    for action in [
+        "PrepareDev",
+        "ValidateDev",
+        "Setup",
+        "SmokePreflight",
+        "SmokeStatus",
+        "SmokeQueue",
+        "GoalStatus",
+        "LocalReady",
+        "Launch",
+        "Smoke",
+        "SmokeAll",
+        "SmokeAttach",
+        "SmokeAttachModules",
+        "SmokeAttachAll",
+        "HealFriendNoTargetSmoke",
+        "ConditionsObserverSmoke",
+        "EquipmentObserverSmoke",
+        "ScriptingPolicySmoke",
+        "PlannerStaticSmoke",
+        "RuntimePolicyStaticSmoke",
+        "DispatchGuardStaticSmoke",
+        "PlanQueueStaticSmoke",
+        "RuntimeReadinessStaticSmoke",
+        "ModuleStatusStaticSmoke",
+        "ActionCatalogStaticSmoke",
+        "DecisionTraceStaticSmoke",
+        "DecisionPipelineStaticSmoke",
+        "SandboxHandoffStaticSmoke",
+        "FeatureFlagsStaticSmoke",
+        "HudStaticSmoke",
+        "HotkeysStaticSmoke",
+        "ModalStaticSmoke",
+        "InputContractsStaticSmoke",
+        "RouteStaticSmoke",
+        "TargetingStaticSmoke",
+        "CombatRuntimeStaticSmoke",
+        "CavebotRuntimeStaticSmoke",
+        "LootRuntimeStaticSmoke",
+        "TimerRuntimeStaticSmoke",
+        "RecoveryRuntimeStaticSmoke",
+        "RecoveryBridgeStaticSmoke",
+        "ConditionsRuntimeGateStaticSmoke",
+        "EquipmentRuntimeGateStaticSmoke",
+        "HealFriendRuntimeGateStaticSmoke",
+        "RuntimeModuleGatesSandboxSmoke",
+        "ProfileSchemaStaticSmoke",
+        "OperatorSummaryStaticSmoke",
+        "ExternalBotImportGateStaticSmoke",
+        "HelperShellBudgetStaticSmoke",
+        "HelperShellBudgetPlanStaticSmoke",
+        "ModuleContract",
+        "ModuleAudit",
+        "ModuleStaticGates",
+        "Snapshot",
+        "ReadyCheck",
+        "BackupLiveCtoa",
+        "PromoteLiveCtoa",
+        "EmergencyRepairLiveCtoa",
+        "DisableLiveCtoa",
+        "EnableLiveCtoa",
+        "EnableLiveCtoaUiOnly",
+        "Stop",
+    ]:
         assert f'"{action}"' in script
     for tab in SMOKE_ALL_TABS:
         assert f'"{tab}"' in script
@@ -2159,7 +2859,7 @@ def test_solteria_dev_lane_packages_without_touching_live_client():
     assert "release_readiness.json" in script
     assert "Get-FileHash -Algorithm SHA256" in script
     assert "function Write-JsonAtomic" in script
-    assert 'Move-Item -LiteralPath $tmp -Destination $Path -Force' in script
+    assert "Move-Item -LiteralPath $tmp -Destination $Path -Force" in script
     assert "function Write-TextAtomic" in script
     assert "function Write-DevChangelog" in script
     assert "function Write-DevValidationReport" in script
@@ -2168,9 +2868,15 @@ def test_solteria_dev_lane_packages_without_touching_live_client():
     assert "No live Solteria files are changed by PrepareDev or ValidateDev." in script
     assert "Live client untouched." in script
     assert "function Invoke-SmokePreflight" in script
+    assert "function Get-DevPackageSourcePath" in script
     assert "smoke_preflight.json" in script
     assert "SmokePreflight runs Setup and hash checks only" in script
-    assert "if ($missingPackage)" in script
+    assert "if ($packageStale)" in script
+    smoke_preflight = script.split("function Invoke-SmokePreflight", 1)[1].split(
+        "function Start-SandboxClient", 1
+    )[0]
+    assert "Get-DevPackageSourcePath" in smoke_preflight
+    assert "$sourceHash -ne $stageHash" in smoke_preflight
     assert "New-DevPackage" in script
     assert "ctoa_helper_modules.lua" in script
     assert "ctoa_helper_ui.lua" in script
@@ -2189,6 +2895,10 @@ def test_solteria_dev_lane_packages_without_touching_live_client():
     assert "ctoa_helper_planner.lua" in script
     assert "ctoa_helper_runtime_policy.lua" in script
     assert "ctoa_helper_dispatch_guard.lua" in script
+    assert "ctoa_helper_runtime_module_gate.lua" in script
+    assert "ctoa_helper_conditions_runtime_gate.lua" in script
+    assert "ctoa_helper_equipment_runtime_gate.lua" in script
+    assert "ctoa_helper_heal_friend_runtime_gate.lua" in script
     assert "ctoa_helper_plan_queue.lua" in script
     assert "ctoa_helper_runtime_readiness.lua" in script
     assert "ctoa_helper_hud.lua" in script
@@ -2196,29 +2906,33 @@ def test_solteria_dev_lane_packages_without_touching_live_client():
     assert "ctoa_helper_equipment.lua" in script
     assert "ctoa_helper_scripting.lua" in script
     assert "ctoa_helper_heal_friend.lua" in script
-    assert 'mods/ctoa_otclient/ctoa_helper_modules.lua' in script
-    assert 'mods/ctoa_otclient/ctoa_helper_ui.lua' in script
-    assert 'mods/ctoa_otclient/ctoa_helper_diagnostics.lua' in script
-    assert 'mods/ctoa_otclient/ctoa_helper_hotkeys.lua' in script
-    assert 'mods/ctoa_otclient/ctoa_helper_modal.lua' in script
-    assert 'mods/ctoa_otclient/ctoa_helper_route.lua' in script
-    assert 'mods/ctoa_otclient/ctoa_helper_targeting.lua' in script
-    assert 'mods/ctoa_otclient/ctoa_helper_combat_runtime.lua' in script
-    assert 'mods/ctoa_otclient/ctoa_helper_cavebot_runtime.lua' in script
-    assert 'mods/ctoa_otclient/ctoa_helper_loot_runtime.lua' in script
-    assert 'mods/ctoa_otclient/ctoa_helper_timer_runtime.lua' in script
-    assert 'mods/ctoa_otclient/ctoa_helper_profile_schema.lua' in script
-    assert 'mods/ctoa_otclient/ctoa_helper_profile_persistence.lua' in script
-    assert 'mods/ctoa_otclient/ctoa_helper_planner.lua' in script
-    assert 'mods/ctoa_otclient/ctoa_helper_runtime_policy.lua' in script
-    assert 'mods/ctoa_otclient/ctoa_helper_dispatch_guard.lua' in script
-    assert 'mods/ctoa_otclient/ctoa_helper_plan_queue.lua' in script
-    assert 'mods/ctoa_otclient/ctoa_helper_runtime_readiness.lua' in script
-    assert 'mods/ctoa_otclient/ctoa_helper_hud.lua' in script
-    assert 'mods/ctoa_otclient/ctoa_helper_conditions.lua' in script
-    assert 'mods/ctoa_otclient/ctoa_helper_equipment.lua' in script
-    assert 'mods/ctoa_otclient/ctoa_helper_scripting.lua' in script
-    assert 'mods/ctoa_otclient/ctoa_helper_heal_friend.lua' in script
+    assert "mods/ctoa_otclient/ctoa_helper_modules.lua" in script
+    assert "mods/ctoa_otclient/ctoa_helper_ui.lua" in script
+    assert "mods/ctoa_otclient/ctoa_helper_diagnostics.lua" in script
+    assert "mods/ctoa_otclient/ctoa_helper_hotkeys.lua" in script
+    assert "mods/ctoa_otclient/ctoa_helper_modal.lua" in script
+    assert "mods/ctoa_otclient/ctoa_helper_route.lua" in script
+    assert "mods/ctoa_otclient/ctoa_helper_targeting.lua" in script
+    assert "mods/ctoa_otclient/ctoa_helper_combat_runtime.lua" in script
+    assert "mods/ctoa_otclient/ctoa_helper_cavebot_runtime.lua" in script
+    assert "mods/ctoa_otclient/ctoa_helper_loot_runtime.lua" in script
+    assert "mods/ctoa_otclient/ctoa_helper_timer_runtime.lua" in script
+    assert "mods/ctoa_otclient/ctoa_helper_profile_schema.lua" in script
+    assert "mods/ctoa_otclient/ctoa_helper_profile_persistence.lua" in script
+    assert "mods/ctoa_otclient/ctoa_helper_planner.lua" in script
+    assert "mods/ctoa_otclient/ctoa_helper_runtime_policy.lua" in script
+    assert "mods/ctoa_otclient/ctoa_helper_dispatch_guard.lua" in script
+    assert "mods/ctoa_otclient/ctoa_helper_runtime_module_gate.lua" in script
+    assert "mods/ctoa_otclient/ctoa_helper_conditions_runtime_gate.lua" in script
+    assert "mods/ctoa_otclient/ctoa_helper_equipment_runtime_gate.lua" in script
+    assert "mods/ctoa_otclient/ctoa_helper_heal_friend_runtime_gate.lua" in script
+    assert "mods/ctoa_otclient/ctoa_helper_plan_queue.lua" in script
+    assert "mods/ctoa_otclient/ctoa_helper_runtime_readiness.lua" in script
+    assert "mods/ctoa_otclient/ctoa_helper_hud.lua" in script
+    assert "mods/ctoa_otclient/ctoa_helper_conditions.lua" in script
+    assert "mods/ctoa_otclient/ctoa_helper_equipment.lua" in script
+    assert "mods/ctoa_otclient/ctoa_helper_scripting.lua" in script
+    assert "mods/ctoa_otclient/ctoa_helper_heal_friend.lua" in script
     assert "manifest = [pscustomobject]" in script
     assert '$manifest.created_at.ToString("s")' in script
     assert "created_at = $manifestCreatedAt" in script
@@ -2347,14 +3061,25 @@ def test_solteria_dev_lane_packages_without_touching_live_client():
     assert "-Action LootRuntimeStaticSmoke" in script
     assert "-Action SmokeAttach -Tab tools_diag" in script
     assert "function Invoke-SmokeAttachModules" in script
+    assert (
+        '$moduleTabs = @("conditions", "equipment", "heal_friend", "scripting")'
+        in script
+    )
+    assert 'required_sequence = @("conditions", "equipment", "heal_friend")' in script
     assert "module_attach_smoke.json" in script
     assert "solteria-helper-module-attach-smoke" in script
-    assert "SmokeAttachModules attaches only to an already-running sandbox client" in script
+    assert (
+        "SmokeAttachModules attaches only to an already-running sandbox client"
+        in script
+    )
     assert "Run SmokeAttachAll for final in-world visual acceptance." in script
     assert "function Invoke-LocalReady" in script
     assert "local_ready.json" in script
     assert "ready_for_sandbox" in script
-    assert "LocalReady runs local packaging, static validation, SmokePreflight, ModuleStaticGates, GoalStatus, and SmokeQueue only" in script
+    assert (
+        "LocalReady runs local packaging, static validation, SmokePreflight, ModuleStaticGates, GoalStatus, and SmokeQueue only"
+        in script
+    )
     assert "function Invoke-SmokeQueue" in script
     assert "sandbox_smoke_queue.json" in script
     assert "solteria_helper_sandbox_smoke_queue.py" in script
@@ -2378,6 +3103,16 @@ def test_solteria_dev_lane_packages_without_touching_live_client():
     assert '"DispatchGuardStaticSmoke" {' in script
     assert '"PlanQueueStaticSmoke" {' in script
     assert '"RuntimeReadinessStaticSmoke" {' in script
+    assert "function Invoke-RuntimeModuleGateStaticSmoke" in script
+    assert "function Invoke-ConditionsRuntimeGateStaticSmoke" in script
+    assert "function Invoke-EquipmentRuntimeGateStaticSmoke" in script
+    assert "function Invoke-HealFriendRuntimeGateStaticSmoke" in script
+    assert "conditions_runtime_gate_static_smoke.json" in script
+    assert "equipment_runtime_gate_static_smoke.json" in script
+    assert "heal_friend_runtime_gate_static_smoke.json" in script
+    assert '"ConditionsRuntimeGateStaticSmoke" {' in script
+    assert '"EquipmentRuntimeGateStaticSmoke" {' in script
+    assert '"HealFriendRuntimeGateStaticSmoke" {' in script
     assert '"HudStaticSmoke" {' in script
     assert '"HotkeysStaticSmoke" {' in script
     assert '"ModalStaticSmoke" {' in script
@@ -2397,7 +3132,7 @@ def test_solteria_dev_lane_packages_without_touching_live_client():
     assert '"TimerRuntimeStaticSmoke" {' in script
     assert "function Invoke-ProfileSchemaStaticSmoke" in script
     assert "profile_schema_static_smoke.json" in script
-    assert "moduleValue(externalProfileSchema, functionName" in script
+    assert 'moduleValue(externalProfileSchema, "profileSchemaValue"' in script
     assert "pcall(externalProfileSchema[functionName]" not in script
     assert '"ProfileSchemaStaticSmoke" {' in script
     assert "function Invoke-OperatorSummaryStaticSmoke" in script
@@ -2466,7 +3201,10 @@ def test_solteria_dev_lane_packages_without_touching_live_client():
     assert "dispatch_guard_static_smoke.json" in script
     assert "plan_queue_static_smoke.json" in script
     assert "runtime_readiness_static_smoke.json" in script
-    assert "Capture in-world SmokeAttachModules evidence for prototype module tabs" in script
+    assert (
+        "Capture ordered Conditions -> Equipment -> Heal Friend fail-closed sandbox evidence"
+        in script
+    )
     assert "-Action HealFriendNoTargetSmoke" in script
     assert "-Action SmokeAttach -Tab heal_friend" in script
     assert "-Action ConditionsObserverSmoke" in script
@@ -2488,48 +3226,101 @@ def test_solteria_dev_lane_packages_without_touching_live_client():
     assert "Write-JsonAtomic -InputObject $status -Path $statusPath -Depth 8" in script
     assert '"GoalStatus" {' in script
     assert "smoke_preflight_status = $preflightStatus" in script
-    assert "Launch the sandbox client, enter test character, then run SmokeAttachModules." in script
+    assert (
+        "Launch the sandbox client, enter test character, then run SmokeAttachModules."
+        in script
+    )
     assert "next_command = $nextCommand" in script
     assert "Next command: $nextCommand" in script
     assert '"SmokeStatus" {' in script
     assert '$stageRoot = Join-Path (Join-Path $repo $DevDir) "latest"' in script
     assert "function Copy-CtoaRuntimeFile" in script
     assert "$stagePath = Join-Path $stageRoot $StageRelative" in script
-    assert "Copy-Item -LiteralPath $stagePath -Destination $Destination -Force" in script
+    assert (
+        "Copy-Item -LiteralPath $stagePath -Destination $Destination -Force" in script
+    )
     assert "$sourcePath = Join-Path $repo $RepoRelative" in script
-    assert "Copy-Item -LiteralPath $sourcePath -Destination $Destination -Force" in script
-    assert 'Copy-CtoaRuntimeFile -StageRelative "mods\\ctoa_otclient\\$name" -RepoRelative "scripts\\lua\\otclient\\$name" -Destination (Join-Path $modDir $name)' in script
-    assert 'Copy-CtoaRuntimeFile -StageRelative "ctoa_otclient_loader.lua" -RepoRelative "scripts\\lua\\otclient\\ctoa_otclient_loader.lua" -Destination (Join-Path $ClientDir "ctoa_otclient_loader.lua")' in script
-    assert 'Copy-CtoaRuntimeFile -StageRelative "ctoa_ek_profile.lua" -RepoRelative "scripts\\lua\\otclient\\ctoa_ek_profile.lua" -Destination (Join-Path $ClientDir "ctoa_ek_profile.lua")' in script
+    assert (
+        "Copy-Item -LiteralPath $sourcePath -Destination $Destination -Force" in script
+    )
+    assert (
+        'Copy-CtoaRuntimeFile -StageRelative "mods\\ctoa_otclient\\$name" -RepoRelative "scripts\\lua\\otclient\\$name" -Destination (Join-Path $modDir $name)'
+        in script
+    )
+    assert (
+        'Copy-CtoaRuntimeFile -StageRelative "ctoa_project_loader.lua" -RepoRelative "scripts\\lua\\ctoa_chooser\\ctoa_chooser_loader.lua" -Destination (Join-Path $ClientDir "ctoa_project_loader.lua")'
+        in script
+    )
+    assert "Remove-Item -LiteralPath $safeDir -Recurse -Force" in script
+    sync = script.split("function Sync-CtoaRuntimeFiles", 1)[1].split(
+        "function Ensure-CtoaBootHook", 1
+    )[0]
+    assert 'StageRelative "mods\\ctoa_safe\\$name"' not in sync
     assert '"ctoa_helper_cavebot_runtime.lua"' in script
     assert '"ctoa_native_helper.lua"' in script
     assert '"ctoa_ek_profile.lua"' in script
     assert '"SmokePreflight" {' in script
-    assert "& python -m pytest tests\\test_otclient_helper_zerobot_shell.py tests\\test_solteria_api_audit.py tests\\test_ctoa_helper_smoke_report.py tests\\test_solteria_helper_release_gate.py tests\\test_solteria_helper_goal_audit.py -q" in script
+    assert (
+        "& python -m pytest tests\\test_ctoa_exclusive_project_loader.py tests\\test_otclient_loader_cross_fork.py tests\\test_otclient_helper_zerobot_shell.py tests\\test_solteria_api_audit.py tests\\test_ctoa_helper_smoke_report.py tests\\test_solteria_helper_release_gate.py tests\\test_solteria_helper_goal_audit.py -q"
+        in script
+    )
     assert "& python scripts\\ops\\ctoa_helper_ui_preview.py" in script
-    assert "& python scripts\\ops\\solteria_api_audit.py --client-dir $SourceClient" in script
-    assert "& python scripts\\ops\\solteria_helper_release_gate.py --dev-dir $outRoot --allow-blocked" in script
-    assert "& python scripts\\ops\\solteria_helper_goal_audit.py --dev-dir $outRoot --allow-blocked" in script
+    assert (
+        "& python scripts\\ops\\solteria_api_audit.py --client-dir $SourceClient"
+        in script
+    )
+    assert (
+        "& python scripts\\ops\\solteria_helper_release_gate.py --dev-dir $outRoot --allow-blocked"
+        in script
+    )
+    assert (
+        "& python scripts\\ops\\solteria_helper_goal_audit.py --dev-dir $outRoot --allow-blocked"
+        in script
+    )
 
 
 def test_solteria_sandbox_path_guard_rejects_live_client_aliases():
     script = SMOKE_SCRIPT.read_text(encoding="utf-8")
 
     assert "function Assert-SandboxClientPath" in script
-    assert "$rootWithSeparator = $root + [System.IO.Path]::DirectorySeparatorChar" in script
-    assert "-not $full.Equals($root, [System.StringComparison]::OrdinalIgnoreCase)" in script
-    assert "-not $full.StartsWith($rootWithSeparator, [System.StringComparison]::OrdinalIgnoreCase)" in script
-    assert "$sourceWithSeparator = $sourceFull + [System.IO.Path]::DirectorySeparatorChar" in script
-    assert "$sandboxFull.Equals($sourceFull, [System.StringComparison]::OrdinalIgnoreCase)" in script
-    assert "$sandboxFull.StartsWith($sourceWithSeparator, [System.StringComparison]::OrdinalIgnoreCase)" in script
+    assert (
+        "$rootWithSeparator = $root + [System.IO.Path]::DirectorySeparatorChar"
+        in script
+    )
+    assert (
+        "-not $full.Equals($root, [System.StringComparison]::OrdinalIgnoreCase)"
+        in script
+    )
+    assert (
+        "-not $full.StartsWith($rootWithSeparator, [System.StringComparison]::OrdinalIgnoreCase)"
+        in script
+    )
+    assert (
+        "$sourceWithSeparator = $sourceFull + [System.IO.Path]::DirectorySeparatorChar"
+        in script
+    )
+    assert (
+        "$sandboxFull.Equals($sourceFull, [System.StringComparison]::OrdinalIgnoreCase)"
+        in script
+    )
+    assert (
+        "$sandboxFull.StartsWith($sourceWithSeparator, [System.StringComparison]::OrdinalIgnoreCase)"
+        in script
+    )
     assert "Refusing to treat SourceClient as sandbox" in script
-    assert "$sandboxRoot = Assert-SandboxClientPath -SandboxPath $SandboxClient -SourcePath $SourceClient" in script
+    assert (
+        "$sandboxRoot = Assert-SandboxClientPath -SandboxPath $SandboxClient -SourcePath $SourceClient"
+        in script
+    )
 
     smoke_attach_source = script[
-        script.index("function Invoke-SmokeAttach"):
-        script.index("function Invoke-SmokeAttachAll")
+        script.index("function Invoke-SmokeAttach") : script.index(
+            "function Invoke-SmokeAttachAll"
+        )
     ]
-    assert smoke_attach_source.index("Assert-SandboxClientPath") < smoke_attach_source.index("Sync-CtoaRuntimeFiles")
+    assert smoke_attach_source.index(
+        "Assert-SandboxClientPath"
+    ) < smoke_attach_source.index("Sync-CtoaRuntimeFiles")
 
 
 def test_solteria_updated_client_boot_hook_is_controlled():
@@ -2538,25 +3329,41 @@ def test_solteria_updated_client_boot_hook_is_controlled():
     assert "function Ensure-CtoaBootHook" in script
     assert "-- CTOA-BOOT-BEGIN" in script
     assert "ctoa_boot.log" in script
-    assert "local loader = '/ctoa_otclient_loader.lua'" in script
+    assert "local loader = '/ctoa_project_loader.lua'" in script
+    assert "CTOA_PROJECT_LOADER.init()" in script
     assert "local ctoaOriginalLoadModules = loadModules" in script
     assert "local result = ctoaOriginalLoadModules(...)" in script
-    assert "$content.Replace($needle, $hook + $needle)" in script
+    assert '$content.Replace($needle, "`r`n" + $hook + "`r`n" + $needle)' in script
 
-    sandbox_source = script[script.index("function Initialize-Sandbox"):script.index("function Invoke-SmokePreflight")]
+    sandbox_source = script[
+        script.index("function Initialize-Sandbox") : script.index(
+            "function Invoke-SmokePreflight"
+        )
+    ]
     assert "Ensure-CtoaBootHook -ClientDir $sandboxRoot" in sandbox_source
     assert 'Join-Path $sandboxRoot "ctoa_boot.log"' in sandbox_source
 
-    backup_source = script[script.index("function New-LiveCtoaBackup"):script.index("function Assert-LiveDeployApproved")]
-    assert '@("init.lua") + (Get-DevPackageFiles) + (Get-LiveRootFallbackFiles)' in backup_source
+    backup_source = script[
+        script.index("function New-LiveCtoaBackup") : script.index(
+            "function Assert-LiveDeployApproved"
+        )
+    ]
+    assert (
+        '@("init.lua") + (Get-DevPackageFiles) + (Get-LiveLegacyFiles)' in backup_source
+    )
 
-    promotion_source = script[script.index("function Invoke-LivePromotion"):script.index("function Capture-Screenshot")]
+    promotion_source = script[
+        script.index("function Invoke-LivePromotion") : script.index(
+            "function Capture-Screenshot"
+        )
+    ]
     assert "Ensure-CtoaBootHook -ClientDir $SourceClient" in promotion_source
-    assert "function Get-LiveRootFallbackFiles" in script
+    assert "function Get-LiveLegacyFiles" in script
     assert "ctoa_native_helper.lua" in script
-    assert "Get-LiveRootFallbackFiles" in promotion_source
-    assert "Remove-Item -LiteralPath $fallbackPath -Force" in promotion_source
-    assert "removed_root_fallbacks = $removedRootFallbacks" in promotion_source
+    assert "Copy-LegacyHelperUserState -ClientDir $SourceClient" in promotion_source
+    assert "Remove-LiveLegacyFiles -ClientDir $SourceClient" in promotion_source
+    assert "migrated_user_state = $migratedUserState" in promotion_source
+    assert "removed_legacy_files = $removedLegacyFiles" in promotion_source
 
 
 def test_live_promotion_requires_explicit_approval_and_fresh_backup():
@@ -2575,21 +3382,86 @@ def test_live_promotion_requires_explicit_approval_and_fresh_backup():
     assert "Refusing live promotion because release_gate is not passed" in script
     assert "function Invoke-LivePromotion" in script
     assert "Assert-LiveDeployApproved" in script
-    promotion_source = script[script.index("function Invoke-LivePromotion"):script.index("function Capture-Screenshot")]
+    promotion_source = script[
+        script.index("function Invoke-LivePromotion") : script.index(
+            "function Capture-Screenshot"
+        )
+    ]
     assert "Invoke-DevValidation" not in promotion_source
     assert "Invoke-SmokePreflight" not in promotion_source
-    assert "Checking existing release gate for staged package before live promotion." in promotion_source
+    assert (
+        "Checking existing release gate for staged package before live promotion."
+        in promotion_source
+    )
     assert "Assert-ReleaseGateForLivePromotion -OutRoot $outRoot" in script
-    assert script.index("Assert-ReleaseGateForLivePromotion -OutRoot $outRoot") < script.index("$backupRoot = New-LiveCtoaBackup")
+    assert script.index(
+        "Assert-ReleaseGateForLivePromotion -OutRoot $outRoot"
+    ) < script.index("$backupRoot = New-LiveCtoaBackup")
     assert "$backupRoot = New-LiveCtoaBackup" in script
     assert "Copy-Item -LiteralPath $sourcePath -Destination $destPath -Force" in script
     assert "function Assert-LivePromotionMatchesStage" in script
+    assert "function Get-VerifiedStagePromotionEntries" in script
     assert "Promotion verification failed: live file is missing" in script
     assert "Promotion verification failed: SHA256 mismatch" in script
-    assert "$verifiedFileCount = Assert-LivePromotionMatchesStage -Stage $stage -LiveClient $SourceClient" in promotion_source
+    stage_preflight_source = script[
+        script.index("function Get-VerifiedStagePromotionEntries") : script.index(
+            "function Assert-LivePromotionMatchesStage"
+        )
+    ]
+    verifier_source = script[
+        script.index("function Assert-LivePromotionMatchesStage") : script.index(
+            "function Write-LiveManifestSnapshot"
+        )
+    ]
+    assert "$maxFiles = 128" in stage_preflight_source
+    assert "$maxFileBytes = 2MB" in stage_preflight_source
+    assert "$maxTotalBytes = 16MB" in stage_preflight_source
+    assert "duplicate case-insensitive package path" in stage_preflight_source
+    assert "ReparsePoint" in stage_preflight_source
+    assert stage_preflight_source.index(
+        "file exceeds 2 MiB"
+    ) < stage_preflight_source.index("Get-FileHash")
+    assert stage_preflight_source.index(
+        "package exceeds 16 MiB total"
+    ) < stage_preflight_source.index("Get-FileHash")
+    assert "$StageEntries" in verifier_source
+    assert "Get-DevPackageFiles" not in verifier_source
+    assert "live reparse file is forbidden" in verifier_source
+    assert verifier_source.index("byte-size mismatch") < verifier_source.index(
+        "Get-FileHash"
+    )
+    assert (
+        "$verifiedEntries = @(Assert-LivePromotionMatchesStage -StageEntries $stageEntries -LiveClient $SourceClient)"
+        in promotion_source
+    )
+    assert (
+        "$stageEntries = @(Get-VerifiedStagePromotionEntries -Stage $stage)"
+        in promotion_source
+    )
+    assert promotion_source.index(
+        "Get-VerifiedStagePromotionEntries -Stage $stage"
+    ) < promotion_source.index("$backupRoot = New-LiveCtoaBackup")
+    assert promotion_source.index(
+        "$backupRoot = New-LiveCtoaBackup"
+    ) < promotion_source.index(
+        "Copy-Item -LiteralPath $sourcePath -Destination $destPath -Force"
+    )
+    assert promotion_source.index(
+        "Copy-Item -LiteralPath $sourcePath -Destination $destPath -Force"
+    ) < promotion_source.index("Assert-LivePromotionMatchesStage -StageEntries")
+    assert "verified_file_count = $verifiedEntries.Count" in promotion_source
+    assert "-VerifiedEntries $verifiedEntries" in promotion_source
+    assert "-HelperVersion $helperVersion" in promotion_source
     assert 'verification = "stage_live_sha256_match"' in promotion_source
+    assert 'Origin "official_live_promotion"' in promotion_source
+    assert "live_manifest_sha256 = $liveManifestSha256" in promotion_source
+    assert (
+        "Get-FileHash -LiteralPath $liveManifestPath -Algorithm SHA256"
+        in promotion_source
+    )
+    assert "Write-JsonAtomic -InputObject $report -Path $reportPath" in promotion_source
     assert "Ensure-CtoaBootHook -ClientDir $SourceClient" in script
-    assert 'launch_after_promote = $LaunchAfterPromote.IsPresent' in promotion_source
+    assert "launch_after_promote = $LaunchAfterPromote.IsPresent" in promotion_source
     assert 'status = "not_requested"' in promotion_source
     assert "live_promotion.json" in script
     assert '"BackupLiveCtoa" {' in script
@@ -2601,22 +3473,30 @@ def test_live_promotion_launch_after_promote_is_explicit_and_non_restart():
 
     assert "function Start-LiveClientAfterPromotion" in script
     launch_source = script[
-        script.index("function Start-LiveClientAfterPromotion"):
-        script.index("function Get-DevPackageFiles")
+        script.index("function Start-LiveClientAfterPromotion") : script.index(
+            "function Get-DevPackageFiles"
+        )
     ]
     assert "Get-SourceClientProcessSummaries" in launch_source
     assert 'status = "already_running"' in launch_source
-    assert "Start-Process -FilePath $exe -WorkingDirectory $sourceRoot -PassThru" in launch_source
+    assert (
+        "Start-Process -FilePath $exe -WorkingDirectory $sourceRoot -PassThru"
+        in launch_source
+    )
     assert "Stop-Process" not in launch_source
     assert "Restart" not in launch_source
 
     promotion_source = script[
-        script.index("function Invoke-LivePromotion"):
-        script.index("function Capture-Screenshot")
+        script.index("function Invoke-LivePromotion") : script.index(
+            "function Capture-Screenshot"
+        )
     ]
     assert "if ($LaunchAfterPromote)" in promotion_source
     assert "Start-LiveClientAfterPromotion" in promotion_source
-    assert "Use -LaunchAfterPromote to launch the live client after promotion" in promotion_source
+    assert (
+        "Use -LaunchAfterPromote to launch the live client after promotion"
+        in promotion_source
+    )
     assert "it does not stop or restart the live client" in promotion_source
 
 
@@ -2626,14 +3506,15 @@ def test_live_emergency_repair_is_audited_and_removes_root_fallback():
     assert "EmergencyRepairLiveCtoa" in script
     assert "function Invoke-LiveEmergencyRepair" in script
     emergency_source = script[
-        script.index("function Invoke-LiveEmergencyRepair"):
-        script.index("function Capture-Screenshot")
+        script.index("function Invoke-LiveEmergencyRepair") : script.index(
+            "function Capture-Screenshot"
+        )
     ]
     assert "New-LiveCtoaBackup" in emergency_source
     assert "release_gate_bypassed = $true" in emergency_source
     assert "EmergencyRepairLiveCtoa" in emergency_source
-    assert "Get-LiveRootFallbackFiles" in emergency_source
-    assert "Remove-Item -LiteralPath $fallbackPath -Force" in emergency_source
+    assert "Copy-LegacyHelperUserState -ClientDir $SourceClient" in emergency_source
+    assert "Remove-LiveLegacyFiles -ClientDir $SourceClient" in emergency_source
     assert "Ensure-CtoaBootHook -ClientDir $SourceClient" in emergency_source
     assert "live_emergency_repair.json" in emergency_source
     assert "does not stop or restart the live client" in emergency_source
@@ -2650,33 +3531,47 @@ def test_helper_logs_subtab_smoke_markers():
 def test_helper_supports_runtime_smoke_command_file():
     source = HELPER.read_text(encoding="utf-8")
     script = SMOKE_SCRIPT.read_text(encoding="utf-8")
+    diagnostics = DIAGNOSTICS.read_text(encoding="utf-8")
 
-    assert "ctoa_smoke_command.lua" in source
-    smoke_path_start = source.index("local function getSmokeCommandPath()")
-    smoke_path_end = source.index("local function getDiagnosticsExportPath()")
-    smoke_path_source = source[smoke_path_start:smoke_path_end]
-    assert 'string.sub(Helper.ui_path, 1, 1) ~= "/"' in smoke_path_source
+    assert "ctoa_smoke_command.lua" in diagnostics
+    smoke_path_start = diagnostics.index("function Diagnostics.smokeCommandPath")
+    smoke_path_end = diagnostics.index("function Diagnostics.removeSmokeCommand")
+    smoke_path_source = diagnostics[smoke_path_start:smoke_path_end]
+    assert 'string.sub(uiPath, 1, 1) ~= "/"' in smoke_path_source
     assert 'return workDir .. "ctoa_smoke_command.lua"' in smoke_path_source
-    assert 'g_resources.getWorkDir() .. "mods/ctoa_otclient/ctoa_smoke_command.lua"' not in smoke_path_source
+    assert (
+        'g_resources.getWorkDir() .. "mods/ctoa_otclient/ctoa_smoke_command.lua"'
+        not in smoke_path_source
+    )
     assert "processSmokeCommand()" in source
-    assert "parseSmokeCommandText" in source
-    assert "pcall(readSmokeCommand, path)" in source
+    assert "parseSmokeCommandText" in diagnostics
+    assert 'moduleValue(externalDiagnostics, "readSmokeCommand", path, io)' in source
+    assert 'moduleValue(externalDiagnostics, "removeSmokeCommand", path, os)' in source
     assert "applySmokeCommand(command)" in source
     assert 'action == "cavebot_probe"' in source
     assert 'action == "cavebot_test_walk"' in source
     assert 'action == "magic_probe"' in source
     assert 'action == "api_probe"' in source
     assert 'action == "diag_export"' in source
-    assert 'moduleValue(externalDiagnostics, "smokeCommandExists", path, g_resources, io)' in source
-    assert "loadfile" not in source
-    diagnostics = DIAGNOSTICS.read_text(encoding="utf-8")
+    assert (
+        'moduleValue(externalDiagnostics, "smokeCommandExists", path, g_resources, io)'
+        in source
+    )
+    smoke_command_source = diagnostics[
+        diagnostics.index("function Diagnostics.readSmokeCommand") : diagnostics.index(
+            "function Diagnostics.parseSmokeCommandText"
+        )
+    ]
+    assert "loadfile" not in smoke_command_source
+    assert "file:read(4097)" in smoke_command_source
     assert "Smoke command blocked: " not in source
     assert "Smoke command failed: " not in source
     assert "Smoke command blocked: " in diagnostics
     assert "Smoke command failed: " in diagnostics
     write_command = script[
-        script.index("function Write-SmokeCommand"):
-        script.index("function Sync-CtoaRuntimeFiles")
+        script.index("function Write-SmokeCommand") : script.index(
+            "function Sync-CtoaRuntimeFiles"
+        )
     ]
     assert "tab=$ActiveTab" in write_command
     assert "subtab=$SmokeSubtab" in write_command
@@ -2686,26 +3581,48 @@ def test_helper_supports_runtime_smoke_command_file():
 def test_helper_otclient_architecture_hooks_are_registered():
     source = HELPER.read_text(encoding="utf-8")
 
-    assert 'local HELPER_VERSION = "v2.2.1"' in source
+    assert 'local HELPER_VERSION = "v2.4.1"' in source
     assert 'io.open("ctoa_local.log", "a")' in source
-    assert 'g_resources.getUserDir()' in source
+    assert "g_resources.getUserDir()" in source
     assert 'userDir .. "/ctoa_local.log"' in source
     assert 'status("Initialized successfully " .. HELPER_VERSION)' in source
-    assert "g_keyboard.bindKeyDown(normalizedHotkey, Helper.toggleWindow or toggleWindow)" in source
+    assert (
+        "g_keyboard.bindKeyDown(normalizedHotkey, Helper.toggleWindow or toggleWindow)"
+        in source
+    )
     assert "Helper.think_event = cycleEvent(onThink, HELPER_CONFIG.tick_ms)" in source
+
+
+def test_profile_renderer_context_keeps_module_visibility_callback_after_extraction():
+    source = HELPER.read_text(encoding="utf-8")
+    profile_context = source[
+        source.index('styleUi("renderProfilePanel"') : source.index(
+            'styleUi("renderEnginePanel"'
+        )
+    ]
+
+    assert "module_visible = function(moduleId)" in profile_context
+    assert (
+        'moduleValue(externalModules, "moduleTabVisible", moduleId' in profile_context
+    )
+    assert "set_module_visible = setModuleTabVisible" in profile_context
     assert "function ensureCTOAManager()" in source
     assert 'CTOA_Manager:registerModule("helper", {' in source
     assert "enabled = Helper.config.enabled" in source
     assert "onThink = function() Helper:onThink() end" in source
 
 
-def test_loader_is_helper_ui_only_and_loads_without_online_gate():
+def test_loader_is_helper_ui_only_and_requires_neutral_loader_selection():
     source = LOADER.read_text(encoding="utf-8")
 
-    assert 'version = "2.2.1"' in source
+    assert 'local LOADER_VERSION = "2.4.1"' in source
+    assert 'local PACKAGE_VERSION = "v2.4.1"' in source
     assert 'mode = "helper-ui-only"' in source
     assert 'local HELPER_MODULE = "ctoa_native_helper.lua"' in source
-    assert 'local BOOTSTRAP_MODULE = {name = "ctoa_helper_modules", file = "ctoa_helper_modules.lua"}' in source
+    assert (
+        'local BOOTSTRAP_MODULE = {name = "ctoa_helper_modules", file = "ctoa_helper_modules.lua"}'
+        in source
+    )
     assert "local function supportManifest()" in source
     assert "registry.getSupportModules()" in source
     assert "registry.validateSupportModules(modules)" in source
@@ -2714,32 +3631,48 @@ def test_loader_is_helper_ui_only_and_loads_without_online_gate():
     assert "local function loadSupportModulesFromFilesystem()" in source
     assert "loadSupportModules(moduleDir)" in source
     assert "loadSupportModulesFromFilesystem()" in source
-    assert "onGameStart = onGameStart" in source
-    assert "scheduleHelperLoad()" in source
+    assert "local function selectionAuthorized()" in source
+    assert 'loader.isSelected("helper") == true' in source
+    assert (
+        'log("Initialization rejected: neutral loader did not select Helper")' in source
+    )
     assert "loadHelperOnly()" in source
     assert "loadHelperFromFilesystem" in source
     assert "local function bootLog(msg)" in source
     assert "bootLog(msg)" in source
-    assert 'g_resources.getWorkDir() .. "mods/ctoa_otclient/" .. HELPER_MODULE' in source
+    assert (
+        'g_resources.getWorkDir() .. "mods/ctoa_otclient/" .. HELPER_MODULE' in source
+    )
     assert 'g_resources.getWorkDir() .. "mods/ctoa_otclient/",' in source
     assert "user_dir/ctoa_otclient/" not in source
     assert "g_resources.getWorkDir() .. HELPER_MODULE" not in source
     assert "g_resources.getWorkDir()," not in source
-    assert 'log("Resource helper path not resolved; trying filesystem fallback")' in source
+    assert (
+        'log("Resource helper path not resolved; trying filesystem fallback")' in source
+    )
     assert 'log("Deferred helper load: game is not online")' not in source
     assert 'log("CTOA loader armed; waiting for game start")' not in source
     assert "if isOnline() then" not in source
     assert "initializeCTOA()" not in source
-    assert "loadRuntimeModules()" not in source.split("CTOA_OTCLIENT.loadRuntimeModules", 1)[0]
-    assert "Initialization complete: helper UI loaded; runtime modules skipped" in source
+    assert (
+        "loadRuntimeModules()"
+        not in source.split("CTOA_OTCLIENT.loadRuntimeModules", 1)[0]
+    )
+    assert (
+        "Initialization complete: helper UI loaded; runtime modules skipped" in source
+    )
 
 
 def test_helper_safe_boot_disables_runtime_automation():
     source = HELPER.read_text(encoding="utf-8")
-    profile = (ROOT / "scripts" / "lua" / "otclient" / "ctoa_ek_profile.lua").read_text(encoding="utf-8")
-    loot = (ROOT / "scripts" / "lua" / "otclient" / "ctoa_native_loot.lua").read_text(encoding="utf-8")
+    profile = (ROOT / "scripts" / "lua" / "otclient" / "ctoa_ek_profile.lua").read_text(
+        encoding="utf-8"
+    )
+    loot = (ROOT / "scripts" / "lua" / "otclient" / "ctoa_native_loot.lua").read_text(
+        encoding="utf-8"
+    )
 
-    assert "safe_boot_runtime_disabled = true" in source
+    assert "safe_boot_runtime_disabled = true" in DEFAULT_PROFILE_SOURCE
     assert "local function applySafeBootRuntimeGuard()" in source
     assert "local function runtimeArmingBlockedReason()" in source
     assert 'return "safe boot runtime disabled"' in source
@@ -2747,6 +3680,12 @@ def test_helper_safe_boot_disables_runtime_automation():
     assert "Runtime module blocked: " in source
     assert "HELPER_CONFIG.tools.auto_attack = false" in source
     assert "processSmokeCommand()\n    if not HELPER_CONFIG.enabled then" in source
+    assert "local PRIVILEGED_SMOKE_ACTIONS = {" in source
+    assert "recovery_bridge_arm = true" in source
+    assert "recovery_bridge_execute_once = true" in source
+    assert "local function smokeCommandRuntimeBlockedReason(action)" not in source
+    assert 'privilegedBlocked = "runtime disabled"' in source
+    assert "privilegedBlocked = runtimeArmingBlockedReason()" in source
     assert "\n    enabled = false," in profile
     assert "\n    safe_boot_runtime_disabled = true," in profile
     assert "auto_attack = false" in profile
@@ -2773,7 +3712,7 @@ def test_otprofile_builder_emits_safe_boot_profile_shape():
     assert "block_friendly_summons = true" in rendered
     assert "friendly_summon_name_fragments" in rendered
     assert "auto_exeta = false" in rendered
-    assert "potion_actionbar_slot = \"F1\"" in rendered
+    assert 'potion_actionbar_slot = "F1"' in rendered
     assert "mana_potion_enabled = true" in rendered
     assert "rune_enabled = false" in rendered
     assert "cavebot_movement_enabled = false" in rendered
@@ -2792,50 +3731,88 @@ def test_helper_runtime_arming_has_pz_and_non_monster_guards():
     assert 'pcallOptionalBool(creature, "isPlayer")' in source
     assert "return result == true" in source
     assert "clearUnsafeCurrentTarget = function(reason, now, forceClear)" in source
-    assert "if not forceClear and localPlayer and isMonsterCreature(target, localPlayer) and isTargetInRange(target, HELPER_CONFIG.tools.attack_range or 7) then" in source
-    assert "local states = pcallNumber(player, \"getStates\")" in source
-    assert "observation.tile_flags = pcallNumber(tile, \"getFlags\")" in source
-    assert 'moduleValue(externalRuntimePolicy, "resolvedProtectionZonePolicy")' in source
-    assert 'moduleValue(externalRuntimePolicy, "protectionZoneDecision", observation)' in source
+    assert (
+        "if not forceClear and localPlayer and isMonsterCreature(target, localPlayer) and isTargetInRange(target, HELPER_CONFIG.tools.attack_range or 7) then"
+        in source
+    )
+    assert 'player_states = pcallNumber(player, "getStates")' in source
+    assert 'observation.tile_flags = pcallNumber(tile, "getFlags")' in source
+    assert (
+        'moduleValue(externalRuntimePolicy, "resolvedProtectionZonePolicy")' in source
+    )
+    assert (
+        'moduleValue(externalRuntimePolicy, "protectionZoneDecision", observation)'
+        in source
+    )
     assert "local function runtimePolicyProtectionZonePolicy()" not in source
-    assert "local function runtimePolicyProtectionZoneDecision(observation)" not in source
-    assert "function RuntimePolicy.resolvedProtectionZonePolicy" in RUNTIME_POLICY.read_text(encoding="utf-8")
-    assert "collectNumericFlags(data.state_flag_values, data.state_flag_fallbacks)" in RUNTIME_POLICY.read_text(encoding="utf-8")
+    assert (
+        "local function runtimePolicyProtectionZoneDecision(observation)" not in source
+    )
+    assert (
+        "function RuntimePolicy.resolvedProtectionZonePolicy"
+        in RUNTIME_POLICY.read_text(encoding="utf-8")
+    )
+    assert (
+        "collectNumericFlags(data.state_flag_values, data.state_flag_fallbacks)"
+        in RUNTIME_POLICY.read_text(encoding="utf-8")
+    )
 
 
 def test_helper_targeting_on_executes_safe_monster_retarget():
     source = HELPER.read_text(encoding="utf-8")
     ui_module = UI_HELPERS.read_text(encoding="utf-8")
-    profile = (ROOT / "scripts" / "lua" / "otclient" / "ctoa_ek_profile.lua").read_text(encoding="utf-8")
+    profile = (ROOT / "scripts" / "lua" / "otclient" / "ctoa_ek_profile.lua").read_text(
+        encoding="utf-8"
+    )
     targeting = TARGETING.read_text(encoding="utf-8")
 
     assert "local function findBestAttackTarget(tools)" in source
     assert "local function retargetSafeMonster(now, tools)" in source
     assert "target = retargetSafeMonster(now, tools) or getSafeAttackTarget" in source
     assert "pcall(function() g_game.attack(target) end)" in source
+    assert "local current = getCurrentAttackTarget()" in source
+    assert "if targetId ~= nil and currentId == targetId then" in source
+    assert "Helper.last_retarget_ms = now" in source
     assert "pcall(function() g_game.follow(target) end)" not in source
     assert "tools.retarget_delay_ms or 200" in source
     assert "isMonsterCreature(creature, localPlayer)" in source
-    assert "block_friendly_summons = true" in source
+    assert "block_friendly_summons = true" in DEFAULT_PROFILE_SOURCE
     assert "block_friendly_summons = true" in profile
-    assert "friendly_summon_name_fragments" in source
+    assert "friendly_summon_name_fragments" in DEFAULT_PROFILE_SOURCE
     assert "friendly_summon_name_fragments" in profile
     assert "local function isFriendlySummonCreature(creature, localPlayer)" in source
     assert "isFriendlySummonCreature(target, getLocalPlayer())" in source
-    assert "is_friendly_summon = isFriendlySummonCreature(creature, localPlayer)" in source
+    assert (
+        "is_friendly_summon = isFriendlySummonCreature(creature, localPlayer)" in source
+    )
     assert '"isSummon"' in source
     assert '"isFamiliar"' in source
-    assert 'clearUnsafeCurrentTarget("friendly summon/familiar target", now, true)' in source
-    assert 'throttledRuntimeStatus(combatRuntimeText("targetingStatusText", "friendly_summon"), now)' in source
-    assert 'function CombatRuntime.targetingStatusText(event, data)' in COMBAT_RUNTIME.read_text(encoding="utf-8")
+    assert (
+        'clearUnsafeCurrentTarget("friendly summon/familiar target", now, true)'
+        in source
+    )
+    assert (
+        'throttledRuntimeStatus(combatRuntimeText("targetingStatusText", "friendly_summon"), now)'
+        in source
+    )
+    assert (
+        "function CombatRuntime.targetingStatusText(event, data)"
+        in COMBAT_RUNTIME.read_text(encoding="utf-8")
+    )
     assert "function Targeting.isFriendlySummonName" in targeting
     assert "function Targeting.isFriendlySummonCandidate" in targeting
     assert 'reason = "friendly_summon"' in targeting
     assert "owns_friendly_summon_guard = true" in targeting
-    assert 'throttledRuntimeStatus(combatRuntimeText("targetingStatusText", "no_valid_target"), now)' in source
+    assert (
+        'throttledRuntimeStatus(combatRuntimeText("targetingStatusText", "no_valid_target"), now)'
+        in source
+    )
     assert "local function applyChaseMode(enabled)" in source
     assert "g_game.setChaseMode(chaseMode)" in source
-    assert "applyChaseMode(tools.chase == true)" in source
+    assert "local chase = tools.chase == true" in source
+    assert 'targetDecision.chase_policy == "follow"' in source
+    assert 'targetDecision.chase_policy == "stand"' in source
+    assert "applyChaseMode(chase)" in source
     assert "chase = true" in source
     assert "chase = true" in profile
     assert "auto_follow = false" in source
@@ -2848,18 +3825,23 @@ def test_helper_targeting_on_executes_safe_monster_retarget():
 
 def test_helper_blocks_npc_icons_and_known_npc_names_before_attack():
     source = HELPER.read_text(encoding="utf-8")
-    profile = (ROOT / "scripts" / "lua" / "otclient" / "ctoa_ek_profile.lua").read_text(encoding="utf-8")
+    profile = (ROOT / "scripts" / "lua" / "otclient" / "ctoa_ek_profile.lua").read_text(
+        encoding="utf-8"
+    )
     targeting = TARGETING.read_text(encoding="utf-8")
 
-    assert "block_npc_icons = true" in source
-    assert "local function creatureHasBlockingNpcIcon(creature)" in source
-    assert 'moduleValue(externalTargeting, "hasBlockingNpcIcon", creature, HELPER_CONFIG.tools)' in source
+    assert "block_npc_icons = true" in DEFAULT_PROFILE_SOURCE
+    assert "local function creatureHasBlockingNpcIcon(creature)" not in source
+    assert (
+        'moduleValue(externalTargeting, "creatureHasBlockingNpcIcon", npcIcon, HELPER_CONFIG.tools)'
+        in source
+    )
     assert "pcall(externalTargeting.hasBlockingNpcIcon" not in source
     assert "function Targeting.hasBlockingNpcIcon" in targeting
-    assert "return creature:getIcon()" in targeting
-    assert "creatureHasBlockingNpcIcon(creature)" in source
+    assert "return creature:getIcon()" not in targeting
+    assert "pcall(creature.getIcon, creature)" in source
     for name in ["hireling", "selmir", "andrew", "brumgar"]:
-        assert f'"{name}"' in source
+        assert f'"{name}"' in DEFAULT_PROFILE_SOURCE
         assert f'"{name}"' in profile
 
 
@@ -2870,17 +3852,34 @@ def test_runtime_modules_auto_arm_helper_runtime():
     assert "function armRuntime(reason)" in source
     assert "setWidgetChecked(Helper.widgets.enabled, true)" in source
     assert "Helper.setRuntimeModuleEnabled = function(path, value, reason)" in source
-    assert 'helper.setRuntimeModuleEnabled({"tools", "auto_attack"}, value, "targeting")' in ui_module
-    assert 'helper.setRuntimeModuleEnabled({"healing", "spell_enabled"}, value, "spell healing")' in ui_module
-    assert 'helper.setRuntimeModuleEnabled({"tools", "spell_rotation"}, value, "spell rotation")' in ui_module
-    assert 'helper.setRuntimeModuleEnabled({"tools", "rune_enabled"}, value, "rune shooter")' in ui_module
+    assert (
+        'helper.setRuntimeModuleEnabled({"tools", "auto_attack"}, value, "targeting")'
+        in ui_module
+    )
+    assert (
+        'helper.setRuntimeModuleEnabled({"healing", "spell_enabled"}, value, "spell healing")'
+        in ui_module
+    )
+    assert (
+        'helper.setRuntimeModuleEnabled({"tools", "spell_rotation"}, value, "spell rotation")'
+        in ui_module
+    )
+    assert (
+        'helper.setRuntimeModuleEnabled({"tools", "rune_enabled"}, value, "rune shooter")'
+        in ui_module
+    )
     assert 'moduleValue(externalHud, "disarmedText")' in source
-    assert 'setHudText(type(disarmedText) == "string" and disarmedText ~= "" and disarmedText or "HUD module unavailable | runtime disarmed")' in source
+    assert (
+        'setHudText(type(disarmedText) == "string" and disarmedText ~= "" and disarmedText or "HUD module unavailable | runtime disarmed")'
+        in source
+    )
 
 
 def test_healing_and_magic_cards_expose_actionbar_box_controls():
     source = HELPER.read_text(encoding="utf-8")
-    ui_module = UI_HELPERS.read_text(encoding="utf-8")
+    ui_module = UI_HELPERS.read_text(encoding="utf-8") + UI_RULE_EDITORS.read_text(
+        encoding="utf-8"
+    )
 
     assert '"ctoaSpellHeal", "HP spell"' in ui_module
     assert '"ctoaPotionHeal", "HP potion"' in ui_module
@@ -2890,12 +3889,19 @@ def test_healing_and_magic_cards_expose_actionbar_box_controls():
     assert '"ctoaManaPotionHotkeyHealing", "MP box"' in ui_module
     assert "healing.potion_actionbar_slot = value" in ui_module
     assert "healing.mana_potion_actionbar_slot = value" in ui_module
-    assert "tools.rune_actionbar_slot = value" in ui_module
-    assert '"ctoaRotationGranMobs", "Gran mobs"' in ui_module
-    assert '"ctoaRotationExoriMobs", "Exori mobs"' in ui_module
-    assert '"ctoaRotationMinMobs", "Min mobs"' in ui_module
+    assert "{hotkey = cycle(ctx.hotkey_choices" in ui_module
+    assert '"ctoaMagicRuleEditor"' in ui_module
+    assert '"ctoaMagicRuleWords"' in ui_module
+    assert '"ctoaMagicRuleAdd"' in ui_module
+    assert '"ctoaMagicRuleRemove"' in ui_module
+    assert '"ctoaMagicRuleUp"' in ui_module
+    assert '"ctoaMagicRuleDown"' in ui_module
+    assert '"ctoaRotationGranMobs", "Gran mobs"' not in ui_module
+    assert '"ctoaRotationExoriMobs", "Exori mobs"' not in ui_module
+    assert '"ctoaRotationMinMobs", "Min mobs"' not in ui_module
     assert '"ctoaRotationLockMs", "Spell lock"' in ui_module
-    assert '"ctoaRuneHotkeyMagic", "Rune box"' in ui_module
+    assert '"ctoaCombatActionMode"' in ui_module
+    assert '"ctoaCombatActionText"' in ui_module
     assert '"Decision: waiting for runtime"' in ui_module
     assert '"Magic " .. HELPER_VERSION .. ": "' in source
     assert "HUD module unavailable | runtime gated" in source
@@ -2903,30 +3909,63 @@ def test_healing_and_magic_cards_expose_actionbar_box_controls():
 
 def test_actionbar_slots_are_the_runtime_source_for_potions_and_runes():
     source = HELPER.read_text(encoding="utf-8")
+    hotkeys_module = HOTKEYS.read_text(encoding="utf-8")
+    combat_runtime = COMBAT_RUNTIME.read_text(encoding="utf-8")
 
-    assert "local function resolveActionbarSlot(primarySlot, fallbackHotkey)" in source
+    assert (
+        "local function resolveActionbarSlot(primarySlot, fallbackHotkey)" not in source
+    )
+    assert "function Hotkeys.resolveActionbarSlot" in hotkeys_module
+    assert "owns_actionbar_slot_resolution = true" in hotkeys_module
+    assert (
+        'moduleValue(externalHotkeys, "resolveActionbarSlot", primarySlot, fallbackHotkey)'
+        in source
+    )
     assert "local function sendActionbarSlot(primarySlot, fallbackHotkey)" in source
     assert "local function actionbarSlotText(slot)" not in source
-    assert "sendActionbarSlot(healing.potion_actionbar_slot, healing.potion_hotkey)" in source
-    assert "sendActionbarSlot(healing.mana_potion_actionbar_slot, healing.mana_potion_hotkey)" in source
-    assert "sendActionbarSlot(tools.rune_actionbar_slot, tools.rune_hotkey)" in source
-    assert 'moduleValue(externalHotkeys, "actionbarSlotText", slot) or "actionbar ?"' in source
-    assert 'moduleValue(externalHotkeys, "actionbarSlotText", runeSlot) or "actionbar ?"' in source
+    assert (
+        "sendActionbarSlot(healing.potion_actionbar_slot, healing.potion_hotkey)"
+        in source
+    )
+    assert (
+        "sendActionbarSlot(healing.mana_potion_actionbar_slot, healing.mana_potion_hotkey)"
+        in source
+    )
+    assert "sendActionbarSlot(descriptor.slot, descriptor.hotkey)" in source
+    assert "slot = item.actionbar_slot or cfg.rune_actionbar_slot" in combat_runtime
+    assert "hotkey = item.hotkey or cfg.rune_hotkey" in combat_runtime
+    assert (
+        'moduleValue(externalHotkeys, "actionbarSlotText", slot) or "actionbar ?"'
+        in source
+    )
+    assert (
+        'moduleValue(externalHotkeys, "actionbarSlotText", slot) or "actionbar ?"'
+        in source
+    )
     assert '"Potion heal via " .. slotText .. " at " .. hp .. "%"' in source
     assert '"Mana potion via " .. slotText .. " at " .. mp .. "%"' in source
-    assert "slot_text = slotText" in source
+    assert (
+        'slot_text = moduleValue(externalHotkeys, "actionbarSlotText", slot)' in source
+    )
     assert "sendHotkey(healing.potion_hotkey)" not in source
-    assert "healing.mana_potion_hotkey or healing.mana_potion_actionbar_slot" not in source
+    assert (
+        "healing.mana_potion_hotkey or healing.mana_potion_actionbar_slot" not in source
+    )
     assert "tools.rune_hotkey or tools.rune_actionbar_slot" not in source
 
 
 def test_rotation_debug_reports_runtime_decision_reasons():
     source = HELPER.read_text(encoding="utf-8")
-    combat_runtime = (ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_combat_runtime.lua").read_text(encoding="utf-8")
+    combat_runtime = (
+        ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_combat_runtime.lua"
+    ).read_text(encoding="utf-8")
 
     assert "local function scanCombatArea(tools)" in source
     assert "local function rotationWaitReason(tools, target, scan, now)" in source
-    assert "local function combatDecisionStateText(tools, target, scan, now, nextAction)" in source
+    assert (
+        "local function combatDecisionStateText(tools, target, scan, now, nextAction)"
+        in source
+    )
     assert 'moduleValue(externalCombatRuntime, "waitReason", {' in source
     assert 'moduleValue(externalCombatRuntime, "decisionStateSummary", tools' in source
     assert 'moduleValue(externalCombatRuntime, "offensiveAction", tools' in source
@@ -2942,7 +3981,10 @@ def test_rotation_debug_reports_runtime_decision_reasons():
     assert '"Wait: action lock "' in combat_runtime
     assert '"Wait: rotation interval"' in combat_runtime
     assert '"Wait: mobs " .. tostring(state.nearby or 0)' in combat_runtime
-    assert 'local targetText = state.target_present and "target=monster" or "target=none"' in combat_runtime
+    assert (
+        'local targetText = state.target_present and "target=monster" or "target=none"'
+        in combat_runtime
+    )
     assert '" | " .. targetText' in combat_runtime
     assert '" | lock " .. CombatRuntime.msLeftText' in combat_runtime
     assert '" | exeta " .. exetaState' in combat_runtime
@@ -2954,28 +3996,53 @@ def test_rotation_debug_reports_runtime_decision_reasons():
     assert '"Rune: " .. tostring(env.rune_name' in combat_runtime
     assert "local scan = scanCombatArea(tools)" in source
     assert "planNextCombatAction(target, scan, now)" in source
-    assert 'moduleValue(externalCombatRuntime, "nextActionText", action, fallback)' in source
-    assert 'moduleValue(externalCombatRuntime, "rotationSpellRows", tools.rotation_spells' in source
+    assert (
+        'moduleValue(externalCombatRuntime, "nextActionText", action, fallback)'
+        in source
+    )
+    assert (
+        'moduleValue(externalCombatRuntime, "rotationSpellRows", tools.rotation_spells'
+        in source
+    )
     assert 'moduleValue(externalCombatRuntime, "spellReadiness", spells' in source
-    assert 'moduleValue(externalCombatRuntime, "rotationSpell", spells' in source
+    assert (
+        'moduleValue(externalCombatRuntime, "selectRotationSpell", tools, scan, now)'
+        in source
+    )
     assert "local function monsterCountForRange" not in source
     assert "local function monsterCountForSpell" not in source
-    assert "local decisionState = combatDecisionStateText(tools, target, scan, now, nextAction)" in source
-    assert 'Helper.widgets.magic_footer:setText(fitText("Magic " .. HELPER_VERSION' in source
+    assert (
+        "local decisionState = combatDecisionStateText(tools, target, scan, now, nextAction)"
+        in source
+    )
+    assert (
+        'Helper.widgets.magic_footer:setText(fitText("Magic " .. HELPER_VERSION'
+        in source
+    )
 
 
 def test_combat_action_selection_lives_in_passive_runtime_adapter():
     source = HELPER.read_text(encoding="utf-8")
     combat_runtime = COMBAT_RUNTIME.read_text(encoding="utf-8")
 
-    build_start = source.index("local function buildOffensiveAction(tools, target, scan, now)")
-    build_end = source.index("local function executeOffensiveAction(tools, action, nearby, visible, now)")
+    build_start = source.index(
+        "local function buildOffensiveAction(tools, target, scan, now)"
+    )
+    build_end = source.index(
+        "local function executeOffensiveAction(tools, action, nearby, visible, now)"
+    )
     build_source = source[build_start:build_end]
 
     assert 'moduleValue(externalCombatRuntime, "offensiveAction", tools' in build_source
     assert 'moduleValue(externalCombatRuntime, "runeReady", tools' in source
-    assert 'moduleValue(externalCombatRuntime, "rotationSpellRows", tools.rotation_spells' in source
-    assert 'moduleValue(externalCombatRuntime, "rotationSpell", spells' in source
+    assert (
+        'moduleValue(externalCombatRuntime, "rotationSpellRows", tools.rotation_spells'
+        in source
+    )
+    assert (
+        'moduleValue(externalCombatRuntime, "selectRotationSpell", tools, scan, now)'
+        in source
+    )
     assert "spellReady(tools" not in source
     assert 'return {kind = "rune"}' not in build_source
     assert 'kind = "exeta"' not in build_source
@@ -2991,17 +4058,32 @@ def test_combat_action_selection_lives_in_passive_runtime_adapter():
 
 def test_offensive_actions_are_pz_aware_and_rate_limited_at_execution():
     source = HELPER.read_text(encoding="utf-8")
+    combat_runtime = COMBAT_RUNTIME.read_text(encoding="utf-8")
 
-    start = source.index("local function executeOffensiveAction(tools, action, nearby, visible, now)")
+    start = source.index(
+        "local function executeOffensiveAction(tools, action, nearby, visible, now)"
+    )
     end = source.index("local function planNextCombatAction(target, scan, now)")
     execute_source = source[start:end]
 
     assert "local blocked = combatBlockedReason(tools)" in execute_source
-    assert 'status(combatRuntimeText("actionStatusText", {kind = "blocked", reason = blocked}' in execute_source
+    assert (
+        'status(combatRuntimeText("actionStatusText", {kind = "blocked", reason = blocked}'
+        in execute_source
+    )
     assert "now < (tools.attack_action_lock_until_ms or 0)" in execute_source
-    assert 'status(combatRuntimeText("actionStatusText", {kind = "action_lock"}' in execute_source
-    assert "recoveryActionGap(now).active" in execute_source
-    assert 'status(combatRuntimeText("actionStatusText", {kind = "recovery_gap"}' in execute_source
+    assert (
+        'status(combatRuntimeText("actionStatusText", {kind = "action_lock"}'
+        in execute_source
+    )
+    assert (
+        'moduleValue(externalRecoveryRuntime, "recoveryActionGap", now, HELPER_CONFIG.healing, HELPER_CONFIG.tools).active'
+        in execute_source
+    )
+    assert (
+        'status(combatRuntimeText("actionStatusText", {kind = "recovery_gap"}'
+        in execute_source
+    )
     assert '"Offensive action blocked: " .. blocked' not in execute_source
     assert '"Offensive action blocked: action lock"' not in execute_source
     assert '"Offensive action blocked: recovery gap"' not in execute_source
@@ -3009,69 +4091,101 @@ def test_offensive_actions_are_pz_aware_and_rate_limited_at_execution():
     assert '"Rotation: " .. action.spell.words' not in execute_source
     assert '"Rune: " .. (tools.rune_name or "rune")' not in execute_source
     plan_start = source.index("local function planNextCombatAction(target, scan, now)")
-    plan_end = source.index("local function combatDecisionStateText(tools, target, scan, now, nextAction)")
+    plan_end = source.index(
+        "local function combatDecisionStateText(tools, target, scan, now, nextAction)"
+    )
     plan_source = source[plan_start:plan_end]
     assert '"Next: " .. action.spell' not in plan_source
     assert '"Next: rune/AoE"' not in plan_source
     assert '"Next: " .. action.spell.words' not in plan_source
     assert "lockOffensiveAction(tools, now)" in execute_source
-    assert "tools.last_exeta_ms = now" in execute_source
-    assert "tools.last_spell_casts[action.spell.words] = now" in execute_source
-    assert "tools.last_rune_ms = now" in execute_source
+    assert (
+        'moduleValue(externalCombatRuntime, "dispatchDescriptor", action, tools)'
+        in execute_source
+    )
+    assert (
+        'moduleValue(externalCombatRuntime, "recordActionSuccess", tools, action, now)'
+        in execute_source
+    )
+    assert "cfg.last_exeta_ms = current" in combat_runtime
+    assert (
+        'cfg.last_spell_casts[tostring(item.spell.words or "")] = current'
+        in combat_runtime
+    )
+    assert "cfg.last_rune_ms = current" in combat_runtime
 
 
 def test_magic_v11b_has_safe_api_probe():
     source = HELPER.read_text(encoding="utf-8")
-    profile = (ROOT / "scripts" / "lua" / "otclient" / "ctoa_ek_profile.lua").read_text(encoding="utf-8")
+    profile = (ROOT / "scripts" / "lua" / "otclient" / "ctoa_ek_profile.lua").read_text(
+        encoding="utf-8"
+    )
     diagnostics = DIAGNOSTICS.read_text(encoding="utf-8")
 
-    assert "magic_api_probe_enabled = true" in source
+    assert "magic_api_probe_enabled = true" in DEFAULT_PROFILE_SOURCE
     assert "magic_api_probe_enabled = true" in profile
     assert "function runMagicApiProbe(reason)" in source
     assert "Magic API probe (" in diagnostics
     assert 'moduleValue(externalDiagnostics, "magicApiProbeText"' in source
-    assert "talk=\" .. Diagnostics.apiText(data.game, \"talk\")" in diagnostics
-    assert "useInventoryItemWith=\" .. Diagnostics.apiText(data.game, \"useInventoryItemWith\")" in diagnostics
-    assert "findItemInContainers=\" .. Diagnostics.apiText(data.game, \"findItemInContainers\")" in diagnostics
+    assert 'talk=" .. Diagnostics.apiText(data.game, "talk")' in diagnostics
+    assert (
+        'useInventoryItemWith=" .. Diagnostics.apiText(data.game, "useInventoryItemWith")'
+        in diagnostics
+    )
+    assert (
+        'findItemInContainers=" .. Diagnostics.apiText(data.game, "findItemInContainers")'
+        in diagnostics
+    )
     magic_probe_start = source.index("function runMagicApiProbe(reason)")
     magic_probe_end = source.index("function refreshCavebotUi()")
     magic_probe_source = source[magic_probe_start:magic_probe_end]
     assert '" talk=" .. boolText(g_game and g_game.talk)' not in magic_probe_source
-    assert '" useInventoryItemWith=" .. boolText(g_game and g_game.useInventoryItemWith)' not in magic_probe_source
-    assert '" findItemInContainers=" .. boolText(g_game and g_game.findItemInContainers)' not in magic_probe_source
+    assert (
+        '" useInventoryItemWith=" .. boolText(g_game and g_game.useInventoryItemWith)'
+        not in magic_probe_source
+    )
+    assert (
+        '" findItemInContainers=" .. boolText(g_game and g_game.findItemInContainers)'
+        not in magic_probe_source
+    )
     assert '" states=" .. tostring(data.states or "n/a") ..' in diagnostics
     assert '" tileFlags=" .. tostring(data.tile_flags or "n/a")' in diagnostics
     assert "Helper.magic_api_probe_attempts <= 120" not in magic_probe_source
     assert 'label = "Magic API"' in magic_probe_source
     assert "max_attempts = 120" in magic_probe_source
     assert "requires_position = true" in magic_probe_source
-    assert "runMagicApiProbe(\"startup\")" in source
+    assert 'runMagicApiProbe("startup")' in source
     assert "Helper.runMagicApiProbe = function()" in source
-    assert "return runMagicApiProbe(\"manual\")" in source
+    assert 'return runMagicApiProbe("manual")' in source
 
 
 def test_helper_v11b_has_central_api_registry_probe():
     source = HELPER.read_text(encoding="utf-8")
-    profile = (ROOT / "scripts" / "lua" / "otclient" / "ctoa_ek_profile.lua").read_text(encoding="utf-8")
+    profile = (ROOT / "scripts" / "lua" / "otclient" / "ctoa_ek_profile.lua").read_text(
+        encoding="utf-8"
+    )
     diagnostics = DIAGNOSTICS.read_text(encoding="utf-8")
 
-    assert "api_probe_enabled = true" in source
+    assert "api_probe_enabled = true" in DEFAULT_PROFILE_SOURCE
     assert "api_probe_enabled = true" in profile
-    assert "function hasApi(owner, methodName)" in source
-    assert "function runApiProbe(reason)" in source
-    assert "Helper.api_snapshot = snapshot" in source
+    assert "function Diagnostics.hasApi(owner, methodName)" in diagnostics
+    assert "function Diagnostics.safeCall(owner, methodName, ...)" in diagnostics
+    assert "function Diagnostics.safeGlobalCall(owner, methodName, ...)" in diagnostics
+    assert "function hasApi(owner, methodName)" not in source
+    assert "function controller.runApiProbe(reason)" in diagnostics
+    assert "helper.api_snapshot = snapshot" in diagnostics
     assert "function apiSnapshotText()" not in source
-    assert "function refreshApiSnapshotUi()" in source
-    assert "refreshApiSnapshotUi()" in source
-    assert 'moduleValue(externalDiagnostics, "apiProbeText"' in source
+    assert "function controller.refresh()" in diagnostics
+    assert "diagnosticsController.refresh" in source
+    assert "Diagnostics.apiProbeText" in diagnostics
     assert "API probe (" in diagnostics
     assert "API probe (" not in source
     assert "API probe detail:" in diagnostics
     assert "API probe detail:" not in source
-    assert "runApiProbe(\"startup\")" in source
-    assert 'label = "API"' in source
+    assert 'diagnosticsController.runApiProbe("startup")' in source
+    assert 'label = "API"' in diagnostics
     assert "Helper.runApiProbe = function()" in source
-    assert "return runApiProbe(\"manual\")" in source
+    assert 'return diagnosticsController.runApiProbe("manual")' in source
     assert 'action == "api_probe"' in source
     for token in [
         'Diagnostics.apiText(player, "autoWalk")',
@@ -3092,55 +4206,88 @@ def test_helper_v11b_exposes_api_snapshot_in_tools_ui():
     ui_module = UI_HELPERS.read_text(encoding="utf-8")
     diagnostics = DIAGNOSTICS.read_text(encoding="utf-8")
 
-    assert 'ctx.widgets.tools_api_snapshot = ctx.add_footer_strip(window, "ctoaToolsApiSnapshot", "API: pending probe"' in ui_module
-    assert 'moduleValue(externalDiagnostics, "snapshotUiRows"' in source
-    assert 'moduleValue(externalDiagnostics, "apiSnapshotText"' in source
+    assert (
+        'ctx.widgets.tools_api_snapshot = ctx.add_footer_strip(window, "ctoaToolsApiSnapshot", "API: pending probe"'
+        in ui_module
+    )
+    assert "Diagnostics.snapshotUiRows()" in diagnostics
+    assert "Diagnostics.snapshotUiValues(" in diagnostics
+    assert "diagnosticsController.refresh" in source
+    assert "function Ui.updateDiagnosticsSnapshot" in ui_module
     assert '"API " .. tostring(snapshot.version or version or "?")' in diagnostics
 
 
 def test_helper_tools_diag_tab_exposes_api_and_feature_flags():
     source = HELPER.read_text(encoding="utf-8")
-    profile = (ROOT / "scripts" / "lua" / "otclient" / "ctoa_ek_profile.lua").read_text(encoding="utf-8")
+    profile = (ROOT / "scripts" / "lua" / "otclient" / "ctoa_ek_profile.lua").read_text(
+        encoding="utf-8"
+    )
 
     assert "tools_diag" in source
     ui_module = UI_HELPERS.read_text(encoding="utf-8")
-    assert 'function Ui.toolsSubtabs' in ui_module
-    assert '{key = "tools_diag_tab", id = "ctoaToolsDiagTab", text = "Diag"' in ui_module
-    assert 'ctx.add_subtab_buttons(window, "toolsSubtabs", "tools", panelX, bodyY, panelW)' in ui_module
-    assert "ctx.add_table_headers(window, Ui.toolsTableHeaders(panelX, contentY, panelW))" in ui_module
-    assert 'ctx.bind_click(ctx.widgets.tools_diag_tab, function() ctx.switch_tools_subtab("diag") end)' in ui_module
-    assert 'setSectionVisible("tools_diag", Helper.active_tab == "tools" and Helper.active_tools_tab == "diag")' in source
-    assert 'ctx.widgets.tools_diag_core = ctx.add_footer_strip(window, "ctoaToolsDiagCore", "API: pending probe"' in ui_module
-    assert 'ctx.widgets.tools_diag_flags = ctx.add_footer_strip(window, "ctoaToolsDiagFlags", ctx.feature_flags_text()' in ui_module
+    composition = UI_COMPOSITION.read_text(encoding="utf-8")
+    assert "function Ui.toolsSubtabs" in ui_module
+    assert (
+        '{key = "tools_diag_tab", id = "ctoaToolsDiagTab", text = "Diag"' in composition
+    )
+    assert (
+        'ctx.add_subtab_buttons(window, "toolsSubtabs", "tools", panelX, bodyY, panelW)'
+        in ui_module
+    )
+    assert (
+        "ctx.add_table_headers(window, Ui.toolsTableHeaders(panelX, contentY, panelW))"
+        in ui_module
+    )
+    assert (
+        'ctx.bind_click(ctx.widgets.tools_diag_tab, function() ctx.switch_tools_subtab("diag") end)'
+        in ui_module
+    )
+    assert (
+        'setSectionVisible("tools_diag", Helper.active_tab == "tools" and Helper.active_tools_tab == "diag")'
+        in source
+    )
+    assert (
+        'ctx.widgets.tools_diag_core = ctx.add_footer_strip(window, "ctoaToolsDiagCore", "API: pending probe"'
+        in ui_module
+    )
+    assert (
+        'ctx.widgets.tools_diag_flags = ctx.add_footer_strip(window, "ctoaToolsDiagFlags", ctx.feature_flags_text()'
+        in ui_module
+    )
     assert "function featureFlagsText()" not in source
     assert 'moduleValue(externalDiagnostics, "featureFlagsText"' in source
-    assert "feature_flags = {" in source
-    assert "experimental_cavebot = false" in source
-    assert "experimental_loot = false" in source
-    assert "experimental_combat = false" in source
+    assert "feature_flags = {" in DEFAULT_PROFILE_SOURCE
+    assert "experimental_cavebot = false" in DEFAULT_PROFILE_SOURCE
+    assert "experimental_loot = false" in DEFAULT_PROFILE_SOURCE
+    assert "experimental_combat = false" in DEFAULT_PROFILE_SOURCE
     assert "feature_flags = {" in profile
 
 
 def test_helper_bounded_diagnostics_export_is_wired():
     source = HELPER.read_text(encoding="utf-8")
     diagnostics = DIAGNOSTICS.read_text(encoding="utf-8")
-    profile = (ROOT / "scripts" / "lua" / "otclient" / "ctoa_ek_profile.lua").read_text(encoding="utf-8")
+    profile = (ROOT / "scripts" / "lua" / "otclient" / "ctoa_ek_profile.lua").read_text(
+        encoding="utf-8"
+    )
 
-    assert "diagnostics_export_limit = 20" in source
-    assert "diagnostics_sample_interval_ms = 5000" in source
+    assert "diagnostics_export_limit = 20" in DEFAULT_PROFILE_SOURCE
+    assert "diagnostics_sample_interval_ms = 5000" in DEFAULT_PROFILE_SOURCE
     assert "diagnostics_export_limit = 20" in profile
     assert "diagnostics_sample_interval_ms = 5000" in profile
-    assert 'return g_resources.getWorkDir() .. "mods/ctoa_otclient/ctoa_diag_export.lua"' in source
-    assert "function recordDiagnosticsSnapshot(reason, snapshot)" in source
-    assert 'moduleValue(externalDiagnostics, "recordSnapshot"' in source
+    assert (
+        'return g_resources.getWorkDir() .. "mods/ctoa_otclient/ctoa_diag_export.lua"'
+        in diagnostics
+    )
+    assert "function controller.record(reason, snapshot)" in diagnostics
+    assert "Diagnostics.recordSnapshot" in diagnostics
     assert "while #nextBuffer > limit do" in diagnostics
     assert "table.remove(nextBuffer, 1)" in diagnostics
-    assert "function exportDiagnosticsBuffer(reason)" in source
-    assert 'moduleValue(externalDiagnostics, "exportBuffer"' in source
+    assert "function controller.export(reason)" in diagnostics
+    assert "Diagnostics.exportBuffer" in diagnostics
     assert '"-- ctoa_diag_export.lua\\n"' in diagnostics
-    assert "samples = Helper.diagnostics_buffer or {}" in source
+    assert "samples = helper.diagnostics_buffer or {}" in diagnostics
     assert "function maybeSampleDiagnostics(now)" in source
-    assert 'return runApiProbe("sample")' in source
+    assert 'return diagnosticsController.runApiProbe("sample")' in source
     assert "maybeSampleDiagnostics(now)" in source
     assert 'action == "diag_export"' in source
     assert "Helper.exportDiagnostics = function()" in source
@@ -3156,27 +4303,36 @@ def test_helper_bounded_diagnostics_export_is_wired():
 
 def test_recovery_actions_do_not_hard_stop_targeting_or_rotation():
     source = HELPER.read_text(encoding="utf-8")
-    combat_runtime = (ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_combat_runtime.lua").read_text(encoding="utf-8")
-    profile = (ROOT / "scripts" / "lua" / "otclient" / "ctoa_ek_profile.lua").read_text(encoding="utf-8")
+    combat_runtime = (
+        ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_combat_runtime.lua"
+    ).read_text(encoding="utf-8")
+    profile = (ROOT / "scripts" / "lua" / "otclient" / "ctoa_ek_profile.lua").read_text(
+        encoding="utf-8"
+    )
 
-    assert "local function recoveryActionGap(now)" in source
-    assert 'moduleValue(externalRecoveryRuntime, "actionGap", now, lastActionMs, gapMs)' in source
+    assert "local function recoveryActionGap(now)" not in source
+    assert (
+        'moduleValue(externalRecoveryRuntime, "recoveryActionGap", now, HELPER_CONFIG.healing, HELPER_CONFIG.tools)'
+        in source
+    )
     assert '"Wait: recovery gap "' in combat_runtime
     assert "if recentlyHealed(now)" not in source
     assert "maybeHeal(now, vitals)" in source
     assert "maybeManaPotion(now, vitals)" in source
     assert "maybeUseTools(now, vitals)" in source
-    assert "mana_potion_enabled = true" in source
-    assert "mana_potion_threshold = 45" in source
-    assert "mana_potion_hotkey = \"F2\"" in source
+    assert "mana_potion_enabled = true" in DEFAULT_PROFILE_SOURCE
+    assert "mana_potion_threshold = 45" in DEFAULT_PROFILE_SOURCE
+    assert 'mana_potion_hotkey = "F2"' in DEFAULT_PROFILE_SOURCE
     assert "mana_potion_enabled = true" in profile
-    assert "recovery_action_gap_ms = 250" in source
+    assert "recovery_action_gap_ms = 250" in DEFAULT_PROFILE_SOURCE
     assert "recovery_action_gap_ms = 250" in profile
 
 
 def test_timer_runtime_is_bounded_and_profile_persisted():
     source = HELPER.read_text(encoding="utf-8")
-    profile = (ROOT / "scripts" / "lua" / "otclient" / "ctoa_ek_profile.lua").read_text(encoding="utf-8")
+    profile = (ROOT / "scripts" / "lua" / "otclient" / "ctoa_ek_profile.lua").read_text(
+        encoding="utf-8"
+    )
     adapter = TIMER_RUNTIME.read_text(encoding="utf-8")
 
     assert "function maybeRunTimer(now)" in source
@@ -3193,17 +4349,28 @@ def test_timer_runtime_is_bounded_and_profile_persisted():
     timer_start = source.index("function maybeRunTimer(now)")
     timer_end = source.index("function maybeUseTools(now, vitals)")
     timer_source = source[timer_start:timer_end]
-    assert "math.max(1000, tonumber(tools.timer_interval_ms) or 60000)" not in timer_source
+    assert (
+        "math.max(1000, tonumber(tools.timer_interval_ms) or 60000)" not in timer_source
+    )
     assert "now - (tools.last_timer_ms or 0) < interval" not in timer_source
-    assert 'status(tostring(dispatch.status_text or ("Timer: " .. shortText(message, 32))))' in source
+    assert (
+        'status(tostring(dispatch.status_text or ("Timer: " .. shortText(message, 32))))'
+        in source
+    )
     assert "maybeRunTimer(now)" in source
-    assert '"last_timer_ms"' in (ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_profile_persistence.lua").read_text(encoding="utf-8")
+    assert '"last_timer_ms"' in (
+        ROOT / "scripts" / "lua" / "otclient" / "ctoa_helper_profile_persistence.lua"
+    ).read_text(encoding="utf-8")
     assert "last_timer_ms = 0" in profile
 
 
 def test_standalone_heal_and_loot_are_profile_fed_and_passive():
-    heal = (ROOT / "scripts" / "lua" / "otclient" / "ctoa_native_heal.lua").read_text(encoding="utf-8")
-    loot = (ROOT / "scripts" / "lua" / "otclient" / "ctoa_native_loot.lua").read_text(encoding="utf-8")
+    heal = (ROOT / "scripts" / "lua" / "otclient" / "ctoa_native_heal.lua").read_text(
+        encoding="utf-8"
+    )
+    loot = (ROOT / "scripts" / "lua" / "otclient" / "ctoa_native_loot.lua").read_text(
+        encoding="utf-8"
+    )
 
     assert "local DEFAULT_HEAL_SETTINGS = {" in heal
     assert "enabled = false" in heal
@@ -3225,10 +4392,15 @@ def test_standalone_heal_and_loot_are_profile_fed_and_passive():
 def test_healing_spell_rotation_has_threshold_rules():
     source = HELPER.read_text(encoding="utf-8")
     adapter = RECOVERY_RUNTIME.read_text(encoding="utf-8")
-    profile = (ROOT / "scripts" / "lua" / "otclient" / "ctoa_ek_profile.lua").read_text(encoding="utf-8")
+    profile = (ROOT / "scripts" / "lua" / "otclient" / "ctoa_ek_profile.lua").read_text(
+        encoding="utf-8"
+    )
 
-    assert "local function selectHealingSpell(healing, hp, now)" in source
-    assert 'moduleValue(externalRecoveryRuntime, "selectHealingSpell", healing, hp, nonce)' in source
+    assert "local function selectHealingSpell(healing, hp, now)" not in source
+    assert (
+        'moduleValue(externalRecoveryRuntime, "selectHealingSpell", healing, hp, nonce)'
+        in source
+    )
     assert "cfg.spell_rotation or {}" in adapter
     assert "threshold = 85" in profile
     assert "threshold = 55" in profile
@@ -3240,20 +4412,32 @@ def test_helper_login_singleton_module_visibility_and_healing_jitter_contracts()
     loader = LOADER.read_text(encoding="utf-8")
     ui = UI_HELPERS.read_text(encoding="utf-8")
     recovery = RECOVERY_RUNTIME.read_text(encoding="utf-8")
-    profile = (ROOT / "scripts" / "lua" / "otclient" / "ctoa_ek_profile.lua").read_text(encoding="utf-8")
+    profile = (ROOT / "scripts" / "lua" / "otclient" / "ctoa_ek_profile.lua").read_text(
+        encoding="utf-8"
+    )
 
     assert 'local existingHelper = rawget(_G, "CTOA_Helper")' in source
     assert "return existingHelper" in source
-    assert 'log("Game ended; helper singleton retained for next login")' in loader
-    assert 'log("Game started; reused existing helper singleton")' in loader
-    assert "CTOA_OTCLIENT.loaded = false" not in loader
+    assert "local function selectionAuthorized()" in loader
+    assert 'loader.isSelected("helper") == true' in loader
+    assert "onGameStart = onGameStart" not in loader
+    assert "scheduleHelperLoad" not in loader
+    assert "CTOA_OTCLIENT.loaded = false" in loader
+    assert "pcall(helper.terminate)" in loader
     assert 'root:getChildById("ctoaNativeHelperWindow")' in source
     assert "function RecoveryRuntime.jitterThreshold" in recovery
-    assert "threshold_jitter_percent = 3" in source
+    assert "threshold_jitter_percent = 3" in DEFAULT_PROFILE_SOURCE
     assert "threshold_jitter_percent = 3" in profile
     assert '"ctoaProfilePotionName"' not in ui
     assert '"ctoaProfileRuneName"' not in ui
-    for module_key in ["heal_friend", "conditions", "cavebot", "equipment", "helper", "scripting"]:
+    for module_key in [
+        "heal_friend",
+        "conditions",
+        "cavebot",
+        "equipment",
+        "helper",
+        "scripting",
+    ]:
         assert f'key = "{module_key}"' in ui
 
 
@@ -3263,13 +4447,14 @@ def test_healing_uses_real_local_player_vitals_before_percent_fallback():
     diagnostics = DIAGNOSTICS.read_text(encoding="utf-8")
 
     assert "local function readPlayerVitals()" in source
-    assert 'moduleValue(externalRecoveryRuntime, "normalizeVitals", snapshot)' in source
+    assert 'moduleValue(externalRecoveryRuntime, "readVitals", player)' in source
+    assert 'moduleValue(externalRecoveryRuntime, "normalizeVitals", {})' in source
     assert 'source = "none"' in adapter
-    assert '{field = "hp", method = "getHealth"}' in source
-    assert '{field = "max_hp", method = "getMaxHealth"}' in source
-    assert '{field = "mana", method = "getMana"}' in source
-    assert '{field = "max_mana", method = "getMaxMana"}' in source
-    assert "player[read.method](player)" in source
+    assert '{field = "hp", method = "getHealth"}' in adapter
+    assert '{field = "max_hp", method = "getMaxHealth"}' in adapter
+    assert '{field = "mana", method = "getMana"}' in adapter
+    assert '{field = "max_mana", method = "getMaxMana"}' in adapter
+    assert "pcall(method, player)" in adapter
     assert 'vitals.source = "real"' in adapter
     assert 'vitals.source = "percent_api"' in adapter
     assert "local vitals = readPlayerVitals()" in source
@@ -3280,7 +4465,10 @@ def test_healing_uses_real_local_player_vitals_before_percent_fallback():
     assert "local function maybeHeal(now, vitals)" in source
     assert "function maybeManaPotion(now, vitals)" in source
     assert "function maybeUseTools(now, vitals)" in source
-    assert "local vitals = readPlayerVitals()\n    maybeHeal(now, vitals)\n    maybeManaPotion(now, vitals)" in source
+    assert (
+        "local vitals = readPlayerVitals()\n    maybeHeal(now, vitals)\n    maybeManaPotion(now, vitals)"
+        in source
+    )
     assert "maybeUseTools(now, vitals)" in source
     assert '"vitals=" .. tostring(vitals.source or "none")' in diagnostics
 
@@ -3293,7 +4481,10 @@ def test_smoke_runner_supports_attach_without_restart():
     assert "Write-SmokeCommand" in script
     assert "No running sandbox client window found for SmokeAttach" in script
     assert "If Select Character is visible, enter the character first" in script
-    assert "Wait-ForSmokeTab -ActiveTab $resolved.Active -SmokeSubtab $resolved.Subtab -Required" in script
+    assert (
+        "Wait-ForSmokeTab -ActiveTab $resolved.Active -SmokeSubtab $resolved.Subtab -Required"
+        in script
+    )
     assert "Get-SmokeLogLineCount" in script
     assert "-AfterLineCount $lineCountBeforeCommand" in script
     assert "[string]$RunId" in script
@@ -3311,10 +4502,15 @@ def test_smoke_runner_supports_attach_without_restart():
     assert "Not ready: blocked_by_character_modal or helper not online." in script
     assert "Set-LiveCtoaEnabled" in script
     assert "Set-LiveCtoaUiOnly" in script
-    assert "ctoa_otclient_loader.lua" in script
+    assert "ctoa_project_loader.lua" in script
+
 
 def boot_graph_source() -> str:
-    return LOADER.read_text(encoding="utf-8") + "\n" + MODULE_REGISTRY.read_text(encoding="utf-8")
+    return (
+        LOADER.read_text(encoding="utf-8")
+        + "\n"
+        + MODULE_REGISTRY.read_text(encoding="utf-8")
+    )
 
 
 def boot_graph_has_module(source: str, name: str, file_name: str) -> bool:

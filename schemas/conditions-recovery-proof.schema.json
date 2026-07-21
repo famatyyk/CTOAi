@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ctoa.local/schemas/conditions-recovery-proof.schema.json",
+  "title": "CTOAi Conditions Recovery Proof v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "proof_id",
+    "observed_at_unix_ms",
+    "status",
+    "source",
+    "action",
+    "condition",
+    "spell",
+    "recovery_trace_sha256",
+    "profile_sha256",
+    "observation_sha256",
+    "p8_proof_sha256",
+    "dispatch_allowed",
+    "runtime_actions",
+    "executes_plan",
+    "execute_once_allowed",
+    "promotion_allowed",
+    "intrusive_actions_performed"
+  ],
+  "properties": {
+    "schema_version": {"const": "ctoa.conditions-recovery-proof.v1"},
+    "proof_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z0-9][a-z0-9._-]*$"
+    },
+    "observed_at_unix_ms": {"type": "integer", "minimum": 1},
+    "status": {"enum": ["ready", "blocked", "unknown"]},
+    "source": {"enum": ["recovery_shadow", "fixture"]},
+    "action": {"const": "plan_paralyze_recovery"},
+    "condition": {"const": "paralyze"},
+    "spell": {"const": "exura"},
+    "recovery_trace_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "profile_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "observation_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "p8_proof_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "dispatch_allowed": {"const": false},
+    "runtime_actions": {"const": false},
+    "executes_plan": {"const": false},
+    "execute_once_allowed": {"const": false},
+    "promotion_allowed": {"const": false},
+    "intrusive_actions_performed": {"type": "array", "maxItems": 0}
+  }
+}

@@ -9,9 +9,11 @@
     "diff_check"
   ],
   "p6_readiness": {
-    "status": "ready_for_plugin_design",
-    "checks": 55,
-    "blocked_checks": []
+    "status": "blocked",
+    "checks": 97,
+    "blocked_checks": [
+      "ctoai_plugin_installed_cache"
+    ]
   },
   "validation": {
     "generated_at_utc": "2026-07-18T12:34:49Z",
@@ -23,9 +25,9 @@
     ]
   },
   "operator_workflow": {
-    "status": "safe_write_ready",
-    "allowed_tool_count": 9,
-    "safe_write_tool_count": 5,
+    "status": "blocked",
+    "allowed_tool_count": 11,
+    "safe_write_tool_count": 6,
     "blocked_action_classes": [
       {
         "risk_class": "guarded_write",
@@ -45,11 +47,11 @@
   "action_readiness": {
     "status": "safe_write_tools_enabled",
     "decision": "monitor_enabled_safe_write_tools",
-    "candidate_count": 5,
-    "audited_candidate_count": 5,
-    "enabled_dry_run_ready_count": 5,
-    "next_safe_mode": "design_next_p7_plugin_action",
-    "mcp_write_tool_count": 5,
+    "candidate_count": 6,
+    "audited_candidate_count": 6,
+    "enabled_dry_run_ready_count": 6,
+    "next_safe_mode": "monitor_adaptive_roadmap_state",
+    "mcp_write_tool_count": 6,
     "enabled_safe_write_tools": [
       {
         "action_id": "repo-hygiene-refresh",
@@ -75,9 +77,14 @@
         "action_id": "p7-cockpit-smoke-refresh",
         "mcp_tool": "ctoai_p7_cockpit_smoke_refresh",
         "risk_class": "safe_write"
+      },
+      {
+        "action_id": "roadmap-state-refresh",
+        "mcp_tool": "ctoai_roadmap_state_refresh",
+        "risk_class": "safe_write"
       }
     ],
-    "next_safe_command": "Design the next P7 plugin action only after risk model coverage, audit logging, Control Center gates, and targeted MCP tests exist; keep deploy/live actions outside the plugin surface."
+    "next_safe_command": "Monitor the adaptive ROADMAP_STATE and refresh it only when required P13 inputs change; pending P14 evidence must not degrade the platform."
   },
   "safe_write_tool_design": {
     "status": "implemented",
@@ -96,10 +103,10 @@
     "warnings": [],
     "p7_cockpit": {
       "status": "safe_write_tools_enabled",
-      "enabled_safe_write_tool_count": 5,
-      "ready_audit_count": 5,
-      "audit_count": 5,
-      "mcp_write_tool_count": 5
+      "enabled_safe_write_tool_count": 6,
+      "ready_audit_count": 6,
+      "audit_count": 6,
+      "mcp_write_tool_count": 6
     },
     "p7_cockpit_smoke": {
       "status": "ready",
@@ -108,9 +115,7 @@
       "blocked": 0,
       "action_audit_line_count": 680,
       "hard_blockers": [],
-      "warnings": [
-        "release_evidence_operator_brief_timestamp_mismatch"
-      ],
+      "warnings": [],
       "source_path": "runtime\\control-center\\p7-cockpit-smoke.json"
     },
     "release_evidence": {
@@ -127,6 +132,390 @@
         "passed_count": 39,
         "check_count": 39,
         "forbidden_count": 0
+      },
+      "otclient_helper_background_status": {
+        "status": "stale",
+        "integrity_status": "passed",
+        "capability_status": "fresh",
+        "runtime_state": "disarmed",
+        "safe_to_run_while_playing": true
+      },
+      "otclient_helper_conditions_shadow": {
+        "status": "stale",
+        "contract_valid": true,
+        "fresh": false,
+        "fixture_validation_status": "passed",
+        "fixture_only_validation_passed": true,
+        "runtime_readiness_claimed": false
+      },
+      "otclient_helper_equipment_shadow": {
+        "status": "stale",
+        "contract_valid": true,
+        "fresh": false,
+        "fixture_validation_status": "passed",
+        "rollback_simulation": "ready",
+        "runtime_readiness_claimed": false
+      },
+      "otclient_helper_equipment_acceptance": {
+        "status": "invalid",
+        "contract_valid": false,
+        "fresh": false,
+        "report_hash_match": true,
+        "acceptance_granted": false,
+        "p11_predecessor_eligible": false,
+        "runtime_readiness_claimed": false
+      },
+      "otclient_helper_roadmap_phase_state": {
+        "status": "p14_foundation_ready",
+        "current_phase": "P14",
+        "next_phase": "P14",
+        "aligned_with_current_roadmap": true,
+        "p8": "operational_acceptance_complete",
+        "p9": "operational_acceptance_complete",
+        "p10": "operational_acceptance_complete",
+        "p11": "operational_acceptance_complete",
+        "p12": {
+          "status": "complete",
+          "conditions": {
+            "status": "operational_acceptance_complete",
+            "contract_valid": true,
+            "acceptance_granted": true,
+            "plan_sha256": "67c27a26797b0b01e4f8dfccec4e02b0e5f454ca6818434709e4b55850f49810",
+            "receipt_id": "p12-conditions-78a8b689653640af",
+            "attempt_count": 1,
+            "retry_scheduled": false,
+            "final_state": "killed_and_disarmed",
+            "downstream_authority_granted": false,
+            "blockers": []
+          },
+          "equipment": {
+            "status": "operational_acceptance_complete",
+            "receipt_status": "accepted",
+            "receipt_contract_valid": true,
+            "acceptance_granted": true,
+            "consumed_attempt": true,
+            "consumed_plan_sha256": "d041db806c6417b018c6ae390e3d384ccec9bead2a77e498a582093bf7c823e0",
+            "consumed_receipt_id": "p12-equipment-bdf7027cf48c438d",
+            "current_plan_status": "ready_for_sandbox_session_approval",
+            "current_plan_contract_valid": true,
+            "current_plan_safe": true,
+            "current_plan_sha256": "d041db806c6417b018c6ae390e3d384ccec9bead2a77e498a582093bf7c823e0",
+            "current_plan_blockers": [],
+            "replacement_plan_distinct": false,
+            "attempt_count": 1,
+            "session_approved": true,
+            "execution_approved": true,
+            "final_state": "killed_and_disarmed",
+            "downstream_authority_granted": false
+          },
+          "heal_friend": {
+            "status": "closed_blocked_no_compatible_vocation",
+            "contract_valid": true,
+            "closure_granted": true,
+            "closure_reason": "no_compatible_sandbox_vocation",
+            "attempt_count": 0,
+            "retry_scheduled": false,
+            "final_state": "disarmed",
+            "required_vocation": "ed",
+            "available_vocations": [
+              "sorcerer",
+              "knight"
+            ],
+            "downstream_authority_granted": false,
+            "runtime_actions": false,
+            "live_promotion": false,
+            "binding_status": "passed",
+            "blockers": []
+          }
+        },
+        "p13": {
+          "status": "runtime_evidence_ready",
+          "roadmap_state": {
+            "status": "runtime_evidence_ready",
+            "contract_valid": true,
+            "readiness_status": "awaiting_external",
+            "warning_count": 1,
+            "freshness_status": "current",
+            "tamper_status": "passed",
+            "audit_binding_status": "passed",
+            "audit_id": "20260716182113861586-roadmap-state-refresh",
+            "state_sha256": "32b752aec35eb2af028560e466f9355b647dae29b56e154ed6387066bb67dd75",
+            "file_sha256": "b6e5f455c30740b8215020bcc59e2f3b0a6d56d0b687835159321e4fbe8167de",
+            "control_center_mode": "read_only",
+            "runtime_authority_count": 0,
+            "live_authority_count": 0,
+            "blockers": []
+          },
+          "control_center_mode": "read_only",
+          "runtime_authority_granted": false,
+          "live_authority_granted": false
+        },
+        "p14": {
+          "status": "foundation_ready",
+          "contract_version": "ctoa.p14-runner-request.v1",
+          "implementation_file_count": 13,
+          "required_file_count": 13,
+          "operational_runner_result": "externally_verified_stale",
+          "operational_ready": false,
+          "operational_blockers": [
+            "p14_environment_required_reviewer_missing",
+            "p14_environment_admin_bypass_enabled",
+            "p14_self_hosted_result_revision_mismatch",
+            "p14_visual_regression_not_proven",
+            "p14_in_world_regression_not_proven",
+            "p14_canary_rehearsal_not_proven",
+            "p14_rollback_rehearsal_not_proven"
+          ],
+          "operational_warnings": [],
+          "acceptance": {
+            "status": "missing",
+            "request_present": false,
+            "result_present": false,
+            "proven_capability_count": 0,
+            "required_capability_count": 4,
+            "complete": false,
+            "capabilities": {
+              "canary_rehearsal": false,
+              "in_world_regression": false,
+              "rollback_rehearsal": false,
+              "visual_regression": false
+            }
+          },
+          "remediation_plan": {
+            "schema_version": "ctoa.p14-remediation-plan.v1",
+            "status": "action_required",
+            "next_action": "harden_p14_environment",
+            "interaction": "external_config",
+            "risk_class": "guarded_write",
+            "action_count": 6,
+            "ready_action_count": 1,
+            "blocked_action_count": 5,
+            "unknown_blocker_count": 0,
+            "actions": [
+              {
+                "action_id": "harden_p14_environment",
+                "capability": "environment_protection",
+                "status": "ready",
+                "risk_class": "guarded_write",
+                "interaction": "external_config",
+                "reason_codes": [
+                  "p14_environment_admin_bypass_enabled",
+                  "p14_environment_required_reviewer_missing"
+                ],
+                "blocked_by": [],
+                "auto_executable": false
+              },
+              {
+                "action_id": "refresh_p14_independent_runner_evidence",
+                "capability": "external_attestation",
+                "status": "blocked",
+                "risk_class": "safe_write",
+                "interaction": "external_runner",
+                "reason_codes": [
+                  "p14_self_hosted_result_revision_mismatch"
+                ],
+                "blocked_by": [
+                  "environment_protection"
+                ],
+                "auto_executable": false
+              },
+              {
+                "action_id": "collect_p14_visual_evidence",
+                "capability": "visual_attestation",
+                "status": "blocked",
+                "risk_class": "safe_write",
+                "interaction": "external_runner",
+                "reason_codes": [
+                  "p14_visual_regression_not_proven"
+                ],
+                "blocked_by": [
+                  "external_attestation"
+                ],
+                "auto_executable": false
+              },
+              {
+                "action_id": "collect_p14_in_world_evidence",
+                "capability": "in_world_attestation",
+                "status": "blocked",
+                "risk_class": "safe_write",
+                "interaction": "external_runner",
+                "reason_codes": [
+                  "p14_in_world_regression_not_proven"
+                ],
+                "blocked_by": [
+                  "external_attestation"
+                ],
+                "auto_executable": false
+              },
+              {
+                "action_id": "run_p14_canary_rehearsal",
+                "capability": "canary_attestation",
+                "status": "blocked",
+                "risk_class": "guarded_write",
+                "interaction": "external_runner",
+                "reason_codes": [
+                  "p14_canary_rehearsal_not_proven"
+                ],
+                "blocked_by": [
+                  "in_world_attestation",
+                  "visual_attestation"
+                ],
+                "auto_executable": false
+              },
+              {
+                "action_id": "run_p14_rollback_rehearsal",
+                "capability": "rollback_attestation",
+                "status": "blocked",
+                "risk_class": "guarded_write",
+                "interaction": "external_runner",
+                "reason_codes": [
+                  "p14_rollback_rehearsal_not_proven"
+                ],
+                "blocked_by": [
+                  "canary_attestation"
+                ],
+                "auto_executable": false
+              }
+            ]
+          },
+          "runner_preflight": {
+            "status": "needs_attention",
+            "fresh": true,
+            "age_seconds": 6863,
+            "contract_valid": true,
+            "operational_result": "externally_verified_stale",
+            "operational_ready": false,
+            "hard_blockers": [
+              "p14_environment_required_reviewer_missing",
+              "p14_environment_admin_bypass_enabled",
+              "p14_self_hosted_result_revision_mismatch",
+              "p14_visual_regression_not_proven",
+              "p14_in_world_regression_not_proven",
+              "p14_canary_rehearsal_not_proven",
+              "p14_rollback_rehearsal_not_proven"
+            ],
+            "warnings": [],
+            "acceptance": {
+              "status": "missing",
+              "request_present": false,
+              "result_present": false,
+              "proven_capability_count": 0,
+              "required_capability_count": 4,
+              "complete": false,
+              "capabilities": {
+                "canary_rehearsal": false,
+                "in_world_regression": false,
+                "rollback_rehearsal": false,
+                "visual_regression": false
+              }
+            },
+            "remediation": {
+              "schema_version": "ctoa.p14-remediation-plan.v1",
+              "status": "action_required",
+              "next_action": "harden_p14_environment",
+              "interaction": "external_config",
+              "risk_class": "guarded_write",
+              "action_count": 6,
+              "ready_action_count": 1,
+              "blocked_action_count": 5,
+              "unknown_blocker_count": 0,
+              "actions": [
+                {
+                  "action_id": "harden_p14_environment",
+                  "capability": "environment_protection",
+                  "status": "ready",
+                  "risk_class": "guarded_write",
+                  "interaction": "external_config",
+                  "reason_codes": [
+                    "p14_environment_admin_bypass_enabled",
+                    "p14_environment_required_reviewer_missing"
+                  ],
+                  "blocked_by": [],
+                  "auto_executable": false
+                },
+                {
+                  "action_id": "refresh_p14_independent_runner_evidence",
+                  "capability": "external_attestation",
+                  "status": "blocked",
+                  "risk_class": "safe_write",
+                  "interaction": "external_runner",
+                  "reason_codes": [
+                    "p14_self_hosted_result_revision_mismatch"
+                  ],
+                  "blocked_by": [
+                    "environment_protection"
+                  ],
+                  "auto_executable": false
+                },
+                {
+                  "action_id": "collect_p14_visual_evidence",
+                  "capability": "visual_attestation",
+                  "status": "blocked",
+                  "risk_class": "safe_write",
+                  "interaction": "external_runner",
+                  "reason_codes": [
+                    "p14_visual_regression_not_proven"
+                  ],
+                  "blocked_by": [
+                    "external_attestation"
+                  ],
+                  "auto_executable": false
+                },
+                {
+                  "action_id": "collect_p14_in_world_evidence",
+                  "capability": "in_world_attestation",
+                  "status": "blocked",
+                  "risk_class": "safe_write",
+                  "interaction": "external_runner",
+                  "reason_codes": [
+                    "p14_in_world_regression_not_proven"
+                  ],
+                  "blocked_by": [
+                    "external_attestation"
+                  ],
+                  "auto_executable": false
+                },
+                {
+                  "action_id": "run_p14_canary_rehearsal",
+                  "capability": "canary_attestation",
+                  "status": "blocked",
+                  "risk_class": "guarded_write",
+                  "interaction": "external_runner",
+                  "reason_codes": [
+                    "p14_canary_rehearsal_not_proven"
+                  ],
+                  "blocked_by": [
+                    "in_world_attestation",
+                    "visual_attestation"
+                  ],
+                  "auto_executable": false
+                },
+                {
+                  "action_id": "run_p14_rollback_rehearsal",
+                  "capability": "rollback_attestation",
+                  "status": "blocked",
+                  "risk_class": "guarded_write",
+                  "interaction": "external_runner",
+                  "reason_codes": [
+                    "p14_rollback_rehearsal_not_proven"
+                  ],
+                  "blocked_by": [
+                    "canary_attestation"
+                  ],
+                  "auto_executable": false
+                }
+              ]
+            },
+            "runner_online": true,
+            "signature_verification_passed": true,
+            "authority_safe": true
+          },
+          "runtime_authority_granted": false,
+          "live_authority_granted": false,
+          "promotion_approved": false,
+          "mcp_write_tool_enabled": false,
+          "blockers": []
+        }
       },
       "sandbox_smoke_queue": {
         "status": "ready_for_operator",
@@ -148,17 +537,17 @@
       }
     },
     "recommended_tool_order": [
-      "ctoai_engine_brain_brief",
-      "ctoai_control_center_cockpit",
-      "design next P7 plugin action"
+      "ctoai_control_central",
+      "ctoai_evidence_pack_refresh dry_run=true"
     ]
   },
   "roadmap_generation": {
     "status": "ready",
     "doc_sync_status": "passed",
     "doc_sync_roadmap_plan3_status": "passed",
-    "doc_count": 3,
-    "ready_doc_count": 3,
+    "doc_sync_roadmap_p8_p16_status": "passed",
+    "doc_count": 4,
+    "ready_doc_count": 4,
     "hard_blockers": [],
     "docs": [
       {
@@ -174,6 +563,12 @@
         "missing_markers": []
       },
       {
+        "name": "p8_p16_execution_roadmap",
+        "path": "AI/P8_P16_EXECUTION_ROADMAP.md",
+        "status": "passed",
+        "missing_markers": []
+      },
+      {
         "name": "plan3_roadmap",
         "path": "docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md",
         "status": "passed",
@@ -183,6 +578,6 @@
     "next_action": "Keep roadmap generation read-only in Control Center Evidence and plugin cockpit before adding any new MCP action.",
     "blocked_until": "risk model coverage, audit replay evidence, Control Center gates, and tests exist before adding any new MCP write tool."
   },
-  "next_safe_command": "Design the next P7 plugin action only after risk model coverage, audit logging, Control Center gates, and targeted MCP tests exist; keep deploy/live actions outside the plugin surface.",
-  "policy": "Generated operator brief. Only audited repo-hygiene, API-cost, evidence-pack, Engine Brain, and P7 cockpit-smoke safe_write tools are allowed; deploy/live actions remain blocked."
+  "next_safe_command": "Fix hard_blockers before expanding P7 operator workflow.",
+  "policy": "Generated operator brief. Only audited repo-hygiene, API-cost, evidence-pack, Engine Brain, P7 cockpit-smoke, and roadmap-state safe_write tools are allowed; deploy/live actions remain blocked."
 }

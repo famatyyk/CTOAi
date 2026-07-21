@@ -10,8 +10,8 @@ Authority: This file is the single source of truth for infra and deployment.
 - SSH user: ctoa
 - SSH key path: ~/.ssh/ctoa_vps_ed25519
 - Runtime: Docker-first
-- Docker registry namespace: docker.io/famatyyk/ctoa-toolkit
-- CI promotion path: PR-only build/test, then tag-based publish/deploy on `v*`
+- Docker registry namespace: ghcr.io/famatyyk/ctoa-toolkit
+- CI promotion path: PR-only build/test, then tag-based GHCR publish on `v*`; VPS deploy is opt-in
 
 ## Standard Local Flow
 
@@ -24,7 +24,7 @@ Authority: This file is the single source of truth for infra and deployment.
 
 Preferred deploy command with registry image:
 
-./deploy-to-vps.sh 116.202.96.250 ctoa $HOME/.ssh/ctoa_vps_ed25519 v1.14.0 docker.io/famatyyk/ctoa-toolkit
+./deploy-to-vps.sh 116.202.96.250 ctoa $HOME/.ssh/ctoa_vps_ed25519 v1.14.0 ghcr.io/famatyyk/ctoa-toolkit
 
 Fallback deploy command without registry (image streamed over SSH):
 
@@ -44,22 +44,22 @@ On tag `v*`:
 
 1. Build image
 2. Run test suite in container
-3. Publish image to docker.io/famatyyk/ctoa-toolkit
-4. Deploy to VPS using deploy-to-vps.sh
+3. Publish image to ghcr.io/famatyyk/ctoa-toolkit using the built-in `GITHUB_TOKEN`
+4. Deploy to VPS only when repository variable `CTOA_ENABLE_VPS_DEPLOY=true`
 
 Required GitHub secrets:
 
-- DOCKER_HUB_TOKEN
 - VPS_SSH_KEY
 - VPS_HOST
 - VPS_USER
 
 Notes:
 
-- Docker Hub username is fixed to famatyyk in workflow.
+- GHCR package owner follows the GitHub repository owner.
 - VPS_HOST should be 116.202.96.250
 - VPS_USER should be ctoa
-- ACR publish flow was removed in favor of the canonical Docker Hub release path.
+- Docker Hub publishing was removed; GHCR is the canonical registry.
+- VPS deployment remains opt-in until registry pull authentication and the deploy wrapper are configured.
 - Direct push to `main` is not part of this flow; PR merge and tag release are the standard path.
 
 ## Operational Guardrails

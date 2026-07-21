@@ -116,6 +116,8 @@ describe("Tibia operational state contract", () => {
     expect(capabilities?.heartbeat.status).toBe("missing")
     expect(capabilities?.evidence_status).toBe("stale_snapshot")
     expect(capabilities?.report_error).toBe("missing")
+    expect(capabilities?.game_online).toBeNull()
+    expect(capabilities?.runtime).toMatchObject({ state: "unknown", actions: false })
   })
 
   it("reads a current helper capability heartbeat without inventing protocol readiness", async () => {
@@ -138,6 +140,12 @@ describe("Tibia operational state contract", () => {
         observed_at: observedAt,
         observed_at_unix_ms: Date.now(),
         heartbeat_status: "online",
+        online: true,
+        runtime_session_armed: false,
+        runtime_state: "disarmed",
+        runtime_enabled: false,
+        runtime_actions: false,
+        runtime_core: { status: "available", mode: "passive", runtime_actions: false },
       }),
       "utf8",
     )
@@ -151,6 +159,15 @@ describe("Tibia operational state contract", () => {
     expect(client.evidence_status).toBe("fresh")
     expect(client.protocol_status).toBe("pending_protocol_source")
     expect(client.safe_fallback).toBe(true)
+    expect(client.game_online).toBe(true)
+    expect(client.runtime).toEqual({
+      state: "disarmed",
+      session_armed: false,
+      enabled: false,
+      actions: false,
+      core_status: "available",
+      core_mode: "passive",
+    })
   })
 
   it("fails closed for stale and malformed helper reports", async () => {
@@ -173,6 +190,9 @@ describe("Tibia operational state contract", () => {
         observed_at: new Date(staleAt).toISOString(),
         observed_at_unix_ms: staleAt,
         heartbeat_status: "online",
+        online: true,
+        runtime_actions: false,
+        runtime_core: { status: "available", mode: "passive", runtime_actions: false },
       }),
       "utf8",
     )
@@ -191,6 +211,74 @@ describe("Tibia operational state contract", () => {
       evidence_status: "parser_broken",
       report_error: "invalid_schema",
       safe_fallback: true,
+    })
+  })
+
+  it("fails closed when explicit runtime safety evidence is missing or unsafe", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "ctoa-client-runtime-contract-"))
+    temporaryRoots.push(root)
+    const reportPath = path.join(root, "client.json")
+    const observedAt = new Date().toISOString()
+    const baseReport = {
+      schema_version: "ctoa-client-capabilities-v1",
+      client_id: "otclientv8-local-default",
+      client_family: "otclientv8",
+      build_id: "1400",
+      status: "known_build",
+      supported_modules: ["ctoa_native_helper"],
+      protocol_status: "ready",
+      profile_schema: "ctoa-helper-profile-v1",
+      safe_fallback: false,
+      observed_at: observedAt,
+      observed_at_unix_ms: Date.now(),
+      heartbeat_status: "online",
+    }
+    process.env.CTOA_HELPER_CLIENT_STATE_PATH = reportPath
+
+    await writeFile(reportPath, JSON.stringify(baseReport), "utf8")
+    expect((await getClients()).clients[0]).toMatchObject({
+      status: "unknown_build",
+      evidence_status: "parser_broken",
+      report_error: "invalid_schema",
+      safe_fallback: true,
+      game_online: null,
+      runtime: { actions: false },
+    })
+
+    await writeFile(
+      reportPath,
+      JSON.stringify({
+        ...baseReport,
+        online: true,
+        runtime_actions: true,
+        runtime_core: { status: "available", mode: "passive", runtime_actions: false },
+      }),
+      "utf8",
+    )
+    expect((await getClients()).clients[0]).toMatchObject({
+      status: "known_build",
+      evidence_status: "fresh",
+      safe_fallback: true,
+      game_online: true,
+      runtime: { actions: true },
+    })
+
+    await writeFile(
+      reportPath,
+      JSON.stringify({
+        ...baseReport,
+        online: false,
+        runtime_actions: false,
+        runtime_core: { status: "available", mode: "passive", runtime_actions: false },
+      }),
+      "utf8",
+    )
+    expect((await getClients()).clients[0]).toMatchObject({
+      status: "known_build",
+      evidence_status: "fresh",
+      safe_fallback: true,
+      game_online: false,
+      runtime: { actions: false },
     })
   })
 

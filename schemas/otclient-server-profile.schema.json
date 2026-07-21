@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ctoai.local/schemas/otclient-server-profile.schema.json",
+  "title": "CTOA public OTClient server profile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "profile_id",
+    "display_name",
+    "adapter",
+    "endpoints",
+    "protocol",
+    "trust",
+    "credential_ref"
+  ],
+  "properties": {
+    "schema_version": { "const": "ctoa-ots-server-profile-v1" },
+    "profile_id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,63}$" },
+    "display_name": { "type": "string", "minLength": 1, "maxLength": 80 },
+    "icon": { "type": "string", "maxLength": 240 },
+    "adapter": {
+      "type": "string",
+      "enum": ["otclient-edubart", "otcv8", "otcbr", "redemption-mehah"]
+    },
+    "endpoints": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["host", "login_port", "game_port"],
+        "properties": {
+          "host": { "type": "string", "minLength": 1, "maxLength": 253 },
+          "login_port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+          "game_port": { "type": "integer", "minimum": 1, "maximum": 65535 }
+        }
+      }
+    },
+    "protocol": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["client_version"],
+      "properties": {
+        "client_version": { "type": "integer", "minimum": 700, "maximum": 2000 },
+        "extended_opcodes": { "type": "boolean", "default": false },
+        "cef_login": { "type": "boolean", "default": false }
+      }
+    },
+    "trust": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tls_required", "public_key_sha256"],
+      "properties": {
+        "tls_required": { "type": "boolean" },
+        "public_key_sha256": { "type": "string", "pattern": "^[A-Fa-f0-9]{64}$" },
+        "certificate_sha256": { "type": "string", "pattern": "^[A-Fa-f0-9]{64}$" }
+      }
+    },
+    "credential_ref": { "type": "string", "pattern": "^ctoa-vault://[a-zA-Z0-9._/-]{3,160}$" },
+    "capability_overrides": {
+      "type": "object",
+      "additionalProperties": { "type": "boolean" },
+      "maxProperties": 32
+    }
+  }
+}

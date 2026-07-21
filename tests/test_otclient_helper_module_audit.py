@@ -14,10 +14,11 @@ def test_module_audit_tracks_remaining_function_modularization_pressure():
 
     assert result.name == "otclient-helper-module-audit"
     assert result.status == "ready"
-    assert result.helper_line_count <= result.helper_line_budget
+    assert result.helper_line_count <= 4000
+    assert result.helper_function_count <= 110
     assert result.helper_line_budget == 4500
     assert result.helper_function_budget == 130
-    assert result.helper_budget_status == "over_budget"
+    assert result.helper_budget_status == "within_budget"
     assert "UI composition" in result.helper_shell_target
     assert result.modularization_pressure == "medium"
     assert result.placeholder_count == 0
@@ -25,15 +26,16 @@ def test_module_audit_tracks_remaining_function_modularization_pressure():
     assert result.prototype_count >= 4
     assert result.registry_count == 9
     assert result.registry_missing == []
+    assert result.single_reference_local_candidates == []
+    assert result.duplicate_config_surfaces == []
+    assert result.rigid_behavior_findings == []
     assert result.next_extraction_id == ""
     assert result.next_supplemental_id == ""
     assert len(result.extraction_plan) == 6
     assert len(result.supplemental_refactor_plan) == 16
-    assert "P6-module-lane" in result.next_phase
-    assert "UI composition shell" in result.next_phase
-    assert result.next_module_id == "heal_friend"
-    assert "HealFriendNoTargetSmoke" in result.next_module_action
-    assert "SmokeAttachModules" in result.next_module_action
+    assert result.next_phase == "Keep module gates current before adding new runtime actions."
+    assert result.next_module_id == "conditions"
+    assert "ConditionsRuntimeGate" in result.next_module_action
 
 
 def test_module_audit_maps_runtime_and_placeholder_lanes():
@@ -48,19 +50,19 @@ def test_module_audit_maps_runtime_and_placeholder_lanes():
     assert modules["cavebot"].target_file == "ctoa_native_helper.lua"
     assert modules["heal_friend"].status == "prototype"
     assert modules["heal_friend"].target_file == "ctoa_helper_heal_friend.lua"
-    assert "No runtime sio cast" in modules["heal_friend"].gate
-    assert "HealFriendNoTargetSmoke" in modules["heal_friend"].gate
-    assert "ModuleAttachSmoke" in modules["heal_friend"].gate
+    assert "HealFriendRuntimeGate" in modules["heal_friend"].gate
+    assert "Conditions/Equipment" in modules["heal_friend"].gate
+    assert "Combat/CaveBot disabled" in modules["heal_friend"].gate
     assert modules["conditions"].status == "prototype"
     assert modules["conditions"].target_file == "ctoa_helper_conditions.lua"
-    assert "No condition recovery action" in modules["conditions"].gate
-    assert "ConditionsObserverSmoke" in modules["conditions"].gate
-    assert "SmokeAttachModules" in modules["conditions"].next_step
+    assert "ConditionsRuntimeGate" in modules["conditions"].gate
+    assert "Recovery acceptance" in modules["conditions"].gate
+    assert "ConditionsRuntimeGate" in modules["conditions"].next_step
     assert modules["equipment"].status == "prototype"
     assert modules["equipment"].target_file == "ctoa_helper_equipment.lua"
-    assert "No runtime swap" in modules["equipment"].gate
-    assert "EquipmentObserverSmoke" in modules["equipment"].gate
-    assert "SmokeAttachModules" in modules["equipment"].next_step
+    assert "EquipmentRuntimeGate" in modules["equipment"].gate
+    assert "rollback snapshot" in modules["equipment"].gate
+    assert "EquipmentRuntimeGate" in modules["equipment"].next_step
     assert modules["scripting"].status == "prototype"
     assert modules["scripting"].target_file == "ctoa_helper_scripting.lua"
     assert "No user snippet execution" in modules["scripting"].gate
@@ -77,9 +79,9 @@ def test_module_audit_defines_professional_extraction_map():
     assert list(plan) == [
         "module_registry",
         "diagnostics",
-        "heal_friend",
         "conditions",
         "equipment",
+        "heal_friend",
         "scripting",
     ]
     assert plan["module_registry"].target_file == "ctoa_helper_modules.lua"
@@ -89,11 +91,14 @@ def test_module_audit_defines_professional_extraction_map():
     assert plan["diagnostics"].target_file == "ctoa_helper_diagnostics.lua"
     assert plan["diagnostics"].status == "extracted"
     assert "no secret/runtime path leakage" in plan["diagnostics"].gate
+    assert plan["conditions"].status == "extracted"
+    assert plan["conditions"].safe_order == 3
+    assert plan["equipment"].status == "extracted"
+    assert plan["equipment"].safe_order == 4
     assert plan["heal_friend"].target_file == "ctoa_helper_heal_friend.lua"
     assert plan["heal_friend"].status == "extracted"
-    assert "ModuleAttachSmoke" in plan["heal_friend"].gate
-    assert plan["conditions"].status == "extracted"
-    assert plan["equipment"].status == "extracted"
+    assert plan["heal_friend"].safe_order == 5
+    assert "Conditions and Equipment" in plan["heal_friend"].gate
     assert plan["scripting"].status == "extracted"
     assert plan["scripting"].safe_order == 6
     assert "eval remains blocked" in plan["scripting"].gate
@@ -196,19 +201,24 @@ def test_module_audit_writes_atomic_json_and_plan(tmp_path: Path):
     plan = plan_out.read_text(encoding="utf-8")
 
     assert payload["status"] == "ready"
-    assert payload["next_module_id"] == "heal_friend"
+    assert payload["helper_line_count"] <= 4000
+    assert payload["helper_function_count"] <= 110
+    assert payload["single_reference_local_candidates"] == []
+    assert payload["duplicate_config_surfaces"] == []
+    assert payload["rigid_behavior_findings"] == []
+    assert payload["next_module_id"] == "conditions"
     assert payload["next_extraction_id"] == ""
     assert payload["next_supplemental_id"] == ""
-    assert payload["helper_budget_status"] == "over_budget"
+    assert payload["helper_budget_status"] == "within_budget"
     assert payload["extraction_plan"][0]["target_file"] == "ctoa_helper_modules.lua"
     assert payload["extraction_plan"][0]["status"] == "extracted"
     assert payload["extraction_plan"][1]["target_file"] == "ctoa_helper_diagnostics.lua"
     assert payload["extraction_plan"][1]["status"] == "extracted"
-    assert payload["extraction_plan"][2]["target_file"] == "ctoa_helper_heal_friend.lua"
+    assert payload["extraction_plan"][2]["target_file"] == "ctoa_helper_conditions.lua"
     assert payload["extraction_plan"][2]["status"] == "extracted"
-    assert payload["extraction_plan"][3]["target_file"] == "ctoa_helper_conditions.lua"
+    assert payload["extraction_plan"][3]["target_file"] == "ctoa_helper_equipment.lua"
     assert payload["extraction_plan"][3]["status"] == "extracted"
-    assert payload["extraction_plan"][4]["target_file"] == "ctoa_helper_equipment.lua"
+    assert payload["extraction_plan"][4]["target_file"] == "ctoa_helper_heal_friend.lua"
     assert payload["extraction_plan"][4]["status"] == "extracted"
     assert payload["extraction_plan"][5]["target_file"] == "ctoa_helper_scripting.lua"
     assert payload["extraction_plan"][5]["status"] == "extracted"
@@ -290,7 +300,7 @@ def test_module_audit_promotes_only_fresh_static_gate_evidence(tmp_path: Path):
     assert modules["heal_friend"].status == "static_gated"
     assert modules["conditions"].status == "prototype"
     assert result.next_module_id == "conditions"
-    assert "ConditionsObserverSmoke" in result.next_module_action
+    assert "ConditionsRuntimeGate" in result.next_module_action
 
 
 def test_module_audit_promotes_healing_after_fresh_vitals_and_tab_evidence(tmp_path: Path):

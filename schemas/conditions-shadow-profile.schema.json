@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ctoa.local/schemas/conditions-shadow-profile.schema.json",
+  "title": "CTOAi Conditions Shadow Profile v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "mode",
+    "action",
+    "condition",
+    "spell",
+    "max_observation_age_ms",
+    "cooldown_required",
+    "retry_budget",
+    "requires_p8_ready",
+    "requires_recovery_trace",
+    "dispatch_allowed",
+    "runtime_actions",
+    "executes_plan",
+    "execute_once_allowed",
+    "promotion_allowed"
+  ],
+  "properties": {
+    "schema_version": {"const": "ctoa.conditions-shadow-profile.v1"},
+    "mode": {"const": "shadow_only"},
+    "action": {"const": "plan_paralyze_recovery"},
+    "condition": {"const": "paralyze"},
+    "spell": {"const": "exura"},
+    "max_observation_age_ms": {"type": "integer", "const": 6000},
+    "cooldown_required": {"const": "ready"},
+    "retry_budget": {"type": "integer", "const": 0},
+    "requires_p8_ready": {"const": true},
+    "requires_recovery_trace": {"const": true},
+    "dispatch_allowed": {"const": false},
+    "runtime_actions": {"const": false},
+    "executes_plan": {"const": false},
+    "execute_once_allowed": {"const": false},
+    "promotion_allowed": {"const": false}
+  }
+}

@@ -1,3 +1,7 @@
+import hashlib
+import json
+import subprocess
+import sys
 from pathlib import Path
 
 from scripts.ops import ctoa_helper_smoke_report as report
@@ -136,3 +140,35 @@ def test_render_html_inworld_status(tmp_path: Path):
 
     assert "ready_for_visual_review" in html
     assert "class=\"status ready\"" in html
+
+
+def test_cli_binds_inworld_report_to_manifest(tmp_path: Path):
+    for view in report.EXPECTED_VIEWS:
+        (tmp_path / f"solteria-helper-attach-{view}-20260705-041200.png").write_bytes(b"png")
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps({"created_at": "2026-07-05T04:00:00"}), encoding="utf-8")
+    completed = subprocess.run(
+        [
+            sys.executable,
+            str(report.ROOT / "scripts" / "ops" / "ctoa_helper_smoke_report.py"),
+            "--run-id",
+            "20260705-041",
+            "--prefix",
+            "solteria-helper-attach",
+            "--in-world",
+            "--screenshot-dir",
+            str(tmp_path),
+            "--manifest-path",
+            str(manifest),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert completed.returncode == 0, completed.stderr
+    payload = json.loads(
+        (tmp_path / "solteria-helper-smokeall-inworld-20260705-041.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert payload["manifest"]["sha256"] == hashlib.sha256(manifest.read_bytes()).hexdigest()

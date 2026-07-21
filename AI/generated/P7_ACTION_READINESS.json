@@ -26,14 +26,15 @@
     "warnings": [],
     "source_path": "runtime\\control-center\\p7-evidence-review.json"
   },
-  "next_safe_mode": "design_next_p7_plugin_action",
-  "mcp_write_tool_count": 5,
+  "next_safe_mode": "monitor_adaptive_roadmap_state",
+  "mcp_write_tool_count": 6,
   "mcp_write_tools": [
     "ctoai_repo_hygiene_refresh",
     "ctoai_api_cost_refresh",
     "ctoai_evidence_pack_refresh",
     "ctoai_engine_brain_refresh",
-    "ctoai_p7_cockpit_smoke_refresh"
+    "ctoai_p7_cockpit_smoke_refresh",
+    "ctoai_roadmap_state_refresh"
   ],
   "unexpected_mcp_write_tools": [],
   "enabled_safe_write_tools": [
@@ -60,6 +61,11 @@
     {
       "action_id": "p7-cockpit-smoke-refresh",
       "mcp_tool": "ctoai_p7_cockpit_smoke_refresh",
+      "risk_class": "safe_write"
+    },
+    {
+      "action_id": "roadmap-state-refresh",
+      "mcp_tool": "ctoai_roadmap_state_refresh",
       "risk_class": "safe_write"
     }
   ],
@@ -133,7 +139,21 @@
       "expected_mcp_tool": "ctoai_p7_cockpit_smoke_refresh",
       "plugin_mcp_allowed": true,
       "missing_gates": []
+    },
+    {
+      "id": "roadmap-state-refresh",
+      "risk_class": "safe_write",
+      "control_center_label": "Refresh adaptive roadmap state",
+      "control_center_enabled": true,
+      "risk_model_present": true,
+      "audit_seen": true,
+      "audit_record_count": 36,
+      "audit_dry_run_count": 15,
+      "audit_confirmed_count": 15,
+      "expected_mcp_tool": "ctoai_roadmap_state_refresh",
+      "plugin_mcp_allowed": true,
+      "missing_gates": []
     }
   ],
-  "next_safe_command": "Design the next P7 plugin action only after risk model coverage, audit logging, Control Center gates, and targeted MCP tests exist; keep deploy/live actions outside the plugin surface."
+  "next_safe_command": "Monitor the adaptive ROADMAP_STATE and refresh it only when required P13 inputs change; pending P14 evidence must not degrade the platform."
 }

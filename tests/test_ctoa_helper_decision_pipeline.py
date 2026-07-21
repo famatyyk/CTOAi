@@ -65,11 +65,11 @@ def test_full_decision_pipeline_with_real_lua(tmp_path: Path):
         """
 for index = 1, 9 do dofile(arg[index]) end
 local pipeline = CTOA_HELPER_DECISION_PIPELINE
-local attackModule = {
+local conditionsModule = {
   plan = function(config, observation, context)
     assert(config.enabled == true)
-    assert(observation.target == "Dragon")
-    return {next_action = "plan_attack", reason = "target_selected"}
+    assert(observation.paralyzed == true)
+    return {next_action = "plan_paralyze_recovery", reason = "condition_detected"}
   end,
 }
 local gates = {
@@ -78,12 +78,25 @@ local gates = {
   module_attach_smoke = true,
   smoke_attach_all = true,
   live_approval = true,
+  conditions_runtime_gate = {
+    schema_version = "ctoa.conditions-runtime-safety-gate.v1",
+    evidence_id = "conditions-e1",
+    gate_id = "conditions_runtime_gate",
+    next_action = "plan_paralyze_recovery",
+    status = "accepted",
+    accepted = true,
+    guard = "passed",
+    dry_run = true,
+    dispatch_allowed = false,
+    runtime_actions = false,
+    live_promotion = false,
+  },
 }
 local result = pipeline.evaluate({{
-  id = "combat",
-  module = attackModule,
+  id = "conditions",
+  module = conditionsModule,
   config = {enabled = true},
-  observation = {target = "Dragon"},
+  observation = {paralyzed = true},
 }}, {
   gates = gates,
   runtime_enabled = true,
@@ -93,27 +106,47 @@ local result = pipeline.evaluate({{
 })
 
 assert(result.status == "review_ready")
-assert(result.selected.next_action == "plan_attack")
-assert(result.catalog.domain == "combat")
+assert(result.selected.next_action == "plan_paralyze_recovery")
+assert(result.catalog.domain == "conditions")
 assert(result.catalog.runtime_action == true)
+assert(result.catalog.module_safety_gate == "conditions_runtime_gate")
 assert(result.policy.status == "ready")
 assert(result.policy.planner_is_passive == true)
 assert(result.guard.status == "ready")
 assert(#result.queue == 1)
 assert(result.readiness.status == "review_ready")
-assert(result.trace.risk == "runtime_combat")
-assert(result.adapter_handoff.adapter_id == "combat_runtime")
+assert(result.trace.risk == "runtime_recovery")
+assert(result.adapter_handoff.adapter_id == "conditions_runtime")
 assert(result.adapter_handoff.status == "review_ready")
 assert(result.adapter_handoff.dispatch_allowed == false)
 assert(result.dispatch_allowed == false)
 assert(result.executes_plan == false)
 
-gates.live_approval = false
-local blocked = pipeline.evaluate({{
+local attackModule = {
+  plan = function()
+    return {next_action = "plan_attack", reason = "target_selected"}
+  end,
+}
+local highRisk = pipeline.evaluate({{
   id = "combat",
   module = attackModule,
   config = {enabled = true},
   observation = {target = "Dragon"},
+}}, {
+  gates = gates,
+  runtime_enabled = true,
+  sandbox_attach_ready = true,
+})
+assert(highRisk.status == "blocked")
+assert(highRisk.policy.status == "blocked")
+assert(highRisk.policy.reasons[#highRisk.policy.reasons] == "high_risk_deferred")
+
+gates.live_approval = false
+local blocked = pipeline.evaluate({{
+  id = "conditions",
+  module = conditionsModule,
+  config = {enabled = true},
+  observation = {paralyzed = true},
 }}, {
   gates = gates,
   runtime_enabled = true,
@@ -184,4 +217,5 @@ def test_engine_panel_exposes_boot_pipeline_and_blocker_status():
     assert "owns_engine_status_rows = true" in ui
     assert 'moduleValue(externalModules, "bootSnapshot", loaderState.modules or {})' in helper
     assert 'moduleValue(externalModules, "bootSummary", bootSnapshot or {})' in helper
-    assert 'moduleValue(externalDecisionPipeline, "summary", Helper.decision_pipeline_result or {})' in helper
+    assert "local pipelineResult = Helper.decision_pipeline_result or {}" in helper
+    assert 'moduleValue(externalDecisionPipeline, "summary", pipelineResult)' in helper

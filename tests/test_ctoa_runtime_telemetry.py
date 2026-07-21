@@ -18,18 +18,33 @@ def test_runtime_core_telemetry_is_wired_to_diagnostics_and_reporter():
 
     assert "function Diagnostics.runtimeCoreSnapshot" in diagnostics
     assert "function Diagnostics.runtimeCoreText" in diagnostics
-    assert "runtime_core = Diagnostics.runtimeCoreSnapshot(data.runtime_core)" in diagnostics
+    assert (
+        "runtime_core = Diagnostics.runtimeCoreSnapshot(data.runtime_core)"
+        in diagnostics
+    )
     assert "runtime_core = snapshot.runtime_core" in diagnostics
     assert "owns_runtime_core_snapshot = true" in diagnostics
     assert "owns_runtime_core_text = true" in diagnostics
     assert "local function runtimeCoreSnapshot" in reporter
     assert "runtime_core = runtimeCoreSnapshot(data.runtime_core)" in reporter
     assert "reports_runtime_core = true" in reporter
-    assert 'local externalRuntimeCore = rawget(_G, "CTOA_HELPER_RUNTIME_CORE")' in helper
+    assert "reports_optional_conditions_observation = true" in reporter
+    assert "sanitizes_conditions_observation = true" in reporter
+    assert "reports_optional_heal_friend_scan = true" in reporter
+    assert "sanitizes_heal_friend_scan = true" in reporter
+    assert (
+        'local externalRuntimeCore = rawget(_G, "CTOA_HELPER_RUNTIME_CORE")' in helper
+    )
     assert "runtime_core = externalRuntimeCore" in helper
+    assert "function Reporter.report" in reporter
+    assert "observation_adapter = observationAdapter" in reporter
+    assert 'modules = rawget(_G, "modules")' in reporter
+    assert 'moduleValue(externalClientReporter, "report", Helper' in helper
 
 
-def test_runtime_telemetry_reports_disabled_deferred_and_failed_states_with_real_lua(tmp_path):
+def test_runtime_telemetry_reports_disabled_deferred_and_failed_states_with_real_lua(
+    tmp_path,
+):
     lua = shutil.which("lua")
     assert lua, "Lua interpreter is required for runtime telemetry validation"
     probe = tmp_path / "runtime_telemetry_probe.lua"
@@ -82,6 +97,8 @@ local snapshot = reporter.snapshot({
     runtime_core = core,
     active = true,
     online = false,
+    runtime_session_armed = false,
+    runtime_enabled = false,
 })
 assert(snapshot.schema_version == "ctoa-client-capabilities-v1")
 assert(snapshot.runtime_core.schema_version == "ctoa.runtime-core.v1")
@@ -91,6 +108,17 @@ assert(snapshot.runtime_core.disabled_tasks == 1)
 assert(snapshot.runtime_core.failed_tasks == 1)
 assert(snapshot.runtime_core.tasks_deferred == 1)
 assert(snapshot.runtime_core.runtime_actions == false)
+assert(snapshot.runtime_state == "disarmed")
+assert(snapshot.runtime_session_armed == false)
+assert(snapshot.runtime_enabled == false)
+
+local resources = {
+    getWorkDir = function() return "C:/Solteria/client" end,
+    getUserDir = function() return "C:/Users/test" end,
+}
+assert(reporter.resolvePath(nil, resources) == "C:/Solteria/client/mods/ctoa_otclient/ctoa_client_capabilities.json")
+assert(reporter.resolvePath("user_dir/ctoa_otclient/ctoa_ui_prefs.lua", resources) == "C:/Solteria/client/mods/ctoa_otclient/ctoa_client_capabilities.json")
+assert(reporter.resolvePath("ctoa_otclient/ctoa_ui_prefs.lua", resources) == "C:/Solteria/client/mods/ctoa_otclient/ctoa_client_capabilities.json")
 
 local unavailable = diagnostics.runtimeCoreSnapshot({statusSnapshot = function() error("broken") end})
 assert(unavailable.status == "unavailable")
@@ -109,7 +137,9 @@ assert(unavailable.runtime_actions == false)
 
 
 def test_runtime_telemetry_remains_read_only():
-    combined = DIAGNOSTICS.read_text(encoding="utf-8") + REPORTER.read_text(encoding="utf-8")
+    combined = DIAGNOSTICS.read_text(encoding="utf-8") + REPORTER.read_text(
+        encoding="utf-8"
+    )
     for forbidden in [
         "g_game.attack",
         "g_game.talk",

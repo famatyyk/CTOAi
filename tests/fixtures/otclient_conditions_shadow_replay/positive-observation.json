@@ -1,0 +1,19 @@
+{
+  "schema_version": "ctoa.conditions-observation.v1",
+  "observed_at_unix_ms": 1783799999000,
+  "observation_id": "fixture-positive-paralyze",
+  "online": "online",
+  "alive": "alive",
+  "protection_zone": "outside",
+  "protection_zone_source": "player_method",
+  "condition_id": "paralyze",
+  "condition_state": "present",
+  "cooldown": "ready",
+  "cooldown_source": "game_cooldown_group",
+  "producer_source": "fixture",
+  "dispatch_allowed": false,
+  "runtime_actions": false,
+  "executes_plan": false,
+  "execute_once_allowed": false,
+  "promotion_allowed": false
+}

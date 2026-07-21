@@ -6,6 +6,12 @@
   "risk_model": "docs/CTOAI_COMMAND_RISK_MODEL.md",
   "allowed_mcp_tools": [
     {
+      "name": "ctoai_control_central",
+      "risk_class": "read_only",
+      "allowed": true,
+      "purpose": "Return token-efficient brain, Control Center, plugin-management, and sites status with lane-specific drilldown."
+    },
+    {
       "name": "ctoai_engine_brain_status",
       "risk_class": "read_only",
       "allowed": true,
@@ -73,6 +79,15 @@
       "dry_run_default": true,
       "audit_sink": "runtime/control-center/action-audit.jsonl",
       "purpose": "Dry-run-first refresh of P7 cockpit smoke evidence with Control Center-compatible audit logging."
+    },
+    {
+      "name": "ctoai_roadmap_state_refresh",
+      "risk_class": "safe_write",
+      "allowed": true,
+      "action_id": "roadmap-state-refresh",
+      "dry_run_default": true,
+      "audit_sink": "runtime/control-center/action-audit.jsonl",
+      "purpose": "Native dry-run-first refresh of the adaptive roadmap state with fixed inputs, fixed outputs, and hash-bound audit logging."
     }
   ],
   "blocked_action_classes": [
@@ -92,12 +107,12 @@
   "gates_before_actions": [
     "Every plugin tool must have a stable risk class from docs/CTOAI_COMMAND_RISK_MODEL.md.",
     "Every write-capable tool must be represented in Control Center action audit before enablement.",
-    "Only ctoai_repo_hygiene_refresh, ctoai_api_cost_refresh, ctoai_evidence_pack_refresh, ctoai_engine_brain_refresh, and ctoai_p7_cockpit_smoke_refresh may be exposed as safe_write in this wave.",
+    "Only ctoai_repo_hygiene_refresh, ctoai_api_cost_refresh, ctoai_evidence_pack_refresh, ctoai_engine_brain_refresh, ctoai_p7_cockpit_smoke_refresh, and ctoai_roadmap_state_refresh may be exposed as safe_write in this wave.",
     "Every safe-write MCP tool must default to dry-run and append runtime/control-center/action-audit.jsonl.",
     "No tool may bypass PromoteLiveCtoa -ApproveLiveDeploy for Solteria Helper live promotion.",
     "No tool may read .env, logs, databases, runtime client state, or private Solteria client data into generated context.",
     "P6 readiness, P7 operator brief, release evidence pack, doc sync, and secret guardrail must all be current."
   ],
-  "next_safe_command": "Use ctoai_repo_hygiene_refresh, ctoai_api_cost_refresh, ctoai_evidence_pack_refresh, ctoai_engine_brain_refresh, and ctoai_p7_cockpit_smoke_refresh with dry_run=true before any confirmed refresh.",
-  "policy": "P7 operator workflow allows five audited safe_write evidence/context refresh tools. Deploy/live actions stay blocked."
+  "next_safe_command": "Fix P6 readiness before exposing the P7 operator workflow.",
+  "policy": "P7 operator workflow allows six audited safe_write evidence/context refresh tools. Deploy/live actions stay blocked."
 }

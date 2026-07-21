@@ -1,0 +1,986 @@
+{
+  "schema_version": "ctoa.helper-evolution-roadmap.v1",
+  "status": "static_refactor_in_progress",
+  "primary_project": "CTOAi Helper",
+  "secondary_project": "CTOAi Safe",
+  "current_evidence_dependency": "P14",
+  "execution_policy": {
+    "static_refactor_during_p14": true,
+    "runtime_acceptance_requires_p14_complete": true,
+    "sandbox_first": true,
+    "live_requires_separate_explicit_approval": true,
+    "safe_acceptance_never_satisfies_helper_gates": true
+  },
+  "condition_contract": {
+    "metrics": [
+      "hp_percent",
+      "mana_percent",
+      "monster_count",
+      "distance",
+      "pz",
+      "active_condition"
+    ],
+    "operators": ["<", "<=", "=", "!=", ">=", ">"],
+    "combinators": ["AND", "OR"],
+    "dispatch_controls": [
+      "cooldown",
+      "hysteresis",
+      "bounded_randomization"
+    ]
+  },
+  "baseline": {
+    "initial_native_helper_lines": 4404,
+    "initial_native_helper_functions": 130,
+    "current_native_helper_lines": 3593,
+    "current_native_helper_functions": 102,
+    "native_helper_line_budget": 4500,
+    "native_helper_function_budget": 130,
+    "modularization_pressure": "low",
+    "resolved_dead_local_candidates": [
+      "hasAttackTarget",
+      "countMonsters"
+    ],
+    "resolved_duplicate_surfaces": [
+      "Tools/HUD removed; Settings/HUD is canonical"
+    ],
+    "resolved_rigid_behaviors": [
+      "target name policy has native editable ignored and priority fields",
+      "Magic Shooter spell rows are an editable ordered list with bounded profile-data controls",
+      "target selection uses ordered editable HP distance count priority and chase rules",
+      "rune and stance actions are editable ordered add remove reorder rules",
+      "haste and observed buff families block recast while active",
+      "unobservable spell state requires an explicit bounded fallback",
+      "legacy scalar stance selection no longer drives runtime",
+      "moduleValue no longer contains duplicate domain implementations",
+      "diagnostics owns safe API probes and bounded smoke command IO",
+      "UI owns style and layout tables",
+      "observation adapter owns guarded native reads",
+      "Route and CaveBot Runtime own editor bindings and movement state decisions"
+    ],
+    "confirmed_rigid_lanes": []
+  },
+  "immediate_slices": [
+    {
+      "id": "P17.1",
+      "title": "Ownership and reachability audit",
+      "status": "complete",
+      "runtime_authority": false
+    },
+    {
+      "id": "P17.2",
+      "title": "Remove proven dead locals and duplicate fallbacks",
+      "status": "complete",
+      "runtime_authority": false
+    },
+    {
+      "id": "P17.3",
+      "title": "Unify HUD settings under one owner",
+      "status": "complete",
+      "runtime_authority": false
+    },
+    {
+      "id": "P17.4",
+      "title": "Prototype typed action and condition schema",
+      "status": "complete",
+      "artifact": "scripts/lua/otclient/ctoa_helper_rule_engine.lua",
+      "runtime_authority": false
+    },
+    {
+      "id": "P17.5",
+      "title": "Remove duplicate targeting fallbacks from native shell",
+      "status": "complete",
+      "artifact": "scripts/lua/otclient/ctoa_native_helper.lua",
+      "runtime_authority": false
+    },
+    {
+      "id": "P19.1",
+      "title": "Editable ignored and priority target-name policy",
+      "status": "complete",
+      "artifacts": [
+        "scripts/lua/otclient/ctoa_helper_targeting.lua",
+        "scripts/lua/otclient/ctoa_helper_ui.lua"
+      ],
+      "runtime_authority": false,
+      "validation": {
+        "lua_syntax_files": 60,
+        "targeted_tests": 102
+      }
+    },
+    {
+      "id": "P19.2",
+      "title": "Editable ordered Magic Shooter spell-rule list",
+      "status": "complete",
+      "artifacts": [
+        "scripts/lua/otclient/ctoa_helper_combat_runtime.lua",
+        "scripts/lua/otclient/ctoa_helper_ui.lua",
+        "scripts/lua/otclient/ctoa_helper_profile_schema.lua",
+        "scripts/lua/otclient/ctoa_native_helper.lua"
+      ],
+      "runtime_authority": false,
+      "validation": {
+        "lua_syntax_files": 60,
+        "targeted_tests": 100,
+        "preview_widgets": 172,
+        "preview_layout_issues": 0
+      }
+    },
+    {
+      "id": "P19.3",
+      "title": "Ordered target and rune/stance action rules",
+      "status": "complete",
+      "artifacts": [
+        "scripts/lua/otclient/ctoa_helper_targeting.lua",
+        "scripts/lua/otclient/ctoa_helper_combat_runtime.lua",
+        "scripts/lua/otclient/ctoa_helper_ui.lua",
+        "scripts/lua/otclient/ctoa_helper_profile_schema.lua",
+        "scripts/lua/otclient/ctoa_native_helper.lua"
+      ],
+      "runtime_authority": false,
+      "validation": {
+        "lua_syntax_files": 60,
+        "targeted_tests": 98,
+        "preview_widgets": 208,
+        "preview_layout_issues": 0,
+        "native_helper_lines": 4424,
+        "native_helper_functions": 128
+      }
+    },
+    {
+      "id": "P20.1",
+      "title": "Data-driven spell state registry and anti-spam decisions",
+      "status": "complete",
+      "artifacts": [
+        "scripts/lua/otclient/ctoa_helper_spell_state_registry.lua",
+        "scripts/lua/otclient/ctoa_helper_combat_runtime.lua",
+        "scripts/lua/otclient/ctoa_native_helper.lua"
+      ],
+      "runtime_authority": false,
+      "validation": {
+        "lua_syntax_files": 61,
+        "helper_targeted_tests": 195,
+        "deterministic_transition_replay": true,
+        "unknown_state_policy": "fail_closed_or_explicit_bounded_cooldown"
+      }
+    },
+    {
+      "id": "P17.6",
+      "title": "Remove scalar stance fallback and centralize combat bookkeeping",
+      "status": "complete",
+      "artifacts": [
+        "scripts/lua/otclient/ctoa_helper_combat_runtime.lua",
+        "scripts/lua/otclient/ctoa_native_helper.lua",
+        "scripts/ops/otclient_helper_module_audit.py"
+      ],
+      "runtime_authority": false,
+      "validation": {
+        "native_helper_lines": 4404,
+        "native_helper_functions": 128,
+        "module_audit_status": "needs_simplification",
+        "rigid_behavior_findings": 0
+      }
+    },
+    {
+      "id": "P17.7",
+      "title": "Remove the central duplicate module fallback hub",
+      "status": "complete",
+      "artifacts": [
+        "scripts/lua/otclient/ctoa_native_helper.lua",
+        "tests/test_otclient_helper_module_contract.py"
+      ],
+      "runtime_authority": false,
+      "validation": {
+        "native_helper_lines": 4320,
+        "native_helper_functions": 128,
+        "removed_shell_lines": 84,
+        "missing_owner_policy": "fail_closed",
+        "profile_serialization_precedes_file_open": true,
+        "module_audit_status": "needs_simplification"
+      }
+    },
+    {
+      "id": "P17.8",
+      "title": "Move API guards and bounded smoke IO into diagnostics ownership",
+      "status": "complete",
+      "artifacts": [
+        "scripts/lua/otclient/ctoa_helper_diagnostics.lua",
+        "scripts/lua/otclient/ctoa_native_helper.lua",
+        "tests/test_ctoa_helper_diagnostics_log_path.py"
+      ],
+      "runtime_authority": false,
+      "validation": {
+        "native_helper_lines": 4247,
+        "native_helper_functions": 121,
+        "removed_shell_lines": 73,
+        "removed_shell_functions": 7,
+        "bounded_smoke_command_bytes": 4096,
+        "targeted_tests": 82,
+        "lua_syntax_files": 61,
+        "module_audit_status": "needs_simplification"
+      }
+    },
+    {
+      "id": "P17.9",
+      "title": "Close the strict shell budget through module-owned CaveBot, diagnostics, UI and observation contracts",
+      "status": "complete",
+      "artifacts": [
+        "scripts/lua/otclient/ctoa_helper_cavebot_runtime.lua",
+        "scripts/lua/otclient/ctoa_helper_diagnostics.lua",
+        "scripts/lua/otclient/ctoa_helper_otclient_observation_adapter.lua",
+        "scripts/lua/otclient/ctoa_helper_route.lua",
+        "scripts/lua/otclient/ctoa_helper_ui.lua",
+        "scripts/lua/otclient/ctoa_native_helper.lua"
+      ],
+      "runtime_authority": false,
+      "validation": {
+        "native_helper_lines": 3719,
+        "native_helper_functions": 100,
+        "removed_shell_lines": 528,
+        "removed_shell_functions": 21,
+        "product_target_lines_below": 4000,
+        "product_target_functions_below": 110,
+        "module_audit_status": "ready",
+        "targeted_tests": 112,
+        "lua_syntax_files": 61,
+        "broad_regression_passed": 736,
+        "broad_regression_skipped": 12,
+        "pre_existing_out_of_slice_failures": 6
+      }
+    },
+    {
+      "id": "P18.1",
+      "title": "Versioned deterministic rule-set and profile migration",
+      "status": "complete",
+      "artifacts": [
+        "scripts/lua/otclient/ctoa_helper_rule_engine.lua",
+        "scripts/lua/otclient/ctoa_helper_profile_schema.lua",
+        "scripts/lua/otclient/ctoa_helper_profile_persistence.lua",
+        "scripts/lua/otclient/ctoa_helper_modules.lua",
+        "scripts/lua/otclient/ctoa_native_helper.lua"
+      ],
+      "runtime_authority": false,
+      "validation": {
+        "native_helper_lines": 3721,
+        "native_helper_functions": 100,
+        "rule_set_schema": "ctoa-helper-rule-set-v1",
+        "max_rules": 32,
+        "legacy_rules_safe_disabled": true,
+        "future_versions_fail_closed": true,
+        "deterministic_replay": true,
+        "targeted_tests": 96,
+        "lua_syntax_files": 61,
+        "module_audit_status": "ready",
+        "broad_regression_passed": 756,
+        "broad_regression_skipped": 13,
+        "pre_existing_out_of_slice_failures": 6
+      }
+    },
+    {
+      "id": "P21.1",
+      "title": "Audit and consolidate vocation profile data before schema growth",
+      "status": "complete",
+      "artifacts": [
+        "scripts/lua/otclient/ctoa_helper_profile_schema.lua",
+        "scripts/lua/otclient/ctoa_ek_profile.lua",
+        "scripts/lua/otclient/ctoa_rp_profile.lua",
+        "scripts/lua/otclient/ctoa_ed_profile.lua",
+        "scripts/lua/otclient/ctoa_ms_profile.lua"
+      ],
+      "runtime_authority": false,
+      "entry_gate": "inventory duplicated defaults branches and spell data before introducing profile v2",
+      "done_gates": [
+        "vocation files contain data only",
+        "MS ED and RP packs contain only vocation deltas plus explicit safe flags",
+        "custom server spells remain editable",
+        "migration replay cannot arm runtime"
+      ],
+      "validation": {
+        "native_helper_lines": 3727,
+        "native_helper_functions": 100,
+        "pack_schema": "ctoa-helper-profile-v1",
+        "max_pack_depth": 12,
+        "max_pack_nodes": 4096,
+        "vocation_pack_bytes_removed": 1416,
+        "targeted_tests": 97,
+        "lua_syntax_files": 61,
+        "module_audit_status": "ready",
+        "broad_regression_passed": 762,
+        "broad_regression_skipped": 13,
+        "pre_existing_out_of_slice_failures": 6,
+        "expected_stale_stage_manifest_failure": 1
+      }
+    },
+    {
+      "id": "P21.2",
+      "title": "Move canonical shared defaults from the native shell into profile schema ownership",
+      "status": "complete",
+      "artifacts": [
+        "scripts/lua/otclient/ctoa_helper_profile_schema.lua",
+        "scripts/lua/otclient/ctoa_native_helper.lua"
+      ],
+      "runtime_authority": false,
+      "entry_gate": "P21.1 data-only vocation pack validation and replay complete",
+      "done_gates": [
+        "profile schema is the single owner of shared defaults and migrations",
+        "native shell requests a defensive default copy and has no duplicate default tree",
+        "current profiles replay without behavior drift",
+        "safe boot remains default-off"
+      ],
+      "validation": {
+        "native_helper_lines": 3547,
+        "native_helper_functions": 100,
+        "removed_native_shell_lines": 180,
+        "defensive_copy": true,
+        "missing_owner_policy": "fail_closed",
+        "default_profile_schema": "ctoa-helper-profile-v1",
+        "runtime_authority": false,
+        "targeted_tests": 109,
+        "lua_syntax_files": 61,
+        "module_audit_status": "ready",
+        "broad_regression_passed": 787,
+        "broad_regression_skipped": 13,
+        "pre_existing_out_of_slice_failures": 6
+      }
+    },
+    {
+      "id": "P22.1",
+      "title": "Audit and unify settings HUD and rule-editor surfaces",
+      "status": "complete",
+      "artifacts": [
+        "scripts/lua/otclient/ctoa_helper_ui.lua",
+        "scripts/lua/otclient/ctoa_helper_hud.lua",
+        "scripts/lua/otclient/ctoa_helper_profile_schema.lua",
+        "scripts/lua/otclient/ctoa_native_helper.lua"
+      ],
+      "runtime_authority": false,
+      "entry_gate": "P21 canonical profile ownership complete",
+      "done_gates": [
+        "one settings location per concern",
+        "HUD preferences have one visible owner",
+        "target spell and action rule editors share one interaction model",
+        "small viewport layout remains contained"
+      ],
+      "validation": {
+        "settings_surface": "ui tab owns hotkey appearance and HUD",
+        "profile_surface": "profile tab owns healing modules and presets",
+        "shared_rule_editor_chrome_consumers": 3,
+        "preview_window": "690x560",
+        "preview_widgets": 208,
+        "preview_layout_issues": 0,
+        "targeted_tests": 92,
+        "lua_syntax_files": 61,
+        "module_audit_status": "ready",
+        "broad_regression_passed": 1933,
+        "broad_regression_skipped": 49,
+        "pre_existing_out_of_slice_failures": 20,
+        "runtime_authority": false
+      }
+    },
+    {
+      "id": "P22.2",
+      "title": "Make runtime feedback distinct and preserve contained navigation",
+      "status": "complete",
+      "artifacts": [
+        "scripts/lua/otclient/ctoa_helper_ui.lua",
+        "scripts/lua/otclient/ctoa_helper_hud.lua",
+        "scripts/lua/otclient/ctoa_helper_module_status.lua",
+        "scripts/ops/ctoa_helper_ui_preview.py"
+      ],
+      "runtime_authority": false,
+      "entry_gate": "P22.1 unified editor and settings ownership complete",
+      "done_gates": [
+        "disabled blocked stale and active have distinct native feedback",
+        "rule editor overflow has a proven contained navigation path",
+        "compact and default layouts remain usable at the supported viewport",
+        "preview and real Lua contracts remain action free"
+      ],
+      "validation": {
+        "operator_states": ["disabled", "blocked", "stale", "active"],
+        "distinct_visual_roles": 4,
+        "state_priority": "blocked then stale then active then disabled",
+        "pipeline_stale_after_ms": 5000,
+        "rule_editor_navigation": "single-row bounded previous-next",
+        "rule_editor_max_proven": 16,
+        "default_preview_widgets": 208,
+        "default_preview_layout_issues": 0,
+        "compact_preview_widgets": 208,
+        "compact_preview_layout_issues": 0,
+        "targeted_tests": 112,
+        "lua_syntax_files": 61,
+        "module_audit_status": "ready",
+        "helper_otclient_regression_passed": 792,
+        "helper_otclient_regression_skipped": 13,
+        "pre_existing_out_of_slice_failures": 6,
+        "native_helper_lines": 3576,
+        "native_helper_functions": 102,
+        "runtime_authority": false
+      }
+    },
+    {
+      "id": "P23.1",
+      "title": "Inventory pure Helper Safe contracts and reject runtime coupling",
+      "status": "complete",
+      "artifacts": [
+        "AI/P23_HELPER_SAFE_CONTRACT_INVENTORY.json",
+        "docs/otclient/P23_HELPER_SAFE_CONTRACT_INVENTORY.md",
+        "scripts/lua/otclient/ctoa_helper_rule_engine.lua",
+        "scripts/lua/otclient/ctoa_helper_profile_schema.lua",
+        "mods/ctoa_safe/ctoa_safe_helper.lua",
+        "tests/fixtures/ctoa_helper_safe_condition_parity_v1.json",
+        "tests/fixtures/lua/ctoa_safe_condition_contract.lua"
+      ],
+      "runtime_authority": false,
+      "entry_gate": "P22 unified operator UX complete",
+      "done_gates": [
+        "candidate contracts are classified share adapt or reject",
+        "no Helper loader runtime or mutable state enters Safe",
+        "Helper and Safe acceptance evidence remains separate",
+        "a passive parity fixture proves shared data semantics"
+      ],
+      "validation": {
+        "share_contracts": 1,
+        "adapt_contracts": 3,
+        "reject_contracts": 5,
+        "parity_cases": 10,
+        "operators_proven": 6,
+        "combinators_proven": 2,
+        "mapped_metrics": 3,
+        "safe_runtime_tree_files_added": 0,
+        "safe_loader_wired": false,
+        "safe_runtime_wired": false,
+        "shared_loaders": 0,
+        "shared_mutable_state": 0,
+        "shared_acceptance_receipts": 0,
+        "parity_tests": 3,
+        "targeted_tests": 51,
+        "known_safe_version_expectation_failures": 1,
+        "helper_lua_syntax_files": 61,
+        "fixture_lua_syntax_files": 1,
+        "module_audit_status": "ready",
+        "runtime_authority": false,
+        "operational_acceptance_evaluated": false,
+        "runtime_randomization_parity_evaluated": false,
+        "promotion_allowed": false
+      }
+    },
+    {
+      "id": "P23.2",
+      "title": "Decide canonical pure condition core and product local adapters",
+      "status": "complete",
+      "artifacts": [
+        "AI/P23_2_CONDITION_CORE_DECISION.json",
+        "docs/otclient/P23_2_CONDITION_CORE_DECISION.md",
+        "AI/P23_HELPER_SAFE_CONTRACT_INVENTORY.json",
+        "scripts/lua/otclient/ctoa_helper_rule_engine.lua",
+        "mods/ctoa_safe/ctoa_safe_helper.lua",
+        "tests/test_ctoa_helper_safe_contract_parity.py"
+      ],
+      "runtime_authority": false,
+      "entry_gate": "P23.1 passive parity inventory complete",
+      "done_gates": [
+        "one reviewed pure condition core or an explicit no-share decision exists",
+        "product local adapters preserve Helper v1 and Safe v3 schemas",
+        "no loader lifecycle mutable runtime or evidence contract is shared",
+        "integration tests preserve safe boot and independent release manifests"
+      ],
+      "validation": {
+        "decision": "no_shared_runtime_core",
+        "shared_numeric_operators": 6,
+        "shared_combinators": 2,
+        "helper_max_conditions": 8,
+        "safe_max_conditions": 4,
+        "runtime_randomization_parity": false,
+        "shared_runtime_files": 0,
+        "shared_loaders": 0,
+        "shared_mutable_state": 0,
+        "shared_profile_schemas": 0,
+        "shared_acceptance_receipts": 0,
+        "safe_release_manifest_changed": false,
+        "helper_release_manifest_changed": false,
+        "contract_and_roadmap_tests": 14,
+        "exclusive_loader_tests": 24,
+        "safe_release_boundary_tests": 3,
+        "helper_rule_and_profile_tests": 11,
+        "targeted_tests": 52,
+        "helper_lua_syntax_files": 61,
+        "fixture_lua_syntax_files": 1,
+        "module_audit_status": "ready",
+        "workspace_audit_file_count": 47323,
+        "workspace_audit_sensitive_hash_count": 0,
+        "engine_brain_doc_sync": "passed",
+        "engine_brain_secret_guardrail": "passed",
+        "engine_brain_doctor": "warn",
+        "engine_brain_doctor_failures": 0,
+        "engine_brain_doctor_warnings": 3,
+        "engine_brain_pack_profile": "control-central",
+        "engine_brain_pack_included": 10,
+        "engine_brain_pack_truncated": 0,
+        "runtime_authority": false,
+        "operational_acceptance_evaluated": false,
+        "promotion_allowed": false
+      }
+    },
+    {
+      "id": "P24.1",
+      "title": "Build independent replay matrix and bounded canary specification",
+      "status": "complete",
+      "artifacts": [
+        "AI/P24_REPLAY_CANARY_MATRIX.json",
+        "docs/otclient/P24_REPLAY_CANARY_MATRIX.md",
+        "tests/test_p24_helper_replay_canary_matrix.py",
+        "AI/P17_P24_HELPER_EVOLUTION_ROADMAP.json"
+      ],
+      "runtime_authority": false,
+      "entry_gate": "P23 product-local condition ownership complete",
+      "done_gates": [
+        "replay matrix binds every P18-P23 contract to an independent fixture or runner",
+        "sandbox canaries list exact preconditions actions observations and rollback",
+        "fixture evidence cannot satisfy runtime acceptance",
+        "live promotion remains a separate explicit approval"
+      ],
+      "validation": {
+        "replay_lanes": 6,
+        "sandbox_canaries_specified": 4,
+        "sandbox_canaries_executed": 0,
+        "maximum_authorized_canary_dispatches": 0,
+        "replay_matrix_tests": 4,
+        "p18_p23_replay_tests": 61,
+        "sandbox_queue_release_gate_tests": 47,
+        "p14_contract_tests_passed": 31,
+        "p14_contract_tests_skipped": 1,
+        "p14_expected_stale_stage_failures": 1,
+        "independent_runner_status": "externally_verified_stale",
+        "current_revision_match": false,
+        "local_stage_manifest_match": false,
+        "engine_brain_doc_sync": "passed",
+        "engine_brain_secret_guardrail": "passed",
+        "engine_brain_doctor": "warn",
+        "engine_brain_doctor_failures": 0,
+        "engine_brain_doctor_warnings": 3,
+        "engine_brain_pack_included": 10,
+        "engine_brain_pack_truncated": 0,
+        "runtime_authority": false,
+        "operational_acceptance_evaluated": false,
+        "canary_execution_authorized": false,
+        "promotion_allowed": false
+      }
+    },
+    {
+      "id": "P24.2",
+      "title": "Refresh current-revision independent runner and signed acceptance request",
+      "status": "in_progress",
+      "artifacts": [
+        "docs/otclient/P14_INDEPENDENT_RUNNER_CONTRACT.md",
+        "scripts/ops/otclient_p14_independent_runner.py",
+        "scripts/ops/otclient_p14_acceptance_attestation.py"
+      ],
+      "runtime_authority": false,
+      "entry_gate": "P24.1 replay matrix complete and stale stage mismatch recorded",
+      "done_gates": [
+        "official stage manifest matches tracked Helper source",
+        "signed self-hosted Windows result matches current source revision",
+        "protected environment requires review and disables admin bypass",
+        "acceptance request remains action-free and names all four P14 capabilities"
+      ],
+      "validation": {
+        "official_stage_file_count": 67,
+        "github_hosted_current_revision": true,
+        "self_hosted_runner_online": false,
+        "required_reviewer_configured": false,
+        "admin_bypass_disabled": false,
+        "acceptance_capabilities_proven": 0,
+        "acceptance_capabilities_required": 4,
+        "runtime_authority": false,
+        "promotion_allowed": false
+      }
+    },
+    {
+      "id": "P25.1",
+      "title": "Remove unloaded standalone runtimes from the Helper distribution",
+      "status": "complete",
+      "artifacts": [
+        "docs/otclient/P25_HELPER_PACKAGE_SURFACE.md",
+        "scripts/windows/solteria_helper_test_env.ps1",
+        "scripts/ops/otclient_p14_independent_runner.py",
+        "tests/test_helper_package_surface.py"
+      ],
+      "runtime_authority": false,
+      "entry_gate": "P23 product boundary complete; static refactor remains allowed while P24 acceptance is external",
+      "done_gates": [
+        "unloaded duplicate runtimes are absent from stage ZIP sandbox sync and signed manifests",
+        "legacy enabled and disabled copies are cleanup-only paths",
+        "local reference sources remain explicitly non-distributable",
+        "Safe and live client remain untouched"
+      ],
+      "validation": {
+        "package_files_before": 65,
+        "package_files_after": 62,
+        "local_only_runtime_references": 3,
+        "legacy_runtime_files_in_zip": 0,
+        "package_surface_tests_passed": 48,
+        "package_surface_tests_skipped": 1,
+        "runtime_authority": false,
+        "promotion_allowed": false
+      }
+    },
+    {
+      "id": "P25.2",
+      "title": "Derive wrapper module inventories from one package owner",
+      "status": "complete",
+      "runtime_authority": false,
+      "entry_gate": "P25.1 minimized package surface",
+      "done_gates": [
+        "stage sync enablement and promotion consume one canonical package inventory",
+        "local-only and legacy cleanup lists remain explicit and separate",
+        "manifest order and hashes stay deterministic",
+        "no live or sandbox runtime action is introduced"
+      ],
+      "validation": {
+        "canonical_package_inventory_functions": 1,
+        "derived_active_inventory_consumers": 4,
+        "repeated_active_inventory_arrays_removed": 4,
+        "legacy_cleanup_inventory_separate": true,
+        "runtime_authority": false,
+        "promotion_allowed": false
+      }
+    },
+    {
+      "id": "P26.1",
+      "title": "Extract shared UI form and rule editor primitives",
+      "status": "complete",
+      "artifacts": [
+        "scripts/lua/otclient/ctoa_helper_ui_primitives.lua",
+        "scripts/lua/otclient/ctoa_helper_ui.lua",
+        "tests/test_ctoa_helper_ui_primitives.py"
+      ],
+      "runtime_authority": false,
+      "entry_gate": "P25 canonical package surface complete",
+      "done_gates": [
+        "primitive module owns reusable labels fields selectors and rule navigation chrome",
+        "UI composition keeps tab ownership and profile callbacks explicit",
+        "programmatic OTCv8 widget path remains capability-proven",
+        "default and compact previews remain contained with zero layout issues"
+      ],
+      "validation": {
+        "official_stage_file_count": 63,
+        "primitive_module_lines": 174,
+        "ui_composition_lines_after": 2461,
+        "passive_module_contracts_passed": 35,
+        "focused_tests_passed": 97,
+        "official_validation_tests_passed": 162,
+        "preview_widgets": 208,
+        "preview_layout_issues": 0,
+        "smoke_preflight": "passed",
+        "runtime_authority": false,
+        "promotion_allowed": false
+      }
+    },
+    {
+      "id": "P26.2",
+      "title": "Separate tab composition from profile mutation callbacks",
+      "status": "complete",
+      "artifacts": [
+        "scripts/lua/otclient/ctoa_helper_ui_composition.lua",
+        "scripts/lua/otclient/ctoa_helper_ui.lua",
+        "tests/test_ctoa_helper_ui_composition.py"
+      ],
+      "runtime_authority": false,
+      "entry_gate": "P26.1 passive primitives complete",
+      "done_gates": [
+        "tab section and action composition use declarative passive specifications",
+        "profile mutation callbacks stay explicit and product-local",
+        "composition metadata contains no profile mutation or gameplay APIs",
+        "default and compact previews retain zero layout issues"
+      ],
+      "validation": {
+        "official_stage_file_count": 64,
+        "composition_module_lines": 127,
+        "ui_composition_lines_after": 2385,
+        "passive_module_contracts_passed": 36,
+        "focused_tests_passed": 87,
+        "official_validation_tests_passed": 162,
+        "preview_widgets": 208,
+        "preview_layout_issues": 0,
+        "smoke_preflight": "passed",
+        "runtime_authority": false,
+        "promotion_allowed": false
+      }
+    },
+    {
+      "id": "P26.3",
+      "title": "Extract rule editor renderers from unrelated panels",
+      "status": "complete",
+      "artifacts": [
+        "scripts/lua/otclient/ctoa_helper_ui_rule_editors.lua",
+        "scripts/lua/otclient/ctoa_helper_ui.lua",
+        "tests/test_ctoa_helper_ui_rule_editors.py"
+      ],
+      "runtime_authority": false,
+      "entry_gate": "P26.2 declarative composition complete",
+      "done_gates": [
+        "target spell and combat action editors have one presentation owner",
+        "profile mutations remain injected callbacks with explicit dirty tracking",
+        "non-rule panels do not depend on rule editor implementation",
+        "real Lua editor navigation and preview containment remain green"
+      ],
+      "validation": {
+        "official_stage_file_count": 65,
+        "rule_editor_module_lines": 476,
+        "ui_composition_lines_after": 1953,
+        "passive_module_contracts_passed": 37,
+        "focused_tests_passed": 131,
+        "focused_tests_skipped": 1,
+        "official_validation_tests_passed": 162,
+        "preview_widgets": 208,
+        "preview_layout_issues": 0,
+        "module_static_gates_passed": 39,
+        "smoke_preflight": "passed",
+        "runtime_authority": false,
+        "promotion_allowed": false
+      }
+    },
+    {
+      "id": "P27.1",
+      "title": "Define strict portable rule preset schema and import export boundary",
+      "status": "complete",
+      "artifacts": [
+        "scripts/lua/otclient/ctoa_helper_rule_presets.lua",
+        "tests/test_ctoa_helper_rule_presets.py"
+      ],
+      "runtime_authority": false,
+      "entry_gate": "P26 presentation ownership split complete",
+      "done_gates": [
+        "preset payload is versioned bounded data only",
+        "unknown fields executable values and future versions fail closed",
+        "import preserves disabled safe boot and never dispatches actions",
+        "target spell and combat action rules round trip deterministically"
+      ],
+      "validation": {
+        "schema_version": "ctoa-helper-rule-preset-v1",
+        "official_stage_file_count": 66,
+        "preset_module_lines": 240,
+        "rule_lanes": 3,
+        "maximum_rules_per_lane": 16,
+        "passive_module_contracts_passed": 38,
+        "focused_tests_passed": 35,
+        "focused_tests_skipped": 1,
+        "official_validation_tests_passed": 162,
+        "preview_widgets": 208,
+        "preview_layout_issues": 0,
+        "module_static_gates_passed": 39,
+        "smoke_preflight": "passed",
+        "runtime_authority": false,
+        "promotion_allowed": false
+      }
+    },
+    {
+      "id": "P27.2",
+      "title": "Add deterministic rule match and block explanations",
+      "status": "complete",
+      "artifacts": [
+        "scripts/lua/otclient/ctoa_helper_rule_explanations.lua",
+        "scripts/lua/otclient/ctoa_helper_targeting.lua",
+        "scripts/lua/otclient/ctoa_helper_combat_runtime.lua",
+        "scripts/lua/otclient/ctoa_native_helper.lua",
+        "tests/test_ctoa_helper_rule_explanations.py"
+      ],
+      "runtime_authority": false,
+      "entry_gate": "P27.1 strict preset boundary complete",
+      "done_gates": [
+        "target spell and combat action decisions expose stable reason codes",
+        "explanations use normalized observations and never rescan the client",
+        "UI consumes passive traces without dispatch authority",
+        "unknown or stale observations fail closed visibly"
+      ],
+      "validation": {
+        "schema_version": "ctoa-helper-rule-explanation-v1",
+        "official_stage_file_count": 67,
+        "explanation_module_lines": 107,
+        "native_helper_lines": 3593,
+        "native_helper_functions": 102,
+        "rule_lanes": 3,
+        "stable_reason_code_tests": 3,
+        "focused_tests_passed": 129,
+        "focused_tests_skipped": 1,
+        "passive_module_contracts_passed": 39,
+        "official_validation_tests_passed": 162,
+        "preview_widgets": 208,
+        "preview_layout_issues": 0,
+        "module_static_gates_passed": 39,
+        "smoke_preflight": "passed",
+        "runtime_authority": false,
+        "promotion_allowed": false
+      }
+    },
+    {
+      "id": "P28.1",
+      "title": "Run signed isolated visual in-world canary and rollback acceptance",
+      "status": "waiting_on_dependency",
+      "runtime_authority": false,
+      "entry_gate": "P24.2 signed self-hosted Windows runner and protected environment complete",
+      "done_gates": [
+        "current revision runs on an independent Windows host",
+        "visual and in-world traces include P27 explanations",
+        "bounded canary abort and rollback are exercised",
+        "live promotion remains a separate explicit approval"
+      ]
+    }
+  ],
+  "phases": [
+    {
+      "id": "P17",
+      "title": "Helper Simplification And Ownership",
+      "status": "complete",
+      "depends_on": ["P14 foundation"],
+      "objective": "Reduce the shell, remove dead paths, and give every UI/runtime concern one owner.",
+      "done_gates": [
+        "no confirmed dead local remains",
+        "HUD configuration has one canonical surface",
+        "native helper is below 4000 lines and 110 functions",
+        "module audit measures ownership and reachability"
+      ]
+    },
+    {
+      "id": "P18",
+      "title": "Declarative Action And Condition Engine",
+      "depends_on": ["P17"],
+      "status": "complete",
+      "objective": "Represent actions separately from composable conditions instead of hard-coded branches.",
+      "done_gates": [
+        "typed metrics include HP, mana, monster count, PZ and active conditions",
+        "operators include <, <=, =, !=, >= and >",
+        "AND/OR groups, cooldown, hysteresis and bounded randomization are supported",
+        "profile migration is deterministic and runtime stays default-off"
+      ]
+    },
+    {
+      "id": "P19",
+      "title": "Configurable Targeting And Magic Shooter",
+      "depends_on": ["P18"],
+      "status": "complete",
+      "objective": "Replace fixed target and spell behavior with editable ordered rule lists.",
+      "done_gates": [
+        "ignored and priority names are editable",
+        "target rules expose distance, HP, count, priority and chase policy",
+        "spell/rune/stance rows are addable, removable and reorderable",
+        "NPC, player, summon, PZ and exercise-dummy guards remain mandatory"
+      ]
+    },
+    {
+      "id": "P20",
+      "title": "Spell State Registry And Anti-Spam",
+      "depends_on": ["P18"],
+      "status": "complete",
+      "objective": "Use observed spell/condition state before dispatching haste, buffs, stances and shields.",
+      "done_gates": [
+        "haste never recasts while proven active",
+        "unknown state fails closed or uses an explicit bounded fallback",
+        "vocation-specific spell families are data, not runtime branches",
+        "state transitions have deterministic replay coverage"
+      ]
+    },
+    {
+      "id": "P21",
+      "title": "Canonical Profile Schema And Vocation Packs",
+      "depends_on": ["P18", "P19", "P20"],
+      "status": "complete",
+      "objective": "Make profiles portable, editable and vocation-aware without duplicating runtime logic.",
+      "done_gates": [
+        "one schema owns defaults and migrations",
+        "vocation packs contain data only",
+        "unknown/custom server spells remain explicitly editable",
+        "old profiles migrate without arming runtime"
+      ]
+    },
+    {
+      "id": "P22",
+      "title": "Native Unified Operator UX",
+      "depends_on": ["P17", "P21"],
+      "status": "complete",
+      "objective": "Expose the flexible model through one native, uncluttered Helper surface.",
+      "done_gates": [
+        "one settings location per concern",
+        "rule editors use proven OTClient widgets and bounded contained navigation",
+        "disabled, blocked, stale and active states are distinct",
+        "smallest supported viewport remains usable"
+      ]
+    },
+    {
+      "id": "P23",
+      "title": "Shared Contracts Without Project Coupling",
+      "depends_on": ["P18", "P21"],
+      "status": "complete",
+      "objective": "Share pure condition semantics and parity evidence with Safe while preserving product-local evaluators and independent gates.",
+      "done_gates": [
+        "no Helper runtime file is copied into Safe",
+        "shared code is pure, bounded and action-free",
+        "Safe evidence cannot satisfy Helper acceptance",
+        "contract parity tests cover both adapters"
+      ]
+    },
+    {
+      "id": "P24",
+      "title": "Replay, Canary And Rollback Program",
+      "depends_on": ["P19", "P20", "P22", "P23"],
+      "status": "in_progress",
+      "objective": "Prove the simplified Helper with independent replay, sandbox canaries and rollback evidence.",
+      "done_gates": [
+        "independent runner evidence is current",
+        "targeting, spell state and profile migrations pass replay",
+        "sandbox gameplay canaries are explicit and bounded",
+        "live promotion remains a separate operator approval"
+      ]
+    },
+    {
+      "id": "P25",
+      "title": "Minimal Helper Distribution Surface",
+      "status": "complete",
+      "depends_on": ["P23", "P24 static contracts"],
+      "objective": "Ship only loader-reachable Helper code and keep local references, cleanup paths and product packages explicitly separate.",
+      "done_gates": [
+        "unloaded duplicate runtimes are absent from official artifacts",
+        "one package inventory owns stage sync enablement and promotion",
+        "local-only source is explicit and never enters P14 manifests",
+        "stale legacy copies are removed without touching Safe"
+      ]
+    },
+    {
+      "id": "P26",
+      "title": "UI Composition And Rule Editor Split",
+      "status": "complete",
+      "depends_on": ["P22", "P25"],
+      "objective": "Reduce the UI monolith while preserving the proven OTCv8 programmatic widget and bounded navigation contracts.",
+      "done_gates": [
+        "shared form and rule editor primitives have one owner",
+        "tab composition is separate from profile mutation callbacks",
+        "default and compact previews retain zero layout issues",
+        "no unproven OTUI widget or loader API is introduced"
+      ]
+    },
+    {
+      "id": "P27",
+      "title": "Portable Rule Presets And Explainability",
+      "status": "complete",
+      "depends_on": ["P18", "P19", "P21", "P26"],
+      "objective": "Make targeting spell and action rule sets portable and understandable without importing executable code or arming runtime.",
+      "done_gates": [
+        "preset import and export use strict versioned data schemas",
+        "unknown fields future versions and executable values fail closed",
+        "every rule exposes a deterministic why matched or blocked trace",
+        "migration and import never enable runtime"
+      ]
+    },
+    {
+      "id": "P28",
+      "title": "Independent Sandbox Acceptance And Rollback",
+      "status": "planned",
+      "depends_on": ["P24", "P25", "P26", "P27"],
+      "objective": "Execute visual in-world canary and rollback acceptance on an isolated current-revision Windows runner.",
+      "done_gates": [
+        "all four P14 acceptance capabilities have signed current evidence",
+        "bounded canary abort and rollback paths are exercised",
+        "Helper and Safe evidence remain independent",
+        "live promotion still requires a separate explicit approval"
+      ]
+    }
+  ]
+}

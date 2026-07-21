@@ -69,6 +69,55 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_hel
 current blockers, and the next safe command when a next gate still exists. It
 does not launch, stop, or overwrite any client.
 
+Collect passive live evidence while the user keeps the only game screen:
+
+```powershell
+.\ctoa.ps1 otbg
+```
+
+Equivalent explicit wrapper command:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action BackgroundStatus -OperatorMode BackgroundNoScreen
+```
+
+`BackgroundNoScreen` has a positive allowlist containing only
+`BackgroundStatus`. The mode is inherited by child processes and cannot be
+downgraded. It rejects live approval, launch, helper-toggle, and dialog-control
+parameters before dispatch. The action performs bounded passive reads, checks
+immutable live parity against the manifest cryptographically bound to the
+official promotion report, and writes only
+`runtime\solteria_helper_dev\background_status.json`. It does not move the
+mouse, send keys, focus or capture a window, start/stop a client, write a smoke
+command, copy into live, or approve promotion. Use `-NoReport` for stdout-only
+JSON with no evidence-file write. It requires the canonical
+`%LOCALAPPDATA%\Solteria\client` root and the trusted repo-local interpreter.
+
+Missing, stale, offline, cross-client, incomplete, or pre-process capability
+heartbeat is reported as waiting/blocked rather than ready. A missing or
+untrusted official live-manifest pin also blocks; the observer never creates
+that pin. Only `PromoteLiveCtoa -ApproveLiveDeploy` writes it and binds its
+SHA256 into `live_promotion.json`. Mutable vocation-profile drift is counted
+separately from other package-code mismatch, but still blocks because those
+profiles are executable Lua. The wrapper only publishes the sample after client
+process identity and screenshot count are checked.
+
+Run the P9 Conditions data-only replay through the same bounded entry path:
+
+```powershell
+.\ctoa.ps1 otp9
+```
+
+`otp9` first invokes the allowlisted `BackgroundStatus` action, requires a fresh
+repo-local `background_status.json`, and then runs the trusted repo interpreter
+against `scripts\ops\otclient_conditions_shadow_replay.py`. It refreshes only
+the two repo-local evidence artifacts `background_status.json` and
+`conditions_shadow_replay.json`. A green fixture
+pack is reported separately from operational acceptance; missing or unaccepted
+P8, Conditions, or Recovery evidence remains blocked. The command never adds a
+wrapper action, interacts with the client window, dispatches, executes once, or
+promotes live.
+
 Emergency-disable CTOA modules in the normal live Solteria client when login is
 unstable:
 
@@ -191,6 +240,22 @@ and absence of `castSpell`, actionbar sends, `g_game.talk`, `g_game.move`,
 `moveTo`, item use, or inventory-use calls in the Equipment observer slice. It
 does not launch, stop, move gear, use items, or overwrite any client.
 
+Validate the passive P10 operational boundary with three separate repo-only
+checks:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action EquipmentShadowSnapshotStaticSmoke
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action EquipmentShadowReplayStaticSmoke
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_helper_test_env.ps1 -Action EquipmentShadowAcceptanceStaticSmoke
+```
+
+The snapshot check consumes only sanitized `background_status.json` plus the
+explicit capture profile. The replay check rejects fixture provenance and
+noncanonical paths in operational mode. The acceptance check is a no-write
+preflight and must remain blocked until current accepted P9 evidence and exact
+ring/container IDs are present. None of these checks enables runtime readiness,
+dispatch, item movement, or live promotion.
+
 Run the static Scripting policy contract before enabling any command model,
 snippet, or runtime eval path:
 
@@ -303,9 +368,18 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_hel
 ```
 
 `SmokeAttachModules` is the focused in-world gate for the prototype module tabs:
-`heal_friend`, `conditions`, `equipment`, and `scripting`. It writes
+`conditions`, `equipment`, `heal_friend`, and `scripting`. The required runtime
+predecessor sequence is `conditions -> equipment -> heal_friend`. It writes
 `runtime/solteria_helper_dev/module_attach_smoke.json` and routes to
 `SmokeAttachAll` only when all four module tabs capture successfully.
+The report also records the current dev manifest path, creation time, and
+SHA-256. The release gate accepts a passing 4/4 report only when that hash
+matches the current `manifest.json`; legacy reports without this binding stay
+blocked even when their module counts are 4/4.
+
+After both attach commands, run `RuntimeModuleGatesSandboxSmoke`. Its passing
+state proves action-bound dry-run and fail-closed behavior only; it does not
+accept a domain action and does not promote the live client.
 
 Use a stable run id when you want repeatable artifact names:
 
@@ -316,8 +390,14 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows\solteria_hel
 `SmokeAttachAll` automatically builds an in-world coverage report with:
 
 ```powershell
-python scripts\ops\ctoa_helper_smoke_report.py --run-id <run-id> --prefix solteria-helper-attach --in-world
+python scripts\ops\ctoa_helper_smoke_report.py --run-id <run-id> --prefix solteria-helper-attach --in-world --manifest-path runtime\solteria_helper_dev\manifest.json
 ```
+
+The report records the current dev manifest path, creation time, and SHA-256.
+The release gate accepts complete 16/16 evidence only when that hash matches
+the current manifest; a legacy report cannot be made fresh by changing its
+timestamp. `RuntimeModuleGatesSandboxSmoke` uses the same binding for its
+action-bound dry-run contract.
 
 Attach smoke writes `ctoa_smoke_command.lua`; the helper consumes it during
 runtime, switches tabs, logs `Smoke tab visible: <tab>/<subtab>`, captures a
@@ -392,10 +472,19 @@ runtime\solteria_helper_dev\smoke_preflight.json
 runtime\solteria_helper_dev\smoke_status.json
 runtime\solteria_helper_dev\ready_check.json
 runtime\solteria_helper_dev\live_promotion.json
+runtime\solteria_helper_dev\background_status.json
 runtime\solteria_helper_dev\live_backup_<timestamp>\backup_manifest.json
 runtime\solteria_helper_dev\latest\
 runtime\solteria_helper_dev\ctoa_otclient_<version>.zip
 ```
+
+The Helper development stage and ZIP contain only the neutral chooser plus the
+Helper project files listed in `manifest.json`. They intentionally exclude
+`mods/ctoa_safe`; Safe has its own source tree, seven-file release manifest,
+validation, and promotion workflow through `scripts/windows/solteria_safe_release.ps1`.
+Helper sandbox synchronization removes a stale `mods/ctoa_safe` directory only
+inside the verified separate sandbox root so Helper and Safe evidence cannot be
+mixed. It never removes or rewrites Safe in the live client.
 
 `manifest.json` contains the staged file list with SHA256 hashes and a snapshot
 of any running Solteria process. The release gate verifies those staged file
@@ -546,7 +635,10 @@ HP/MP, movement, combat, magic, and container APIs.
 
 ## Test Account
 
-For live in-game UI/runtime checks, use a separate low-risk test character in the sandbox. Keep the main play client logged in normally. The sandbox should be used for:
+Interactive in-game UI/runtime checks are no longer routine background work.
+Use a separate runner/VM, or an explicitly scheduled user-visible session with a
+low-risk sandbox character. Keep the main play client untouched. That separate
+interactive lane is used only for:
 
 - helper UI screenshots,
 - tab persistence checks,

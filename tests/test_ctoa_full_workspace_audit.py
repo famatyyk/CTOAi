@@ -22,6 +22,28 @@ def test_full_workspace_audit_categories_keep_git_vendor_and_secrets_visible():
     )
 
 
+def test_compact_summary_omits_file_inventory_rows():
+    summary = audit.build_compact_summary(
+        {
+            "schema_version": 1,
+            "generated_at_utc": "2026-07-16T00:00:00Z",
+            "root": "C:/repo",
+            "coverage": {"regular_file_count": 2},
+            "counts_by_category": {"tracked_source": 2},
+            "bytes_by_category": {"tracked_source": 20},
+            "audit_gate": {"status": "evidence_ready"},
+            "files": [{"path": "private/file.py"}],
+            "dirty_entries": ["private/file.py"],
+            "top_directories": {"private": {"files": 1}},
+        }
+    )
+
+    assert summary["coverage"] == {"regular_file_count": 2}
+    assert "files" not in summary
+    assert "dirty_entries" not in summary
+    assert "top_directories" not in summary
+
+
 def test_three_development_plans_render_expected_plan_names():
     markdown = audit.render_plans_markdown(
         {
@@ -34,12 +56,17 @@ def test_three_development_plans_render_expected_plan_names():
     assert "Plan 3: Engine Brain And CTOAi Platform" in markdown
     assert "P6_CODEX_INTEGRATION_READINESS.md" in markdown
     assert "P7_OPERATOR_BRIEF.md" in markdown
+    assert "BackgroundNoScreen" in markdown
+    assert "AI/P8_P16_EXECUTION_ROADMAP.md" in markdown
     assert "ctoai-engine-brain" in markdown
     assert "ctoai_engine_brain_self_check" in markdown
     assert "ctoai_engine_brain_brief" in markdown
     assert "runtime smoke base URLs" in markdown
     assert "LAB003 base URLs stay on loopback HTTP(S)" in markdown
     assert "GS reset API URLs/timing values are validated" in markdown
+    assert "Conditions paralyze-only gate" in markdown
+    assert "RuntimeModuleGatesSandboxSmoke" in markdown
+    assert "Combat and CaveBot remain `deferred_high_risk`" in markdown
 
 
 def test_full_workspace_audit_markdown_reports_integrity_gate_without_stale_pass_claims():
@@ -177,7 +204,10 @@ def test_full_workspace_audit_markdown_reports_validation_evidence_gate():
     assert "## Validation Evidence Gate" in markdown
     assert "- Status: `evidence_ready`" in markdown
     assert "- Missing command evidence: `<none>`" in markdown
-    assert "| `python_non_e2e` | `passed` | `133.75s` | 1039 passed, 32 skipped |" in markdown
+    assert (
+        "| `python_non_e2e` | `passed` | `133.75s` | 1039 passed, 32 skipped |"
+        in markdown
+    )
 
 
 def test_full_workspace_audit_does_not_follow_symlinked_files(tmp_path, monkeypatch):

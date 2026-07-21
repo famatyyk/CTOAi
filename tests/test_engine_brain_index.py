@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import importlib.util
+import hashlib
 import json
 import subprocess
 import sys
@@ -156,6 +158,49 @@ def test_release_evidence_summary_exposes_helper_sandbox_queue(tmp_path):
                         "check_count": 16,
                         "forbidden_count": 0,
                     },
+                    "conditions_shadow": {
+                        "status": "operational_acceptance_blocked",
+                        "contract_valid": True,
+                        "fresh": True,
+                        "fixture_validation_status": "passed",
+                        "fixture_only_validation_passed": True,
+                        "runtime_readiness_claimed": False,
+                    },
+                    "equipment_shadow": {
+                        "status": "operational_acceptance_blocked",
+                        "contract_valid": True,
+                        "fresh": True,
+                        "fixture_validation_status": "passed",
+                        "rollback_simulation": "blocked",
+                        "runtime_readiness_claimed": False,
+                    },
+                    "equipment_shadow_acceptance": {
+                        "status": "blocked",
+                        "contract_valid": True,
+                        "fresh": True,
+                        "report_hash_match": True,
+                        "acceptance_granted": False,
+                        "p11_predecessor_eligible": False,
+                        "runtime_readiness_claimed": False,
+                    },
+                    "roadmap_phase_state": {
+                        "status": "p12_in_progress",
+                        "aligned_with_current_roadmap": True,
+                        "p8": "operational_acceptance_complete",
+                        "p9": "operational_acceptance_complete",
+                        "p10": "operational_acceptance_complete",
+                        "p11": "operational_acceptance_complete",
+                        "p12": {
+                            "status": "in_progress",
+                            "conditions": {"status": "operational_acceptance_complete"},
+                            "equipment": {
+                                "status": "operational_acceptance_blocked",
+                                "current_plan_status": "blocked",
+                                "attempt_count": 0,
+                            },
+                            "heal_friend": {"status": "not_started"},
+                        },
+                    },
                     "sandbox_smoke_queue": {
                         "status": "ready_for_operator",
                         "runtime_status": "not_running",
@@ -170,7 +215,9 @@ def test_release_evidence_summary_exposes_helper_sandbox_queue(tmp_path):
         encoding="utf-8",
     )
 
-    summary = engine_brain_index.read_release_evidence_summary(release_root, latest_path)
+    summary = engine_brain_index.read_release_evidence_summary(
+        release_root, latest_path
+    )
 
     assert summary["status"] == "ready"
     assert summary["file_count"] == 1
@@ -180,6 +227,43 @@ def test_release_evidence_summary_exposes_helper_sandbox_queue(tmp_path):
     assert summary["otclient_helper_module_contract"]["passed_count"] == 16
     assert summary["otclient_helper_module_contract"]["check_count"] == 16
     assert summary["otclient_helper_module_contract"]["forbidden_count"] == 0
+    assert summary["otclient_helper_conditions_shadow"] == {
+        "status": "operational_acceptance_blocked",
+        "contract_valid": True,
+        "fresh": True,
+        "fixture_validation_status": "passed",
+        "fixture_only_validation_passed": True,
+        "runtime_readiness_claimed": False,
+    }
+    assert summary["otclient_helper_equipment_shadow"] == {
+        "status": "operational_acceptance_blocked",
+        "contract_valid": True,
+        "fresh": True,
+        "fixture_validation_status": "passed",
+        "rollback_simulation": "blocked",
+        "runtime_readiness_claimed": False,
+    }
+    assert summary["otclient_helper_equipment_acceptance"] == {
+        "status": "blocked",
+        "contract_valid": True,
+        "fresh": True,
+        "report_hash_match": True,
+        "acceptance_granted": False,
+        "p11_predecessor_eligible": False,
+        "runtime_readiness_claimed": False,
+    }
+    assert summary["otclient_helper_roadmap_phase_state"]["status"] == (
+        "p12_in_progress"
+    )
+    assert (
+        summary["otclient_helper_roadmap_phase_state"]["aligned_with_current_roadmap"]
+        is True
+    )
+    assert summary["otclient_helper_roadmap_phase_state"]["p12"]["equipment"] == {
+        "status": "operational_acceptance_blocked",
+        "current_plan_status": "blocked",
+        "attempt_count": 0,
+    }
     assert summary["sandbox_smoke_queue"]["status"] == "ready_for_operator"
     assert summary["sandbox_smoke_queue"]["first_step"] == "launch_sandbox"
 
@@ -248,6 +332,8 @@ def test_engine_brain_index_writes_secret_safe_outputs(tmp_path):
         encoding="utf-8"
     )
     assert "P7 Operator Brief" in p7_operator_brief.read_text(encoding="utf-8")
+    assert "P10 Equipment shadow" in p7_operator_brief.read_text(encoding="utf-8")
+    assert "P10 Equipment acceptance" in p7_operator_brief.read_text(encoding="utf-8")
     p6_payload = json.loads(p6_readiness_json.read_text(encoding="utf-8"))
     p6_check_names = {check["name"] for check in p6_payload["checks"]}
     assert {
@@ -256,6 +342,13 @@ def test_engine_brain_index_writes_secret_safe_outputs(tmp_path):
         "control_center_p7_operator_brief_ops",
         "control_center_p7_operator_brief_ui",
         "control_center_p7_operator_brief_detail_ui",
+        "control_center_scoped_capability_runtime",
+        "control_center_scoped_evidence_slices",
+        "control_center_evidence_bounded_io",
+        "control_center_evidence_domain_adapters",
+        "control_center_capability_adapter_tests",
+        "control_center_engine_brain_evidence_adapter",
+        "control_center_evidence_adapter_tests",
         "control_center_p7_cockpit_smoke_script",
         "control_center_p7_cockpit_smoke_tests",
         "control_center_p7_safe_write_dry_run_smoke_script",
@@ -263,10 +356,44 @@ def test_engine_brain_index_writes_secret_safe_outputs(tmp_path):
         "control_center_p7_evidence_review_script",
         "control_center_p7_evidence_review_tests",
         "control_center_safe_write_action_catalog",
+        "control_center_dry_run_first_action_engine",
+        "control_center_action_capability_api",
+        "control_center_action_capability_ui",
+        "control_center_action_capability_tests",
         "ctoai_plugin_control_center_cockpit_mcp_contract",
+        "ctoai_plugin_public_cockpit_projection",
+        "ctoai_plugin_public_cockpit_tests",
+        "ctoai_plugin_public_projection_contract",
+        "control_center_evidence_provenance_contract",
+        "ctoai_plugin_evidence_artifact_hash_contract",
+        "ctoai_plugin_evidence_integrity_gate",
+        "control_center_evidence_integrity_tests",
+        "control_central_freshness_policy",
+        "ctoai_plugin_freshness",
+        "ctoai_plugin_freshness_contract",
+        "ctoai_plugin_freshness_status_gate",
+        "ctoai_plugin_freshness_cockpit_gate",
+        "control_central_freshness_tests",
+        "ctoai_plugin_helper_readiness",
+        "ctoai_plugin_helper_readiness_contract",
+        "ctoai_plugin_helper_recovery_projection",
+        "control_central_helper_readiness_tests",
+        "ctoai_plugin_operator_decision",
+        "ctoai_plugin_operator_decision_contract",
+        "control_central_operator_decision_tests",
         "ctoai_plugin_control_center_cockpit_drilldown_contract",
         "ctoai_plugin_control_center_cockpit_self_check_contract",
         "ctoai_plugin_control_center_cockpit_script",
+        "ctoai_plugin_evidence_io",
+        "ctoai_plugin_bounded_evidence_io_contract",
+        "ctoai_plugin_bounded_evidence_io_tests",
+        "ctoai_plugin_cache_hash_parity",
+        "ctoai_plugin_compact_audit_status",
+        "full_workspace_audit_compact_summary",
+        "ctoai_plugin_control_central_contract",
+        "ctoai_plugin_control_central_mcp_contract",
+        "ctoai_plugin_control_central_script",
+        "ctoai_plugin_control_central_fault_isolation_tests",
         "ctoai_plugin_mcp_absolute_script",
         "ctoai_plugin_operator_brief_cockpit_handoff_contract",
         "ctoai_plugin_p7_cockpit_smoke_contract_tests",
@@ -278,6 +405,7 @@ def test_engine_brain_index_writes_secret_safe_outputs(tmp_path):
         "ctoai_plugin_p7_workflow_brief_contract",
         "ctoai_plugin_engine_brain_refresh_mcp_contract",
         "ctoai_plugin_p7_cockpit_smoke_refresh_mcp_contract",
+        "ctoai_plugin_roadmap_state_refresh_mcp_contract",
         "release_evidence_p7_operator_brief",
     }.issubset(p6_check_names)
     workflow_payload = json.loads(p7_operator_workflow_json.read_text(encoding="utf-8"))
@@ -286,8 +414,9 @@ def test_engine_brain_index_writes_secret_safe_outputs(tmp_path):
         "allow_bounded_safe_write_tools",
         "fix_p6_before_operator_workflow",
     }
-    assert "five audited safe_write" in workflow_payload["policy"]
+    assert "six audited safe_write" in workflow_payload["policy"]
     assert [tool["name"] for tool in workflow_payload["allowed_mcp_tools"]] == [
+        "ctoai_control_central",
         "ctoai_engine_brain_status",
         "ctoai_engine_brain_self_check",
         "ctoai_engine_brain_brief",
@@ -297,17 +426,26 @@ def test_engine_brain_index_writes_secret_safe_outputs(tmp_path):
         "ctoai_evidence_pack_refresh",
         "ctoai_engine_brain_refresh",
         "ctoai_p7_cockpit_smoke_refresh",
+        "ctoai_roadmap_state_refresh",
     ]
-    assert "repo-hygiene, API-cost, evidence-pack, Engine Brain, and P7 cockpit-smoke" in p6_payload["policy"]
+    assert (
+        "repo-hygiene, API-cost, evidence-pack, Engine Brain, P7 cockpit-smoke, and adaptive roadmap-state"
+        in p6_payload["policy"]
+    )
     if "Fix blocked readiness checks" in p6_payload["recommended_next"]:
         assert "Fix blocked readiness checks" in p6_payload["recommended_next"]
     else:
-        assert "repo-hygiene, API-cost, evidence-pack, Engine Brain, and P7 cockpit-smoke" in p6_payload["recommended_next"]
+        assert (
+            "repo-hygiene, API-cost, evidence-pack, Engine Brain, P7 cockpit-smoke, and adaptive roadmap-state"
+            in p6_payload["recommended_next"]
+        )
     assert [tool["risk_class"] for tool in workflow_payload["allowed_mcp_tools"]] == [
         "read_only",
         "read_only",
         "read_only",
         "read_only",
+        "read_only",
+        "safe_write",
         "safe_write",
         "safe_write",
         "safe_write",
@@ -337,8 +475,8 @@ def test_engine_brain_index_writes_secret_safe_outputs(tmp_path):
         "monitor_enabled_safe_write_tools",
         "remove_unexpected_mcp_write_tools",
     }
-    assert action_readiness_payload["candidate_count"] == 5
-    assert action_readiness_payload["mcp_write_tool_count"] in {0, 1, 2, 3, 4, 5}
+    assert action_readiness_payload["candidate_count"] == 6
+    assert action_readiness_payload["mcp_write_tool_count"] in {0, 1, 2, 3, 4, 5, 6}
     assert [
         candidate["id"]
         for candidate in action_readiness_payload["safe_write_candidates"]
@@ -348,6 +486,7 @@ def test_engine_brain_index_writes_secret_safe_outputs(tmp_path):
         "evidence-pack-refresh",
         "engine-brain-refresh",
         "p7-cockpit-smoke-refresh",
+        "roadmap-state-refresh",
     ]
     allowed_candidates = [
         candidate["id"]
@@ -371,6 +510,7 @@ def test_engine_brain_index_writes_secret_safe_outputs(tmp_path):
             "evidence-pack-refresh",
             "engine-brain-refresh",
             "p7-cockpit-smoke-refresh",
+            "roadmap-state-refresh",
         ),
     }
     safe_write_design_payload = json.loads(
@@ -393,10 +533,16 @@ def test_engine_brain_index_writes_secret_safe_outputs(tmp_path):
         in " ".join(safe_write_design_payload["implementation_contract"]).lower()
     )
     brief_payload = json.loads(p7_operator_brief_json.read_text(encoding="utf-8"))
-    assert "repo-hygiene, API-cost, evidence-pack, Engine Brain, and P7 cockpit-smoke" in brief_payload["policy"]
+    assert (
+        "repo-hygiene, API-cost, evidence-pack, Engine Brain, P7 cockpit-smoke, and roadmap-state"
+        in brief_payload["policy"]
+    )
     next_safe_mode = brief_payload["action_readiness"].get("next_safe_mode")
     if next_safe_mode == "review_confirmed_safe_write_evidence":
-        assert "Review confirmed evidence-pack-refresh audit" in brief_payload["next_safe_command"]
+        assert (
+            "Review confirmed evidence-pack-refresh audit"
+            in brief_payload["next_safe_command"]
+        )
         assert "runtime/evidence/latest.json" in brief_payload["next_safe_command"]
     elif next_safe_mode == "design_next_p7_plugin_action":
         assert brief_payload["next_safe_command"]
@@ -412,15 +558,24 @@ def test_engine_brain_index_writes_secret_safe_outputs(tmp_path):
         assert "ctoai_api_cost_refresh" in brief_payload["next_safe_command"]
         assert "ctoai_engine_brain_refresh" in brief_payload["next_safe_command"]
         assert "ctoai_p7_cockpit_smoke_refresh" in brief_payload["next_safe_command"]
+        assert "ctoai_roadmap_state_refresh" in brief_payload["next_safe_command"]
     assert brief_payload["operator_workflow"]["status"] == workflow_payload["status"]
-    assert brief_payload["operator_workflow"]["allowed_tool_count"] == 9
-    assert brief_payload["operator_workflow"]["safe_write_tool_count"] == 5
+    assert brief_payload["operator_workflow"]["allowed_tool_count"] == 11
+    assert brief_payload["operator_workflow"]["safe_write_tool_count"] == 6
     assert (
         brief_payload["action_readiness"]["status"]
         == action_readiness_payload["status"]
     )
-    assert brief_payload["action_readiness"]["candidate_count"] == 5
-    assert brief_payload["action_readiness"]["mcp_write_tool_count"] in {0, 1, 2, 3, 4, 5}
+    assert brief_payload["action_readiness"]["candidate_count"] == 6
+    assert brief_payload["action_readiness"]["mcp_write_tool_count"] in {
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+    }
     assert (
         brief_payload["safe_write_tool_design"]["status"]
         == safe_write_design_payload["status"]
@@ -440,39 +595,39 @@ def test_engine_brain_index_writes_secret_safe_outputs(tmp_path):
     assert "action_audit" in brief_payload["cockpit_handoff"]
     assert brief_payload["cockpit_handoff"]["recommended_tool_order"] in [
         [
-            "ctoai_engine_brain_brief",
-            "ctoai_control_center_cockpit",
+            "ctoai_control_central",
             "ctoai_evidence_pack_refresh dry_run=true",
         ],
         [
-            "ctoai_engine_brain_brief",
-            "ctoai_control_center_cockpit",
+            "ctoai_control_central",
             "ctoai_evidence_pack_refresh dry_run=false confirm='refresh evidence pack'",
         ],
         [
-            "ctoai_engine_brain_brief",
-            "ctoai_control_center_cockpit",
+            "ctoai_control_central",
             "review confirmed evidence-pack-refresh audit",
         ],
         [
-            "ctoai_engine_brain_brief",
-            "ctoai_control_center_cockpit",
+            "ctoai_control_central",
             "design next P7 plugin action",
         ],
         [
+            "ctoai_control_central",
             "ctoai_engine_brain_self_check",
-            "ctoai_control_center_cockpit",
         ],
     ]
     assert brief_payload["roadmap_generation"]["status"] == "ready"
     assert brief_payload["roadmap_generation"]["doc_sync_status"] == "passed"
-    assert brief_payload["roadmap_generation"]["ready_doc_count"] == 3
-    assert brief_payload["roadmap_generation"]["doc_count"] == 3
-    assert brief_payload["roadmap_generation"]["hard_blockers"] == []
     assert (
-        "risk model coverage"
-        in brief_payload["roadmap_generation"]["blocked_until"]
+        brief_payload["roadmap_generation"]["doc_sync_roadmap_plan3_status"] == "passed"
     )
+    assert (
+        brief_payload["roadmap_generation"]["doc_sync_roadmap_p8_p16_status"]
+        == "passed"
+    )
+    assert brief_payload["roadmap_generation"]["ready_doc_count"] == 4
+    assert brief_payload["roadmap_generation"]["doc_count"] == 4
+    assert brief_payload["roadmap_generation"]["hard_blockers"] == []
+    assert "risk model coverage" in brief_payload["roadmap_generation"]["blocked_until"]
 
     manifest_payload = json.loads(manifest.read_text(encoding="utf-8"))
     assert manifest_payload["schema_version"] == 1
@@ -545,21 +700,40 @@ def test_p6_installed_plugin_cache_check_matches_local_manifest(tmp_path, monkey
     for relative in [
         ".mcp.json",
         "skills/ctoai-engine-brain-operator/SKILL.md",
+        "scripts/ctoai_collection_policy.py",
+        "scripts/ctoai_control_central.py",
         "scripts/ctoai_engine_brain_brief.py",
         "scripts/ctoai_control_center_cockpit.py",
+        "scripts/ctoai_evidence_io.py",
+        "scripts/ctoai_freshness.py",
+        "scripts/ctoai_helper_readiness.py",
+        "scripts/ctoai_operator_decision.py",
+        "scripts/ctoai_public_projection.py",
         "scripts/ctoai_engine_brain_mcp.py",
         "scripts/ctoai_engine_brain_status.py",
         "scripts/ctoai_engine_brain_self_check.py",
     ]:
-        path = cache_manifest.parents[1] / relative
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text("{}", encoding="utf-8")
+        source_path = plugin_root / relative
+        cache_path = cache_manifest.parents[1] / relative
+        source_path.parent.mkdir(parents=True, exist_ok=True)
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
+        source_path.write_text("{}", encoding="utf-8")
+        cache_path.write_text("{}", encoding="utf-8")
     monkeypatch.setattr(engine_brain_index.Path, "home", lambda: tmp_path)
 
     check = engine_brain_index._installed_plugin_cache_check()
 
     assert check["status"] == "passed"
     assert "0.1.0+codex.test" in check["evidence"]
+    assert "hash parity" in check["evidence"]
+
+    (cache_manifest.parents[1] / "scripts/ctoai_control_central.py").write_text(
+        "changed", encoding="utf-8"
+    )
+    mismatch = engine_brain_index._installed_plugin_cache_check()
+
+    assert mismatch["status"] == "blocked"
+    assert "hash_mismatch=1" in mismatch["evidence"]
 
 
 def test_p6_plugin_mcp_absolute_script_check_requires_runnable_absolute_arg(
@@ -627,10 +801,10 @@ def test_p6_plugin_status_script_reports_ready_for_current_workspace():
     assert payload["manifest"]["secret_guardrail_status"] == "passed"
     assert payload["p6"]["status"] == "ready_for_plugin_design"
     assert payload["p7_operator_workflow"]["status"] == "safe_write_ready"
-    assert payload["p7_operator_workflow"]["allowed_tool_count"] == 9
+    assert payload["p7_operator_workflow"]["allowed_tool_count"] == 11
     assert payload["p7_action_readiness"]["status"] == "safe_write_tools_enabled"
-    assert payload["p7_action_readiness"]["candidate_count"] == 5
-    assert payload["p7_action_readiness"]["mcp_write_tool_count"] == 5
+    assert payload["p7_action_readiness"]["candidate_count"] == 6
+    assert payload["p7_action_readiness"]["mcp_write_tool_count"] == 6
     assert payload["p7_safe_write_tool_design"]["status"] == "implemented"
     assert (
         payload["p7_safe_write_tool_design"]["selected_action_id"]
@@ -670,8 +844,12 @@ def test_p6_plugin_self_check_reports_ready_for_current_workspace():
     assert checks["bounded_write_policy"] == "passed"
     assert checks["brief_script"] == "passed"
     assert checks["control_center_cockpit_script"] == "passed"
+    assert checks["operator_decision_script"] == "passed"
     assert checks["mcp_config"] == "passed"
     assert checks["mcp_server_script"] == "passed"
+    assert checks["dashboard_skill"] == "passed"
+    assert checks["collection_policy_script"] == "passed"
+    assert checks["collection_policy"] == "passed"
     assert checks["installed_cache"] == "passed"
     assert checks["workspace_evidence_status"] == "passed"
     assert checks["p7_cockpit_smoke"] == "passed"
@@ -731,6 +909,72 @@ def test_p7_operator_brief_reports_next_safe_step():
     _assert_operator_brief_contract(payload)
 
 
+def _write_plugin_roadmap_workspace(root, *, p8_p16_status="passed"):
+    roadmap_paths = [
+        "AI/FEATURE_ROADMAP.md",
+        "AI/ENGINE_BRAIN_STATUS.md",
+        "AI/P8_P16_EXECUTION_ROADMAP.md",
+        "docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md",
+    ]
+    for rel_path in roadmap_paths:
+        source = engine_brain_index.ROOT / rel_path
+        destination = root / rel_path
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
+    doc_sync_path = root / "AI" / "generated" / "DOC_SYNC.json"
+    doc_sync_path.parent.mkdir(parents=True, exist_ok=True)
+    doc_sync_path.write_text(
+        json.dumps(_roadmap_doc_sync_payload(p8_p16_status=p8_p16_status)),
+        encoding="utf-8",
+    )
+
+
+def _run_plugin_cockpit(workspace):
+    script = PLUGIN_ROOT / "scripts" / "ctoai_control_center_cockpit.py"
+    module = _load_plugin_module("ctoai_control_center_cockpit_internal", script)
+    return module.build_cockpit(workspace)
+
+
+@requires_engine_brain_plugin
+def test_p6_plugin_cockpit_blocks_current_phase_marker_drift(tmp_path):
+    _write_plugin_roadmap_workspace(tmp_path)
+    roadmap_path = tmp_path / "AI" / "P8_P16_EXECUTION_ROADMAP.md"
+    required_marker = (
+        "Conditions and Equipment lanes are `operational_acceptance_complete`"
+    )
+    roadmap_path.write_text(
+        roadmap_path.read_text(encoding="utf-8").replace(
+            required_marker, "Conditions and Equipment lanes remain under review"
+        ),
+        encoding="utf-8",
+    )
+
+    payload = _run_plugin_cockpit(tmp_path)["roadmap_generation"]
+
+    assert payload["status"] == "needs_attention"
+    assert "p8_p16_execution_roadmap_not_ready" in payload["hard_blockers"]
+    assert payload["doc_sync_status"] == "passed"
+    assert payload["doc_sync_roadmap_plan3_status"] == "passed"
+    assert payload["doc_sync_roadmap_p8_p16_status"] == "passed"
+    p8_doc = next(
+        item for item in payload["docs"] if item["name"] == "p8_p16_execution_roadmap"
+    )
+    assert required_marker in p8_doc["missing_markers"]
+
+
+@requires_engine_brain_plugin
+def test_p6_plugin_cockpit_requires_p8_doc_sync_status(tmp_path):
+    _write_plugin_roadmap_workspace(tmp_path, p8_p16_status="blocked")
+
+    payload = _run_plugin_cockpit(tmp_path)["roadmap_generation"]
+
+    assert payload["status"] == "needs_attention"
+    assert "doc_sync:roadmap_p8_p16" in payload["hard_blockers"]
+    assert payload["doc_sync_status"] == "passed"
+    assert payload["doc_sync_roadmap_plan3_status"] == "passed"
+    assert payload["doc_sync_roadmap_p8_p16_status"] == "blocked"
+
+
 @requires_engine_brain_plugin
 def test_p6_control_center_cockpit_script_reports_read_only_status():
     script = (
@@ -743,18 +987,65 @@ def test_p6_control_center_cockpit_script_reports_read_only_status():
     if not script.exists():
         raise AssertionError(f"Missing Control Center cockpit script: {script}")
 
+    module = _load_plugin_module("ctoai_control_center_cockpit_internal", script)
+    payload = module.build_cockpit(engine_brain_index.ROOT)
+
+    _assert_cockpit_contract(payload)
+
+
+@requires_engine_brain_plugin
+def test_p6_control_center_cockpit_cli_returns_public_projection():
+    script = PLUGIN_ROOT / "scripts" / "ctoai_control_center_cockpit.py"
     completed = subprocess.run(
-        [sys.executable, str(script), "--workspace", str(engine_brain_index.ROOT)],
+        [
+            sys.executable,
+            str(script),
+            "--workspace",
+            str(engine_brain_index.ROOT),
+        ],
         check=True,
         capture_output=True,
         text=True,
     )
     payload = json.loads(completed.stdout)
+    serialized = json.dumps(payload, sort_keys=True)
 
-    _assert_cockpit_contract(payload)
+    assert payload["schema_version"] == 2
+    assert payload["status"] == "ready"
+    assert len(serialized) < 6000
+    for private_key in (
+        '"command"',
+        '"source_path"',
+        '"source_paths"',
+        '"audit_id"',
+        '"actor"',
+        '"actor_role"',
+        '"reason"',
+        '"output_preview"',
+        '"recent_records"',
+        '"recent_files"',
+    ):
+        assert private_key not in serialized
+
+    internal_attempt = subprocess.run(
+        [
+            sys.executable,
+            str(script),
+            "--workspace",
+            str(engine_brain_index.ROOT),
+            "--detail",
+            "internal",
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert internal_attempt.returncode != 0
 
 
 def write_cockpit_preflight_fixture(root):
+    fresh_now = engine_brain_index.datetime.now(
+        engine_brain_index.timezone.utc
+    ).isoformat()
     release_dir = root / "releases" / "evidence" / "sprint-999"
     release_dir.mkdir(parents=True, exist_ok=True)
     (release_dir / "CTOA-test.md").write_text(
@@ -790,6 +1081,11 @@ def write_cockpit_preflight_fixture(root):
             "mcp_tool": "ctoai_p7_cockpit_smoke_refresh",
             "risk_class": "safe_write",
         },
+        {
+            "action_id": "roadmap-state-refresh",
+            "mcp_tool": "ctoai_roadmap_state_refresh",
+            "risk_class": "safe_write",
+        },
     ]
     operator_brief_path.write_text(
         json.dumps(
@@ -803,9 +1099,9 @@ def write_cockpit_preflight_fixture(root):
                 "action_readiness": {
                     "status": "safe_write_tools_enabled",
                     "decision": "monitor_enabled_safe_write_tools",
-                    "candidate_count": 5,
-                    "audited_candidate_count": 5,
-                    "mcp_write_tool_count": 5,
+                    "candidate_count": 6,
+                    "audited_candidate_count": 6,
+                    "mcp_write_tool_count": 6,
                     "enabled_safe_write_tools": enabled_tools,
                     "next_safe_command": "Run ctoai_repo_hygiene_refresh, ctoai_api_cost_refresh, ctoai_evidence_pack_refresh, ctoai_engine_brain_refresh, and ctoai_p7_cockpit_smoke_refresh with dry_run=true.",
                 },
@@ -825,35 +1121,71 @@ def write_cockpit_preflight_fixture(root):
 
     evidence_path = root / "runtime" / "evidence" / "latest.json"
     evidence_path.parent.mkdir(parents=True, exist_ok=True)
-    evidence_path.write_text(
-        json.dumps(
-            {
-                "generated_at_utc": "2026-07-07T06:30:00+00:00",
-                "release_evidence_file_count": 1,
-                "latest_release_evidence": {"path": "releases/evidence/CTOA-test.md"},
-                "repo_hygiene": {"status": "PASS", "finding_count": 0},
-                "api_cost_report": {"status": "ready", "records_seen": 0},
-                "control_center_audit": {"status": "ready", "record_count": 5},
-                "otclient_helper": {
-                    "status": "blocked",
-                    "release_gate_status": "blocked",
-                    "next_action": "Run SmokeAttachModules after sandbox character is in-world.",
-                    "sandbox_smoke_queue": {
-                        "status": "ready_for_operator",
-                        "runtime_status": "not_running",
-                        "next_action": "Launch sandbox client and enter test character",
-                        "required_count": 5,
-                        "queued_count": 4,
-                        "next_steps": [
-                            {"step_id": "launch_sandbox"},
-                            {"step_id": "module_attach_group"},
-                        ],
+    evidence_payload = {
+        "generated_at_utc": fresh_now,
+        "release_evidence_file_count": 1,
+        "latest_release_evidence": {"path": "releases/evidence/CTOA-test.md"},
+        "repo_hygiene": {"status": "PASS", "finding_count": 0},
+        "api_cost_report": {"status": "ready", "records_seen": 0},
+        "control_center_audit": {"status": "ready", "record_count": 5},
+        "otclient_helper": {
+            "status": "blocked",
+            "release_gate_status": "blocked",
+            "next_action": "Run SmokeAttachModules after sandbox character is in-world.",
+            "roadmap_phase_state": {
+                "status": "p12_in_progress",
+                "aligned_with_current_roadmap": True,
+                "p8": "operational_acceptance_complete",
+                "p9": "operational_acceptance_complete",
+                "p10": "operational_acceptance_complete",
+                "p11": "operational_acceptance_complete",
+                "p12": {
+                    "status": "in_progress",
+                    "conditions": {"status": "operational_acceptance_complete"},
+                    "equipment": {
+                        "status": "operational_acceptance_blocked",
+                        "receipt_status": "rejected",
+                        "consumed_attempt": True,
+                        "current_plan_status": "blocked",
+                        "current_plan_safe": True,
+                        "attempt_count": 0,
+                        "session_approved": False,
+                        "execution_approved": False,
                     },
+                    "heal_friend": {"status": "not_started"},
                 },
-            }
-        ),
-        encoding="utf-8",
-    )
+            },
+            "sandbox_smoke_queue": {
+                "status": "ready_for_operator",
+                "runtime_status": "not_running",
+                "next_action": "Launch sandbox client and enter test character",
+                "required_count": 5,
+                "queued_count": 4,
+                "next_steps": [
+                    {"step_id": "launch_sandbox"},
+                    {"step_id": "module_attach_group"},
+                ],
+            },
+        },
+    }
+    source_audit_id = "20260707063000000000-evidence-pack-refresh"
+    evidence_payload["schema_version"] = "ctoa.control-center.evidence.v2"
+    evidence_payload["provenance"] = {
+        "source_action": "evidence-pack-refresh",
+        "source_audit_id": source_audit_id,
+        "binding_status": "bound",
+    }
+    evidence_payload["provenance"]["content_sha256"] = hashlib.sha256(
+        json.dumps(
+            evidence_payload,
+            allow_nan=False,
+            ensure_ascii=True,
+            separators=(",", ":"),
+            sort_keys=True,
+        ).encode("utf-8")
+    ).hexdigest()
+    evidence_text = json.dumps(evidence_payload)
+    evidence_path.write_text(evidence_text, encoding="utf-8")
 
     audit_path = root / "runtime" / "control-center" / "action-audit.jsonl"
     audit_path.parent.mkdir(parents=True, exist_ok=True)
@@ -875,13 +1207,33 @@ def write_cockpit_preflight_fixture(root):
         }
         for index, tool in enumerate(enabled_tools, start=1)
     ]
+    records.append(
+        {
+            "at": "2026-07-07T06:30:06Z",
+            "audit_id": source_audit_id,
+            "actor": "pytest",
+            "actor_role": "operator",
+            "action": "evidence-pack-refresh",
+            "target": "local",
+            "risk_class": "safe_write",
+            "minimum_role": "operator",
+            "dry_run": False,
+            "authorized": True,
+            "ok": True,
+            "reason": "pytest integrity fixture",
+            "output_preview": "ready",
+            "output_hashes": {
+                "runtime/evidence/latest.json": hashlib.sha256(
+                    evidence_text.encode("utf-8")
+                ).hexdigest()
+            },
+        }
+    )
     audit_path.write_text(
         "\n".join(json.dumps(record) for record in records) + "\n",
         encoding="utf-8",
     )
-    p6_smoke_path = (
-        root / "runtime" / "control-center" / "p6-plugin-handoff-smoke.json"
-    )
+    p6_smoke_path = root / "runtime" / "control-center" / "p6-plugin-handoff-smoke.json"
     p6_smoke_path.write_text(
         json.dumps(
             {
@@ -898,9 +1250,9 @@ def write_cockpit_preflight_fixture(root):
                     "p6_passed_count": 48,
                     "mcp_contract_count": 6,
                     "passed_mcp_contract_count": 6,
-                    "allowed_tool_count": 9,
-                    "read_only_tool_count": 4,
-                    "safe_write_tool_count": 5,
+                    "allowed_tool_count": 11,
+                    "read_only_tool_count": 5,
+                    "safe_write_tool_count": 6,
                     "installed_cache_version": "0.1.0+codex.test",
                     "plugin_manifest_version": "0.1.0+codex.test",
                     "fresh_thread_required": True,
@@ -909,8 +1261,7 @@ def write_cockpit_preflight_fixture(root):
                 "fresh_thread_verification": {
                     "status": "pending_fresh_thread",
                     "recommended_tool_order": [
-                        "ctoai_engine_brain_brief",
-                        "ctoai_control_center_cockpit",
+                        "ctoai_control_central",
                         "ctoai_engine_brain_self_check",
                     ],
                     "next_action": "Open a fresh Codex thread and verify plugin tools.",
@@ -932,10 +1283,10 @@ def write_cockpit_preflight_fixture(root):
                     "checks": 14,
                     "passed": 14,
                     "blocked": 0,
-                    "allowed_mcp_tool_count": 9,
-                    "enabled_safe_write_tool_count": 5,
-                    "ready_safe_write_audit_count": 5,
-                    "expected_safe_write_audit_count": 5,
+                    "allowed_mcp_tool_count": 11,
+                    "enabled_safe_write_tool_count": 6,
+                    "ready_safe_write_audit_count": 6,
+                    "expected_safe_write_audit_count": 6,
                     "action_audit_line_count": len(records),
                 },
             }
@@ -957,9 +1308,9 @@ def write_cockpit_preflight_fixture(root):
                     "checks": 12,
                     "passed": 12,
                     "blocked": 0,
-                    "safe_write_tool_count": 5,
-                    "dry_run_ready_count": 5,
-                    "preflight_ready_count": 5,
+                    "safe_write_tool_count": 6,
+                    "dry_run_ready_count": 6,
+                    "preflight_ready_count": 6,
                     "bootstrap_allowed_count": 0,
                 },
                 "safe_write_results": [
@@ -991,19 +1342,14 @@ def test_p6_plugin_cockpit_blocks_bootstrap_only_dry_run_smoke(tmp_path):
         tmp_path / "runtime" / "control-center" / "p7-safe-write-dry-run-smoke.json"
     )
     dry_run_smoke = json.loads(dry_run_smoke_path.read_text(encoding="utf-8"))
-    dry_run_smoke["summary"]["preflight_ready_count"] = 4
+    dry_run_smoke["summary"]["preflight_ready_count"] = 5
     dry_run_smoke["summary"]["bootstrap_allowed_count"] = 1
     dry_run_smoke["safe_write_results"][0]["preflight_ok"] = False
     dry_run_smoke["safe_write_results"][0]["preflight_bootstrap_allowed"] = True
     dry_run_smoke_path.write_text(json.dumps(dry_run_smoke), encoding="utf-8")
 
-    completed = subprocess.run(
-        [sys.executable, str(script), "--workspace", str(tmp_path)],
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    payload = json.loads(completed.stdout)
+    module = _load_plugin_module("ctoai_control_center_cockpit_bootstrap", script)
+    payload = module.build_cockpit(tmp_path)
 
     assert payload["status"] == "needs_attention"
     assert "p7_safe_write_dry_run_smoke_not_ready" in payload["hard_blockers"]
@@ -1029,19 +1375,94 @@ def test_p6_plugin_mcp_server_exposes_expected_tools_and_audited_safe_write(tmp_
     p7_cockpit_smoke_script_path = (
         tmp_path / "scripts" / "ops" / "control_center_p7_cockpit_smoke.py"
     )
+    roadmap_state_script_path = (
+        tmp_path / "scripts" / "ops" / "ctoai_roadmap_state.py"
+    )
     script_path.parent.mkdir(parents=True)
-    script_path.write_text("print('release evidence refreshed')\n", encoding="utf-8")
-    api_cost_script_path.write_text("print('api cost refreshed')\n", encoding="utf-8")
+    script_path.write_text(
+        """import argparse, hashlib, json
+from datetime import datetime, timezone
+from pathlib import Path
+parser = argparse.ArgumentParser()
+parser.add_argument('--json-out', type=Path, required=True)
+parser.add_argument('--md-out', type=Path, required=True)
+parser.add_argument('--source-audit-id', required=True)
+args = parser.parse_args()
+payload = {'schema_version': 'ctoa.control-center.evidence.v2', 'generated_at_utc': datetime.now(timezone.utc).isoformat(), 'provenance': {'source_action': 'evidence-pack-refresh', 'source_audit_id': args.source_audit_id, 'binding_status': 'bound'}}
+payload['provenance']['content_sha256'] = hashlib.sha256(json.dumps(payload, allow_nan=False, ensure_ascii=True, separators=(',', ':'), sort_keys=True).encode('utf-8')).hexdigest()
+args.json_out.parent.mkdir(parents=True, exist_ok=True)
+args.json_out.write_text(json.dumps(payload, indent=2), encoding='utf-8')
+args.md_out.write_text('# refreshed\\n', encoding='utf-8')
+print('release evidence refreshed')
+""",
+        encoding="utf-8",
+    )
+    api_cost_script_path.write_text(
+        """import argparse, json
+from pathlib import Path
+parser = argparse.ArgumentParser()
+parser.add_argument('--json-out', type=Path, required=True)
+parser.add_argument('--md-out', type=Path, required=True)
+args = parser.parse_args()
+args.json_out.parent.mkdir(parents=True, exist_ok=True)
+args.json_out.write_text(json.dumps({'status': 'ready'}), encoding='utf-8')
+args.md_out.write_text('# ready\\n', encoding='utf-8')
+print('api cost refreshed')
+""",
+        encoding="utf-8",
+    )
     repo_hygiene_script_path.write_text(
-        "print('repo hygiene refreshed')\n",
+        """import argparse, json
+from pathlib import Path
+parser = argparse.ArgumentParser()
+parser.add_argument('--json-out', type=Path, required=True)
+args = parser.parse_args()
+args.json_out.parent.mkdir(parents=True, exist_ok=True)
+args.json_out.write_text(json.dumps({'status': 'PASS'}), encoding='utf-8')
+print('repo hygiene refreshed')
+""",
         encoding="utf-8",
     )
     engine_brain_script_path.write_text(
-        "print('engine brain refreshed')\n",
+        """import json
+from pathlib import Path
+path = Path('AI/generated/manifest.json')
+path.parent.mkdir(parents=True, exist_ok=True)
+path.write_text(json.dumps({'status': 'ready'}), encoding='utf-8')
+print('engine brain refreshed')
+""",
         encoding="utf-8",
     )
     p7_cockpit_smoke_script_path.write_text(
-        "print('p7 cockpit smoke refreshed')\n",
+        """import json
+from pathlib import Path
+for suffix in ('json', 'md'):
+    path = Path(f'runtime/control-center/p7-cockpit-smoke.{suffix}')
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {'status': 'ready', 'hard_blockers': [], 'warnings': [], 'summary': {'checks': 14, 'passed': 14, 'blocked': 0, 'allowed_mcp_tool_count': 11, 'enabled_safe_write_tool_count': 6, 'ready_safe_write_audit_count': 6, 'expected_safe_write_audit_count': 6}}
+    path.write_text(json.dumps(payload) if suffix == 'json' else '# ready\\n', encoding='utf-8')
+print('p7 cockpit smoke refreshed')
+""",
+        encoding="utf-8",
+    )
+    roadmap_state_script_path.write_text(
+        """import argparse, json
+from pathlib import Path
+parser = argparse.ArgumentParser()
+parser.add_argument('--dry-run', choices=('true', 'false'), required=True)
+parser.add_argument('--confirmation')
+parser.add_argument('--reason', required=True)
+args = parser.parse_args()
+if args.dry_run == 'false':
+    if args.confirmation != 'refresh roadmap state':
+        raise SystemExit('invalid confirmation')
+    json_out = Path('AI/generated/ROADMAP_STATE.json')
+    md_out = Path('AI/generated/ROADMAP_STATE.md')
+    json_out.parent.mkdir(parents=True, exist_ok=True)
+    json_out.write_text(json.dumps({'schema_version': 'ctoa.roadmap-state.v2', 'status': 'ready', 'readiness_status': 'awaiting_external'}), encoding='utf-8')
+    md_out.write_text('# Adaptive roadmap state\\n', encoding='utf-8')
+print(json.dumps({'status': 'dry_run' if args.dry_run == 'true' else 'completed', 'ok': True}))
+""",
         encoding="utf-8",
     )
     write_cockpit_preflight_fixture(tmp_path)
@@ -1230,6 +1651,33 @@ def test_p6_plugin_mcp_server_exposes_expected_tools_and_audited_safe_write(tmp_
                 },
             },
         },
+        {
+            "jsonrpc": "2.0",
+            "id": 16,
+            "method": "tools/call",
+            "params": {
+                "name": "ctoai_roadmap_state_refresh",
+                "arguments": {
+                    "workspace": str(tmp_path),
+                    "dry_run": True,
+                    "reason": "pytest roadmap token=secret-value",
+                },
+            },
+        },
+        {
+            "jsonrpc": "2.0",
+            "id": 17,
+            "method": "tools/call",
+            "params": {
+                "name": "ctoai_roadmap_state_refresh",
+                "arguments": {
+                    "workspace": str(tmp_path),
+                    "dry_run": False,
+                    "confirm": "refresh roadmap state",
+                    "reason": "pytest roadmap confirmed token=secret-value",
+                },
+            },
+        },
     ]
     completed = subprocess.run(
         [sys.executable, *args],
@@ -1240,9 +1688,7 @@ def test_p6_plugin_mcp_server_exposes_expected_tools_and_audited_safe_write(tmp_
         cwd=plugin_root,
     )
     responses = [json.loads(line) for line in completed.stdout.splitlines()]
-    tools_by_name = {
-        tool["name"]: tool for tool in responses[1]["result"]["tools"]
-    }
+    tools_by_name = {tool["name"]: tool for tool in responses[1]["result"]["tools"]}
     tools = set(tools_by_name)
     payload = json.loads(responses[2]["result"]["content"][0]["text"])
     cockpit_payload = json.loads(responses[3]["result"]["content"][0]["text"])
@@ -1260,6 +1706,12 @@ def test_p6_plugin_mcp_server_exposes_expected_tools_and_audited_safe_write(tmp_
     )
     p7_cockpit_smoke_confirmed_payload = json.loads(
         responses[14]["result"]["content"][0]["text"]
+    )
+    roadmap_state_refresh_payload = json.loads(
+        responses[15]["result"]["content"][0]["text"]
+    )
+    roadmap_state_confirmed_payload = json.loads(
+        responses[16]["result"]["content"][0]["text"]
     )
 
     assert responses[0]["result"]["serverInfo"]["name"] == "ctoai-engine-brain"
@@ -1288,12 +1740,26 @@ def test_p6_plugin_mcp_server_exposes_expected_tools_and_audited_safe_write(tmp_
         schema = tools_by_name[tool_name]["inputSchema"]
         assert schema["additionalProperties"] is False
         assert set(schema["properties"]) == {"workspace"}
+    central_schema = tools_by_name["ctoai_control_central"]["inputSchema"]
+    assert central_schema["additionalProperties"] is False
+    assert set(central_schema["properties"]) == {"workspace", "profile", "detail"}
+    assert "plugin-management" in central_schema["properties"]["profile"]["enum"]
+    assert central_schema["properties"]["detail"]["enum"] == [
+        "summary",
+        "compact",
+        "full",
+    ]
+    assert central_schema["properties"]["detail"]["default"] == "summary"
+    detail_description = central_schema["properties"]["detail"]["description"]
+    assert "bounded allowlisted" in detail_description
+    assert "never raw evidence" in detail_description
     for tool_name in [
         "ctoai_repo_hygiene_refresh",
         "ctoai_evidence_pack_refresh",
         "ctoai_api_cost_refresh",
         "ctoai_engine_brain_refresh",
         "ctoai_p7_cockpit_smoke_refresh",
+        "ctoai_roadmap_state_refresh",
     ]:
         schema = tools_by_name[tool_name]["inputSchema"]
         assert schema["additionalProperties"] is False
@@ -1334,6 +1800,29 @@ def test_p6_plugin_mcp_server_exposes_expected_tools_and_audited_safe_write(tmp_
     )
     assert all(record["risk_class"] == "safe_write" for record in audit_records)
     assert "secret-value" not in json.dumps(audit_records)
+
+
+@requires_engine_brain_plugin
+def test_p6_plugin_dry_run_bootstrap_breaks_only_known_evidence_cycles():
+    script = PLUGIN_ROOT / "scripts" / "ctoai_engine_brain_mcp.py"
+    module = _load_plugin_module("ctoai_engine_brain_mcp_bootstrap", script)
+
+    assert module.dry_run_preflight_bootstrap_allowed(
+        {
+            "hard_blockers": [
+                "p6_plugin_handoff_smoke_not_ready",
+                "p7_safe_write_dry_run_smoke_not_ready",
+            ]
+        }
+    )
+    assert not module.dry_run_preflight_bootstrap_allowed(
+        {
+            "hard_blockers": [
+                "p6_plugin_handoff_smoke_not_ready",
+                "untrusted_runtime_authority",
+            ]
+        }
+    )
 
 
 @requires_engine_brain_plugin
@@ -1389,9 +1878,12 @@ def test_p6_plugin_safe_write_blocks_without_cockpit_preflight(tmp_path):
     payload = json.loads(responses[1]["result"]["content"][0]["text"])
 
     assert payload["status"] == "blocked"
+    assert payload["schema_version"] == 2
     assert payload["action"] == "repo-hygiene-refresh"
     assert payload["dry_run"] is True
     assert payload["ok"] is False
+    assert payload["result_code"] == "action_blocked"
+    assert payload["audit_recorded"] is True
     assert payload["preflight"]["ok"] is False
     assert "missing_p7_operator_brief" in payload["preflight"]["hard_blockers"]
     assert "missing_p7_cockpit_smoke" in payload["preflight"]["warnings"]

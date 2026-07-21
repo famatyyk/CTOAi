@@ -60,7 +60,47 @@ def _write_static_artifacts(dev_dir: Path) -> None:
     )
     _write_json(
         dev_dir / "module_attach_smoke.json",
-        {"status": "passed", "module_count": 4, "passed_count": 4, "failed_count": 0},
+        {
+            "status": "passed",
+            "module_count": 4,
+            "passed_count": 4,
+            "failed_count": 0,
+            "required_sequence": ["conditions", "equipment", "heal_friend"],
+            "manifest": {
+                "path": str(dev_dir / "manifest.json"),
+                "created_at": "2026-07-06T03:00:00",
+                "sha256": hashlib.sha256((dev_dir / "manifest.json").read_bytes()).hexdigest(),
+            },
+        },
+    )
+    _write_json(
+        dev_dir / "runtime_module_gates_sandbox_smoke.json",
+        {
+            "status": "passed",
+            "manifest": {
+                "path": str(dev_dir / "manifest.json"),
+                "created_at": "2026-07-06T03:00:00",
+                "sha256": hashlib.sha256((dev_dir / "manifest.json").read_bytes()).hexdigest(),
+            },
+            "mode": "in_world_fail_closed_dry_run",
+            "sequence": ["conditions", "equipment", "heal_friend"],
+            "checks": {
+                "synthetic_action_bound_acceptance": True,
+                "outside_pz_fail_closed_enforced": True,
+                "actual_environment_gate_behavior": True,
+                "high_risk_and_out_of_scope_deferred": True,
+            },
+            "lane_results": {
+                "conditions": "blocked_fail_closed",
+                "equipment": "blocked_fail_closed",
+                "heal_friend": "blocked_fail_closed",
+                "combat": "deferred_high_risk",
+                "cavebot": "deferred_high_risk",
+            },
+            "dispatch_allowed": False,
+            "runtime_actions": False,
+            "live_promotion": False,
+        },
     )
 
 
@@ -70,17 +110,21 @@ def _write_complete_smoke_report(path: Path) -> None:
         screenshot = path.parent / f"solteria-helper-attach-{view}-20260706-030000.png"
         screenshot.write_bytes(b"png")
         views.append({"view": view, "screenshot": str(screenshot), "size_bytes": 3})
-    _write_json(
-        path,
-        {
-            "covered_count": len(gate.EXPECTED_SMOKE_VIEWS),
-            "expected_count": len(gate.EXPECTED_SMOKE_VIEWS),
-            "missing": [],
-            "acceptance_status": "ready_for_visual_review",
-            "modal_limited": False,
-            "views": views,
-        },
-    )
+    payload = {
+        "covered_count": len(gate.EXPECTED_SMOKE_VIEWS),
+        "expected_count": len(gate.EXPECTED_SMOKE_VIEWS),
+        "missing": [],
+        "acceptance_status": "ready_for_visual_review",
+        "modal_limited": False,
+        "views": views,
+    }
+    manifest_path = path.parent / "manifest.json"
+    if manifest_path.is_file():
+        payload["manifest"] = {
+            "path": str(manifest_path),
+            "sha256": hashlib.sha256(manifest_path.read_bytes()).hexdigest(),
+        }
+    _write_json(path, payload)
 
 
 def test_release_gate_blocks_without_inworld_smoke_and_approval(tmp_path: Path):
@@ -148,19 +192,140 @@ def test_release_gate_blocks_when_module_attach_failed(tmp_path: Path):
 
     module_gate = next(item for item in report.gates if item.name == "ModuleAttachSmoke")
     assert module_gate.status == "blocked"
-    assert "did not pass all prototype module attach tabs" in module_gate.reason
+    assert "required Conditions -> Equipment -> Heal Friend sequence" in module_gate.reason
 
 
-def test_release_gate_blocks_when_module_attach_is_stale(tmp_path: Path):
+def test_release_gate_blocks_when_module_attach_manifest_hash_mismatches(tmp_path: Path):
     _write_static_artifacts(tmp_path)
     attach_gate = tmp_path / "module_attach_smoke.json"
-    os.utime(attach_gate, (1, 1))
+    payload = json.loads(attach_gate.read_text(encoding="utf-8"))
+    payload["manifest"]["sha256"] = "0" * 64
+    attach_gate.write_text(json.dumps(payload), encoding="utf-8")
 
     report = gate.build_report(tmp_path)
 
     module_gate = next(item for item in report.gates if item.name == "ModuleAttachSmoke")
     assert module_gate.status == "blocked"
-    assert "stale" in module_gate.reason
+    assert "SHA256" in module_gate.reason
+
+
+def test_release_gate_rejects_legacy_module_attach_without_manifest_binding(tmp_path: Path):
+    _write_static_artifacts(tmp_path)
+    attach_gate = tmp_path / "module_attach_smoke.json"
+    payload = json.loads(attach_gate.read_text(encoding="utf-8"))
+    payload.pop("manifest")
+    attach_gate.write_text(json.dumps(payload), encoding="utf-8")
+
+    report = gate.build_report(tmp_path)
+
+    module_gate = next(item for item in report.gates if item.name == "ModuleAttachSmoke")
+    assert module_gate.status == "blocked"
+    assert "manifest SHA256 binding" in module_gate.reason
+
+
+def test_release_gate_blocks_when_module_attach_sequence_is_wrong(tmp_path: Path):
+    _write_static_artifacts(tmp_path)
+    _write_json(
+        tmp_path / "module_attach_smoke.json",
+        {
+            "status": "passed",
+            "module_count": 4,
+            "passed_count": 4,
+            "failed_count": 0,
+            "required_sequence": ["heal_friend", "conditions", "equipment"],
+        },
+    )
+
+    report = gate.build_report(tmp_path)
+
+    module_gate = next(item for item in report.gates if item.name == "ModuleAttachSmoke")
+    assert module_gate.status == "blocked"
+    assert "Conditions -> Equipment -> Heal Friend" in module_gate.reason
+
+
+def test_release_gate_requires_current_runtime_module_gate_sandbox_smoke(tmp_path: Path):
+    _write_static_artifacts(tmp_path)
+    smoke = tmp_path / "smoke.json"
+    _write_complete_smoke_report(smoke)
+    (tmp_path / "runtime_module_gates_sandbox_smoke.json").unlink()
+
+    report = gate.build_report(tmp_path, smoke_report=smoke, approved=True)
+
+    runtime_gate = next(
+        item for item in report.gates if item.name == "RuntimeModuleGatesSandboxSmoke"
+    )
+    assert runtime_gate.status == "pending"
+    assert report.next_command.endswith("-Action RuntimeModuleGatesSandboxSmoke")
+
+
+def test_release_gate_rejects_stale_runtime_module_gate_sandbox_smoke(tmp_path: Path):
+    _write_static_artifacts(tmp_path)
+    smoke = tmp_path / "smoke.json"
+    _write_complete_smoke_report(smoke)
+    evidence = tmp_path / "runtime_module_gates_sandbox_smoke.json"
+    payload = json.loads(evidence.read_text(encoding="utf-8"))
+    payload.pop("manifest")
+    _write_json(evidence, payload)
+    os.utime(evidence, (1, 1))
+
+    report = gate.build_report(tmp_path, smoke_report=smoke, approved=True)
+
+    runtime_gate = next(
+        item for item in report.gates if item.name == "RuntimeModuleGatesSandboxSmoke"
+    )
+    assert runtime_gate.status == "blocked"
+    assert "stale" in runtime_gate.reason
+
+
+def test_release_gate_rejects_runtime_module_gate_without_manifest_binding(tmp_path: Path):
+    _write_static_artifacts(tmp_path)
+    smoke = tmp_path / "smoke.json"
+    _write_complete_smoke_report(smoke)
+    evidence = tmp_path / "runtime_module_gates_sandbox_smoke.json"
+    payload = json.loads(evidence.read_text(encoding="utf-8"))
+    payload.pop("manifest")
+    _write_json(evidence, payload)
+
+    report = gate.build_report(tmp_path, smoke_report=smoke, approved=True)
+
+    runtime_gate = next(
+        item for item in report.gates if item.name == "RuntimeModuleGatesSandboxSmoke"
+    )
+    assert runtime_gate.status == "blocked"
+    assert "manifest SHA256 binding" in runtime_gate.reason
+
+
+def test_release_gate_rejects_smoke_report_manifest_hash_mismatch(tmp_path: Path):
+    _write_static_artifacts(tmp_path)
+    smoke = tmp_path / "smoke.json"
+    _write_complete_smoke_report(smoke)
+    payload = json.loads(smoke.read_text(encoding="utf-8"))
+    payload["manifest"]["sha256"] = "0" * 64
+    _write_json(smoke, payload)
+
+    report = gate.build_report(tmp_path, smoke_report=smoke, approved=True)
+
+    smoke_gate = next(item for item in report.gates if item.name == "SmokeAttachAll")
+    assert smoke_gate.status == "blocked"
+    assert "SHA256" in smoke_gate.reason
+
+
+def test_release_gate_rejects_runtime_module_gate_without_pz_enforcement(tmp_path: Path):
+    _write_static_artifacts(tmp_path)
+    smoke = tmp_path / "smoke.json"
+    _write_complete_smoke_report(smoke)
+    evidence = tmp_path / "runtime_module_gates_sandbox_smoke.json"
+    payload = json.loads(evidence.read_text(encoding="utf-8"))
+    payload["checks"]["outside_pz_fail_closed_enforced"] = False
+    _write_json(evidence, payload)
+
+    report = gate.build_report(tmp_path, smoke_report=smoke, approved=True)
+
+    runtime_gate = next(
+        item for item in report.gates if item.name == "RuntimeModuleGatesSandboxSmoke"
+    )
+    assert runtime_gate.status == "blocked"
+    assert "action-bound dry-run" in runtime_gate.reason
 
 
 def test_release_gate_ignores_stale_readycheck_when_sandbox_is_not_running(tmp_path: Path):

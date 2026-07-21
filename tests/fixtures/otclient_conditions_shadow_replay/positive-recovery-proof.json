@@ -1,0 +1,20 @@
+{
+  "schema_version": "ctoa.conditions-recovery-proof.v1",
+  "proof_id": "fixture-recovery-ready",
+  "observed_at_unix_ms": 1783799998000,
+  "status": "ready",
+  "source": "fixture",
+  "action": "plan_paralyze_recovery",
+  "condition": "paralyze",
+  "spell": "exura",
+  "recovery_trace_sha256": "d9f867f1ecbd97d0154c892f5e6d323b8fad0d524fb09e8973febe9281b62feb",
+  "profile_sha256": "c47cbfc965320620c2050816d3598e88a8804988936509dea5ce07a816a96506",
+  "observation_sha256": "f6eba7749b628026694aa3e9b8a0213c060b9b6315a0875663ef82bd65d3ed1a",
+  "p8_proof_sha256": "5d2d35a2cefb49a9df2e15794f2eccae08ea3d68d6efc8937c1b8daaeee23138",
+  "dispatch_allowed": false,
+  "runtime_actions": false,
+  "executes_plan": false,
+  "execute_once_allowed": false,
+  "promotion_allowed": false,
+  "intrusive_actions_performed": []
+}

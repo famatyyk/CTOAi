@@ -57,11 +57,20 @@ Evidence: deterministic clock tests and bounded diagnostic snapshot tests.
 
 ### P3 — Domain Migration
 
-Migrate in order: targeting/combat, recovery/healing, cavebot/pathing, loot, equipment. Each domain must pass observer-only tests before an executor is designed.
+Passive observer/refactor migration may continue without enabling actions. The
+functional runtime sequence after Recovery is fixed: Conditions paralyze-only,
+then Equipment ring-only rollback, then Heal Friend exact-whitelist. Combat and
+CaveBot remain `deferred_high_risk`; no executor follows from passive refactor
+status alone. Each domain must pass observer-only tests before an executor is
+designed.
 
 ### P4 — Guarded Executor
 
-Design an executor only after current sandbox attach, SmokeAttachAll, manifest, release-gate, and explicit live-approval evidence is present. The executor must consume only dispatch-guard-approved plans and must add action-specific cooldown and protection-zone checks.
+Design an executor only after current sandbox attach, SmokeAttachAll,
+`RuntimeModuleGatesSandboxSmoke`, manifest, release-gate, and explicit
+live-approval evidence are present. The executor must consume an action-bound
+accepted gate trace, never a caller boolean, and must add action-specific
+cooldown and protection-zone checks.
 
 ## Current Status
 

@@ -56,8 +56,6 @@ assert(selected.turn_direction == 1)
 def test_magic_shooter_turns_before_directional_cast() -> None:
     source = HELPER.read_text(encoding="utf-8")
     turn_at = source.index("g_game.turn(desiredDirection)")
-    cast_at = source.index(
-        'if action.kind == "rotation" and action.spell and castSpell(action.spell.words) then'
-    )
+    cast_at = source.index('if descriptor.kind == "spell" and descriptor.words ~= "" then sent = castSpell(descriptor.words) end')
     assert turn_at < cast_at
     assert "Rotation blocked: turn API unavailable" in source

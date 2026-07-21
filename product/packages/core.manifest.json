@@ -1,6 +1,7 @@
 {
   "tier": "Core",
-  "description": "Public CTOA Toolkit core runtime and governance surface",
+  "description": "Private CTOA Toolkit core runtime and governance source",
+  "visibility": "private",
   "include_paths": [
     "agents",
     "config",

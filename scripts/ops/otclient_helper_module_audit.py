@@ -24,9 +24,9 @@ STATIC_GATE_REPORTS = {
     "cavebot": ("cavebot_safety_smoke.json", "cavebot"),
     "timer": ("timer_safety_smoke.json", "tools_timer"),
     "loot": ("loot_safety_smoke.json", "tools_diag"),
-    "heal_friend": ("heal_friend_no_target_smoke.json", "heal_friend"),
     "conditions": ("conditions_observer_smoke.json", "conditions"),
     "equipment": ("equipment_observer_smoke.json", "equipment"),
+    "heal_friend": ("heal_friend_no_target_smoke.json", "heal_friend"),
     "scripting": ("scripting_policy_smoke.json", "scripting"),
 }
 
@@ -73,15 +73,6 @@ MODULE_CONTRACTS = [
         "gate": "Static contract and sandbox log evidence for one timer tick.",
     },
     {
-        "id": "heal_friend",
-        "label": "Heal Friend",
-        "status_when_tokens": ["heal_friend = {", "healFriendSummaryText", "maybeObserveHealFriend"],
-        "prototype_only": True,
-        "target_file": "ctoa_helper_heal_friend.lua",
-        "next_step": "Run HealFriendNoTargetSmoke, then capture grouped in-world SmokeAttachModules evidence before any sio cast path.",
-        "gate": "No runtime sio cast until whitelist UI, profile persistence, HealFriendNoTargetSmoke, ModuleStaticGates, and ModuleAttachSmoke evidence exist.",
-    },
-    {
         "id": "conditions",
         "label": "Conditions",
         "status_when_tokens": [
@@ -92,8 +83,8 @@ MODULE_CONTRACTS = [
         ],
         "prototype_only": True,
         "target_file": "ctoa_helper_conditions.lua",
-        "next_step": "Run ConditionsObserverSmoke, then capture grouped in-world SmokeAttachModules state evidence before any recovery action.",
-        "gate": "No condition recovery action until API probe evidence, passive plan contract, ConditionsObserverSmoke, ModuleStaticGates, and ModuleAttachSmoke pass.",
+        "next_step": "Pass ConditionsRuntimeGate after fresh observer and attach evidence; only paralyze recovery dry-run is in scope.",
+        "gate": "ConditionsRuntimeGate requires Recovery acceptance, fresh ConditionsObserverSmoke, current attach evidence, operator confirmation, dry-run, and Combat/CaveBot disabled.",
     },
     {
         "id": "equipment",
@@ -106,8 +97,17 @@ MODULE_CONTRACTS = [
         ],
         "prototype_only": True,
         "target_file": "ctoa_helper_equipment.lua",
-        "next_step": "Run EquipmentObserverSmoke, then capture grouped in-world SmokeAttachModules inventory evidence before any swap path.",
-        "gate": "No runtime swap before inventory API probe output, passive plan contract, profile persistence, EquipmentObserverSmoke, ModuleStaticGates, and ModuleAttachSmoke.",
+        "next_step": "Pass EquipmentRuntimeGate after Conditions; keep the first plan ring-only, dry-run, exact-ID, and rollback-ready.",
+        "gate": "EquipmentRuntimeGate requires accepted Conditions gate, fresh inventory evidence, exact item IDs, rollback snapshot, zero retry, and Combat/CaveBot disabled.",
+    },
+    {
+        "id": "heal_friend",
+        "label": "Heal Friend",
+        "status_when_tokens": ["heal_friend = {", "healFriendSummaryText", "maybeObserveHealFriend"],
+        "prototype_only": True,
+        "target_file": "ctoa_helper_heal_friend.lua",
+        "next_step": "Pass HealFriendRuntimeGate only after Conditions and Equipment; require persisted exact whitelist and stable party target identity.",
+        "gate": "HealFriendRuntimeGate requires accepted Conditions/Equipment gates, no-target smoke, exact whitelist identity, fresh target evidence, cooldown, and Combat/CaveBot disabled.",
     },
     {
         "id": "scripting",
@@ -142,25 +142,25 @@ EXTRACTION_PHASES = [
         "gate": "ValidateDev, UI preview, and no secret/runtime path leakage in generated evidence.",
     },
     {
-        "id": "heal_friend",
-        "target_file": "ctoa_helper_heal_friend.lua",
-        "source_domain": "heal friend profile defaults, whitelist matching, observer sampling, UI summary",
-        "safe_order": 3,
-        "gate": "HealFriendNoTargetSmoke, ModuleStaticGates, and ModuleAttachSmoke before any sio runtime arm.",
-    },
-    {
         "id": "conditions",
         "target_file": "ctoa_helper_conditions.lua",
         "source_domain": "condition state API probes, read-only observer rows, passive recovery planner, profile defaults",
-        "safe_order": 4,
-        "gate": "ConditionsObserverSmoke, passive plan contract, ModuleStaticGates, and ModuleAttachSmoke before any recovery action.",
+        "safe_order": 3,
+        "gate": "ConditionsRuntimeGate after Recovery acceptance; paralyze-only dry-run before any recovery action.",
     },
     {
         "id": "equipment",
         "target_file": "ctoa_helper_equipment.lua",
         "source_domain": "inventory slot probes, passive ring/amulet swap planner, read-only UI summary",
+        "safe_order": 4,
+        "gate": "EquipmentRuntimeGate after Conditions; ring-only exact-ID dry-run with rollback snapshot.",
+    },
+    {
+        "id": "heal_friend",
+        "target_file": "ctoa_helper_heal_friend.lua",
+        "source_domain": "heal friend profile defaults, whitelist matching, observer sampling, UI summary",
         "safe_order": 5,
-        "gate": "EquipmentObserverSmoke, passive plan contract, ModuleStaticGates, and ModuleAttachSmoke before any use/move action.",
+        "gate": "HealFriendRuntimeGate only after Conditions and Equipment; exact whitelist target dry-run before any sio runtime arm.",
     },
     {
         "id": "scripting",
@@ -288,6 +288,8 @@ SUPPLEMENTAL_REFACTOR_PLAN = [
 
 HELPER_LINE_BUDGET = 4500
 HELPER_FUNCTION_BUDGET = 130
+HELPER_PRODUCT_LINE_TARGET = 4000
+HELPER_PRODUCT_FUNCTION_TARGET = 110
 
 
 @dataclass(frozen=True)
@@ -338,6 +340,9 @@ class ModuleAudit:
     prototype_count: int
     registry_count: int
     registry_missing: list[str]
+    single_reference_local_candidates: list[str]
+    duplicate_config_surfaces: list[str]
+    rigid_behavior_findings: list[str]
     modules: list[ModuleAuditItem]
     extraction_plan: list[ExtractionPlanItem]
     supplemental_refactor_plan: list[SupplementalPlanItem]
@@ -436,6 +441,52 @@ def _static_gate_evidence(module_id: str, evidence_dir: Path | None) -> list[str
     return [str(report_path), str(module_gates_path), str(ready_path), str(newest_screenshot)]
 
 
+def _single_reference_local_candidates(helper_text: str) -> list[str]:
+    names = re.findall(
+        r"^\s*local\s+function\s+([A-Za-z_]\w*)\s*\(",
+        helper_text,
+        re.MULTILINE,
+    )
+    return sorted(
+        name
+        for name in names
+        if len(re.findall(rf"\b{re.escape(name)}\b", helper_text)) == 1
+    )
+
+
+def _duplicate_config_surfaces(ui_text: str) -> list[str]:
+    findings: list[str] = []
+    if "ctoaToolsHudEnabled" in ui_text and "ctoaUiHudEnabled" in ui_text:
+        findings.append("hud_preferences:tools_and_engine")
+    if "ctoaToolsHudPos" in ui_text and "ctoaUiHudPos" in ui_text:
+        findings.append("hud_position:tools_and_engine")
+    return findings
+
+
+def _rigid_behavior_findings(helper_text: str, ui_text: str) -> list[str]:
+    findings: list[str] = []
+    if (
+        "ignored_names = {" in helper_text
+        and "priority_names = {" in helper_text
+        and "ctoaTargetRuleEditor" not in ui_text
+    ):
+        findings.append("target_name_policy_without_rule_editor")
+    fixed_magic_rows = (
+        'getRotationMin("exori gran"' in ui_text
+        and 'getRotationMin("exori"' in ui_text
+        and 'getRotationMin("exori min"' in ui_text
+    )
+    if fixed_magic_rows and "ctoaMagicRuleEditor" not in ui_text:
+        findings.append("fixed_ek_magic_shooter_rows")
+    timer_haste = (
+        "if tools.auto_haste and now - tools.last_haste_ms >= tools.haste_interval_ms then"
+        in helper_text
+    )
+    if timer_haste and "activeHasteState" not in helper_text:
+        findings.append("auto_haste_without_active_state_evidence")
+    return findings
+
+
 def build_audit(
     helper_path: Path = DEFAULT_HELPER,
     otclient_dir: Path = DEFAULT_OTCLIENT_DIR,
@@ -445,6 +496,15 @@ def build_audit(
     helper_text = helper_path.read_text(encoding="utf-8")
     registry_path = otclient_dir / "ctoa_helper_modules.lua"
     registry_text = registry_path.read_text(encoding="utf-8") if registry_path.is_file() else ""
+    ui_path = otclient_dir / "ctoa_helper_ui.lua"
+    ui_text = ui_path.read_text(encoding="utf-8") if ui_path.is_file() else ""
+    profile_schema_path = otclient_dir / "ctoa_helper_profile_schema.lua"
+    profile_schema_text = (
+        profile_schema_path.read_text(encoding="utf-8")
+        if profile_schema_path.is_file()
+        else ""
+    )
+    contract_text = helper_text + "\n" + profile_schema_text
     helper_lines = helper_text.splitlines()
     function_count = len(re.findall(r"^\s*(?:local\s+)?function\s+", helper_text, re.MULTILINE))
     helper_budget_status = (
@@ -454,7 +514,7 @@ def build_audit(
     )
     modules: list[ModuleAuditItem] = []
     for contract in MODULE_CONTRACTS:
-        status, evidence = _status_for_contract(contract, helper_text, otclient_dir)
+        status, evidence = _status_for_contract(contract, contract_text, otclient_dir)
         gate_evidence = _static_gate_evidence(str(contract["id"]), evidence_dir)
         if status in {"prototype", "implemented"} and gate_evidence:
             status = "static_gated"
@@ -476,8 +536,22 @@ def build_audit(
     registry_ids = set(re.findall(r'id\s*=\s*"([^"]+)"', registry_text))
     contract_ids = {str(contract["id"]) for contract in MODULE_CONTRACTS}
     registry_missing = sorted(contract_ids - registry_ids)
+    single_reference_locals = _single_reference_local_candidates(helper_text)
+    duplicate_surfaces = _duplicate_config_surfaces(ui_text)
+    rigid_findings = _rigid_behavior_findings(helper_text, ui_text)
     pressure = "high" if len(helper_lines) >= 5000 or placeholder_count >= 3 else "medium"
-    status = "needs_modularization" if pressure == "high" or placeholder_count else "ready"
+    if pressure == "high" or placeholder_count:
+        status = "needs_modularization"
+    elif (
+        len(helper_lines) > HELPER_PRODUCT_LINE_TARGET
+        or function_count > HELPER_PRODUCT_FUNCTION_TARGET
+        or single_reference_locals
+        or duplicate_surfaces
+        or rigid_findings
+    ):
+        status = "needs_simplification"
+    else:
+        status = "ready"
     extraction_plan: list[ExtractionPlanItem] = []
     for phase in EXTRACTION_PHASES:
         target_file = str(phase["target_file"])
@@ -516,7 +590,7 @@ def build_audit(
         + sum(1 for item in supplemental_plan if item.status == "extracted")
     )
     next_phase = (
-        "P6-module-lane: keep the main helper as UI composition shell; move runtime adapters behind static contracts and sandbox gates."
+        "P17 simplification: resolve reachability, ownership, and rigid behavior findings before adding runtime actions."
         if helper_budget_status == "over_budget" or status != "ready"
         else "Keep module gates current before adding new runtime actions."
     )
@@ -544,6 +618,9 @@ def build_audit(
         prototype_count=prototype_count,
         registry_count=len(registry_ids & contract_ids),
         registry_missing=registry_missing,
+        single_reference_local_candidates=single_reference_locals,
+        duplicate_config_surfaces=duplicate_surfaces,
+        rigid_behavior_findings=rigid_findings,
         modules=modules,
         extraction_plan=extraction_plan,
         supplemental_refactor_plan=supplemental_plan,
@@ -574,6 +651,9 @@ def render_markdown(audit: ModuleAudit) -> str:
         f"- Implemented modules: `{audit.implemented_count}`",
         f"- Prototype modules: `{audit.prototype_count}`",
         f"- Registry coverage: `{audit.registry_count}` / `{len(MODULE_CONTRACTS)}`",
+        f"- Single-reference local candidates: `{len(audit.single_reference_local_candidates)}`",
+        f"- Duplicate config surfaces: `{len(audit.duplicate_config_surfaces)}`",
+        f"- Rigid behavior findings: `{len(audit.rigid_behavior_findings)}`",
         f"- Next extraction: `{audit.next_extraction_id or 'none'}`",
         f"- Next supplemental split: `{audit.next_supplemental_id or 'none'}`",
         f"- Next phase: {audit.next_phase}",
@@ -632,7 +712,7 @@ def render_markdown(audit: ModuleAudit) -> str:
             "1. Freeze the current helper UI contract with `ValidateDev`, `ctoa_helper_ui_preview.py`, and `SmokePreflight`.",
             "2. Extract domains in the `Extraction Map` order and keep the main helper as the UI composition shell.",
             "3. Execute the `Supplemental Refactor Plan` one adapter at a time; adapter files may plan or dispatch guarded actions only after static contracts exist.",
-            "4. Convert prototype modules in order: Heal Friend observation, Conditions diagnostics, Equipment safe swaps, Scripting policy shell.",
+            "4. Convert prototype modules in order: Conditions diagnostics and paralyze-only gate, Equipment ring-only rollback gate, Heal Friend exact-whitelist gate, then Scripting policy shell.",
             "5. For each module, add profile schema keys, safe boot defaults, tests, README/docs, `ModuleStaticGates`, and `SmokeAttachModules` before runtime enablement.",
             "6. Keep live promotion separate and require `PromoteLiveCtoa -ApproveLiveDeploy` after in-world `SmokeAttachAll` evidence.",
             "",

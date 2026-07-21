@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ctoa.local/schemas/equipment-capture-profile-doctor.schema.json",
+  "title": "CTOAi Equipment Capture Profile Doctor v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "status", "source", "path", "sha256", "configured_by_operator", "slot", "identifiers_present", "candidate_slot_index_valid", "no_action_contract", "blockers", "next_action", "runtime_actions", "live_file_writes", "runtime_readiness_claimed"],
+  "properties": {
+    "schema_version": {"const": "ctoa.equipment-capture-profile-doctor.v1"},
+    "status": {"enum": ["ready", "blocked"]},
+    "source": {"enum": ["tracked_safe_template", "local_operator_override"]},
+    "path": {"type": "string", "minLength": 1},
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "configured_by_operator": {"type": "boolean"},
+    "slot": {"enum": ["ring", null]},
+    "identifiers_present": {"type": "boolean"},
+    "candidate_slot_index_valid": {"type": "boolean"},
+    "no_action_contract": {"const": true},
+    "blockers": {"type": "array", "uniqueItems": true, "items": {"enum": ["local_operator_override_missing", "capture_profile_invalid", "operator_confirmation_missing", "exact_ids_missing", "candidate_matches_equipped"]}},
+    "next_action": {"type": "string", "minLength": 1},
+    "runtime_actions": {"const": false},
+    "live_file_writes": {"const": false},
+    "runtime_readiness_claimed": {"const": false}
+  }
+}

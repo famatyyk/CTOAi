@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ctoa.local/schemas/conditions-observation.schema.json",
+  "title": "CTOAi Conditions Observation v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "observed_at_unix_ms",
+    "observation_id",
+    "online",
+    "alive",
+    "protection_zone",
+    "protection_zone_source",
+    "condition_id",
+    "condition_state",
+    "cooldown",
+    "cooldown_source",
+    "producer_source",
+    "dispatch_allowed",
+    "runtime_actions",
+    "executes_plan",
+    "execute_once_allowed",
+    "promotion_allowed"
+  ],
+  "properties": {
+    "schema_version": {"const": "ctoa.conditions-observation.v1"},
+    "observed_at_unix_ms": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9999999999999
+    },
+    "observation_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
+    },
+    "online": {"enum": ["online", "offline", "unknown"]},
+    "alive": {"enum": ["alive", "dead", "unknown"]},
+    "protection_zone": {"enum": ["outside", "inside", "unknown"]},
+    "protection_zone_source": {"enum": ["player_method", "player_states", "unavailable"]},
+    "condition_id": {"const": "paralyze"},
+    "condition_state": {"enum": ["present", "absent", "unknown"]},
+    "cooldown": {"enum": ["ready", "active", "unknown"]},
+    "cooldown_source": {"enum": ["game_cooldown_group", "unavailable"]},
+    "producer_source": {"enum": ["otclient_guarded_adapter", "fixture"]},
+    "dispatch_allowed": {"const": false},
+    "runtime_actions": {"const": false},
+    "executes_plan": {"const": false},
+    "execute_once_allowed": {"const": false},
+    "promotion_allowed": {"const": false}
+  }
+}

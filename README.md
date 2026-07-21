@@ -69,7 +69,7 @@ Product map and ownership list:
 - [docs/REPO_SCHEMA.md](docs/REPO_SCHEMA.md)
 - [docs/CTOAI_FOUNDATION_CLEANUP.md](docs/CTOAI_FOUNDATION_CLEANUP.md)
 
-Repository hygiene and publication policy:
+Repository hygiene and private-first publication policy:
 
 - [docs/REPO_HYGIENE_POLICY.md](docs/REPO_HYGIENE_POLICY.md)
 - [Public/Private Architecture](docs/PRODUCT_PUBLIC_PRIVATE_ARCHITECTURE.md)
@@ -147,4 +147,7 @@ Recent approved milestones:
 
 ## License
 
-MIT
+Private and proprietary. No permission is granted to redistribute current or
+future source revisions without a separate written agreement. Historical
+revisions that were previously published remain subject to the terms that
+applied when those revisions were released.

@@ -10,7 +10,7 @@
     {
       "path": "AI/README.md",
       "included": true,
-      "bytes": 2439,
+      "bytes": 3145,
       "truncated": false,
       "reason": ""
     },
@@ -59,9 +59,10 @@
     {
       "path": "AI/generated/manifest.json",
       "included": true,
-      "bytes": 2006,
+      "bytes": 1991,
       "truncated": false,
-      "reason": ""
+      "reason": "",
+      "critical_markers": []
     },
     {
       "path": "AI/generated/ENV_DOCTOR.md",
@@ -80,44 +81,50 @@
     {
       "path": "AI/generated/DOC_SYNC.md",
       "included": true,
-      "bytes": 596,
+      "bytes": 667,
       "truncated": false,
-      "reason": ""
+      "reason": "",
+      "critical_markers": []
     },
     {
       "path": "AI/generated/SECRET_GUARDRAIL.md",
       "included": true,
       "bytes": 524,
       "truncated": false,
-      "reason": ""
+      "reason": "",
+      "critical_markers": []
     },
     {
       "path": "AI/generated/P6_CODEX_INTEGRATION_READINESS.md",
       "included": true,
-      "bytes": 6849,
+      "bytes": 11456,
       "truncated": false,
-      "reason": ""
+      "reason": "",
+      "critical_markers": []
     },
     {
       "path": "AI/generated/P7_OPERATOR_WORKFLOW.md",
       "included": true,
-      "bytes": 2973,
+      "bytes": 3186,
       "truncated": false,
-      "reason": ""
+      "reason": "",
+      "critical_markers": []
     },
     {
       "path": "AI/generated/P7_ACTION_READINESS.md",
       "included": true,
-      "bytes": 1120,
+      "bytes": 1148,
       "truncated": false,
-      "reason": ""
+      "reason": "",
+      "critical_markers": []
     },
     {
       "path": "AI/generated/P7_SAFE_WRITE_TOOL_DESIGN.md",
       "included": true,
       "bytes": 1988,
       "truncated": false,
-      "reason": ""
+      "reason": "",
+      "critical_markers": []
     },
     {
       "path": "AI/generated/P7_OPERATOR_BRIEF.md",

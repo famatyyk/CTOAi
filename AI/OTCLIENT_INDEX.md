@@ -13,15 +13,19 @@
 - `ctoa_ek_profile.lua`
 - `README.md`
 
+The separate product roots are `mods/ctoa_chooser/` and `mods/ctoa_safe/`.
+Official packaging stages all three mod directories and one neutral root loader.
+
 ## Module Definition
 
 `ctoa_otclient.otmod`:
 
 - name: `ctoa_otclient`
 - description: `CTOA OTClient helper and native automation modules`
-- version: `1.1b`
-- `autoLoad: true`
-- `autoLoadPriority: 1000`
+- version: `2.4.0`
+- `autoload: false`
+- `autoload-priority: 1000`
+- lifecycle: `CTOA_OTCLIENT.init()` / `CTOA_OTCLIENT.terminate()`
 - script: `ctoa_otclient_loader`
 
 ## Loader
@@ -29,14 +33,18 @@
 `ctoa_otclient_loader.lua`:
 
 - Creates/reuses `_G.CTOA_OTCLIENT`.
-- Version: `1.1b`.
+- Loader/package version: `2.4.0`; helper version: `v2.4.0`.
 - Main helper module: `ctoa_native_helper.lua`.
-- Load delay: `1500 ms`.
 - Resolves helper from resource/workdir candidate paths.
-- Connects to `g_game.onGameStart` and `g_game.onGameEnd`.
-- Schedules helper load through `scheduleEvent` or `addEvent` fallback.
+- Rejects initialization unless the neutral project loader selected `helper`.
 - Logs through game console when available.
 - Runtime modules are skipped by loader; helper UI is loaded first.
+
+`mods/ctoa_chooser/ctoa_chooser_loader.lua` is the sole startup authority. It
+connects to login/logout, presents the per-session Helper/Safe choice, loads one
+project, rejects a second choice, and terminates the selected project on logout.
+`mods/ctoa_safe/` contains only its descriptor, explicit loader, and self-contained
+Safe project.
 
 ## Helper
 

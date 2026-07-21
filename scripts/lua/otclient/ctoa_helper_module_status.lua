@@ -19,6 +19,7 @@ local DEFAULT_ORDER = {
     "planner",
     "runtime_policy",
     "dispatch_guard",
+    "runtime_module_gate",
     "plan_queue",
     "runtime_readiness",
     "action_catalog",
@@ -27,9 +28,12 @@ local DEFAULT_ORDER = {
     "feature_flags",
     "hud",
     "conditions",
+    "conditions_runtime_gate",
     "equipment",
-    "scripting",
+    "equipment_runtime_gate",
     "heal_friend",
+    "heal_friend_runtime_gate",
+    "scripting",
 }
 
 local function copyList(source)
@@ -51,6 +55,9 @@ local function moduleStatus(module)
     end
     if item.status == "blocked" or item.blocked == true then
         return "blocked"
+    end
+    if item.status == "stale" or item.stale == true then
+        return "stale"
     end
     if item.status == "missing" or item.missing == true then
         return "missing"
@@ -103,6 +110,7 @@ function ModuleStatus.snapshot(modules, order)
         total = #rows,
         ready = 0,
         blocked = 0,
+        stale = 0,
         missing = 0,
         unknown = 0,
     }
@@ -112,6 +120,9 @@ function ModuleStatus.snapshot(modules, order)
             counts.ready = counts.ready + 1
         elseif row.status == "blocked" then
             counts.blocked = counts.blocked + 1
+            blockers[#blockers + 1] = row.module_id
+        elseif row.status == "stale" then
+            counts.stale = counts.stale + 1
             blockers[#blockers + 1] = row.module_id
         elseif row.status == "missing" then
             counts.missing = counts.missing + 1
@@ -136,6 +147,7 @@ function ModuleStatus.summary(snapshot)
     local counts = item.counts or {}
     return "Module status " .. tostring(item.status or "blocked") ..
         " | Ready " .. tostring(counts.ready or 0) .. "/" .. tostring(counts.total or 0) ..
+        " | Stale " .. tostring(counts.stale or 0) ..
         " | Blockers " .. tostring(#(item.blockers or {}))
 end
 
@@ -151,6 +163,7 @@ function ModuleStatus.contract()
         walks = false,
         attacks = false,
         normalizes_module_status = true,
+        distinguishes_stale_module_status = true,
         exposes_status_board = true,
         requires_module_contract = true,
         requires_module_static_gates = true,

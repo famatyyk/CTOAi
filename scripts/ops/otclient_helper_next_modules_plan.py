@@ -14,7 +14,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_JSON = ROOT / "runtime" / "solteria_helper_dev" / "next_modules_plan.json"
 DEFAULT_PLAN = ROOT / "docs" / "otclient" / "solteria_helper_next_modules_plan.md"
-SHELL_BUDGET_JSON = ROOT / "runtime" / "solteria_helper_dev" / "helper_shell_budget_plan.json"
+SHELL_BUDGET_JSON = (
+    ROOT / "runtime" / "solteria_helper_dev" / "helper_shell_budget_plan.json"
+)
 
 
 @dataclass(frozen=True)
@@ -154,11 +156,11 @@ CANDIDATES = [
         order=11,
         module_id="vbot_import",
         label="External vBot/vBot-like import lane",
-        source_basis="source_required: no vBot source is present in this checkout",
+        source_basis="capability_mapping_only: reviewed upstream Vithrax/vBot behavior without importing an archive or directly copying code",
         target_file="docs/otclient/vbot_import_review.md",
-        first_slice="If a vBot source tree is provided, run otclient_external_bot_intake.py and require its import_gate before capability mapping; no direct copy without license/source notes.",
+        first_slice="Keep the reviewed Sio/player-list behavior as a capability checklist; run otclient_external_bot_intake.py for any future archive and require its import_gate before expanding the mapping.",
         gate="Intake import_gate, source provenance note, secret scan, license/provenance review, runtime_gate_mapping, and mapping into existing module gates.",
-        blocked_until="User provides the actual vBot source or a reviewed local archive.",
+        blocked_until="Direct copy/runtime import remains blocked without license or explicit permission, a reviewed archive, and matching sandbox gates.",
     ),
 ]
 
@@ -189,27 +191,27 @@ SUPPLEMENTAL_EXECUTION = [
     ),
     SupplementalExecution(
         order=3,
-        workstream="heal_friend_observer",
-        status="in_progress_static_gated",
-        current_slice="ctoa_helper_heal_friend.lua owns whitelist matching, visible-player scan, observer updates, runtime plan, status text, decision text, and summary text; helper shell now only passes OTClient context and renders module output.",
-        next_slice="Refresh sandbox no-target evidence, add whitelist persistence review, and keep sio execution unavailable until ModuleAttachSmoke, SmokeAttachAll, and live approval are current.",
-        gate="HealFriendNoTargetSmoke, ModuleStaticGates, current LocalReady, then SmokeAttach heal_friend tab in sandbox before any sio runtime bridge.",
+        workstream="conditions_runtime_gate",
+        status="operational_acceptance_complete",
+        current_slice="ctoa_helper_conditions_runtime_gate.lua remains default-closed. P9 data-only shadow acceptance through ctoa.ps1 otp9, its 44-case fixture pack, and P12 Conditions execute-once acceptance are complete. The one approved sandbox executor call ended killed_and_disarmed with retry false; neither receipt grants downstream authority or live promotion.",
+        next_slice="Keep the accepted P9/P12 Conditions evidence immutable and regression-tested; do not reuse either approval for Equipment or Heal Friend.",
+        gate="Accepted hash-bound P9 and P12 Conditions receipts, one terminal attempt, zero retry, killed/disarmed final state, Combat/CaveBot disabled, and no live promotion.",
     ),
     SupplementalExecution(
         order=4,
-        workstream="conditions_observer",
-        status="in_progress_static_gated",
-        current_slice="ctoa_helper_conditions.lua owns condition flag text, state snapshots, API probe text, observer sampling, passive recovery plan, and summary text; helper shell now only passes OTClient context and renders module output.",
-        next_slice="Add sandbox state evidence and keep condition recovery actions unavailable until API probe output, ModuleAttachSmoke, SmokeAttachAll, and live approval are current.",
-        gate="ConditionsObserverSmoke, ModuleStaticGates, current LocalReady, then SmokeAttach conditions tab in sandbox before any condition recovery runtime bridge.",
+        workstream="equipment_runtime_gate",
+        status="operational_acceptance_complete",
+        current_slice="ctoa_helper_equipment_runtime_gate.lua owns the default-closed ring-only contract. P10 shadow acceptance and P12 Equipment operational acceptance are complete. Registry v1 plan d041db806c6417b018c6ae390e3d384ccec9bead2a77e498a582093bf7c823e0 produced accepted receipt p12-equipment-bdf7027cf48c438d after exactly one 3097 -> 3099 move; rollback item 3093 returned to the source slot, retry remained false, and the terminal state was killed_and_disarmed. The first rejected attempt remains historical and cannot be replayed.",
+        next_slice="Keep both Equipment receipts immutable, preserve the accepted Registry v1 evidence as the P12 predecessor, and do not reuse either Equipment approval for Heal Friend or live promotion.",
+        gate="EquipmentRuntimeGateStaticSmoke, accepted P10 and P12 Equipment receipts, exact Registry v1 transformed-item contract, one terminal attempt, zero retry, killed/disarmed final state, Combat/CaveBot disabled, no downstream authority, and no live promotion.",
     ),
     SupplementalExecution(
         order=5,
-        workstream="equipment_observer",
-        status="in_progress_static_gated",
-        current_slice="ctoa_helper_equipment.lua owns slot text, equipment snapshots, inventory API probe text, observer sampling, passive swap plan, and summary text; helper shell now only passes OTClient context and renders module output.",
-        next_slice="Add sandbox inventory slot evidence and keep ring/amulet swap actions unavailable until inventory API output, ModuleAttachSmoke, SmokeAttachAll, and live approval are current.",
-        gate="EquipmentObserverSmoke, ModuleStaticGates, current LocalReady, then SmokeAttach equipment tab in sandbox before any equipment swap runtime bridge.",
+        workstream="heal_friend_runtime_gate",
+        status="closed_blocked_no_compatible_vocation",
+        current_slice="ctoa_helper_heal_friend_runtime_gate.lua owns the default-closed exact-whitelist gate, and the ED-only execute-once plan 964ff8f0c178c7b646a565380e96846a8b29780eb02a734a259713d9ccf023b3 is now terminally closed without action. Its approved sandbox session reached a fresh preflight whose only blocker was vocation_must_be_ed. The operator confirmed that only sorcerer and knight are available, so p12_heal_friend_no_compatible_vocation_closure.json expires the session approval, forbids execution approval and reuse, records attempt count 0, and confirms no cast, retry, downstream authority, or live promotion.",
+        next_slice="Keep the ED-only bridge dormant and preserve the closure plus predecessor artifacts as immutable evidence. Any future Heal Friend mechanic compatible with an available vocation requires a new action design, new plan hash, fresh session approval, and independent execution review; this closed approval cannot be reused.",
+        gate="Successful ctoa.p12-heal-friend-no-compatible-vocation-closure.v1 artifact bound to the original plan, session approval, ED-only blocked preflight, and current HealFriendRuntimeGateStaticSmoke evidence; attempt count 0, retry false, final state disarmed, execution approval forbidden, no cast, no downstream authority, and no live promotion.",
     ),
     SupplementalExecution(
         order=6,
@@ -246,10 +248,10 @@ SUPPLEMENTAL_EXECUTION = [
     SupplementalExecution(
         order=10,
         workstream="runtime_bridge_review",
-        status="blocked_by_sandbox_evidence",
-        current_slice="Runtime policy, dispatch guard, queue, readiness, action catalog, decision trace, sandbox handoff, and feature flags are static-gated only.",
-        next_slice="After sandbox SmokeAttachModules and SmokeAttachAll, review whether any plan can move from passive decision text to guarded runtime dispatcher wiring.",
-        gate="No runtime bridge until ModuleAttachSmoke, SmokeAttachAll, and explicit PromoteLiveCtoa -ApproveLiveDeploy path stay green.",
+        status="p13_ready_to_start",
+        current_slice="P12 Conditions and P12 Equipment remain accepted through separate one-attempt, zero-retry, killed/disarmed receipts. P12 Heal Friend is terminally closed without action because the ED-only preflight is incompatible with the operator's available sorcerer and knight characters. Combat/CaveBot remain deferred_high_risk.",
+        next_slice="Start P13 Runtime Evidence And Machine-Readable Roadmap State: represent accepted, blocked, closed-without-action, freshness, tamper, and authority state without introducing any runtime executor.",
+        gate="Atomic path-confined and redacted roadmap generation, stable schemas, decision/result ledger parity, freshness/tamper reporting, read-only Control Center consumption, audited dry-run behavior, and no new runtime or live authority.",
     ),
 ]
 
@@ -258,22 +260,25 @@ def current_budget_priority() -> dict:
     source = SHELL_BUDGET_JSON.relative_to(ROOT).as_posix()
     if not SHELL_BUDGET_JSON.is_file():
         return {
-            "status": "missing",
+            "status": "p13_platform_priority",
             "source": source,
-            "next_extraction_domains": [],
-            "top_non_shell_domain": "unavailable",
-            "next_action": "Run otclient_helper_shell_budget_plan.py before choosing the next extraction.",
+            "raw_next_extraction_domains": [],
+            "next_extraction_domains": ["roadmap_state_evidence"],
+            "top_non_shell_domain": "roadmap_state_evidence",
+            "next_action": "Start P13 machine-readable roadmap and runtime-evidence state. Keep the closed ED-only Heal Friend bridge dormant and Combat/CaveBot refactor-only.",
         }
     payload = json.loads(SHELL_BUDGET_JSON.read_text(encoding="utf-8"))
-    domains = payload.get("next_extraction_domains") or []
+    raw_domains = payload.get("next_extraction_domains") or []
+    functional_domains = ["roadmap_state_evidence"]
     return {
-        "status": payload.get("status", "unknown"),
+        "status": "p13_platform_priority",
         "source": source,
         "helper_line_count": payload.get("helper_line_count"),
         "helper_function_count": payload.get("helper_function_count"),
-        "next_extraction_domains": domains,
-        "top_non_shell_domain": domains[0] if domains else "unavailable",
-        "next_action": payload.get("next_action", ""),
+        "raw_next_extraction_domains": raw_domains,
+        "next_extraction_domains": functional_domains,
+        "top_non_shell_domain": functional_domains[0],
+        "next_action": "Start P13 machine-readable roadmap and runtime-evidence state. Keep the closed ED-only Heal Friend bridge dormant; Combat/CaveBot remain deferred_high_risk and may only receive passive refactor work.",
     }
 
 
@@ -298,11 +303,13 @@ def write_text_atomic(path: Path, text: str) -> None:
 def build_payload() -> dict:
     candidate_modules = []
     smoke_script = ROOT / "scripts" / "windows" / "solteria_helper_test_env.ps1"
-    smoke_source = smoke_script.read_text(encoding="utf-8") if smoke_script.is_file() else ""
+    smoke_source = (
+        smoke_script.read_text(encoding="utf-8") if smoke_script.is_file() else ""
+    )
     for item in CANDIDATES:
         data = asdict(item)
         if item.module_id == "vbot_import":
-            data["status"] = "source_required"
+            data["status"] = "capability_mapping_only"
         elif item.module_id == "ui_primitives" and "ctoa_helper_ui.lua" in smoke_source:
             data["status"] = "static_gated"
         elif item.module_id == "hud" and "HudStaticSmoke" in smoke_source:
@@ -313,17 +320,34 @@ def build_payload() -> dict:
             data["status"] = "static_gated"
         elif item.module_id == "route_engine" and "RouteStaticSmoke" in smoke_source:
             data["status"] = "static_gated"
-        elif item.module_id == "target_scorer" and "TargetingStaticSmoke" in smoke_source:
+        elif (
+            item.module_id == "target_scorer" and "TargetingStaticSmoke" in smoke_source
+        ):
             data["status"] = "static_gated"
-        elif item.module_id == "combat_runtime" and "CombatRuntimeStaticSmoke" in smoke_source:
+        elif (
+            item.module_id == "combat_runtime"
+            and "CombatRuntimeStaticSmoke" in smoke_source
+        ):
+            data["status"] = "deferred_high_risk_refactor_only"
+        elif (
+            item.module_id == "cavebot_runtime"
+            and "CavebotRuntimeStaticSmoke" in smoke_source
+        ):
+            data["status"] = "deferred_high_risk_refactor_only"
+        elif (
+            item.module_id == "loot_runtime"
+            and "LootRuntimeStaticSmoke" in smoke_source
+        ):
             data["status"] = "static_gated"
-        elif item.module_id == "cavebot_runtime" and "CavebotRuntimeStaticSmoke" in smoke_source:
+        elif (
+            item.module_id == "timer_runtime"
+            and "TimerRuntimeStaticSmoke" in smoke_source
+        ):
             data["status"] = "static_gated"
-        elif item.module_id == "loot_runtime" and "LootRuntimeStaticSmoke" in smoke_source:
-            data["status"] = "static_gated"
-        elif item.module_id == "timer_runtime" and "TimerRuntimeStaticSmoke" in smoke_source:
-            data["status"] = "static_gated"
-        elif item.module_id == "profile_schema" and "ProfileSchemaStaticSmoke" in smoke_source:
+        elif (
+            item.module_id == "profile_schema"
+            and "ProfileSchemaStaticSmoke" in smoke_source
+        ):
             data["status"] = "static_gated"
         elif item.module_id in {
             "hud",
@@ -349,18 +373,30 @@ def build_payload() -> dict:
     return {
         "schema_version": 1,
         "generated_at": datetime.now().replace(microsecond=0).isoformat(),
-        "status": "ready_for_sandbox_then_next_module_design",
+        "status": "p13_ready_to_start",
+        "operational_acceptance_status": "p12_heal_friend_closed_no_action",
+        "active_phase": {
+            "phase": "P13",
+            "conditions": "operational_acceptance_complete",
+            "equipment": "operational_acceptance_complete",
+            "heal_friend": "closed_blocked_no_compatible_vocation",
+            "next_action": "Start P13 Runtime Evidence And Machine-Readable Roadmap State; preserve the ED-only Heal Friend closure as terminal no-action evidence and do not reuse its expired session approval.",
+        },
         "current_budget_priority": current_budget_priority(),
         "source_policy": {
             "zerobot_reference": "docs/otclient/zerobot_reference.md",
-            "vbot": "source_required",
+            "vbot": "capability_mapping_only",
             "external_bot_intake": "scripts/ops/otclient_external_bot_intake.py",
             "external_bot_import_gate": "import_gate.runtime_import_allowed must remain false until mapped module gates and sandbox evidence pass",
             "rule": "Use external bots as capability checklists and naming references only; no direct copy without provenance review; keep CTOAi safe boot, gates, and tests.",
         },
         "prerequisites": [
-            "Run SmokeAttachModules after sandbox character is in-world.",
-            "Run SmokeAttachAll for the current dev manifest before enabling runtime actions.",
+            "P8, P9, P10, and P11 operational acceptance is complete; their receipts remain separate and grant no inherited P12 authority.",
+            "P12 Conditions is complete; keep its one terminal receipt immutable and do not replay its approval.",
+            "P12 Equipment is complete through accepted Registry v1 receipt p12-equipment-bdf7027cf48c438d; keep its one terminal attempt immutable and do not replay either Equipment attempt.",
+            "P12 Heal Friend plan 964ff8f0c178c7b646a565380e96846a8b29780eb02a734a259713d9ccf023b3 is terminally closed without action because its ED-only preflight is incompatible with the available sorcerer and knight characters.",
+            "Keep p12_heal_friend_no_compatible_vocation_closure.json immutable: the session approval is expired and non-reusable, execution approval is forbidden, attempt count is 0, and no cast or downstream authority exists.",
+            "Start P13 with the bounded decision/result ledger and generated machine-readable roadmap state; represent the blocked Heal Friend lane without adding an executor.",
             "Keep PromoteLiveCtoa behind -ApproveLiveDeploy.",
         ],
         "candidate_modules": candidate_modules,
@@ -374,13 +410,17 @@ def render_markdown(payload: dict) -> str:
         "",
         "## Decision",
         "",
-        f"- Status: `{payload['status']}`",
+        f"- Implementation status: `{payload['status']}`.",
+        f"- Operational acceptance: `{payload['operational_acceptance_status']}`.",
         "- Current extraction map: complete.",
         f"- Budget priority source: `{payload['current_budget_priority']['source']}`.",
         f"- Budget top non-shell domain: `{payload['current_budget_priority']['top_non_shell_domain']}`.",
         f"- Budget next extraction domains: `{', '.join(payload['current_budget_priority']['next_extraction_domains'])}`.",
-        "- Runtime blocker: in-world `SmokeAttachModules` and fresh `SmokeAttachAll` are still required before runtime enablement.",
-        "- External vBot source: `source_required`; do not claim vBot-derived implementation until source/provenance is present.",
+        f"- Raw shell-budget signals (refactor-only): `{', '.join(payload['current_budget_priority']['raw_next_extraction_domains'])}`.",
+        "- Runtime sequence: `Conditions -> Equipment -> Heal Friend`; each has a separate action-specific dry-run gate.",
+        f"- Active phase: `{payload['active_phase']['phase']}`; Conditions `{payload['active_phase']['conditions']}`, Equipment `{payload['active_phase']['equipment']}`, Heal Friend `{payload['active_phase']['heal_friend']}`.",
+        f"- Runtime blocker: {payload['active_phase']['next_action']}",
+        "- External vBot source: `capability_mapping_only`; reviewed behavior may inform stricter CTOAi contracts, but direct copy/runtime import remains blocked.",
         "",
         "## Source Policy",
         "",
@@ -426,23 +466,25 @@ def render_markdown(payload: dict) -> str:
             "",
             "## Operator Sequence",
             "",
-            "1. Finish sandbox attach evidence for the current package.",
-            "2. Keep the new module as passive/read-only unless its gate explicitly allows runtime action.",
-            "3. Add profile keys, safe boot defaults, module registry entry, package copy, README note, static smoke, and release-gate evidence for every new module.",
-            "4. Promote a module from `contracted` to `static_gated` only after its dedicated static smoke is included in `ModuleStaticGates`.",
-            "5. Maintain the supplemental status-board lane (`ctoa_helper_module_status.lua`) so module readiness, blockers, and static-only modules remain visible before any runtime bridge work.",
-            "6. Maintain the supplemental action-catalog lane (`ctoa_helper_action_catalog.lua`) so future features declare action names, risk class, and required gates before any dispatcher can consume them.",
-            "7. Maintain the supplemental decision-trace lane (`ctoa_helper_decision_trace.lua`) so runtime policy and dispatch guard reasons are visible before any queued plan is reviewed.",
-            "8. Maintain the supplemental sandbox-handoff lane (`ctoa_helper_sandbox_handoff.lua`) so Launch, ReadyCheck, SmokeAttachModules, SmokeAttachAll, and PromoteLiveCtoa approval remain one explicit operator sequence.",
-            "9. Maintain the supplemental feature-flag lane (`ctoa_helper_feature_flags.lua`) so every future feature declares default disabled state, domain, and required gate before runtime code can consume it.",
-            "10. Only then consider runtime enablement, and only in sandbox first.",
+            "1. Keep Engine Brain current and freeze the separate accepted Conditions and Equipment receipts; neither approval authorizes another lane.",
+            "2. Preserve the Heal Friend no-compatible-vocation closure and its plan, approval, and preflight predecessors; the expired approval cannot be replayed.",
+            "3. Implement P13 as a passive, path-confined decision/result ledger plus generated `ROADMAP_STATE.json` and `ROADMAP_STATE.md`.",
+            "4. Represent accepted, blocked, closed-without-action, freshness, tamper, retry, final-state, and downstream-authority fields explicitly in the P13 schema.",
+            "5. Keep Control Center consumption read-only and require redaction plus stable artifact hashes; P13 adds no runtime executor or live authority.",
+            "6. Keep every new module passive/read-only unless its action-specific gate and a separately reviewed bridge explicitly allow one sandbox action.",
+            "7. Add profile keys, safe boot defaults, module registry entry, package copy, README note, static smoke, and release-gate evidence for every new module.",
+            "8. Promote a module from `contracted` to `static_gated` only after its dedicated static smoke is included in `ModuleStaticGates`.",
+            "9. Maintain `ctoa_helper_module_status.lua`, `ctoa_helper_action_catalog.lua`, `ctoa_helper_decision_trace.lua`, `ctoa_helper_sandbox_handoff.lua`, and `ctoa_helper_feature_flags.lua` so blockers and default-false state stay visible.",
+            "10. Keep Combat and CaveBot deferred_high_risk until a later review explicitly reopens them.",
         ]
     )
     return "\n".join(lines) + "\n"
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Generate Solteria Helper next module plan")
+    parser = argparse.ArgumentParser(
+        description="Generate Solteria Helper next module plan"
+    )
     parser.add_argument("--json-out", type=Path, default=DEFAULT_JSON)
     parser.add_argument("--plan-out", type=Path, default=DEFAULT_PLAN)
     args = parser.parse_args()

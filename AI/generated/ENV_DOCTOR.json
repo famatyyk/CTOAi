@@ -4,8 +4,8 @@
   "root": "C:\\Users\\zycie\\CTOAi",
   "overall_status": "warn",
   "status_counts": {
-    "ok": 5,
-    "warn": 2,
+    "ok": 4,
+    "warn": 3,
     "fail": 0
   },
   "checks": {
@@ -180,7 +180,7 @@
         "pushedAt": "2026-07-21T08:15:38Z",
         "updatedAt": "2026-07-21T08:16:09Z",
         "url": "https://github.com/famatyyk/CTOAi",
-        "visibility": "PUBLIC"
+        "visibility": "PRIVATE"
       },
       "open_pr_count": 1,
       "dirty_prs": [],

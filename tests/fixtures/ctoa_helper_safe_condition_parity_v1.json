@@ -1,0 +1,24 @@
+{
+  "schema_version": "ctoa.helper-safe-condition-parity.v1",
+  "operational_acceptance_evaluated": false,
+  "runtime_actions": false,
+  "dispatch_allowed": false,
+  "promotion_allowed": false,
+  "metric_map": {
+    "hp_percent": "hp",
+    "mana_percent": "mana",
+    "monster_count": "monsters"
+  },
+  "cases": [
+    {"id": "lt_true", "combinator": "AND", "conditions": [{"metric": "hp_percent", "operator": "<", "value": 50}], "context": {"hp_percent": 49}, "expected": true},
+    {"id": "lte_equal", "combinator": "AND", "conditions": [{"metric": "hp_percent", "operator": "<=", "value": 50}], "context": {"hp_percent": 50}, "expected": true},
+    {"id": "eq_false", "combinator": "AND", "conditions": [{"metric": "mana_percent", "operator": "=", "value": 40}], "context": {"mana_percent": 41}, "expected": false},
+    {"id": "neq_true", "combinator": "AND", "conditions": [{"metric": "mana_percent", "operator": "!=", "value": 40}], "context": {"mana_percent": 41}, "expected": true},
+    {"id": "gte_equal", "combinator": "AND", "conditions": [{"metric": "monster_count", "operator": ">=", "value": 3}], "context": {"monster_count": 3}, "expected": true},
+    {"id": "gt_false", "combinator": "AND", "conditions": [{"metric": "monster_count", "operator": ">", "value": 3}], "context": {"monster_count": 3}, "expected": false},
+    {"id": "and_false", "combinator": "AND", "conditions": [{"metric": "hp_percent", "operator": "<=", "value": 70}, {"metric": "monster_count", "operator": ">=", "value": 2}], "context": {"hp_percent": 60, "monster_count": 1}, "expected": false},
+    {"id": "or_true", "combinator": "OR", "conditions": [{"metric": "hp_percent", "operator": "<=", "value": 20}, {"metric": "mana_percent", "operator": ">=", "value": 80}], "context": {"hp_percent": 60, "mana_percent": 90}, "expected": true},
+    {"id": "randomized_true", "combinator": "AND", "conditions": [{"metric": "hp_percent", "operator": "<=", "value": 50, "randomization": 5}], "context": {"hp_percent": 53}, "random_offset": 3, "expected": true},
+    {"id": "randomized_false", "combinator": "AND", "conditions": [{"metric": "mana_percent", "operator": ">=", "value": 50, "randomization": 5}], "context": {"mana_percent": 48}, "random_offset": 3, "expected": false}
+  ]
+}

@@ -1,6 +1,7 @@
 {
   "tier": "Pro",
-  "description": "Commercial CTOA package with customer-facing console and sealed capabilities",
+  "description": "Private commercial CTOA source with customer-facing console and sealed capabilities",
+  "visibility": "private",
   "extends": "Core",
   "include_paths": [
     "mobile_console",

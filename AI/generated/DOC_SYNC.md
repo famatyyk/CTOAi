@@ -11,3 +11,4 @@ Status: `passed`
 | `command_dictionary_otclient` | `schemas/ctoa-command-dictionary.json` | `passed` | - |
 | `docs_index_plan3_artifacts` | `docs/INDEX.md` | `passed` | - |
 | `roadmap_plan3` | `docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md` | `passed` | - |
+| `roadmap_p8_p16` | `AI/P8_P16_EXECUTION_ROADMAP.md` | `passed` | - |

@@ -46,6 +46,12 @@ EXPECTED_READ_ONLY_TOOLS = {
     "ctoai_control_center_cockpit",
 }
 FORBIDDEN_TOOL_FRAGMENTS = ("deploy", "live", "promote", "solteria")
+EXPECTED_ROADMAP_DOCS = {
+    "feature_roadmap": "AI/FEATURE_ROADMAP.md",
+    "engine_brain_status": "AI/ENGINE_BRAIN_STATUS.md",
+    "p8_p16_execution_roadmap": "AI/P8_P16_EXECUTION_ROADMAP.md",
+    "plan3_roadmap": "docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md",
+}
 
 
 def display_path(path: Path, root: Path) -> str:
@@ -176,6 +182,40 @@ def enabled_safe_write_tools(payload: dict[str, Any]) -> dict[str, str]:
     return tools
 
 
+def roadmap_docs(payload: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    docs: dict[str, dict[str, Any]] = {}
+    for item in payload.get("docs", []):
+        if not isinstance(item, dict):
+            continue
+        name = str(item.get("name") or "")
+        if name:
+            docs[name] = item
+    return docs
+
+
+def roadmap_generation_ready(
+    payload: dict[str, Any], *, require_docs: bool
+) -> bool:
+    expected_count = len(EXPECTED_ROADMAP_DOCS)
+    if not (
+        payload.get("status") == "ready"
+        and payload.get("doc_sync_status") == "passed"
+        and int(payload.get("ready_doc_count") or 0) == expected_count
+        and int(payload.get("doc_count") or 0) == expected_count
+        and not payload.get("hard_blockers")
+    ):
+        return False
+    if not require_docs:
+        return True
+    docs = roadmap_docs(payload)
+    return set(docs) == set(EXPECTED_ROADMAP_DOCS) and all(
+        docs[name].get("path") == path
+        and docs[name].get("status") == "passed"
+        and not docs[name].get("missing_markers")
+        for name, path in EXPECTED_ROADMAP_DOCS.items()
+    )
+
+
 def action_id_for_record(record: dict[str, Any]) -> str:
     return str(record.get("action") or record.get("action_id") or "")
 
@@ -290,11 +330,7 @@ def build_report(
     add_check(
         checks,
         "operator_brief_roadmap_generation",
-        roadmap_generation.get("status") == "ready"
-        and roadmap_generation.get("doc_sync_status") == "passed"
-        and int(roadmap_generation.get("ready_doc_count") or 0) == 3
-        and int(roadmap_generation.get("doc_count") or 0) == 3
-        and not roadmap_generation.get("hard_blockers"),
+        roadmap_generation_ready(roadmap_generation, require_docs=True),
         display_path(paths["operator_brief"], root),
         "operator_brief_roadmap_generation_not_ready",
     )
@@ -378,7 +414,9 @@ def build_report(
         and release_brief.get("decision") == "ready_for_p7_operator_workflow"
         and int(release_brief.get("hard_blocker_count") or 0) == 0
         and isinstance(release_brief.get("roadmap_generation"), dict)
-        and release_brief["roadmap_generation"].get("status") == "ready"
+        and roadmap_generation_ready(
+            release_brief["roadmap_generation"], require_docs=False
+        )
         and release_audit.get("status") == "ready"
         and int(release_audit.get("record_count") or 0) >= 3,
         display_path(paths["release_evidence"], root),

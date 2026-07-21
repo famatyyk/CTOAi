@@ -1,5 +1,23 @@
-## Sample Pull Request Template Description
+## Outcome
 
-This is a sample pull request template. You can customize it to fit your project's needs.
+Summarize the operator-visible result and the boundary of this change.
 
-Don't forget to commit your template file to the repository so that it can be used for future pull requests!
+## Scope
+
+- [ ] The diff is limited to one reviewable lane.
+- [ ] Unrelated working-tree changes are excluded.
+- [ ] Runtime artifacts, logs, credentials, and local state are excluded.
+
+## Validation
+
+List the exact commands and results. For evidence or runtime work, include the
+relevant fail-closed, freshness, no-action, and secret-guardrail checks.
+
+```text
+Commands and results
+```
+
+## Evidence and risk
+
+State the risk class, current blockers, rollback or recovery behavior, and any
+acceptance that remains intentionally unclaimed.

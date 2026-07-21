@@ -23,6 +23,58 @@ function Diagnostics.hasApi(owner, methodName)
     return owner ~= nil and type(owner[methodName]) == "function"
 end
 
+function Diagnostics.safeCall(owner, methodName, ...)
+    if not Diagnostics.hasApi(owner, methodName) then
+        return false, "missing"
+    end
+    local args = {...}
+    local unpackArgs = table.unpack or unpack
+    return pcall(function()
+        return owner[methodName](owner, unpackArgs(args))
+    end)
+end
+
+function Diagnostics.safeGlobalCall(owner, methodName, ...)
+    if not Diagnostics.hasApi(owner, methodName) then
+        return false, "missing"
+    end
+    local args = {...}
+    local unpackArgs = table.unpack or unpack
+    return pcall(function()
+        return owner[methodName](unpackArgs(args))
+    end)
+end
+
+function Diagnostics.callBoolean(owner, methodName)
+    if not Diagnostics.hasApi(owner, methodName) then return false end
+    local ok, value = pcall(owner[methodName], owner)
+    return ok and value == true
+end
+
+function Diagnostics.callNumber(owner, methodName)
+    if not Diagnostics.hasApi(owner, methodName) then return nil end
+    local ok, value = pcall(owner[methodName], owner)
+    return ok and type(value) == "number" and value or nil
+end
+
+function Diagnostics.hasAnyState(owner, methodName, states)
+    if not Diagnostics.hasApi(owner, methodName) then return false end
+    for _, state in ipairs(states or {}) do
+        if state ~= nil then
+            local ok, value = pcall(owner[methodName], owner, state)
+            if ok and value == true then return true end
+        end
+    end
+    return false
+end
+
+function Diagnostics.anyBooleanMethod(owner, methods)
+    for _, methodName in ipairs(methods or {}) do
+        if Diagnostics.callBoolean(owner, methodName) then return true end
+    end
+    return false
+end
+
 function Diagnostics.apiText(owner, methodName)
     return Diagnostics.boolText(Diagnostics.hasApi(owner, methodName))
 end
@@ -38,6 +90,13 @@ function Diagnostics.valueText(ok, value)
         return "nil"
     end
     return tostring(value)
+end
+
+function Diagnostics.vocationProbeText(snapshot)
+    local data = snapshot or {}
+    return "Vocation probe: raw=" .. tostring(data.raw) ..
+        " resolved=" .. tostring(data.resolved) ..
+        " source=" .. tostring(data.source)
 end
 
 local function unavailableRuntimeCoreSnapshot()
@@ -218,7 +277,17 @@ function Diagnostics.featureFlagsText(flags)
 end
 
 function Diagnostics.appendLog(msg, prefix)
-    local f = io.open("ctoa_local.log", "a")
+    local f = nil
+    if g_resources and g_resources.getWorkDir then
+        local ok, workDir = pcall(function()
+            return g_resources.getWorkDir()
+        end)
+        if ok and workDir and workDir ~= "" then
+            local last = string.sub(workDir, -1)
+            local separator = (last == "/" or last == "\\") and "" or "/"
+            f = io.open(workDir .. separator .. "ctoa_local.log", "a")
+        end
+    end
     if not f and g_resources and g_resources.getUserDir then
         local ok, userDir = pcall(function()
             return g_resources.getUserDir()
@@ -226,6 +295,9 @@ function Diagnostics.appendLog(msg, prefix)
         if ok and userDir and userDir ~= "" then
             f = io.open(userDir .. "/ctoa_local.log", "a")
         end
+    end
+    if not f then
+        f = io.open("ctoa_local.log", "a")
     end
     if f then
         f:write(os.date("%Y-%m-%d %H:%M:%S") .. " [" .. tostring(prefix or "CTOA-OTC-HELPER") .. "] " .. tostring(msg or "") .. "\n")
@@ -269,6 +341,16 @@ function Diagnostics.snapshotUiRows()
         {widget = "tools_diag_detail", text = "movement", scale = 0.72},
         {widget = "tools_diag_magic", text = "magic_loot", scale = 0.72},
         {widget = "tools_diag_export", text = "buffer", scale = 0.86},
+    }
+end
+
+function Diagnostics.snapshotUiValues(snapshot, flags, buffer, limit, version)
+    return {
+        api = Diagnostics.apiSnapshotText(snapshot, version),
+        flags = Diagnostics.featureFlagsText(flags),
+        movement = Diagnostics.movementText(snapshot),
+        magic_loot = Diagnostics.magicLootText(snapshot),
+        buffer = Diagnostics.bufferText(buffer, limit),
     }
 end
 
@@ -331,13 +413,62 @@ function Diagnostics.smokeCommandExists(path, resources, ioLib)
     return false
 end
 
+function Diagnostics.smokeCommandPath(uiPath, resources)
+    if type(uiPath) == "string" and uiPath ~= "" and string.sub(uiPath, 1, 1) ~= "/" then
+        return string.gsub(uiPath, "ctoa_ui_prefs%.lua$", "ctoa_smoke_command.lua")
+    end
+    if resources and resources.getWorkDir then
+        local ok, workDir = pcall(function()
+            return resources.getWorkDir()
+        end)
+        if ok and type(workDir) == "string" and workDir ~= "" then
+            local suffix = string.sub(workDir, -1)
+            if suffix ~= "/" and suffix ~= "\\" then
+                workDir = workDir .. "/"
+            end
+            return workDir .. "ctoa_smoke_command.lua"
+        end
+    end
+    return "ctoa_smoke_command.lua"
+end
+
+function Diagnostics.removeSmokeCommand(path, osLib)
+    local system = osLib or os
+    if not system or not system.remove then
+        return false
+    end
+    local ok = pcall(function()
+        system.remove(path)
+    end)
+    return ok
+end
+
+function Diagnostics.readSmokeCommand(path, ioLib)
+    local fileApi = ioLib or io
+    if not fileApi or not fileApi.open then
+        return nil
+    end
+    local file = fileApi.open(path, "r")
+    if not file then
+        return nil
+    end
+    local ok, text = pcall(function()
+        return file:read(4097)
+    end)
+    file:close()
+    if not ok then
+        return nil
+    end
+    return Diagnostics.parseSmokeCommandText(text)
+end
+
 function Diagnostics.parseSmokeCommandText(text)
     if type(text) ~= "string" or text == "" or #text > 4096 then
         return nil
     end
     local command = {}
     local hasValue = false
-    for _, key in ipairs({"action", "tab", "subtab", "theme"}) do
+    for _, key in ipairs({"action", "tab", "subtab", "theme", "session_id", "plan_sha256", "p9_receipt_sha256", "p10_receipt_sha256", "p11_receipt_sha256", "p12_equipment_receipt_sha256", "retry_budget", "before_item_id", "candidate_item_id", "source_container_id", "source_slot_index", "target_id", "target_name", "whitelist_revision", "hp_threshold", "max_range"}) do
         local value = Diagnostics.smokeCommandValue(text, key)
         if value and value ~= "" then
             command[key] = value
@@ -348,6 +479,12 @@ function Diagnostics.parseSmokeCommandText(text)
     if confirm == "true" then
         command.confirm = true
         hasValue = true
+    end
+    for _, key in ipairs({"session_approved", "execution_approved"}) do
+        if Diagnostics.smokeCommandValue(text, key) == "true" then
+            command[key] = true
+            hasValue = true
+        end
     end
     if hasValue then
         return command
@@ -477,6 +614,169 @@ function Diagnostics.exportBuffer(options)
     return true
 end
 
+function Diagnostics.createController(context)
+    local ctx = context or {}
+    local helper = ctx.helper or {}
+    local config = ctx.config or {}
+    local controller = {}
+
+    function controller.refresh()
+        local tools = config.tools or {}
+        local values = Diagnostics.snapshotUiValues(
+            helper.api_snapshot,
+            tools.feature_flags or {},
+            helper.diagnostics_buffer,
+            tools.diagnostics_export_limit or 20,
+            ctx.version
+        )
+        if type(ctx.update_snapshot) ~= "function" then
+            if type(ctx.refresh_operator) == "function" then
+                ctx.refresh_operator()
+            end
+            return false
+        end
+        local ok = pcall(ctx.update_snapshot, {
+            widgets = helper.widgets or {},
+            content_width = ctx.content_width,
+            fit_text = ctx.fit_text,
+        }, values, Diagnostics.snapshotUiRows())
+        if type(ctx.refresh_operator) == "function" then
+            ctx.refresh_operator()
+        end
+        return ok == true
+    end
+
+    function controller.record(reason, snapshot)
+        local tools = config.tools or {}
+        if type(tools.feature_flags) ~= "table" or tools.feature_flags.diagnostics ~= true or type(snapshot) ~= "table" then
+            return false
+        end
+        local buffer, recorded = Diagnostics.recordSnapshot(helper.diagnostics_buffer, {
+            version = ctx.version,
+            reason = reason,
+            captured_ms = type(ctx.now_ms) == "function" and ctx.now_ms() or 0,
+            snapshot = snapshot,
+            limit = tools.diagnostics_export_limit,
+        })
+        if recorded == true and type(buffer) == "table" then
+            helper.diagnostics_buffer = buffer
+            return true
+        end
+        return false
+    end
+
+    function controller.export(reason)
+        return Diagnostics.exportBuffer({
+            ui_path = helper.ui_path,
+            version = ctx.version,
+            reason = reason,
+            exported_ms = type(ctx.now_ms) == "function" and ctx.now_ms() or 0,
+            samples = helper.diagnostics_buffer or {},
+            serialize = ctx.serialize,
+            status = ctx.status,
+            refresh = controller.refresh,
+        })
+    end
+
+    function controller.runApiProbe(reason)
+        if helper.api_probe_ran and reason ~= "manual" then
+            return false
+        end
+        local player = type(ctx.get_player) == "function" and ctx.get_player() or nil
+        local current = type(ctx.get_position) == "function" and ctx.get_position(player) or nil
+        local online = type(ctx.online) == "function" and ctx.online() or false
+        local deferPlan = Diagnostics.probeDeferredPlan({
+            reason = reason,
+            label = "API",
+            online = online,
+            has_player = player ~= nil,
+            attempts = helper.api_probe_attempts,
+            max_attempts = 120,
+        })
+        if deferPlan.defer == true then
+            helper.api_probe_attempts = deferPlan.attempts or ((helper.api_probe_attempts or 0) + 1)
+            if deferPlan.retry == true and type(ctx.delay) == "function" then
+                ctx.delay(function()
+                    controller.runApiProbe("startup")
+                end, deferPlan.retry_delay_ms or 2000)
+            elseif type(ctx.status) == "function" then
+                ctx.status(deferPlan.status_text or "API probe deferred: no local player")
+            end
+            return false
+        end
+        helper.api_probe_ran = true
+
+        local vitals = type(ctx.read_vitals) == "function" and ctx.read_vitals() or {}
+        local canWalkOk, canWalk = Diagnostics.safeCall(player, "canWalk", true)
+        local autoWalkingOk, autoWalking = Diagnostics.safeCall(player, "isAutoWalking")
+        local pzOk, pz = Diagnostics.safeCall(player, "isInProtectionZone")
+        local states = type(ctx.pcall_number) == "function" and ctx.pcall_number(player, "getStates") or nil
+        local containersOk, containers = Diagnostics.safeGlobalCall(ctx.game, "getContainers")
+        local container = Diagnostics.firstTableValue(containers)
+        local lootAdapterText = type(ctx.loot_adapter_text) == "function" and ctx.loot_adapter_text(containersOk, containers, online) or ""
+        local targetOk, target = Diagnostics.safeGlobalCall(ctx.game, "getAttackingCreature")
+        local tileFlags = nil
+        if current and ctx.map and type(ctx.map.getTile) == "function" then
+            local tileOk, tile = pcall(function()
+                return ctx.map.getTile(current)
+            end)
+            if tileOk and tile and type(ctx.pcall_number) == "function" then
+                tileFlags = ctx.pcall_number(tile, "getFlags")
+            end
+        end
+        local targetName = "n/a"
+        if targetOk and target and Diagnostics.hasApi(target, "getName") then
+            local nameOk, name = Diagnostics.safeCall(target, "getName")
+            targetName = nameOk and tostring(name) or "error"
+        end
+        local snapshot = Diagnostics.apiProbeSnapshot({
+            version = ctx.version,
+            online = online,
+            player = player,
+            clock_millis = ctx.clock_millis,
+            current_pos = current,
+            vitals = vitals,
+            pz_ok = pzOk,
+            pz = pz,
+            states = states,
+            tile_flags = tileFlags,
+            can_walk_ok = canWalkOk,
+            can_walk = canWalk,
+            auto_walking_ok = autoWalkingOk,
+            auto_walking = autoWalking,
+            map = ctx.map,
+            game = ctx.game,
+            target_ok = targetOk,
+            target = target,
+            target_name = targetName,
+            ui = ctx.ui,
+            keyboard = ctx.keyboard,
+            resources = ctx.resources,
+            container = container,
+            container_count = containersOk and Diagnostics.tableCount(containers) or 0,
+            loot_adapter_text = lootAdapterText,
+            runtime_core = ctx.runtime_core,
+        })
+        helper.api_snapshot = snapshot
+        controller.record(reason, snapshot)
+        controller.refresh()
+        local summaryText, detailText = Diagnostics.apiProbeText({
+            reason = reason,
+            version = ctx.version,
+            snapshot = snapshot,
+        })
+        if type(ctx.status) == "function" then
+            ctx.status(summaryText)
+            if type(detailText) == "string" and detailText ~= "" then
+                ctx.status(detailText)
+            end
+        end
+        return true
+    end
+
+    return controller
+end
+
 function Diagnostics.contract()
     return {
         module = "ctoa_helper_diagnostics",
@@ -485,7 +785,11 @@ function Diagnostics.contract()
         owns_bool_text = true,
         owns_pos_text = true,
         owns_api_text = true,
+        owns_api_method_guard = true,
+        owns_safe_method_call = true,
+        owns_safe_global_call = true,
         owns_value_text = true,
+        owns_vocation_probe_text = true,
         owns_runtime_core_snapshot = true,
         owns_runtime_core_text = true,
         owns_api_snapshot_text = true,
@@ -494,19 +798,27 @@ function Diagnostics.contract()
         owns_probe_deferred_plan = true,
         owns_magic_api_probe_text = true,
         owns_feature_flags_text = true,
+        owns_workdir_log_path = true,
         owns_buffer_text = true,
         owns_movement_text = true,
         owns_magic_loot_text = true,
         owns_snapshot_ui_rows = true,
+        owns_snapshot_ui_values = true,
         owns_table_count = true,
         owns_first_table_value = true,
         owns_smoke_command_exists = true,
+        owns_smoke_command_path = true,
+        owns_smoke_command_read = true,
+        owns_smoke_command_remove = true,
+        bounded_smoke_command_bytes = 4096,
         owns_smoke_command_parse = true,
         owns_smoke_command_target = true,
         owns_smoke_status_text = true,
         owns_smoke_command_status_text = true,
         owns_record_snapshot = true,
         owns_export_buffer = true,
+        owns_diagnostics_controller = true,
+        owns_api_probe_controller = true,
         runtime_actions = false,
         executes_plans = false,
         writes_profile = false,

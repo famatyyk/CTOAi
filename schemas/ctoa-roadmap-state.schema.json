@@ -1,0 +1,224 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ctoai.local/schemas/ctoa-roadmap-state.schema.json",
+  "title": "CTOAi P13 Adaptive Machine-Readable Roadmap State",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "generated_at",
+    "status",
+    "readiness_status",
+    "phase",
+    "phase_status",
+    "next_phase",
+    "state_sha256",
+    "previous_state_sha256",
+    "control_center_preflight",
+    "schema_registry",
+    "source_health",
+    "ledger",
+    "summary",
+    "freshness_status",
+    "tamper_status",
+    "authority",
+    "blockers",
+    "warnings",
+    "next_action"
+  ],
+  "properties": {
+    "schema_version": {"const": "ctoa.roadmap-state.v2"},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "status": {"enum": ["ready", "blocked"]},
+    "readiness_status": {"enum": ["ready", "awaiting_external", "blocked"]},
+    "phase": {"const": "P13"},
+    "phase_status": {"enum": ["runtime_evidence_ready", "blocked"]},
+    "next_phase": {"const": "P14"},
+    "state_sha256": {"$ref": "#/$defs/sha256"},
+    "previous_state_sha256": {"$ref": "#/$defs/nullableSha256"},
+    "control_center_preflight": {"$ref": "#/$defs/preflight"},
+    "schema_registry": {"$ref": "#/$defs/registry"},
+    "source_health": {
+      "type": "array",
+      "minItems": 3,
+      "items": {"$ref": "#/$defs/sourceHealth"}
+    },
+    "ledger": {
+      "type": "array",
+      "minItems": 7,
+      "maxItems": 7,
+      "items": {"$ref": "#/$defs/ledgerEntry"}
+    },
+    "summary": {"$ref": "#/$defs/summary"},
+    "freshness_status": {"enum": ["current", "stale", "blocked"]},
+    "tamper_status": {"enum": ["passed", "tampered", "blocked"]},
+    "authority": {"$ref": "#/$defs/authority"},
+    "blockers": {"$ref": "#/$defs/stringList"},
+    "warnings": {"$ref": "#/$defs/stringList"},
+    "next_action": {"type": "string", "minLength": 20, "maxLength": 300}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "nullableSha256": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"},
+    "stringList": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1, "maxLength": 200}
+    },
+    "preflight": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "ready", "operator_brief_status", "roadmap_generation_status", "cockpit_handoff_status", "hard_blockers"],
+      "properties": {
+        "status": {"enum": ["ready", "blocked"]},
+        "ready": {"type": "boolean"},
+        "operator_brief_status": {"type": "string"},
+        "roadmap_generation_status": {"type": "string"},
+        "cockpit_handoff_status": {"type": "string"},
+        "hard_blockers": {"$ref": "#/$defs/stringList"}
+      }
+    },
+    "registry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "path", "schema_path", "schema_version", "entry_count", "sha256", "schema_sha256", "previous_sha256"],
+      "properties": {
+        "status": {"enum": ["passed", "blocked", "tampered"]},
+        "path": {"const": "schemas/ctoa-roadmap-schema-registry.v1.json"},
+        "schema_path": {"const": "schemas/ctoa-roadmap-schema-registry.schema.json"},
+        "schema_version": {"type": ["string", "null"]},
+        "entry_count": {"type": "integer", "minimum": 0, "maximum": 7},
+        "sha256": {"$ref": "#/$defs/nullableSha256"},
+        "schema_sha256": {"$ref": "#/$defs/nullableSha256"},
+        "previous_sha256": {"$ref": "#/$defs/nullableSha256"}
+      }
+    },
+    "sourceHealth": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "path", "impact", "availability", "load_status", "sha256", "freshness_status", "age_seconds", "contract_status"],
+      "properties": {
+        "name": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+        "path": {"type": "string", "minLength": 1},
+        "impact": {"enum": ["required", "advisory"]},
+        "availability": {"enum": ["available", "awaiting_external", "blocked"]},
+        "load_status": {"enum": ["loaded", "missing", "symlink_rejected", "outside_root", "oversize", "changed_during_read", "duplicate_keys", "malformed", "not_object"]},
+        "sha256": {"$ref": "#/$defs/nullableSha256"},
+        "freshness_status": {"enum": ["current", "stale", "timeless", "blocked"]},
+        "age_seconds": {"type": ["integer", "null"], "minimum": 0},
+        "contract_status": {"enum": ["passed", "pending", "blocked"]}
+      }
+    },
+    "binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "path", "mode", "status", "expected_sha256", "actual_sha256"],
+      "properties": {
+        "role": {"type": "string"},
+        "path": {"type": "string"},
+        "mode": {"enum": ["raw_sha256", "canonical_json_sha256", "field_match"]},
+        "status": {"enum": ["passed", "blocked"]},
+        "expected_sha256": {"type": ["string", "null"]},
+        "actual_sha256": {"type": ["string", "null"]}
+      }
+    },
+    "ledgerEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "decision_id",
+        "ordinal",
+        "phase",
+        "lane",
+        "decision_status",
+        "result_status",
+        "evidence_path",
+        "evidence_schema_version",
+        "evidence_sha256",
+        "previous_evidence_sha256",
+        "evidence_status",
+        "integrity_status",
+        "freshness_status",
+        "created_at",
+        "age_seconds",
+        "terminal",
+        "attempt_count",
+        "retry_scheduled",
+        "final_state",
+        "downstream_authority_granted",
+        "dispatch_allowed",
+        "runtime_actions",
+        "execute_once_allowed",
+        "live_promotion",
+        "intrusive_action_count",
+        "predecessor_ids",
+        "bindings",
+        "blockers"
+      ],
+      "properties": {
+        "decision_id": {"type": "string"},
+        "ordinal": {"type": "integer", "minimum": 8, "maximum": 14},
+        "phase": {"enum": ["P8", "P9", "P10", "P11", "P12"]},
+        "lane": {"enum": ["background", "conditions", "equipment", "heal_friend"]},
+        "decision_status": {"enum": ["accepted", "closed_no_action"]},
+        "result_status": {"enum": ["operational_acceptance_complete", "closed_blocked_no_compatible_vocation"]},
+        "evidence_path": {"type": "string"},
+        "evidence_schema_version": {"type": ["string", "null"]},
+        "evidence_sha256": {"$ref": "#/$defs/nullableSha256"},
+        "previous_evidence_sha256": {"$ref": "#/$defs/nullableSha256"},
+        "evidence_status": {"type": ["string", "null"]},
+        "integrity_status": {"enum": ["passed", "tampered", "blocked"]},
+        "freshness_status": {"enum": ["immutable_terminal", "blocked"]},
+        "created_at": {"type": ["string", "null"]},
+        "age_seconds": {"type": ["integer", "null"], "minimum": 0},
+        "terminal": {"const": true},
+        "attempt_count": {"type": ["integer", "null"], "minimum": 0},
+        "retry_scheduled": {"type": ["boolean", "null"]},
+        "final_state": {"type": ["string", "null"]},
+        "downstream_authority_granted": {"const": false},
+        "dispatch_allowed": {"const": false},
+        "runtime_actions": {"const": false},
+        "execute_once_allowed": {"const": false},
+        "live_promotion": {"const": false},
+        "intrusive_action_count": {"type": "integer", "minimum": 0, "maximum": 1},
+        "predecessor_ids": {"$ref": "#/$defs/stringList"},
+        "bindings": {"type": "array", "items": {"$ref": "#/$defs/binding"}},
+        "blockers": {"$ref": "#/$defs/stringList"}
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ledger_count", "accepted_count", "closed_no_action_count", "blocked_count", "tampered_count", "total_attempt_count", "runtime_authority_count", "live_authority_count"],
+      "properties": {
+        "ledger_count": {"const": 7},
+        "accepted_count": {"type": "integer", "minimum": 0, "maximum": 7},
+        "closed_no_action_count": {"type": "integer", "minimum": 0, "maximum": 7},
+        "blocked_count": {"type": "integer", "minimum": 0, "maximum": 7},
+        "tampered_count": {"type": "integer", "minimum": 0, "maximum": 7},
+        "total_attempt_count": {"type": "integer", "minimum": 0},
+        "runtime_authority_count": {"const": 0},
+        "live_authority_count": {"const": 0}
+      }
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["control_center_mode", "runtime_executor_added", "runtime_actions", "live_authority", "p12_heal_friend_reopened", "runtime_mcp_write_tool_enabled", "roadmap_refresh_tool_enabled", "roadmap_refresh_risk_class", "allowed_output_paths"],
+      "properties": {
+        "control_center_mode": {"const": "read_only"},
+        "runtime_executor_added": {"const": false},
+        "runtime_actions": {"const": false},
+        "live_authority": {"const": false},
+        "p12_heal_friend_reopened": {"const": false},
+        "runtime_mcp_write_tool_enabled": {"const": false},
+        "roadmap_refresh_tool_enabled": {"const": true},
+        "roadmap_refresh_risk_class": {"const": "safe_write"},
+        "allowed_output_paths": {
+          "type": "array",
+          "const": ["AI/generated/ROADMAP_STATE.json", "AI/generated/ROADMAP_STATE.md", "runtime/control-center/action-audit.jsonl"]
+        }
+      }
+    }
+  }
+}

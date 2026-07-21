@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ctoa.local/schemas/equipment-shadow-snapshot-ingest.schema.json",
+  "title": "CTOAi Equipment Shadow Snapshot Ingest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "generated_at_unix_ms", "status", "blockers", "source_sha256", "snapshot_sha256", "snapshot_written", "dispatch_allowed", "runtime_actions", "executes_plan", "execute_once_allowed", "promotion_allowed", "intrusive_actions_performed"],
+  "properties": {
+    "schema_version": {"const": "ctoa.equipment-shadow-snapshot-ingest.v1"},
+    "generated_at_unix_ms": {"type": "integer", "minimum": 1},
+    "status": {"enum": ["snapshot_ready", "blocked"]},
+    "blockers": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "source_sha256": {"type": "object", "additionalProperties": false, "required": ["background_status", "capture_profile", "equipment_observation"], "properties": {"background_status": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "capture_profile": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "equipment_observation": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}},
+    "snapshot_sha256": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"},
+    "snapshot_written": {"type": "boolean"},
+    "dispatch_allowed": {"const": false},
+    "runtime_actions": {"const": false},
+    "executes_plan": {"const": false},
+    "execute_once_allowed": {"const": false},
+    "promotion_allowed": {"const": false},
+    "intrusive_actions_performed": {"const": []}
+  }
+}

@@ -50,6 +50,20 @@ function Conditions.flagText(player, label, enabled, candidates, ctx)
     return label .. ":no"
 end
 
+function Conditions.paralyzeState(player, ctx)
+    local helpers = ctx or {}
+    local stateText = Conditions.flagText(player, "para", true, {
+        _G.CreatureStateParalyze, _G.CreatureStateSlowed, "Paralyze", "Slowed"
+    }, helpers)
+    if stateText == "para:yes" then return "present" end
+    local speed = helpers.pcallNumber and helpers.pcallNumber(player, "getSpeed") or nil
+    local baseSpeed = helpers.pcallNumber and helpers.pcallNumber(player, "getBaseSpeed") or nil
+    if type(speed) == "number" and type(baseSpeed) == "number" and baseSpeed > 0 then
+        return speed < baseSpeed and "present" or "absent"
+    end
+    return "absent"
+end
+
 function Conditions.snapshot(config, ctx)
     ctx = ctx or {}
     local conditions = config or {}
@@ -130,6 +144,26 @@ function Conditions.observe(config, now, ctx)
     return true
 end
 
+function Conditions.executeOnceObservation(config, now, ctx)
+    local root = config or {}
+    local healing = root.healing or {}
+    local helpers = ctx or {}
+    local player = helpers.getLocalPlayer and helpers.getLocalPlayer() or nil
+    local vitals = helpers.readVitals and helpers.readVitals() or {}
+    local paralyzeState = Conditions.paralyzeState(player, helpers)
+    local cooldownMs = math.max(250, tonumber(healing.cooldown_ms) or 1000)
+    local lastCast = tonumber(healing.last_cast_ms) or 0
+    return {
+        online = helpers.online and helpers.online() and "online" or "offline",
+        alive = tonumber(vitals.hp) and tonumber(vitals.hp) > 0 and "alive" or "dead",
+        protection_zone = helpers.inProtectionZone and helpers.inProtectionZone() and "inside" or "outside",
+        condition_id = "paralyze",
+        condition_state = paralyzeState,
+        cooldown = now >= lastCast + cooldownMs and "ready" or "active",
+        observed_at_unix_ms = now,
+    }
+end
+
 function Conditions.plan(config, observation, context)
     local conditions = config or {}
     local observed = observation or {}
@@ -192,6 +226,7 @@ function Conditions.contract()
         owns_snapshot = true,
         owns_api_probe = true,
         owns_observer = true,
+        owns_execute_once_observation = true,
         owns_summary_text = true,
         runtime_actions = false,
         casts = false,

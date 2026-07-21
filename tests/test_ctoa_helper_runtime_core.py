@@ -44,6 +44,7 @@ def test_runtime_core_exposes_registry_event_bus_and_budgeted_scheduler():
     assert "failure_backoff_ms" in source
     assert "tasks_deferred" in source
     assert "handler_failures" in source
+    assert 'scheduler_fairness = "round_robin"' in source
 
 
 def test_runtime_core_is_passive_and_safe_by_default():
@@ -120,6 +121,12 @@ local tick = core.runDue(0, {budget_ms = 100, max_tasks = 2, now_fn = function()
 assert(#tick.ran == 2)
 assert(#tick.deferred == 1 and tick.deferred[1] == "three")
 
+-- The next bounded tick starts with the previously deferred task instead of
+-- repeatedly favoring the first registrations.
+local fairnessTick = core.runDue(0, {budget_ms = 100, max_tasks = 2, now_fn = function() return 0 end})
+assert(#fairnessTick.ran == 1 and fairnessTick.ran[1] == "three")
+assert(#fairnessTick.deferred == 0)
+
 assert(core.registerTask({
     id = "broken_task",
     enabled = true,
@@ -148,12 +155,14 @@ assert(status.registered_tasks == 4)
 assert(status.enabled_tasks == 4)
 assert(status.failed_tasks == 1)
 assert(status.tasks_deferred == 1)
+assert(status.scheduler_cursor >= 1 and status.scheduler_cursor <= 4)
 assert(#status.tasks == 4)
 
 local contract = core.contract()
 assert(contract.mode == "passive")
 assert(contract.runtime_actions == false)
 assert(contract.default_tasks_enabled == false)
+assert(contract.scheduler_fairness == "round_robin")
 """,
         encoding="utf-8",
     )

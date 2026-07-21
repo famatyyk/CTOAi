@@ -25,7 +25,7 @@ Status: `ready`
 | `.venv` | Local/uncategorized | `manual review` | 4543 | vendor_or_cache:4543 |
 | `.vscode` | Local/uncategorized | `manual review` | 4 | tracked_source:4 |
 | `AGENTS.md` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
-| `AI` | Engine Brain | `brain refresh; brain pack` | 45 | tracked_source:45 |
+| `AI` | Engine Brain | `brain refresh; brain pack` | 54 | tracked_source:48, untracked_source_candidate:6 |
 | `CHANGELOG.md` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `Dockerfile` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `Dockerfile.api` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
@@ -39,7 +39,7 @@ Status: `ready`
 | `alembic.ini` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `api` | API runtime | `pytest tests/ --ignore=tests/e2e` | 9 | tracked_source:3, untracked_source_candidate:6 |
 | `bot` | Bot runtime | `pytest tests/ --ignore=tests/e2e` | 144 | tracked_source:43, untracked_source_candidate:101 |
-| `config` | Local/uncategorized | `manual review` | 6 | local_secret_or_sensitive:1, tracked_source:5 |
+| `config` | Local/uncategorized | `manual review` | 11 | local_secret_or_sensitive:1, tracked_source:10 |
 | `conftest.py` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
 | `core` | Local/uncategorized | `manual review` | 3 | tracked_source:3 |
 | `ctoa-vps.ps1` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |
@@ -57,6 +57,7 @@ Status: `ready`
 | `logs` | Local/uncategorized | `manual review` | 3 | runtime_or_local_state:3 |
 | `metrics` | Local/uncategorized | `manual review` | 83 | runtime_or_local_state:83 |
 | `mobile_console` | Mobile console | `pytest tests/ --ignore=tests/e2e` | 20 | tracked_source:9, untracked_source_candidate:11 |
+| `mods` | Local/uncategorized | `manual review` | 7 | tracked_source:7 |
 | `node_modules` | Local/uncategorized | `manual review` | 1 | vendor_or_cache:1 |
 | `outputs` | Local/uncategorized | `manual review` | 1 | untracked_local:1 |
 | `policies` | Local/uncategorized | `manual review` | 1 | tracked_source:1 |

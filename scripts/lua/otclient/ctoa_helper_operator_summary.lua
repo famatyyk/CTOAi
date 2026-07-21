@@ -118,6 +118,30 @@ function OperatorSummary.bridgeText(summaryName, bridges)
     return moduleSummary(OperatorSummary, summaryName, "summary unavailable")
 end
 
+local SUMMARY_FIELDS = {
+    {key = "title", bridge = "title"},
+    {key = "healing", bridge = "healing"},
+    {key = "heal_friend", bridge = "healFriend"},
+    {key = "conditions", bridge = "conditions"},
+    {key = "equipment", bridge = "equipment"},
+    {key = "scripting", bridge = "scripting"},
+    {key = "targeting", bridge = "targeting"},
+    {key = "magic", bridge = "magic"},
+    {key = "tools", bridge = "tools"},
+    {key = "profile", bridge = "profile"},
+    {key = "ui", bridge = "ui"},
+}
+
+function OperatorSummary.collect(bridges, includeTitle)
+    local summaries = {}
+    for _, field in ipairs(SUMMARY_FIELDS) do
+        if includeTitle == true or field.key ~= "title" then
+            summaries[field.key] = OperatorSummary.bridgeText(field.bridge, bridges)
+        end
+    end
+    return summaries
+end
+
 function OperatorSummary.contract()
     return {
         module = "ctoa_helper_operator_summary",
@@ -126,6 +150,7 @@ function OperatorSummary.contract()
         owns_profile_summary_bridge = true,
         owns_module_summary_bridge = true,
         owns_bridge_dispatch = true,
+        owns_summary_collection = true,
         creates_widgets = false,
         runtime_actions = false,
         executes_plans = false,
