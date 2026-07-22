@@ -50,6 +50,11 @@ function allowAccess() {
   }
 }
 
+function expectPrivateNoStoreHeaders(response: Response) {
+  expect(response.headers.get("Cache-Control")).toBe("private, no-store, max-age=0")
+  expect(response.headers.get("Vary")).toBe("Cookie")
+}
+
 function mockMarkdownFile(contents: string) {
   const bytes = Buffer.from(contents, "utf-8")
   lstatMock.mockResolvedValue({ isFile: () => true, isSymbolicLink: () => false, size: bytes.length })
@@ -88,6 +93,7 @@ describe("Control Center evidence routes", () => {
     const response = await GET()
 
     expect(response.status).toBe(401)
+    expectPrivateNoStoreHeaders(response)
     expect(requireControlCenterReadAccessMock).toHaveBeenCalledWith("Control Center evidence")
     expect(collectControlCenterEvidenceMock).not.toHaveBeenCalled()
   })
@@ -99,6 +105,7 @@ describe("Control Center evidence routes", () => {
     const response = await GET()
 
     expect(response.status).toBe(200)
+    expectPrivateNoStoreHeaders(response)
     expect(await response.json()).toEqual({ status: "ready" })
   })
 
@@ -170,6 +177,7 @@ describe("Control Center evidence routes", () => {
     const response = await GET()
 
     expect(response.status).toBe(403)
+    expectPrivateNoStoreHeaders(response)
     expect(requireControlCenterReadAccessMock).toHaveBeenCalledWith("Control Center ops evidence")
     expect(collectControlCenterOpsMock).not.toHaveBeenCalled()
   })
@@ -196,6 +204,7 @@ describe("Control Center evidence routes", () => {
     const payload = await response.json()
 
     expect(response.status).toBe(200)
+    expectPrivateNoStoreHeaders(response)
     expect(payload.details.engineBrain).toMatchObject({
       status: "ready",
       p7OperatorBriefStatus: "ready",
@@ -216,6 +225,7 @@ describe("Control Center evidence routes", () => {
     const response = await GET()
 
     expect(response.status).toBe(403)
+    expectPrivateNoStoreHeaders(response)
     expect(requireControlCenterReadAccessMock).toHaveBeenCalledWith("Control Center release evidence report")
     expect(openMock).not.toHaveBeenCalled()
   })
@@ -227,6 +237,7 @@ describe("Control Center evidence routes", () => {
     const response = await GET()
 
     expect(response.status).toBe(403)
+    expectPrivateNoStoreHeaders(response)
     expect(requireControlCenterReadAccessMock).toHaveBeenCalledWith("Control Center API cost report")
     expect(openMock).not.toHaveBeenCalled()
   })
@@ -245,6 +256,7 @@ describe("Control Center evidence routes", () => {
     const body = await response.text()
 
     expect(response.status).toBe(200)
+    expectPrivateNoStoreHeaders(response)
     expect(response.headers.get("Content-Type")).toContain("text/markdown")
     expect(lstatMock).toHaveBeenCalledWith("runtime/evidence/latest.md")
     expect(openMock).toHaveBeenCalledWith("runtime/evidence/latest.md", "r")
@@ -280,6 +292,7 @@ describe("Control Center evidence routes", () => {
     const body = await response.text()
 
     expect(response.status).toBe(200)
+    expectPrivateNoStoreHeaders(response)
     expect(response.headers.get("Content-Type")).toContain("text/markdown")
     expect(openMock).toHaveBeenCalledWith("runtime/api-cost/latest.md", "r")
     expect(fileReadMock).toHaveBeenCalled()
@@ -296,6 +309,7 @@ describe("Control Center evidence routes", () => {
     const body = await response.json()
 
     expect(response.status).toBe(413)
+    expectPrivateNoStoreHeaders(response)
     expect(body.error).toBe("Evidence markdown is too large to display safely.")
     expect(fileReadMock).toHaveBeenCalled()
     expect(fileCloseMock).toHaveBeenCalled()
@@ -309,6 +323,7 @@ describe("Control Center evidence routes", () => {
     const body = await response.json()
 
     expect(response.status).toBe(413)
+    expectPrivateNoStoreHeaders(response)
     expect(body.error).toBe("API cost markdown is too large to display safely.")
     expect(fileReadMock).toHaveBeenCalled()
     expect(fileCloseMock).toHaveBeenCalled()

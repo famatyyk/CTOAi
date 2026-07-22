@@ -51,6 +51,16 @@ def write_ready_fixture(root: Path):
             "mcp_tool": "ctoai_p7_cockpit_smoke_refresh",
             "risk_class": "safe_write",
         },
+        {
+            "action_id": "roadmap-state-refresh",
+            "mcp_tool": "ctoai_roadmap_state_refresh",
+            "risk_class": "safe_write",
+        },
+        {
+            "action_id": "full-workspace-validation-refresh",
+            "mcp_tool": "ctoai_full_workspace_validation_refresh",
+            "risk_class": "safe_write",
+        },
     ]
     write_json(
         generated / "manifest.json",
@@ -69,6 +79,7 @@ def write_ready_fixture(root: Path):
         {
             "status": "safe_write_ready",
             "allowed_mcp_tools": [
+                {"name": "ctoai_control_central", "risk_class": "read_only"},
                 {"name": "ctoai_engine_brain_status", "risk_class": "read_only"},
                 {"name": "ctoai_engine_brain_self_check", "risk_class": "read_only"},
                 {"name": "ctoai_engine_brain_brief", "risk_class": "read_only"},
@@ -78,6 +89,11 @@ def write_ready_fixture(root: Path):
                 {"name": "ctoai_evidence_pack_refresh", "risk_class": "safe_write"},
                 {"name": "ctoai_engine_brain_refresh", "risk_class": "safe_write"},
                 {"name": "ctoai_p7_cockpit_smoke_refresh", "risk_class": "safe_write"},
+                {"name": "ctoai_roadmap_state_refresh", "risk_class": "safe_write"},
+                {
+                    "name": "ctoai_full_workspace_validation_refresh",
+                    "risk_class": "safe_write",
+                },
             ],
         },
     )
@@ -85,8 +101,8 @@ def write_ready_fixture(root: Path):
         generated / "P7_ACTION_READINESS.json",
         {
             "status": "safe_write_tools_enabled",
-            "candidate_count": 5,
-            "audited_candidate_count": 5,
+            "candidate_count": 7,
+            "audited_candidate_count": 7,
             "unexpected_mcp_write_tools": [],
             "enabled_safe_write_tools": safe_tools,
         },
@@ -134,7 +150,7 @@ def write_ready_fixture(root: Path):
                     "hard_blockers": [],
                 },
             },
-            "control_center_audit": {"status": "ready", "record_count": 5},
+            "control_center_audit": {"status": "ready", "record_count": 7},
         },
     )
     audit_path = runtime / "control-center" / "action-audit.jsonl"
@@ -171,10 +187,18 @@ def test_p7_cockpit_smoke_reports_ready(tmp_path: Path):
     assert {check["name"]: check["status"] for check in report["checks"]}[
         "operator_brief_roadmap_generation"
     ] == "passed"
-    assert report["summary"]["allowed_mcp_tool_count"] == 9
-    assert report["summary"]["enabled_safe_write_tool_count"] == 5
-    assert report["summary"]["ready_safe_write_audit_count"] == 5
-    assert [audit["ready"] for audit in report["safe_write_audits"]] == [True, True, True, True, True]
+    assert report["summary"]["allowed_mcp_tool_count"] == 12
+    assert report["summary"]["enabled_safe_write_tool_count"] == 7
+    assert report["summary"]["ready_safe_write_audit_count"] == 7
+    assert [audit["ready"] for audit in report["safe_write_audits"]] == [
+        True,
+        True,
+        True,
+        True,
+        True,
+        True,
+        True,
+    ]
 
 
 def test_p7_cockpit_smoke_blocks_missing_safe_write_audit(tmp_path: Path):

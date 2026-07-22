@@ -692,7 +692,8 @@ Once available:
 - Keep the plugin-owned `scripts/ctoai_engine_brain_mcp.py` server bounded.
   Its MCP tools should expose only `ctoai_engine_brain_status`,
   `ctoai_engine_brain_self_check`, `ctoai_engine_brain_brief`,
-  `ctoai_control_center_cockpit`, `ctoai_repo_hygiene_refresh`,
+  `ctoai_control_center_cockpit`, `ctoai_control_central`,
+  `ctoai_repo_hygiene_refresh`,
   `ctoai_api_cost_refresh`, `ctoai_evidence_pack_refresh`,
   `ctoai_engine_brain_refresh`, and `ctoai_p7_cockpit_smoke_refresh`, backed by
   generated evidence, plugin install checks, action-audit evidence, runtime
@@ -715,9 +716,14 @@ Once available:
   `evidence-pack-refresh` / `ctoai_evidence_pack_refresh` as the primary
   design, allows `repo-hygiene-refresh` / `ctoai_repo_hygiene_refresh` and
   `api-cost-refresh` / `ctoai_api_cost_refresh` plus
-  `engine-brain-refresh` / `ctoai_engine_brain_refresh` and
-  `p7-cockpit-smoke-refresh` / `ctoai_p7_cockpit_smoke_refresh` as additional bounded
-  evidence/context refreshes, and requires Control Center audit parity.
+  `engine-brain-refresh` / `ctoai_engine_brain_refresh`,
+  `p7-cockpit-smoke-refresh` / `ctoai_p7_cockpit_smoke_refresh`,
+  `roadmap-state-refresh` / `ctoai_roadmap_state_refresh`, and
+  `full-workspace-validation-refresh` /
+  `ctoai_full_workspace_validation_refresh` as registered bounded
+  evidence/context candidates. Registration does not imply readiness: each
+  candidate remains fail-closed until current plugin, preflight, and audit
+  evidence pass.
 - Generate `AI/generated/P7_OPERATOR_BRIEF.md` and `.json` during
   `brain refresh` so Control Center and release evidence can consume the P7
   operator decision, workflow gate, action-readiness summary, and safe-write
@@ -778,15 +784,16 @@ Once available:
   Missing smoke remains a warning to avoid refresh bootstrap loops; present
   non-ready smoke is a plugin cockpit blocker.
 - Keep `scripts/ops/control_center_p7_safe_write_dry_run_smoke.py` as the
-  operator smoke for the five bounded P7 safe-write MCP tools. It must call
+  operator smoke for the seven registered P7 safe-write candidates. It may
+  exercise a candidate only with `dry_run=true`, a current successful plugin
+  preflight, and a matching `runtime/control-center/action-audit.jsonl` record;
+  registration alone is not operator readiness. The registered tools are
   `ctoai_repo_hygiene_refresh`, `ctoai_api_cost_refresh`,
-  `ctoai_evidence_pack_refresh`, `ctoai_engine_brain_refresh`, and
-  `ctoai_p7_cockpit_smoke_refresh` with
-  `dry_run=true`, verify the plugin stdio payloads, and prove matching
-  `runtime/control-center/action-audit.jsonl`
-  records before a new plugin action is designed.
+  `ctoai_evidence_pack_refresh`, `ctoai_engine_brain_refresh`,
+  `ctoai_p7_cockpit_smoke_refresh`, `ctoai_roadmap_state_refresh`, and
+  `ctoai_full_workspace_validation_refresh`.
 - Treat P7 safe-write dry-run smoke as operator-ready only when it reports
-  `dry_run_ready_count=5`, `preflight_ready_count=5`, and
+  `dry_run_ready_count=7`, `preflight_ready_count=7`, and
   `bootstrap_allowed_count=0`. The explicit bootstrap allowance is only a
   temporary self-stale P7 audit/smoke recovery path, not the normal cockpit
   acceptance state.
@@ -797,7 +804,7 @@ Once available:
 - Keep Control Center artifact health aligned with the same P7 dry-run smoke
   acceptance rule: a bootstrap-only or partial-preflight smoke report must be a
   blocking mismatch, not a passed artifact.
-- Once all five enabled P7 safe-write tools have current dry-run/preflight
+- Once all seven registered P7 safe-write candidates have current dry-run/preflight
   evidence, let the generated operator recommendation advance to the selected
   confirmed evidence refresh only:
   `ctoai_evidence_pack_refresh dry_run=false confirm='refresh evidence pack'`.
@@ -846,16 +853,17 @@ Once available:
   `AI/ENGINE_BRAIN_STATUS.md`,
   `docs/roadmaps/CTOAI_THREE_DEVELOPMENT_PLANS_2026-07-06.md`, and
   `AI/generated/DOC_SYNC.json` before expanding plugin actions.
-- Keep the CTOAi plugin bounded to four read-only status/cockpit tools plus
+- Keep the CTOAi plugin bounded to five read-only status/cockpit tools plus
   `ctoai_repo_hygiene_refresh`, `ctoai_api_cost_refresh`,
   `ctoai_evidence_pack_refresh`, `ctoai_engine_brain_refresh`, and
-  `ctoai_p7_cockpit_smoke_refresh`.
-  The read-only cockpit tool is
-  `ctoai_control_center_cockpit`; all safe-write tools must default to
+  `ctoai_p7_cockpit_smoke_refresh`, plus `ctoai_roadmap_state_refresh` and
+  `ctoai_full_workspace_validation_refresh`.
+  The default read-only tool is `ctoai_control_central`; the full cockpit
+  drilldown remains `ctoai_control_center_cockpit`. All safe-write tools must default to
   dry-run, require `ctoai_control_center_cockpit` preflight status `ready`,
   write `runtime/control-center/action-audit.jsonl`, and reject non-dry-run
   calls unless the explicit confirmation text is supplied.
-- Expand the CTOAi plugin beyond these five safe-write MCP tools only after the
+- Expand the CTOAi plugin beyond these seven registered safe-write MCP tools only after the
   next action has risk model coverage, audit logging, Control Center evidence
   gates, and targeted MCP tests.
 - Evaluate Repomix MCP mode for secret-safe full-repo context packs.

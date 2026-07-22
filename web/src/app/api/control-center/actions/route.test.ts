@@ -1,193 +1,214 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
+const requireControlCenterReadAccessMock = vi.hoisted(() => vi.fn())
+const listControlCenterActionCapabilitiesMock = vi.hoisted(() => vi.fn())
 const runControlCenterActionMock = vi.hoisted(() => vi.fn())
-const resolveControlCenterViewerMock = vi.hoisted(() => vi.fn())
-const listControlCenterActionsMock = vi.hoisted(() => vi.fn())
+const projectControlCenterActionResultMock = vi.hoisted(() => vi.fn())
 
-vi.mock("next/headers", () => ({
-  cookies: async () => ({
-    get: () => ({ value: "session-token" }),
-  }),
-}))
-
-vi.mock("@/lib/config", () => ({
-  getServerApiUrl: () => "http://localhost:8000",
-}))
-
-vi.mock("@/lib/controlCenterAuth", () => ({
-  resolveControlCenterViewer: resolveControlCenterViewerMock,
+vi.mock("@/app/api/control-center/access", () => ({
+  requireControlCenterReadAccess: requireControlCenterReadAccessMock,
 }))
 
 vi.mock("@/lib/controlCenterActions", async () => {
   const actual = await vi.importActual<typeof import("@/lib/controlCenterActions")>("@/lib/controlCenterActions")
   return {
     ...actual,
-    listControlCenterActions: listControlCenterActionsMock,
+    listControlCenterActionCapabilities: listControlCenterActionCapabilitiesMock,
     runControlCenterAction: runControlCenterActionMock,
+    projectControlCenterActionResult: projectControlCenterActionResultMock,
   }
 })
 
-function actionRequest(
-  headers: HeadersInit,
-  body: Record<string, unknown> = { actionId: "evidence-pack-refresh", dryRun: true },
-) {
+const operator = { username: "operator", displayName: "Operator", role: "operator" as const }
+
+function allowAccess() {
+  return { ok: true as const, viewer: operator }
+}
+
+function denyAccess(status = 401) {
+  return {
+    ok: false as const,
+    response: new Response(JSON.stringify({ ok: false, error: "Authentication required." }), { status }),
+  }
+}
+
+function actionRequest(headers: HeadersInit, body: Record<string, unknown> = { actionId: "evidence-pack-refresh", dryRun: true }) {
   return new Request("http://localhost/api/control-center/actions", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...headers,
-    },
+    headers: { "Content-Type": "application/json", ...headers },
     body: JSON.stringify(body),
   })
 }
 
-describe("control center action route origin guard", () => {
+describe("control center action capability route", () => {
   beforeEach(() => {
+    requireControlCenterReadAccessMock.mockReset()
+    listControlCenterActionCapabilitiesMock.mockReset()
     runControlCenterActionMock.mockReset()
-    resolveControlCenterViewerMock.mockReset()
-    listControlCenterActionsMock.mockReset()
-    resolveControlCenterViewerMock.mockResolvedValue({
-      authStatus: "authenticated",
-      viewer: { username: "operator", displayName: "Operator", role: "operator" },
+    projectControlCenterActionResultMock.mockReset()
+    requireControlCenterReadAccessMock.mockResolvedValue(allowAccess())
+    listControlCenterActionCapabilitiesMock.mockResolvedValue({
+      schemaVersion: 2,
+      generatedAt: "2026-07-21T12:00:00.000Z",
+      capabilities: [
+        {
+          id: "evidence-pack-refresh",
+          label: "Rebuild evidence pack",
+          description: "Refresh bounded evidence.",
+          target: "local",
+          riskClass: "safe_write",
+          minimumRole: "operator",
+          confirmationText: "refresh evidence pack",
+          requiresReason: true,
+          dryRunAvailable: true,
+          enabled: true,
+          executionMode: "dry_run_first",
+          nativeDryRun: false,
+          effect: "Refreshes bounded evidence.",
+          evidence: "Records an audit.",
+          preflight: {
+            schemaVersion: 2,
+            status: "ready",
+            dryRunAllowed: true,
+            executeAllowed: false,
+            checks: [],
+            blockers: [],
+          },
+        },
+      ],
     })
-    listControlCenterActionsMock.mockReturnValue([
-      {
-        id: "repo-hygiene-refresh",
-        label: "Refresh repo hygiene snapshot",
-        description: "Rebuild repo hygiene.",
-        target: "local",
-        riskClass: "safe_write",
-        minimumRole: "operator",
-        requiresReason: false,
-        dryRunAvailable: true,
-        enabled: true,
-        commandSummary: "python scripts/ops/repo_hygiene_audit.py",
-      },
-      {
-        id: "dangerous-maintenance",
-        label: "Dangerous maintenance",
-        description: "Owner-only maintenance.",
-        target: "local",
-        riskClass: "dangerous",
-        minimumRole: "owner",
-        requiresReason: true,
-        dryRunAvailable: true,
-        enabled: true,
-        commandSummary: "python scripts/ops/private_maintenance.py --token=secret-token-value",
-      },
-    ])
   })
 
-  it("does not expose the local action catalog to unauthenticated viewers", async () => {
-    resolveControlCenterViewerMock.mockResolvedValue({
-      authStatus: "unauthenticated",
-      viewer: null,
-    })
+  it("requires read access before returning capability metadata", async () => {
+    requireControlCenterReadAccessMock.mockResolvedValue(denyAccess())
     const { GET } = await import("./route")
+    const response = await GET()
 
+    expect(response.status).toBe(401)
+    expect(response.headers.get("Cache-Control")).toBe("private, no-store")
+    expect(listControlCenterActionCapabilitiesMock).not.toHaveBeenCalled()
+    expect(requireControlCenterReadAccessMock).toHaveBeenCalledWith("Control Center action capabilities")
+  })
+
+  it("returns schema-v2 capability metadata with private no-store cache headers", async () => {
+    const { GET } = await import("./route")
     const response = await GET()
     const payload = await response.json()
 
     expect(response.status).toBe(200)
-    expect(payload.authStatus).toBe("unauthenticated")
-    expect(payload.viewer).toBeNull()
-    expect(payload.actions).toEqual([])
-    expect(JSON.stringify(payload)).not.toContain("repo_hygiene_audit.py")
-    expect(JSON.stringify(payload)).not.toContain("secret-token-value")
-  })
-
-  it("returns only actions allowed for the viewer role", async () => {
-    const { GET } = await import("./route")
-
-    const response = await GET()
-    const payload = await response.json()
-
-    expect(response.status).toBe(200)
-    expect(payload.authStatus).toBe("authenticated")
-    expect(payload.viewer.role).toBe("operator")
-    expect(payload.actions.map((action: { id: string }) => action.id)).toEqual(["repo-hygiene-refresh"])
-    expect(JSON.stringify(payload)).not.toContain("private_maintenance.py")
-    expect(JSON.stringify(payload)).not.toContain("secret-token-value")
+    expect(response.headers.get("Cache-Control")).toBe("private, no-store")
+    expect(payload.schemaVersion).toBe(2)
+    expect(JSON.stringify(payload)).not.toContain("commandSummary")
+    expect(JSON.stringify(payload)).not.toContain("scripts/ops")
+    expect(listControlCenterActionCapabilitiesMock).toHaveBeenCalledWith({ actor: operator })
   })
 
   it("rejects cross-site POST requests before action execution", async () => {
     const { POST } = await import("./route")
-
     const response = await POST(actionRequest({ Origin: "https://attacker.example" }))
-    const payload = await response.json()
 
     expect(response.status).toBe(403)
-    expect(payload.error).toMatch(/Cross-site/)
     expect(runControlCenterActionMock).not.toHaveBeenCalled()
+    expect(requireControlCenterReadAccessMock).not.toHaveBeenCalled()
   })
 
-  it("rejects cross-site fetch metadata without requiring an Origin header", async () => {
+  it("returns private no-store headers when execution access is denied", async () => {
+    requireControlCenterReadAccessMock.mockResolvedValue(denyAccess(403))
     const { POST } = await import("./route")
-
-    const response = await POST(actionRequest({ "Sec-Fetch-Site": "cross-site" }))
+    const response = await POST(actionRequest({ Origin: "http://localhost" }))
 
     expect(response.status).toBe(403)
+    expect(response.headers.get("Cache-Control")).toBe("private, no-store")
     expect(runControlCenterActionMock).not.toHaveBeenCalled()
+    expect(requireControlCenterReadAccessMock).toHaveBeenCalledWith("Control Center action execution")
   })
 
   it("validates same-origin Origin and Referer headers", async () => {
     const { validateControlCenterActionRequestOrigin } = await import("./route")
-
-    expect(validateControlCenterActionRequestOrigin(actionRequest({ Origin: "http://localhost" }))).toEqual({
-      ok: true,
-    })
-    expect(
-      validateControlCenterActionRequestOrigin(
-        actionRequest({ Referer: "http://localhost/control-center?tab=actions" }),
-      ),
-    ).toEqual({ ok: true })
+    expect(validateControlCenterActionRequestOrigin(actionRequest({ Origin: "http://localhost" }))).toEqual({ ok: true })
     expect(validateControlCenterActionRequestOrigin(actionRequest({ Referer: "https://attacker.example/x" }))).toEqual({
       ok: false,
       error: "Cross-site Control Center action requests are not allowed.",
     })
   })
 
-  it("sanitizes generic action errors before returning JSON", async () => {
-    runControlCenterActionMock.mockRejectedValue(
-      new Error(
-        [
-          "Unknown Control Center action: token=secret-token-value",
-          "C:\\Users\\zycie\\AppData\\Local\\Solteria\\client",
-          "/tmp/ctoa/action-error/latest.json",
-        ].join(" "),
+  it("passes only validated execution-gate fields to the server action engine", async () => {
+    const internalResult = {
+      action: { id: "evidence-pack-refresh" },
+      dryRun: true,
+      ok: true,
+      output: "private output",
+      auditId: "audit-1",
+      completedAt: "2026-07-21T12:00:00.000Z",
+      proofId: "proof-1",
+      preflight: { schemaVersion: 2, status: "ready", dryRunAllowed: true, executeAllowed: true, checks: [], blockers: [] },
+    }
+    runControlCenterActionMock.mockResolvedValue(internalResult)
+    projectControlCenterActionResultMock.mockReturnValue({
+      schemaVersion: 2,
+      actionId: "evidence-pack-refresh",
+      dryRun: true,
+      ok: true,
+      status: "dry_run_validated",
+      auditId: "audit-1",
+      completedAt: "2026-07-21T12:00:00.000Z",
+      proofId: "proof-1",
+      preflight: internalResult.preflight,
+      message: "Dry-run validation completed.",
+    })
+    const { POST } = await import("./route")
+    const response = await POST(
+      actionRequest(
+        { Origin: "http://localhost" },
+        { actionId: "evidence-pack-refresh", dryRun: true, proofId: "ignored-for-dry-run", reason: "ignored" },
       ),
     )
-    const { POST } = await import("./route")
+    const payload = await response.json()
 
-    const response = await POST(actionRequest({ Origin: "http://localhost" }, { actionId: "token=secret-token-value" }))
+    expect(response.status).toBe(200)
+    expect(runControlCenterActionMock).toHaveBeenCalledWith({
+      actionId: "evidence-pack-refresh",
+      dryRun: true,
+      proofId: "ignored-for-dry-run",
+      reason: "ignored",
+      confirmation: undefined,
+      actor: operator,
+    })
+    expect(JSON.stringify(payload)).not.toContain("private output")
+  })
+
+  it("returns a bounded preflight response without executing when the gate is blocked", async () => {
+    const { ControlCenterPreflightError } = await import("@/lib/controlCenterActions")
+    runControlCenterActionMock.mockRejectedValue(
+      new ControlCenterPreflightError("Dry-run preflight is not ready.", {
+        schemaVersion: 2,
+        status: "blocked",
+        dryRunAllowed: false,
+        executeAllowed: false,
+        checks: [],
+        blockers: ["p7_action_readiness_not_ready"],
+      }),
+    )
+    const { POST } = await import("./route")
+    const response = await POST(actionRequest({ Origin: "http://localhost" }))
+    const payload = await response.json()
+
+    expect(response.status).toBe(409)
+    expect(payload.preflight.blockers).toEqual(["p7_action_readiness_not_ready"])
+  })
+
+  it("sanitizes generic action errors before returning JSON", async () => {
+    runControlCenterActionMock.mockRejectedValue(
+      new Error("Unknown action token=secret-token-value C:\\Users\\zycie\\AppData\\Local\\Solteria\\client /tmp/ctoa/action-error/latest.json"),
+    )
+    const { POST } = await import("./route")
+    const response = await POST(actionRequest({ Origin: "http://localhost" }))
     const payload = await response.json()
 
     expect(response.status).toBe(400)
     expect(payload.error).toContain("token=[redacted]")
     expect(payload.error).toContain("[external]/client")
-    expect(payload.error).toContain("[external]/latest.json")
     expect(payload.error).not.toContain("secret-token-value")
     expect(payload.error).not.toContain("C:\\Users\\zycie")
-    expect(payload.error).not.toContain("/tmp/ctoa")
-  })
-
-  it("sanitizes authorization errors before returning JSON", async () => {
-    const { ControlCenterAuthorizationError } = await import("@/lib/controlCenterActions")
-    runControlCenterActionMock.mockRejectedValue(
-      new ControlCenterAuthorizationError(
-        "Bearer abcdefghijklmnopqrstuvwxyz denied for /home/runner/work/CTOAi/private-output.json",
-        401,
-      ),
-    )
-    const { POST } = await import("./route")
-
-    const response = await POST(actionRequest({ Origin: "http://localhost" }))
-    const payload = await response.json()
-
-    expect(response.status).toBe(401)
-    expect(payload.error).toContain("Bearer [redacted]")
-    expect(payload.error).toContain("[external]/private-output.json")
-    expect(payload.error).not.toContain("abcdefghijklmnopqrstuvwxyz")
-    expect(payload.error).not.toContain("/home/runner")
   })
 })

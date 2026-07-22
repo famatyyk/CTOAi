@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -14,8 +16,36 @@ from scripts.ops.engine_brain_index import build_indexes
 PLUGIN_ROOT = engine_brain_index.Path.home() / "plugins" / "ctoai-engine-brain"
 P7_COCKPIT_SMOKE_PATH = "runtime/control-center/p7-cockpit-smoke.json"
 P7_SAFE_WRITE_DRY_RUN_SMOKE_PATH = "runtime/control-center/p7-safe-write-dry-run-smoke.json"
+
+
+def _installed_plugin_supports_full_workspace_validation() -> bool:
+    script = PLUGIN_ROOT / "scripts" / "ctoai_engine_brain_mcp.py"
+    if not script.is_file():
+        return False
+    if "ctoai_full_workspace_validation_refresh" not in script.read_text(
+        encoding="utf-8"
+    ):
+        return False
+    action_readiness_path = (
+        engine_brain_index.ROOT / "AI" / "generated" / "P7_ACTION_READINESS.json"
+    )
+    try:
+        action_readiness = json.loads(action_readiness_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    return "full-workspace-validation-refresh" in {
+        str(candidate.get("id") or candidate.get("action_id") or "")
+        for candidate in action_readiness.get("safe_write_candidates", [])
+        if isinstance(candidate, dict)
+    }
+
+
 requires_engine_brain_plugin = pytest.mark.skipif(
-    not PLUGIN_ROOT.exists(), reason="Engine Brain operator plugin is not installed"
+    not _installed_plugin_supports_full_workspace_validation(),
+    reason=(
+        "Engine Brain plugin and current workspace P6/P7 full-workspace "
+        "validation contract are not both installed"
+    ),
 )
 
 
@@ -133,6 +163,407 @@ def _assert_safe_write_response(
         assert preflight["ok"] or preflight.get("bootstrap_allowed") or preflight.get(
             "repair_allowed"
         )
+
+
+def _p7_safe_write_workflow_fixture() -> dict[str, Any]:
+    return {
+        "allowed_mcp_tools": [
+            {"name": tool_name, "risk_class": "safe_write"}
+            for tool_name in engine_brain_index.P7_ENABLED_SAFE_WRITE_MCP_TOOLS.values()
+        ]
+    }
+
+
+def _p7_audit_record(
+    action_id: str,
+    at: datetime,
+    *,
+    dry_run: bool = True,
+    authorized: bool = True,
+    ok: bool = True,
+    preflight_status: str = "ready",
+) -> dict[str, Any]:
+    return {
+        "at": at.isoformat(),
+        "action": action_id,
+        "risk_class": "safe_write",
+        "dry_run": dry_run,
+        "authorized": authorized,
+        "ok": ok,
+        "preflight_status": preflight_status,
+    }
+
+
+def _write_action_audit_records(tmp_path, records: list[dict[str, Any]]):
+    path = tmp_path / "action-audit.jsonl"
+    path.write_text(
+        "\n".join(json.dumps(record) for record in records) + "\n",
+        encoding="utf-8",
+    )
+    return path
+
+
+def _valid_validation_evidence(now: datetime) -> dict[str, Any]:
+    return {
+        "schema_version": engine_brain_index.VALIDATION_EVIDENCE_SCHEMA_VERSION,
+        "generated_at_utc": now.isoformat(),
+        "status": "passed",
+        "commands": [
+            {"id": command_id, "status": "passed"}
+            for command_id in sorted(engine_brain_index.P6_REQUIRED_VALIDATION_IDS)
+        ],
+    }
+
+
+@pytest.mark.parametrize(
+    "case",
+    ["duplicate_key", "schema", "top_level_status", "stale", "oversized"],
+)
+def test_validation_evidence_reader_rejects_invalid_or_stale_evidence(
+    tmp_path: Path, case: str
+):
+    now = datetime(2026, 7, 22, 12, tzinfo=timezone.utc)
+    path = tmp_path / "validation.json"
+    payload = _valid_validation_evidence(now)
+    if case == "duplicate_key":
+        encoded = b'{"schema_version":2,' + json.dumps(payload).encode("utf-8")[1:]
+    elif case == "schema":
+        payload["schema_version"] = 1
+        encoded = json.dumps(payload).encode("utf-8")
+    elif case == "top_level_status":
+        payload["status"] = "failed"
+        encoded = json.dumps(payload).encode("utf-8")
+    elif case == "stale":
+        payload["generated_at_utc"] = (
+            now
+            - timedelta(
+                seconds=engine_brain_index.VALIDATION_EVIDENCE_MAX_AGE_SECONDS + 1
+            )
+        ).isoformat()
+        encoded = json.dumps(payload).encode("utf-8")
+    else:
+        encoded = b"x" * (engine_brain_index.MAX_VALIDATION_EVIDENCE_BYTES + 1)
+    path.write_bytes(encoded)
+
+    validation = engine_brain_index.read_validation_evidence(path, now=now)
+    check = engine_brain_index._validation_evidence_check(validation)
+
+    assert case in {"duplicate_key", "schema", "top_level_status", "stale", "oversized"}
+    assert validation == {}
+    assert check["status"] == "blocked"
+
+
+def test_validation_evidence_rejects_symlink(tmp_path: Path):
+    now = datetime(2026, 7, 22, 12, tzinfo=timezone.utc)
+    source = tmp_path / "outside-validation.json"
+    source.write_text(json.dumps(_valid_validation_evidence(now)), encoding="utf-8")
+    path = tmp_path / "validation.json"
+    try:
+        path.symlink_to(source)
+    except OSError:
+        pytest.skip("symlink creation is unavailable on this Windows host")
+
+    assert engine_brain_index.read_validation_evidence(path, now=now) == {}
+
+
+def test_invalid_validation_evidence_blocks_p7_operator_readiness(tmp_path: Path):
+    now = datetime(2026, 7, 22, 12, tzinfo=timezone.utc)
+    path = tmp_path / "validation.json"
+    path.write_text('{"schema_version":2,"schema_version":2}', encoding="utf-8")
+    validation = engine_brain_index.read_validation_evidence(path, now=now)
+    validation_check = engine_brain_index._validation_evidence_check(validation)
+    workflow = {"status": "safe_write_ready", "allowed_mcp_tools": []}
+    action_readiness = {"status": "write_tools_blocked", "mcp_write_tool_count": 0}
+    brief = engine_brain_index.build_p7_operator_brief_payload(
+        now.isoformat(),
+        {"status": "ready_for_plugin_design", "checks": [validation_check]},
+        validation,
+        workflow,
+        action_readiness,
+        {"status": "implemented"},
+        {
+            "integrity_status": "valid",
+            "record_count": 0,
+            "by_action": {},
+            "risk_counts": {},
+        },
+        {"status": "ready", "hard_blockers": []},
+    )
+
+    assert brief["status"] == "needs_attention"
+    assert "p6:full_workspace_validation_evidence" in brief["hard_blockers"]
+
+
+def _assert_invalid_audit_blocks_p7(
+    path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(engine_brain_index, "_source_has_needles", lambda *_args: True)
+    now = datetime(2026, 7, 22, 12, tzinfo=timezone.utc)
+    audit = engine_brain_index.read_action_audit_summary(
+        path,
+        now=now,
+        max_age_seconds=300,
+    )
+    readiness = engine_brain_index.build_p7_action_readiness_payload(
+        now.isoformat(),
+        _p7_safe_write_workflow_fixture(),
+        audit,
+    )
+    workflow = _p7_safe_write_workflow_fixture()
+    workflow["status"] = "safe_write_ready"
+    brief = engine_brain_index.build_p7_operator_brief_payload(
+        now.isoformat(),
+        {"status": "ready_for_plugin_design", "checks": []},
+        _valid_validation_evidence(now),
+        workflow,
+        readiness,
+        {"status": "implemented"},
+        audit,
+        {"status": "ready", "hard_blockers": []},
+    )
+
+    assert audit["integrity_status"] == "invalid"
+    assert audit["source_valid"] is False
+    assert readiness["status"] == "write_tools_blocked"
+    assert readiness["enabled_safe_write_tools"] == []
+    assert all(
+        "control_center_action_audit_integrity_invalid" in candidate["missing_gates"]
+        for candidate in readiness["safe_write_candidates"]
+    )
+    assert brief["status"] == "needs_attention"
+    assert "cockpit_handoff:action_audit_integrity_invalid" in brief["hard_blockers"]
+
+
+@pytest.mark.parametrize("case", ["malformed", "truncated"])
+def test_invalid_or_truncated_action_audit_blocks_p7(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, case: str
+):
+    now = datetime(2026, 7, 22, 12, tzinfo=timezone.utc)
+    records = [
+        _p7_audit_record(action_id, now - timedelta(seconds=30))
+        for action_id in engine_brain_index.P7_ENABLED_SAFE_WRITE_MCP_TOOLS
+    ]
+    path = tmp_path / "action-audit.jsonl"
+    valid_lines = "\n".join(json.dumps(record) for record in records)
+    if case == "malformed":
+        path.write_text(valid_lines + "\n{\n", encoding="utf-8")
+    else:
+        path.write_text(valid_lines, encoding="utf-8")
+
+    _assert_invalid_audit_blocks_p7(path, monkeypatch)
+
+
+def test_oversized_action_audit_blocks_p7(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    path = tmp_path / "action-audit.jsonl"
+    path.write_bytes(b"x" * (engine_brain_index.MAX_ACTION_AUDIT_BYTES + 1))
+
+    _assert_invalid_audit_blocks_p7(path, monkeypatch)
+
+
+def test_symlinked_action_audit_blocks_p7(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    now = datetime(2026, 7, 22, 12, tzinfo=timezone.utc)
+    source = tmp_path / "outside-action-audit.jsonl"
+    source.write_text(
+        json.dumps(_p7_audit_record("evidence-pack-refresh", now)) + "\n",
+        encoding="utf-8",
+    )
+    path = tmp_path / "action-audit.jsonl"
+    try:
+        path.symlink_to(source)
+    except OSError:
+        pytest.skip("symlink creation is unavailable on this Windows host")
+
+    _assert_invalid_audit_blocks_p7(path, monkeypatch)
+
+
+def test_p7_action_readiness_enables_only_current_qualifying_audits(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setattr(engine_brain_index, "_source_has_needles", lambda *_args: True)
+    now = datetime(2026, 7, 22, 12, tzinfo=timezone.utc)
+    records = [
+        _p7_audit_record(action_id, now - timedelta(seconds=30))
+        for action_id in engine_brain_index.P7_ENABLED_SAFE_WRITE_MCP_TOOLS
+    ]
+    audit = engine_brain_index.read_action_audit_summary(
+        _write_action_audit_records(tmp_path, records),
+        now=now,
+        max_age_seconds=300,
+    )
+
+    readiness = engine_brain_index.build_p7_action_readiness_payload(
+        now.isoformat(), _p7_safe_write_workflow_fixture(), audit
+    )
+    workflow = engine_brain_index.build_p7_operator_workflow_payload(
+        now.isoformat(), {"status": "ready_for_plugin_design"}, readiness
+    )
+
+    assert readiness["status"] == "safe_write_tools_enabled"
+    assert readiness["enabled_safe_write_tools_ready"] is True
+    assert readiness["audited_candidate_count"] == len(
+        engine_brain_index.P7_SAFE_WRITE_ACTION_CANDIDATES
+    )
+    assert len(readiness["enabled_safe_write_tools"]) == len(
+        engine_brain_index.P7_SAFE_WRITE_ACTION_CANDIDATES
+    )
+    assert all(candidate["audit_ready"] for candidate in readiness["safe_write_candidates"])
+    assert workflow["status"] == "safe_write_ready"
+
+
+@pytest.mark.parametrize(
+    ("case", "current_record", "expected_gate"),
+    [
+        (
+            "failed",
+            {"ok": False},
+            "control_center_action_current_success",
+        ),
+        (
+            "denied",
+            {"authorized": False},
+            "control_center_action_current_success",
+        ),
+        (
+            "stale",
+            {"at_offset_seconds": 301},
+            "control_center_action_audit_freshness_stale",
+        ),
+    ],
+)
+def test_p7_action_readiness_fails_closed_for_current_bad_audit(
+    tmp_path, monkeypatch, case, current_record, expected_gate
+):
+    monkeypatch.setattr(engine_brain_index, "_source_has_needles", lambda *_args: True)
+    now = datetime(2026, 7, 22, 12, tzinfo=timezone.utc)
+    selected_action = engine_brain_index.P7_SELECTED_SAFE_WRITE_ACTION_ID
+    records = [
+        _p7_audit_record(action_id, now - timedelta(seconds=30))
+        for action_id in engine_brain_index.P7_ENABLED_SAFE_WRITE_MCP_TOOLS
+    ]
+    offset_seconds = int(current_record.pop("at_offset_seconds", 1))
+    records.append(
+        _p7_audit_record(
+            selected_action,
+            now - timedelta(seconds=offset_seconds),
+            **current_record,
+        )
+    )
+    audit = engine_brain_index.read_action_audit_summary(
+        _write_action_audit_records(tmp_path, records),
+        now=now,
+        max_age_seconds=300,
+    )
+
+    readiness = engine_brain_index.build_p7_action_readiness_payload(
+        now.isoformat(), _p7_safe_write_workflow_fixture(), audit
+    )
+    workflow = engine_brain_index.build_p7_operator_workflow_payload(
+        now.isoformat(), {"status": "ready_for_plugin_design"}, readiness
+    )
+    selected = next(
+        candidate
+        for candidate in readiness["safe_write_candidates"]
+        if candidate["id"] == selected_action
+    )
+
+    assert case in {"failed", "denied", "stale"}
+    assert selected["audit_seen"] is True
+    assert selected["audit_ready"] is False
+    assert expected_gate in selected["missing_gates"]
+    assert readiness["status"] == "write_tools_blocked"
+    assert readiness["enabled_safe_write_tools_ready"] is False
+    assert readiness["enabled_safe_write_tools"] == []
+    assert workflow["status"] == "registered_fail_closed"
+
+
+def test_p7_action_readiness_fails_closed_for_undated_preflightless_audits(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setattr(engine_brain_index, "_source_has_needles", lambda *_args: True)
+    workflow = _p7_safe_write_workflow_fixture()
+    records = [
+        {
+            "action": action_id,
+            "risk_class": "safe_write",
+            "dry_run": True,
+            "authorized": True,
+            "ok": True,
+        }
+        for action_id in engine_brain_index.P7_ENABLED_SAFE_WRITE_MCP_TOOLS
+    ]
+
+    audit = engine_brain_index.read_action_audit_summary(
+        _write_action_audit_records(tmp_path, records)
+    )
+    readiness = engine_brain_index.build_p7_action_readiness_payload(
+        "2026-07-22T12:00:00+00:00", workflow, audit
+    )
+
+    assert readiness["status"] == "write_tools_blocked"
+    assert readiness["enabled_safe_write_tools"] == []
+    for candidate in readiness["safe_write_candidates"]:
+        assert candidate["audit_ready"] is False
+        assert "control_center_action_current_preflight_missing" in candidate[
+            "missing_gates"
+        ]
+        assert "control_center_action_audit_freshness_missing" in candidate[
+            "missing_gates"
+        ]
+
+
+@pytest.mark.parametrize(
+    ("case", "missing_field", "expected_gate"),
+    [
+        (
+            "preflight",
+            "preflight_status",
+            "control_center_action_current_preflight_missing",
+        ),
+        (
+            "timestamp",
+            "at",
+            "control_center_action_audit_freshness_missing",
+        ),
+    ],
+)
+def test_p7_action_readiness_fails_closed_for_missing_current_audit_metadata(
+    tmp_path, monkeypatch, case, missing_field, expected_gate
+):
+    monkeypatch.setattr(engine_brain_index, "_source_has_needles", lambda *_args: True)
+    now = datetime(2026, 7, 22, 12, tzinfo=timezone.utc)
+    selected_action = engine_brain_index.P7_SELECTED_SAFE_WRITE_ACTION_ID
+    records = [
+        _p7_audit_record(action_id, now - timedelta(seconds=30))
+        for action_id in engine_brain_index.P7_ENABLED_SAFE_WRITE_MCP_TOOLS
+    ]
+    current_record = _p7_audit_record(selected_action, now - timedelta(seconds=1))
+    current_record.pop(missing_field)
+    records.append(current_record)
+
+    audit = engine_brain_index.read_action_audit_summary(
+        _write_action_audit_records(tmp_path, records),
+        now=now,
+        max_age_seconds=300,
+    )
+    readiness = engine_brain_index.build_p7_action_readiness_payload(
+        now.isoformat(), _p7_safe_write_workflow_fixture(), audit
+    )
+    selected = next(
+        candidate
+        for candidate in readiness["safe_write_candidates"]
+        if candidate["id"] == selected_action
+    )
+
+    assert case in {"preflight", "timestamp"}
+    assert selected["audit_ready"] is False
+    assert expected_gate in selected["missing_gates"]
+    assert readiness["status"] == "write_tools_blocked"
+    assert readiness["enabled_safe_write_tools"] == []
 
 
 def test_release_evidence_summary_exposes_helper_sandbox_queue(tmp_path):
@@ -262,8 +693,12 @@ def test_engine_brain_index_writes_secret_safe_outputs(tmp_path):
         "control_center_p7_safe_write_dry_run_smoke_tests",
         "control_center_p7_evidence_review_script",
         "control_center_p7_evidence_review_tests",
+        "control_center_full_workspace_validation_script",
+        "control_center_full_workspace_validation_tests",
         "control_center_safe_write_action_catalog",
         "ctoai_plugin_control_center_cockpit_mcp_contract",
+        "ctoai_plugin_control_central_script",
+        "ctoai_plugin_control_central_mcp_contract",
         "ctoai_plugin_control_center_cockpit_drilldown_contract",
         "ctoai_plugin_control_center_cockpit_self_check_contract",
         "ctoai_plugin_control_center_cockpit_script",
@@ -278,6 +713,8 @@ def test_engine_brain_index_writes_secret_safe_outputs(tmp_path):
         "ctoai_plugin_p7_workflow_brief_contract",
         "ctoai_plugin_engine_brain_refresh_mcp_contract",
         "ctoai_plugin_p7_cockpit_smoke_refresh_mcp_contract",
+        "ctoai_plugin_roadmap_state_refresh_mcp_contract",
+        "ctoai_plugin_full_workspace_validation_refresh_mcp_contract",
         "release_evidence_p7_operator_brief",
     }.issubset(p6_check_names)
     workflow_payload = json.loads(p7_operator_workflow_json.read_text(encoding="utf-8"))
@@ -286,8 +723,9 @@ def test_engine_brain_index_writes_secret_safe_outputs(tmp_path):
         "allow_bounded_safe_write_tools",
         "fix_p6_before_operator_workflow",
     }
-    assert "five audited safe_write" in workflow_payload["policy"]
+    assert "P7 registers seven bounded safe_write candidates" in workflow_payload["policy"]
     assert [tool["name"] for tool in workflow_payload["allowed_mcp_tools"]] == [
+        "ctoai_control_central",
         "ctoai_engine_brain_status",
         "ctoai_engine_brain_self_check",
         "ctoai_engine_brain_brief",
@@ -297,17 +735,17 @@ def test_engine_brain_index_writes_secret_safe_outputs(tmp_path):
         "ctoai_evidence_pack_refresh",
         "ctoai_engine_brain_refresh",
         "ctoai_p7_cockpit_smoke_refresh",
+        "ctoai_roadmap_state_refresh",
+        "ctoai_full_workspace_validation_refresh",
     ]
-    assert "repo-hygiene, API-cost, evidence-pack, Engine Brain, and P7 cockpit-smoke" in p6_payload["policy"]
-    if "Fix blocked readiness checks" in p6_payload["recommended_next"]:
-        assert "Fix blocked readiness checks" in p6_payload["recommended_next"]
-    else:
-        assert "repo-hygiene, API-cost, evidence-pack, Engine Brain, and P7 cockpit-smoke" in p6_payload["recommended_next"]
     assert [tool["risk_class"] for tool in workflow_payload["allowed_mcp_tools"]] == [
         "read_only",
         "read_only",
         "read_only",
         "read_only",
+        "read_only",
+        "safe_write",
+        "safe_write",
         "safe_write",
         "safe_write",
         "safe_write",
@@ -337,8 +775,8 @@ def test_engine_brain_index_writes_secret_safe_outputs(tmp_path):
         "monitor_enabled_safe_write_tools",
         "remove_unexpected_mcp_write_tools",
     }
-    assert action_readiness_payload["candidate_count"] == 5
-    assert action_readiness_payload["mcp_write_tool_count"] in {0, 1, 2, 3, 4, 5}
+    assert action_readiness_payload["candidate_count"] == 7
+    assert action_readiness_payload["mcp_write_tool_count"] in {0, 1, 2, 3, 4, 5, 6, 7}
     assert [
         candidate["id"]
         for candidate in action_readiness_payload["safe_write_candidates"]
@@ -348,6 +786,8 @@ def test_engine_brain_index_writes_secret_safe_outputs(tmp_path):
         "evidence-pack-refresh",
         "engine-brain-refresh",
         "p7-cockpit-smoke-refresh",
+        "roadmap-state-refresh",
+        "full-workspace-validation-refresh",
     ]
     allowed_candidates = [
         candidate["id"]
@@ -371,6 +811,8 @@ def test_engine_brain_index_writes_secret_safe_outputs(tmp_path):
             "evidence-pack-refresh",
             "engine-brain-refresh",
             "p7-cockpit-smoke-refresh",
+            "roadmap-state-refresh",
+            "full-workspace-validation-refresh",
         ),
     }
     safe_write_design_payload = json.loads(
@@ -393,13 +835,23 @@ def test_engine_brain_index_writes_secret_safe_outputs(tmp_path):
         in " ".join(safe_write_design_payload["implementation_contract"]).lower()
     )
     brief_payload = json.loads(p7_operator_brief_json.read_text(encoding="utf-8"))
-    assert "repo-hygiene, API-cost, evidence-pack, Engine Brain, and P7 cockpit-smoke" in brief_payload["policy"]
+    assert "P7 registers seven bounded safe_write candidates" in brief_payload["policy"]
     next_safe_mode = brief_payload["action_readiness"].get("next_safe_mode")
     if next_safe_mode == "review_confirmed_safe_write_evidence":
         assert "Review confirmed evidence-pack-refresh audit" in brief_payload["next_safe_command"]
         assert "runtime/evidence/latest.json" in brief_payload["next_safe_command"]
     elif next_safe_mode == "design_next_p7_plugin_action":
-        assert brief_payload["next_safe_command"]
+        assert "Design the next P7 plugin action" in brief_payload["next_safe_command"]
+        assert "risk model coverage" in brief_payload["next_safe_command"]
+    elif next_safe_mode in {
+        "dry_run_roadmap_state_refresh",
+        "confirmed_roadmap_state_refresh",
+        "monitor_adaptive_roadmap_state",
+    }:
+        if brief_payload["hard_blockers"]:
+            assert "hard_blockers" in brief_payload["next_safe_command"]
+        else:
+            assert "roadmap" in brief_payload["next_safe_command"].lower()
     elif next_safe_mode == "confirmed_selected_safe_write":
         assert "ctoai_evidence_pack_refresh" in brief_payload["next_safe_command"]
         assert "dry_run=false" in brief_payload["next_safe_command"]
@@ -412,15 +864,26 @@ def test_engine_brain_index_writes_secret_safe_outputs(tmp_path):
         assert "ctoai_api_cost_refresh" in brief_payload["next_safe_command"]
         assert "ctoai_engine_brain_refresh" in brief_payload["next_safe_command"]
         assert "ctoai_p7_cockpit_smoke_refresh" in brief_payload["next_safe_command"]
+        assert "ctoai_roadmap_state_refresh" in brief_payload["next_safe_command"]
+        assert "ctoai_full_workspace_validation_refresh" in brief_payload["next_safe_command"]
     assert brief_payload["operator_workflow"]["status"] == workflow_payload["status"]
-    assert brief_payload["operator_workflow"]["allowed_tool_count"] == 9
-    assert brief_payload["operator_workflow"]["safe_write_tool_count"] == 5
+    assert brief_payload["operator_workflow"]["allowed_tool_count"] == 12
+    assert brief_payload["operator_workflow"]["safe_write_tool_count"] == 7
     assert (
         brief_payload["action_readiness"]["status"]
         == action_readiness_payload["status"]
     )
-    assert brief_payload["action_readiness"]["candidate_count"] == 5
-    assert brief_payload["action_readiness"]["mcp_write_tool_count"] in {0, 1, 2, 3, 4, 5}
+    assert brief_payload["action_readiness"]["candidate_count"] == 7
+    assert brief_payload["action_readiness"]["mcp_write_tool_count"] in {
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+    }
     assert (
         brief_payload["safe_write_tool_design"]["status"]
         == safe_write_design_payload["status"]

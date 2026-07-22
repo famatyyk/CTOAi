@@ -33,7 +33,7 @@ authenticated session.
 | Risk class | Meaning | Examples | UI behavior |
 | --- | --- | --- | --- |
 | `read_only` | Reads state, logs, metrics or metadata. | local JSON reports, evidence packs, audit JSONL, `/api/logs` | Can auto-refresh. |
-| `safe_write` | Changes local/UI preferences or low-risk state. | save endpoint profile, save dashboard preference | Needs clear label. |
+| `safe_write` | Performs a fixed, low-risk local evidence/context refresh. | repo hygiene, API cost, evidence pack, Engine Brain, P7 smoke, roadmap state and full-workspace validation | Operator-only, audited and dry-run-first; fails closed until current preflight and audit evidence pass. |
 | `guarded_write` | Changes runtime state but is expected operational behavior. | restart bot, trigger controlled rebuild, enqueue known agent action | Needs confirmation and audit note. |
 | `dangerous` | Can delete data, disrupt production or rewrite history. | Docker prune, delete artifacts, user deletion, deploy rollback | Requires owner role, typed confirmation and audit note. |
 | `forbidden_ui` | Should not be exposed in Control Center. | arbitrary shell, secrets dump, destructive DB command | UI must not render button. |
@@ -42,11 +42,13 @@ authenticated session.
 
 | Capability | Legacy source | Risk class | Control Center decision |
 | --- | --- | --- | --- |
-| Repo hygiene refresh | `scripts/ops/repo_hygiene_audit.py` | `safe_write` | Implemented as `repo-hygiene-refresh`. |
-| API cost refresh | `scripts/ops/api_cost_report.py` | `safe_write` | Implemented as `api-cost-refresh`. |
-| Evidence pack refresh | `scripts/ops/release_evidence_pack.py` | `safe_write` | Implemented as `evidence-pack-refresh`. |
-| Engine Brain refresh | `scripts/ops/engine_brain_index.py` | `safe_write` | Implemented as `engine-brain-refresh`. |
-| P7 cockpit smoke refresh | `scripts/ops/control_center_p7_cockpit_smoke.py` | `safe_write` | Implemented as `p7-cockpit-smoke-refresh`. |
+| Repo hygiene refresh | `scripts/ops/repo_hygiene_audit.py` | `safe_write` | Registered dry-run-first capability `repo-hygiene-refresh`; current preflight and audit evidence are still required. |
+| API cost refresh | `scripts/ops/api_cost_report.py` | `safe_write` | Registered dry-run-first capability `api-cost-refresh`; current preflight and audit evidence are still required. |
+| Evidence pack refresh | `scripts/ops/release_evidence_pack.py` | `safe_write` | Registered dry-run-first capability `evidence-pack-refresh`; current preflight and audit evidence are still required. |
+| Engine Brain refresh | `scripts/ops/engine_brain_index.py` | `safe_write` | Registered dry-run-first capability `engine-brain-refresh`; current preflight and audit evidence are still required. |
+| P7 cockpit smoke refresh | `scripts/ops/control_center_p7_cockpit_smoke.py` | `safe_write` | Registered dry-run-first capability `p7-cockpit-smoke-refresh`; current preflight and audit evidence are still required. |
+| Roadmap state refresh | `scripts/ops/ctoai_roadmap_state.py` | `safe_write` | Registered native dry-run-first candidate `roadmap-state-refresh`; fixed inputs/outputs and hash-bound audit, with no runtime/live authority. It fails closed until current P13 source, plugin, preflight, and audit evidence validate. |
+| Full workspace validation refresh | `scripts/ops/ctoa_full_workspace_validation.py` | `safe_write` | Registered native dry-run-first candidate `full-workspace-validation-refresh`; fixed registry, bounded evidence, and no deploy/live/client/promotion authority. It fails closed until current plugin, preflight, and audit evidence validate. |
 | Logs preview | `/api/logs` | `read_only` | Migrated. |
 | Dashboard summary | `/api/dashboard` | `read_only` | Migrated. |
 | Agent status | `/api/agents/status` | `read_only` | Migrated. |
@@ -146,13 +148,19 @@ client sync can run. Denied attempts are audited as missing confirmation.
 
 ## UI staging plan
 
-1. Show read-only command dictionary.
-2. Add risk labels to command dictionary entries.
-3. Hide commands without risk metadata.
-4. Add disabled buttons for `guarded_write` actions with "requires guardrails" labels.
-5. Implement confirmation modals.
-6. Implement audit trail.
-7. Enable selected guarded actions one by one.
+The seven registered `safe_write` candidates share a capability engine.
+Registration never marks a candidate operator-ready: current P6/P7 source,
+plugin support, cockpit preflight, and audited evidence must pass independently.
+1. Server-side role filtering and schema-v2 minimal projection.
+2. Current P7 readiness plus trusted-runtime preflight.
+3. Dry-run-first, actor-bound and time-limited execution gate.
+4. Exact confirmation, maintenance reason and one-attempt proof consumption.
+5. Redacted audit trail for allowed, denied and failed attempts.
+6. No command text, executable path, script path or operator identity in the browser payload.
+7. Missing, mismatched, stale, or failed evidence blocks the candidate without fallback.
+`guarded_write` and `dangerous` actions remain outside this surface. They are
+enabled one by one only after their own rollback, target-state and audit
+contracts exist.
 
 ## Do not expose yet
 

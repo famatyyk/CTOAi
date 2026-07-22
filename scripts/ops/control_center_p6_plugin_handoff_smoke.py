@@ -33,6 +33,7 @@ DEFAULT_MD_OUT = Path("runtime/control-center/p6-plugin-handoff-smoke.md")
 
 MAX_JSON_BYTES = 1024 * 1024
 EXPECTED_READ_ONLY_TOOLS = {
+    "ctoai_control_central",
     "ctoai_engine_brain_status",
     "ctoai_engine_brain_self_check",
     "ctoai_engine_brain_brief",
@@ -44,6 +45,8 @@ EXPECTED_SAFE_WRITE_TOOLS = {
     "ctoai_evidence_pack_refresh",
     "ctoai_engine_brain_refresh",
     "ctoai_p7_cockpit_smoke_refresh",
+    "ctoai_roadmap_state_refresh",
+    "ctoai_full_workspace_validation_refresh",
 }
 EXPECTED_BLOCKED_CLASSES = {"guarded_write", "dangerous", "forbidden_ui"}
 FORBIDDEN_TOOL_FRAGMENTS = ("deploy", "live", "promote", "solteria")
