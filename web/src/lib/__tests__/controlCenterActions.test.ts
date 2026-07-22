@@ -3,6 +3,7 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import {
+  CONTROL_CENTER_ACTION_READINESS_TTL_MS,
   CONTROL_CENTER_ACTION_SCHEMA_VERSION,
   ControlCenterPreflightError,
   clearControlCenterActionProofsForTest,
@@ -34,6 +35,16 @@ const actionIds = [
   "full-workspace-validation-refresh",
 ] as const
 
+const actionMcpTools: Record<(typeof actionIds)[number], string> = {
+  "repo-hygiene-refresh": "ctoai_repo_hygiene_refresh",
+  "api-cost-refresh": "ctoai_api_cost_refresh",
+  "evidence-pack-refresh": "ctoai_evidence_pack_refresh",
+  "engine-brain-refresh": "ctoai_engine_brain_refresh",
+  "p7-cockpit-smoke-refresh": "ctoai_p7_cockpit_smoke_refresh",
+  "roadmap-state-refresh": "ctoai_roadmap_state_refresh",
+  "full-workspace-validation-refresh": "ctoai_full_workspace_validation_refresh",
+}
+
 afterEach(() => {
   process.chdir(originalCwd)
   if (originalWorkspaceRoot === undefined) delete process.env.CTOA_WORKSPACE_ROOT
@@ -48,25 +59,58 @@ afterEach(() => {
   vi.unstubAllEnvs()
 })
 
-function writeReadyP7ActionReadiness(root: string) {
-  const outputPath = path.join(root, "AI", "generated", "P7_ACTION_READINESS.json")
+function readinessOutputPath(root: string, filename: string) {
+  return path.join(root, "AI", "generated", filename)
+}
+
+function readyP7ActionReadinessPayload(generatedAt: string): Record<string, unknown> {
+  return {
+    schema_version: 1,
+    generated_at: generatedAt,
+    status: "safe_write_tools_enabled",
+    candidate_count: actionIds.length,
+    mcp_write_tool_count: actionIds.length,
+    mcp_write_tools: actionIds.map((actionId) => actionMcpTools[actionId]),
+    enabled_safe_write_tools: actionIds.map((action_id) => ({
+      action_id,
+      mcp_tool: actionMcpTools[action_id],
+      risk_class: "safe_write",
+    })),
+    safe_write_candidates: actionIds.map((id) => ({
+      id,
+      risk_class: "safe_write",
+      control_center_enabled: true,
+      risk_model_present: true,
+      plugin_mcp_allowed: true,
+      audit_ready: true,
+      expected_mcp_tool: actionMcpTools[id],
+      missing_gates: [],
+    })),
+  }
+}
+
+function writeReadyP6Readiness(root: string, generatedAt: string) {
+  const outputPath = readinessOutputPath(root, "P6_CODEX_INTEGRATION_READINESS.json")
   fs.mkdirSync(path.dirname(outputPath), { recursive: true })
   fs.writeFileSync(
     outputPath,
     JSON.stringify({
       schema_version: 1,
-      status: "safe_write_tools_enabled",
-      candidate_count: actionIds.length,
-      mcp_write_tool_count: actionIds.length,
-      enabled_safe_write_tools: actionIds.map((action_id) => ({ action_id, risk_class: "safe_write" })),
-      safe_write_candidates: actionIds.map((id) => ({
-        id,
-        risk_class: "safe_write",
-        control_center_enabled: true,
-        plugin_mcp_allowed: true,
-      })),
+      generated_at: generatedAt,
+      status: "ready_for_plugin_design",
+      checks: [{ name: "fixture_p6_contract", status: "passed" }],
     }),
   )
+}
+
+function writeP7ActionReadiness(root: string, payload: Record<string, unknown> | string) {
+  const outputPath = readinessOutputPath(root, "P7_ACTION_READINESS.json")
+  fs.mkdirSync(path.dirname(outputPath), { recursive: true })
+  fs.writeFileSync(outputPath, typeof payload === "string" ? payload : JSON.stringify(payload))
+}
+
+function writeReadyP7ActionReadiness(root: string, generatedAt: string) {
+  writeP7ActionReadiness(root, readyP7ActionReadinessPayload(generatedAt))
 }
 
 function writeActionScripts(root: string, evidenceScript = "console.log('safe action completed')") {
@@ -89,14 +133,16 @@ function writeActionScripts(root: string, evidenceScript = "console.log('safe ac
 function setupReadyWorkspace(evidenceScript?: string) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "ctoa-actions-"))
   const auditPath = path.join(root, "runtime", "control-center", "action-audit.jsonl")
-  writeReadyP7ActionReadiness(root)
+  const generatedAt = new Date().toISOString()
+  writeReadyP6Readiness(root, generatedAt)
+  writeReadyP7ActionReadiness(root, generatedAt)
   writeActionScripts(root, evidenceScript)
   process.chdir(root)
   process.env.CTOA_WORKSPACE_ROOT = root
   process.env.CTOA_PYTHON_BIN = process.execPath
   process.env.CTOA_ACTION_AUDIT_PATH = auditPath
   process.env.CTOA_REPO_ROOT = root
-  return { root, auditPath }
+  return { root, auditPath, generatedAt }
 }
 
 function readAudit(auditPath: string) {
@@ -222,6 +268,86 @@ describe("control center action capability engine", () => {
     expect(audit.dry_run).toBe(true)
   })
 
+  it("does not issue a proof for an undated synthetic enabled P7 artifact", async () => {
+    const { root, auditPath, generatedAt } = setupReadyWorkspace()
+    const payload = readyP7ActionReadinessPayload(generatedAt)
+    delete payload.generated_at
+    writeP7ActionReadiness(root, payload)
+
+    await expect(runControlCenterAction({ actionId: "evidence-pack-refresh", dryRun: true, actor: operator })).rejects.toMatchObject({
+      statusCode: 409,
+      preflight: { blockers: expect.arrayContaining(["p7_action_readiness_generated_at_invalid"]) },
+    })
+
+    const [audit] = readAudit(auditPath)
+    expect(audit.proof_id).toBeUndefined()
+  })
+
+  it.each([
+    ["malformed", "{", "p7_action_readiness_missing"],
+    ["duplicate-key", "duplicate", "p7_action_readiness_missing"],
+  ])("does not issue a proof for %s P7 readiness JSON", async (_label, serialized, blocker) => {
+    const { root, generatedAt } = setupReadyWorkspace()
+    const payload = readyP7ActionReadinessPayload(generatedAt)
+    const body =
+      serialized === "duplicate"
+        ? JSON.stringify(payload).replace('"schema_version":1', '"schema_version":1,"schema_version":1')
+        : serialized
+    writeP7ActionReadiness(root, body)
+
+    await expect(runControlCenterAction({ actionId: "evidence-pack-refresh", dryRun: true, actor: operator })).rejects.toMatchObject({
+      statusCode: 409,
+      preflight: { blockers: expect.arrayContaining([blocker]) },
+    })
+  })
+
+  it("requires fresh P6/P7 timestamps from the same snapshot instant", async () => {
+    const { root, generatedAt } = setupReadyWorkspace()
+    writeReadyP7ActionReadiness(root, new Date(Date.parse(generatedAt) - 1000).toISOString())
+
+    await expect(runControlCenterAction({ actionId: "evidence-pack-refresh", dryRun: true, actor: operator })).rejects.toMatchObject({
+      statusCode: 409,
+      preflight: { blockers: expect.arrayContaining(["p6_p7_readiness_snapshot_mismatch"]) },
+    })
+
+    const freshP6At = new Date().toISOString()
+    writeReadyP6Readiness(root, freshP6At)
+    writeReadyP7ActionReadiness(root, new Date(Date.now() - CONTROL_CENTER_ACTION_READINESS_TTL_MS - 1).toISOString())
+    await expect(runControlCenterAction({ actionId: "evidence-pack-refresh", dryRun: true, actor: operator })).rejects.toMatchObject({
+      statusCode: 409,
+      preflight: { blockers: expect.arrayContaining(["p7_action_readiness_stale"]) },
+    })
+  })
+
+  it("requires an all-passed P6 binding and audit-ready evidence for every action", async () => {
+    const { root, generatedAt } = setupReadyWorkspace()
+    const p6Path = readinessOutputPath(root, "P6_CODEX_INTEGRATION_READINESS.json")
+    fs.writeFileSync(
+      p6Path,
+      JSON.stringify({
+        schema_version: 1,
+        generated_at: generatedAt,
+        status: "ready_for_plugin_design",
+        checks: [{ name: "fixture_p6_contract", status: "blocked" }],
+      }),
+    )
+    await expect(runControlCenterAction({ actionId: "evidence-pack-refresh", dryRun: true, actor: operator })).rejects.toMatchObject({
+      statusCode: 409,
+      preflight: { blockers: expect.arrayContaining(["p6_action_readiness_checks_incomplete"]) },
+    })
+
+    writeReadyP6Readiness(root, generatedAt)
+    const payload = readyP7ActionReadinessPayload(generatedAt)
+    const candidates = payload.safe_write_candidates as Array<Record<string, unknown>>
+    candidates.find((candidate) => candidate.id === "evidence-pack-refresh")!.audit_ready = false
+    candidates.find((candidate) => candidate.id === "evidence-pack-refresh")!.missing_gates = ["current_audit_missing"]
+    writeP7ActionReadiness(root, payload)
+    await expect(runControlCenterAction({ actionId: "evidence-pack-refresh", dryRun: true, actor: operator })).rejects.toMatchObject({
+      statusCode: 409,
+      preflight: { blockers: expect.arrayContaining(["p7_action_audit_binding_incomplete"]) },
+    })
+  })
+
   it("runs full-workspace-validation-refresh through native dry-run and requires its exact confirmation", async () => {
     const { auditPath } = setupReadyWorkspace()
     const dryRun = await runControlCenterAction({
@@ -318,7 +444,9 @@ describe("control center action capability engine", () => {
   it("fails closed and records a preflight audit when trusted runtime is unavailable", async () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "ctoa-actions-"))
     const auditPath = path.join(root, "runtime", "control-center", "action-audit.jsonl")
-    writeReadyP7ActionReadiness(root)
+    const generatedAt = new Date().toISOString()
+    writeReadyP6Readiness(root, generatedAt)
+    writeReadyP7ActionReadiness(root, generatedAt)
     writeActionScripts(root)
     process.chdir(root)
     process.env.CTOA_WORKSPACE_ROOT = root

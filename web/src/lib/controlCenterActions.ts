@@ -1,10 +1,11 @@
 import { execFile } from "node:child_process"
 import { randomUUID } from "node:crypto"
 import { lstatSync, realpathSync, statSync } from "node:fs"
-import { appendFile, mkdir, readFile } from "node:fs/promises"
+import { appendFile, mkdir } from "node:fs/promises"
 import path from "node:path"
 import { promisify } from "node:util"
 import { getControlCenterEvidenceConfig } from "@/lib/controlCenterEvidenceConfig"
+import { readStrictControlCenterJson } from "@/lib/controlCenterEvidenceIo"
 import { sanitizeControlCenterMarkdownReport } from "@/lib/controlCenterMarkdownReport"
 import type { ControlCenterRole, ControlCenterRiskClass } from "@/lib/controlCenterPolicy"
 import { canRunControlCenterAction, minimumRoleForRiskClass } from "@/lib/controlCenterPolicy"
@@ -13,10 +14,12 @@ import { redactControlCenterAuditText as redactAuditText } from "@/lib/controlCe
 const execFileAsync = promisify(execFile)
 
 export const CONTROL_CENTER_ACTION_SCHEMA_VERSION = 2
+export const P6_CODEX_INTEGRATION_READINESS_PATH = "AI/generated/P6_CODEX_INTEGRATION_READINESS.json"
 export const P7_ACTION_READINESS_PATH = "AI/generated/P7_ACTION_READINESS.json"
 export const CONTROL_CENTER_DRY_RUN_PROOF_TTL_MS = 15 * 60 * 1000
+/** Generated P6/P7 evidence must be as current as the dry-run proof it gates. */
+export const CONTROL_CENTER_ACTION_READINESS_TTL_MS = CONTROL_CENTER_DRY_RUN_PROOF_TTL_MS
 
-const P7_ACTION_READINESS_MAX_BYTES = 512 * 1024
 const SAFE_WRITE_ACTION_IDS = [
   "repo-hygiene-refresh",
   "api-cost-refresh",
@@ -30,6 +33,19 @@ const SAFE_WRITE_ACTION_IDS = [
 type SafeWriteActionId = (typeof SAFE_WRITE_ACTION_IDS)[number]
 type ActionExecutionMode = "dry_run_first"
 type PreflightCheckStatus = "passed" | "blocked" | "required"
+
+/** Mirrors the P7 Engine Brain snapshot contract; it does not authorize tool execution. */
+const SAFE_WRITE_MCP_TOOL_BY_ACTION: Record<SafeWriteActionId, string> = {
+  "repo-hygiene-refresh": "ctoai_repo_hygiene_refresh",
+  "api-cost-refresh": "ctoai_api_cost_refresh",
+  "evidence-pack-refresh": "ctoai_evidence_pack_refresh",
+  "engine-brain-refresh": "ctoai_engine_brain_refresh",
+  "p7-cockpit-smoke-refresh": "ctoai_p7_cockpit_smoke_refresh",
+  "roadmap-state-refresh": "ctoai_roadmap_state_refresh",
+  "full-workspace-validation-refresh": "ctoai_full_workspace_validation_refresh",
+}
+const SAFE_WRITE_MCP_TOOLS = Object.values(SAFE_WRITE_MCP_TOOL_BY_ACTION)
+const ISO_INSTANT_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})$/
 
 export type ControlCenterActor = {
   username: string
@@ -524,49 +540,140 @@ function publicPreflight(
   }
 }
 
-async function readP7ActionReadiness(): Promise<Record<string, unknown> | null> {
+async function readWorkspaceReadinessArtifact(relativePath: string): Promise<Record<string, unknown> | null> {
   try {
     const root = resolveControlCenterWorkspaceRoot()
-    const readinessPath = resolveControlCenterWorkspaceFile(root, P7_ACTION_READINESS_PATH)
-    const stat = statSync(readinessPath)
-    if (stat.size > P7_ACTION_READINESS_MAX_BYTES) return null
-    const parsed = JSON.parse(await readFile(readinessPath, "utf-8"))
-    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : null
+    const readinessPath = resolveControlCenterWorkspaceFile(root, relativePath)
+    return await readStrictControlCenterJson(readinessPath)
   } catch {
     return null
   }
+}
+
+async function readP6ActionReadiness(): Promise<Record<string, unknown> | null> {
+  return readWorkspaceReadinessArtifact(P6_CODEX_INTEGRATION_READINESS_PATH)
+}
+
+async function readP7ActionReadiness(): Promise<Record<string, unknown> | null> {
+  return readWorkspaceReadinessArtifact(P7_ACTION_READINESS_PATH)
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value)
 }
 
-function p7RegistrationForAction(payload: Record<string, unknown> | null, actionId: SafeWriteActionId): P7Registration {
-  if (!payload) return { ok: false, blocker: "p7_action_readiness_missing" }
-  if (payload.schema_version !== 1) return { ok: false, blocker: "p7_action_readiness_schema_invalid" }
-  if (!["safe_write_tools_enabled", "first_safe_write_enabled"].includes(String(payload.status || ""))) {
+type ReadinessTimestamp =
+  | { ok: true; timestamp: number }
+  | { ok: false; blocker: string }
+
+function currentReadinessTimestamp(value: unknown, blockerPrefix: string, now: number): ReadinessTimestamp {
+  if (typeof value !== "string" || !ISO_INSTANT_PATTERN.test(value)) {
+    return { ok: false, blocker: `${blockerPrefix}_generated_at_invalid` }
+  }
+  const timestamp = Date.parse(value)
+  if (!Number.isFinite(timestamp)) {
+    return { ok: false, blocker: `${blockerPrefix}_generated_at_invalid` }
+  }
+  const age = now - timestamp
+  if (age < 0 || age > CONTROL_CENTER_ACTION_READINESS_TTL_MS) {
+    return { ok: false, blocker: `${blockerPrefix}_stale` }
+  }
+  return { ok: true, timestamp }
+}
+
+function p6ReadinessBinding(payload: Record<string, unknown> | null, now: number): ReadinessTimestamp {
+  if (!payload) return { ok: false, blocker: "p6_action_readiness_missing" }
+  if (payload.schema_version !== 1) return { ok: false, blocker: "p6_action_readiness_schema_invalid" }
+  if (payload.status !== "ready_for_plugin_design") {
+    return { ok: false, blocker: "p6_action_readiness_not_ready" }
+  }
+  const checks = Array.isArray(payload.checks) ? payload.checks : []
+  if (!checks.length || checks.some((check) => !isRecord(check) || check.status !== "passed")) {
+    return { ok: false, blocker: "p6_action_readiness_checks_incomplete" }
+  }
+  return currentReadinessTimestamp(payload.generated_at, "p6_action_readiness", now)
+}
+
+function hasExactExpectedMcpTools(value: unknown): boolean {
+  return (
+    Array.isArray(value) &&
+    value.length === SAFE_WRITE_MCP_TOOLS.length &&
+    value.every((item) => typeof item === "string" && SAFE_WRITE_MCP_TOOLS.includes(item)) &&
+    new Set(value).size === SAFE_WRITE_MCP_TOOLS.length
+  )
+}
+
+function p7RegistrationForAction(
+  p6Payload: Record<string, unknown> | null,
+  p7Payload: Record<string, unknown> | null,
+  actionId: SafeWriteActionId,
+  now: number,
+): P7Registration {
+  const p6Timestamp = p6ReadinessBinding(p6Payload, now)
+  if (!p6Timestamp.ok) return p6Timestamp
+
+  if (!p7Payload) return { ok: false, blocker: "p7_action_readiness_missing" }
+  if (p7Payload.schema_version !== 1) return { ok: false, blocker: "p7_action_readiness_schema_invalid" }
+  if (p7Payload.status !== "safe_write_tools_enabled") {
     return { ok: false, blocker: "p7_action_readiness_not_ready" }
   }
-  if (payload.candidate_count !== SAFE_WRITE_ACTION_IDS.length || payload.mcp_write_tool_count !== SAFE_WRITE_ACTION_IDS.length) {
+  const p7Timestamp = currentReadinessTimestamp(p7Payload.generated_at, "p7_action_readiness", now)
+  if (!p7Timestamp.ok) return p7Timestamp
+  if (p7Timestamp.timestamp !== p6Timestamp.timestamp) {
+    return { ok: false, blocker: "p6_p7_readiness_snapshot_mismatch" }
+  }
+  if (
+    p7Payload.candidate_count !== SAFE_WRITE_ACTION_IDS.length ||
+    p7Payload.mcp_write_tool_count !== SAFE_WRITE_ACTION_IDS.length ||
+    !hasExactExpectedMcpTools(p7Payload.mcp_write_tools)
+  ) {
     return { ok: false, blocker: "p7_action_registration_incomplete" }
   }
 
-  const candidates = Array.isArray(payload.safe_write_candidates) ? payload.safe_write_candidates : []
-  const enabled = Array.isArray(payload.enabled_safe_write_tools) ? payload.enabled_safe_write_tools : []
-  const allCandidatesRegistered = SAFE_WRITE_ACTION_IDS.every((id) =>
-    candidates.some(
-      (candidate) =>
-        isRecord(candidate) &&
-        candidate.id === id &&
-        candidate.risk_class === "safe_write" &&
-        candidate.control_center_enabled === true &&
-        candidate.plugin_mcp_allowed === true,
-    ),
-  )
-  const actionEnabled = enabled.some(
-    (item) => isRecord(item) && item.action_id === actionId && item.risk_class === "safe_write",
-  )
-  return allCandidatesRegistered && actionEnabled
+  const candidates = Array.isArray(p7Payload.safe_write_candidates) ? p7Payload.safe_write_candidates : []
+  const enabled = Array.isArray(p7Payload.enabled_safe_write_tools) ? p7Payload.enabled_safe_write_tools : []
+  if (candidates.length !== SAFE_WRITE_ACTION_IDS.length || enabled.length !== SAFE_WRITE_ACTION_IDS.length) {
+    return { ok: false, blocker: "p7_action_registration_incomplete" }
+  }
+
+  const candidateById = new Map<string, Record<string, unknown>>()
+  for (const candidate of candidates) {
+    if (!isRecord(candidate) || typeof candidate.id !== "string" || candidateById.has(candidate.id)) {
+      return { ok: false, blocker: "p7_action_registration_incomplete" }
+    }
+    candidateById.set(candidate.id, candidate)
+  }
+  const enabledByAction = new Map<string, Record<string, unknown>>()
+  for (const item of enabled) {
+    if (!isRecord(item) || typeof item.action_id !== "string" || enabledByAction.has(item.action_id)) {
+      return { ok: false, blocker: "p7_action_registration_incomplete" }
+    }
+    enabledByAction.set(item.action_id, item)
+  }
+
+  for (const expectedActionId of SAFE_WRITE_ACTION_IDS) {
+    const candidate = candidateById.get(expectedActionId)
+    const enabledTool = enabledByAction.get(expectedActionId)
+    const expectedMcpTool = SAFE_WRITE_MCP_TOOL_BY_ACTION[expectedActionId]
+    if (
+      !candidate ||
+      !enabledTool ||
+      candidate.risk_class !== "safe_write" ||
+      candidate.control_center_enabled !== true ||
+      candidate.risk_model_present !== true ||
+      candidate.plugin_mcp_allowed !== true ||
+      candidate.audit_ready !== true ||
+      !Array.isArray(candidate.missing_gates) ||
+      candidate.missing_gates.length !== 0 ||
+      candidate.expected_mcp_tool !== expectedMcpTool ||
+      enabledTool.risk_class !== "safe_write" ||
+      enabledTool.mcp_tool !== expectedMcpTool
+    ) {
+      return { ok: false, blocker: "p7_action_audit_binding_incomplete" }
+    }
+  }
+
+  return candidateById.has(actionId) && enabledByAction.has(actionId)
     ? { ok: true, blocker: "" }
     : { ok: false, blocker: "p7_action_registration_incomplete" }
 }
@@ -621,9 +728,10 @@ export async function evaluateActionPreflight(
       blockers: ["unknown_action"],
     }
   }
-  const readiness = await readP7ActionReadiness()
-  const registration = p7RegistrationForAction(readiness, definition.id)
-  const proof = recentSuccessfulDryRun({ actionId: definition.id, actor: input.actor, proofId: input.proofId, now: input.now })
+  const now = input.now ?? Date.now()
+  const [p6Readiness, p7Readiness] = await Promise.all([readP6ActionReadiness(), readP7ActionReadiness()])
+  const registration = p7RegistrationForAction(p6Readiness, p7Readiness, definition.id, now)
+  const proof = recentSuccessfulDryRun({ actionId: definition.id, actor: input.actor, proofId: input.proofId, now })
   return publicPreflight(registration, trustedRuntimeAvailable(definition), proof)
 }
 
