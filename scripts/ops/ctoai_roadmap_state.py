@@ -29,6 +29,14 @@ ACTION_ID = "roadmap-state-refresh"
 MAX_JSON_BYTES = 2 * 1024 * 1024
 MAX_TEXT_BYTES = 256 * 1024
 MAX_SOURCE_AGE_SECONDS = 24 * 60 * 60
+FEATURE_ROADMAP_P12_STATUS = (
+    "P12 Heal Friend is `closed_blocked_no_compatible_vocation`"
+)
+FEATURE_ROADMAP_P13_STATUSES = (
+    "P13 is `ready_to_start`",
+    "P13 is `implementation_ready_for_confirmed_refresh`",
+    "P13 is `runtime_evidence_ready`",
+)
 REGISTRY_V1_SHA256 = "c3dd65689219229de0a5d5bcda50f7b60779ad8cc6ea0262dc73386c7ae17fb2"
 REGISTRY_SCHEMA_SHA256 = (
     "e63f70b0443c5327a9bf2e597a30e6f49748ae5dee86c7e305ea3b4d28102dd6"
@@ -304,15 +312,8 @@ def _source_health(
     feature_ok = bool(
         feature.status == "loaded"
         and feature.text
-        and "P12 Heal Friend is `closed_blocked_no_compatible_vocation`" in feature.text
-        and any(
-            marker in feature.text
-            for marker in (
-                "P13 is `ready_to_start`",
-                "P13 is `implementation_ready_for_confirmed_refresh`",
-                "P13 is `runtime_evidence_ready`",
-            )
-        )
+        and FEATURE_ROADMAP_P12_STATUS in feature.text
+        and any(marker in feature.text for marker in FEATURE_ROADMAP_P13_STATUSES)
     )
     checks.append(
         {

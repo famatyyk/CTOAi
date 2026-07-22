@@ -230,6 +230,46 @@ def test_audit_redacts_github_token_variants(tmp_path: Path) -> None:
     assert audit.count("[redacted]") >= len(tokens)
 
 
+def _feature_roadmap_health(
+    root: Path, text: str
+) -> tuple[dict[str, object], list[str]]:
+    feature_path = root / roadmap.SOURCE_HEALTH_PATHS["feature_roadmap"]
+    feature_path.parent.mkdir(parents=True, exist_ok=True)
+    feature_path.write_text(text, encoding="utf-8")
+    checks, blockers, _ = roadmap._source_health(root, _now(), {})
+    return (
+        next(item for item in checks if item["name"] == "feature_roadmap"),
+        blockers,
+    )
+
+
+def test_feature_roadmap_status_contract_is_tracked_and_fail_closed(
+    tmp_path: Path,
+) -> None:
+    feature_text = (
+        roadmap.ROOT / roadmap.SOURCE_HEALTH_PATHS["feature_roadmap"]
+    ).read_text(encoding="utf-8")
+
+    health, blockers = _feature_roadmap_health(tmp_path, feature_text)
+
+    assert health["contract_status"] == "passed"
+    assert "feature_roadmap_contract" not in blockers
+
+    without_p12 = feature_text.replace(roadmap.FEATURE_ROADMAP_P12_STATUS, "")
+    health, blockers = _feature_roadmap_health(tmp_path, without_p12)
+
+    assert health["contract_status"] == "blocked"
+    assert "feature_roadmap_contract" in blockers
+
+    without_p13 = feature_text
+    for status in roadmap.FEATURE_ROADMAP_P13_STATUSES:
+        without_p13 = without_p13.replace(status, "")
+    health, blockers = _feature_roadmap_health(tmp_path, without_p13)
+
+    assert health["contract_status"] == "blocked"
+    assert "feature_roadmap_contract" in blockers
+
+
 def test_future_sandbox_gate_is_advisory_not_a_p13_outage(tmp_path: Path) -> None:
     _copy_inputs(tmp_path)
     gate_path = tmp_path / roadmap.SOURCE_HEALTH_PATHS["runtime_module_gates"]

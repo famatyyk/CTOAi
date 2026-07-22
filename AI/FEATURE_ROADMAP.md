@@ -36,6 +36,15 @@
   eval, or snippet runtime was enabled. The next functional phase requires a
   separate runtime-bridge review after the completed v2.1.1a stabilization.
 
+## P12/P13 Bound State Contract
+
+- P12 Heal Friend is `closed_blocked_no_compatible_vocation`. This is a
+  terminal, disarmed closure and does not authorize a reopen, runtime action,
+  or live promotion.
+- P13 is `runtime_evidence_ready`. Its bounded ledger and roadmap-state refresh
+  remain subject to Control Center preflight; P14 interactive evidence still
+  awaits an in-world session.
+
 ## P0: Make This Brain Usable In Daily Codex Work
 
 - Keep this `AI/` folder current when OTClient, Lua generator, API, or Control
