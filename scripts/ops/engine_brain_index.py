@@ -25,6 +25,11 @@ DEFAULT_P7_COCKPIT_SMOKE_PATH = ROOT / "runtime" / "control-center" / "p7-cockpi
 DEFAULT_P7_EVIDENCE_REVIEW_PATH = ROOT / "runtime" / "control-center" / "p7-evidence-review.json"
 DEFAULT_RELEASE_EVIDENCE_DIR = ROOT / "releases" / "evidence"
 DEFAULT_RELEASE_EVIDENCE_LATEST_PATH = ROOT / "runtime" / "evidence" / "latest.json"
+DEFAULT_FRESHNESS_POLICY_PATH = ROOT / "AI" / "control-central-freshness-policy.json"
+DEFAULT_ACTION_AUDIT_MAX_AGE_SECONDS = 86_400
+MIN_ACTION_AUDIT_MAX_AGE_SECONDS = 300
+MAX_ACTION_AUDIT_MAX_AGE_SECONDS = 604_800
+ACTION_AUDIT_FUTURE_SKEW_SECONDS = 300
 ROADMAP_MAX_BYTES = 256 * 1024
 ROADMAP_GENERATION_DOCS = {
     "feature_roadmap": {
@@ -1480,14 +1485,66 @@ def _validation_statuses(validation: dict[str, Any]) -> dict[str, str]:
     return statuses
 
 
+def _action_audit_max_age_seconds() -> int:
+    policy = read_json_object(DEFAULT_FRESHNESS_POLICY_PATH)
+    artifacts = policy.get("artifacts") if isinstance(policy.get("artifacts"), dict) else {}
+    configured = artifacts.get("action_audit")
+    if (
+        policy.get("schema_version") == 1
+        and isinstance(configured, int)
+        and not isinstance(configured, bool)
+        and MIN_ACTION_AUDIT_MAX_AGE_SECONDS
+        <= configured
+        <= MAX_ACTION_AUDIT_MAX_AGE_SECONDS
+    ):
+        return configured
+    return DEFAULT_ACTION_AUDIT_MAX_AGE_SECONDS
+
+
+def _classify_action_audit_freshness(
+    value: Any,
+    *,
+    now: datetime,
+    max_age_seconds: int,
+) -> str:
+    text = str(value or "").strip()
+    if text.endswith("Z"):
+        text = text[:-1] + "+00:00"
+    try:
+        parsed = datetime.fromisoformat(text)
+    except ValueError:
+        return "invalid"
+    if parsed.tzinfo is None:
+        return "invalid"
+    parsed = parsed.astimezone(timezone.utc)
+    age_seconds = int((now - parsed).total_seconds())
+    if age_seconds < -ACTION_AUDIT_FUTURE_SKEW_SECONDS:
+        return "future"
+    return "fresh" if age_seconds <= max_age_seconds else "stale"
+
+
 def read_action_audit_summary(
     action_audit_path: Path = DEFAULT_ACTION_AUDIT_PATH,
+    *,
+    now: datetime | None = None,
+    max_age_seconds: int | None = None,
 ) -> dict[str, Any]:
+    """Summarize append-only P7 audits without letting old success mask failure."""
     by_action: dict[str, dict[str, Any]] = {}
     risk_counts: Counter[str] = Counter()
     record_count = 0
     invalid_record_count = 0
     latest_at = ""
+    current_time = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
+    freshness_max_age = (
+        max_age_seconds
+        if isinstance(max_age_seconds, int)
+        and not isinstance(max_age_seconds, bool)
+        and MIN_ACTION_AUDIT_MAX_AGE_SECONDS
+        <= max_age_seconds
+        <= MAX_ACTION_AUDIT_MAX_AGE_SECONDS
+        else _action_audit_max_age_seconds()
+    )
     try:
         with action_audit_path.open("r", encoding="utf-8") as handle:
             for line in handle:
@@ -1519,16 +1576,55 @@ def read_action_audit_summary(
                         "dry_run_count": 0,
                         "authorized_count": 0,
                         "ok_count": 0,
+                        "qualifying_dry_run": False,
+                        "confirmed_ok_count": 0,
+                        "preflight_seen": False,
+                        "timestamp_seen": False,
+                        "current": {},
                         "risk_classes": Counter(),
                     },
                 )
                 entry["record_count"] += 1
-                if record.get("dry_run") is True:
+                dry_run = record.get("dry_run") is True
+                authorized = record.get("authorized") is True
+                ok = record.get("ok") is True
+                preflight_status_present = "preflight_status" in record
+                preflight_status = str(record.get("preflight_status") or "").strip()
+                timestamp_present = bool(created_at)
+                if dry_run:
                     entry["dry_run_count"] += 1
-                if record.get("authorized") is True:
+                if authorized:
                     entry["authorized_count"] += 1
-                if record.get("ok") is True:
+                if ok:
                     entry["ok_count"] += 1
+                if preflight_status_present:
+                    entry["preflight_seen"] = True
+                if timestamp_present:
+                    entry["timestamp_seen"] = True
+                if (
+                    risk_class == "safe_write"
+                    and dry_run
+                    and authorized
+                    and ok
+                    and (not preflight_status_present or preflight_status == "ready")
+                ):
+                    entry["qualifying_dry_run"] = True
+                if (
+                    risk_class == "safe_write"
+                    and not dry_run
+                    and authorized
+                    and ok
+                ):
+                    entry["confirmed_ok_count"] += 1
+                entry["current"] = {
+                    "at": created_at,
+                    "dry_run": dry_run,
+                    "authorized": authorized,
+                    "ok": ok,
+                    "risk_class": risk_class,
+                    "preflight_status": preflight_status,
+                    "preflight_status_present": preflight_status_present,
+                }
                 if risk_class:
                     entry["risk_classes"][risk_class] += 1
     except OSError:
@@ -1539,16 +1635,59 @@ def read_action_audit_summary(
             "latest_at": "",
             "risk_counts": {},
             "by_action": {},
+            "action_audit_freshness_max_age_seconds": freshness_max_age,
         }
 
     sanitized_by_action: dict[str, dict[str, Any]] = {}
     for action_id, entry in by_action.items():
         risk_classes = entry["risk_classes"]
+        current_record = entry["current"]
+        timestamp_seen = bool(entry["timestamp_seen"])
+        freshness_status = (
+            _classify_action_audit_freshness(
+                current_record.get("at"),
+                now=current_time,
+                max_age_seconds=freshness_max_age,
+            )
+            if timestamp_seen
+            else "not_recorded"
+        )
+        preflight_status_seen = bool(entry["preflight_seen"])
+        current_preflight_ready = (
+            not preflight_status_seen
+            or current_record.get("preflight_status") == "ready"
+        )
+        current_successful = bool(
+            current_record.get("risk_class") == "safe_write"
+            and current_record.get("authorized") is True
+            and current_record.get("ok") is True
+        )
+        audit_ready = bool(
+            entry["record_count"] > 0
+            and entry["dry_run_count"] > 0
+            and entry["authorized_count"] > 0
+            and entry["ok_count"] > 0
+            and entry["qualifying_dry_run"]
+            and current_successful
+            and current_preflight_ready
+            and freshness_status in {"fresh", "not_recorded"}
+        )
         sanitized_by_action[action_id] = {
             "record_count": entry["record_count"],
             "dry_run_count": entry["dry_run_count"],
             "authorized_count": entry["authorized_count"],
             "ok_count": entry["ok_count"],
+            "confirmed_ok_count": entry["confirmed_ok_count"],
+            "preflight_status_seen": preflight_status_seen,
+            "current_preflight_status": str(
+                current_record.get("preflight_status") or ""
+            ),
+            "current_preflight_ready": current_preflight_ready,
+            "timestamp_seen": timestamp_seen,
+            "current_at": str(current_record.get("at") or ""),
+            "freshness_status": freshness_status,
+            "current_successful": current_successful,
+            "audit_ready": audit_ready,
             "risk_classes": sorted(risk_classes.keys()),
         }
     return {
@@ -1558,6 +1697,7 @@ def read_action_audit_summary(
         "latest_at": latest_at,
         "risk_counts": dict(sorted(risk_counts.items())),
         "by_action": sanitized_by_action,
+        "action_audit_freshness_max_age_seconds": freshness_max_age,
     }
 
 
@@ -1797,11 +1937,7 @@ def build_p7_cockpit_handoff_payload(
             continue
         action_id = str(tool.get("action_id") or "")
         audit_entry = (action_audit.get("by_action") or {}).get(action_id, {})
-        if (
-            isinstance(audit_entry, dict)
-            and audit_entry.get("ok_count", 0) > 0
-            and audit_entry.get("authorized_count", 0) > 0
-        ):
+        if isinstance(audit_entry, dict) and audit_entry.get("audit_ready") is True:
             ready_audit_count += 1
 
     smoke = smoke_summary or read_p7_cockpit_smoke_summary()
@@ -1814,6 +1950,11 @@ def build_p7_cockpit_handoff_payload(
         warnings.append("release_evidence_missing")
     if not audit_record_count:
         warnings.append("action_audit_missing")
+    if action_readiness.get("status") not in {
+        "first_safe_write_enabled",
+        "safe_write_tools_enabled",
+    } and int(action_readiness.get("mcp_write_tool_count") or 0):
+        blockers.append("p7_action_readiness_not_ready")
     if enabled_tool_count and ready_audit_count != enabled_tool_count:
         blockers.append("safe_write_audit_not_ready")
 
@@ -1927,6 +2068,7 @@ def build_p7_action_readiness_payload(
             else {}
         )
         audit_seen = bool(audit_entry.get("record_count", 0))
+        audit_ready = bool(audit_entry.get("audit_ready") is True)
         missing_gates: list[str] = []
         if not source_ok:
             missing_gates.append("control_center_action_source_contract")
@@ -1934,6 +2076,20 @@ def build_p7_action_readiness_payload(
             missing_gates.append("risk_model_entry")
         if not audit_seen:
             missing_gates.append("control_center_action_audit_evidence")
+        if audit_entry.get("preflight_status_seen") and not audit_entry.get(
+            "current_preflight_ready"
+        ):
+            missing_gates.append("control_center_action_current_preflight")
+        freshness_status = str(audit_entry.get("freshness_status") or "")
+        if audit_entry.get("timestamp_seen") and freshness_status != "fresh":
+            missing_gates.append(
+                "control_center_action_audit_"
+                f"freshness_{freshness_status or 'invalid'}"
+            )
+        if audit_seen and not audit_entry.get("current_successful"):
+            missing_gates.append("control_center_action_current_success")
+        if audit_seen and not audit_ready:
+            missing_gates.append("control_center_action_audit_not_ready")
         if not plugin_mcp_allowed:
             missing_gates.append("plugin_write_tool_not_enabled_by_policy")
         candidates.append(
@@ -1944,12 +2100,11 @@ def build_p7_action_readiness_payload(
                 "control_center_enabled": source_ok,
                 "risk_model_present": risk_model_ok,
                 "audit_seen": audit_seen,
+                "audit_ready": audit_ready,
                 "audit_record_count": int(audit_entry.get("record_count", 0) or 0),
                 "audit_dry_run_count": int(audit_entry.get("dry_run_count", 0) or 0),
-                "audit_confirmed_count": max(
-                    0,
-                    int(audit_entry.get("record_count", 0) or 0)
-                    - int(audit_entry.get("dry_run_count", 0) or 0),
+                "audit_confirmed_count": int(
+                    audit_entry.get("confirmed_ok_count", 0) or 0
                 ),
                 "expected_mcp_tool": expected_mcp_tool,
                 "plugin_mcp_allowed": plugin_mcp_allowed,
@@ -1957,7 +2112,7 @@ def build_p7_action_readiness_payload(
             }
         )
 
-    audited_count = sum(1 for candidate in candidates if candidate["audit_seen"])
+    audited_count = sum(1 for candidate in candidates if candidate["audit_ready"])
     source_ready_count = sum(
         1
         for candidate in candidates
@@ -1975,22 +2130,31 @@ def build_p7_action_readiness_payload(
         selected_candidate
         and selected_candidate.get("control_center_enabled")
         and selected_candidate.get("risk_model_present")
-        and selected_candidate.get("audit_seen")
+        and selected_candidate.get("audit_ready")
     )
     all_candidates_audited = source_ready_count == len(
         candidates
     ) and audited_count == len(candidates)
     ready_to_design = not mcp_write_tools and all_candidates_audited
+    registered_safe_write_tools = [
+        {
+            "action_id": candidate["id"],
+            "mcp_tool": candidate["expected_mcp_tool"],
+            "risk_class": candidate["risk_class"],
+        }
+        for candidate in candidates
+        if candidate["plugin_mcp_allowed"]
+    ]
     enabled_safe_write_tool_count = sum(
         1 for candidate in candidates if candidate["plugin_mcp_allowed"]
     )
     enabled_safe_write_tools_ready = all(
         candidate["control_center_enabled"]
         and candidate["risk_model_present"]
-        and candidate["audit_seen"]
+        and candidate["audit_ready"]
         for candidate in candidates
         if candidate["plugin_mcp_allowed"]
-    )
+    ) and bool(registered_safe_write_tools)
     safe_write_tools_enabled = (
         selected_mcp_enabled
         and selected_ready
@@ -2019,23 +2183,17 @@ def build_p7_action_readiness_payload(
             if ready_to_design
             else "collect_control_center_action_audit_evidence"
         )
-    enabled_safe_write_tools = [
-        {
-            "action_id": candidate["id"],
-            "mcp_tool": candidate["expected_mcp_tool"],
-            "risk_class": candidate["risk_class"],
-        }
-        for candidate in candidates
-        if candidate["plugin_mcp_allowed"]
-    ]
+    enabled_safe_write_tools = (
+        registered_safe_write_tools if safe_write_tools_enabled else []
+    )
     enabled_dry_run_ready_count = sum(
         1
         for candidate in candidates
-        if candidate["plugin_mcp_allowed"] and candidate["audit_dry_run_count"] > 0
+        if candidate["plugin_mcp_allowed"] and candidate["audit_ready"]
     )
     enabled_dry_run_ready = bool(
-        enabled_safe_write_tools
-        and enabled_dry_run_ready_count == len(enabled_safe_write_tools)
+        registered_safe_write_tools
+        and enabled_dry_run_ready_count == len(registered_safe_write_tools)
     )
     selected_confirmed_ready = bool(
         selected_candidate and int(selected_candidate.get("audit_confirmed_count") or 0)
@@ -2108,11 +2266,13 @@ def build_p7_action_readiness_payload(
         "source_ready_count": source_ready_count,
         "audited_candidate_count": audited_count,
         "enabled_dry_run_ready_count": enabled_dry_run_ready_count,
+        "enabled_safe_write_tools_ready": enabled_safe_write_tools_ready,
         "p7_evidence_review": evidence_review,
         "next_safe_mode": next_safe_mode,
         "mcp_write_tool_count": len(mcp_write_tools),
         "mcp_write_tools": mcp_write_tools,
         "unexpected_mcp_write_tools": unexpected_mcp_write_tools,
+        "registered_safe_write_tools": registered_safe_write_tools,
         "enabled_safe_write_tools": enabled_safe_write_tools,
         "safe_write_candidates": candidates,
         "next_safe_command": (
@@ -2144,8 +2304,8 @@ def render_p7_action_readiness(payload: dict[str, Any]) -> str:
         "",
         "## Safe Write Candidates",
         "",
-        "| Action | Source | Risk model | Audit | MCP allowed | Missing gates |",
-        "|---|---:|---:|---:|---:|---|",
+        "| Action | Source | Risk model | Audit seen | Audit ready | MCP allowed | Missing gates |",
+        "|---|---:|---:|---:|---:|---:|---|",
     ]
     for candidate in payload["safe_write_candidates"]:
         missing = (
@@ -2157,6 +2317,7 @@ def render_p7_action_readiness(payload: dict[str, Any]) -> str:
             f"`{candidate['control_center_enabled']}` | "
             f"`{candidate['risk_model_present']}` | "
             f"`{candidate['audit_seen']}` | "
+            f"`{candidate['audit_ready']}` | "
             f"`{candidate['plugin_mcp_allowed']}` | "
             f"{missing} |"
         )
@@ -2186,7 +2347,7 @@ def build_p7_safe_write_tool_design_payload(
         selected_candidate
         and selected_candidate.get("control_center_enabled")
         and selected_candidate.get("risk_model_present")
-        and selected_candidate.get("audit_seen")
+        and selected_candidate.get("audit_ready")
     )
     mcp_write_tools = (
         action_readiness_payload.get("mcp_write_tools")
@@ -2557,6 +2718,7 @@ def build_p7_operator_brief_payload(
 def build_p7_operator_workflow_payload(
     generated_at: str,
     p6_payload: dict[str, Any],
+    action_readiness_payload: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     p6_ready = p6_payload.get("status") == "ready_for_plugin_design"
     allowed_tools = [
@@ -2679,24 +2841,47 @@ def build_p7_operator_workflow_payload(
         "No tool may read .env, logs, databases, runtime client state, or private Solteria client data into generated context.",
         "P6 readiness, P7 operator brief, release evidence pack, doc sync, and secret guardrail must all be current.",
     ]
-    status = "safe_write_ready" if p6_ready else "blocked"
+    action_readiness = action_readiness_payload or {}
+    safe_write_ready = (
+        p6_ready
+        and action_readiness.get("status")
+        in {"first_safe_write_enabled", "safe_write_tools_enabled"}
+        and action_readiness.get("enabled_safe_write_tools_ready") is True
+        and int(action_readiness.get("audited_candidate_count") or 0)
+        == len(P7_SAFE_WRITE_ACTION_CANDIDATES)
+        and len(action_readiness.get("enabled_safe_write_tools") or [])
+        == len(P7_SAFE_WRITE_ACTION_CANDIDATES)
+    )
+    status = (
+        "safe_write_ready"
+        if safe_write_ready
+        else "registered_fail_closed"
+        if p6_ready
+        else "blocked"
+    )
     return {
         "schema_version": 1,
         "generated_at": generated_at,
         "status": status,
-        "decision": "allow_bounded_safe_write_tools"
-        if p6_ready
-        else "fix_p6_before_operator_workflow",
+        "decision": (
+            "allow_bounded_safe_write_tools"
+            if safe_write_ready
+            else "retain_registered_safe_write_candidates"
+            if p6_ready
+            else "fix_p6_before_operator_workflow"
+        ),
         "risk_model": "docs/CTOAI_COMMAND_RISK_MODEL.md",
         "allowed_mcp_tools": allowed_tools,
         "blocked_action_classes": blocked_action_classes,
         "gates_before_actions": gates_before_actions,
         "next_safe_command": (
-            "Assess each registered safe-write candidate with dry_run=true; a missing, failed, or stale current preflight/audit record keeps that candidate blocked."
+            "Monitor current bounded safe-write evidence; any failed, denied, or stale current audit/preflight record returns the workflow to registered_fail_closed."
+            if safe_write_ready
+            else "Assess each registered safe-write candidate with dry_run=true; a missing, failed, or stale current preflight/audit record keeps that candidate blocked."
             if p6_ready
             else "Fix P6 readiness before exposing the P7 operator workflow."
         ),
-        "policy": "P7 registers seven bounded safe_write candidates. Individual readiness is fail-closed on current source, plugin, preflight, and audit evidence; deploy/live actions stay blocked.",
+        "policy": "P7 registers seven bounded safe_write candidates. Registration alone is registered_fail_closed; safe_write_ready requires every current source, plugin, preflight, and audit gate to pass. Deploy/live actions stay blocked.",
     }
 
 
@@ -2904,17 +3089,25 @@ def build_indexes(out_dir: Path) -> dict[str, object]:
     )
     p6_readiness.write_text(render_p6_readiness(p6_payload), encoding="utf-8")
     p6_readiness_json.write_text(json.dumps(p6_payload, indent=2), encoding="utf-8")
-    p7_workflow_payload = build_p7_operator_workflow_payload(generated_at, p6_payload)
+    p7_workflow_registration_payload = build_p7_operator_workflow_payload(
+        generated_at, p6_payload
+    )
+    action_audit = read_action_audit_summary()
+    p7_evidence_review = read_p7_evidence_review_summary()
+    p7_action_payload = build_p7_action_readiness_payload(
+        generated_at,
+        p7_workflow_registration_payload,
+        action_audit,
+        p7_evidence_review,
+    )
+    p7_workflow_payload = build_p7_operator_workflow_payload(
+        generated_at, p6_payload, p7_action_payload
+    )
     p7_operator_workflow.write_text(
         render_p7_operator_workflow(p7_workflow_payload), encoding="utf-8"
     )
     p7_operator_workflow_json.write_text(
         json.dumps(p7_workflow_payload, indent=2), encoding="utf-8"
-    )
-    action_audit = read_action_audit_summary()
-    p7_evidence_review = read_p7_evidence_review_summary()
-    p7_action_payload = build_p7_action_readiness_payload(
-        generated_at, p7_workflow_payload, action_audit, p7_evidence_review
     )
     p7_action_readiness.write_text(
         render_p7_action_readiness(p7_action_payload), encoding="utf-8"

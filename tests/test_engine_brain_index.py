@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import pytest
@@ -161,6 +162,144 @@ def _assert_safe_write_response(
         assert preflight["ok"] or preflight.get("bootstrap_allowed") or preflight.get(
             "repair_allowed"
         )
+
+
+def _p7_safe_write_workflow_fixture() -> dict[str, Any]:
+    return {
+        "allowed_mcp_tools": [
+            {"name": tool_name, "risk_class": "safe_write"}
+            for tool_name in engine_brain_index.P7_ENABLED_SAFE_WRITE_MCP_TOOLS.values()
+        ]
+    }
+
+
+def _p7_audit_record(
+    action_id: str,
+    at: datetime,
+    *,
+    dry_run: bool = True,
+    authorized: bool = True,
+    ok: bool = True,
+    preflight_status: str = "ready",
+) -> dict[str, Any]:
+    return {
+        "at": at.isoformat(),
+        "action": action_id,
+        "risk_class": "safe_write",
+        "dry_run": dry_run,
+        "authorized": authorized,
+        "ok": ok,
+        "preflight_status": preflight_status,
+    }
+
+
+def _write_action_audit_records(tmp_path, records: list[dict[str, Any]]):
+    path = tmp_path / "action-audit.jsonl"
+    path.write_text(
+        "\n".join(json.dumps(record) for record in records) + "\n",
+        encoding="utf-8",
+    )
+    return path
+
+
+def test_p7_action_readiness_enables_only_current_qualifying_audits(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setattr(engine_brain_index, "_source_has_needles", lambda *_args: True)
+    now = datetime(2026, 7, 22, 12, tzinfo=timezone.utc)
+    records = [
+        _p7_audit_record(action_id, now - timedelta(seconds=30))
+        for action_id in engine_brain_index.P7_ENABLED_SAFE_WRITE_MCP_TOOLS
+    ]
+    audit = engine_brain_index.read_action_audit_summary(
+        _write_action_audit_records(tmp_path, records),
+        now=now,
+        max_age_seconds=300,
+    )
+
+    readiness = engine_brain_index.build_p7_action_readiness_payload(
+        now.isoformat(), _p7_safe_write_workflow_fixture(), audit
+    )
+    workflow = engine_brain_index.build_p7_operator_workflow_payload(
+        now.isoformat(), {"status": "ready_for_plugin_design"}, readiness
+    )
+
+    assert readiness["status"] == "safe_write_tools_enabled"
+    assert readiness["enabled_safe_write_tools_ready"] is True
+    assert readiness["audited_candidate_count"] == len(
+        engine_brain_index.P7_SAFE_WRITE_ACTION_CANDIDATES
+    )
+    assert len(readiness["enabled_safe_write_tools"]) == len(
+        engine_brain_index.P7_SAFE_WRITE_ACTION_CANDIDATES
+    )
+    assert all(candidate["audit_ready"] for candidate in readiness["safe_write_candidates"])
+    assert workflow["status"] == "safe_write_ready"
+
+
+@pytest.mark.parametrize(
+    ("case", "current_record", "expected_gate"),
+    [
+        (
+            "failed",
+            {"ok": False},
+            "control_center_action_current_success",
+        ),
+        (
+            "denied",
+            {"authorized": False},
+            "control_center_action_current_success",
+        ),
+        (
+            "stale",
+            {"at_offset_seconds": 301},
+            "control_center_action_audit_freshness_stale",
+        ),
+    ],
+)
+def test_p7_action_readiness_fails_closed_for_current_bad_audit(
+    tmp_path, monkeypatch, case, current_record, expected_gate
+):
+    monkeypatch.setattr(engine_brain_index, "_source_has_needles", lambda *_args: True)
+    now = datetime(2026, 7, 22, 12, tzinfo=timezone.utc)
+    selected_action = engine_brain_index.P7_SELECTED_SAFE_WRITE_ACTION_ID
+    records = [
+        _p7_audit_record(action_id, now - timedelta(seconds=30))
+        for action_id in engine_brain_index.P7_ENABLED_SAFE_WRITE_MCP_TOOLS
+    ]
+    offset_seconds = int(current_record.pop("at_offset_seconds", 1))
+    records.append(
+        _p7_audit_record(
+            selected_action,
+            now - timedelta(seconds=offset_seconds),
+            **current_record,
+        )
+    )
+    audit = engine_brain_index.read_action_audit_summary(
+        _write_action_audit_records(tmp_path, records),
+        now=now,
+        max_age_seconds=300,
+    )
+
+    readiness = engine_brain_index.build_p7_action_readiness_payload(
+        now.isoformat(), _p7_safe_write_workflow_fixture(), audit
+    )
+    workflow = engine_brain_index.build_p7_operator_workflow_payload(
+        now.isoformat(), {"status": "ready_for_plugin_design"}, readiness
+    )
+    selected = next(
+        candidate
+        for candidate in readiness["safe_write_candidates"]
+        if candidate["id"] == selected_action
+    )
+
+    assert case in {"failed", "denied", "stale"}
+    assert selected["audit_seen"] is True
+    assert selected["audit_ready"] is False
+    assert expected_gate in selected["missing_gates"]
+    assert readiness["status"] == "write_tools_blocked"
+    assert readiness["enabled_safe_write_tools_ready"] is False
+    assert readiness["enabled_safe_write_tools"] == []
+    assert workflow["status"] == "registered_fail_closed"
 
 
 def test_release_evidence_summary_exposes_helper_sandbox_queue(tmp_path):
