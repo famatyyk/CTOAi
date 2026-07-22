@@ -1,0 +1,445 @@
+{
+  "authority": {
+    "allowed_output_paths": [
+      "AI/generated/ROADMAP_STATE.json",
+      "AI/generated/ROADMAP_STATE.md",
+      "runtime/control-center/action-audit.jsonl"
+    ],
+    "control_center_mode": "read_only",
+    "live_authority": false,
+    "p12_heal_friend_reopened": false,
+    "roadmap_refresh_risk_class": "safe_write",
+    "roadmap_refresh_tool_enabled": true,
+    "runtime_actions": false,
+    "runtime_executor_added": false,
+    "runtime_mcp_write_tool_enabled": false
+  },
+  "blockers": [],
+  "control_center_preflight": {
+    "cockpit_handoff_status": "ready",
+    "hard_blockers": [],
+    "operator_brief_status": "ready",
+    "ready": true,
+    "roadmap_generation_status": "ready",
+    "status": "ready"
+  },
+  "freshness_status": "current",
+  "generated_at": "2026-07-16T18:22:52.727961Z",
+  "ledger": [
+    {
+      "age_seconds": 90707,
+      "attempt_count": null,
+      "bindings": [],
+      "blockers": [],
+      "created_at": "2026-07-15T17:11:05Z",
+      "decision_id": "p8-background-acceptance",
+      "decision_status": "accepted",
+      "dispatch_allowed": false,
+      "downstream_authority_granted": false,
+      "evidence_path": "runtime/solteria_helper_dev/background_status.json",
+      "evidence_schema_version": "ctoa.otclient-headless-status.v1",
+      "evidence_sha256": "f871b64e7c1981c591b3013ab2b3560417e3bdc26c5aae4d74949bcb6501df78",
+      "evidence_status": "ready",
+      "execute_once_allowed": false,
+      "final_state": null,
+      "freshness_status": "immutable_terminal",
+      "integrity_status": "passed",
+      "intrusive_action_count": 0,
+      "lane": "background",
+      "live_promotion": false,
+      "ordinal": 8,
+      "phase": "P8",
+      "predecessor_ids": [],
+      "previous_evidence_sha256": "f871b64e7c1981c591b3013ab2b3560417e3bdc26c5aae4d74949bcb6501df78",
+      "result_status": "operational_acceptance_complete",
+      "retry_scheduled": null,
+      "runtime_actions": false,
+      "terminal": true
+    },
+    {
+      "age_seconds": 171441,
+      "attempt_count": null,
+      "bindings": [
+        {
+          "actual_sha256": "795c2d4b1a130376335035d144be1cff609fe51ed826a75f46530571579ce0df",
+          "expected_sha256": "795c2d4b1a130376335035d144be1cff609fe51ed826a75f46530571579ce0df",
+          "mode": "canonical_json_sha256",
+          "path": "runtime/solteria_helper_dev/conditions_shadow_replay.json",
+          "role": "report",
+          "status": "passed"
+        }
+      ],
+      "blockers": [],
+      "created_at": "2026-07-14T18:45:31.632000Z",
+      "decision_id": "p9-conditions-shadow-acceptance",
+      "decision_status": "accepted",
+      "dispatch_allowed": false,
+      "downstream_authority_granted": false,
+      "evidence_path": "runtime/solteria_helper_dev/conditions_shadow_acceptance.json",
+      "evidence_schema_version": "ctoa.conditions-shadow-acceptance.v1",
+      "evidence_sha256": "cd251c883ca83e83769b5c1cd6721dd6062b1913c2614388070d04b560afde8a",
+      "evidence_status": "accepted",
+      "execute_once_allowed": false,
+      "final_state": null,
+      "freshness_status": "immutable_terminal",
+      "integrity_status": "passed",
+      "intrusive_action_count": 0,
+      "lane": "conditions",
+      "live_promotion": false,
+      "ordinal": 9,
+      "phase": "P9",
+      "predecessor_ids": [
+        "p8-background-acceptance"
+      ],
+      "previous_evidence_sha256": "cd251c883ca83e83769b5c1cd6721dd6062b1913c2614388070d04b560afde8a",
+      "result_status": "operational_acceptance_complete",
+      "retry_scheduled": null,
+      "runtime_actions": false,
+      "terminal": true
+    },
+    {
+      "age_seconds": 135761,
+      "attempt_count": null,
+      "bindings": [
+        {
+          "actual_sha256": "e3f9048a7432593ff010f5dee0229d0cc42d6c221ef9b4c8028523896bd5c16e",
+          "expected_sha256": "e3f9048a7432593ff010f5dee0229d0cc42d6c221ef9b4c8028523896bd5c16e",
+          "mode": "canonical_json_sha256",
+          "path": "runtime/solteria_helper_dev/equipment_shadow_replay.json",
+          "role": "report",
+          "status": "passed"
+        }
+      ],
+      "blockers": [],
+      "created_at": "2026-07-15T04:40:11.067000Z",
+      "decision_id": "p10-equipment-shadow-acceptance",
+      "decision_status": "accepted",
+      "dispatch_allowed": false,
+      "downstream_authority_granted": false,
+      "evidence_path": "runtime/solteria_helper_dev/equipment_shadow_acceptance.json",
+      "evidence_schema_version": "ctoa.equipment-shadow-acceptance.v1",
+      "evidence_sha256": "ca062e4ddc41029dbae059bae303e6b4a5b4a87a66442c7f846ae050a3fa9548",
+      "evidence_status": "accepted",
+      "execute_once_allowed": false,
+      "final_state": null,
+      "freshness_status": "immutable_terminal",
+      "integrity_status": "passed",
+      "intrusive_action_count": 0,
+      "lane": "equipment",
+      "live_promotion": false,
+      "ordinal": 10,
+      "phase": "P10",
+      "predecessor_ids": [
+        "p9-conditions-shadow-acceptance"
+      ],
+      "previous_evidence_sha256": "ca062e4ddc41029dbae059bae303e6b4a5b4a87a66442c7f846ae050a3fa9548",
+      "result_status": "operational_acceptance_complete",
+      "retry_scheduled": null,
+      "runtime_actions": false,
+      "terminal": true
+    },
+    {
+      "age_seconds": 132379,
+      "attempt_count": null,
+      "bindings": [
+        {
+          "actual_sha256": "b6d5f8e53c7e7354445ab9b134b4b04a7bda984df93c477ed2cbb2a57d575ed8",
+          "expected_sha256": "b6d5f8e53c7e7354445ab9b134b4b04a7bda984df93c477ed2cbb2a57d575ed8",
+          "mode": "canonical_json_sha256",
+          "path": "runtime/solteria_helper_dev/heal_friend_shadow_replay.json",
+          "role": "report",
+          "status": "passed"
+        }
+      ],
+      "blockers": [],
+      "created_at": "2026-07-15T05:36:33.724000Z",
+      "decision_id": "p11-heal-friend-shadow-acceptance",
+      "decision_status": "accepted",
+      "dispatch_allowed": false,
+      "downstream_authority_granted": false,
+      "evidence_path": "runtime/solteria_helper_dev/heal_friend_shadow_acceptance.json",
+      "evidence_schema_version": "ctoa.heal-friend-shadow-acceptance.v1",
+      "evidence_sha256": "9bce6d49dc9177aa962a9eec7d80ee61848eb9b8d0dbd3bc72cce71921cf0819",
+      "evidence_status": "accepted",
+      "execute_once_allowed": false,
+      "final_state": null,
+      "freshness_status": "immutable_terminal",
+      "integrity_status": "passed",
+      "intrusive_action_count": 0,
+      "lane": "heal_friend",
+      "live_promotion": false,
+      "ordinal": 11,
+      "phase": "P11",
+      "predecessor_ids": [
+        "p10-equipment-shadow-acceptance"
+      ],
+      "previous_evidence_sha256": "9bce6d49dc9177aa962a9eec7d80ee61848eb9b8d0dbd3bc72cce71921cf0819",
+      "result_status": "operational_acceptance_complete",
+      "retry_scheduled": null,
+      "runtime_actions": false,
+      "terminal": true
+    },
+    {
+      "age_seconds": 127081,
+      "attempt_count": 1,
+      "bindings": [
+        {
+          "actual_sha256": "67c27a26797b0b01e4f8dfccec4e02b0e5f454ca6818434709e4b55850f49810",
+          "expected_sha256": "67c27a26797b0b01e4f8dfccec4e02b0e5f454ca6818434709e4b55850f49810",
+          "mode": "field_match",
+          "path": "runtime/solteria_helper_dev/p12_conditions_execute_once_plan.json",
+          "role": "plan",
+          "status": "passed"
+        },
+        {
+          "actual_sha256": "6ce8a238169ffd4aa0762603cc1b1a1457072d8ce45005e5f8e34a549c94bfec",
+          "expected_sha256": "6ce8a238169ffd4aa0762603cc1b1a1457072d8ce45005e5f8e34a549c94bfec",
+          "mode": "canonical_json_sha256",
+          "path": "runtime/solteria_helper_dev/p12_conditions_session_approval.json",
+          "role": "approval",
+          "status": "passed"
+        },
+        {
+          "actual_sha256": "125af0ec0e73ca8015b50ee8b08392ab76fb3637145f272743cdb96b4851f69c",
+          "expected_sha256": "125af0ec0e73ca8015b50ee8b08392ab76fb3637145f272743cdb96b4851f69c",
+          "mode": "canonical_json_sha256",
+          "path": "runtime/solteria_helper_dev/p12_conditions_execute_once_trace.json",
+          "role": "trace",
+          "status": "passed"
+        }
+      ],
+      "blockers": [],
+      "created_at": "2026-07-15T07:04:51.648000Z",
+      "decision_id": "p12-conditions-execute-once",
+      "decision_status": "accepted",
+      "dispatch_allowed": false,
+      "downstream_authority_granted": false,
+      "evidence_path": "runtime/solteria_helper_dev/p12_conditions_execute_once_receipt.json",
+      "evidence_schema_version": "ctoa.p12-conditions-execute-once-receipt.v1",
+      "evidence_sha256": "ce9017f67a8efac96903fead66a925a3aa6e237352883ee9ac99e44da4e5fba8",
+      "evidence_status": "accepted",
+      "execute_once_allowed": false,
+      "final_state": "killed_and_disarmed",
+      "freshness_status": "immutable_terminal",
+      "integrity_status": "passed",
+      "intrusive_action_count": 1,
+      "lane": "conditions",
+      "live_promotion": false,
+      "ordinal": 12,
+      "phase": "P12",
+      "predecessor_ids": [
+        "p9-conditions-shadow-acceptance"
+      ],
+      "previous_evidence_sha256": "ce9017f67a8efac96903fead66a925a3aa6e237352883ee9ac99e44da4e5fba8",
+      "result_status": "operational_acceptance_complete",
+      "retry_scheduled": false,
+      "runtime_actions": false,
+      "terminal": true
+    },
+    {
+      "age_seconds": 114599,
+      "attempt_count": 1,
+      "bindings": [
+        {
+          "actual_sha256": "d041db806c6417b018c6ae390e3d384ccec9bead2a77e498a582093bf7c823e0",
+          "expected_sha256": "d041db806c6417b018c6ae390e3d384ccec9bead2a77e498a582093bf7c823e0",
+          "mode": "field_match",
+          "path": "runtime/solteria_helper_dev/p12_equipment_execute_once_plan.json",
+          "role": "plan",
+          "status": "passed"
+        },
+        {
+          "actual_sha256": "7a232baf0b87abdac05cf71998cd17962187b0e9eab25aa5ac6f169489821eec",
+          "expected_sha256": "7a232baf0b87abdac05cf71998cd17962187b0e9eab25aa5ac6f169489821eec",
+          "mode": "canonical_json_sha256",
+          "path": "runtime/solteria_helper_dev/p12_equipment_session_approval.json",
+          "role": "approval",
+          "status": "passed"
+        },
+        {
+          "actual_sha256": "a4352002e593779fe6809fceb52cda4c53a7530862ce9fdb969a0ed86ee45930",
+          "expected_sha256": "a4352002e593779fe6809fceb52cda4c53a7530862ce9fdb969a0ed86ee45930",
+          "mode": "canonical_json_sha256",
+          "path": "runtime/solteria_helper_dev/p12_equipment_execute_once_trace.json",
+          "role": "trace",
+          "status": "passed"
+        }
+      ],
+      "blockers": [],
+      "created_at": "2026-07-15T10:32:52.914000Z",
+      "decision_id": "p12-equipment-execute-once",
+      "decision_status": "accepted",
+      "dispatch_allowed": false,
+      "downstream_authority_granted": false,
+      "evidence_path": "runtime/solteria_helper_dev/p12_equipment_execute_once_receipt.json",
+      "evidence_schema_version": "ctoa.p12-equipment-execute-once-receipt.v1",
+      "evidence_sha256": "c36483f5da4ecefe9a5f7fb0be5c069999053e84b2040131b9a0f643b10cf635",
+      "evidence_status": "accepted",
+      "execute_once_allowed": false,
+      "final_state": "killed_and_disarmed",
+      "freshness_status": "immutable_terminal",
+      "integrity_status": "passed",
+      "intrusive_action_count": 1,
+      "lane": "equipment",
+      "live_promotion": false,
+      "ordinal": 13,
+      "phase": "P12",
+      "predecessor_ids": [
+        "p10-equipment-shadow-acceptance"
+      ],
+      "previous_evidence_sha256": "c36483f5da4ecefe9a5f7fb0be5c069999053e84b2040131b9a0f643b10cf635",
+      "result_status": "operational_acceptance_complete",
+      "retry_scheduled": false,
+      "runtime_actions": false,
+      "terminal": true
+    },
+    {
+      "age_seconds": 108892,
+      "attempt_count": 0,
+      "bindings": [
+        {
+          "actual_sha256": "aaf2b8fb7bcd6fe9f828bf41fb9a52c0e53ea0a7a062125f359bc6a72d612f21",
+          "expected_sha256": "aaf2b8fb7bcd6fe9f828bf41fb9a52c0e53ea0a7a062125f359bc6a72d612f21",
+          "mode": "raw_sha256",
+          "path": "runtime/solteria_helper_dev/p12_heal_friend_execute_once_plan.json",
+          "role": "plan",
+          "status": "passed"
+        },
+        {
+          "actual_sha256": "f6db26767ae5c5605d501c11b47d26813a0f808887ffb7b61109b8ddc49433fe",
+          "expected_sha256": "f6db26767ae5c5605d501c11b47d26813a0f808887ffb7b61109b8ddc49433fe",
+          "mode": "raw_sha256",
+          "path": "runtime/solteria_helper_dev/p12_heal_friend_session_approval.json",
+          "role": "approval",
+          "status": "passed"
+        },
+        {
+          "actual_sha256": "607aabf45e4bb417779af61cf91d826d3d82c0551f9a28b73ac0ecabb87a6a87",
+          "expected_sha256": "607aabf45e4bb417779af61cf91d826d3d82c0551f9a28b73ac0ecabb87a6a87",
+          "mode": "raw_sha256",
+          "path": "runtime/solteria_helper_dev/p12_heal_friend_execution_preflight.json",
+          "role": "preflight",
+          "status": "passed"
+        }
+      ],
+      "blockers": [],
+      "created_at": "2026-07-15T12:08:00.489000Z",
+      "decision_id": "p12-heal-friend-no-compatible-vocation",
+      "decision_status": "closed_no_action",
+      "dispatch_allowed": false,
+      "downstream_authority_granted": false,
+      "evidence_path": "runtime/solteria_helper_dev/p12_heal_friend_no_compatible_vocation_closure.json",
+      "evidence_schema_version": "ctoa.p12-heal-friend-no-compatible-vocation-closure.v1",
+      "evidence_sha256": "1290568c48439e3bd512754a21b75dcac6bc05e17d48c36c1edc56b3b3189d9b",
+      "evidence_status": "closed_blocked_no_compatible_vocation",
+      "execute_once_allowed": false,
+      "final_state": "disarmed",
+      "freshness_status": "immutable_terminal",
+      "integrity_status": "passed",
+      "intrusive_action_count": 0,
+      "lane": "heal_friend",
+      "live_promotion": false,
+      "ordinal": 14,
+      "phase": "P12",
+      "predecessor_ids": [
+        "p11-heal-friend-shadow-acceptance",
+        "p12-equipment-execute-once"
+      ],
+      "previous_evidence_sha256": "1290568c48439e3bd512754a21b75dcac6bc05e17d48c36c1edc56b3b3189d9b",
+      "result_status": "closed_blocked_no_compatible_vocation",
+      "retry_scheduled": false,
+      "runtime_actions": false,
+      "terminal": true
+    }
+  ],
+  "next_action": "Refresh the pending P14 sandbox evidence when an in-world session is available; the P13 ledger and bounded roadmap refresh remain operational.",
+  "next_phase": "P14",
+  "phase": "P13",
+  "phase_status": "runtime_evidence_ready",
+  "previous_state_sha256": "b6e5f455c30740b8215020bcc59e2f3b0a6d56d0b687835159321e4fbe8167de",
+  "readiness_status": "awaiting_external",
+  "schema_registry": {
+    "entry_count": 7,
+    "path": "schemas/ctoa-roadmap-schema-registry.v1.json",
+    "previous_sha256": "c3dd65689219229de0a5d5bcda50f7b60779ad8cc6ea0262dc73386c7ae17fb2",
+    "schema_path": "schemas/ctoa-roadmap-schema-registry.schema.json",
+    "schema_sha256": "e63f70b0443c5327a9bf2e597a30e6f49748ae5dee86c7e305ea3b4d28102dd6",
+    "schema_version": "ctoa.roadmap-schema-registry.v1",
+    "sha256": "c3dd65689219229de0a5d5bcda50f7b60779ad8cc6ea0262dc73386c7ae17fb2",
+    "status": "passed"
+  },
+  "schema_version": "ctoa.roadmap-state.v2",
+  "source_health": [
+    {
+      "age_seconds": null,
+      "availability": "available",
+      "contract_status": "passed",
+      "freshness_status": "timeless",
+      "impact": "required",
+      "load_status": "loaded",
+      "name": "feature_roadmap",
+      "path": "AI/FEATURE_ROADMAP.md",
+      "sha256": "794f54bb681ae9fff7b0466f7f761acc99f426abf17d4402b925567eedc50f87"
+    },
+    {
+      "age_seconds": 182,
+      "availability": "available",
+      "contract_status": "passed",
+      "freshness_status": "current",
+      "impact": "required",
+      "load_status": "loaded",
+      "name": "engine_brain_manifest",
+      "path": "AI/generated/manifest.json",
+      "sha256": "f2089eb9563fac123e5767f63fd20f545a1d4212e0e005f85648dc6063e7fc3a"
+    },
+    {
+      "age_seconds": 182,
+      "availability": "available",
+      "contract_status": "passed",
+      "freshness_status": "current",
+      "impact": "required",
+      "load_status": "loaded",
+      "name": "operator_brief",
+      "path": "AI/generated/P7_OPERATOR_BRIEF.json",
+      "sha256": "f779e232f579c8e55abe9889b9d78c00c83fbe0ed2846bad000dba5e678b49a0"
+    },
+    {
+      "age_seconds": 0,
+      "availability": "available",
+      "contract_status": "passed",
+      "freshness_status": "current",
+      "impact": "required",
+      "load_status": "loaded",
+      "name": "helper_manifest",
+      "path": "runtime/solteria_helper_dev/manifest.json",
+      "sha256": "4a9418472babbe9a99d242363ca351e26c311e104a310b08dc7032631bf24be5"
+    },
+    {
+      "age_seconds": 91380,
+      "availability": "awaiting_external",
+      "contract_status": "pending",
+      "freshness_status": "stale",
+      "impact": "advisory",
+      "load_status": "loaded",
+      "name": "runtime_module_gates",
+      "path": "runtime/solteria_helper_dev/runtime_module_gates_sandbox_smoke.json",
+      "sha256": "f22c309f1145ae51c2e3654cd1345ec2fe41ef5a8495792cc23a70e0ec8e1b2b"
+    }
+  ],
+  "state_sha256": "094e472084b3e12bb89bdc52446219d3c5104f1764ff60d4b8c6f763e820317d",
+  "status": "ready",
+  "summary": {
+    "accepted_count": 6,
+    "blocked_count": 0,
+    "closed_no_action_count": 1,
+    "ledger_count": 7,
+    "live_authority_count": 0,
+    "runtime_authority_count": 0,
+    "tampered_count": 0,
+    "total_attempt_count": 2
+  },
+  "tamper_status": "passed",
+  "warnings": [
+    "runtime_module_gates_pending"
+  ]
+}

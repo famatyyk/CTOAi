@@ -6,6 +6,49 @@ local Reporter = rawget(_G, "CTOA_HELPER_CLIENT_REPORTER") or {}
 local SCHEMA_VERSION = "ctoa-client-capabilities-v1"
 local PROFILE_SCHEMA = "ctoa-helper-profile-v1"
 local HEARTBEAT_INTERVAL_MS = 5000
+local P14_CAPTURE_FLAGS = {
+    CTOA_P14_CAPTURE_HELPER_ACTIVATION = "helper-ui-only",
+    CTOA_P14_ISOLATED_ENVIRONMENT = "true",
+    CTOA_P14_CAPTURE_CONTEXT = "guest",
+    CTOA_P14_OPERATOR_WORKSTATION_FOCUS_USED = "false",
+    CTOA_P14_OPERATOR_WORKSTATION_INPUT_USED = "false",
+    CTOA_P14_NETWORK_DISPATCH_USED = "false",
+    CTOA_P14_LIVE_CLIENT_ACCESSED = "false",
+    CTOA_P14_PROMOTION_ATTEMPTED = "false",
+}
+local P14_CAPTURE_REPORT_ROOT = "C:\\P14Runner\\evidence\\"
+
+local function p14CaptureRequested()
+    if not os or type(os.getenv) ~= "function" then return false end
+    for name, expected in pairs(P14_CAPTURE_FLAGS) do
+        local ok, value = pcall(function() return os.getenv(name) end)
+        if not ok or value ~= expected then return false end
+    end
+    return true
+end
+
+local function p14CaptureReportPath()
+    if not p14CaptureRequested() then return nil end
+    local ok, target = pcall(function()
+        return os.getenv("CTOA_P14_CAPTURE_REPORT_PATH")
+    end)
+    if not ok or type(target) ~= "string" or target == "" then return nil end
+
+    local normalized = string.gsub(target, "/", "\\")
+    local root = string.lower(P14_CAPTURE_REPORT_ROOT)
+    if string.lower(string.sub(normalized, 1, #root)) ~= root then return nil end
+    local relative = string.sub(normalized, #root + 1)
+    if relative == "" or string.find(relative, "\\", 1, true) or string.find(relative, "..", 1, true) or string.find(relative, ":", 1, true) then
+        return nil
+    end
+    local filename = relative
+    local revision, nonce = nil, nil
+    if filename then
+        revision, nonce = string.match(filename, "^p14%-helper%-runtime%-([a-f0-9]+)%-([a-f0-9]+)%.json$")
+    end
+    if not revision or #revision ~= 40 or not nonce or #nonce ~= 32 then return nil end
+    return normalized
+end
 
 local function safeCall(target, methodName)
     if not target or type(target[methodName]) ~= "function" then
@@ -186,6 +229,10 @@ function Reporter.snapshot(context)
 end
 
 function Reporter.resolvePath(uiPath, resources)
+    local capturePath = p14CaptureReportPath()
+    if capturePath then
+        return capturePath
+    end
     if type(uiPath) == "string" and uiPath ~= "" then
         local resolved = string.gsub(uiPath, "ctoa_ui_prefs%.lua$", "ctoa_client_capabilities.json")
         if resolved ~= uiPath then

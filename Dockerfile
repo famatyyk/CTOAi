@@ -40,3 +40,19 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
   CMD python -c "import os,urllib.request; t=os.getenv('CTOA_MOBILE_TOKEN',''); req=urllib.request.Request('http://127.0.0.1:8787/api/health', headers={'X-CTOA-Token': t}); urllib.request.urlopen(req, timeout=5)"
 
 CMD ["python", "-m", "uvicorn", "mobile_console.app:app", "--host", "0.0.0.0", "--port", "8787"]
+
+# The P14 contract tests create isolated Git worktrees to prove that only
+# reviewed, tracked helper sources can be signed. Keep this dependency out of
+# the runtime image: the runner itself fails closed when tracking is unavailable.
+FROM runtime AS test
+
+USER root
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git \
+    && rm -rf /var/lib/apt/lists/*
+
+USER ctoa
+
+# Leave the production image as the default Docker target. Build/test CI opts
+# into the test target explicitly so Git is never a production dependency.
+FROM runtime AS production

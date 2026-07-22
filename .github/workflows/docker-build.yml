@@ -28,6 +28,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
+          target: test
           load: true
           tags: ${{ env.IMAGE_NAME }}:${{ github.sha }}
           cache-from: type=gha
