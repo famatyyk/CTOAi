@@ -455,6 +455,25 @@ def _step_passed(job: dict[str, Any], name: str) -> bool:
     )
 
 
+def _protected_job(run: dict[str, Any]) -> dict[str, Any]:
+    jobs = _rows(run.get("jobs"))
+    protected = next(
+        (item for item in jobs if item.get("name") == PROTECTED_JOB), {}
+    )
+    return protected or next(
+        (item for item in jobs if item.get("name") == LEGACY_PROTECTED_JOB), {}
+    )
+
+
+def _protected_run_attempted(run: dict[str, Any]) -> bool:
+    job = _protected_job(run)
+    return bool(
+        job
+        and job.get("status") != "skipped"
+        and job.get("conclusion") != "skipped"
+    )
+
+
 def _structural_result_valid(request: dict[str, Any], result: dict[str, Any]) -> bool:
     checks = _rows(result.get("checks"))
     request_signature = _mapping(request.get("signature"))
@@ -796,14 +815,7 @@ def build_preflight(
     if not branch_allowed:
         blockers.append("p14_environment_branch_policy_missing")
 
-    jobs = _rows(run.get("jobs"))
-    protected_job = next(
-        (item for item in jobs if item.get("name") == PROTECTED_JOB), {}
-    )
-    if not protected_job:
-        protected_job = next(
-            (item for item in jobs if item.get("name") == LEGACY_PROTECTED_JOB), {}
-        )
+    protected_job = _protected_job(run)
     run_success = bool(
         run.get("event") == "workflow_dispatch"
         and run.get("status") == "completed"
@@ -1092,30 +1104,46 @@ def collect_preflight(
             "databaseId,status,conclusion,event,headBranch,headSha,createdAt,updatedAt",
         ]
     )
-    selected = next(
-        (
-            item
-            for item in _rows(runs)
-            if item.get("event") == "workflow_dispatch"
-            and item.get("conclusion") == "success"
-        ),
-        {},
-    )
-    run_id = int(selected.get("databaseId") or 0)
+    candidate_runs = [
+        item for item in _rows(runs) if item.get("event") == "workflow_dispatch"
+    ]
+    if not candidate_runs:
+        raise PreflightError("manual_run_missing")
+    run: dict[str, Any] = {}
+    run_id = 0
+    for candidate in candidate_runs:
+        try:
+            candidate_id = int(candidate.get("databaseId") or 0)
+        except (TypeError, ValueError) as exc:
+            raise PreflightError("manual_run_invalid") from exc
+        if candidate_id <= 0:
+            continue
+        candidate_run = _mapping(
+            _json_command(
+                [
+                    "gh",
+                    "run",
+                    "view",
+                    str(candidate_id),
+                    "--repo",
+                    repository,
+                    "--json",
+                    "databaseId,status,conclusion,event,headBranch,headSha,createdAt,updatedAt,jobs",
+                ]
+            )
+        )
+        # The default dispatch leaves the protected job skipped. Select the
+        # newest run that actually attempted it, even when it failed, so an
+        # older passing replay cannot mask the current protected state.
+        if (
+            candidate_run.get("event") == "workflow_dispatch"
+            and _protected_run_attempted(candidate_run)
+        ):
+            run_id = candidate_id
+            run = candidate_run
+            break
     if run_id <= 0:
-        raise PreflightError("successful_manual_run_missing")
-    run = _json_command(
-        [
-            "gh",
-            "run",
-            "view",
-            str(run_id),
-            "--repo",
-            repository,
-            "--json",
-            "databaseId,status,conclusion,event,headBranch,headSha,createdAt,updatedAt,jobs",
-        ]
-    )
+        raise PreflightError("protected_manual_run_missing")
     environment = _json_command(
         ["gh", "api", f"repos/{repository}/environments/{ENVIRONMENT_NAME}"]
     )
@@ -1148,16 +1176,18 @@ def collect_preflight(
             item
             for item in _rows(_mapping(artifacts).get("artifacts"))
             if str(item.get("name") or "").startswith(PROTECTED_ARTIFACT_PREFIXES)
-            and item.get("expired") is False
         ),
         {},
     )
     artifact_id = int(artifact.get("id") or 0)
-    if artifact_id <= 0:
-        raise PreflightError("protected_artifact_missing")
-    request, result, acceptance_request, acceptance_result = _artifact_bundle(
-        repository, artifact_id
-    )
+    request: dict[str, Any] = {}
+    result: dict[str, Any] = {}
+    acceptance_request: dict[str, Any] = {}
+    acceptance_result: dict[str, Any] = {}
+    if artifact_id > 0 and artifact.get("expired") is False:
+        request, result, acceptance_request, acceptance_result = _artifact_bundle(
+            repository, artifact_id
+        )
     current_branch = str(
         _run(["git", "branch", "--show-current"], cwd=root)
     ).strip()

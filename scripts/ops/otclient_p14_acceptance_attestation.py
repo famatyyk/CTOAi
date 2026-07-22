@@ -454,7 +454,10 @@ def _attest(args: argparse.Namespace) -> int:
             "authority": AUTHORITY,
         }
     )
-    return 0 if result["status"] == "passed" else 2
+    # A valid signed partial or blocked result is useful fail-closed evidence.
+    # Return success so the workflow can verify and upload it; invalid artifacts
+    # still raise and are reported as nonzero by main().
+    return 0
 
 
 def _verify_result(args: argparse.Namespace) -> int:
@@ -473,7 +476,9 @@ def _verify_result(args: argparse.Namespace) -> int:
             "authority": AUTHORITY,
         }
     )
-    return 0 if result["status"] == "passed" else 2
+    # Verification proves artifact integrity, not operational acceptance.
+    # Keep valid non-passed results available to the bounded preflight.
+    return 0
 
 
 def parse_args() -> argparse.Namespace:

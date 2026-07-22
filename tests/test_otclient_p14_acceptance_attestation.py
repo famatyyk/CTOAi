@@ -4,6 +4,7 @@ import copy
 import importlib.util
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from jsonschema import Draft202012Validator
@@ -204,6 +205,80 @@ def test_capability_subset_and_partial_result_are_derived_not_free_form(
     assert result["status"] == "partial"
     assert result["blockers"] == ["p14_canary_rehearsal_not_proven"]
     p14.verify_acceptance_bundle(request, result, key=KEY, key_id=KEY_ID)
+
+
+@pytest.mark.parametrize(
+    ("capabilities", "blocked", "expected_status", "expected_blockers"),
+    [
+        (
+            ["visual_regression", "canary_rehearsal"],
+            {"canary_rehearsal"},
+            "partial",
+            ["p14_canary_rehearsal_not_proven"],
+        ),
+        (
+            ["visual_regression"],
+            {"visual_regression"},
+            "blocked",
+            ["p14_visual_regression_not_proven"],
+        ),
+    ],
+)
+def test_valid_nonpassed_attestation_exits_success_for_verify_and_upload(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capabilities: list[str],
+    blocked: set[str],
+    expected_status: str,
+    expected_blockers: list[str],
+) -> None:
+    request = _acceptance_request(
+        monkeypatch,
+        tmp_path,
+        capabilities,
+    )
+    artifact_root = tmp_path / "acceptance-artifacts"
+    artifact_root.mkdir()
+    (artifact_root / "acceptance-request.json").write_text(
+        json.dumps(request), encoding="utf-8"
+    )
+    (artifact_root / "acceptance-report.json").write_text(
+        json.dumps(_report(request, blocked=blocked)), encoding="utf-8"
+    )
+    monkeypatch.setattr(p14.foundation, "_signing_material", lambda: (KEY, KEY_ID))
+    args = SimpleNamespace(artifact_root=str(artifact_root))
+
+    assert p14._attest(args) == 0
+    result = json.loads((artifact_root / "acceptance-result.json").read_text())
+    assert result["status"] == expected_status
+    assert result["blockers"] == expected_blockers
+    assert p14._verify_result(args) == 0
+
+
+def test_invalid_attestation_keeps_nonzero_exit_and_writes_no_result(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    request = _acceptance_request(monkeypatch, tmp_path, ["visual_regression"])
+    artifact_root = tmp_path / "invalid-acceptance-artifacts"
+    artifact_root.mkdir()
+    (artifact_root / "acceptance-request.json").write_text(
+        json.dumps(request), encoding="utf-8"
+    )
+    (artifact_root / "acceptance-report.json").write_text(
+        json.dumps({"schema_version": "ctoa.p14-acceptance-report.v1"}),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(p14.foundation, "_signing_material", lambda: (KEY, KEY_ID))
+    monkeypatch.setattr(
+        p14,
+        "parse_args",
+        lambda: SimpleNamespace(
+            handler=p14._attest, artifact_root=str(artifact_root)
+        ),
+    )
+
+    assert p14.main() == 2
+    assert not (artifact_root / "acceptance-result.json").exists()
 
 
 def test_passed_proof_requires_nonempty_digest_bound_evidence(

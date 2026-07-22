@@ -574,6 +574,102 @@ def test_collect_preflight_scopes_workflow_run_and_git_to_requested_targets(
     ]
 
 
+def test_collect_preflight_uses_newest_protected_attempt_even_when_failed(
+    monkeypatch, tmp_path: Path
+):
+    repository = "example/isolated-repository"
+    values = _inputs()
+    unprotected_run = {
+        **values["run"],
+        "databaseId": 30,
+        "jobs": [
+            {
+                "name": preflight.PROTECTED_JOB,
+                "status": "completed",
+                "conclusion": "skipped",
+            }
+        ],
+    }
+    failed_protected_run = {
+        **values["run"],
+        "databaseId": 29,
+        "conclusion": "failure",
+        "jobs": [
+            {
+                "name": preflight.PROTECTED_JOB,
+                "status": "completed",
+                "conclusion": "failure",
+                "steps": [],
+            }
+        ],
+    }
+    older_passing_protected_run = {
+        **values["run"],
+        "databaseId": 28,
+    }
+    run_views = {
+        "30": unprotected_run,
+        "29": failed_protected_run,
+        "28": older_passing_protected_run,
+    }
+    viewed_run_ids: list[str] = []
+    api_responses = {
+        f"repos/{repository}/environments/{preflight.ENVIRONMENT_NAME}": values[
+            "environment"
+        ],
+        f"repos/{repository}/environments/{preflight.ENVIRONMENT_NAME}/secrets": values[
+            "secrets"
+        ],
+        f"repos/{repository}/environments/{preflight.ENVIRONMENT_NAME}/variables": values[
+            "variables"
+        ],
+        f"repos/{repository}/environments/{preflight.ENVIRONMENT_NAME}/deployment-branch-policies": values[
+            "branch_policies"
+        ],
+        f"repos/{repository}/actions/runs/29/artifacts": {"artifacts": []},
+    }
+
+    def fake_json_command(command: list[str]):
+        if command[1:3] == ["workflow", "list"]:
+            return [values["workflow"]]
+        if command[1:3] == ["run", "list"]:
+            return [
+                {"databaseId": 30, "event": "workflow_dispatch"},
+                {"databaseId": 29, "event": "workflow_dispatch"},
+                {"databaseId": 28, "event": "workflow_dispatch"},
+            ]
+        if command[1:3] == ["run", "view"]:
+            viewed_run_ids.append(command[3])
+            return run_views[command[3]]
+        assert command[:2] == ["gh", "api"]
+        return api_responses[command[2]]
+
+    def fake_run(command: list[str], *, binary=False, cwd=None):
+        assert binary is False
+        assert cwd == tmp_path.resolve()
+        if command == ["git", "branch", "--show-current"]:
+            return f"{values['current_branch']}\n"
+        if command == ["git", "rev-parse", "HEAD"]:
+            return f"{values['current_head']}\n"
+        raise AssertionError(f"unexpected command: {command}")
+
+    monkeypatch.setattr(preflight, "_json_command", fake_json_command)
+    monkeypatch.setattr(
+        preflight,
+        "_artifact_bundle",
+        lambda *_args: pytest.fail("failed protected runs must not use older artifacts"),
+    )
+    monkeypatch.setattr(preflight, "_run", fake_run)
+
+    payload = preflight.collect_preflight(repository, workspace=tmp_path)
+
+    assert viewed_run_ids == ["30", "29"]
+    assert payload["workflow"]["protected_run_success"] is False
+    assert "p14_self_hosted_run_not_successful" in payload["hard_blockers"]
+    assert "p14_self_hosted_artifact_missing" in payload["hard_blockers"]
+    assert payload["operational_result"] == "missing"
+
+
 def test_main_forwards_workspace_to_collect_preflight(monkeypatch, tmp_path: Path):
     workspace = tmp_path / "workspace"
     workspace.mkdir()
