@@ -59,6 +59,12 @@ jobs:
       - name: Install contract dependencies
         run: python -m pip install pytest "jsonschema>=4.23.0,<5.0.0"
 
+      - name: Install pinned Lua runtime for behavioral contract tests
+        shell: pwsh
+        run: |
+          choco install lua --version=5.1.5.52 --yes --no-progress
+          lua -v
+
       - name: Run schema, tamper, and rollback contract tests
         run: >-
           python -m pytest
@@ -140,6 +146,12 @@ jobs:
 
       - name: Install contract dependencies
         run: python -m pip install pytest "jsonschema>=4.23.0,<5.0.0"
+
+      - name: Install pinned Lua runtime for behavioral contract tests
+        shell: pwsh
+        run: |
+          choco install lua --version=5.1.5.52 --yes --no-progress
+          lua -v
 
       - name: Validate protected signing material
         shell: pwsh
