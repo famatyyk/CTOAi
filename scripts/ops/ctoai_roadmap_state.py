@@ -13,7 +13,7 @@ import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, TextIO
 
 from jsonschema import Draft202012Validator, exceptions as jsonschema_exceptions
 
@@ -242,6 +242,35 @@ def _schema_errors(schema: dict[str, Any], payload: dict[str, Any]) -> list[str]
     ]
 
 
+def _previous_state_contract_blockers(
+    previous: LoadedJson, state_schema: LoadedJson
+) -> list[str]:
+    """Return fail-closed blockers before using a prior ledger as integrity input."""
+    if previous.status == "missing":
+        return []
+    if previous.status != "loaded" or previous.payload is None:
+        return [f"previous_state_{previous.status}"]
+    if (
+        state_schema.status != "loaded"
+        or state_schema.payload is None
+        or state_schema.sha256 != STATE_SCHEMA_SHA256
+    ):
+        return ["previous_state_schema_untrusted"]
+
+    blockers: list[str] = []
+    if _schema_errors(state_schema.payload, previous.payload):
+        blockers.append("previous_state_schema_invalid")
+    expected_state_sha = previous.payload.get("state_sha256")
+    state_basis = {
+        key: value for key, value in previous.payload.items() if key != "state_sha256"
+    }
+    if not isinstance(
+        expected_state_sha, str
+    ) or expected_state_sha != _canonical_sha256(state_basis):
+        blockers.append("previous_state_sha256_invalid")
+    return blockers
+
+
 def _source_health(
     root: Path, now: datetime, cache: dict[str, LoadedJson]
 ) -> tuple[list[dict[str, Any]], list[str], list[str]]:
@@ -354,7 +383,11 @@ def _source_health(
             contract_ok = False
         pending = impact == "advisory" and not contract_ok
         availability = (
-            "available" if contract_ok else "awaiting_external" if pending else "blocked"
+            "available"
+            if contract_ok
+            else "awaiting_external"
+            if pending
+            else "blocked"
         )
         checks.append(
             {
@@ -680,9 +713,7 @@ def build_state(
         for item in entries
         if isinstance(item, dict)
         for binding in (
-            item.get("bindings", [])
-            if isinstance(item.get("bindings"), list)
-            else []
+            item.get("bindings", []) if isinstance(item.get("bindings"), list) else []
         )
         if isinstance(binding, dict)
     }
@@ -690,11 +721,15 @@ def build_state(
         blockers.append("registry_binding_allowlist_mismatch")
 
     previous_loaded = _load_json(root, OUTPUT_JSON_PATH)
-    previous_payload = (
-        previous_loaded.payload if previous_loaded.status == "loaded" else None
+    previous_state_blockers = _previous_state_contract_blockers(
+        previous_loaded, state_schema
     )
-    if previous_loaded.status not in {"loaded", "missing"}:
-        blockers.append(f"previous_state_{previous_loaded.status}")
+    blockers.extend(previous_state_blockers)
+    previous_payload = (
+        previous_loaded.payload
+        if previous_loaded.status == "loaded" and not previous_state_blockers
+        else None
+    )
     previous_ledger = {
         str(item.get("decision_id")): item
         for item in (previous_payload or {}).get("ledger", [])
@@ -726,17 +761,21 @@ def build_state(
         and not registry_pin_mismatch
         and not registry_errors
     )
-    ledger = [
-        _build_ledger_entry(
-            root,
-            item,
-            current,
-            cache,
-            previous_ledger.get(str(item.get("decision_id"))),
-        )
-        for item in entries
-        if isinstance(item, dict)
-    ] if registry_is_trusted else []
+    ledger = (
+        [
+            _build_ledger_entry(
+                root,
+                item,
+                current,
+                cache,
+                previous_ledger.get(str(item.get("decision_id"))),
+            )
+            for item in entries
+            if isinstance(item, dict)
+        ]
+        if registry_is_trusted
+        else []
+    )
     if len(ledger) != 7:
         blockers.append("ledger_count_mismatch")
     for item in ledger:
@@ -766,11 +805,7 @@ def build_state(
     ready = not unique_blockers and preflight["ready"]
     warnings = list(dict.fromkeys([*source_warnings, *preflight_warnings]))
     readiness_status = (
-        "blocked"
-        if not ready
-        else "awaiting_external"
-        if warnings
-        else "ready"
+        "blocked" if not ready else "awaiting_external" if warnings else "ready"
     )
 
     basis: dict[str, Any] = {
@@ -963,8 +998,9 @@ def _timestamp_utc() -> str:
     )
 
 
-def _audit_id(at: str) -> str:
-    return f"{re.sub(r'[^0-9]', '', at)}-{ACTION_ID}"
+def _audit_id(at: str, write_phase: str = "completed") -> str:
+    suffix = "" if write_phase == "completed" else f"-{write_phase}"
+    return f"{re.sub(r'[^0-9]', '', at)}-{ACTION_ID}{suffix}"
 
 
 def _ensure_write_target(root: Path, relative: Path) -> Path:
@@ -997,6 +1033,23 @@ def _atomic_write(path: Path, raw: bytes) -> None:
             pass
 
 
+def _open_audit_sink(root: Path) -> tuple[TextIO, str]:
+    """Open the append-only audit sink before any confirmed state replacement."""
+    audit_path = _ensure_write_target(root, AUDIT_PATH)
+    try:
+        return audit_path.open(
+            "a", encoding="utf-8", newline="\n"
+        ), AUDIT_PATH.as_posix()
+    except OSError as exc:
+        raise ValueError(f"{AUDIT_PATH.as_posix()}:audit_sink_unavailable") from exc
+
+
+def _write_audit_record(audit_sink: TextIO, record: dict[str, Any]) -> None:
+    audit_sink.write(json.dumps(record, sort_keys=True, separators=(",", ":")) + "\n")
+    audit_sink.flush()
+    os.fsync(audit_sink.fileno())
+
+
 def _append_audit(
     root: Path,
     *,
@@ -1006,10 +1059,15 @@ def _append_audit(
     reason: str,
     output_hashes: dict[str, str],
     written_paths: list[str],
+    audit_sink: TextIO | None = None,
+    write_phase: str = "completed",
+    planned_paths: list[str] | None = None,
+    planned_output_hashes: dict[str, str] | None = None,
 ) -> tuple[str, str]:
     at = _timestamp_utc()
-    identifier = _audit_id(at)
-    audit_path = _ensure_write_target(root, AUDIT_PATH)
+    identifier = _audit_id(at, write_phase)
+    planned = planned_paths or []
+    planned_hashes = planned_output_hashes or {}
     record = {
         "at": at,
         "audit_id": identifier,
@@ -1022,17 +1080,27 @@ def _append_audit(
         "dry_run": dry_run,
         "authorized": authorized,
         "ok": ok,
+        "write_phase": write_phase,
         "reason": _sanitize_audit_text(reason),
         "output_preview": _sanitize_audit_text(
-            f"status={'completed' if ok else 'blocked'}; outputs={','.join(written_paths) or 'none'}"
+            "status="
+            f"{'completed' if ok else 'blocked'}; phase={write_phase}; "
+            f"outputs={','.join(written_paths) or 'none'}; "
+            f"planned={','.join(planned) or 'none'}"
         ),
         "output_hashes": output_hashes,
         "written_paths": written_paths,
+        "planned_paths": planned,
+        "planned_output_hashes": planned_hashes,
     }
-    with audit_path.open("a", encoding="utf-8", newline="\n") as handle:
-        handle.write(json.dumps(record, sort_keys=True, separators=(",", ":")) + "\n")
-        handle.flush()
-        os.fsync(handle.fileno())
+    if audit_sink is not None:
+        _write_audit_record(audit_sink, record)
+    else:
+        sink, _ = _open_audit_sink(root)
+        try:
+            _write_audit_record(sink, record)
+        finally:
+            sink.close()
     return identifier, AUDIT_PATH.as_posix()
 
 
@@ -1055,34 +1123,70 @@ def execute(
     ok = payload["status"] == "ready" and authorized
     written_paths: list[str] = []
     failure_reason = reason
+    audit_identifier = ""
+    audit_path = AUDIT_PATH.as_posix()
+    prepared_audit_identifier = ""
+    audit_sink: TextIO | None = None
+    output_paths = [
+        OUTPUT_JSON_PATH.as_posix(),
+        OUTPUT_MD_PATH.as_posix(),
+    ]
     if not authorized:
         failure_reason = f"Confirmed execution requires confirmation={CONFIRMATION!r}."
     elif payload["status"] != "ready":
         failure_reason = f"P13 state is blocked: {', '.join(payload['blockers'][:8]) or 'unknown blocker'}"
     elif not dry_run:
         try:
+            audit_sink, audit_path = _open_audit_sink(root)
+            prepared_audit_identifier, _ = _append_audit(
+                root,
+                dry_run=False,
+                authorized=True,
+                ok=False,
+                reason="P13 roadmap-state confirmed refresh audit sink prepared before output replacement",
+                output_hashes={},
+                written_paths=[],
+                audit_sink=audit_sink,
+                write_phase="prepared",
+                planned_paths=output_paths,
+                planned_output_hashes=output_hashes,
+            )
             json_path = _ensure_write_target(root, OUTPUT_JSON_PATH)
             markdown_path = _ensure_write_target(root, OUTPUT_MD_PATH)
             _atomic_write(json_path, json_raw)
+            written_paths.append(OUTPUT_JSON_PATH.as_posix())
             _atomic_write(markdown_path, markdown_raw)
-            written_paths = [OUTPUT_JSON_PATH.as_posix(), OUTPUT_MD_PATH.as_posix()]
+            written_paths.append(OUTPUT_MD_PATH.as_posix())
         except (OSError, ValueError) as exc:
             ok = False
-            failure_reason = f"Roadmap output write failed: {exc}"
-    audit_identifier, audit_path = _append_audit(
-        root,
-        dry_run=dry_run,
-        authorized=authorized,
-        ok=ok,
-        reason=failure_reason
-        or (
-            "P13 roadmap-state dry run"
-            if dry_run
-            else "P13 roadmap-state confirmed refresh"
-        ),
-        output_hashes=output_hashes if ok else {},
-        written_paths=written_paths,
-    )
+            failure_reason = f"Roadmap audit preparation or output write failed: {exc}"
+    completed_hashes = {
+        path: output_hashes[path] for path in written_paths if path in output_hashes
+    }
+    try:
+        audit_identifier, audit_path = _append_audit(
+            root,
+            dry_run=dry_run,
+            authorized=authorized,
+            ok=ok,
+            reason=failure_reason
+            or (
+                "P13 roadmap-state dry run"
+                if dry_run
+                else "P13 roadmap-state confirmed refresh"
+            ),
+            output_hashes=completed_hashes if written_paths else {},
+            written_paths=written_paths,
+            audit_sink=audit_sink,
+            write_phase="completed" if ok else "failed",
+        )
+    except (OSError, ValueError) as exc:
+        ok = False
+        failure_reason = f"Roadmap audit completion failed: {exc}"
+        audit_identifier = prepared_audit_identifier
+    finally:
+        if audit_sink is not None:
+            audit_sink.close()
     return {
         "schema_version": 1,
         "status": "dry_run" if ok and dry_run else ("completed" if ok else "blocked"),
@@ -1095,7 +1199,7 @@ def execute(
         "audit_path": audit_path,
         "state_status": payload["status"],
         "state_sha256": payload["state_sha256"],
-        "output_hashes": output_hashes if ok else {},
+        "output_hashes": completed_hashes if written_paths else {},
         "written_paths": written_paths,
         "blockers": payload["blockers"],
         "authority": payload["authority"],

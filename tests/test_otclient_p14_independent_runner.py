@@ -65,6 +65,7 @@ def roadmap_state() -> dict[str, object]:
 @pytest.mark.parametrize(
     "warning",
     [
+        "control_center_preflight_pending",
         "runtime_module_gates_pending",
         "p14_runner_preflight_pending",
         "p14_runner_preflight_invalid",

@@ -284,8 +284,7 @@ def _validate_roadmap_state(payload: dict[str, Any]) -> None:
     if (
         payload.get("schema_version") != "ctoa.roadmap-state.v2"
         or payload.get("status") != "ready"
-        or payload.get("readiness_status")
-        not in {"ready", "awaiting_external"}
+        or payload.get("readiness_status") not in {"ready", "awaiting_external"}
         or payload.get("phase") != "P13"
         or payload.get("phase_status") != "runtime_evidence_ready"
         or payload.get("next_phase") != "P14"
@@ -311,17 +310,16 @@ def _validate_roadmap_state(payload: dict[str, Any]) -> None:
         raise ContractError("roadmap_state_authority_invalid")
     if authority.get("roadmap_refresh_risk_class") != "safe_write":
         raise ContractError("roadmap_state_refresh_risk_invalid")
-    if (
-        authority.get("control_center_mode") != "read_only"
-        or authority.get("allowed_output_paths")
-        != [
-            "AI/generated/ROADMAP_STATE.json",
-            "AI/generated/ROADMAP_STATE.md",
-            "runtime/control-center/action-audit.jsonl",
-        ]
-    ):
+    if authority.get("control_center_mode") != "read_only" or authority.get(
+        "allowed_output_paths"
+    ) != [
+        "AI/generated/ROADMAP_STATE.json",
+        "AI/generated/ROADMAP_STATE.md",
+        "runtime/control-center/action-audit.jsonl",
+    ]:
         raise ContractError("roadmap_state_refresh_boundary_invalid")
     allowed_warnings = {
+        "control_center_preflight_pending",
         "runtime_module_gates_pending",
         "p14_runner_preflight_pending",
         "p14_runner_preflight_invalid",

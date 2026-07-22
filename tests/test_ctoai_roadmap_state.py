@@ -57,6 +57,40 @@ def _now() -> datetime:
     return datetime(2026, 7, 15, 12, 20, tzinfo=timezone.utc)
 
 
+def _ready_payload_for_execute() -> dict[str, object]:
+    return {
+        "schema_version": "ctoa.roadmap-state.v2",
+        "generated_at": "2026-07-15T12:20:00Z",
+        "status": "ready",
+        "readiness_status": "ready",
+        "phase": "P13",
+        "phase_status": "runtime_evidence_ready",
+        "next_phase": "P14",
+        "state_sha256": "a" * 64,
+        "previous_state_sha256": None,
+        "control_center_preflight": {},
+        "schema_registry": {},
+        "source_health": [],
+        "ledger": [],
+        "summary": {
+            "ledger_count": 0,
+            "accepted_count": 0,
+            "closed_no_action_count": 0,
+            "blocked_count": 0,
+            "tampered_count": 0,
+            "total_attempt_count": 0,
+            "runtime_authority_count": 0,
+            "live_authority_count": 0,
+        },
+        "freshness_status": "current",
+        "tamper_status": "passed",
+        "authority": {},
+        "blockers": [],
+        "warnings": [],
+        "next_action": "No further action is required for this isolated test payload.",
+    }
+
+
 def test_committed_p13_contract_and_state_are_self_validating() -> None:
     registry_schema_raw = (roadmap.ROOT / roadmap.REGISTRY_SCHEMA_PATH).read_bytes()
     registry_raw = (roadmap.ROOT / roadmap.REGISTRY_PATH).read_bytes()
@@ -206,7 +240,9 @@ def test_future_sandbox_gate_is_advisory_not_a_p13_outage(tmp_path: Path) -> Non
     state = roadmap.build_state(tmp_path, now=_now())
 
     gate_health = next(
-        item for item in state["source_health"] if item["name"] == "runtime_module_gates"
+        item
+        for item in state["source_health"]
+        if item["name"] == "runtime_module_gates"
     )
     assert state["status"] == "ready"
     assert state["readiness_status"] == "awaiting_external"
@@ -228,7 +264,9 @@ def test_malformed_sandbox_gate_observation_is_advisory(tmp_path: Path) -> None:
     state = roadmap.build_state(tmp_path, now=_now())
 
     gate_health = next(
-        item for item in state["source_health"] if item["name"] == "runtime_module_gates"
+        item
+        for item in state["source_health"]
+        if item["name"] == "runtime_module_gates"
     )
     assert state["status"] == "blocked"
     assert "runtime_module_gates_pending" in state["warnings"]
@@ -336,6 +374,78 @@ def test_confirmed_refresh_rejects_wrong_confirmation(tmp_path: Path) -> None:
     assert record["output_hashes"] == {}
 
 
+def test_confirmed_refresh_persists_prewrite_audit_before_state_replacement(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setattr(
+        roadmap,
+        "build_state",
+        lambda *_args, **_kwargs: _ready_payload_for_execute(),
+    )
+
+    result = roadmap.execute(
+        tmp_path,
+        dry_run=False,
+        confirmation=roadmap.CONFIRMATION,
+        now=_now(),
+    )
+
+    records = [
+        json.loads(line)
+        for line in (tmp_path / roadmap.AUDIT_PATH)
+        .read_text(encoding="utf-8")
+        .splitlines()
+    ]
+    assert result["status"] == "completed"
+    assert [record["write_phase"] for record in records] == ["prepared", "completed"]
+    assert records[0]["ok"] is False
+    assert records[0]["planned_paths"] == [
+        roadmap.OUTPUT_JSON_PATH.as_posix(),
+        roadmap.OUTPUT_MD_PATH.as_posix(),
+    ]
+    assert records[0]["output_hashes"] == {}
+    assert records[0]["planned_output_hashes"] == result["output_hashes"]
+    assert records[1]["ok"] is True
+    assert records[1]["written_paths"] == result["written_paths"]
+
+
+def test_confirmed_refresh_rejects_audit_sink_before_state_replacement(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setattr(
+        roadmap,
+        "build_state",
+        lambda *_args, **_kwargs: _ready_payload_for_execute(),
+    )
+    json_path = tmp_path / roadmap.OUTPUT_JSON_PATH
+    markdown_path = tmp_path / roadmap.OUTPUT_MD_PATH
+    json_path.parent.mkdir(parents=True, exist_ok=True)
+    json_path.write_text("previous-json", encoding="utf-8")
+    markdown_path.write_text("previous-markdown", encoding="utf-8")
+    audit_path = tmp_path / roadmap.AUDIT_PATH
+    audit_path.parent.mkdir(parents=True, exist_ok=True)
+    outside = tmp_path / "outside-audit.jsonl"
+    outside.write_text("outside", encoding="utf-8")
+    try:
+        audit_path.symlink_to(outside)
+    except OSError:
+        pytest.skip("Symlink creation is unavailable in this Windows environment")
+
+    result = roadmap.execute(
+        tmp_path,
+        dry_run=False,
+        confirmation=roadmap.CONFIRMATION,
+        now=_now(),
+    )
+
+    assert result["status"] == "blocked"
+    assert result["ok"] is False
+    assert result["written_paths"] == []
+    assert json_path.read_text(encoding="utf-8") == "previous-json"
+    assert markdown_path.read_text(encoding="utf-8") == "previous-markdown"
+    assert outside.read_text(encoding="utf-8") == "outside"
+
+
 def test_binding_tamper_blocks_heal_friend_closure(tmp_path: Path) -> None:
     _copy_inputs(tmp_path)
     preflight_path = (
@@ -379,6 +489,46 @@ def test_previous_terminal_evidence_drift_is_reported_as_tamper(
     assert p8_entry["integrity_status"] == "tampered"
     assert "terminal_evidence_changed_since_previous_state" in p8_entry["blockers"]
 
+
+def test_invalid_previous_state_schema_is_never_used_for_terminal_hashes(
+    tmp_path: Path,
+) -> None:
+    _copy_contract_files(tmp_path)
+    previous_path = tmp_path / roadmap.OUTPUT_JSON_PATH
+    previous_path.parent.mkdir(parents=True, exist_ok=True)
+    previous = json.loads(
+        (roadmap.ROOT / roadmap.OUTPUT_JSON_PATH).read_text(encoding="utf-8")
+    )
+    previous["ledger"] = []
+    previous["state_sha256"] = roadmap._canonical_sha256(
+        {key: value for key, value in previous.items() if key != "state_sha256"}
+    )
+    previous_path.write_text(json.dumps(previous), encoding="utf-8")
+
+    state = roadmap.build_state(tmp_path, now=_now())
+
+    assert state["status"] == "blocked"
+    assert "previous_state_schema_invalid" in state["blockers"]
+    assert all(item["previous_evidence_sha256"] is None for item in state["ledger"])
+
+
+def test_invalid_previous_state_self_hash_is_never_used_for_terminal_hashes(
+    tmp_path: Path,
+) -> None:
+    _copy_contract_files(tmp_path)
+    previous_path = tmp_path / roadmap.OUTPUT_JSON_PATH
+    previous_path.parent.mkdir(parents=True, exist_ok=True)
+    previous = json.loads(
+        (roadmap.ROOT / roadmap.OUTPUT_JSON_PATH).read_text(encoding="utf-8")
+    )
+    previous["state_sha256"] = "0" * 64
+    previous_path.write_text(json.dumps(previous), encoding="utf-8")
+
+    state = roadmap.build_state(tmp_path, now=_now())
+
+    assert state["status"] == "blocked"
+    assert "previous_state_sha256_invalid" in state["blockers"]
+    assert all(item["previous_evidence_sha256"] is None for item in state["ledger"])
 
 
 def test_registry_cannot_redirect_a_fixed_input_path(tmp_path: Path) -> None:
