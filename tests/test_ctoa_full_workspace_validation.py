@@ -221,3 +221,104 @@ def test_mcp_handshake_rejects_non_list_tools_with_stable_error(tools):
 
     assert ok is False
     assert summary == "invalid_mcp_tools_response"
+
+
+@pytest.mark.parametrize(
+    "missing_tool",
+    [
+        "ctoai_control_central",
+        "ctoai_full_workspace_validation_refresh",
+    ],
+)
+def test_mcp_handshake_requires_every_declared_read_only_and_safe_write_tool(
+    missing_tool,
+):
+    module = load_module()
+    responses = [
+        {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "result": {"serverInfo": {"name": "ctoai-engine-brain"}},
+        },
+        {
+            "jsonrpc": "2.0",
+            "id": 2,
+            "result": {
+                "tools": [
+                    {"name": name}
+                    for name in sorted(module.MCP_REQUIRED_TOOLS - {missing_tool})
+                ]
+            },
+        },
+        {
+            "jsonrpc": "2.0",
+            "id": 3,
+            "result": {"content": [{"type": "text", "text": '{"status":"ready"}'}]},
+        },
+    ]
+
+    ok, summary = module._mcp_handshake_ok(
+        "\n".join(json.dumps(response) for response in responses)
+    )
+
+    assert ok is False
+    assert summary == "mcp_required_tools_missing"
+
+
+def test_mcp_handshake_rejects_forbidden_write_tool_even_when_required_tools_exist():
+    module = load_module()
+    responses = [
+        {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "result": {"serverInfo": {"name": "ctoai-engine-brain"}},
+        },
+        {
+            "jsonrpc": "2.0",
+            "id": 2,
+            "result": {
+                "tools": [
+                    {"name": name}
+                    for name in sorted(
+                        module.MCP_REQUIRED_TOOLS | {"ctoai_live_deploy"}
+                    )
+                ]
+            },
+        },
+        {
+            "jsonrpc": "2.0",
+            "id": 3,
+            "result": {"content": [{"type": "text", "text": '{"status":"ready"}'}]},
+        },
+    ]
+
+    ok, summary = module._mcp_handshake_ok(
+        "\n".join(json.dumps(response) for response in responses)
+    )
+
+    assert ok is False
+    assert summary == "mcp_forbidden_tools_present"
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"status": "ready"},
+        {"status": "ready", "hard_blockers": None},
+        {"status": "ready", "hard_blockers": {"blocked": False}},
+        {"status": "ready", "hard_blockers": "none"},
+        {"status": "ready", "hard_blockers": ["not_ready"]},
+    ],
+)
+@pytest.mark.parametrize("kind", ["p7_operator_brief", "p7_generated_brief"])
+def test_p7_briefs_require_an_explicit_empty_hard_blockers_list(payload, kind):
+    module = load_module()
+    spec = next(item for item in module.VALIDATION_REGISTRY if item.kind == kind)
+
+    status, summary = module._classify_execution(
+        spec,
+        module.ExecutionResult(0, json.dumps(payload)),
+    )
+
+    assert status == "failed"
+    assert summary in {"operator_brief_not_ready", "generated_operator_brief_not_ready"}

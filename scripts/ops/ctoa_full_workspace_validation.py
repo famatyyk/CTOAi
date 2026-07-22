@@ -34,14 +34,31 @@ MAX_REASON_BYTES = 512
 MAX_RESULT_BYTES = 1024 * 1024
 MAX_EVIDENCE_BYTES = 64 * 1024
 
-MCP_REQUIRED_TOOLS = frozenset(
+MCP_REQUIRED_READ_ONLY_TOOLS = frozenset(
     {
+        "ctoai_control_central",
         "ctoai_engine_brain_status",
         "ctoai_engine_brain_self_check",
         "ctoai_engine_brain_brief",
         "ctoai_control_center_cockpit",
     }
 )
+MCP_ALLOWED_SAFE_WRITE_TOOLS = frozenset(
+    {
+        "ctoai_repo_hygiene_refresh",
+        "ctoai_api_cost_refresh",
+        "ctoai_evidence_pack_refresh",
+        "ctoai_engine_brain_refresh",
+        "ctoai_p7_cockpit_smoke_refresh",
+        "ctoai_roadmap_state_refresh",
+        "ctoai_full_workspace_validation_refresh",
+    }
+)
+# The MCP server is deliberately a closed surface: the five read-only tools and
+# the seven declared safe-write candidates are the complete policy.  Keeping
+# the combined name preserves the small test helper and makes omission checks
+# explicit at the handshake boundary.
+MCP_REQUIRED_TOOLS = MCP_REQUIRED_READ_ONLY_TOOLS | MCP_ALLOWED_SAFE_WRITE_TOOLS
 
 
 @dataclass(frozen=True)
@@ -328,13 +345,18 @@ def _mcp_handshake_ok(stdout: str) -> tuple[bool, str]:
     tools = listed.get("tools")
     if not isinstance(tools, list):
         return False, "invalid_mcp_tools_response"
-    tool_names = {
-        str(item.get("name"))
-        for item in tools
-        if isinstance(item, dict) and item.get("name")
-    }
+    tool_names: set[str] = set()
+    for item in tools:
+        if not isinstance(item, dict):
+            return False, "invalid_mcp_tools_response"
+        name = item.get("name")
+        if not isinstance(name, str) or not name.strip() or name in tool_names:
+            return False, "invalid_mcp_tools_response"
+        tool_names.add(name)
     if not MCP_REQUIRED_TOOLS.issubset(tool_names):
         return False, "mcp_required_tools_missing"
+    if tool_names - MCP_REQUIRED_TOOLS:
+        return False, "mcp_forbidden_tools_present"
     content = called.get("content")
     if called.get("isError") is True or not isinstance(content, list) or not content:
         return False, "mcp_brief_unavailable"
@@ -403,9 +425,7 @@ def _classify_execution(
         )
     if spec.kind == "p7_operator_brief":
         hard_blockers = payload.get("hard_blockers")
-        ready = payload.get("status") == "ready" and (
-            not isinstance(hard_blockers, list) or not hard_blockers
-        )
+        ready = payload.get("status") == "ready" and hard_blockers == []
         return (
             ("passed", "operator_brief_ready")
             if ready
@@ -413,9 +433,7 @@ def _classify_execution(
         )
     if spec.kind == "p7_generated_brief":
         hard_blockers = payload.get("hard_blockers")
-        ready = payload.get("status") == "ready" and (
-            not isinstance(hard_blockers, list) or not hard_blockers
-        )
+        ready = payload.get("status") == "ready" and hard_blockers == []
         return (
             ("passed", "generated_operator_brief_ready")
             if ready

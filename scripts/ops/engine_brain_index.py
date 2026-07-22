@@ -7,6 +7,7 @@ import ast
 import json
 import os
 import re
+import stat
 from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -30,6 +31,12 @@ DEFAULT_ACTION_AUDIT_MAX_AGE_SECONDS = 86_400
 MIN_ACTION_AUDIT_MAX_AGE_SECONDS = 300
 MAX_ACTION_AUDIT_MAX_AGE_SECONDS = 604_800
 ACTION_AUDIT_FUTURE_SKEW_SECONDS = 300
+MAX_VALIDATION_EVIDENCE_BYTES = 64 * 1024
+MAX_ACTION_AUDIT_BYTES = 1024 * 1024
+MAX_ACTION_AUDIT_LINE_BYTES = 20_000
+VALIDATION_EVIDENCE_SCHEMA_VERSION = 2
+VALIDATION_EVIDENCE_MAX_AGE_SECONDS = 86_400
+VALIDATION_EVIDENCE_FUTURE_SKEW_SECONDS = 300
 ROADMAP_MAX_BYTES = 256 * 1024
 ROADMAP_GENERATION_DOCS = {
     "feature_roadmap": {
@@ -588,16 +595,145 @@ def render_secret_guardrail(payload: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+class _EvidenceReadError(ValueError):
+    """A bounded local-evidence read failed without exposing source contents."""
+
+    def __init__(self, code: str):
+        super().__init__(code)
+        self.code = code
+
+
+def _reject_duplicate_json_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    payload: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in payload:
+            raise ValueError("duplicate_json_key")
+        payload[key] = value
+    return payload
+
+
+def _reject_non_finite_json_number(value: str) -> None:
+    raise ValueError(f"non_finite_json_number:{value}")
+
+
+def _is_reparse_path(path: Path) -> bool:
+    """Reject symlinks and Windows reparse points before reading evidence."""
+
+    try:
+        info = path.lstat()
+    except OSError:
+        return True
+    attributes = getattr(info, "st_file_attributes", 0)
+    reparse_flag = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
+    return stat.S_ISLNK(info.st_mode) or bool(attributes & reparse_flag)
+
+
+def _read_bounded_regular_file(path: Path, *, max_bytes: int) -> bytes:
+    """Read one stable regular evidence file without following a link."""
+
+    try:
+        before = path.lstat()
+    except FileNotFoundError as exc:
+        raise _EvidenceReadError("missing") from exc
+    except OSError as exc:
+        raise _EvidenceReadError("unreadable") from exc
+    if _is_reparse_path(path) or not stat.S_ISREG(before.st_mode):
+        raise _EvidenceReadError("regular_file_required")
+    if before.st_size > max_bytes:
+        raise _EvidenceReadError("file_too_large")
+    try:
+        raw = path.read_bytes()
+        after = path.lstat()
+    except OSError as exc:
+        raise _EvidenceReadError("unreadable") from exc
+    if (
+        _is_reparse_path(path)
+        or not stat.S_ISREG(after.st_mode)
+        or before.st_size != after.st_size
+        or after.st_size != len(raw)
+        or before.st_mtime_ns != after.st_mtime_ns
+        or getattr(before, "st_ino", 0) != getattr(after, "st_ino", 0)
+    ):
+        raise _EvidenceReadError("file_changed_during_read")
+    if len(raw) > max_bytes:
+        raise _EvidenceReadError("file_too_large")
+    return raw
+
+
+def _strict_json_object(raw: bytes) -> dict[str, Any]:
+    try:
+        payload = json.loads(
+            raw.decode("utf-8-sig"),
+            object_pairs_hook=_reject_duplicate_json_keys,
+            parse_constant=_reject_non_finite_json_number,
+        )
+    except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
+        raise _EvidenceReadError("invalid_json") from exc
+    if not isinstance(payload, dict):
+        raise _EvidenceReadError("json_object_required")
+    return payload
+
+
+def _parse_utc_timestamp(value: Any) -> datetime | None:
+    if not isinstance(value, str) or not value.strip():
+        return None
+    text = value.strip()
+    if text.endswith("Z"):
+        text = text[:-1] + "+00:00"
+    try:
+        parsed = datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        return None
+    return parsed.astimezone(timezone.utc)
+
+
+def _as_utc(value: datetime | None = None) -> datetime:
+    current = value or datetime.now(timezone.utc)
+    if current.tzinfo is None:
+        return current.replace(tzinfo=timezone.utc)
+    return current.astimezone(timezone.utc)
+
+
+def _validation_evidence_policy(
+    payload: dict[str, Any], *, now: datetime | None = None
+) -> tuple[bool, str]:
+    """Require current, successful evidence before P6/P7 can consume it."""
+
+    if payload.get("schema_version") != VALIDATION_EVIDENCE_SCHEMA_VERSION:
+        return False, "schema_version_invalid"
+    if payload.get("status") != "passed":
+        return False, "top_level_status_not_passed"
+    if not isinstance(payload.get("commands"), list):
+        return False, "commands_invalid"
+    generated_at = _parse_utc_timestamp(payload.get("generated_at_utc"))
+    if generated_at is None:
+        return False, "generated_at_invalid"
+    age_seconds = (_as_utc(now) - generated_at).total_seconds()
+    if age_seconds < -VALIDATION_EVIDENCE_FUTURE_SKEW_SECONDS:
+        return False, "generated_at_future"
+    if age_seconds > VALIDATION_EVIDENCE_MAX_AGE_SECONDS:
+        return False, "generated_at_stale"
+    return True, "passed"
+
+
 def read_validation_evidence(
     validation_path: Path = DEFAULT_VALIDATION_PATH,
+    *,
+    now: datetime | None = None,
 ) -> dict[str, Any]:
-    if not validation_path.exists():
-        return {}
     try:
-        payload = json.loads(validation_path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError:
+        payload = _strict_json_object(
+            _read_bounded_regular_file(
+                validation_path,
+                max_bytes=MAX_VALIDATION_EVIDENCE_BYTES,
+            )
+        )
+    except _EvidenceReadError:
         return {}
-    return payload if isinstance(payload, dict) else {}
+    valid, _reason = _validation_evidence_policy(payload, now=now)
+    return payload if valid else {}
 
 
 def _path_check(name: str, path: str) -> dict[str, str]:
@@ -843,6 +979,7 @@ def _personal_marketplace_plugin_check() -> dict[str, str]:
 
 
 def _validation_evidence_check(validation: dict[str, Any]) -> dict[str, Any]:
+    evidence_valid, evidence_error = _validation_evidence_policy(validation)
     commands = (
         validation.get("commands")
         if isinstance(validation.get("commands"), list)
@@ -860,15 +997,16 @@ def _validation_evidence_check(validation: dict[str, Any]) -> dict[str, Any]:
         if command_id in P6_REQUIRED_VALIDATION_IDS
         and command.get("status") not in {"passed", "warn"}
     )
-    status = "passed" if not missing and not failed else "blocked"
+    status = "passed" if evidence_valid and not missing and not failed else "blocked"
     return {
         "name": "full_workspace_validation_evidence",
         "status": status,
         "evidence": display_path(DEFAULT_VALIDATION_PATH)
         if status == "passed"
-        else "missing or failed command evidence",
+        else "missing, invalid, or failed command evidence",
         "missing": missing,
         "failed": failed,
+        "evidence_error": "" if evidence_valid else evidence_error,
     }
 
 
@@ -1523,6 +1661,25 @@ def _classify_action_audit_freshness(
     return "fresh" if age_seconds <= max_age_seconds else "stale"
 
 
+def _empty_action_audit_summary(
+    action_audit_path: Path,
+    freshness_max_age: int,
+    *,
+    integrity_status: str,
+) -> dict[str, Any]:
+    return {
+        "path": display_path(action_audit_path),
+        "record_count": 0,
+        "invalid_record_count": 0,
+        "latest_at": "",
+        "risk_counts": {},
+        "by_action": {},
+        "integrity_status": integrity_status,
+        "source_valid": False,
+        "action_audit_freshness_max_age_seconds": freshness_max_age,
+    }
+
+
 def read_action_audit_summary(
     action_audit_path: Path = DEFAULT_ACTION_AUDIT_PATH,
     *,
@@ -1546,92 +1703,92 @@ def read_action_audit_summary(
         else _action_audit_max_age_seconds()
     )
     try:
-        with action_audit_path.open("r", encoding="utf-8") as handle:
-            for line in handle:
-                record_count += 1
-                if len(line) > 20_000:
-                    invalid_record_count += 1
-                    continue
-                try:
-                    record = json.loads(line)
-                except json.JSONDecodeError:
-                    invalid_record_count += 1
-                    continue
-                if not isinstance(record, dict):
-                    invalid_record_count += 1
-                    continue
-                created_at = str(record.get("at") or record.get("created_at") or "")
-                if created_at:
-                    latest_at = created_at
-                risk_class = str(record.get("risk_class") or "").strip()
-                if risk_class:
-                    risk_counts[risk_class] += 1
-                action_id = str(record.get("action") or "").strip()
-                if not action_id:
-                    continue
-                entry = by_action.setdefault(
-                    action_id,
-                    {
-                        "record_count": 0,
-                        "dry_run_count": 0,
-                        "authorized_count": 0,
-                        "ok_count": 0,
-                        "qualifying_dry_run": False,
-                        "confirmed_ok_count": 0,
-                        "current": {},
-                        "risk_classes": Counter(),
-                    },
-                )
-                entry["record_count"] += 1
-                dry_run = record.get("dry_run") is True
-                authorized = record.get("authorized") is True
-                ok = record.get("ok") is True
-                preflight_status_present = "preflight_status" in record
-                preflight_status = str(record.get("preflight_status") or "").strip()
-                if dry_run:
-                    entry["dry_run_count"] += 1
-                if authorized:
-                    entry["authorized_count"] += 1
-                if ok:
-                    entry["ok_count"] += 1
-                if (
-                    risk_class == "safe_write"
-                    and dry_run
-                    and authorized
-                    and ok
-                    and preflight_status_present
-                    and preflight_status == "ready"
-                ):
-                    entry["qualifying_dry_run"] = True
-                if (
-                    risk_class == "safe_write"
-                    and not dry_run
-                    and authorized
-                    and ok
-                ):
-                    entry["confirmed_ok_count"] += 1
-                entry["current"] = {
-                    "at": created_at,
-                    "dry_run": dry_run,
-                    "authorized": authorized,
-                    "ok": ok,
-                    "risk_class": risk_class,
-                    "preflight_status": preflight_status,
-                    "preflight_status_present": preflight_status_present,
-                }
-                if risk_class:
-                    entry["risk_classes"][risk_class] += 1
-    except OSError:
-        return {
-            "path": display_path(action_audit_path),
-            "record_count": 0,
-            "invalid_record_count": 0,
-            "latest_at": "",
-            "risk_counts": {},
-            "by_action": {},
-            "action_audit_freshness_max_age_seconds": freshness_max_age,
-        }
+        raw = _read_bounded_regular_file(
+            action_audit_path,
+            max_bytes=MAX_ACTION_AUDIT_BYTES,
+        )
+    except _EvidenceReadError as exc:
+        return _empty_action_audit_summary(
+            action_audit_path,
+            freshness_max_age,
+            integrity_status="missing" if exc.code == "missing" else "invalid",
+        )
 
+    if raw and not raw.endswith(b"\n"):
+        return _empty_action_audit_summary(
+            action_audit_path,
+            freshness_max_age,
+            integrity_status="invalid",
+        )
+
+    for raw_line in raw.splitlines():
+        record_count += 1
+        if len(raw_line) > MAX_ACTION_AUDIT_LINE_BYTES:
+            invalid_record_count += 1
+            continue
+        try:
+            record = _strict_json_object(raw_line)
+        except _EvidenceReadError:
+            invalid_record_count += 1
+            continue
+        created_at = str(record.get("at") or record.get("created_at") or "")
+        if created_at:
+            latest_at = created_at
+        risk_class = str(record.get("risk_class") or "").strip()
+        if risk_class:
+            risk_counts[risk_class] += 1
+        action_id = str(record.get("action") or "").strip()
+        if not action_id:
+            continue
+        entry = by_action.setdefault(
+            action_id,
+            {
+                "record_count": 0,
+                "dry_run_count": 0,
+                "authorized_count": 0,
+                "ok_count": 0,
+                "qualifying_dry_run": False,
+                "confirmed_ok_count": 0,
+                "current": {},
+                "risk_classes": Counter(),
+            },
+        )
+        entry["record_count"] += 1
+        dry_run = record.get("dry_run") is True
+        authorized = record.get("authorized") is True
+        ok = record.get("ok") is True
+        preflight_status_present = "preflight_status" in record
+        preflight_status = str(record.get("preflight_status") or "").strip()
+        if dry_run:
+            entry["dry_run_count"] += 1
+        if authorized:
+            entry["authorized_count"] += 1
+        if ok:
+            entry["ok_count"] += 1
+        if (
+            risk_class == "safe_write"
+            and dry_run
+            and authorized
+            and ok
+            and preflight_status_present
+            and preflight_status == "ready"
+        ):
+            entry["qualifying_dry_run"] = True
+        if risk_class == "safe_write" and not dry_run and authorized and ok:
+            entry["confirmed_ok_count"] += 1
+        entry["current"] = {
+            "at": created_at,
+            "dry_run": dry_run,
+            "authorized": authorized,
+            "ok": ok,
+            "risk_class": risk_class,
+            "preflight_status": preflight_status,
+            "preflight_status_present": preflight_status_present,
+        }
+        if risk_class:
+            entry["risk_classes"][risk_class] += 1
+
+    source_valid = invalid_record_count == 0
     sanitized_by_action: dict[str, dict[str, Any]] = {}
     for action_id, entry in by_action.items():
         risk_classes = entry["risk_classes"]
@@ -1656,7 +1813,8 @@ def read_action_audit_summary(
             and current_record.get("ok") is True
         )
         audit_ready = bool(
-            entry["record_count"] > 0
+            source_valid
+            and entry["record_count"] > 0
             and entry["dry_run_count"] > 0
             and entry["authorized_count"] > 0
             and entry["ok_count"] > 0
@@ -1690,6 +1848,8 @@ def read_action_audit_summary(
         "latest_at": latest_at,
         "risk_counts": dict(sorted(risk_counts.items())),
         "by_action": sanitized_by_action,
+        "integrity_status": "valid" if source_valid else "invalid",
+        "source_valid": source_valid,
         "action_audit_freshness_max_age_seconds": freshness_max_age,
     }
 
@@ -1917,6 +2077,7 @@ def build_p7_cockpit_handoff_payload(
     release_evidence: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     action_readiness = action_readiness_payload or {}
+    action_audit_integrity = str(action_audit.get("integrity_status") or "invalid")
     enabled_tools = (
         action_readiness.get("enabled_safe_write_tools")
         if isinstance(action_readiness.get("enabled_safe_write_tools"), list)
@@ -1943,6 +2104,8 @@ def build_p7_cockpit_handoff_payload(
         warnings.append("release_evidence_missing")
     if not audit_record_count:
         warnings.append("action_audit_missing")
+    if action_audit_integrity != "valid":
+        blockers.append("action_audit_integrity_invalid")
     if action_readiness.get("status") not in {
         "first_safe_write_enabled",
         "safe_write_tools_enabled",
@@ -1983,6 +2146,7 @@ def build_p7_cockpit_handoff_payload(
             "record_count": audit_record_count,
             "latest_at": str(action_audit.get("latest_at") or ""),
             "invalid_record_count": int(action_audit.get("invalid_record_count") or 0),
+            "integrity_status": action_audit_integrity,
             "risk_counts": action_audit.get("risk_counts") or {},
         },
         "recommended_tool_order": [
@@ -2026,6 +2190,8 @@ def build_p7_action_readiness_payload(
         tool for tool in mcp_write_tools if tool not in enabled_tool_names
     ]
     selected_mcp_enabled = P7_SELECTED_SAFE_WRITE_MCP_TOOL in mcp_write_tools
+    action_audit_integrity = str(action_audit.get("integrity_status") or "invalid")
+    action_audit_valid = action_audit_integrity == "valid"
     audit_by_action = (
         action_audit.get("by_action")
         if isinstance(action_audit.get("by_action"), dict)
@@ -2061,7 +2227,9 @@ def build_p7_action_readiness_payload(
             else {}
         )
         audit_seen = bool(audit_entry.get("record_count", 0))
-        audit_ready = bool(audit_entry.get("audit_ready") is True)
+        audit_ready = bool(
+            action_audit_valid and audit_entry.get("audit_ready") is True
+        )
         missing_gates: list[str] = []
         if not source_ok:
             missing_gates.append("control_center_action_source_contract")
@@ -2085,6 +2253,8 @@ def build_p7_action_readiness_payload(
             missing_gates.append("control_center_action_current_success")
         if audit_seen and not audit_ready:
             missing_gates.append("control_center_action_audit_not_ready")
+        if not action_audit_valid:
+            missing_gates.append("control_center_action_audit_integrity_invalid")
         if not plugin_mcp_allowed:
             missing_gates.append("plugin_write_tool_not_enabled_by_policy")
         candidates.append(
@@ -2257,6 +2427,7 @@ def build_p7_action_readiness_payload(
             "path", display_path(DEFAULT_ACTION_AUDIT_PATH)
         ),
         "action_audit_record_count": action_audit.get("record_count", 0),
+        "action_audit_integrity_status": action_audit_integrity,
         "candidate_count": len(candidates),
         "source_ready_count": source_ready_count,
         "audited_candidate_count": audited_count,

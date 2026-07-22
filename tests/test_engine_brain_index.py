@@ -4,6 +4,7 @@ import json
 import subprocess
 import sys
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -200,6 +201,184 @@ def _write_action_audit_records(tmp_path, records: list[dict[str, Any]]):
         encoding="utf-8",
     )
     return path
+
+
+def _valid_validation_evidence(now: datetime) -> dict[str, Any]:
+    return {
+        "schema_version": engine_brain_index.VALIDATION_EVIDENCE_SCHEMA_VERSION,
+        "generated_at_utc": now.isoformat(),
+        "status": "passed",
+        "commands": [
+            {"id": command_id, "status": "passed"}
+            for command_id in sorted(engine_brain_index.P6_REQUIRED_VALIDATION_IDS)
+        ],
+    }
+
+
+@pytest.mark.parametrize(
+    "case",
+    ["duplicate_key", "schema", "top_level_status", "stale", "oversized"],
+)
+def test_validation_evidence_reader_rejects_invalid_or_stale_evidence(
+    tmp_path: Path, case: str
+):
+    now = datetime(2026, 7, 22, 12, tzinfo=timezone.utc)
+    path = tmp_path / "validation.json"
+    payload = _valid_validation_evidence(now)
+    if case == "duplicate_key":
+        encoded = b'{"schema_version":2,' + json.dumps(payload).encode("utf-8")[1:]
+    elif case == "schema":
+        payload["schema_version"] = 1
+        encoded = json.dumps(payload).encode("utf-8")
+    elif case == "top_level_status":
+        payload["status"] = "failed"
+        encoded = json.dumps(payload).encode("utf-8")
+    elif case == "stale":
+        payload["generated_at_utc"] = (
+            now
+            - timedelta(
+                seconds=engine_brain_index.VALIDATION_EVIDENCE_MAX_AGE_SECONDS + 1
+            )
+        ).isoformat()
+        encoded = json.dumps(payload).encode("utf-8")
+    else:
+        encoded = b"x" * (engine_brain_index.MAX_VALIDATION_EVIDENCE_BYTES + 1)
+    path.write_bytes(encoded)
+
+    validation = engine_brain_index.read_validation_evidence(path, now=now)
+    check = engine_brain_index._validation_evidence_check(validation)
+
+    assert case in {"duplicate_key", "schema", "top_level_status", "stale", "oversized"}
+    assert validation == {}
+    assert check["status"] == "blocked"
+
+
+def test_validation_evidence_rejects_symlink(tmp_path: Path):
+    now = datetime(2026, 7, 22, 12, tzinfo=timezone.utc)
+    source = tmp_path / "outside-validation.json"
+    source.write_text(json.dumps(_valid_validation_evidence(now)), encoding="utf-8")
+    path = tmp_path / "validation.json"
+    try:
+        path.symlink_to(source)
+    except OSError:
+        pytest.skip("symlink creation is unavailable on this Windows host")
+
+    assert engine_brain_index.read_validation_evidence(path, now=now) == {}
+
+
+def test_invalid_validation_evidence_blocks_p7_operator_readiness(tmp_path: Path):
+    now = datetime(2026, 7, 22, 12, tzinfo=timezone.utc)
+    path = tmp_path / "validation.json"
+    path.write_text('{"schema_version":2,"schema_version":2}', encoding="utf-8")
+    validation = engine_brain_index.read_validation_evidence(path, now=now)
+    validation_check = engine_brain_index._validation_evidence_check(validation)
+    workflow = {"status": "safe_write_ready", "allowed_mcp_tools": []}
+    action_readiness = {"status": "write_tools_blocked", "mcp_write_tool_count": 0}
+    brief = engine_brain_index.build_p7_operator_brief_payload(
+        now.isoformat(),
+        {"status": "ready_for_plugin_design", "checks": [validation_check]},
+        validation,
+        workflow,
+        action_readiness,
+        {"status": "implemented"},
+        {
+            "integrity_status": "valid",
+            "record_count": 0,
+            "by_action": {},
+            "risk_counts": {},
+        },
+        {"status": "ready", "hard_blockers": []},
+    )
+
+    assert brief["status"] == "needs_attention"
+    assert "p6:full_workspace_validation_evidence" in brief["hard_blockers"]
+
+
+def _assert_invalid_audit_blocks_p7(
+    path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(engine_brain_index, "_source_has_needles", lambda *_args: True)
+    now = datetime(2026, 7, 22, 12, tzinfo=timezone.utc)
+    audit = engine_brain_index.read_action_audit_summary(
+        path,
+        now=now,
+        max_age_seconds=300,
+    )
+    readiness = engine_brain_index.build_p7_action_readiness_payload(
+        now.isoformat(),
+        _p7_safe_write_workflow_fixture(),
+        audit,
+    )
+    workflow = _p7_safe_write_workflow_fixture()
+    workflow["status"] = "safe_write_ready"
+    brief = engine_brain_index.build_p7_operator_brief_payload(
+        now.isoformat(),
+        {"status": "ready_for_plugin_design", "checks": []},
+        _valid_validation_evidence(now),
+        workflow,
+        readiness,
+        {"status": "implemented"},
+        audit,
+        {"status": "ready", "hard_blockers": []},
+    )
+
+    assert audit["integrity_status"] == "invalid"
+    assert audit["source_valid"] is False
+    assert readiness["status"] == "write_tools_blocked"
+    assert readiness["enabled_safe_write_tools"] == []
+    assert all(
+        "control_center_action_audit_integrity_invalid" in candidate["missing_gates"]
+        for candidate in readiness["safe_write_candidates"]
+    )
+    assert brief["status"] == "needs_attention"
+    assert "cockpit_handoff:action_audit_integrity_invalid" in brief["hard_blockers"]
+
+
+@pytest.mark.parametrize("case", ["malformed", "truncated"])
+def test_invalid_or_truncated_action_audit_blocks_p7(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, case: str
+):
+    now = datetime(2026, 7, 22, 12, tzinfo=timezone.utc)
+    records = [
+        _p7_audit_record(action_id, now - timedelta(seconds=30))
+        for action_id in engine_brain_index.P7_ENABLED_SAFE_WRITE_MCP_TOOLS
+    ]
+    path = tmp_path / "action-audit.jsonl"
+    valid_lines = "\n".join(json.dumps(record) for record in records)
+    if case == "malformed":
+        path.write_text(valid_lines + "\n{\n", encoding="utf-8")
+    else:
+        path.write_text(valid_lines, encoding="utf-8")
+
+    _assert_invalid_audit_blocks_p7(path, monkeypatch)
+
+
+def test_oversized_action_audit_blocks_p7(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    path = tmp_path / "action-audit.jsonl"
+    path.write_bytes(b"x" * (engine_brain_index.MAX_ACTION_AUDIT_BYTES + 1))
+
+    _assert_invalid_audit_blocks_p7(path, monkeypatch)
+
+
+def test_symlinked_action_audit_blocks_p7(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    now = datetime(2026, 7, 22, 12, tzinfo=timezone.utc)
+    source = tmp_path / "outside-action-audit.jsonl"
+    source.write_text(
+        json.dumps(_p7_audit_record("evidence-pack-refresh", now)) + "\n",
+        encoding="utf-8",
+    )
+    path = tmp_path / "action-audit.jsonl"
+    try:
+        path.symlink_to(source)
+    except OSError:
+        pytest.skip("symlink creation is unavailable on this Windows host")
+
+    _assert_invalid_audit_blocks_p7(path, monkeypatch)
 
 
 def test_p7_action_readiness_enables_only_current_qualifying_audits(
