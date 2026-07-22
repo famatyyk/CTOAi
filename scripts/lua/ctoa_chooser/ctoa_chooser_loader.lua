@@ -1,7 +1,19 @@
 -- ctoa_chooser_loader.lua [CTOA Project Loader]
--- The only CTOA autoload entrypoint. It activates Helper only after an explicit choice.
+-- The only normal CTOA autoload entrypoint. It activates Helper only after an
+-- explicit choice, except for the fully flag-bound isolated P14 capture path.
 
 local LOADER_VERSION = "2.1.1"
+local P14_CAPTURE_FLAGS = {
+    CTOA_P14_CAPTURE_HELPER_ACTIVATION = "helper-ui-only",
+    CTOA_P14_ISOLATED_ENVIRONMENT = "true",
+    CTOA_P14_CAPTURE_CONTEXT = "guest",
+    CTOA_P14_OPERATOR_WORKSTATION_FOCUS_USED = "false",
+    CTOA_P14_OPERATOR_WORKSTATION_INPUT_USED = "false",
+    CTOA_P14_NETWORK_DISPATCH_USED = "false",
+    CTOA_P14_LIVE_CLIENT_ACCESSED = "false",
+    CTOA_P14_PROMOTION_ATTEMPTED = "false",
+}
+
 local PROJECTS = {
     helper = {
         module_name = "ctoa_otclient",
@@ -34,6 +46,7 @@ Loader.initialized = Loader.initialized == true
 Loader.callbacks = Loader.callbacks or nil
 Loader.window = Loader.window or nil
 Loader.show_event = Loader.show_event or nil
+Loader.capture_activation_event = Loader.capture_activation_event or nil
 
 local function log(message)
     local text = "[CTOA-LOADER] " .. tostring(message)
@@ -51,6 +64,18 @@ local function removeScheduled(event)
     if event and type(removeEvent) == "function" then
         pcall(removeEvent, event)
     end
+end
+
+-- This is deliberately narrower than a normal autoload. Only the isolated P14
+-- capture process supplies every flag, so ordinary client sessions still require
+-- an operator choice in the chooser UI.
+local function p14CaptureActivationRequested()
+    if not os or type(os.getenv) ~= "function" then return false end
+    for name, expected in pairs(P14_CAPTURE_FLAGS) do
+        local ok, value = pcall(function() return os.getenv(name) end)
+        if not ok or value ~= expected then return false end
+    end
+    return true
 end
 
 local function fileExists(path)
@@ -178,6 +203,27 @@ function Loader.activate(projectId)
     return true
 end
 
+local function activateP14CaptureHelper()
+    Loader.capture_activation_event = nil
+    if not p14CaptureActivationRequested() then
+        log("P14 capture activation rejected: required isolated flags are missing")
+        return
+    end
+    local ok, reason = Loader.activate("helper")
+    if not ok then
+        log("P14 capture Helper activation failed: " .. tostring(reason))
+    end
+end
+
+local function scheduleP14CaptureHelperActivation()
+    if Loader.capture_activation_event then return end
+    if type(scheduleEvent) == "function" then
+        Loader.capture_activation_event = scheduleEvent(activateP14CaptureHelper, 600)
+    else
+        activateP14CaptureHelper()
+    end
+end
+
 local function showChooser()
     if not Loader.online_session or Loader.active_project or Loader.window then return end
     local root = g_ui and g_ui.getRootWidget and g_ui.getRootWidget()
@@ -216,6 +262,12 @@ local function onGameStart()
     Loader.online_session = true
     removeScheduled(Loader.show_event)
     Loader.show_event = nil
+    removeScheduled(Loader.capture_activation_event)
+    Loader.capture_activation_event = nil
+    if p14CaptureActivationRequested() then
+        scheduleP14CaptureHelperActivation()
+        return
+    end
     if type(scheduleEvent) == "function" then
         Loader.show_event = scheduleEvent(function()
             Loader.show_event = nil
@@ -230,6 +282,8 @@ local function onGameEnd()
     Loader.online_session = false
     removeScheduled(Loader.show_event)
     Loader.show_event = nil
+    removeScheduled(Loader.capture_activation_event)
+    Loader.capture_activation_event = nil
     destroyChooser()
     terminateAllProjects("logout")
     log("Session closed; project selection cleared")

@@ -111,14 +111,32 @@ if (-not $explorer) {
 }
 
 $evidence = Get-StrictEvidenceRoot $EvidenceRoot $evidenceAllowlistRoot $clientRoot
-$reporter = Join-Path $clientRoot 'mods\ctoa_otclient\ctoa_client_capabilities.json'
+$captureNonce = [Guid]::NewGuid().ToString('N')
+$reporterRoot = (Resolve-Path -LiteralPath $evidenceAllowlistRoot).Path
+$reporter = Join-Path $reporterRoot ("p14-helper-runtime-$SourceRevision-$captureNonce.json")
+if (-not (Test-PathWithin $reporter $reporterRoot)) {
+    Stop-P14Capture('reporter_outside_evidence')
+}
 $timestamp = [DateTime]::UtcNow.ToString('o')
 $process = $null
 
 try {
-    $process = Start-Process -FilePath $client -WorkingDirectory $clientRoot -PassThru -WindowStyle Normal
+    # ProcessStartInfo supplies these values only to the isolated client child;
+    # neither the capture PowerShell process nor a later launch inherits them.
+    $activationName = 'CTOA_P14_CAPTURE_HELPER_ACTIVATION'
+    $reporterName = 'CTOA_P14_CAPTURE_REPORT_PATH'
+    $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
+    $startInfo.FileName = $client
+    $startInfo.WorkingDirectory = $clientRoot
+    $startInfo.UseShellExecute = $false
+    $startInfo.CreateNoWindow = $false
+    $startInfo.WindowStyle = [System.Diagnostics.ProcessWindowStyle]::Normal
+    $startInfo.EnvironmentVariables[$activationName] = 'helper-ui-only'
+    $startInfo.EnvironmentVariables[$reporterName] = $reporter
+    $process = [System.Diagnostics.Process]::Start($startInfo)
     $deadline = [DateTime]::UtcNow.AddSeconds($TimeoutSeconds)
     $onlineMarker = $null
+    $resolvedReporter = $null
     while ([DateTime]::UtcNow -lt $deadline) {
         $process.Refresh()
         if ($process.HasExited) {
@@ -126,12 +144,17 @@ try {
         }
         if (Test-Path -LiteralPath $reporter -PathType Leaf) {
             try {
-                $candidate = Get-Content -Raw -LiteralPath $reporter | ConvertFrom-Json
+                $candidateReporter = Get-StrictPath $reporter $reporterRoot 'reporter'
+                $candidate = Get-Content -Raw -LiteralPath $candidateReporter | ConvertFrom-Json
                 if ($candidate.online -eq $true -and $candidate.status -eq 'known_build') {
                     $onlineMarker = $candidate
+                    $resolvedReporter = $candidateReporter
                     break
                 }
             } catch {
+                if ($_.Exception.Message -ne 'p14_vm_capture:reporter_missing') {
+                    throw
+                }
                 # The helper reporter is written atomically; retry while it is changing.
             }
         }
@@ -162,7 +185,7 @@ try {
     }
 
     $capabilityCopy = Join-Path $evidence 'client-capabilities.json'
-    Copy-Item -LiteralPath $reporter -Destination $capabilityCopy -Force
+    Copy-Item -LiteralPath $resolvedReporter -Destination $capabilityCopy -Force
     $artifacts = @(
         [ordered]@{
             kind = 'in_world_capture'
@@ -212,6 +235,7 @@ try {
             online = [bool]$onlineMarker.online
             build_id = [string]$onlineMarker.build_id
             observed_at = [string]$onlineMarker.observed_at
+            reporter_path = $resolvedReporter
         }
         artifacts = $artifacts
     }

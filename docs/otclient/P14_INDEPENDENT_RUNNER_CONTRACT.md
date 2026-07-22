@@ -63,9 +63,12 @@ commands:
 
 - `prepare` derives the official Helper package manifest from the current tracked
   `scripts/lua/otclient` and `scripts/lua/ctoa_chooser` sources, rejecting any
-  untracked package input before signing. The chooser is the only P14 autoload
-  module; Helper remains disabled until the chooser explicitly activates it, and
-  the unimplemented Safe option is not exposed. The command embeds the terminal P13
+  untracked package input before signing. The chooser is the only normal P14
+  autoload module; Helper remains disabled until the chooser explicitly activates
+  it in ordinary sessions, and the unimplemented Safe option is not exposed. The
+  isolated P14 capture process may instead supply its complete, exact guest-context
+  flag set to select the same Helper UI-only loader path without focus or input; it
+  is not a generic or live-client autoload. The command embeds the terminal P13
   roadmap state, adds a rollback baseline, signs the canonical request, and writes
   only `request.json` under the selected artifact root.
 - `verify` accepts only that fixed request file, verifies the versioned schema,
@@ -228,6 +231,13 @@ $env:CTOA_P14_PROMOTION_ATTEMPTED = 'false'
 & C:\P14Runner\repo\scripts\windows\otclient_p14_vm_capture.ps1 `
   -SourceRevision $env:GITHUB_SHA
 ```
+
+For that child process only, the capture script adds the exact
+`CTOA_P14_CAPTURE_HELPER_ACTIVATION=helper-ui-only` flag and an allowlisted,
+nonce-bound `CTOA_P14_CAPTURE_REPORT_PATH` beneath `C:\P14Runner\evidence`. The
+passive reporter accepts that destination only when every guest-context flag is
+present, and the capture report records the resulting marker filename. Ordinary
+sessions retain the chooser and never inherit this activation path.
 
 The capture output is raw protected evidence. The acceptance report must be
 derived from its hashes and the independent canary/rollback manifests; no caller

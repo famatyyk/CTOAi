@@ -3,6 +3,8 @@ from __future__ import annotations
 import copy
 import importlib.util
 import json
+import os
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -492,6 +494,124 @@ def test_p14_chooser_activates_helper_through_its_explicit_safe_loader_api() -> 
     assert "loadRuntimeModules" not in chooser_loader
 
 
+def test_p14_chooser_allows_noninteractive_activation_only_for_the_complete_guest_capture_context() -> (
+    None
+):
+    chooser_loader = (
+        ROOT / "scripts" / "lua" / "ctoa_chooser" / "ctoa_chooser_loader.lua"
+    ).read_text(encoding="utf-8")
+
+    assert "local P14_CAPTURE_FLAGS" in chooser_loader
+    assert 'CTOA_P14_CAPTURE_HELPER_ACTIVATION = "helper-ui-only"' in chooser_loader
+    for flag, value in (
+        ("CTOA_P14_ISOLATED_ENVIRONMENT", "true"),
+        ("CTOA_P14_CAPTURE_CONTEXT", "guest"),
+        ("CTOA_P14_OPERATOR_WORKSTATION_FOCUS_USED", "false"),
+        ("CTOA_P14_OPERATOR_WORKSTATION_INPUT_USED", "false"),
+        ("CTOA_P14_NETWORK_DISPATCH_USED", "false"),
+        ("CTOA_P14_LIVE_CLIENT_ACCESSED", "false"),
+        ("CTOA_P14_PROMOTION_ATTEMPTED", "false"),
+    ):
+        assert f'{flag} = "{value}"' in chooser_loader
+    assert "p14CaptureActivationRequested" in chooser_loader
+    assert "scheduleP14CaptureHelperActivation" in chooser_loader
+    assert "if p14CaptureActivationRequested() then" in chooser_loader
+    assert 'Loader.activate("helper")' in chooser_loader
+    assert "showChooser()" in chooser_loader
+
+
+def test_p14_chooser_runtime_requires_every_guest_capture_flag(tmp_path: Path) -> None:
+    lua = shutil.which("lua")
+    assert lua, "Lua interpreter is required for P14 chooser validation"
+    chooser = ROOT / "scripts" / "lua" / "ctoa_chooser" / "ctoa_chooser_loader.lua"
+    probe = tmp_path / "p14_chooser_probe.lua"
+    probe.write_text(
+        """
+local chooserPath = arg[1]
+local expected = arg[2]
+local realDofile = dofile
+local activationCalls = 0
+local chooserCalls = 0
+
+g_game = {isOnline = function() return true end}
+g_resources = {fileExists = function() return true end}
+g_ui = {getRootWidget = function()
+    chooserCalls = chooserCalls + 1
+    return nil
+end}
+connect = function() end
+scheduleEvent = function(callback)
+    callback()
+    return nil
+end
+dofile = function(path)
+    if string.find(path, "ctoa_otclient_loader.lua", 1, true) then
+        local api = {loaded = false}
+        api.loadHelperOnly = function()
+            activationCalls = activationCalls + 1
+            api.loaded = true
+            return true
+        end
+        _G.CTOA_OTCLIENT = api
+        return api
+    end
+    return realDofile(path)
+end
+
+local loader = realDofile(chooserPath)
+assert(loader.init() == true)
+if expected == "capture" then
+    assert(activationCalls == 1)
+    assert(chooserCalls == 0)
+    assert(loader.active_project == "helper")
+else
+    assert(activationCalls == 0)
+    assert(chooserCalls == 1)
+    assert(loader.active_project == nil)
+end
+""",
+        encoding="utf-8",
+    )
+    capture_environment = {
+        name: value
+        for name, value in os.environ.items()
+        if not name.startswith("CTOA_P14_")
+    }
+    capture_environment.update(
+        {
+            "CTOA_P14_CAPTURE_HELPER_ACTIVATION": "helper-ui-only",
+            "CTOA_P14_ISOLATED_ENVIRONMENT": "true",
+            "CTOA_P14_CAPTURE_CONTEXT": "guest",
+            "CTOA_P14_OPERATOR_WORKSTATION_FOCUS_USED": "false",
+            "CTOA_P14_OPERATOR_WORKSTATION_INPUT_USED": "false",
+            "CTOA_P14_NETWORK_DISPATCH_USED": "false",
+            "CTOA_P14_LIVE_CLIENT_ACCESSED": "false",
+            "CTOA_P14_PROMOTION_ATTEMPTED": "false",
+        }
+    )
+
+    def run_probe(environment: dict[str, str], expected: str) -> None:
+        completed = subprocess.run(
+            [lua, str(probe), str(chooser), expected],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=10,
+            env=environment,
+        )
+        assert completed.returncode == 0, completed.stdout + completed.stderr
+
+    run_probe(capture_environment, "capture")
+
+    missing_flag = capture_environment.copy()
+    missing_flag.pop("CTOA_P14_OPERATOR_WORKSTATION_INPUT_USED")
+    run_probe(missing_flag, "chooser")
+
+    bad_flag = capture_environment.copy()
+    bad_flag["CTOA_P14_NETWORK_DISPATCH_USED"] = "true"
+    run_probe(bad_flag, "chooser")
+
+
 def test_docker_build_tests_use_a_git_capable_nonproduction_stage() -> None:
     dockerfile = DOCKERFILE.read_text(encoding="utf-8")
     workflow = DOCKER_BUILD_WORKFLOW.read_text(encoding="utf-8")
@@ -502,7 +622,8 @@ def test_docker_build_tests_use_a_git_capable_nonproduction_stage() -> None:
         "FROM runtime AS production"
     )
     assert dockerfile.rstrip().endswith("FROM runtime AS production")
-    assert "apt-get install -y --no-install-recommends git" not in dockerfile.split(
-        "FROM runtime AS test", maxsplit=1
-    )[0]
+    assert (
+        "apt-get install -y --no-install-recommends git"
+        not in dockerfile.split("FROM runtime AS test", maxsplit=1)[0]
+    )
     assert "target: test" in workflow
