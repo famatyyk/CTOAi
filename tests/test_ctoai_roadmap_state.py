@@ -41,6 +41,18 @@ def _copy_inputs(destination: Path) -> None:
     operator_brief_path.write_text(json.dumps(operator_brief), encoding="utf-8")
 
 
+def _copy_contract_files(destination: Path) -> None:
+    for relative in (
+        roadmap.REGISTRY_PATH,
+        roadmap.REGISTRY_SCHEMA_PATH,
+        roadmap.STATE_SCHEMA_PATH,
+    ):
+        source = roadmap.ROOT / relative
+        target = destination / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, target)
+
+
 def _now() -> datetime:
     return datetime(2026, 7, 15, 12, 20, tzinfo=timezone.utc)
 
@@ -155,6 +167,34 @@ def test_dry_run_writes_only_sanitized_audit(tmp_path: Path) -> None:
     assert "[redacted]" in audit
 
 
+def test_audit_redacts_github_token_variants(tmp_path: Path) -> None:
+    tokens = [
+        "sk-test_secret_value",
+        "ghp-test_secret_value",
+        "ghp_test_secret_value",
+        "gho_test_secret_value",
+        "ghu_test_secret_value",
+        "ghs_test_secret_value",
+        "ghr_test_secret_value",
+        "github_pat_test_secret_value",
+        "github_pat-test_secret_value",
+    ]
+
+    _, audit_path = roadmap._append_audit(
+        tmp_path,
+        dry_run=True,
+        authorized=True,
+        ok=True,
+        reason=f"P13 audit redaction {' '.join(tokens)}",
+        output_hashes={},
+        written_paths=[],
+    )
+
+    audit = (tmp_path / audit_path).read_text(encoding="utf-8")
+    assert all(token not in audit for token in tokens)
+    assert audit.count("[redacted]") >= len(tokens)
+
+
 def test_future_sandbox_gate_is_advisory_not_a_p13_outage(tmp_path: Path) -> None:
     _copy_inputs(tmp_path)
     gate_path = tmp_path / roadmap.SOURCE_HEALTH_PATHS["runtime_module_gates"]
@@ -173,6 +213,25 @@ def test_future_sandbox_gate_is_advisory_not_a_p13_outage(tmp_path: Path) -> Non
     assert state["blockers"] == []
     assert state["warnings"] == ["runtime_module_gates_pending"]
     assert gate_health["impact"] == "advisory"
+    assert gate_health["availability"] == "awaiting_external"
+    assert gate_health["contract_status"] == "pending"
+
+
+def test_malformed_sandbox_gate_observation_is_advisory(tmp_path: Path) -> None:
+    gate_path = tmp_path / roadmap.SOURCE_HEALTH_PATHS["runtime_module_gates"]
+    gate_path.parent.mkdir(parents=True, exist_ok=True)
+    gate_path.write_text(
+        json.dumps({"observed": []}),
+        encoding="utf-8",
+    )
+
+    state = roadmap.build_state(tmp_path, now=_now())
+
+    gate_health = next(
+        item for item in state["source_health"] if item["name"] == "runtime_module_gates"
+    )
+    assert state["status"] == "blocked"
+    assert "runtime_module_gates_pending" in state["warnings"]
     assert gate_health["availability"] == "awaiting_external"
     assert gate_health["contract_status"] == "pending"
 
@@ -337,6 +396,41 @@ def test_registry_cannot_redirect_a_fixed_input_path(tmp_path: Path) -> None:
     assert "registry_entry_allowlist_mismatch" in state["blockers"]
 
 
+@pytest.mark.parametrize("missing_field", ["path", "bindings"])
+def test_invalid_registry_entry_fails_closed_and_writes_audit(
+    tmp_path: Path,
+    missing_field: str,
+) -> None:
+    _copy_contract_files(tmp_path)
+    registry_path = tmp_path / roadmap.REGISTRY_PATH
+    registry = json.loads(registry_path.read_text(encoding="utf-8"))
+    del registry["entries"][0][missing_field]
+    registry_path.write_text(json.dumps(registry), encoding="utf-8")
+
+    state = roadmap.build_state(tmp_path, now=_now())
+    result = roadmap.execute(
+        tmp_path,
+        dry_run=False,
+        confirmation=roadmap.CONFIRMATION,
+        now=_now(),
+    )
+
+    assert state["status"] == "blocked"
+    assert any(
+        blocker.startswith("registry_validation:entries.0")
+        for blocker in state["blockers"]
+    )
+    assert "ledger_count_mismatch" in state["blockers"]
+    assert result["status"] == "blocked"
+    assert result["ok"] is False
+    assert result["written_paths"] == []
+    audit = json.loads(
+        (tmp_path / roadmap.AUDIT_PATH).read_text(encoding="utf-8").splitlines()[-1]
+    )
+    assert audit["authorized"] is True
+    assert audit["ok"] is False
+
+
 def test_registry_semantics_are_pinned_before_the_first_state(tmp_path: Path) -> None:
     _copy_inputs(tmp_path)
     registry_path = tmp_path / roadmap.REGISTRY_PATH
@@ -397,6 +491,19 @@ def test_symlinked_output_is_rejected(tmp_path: Path) -> None:
     assert result["status"] == "blocked"
     assert result["ok"] is False
     assert target.read_text(encoding="utf-8") == "{}"
+
+
+def test_dangling_symlink_input_is_rejected(tmp_path: Path) -> None:
+    dangling = tmp_path / "dangling-input"
+    try:
+        dangling.symlink_to(tmp_path / "outside-target.json")
+    except OSError:
+        pytest.skip("Symlink creation is unavailable in this Windows environment")
+
+    path, error = roadmap._fixed_path(tmp_path, dangling.name)
+
+    assert path is None
+    assert error == "symlink_rejected"
 
 
 def test_cli_has_no_caller_selected_output_path() -> None:

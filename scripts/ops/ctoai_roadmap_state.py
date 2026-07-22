@@ -123,7 +123,7 @@ def _fixed_path(root: Path, relative: str | Path) -> tuple[Path | None, str | No
     current = root
     for part in rel.parts:
         current = current / part
-        if current.exists() and current.is_symlink():
+        if current.is_symlink():
             return None, "symlink_rejected"
     resolved = candidate.resolve(strict=False)
     try:
@@ -333,6 +333,11 @@ def _source_health(
                 SOURCE_HEALTH_PATHS["helper_manifest"],
                 _load_json(root, SOURCE_HEALTH_PATHS["helper_manifest"]),
             )
+            observed = (
+                payload.get("observed")
+                if isinstance(payload.get("observed"), dict)
+                else {}
+            )
             gate_manifest = (
                 payload.get("manifest")
                 if isinstance(payload.get("manifest"), dict)
@@ -342,7 +347,7 @@ def _source_health(
                 contract_ok
                 and payload.get("status") == "passed"
                 and payload.get("failed") == []
-                and payload.get("observed", {}).get("runtime_state") == "disarmed"
+                and observed.get("runtime_state") == "disarmed"
                 and gate_manifest.get("sha256") == manifest.sha256
             )
         if freshness == "stale" and impact == "required":
@@ -674,7 +679,11 @@ def build_state(
         str(binding.get("path"))
         for item in entries
         if isinstance(item, dict)
-        for binding in item.get("bindings", [])
+        for binding in (
+            item.get("bindings", [])
+            if isinstance(item.get("bindings"), list)
+            else []
+        )
         if isinstance(binding, dict)
     }
     if observed_binding_paths != FIXED_BINDING_PATHS:
@@ -709,6 +718,14 @@ def build_state(
     if registry_tampered:
         blockers.append("schema_registry_changed_without_version")
 
+    registry_is_trusted = bool(
+        registry.status == "loaded"
+        and registry_schema.status == "loaded"
+        and registry.payload is not None
+        and registry_schema.payload is not None
+        and not registry_pin_mismatch
+        and not registry_errors
+    )
     ledger = [
         _build_ledger_entry(
             root,
@@ -719,7 +736,7 @@ def build_state(
         )
         for item in entries
         if isinstance(item, dict)
-    ]
+    ] if registry_is_trusted else []
     if len(ledger) != 7:
         blockers.append("ledger_count_mismatch")
     for item in ledger:
@@ -925,7 +942,11 @@ def _sanitize_audit_text(value: Any, max_length: int = 500) -> str:
         r"\1\2[redacted]",
         text,
     )
-    text = re.sub(r"(?i)\b(?:sk|ghp|github_pat)-[A-Za-z0-9_-]+", "[redacted]", text)
+    text = re.sub(
+        r"(?i)\b(?:sk-[A-Za-z0-9_-]+|gh[opusr][_-][A-Za-z0-9_-]+|github_pat[_-][A-Za-z0-9_-]+)\b",
+        "[redacted]",
+        text,
+    )
     text = text.replace("\r", " ").replace("\n", " ").strip()
     return (
         text
