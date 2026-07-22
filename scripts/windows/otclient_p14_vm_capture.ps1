@@ -35,6 +35,36 @@ function Get-StrictPath([string]$Path, [string]$Root, [string]$Code) {
     return $resolved
 }
 
+function Test-PathWithin([string]$Path, [string]$Root) {
+    $candidate = [IO.Path]::GetFullPath($Path).TrimEnd('\')
+    $allowlisted = [IO.Path]::GetFullPath($Root).TrimEnd('\')
+    return $candidate.Equals($allowlisted, [StringComparison]::OrdinalIgnoreCase) -or
+        $candidate.StartsWith($allowlisted + '\', [StringComparison]::OrdinalIgnoreCase)
+}
+
+function Get-StrictEvidenceRoot([string]$Path, [string]$AllowedRoot, [string]$ClientRoot) {
+    # Validate lexically before creating anything, then validate resolved paths
+    # again to reject junctions/symlinks that leave the evidence allowlist.
+    if (-not (Test-PathWithin $Path $AllowedRoot)) {
+        Stop-P14Capture('evidence_outside_allowlist')
+    }
+    if ((Test-PathWithin $Path $ClientRoot) -or (Test-PathWithin $ClientRoot $Path)) {
+        Stop-P14Capture('evidence_overlaps_client_root')
+    }
+    New-Item -ItemType Directory -Path $AllowedRoot -Force | Out-Null
+    New-Item -ItemType Directory -Path $Path -Force | Out-Null
+    $resolved = (Resolve-Path -LiteralPath $Path).Path
+    $allowlisted = (Resolve-Path -LiteralPath $AllowedRoot).Path
+    $client = (Resolve-Path -LiteralPath $ClientRoot).Path
+    if (-not (Test-PathWithin $resolved $allowlisted)) {
+        Stop-P14Capture('evidence_outside_allowlist')
+    }
+    if ((Test-PathWithin $resolved $client) -or (Test-PathWithin $client $resolved)) {
+        Stop-P14Capture('evidence_overlaps_client_root')
+    }
+    return $resolved
+}
+
 function Get-Sha256([string]$Path) {
     return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant()
 }
@@ -57,6 +87,7 @@ if ($TimeoutSeconds -lt 10 -or $TimeoutSeconds -gt 600) {
 
 $clientRoot = if ($env:CTOA_P14_CLIENT_ROOT) { $env:CTOA_P14_CLIENT_ROOT } else { 'C:\P14Runner\client' }
 $client = Get-StrictPath $ClientPath $clientRoot 'client'
+$evidenceAllowlistRoot = 'C:\P14Runner\evidence'
 if (-not [Environment]::UserInteractive) {
     Stop-P14Capture('interactive_desktop_required')
 }
@@ -79,8 +110,7 @@ if (-not $explorer) {
     Stop-P14Capture('guest_desktop_session_missing')
 }
 
-New-Item -ItemType Directory -Path $EvidenceRoot -Force | Out-Null
-$evidence = (Resolve-Path -LiteralPath $EvidenceRoot).Path
+$evidence = Get-StrictEvidenceRoot $EvidenceRoot $evidenceAllowlistRoot $clientRoot
 $reporter = Join-Path $clientRoot 'mods\ctoa_otclient\ctoa_client_capabilities.json'
 $timestamp = [DateTime]::UtcNow.ToString('o')
 $process = $null

@@ -954,13 +954,16 @@ def build_preflight(
     }
 
 
-def _run(command: list[str], *, binary: bool = False) -> str | bytes:
+def _run(
+    command: list[str], *, binary: bool = False, cwd: Path | None = None
+) -> str | bytes:
     completed = subprocess.run(
         command,
         check=False,
         capture_output=True,
         text=not binary,
         timeout=30,
+        cwd=cwd,
     )
     if completed.returncode != 0:
         raise PreflightError("external_command_failed")
@@ -993,11 +996,24 @@ def _artifact_bundle(
         raise PreflightError("artifact_archive_invalid")
     try:
         with zipfile.ZipFile(io.BytesIO(raw)) as archive:
-            members = {
-                PurePosixPath(item.filename).name: item
-                for item in archive.infolist()
-                if not item.is_dir()
-            }
+            members: dict[str, zipfile.ZipInfo] = {}
+            for item in archive.infolist():
+                if item.is_dir():
+                    raise PreflightError("artifact_members_invalid")
+                member_path = PurePosixPath(item.filename)
+                name = member_path.name
+                # Artifact input is untrusted. Require exactly one flat,
+                # allowlisted filename so a nested member cannot shadow a
+                # required file after basename normalization.
+                if (
+                    "\\" in item.filename
+                    or member_path.is_absolute()
+                    or len(member_path.parts) != 1
+                    or item.filename != name
+                    or name in members
+                ):
+                    raise PreflightError("artifact_members_invalid")
+                members[name] = item
             names = set(members)
             required_names = {"request.json", "result.json"}
             allowed_names = required_names | {
@@ -1018,13 +1034,13 @@ def _artifact_bundle(
                 raise PreflightError("artifact_members_invalid")
             values: dict[str, dict[str, Any]] = {}
             for name, member in members.items():
-                if name == "acceptance-report.json":
-                    continue
                 if (
                     member.file_size <= 0
                     or member.file_size > MAX_ARTIFACT_MEMBER_BYTES
                 ):
                     raise PreflightError("artifact_member_size_invalid")
+                if name == "acceptance-report.json":
+                    continue
                 payload = json.loads(archive.read(member))
                 if not isinstance(payload, dict):
                     raise PreflightError("artifact_payload_invalid")
@@ -1039,11 +1055,23 @@ def _artifact_bundle(
     )
 
 
-def collect_preflight(repository: str = DEFAULT_REPOSITORY) -> dict[str, Any]:
+def collect_preflight(
+    repository: str = DEFAULT_REPOSITORY, *, workspace: Path | None = None
+) -> dict[str, Any]:
     if not REPOSITORY_RE.fullmatch(repository):
         raise PreflightError("repository_invalid")
+    root = (workspace or Path(__file__).resolve().parents[2]).resolve(strict=True)
     workflow_rows = _json_command(
-        ["gh", "workflow", "list", "--all", "--json", "name,path,state,id"]
+        [
+            "gh",
+            "workflow",
+            "list",
+            "--all",
+            "--repo",
+            repository,
+            "--json",
+            "name,path,state,id",
+        ]
     )
     workflow = next(
         (item for item in _rows(workflow_rows) if item.get("path") == WORKFLOW_PATH),
@@ -1054,6 +1082,8 @@ def collect_preflight(repository: str = DEFAULT_REPOSITORY) -> dict[str, Any]:
             "gh",
             "run",
             "list",
+            "--repo",
+            repository,
             "--workflow",
             PurePosixPath(WORKFLOW_PATH).name,
             "--limit",
@@ -1080,6 +1110,8 @@ def collect_preflight(repository: str = DEFAULT_REPOSITORY) -> dict[str, Any]:
             "run",
             "view",
             str(run_id),
+            "--repo",
+            repository,
             "--json",
             "databaseId,status,conclusion,event,headBranch,headSha,createdAt,updatedAt,jobs",
         ]
@@ -1126,8 +1158,10 @@ def collect_preflight(repository: str = DEFAULT_REPOSITORY) -> dict[str, Any]:
     request, result, acceptance_request, acceptance_result = _artifact_bundle(
         repository, artifact_id
     )
-    current_branch = str(_run(["git", "branch", "--show-current"])).strip()
-    current_head = str(_run(["git", "rev-parse", "HEAD"])).strip()
+    current_branch = str(
+        _run(["git", "branch", "--show-current"], cwd=root)
+    ).strip()
+    current_head = str(_run(["git", "rev-parse", "HEAD"], cwd=root)).strip()
     return build_preflight(
         workflow=workflow,
         run=_mapping(run),
@@ -1181,12 +1215,12 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
+    root = args.workspace.resolve(strict=False)
     try:
-        payload = collect_preflight(args.repository)
+        payload = collect_preflight(args.repository, workspace=root)
     except (OSError, subprocess.SubprocessError, PreflightError):
         payload = unavailable_snapshot()
     if not args.no_write:
-        root = args.workspace.resolve(strict=False)
         output = root / "runtime" / "control-center" / "p14-runner-preflight.json"
         _write_atomic(output, payload)
     print(json.dumps(payload, indent=2))

@@ -3,7 +3,12 @@ from __future__ import annotations
 import datetime as dt
 import io
 import json
+import warnings
 import zipfile
+from pathlib import Path
+from types import SimpleNamespace
+
+import pytest
 
 from scripts.ops import otclient_p14_runner_preflight as preflight
 
@@ -446,3 +451,147 @@ def test_artifact_bundle_ignores_acceptance_report_without_reading_or_projecting
     assert bundle == (request, result, acceptance_request, acceptance_result)
     assert "acceptance-report.json" not in read_members
     assert "must-never-be-read-or-projected" not in str(bundle)
+
+
+def test_artifact_bundle_rejects_nested_members(monkeypatch):
+    request = _request()
+    result = _result(request)
+    archive_bytes = io.BytesIO()
+    with zipfile.ZipFile(archive_bytes, "w") as archive:
+        archive.writestr("request.json", json.dumps(request))
+        archive.writestr("result.json", json.dumps(result))
+        archive.writestr("nested/request.json", json.dumps(request))
+
+    monkeypatch.setattr(
+        preflight,
+        "_run",
+        lambda *_args, **_kwargs: archive_bytes.getvalue(),
+    )
+
+    with pytest.raises(preflight.PreflightError, match="artifact_members_invalid"):
+        preflight._artifact_bundle("famatyyk/CTOAi", 1)
+
+
+def test_artifact_bundle_rejects_duplicate_members(monkeypatch):
+    request = _request()
+    result = _result(request)
+    archive_bytes = io.BytesIO()
+    with zipfile.ZipFile(archive_bytes, "w") as archive:
+        archive.writestr("request.json", json.dumps(request))
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", UserWarning)
+            archive.writestr("request.json", json.dumps(request))
+        archive.writestr("result.json", json.dumps(result))
+
+    monkeypatch.setattr(
+        preflight,
+        "_run",
+        lambda *_args, **_kwargs: archive_bytes.getvalue(),
+    )
+
+    with pytest.raises(preflight.PreflightError, match="artifact_members_invalid"):
+        preflight._artifact_bundle("famatyyk/CTOAi", 1)
+
+
+def test_collect_preflight_scopes_workflow_run_and_git_to_requested_targets(
+    monkeypatch, tmp_path: Path
+):
+    repository = "example/isolated-repository"
+    values = _inputs()
+    selected_run = {**values["run"], "databaseId": 42}
+    artifacts = {
+        "artifacts": [
+            {**values["artifacts"]["artifacts"][0], "id": 9},
+        ]
+    }
+    commands: list[list[str]] = []
+    api_responses = {
+        f"repos/{repository}/environments/{preflight.ENVIRONMENT_NAME}": values[
+            "environment"
+        ],
+        f"repos/{repository}/environments/{preflight.ENVIRONMENT_NAME}/secrets": values[
+            "secrets"
+        ],
+        f"repos/{repository}/environments/{preflight.ENVIRONMENT_NAME}/variables": values[
+            "variables"
+        ],
+        f"repos/{repository}/environments/{preflight.ENVIRONMENT_NAME}/deployment-branch-policies": values[
+            "branch_policies"
+        ],
+        f"repos/{repository}/actions/runs/42/artifacts": artifacts,
+    }
+
+    def fake_json_command(command: list[str]):
+        commands.append(command)
+        if command[1:3] == ["workflow", "list"]:
+            return [values["workflow"]]
+        if command[1:3] == ["run", "list"]:
+            return [selected_run]
+        if command[1:3] == ["run", "view"]:
+            return selected_run
+        assert command[:2] == ["gh", "api"]
+        return api_responses[command[2]]
+
+    git_calls: list[tuple[list[str], Path | None]] = []
+
+    def fake_run(command: list[str], *, binary=False, cwd=None):
+        assert binary is False
+        git_calls.append((command, cwd))
+        if command == ["git", "branch", "--show-current"]:
+            return f"{values['current_branch']}\n"
+        if command == ["git", "rev-parse", "HEAD"]:
+            return f"{values['current_head']}\n"
+        raise AssertionError(f"unexpected command: {command}")
+
+    monkeypatch.setattr(preflight, "_json_command", fake_json_command)
+    monkeypatch.setattr(
+        preflight,
+        "_artifact_bundle",
+        lambda *_args: (
+            values["request"],
+            values["result"],
+            values["acceptance_request"],
+            values["acceptance_result"],
+        ),
+    )
+    monkeypatch.setattr(preflight, "_run", fake_run)
+
+    preflight.collect_preflight(repository, workspace=tmp_path)
+
+    scoped_commands = [
+        command
+        for command in commands
+        if command[1:3] in (["workflow", "list"], ["run", "list"], ["run", "view"])
+    ]
+    assert len(scoped_commands) == 3
+    assert all(
+        command[command.index("--repo") + 1] == repository
+        for command in scoped_commands
+    )
+    assert git_calls == [
+        (["git", "branch", "--show-current"], tmp_path.resolve()),
+        (["git", "rev-parse", "HEAD"], tmp_path.resolve()),
+    ]
+
+
+def test_main_forwards_workspace_to_collect_preflight(monkeypatch, tmp_path: Path):
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    args = SimpleNamespace(
+        repository="example/isolated-repository", workspace=workspace, no_write=True
+    )
+    received: dict[str, object] = {}
+
+    def fake_collect(repository: str, *, workspace: Path | None = None):
+        received["repository"] = repository
+        received["workspace"] = workspace
+        return {"status": "needs_attention"}
+
+    monkeypatch.setattr(preflight, "parse_args", lambda: args)
+    monkeypatch.setattr(preflight, "collect_preflight", fake_collect)
+
+    assert preflight.main() == 0
+    assert received == {
+        "repository": "example/isolated-repository",
+        "workspace": workspace.resolve(),
+    }

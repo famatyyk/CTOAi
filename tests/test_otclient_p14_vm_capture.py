@@ -30,6 +30,11 @@ def test_vm_capture_keeps_client_and_evidence_roots_separate() -> None:
     source = SCRIPT.read_text(encoding="utf-8")
 
     assert "Get-StrictPath $ClientPath $clientRoot 'client'" in source
-    assert "New-Item -ItemType Directory -Path $EvidenceRoot -Force" in source
+    assert "Get-StrictEvidenceRoot $EvidenceRoot $evidenceAllowlistRoot $clientRoot" in source
+    assert "$evidenceAllowlistRoot = 'C:\\P14Runner\\evidence'" in source
+    assert "evidence_outside_allowlist" in source
+    assert "evidence_overlaps_client_root" in source
+    assert "Test-PathWithin $Path $AllowedRoot" in source
+    assert "Test-PathWithin $ClientRoot $Path" in source
     assert "client-capabilities.json" in source
     assert "capture-report.json" in source
