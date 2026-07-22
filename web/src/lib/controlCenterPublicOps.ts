@@ -250,11 +250,16 @@ function safeCapabilityStatus(value: unknown): PublicCapabilityStatus {
 
 function publicReadiness(value: unknown): PublicReadinessStatus {
   if (typeof value !== "string") return "missing"
-  const normalized = value.toLowerCase()
-  if (/(blocked|failed|fail|offline|denied)/.test(normalized)) return "blocked"
-  if (/(missing|not_ready|unknown|unavailable)/.test(normalized)) return "missing"
-  if (/(warn|attention|stale|pending|review|aging)/.test(normalized)) return "needs_attention"
-  if (/(ready|pass|enabled|online|complete|implement)/.test(normalized)) return "ready"
+  const tokens = value.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean)
+  const hasToken = (...expected: string[]) => expected.some((item) => tokens.includes(item))
+  if (hasToken("blocked", "failed", "fail", "offline", "denied")) return "blocked"
+  if (hasToken("missing", "unknown", "unavailable", "incomplete") || (tokens.includes("not") && tokens.includes("ready"))) {
+    return "missing"
+  }
+  if (hasToken("warn", "attention", "stale", "pending", "review", "aging")) return "needs_attention"
+  if (hasToken("ready", "pass", "passed", "enabled", "online", "complete", "completed", "implement", "implemented")) {
+    return "ready"
+  }
   return "missing"
 }
 

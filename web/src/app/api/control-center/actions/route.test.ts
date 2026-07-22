@@ -85,6 +85,7 @@ describe("control center action capability route", () => {
     const response = await GET()
 
     expect(response.status).toBe(401)
+    expect(response.headers.get("Cache-Control")).toBe("private, no-store")
     expect(listControlCenterActionCapabilitiesMock).not.toHaveBeenCalled()
     expect(requireControlCenterReadAccessMock).toHaveBeenCalledWith("Control Center action capabilities")
   })
@@ -109,6 +110,17 @@ describe("control center action capability route", () => {
     expect(response.status).toBe(403)
     expect(runControlCenterActionMock).not.toHaveBeenCalled()
     expect(requireControlCenterReadAccessMock).not.toHaveBeenCalled()
+  })
+
+  it("returns private no-store headers when execution access is denied", async () => {
+    requireControlCenterReadAccessMock.mockResolvedValue(denyAccess(403))
+    const { POST } = await import("./route")
+    const response = await POST(actionRequest({ Origin: "http://localhost" }))
+
+    expect(response.status).toBe(403)
+    expect(response.headers.get("Cache-Control")).toBe("private, no-store")
+    expect(runControlCenterActionMock).not.toHaveBeenCalled()
+    expect(requireControlCenterReadAccessMock).toHaveBeenCalledWith("Control Center action execution")
   })
 
   it("validates same-origin Origin and Referer headers", async () => {

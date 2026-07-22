@@ -15,6 +15,11 @@ export const runtime = "nodejs"
 
 const privateNoStore = { "Cache-Control": "private, no-store" }
 
+function withPrivateNoStore(response: Response): Response {
+  response.headers.set("Cache-Control", "private, no-store")
+  return response
+}
+
 type ActionRequestBody = {
   actionId?: unknown
   confirmation?: unknown
@@ -77,7 +82,7 @@ function parseActionRequest(body: ActionRequestBody):
 
 export async function GET() {
   const access = await requireControlCenterReadAccess("Control Center action capabilities")
-  if (!access.ok) return access.response
+  if (!access.ok) return withPrivateNoStore(access.response)
 
   const payload = await listControlCenterActionCapabilities({ actor: access.viewer })
   return NextResponse.json(payload, { headers: privateNoStore })
@@ -91,7 +96,7 @@ export async function POST(request: Request) {
     }
 
     const access = await requireControlCenterReadAccess("Control Center action execution")
-    if (!access.ok) return access.response
+    if (!access.ok) return withPrivateNoStore(access.response)
 
     const parsed = parseActionRequest((await request.json()) as ActionRequestBody)
     if (!parsed.ok) {

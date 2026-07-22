@@ -196,3 +196,28 @@ def test_cli_rejects_command_and_path_overrides():
         )
 
     assert exc_info.value.code == 2
+
+
+@pytest.mark.parametrize("tools", [None, {}, "not-a-list"])
+def test_mcp_handshake_rejects_non_list_tools_with_stable_error(tools):
+    module = load_module()
+    responses = [
+        {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "result": {"serverInfo": {"name": "ctoai-engine-brain"}},
+        },
+        {"jsonrpc": "2.0", "id": 2, "result": {"tools": tools}},
+        {
+            "jsonrpc": "2.0",
+            "id": 3,
+            "result": {"content": [{"type": "text", "text": '{"status":"ready"}'}]},
+        },
+    ]
+
+    ok, summary = module._mcp_handshake_ok(
+        "\n".join(json.dumps(response) for response in responses)
+    )
+
+    assert ok is False
+    assert summary == "invalid_mcp_tools_response"

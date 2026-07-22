@@ -326,10 +326,12 @@ def _mcp_handshake_ok(stdout: str) -> tuple[bool, str]:
     if not isinstance(server, dict) or not str(server.get("name") or "").strip():
         return False, "invalid_mcp_initialize"
     tools = listed.get("tools")
+    if not isinstance(tools, list):
+        return False, "invalid_mcp_tools_response"
     tool_names = {
         str(item.get("name"))
         for item in tools
-        if isinstance(tools, list) and isinstance(item, dict) and item.get("name")
+        if isinstance(item, dict) and item.get("name")
     }
     if not MCP_REQUIRED_TOOLS.issubset(tool_names):
         return False, "mcp_required_tools_missing"

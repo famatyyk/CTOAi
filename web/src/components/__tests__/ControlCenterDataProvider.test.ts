@@ -131,4 +131,20 @@ describe("Control Center public ops projection", () => {
     expect(projectControlCenterOpsForPublicApi({ generatedAt: "2026-07-22T10:00:00.000Z" })).toBeNull()
     expect(isControlCenterPublicOps({ generatedAt: "2026-07-22T10:00:00.000Z" })).toBe(false)
   })
+
+  it("does not classify incomplete readiness as ready", () => {
+    const projected = projectControlCenterOpsForPublicApi({
+      generatedAt: "2026-07-22T10:00:00.000Z",
+      tiles: [],
+      details: {
+        engineBrain: {
+          p7ActionReadinessStatus: "incomplete",
+          p7SafeWriteToolDesignStatus: "safe_write_tools_enabled",
+        },
+      },
+    })
+
+    expect(projected?.details.engineBrain.p7.actionReadinessStatus).toBe("missing")
+    expect(projected?.details.engineBrain.p7.safeWriteToolDesignStatus).toBe("ready")
+  })
 })
