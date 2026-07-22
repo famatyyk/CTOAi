@@ -128,8 +128,9 @@ def test_control_central_fault_isolation_regression_contract():
 
 def test_evidence_safe_write_binds_audit_id_and_hashes_declared_outputs(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ):
-    """Evidence refresh binds its declared JSON output to its preallocated audit."""
+    """Binding remains testable without weakening the fixed-root guard."""
     mcp = load_plugin_module("ctoai_engine_brain_mcp")
     spec = mcp.SAFE_WRITE_SPECS[mcp.EVIDENCE_TOOL_NAME]
     audit_identifier = "20260721000000000000-evidence-pack-refresh"
@@ -158,6 +159,19 @@ def test_evidence_safe_write_binds_audit_id_and_hashes_declared_outputs(
         "runtime/evidence/latest.json",
         "runtime/evidence/latest.md",
     }
+
+    with pytest.raises(ValueError, match=mcp.SAFE_WRITE_UNAUTHORIZED_WORKSPACE):
+        mcp.safe_write_command(tmp_path, spec, audit_identifier)
+
+    # Command composition is unit-tested against a hermetic trusted root; the
+    # production guard above still rejects the arbitrary pytest workspace.
+    monkeypatch.setattr(mcp, "_trusted_safe_write_root", lambda: tmp_path)
+    monkeypatch.setattr(
+        mcp,
+        "_trusted_safe_write_file",
+        lambda root, relative_path: root / relative_path,
+    )
+    monkeypatch.setattr(mcp, "trusted_python", lambda root: root / "python")
     command = mcp.safe_write_command(tmp_path, spec, audit_identifier)
     assert "--source-audit-id" in command
     assert command[-1] == audit_identifier
