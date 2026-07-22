@@ -67,8 +67,9 @@ commands:
   autoload module; Helper remains disabled until the chooser explicitly activates
   it in ordinary sessions, and the unimplemented Safe option is not exposed. The
   isolated P14 capture process may instead supply its complete, exact guest-context
-  flag set to select the same Helper UI-only loader path without focus or input; it
-  is not a generic or live-client autoload. The command embeds the terminal P13
+  flag set to select the same Helper UI-only loader path without operator-workstation
+  focus or synthetic input; it is not a generic or live-client autoload. The command
+  embeds the terminal P13
   roadmap state, adds a rollback baseline, signs the canonical request, and writes
   only `request.json` under the selected artifact root.
 - `verify` accepts only that fixed request file, verifies the versioned schema,
