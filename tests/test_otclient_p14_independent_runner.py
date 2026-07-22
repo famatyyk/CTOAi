@@ -14,6 +14,8 @@ ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "ops" / "otclient_p14_independent_runner.py"
 WORKFLOW = ROOT / ".github" / "workflows" / "p14-independent-runner-contract.yml"
 CONTRACT_DOC = ROOT / "docs" / "otclient" / "P14_INDEPENDENT_RUNNER_CONTRACT.md"
+DOCKERFILE = ROOT / "Dockerfile"
+DOCKER_BUILD_WORKFLOW = ROOT / ".github" / "workflows" / "docker-build.yml"
 SPEC = importlib.util.spec_from_file_location("otclient_p14_independent_runner", SCRIPT)
 assert SPEC and SPEC.loader
 p14 = importlib.util.module_from_spec(SPEC)
@@ -294,7 +296,12 @@ def test_source_manifest_rejects_path_escape(
 
 
 def test_source_manifest_excludes_local_only_legacy_runtime_references() -> None:
-    package_names = {path.name for _, path in p14._package_sources()}
+    package_names = {
+        path.name
+        for path in p14.HELPER_SOURCE_PATH.iterdir()
+        if path.suffix.lower() in {".lua", ".otmod"}
+        and path.name not in p14.LOCAL_SOURCE_ONLY_HELPER_FILES
+    }
 
     assert p14.LOCAL_SOURCE_ONLY_HELPER_FILES == {
         "ctoa_native_combat.lua",
@@ -334,6 +341,23 @@ def test_source_manifest_rejects_untracked_package_source(
 
     with pytest.raises(p14.ContractError, match="helper_untracked_source_rejected"):
         p14._sanitize_helper_manifest()
+
+
+def test_source_manifest_rejects_when_git_tracking_is_unavailable(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    source = tmp_path / "scripts" / "lua" / "otclient" / "helper.lua"
+    source.parent.mkdir(parents=True)
+    source.write_text("return true\n", encoding="utf-8")
+    monkeypatch.setattr(p14, "ROOT", tmp_path)
+
+    def missing_git(*_args: object, **_kwargs: object) -> object:
+        raise FileNotFoundError("git unavailable")
+
+    monkeypatch.setattr(p14.subprocess, "run", missing_git)
+
+    with pytest.raises(p14.ContractError, match="helper_tracking_unavailable"):
+        p14._require_tracked_package_sources([("helper.lua", source)])
 
 
 def test_source_manifest_checks_reparse_before_regular_file_status(
@@ -452,3 +476,19 @@ def test_p14_bundle_uses_the_chooser_as_its_only_autoload_and_hides_safe() -> No
     assert "autoLoad: false" in helper_metadata
     assert "ctoa_safe" not in chooser_loader
     assert "CTOA SAFE" not in chooser_loader
+
+
+def test_docker_build_tests_use_a_git_capable_nonproduction_stage() -> None:
+    dockerfile = DOCKERFILE.read_text(encoding="utf-8")
+    workflow = DOCKER_BUILD_WORKFLOW.read_text(encoding="utf-8")
+
+    assert "FROM runtime AS test" in dockerfile
+    assert "apt-get install -y --no-install-recommends git" in dockerfile
+    assert dockerfile.index("FROM runtime AS test") < dockerfile.index(
+        "FROM runtime AS production"
+    )
+    assert dockerfile.rstrip().endswith("FROM runtime AS production")
+    assert "apt-get install -y --no-install-recommends git" not in dockerfile.split(
+        "FROM runtime AS test", maxsplit=1
+    )[0]
+    assert "target: test" in workflow
