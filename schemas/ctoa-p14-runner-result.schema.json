@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ctoai.local/schemas/ctoa-p14-runner-result.schema.json",
+  "title": "CTOAi P14 independent runner result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "generated_at",
+    "result_id",
+    "request_id",
+    "request_sha256",
+    "status",
+    "runner",
+    "checks",
+    "canary",
+    "rollback",
+    "authority",
+    "blockers",
+    "signature"
+  ],
+  "properties": {
+    "schema_version": {"const": "ctoa.p14-runner-result.v1"},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "result_id": {"type": "string", "pattern": "^p14-result-[a-f0-9]{16}$"},
+    "request_id": {"type": "string", "pattern": "^p14-[a-f0-9]{16}$"},
+    "request_sha256": {"$ref": "#/$defs/sha256"},
+    "status": {"enum": ["passed", "blocked"]},
+    "runner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "runner_id",
+        "source_revision",
+        "revision_match",
+        "clean_checkout_proven",
+        "artifact_only",
+        "isolated_display",
+        "operator_workstation_focus_used",
+        "operator_workstation_input_used",
+        "network_dispatch_used",
+        "live_client_accessed"
+      ],
+      "properties": {
+        "runner_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,63}$"},
+        "source_revision": {"type": "string", "pattern": "^[a-f0-9]{40}$"},
+        "revision_match": {"type": "boolean"},
+        "clean_checkout_proven": {"type": "boolean"},
+        "artifact_only": {"const": true},
+        "isolated_display": {"const": true},
+        "operator_workstation_focus_used": {"const": false},
+        "operator_workstation_input_used": {"const": false},
+        "network_dispatch_used": {"const": false},
+        "live_client_accessed": {"const": false}
+      }
+    },
+    "checks": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "status", "detail"],
+        "properties": {
+          "id": {"enum": ["request_schema", "bundle_signature", "roadmap_state_replay", "helper_manifest_replay", "rollback_manifest_replay"]},
+          "status": {"enum": ["passed", "blocked"]},
+          "detail": {"type": "string", "minLength": 1, "maxLength": 160}
+        }
+      }
+    },
+    "canary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "mode", "changed_file_count", "promotion_approved", "external_approval_required"],
+      "properties": {
+        "status": {"const": "not_executed"},
+        "mode": {"const": "artifact_manifest_only"},
+        "changed_file_count": {"const": 0},
+        "promotion_approved": {"const": false},
+        "external_approval_required": {"const": true}
+      }
+    },
+    "rollback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "baseline_manifest_sha256", "simulated_canary_manifest_sha256", "restored_manifest_sha256", "live_rollback_tested"],
+      "properties": {
+        "status": {"enum": ["manifest_replay_passed", "blocked"]},
+        "baseline_manifest_sha256": {"$ref": "#/$defs/sha256"},
+        "simulated_canary_manifest_sha256": {"$ref": "#/$defs/sha256"},
+        "restored_manifest_sha256": {"$ref": "#/$defs/sha256"},
+        "live_rollback_tested": {"const": false}
+      }
+    },
+    "authority": {"$ref": "#/$defs/authority"},
+    "blockers": {"type": "array", "maxItems": 16, "items": {"type": "string", "minLength": 1, "maxLength": 160}},
+    "signature": {"$ref": "#/$defs/signature"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["runtime_executor_added", "runtime_actions", "live_authority", "promotion_approved", "mcp_write_tool_enabled", "p12_reopened"],
+      "properties": {
+        "runtime_executor_added": {"const": false},
+        "runtime_actions": {"const": false},
+        "live_authority": {"const": false},
+        "promotion_approved": {"const": false},
+        "mcp_write_tool_enabled": {"const": false},
+        "p12_reopened": {"const": false}
+      }
+    },
+    "signature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm", "key_id", "value"],
+      "properties": {
+        "algorithm": {"const": "hmac-sha256"},
+        "key_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,63}$"},
+        "value": {"$ref": "#/$defs/sha256"}
+      }
+    }
+  }
+}

@@ -1,0 +1,222 @@
+name: P14 Independent Runner Contract
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/p14-independent-runner-contract.yml"
+      - "AI/generated/ROADMAP_STATE.json"
+      - "scripts/lua/ctoa_chooser/**"
+      - "requirements.txt"
+      - "schemas/ctoa-p14-acceptance-*.schema.json"
+      - "schemas/ctoa-p14-runner-*.schema.json"
+      - "scripts/lua/otclient/**"
+      - "scripts/ops/otclient_p14_acceptance_attestation.py"
+      - "scripts/ops/otclient_p14_independent_runner.py"
+      - "scripts/ops/otclient_p14_runner_preflight.py"
+      - "scripts/windows/otclient_p14_vm_capture.ps1"
+      - "tests/test_otclient_p14_acceptance_attestation.py"
+      - "tests/test_otclient_p14_independent_runner.py"
+      - "tests/test_otclient_p14_runner_preflight.py"
+      - "tests/test_otclient_p14_vm_capture.py"
+  workflow_dispatch:
+    inputs:
+      run_protected_replay:
+        description: Run the trusted P14 replay on a protected GitHub-hosted Windows runner
+        required: true
+        default: false
+        type: boolean
+      acceptance_report_b64:
+        description: Optional base64-encoded external isolated P14 acceptance report
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: p14-independent-runner-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  artifact-replay:
+    name: GitHub-hosted signed artifact replay
+    runs-on: windows-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out clean source
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install contract dependencies
+        run: python -m pip install pytest "jsonschema>=4.23.0,<5.0.0"
+
+      - name: Run schema, tamper, and rollback contract tests
+        run: >-
+          python -m pytest
+          tests/test_otclient_p14_independent_runner.py
+          tests/test_otclient_p14_acceptance_attestation.py
+          tests/test_otclient_p14_runner_preflight.py
+          tests/test_otclient_p14_vm_capture.py -q
+
+      - name: Create job-scoped signing material
+        shell: python
+        run: |
+          import os
+          import secrets
+
+          env_file = os.environ["GITHUB_ENV"]
+          with open(env_file, "a", encoding="utf-8") as handle:
+              handle.write(f"CTOA_P14_RUNNER_SIGNING_KEY={secrets.token_hex(32)}\n")
+              handle.write("CTOA_P14_RUNNER_KEY_ID=github-p14-contract\n")
+
+      - name: Prepare signed request from tracked sources
+        run: >-
+          python scripts/ops/otclient_p14_independent_runner.py prepare
+          --artifact-root runtime/p14_independent_runner
+
+      - name: Verify on the clean independent runner
+        run: >-
+          python scripts/ops/otclient_p14_independent_runner.py verify
+          --artifact-root runtime/p14_independent_runner
+          --runner-id github-windows-p14
+
+      - name: Verify signed result handoff
+        run: >-
+          python scripts/ops/otclient_p14_independent_runner.py verify-result
+          --artifact-root runtime/p14_independent_runner
+
+      - name: Prepare capability-driven isolated acceptance request
+        run: >-
+          python scripts/ops/otclient_p14_acceptance_attestation.py prepare
+          --artifact-root runtime/p14_independent_runner
+
+      - name: Verify signed acceptance attestation
+        if: ${{ hashFiles('runtime/p14_independent_runner/acceptance-result.json') != '' }}
+        run: >-
+          python scripts/ops/otclient_p14_acceptance_attestation.py verify-result
+          --artifact-root runtime/p14_independent_runner
+
+      - name: Upload non-promotable contract evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: p14-github-hosted-contract-${{ github.run_id }}
+          path: runtime/p14_independent_runner/*.json
+          if-no-files-found: error
+          retention-days: 7
+
+  protected-artifact-replay:
+    name: Protected GitHub-hosted Windows signed artifact replay
+    if: github.event_name == 'workflow_dispatch' && inputs.run_protected_replay == true
+    runs-on: windows-latest
+    environment:
+      name: p14-independent-runner
+    timeout-minutes: 15
+    env:
+      CTOA_P14_RUNNER_SIGNING_KEY: ${{ secrets.CTOA_P14_RUNNER_SIGNING_KEY }}
+      CTOA_P14_RUNNER_KEY_ID: ${{ vars.CTOA_P14_RUNNER_KEY_ID }}
+
+    steps:
+      - name: Check out clean source without persisted credentials
+        uses: actions/checkout@v7
+        with:
+          clean: true
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install contract dependencies
+        run: python -m pip install pytest "jsonschema>=4.23.0,<5.0.0"
+
+      - name: Validate protected signing material
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          if ([string]::IsNullOrWhiteSpace($env:CTOA_P14_RUNNER_SIGNING_KEY)) {
+            throw "Missing protected CTOA_P14_RUNNER_SIGNING_KEY environment secret."
+          }
+          if ([Text.Encoding]::UTF8.GetByteCount($env:CTOA_P14_RUNNER_SIGNING_KEY) -lt 32) {
+            throw "Protected signing key must contain at least 32 UTF-8 bytes."
+          }
+          if ($env:CTOA_P14_RUNNER_KEY_ID -notmatch '^[a-z0-9][a-z0-9._-]{2,63}$') {
+            throw "Protected CTOA_P14_RUNNER_KEY_ID environment variable is invalid."
+          }
+
+      - name: Bind provider-scoped evidence runner ID
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          Add-Content -LiteralPath $env:GITHUB_ENV -Value "CTOA_P14_RUNNER_ID=p14-github-hosted-windows"
+
+      - name: Run schema, tamper, and rollback contract tests
+        run: >-
+          python -m pytest
+          tests/test_otclient_p14_independent_runner.py
+          tests/test_otclient_p14_acceptance_attestation.py
+          tests/test_otclient_p14_runner_preflight.py
+          tests/test_otclient_p14_vm_capture.py -q
+
+      - name: Prepare request from the trusted clean checkout
+        run: >-
+          python scripts/ops/otclient_p14_independent_runner.py prepare
+          --artifact-root runtime/p14_independent_runner
+
+      - name: Verify request on the isolated runner
+        run: >-
+          python scripts/ops/otclient_p14_independent_runner.py verify
+          --artifact-root runtime/p14_independent_runner
+          --runner-id ${{ env.CTOA_P14_RUNNER_ID }}
+
+      - name: Verify signed result handoff
+        run: >-
+          python scripts/ops/otclient_p14_independent_runner.py verify-result
+          --artifact-root runtime/p14_independent_runner
+
+      - name: Prepare capability-driven isolated acceptance request
+        run: >-
+          python scripts/ops/otclient_p14_acceptance_attestation.py prepare
+          --artifact-root runtime/p14_independent_runner
+
+      - name: Inject external isolated acceptance report
+        if: ${{ inputs.acceptance_report_b64 != '' }}
+        shell: pwsh
+        env:
+          CTOA_P14_ACCEPTANCE_REPORT_B64: ${{ inputs.acceptance_report_b64 }}
+        run: |
+          $ErrorActionPreference = "Stop"
+          $bytes = [Convert]::FromBase64String($env:CTOA_P14_ACCEPTANCE_REPORT_B64)
+          if ($bytes.Length -gt 32768) { throw "Acceptance report input is too large." }
+          [IO.File]::WriteAllBytes("runtime/p14_independent_runner/acceptance-report.json", $bytes)
+
+      - name: Sign isolated acceptance result
+        if: ${{ hashFiles('runtime/p14_independent_runner/acceptance-report.json') != '' }}
+        run: >-
+          python scripts/ops/otclient_p14_acceptance_attestation.py attest
+          --artifact-root runtime/p14_independent_runner
+
+      - name: Verify signed acceptance attestation
+        if: ${{ hashFiles('runtime/p14_independent_runner/acceptance-result.json') != '' }}
+        run: >-
+          python scripts/ops/otclient_p14_acceptance_attestation.py verify-result
+          --artifact-root runtime/p14_independent_runner
+
+      - name: Upload protected contract evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: p14-protected-contract-${{ github.run_id }}
+          path: runtime/p14_independent_runner/*.json
+          if-no-files-found: error
+          retention-days: 7
