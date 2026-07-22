@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import importlib.util
 import json
+import subprocess
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -78,6 +79,21 @@ def _base_runner_bundle(
     )
     roadmap_path = tmp_path / "ROADMAP_STATE.json"
     roadmap_path.write_text(json.dumps(_roadmap_state()), encoding="utf-8")
+    subprocess.run(
+        ["git", "init", "--quiet"],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    subprocess.run(
+        ["git", "add", "scripts/lua/otclient", "scripts/lua/ctoa_chooser"],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    monkeypatch.setattr(p14.foundation, "ROOT", tmp_path)
     monkeypatch.setattr(p14.foundation, "HELPER_SOURCE_PATH", helper_source)
     monkeypatch.setattr(p14.foundation, "CHOOSER_SOURCE_PATH", chooser_source)
     monkeypatch.setattr(p14.foundation, "ROADMAP_STATE_PATH", roadmap_path)

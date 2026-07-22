@@ -1,19 +1,13 @@
 -- ctoa_chooser_loader.lua [CTOA Project Loader]
--- The only CTOA autoload entrypoint. It selects exactly one project after login.
+-- The only CTOA autoload entrypoint. It activates Helper only after an explicit choice.
 
-local LOADER_VERSION = "2.1.0"
+local LOADER_VERSION = "2.1.1"
 local PROJECTS = {
     helper = {
         module_name = "ctoa_otclient",
         loader_paths = {"/mods/ctoa_otclient/ctoa_otclient_loader.lua", "mods/ctoa_otclient/ctoa_otclient_loader.lua", "/scripts/lua/otclient/ctoa_otclient_loader.lua"},
         global_name = "CTOA_OTCLIENT",
         label = "CTOA Helper",
-    },
-    safe = {
-        module_name = "ctoa_safe",
-        loader_paths = {"/mods/ctoa_safe/ctoa_safe_loader.lua", "mods/ctoa_safe/ctoa_safe_loader.lua"},
-        global_name = "CTOA_SAFE_LOADER",
-        label = "CTOA Safe",
     },
 }
 
@@ -76,7 +70,6 @@ end
 
 local function terminateAllProjects(reason)
     terminateProject("helper", reason)
-    terminateProject("safe", reason)
     Loader.active_project = nil
     Loader.selected_project = nil
     Loader.activation_pending = false
@@ -166,7 +159,7 @@ function Loader.activate(projectId)
     end
 
     Loader.active_project = projectId
-    log(PROJECTS[projectId].label .. " active; the other project remains unloaded")
+    log(PROJECTS[projectId].label .. " active; no other CTOA project is packaged")
     return true
 end
 
@@ -177,7 +170,7 @@ local function showChooser()
 
     local rootWidth = root.getWidth and root:getWidth() or 1024
     local rootHeight = root.getHeight and root:getHeight() or 768
-    local width, height = 360, 218
+    local width, height = 360, 156
     local left = math.floor((rootWidth - width) / 2)
     local top = math.floor((rootHeight - height) / 2.4)
     local window = createWidget("HeadlessWindow", root, "ctoaProjectChooser", "", left, top, width, height)
@@ -190,7 +183,7 @@ local function showChooser()
 
     setBackground(createWidget("Label", window, "ctoaProjectHeader", "", 0, 0, width, 28), "#101010")
     setColor(createWidget("Label", window, "ctoaProjectTitle", "CTOA Loader " .. LOADER_VERSION, 12, 7, 250, 16), "#f0c56a")
-    setColor(createWidget("Label", window, "ctoaProjectSubtitle", "Wybierz jeden projekt dla tej sesji:", 12, 38, 330, 16), "#d0d0d0")
+    setColor(createWidget("Label", window, "ctoaProjectSubtitle", "Aktywuj Helper dla tej sesji:", 12, 38, 330, 16), "#d0d0d0")
 
     local helperButton = createWidget("Button", window, "ctoaChooseHelper", "CTOA HELPER", 12, 62, 336, 52)
     if helperButton then
@@ -198,14 +191,7 @@ local function showChooser()
         helperButton.onClick = function() Loader.activate("helper") end
     end
     setColor(createWidget("Label", window, "ctoaHelperHint", "Main project P8-P16", 26, 95, 250, 14), "#a0a0c0")
-
-    local safeButton = createWidget("Button", window, "ctoaChooseSafe", "CTOA SAFE", 12, 124, 336, 52)
-    if safeButton then
-        setBackground(safeButton, "#1a3020")
-        safeButton.onClick = function() Loader.activate("safe") end
-    end
-    setColor(createWidget("Label", window, "ctoaSafeHint", "Minimal Safe panel - Helper stays unloaded", 26, 157, 300, 14), "#8fcf8f")
-    setColor(createWidget("Label", window, "ctoaSessionHint", "Selection resets each session; Safe starts disarmed.", 12, 190, 336, 14), "#888888")
+    setColor(createWidget("Label", window, "ctoaSessionHint", "Selection resets each session; Helper starts disarmed.", 12, 126, 336, 14), "#888888")
     if window.show then pcall(function() window:show() end) end
     if window.raise then pcall(function() window:raise() end) end
 end

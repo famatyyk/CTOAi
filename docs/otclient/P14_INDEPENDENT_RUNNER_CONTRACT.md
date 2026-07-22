@@ -62,7 +62,10 @@ remain unproven and are not used as an authorization signal.
 commands:
 
 - `prepare` derives the official Helper package manifest from the current tracked
-  `scripts/lua/otclient` and `scripts/lua/ctoa_chooser` sources, embeds the terminal P13
+  `scripts/lua/otclient` and `scripts/lua/ctoa_chooser` sources, rejecting any
+  untracked package input before signing. The chooser is the only P14 autoload
+  module; Helper remains disabled until the chooser explicitly activates it, and
+  the unimplemented Safe option is not exposed. The command embeds the terminal P13
   roadmap state, adds a rollback baseline, signs the canonical request, and writes
   only `request.json` under the selected artifact root.
 - `verify` accepts only that fixed request file, verifies the versioned schema,

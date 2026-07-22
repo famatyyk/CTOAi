@@ -4,6 +4,6 @@ Module
   author: CTOA AI Toolkit
   website: github.com/famatyyk/CTOAi
   version: 2.2.1
-  autoLoad: true
+  autoLoad: false
   autoLoadPriority: 1000
   scripts: [ ctoa_otclient_loader ]

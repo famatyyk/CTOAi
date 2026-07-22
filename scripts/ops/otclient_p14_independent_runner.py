@@ -157,6 +157,51 @@ def _safe_relative_path(value: Any) -> str:
     return candidate.as_posix()
 
 
+def _require_tracked_package_sources(sources: list[tuple[str, Path]]) -> None:
+    """Reject package inputs that are not tracked by the reviewed Git revision."""
+    try:
+        repository_root = ROOT.resolve(strict=True)
+    except OSError as exc:
+        raise ContractError("helper_tracking_unavailable") from exc
+
+    relative_paths: set[str] = set()
+    for _, source_path in sources:
+        if _is_reparse(source_path):
+            raise ContractError("helper_reparse_file_rejected")
+        try:
+            relative_path = source_path.resolve(strict=True).relative_to(repository_root)
+        except (OSError, RuntimeError, ValueError) as exc:
+            raise ContractError("helper_source_outside_repository") from exc
+        relative_paths.add(relative_path.as_posix())
+
+    if not relative_paths:
+        raise ContractError("helper_file_count_invalid")
+    try:
+        result = subprocess.run(
+            [
+                "git",
+                "ls-files",
+                "-z",
+                "--error-unmatch",
+                "--",
+                *sorted(relative_paths),
+            ],
+            cwd=ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise ContractError("helper_tracking_unavailable") from exc
+    if result.returncode != 0:
+        raise ContractError("helper_untracked_source_rejected")
+
+    tracked_paths = {item for item in result.stdout.split("\0") if item}
+    if tracked_paths != relative_paths:
+        raise ContractError("helper_untracked_source_rejected")
+
+
 def _package_sources() -> list[tuple[str, Path]]:
     if not HELPER_SOURCE_PATH.is_dir() or _is_reparse(HELPER_SOURCE_PATH):
         raise ContractError("helper_source_root_invalid")
@@ -190,6 +235,7 @@ def _package_sources() -> list[tuple[str, Path]]:
     sources.extend((f"mods/ctoa_otclient/{path.name}", path) for path in helper_files)
     if not 1 <= len(sources) <= MAX_HELPER_FILES:
         raise ContractError("helper_file_count_invalid")
+    _require_tracked_package_sources(sources)
     return sources
 
 

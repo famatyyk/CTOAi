@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import importlib.util
 import json
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -88,7 +89,7 @@ def test_runner_rejects_unknown_roadmap_advisory() -> None:
 
 def configure_sources(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     helper_source = tmp_path / "scripts" / "lua" / "otclient"
-    chooser_source = tmp_path / "mods" / "ctoa_chooser"
+    chooser_source = tmp_path / "scripts" / "lua" / "ctoa_chooser"
     helper_source.mkdir(parents=True)
     chooser_source.mkdir(parents=True)
     helper_file = helper_source / "helper.lua"
@@ -104,6 +105,21 @@ def configure_sources(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     roadmap_path = tmp_path / "ROADMAP_STATE.json"
     roadmap_path.write_text(json.dumps(roadmap_state()), encoding="utf-8")
 
+    subprocess.run(
+        ["git", "init", "--quiet"],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    subprocess.run(
+        ["git", "add", "scripts/lua/otclient", "scripts/lua/ctoa_chooser"],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    monkeypatch.setattr(p14, "ROOT", tmp_path)
     monkeypatch.setattr(p14, "HELPER_SOURCE_PATH", helper_source)
     monkeypatch.setattr(p14, "CHOOSER_SOURCE_PATH", chooser_source)
     monkeypatch.setattr(p14, "ROADMAP_STATE_PATH", roadmap_path)
@@ -308,6 +324,18 @@ def test_source_manifest_rejects_reparse_file(
         p14._sanitize_helper_manifest()
 
 
+def test_source_manifest_rejects_untracked_package_source(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    configure_sources(monkeypatch, tmp_path)
+    (p14.HELPER_SOURCE_PATH / "untracked.lua").write_text(
+        "return { unexpected = true }\n", encoding="utf-8"
+    )
+
+    with pytest.raises(p14.ContractError, match="helper_untracked_source_rejected"):
+        p14._sanitize_helper_manifest()
+
+
 def test_source_manifest_checks_reparse_before_regular_file_status(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -404,3 +432,23 @@ def test_contract_does_not_hardcode_derived_helper_file_count() -> None:
 
     assert "63-file" not in source
     assert "current tracked" in source
+
+
+def test_p14_bundle_uses_the_chooser_as_its_only_autoload_and_hides_safe() -> None:
+    chooser_metadata = (
+        ROOT / "scripts" / "lua" / "ctoa_chooser" / "ctoa_chooser.otmod"
+    ).read_text(encoding="utf-8")
+    helper_metadata = (
+        ROOT / "scripts" / "lua" / "otclient" / "ctoa_otclient.otmod"
+    ).read_text(encoding="utf-8")
+    chooser_loader = (
+        ROOT / "scripts" / "lua" / "ctoa_chooser" / "ctoa_chooser_loader.lua"
+    ).read_text(encoding="utf-8")
+
+    assert "autoLoad: true" in chooser_metadata
+    assert "autoLoadPriority: 900" in chooser_metadata
+    assert "autoload:" not in chooser_metadata
+    assert "autoload-priority:" not in chooser_metadata
+    assert "autoLoad: false" in helper_metadata
+    assert "ctoa_safe" not in chooser_loader
+    assert "CTOA SAFE" not in chooser_loader
