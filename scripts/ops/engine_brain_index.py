@@ -1578,8 +1578,6 @@ def read_action_audit_summary(
                         "ok_count": 0,
                         "qualifying_dry_run": False,
                         "confirmed_ok_count": 0,
-                        "preflight_seen": False,
-                        "timestamp_seen": False,
                         "current": {},
                         "risk_classes": Counter(),
                     },
@@ -1590,23 +1588,19 @@ def read_action_audit_summary(
                 ok = record.get("ok") is True
                 preflight_status_present = "preflight_status" in record
                 preflight_status = str(record.get("preflight_status") or "").strip()
-                timestamp_present = bool(created_at)
                 if dry_run:
                     entry["dry_run_count"] += 1
                 if authorized:
                     entry["authorized_count"] += 1
                 if ok:
                     entry["ok_count"] += 1
-                if preflight_status_present:
-                    entry["preflight_seen"] = True
-                if timestamp_present:
-                    entry["timestamp_seen"] = True
                 if (
                     risk_class == "safe_write"
                     and dry_run
                     and authorized
                     and ok
-                    and (not preflight_status_present or preflight_status == "ready")
+                    and preflight_status_present
+                    and preflight_status == "ready"
                 ):
                     entry["qualifying_dry_run"] = True
                 if (
@@ -1642,7 +1636,7 @@ def read_action_audit_summary(
     for action_id, entry in by_action.items():
         risk_classes = entry["risk_classes"]
         current_record = entry["current"]
-        timestamp_seen = bool(entry["timestamp_seen"])
+        timestamp_seen = bool(str(current_record.get("at") or "").strip())
         freshness_status = (
             _classify_action_audit_freshness(
                 current_record.get("at"),
@@ -1650,12 +1644,11 @@ def read_action_audit_summary(
                 max_age_seconds=freshness_max_age,
             )
             if timestamp_seen
-            else "not_recorded"
+            else "missing"
         )
-        preflight_status_seen = bool(entry["preflight_seen"])
+        preflight_status_seen = bool(current_record.get("preflight_status_present"))
         current_preflight_ready = (
-            not preflight_status_seen
-            or current_record.get("preflight_status") == "ready"
+            preflight_status_seen and current_record.get("preflight_status") == "ready"
         )
         current_successful = bool(
             current_record.get("risk_class") == "safe_write"
@@ -1670,7 +1663,7 @@ def read_action_audit_summary(
             and entry["qualifying_dry_run"]
             and current_successful
             and current_preflight_ready
-            and freshness_status in {"fresh", "not_recorded"}
+            and freshness_status == "fresh"
         )
         sanitized_by_action[action_id] = {
             "record_count": entry["record_count"],
@@ -2076,12 +2069,14 @@ def build_p7_action_readiness_payload(
             missing_gates.append("risk_model_entry")
         if not audit_seen:
             missing_gates.append("control_center_action_audit_evidence")
-        if audit_entry.get("preflight_status_seen") and not audit_entry.get(
-            "current_preflight_ready"
-        ):
+        if audit_seen and not audit_entry.get("preflight_status_seen"):
+            missing_gates.append("control_center_action_current_preflight_missing")
+        elif audit_seen and not audit_entry.get("current_preflight_ready"):
             missing_gates.append("control_center_action_current_preflight")
         freshness_status = str(audit_entry.get("freshness_status") or "")
-        if audit_entry.get("timestamp_seen") and freshness_status != "fresh":
+        if audit_seen and not audit_entry.get("timestamp_seen"):
+            missing_gates.append("control_center_action_audit_freshness_missing")
+        elif audit_seen and freshness_status != "fresh":
             missing_gates.append(
                 "control_center_action_audit_"
                 f"freshness_{freshness_status or 'invalid'}"

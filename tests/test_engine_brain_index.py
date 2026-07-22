@@ -302,6 +302,91 @@ def test_p7_action_readiness_fails_closed_for_current_bad_audit(
     assert workflow["status"] == "registered_fail_closed"
 
 
+def test_p7_action_readiness_fails_closed_for_undated_preflightless_audits(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setattr(engine_brain_index, "_source_has_needles", lambda *_args: True)
+    workflow = _p7_safe_write_workflow_fixture()
+    records = [
+        {
+            "action": action_id,
+            "risk_class": "safe_write",
+            "dry_run": True,
+            "authorized": True,
+            "ok": True,
+        }
+        for action_id in engine_brain_index.P7_ENABLED_SAFE_WRITE_MCP_TOOLS
+    ]
+
+    audit = engine_brain_index.read_action_audit_summary(
+        _write_action_audit_records(tmp_path, records)
+    )
+    readiness = engine_brain_index.build_p7_action_readiness_payload(
+        "2026-07-22T12:00:00+00:00", workflow, audit
+    )
+
+    assert readiness["status"] == "write_tools_blocked"
+    assert readiness["enabled_safe_write_tools"] == []
+    for candidate in readiness["safe_write_candidates"]:
+        assert candidate["audit_ready"] is False
+        assert "control_center_action_current_preflight_missing" in candidate[
+            "missing_gates"
+        ]
+        assert "control_center_action_audit_freshness_missing" in candidate[
+            "missing_gates"
+        ]
+
+
+@pytest.mark.parametrize(
+    ("case", "missing_field", "expected_gate"),
+    [
+        (
+            "preflight",
+            "preflight_status",
+            "control_center_action_current_preflight_missing",
+        ),
+        (
+            "timestamp",
+            "at",
+            "control_center_action_audit_freshness_missing",
+        ),
+    ],
+)
+def test_p7_action_readiness_fails_closed_for_missing_current_audit_metadata(
+    tmp_path, monkeypatch, case, missing_field, expected_gate
+):
+    monkeypatch.setattr(engine_brain_index, "_source_has_needles", lambda *_args: True)
+    now = datetime(2026, 7, 22, 12, tzinfo=timezone.utc)
+    selected_action = engine_brain_index.P7_SELECTED_SAFE_WRITE_ACTION_ID
+    records = [
+        _p7_audit_record(action_id, now - timedelta(seconds=30))
+        for action_id in engine_brain_index.P7_ENABLED_SAFE_WRITE_MCP_TOOLS
+    ]
+    current_record = _p7_audit_record(selected_action, now - timedelta(seconds=1))
+    current_record.pop(missing_field)
+    records.append(current_record)
+
+    audit = engine_brain_index.read_action_audit_summary(
+        _write_action_audit_records(tmp_path, records),
+        now=now,
+        max_age_seconds=300,
+    )
+    readiness = engine_brain_index.build_p7_action_readiness_payload(
+        now.isoformat(), _p7_safe_write_workflow_fixture(), audit
+    )
+    selected = next(
+        candidate
+        for candidate in readiness["safe_write_candidates"]
+        if candidate["id"] == selected_action
+    )
+
+    assert case in {"preflight", "timestamp"}
+    assert selected["audit_ready"] is False
+    assert expected_gate in selected["missing_gates"]
+    assert readiness["status"] == "write_tools_blocked"
+    assert readiness["enabled_safe_write_tools"] == []
+
+
 def test_release_evidence_summary_exposes_helper_sandbox_queue(tmp_path):
     release_root = tmp_path / "releases" / "evidence"
     sprint_dir = release_root / "sprint-999"
