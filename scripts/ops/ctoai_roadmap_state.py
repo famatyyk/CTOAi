@@ -65,6 +65,7 @@ SOURCE_HEALTH_PATHS = {
     "helper_manifest": "runtime/solteria_helper_dev/manifest.json",
     "runtime_module_gates": "runtime/solteria_helper_dev/runtime_module_gates_sandbox_smoke.json",
 }
+HELPER_METADATA_PATH = Path("scripts/lua/otclient/ctoa_otclient.otmod")
 ALLOWED_OUTPUT_PATHS = [
     OUTPUT_JSON_PATH.as_posix(),
     OUTPUT_MD_PATH.as_posix(),
@@ -187,6 +188,28 @@ def _load_text(root: Path, relative: str | Path) -> LoadedText:
     except UnicodeDecodeError:
         return LoadedText("malformed", None, raw, _raw_sha256(raw), mtime_ns)
     return LoadedText("loaded", value, raw, _raw_sha256(raw), mtime_ns)
+
+
+def _tracked_helper_version(root: Path) -> str | None:
+    """Return the single strict helper version from the tracked OTClient metadata."""
+    metadata = _load_text(root, HELPER_METADATA_PATH)
+    if metadata.status != "loaded" or metadata.text is None:
+        return None
+
+    version_lines = [
+        line
+        for line in metadata.text.splitlines()
+        if re.match(r"^[ \t]*version:", line)
+    ]
+    if len(version_lines) != 1:
+        return None
+    match = re.fullmatch(
+        r"[ \t]*version:[ \t]*v?([0-9]+\.[0-9]+\.[0-9]+)[ \t]*",
+        version_lines[0],
+    )
+    if match is None:
+        return None
+    return f"v{match.group(1)}"
 
 
 def _parse_datetime(value: Any) -> datetime | None:
@@ -352,9 +375,11 @@ def _source_health(
                 and action_readiness.get("status") == "safe_write_tools_enabled"
             )
         elif name == "helper_manifest":
+            expected_helper_version = _tracked_helper_version(root)
             contract_ok = (
                 contract_ok
-                and payload.get("helper_version") == "v2.4.1"
+                and expected_helper_version is not None
+                and payload.get("helper_version") == expected_helper_version
                 and isinstance(payload.get("files"), list)
             )
         else:

@@ -17,6 +17,7 @@ def _copy_inputs(destination: Path) -> None:
         roadmap.REGISTRY_PATH.as_posix(),
         roadmap.REGISTRY_SCHEMA_PATH.as_posix(),
         roadmap.STATE_SCHEMA_PATH.as_posix(),
+        roadmap.HELPER_METADATA_PATH.as_posix(),
         *roadmap.SOURCE_HEALTH_PATHS.values(),
         *roadmap.FIXED_ENTRY_PATHS.values(),
         *roadmap.FIXED_BINDING_PATHS,
@@ -272,6 +273,88 @@ def test_malformed_sandbox_gate_observation_is_advisory(tmp_path: Path) -> None:
     assert "runtime_module_gates_pending" in state["warnings"]
     assert gate_health["availability"] == "awaiting_external"
     assert gate_health["contract_status"] == "pending"
+
+
+def _helper_manifest_health(root: Path, version: str) -> tuple[dict[str, object], list[str]]:
+    manifest_path = root / roadmap.SOURCE_HEALTH_PATHS["helper_manifest"]
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    manifest_path.write_text(
+        json.dumps({"helper_version": version, "files": []}), encoding="utf-8"
+    )
+    checks, blockers, _ = roadmap._source_health(
+        root, datetime.now(timezone.utc), {}
+    )
+    return (
+        next(item for item in checks if item["name"] == "helper_manifest"),
+        blockers,
+    )
+
+
+def _write_helper_metadata(root: Path, metadata: str) -> Path:
+    metadata_path = root / roadmap.HELPER_METADATA_PATH
+    metadata_path.parent.mkdir(parents=True, exist_ok=True)
+    metadata_path.write_text(metadata, encoding="utf-8")
+    return metadata_path
+
+
+def test_helper_manifest_version_matches_tracked_helper_metadata(tmp_path: Path) -> None:
+    _write_helper_metadata(
+        tmp_path,
+        "Module\n  name: ctoa_otclient\n  version: 2.2.1\n",
+    )
+
+    health, blockers = _helper_manifest_health(tmp_path, "v2.2.1")
+
+    assert health["contract_status"] == "passed"
+    assert "helper_manifest_contract" not in blockers
+
+
+def test_helper_manifest_version_mismatch_with_tracked_metadata_blocks(
+    tmp_path: Path,
+) -> None:
+    _write_helper_metadata(
+        tmp_path,
+        "Module\n  name: ctoa_otclient\n  version: 2.2.1\n",
+    )
+
+    health, blockers = _helper_manifest_health(tmp_path, "v2.4.1")
+
+    assert health["contract_status"] == "blocked"
+    assert "helper_manifest_contract" in blockers
+
+
+@pytest.mark.parametrize(
+    "metadata",
+    [
+        "Module\n  version: v2.2.1\n  version: ../escape\n",
+        "Module\n  version: v2.2.1 # untrusted suffix\n",
+    ],
+)
+def test_invalid_tracked_helper_metadata_blocks_manifest(
+    tmp_path: Path, metadata: str
+) -> None:
+    _write_helper_metadata(tmp_path, metadata)
+
+    health, blockers = _helper_manifest_health(tmp_path, "v2.2.1")
+
+    assert health["contract_status"] == "blocked"
+    assert "helper_manifest_contract" in blockers
+
+
+def test_symlinked_tracked_helper_metadata_blocks_manifest(tmp_path: Path) -> None:
+    metadata_path = tmp_path / roadmap.HELPER_METADATA_PATH
+    metadata_path.parent.mkdir(parents=True, exist_ok=True)
+    outside = tmp_path / "outside.otmod"
+    outside.write_text("Module\n  version: 2.2.1\n", encoding="utf-8")
+    try:
+        metadata_path.symlink_to(outside)
+    except OSError:
+        pytest.skip("Symlink creation is unavailable in this Windows environment")
+
+    health, blockers = _helper_manifest_health(tmp_path, "v2.2.1")
+
+    assert health["contract_status"] == "blocked"
+    assert "helper_manifest_contract" in blockers
 
 
 def test_generated_plugin_cache_gap_is_advisory_during_safe_bootstrap(
