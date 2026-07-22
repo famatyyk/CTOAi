@@ -28,6 +28,7 @@ def write_ready_fixture(root: Path, plugin_root: Path):
     generated = root / "AI" / "generated"
     runtime = root / "runtime" / "control-center"
     allowed_tools = [
+        {"name": "ctoai_control_central", "risk_class": "read_only"},
         {"name": "ctoai_engine_brain_status", "risk_class": "read_only"},
         {"name": "ctoai_engine_brain_self_check", "risk_class": "read_only"},
         {"name": "ctoai_engine_brain_brief", "risk_class": "read_only"},
@@ -37,6 +38,11 @@ def write_ready_fixture(root: Path, plugin_root: Path):
         {"name": "ctoai_evidence_pack_refresh", "risk_class": "safe_write"},
         {"name": "ctoai_engine_brain_refresh", "risk_class": "safe_write"},
         {"name": "ctoai_p7_cockpit_smoke_refresh", "risk_class": "safe_write"},
+        {"name": "ctoai_roadmap_state_refresh", "risk_class": "safe_write"},
+        {
+            "name": "ctoai_full_workspace_validation_refresh",
+            "risk_class": "safe_write",
+        },
     ]
     write_json(
         generated / "P6_CODEX_INTEGRATION_READINESS.json",
@@ -62,6 +68,11 @@ def write_ready_fixture(root: Path, plugin_root: Path):
                 },
                 {
                     "name": "ctoai_plugin_p7_cockpit_smoke_refresh_mcp_contract",
+                    "status": "passed",
+                    "evidence": "home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_mcp.py",
+                },
+                {
+                    "name": "ctoai_plugin_full_workspace_validation_refresh_mcp_contract",
                     "status": "passed",
                     "evidence": "home/plugins/ctoai-engine-brain/scripts/ctoai_engine_brain_mcp.py",
                 },
@@ -97,7 +108,7 @@ def write_ready_fixture(root: Path, plugin_root: Path):
                 "checks": 14,
                 "passed": 14,
                 "blocked": 0,
-                "enabled_safe_write_tool_count": 5,
+                "enabled_safe_write_tool_count": 7,
             },
         },
     )
@@ -109,9 +120,9 @@ def write_ready_fixture(root: Path, plugin_root: Path):
                 "checks": 12,
                 "passed": 12,
                 "blocked": 0,
-                "safe_write_tool_count": 5,
-                "dry_run_ready_count": 5,
-                "preflight_ready_count": 5,
+                "safe_write_tool_count": 7,
+                "dry_run_ready_count": 7,
+                "preflight_ready_count": 7,
                 "bootstrap_allowed_count": 0,
             },
         },
@@ -152,10 +163,11 @@ def test_p6_plugin_handoff_smoke_reports_ready(tmp_path: Path):
     assert report["hard_blockers"] == []
     assert report["summary"]["passed"] == report["summary"]["checks"]
     assert report["summary"]["p6_passed_count"] == report["summary"]["p6_check_count"]
-    assert report["summary"]["mcp_contract_count"] == 2
-    assert report["summary"]["passed_mcp_contract_count"] == 2
-    assert report["summary"]["allowed_tool_count"] == 9
-    assert report["summary"]["safe_write_tool_count"] == 5
+    assert report["summary"]["mcp_contract_count"] == 3
+    assert report["summary"]["passed_mcp_contract_count"] == 3
+    assert report["summary"]["allowed_tool_count"] == 12
+    assert report["summary"]["read_only_tool_count"] == 5
+    assert report["summary"]["safe_write_tool_count"] == 7
     assert report["summary"]["installed_cache_version"] == "0.1.0+codex.test"
     assert report["summary"]["plugin_manifest_version"] == "0.1.0+codex.test"
     assert report["summary"]["fresh_thread_required"] is True

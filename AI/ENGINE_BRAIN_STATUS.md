@@ -2,6 +2,16 @@
 
 Snapshot date: 2026-07-07 Europe/Warsaw
 
+Current P7 Control Center contract: seven bounded `safe_write` capabilities
+are registered for local evidence/context maintenance only: repo hygiene, API
+cost, evidence pack, Engine Brain, P7 cockpit smoke, adaptive roadmap state,
+and fixed full-workspace validation. The seventh action,
+`full-workspace-validation-refresh` /
+`ctoai_full_workspace_validation_refresh`, has a native dry-run, actor-bound
+proof, exact confirmation `refresh full workspace validation`, bounded public
+projection, and sanitized audit evidence. It does not grant deploy, live
+client, promotion, or runtime authority.
+
 ## Completed In This Brain
 
 - Root prompt pack created under `AI/`.

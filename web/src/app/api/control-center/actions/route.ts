@@ -1,84 +1,129 @@
 import { NextResponse } from "next/server"
-import { cookies } from "next/headers"
-import { getServerApiUrl } from "@/lib/config"
-import { resolveControlCenterViewer } from "@/lib/controlCenterAuth"
+import { requireControlCenterReadAccess } from "@/app/api/control-center/access"
 import {
-  listControlCenterActions,
-  runControlCenterAction,
   ControlCenterAuthorizationError,
+  ControlCenterPreflightError,
+  getControlCenterActionSchemaVersion,
+  listControlCenterActionCapabilities,
+  projectControlCenterActionResult,
+  runControlCenterAction,
   sanitizeControlCenterActionOutput,
 } from "@/lib/controlCenterActions"
-import { canRunControlCenterAction } from "@/lib/controlCenterPolicy"
 import { validateSameOriginRequest } from "@/lib/requestOriginGuard"
-import { CTOA_TOKEN_COOKIE_NAME } from "@/lib/authCookies"
 
 export const runtime = "nodejs"
 
-export function validateControlCenterActionRequestOrigin(request: Request): { ok: boolean; error?: string } {
-  return validateSameOriginRequest(request, { requestLabel: "Control Center action" })
+const privateNoStore = { "Cache-Control": "private, no-store" }
+
+type ActionRequestBody = {
+  actionId?: unknown
+  confirmation?: unknown
+  reason?: unknown
+  proofId?: unknown
+  dryRun?: unknown
 }
 
-async function loadViewer() {
-  const token = (await cookies()).get(CTOA_TOKEN_COOKIE_NAME)?.value
-  return resolveControlCenterViewer(token, getServerApiUrl())
+export function validateControlCenterActionRequestOrigin(request: Request): { ok: boolean; error?: string } {
+  return validateSameOriginRequest(request, { requestLabel: "Control Center action" })
 }
 
 function sanitizeControlCenterActionError(value: string): string {
   return sanitizeControlCenterActionOutput(value, 1200) || "Control Center action failed."
 }
 
-export async function GET() {
-  const viewer = await loadViewer()
-  const actions = viewer.viewer
-    ? listControlCenterActions().filter((action) => canRunControlCenterAction(action, viewer.viewer?.role).allowed)
-    : []
+function stringField(value: unknown, maximumLength: number, trim = false): string | undefined {
+  if (typeof value !== "string") return undefined
+  const normalized = trim ? value.trim() : value
+  return normalized.length <= maximumLength ? normalized : undefined
+}
 
-  return NextResponse.json({
-    generatedAt: new Date().toISOString(),
-    actions,
-    authStatus: viewer.authStatus,
-    viewer: viewer.viewer,
-  })
+function parseActionRequest(body: ActionRequestBody):
+  | {
+      ok: true
+      value: {
+        actionId: string
+        confirmation?: string
+        reason?: string
+        proofId?: string
+        dryRun: boolean
+      }
+    }
+  | { ok: false; error: string } {
+  const actionId = stringField(body.actionId, 120, true)
+  if (!actionId) return { ok: false, error: "Missing or invalid actionId." }
+  if (body.dryRun !== undefined && typeof body.dryRun !== "boolean") {
+    return { ok: false, error: "dryRun must be a boolean." }
+  }
+  if (body.confirmation !== undefined && typeof body.confirmation !== "string") {
+    return { ok: false, error: "confirmation must be a string." }
+  }
+  if (body.reason !== undefined && typeof body.reason !== "string") {
+    return { ok: false, error: "reason must be a string." }
+  }
+  if (body.proofId !== undefined && typeof body.proofId !== "string") {
+    return { ok: false, error: "proofId must be a string." }
+  }
+
+  const confirmation = stringField(body.confirmation, 256)
+  const reason = stringField(body.reason, 1024)
+  const proofId = stringField(body.proofId, 128)
+  if ((body.confirmation !== undefined && confirmation === undefined) || (body.reason !== undefined && reason === undefined)) {
+    return { ok: false, error: "Action text exceeds the allowed length." }
+  }
+  if (body.proofId !== undefined && proofId === undefined) return { ok: false, error: "Invalid proofId." }
+
+  return { ok: true, value: { actionId, confirmation, reason, proofId, dryRun: body.dryRun !== false } }
+}
+
+export async function GET() {
+  const access = await requireControlCenterReadAccess("Control Center action capabilities")
+  if (!access.ok) return access.response
+
+  const payload = await listControlCenterActionCapabilities({ actor: access.viewer })
+  return NextResponse.json(payload, { headers: privateNoStore })
 }
 
 export async function POST(request: Request) {
   try {
     const originGate = validateControlCenterActionRequestOrigin(request)
     if (!originGate.ok) {
-      return NextResponse.json({ ok: false, error: originGate.error }, { status: 403 })
+      return NextResponse.json({ ok: false, error: originGate.error }, { status: 403, headers: privateNoStore })
     }
 
-    const viewer = await loadViewer()
-    const body = (await request.json()) as {
-      actionId?: string
-      confirmation?: string
-      reason?: string
-      dryRun?: boolean
+    const access = await requireControlCenterReadAccess("Control Center action execution")
+    if (!access.ok) return access.response
+
+    const parsed = parseActionRequest((await request.json()) as ActionRequestBody)
+    if (!parsed.ok) {
+      return NextResponse.json({ ok: false, error: parsed.error }, { status: 400, headers: privateNoStore })
     }
 
-    if (!body.actionId) {
-      return NextResponse.json({ ok: false, error: "Missing actionId." }, { status: 400 })
-    }
-
-    const result = await runControlCenterAction({
-      actionId: body.actionId,
-      confirmation: body.confirmation,
-      reason: body.reason,
-      dryRun: body.dryRun,
-      actor: viewer.viewer,
-    })
-
-    return NextResponse.json({ ok: result.ok, result }, { status: result.ok ? 200 : 500 })
+    const result = await runControlCenterAction({ ...parsed.value, actor: access.viewer })
+    return NextResponse.json(
+      { ok: result.ok, result: projectControlCenterActionResult(result) },
+      { status: result.ok ? 200 : 500, headers: privateNoStore },
+    )
   } catch (error) {
+    if (error instanceof ControlCenterPreflightError) {
+      return NextResponse.json(
+        { ok: false, error: sanitizeControlCenterActionError(error.message), preflight: error.preflight },
+        { status: error.statusCode, headers: privateNoStore },
+      )
+    }
     if (error instanceof ControlCenterAuthorizationError) {
-      return NextResponse.json({ ok: false, error: sanitizeControlCenterActionError(error.message) }, { status: error.statusCode })
+      return NextResponse.json(
+        { ok: false, error: sanitizeControlCenterActionError(error.message) },
+        { status: error.statusCode, headers: privateNoStore },
+      )
     }
     return NextResponse.json(
       {
         ok: false,
         error: error instanceof Error ? sanitizeControlCenterActionError(error.message) : "Control Center action failed.",
       },
-      { status: 400 },
+      { status: 400, headers: privateNoStore },
     )
   }
 }
+
+export { getControlCenterActionSchemaVersion }

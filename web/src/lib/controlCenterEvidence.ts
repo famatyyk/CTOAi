@@ -4,6 +4,26 @@ import path from "node:path"
 import { toControlCenterDisplayConfig, toControlCenterDisplayPath } from "@/lib/controlCenterDisplayPath"
 import { getControlCenterEvidenceConfig, type ControlCenterEvidenceConfig } from "@/lib/controlCenterEvidenceConfig"
 import { sanitizeControlCenterDisplayText } from "@/lib/controlCenterRedaction"
+import {
+  collectApiCostCapability,
+  collectControlCenterAuditCapability,
+  collectReleaseEvidenceCapability,
+  collectRepoHygieneCapability,
+  type ApiCostCapabilityEvidence,
+  type ControlCenterAuditCapabilityEvidence,
+  type ReleaseEvidenceCapabilityEvidence,
+  type RepoHygieneCapabilityEvidence,
+} from "@/lib/controlCenterEvidenceAdapters"
+import {
+  collectEngineBrainStatus as collectScopedEngineBrainStatus,
+  type EngineBrainCapabilityEvidence,
+} from "@/lib/controlCenterEngineBrainEvidence"
+import { projectOperatorNextCapabilityEvidence, type OperatorNextDetail } from "@/lib/controlCenterCapabilities"
+
+// The public Engine Brain projection is shared by the scoped runtime.  Keeping
+// this re-export beside slice collection makes the private-to-public boundary
+// explicit for callers that only need a single capability.
+export { projectEngineBrainCapabilityEvidence } from "@/lib/controlCenterCapabilities"
 
 export type ControlCenterEvidence = {
   generatedAt: string
@@ -523,6 +543,92 @@ export async function collectControlCenterEvidence(): Promise<ControlCenterEvide
   }
 }
 
+/**
+ * Capability collection is deliberately narrower than the legacy full
+ * evidence view above.  Each caller asks for only the local evidence it needs
+ * and receives a read-only, bounded slice.
+ */
+export const CONTROL_CENTER_CAPABILITY_IDS = [
+  "operator-next",
+  "engine-brain",
+  "repo-hygiene",
+  "release-evidence",
+  "api-cost",
+  "control-center-audit",
+] as const
+
+export type ControlCenterCapabilityId = (typeof CONTROL_CENTER_CAPABILITY_IDS)[number]
+
+export type ControlCenterEvidenceSlice<K extends ControlCenterCapabilityId = ControlCenterCapabilityId> = {
+  id: K
+  collectedAt: string
+  readOnly: true
+  value: ControlCenterEvidenceSliceMap[K]["value"]
+}
+
+export type ControlCenterEvidenceSliceMap = {
+  "operator-next": ControlCenterEvidenceSliceBase<"operator-next", OperatorNextDetail>
+  "engine-brain": ControlCenterEvidenceSliceBase<"engine-brain", EngineBrainCapabilityEvidence>
+  "repo-hygiene": ControlCenterEvidenceSliceBase<"repo-hygiene", RepoHygieneCapabilityEvidence>
+  "release-evidence": ControlCenterEvidenceSliceBase<"release-evidence", ReleaseEvidenceCapabilityEvidence>
+  "api-cost": ControlCenterEvidenceSliceBase<"api-cost", ApiCostCapabilityEvidence>
+  "control-center-audit": ControlCenterEvidenceSliceBase<"control-center-audit", ControlCenterAuditCapabilityEvidence>
+}
+
+type ControlCenterEvidenceSliceBase<K extends ControlCenterCapabilityId, T extends { status: string }> = {
+  id: K
+  collectedAt: string
+  readOnly: true
+  value: T
+}
+
+export async function collectControlCenterEvidenceSlices(
+  ids: readonly ControlCenterCapabilityId[] = CONTROL_CENTER_CAPABILITY_IDS,
+): Promise<Partial<ControlCenterEvidenceSliceMap>> {
+  const requestedIds = Array.from(new Set(ids))
+  const config = getControlCenterEvidenceConfig()
+  const needs = (id: ControlCenterCapabilityId) => requestedIds.includes(id)
+
+  const repoPromise = needs("repo-hygiene") ? collectRepoHygieneCapability(config.qualityPath) : undefined
+  const apiCostPromise = needs("api-cost") ? collectApiCostCapability(config.costReportPath) : undefined
+  const auditSourcePromise = needs("control-center-audit")
+    ? collectControlCenterAuditCapability(config.actionAuditPath)
+    : undefined
+  const releasePromise = needs("release-evidence") ? collectReleaseEvidenceCapability(config.releasesDir) : undefined
+  const engineBrainSourcePromise = needs("engine-brain") || needs("operator-next")
+    ? collectScopedEngineBrainStatus(config)
+    : undefined
+  const cockpitHandoff = engineBrainSourcePromise
+  const operatorNextPromise = needs("operator-next")
+    ? (cockpitHandoff || collectScopedEngineBrainStatus(config)).then(projectOperatorNextCapabilityEvidence)
+    : undefined
+
+  const [repo, apiCost, audit, release, engineBrain, operatorNext] = await Promise.all([
+    repoPromise,
+    apiCostPromise,
+    auditSourcePromise,
+    releasePromise,
+    engineBrainSourcePromise,
+    operatorNextPromise,
+  ])
+  const collectedAt = new Date().toISOString()
+  const slices: Partial<ControlCenterEvidenceSliceMap> = {}
+  if (repo) slices["repo-hygiene"] = makeEvidenceSlice("repo-hygiene", repo, collectedAt)
+  if (apiCost) slices["api-cost"] = makeEvidenceSlice("api-cost", apiCost, collectedAt)
+  if (audit) slices["control-center-audit"] = makeEvidenceSlice("control-center-audit", audit, collectedAt)
+  if (release) slices["release-evidence"] = makeEvidenceSlice("release-evidence", release, collectedAt)
+  if (engineBrain && needs("engine-brain")) slices["engine-brain"] = makeEvidenceSlice("engine-brain", engineBrain, collectedAt)
+  if (operatorNext) slices["operator-next"] = makeEvidenceSlice("operator-next", operatorNext, collectedAt)
+  return slices
+}
+
+function makeEvidenceSlice<K extends ControlCenterCapabilityId>(
+  id: K,
+  value: ControlCenterEvidenceSliceMap[K]["value"],
+  collectedAt: string,
+): ControlCenterEvidenceSliceMap[K] {
+  return { id, collectedAt, readOnly: true, value } as ControlCenterEvidenceSliceMap[K]
+}
 async function collectOperatorBriefCard(
   config: ControlCenterEvidenceConfig,
 ): Promise<ControlCenterEvidence["operatorBrief"]> {

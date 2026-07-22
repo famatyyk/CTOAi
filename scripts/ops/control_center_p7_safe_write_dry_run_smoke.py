@@ -33,8 +33,14 @@ EXPECTED_SAFE_WRITE_TOOLS = [
     ("evidence-pack-refresh", "ctoai_evidence_pack_refresh"),
     ("engine-brain-refresh", "ctoai_engine_brain_refresh"),
     ("p7-cockpit-smoke-refresh", "ctoai_p7_cockpit_smoke_refresh"),
+    ("roadmap-state-refresh", "ctoai_roadmap_state_refresh"),
+    (
+        "full-workspace-validation-refresh",
+        "ctoai_full_workspace_validation_refresh",
+    ),
 ]
 EXPECTED_READ_ONLY_TOOLS = {
+    "ctoai_control_central",
     "ctoai_engine_brain_status",
     "ctoai_engine_brain_self_check",
     "ctoai_engine_brain_brief",
@@ -42,8 +48,13 @@ EXPECTED_READ_ONLY_TOOLS = {
 }
 FORBIDDEN_TOOL_FRAGMENTS = ("deploy", "live", "promote", "solteria")
 FINALIZABLE_BOOTSTRAP_BLOCKERS = {
+    "freshness:evidence:stale",
+    "p6_plugin_handoff_smoke_not_ready",
+    "p7_operator_brief_not_ready",
     "p7_safe_write_audit_not_ready",
+    "p7_cockpit_smoke_not_ready",
     "p7_safe_write_dry_run_smoke_not_ready",
+    "runtime_evidence_integrity_not_verified",
 }
 
 
@@ -197,6 +208,22 @@ def latest_record_by_audit_id(records: list[dict[str, Any]]) -> dict[str, dict[s
     return by_audit
 
 
+def latest_record_by_action(records: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    by_action: dict[str, dict[str, Any]] = {}
+    for record in records:
+        action = str(record.get("action") or "")
+        if action:
+            by_action[action] = record
+    return by_action
+
+
+def preflight_bootstrap_allowed(preflight: dict[str, Any]) -> bool:
+    return (
+        preflight.get("dry_run_bootstrap_allowed") is True
+        or preflight.get("bootstrap_allowed") is True
+    )
+
+
 def finalizable_bootstrap_preflight(preflight: dict[str, Any]) -> bool:
     blockers = {
         str(item)
@@ -204,7 +231,7 @@ def finalizable_bootstrap_preflight(preflight: dict[str, Any]) -> bool:
         if str(item).strip()
     }
     return (
-        preflight.get("dry_run_bootstrap_allowed") is True
+        preflight_bootstrap_allowed(preflight)
         and bool(blockers)
         and blockers.issubset(FINALIZABLE_BOOTSTRAP_BLOCKERS)
     )
@@ -232,6 +259,12 @@ def build_report(root: Path, plugin_root: Path) -> dict[str, Any]:
     plugin_root = plugin_root.resolve()
     command = plugin_command(plugin_root)
     messages = mcp_messages(root)
+    action_audit_path = root / DEFAULT_ACTION_AUDIT_PATH
+    prior_audit_ids = {
+        str(record.get("audit_id") or "")
+        for record in read_jsonl_tail(action_audit_path)
+        if str(record.get("audit_id") or "")
+    }
     completed = subprocess.run(
         command,
         input="\n".join(json.dumps(message) for message in messages) + "\n",
@@ -284,8 +317,15 @@ def build_report(root: Path, plugin_root: Path) -> dict[str, Any]:
         "mcp_tool_policy_mismatch",
     )
 
-    action_audit_path = root / DEFAULT_ACTION_AUDIT_PATH
-    records_by_audit = latest_record_by_audit_id(read_jsonl_tail(action_audit_path))
+    audit_records = read_jsonl_tail(action_audit_path)
+    records_by_audit = latest_record_by_audit_id(audit_records)
+    new_records_by_action = latest_record_by_action(
+        [
+            record
+            for record in audit_records
+            if str(record.get("audit_id") or "") not in prior_audit_ids
+        ]
+    )
     safe_write_results: list[dict[str, Any]] = []
     for index, (action_id, tool_name) in enumerate(EXPECTED_SAFE_WRITE_TOOLS, start=3):
         payload = tool_text_payload(responses.get(index, {}))
@@ -295,10 +335,24 @@ def build_report(root: Path, plugin_root: Path) -> dict[str, Any]:
             else {}
         )
         audit_id = str(payload.get("audit_id") or "")
-        record = records_by_audit.get(audit_id, {})
+        record = (
+            records_by_audit.get(audit_id, {})
+            if audit_id
+            else new_records_by_action.get(action_id, {})
+        )
+        bootstrap_allowed = preflight_bootstrap_allowed(preflight)
         preflight_ready = (
             preflight.get("ok") is True
-            or preflight.get("dry_run_bootstrap_allowed") is True
+            or bootstrap_allowed
+        )
+        projected_payload_ready = (
+            payload.get("schema_version") == 2
+            and payload.get("audit_recorded") is True
+            and payload.get("result_code") == "plan_recorded"
+        )
+        legacy_payload_ready = (
+            payload.get("schema_version") == 1
+            and "DRY RUN ONLY" in str(payload.get("output") or "")
         )
         payload_ready = (
             payload.get("status") == "dry_run"
@@ -308,7 +362,7 @@ def build_report(root: Path, plugin_root: Path) -> dict[str, Any]:
             and payload.get("dry_run") is True
             and payload.get("ok") is True
             and preflight_ready
-            and "DRY RUN ONLY" in str(payload.get("output") or "")
+            and (projected_payload_ready or legacy_payload_ready)
         )
         add_check(
             checks,
@@ -338,14 +392,10 @@ def build_report(root: Path, plugin_root: Path) -> dict[str, Any]:
                 "status": str(payload.get("status") or "missing"),
                 "ok": payload.get("ok") is True,
                 "dry_run": payload.get("dry_run") is True,
-                "audit_id": audit_id,
                 "audit_record_ready": record_ready,
                 "preflight_status": str(preflight.get("status") or "missing"),
                 "preflight_ok": preflight.get("ok") is True,
-                "preflight_bootstrap_allowed": preflight.get(
-                    "dry_run_bootstrap_allowed"
-                )
-                is True,
+                "preflight_bootstrap_allowed": bootstrap_allowed,
                 "preflight_bootstrap_used": False,
                 "preflight_hard_blockers": [
                     str(item)

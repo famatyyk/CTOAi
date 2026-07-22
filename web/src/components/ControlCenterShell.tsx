@@ -9,6 +9,7 @@ import ControlCenterChatPanel from "@/components/ControlCenterChatPanel"
 import ControlCenterLegacyPanels from "@/components/ControlCenterLegacyPanels"
 import ControlCenterActionPanel from "@/components/ControlCenterActionPanel"
 import ControlCenterEvidencePanel from "@/components/ControlCenterEvidencePanel"
+import { ControlCenterDataProvider } from "@/components/ControlCenterDataProvider"
 
 const navSections = ["Overview", "Actions", "Codex Chat", "Local Status", "Evidence", "Docs Map"] as const
 
@@ -40,6 +41,14 @@ function ToneOrb({ tone }: { tone: string }) {
 }
 
 export default function ControlCenterShell() {
+  return (
+    <ControlCenterDataProvider>
+      <ControlCenterShellContent />
+    </ControlCenterDataProvider>
+  )
+}
+
+function ControlCenterShellContent() {
   const [activeTab, setActiveTab] = useState<ControlCenterTab>("Overview")
   const subtitle = useMemo(() => {
     if (activeTab === "Overview") return "One place for Codex, local status, evidence and project boundaries."

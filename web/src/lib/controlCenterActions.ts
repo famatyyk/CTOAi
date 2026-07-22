@@ -1,6 +1,7 @@
 import { execFile } from "node:child_process"
+import { randomUUID } from "node:crypto"
 import { lstatSync, realpathSync, statSync } from "node:fs"
-import { appendFile, mkdir } from "node:fs/promises"
+import { appendFile, mkdir, readFile } from "node:fs/promises"
 import path from "node:path"
 import { promisify } from "node:util"
 import { getControlCenterEvidenceConfig } from "@/lib/controlCenterEvidenceConfig"
@@ -11,26 +12,78 @@ import { redactControlCenterAuditText as redactAuditText } from "@/lib/controlCe
 
 const execFileAsync = promisify(execFile)
 
+export const CONTROL_CENTER_ACTION_SCHEMA_VERSION = 2
+export const P7_ACTION_READINESS_PATH = "AI/generated/P7_ACTION_READINESS.json"
+export const CONTROL_CENTER_DRY_RUN_PROOF_TTL_MS = 15 * 60 * 1000
+
+const P7_ACTION_READINESS_MAX_BYTES = 512 * 1024
+const SAFE_WRITE_ACTION_IDS = [
+  "repo-hygiene-refresh",
+  "api-cost-refresh",
+  "evidence-pack-refresh",
+  "engine-brain-refresh",
+  "p7-cockpit-smoke-refresh",
+  "roadmap-state-refresh",
+  "full-workspace-validation-refresh",
+] as const
+
+type SafeWriteActionId = (typeof SAFE_WRITE_ACTION_IDS)[number]
+type ActionExecutionMode = "dry_run_first"
+type PreflightCheckStatus = "passed" | "blocked" | "required"
+
 export type ControlCenterActor = {
   username: string
   displayName: string
   role: ControlCenterRole
 }
 
+/**
+ * This is deliberately the browser-safe action shape. Command details live only
+ * in ActionDefinition below and never cross the capability API boundary.
+ */
 export type ControlCenterAction = {
-  id: string
+  id: SafeWriteActionId
   label: string
   description: string
   target: "local"
   riskClass: ControlCenterRiskClass
   minimumRole: ControlCenterRole
-  confirmationText?: string
-  requiresReason: boolean
-  dryRunAvailable: boolean
-  enabled: boolean
-  commandSummary: string
+  confirmationText: string
+  requiresReason: true
+  dryRunAvailable: true
+  enabled: true
+  executionMode: ActionExecutionMode
+  nativeDryRun: boolean
+  effect: string
+  evidence: string
 }
 
+export type ControlCenterPreflightCheck = {
+  id: "p7_registration" | "trusted_runtime" | "dry_run_proof"
+  status: PreflightCheckStatus
+  detail: string
+}
+
+export type ControlCenterActionPreflight = {
+  schemaVersion: typeof CONTROL_CENTER_ACTION_SCHEMA_VERSION
+  status: "ready" | "blocked"
+  dryRunAllowed: boolean
+  executeAllowed: boolean
+  checks: ControlCenterPreflightCheck[]
+  blockers: string[]
+}
+
+export type ControlCenterActionCapability = ControlCenterAction & {
+  preflight: ControlCenterActionPreflight
+}
+
+export type ControlCenterActionCapabilityResponse = {
+  schemaVersion: typeof CONTROL_CENTER_ACTION_SCHEMA_VERSION
+  generatedAt: string
+  capabilities: ControlCenterActionCapability[]
+}
+
+/** Private server-side result. Route code must project it before returning JSON. */
 export type ControlCenterActionResult = {
   action: ControlCenterAction
   dryRun: boolean
@@ -38,6 +91,21 @@ export type ControlCenterActionResult = {
   output: string
   auditId: string
   completedAt: string
+  proofId?: string
+  preflight: ControlCenterActionPreflight
+}
+
+export type ControlCenterActionResultProjection = {
+  schemaVersion: typeof CONTROL_CENTER_ACTION_SCHEMA_VERSION
+  actionId: SafeWriteActionId
+  dryRun: boolean
+  ok: boolean
+  status: "dry_run_validated" | "completed" | "failed"
+  auditId: string
+  completedAt: string
+  proofId?: string
+  preflight: ControlCenterActionPreflight
+  message: string
 }
 
 type CommandSpec = {
@@ -48,7 +116,8 @@ type CommandSpec = {
 }
 
 type ActionDefinition = ControlCenterAction & {
-  command: () => CommandSpec
+  commandSummary: string
+  command: (mode: "dry_run" | "execute", reason: string) => CommandSpec
 }
 
 type AuditRecord = {
@@ -65,7 +134,26 @@ type AuditRecord = {
   ok: boolean
   reason: string
   output_preview: string
+  preflight_status: "ready" | "blocked"
+  preflight_blockers: string[]
+  proof_id?: string
+  consumed_proof_id?: string
 }
+
+type DryRunProof = {
+  actionId: SafeWriteActionId
+  actorUsername: string
+  issuedAt: number
+  expiresAt: number
+  consumed: boolean
+}
+
+type P7Registration = {
+  ok: boolean
+  blocker: string
+}
+
+const dryRunProofs = new Map<string, DryRunProof>()
 
 export class ControlCenterAuthorizationError extends Error {
   statusCode: number
@@ -75,6 +163,22 @@ export class ControlCenterAuthorizationError extends Error {
     this.name = "ControlCenterAuthorizationError"
     this.statusCode = statusCode
   }
+}
+
+export class ControlCenterPreflightError extends Error {
+  statusCode: number
+  preflight: ControlCenterActionPreflight
+
+  constructor(message: string, preflight: ControlCenterActionPreflight, statusCode = 409) {
+    super(message)
+    this.name = "ControlCenterPreflightError"
+    this.statusCode = statusCode
+    this.preflight = preflight
+  }
+}
+
+export function getControlCenterActionSchemaVersion(): typeof CONTROL_CENTER_ACTION_SCHEMA_VERSION {
+  return CONTROL_CENTER_ACTION_SCHEMA_VERSION
 }
 
 export function redactControlCenterAuditText(value: string, maxLength = 1200): string {
@@ -195,13 +299,18 @@ function actionCatalog(): ActionDefinition[] {
     {
       id: "repo-hygiene-refresh",
       label: "Refresh repo hygiene snapshot",
-      description: "Rebuild the local repo hygiene report from the current workspace tree.",
+      description: "Rebuild the bounded local repository hygiene evidence.",
       target: "local",
       riskClass: "safe_write",
       minimumRole: minimumRoleForRiskClass("safe_write"),
-      requiresReason: false,
+      confirmationText: "refresh repo hygiene snapshot",
+      requiresReason: true,
       dryRunAvailable: true,
       enabled: true,
+      executionMode: "dry_run_first",
+      nativeDryRun: false,
+      effect: "Refreshes a local repository-quality summary.",
+      evidence: "Writes a redacted action-audit result.",
       commandSummary: "python scripts/ops/repo_hygiene_audit.py --json-out runtime/repo-hygiene/local-pr-quality.json",
       command: () =>
         pythonCommand("scripts/ops/repo_hygiene_audit.py", ["--json-out", "runtime/repo-hygiene/local-pr-quality.json"], 120000),
@@ -209,15 +318,19 @@ function actionCatalog(): ActionDefinition[] {
     {
       id: "api-cost-refresh",
       label: "Refresh API cost report",
-      description: "Rebuild the local API cost report from the current eval run artifacts.",
+      description: "Rebuild the bounded local API-cost evidence summary.",
       target: "local",
       riskClass: "safe_write",
       minimumRole: minimumRoleForRiskClass("safe_write"),
-      requiresReason: false,
+      confirmationText: "refresh api cost report",
+      requiresReason: true,
       dryRunAvailable: true,
       enabled: true,
-      commandSummary:
-        "python scripts/ops/api_cost_report.py --json-out runtime/api-cost/latest.json --md-out runtime/api-cost/latest.md",
+      executionMode: "dry_run_first",
+      nativeDryRun: false,
+      effect: "Refreshes a local cost-evidence summary.",
+      evidence: "Writes a redacted action-audit result.",
+      commandSummary: "python scripts/ops/api_cost_report.py --json-out runtime/api-cost/latest.json --md-out runtime/api-cost/latest.md",
       command: () =>
         pythonCommand(
           "scripts/ops/api_cost_report.py",
@@ -228,15 +341,19 @@ function actionCatalog(): ActionDefinition[] {
     {
       id: "evidence-pack-refresh",
       label: "Rebuild evidence pack",
-      description: "Rebuild the compact evidence pack that Control Center reads for sign-off.",
+      description: "Rebuild the compact local evidence pack used for sign-off.",
       target: "local",
       riskClass: "safe_write",
       minimumRole: minimumRoleForRiskClass("safe_write"),
-      requiresReason: false,
+      confirmationText: "refresh evidence pack",
+      requiresReason: true,
       dryRunAvailable: true,
       enabled: true,
-      commandSummary:
-        "python scripts/ops/release_evidence_pack.py --json-out runtime/evidence/latest.json --md-out runtime/evidence/latest.md",
+      executionMode: "dry_run_first",
+      nativeDryRun: false,
+      effect: "Refreshes the bounded sign-off evidence pack.",
+      evidence: "Writes a redacted action-audit result.",
+      commandSummary: "python scripts/ops/release_evidence_pack.py --json-out runtime/evidence/latest.json --md-out runtime/evidence/latest.md",
       command: () =>
         pythonCommand(
           "scripts/ops/release_evidence_pack.py",
@@ -247,134 +364,557 @@ function actionCatalog(): ActionDefinition[] {
     {
       id: "engine-brain-refresh",
       label: "Refresh Engine Brain context",
-      description: "Regenerate the local Engine Brain context files under AI/generated.",
+      description: "Regenerate bounded Engine Brain context from the local workspace.",
       target: "local",
       riskClass: "safe_write",
       minimumRole: minimumRoleForRiskClass("safe_write"),
-      requiresReason: false,
+      confirmationText: "refresh engine brain context",
+      requiresReason: true,
       dryRunAvailable: true,
       enabled: true,
+      executionMode: "dry_run_first",
+      nativeDryRun: false,
+      effect: "Refreshes generated local context.",
+      evidence: "Writes a redacted action-audit result.",
       commandSummary: "python scripts/ops/engine_brain_index.py",
       command: () => pythonCommand("scripts/ops/engine_brain_index.py", [], 180000),
     },
     {
       id: "p7-cockpit-smoke-refresh",
       label: "Refresh P7 cockpit smoke",
-      description: "Regenerate the local P7 cockpit smoke evidence from Engine Brain, release evidence, and action audit state.",
+      description: "Regenerate bounded P7 cockpit-smoke evidence from local sources.",
       target: "local",
       riskClass: "safe_write",
       minimumRole: minimumRoleForRiskClass("safe_write"),
-      requiresReason: false,
+      confirmationText: "refresh p7 cockpit smoke",
+      requiresReason: true,
       dryRunAvailable: true,
       enabled: true,
+      executionMode: "dry_run_first",
+      nativeDryRun: false,
+      effect: "Refreshes local P7 smoke evidence.",
+      evidence: "Writes a redacted action-audit result.",
       commandSummary: "python scripts/ops/control_center_p7_cockpit_smoke.py",
       command: () => pythonCommand("scripts/ops/control_center_p7_cockpit_smoke.py", [], 180000),
+    },
+    {
+      id: "roadmap-state-refresh",
+      label: "Refresh adaptive roadmap state",
+      description: "Run the fixed P13 roadmap-state generator with its native dry-run gate.",
+      target: "local",
+      riskClass: "safe_write",
+      minimumRole: minimumRoleForRiskClass("safe_write"),
+      confirmationText: "refresh roadmap state",
+      requiresReason: true,
+      dryRunAvailable: true,
+      enabled: true,
+      executionMode: "dry_run_first",
+      nativeDryRun: true,
+      effect: "Refreshes only the bounded adaptive roadmap state outputs.",
+      evidence: "Uses native dry-run, preflight, and hash-bound audit evidence.",
+      commandSummary: "python scripts/ops/ctoai_roadmap_state.py --dry-run true|false",
+      command: (mode, reason) =>
+        pythonCommand(
+          "scripts/ops/ctoai_roadmap_state.py",
+          [
+            "--dry-run",
+            mode === "dry_run" ? "true" : "false",
+            ...(mode === "execute" ? ["--confirmation", "refresh roadmap state"] : []),
+            "--reason",
+            reason || "Control Center bounded roadmap refresh",
+          ],
+          180000,
+        ),
+    },
+    {
+      id: "full-workspace-validation-refresh",
+      label: "Refresh full workspace validation",
+      description: "Run the fixed workspace validation registry through its native dry-run gate.",
+      target: "local",
+      riskClass: "safe_write",
+      minimumRole: minimumRoleForRiskClass("safe_write"),
+      confirmationText: "refresh full workspace validation",
+      requiresReason: true,
+      dryRunAvailable: true,
+      enabled: true,
+      executionMode: "dry_run_first",
+      nativeDryRun: true,
+      effect: "Refreshes only the bounded full-workspace validation evidence.",
+      evidence: "Uses native dry-run, fixed registry inputs, and a redacted action audit.",
+      commandSummary: "python scripts/ops/ctoa_full_workspace_validation.py --dry-run true|false",
+      command: (mode, reason) =>
+        pythonCommand(
+          "scripts/ops/ctoa_full_workspace_validation.py",
+          [
+            "--dry-run",
+            mode === "dry_run" ? "true" : "false",
+            ...(mode === "execute" ? ["--confirmation", "refresh full workspace validation"] : []),
+            "--reason",
+            reason || "Control Center bounded full workspace validation refresh",
+          ],
+          1200000,
+        ),
     },
   ]
 }
 
+function toPublicAction(definition: ActionDefinition): ControlCenterAction {
+  const { command, commandSummary, ...action } = definition
+  void command
+  void commandSummary
+  return action
+}
+
 export function listControlCenterActions(): ControlCenterAction[] {
-  return actionCatalog().map(({ command, ...action }) => {
-    void command
-    return action
-  })
+  return actionCatalog().map(toPublicAction)
 }
 
 export function getControlCenterAction(actionId: string): ControlCenterAction | null {
-  const action = listControlCenterActions().find((item) => item.id === actionId)
-  return action || null
+  return listControlCenterActions().find((item) => item.id === actionId) || null
+}
+
+function findActionDefinition(actionId: string): ActionDefinition | null {
+  return actionCatalog().find((item) => item.id === actionId) || null
+}
+
+function auditId(completedAt: string, actionId: string): string {
+  return `${completedAt.replace(/[^0-9]/g, "")}-${actionId}-${randomUUID()}`
+}
+
+function publicPreflight(
+  registration: P7Registration,
+  trustedRuntime: boolean,
+  proof: ReturnType<typeof recentSuccessfulDryRun>,
+): ControlCenterActionPreflight {
+  const checks: ControlCenterPreflightCheck[] = [
+    {
+      id: "p7_registration",
+      status: registration.ok ? "passed" : "blocked",
+      detail: registration.ok ? "P7 safe-write registration is current." : "P7 safe-write registration is not ready.",
+    },
+    {
+      id: "trusted_runtime",
+      status: trustedRuntime ? "passed" : "blocked",
+      detail: trustedRuntime ? "Trusted local runtime is available." : "Trusted local runtime is unavailable.",
+    },
+    {
+      id: "dry_run_proof",
+      status: proof.status,
+      detail:
+        proof.status === "passed"
+          ? "A current dry-run proof is available for this execution gate."
+          : proof.status === "required"
+            ? "Validate a dry-run before opening the execution gate."
+            : "The dry-run proof is not valid for this execution gate.",
+    },
+  ]
+  const blockers = [
+    ...(registration.ok ? [] : [registration.blocker]),
+    ...(trustedRuntime ? [] : ["trusted_runtime_unavailable"]),
+    ...(proof.status === "blocked" ? [proof.blocker] : []),
+  ]
+  const dryRunAllowed = registration.ok && trustedRuntime
+  return {
+    schemaVersion: CONTROL_CENTER_ACTION_SCHEMA_VERSION,
+    status: dryRunAllowed ? "ready" : "blocked",
+    dryRunAllowed,
+    executeAllowed: dryRunAllowed && proof.status === "passed",
+    checks,
+    blockers,
+  }
+}
+
+async function readP7ActionReadiness(): Promise<Record<string, unknown> | null> {
+  try {
+    const root = resolveControlCenterWorkspaceRoot()
+    const readinessPath = resolveControlCenterWorkspaceFile(root, P7_ACTION_READINESS_PATH)
+    const stat = statSync(readinessPath)
+    if (stat.size > P7_ACTION_READINESS_MAX_BYTES) return null
+    const parsed = JSON.parse(await readFile(readinessPath, "utf-8"))
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : null
+  } catch {
+    return null
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value)
+}
+
+function p7RegistrationForAction(payload: Record<string, unknown> | null, actionId: SafeWriteActionId): P7Registration {
+  if (!payload) return { ok: false, blocker: "p7_action_readiness_missing" }
+  if (payload.schema_version !== 1) return { ok: false, blocker: "p7_action_readiness_schema_invalid" }
+  if (!["safe_write_tools_enabled", "first_safe_write_enabled"].includes(String(payload.status || ""))) {
+    return { ok: false, blocker: "p7_action_readiness_not_ready" }
+  }
+  if (payload.candidate_count !== SAFE_WRITE_ACTION_IDS.length || payload.mcp_write_tool_count !== SAFE_WRITE_ACTION_IDS.length) {
+    return { ok: false, blocker: "p7_action_registration_incomplete" }
+  }
+
+  const candidates = Array.isArray(payload.safe_write_candidates) ? payload.safe_write_candidates : []
+  const enabled = Array.isArray(payload.enabled_safe_write_tools) ? payload.enabled_safe_write_tools : []
+  const allCandidatesRegistered = SAFE_WRITE_ACTION_IDS.every((id) =>
+    candidates.some(
+      (candidate) =>
+        isRecord(candidate) &&
+        candidate.id === id &&
+        candidate.risk_class === "safe_write" &&
+        candidate.control_center_enabled === true &&
+        candidate.plugin_mcp_allowed === true,
+    ),
+  )
+  const actionEnabled = enabled.some(
+    (item) => isRecord(item) && item.action_id === actionId && item.risk_class === "safe_write",
+  )
+  return allCandidatesRegistered && actionEnabled
+    ? { ok: true, blocker: "" }
+    : { ok: false, blocker: "p7_action_registration_incomplete" }
+}
+
+function trustedRuntimeAvailable(definition: ActionDefinition): boolean {
+  try {
+    definition.command("dry_run", "")
+    return true
+  } catch {
+    return false
+  }
+}
+
+export function recentSuccessfulDryRun(input: {
+  actionId: SafeWriteActionId
+  actor?: ControlCenterActor | null
+  proofId?: string
+  now?: number
+}): { status: PreflightCheckStatus; blocker: string } {
+  if (!input.proofId) return { status: "required", blocker: "" }
+  const proof = dryRunProofs.get(input.proofId)
+  const now = input.now ?? Date.now()
+  if (!proof || proof.actionId !== input.actionId) return { status: "blocked", blocker: "dry_run_proof_invalid" }
+  if (!input.actor || proof.actorUsername !== input.actor.username) {
+    return { status: "blocked", blocker: "dry_run_proof_actor_mismatch" }
+  }
+  if (proof.consumed) return { status: "blocked", blocker: "dry_run_proof_consumed" }
+  if (proof.expiresAt <= now) {
+    dryRunProofs.delete(input.proofId)
+    return { status: "blocked", blocker: "dry_run_proof_expired" }
+  }
+  return { status: "passed", blocker: "" }
+}
+
+export async function evaluateActionPreflight(
+  action: string | Pick<ControlCenterAction, "id">,
+  input: { actor?: ControlCenterActor | null; proofId?: string; now?: number } = {},
+): Promise<ControlCenterActionPreflight> {
+  const actionId = typeof action === "string" ? action : action.id
+  const definition = findActionDefinition(actionId)
+  if (!definition) {
+    return {
+      schemaVersion: CONTROL_CENTER_ACTION_SCHEMA_VERSION,
+      status: "blocked",
+      dryRunAllowed: false,
+      executeAllowed: false,
+      checks: [
+        { id: "p7_registration", status: "blocked", detail: "P7 safe-write registration is not ready." },
+        { id: "trusted_runtime", status: "blocked", detail: "Trusted local runtime is unavailable." },
+        { id: "dry_run_proof", status: "required", detail: "Validate a dry-run before opening the execution gate." },
+      ],
+      blockers: ["unknown_action"],
+    }
+  }
+  const readiness = await readP7ActionReadiness()
+  const registration = p7RegistrationForAction(readiness, definition.id)
+  const proof = recentSuccessfulDryRun({ actionId: definition.id, actor: input.actor, proofId: input.proofId, now: input.now })
+  return publicPreflight(registration, trustedRuntimeAvailable(definition), proof)
+}
+
+export async function listControlCenterActionCapabilities(input: {
+  actor?: ControlCenterActor | null
+} = {}): Promise<ControlCenterActionCapabilityResponse> {
+  const actor = input.actor || null
+  const capabilities = actor
+    ? await Promise.all(
+        actionCatalog()
+          .filter((definition) => canRunControlCenterAction(definition, actor.role).allowed)
+          .map(async (definition) => ({
+            ...toPublicAction(definition),
+            preflight: await evaluateActionPreflight(definition, { actor }),
+          })),
+      )
+    : []
+  return {
+    schemaVersion: CONTROL_CENTER_ACTION_SCHEMA_VERSION,
+    generatedAt: new Date().toISOString(),
+    capabilities,
+  }
+}
+
+function withAdditionalBlocker(
+  preflight: ControlCenterActionPreflight,
+  blocker: string,
+  detail: string,
+): ControlCenterActionPreflight {
+  return {
+    ...preflight,
+    status: "blocked",
+    executeAllowed: false,
+    checks: [...preflight.checks, { id: "dry_run_proof", status: "blocked", detail }],
+    blockers: [...new Set([...preflight.blockers, blocker])],
+  }
+}
+
+async function appendAttemptAudit(input: {
+  completedAt: string
+  auditId: string
+  definition: ActionDefinition
+  dryRun: boolean
+  actor: ControlCenterActor | null
+  authorized: boolean
+  ok: boolean
+  reason?: string
+  output: string
+  preflight: ControlCenterActionPreflight
+  proofId?: string
+  consumedProofId?: string
+}): Promise<void> {
+  await appendAuditRecord({
+    at: input.completedAt,
+    audit_id: input.auditId,
+    actor: input.actor?.username || "anonymous",
+    actor_role: input.actor?.role || "anonymous",
+    action: input.definition.id,
+    target: input.definition.target,
+    risk_class: input.definition.riskClass,
+    minimum_role: input.definition.minimumRole,
+    dry_run: input.dryRun,
+    authorized: input.authorized,
+    ok: input.ok,
+    reason: redactControlCenterAuditText(input.reason || ""),
+    output_preview: redactControlCenterAuditText(input.output),
+    preflight_status: input.preflight.status,
+    preflight_blockers: input.preflight.blockers,
+    ...(input.proofId ? { proof_id: input.proofId } : {}),
+    ...(input.consumedProofId ? { consumed_proof_id: input.consumedProofId } : {}),
+  })
+}
+
+async function executeActionCommand(
+  definition: ActionDefinition,
+  mode: "dry_run" | "execute",
+  reason: string,
+): Promise<{ ok: boolean; output: string }> {
+  try {
+    const command = definition.command(mode, reason)
+    const result = await execFileAsync(command.file, command.args, {
+      timeout: command.timeout,
+      cwd: command.cwd,
+      windowsHide: true,
+      maxBuffer: 1024 * 1024,
+    })
+    const output = [result.stdout, result.stderr].filter(Boolean).join("\n").trim() || "Action completed with no output."
+    return { ok: true, output: sanitizeControlCenterActionOutput(output) }
+  } catch (error) {
+    const output = error instanceof Error ? error.message : "Action failed."
+    return { ok: false, output: sanitizeControlCenterActionOutput(output) }
+  }
+}
+
+function issueDryRunProof(actionId: SafeWriteActionId, actor: ControlCenterActor, proofId: string, now = Date.now()): void {
+  dryRunProofs.set(proofId, {
+    actionId,
+    actorUsername: actor.username,
+    issuedAt: now,
+    expiresAt: now + CONTROL_CENTER_DRY_RUN_PROOF_TTL_MS,
+    consumed: false,
+  })
+}
+
+function consumeDryRunProof(proofId: string): void {
+  const proof = dryRunProofs.get(proofId)
+  if (proof) proof.consumed = true
+}
+
+function requireExactExecutionGate(
+  definition: ActionDefinition,
+  input: { confirmation?: string; reason?: string },
+  preflight: ControlCenterActionPreflight,
+): ControlCenterActionPreflight | null {
+  if (input.confirmation !== definition.confirmationText) {
+    return withAdditionalBlocker(preflight, "confirmation_required", "Enter the exact confirmation text before executing.")
+  }
+  if (!input.reason || input.reason.trim().length < 8) {
+    return withAdditionalBlocker(preflight, "maintenance_reason_required", "Enter a maintenance reason with at least 8 characters.")
+  }
+  return null
 }
 
 export async function runControlCenterAction(input: {
   actionId: string
   confirmation?: string
   reason?: string
+  proofId?: string
   dryRun?: boolean
   actor?: ControlCenterActor | null
 }): Promise<ControlCenterActionResult> {
-  const definition = actionCatalog().find((item) => item.id === input.actionId)
-  if (!definition) {
-    throw new Error(`Unknown Control Center action: ${input.actionId}`)
-  }
-  if (!definition.enabled || definition.riskClass === "forbidden_ui") {
-    throw new Error(`Action is not enabled in Control Center: ${definition.id}`)
+  const definition = findActionDefinition(input.actionId)
+  if (!definition || !definition.enabled || definition.riskClass !== "safe_write") {
+    throw new Error("Unknown or disabled Control Center action.")
   }
 
-  const dryRun = Boolean(input.dryRun)
+  const dryRun = input.dryRun !== false
   const actor = input.actor || null
-  const access = canRunControlCenterAction(definition, actor?.role)
   const completedAt = new Date().toISOString()
-  const auditId = `${completedAt.replace(/[^0-9]/g, "")}-${definition.id}`
+  const identifier = auditId(completedAt, definition.id)
+  const access = canRunControlCenterAction(definition, actor?.role)
+  let preflight = await evaluateActionPreflight(definition, { actor, proofId: input.proofId })
 
   if (!access.allowed) {
-    const output = access.reason
-    await appendAuditRecord({
-      at: completedAt,
-      audit_id: auditId,
-      actor: actor?.username || "anonymous",
-      actor_role: actor?.role || "anonymous",
-      action: definition.id,
-      target: definition.target,
-      risk_class: definition.riskClass,
-      minimum_role: definition.minimumRole,
-      dry_run: dryRun,
+    await appendAttemptAudit({
+      completedAt,
+      auditId: identifier,
+      definition,
+      dryRun,
+      actor,
       authorized: false,
       ok: false,
-      reason: redactControlCenterAuditText(input.reason || ""),
-      output_preview: redactControlCenterAuditText(output),
+      reason: input.reason,
+      output: access.reason,
+      preflight,
     })
-    throw new ControlCenterAuthorizationError(output, actor ? 403 : 401)
+    throw new ControlCenterAuthorizationError(access.reason, actor ? 403 : 401)
   }
 
-  if (definition.riskClass === "guarded_write" || definition.riskClass === "dangerous") {
-    if (definition.confirmationText && input.confirmation !== definition.confirmationText) {
-      throw new Error(`Confirmation text must match: ${definition.confirmationText}`)
-    }
-    if (definition.requiresReason && (!input.reason || input.reason.trim().length < 8)) {
-      throw new Error("A maintenance reason with at least 8 characters is required.")
-    }
+  if (dryRun && !preflight.dryRunAllowed) {
+    await appendAttemptAudit({
+      completedAt,
+      auditId: identifier,
+      definition,
+      dryRun: true,
+      actor,
+      authorized: true,
+      ok: false,
+      reason: input.reason,
+      output: "Dry-run preflight is not ready.",
+      preflight,
+    })
+    throw new ControlCenterPreflightError("Dry-run preflight is not ready.", preflight)
   }
-
-  let ok = true
-  let output = dryRun ? `DRY RUN ONLY\n${definition.commandSummary}` : ""
 
   if (!dryRun) {
-    try {
-      const command = definition.command()
-      const result = await execFileAsync(command.file, command.args, {
-        timeout: command.timeout,
-        cwd: command.cwd,
-        windowsHide: true,
-        maxBuffer: 1024 * 1024,
+    const confirmationGate = requireExactExecutionGate(definition, input, preflight)
+    if (confirmationGate) {
+      await appendAttemptAudit({
+        completedAt,
+        auditId: identifier,
+        definition,
+        dryRun: false,
+        actor,
+        authorized: true,
+        ok: false,
+        reason: input.reason,
+        output: "Execution confirmation gate is not ready.",
+        preflight: confirmationGate,
       })
-      output = [result.stdout, result.stderr].filter(Boolean).join("\n").trim() || "Action completed with no output."
-    } catch (error) {
-      ok = false
-      output = error instanceof Error ? error.message : "Action failed."
+      throw new ControlCenterPreflightError("Execution confirmation gate is not ready.", confirmationGate)
     }
+    if (!preflight.executeAllowed || !input.proofId) {
+      await appendAttemptAudit({
+        completedAt,
+        auditId: identifier,
+        definition,
+        dryRun: false,
+        actor,
+        authorized: true,
+        ok: false,
+        reason: input.reason,
+        output: "Execution requires a current dry-run proof.",
+        preflight,
+      })
+      throw new ControlCenterPreflightError("Execution requires a current dry-run proof.", preflight)
+    }
+    consumeDryRunProof(input.proofId)
+    const executed = await executeActionCommand(definition, "execute", input.reason || "")
+    preflight = await evaluateActionPreflight(definition, { actor, proofId: input.proofId })
+    const result: ControlCenterActionResult = {
+      action: toPublicAction(definition),
+      dryRun: false,
+      ok: executed.ok,
+      output: executed.output,
+      auditId: identifier,
+      completedAt,
+      preflight,
+    }
+    await appendAttemptAudit({
+      completedAt,
+      auditId: identifier,
+      definition,
+      dryRun: false,
+      actor,
+      authorized: true,
+      ok: result.ok,
+      reason: input.reason,
+      output: result.output,
+      preflight,
+      consumedProofId: input.proofId,
+    })
+    return result
   }
 
-  output = sanitizeControlCenterActionOutput(output)
-
-  const { command, ...action } = definition
-  void command
-  const result = { action, dryRun, ok, output, auditId, completedAt }
-  await appendAuditRecord({
-    at: result.completedAt,
-    audit_id: result.auditId,
-    actor: actor?.username || "anonymous",
-    actor_role: actor?.role || "anonymous",
-    action: result.action.id,
-    target: result.action.target,
-    risk_class: result.action.riskClass,
-    minimum_role: result.action.minimumRole,
-    dry_run: result.dryRun,
+  const nativeResult = definition.nativeDryRun
+    ? await executeActionCommand(definition, "dry_run", input.reason || "")
+    : { ok: true, output: "Dry-run preflight completed." }
+  const proofId = nativeResult.ok && actor ? randomUUID() : undefined
+  await appendAttemptAudit({
+    completedAt,
+    auditId: identifier,
+    definition,
+    dryRun: true,
+    actor,
     authorized: true,
-    ok: result.ok,
-    reason: redactControlCenterAuditText(input.reason || ""),
-    output_preview: redactControlCenterAuditText(result.output),
+    ok: nativeResult.ok,
+    reason: input.reason,
+    output: nativeResult.output,
+    preflight,
+    proofId,
   })
+  if (proofId && actor) {
+    issueDryRunProof(definition.id, actor, proofId)
+    preflight = await evaluateActionPreflight(definition, { actor, proofId })
+  }
+  const result: ControlCenterActionResult = {
+    action: toPublicAction(definition),
+    dryRun: true,
+    ok: nativeResult.ok,
+    output: nativeResult.output,
+    auditId: identifier,
+    completedAt,
+    proofId,
+    preflight,
+  }
   return result
+}
+
+export function projectControlCenterActionResult(result: ControlCenterActionResult): ControlCenterActionResultProjection {
+  return {
+    schemaVersion: CONTROL_CENTER_ACTION_SCHEMA_VERSION,
+    actionId: result.action.id,
+    dryRun: result.dryRun,
+    ok: result.ok,
+    status: result.ok ? (result.dryRun ? "dry_run_validated" : "completed") : "failed",
+    auditId: result.auditId,
+    completedAt: result.completedAt,
+    ...(result.proofId ? { proofId: result.proofId } : {}),
+    preflight: result.preflight,
+    message: result.ok
+      ? result.dryRun
+        ? "Dry-run validation completed."
+        : "Bounded local refresh completed."
+      : "Bounded local refresh failed. Review the local audit evidence.",
+  }
+}
+
+/** Test-only reset; production code never exposes proof inventory to the browser. */
+export function clearControlCenterActionProofsForTest(): void {
+  dryRunProofs.clear()
 }
 
 async function appendAuditRecord(record: AuditRecord): Promise<void> {

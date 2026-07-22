@@ -38,8 +38,11 @@ EXPECTED_SAFE_WRITE_ACTIONS = {
     "evidence-pack-refresh": "ctoai_evidence_pack_refresh",
     "engine-brain-refresh": "ctoai_engine_brain_refresh",
     "p7-cockpit-smoke-refresh": "ctoai_p7_cockpit_smoke_refresh",
+    "roadmap-state-refresh": "ctoai_roadmap_state_refresh",
+    "full-workspace-validation-refresh": "ctoai_full_workspace_validation_refresh",
 }
 EXPECTED_READ_ONLY_TOOLS = {
+    "ctoai_control_central",
     "ctoai_engine_brain_status",
     "ctoai_engine_brain_self_check",
     "ctoai_engine_brain_brief",

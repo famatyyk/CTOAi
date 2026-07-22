@@ -32,7 +32,9 @@ ROADMAP_GENERATION_DOCS = {
         "needles": [
             "P6: Codex Integration",
             "P7_OPERATOR_BRIEF.json",
-            "Expand the CTOAi plugin beyond these five safe-write MCP tools only after",
+            "Expand the CTOAi plugin beyond these seven registered safe-write MCP tools only after",
+            "Registration does not imply readiness: each",
+            "candidate remains fail-closed until current plugin, preflight, and audit",
         ],
     },
     "engine_brain_status": {
@@ -205,16 +207,40 @@ P7_SAFE_WRITE_ACTION_CANDIDATES = [
         "source": "web/src/lib/controlCenterActions.ts",
         "risk_model": "docs/CTOAI_COMMAND_RISK_MODEL.md",
     },
+    {
+        "id": "roadmap-state-refresh",
+        "risk_class": "safe_write",
+        "control_center_label": "Refresh adaptive roadmap state",
+        "source": "web/src/lib/controlCenterActions.ts",
+        "risk_model": "docs/CTOAI_COMMAND_RISK_MODEL.md",
+        "native_dry_run": True,
+    },
+    {
+        "id": "full-workspace-validation-refresh",
+        "risk_class": "safe_write",
+        "control_center_label": "Refresh full workspace validation",
+        "source": "web/src/lib/controlCenterActions.ts",
+        "risk_model": "docs/CTOAI_COMMAND_RISK_MODEL.md",
+        "native_dry_run": True,
+    },
 ]
 P7_SELECTED_SAFE_WRITE_ACTION_ID = "evidence-pack-refresh"
 P7_SELECTED_SAFE_WRITE_MCP_TOOL = "ctoai_evidence_pack_refresh"
 P7_SELECTED_SAFE_WRITE_CONFIRM_TEXT = "refresh evidence pack"
+P7_ROADMAP_STATE_ACTION_ID = "roadmap-state-refresh"
+P7_ROADMAP_STATE_MCP_TOOL = "ctoai_roadmap_state_refresh"
+P7_ROADMAP_STATE_CONFIRM_TEXT = "refresh roadmap state"
+P7_FULL_WORKSPACE_VALIDATION_ACTION_ID = "full-workspace-validation-refresh"
+P7_FULL_WORKSPACE_VALIDATION_MCP_TOOL = "ctoai_full_workspace_validation_refresh"
+P7_FULL_WORKSPACE_VALIDATION_CONFIRM_TEXT = "refresh full workspace validation"
 P7_ENABLED_SAFE_WRITE_MCP_TOOLS = {
     "repo-hygiene-refresh": "ctoai_repo_hygiene_refresh",
     "api-cost-refresh": "ctoai_api_cost_refresh",
     "evidence-pack-refresh": "ctoai_evidence_pack_refresh",
     "engine-brain-refresh": "ctoai_engine_brain_refresh",
     "p7-cockpit-smoke-refresh": "ctoai_p7_cockpit_smoke_refresh",
+    "roadmap-state-refresh": "ctoai_roadmap_state_refresh",
+    "full-workspace-validation-refresh": "ctoai_full_workspace_validation_refresh",
 }
 
 
@@ -874,6 +900,10 @@ def build_p6_readiness_payload(
             "scripts/ctoai_control_center_cockpit.py",
         ),
         _local_plugin_file_check(
+            "ctoai_plugin_control_central_script",
+            "scripts/ctoai_control_central.py",
+        ),
+        _local_plugin_file_check(
             "ctoai_plugin_self_check_script",
             "scripts/ctoai_engine_brain_self_check.py",
         ),
@@ -919,6 +949,17 @@ def build_p6_readiness_payload(
                 "action audit",
                 "p7_cockpit_smoke",
                 "p7_safe_write_dry_run_smoke",
+            ],
+        ),
+        _local_plugin_source_needles_check(
+            "ctoai_plugin_control_central_mcp_contract",
+            "scripts/ctoai_engine_brain_mcp.py",
+            [
+                "ctoai_control_central",
+                "ctoai_control_central.build_control_central",
+                "control_central_schema",
+                "profile",
+                "detail",
             ],
         ),
         _local_plugin_source_needles_check(
@@ -1050,6 +1091,30 @@ def build_p6_readiness_payload(
             ],
         ),
         _local_plugin_source_needles_check(
+            "ctoai_plugin_roadmap_state_refresh_mcp_contract",
+            "scripts/ctoai_engine_brain_mcp.py",
+            [
+                "ROADMAP_STATE_TOOL_NAME",
+                "ctoai_roadmap_state_refresh",
+                "run_roadmap_state_refresh",
+                "ctoai_roadmap_state.py",
+                '"native_dry_run": True',
+                "refresh roadmap state",
+            ],
+        ),
+        _local_plugin_source_needles_check(
+            "ctoai_plugin_full_workspace_validation_refresh_mcp_contract",
+            "scripts/ctoai_engine_brain_mcp.py",
+            [
+                "FULL_VALIDATION_TOOL_NAME",
+                "ctoai_full_workspace_validation_refresh",
+                "run_full_workspace_validation_refresh",
+                "ctoa_full_workspace_validation.py",
+                '"native_dry_run": True',
+                "refresh full workspace validation",
+            ],
+        ),
+        _local_plugin_source_needles_check(
             "ctoai_plugin_p6_handoff_smoke_status_contract",
             "scripts/ctoai_engine_brain_status.py",
             [
@@ -1107,6 +1172,10 @@ def build_p6_readiness_payload(
                 "ctoai_engine_brain_refresh",
                 "p7-cockpit-smoke-refresh",
                 "ctoai_p7_cockpit_smoke_refresh",
+                "roadmap-state-refresh",
+                "ctoai_roadmap_state_refresh",
+                "full-workspace-validation-refresh",
+                "ctoai_full_workspace_validation_refresh",
                 "preflight",
                 "runtime/control-center/p7-cockpit-smoke.json",
                 "runtime/control-center/p7-safe-write-dry-run-smoke.json",
@@ -1150,6 +1219,20 @@ def build_p6_readiness_payload(
             ],
         ),
         _path_check(
+            "control_center_full_workspace_validation_script",
+            "scripts/ops/ctoa_full_workspace_validation.py",
+        ),
+        _source_needles_check(
+            "control_center_full_workspace_validation_tests",
+            "tests/test_ctoa_full_workspace_validation.py",
+            [
+                "test_dry_run_never_executes_or_writes",
+                "test_confirmed_run_writes_bounded_fixed_registry_evidence",
+                "test_failed_entry_is_recorded_without_sensitive_output",
+                "test_confirmed_run_requires_exact_confirmation",
+            ],
+        ),
+        _path_check(
             "control_center_p7_evidence_review_script",
             "scripts/ops/control_center_p7_evidence_review.py",
         ),
@@ -1185,6 +1268,8 @@ def build_p6_readiness_payload(
                 'id: "evidence-pack-refresh"',
                 'id: "engine-brain-refresh"',
                 'id: "p7-cockpit-smoke-refresh"',
+                'id: "roadmap-state-refresh"',
+                'id: "full-workspace-validation-refresh"',
                 'riskClass: "safe_write"',
                 "appendAuditRecord",
             ],
@@ -1343,7 +1428,7 @@ def build_p6_readiness_payload(
 
     blocking = [check for check in checks if check["status"] != "passed"]
     recommended_next = (
-        "Operate the plugin as four read-only status/cockpit tools plus audited repo-hygiene, API-cost, evidence-pack, Engine Brain, and P7 cockpit-smoke safe-write refreshes."
+        "Operate the plugin as five read-only Control Central/status/cockpit tools. Seven safe-write candidates are registered; invoke only a candidate whose current plugin, preflight, and audit evidence pass."
         if not blocking
         else "Fix blocked readiness checks before creating a CTOAi plugin."
     )
@@ -1351,7 +1436,7 @@ def build_p6_readiness_payload(
         "schema_version": 1,
         "generated_at": generated_at,
         "status": "ready_for_plugin_design" if not blocking else "blocked",
-        "policy": "P6 allows only four read-only status/cockpit tools plus audited repo-hygiene, API-cost, evidence-pack, Engine Brain, and P7 cockpit-smoke safe-write refreshes. Do not add deploy/live shortcuts or bypass Control Center evidence gates.",
+        "policy": "P6 registers five read-only Control Central/status/cockpit tools and seven bounded safe-write candidates. Each candidate remains fail-closed until current plugin, preflight, and audit evidence pass. Do not add deploy/live shortcuts or bypass Control Center evidence gates.",
         "recommended_next": recommended_next,
         "checks": checks,
     }
@@ -1819,15 +1904,15 @@ def build_p7_action_readiness_payload(
         plugin_mcp_allowed = bool(
             expected_mcp_tool and expected_mcp_tool in mcp_write_tools
         )
-        source_ok = _source_has_needles(
-            candidate["source"],
-            [
-                f'id: "{action_id}"',
-                'riskClass: "safe_write"',
-                "dryRunAvailable: true",
-                "appendAuditRecord",
-            ],
-        )
+        source_needles = [
+            f'id: "{action_id}"',
+            'riskClass: "safe_write"',
+            "dryRunAvailable: true",
+            "appendAuditRecord",
+        ]
+        if candidate.get("native_dry_run"):
+            source_needles.append("nativeDryRun: true")
+        source_ok = _source_has_needles(candidate["source"], source_needles)
         risk_model_ok = _source_has_needles(
             candidate["risk_model"],
             [
@@ -2465,7 +2550,7 @@ def build_p7_operator_brief_payload(
             if ready
             else "Fix hard_blockers before expanding P7 operator workflow."
         ),
-        "policy": "Generated operator brief. Only audited repo-hygiene, API-cost, evidence-pack, Engine Brain, and P7 cockpit-smoke safe_write tools are allowed; deploy/live actions remain blocked.",
+        "policy": "Generated operator brief. P7 registers seven bounded safe_write candidates; each remains fail-closed until current source, plugin, preflight, and audit evidence pass. Deploy/live actions remain blocked.",
     }
 
 
@@ -2475,6 +2560,12 @@ def build_p7_operator_workflow_payload(
 ) -> dict[str, Any]:
     p6_ready = p6_payload.get("status") == "ready_for_plugin_design"
     allowed_tools = [
+        {
+            "name": "ctoai_control_central",
+            "risk_class": "read_only",
+            "allowed": True,
+            "purpose": "Return token-efficient brain, Control Center, plugin-management, and sites status with lane-specific drilldown.",
+        },
         {
             "name": "ctoai_engine_brain_status",
             "risk_class": "read_only",
@@ -2544,6 +2635,26 @@ def build_p7_operator_workflow_payload(
             "audit_sink": "runtime/control-center/action-audit.jsonl",
             "purpose": "Dry-run-first refresh of P7 cockpit smoke evidence with Control Center-compatible audit logging.",
         },
+        {
+            "name": P7_ENABLED_SAFE_WRITE_MCP_TOOLS["roadmap-state-refresh"],
+            "risk_class": "safe_write",
+            "allowed": True,
+            "action_id": "roadmap-state-refresh",
+            "dry_run_default": True,
+            "audit_sink": "runtime/control-center/action-audit.jsonl",
+            "purpose": "Registered native dry-run-first P13 roadmap-state candidate; current source, plugin, preflight, and audit evidence remain required.",
+        },
+        {
+            "name": P7_ENABLED_SAFE_WRITE_MCP_TOOLS[
+                "full-workspace-validation-refresh"
+            ],
+            "risk_class": "safe_write",
+            "allowed": True,
+            "action_id": "full-workspace-validation-refresh",
+            "dry_run_default": True,
+            "audit_sink": "runtime/control-center/action-audit.jsonl",
+            "purpose": "Registered native dry-run-first full-workspace-validation candidate; current plugin, preflight, and audit evidence remain required.",
+        },
     ]
     blocked_action_classes = [
         {
@@ -2562,7 +2673,7 @@ def build_p7_operator_workflow_payload(
     gates_before_actions = [
         "Every plugin tool must have a stable risk class from docs/CTOAI_COMMAND_RISK_MODEL.md.",
         "Every write-capable tool must be represented in Control Center action audit before enablement.",
-        "Only ctoai_repo_hygiene_refresh, ctoai_api_cost_refresh, ctoai_evidence_pack_refresh, ctoai_engine_brain_refresh, and ctoai_p7_cockpit_smoke_refresh may be exposed as safe_write in this wave.",
+        "The seven registered safe-write candidates (ctoai_repo_hygiene_refresh, ctoai_api_cost_refresh, ctoai_evidence_pack_refresh, ctoai_engine_brain_refresh, ctoai_p7_cockpit_smoke_refresh, ctoai_roadmap_state_refresh, and ctoai_full_workspace_validation_refresh) may be exposed only when their individual current source, plugin, preflight, and audit evidence pass.",
         "Every safe-write MCP tool must default to dry-run and append runtime/control-center/action-audit.jsonl.",
         "No tool may bypass PromoteLiveCtoa -ApproveLiveDeploy for Solteria Helper live promotion.",
         "No tool may read .env, logs, databases, runtime client state, or private Solteria client data into generated context.",
@@ -2581,11 +2692,11 @@ def build_p7_operator_workflow_payload(
         "blocked_action_classes": blocked_action_classes,
         "gates_before_actions": gates_before_actions,
         "next_safe_command": (
-            "Use ctoai_repo_hygiene_refresh, ctoai_api_cost_refresh, ctoai_evidence_pack_refresh, ctoai_engine_brain_refresh, and ctoai_p7_cockpit_smoke_refresh with dry_run=true before any confirmed refresh."
+            "Assess each registered safe-write candidate with dry_run=true; a missing, failed, or stale current preflight/audit record keeps that candidate blocked."
             if p6_ready
             else "Fix P6 readiness before exposing the P7 operator workflow."
         ),
-        "policy": "P7 operator workflow allows five audited safe_write evidence/context refresh tools. Deploy/live actions stay blocked.",
+        "policy": "P7 registers seven bounded safe_write candidates. Individual readiness is fail-closed on current source, plugin, preflight, and audit evidence; deploy/live actions stay blocked.",
     }
 
 

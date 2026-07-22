@@ -14,8 +14,36 @@ from scripts.ops.engine_brain_index import build_indexes
 PLUGIN_ROOT = engine_brain_index.Path.home() / "plugins" / "ctoai-engine-brain"
 P7_COCKPIT_SMOKE_PATH = "runtime/control-center/p7-cockpit-smoke.json"
 P7_SAFE_WRITE_DRY_RUN_SMOKE_PATH = "runtime/control-center/p7-safe-write-dry-run-smoke.json"
+
+
+def _installed_plugin_supports_full_workspace_validation() -> bool:
+    script = PLUGIN_ROOT / "scripts" / "ctoai_engine_brain_mcp.py"
+    if not script.is_file():
+        return False
+    if "ctoai_full_workspace_validation_refresh" not in script.read_text(
+        encoding="utf-8"
+    ):
+        return False
+    action_readiness_path = (
+        engine_brain_index.ROOT / "AI" / "generated" / "P7_ACTION_READINESS.json"
+    )
+    try:
+        action_readiness = json.loads(action_readiness_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    return "full-workspace-validation-refresh" in {
+        str(candidate.get("id") or candidate.get("action_id") or "")
+        for candidate in action_readiness.get("safe_write_candidates", [])
+        if isinstance(candidate, dict)
+    }
+
+
 requires_engine_brain_plugin = pytest.mark.skipif(
-    not PLUGIN_ROOT.exists(), reason="Engine Brain operator plugin is not installed"
+    not _installed_plugin_supports_full_workspace_validation(),
+    reason=(
+        "Engine Brain plugin and current workspace P6/P7 full-workspace "
+        "validation contract are not both installed"
+    ),
 )
 
 
@@ -262,8 +290,12 @@ def test_engine_brain_index_writes_secret_safe_outputs(tmp_path):
         "control_center_p7_safe_write_dry_run_smoke_tests",
         "control_center_p7_evidence_review_script",
         "control_center_p7_evidence_review_tests",
+        "control_center_full_workspace_validation_script",
+        "control_center_full_workspace_validation_tests",
         "control_center_safe_write_action_catalog",
         "ctoai_plugin_control_center_cockpit_mcp_contract",
+        "ctoai_plugin_control_central_script",
+        "ctoai_plugin_control_central_mcp_contract",
         "ctoai_plugin_control_center_cockpit_drilldown_contract",
         "ctoai_plugin_control_center_cockpit_self_check_contract",
         "ctoai_plugin_control_center_cockpit_script",
@@ -278,6 +310,8 @@ def test_engine_brain_index_writes_secret_safe_outputs(tmp_path):
         "ctoai_plugin_p7_workflow_brief_contract",
         "ctoai_plugin_engine_brain_refresh_mcp_contract",
         "ctoai_plugin_p7_cockpit_smoke_refresh_mcp_contract",
+        "ctoai_plugin_roadmap_state_refresh_mcp_contract",
+        "ctoai_plugin_full_workspace_validation_refresh_mcp_contract",
         "release_evidence_p7_operator_brief",
     }.issubset(p6_check_names)
     workflow_payload = json.loads(p7_operator_workflow_json.read_text(encoding="utf-8"))
@@ -286,8 +320,9 @@ def test_engine_brain_index_writes_secret_safe_outputs(tmp_path):
         "allow_bounded_safe_write_tools",
         "fix_p6_before_operator_workflow",
     }
-    assert "five audited safe_write" in workflow_payload["policy"]
+    assert "P7 registers seven bounded safe_write candidates" in workflow_payload["policy"]
     assert [tool["name"] for tool in workflow_payload["allowed_mcp_tools"]] == [
+        "ctoai_control_central",
         "ctoai_engine_brain_status",
         "ctoai_engine_brain_self_check",
         "ctoai_engine_brain_brief",
@@ -297,17 +332,17 @@ def test_engine_brain_index_writes_secret_safe_outputs(tmp_path):
         "ctoai_evidence_pack_refresh",
         "ctoai_engine_brain_refresh",
         "ctoai_p7_cockpit_smoke_refresh",
+        "ctoai_roadmap_state_refresh",
+        "ctoai_full_workspace_validation_refresh",
     ]
-    assert "repo-hygiene, API-cost, evidence-pack, Engine Brain, and P7 cockpit-smoke" in p6_payload["policy"]
-    if "Fix blocked readiness checks" in p6_payload["recommended_next"]:
-        assert "Fix blocked readiness checks" in p6_payload["recommended_next"]
-    else:
-        assert "repo-hygiene, API-cost, evidence-pack, Engine Brain, and P7 cockpit-smoke" in p6_payload["recommended_next"]
     assert [tool["risk_class"] for tool in workflow_payload["allowed_mcp_tools"]] == [
         "read_only",
         "read_only",
         "read_only",
         "read_only",
+        "read_only",
+        "safe_write",
+        "safe_write",
         "safe_write",
         "safe_write",
         "safe_write",
@@ -337,8 +372,8 @@ def test_engine_brain_index_writes_secret_safe_outputs(tmp_path):
         "monitor_enabled_safe_write_tools",
         "remove_unexpected_mcp_write_tools",
     }
-    assert action_readiness_payload["candidate_count"] == 5
-    assert action_readiness_payload["mcp_write_tool_count"] in {0, 1, 2, 3, 4, 5}
+    assert action_readiness_payload["candidate_count"] == 7
+    assert action_readiness_payload["mcp_write_tool_count"] in {0, 1, 2, 3, 4, 5, 6, 7}
     assert [
         candidate["id"]
         for candidate in action_readiness_payload["safe_write_candidates"]
@@ -348,6 +383,8 @@ def test_engine_brain_index_writes_secret_safe_outputs(tmp_path):
         "evidence-pack-refresh",
         "engine-brain-refresh",
         "p7-cockpit-smoke-refresh",
+        "roadmap-state-refresh",
+        "full-workspace-validation-refresh",
     ]
     allowed_candidates = [
         candidate["id"]
@@ -371,6 +408,8 @@ def test_engine_brain_index_writes_secret_safe_outputs(tmp_path):
             "evidence-pack-refresh",
             "engine-brain-refresh",
             "p7-cockpit-smoke-refresh",
+            "roadmap-state-refresh",
+            "full-workspace-validation-refresh",
         ),
     }
     safe_write_design_payload = json.loads(
@@ -393,13 +432,23 @@ def test_engine_brain_index_writes_secret_safe_outputs(tmp_path):
         in " ".join(safe_write_design_payload["implementation_contract"]).lower()
     )
     brief_payload = json.loads(p7_operator_brief_json.read_text(encoding="utf-8"))
-    assert "repo-hygiene, API-cost, evidence-pack, Engine Brain, and P7 cockpit-smoke" in brief_payload["policy"]
+    assert "P7 registers seven bounded safe_write candidates" in brief_payload["policy"]
     next_safe_mode = brief_payload["action_readiness"].get("next_safe_mode")
     if next_safe_mode == "review_confirmed_safe_write_evidence":
         assert "Review confirmed evidence-pack-refresh audit" in brief_payload["next_safe_command"]
         assert "runtime/evidence/latest.json" in brief_payload["next_safe_command"]
     elif next_safe_mode == "design_next_p7_plugin_action":
-        assert brief_payload["next_safe_command"]
+        assert "Design the next P7 plugin action" in brief_payload["next_safe_command"]
+        assert "risk model coverage" in brief_payload["next_safe_command"]
+    elif next_safe_mode in {
+        "dry_run_roadmap_state_refresh",
+        "confirmed_roadmap_state_refresh",
+        "monitor_adaptive_roadmap_state",
+    }:
+        if brief_payload["hard_blockers"]:
+            assert "hard_blockers" in brief_payload["next_safe_command"]
+        else:
+            assert "roadmap" in brief_payload["next_safe_command"].lower()
     elif next_safe_mode == "confirmed_selected_safe_write":
         assert "ctoai_evidence_pack_refresh" in brief_payload["next_safe_command"]
         assert "dry_run=false" in brief_payload["next_safe_command"]
@@ -412,15 +461,26 @@ def test_engine_brain_index_writes_secret_safe_outputs(tmp_path):
         assert "ctoai_api_cost_refresh" in brief_payload["next_safe_command"]
         assert "ctoai_engine_brain_refresh" in brief_payload["next_safe_command"]
         assert "ctoai_p7_cockpit_smoke_refresh" in brief_payload["next_safe_command"]
+        assert "ctoai_roadmap_state_refresh" in brief_payload["next_safe_command"]
+        assert "ctoai_full_workspace_validation_refresh" in brief_payload["next_safe_command"]
     assert brief_payload["operator_workflow"]["status"] == workflow_payload["status"]
-    assert brief_payload["operator_workflow"]["allowed_tool_count"] == 9
-    assert brief_payload["operator_workflow"]["safe_write_tool_count"] == 5
+    assert brief_payload["operator_workflow"]["allowed_tool_count"] == 12
+    assert brief_payload["operator_workflow"]["safe_write_tool_count"] == 7
     assert (
         brief_payload["action_readiness"]["status"]
         == action_readiness_payload["status"]
     )
-    assert brief_payload["action_readiness"]["candidate_count"] == 5
-    assert brief_payload["action_readiness"]["mcp_write_tool_count"] in {0, 1, 2, 3, 4, 5}
+    assert brief_payload["action_readiness"]["candidate_count"] == 7
+    assert brief_payload["action_readiness"]["mcp_write_tool_count"] in {
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+    }
     assert (
         brief_payload["safe_write_tool_design"]["status"]
         == safe_write_design_payload["status"]

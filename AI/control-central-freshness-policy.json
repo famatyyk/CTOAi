@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "revision": "control-central-v1",
+  "artifacts": {
+    "manifest": 86400,
+    "pack": 86400,
+    "workspace_audit": 86400,
+    "validation": 604800,
+    "p6_handoff": 86400,
+    "evidence": 21600,
+    "action_audit": 86400,
+    "p7_cockpit_smoke": 86400,
+    "p7_dry_run_smoke": 86400
+  }
+}
