@@ -478,6 +478,20 @@ def test_p14_bundle_uses_the_chooser_as_its_only_autoload_and_hides_safe() -> No
     assert "CTOA SAFE" not in chooser_loader
 
 
+def test_p14_chooser_activates_helper_through_its_explicit_safe_loader_api() -> None:
+    chooser_loader = (
+        ROOT / "scripts" / "lua" / "ctoa_chooser" / "ctoa_chooser_loader.lua"
+    ).read_text(encoding="utf-8")
+
+    assert "activation = function(api)" in chooser_loader
+    assert 'type(api.loadHelperOnly) ~= "function"' in chooser_loader
+    assert "pcall(api.loadHelperOnly)" in chooser_loader
+    assert "api.loaded ~= true" in chooser_loader
+    assert "project.activation" in chooser_loader
+    assert "api.init" not in chooser_loader
+    assert "loadRuntimeModules" not in chooser_loader
+
+
 def test_docker_build_tests_use_a_git_capable_nonproduction_stage() -> None:
     dockerfile = DOCKERFILE.read_text(encoding="utf-8")
     workflow = DOCKER_BUILD_WORKFLOW.read_text(encoding="utf-8")

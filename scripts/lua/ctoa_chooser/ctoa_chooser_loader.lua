@@ -8,6 +8,19 @@ local PROJECTS = {
         loader_paths = {"/mods/ctoa_otclient/ctoa_otclient_loader.lua", "mods/ctoa_otclient/ctoa_otclient_loader.lua", "/scripts/lua/otclient/ctoa_otclient_loader.lua"},
         global_name = "CTOA_OTCLIENT",
         label = "CTOA Helper",
+        activation = function(api)
+            if type(api) ~= "table" or type(api.loadHelperOnly) ~= "function" then
+                return false, "project_api_missing"
+            end
+            local callOk, result = pcall(api.loadHelperOnly)
+            if not callOk then
+                return false, tostring(result or "helper_load_failed")
+            end
+            if result == false or api.loaded ~= true then
+                return false, "helper_load_rejected"
+            end
+            return true
+        end,
     },
 }
 
@@ -131,11 +144,13 @@ local function loadProjectFile(projectId)
     local ok, err = pcall(function() dofile(path) end)
     if not ok then return false, tostring(err) end
     local api = projectApi(projectId)
-    if type(api) ~= "table" or type(api.init) ~= "function" then
+    if type(api) ~= "table" or type(project.activation) ~= "function" then
         return false, "project_api_missing"
     end
-    local initOk, result = pcall(api.init)
-    if not initOk or result == false then return false, tostring(result or "init_rejected") end
+    local activationOk, activated, result = pcall(project.activation, api)
+    if not activationOk or activated ~= true then
+        return false, tostring(result or activated or "activation_rejected")
+    end
     return true
 end
 
