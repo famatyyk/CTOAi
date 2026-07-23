@@ -29,6 +29,8 @@ bcrypt>=4.0.0
 # Utilities
 python-dateutil>=2.8.2
 pytz>=2023.3
+numpy>=1.26.0,<3.0.0
+opencv-python-headless>=4.10.0.84,<5.0.0.0
 
 # SSH/Remote
 paramiko>=3.3.0
