@@ -28,7 +28,7 @@ BINDING = {
     "helper_manifest_sha256": "b" * 64,
     "rollback_baseline_manifest_sha256": "c" * 64,
     "snapshot_id": "p14-snapshot-001",
-    "run_id": "p14-run-001",
+    "run_id": "0123456789abcdef",
 }
 
 
@@ -206,6 +206,21 @@ def test_binding_mismatch_rejects_replay_to_another_snapshot(
             public_certificate=certificate_pem,
             expected_binding=BINDING,
         )
+
+
+@pytest.mark.parametrize(
+    "run_id",
+    ["0123456789abcde", "0123456789abcdef0", "0123456789ABCDEf", "p14-run-001"],
+)
+def test_receipt_binding_rejects_noncanonical_run_id(run_id: str) -> None:
+    binding = copy.deepcopy(BINDING)
+    binding["run_id"] = run_id
+
+    with pytest.raises(
+        p14.GuestEvidenceError,
+        match="schema_invalid:ctoa-p14-guest-receipt.schema.json:binding.run_id",
+    ):
+        p14.validate_receipt(_receipt(binding=binding))
 
 
 def test_passed_proof_requires_nonzero_digest_bound_evidence(

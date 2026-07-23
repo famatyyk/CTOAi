@@ -65,10 +65,48 @@ function Get-P14RegularFileHash([string]$Path, [int]$MaxBytes = 2MB) {
     return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant()
 }
 
+function ConvertTo-P14Hashtable(
+    [object]$Value,
+    [int]$CurrentDepth = 0,
+    [int]$MaximumDepth = 12
+) {
+    # Windows PowerShell 5.1 lacks the hashtable and depth switches on its JSON reader.
+    # Keep the same bounded, recursively indexed data contract locally.
+    if ($CurrentDepth -gt $MaximumDepth) {
+        throw 'p14_json_depth_exceeded'
+    }
+    if ($null -eq $Value) {
+        return $null
+    }
+    if ($Value -is [System.Collections.IDictionary]) {
+        $converted = @{}
+        foreach ($entry in $Value.GetEnumerator()) {
+            $converted[[string]$entry.Key] = ConvertTo-P14Hashtable -Value $entry.Value -CurrentDepth ($CurrentDepth + 1) -MaximumDepth $MaximumDepth
+        }
+        return $converted
+    }
+    if ($Value -is [pscustomobject]) {
+        $converted = @{}
+        foreach ($property in $Value.PSObject.Properties) {
+            $converted[[string]$property.Name] = ConvertTo-P14Hashtable -Value $property.Value -CurrentDepth ($CurrentDepth + 1) -MaximumDepth $MaximumDepth
+        }
+        return $converted
+    }
+    if ($Value -is [System.Collections.IEnumerable] -and $Value -isnot [string]) {
+        $converted = [System.Collections.Generic.List[object]]::new()
+        foreach ($item in $Value) {
+            $converted.Add((ConvertTo-P14Hashtable -Value $item -CurrentDepth ($CurrentDepth + 1) -MaximumDepth $MaximumDepth)) | Out-Null
+        }
+        return ,$converted.ToArray()
+    }
+    return $Value
+}
+
 function Get-P14Json([string]$Path, [int]$MaxBytes = 2MB) {
     Get-P14RegularFileHash $Path $MaxBytes | Out-Null
     try {
-        $value = Get-Content -LiteralPath $Path -Raw | ConvertFrom-Json -AsHashtable -Depth 12
+        $parsed = Get-Content -LiteralPath $Path -Raw | ConvertFrom-Json -ErrorAction Stop
+        $value = ConvertTo-P14Hashtable -Value $parsed -MaximumDepth 12
     } catch {
         Stop-P14GuestBroker 'evidence_json_invalid'
     }

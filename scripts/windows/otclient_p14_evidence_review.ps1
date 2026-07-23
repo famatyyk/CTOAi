@@ -37,6 +37,43 @@ function Test-P14PathWithin([string]$Path, [string]$Root) {
         $candidate.StartsWith($allowed + '\', [StringComparison]::OrdinalIgnoreCase)
 }
 
+function ConvertTo-P14Hashtable(
+    [object]$Value,
+    [int]$CurrentDepth = 0,
+    [int]$MaximumDepth = 10
+) {
+    # Windows PowerShell 5.1 lacks the hashtable and depth switches on its JSON reader.
+    # Keep the same bounded, recursively indexed data contract locally.
+    if ($CurrentDepth -gt $MaximumDepth) {
+        throw 'p14_json_depth_exceeded'
+    }
+    if ($null -eq $Value) {
+        return $null
+    }
+    if ($Value -is [System.Collections.IDictionary]) {
+        $converted = @{}
+        foreach ($entry in $Value.GetEnumerator()) {
+            $converted[[string]$entry.Key] = ConvertTo-P14Hashtable -Value $entry.Value -CurrentDepth ($CurrentDepth + 1) -MaximumDepth $MaximumDepth
+        }
+        return $converted
+    }
+    if ($Value -is [pscustomobject]) {
+        $converted = @{}
+        foreach ($property in $Value.PSObject.Properties) {
+            $converted[[string]$property.Name] = ConvertTo-P14Hashtable -Value $property.Value -CurrentDepth ($CurrentDepth + 1) -MaximumDepth $MaximumDepth
+        }
+        return $converted
+    }
+    if ($Value -is [System.Collections.IEnumerable] -and $Value -isnot [string]) {
+        $converted = [System.Collections.Generic.List[object]]::new()
+        foreach ($item in $Value) {
+            $converted.Add((ConvertTo-P14Hashtable -Value $item -CurrentDepth ($CurrentDepth + 1) -MaximumDepth $MaximumDepth)) | Out-Null
+        }
+        return ,$converted.ToArray()
+    }
+    return $Value
+}
+
 function Get-P14Json([string]$Path) {
     if (
         -not (Test-Path -LiteralPath $Path -PathType Leaf) -or
@@ -46,7 +83,12 @@ function Get-P14Json([string]$Path) {
         Stop-P14EvidenceReview 'evidence_json_invalid'
     }
     try {
-        return Get-Content -LiteralPath $Path -Raw | ConvertFrom-Json -AsHashtable -Depth 10
+        $parsed = Get-Content -LiteralPath $Path -Raw | ConvertFrom-Json -ErrorAction Stop
+        $value = ConvertTo-P14Hashtable -Value $parsed -MaximumDepth 10
+        if ($value -isnot [hashtable]) {
+            Stop-P14EvidenceReview 'evidence_json_invalid'
+        }
+        return $value
     } catch {
         Stop-P14EvidenceReview 'evidence_json_invalid'
     }

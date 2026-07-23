@@ -167,7 +167,11 @@ cryptographically bound evidence contract provide the control boundary. When an
 external envelope is supplied, the dispatch must also provide the matching
 one-time `guest_run_id`. The job validates values without printing keys or the
 envelope payload, performs a clean checkout without persisted GitHub credentials,
-and uploads a separately named seven-day artifact. The GitHub-hosted VM is
+and uploads a separately named seven-day artifact containing only the fixed
+preflight allowlist: `request.json`, `result.json`, `acceptance-request.json`,
+`acceptance-result.json`, and `acceptance-report.json`. The injected
+`guest-evidence-envelope.json` and replay-ledger `guest-run-claim.json` remain
+inside the protected job and are never uploaded. The GitHub-hosted VM is
 disposable and never the operator workstation.
 
 ### Durable one-time guest-run ledger
@@ -271,7 +275,7 @@ and guest integration channel, set `CTOA/P14/EndpointProfile` to
 snapshot UUID only after recording the new UUID. The previous NAT-capable snapshot
 is not an acceptable fallback and is rejected by the host runner.
 
-For each run, generate a new 16-hex run ID, execute the host runner with that ID,
+For each run, generate a new lowercase 16-hex run ID, execute the host runner with that ID,
 then dispatch the protected workflow with `run_protected_replay=true`, the returned
 `acceptance_envelope_b64`, and the same `guest_run_id`. This binds a result to a
 single appliance run. The protected workflow records the opaque one-time ledger

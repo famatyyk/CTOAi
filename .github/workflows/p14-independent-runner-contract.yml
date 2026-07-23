@@ -131,7 +131,14 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: p14-github-hosted-contract-${{ github.run_id }}
-          path: runtime/p14_independent_runner/*.json
+          # Keep the archive compatible with the bounded preflight reader and
+          # never publish future runtime inputs merely because they are JSON.
+          path: |
+            runtime/p14_independent_runner/request.json
+            runtime/p14_independent_runner/result.json
+            runtime/p14_independent_runner/acceptance-request.json
+            runtime/p14_independent_runner/acceptance-result.json
+            runtime/p14_independent_runner/acceptance-report.json
           if-no-files-found: error
           retention-days: 7
 
@@ -355,6 +362,14 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: p14-protected-contract-${{ github.run_id }}
-          path: runtime/p14_independent_runner/*.json
+          # The external envelope and replay-ledger claim are untrusted or
+          # operational inputs, not public contract evidence. Upload only the
+          # bounded files accepted by otclient_p14_runner_preflight.py.
+          path: |
+            runtime/p14_independent_runner/request.json
+            runtime/p14_independent_runner/result.json
+            runtime/p14_independent_runner/acceptance-request.json
+            runtime/p14_independent_runner/acceptance-result.json
+            runtime/p14_independent_runner/acceptance-report.json
           if-no-files-found: error
           retention-days: 7

@@ -29,6 +29,7 @@ REVISION = "a" * 40
 KEY = b"p14-acceptance-test-key-material-32-bytes-minimum"
 KEY_ID = "p14-acceptance-test"
 GENERATED_AT = "2026-07-16T16:00:00Z"
+GUEST_RUN_ID = "0123456789abcdef"
 
 
 def _roadmap_state() -> dict[str, object]:
@@ -228,7 +229,7 @@ def _guest_evidence_envelope(
             "helper_manifest_sha256": request["binding"]["helper_manifest_sha256"],
             "rollback_baseline_manifest_sha256": baseline,
             "snapshot_id": "p14-snapshot-001",
-            "run_id": "p14-run-001",
+            "run_id": GUEST_RUN_ID,
         },
         "isolation": copy.deepcopy(p14.ISOLATION),
         "capabilities": report["capabilities"],
@@ -368,14 +369,14 @@ def test_attest_requires_a_verified_guest_envelope_for_a_passed_result(
     monkeypatch.setenv(p14.GUEST_EVIDENCE_CERT_ENV, certificate_b64)
     monkeypatch.setenv(p14.GUEST_EVIDENCE_KEY_ID_ENV, "p14-guest-evidence")
     monkeypatch.setenv(p14.GUEST_SNAPSHOT_ID_ENV, "p14-snapshot-001")
-    monkeypatch.setenv(p14.GUEST_RUN_ID_ENV, "p14-run-001")
+    monkeypatch.setenv(p14.GUEST_RUN_ID_ENV, GUEST_RUN_ID)
     args = SimpleNamespace(artifact_root=str(artifact_root))
 
-    monkeypatch.setenv(p14.GUEST_RUN_ID_ENV, "p14-run-002")
+    monkeypatch.setenv(p14.GUEST_RUN_ID_ENV, "fedcba9876543210")
     with pytest.raises(p14.AttestationError, match="guest_evidence_envelope_invalid"):
         p14._attest(args)
 
-    monkeypatch.setenv(p14.GUEST_RUN_ID_ENV, "p14-run-001")
+    monkeypatch.setenv(p14.GUEST_RUN_ID_ENV, GUEST_RUN_ID)
     assert p14._attest(args) == 0
     result = json.loads((artifact_root / "acceptance-result.json").read_text())
     assert result["status"] == "passed"
@@ -413,7 +414,7 @@ def test_verify_guest_evidence_has_no_attestation_write_side_effect(
     monkeypatch.setenv(p14.GUEST_EVIDENCE_CERT_ENV, certificate_b64)
     monkeypatch.setenv(p14.GUEST_EVIDENCE_KEY_ID_ENV, "p14-guest-evidence")
     monkeypatch.setenv(p14.GUEST_SNAPSHOT_ID_ENV, "p14-snapshot-001")
-    monkeypatch.setenv(p14.GUEST_RUN_ID_ENV, "p14-run-001")
+    monkeypatch.setenv(p14.GUEST_RUN_ID_ENV, GUEST_RUN_ID)
 
     assert (
         p14._verify_guest_evidence(SimpleNamespace(artifact_root=str(artifact_root)))
@@ -530,3 +531,25 @@ def test_workflow_tracks_acceptance_contract_and_prepares_only_a_request() -> No
     assert "guest_run_id" in source
     assert "guest-evidence-envelope.json" in source
     assert "CTOA_P14_GUEST_EVIDENCE_PUBLIC_CERT_B64" in source
+
+
+def test_workflow_uploads_only_preflight_allowlisted_p14_evidence() -> None:
+    source = WORKFLOW.read_text(encoding="utf-8")
+    protected_upload = source.split(
+        "      - name: Upload protected contract evidence\n", 1
+    )[1]
+
+    assert "path: |" in protected_upload
+    assert "runtime/p14_independent_runner/*.json" not in protected_upload
+    for filename in (
+        "request.json",
+        "result.json",
+        "acceptance-request.json",
+        "acceptance-result.json",
+        "acceptance-report.json",
+    ):
+        assert f"runtime/p14_independent_runner/{filename}" in protected_upload
+    # These values may be consumed inside the protected job, but must never
+    # become part of the downloadable artifact preflight parses.
+    assert "guest-evidence-envelope.json" not in protected_upload
+    assert "guest-run-claim.json" not in protected_upload

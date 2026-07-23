@@ -73,7 +73,8 @@
           "$ref": "#/$defs/safeId"
         },
         "run_id": {
-          "$ref": "#/$defs/safeId"
+          "type": "string",
+          "pattern": "^[a-f0-9]{16}$"
         }
       }
     },

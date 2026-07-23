@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -13,6 +14,14 @@ HOST_RUNNER = WINDOWS / "otclient_p14_vm_runner.ps1"
 GUEST_PROVISION = WINDOWS / "otclient_p14_guest_provision.ps1"
 GUEST_BROKER = WINDOWS / "otclient_p14_guest_broker.ps1"
 EVIDENCE_REVIEW = WINDOWS / "otclient_p14_evidence_review.ps1"
+VM_CAPTURE = WINDOWS / "otclient_p14_vm_capture.ps1"
+P14_WINDOWS_SCRIPTS = (
+    HOST_RUNNER,
+    GUEST_PROVISION,
+    GUEST_BROKER,
+    EVIDENCE_REVIEW,
+    VM_CAPTURE,
+)
 
 
 def _source(path: Path) -> str:
@@ -110,6 +119,52 @@ def test_guest_broker_accepts_only_a_run_id_and_fixed_local_sequence() -> None:
     _assert_no_interactive_or_remote_control(source)
 
 
+@pytest.mark.parametrize("path", [GUEST_BROKER, EVIDENCE_REVIEW])
+def test_p14_guest_json_is_compatible_with_windows_powershell_51(path: Path) -> None:
+    source = _source(path)
+
+    assert "ConvertFrom-Json -AsHashtable" not in source
+    assert "ConvertFrom-Json -Depth" not in source
+    assert "function ConvertTo-P14Hashtable" in source
+    assert "p14_json_depth_exceeded" in source
+
+    powershell = shutil.which("powershell.exe")
+    if not powershell:
+        pytest.skip("Windows PowerShell 5.1 is unavailable")
+
+    escaped_path = str(path).replace("'", "''")
+    command = (
+        "$ErrorActionPreference='Stop'; "
+        f"$scriptPath='{escaped_path}'; "
+        "$text=[IO.File]::ReadAllText($scriptPath); "
+        "$start=$text.IndexOf('function ConvertTo-P14Hashtable'); "
+        "$end=$text.IndexOf('function Get-P14Json'); "
+        "if ($start -lt 0 -or $end -le $start) { throw 'compatibility helper missing' }; "
+        ". ([scriptblock]::Create($text.Substring($start, $end - $start))); "
+        "$value=ConvertTo-P14Hashtable -Value ('{\"nested\":{\"flag\":true},\"items\":[{\"kind\":\"proof\"}],\"empty\":[]}' | ConvertFrom-Json); "
+        "if ($value -isnot [hashtable] -or $value['nested'] -isnot [hashtable] -or "
+        "$value['items'][0] -isnot [hashtable] -or $value['items'][0]['kind'] -ne 'proof' -or "
+        "$value['empty'].Count -ne 0) { throw 'JSON conversion contract failed' }"
+    )
+    result = subprocess.run(
+        [powershell, "-NoLogo", "-NoProfile", "-Command", command],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=20,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize("path", P14_WINDOWS_SCRIPTS)
+def test_p14_windows_json_readers_do_not_use_pscore_only_switches(path: Path) -> None:
+    source = _source(path)
+
+    assert not re.search(
+        r"ConvertFrom-Json[^\r\n]*-(?:AsHashtable|Depth)\b", source
+    ), path
+
+
 def test_evidence_review_has_only_fixed_derived_evidence_paths() -> None:
     source = _source(EVIDENCE_REVIEW)
 
@@ -128,10 +183,10 @@ def test_evidence_review_has_only_fixed_derived_evidence_paths() -> None:
 
 
 @pytest.mark.parametrize(
-    "path", [HOST_RUNNER, GUEST_PROVISION, GUEST_BROKER, EVIDENCE_REVIEW]
+    "path", P14_WINDOWS_SCRIPTS
 )
-def test_p14_guest_scaffolding_parses_without_running(path: Path) -> None:
-    powershell = shutil.which("pwsh") or shutil.which("powershell")
+def test_p14_windows_scripts_parse_in_windows_powershell_51(path: Path) -> None:
+    powershell = shutil.which("powershell.exe") or shutil.which("pwsh")
     if not powershell:
         pytest.skip("PowerShell is unavailable")
     escaped_path = str(path).replace("'", "''")
