@@ -294,7 +294,7 @@ function New-P14RunEvidenceRoot([string]$RunId) {
     if (Test-Path -LiteralPath $path) {
         Stop-P14GuestBroker 'capture_evidence_run_already_exists'
     }
-    New-Item -ItemType Directory -LiteralPath $path -Force | Out-Null
+        New-Item -ItemType Directory -Path $path -Force | Out-Null
     return (Resolve-Path -LiteralPath $path).Path
 }
 

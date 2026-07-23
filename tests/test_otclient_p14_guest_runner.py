@@ -15,12 +15,14 @@ GUEST_PROVISION = WINDOWS / "otclient_p14_guest_provision.ps1"
 GUEST_BROKER = WINDOWS / "otclient_p14_guest_broker.ps1"
 EVIDENCE_REVIEW = WINDOWS / "otclient_p14_evidence_review.ps1"
 VM_CAPTURE = WINDOWS / "otclient_p14_vm_capture.ps1"
+BASELINE_CAPTURE = WINDOWS / "otclient_p14_baseline_capture.ps1"
 P14_WINDOWS_SCRIPTS = (
     HOST_RUNNER,
     GUEST_PROVISION,
     GUEST_BROKER,
     EVIDENCE_REVIEW,
     VM_CAPTURE,
+    BASELINE_CAPTURE,
 )
 
 
@@ -57,11 +59,14 @@ def test_host_runner_is_fixed_to_the_p14_appliance_and_dry_run_by_default() -> N
     assert "Stop-AndRestoreP14Appliance" in source
     assert "'controlvm', $P14VmUuid, 'poweroff'" in source
     assert "acceptance_envelope_b64" in source
+    assert "CurrentSnapshotUUID') -ne $P14SnapshotUuid" in source
     assert "'snapshot', $P14VmUuid, 'restore', $P14SnapshotUuid" in source
     assert "'startvm', $P14VmUuid, '--type', 'headless'" in source
     assert "'getextradata', $P14VmUuid, $P14EndpointProfileKey" in source
+    assert "recording_enabled = 'off'" in source
     assert "nic1 = 'none'" in source
-    assert "cableconnected1 = 'off'" in source
+    assert "Get-P14MachineValue $machine 'cableconnected1'" in source
+    assert "appliance_setting_invalid:cableconnected1" in source
     assert "network_mode_not_isolated" in source
     assert "shared_folder_not_allowed" in source
     _assert_no_interactive_or_remote_control(source)
@@ -86,9 +91,43 @@ def test_guest_provision_uses_only_the_current_standard_guest_account() -> None:
     assert "C:\\P14Runner\\bundle\\helper-manifest.json" in source
     assert "C:\\P14Runner\\runs" in source
     assert "C:\\P14Runner\\evidence" in source
+    assert "[switch]$ApproveVisualBaseline" in source
+    assert "visual_baseline_approval_required" in source
+    assert "baseline-receipt.json" in source
+    assert "Get-P14VisualBaseline $revision" in source
+    assert "Set-P14ImmutableTree $P14BaselineRoot" in source
+    assert "VisualBaselineSha256" not in source
     assert "[string]$Password" not in source
     assert "Register-ScheduledTask" not in source
     _assert_no_interactive_or_remote_control(source)
+
+
+def test_baseline_capture_is_guest_only_and_requires_later_owner_approval() -> None:
+    source = _source(BASELINE_CAPTURE)
+
+    assert "[switch]$Apply" in source
+    assert "$P14BaselineRoot = 'C:\\P14Runner\\baseline'" in source
+    assert "$P14BaselineReceipt = 'C:\\P14Runner\\baseline\\baseline-receipt.json'" in source
+    assert "awaiting_owner_approval" in source
+    assert "Get-P14RunId" in source
+    assert "RandomNumberGenerator" in source
+    assert "Set-P14CaptureEnvironment $runId" in source
+    assert "& $P14CaptureScript -SourceRevision $sourceRevision" in source
+    assert "network_adapter_not_isolated" in source
+    assert "baseline_root_not_empty" in source
+    assert "VisualBaselineSha256" not in source
+    assert "VBoxManage" not in source
+    _assert_no_interactive_or_remote_control(source)
+
+
+@pytest.mark.parametrize("path", [GUEST_PROVISION, GUEST_BROKER, BASELINE_CAPTURE])
+def test_p14_guest_directory_creation_uses_the_supported_path_parameter(
+    path: Path,
+) -> None:
+    source = _source(path)
+
+    assert "New-Item -ItemType Directory -LiteralPath" not in source
+    assert "New-Item -ItemType Directory -Path" in source
 
 
 def test_guest_broker_accepts_only_a_run_id_and_fixed_local_sequence() -> None:
@@ -119,7 +158,7 @@ def test_guest_broker_accepts_only_a_run_id_and_fixed_local_sequence() -> None:
     _assert_no_interactive_or_remote_control(source)
 
 
-@pytest.mark.parametrize("path", [GUEST_BROKER, EVIDENCE_REVIEW])
+@pytest.mark.parametrize("path", [GUEST_PROVISION, GUEST_BROKER, EVIDENCE_REVIEW, BASELINE_CAPTURE])
 def test_p14_guest_json_is_compatible_with_windows_powershell_51(path: Path) -> None:
     source = _source(path)
 
