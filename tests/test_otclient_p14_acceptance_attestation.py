@@ -1,13 +1,19 @@
 from __future__ import annotations
 
+import base64
 import copy
 import importlib.util
 import json
 import subprocess
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+from cryptography import x509
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.x509.oid import NameOID
 from jsonschema import Draft202012Validator
 
 
@@ -183,6 +189,61 @@ def _acceptance_request(
     )
 
 
+def _guest_evidence_envelope(
+    runner_request: dict[str, object], request: dict[str, object]
+) -> tuple[dict[str, str], str]:
+    private_key = ec.generate_private_key(ec.SECP256R1())
+    now = datetime.now(timezone.utc)
+    name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "CTOAi P14 guest")])
+    certificate = (
+        x509.CertificateBuilder()
+        .subject_name(name)
+        .issuer_name(name)
+        .public_key(private_key.public_key())
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(now - timedelta(minutes=1))
+        .not_valid_after(now + timedelta(days=1))
+        .sign(private_key, hashes.SHA256())
+    )
+    baseline = p14.foundation.canonical_sha256(
+        p14.foundation._artifact_map(runner_request)["rollback_baseline"]["payload"]
+    )
+    report = _report(request)
+    for capability in report["capabilities"]:
+        if capability["transition"] is not None:
+            capability["transition"]["baseline_manifest_sha256"] = baseline
+            capability["transition"]["changed_manifest_sha256"] = "d" * 64
+            capability["transition"]["restored_manifest_sha256"] = (
+                "d" * 64
+                if capability["capability"] == "canary_rehearsal"
+                else baseline
+            )
+            capability["transition"]["changed_file_count"] = 1
+    receipt = {
+        "schema_version": "ctoa.p14-guest-receipt.v1",
+        "receipt_id": "p14-guest-0123456789abcdef",
+        "generated_at": GENERATED_AT,
+        "binding": {
+            "source_revision": request["binding"]["source_revision"],
+            "helper_manifest_sha256": request["binding"]["helper_manifest_sha256"],
+            "rollback_baseline_manifest_sha256": baseline,
+            "snapshot_id": "p14-snapshot-001",
+            "run_id": "p14-run-001",
+        },
+        "isolation": copy.deepcopy(p14.ISOLATION),
+        "capabilities": report["capabilities"],
+    }
+    envelope = p14.guest_evidence.build_envelope(
+        p14.guest_evidence.canonical_json_bytes(receipt),
+        private_key=private_key,
+        key_id="p14-guest-evidence",
+    )
+    certificate_b64 = base64.b64encode(
+        certificate.public_bytes(serialization.Encoding.PEM)
+    ).decode("ascii")
+    return envelope, certificate_b64
+
+
 def test_complete_attestation_is_signed_bound_and_secret_minimized(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -248,18 +309,27 @@ def test_valid_nonpassed_attestation_exits_success_for_verify_and_upload(
     expected_status: str,
     expected_blockers: list[str],
 ) -> None:
-    request = _acceptance_request(
-        monkeypatch,
-        tmp_path,
-        capabilities,
+    runner_request, runner_result = _base_runner_bundle(monkeypatch, tmp_path)
+    request = p14.build_acceptance_request(
+        runner_request,
+        runner_result,
+        generated_at=GENERATED_AT,
+        key=KEY,
+        key_id=KEY_ID,
+        required_capabilities=capabilities,
     )
     artifact_root = tmp_path / "acceptance-artifacts"
     artifact_root.mkdir()
+    (artifact_root / "request.json").write_text(
+        json.dumps(runner_request), encoding="utf-8"
+    )
     (artifact_root / "acceptance-request.json").write_text(
         json.dumps(request), encoding="utf-8"
     )
-    (artifact_root / "acceptance-report.json").write_text(
-        json.dumps(_report(request, blocked=blocked)), encoding="utf-8"
+    monkeypatch.setattr(
+        p14,
+        "_project_guest_evidence",
+        lambda *args, **kwargs: _report(request, blocked=blocked),
     )
     monkeypatch.setattr(p14.foundation, "_signing_material", lambda: (KEY, KEY_ID))
     args = SimpleNamespace(artifact_root=str(artifact_root))
@@ -269,6 +339,51 @@ def test_valid_nonpassed_attestation_exits_success_for_verify_and_upload(
     assert result["status"] == expected_status
     assert result["blockers"] == expected_blockers
     assert p14._verify_result(args) == 0
+
+
+def test_attest_requires_a_verified_guest_envelope_for_a_passed_result(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    runner_request, runner_result = _base_runner_bundle(monkeypatch, tmp_path)
+    request = p14.build_acceptance_request(
+        runner_request,
+        runner_result,
+        generated_at=GENERATED_AT,
+        key=KEY,
+        key_id=KEY_ID,
+    )
+    artifact_root = tmp_path / "guest-envelope-artifacts"
+    artifact_root.mkdir()
+    (artifact_root / "request.json").write_text(
+        json.dumps(runner_request), encoding="utf-8"
+    )
+    (artifact_root / "acceptance-request.json").write_text(
+        json.dumps(request), encoding="utf-8"
+    )
+    envelope, certificate_b64 = _guest_evidence_envelope(runner_request, request)
+    (artifact_root / p14.GUEST_EVIDENCE_ENVELOPE_FILENAME).write_text(
+        json.dumps(envelope), encoding="utf-8"
+    )
+    monkeypatch.setattr(p14.foundation, "_signing_material", lambda: (KEY, KEY_ID))
+    monkeypatch.setenv(p14.GUEST_EVIDENCE_CERT_ENV, certificate_b64)
+    monkeypatch.setenv(p14.GUEST_EVIDENCE_KEY_ID_ENV, "p14-guest-evidence")
+    monkeypatch.setenv(p14.GUEST_SNAPSHOT_ID_ENV, "p14-snapshot-001")
+    monkeypatch.setenv(p14.GUEST_RUN_ID_ENV, "p14-run-001")
+    args = SimpleNamespace(artifact_root=str(artifact_root))
+
+    monkeypatch.setenv(p14.GUEST_RUN_ID_ENV, "p14-run-002")
+    with pytest.raises(p14.AttestationError, match="guest_evidence_envelope_invalid"):
+        p14._attest(args)
+
+    monkeypatch.setenv(p14.GUEST_RUN_ID_ENV, "p14-run-001")
+    assert p14._attest(args) == 0
+    result = json.loads((artifact_root / "acceptance-result.json").read_text())
+    assert result["status"] == "passed"
+    assert (artifact_root / "acceptance-report.json").is_file()
+
+    (artifact_root / p14.GUEST_EVIDENCE_ENVELOPE_FILENAME).unlink()
+    with pytest.raises(p14.AttestationError, match="guest_evidence_envelope_missing"):
+        p14._attest(args)
 
 
 def test_invalid_attestation_keeps_nonzero_exit_and_writes_no_result(
@@ -369,8 +484,12 @@ def test_cli_has_no_client_command_promotion_or_control_central_raw_artifact_sur
 
 def test_workflow_tracks_acceptance_contract_and_prepares_only_a_request() -> None:
     source = WORKFLOW.read_text(encoding="utf-8")
-    assert "schemas/ctoa-p14-acceptance-*.schema.json" in source
+    assert "schemas/ctoa-p14-*.schema.json" in source
     assert "tests/test_otclient_p14_acceptance_attestation.py" in source
+    assert "tests/test_otclient_p14_guest_evidence.py" in source
     assert "otclient_p14_acceptance_attestation.py prepare" in source
     assert "otclient_p14_acceptance_attestation.py attest" in source
-    assert "acceptance-report.json" in source
+    assert "acceptance_envelope_b64" in source
+    assert "guest_run_id" in source
+    assert "guest-evidence-envelope.json" in source
+    assert "CTOA_P14_GUEST_EVIDENCE_PUBLIC_CERT_B64" in source

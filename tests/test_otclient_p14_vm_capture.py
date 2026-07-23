@@ -27,6 +27,9 @@ def test_vm_capture_is_guest_bound_and_fail_closed() -> None:
     assert "VirtualBox Guest Additions" in source
     assert "C:\\Windows\\System32\\VBoxService.exe" in source
     assert "VBoxManage" not in source
+    assert "CTOA_P14_RUN_ID" in source
+    assert "run_id_invalid" in source
+    assert "caller_path_override_rejected" in source
 
 
 def test_vm_capture_keeps_client_and_evidence_roots_separate() -> None:
@@ -44,6 +47,9 @@ def test_vm_capture_keeps_client_and_evidence_roots_separate() -> None:
     assert "Test-PathWithin $ClientRoot $Path" in source
     assert "client-capabilities.json" in source
     assert "capture-report.json" in source
+    assert "C:\\P14Runner\\client\\otclient.exe" in source
+    assert "CTOA_P14_CLIENT_PATH) {" not in source
+    assert "CTOA_P14_EVIDENCE_ROOT) {" not in source
 
 
 def test_vm_capture_passes_a_bounded_helper_activation_and_reporter_target() -> None:
@@ -67,8 +73,19 @@ def test_vm_capture_passes_a_bounded_helper_activation_and_reporter_target() -> 
     assert "SetEnvironmentVariable" not in source
     assert "Get-StrictPath $reporter $reporterRoot 'reporter'" in source
     assert "Copy-Item -LiteralPath $resolvedReporter" in source
-    assert "reporter_path = $resolvedReporter" in source
+    assert "reporter_artifact = [IO.Path]::GetFileName($capabilityCopy)" in source
     assert "mods\\ctoa_otclient\\ctoa_client_capabilities.json" not in source
+
+
+def test_vm_capture_is_limited_to_the_client_window_and_not_log_export() -> None:
+    source = SCRIPT.read_text(encoding="utf-8")
+
+    assert "Get-P14ClientWindowBounds" in source
+    assert "client_window_missing" in source
+    assert "client_window_bounds_invalid" in source
+    assert "[CTOAiP14NativeWindow]::GetWindowRect" in source
+    assert "System.Windows.Forms" not in source
+    assert "otclient.log" not in source
 
 
 def test_capture_reporter_override_requires_full_guest_context(tmp_path: Path) -> None:

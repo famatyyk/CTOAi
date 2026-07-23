@@ -1,0 +1,210 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ctoai.local/schemas/ctoa-p14-guest-receipt.schema.json",
+  "title": "CTOAi P14 isolated guest evidence receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "receipt_id",
+    "generated_at",
+    "binding",
+    "isolation",
+    "capabilities"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "ctoa.p14-guest-receipt.v1"
+    },
+    "receipt_id": {
+      "type": "string",
+      "pattern": "^p14-guest-[a-f0-9]{16}$"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "binding": {
+      "$ref": "#/$defs/binding"
+    },
+    "isolation": {
+      "$ref": "#/$defs/isolation"
+    },
+    "capabilities": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 4,
+      "items": {
+        "$ref": "#/$defs/capabilityResult"
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "safeId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{2,63}$"
+    },
+    "binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_revision",
+        "helper_manifest_sha256",
+        "rollback_baseline_manifest_sha256",
+        "snapshot_id",
+        "run_id"
+      ],
+      "properties": {
+        "source_revision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "helper_manifest_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "rollback_baseline_manifest_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "snapshot_id": {
+          "$ref": "#/$defs/safeId"
+        },
+        "run_id": {
+          "$ref": "#/$defs/safeId"
+        }
+      }
+    },
+    "capability": {
+      "enum": [
+        "visual_regression",
+        "in_world_regression",
+        "canary_rehearsal",
+        "rollback_rehearsal"
+      ]
+    },
+    "proof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "proof_id",
+        "status",
+        "artifact_count",
+        "evidence_sha256"
+      ],
+      "properties": {
+        "proof_id": {
+          "enum": [
+            "isolated_visual_capture",
+            "independent_visual_review",
+            "isolated_client_launch",
+            "helper_runtime_smoke",
+            "independent_in_world_review",
+            "sandbox_canary_apply",
+            "canary_health_check",
+            "rollback_apply",
+            "baseline_restore_verified"
+          ]
+        },
+        "status": {
+          "enum": ["passed", "blocked"]
+        },
+        "artifact_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 16
+        },
+        "evidence_sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "transition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "baseline_manifest_sha256",
+        "changed_manifest_sha256",
+        "restored_manifest_sha256",
+        "changed_file_count"
+      ],
+      "properties": {
+        "baseline_manifest_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "changed_manifest_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "restored_manifest_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "changed_file_count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1
+        }
+      }
+    },
+    "capabilityResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["capability", "status", "proofs", "transition"],
+      "properties": {
+        "capability": {
+          "$ref": "#/$defs/capability"
+        },
+        "status": {
+          "enum": ["passed", "blocked"]
+        },
+        "proofs": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 3,
+          "items": {
+            "$ref": "#/$defs/proof"
+          }
+        },
+        "transition": {
+          "oneOf": [
+            {"type": "null"},
+            {"$ref": "#/$defs/transition"}
+          ]
+        }
+      }
+    },
+    "isolation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "isolated_environment",
+        "operator_workstation_focus_used",
+        "operator_workstation_input_used",
+        "network_dispatch_used",
+        "live_client_accessed",
+        "promotion_attempted"
+      ],
+      "properties": {
+        "isolated_environment": {
+          "const": true
+        },
+        "operator_workstation_focus_used": {
+          "const": false
+        },
+        "operator_workstation_input_used": {
+          "const": false
+        },
+        "network_dispatch_used": {
+          "const": false
+        },
+        "live_client_accessed": {
+          "const": false
+        },
+        "promotion_attempted": {
+          "const": false
+        }
+      }
+    }
+  }
+}

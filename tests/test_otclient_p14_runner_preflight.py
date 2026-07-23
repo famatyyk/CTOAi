@@ -177,14 +177,9 @@ def _inputs(
         "environment": {
             "name": preflight.ENVIRONMENT_NAME,
             "can_admins_bypass": not secure_environment,
-            "protection_rules": [
-                {
-                    "type": "required_reviewers",
-                    "reviewers": [{"type": "User"}],
-                }
-            ]
-            if secure_environment
-            else [{"type": "branch_policy"}],
+            # P14 has no human approval gate: the signed, isolated evidence
+            # contract and the protected workflow are the release controls.
+            "protection_rules": [],
         },
         "secrets": {"secrets": [{"name": preflight.SECRET_NAME}]},
         "variables": {
@@ -192,7 +187,19 @@ def _inputs(
                 {
                     "name": preflight.KEY_ID_VARIABLE,
                     "value": "independent-runner-prod-v1",
-                }
+                },
+                {
+                    "name": preflight.GUEST_EVIDENCE_CERT_VARIABLE,
+                    "value": "Q" * 128,
+                },
+                {
+                    "name": preflight.GUEST_EVIDENCE_KEY_ID_VARIABLE,
+                    "value": "p14-guest-evidence",
+                },
+                {
+                    "name": preflight.GUEST_SNAPSHOT_ID_VARIABLE,
+                    "value": "p14-isolated-executor-v1",
+                },
             ]
         },
         "branch_policies": {
@@ -250,7 +257,7 @@ def test_current_secure_external_result_is_operationally_ready():
         "online": True,
         "required_labels_complete": True,
     }
-    assert payload["environment"]["required_reviewer_configured"] is True
+    assert payload["environment"]["reviewer_gate_removed"] is True
     assert payload["environment"]["admin_bypass_disabled"] is True
     assert payload["result"]["structural_valid"] is True
     assert payload["acceptance"]["complete"] is True
@@ -268,7 +275,6 @@ def test_realistic_environment_gap_and_old_revision_fail_closed():
     assert payload["operational_result"] == "externally_verified_stale"
     assert payload["operational_ready"] is False
     assert payload["hard_blockers"] == [
-        "p14_environment_required_reviewer_missing",
         "p14_environment_admin_bypass_enabled",
         "p14_self_hosted_result_revision_mismatch",
         "p14_visual_regression_not_proven",
@@ -287,7 +293,6 @@ def test_realistic_environment_gap_and_old_revision_fail_closed():
     assert remediation["blocked_action_count"] == 5
     assert remediation["actions"][0]["reason_codes"] == [
         "p14_environment_admin_bypass_enabled",
-        "p14_environment_required_reviewer_missing",
     ]
     assert remediation["actions"][1]["action_id"] == (
         "refresh_p14_independent_runner_evidence"
@@ -691,3 +696,25 @@ def test_main_forwards_workspace_to_collect_preflight(monkeypatch, tmp_path: Pat
         "repository": "example/isolated-repository",
         "workspace": workspace.resolve(),
     }
+
+
+def test_guest_identity_configuration_requires_all_three_public_bindings():
+    values = _inputs(acceptance=False)
+    values["variables"]["variables"] = [
+        item
+        for item in values["variables"]["variables"]
+        if item["name"] not in {
+            preflight.GUEST_EVIDENCE_CERT_VARIABLE,
+            preflight.GUEST_EVIDENCE_KEY_ID_VARIABLE,
+            preflight.GUEST_SNAPSHOT_ID_VARIABLE,
+        }
+    ]
+
+    payload = preflight.build_preflight(**values)
+
+    assert {
+        "p14_guest_evidence_certificate_missing",
+        "p14_guest_evidence_key_id_missing",
+        "p14_guest_snapshot_id_missing",
+    }.issubset(payload["hard_blockers"])
+    assert payload["environment"]["reviewer_gate_removed"] is True

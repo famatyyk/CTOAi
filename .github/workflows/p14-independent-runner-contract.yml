@@ -7,16 +7,20 @@ on:
       - "AI/generated/ROADMAP_STATE.json"
       - "scripts/lua/ctoa_chooser/**"
       - "requirements.txt"
-      - "schemas/ctoa-p14-acceptance-*.schema.json"
+      - "schemas/ctoa-p14-*.schema.json"
       - "schemas/ctoa-p14-runner-*.schema.json"
       - "scripts/lua/otclient/**"
       - "scripts/ops/otclient_p14_acceptance_attestation.py"
+      - "scripts/ops/otclient_p14_guest_evidence.py"
       - "scripts/ops/otclient_p14_independent_runner.py"
       - "scripts/ops/otclient_p14_runner_preflight.py"
-      - "scripts/windows/otclient_p14_vm_capture.ps1"
+      - "scripts/ops/otclient_p14_sandbox_executor.py"
+      - "scripts/windows/otclient_p14_*.ps1"
       - "tests/test_otclient_p14_acceptance_attestation.py"
+      - "tests/test_otclient_p14_guest_evidence.py"
       - "tests/test_otclient_p14_independent_runner.py"
       - "tests/test_otclient_p14_runner_preflight.py"
+      - "tests/test_otclient_p14_sandbox_executor.py"
       - "tests/test_otclient_p14_vm_capture.py"
   workflow_dispatch:
     inputs:
@@ -25,8 +29,13 @@ on:
         required: true
         default: false
         type: boolean
-      acceptance_report_b64:
-        description: Optional base64-encoded external isolated P14 acceptance report
+      acceptance_envelope_b64:
+        description: Optional base64-encoded signed external isolated P14 evidence envelope
+        required: false
+        default: ''
+        type: string
+      guest_run_id:
+        description: Required 16-hex one-time run id bound to an external evidence envelope
         required: false
         default: ''
         type: string
@@ -57,7 +66,7 @@ jobs:
           cache: pip
 
       - name: Install contract dependencies
-        run: python -m pip install pytest "jsonschema>=4.23.0,<5.0.0"
+        run: python -m pip install pytest "jsonschema>=4.23.0,<5.0.0" "cryptography>=42.0.0,<49.0.0"
 
       - name: Install pinned Lua runtime for behavioral contract tests
         shell: pwsh
@@ -72,7 +81,9 @@ jobs:
           python -m pytest
           tests/test_otclient_p14_independent_runner.py
           tests/test_otclient_p14_acceptance_attestation.py
+          tests/test_otclient_p14_guest_evidence.py
           tests/test_otclient_p14_runner_preflight.py
+          tests/test_otclient_p14_sandbox_executor.py
           tests/test_otclient_p14_vm_capture.py -q
 
       - name: Create job-scoped signing material
@@ -131,6 +142,10 @@ jobs:
     env:
       CTOA_P14_RUNNER_SIGNING_KEY: ${{ secrets.CTOA_P14_RUNNER_SIGNING_KEY }}
       CTOA_P14_RUNNER_KEY_ID: ${{ vars.CTOA_P14_RUNNER_KEY_ID }}
+      CTOA_P14_GUEST_EVIDENCE_PUBLIC_CERT_B64: ${{ vars.CTOA_P14_GUEST_EVIDENCE_PUBLIC_CERT_B64 }}
+      CTOA_P14_GUEST_EVIDENCE_KEY_ID: ${{ vars.CTOA_P14_GUEST_EVIDENCE_KEY_ID }}
+      CTOA_P14_GUEST_SNAPSHOT_ID: ${{ vars.CTOA_P14_GUEST_SNAPSHOT_ID }}
+      CTOA_P14_GUEST_RUN_ID: ${{ inputs.guest_run_id }}
 
     steps:
       - name: Check out clean source without persisted credentials
@@ -147,7 +162,7 @@ jobs:
           cache: pip
 
       - name: Install contract dependencies
-        run: python -m pip install pytest "jsonschema>=4.23.0,<5.0.0"
+        run: python -m pip install pytest "jsonschema>=4.23.0,<5.0.0" "cryptography>=42.0.0,<49.0.0"
 
       - name: Install pinned Lua runtime for behavioral contract tests
         shell: pwsh
@@ -182,7 +197,9 @@ jobs:
           python -m pytest
           tests/test_otclient_p14_independent_runner.py
           tests/test_otclient_p14_acceptance_attestation.py
+          tests/test_otclient_p14_guest_evidence.py
           tests/test_otclient_p14_runner_preflight.py
+          tests/test_otclient_p14_sandbox_executor.py
           tests/test_otclient_p14_vm_capture.py -q
 
       - name: Prepare request from the trusted clean checkout
@@ -206,19 +223,37 @@ jobs:
           python scripts/ops/otclient_p14_acceptance_attestation.py prepare
           --artifact-root runtime/p14_independent_runner
 
-      - name: Inject external isolated acceptance report
-        if: ${{ inputs.acceptance_report_b64 != '' }}
+      - name: Validate protected guest evidence identity
+        if: ${{ inputs.acceptance_envelope_b64 != '' }}
         shell: pwsh
-        env:
-          CTOA_P14_ACCEPTANCE_REPORT_B64: ${{ inputs.acceptance_report_b64 }}
         run: |
           $ErrorActionPreference = "Stop"
-          $bytes = [Convert]::FromBase64String($env:CTOA_P14_ACCEPTANCE_REPORT_B64)
-          if ($bytes.Length -gt 32768) { throw "Acceptance report input is too large." }
-          [IO.File]::WriteAllBytes("runtime/p14_independent_runner/acceptance-report.json", $bytes)
+          if ($env:CTOA_P14_GUEST_EVIDENCE_PUBLIC_CERT_B64 -notmatch '^[A-Za-z0-9+/=]{128,16384}$') {
+            throw "Protected guest evidence certificate variable is missing or invalid."
+          }
+          if ($env:CTOA_P14_GUEST_EVIDENCE_KEY_ID -notmatch '^[a-z0-9][a-z0-9._-]{2,63}$') {
+            throw "Protected guest evidence key id variable is missing or invalid."
+          }
+          if ($env:CTOA_P14_GUEST_SNAPSHOT_ID -notmatch '^[a-z0-9][a-z0-9._-]{2,63}$') {
+            throw "Protected guest snapshot id variable is missing or invalid."
+          }
+          if ($env:CTOA_P14_GUEST_RUN_ID -notmatch '^[a-f0-9]{16}$') {
+            throw "A 16-hex guest run id is required with an external evidence envelope."
+          }
 
-      - name: Sign isolated acceptance result
-        if: ${{ hashFiles('runtime/p14_independent_runner/acceptance-report.json') != '' }}
+      - name: Inject external isolated guest evidence envelope
+        if: ${{ inputs.acceptance_envelope_b64 != '' }}
+        shell: pwsh
+        env:
+          CTOA_P14_ACCEPTANCE_ENVELOPE_B64: ${{ inputs.acceptance_envelope_b64 }}
+        run: |
+          $ErrorActionPreference = "Stop"
+          $bytes = [Convert]::FromBase64String($env:CTOA_P14_ACCEPTANCE_ENVELOPE_B64)
+          if ($bytes.Length -gt 32768) { throw "Acceptance envelope input is too large." }
+          [IO.File]::WriteAllBytes("runtime/p14_independent_runner/guest-evidence-envelope.json", $bytes)
+
+      - name: Verify guest evidence and sign isolated acceptance result
+        if: ${{ hashFiles('runtime/p14_independent_runner/guest-evidence-envelope.json') != '' }}
         run: >-
           python scripts/ops/otclient_p14_acceptance_attestation.py attest
           --artifact-root runtime/p14_independent_runner
