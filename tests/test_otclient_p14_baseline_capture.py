@@ -109,6 +109,6 @@ def test_bootstrap_runbook_uses_no_hand_typed_baseline_hash() -> None:
     assert "baseline-receipt.json" in source
     assert "transient\nread-only shared folder" in source
     assert "remove the shared\nfolder completely" in source
-    assert "resolves the snapshot UUID from that predeclared\nname at runtime" in source
-    assert "post-provision source\nchange" in source
+    assert "must pin that UUID before the host runner may start the VM" in source
+    assert "Record its generated UUID exactly." in source
     assert "<SHA256" not in source

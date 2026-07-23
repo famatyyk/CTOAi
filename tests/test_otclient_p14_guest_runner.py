@@ -48,8 +48,8 @@ def _assert_no_interactive_or_remote_control(source: str) -> None:
 def test_host_runner_is_fixed_to_the_p14_appliance_and_dry_run_by_default() -> None:
     source = _source(HOST_RUNNER)
 
-    assert "$P14VmUuid = '19aaab8d-7db3-471f-ad3c-d6e9bc73ee07'" in source
-    assert "$P14SnapshotName = 'p14-offline-20260724'" in source
+    assert "$P14VmUuid = '68c47454-65cd-4211-ac24-9a3f8bc219b1'" in source
+    assert "$P14SnapshotUuid = '60813f92-d982-44ee-95a8-833596672a1b'" in source
     assert "$P14EndpointProfile = 'p14-offline-replay-v1'" in source
     assert "[ValidatePattern('^[a-f0-9]{16}$')]" in source
     assert "if (-not $Execute)" in source
@@ -59,10 +59,8 @@ def test_host_runner_is_fixed_to_the_p14_appliance_and_dry_run_by_default() -> N
     assert "Stop-AndRestoreP14Appliance" in source
     assert "'controlvm', $P14VmUuid, 'poweroff'" in source
     assert "acceptance_envelope_b64" in source
-    assert "CurrentSnapshotName') -ne $P14SnapshotName" in source
-    assert "'snapshot', $P14VmUuid, 'list', '--machinereadable'" in source
-    assert "snapshot_binding_invalid" in source
-    assert "'snapshot', $P14VmUuid, 'restore', $P14SnapshotName" in source
+    assert "CurrentSnapshotUUID') -ne $P14SnapshotUuid" in source
+    assert "'snapshot', $P14VmUuid, 'restore', $P14SnapshotUuid" in source
     assert "'startvm', $P14VmUuid, '--type', 'headless'" in source
     assert "'getextradata', $P14VmUuid, $P14EndpointProfileKey" in source
     assert "recording_enabled = 'off'" in source
