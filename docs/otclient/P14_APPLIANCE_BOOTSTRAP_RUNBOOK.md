@@ -2,8 +2,9 @@
 
 This runbook creates the one-time offline P14 appliance baseline. It is an
 operator procedure inside the dedicated guest; it does not authorize a live
-client, network access, runtime actions, promotion, or a host-to-guest input
-channel.
+client, network access, runtime actions, promotion, or an arbitrary
+host-to-guest input channel. The later runner passes only a run ID and two
+fixed cryptographic commitments through fixed VBox properties.
 
 ## Preconditions
 
@@ -68,8 +69,8 @@ snapshot manifest.
 
 ## 3. Provision the immutable guest appliance
 
-Use the logical snapshot ID that matches the source-controlled host runner
-binding. For the current appliance name, run:
+Use the logical snapshot ID for the fixed offline appliance. For the current
+appliance, run:
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\P14Runner\repo\scripts\windows\otclient_p14_guest_provision.ps1 -Apply -SnapshotId p14-offline-20260724 -ApproveVisualBaseline
@@ -80,20 +81,49 @@ the exact clean guest revision, all hashes and image dimensions match, the
 capture and Helper report prove guest isolation, and the owner approval switch
 is present. It stages the tracked package, creates or validates the
 non-exportable guest evidence certificate, writes the snapshot manifest, then
-makes the repo, package, trust, and baseline trees read-only.
+makes the repo, package, trust, and baseline trees read-only. It also publishes
+the immutable raw snapshot manifest (base64) and its exact raw SHA-256 through
+two fixed, non-secret VBox guest properties. They are consumed once by the
+host-side binder; no shared folder, clipboard, typed hash, credential, or
+guest-control channel is used.
 
-Record only the emitted guest evidence public certificate, key ID, and logical
-snapshot ID in the approved GitHub environment variables. Do not export the
-private key, raw receipt, image, or certificate-store contents.
+Record no private key, raw receipt, image, or certificate-store contents.
 
-## 4. Create and bind the offline VM snapshot
+## 4. Create and bind the resumable offline VM snapshot
 
-Power the guest off. Recheck that every NIC and integration channel remains
-disabled, set the fixed endpoint profile, and create the named snapshot for the
-prepared appliance. Record its generated UUID exactly. The follow-up appliance
-binding must pin that UUID before the host runner may start the VM; never
-substitute a mutable snapshot name for the UUID. The prior NAT-capable snapshot
-is not an acceptable fallback.
+After provisioning, sign out and sign back in once to start the fixed HKCU
+broker. Leave that dedicated standard-user desktop session open. Recheck that
+every NIC and integration channel remains disabled, but leave the VM running
+and do not take a snapshot yourself. The binder performs the only savestate and
+snapshot operation after it has consumed and erased the one-time manifest
+export. The resulting saved state is deliberate: VirtualBox resumes it exactly,
+so the fixed broker can receive a later bounded run ID without any password,
+guest-control command, autologon, RDP, or synthetic input.
+
+Then, on the host, run the fixed-path binder from the clean B0 checkout:
+
+```powershell
+$P14HostCheckout = 'C:\Users\zycie\CTOAi-p14-uuid-binding'
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $P14HostCheckout 'scripts\windows\otclient_p14_appliance_bind.ps1') -Apply
+```
+
+The binder derives the offline VM UUID, logical snapshot ID, and final snapshot
+UUID itself, pins them in `C:\ProgramData\CTOAi\P14\p14-appliance-binding.json`,
+makes that record read-only, and prints its raw SHA-256. It never accepts a VM
+UUID, snapshot UUID, snapshot name, binding path, or hash argument. It also
+clears the one-time manifest export properties. Never substitute a mutable
+snapshot name for the UUID. The prior NAT-capable snapshot is not an acceptable
+fallback.
+
+## 5. Pin the public B1 commitments
+
+Set only these public values in the protected `p14-independent-runner`
+environment after the binder succeeds: the guest public certificate, key ID,
+logical snapshot ID, guest source revision, snapshot-manifest SHA-256, and
+appliance-binding SHA-256. The last two values are emitted by the provisioner
+and binder; do not hand-enter or derive them from a screenshot. The protected
+workflow verifies them against the guest-signed receipt before it accepts any
+visual, in-world, canary, or rollback result.
 
 Only after the immutable snapshot and its source binding are in place may the
 host runner perform an isolated run. The runner remains limited to visual and

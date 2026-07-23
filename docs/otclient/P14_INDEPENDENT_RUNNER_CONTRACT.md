@@ -90,9 +90,10 @@ capability-driven acceptance boundary:
   runner request, and runner result. By default it requests all four P14 acceptance
   capabilities; a runner may request a bounded subset while collecting evidence.
 - `attest` accepts only a P-256 signed guest evidence envelope. The protected
-  workflow pins its public certificate, key ID, logical snapshot ID, one-time
-  16-hex run ID, source revision, Helper manifest, and rollback baseline before
-  it projects the payload to an `acceptance-report.json`. It requires the exact
+  workflow pins its public certificate, key ID, logical snapshot ID, immutable
+  guest-snapshot-manifest hash, immutable appliance-binding hash, one-time 16-hex
+  run ID, and exact guest/GitHub source revision before it projects the payload to
+  an `acceptance-report.json`. It requires the exact
   proof set for each reported capability, non-empty digest-bound evidence for
   every passed proof, a real changed manifest for canary, and exact baseline
   restoration for rollback. It derives blocker codes and signs
@@ -250,11 +251,16 @@ The P14 appliance consists of four fixed components:
   guest capture/review plus real file-only sandbox canary and rollback, signs the
   compact receipt with the guest CNG key, and returns only a base64 envelope and
   hash through guest properties.
-- `otclient_p14_vm_runner.ps1` is host-side and pins the P14 VM and snapshot. It
+- `otclient_p14_appliance_bind.ps1` is the only one-time host binder. From a
+  running offline guest it reads the fixed, non-secret manifest export, clears the
+  bridge, saves the approved user session, takes the manifest-named snapshot, and
+  stores a read-only local binding record containing the returned VM/snapshot UUIDs.
+- `otclient_p14_vm_runner.ps1` is host-side and reads only that binding record. It
   rejects every enabled NIC (including NAT), shared folders, clipboard,
-  drag-and-drop, VRDE, USB, wrong endpoint profile, and non-powered-off state. It
-  waits only for the signed compact envelope, powers the ephemeral VM off, restores
-  the snapshot, and clears transport properties.
+  drag-and-drop, VRDE, USB, wrong endpoint profile, and any binding/session state
+  other than the saved offline appliance. It waits only for the signed compact
+  envelope, clears transport properties, powers the rehearsal off, and restores
+  the saved snapshot.
 - `otclient_p14_sandbox_executor.py` makes a complete verified package copy,
   creates exactly one sandbox-only canary marker, checks it, removes it, and proves
   the original baseline was restored. It never launches a client or accepts a
@@ -273,12 +279,16 @@ unlocks Windows, or sends keyboard/mouse input. The snapshot must resume that
 approved interactive session; a lock screen is deliberately a blocker. The
 detailed procedure is in `P14_APPLIANCE_BOOTSTRAP_RUNBOOK.md`.
 
-After provisioning, pin the emitted public certificate, key ID, and logical
-snapshot ID as the three GitHub environment variables above. Disable every VM NIC
-and guest integration channel, set `CTOA/P14/EndpointProfile` to
-`p14-offline-replay-v1`, create the new snapshot, and replace the source-controlled
-snapshot UUID only after recording the new UUID. The previous NAT-capable snapshot
-is not an acceptable fallback and is rejected by the host runner.
+After provisioning, the owner signs out and back in once so the dedicated HKCU
+broker is running, then leaves the isolated guest running for the fixed host
+binder. The binder saves that session and creates the snapshot; its read-only
+local binding record, not source code or GitHub, contains raw VM/snapshot UUIDs.
+Pin the emitted public certificate, key ID, logical snapshot ID, guest source
+revision, snapshot-manifest hash, and appliance-binding hash as the six GitHub
+environment variables. The protected workflow requires the guest source revision
+to equal `GITHUB_SHA`. Disable every VM NIC and guest integration channel and set
+`CTOA/P14/EndpointProfile` to `p14-offline-replay-v1`. The previous NAT-capable
+snapshot is not an acceptable fallback and is rejected by the host runner.
 
 For each run, generate a new lowercase 16-hex run ID, execute the host runner with that ID,
 then dispatch the protected workflow with `run_protected_replay=true`, the returned

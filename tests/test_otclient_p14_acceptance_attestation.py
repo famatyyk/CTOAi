@@ -30,6 +30,8 @@ KEY = b"p14-acceptance-test-key-material-32-bytes-minimum"
 KEY_ID = "p14-acceptance-test"
 GENERATED_AT = "2026-07-16T16:00:00Z"
 GUEST_RUN_ID = "0123456789abcdef"
+GUEST_SNAPSHOT_MANIFEST_SHA256 = "e" * 64
+GUEST_APPLIANCE_BINDING_SHA256 = "f" * 64
 
 
 def _roadmap_state() -> dict[str, object]:
@@ -221,7 +223,7 @@ def _guest_evidence_envelope(
             )
             capability["transition"]["changed_file_count"] = 1
     receipt = {
-        "schema_version": "ctoa.p14-guest-receipt.v1",
+        "schema_version": "ctoa.p14-guest-receipt.v2",
         "receipt_id": "p14-guest-0123456789abcdef",
         "generated_at": GENERATED_AT,
         "binding": {
@@ -229,6 +231,8 @@ def _guest_evidence_envelope(
             "helper_manifest_sha256": request["binding"]["helper_manifest_sha256"],
             "rollback_baseline_manifest_sha256": baseline,
             "snapshot_id": "p14-snapshot-001",
+            "snapshot_manifest_sha256": GUEST_SNAPSHOT_MANIFEST_SHA256,
+            "appliance_binding_sha256": GUEST_APPLIANCE_BINDING_SHA256,
             "run_id": GUEST_RUN_ID,
         },
         "isolation": copy.deepcopy(p14.ISOLATION),
@@ -369,6 +373,14 @@ def test_attest_requires_a_verified_guest_envelope_for_a_passed_result(
     monkeypatch.setenv(p14.GUEST_EVIDENCE_CERT_ENV, certificate_b64)
     monkeypatch.setenv(p14.GUEST_EVIDENCE_KEY_ID_ENV, "p14-guest-evidence")
     monkeypatch.setenv(p14.GUEST_SNAPSHOT_ID_ENV, "p14-snapshot-001")
+    monkeypatch.setenv(
+        p14.GUEST_SNAPSHOT_MANIFEST_SHA256_ENV, GUEST_SNAPSHOT_MANIFEST_SHA256
+    )
+    monkeypatch.setenv(
+        p14.GUEST_APPLIANCE_BINDING_SHA256_ENV, GUEST_APPLIANCE_BINDING_SHA256
+    )
+    monkeypatch.setenv(p14.GUEST_SOURCE_REVISION_ENV, REVISION)
+    monkeypatch.setenv("GITHUB_SHA", REVISION)
     monkeypatch.setenv(p14.GUEST_RUN_ID_ENV, GUEST_RUN_ID)
     args = SimpleNamespace(artifact_root=str(artifact_root))
 
@@ -377,6 +389,25 @@ def test_attest_requires_a_verified_guest_envelope_for_a_passed_result(
         p14._attest(args)
 
     monkeypatch.setenv(p14.GUEST_RUN_ID_ENV, GUEST_RUN_ID)
+    monkeypatch.setenv("GITHUB_SHA", "b" * 40)
+    with pytest.raises(p14.AttestationError, match="guest_evidence_binding_invalid"):
+        p14._attest(args)
+
+    monkeypatch.setenv("GITHUB_SHA", REVISION)
+    monkeypatch.setenv(p14.GUEST_SNAPSHOT_MANIFEST_SHA256_ENV, "c" * 64)
+    with pytest.raises(p14.AttestationError, match="guest_evidence_envelope_invalid"):
+        p14._attest(args)
+
+    monkeypatch.setenv(
+        p14.GUEST_SNAPSHOT_MANIFEST_SHA256_ENV, GUEST_SNAPSHOT_MANIFEST_SHA256
+    )
+    monkeypatch.setenv(p14.GUEST_APPLIANCE_BINDING_SHA256_ENV, "d" * 64)
+    with pytest.raises(p14.AttestationError, match="guest_evidence_envelope_invalid"):
+        p14._attest(args)
+
+    monkeypatch.setenv(
+        p14.GUEST_APPLIANCE_BINDING_SHA256_ENV, GUEST_APPLIANCE_BINDING_SHA256
+    )
     assert p14._attest(args) == 0
     result = json.loads((artifact_root / "acceptance-result.json").read_text())
     assert result["status"] == "passed"
@@ -414,6 +445,14 @@ def test_verify_guest_evidence_has_no_attestation_write_side_effect(
     monkeypatch.setenv(p14.GUEST_EVIDENCE_CERT_ENV, certificate_b64)
     monkeypatch.setenv(p14.GUEST_EVIDENCE_KEY_ID_ENV, "p14-guest-evidence")
     monkeypatch.setenv(p14.GUEST_SNAPSHOT_ID_ENV, "p14-snapshot-001")
+    monkeypatch.setenv(
+        p14.GUEST_SNAPSHOT_MANIFEST_SHA256_ENV, GUEST_SNAPSHOT_MANIFEST_SHA256
+    )
+    monkeypatch.setenv(
+        p14.GUEST_APPLIANCE_BINDING_SHA256_ENV, GUEST_APPLIANCE_BINDING_SHA256
+    )
+    monkeypatch.setenv(p14.GUEST_SOURCE_REVISION_ENV, REVISION)
+    monkeypatch.setenv("GITHUB_SHA", REVISION)
     monkeypatch.setenv(p14.GUEST_RUN_ID_ENV, GUEST_RUN_ID)
 
     assert (
@@ -531,6 +570,9 @@ def test_workflow_tracks_acceptance_contract_and_prepares_only_a_request() -> No
     assert "guest_run_id" in source
     assert "guest-evidence-envelope.json" in source
     assert "CTOA_P14_GUEST_EVIDENCE_PUBLIC_CERT_B64" in source
+    assert "CTOA_P14_GUEST_SNAPSHOT_MANIFEST_SHA256" in source
+    assert "CTOA_P14_APPLIANCE_BINDING_SHA256" in source
+    assert "CTOA_P14_GUEST_SOURCE_REVISION" in source
 
 
 def test_workflow_uploads_only_preflight_allowlisted_p14_evidence() -> None:

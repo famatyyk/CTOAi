@@ -41,6 +41,9 @@ KEY_ID_VARIABLE = "CTOA_P14_RUNNER_KEY_ID"
 GUEST_EVIDENCE_CERT_VARIABLE = "CTOA_P14_GUEST_EVIDENCE_PUBLIC_CERT_B64"
 GUEST_EVIDENCE_KEY_ID_VARIABLE = "CTOA_P14_GUEST_EVIDENCE_KEY_ID"
 GUEST_SNAPSHOT_ID_VARIABLE = "CTOA_P14_GUEST_SNAPSHOT_ID"
+GUEST_SOURCE_REVISION_VARIABLE = "CTOA_P14_GUEST_SOURCE_REVISION"
+GUEST_SNAPSHOT_MANIFEST_SHA256_VARIABLE = "CTOA_P14_GUEST_SNAPSHOT_MANIFEST_SHA256"
+APPLIANCE_BINDING_SHA256_VARIABLE = "CTOA_P14_APPLIANCE_BINDING_SHA256"
 AUTHORITY_FIELDS = (
     "live_authority",
     "mcp_write_tool_enabled",
@@ -100,15 +103,29 @@ REMEDIATION_RULES: tuple[dict[str, Any], ...] = (
             {
                 "p14_signing_secret_missing",
                 "p14_signing_key_id_missing",
-                "p14_guest_evidence_certificate_missing",
-                "p14_guest_evidence_key_id_missing",
-                "p14_guest_snapshot_id_missing",
             }
         ),
         "requires": frozenset(),
         "risk_class": "guarded_write",
         "interaction": "external_config",
         "priority": 85,
+    },
+    {
+        "action_id": "bind_p14_offline_appliance",
+        "capability": "appliance_binding",
+        "blockers": frozenset(
+            {
+                "p14_appliance_unbound",
+                "p14_appliance_binding_incomplete",
+                "p14_appliance_binding_source_mismatch",
+            }
+        ),
+        "requires": frozenset(
+            {"workflow_active", "environment_protection", "signing_material"}
+        ),
+        "risk_class": "guarded_write",
+        "interaction": "local_isolated_appliance",
+        "priority": 84,
     },
     {
         "action_id": "allow_p14_source_branch",
@@ -811,39 +828,87 @@ def build_preflight(
         and bool(str(item.get("value") or "").strip())
         for item in variable_rows
     )
-    guest_evidence_certificate_configured = any(
-        item.get("name") == GUEST_EVIDENCE_CERT_VARIABLE
-        and bool(re.fullmatch(r"[A-Za-z0-9+/=]{128,16384}", str(item.get("value") or "")))
+    variable_values = {
+        str(item.get("name") or ""): str(item.get("value") or "")
         for item in variable_rows
-    )
-    guest_evidence_key_id_configured = any(
-        item.get("name") == GUEST_EVIDENCE_KEY_ID_VARIABLE
-        and bool(
-            re.fullmatch(
-                r"[a-z0-9][a-z0-9._-]{2,63}", str(item.get("value") or "")
-            )
+    }
+    guest_evidence_certificate_configured = bool(
+        re.fullmatch(
+            r"[A-Za-z0-9+/=]{128,16384}",
+            variable_values.get(GUEST_EVIDENCE_CERT_VARIABLE, ""),
         )
-        for item in variable_rows
     )
-    guest_snapshot_id_configured = any(
-        item.get("name") == GUEST_SNAPSHOT_ID_VARIABLE
-        and bool(
-            re.fullmatch(
-                r"[a-z0-9][a-z0-9._-]{2,63}", str(item.get("value") or "")
-            )
+    guest_evidence_key_id_configured = bool(
+        re.fullmatch(
+            r"[a-z0-9][a-z0-9._-]{2,63}",
+            variable_values.get(GUEST_EVIDENCE_KEY_ID_VARIABLE, ""),
         )
-        for item in variable_rows
     )
+    guest_snapshot_id_configured = bool(
+        re.fullmatch(
+            r"[a-z0-9][a-z0-9._-]{2,63}",
+            variable_values.get(GUEST_SNAPSHOT_ID_VARIABLE, ""),
+        )
+    )
+    guest_source_revision_configured = bool(
+        re.fullmatch(
+            r"[a-f0-9]{40}",
+            variable_values.get(GUEST_SOURCE_REVISION_VARIABLE, ""),
+        )
+    )
+    guest_snapshot_manifest_sha256_configured = bool(
+        SHA256_RE.fullmatch(
+            variable_values.get(GUEST_SNAPSHOT_MANIFEST_SHA256_VARIABLE, "")
+        )
+    )
+    appliance_binding_sha256_configured = bool(
+        SHA256_RE.fullmatch(
+            variable_values.get(APPLIANCE_BINDING_SHA256_VARIABLE, "")
+        )
+    )
+    appliance_variable_names = {
+        GUEST_EVIDENCE_CERT_VARIABLE,
+        GUEST_EVIDENCE_KEY_ID_VARIABLE,
+        GUEST_SNAPSHOT_ID_VARIABLE,
+        GUEST_SOURCE_REVISION_VARIABLE,
+        GUEST_SNAPSHOT_MANIFEST_SHA256_VARIABLE,
+        APPLIANCE_BINDING_SHA256_VARIABLE,
+    }
+    appliance_variables_present = any(
+        name in variable_values for name in appliance_variable_names
+    )
+    appliance_binding_complete = all(
+        (
+            guest_evidence_certificate_configured,
+            guest_evidence_key_id_configured,
+            guest_snapshot_id_configured,
+            guest_source_revision_configured,
+            guest_snapshot_manifest_sha256_configured,
+            appliance_binding_sha256_configured,
+        )
+    )
+    guest_source_revision_matches_current = (
+        guest_source_revision_configured
+        and variable_values.get(GUEST_SOURCE_REVISION_VARIABLE) == current_head
+    )
+    if appliance_binding_complete and guest_source_revision_matches_current:
+        appliance_binding_state = "bound"
+    elif appliance_binding_complete:
+        appliance_binding_state = "requires_rebind"
+    elif appliance_variables_present:
+        appliance_binding_state = "partial"
+    else:
+        appliance_binding_state = "unbound"
     if not signing_secret_configured:
         blockers.append("p14_signing_secret_missing")
     if not key_id_configured:
         blockers.append("p14_signing_key_id_missing")
-    if not guest_evidence_certificate_configured:
-        blockers.append("p14_guest_evidence_certificate_missing")
-    if not guest_evidence_key_id_configured:
-        blockers.append("p14_guest_evidence_key_id_missing")
-    if not guest_snapshot_id_configured:
-        blockers.append("p14_guest_snapshot_id_missing")
+    if appliance_binding_state == "unbound":
+        blockers.append("p14_appliance_unbound")
+    elif appliance_binding_state == "partial":
+        blockers.append("p14_appliance_binding_incomplete")
+    elif appliance_binding_state == "requires_rebind":
+        blockers.append("p14_appliance_binding_source_mismatch")
 
     policy_names = {
         str(item.get("name") or "")
@@ -986,6 +1051,17 @@ def build_preflight(
             ),
             "guest_evidence_key_id_configured": guest_evidence_key_id_configured,
             "guest_snapshot_id_configured": guest_snapshot_id_configured,
+            "guest_source_revision_configured": guest_source_revision_configured,
+            "guest_snapshot_manifest_sha256_configured": (
+                guest_snapshot_manifest_sha256_configured
+            ),
+            "appliance_binding_sha256_configured": (
+                appliance_binding_sha256_configured
+            ),
+            "appliance_binding_state": appliance_binding_state,
+            "guest_source_revision_matches_current_checkout": (
+                guest_source_revision_matches_current
+            ),
         },
         "artifact": {
             "present": artifact_present,

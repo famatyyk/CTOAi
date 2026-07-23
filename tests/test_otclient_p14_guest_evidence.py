@@ -28,6 +28,8 @@ BINDING = {
     "helper_manifest_sha256": "b" * 64,
     "rollback_baseline_manifest_sha256": "c" * 64,
     "snapshot_id": "p14-snapshot-001",
+    "snapshot_manifest_sha256": "d" * 64,
+    "appliance_binding_sha256": "e" * 64,
     "run_id": "0123456789abcdef",
 }
 
@@ -98,7 +100,7 @@ def _receipt(
     binding: dict[str, str] | None = None,
 ) -> dict[str, object]:
     return {
-        "schema_version": "ctoa.p14-guest-receipt.v1",
+        "schema_version": "ctoa.p14-guest-receipt.v2",
         "receipt_id": "p14-guest-0123456789abcdef",
         "generated_at": GENERATED_AT,
         "binding": copy.deepcopy(binding or BINDING),
@@ -167,6 +169,8 @@ def test_b64_certificate_verification_projects_exact_p14_v1_report(
     for value in (
         "receipt_id",
         "snapshot_id",
+        "snapshot_manifest_sha256",
+        "appliance_binding_sha256",
         "run_id",
         "signature",
         "payload_b64",
@@ -206,6 +210,38 @@ def test_binding_mismatch_rejects_replay_to_another_snapshot(
             public_certificate=certificate_pem,
             expected_binding=BINDING,
         )
+
+
+@pytest.mark.parametrize(
+    "field", ("snapshot_manifest_sha256", "appliance_binding_sha256")
+)
+def test_binding_mismatch_rejects_replay_to_another_external_pin(
+    signing_material: tuple[ec.EllipticCurvePrivateKey, bytes, str], field: str
+) -> None:
+    private_key, certificate_pem, _ = signing_material
+    receipt = _receipt()
+    receipt["binding"][field] = "f" * 64
+    envelope = _envelope(receipt, private_key)
+
+    with pytest.raises(
+        p14.GuestEvidenceError, match=f"receipt_binding_mismatch:{field}"
+    ):
+        p14.verify_and_project_envelope(
+            envelope,
+            public_certificate=certificate_pem,
+            expected_binding=BINDING,
+        )
+
+
+def test_external_pins_must_be_signed_binding_fields() -> None:
+    receipt = _receipt()
+    receipt["snapshot_manifest_sha256"] = BINDING["snapshot_manifest_sha256"]
+
+    with pytest.raises(
+        p14.GuestEvidenceError,
+        match="schema_invalid:ctoa-p14-guest-receipt.schema.json:root",
+    ):
+        p14.validate_receipt(receipt)
 
 
 @pytest.mark.parametrize(
@@ -279,8 +315,8 @@ def test_signed_duplicate_key_payload_is_rejected_before_projection(
 ) -> None:
     private_key, certificate_pem, _ = signing_material
     payload = (
-        b'{"schema_version":"ctoa.p14-guest-receipt.v1",'
-        b'"schema_version":"ctoa.p14-guest-receipt.v1"}'
+        b'{"schema_version":"ctoa.p14-guest-receipt.v2",'
+        b'"schema_version":"ctoa.p14-guest-receipt.v2"}'
     )
     envelope = p14.build_envelope(
         payload,
