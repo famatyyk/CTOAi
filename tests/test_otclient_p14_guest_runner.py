@@ -65,8 +65,10 @@ def test_host_runner_is_fixed_to_the_p14_appliance_and_dry_run_by_default() -> N
     assert "'snapshot', $P14VmUuid, 'restore', $P14SnapshotName" in source
     assert "'startvm', $P14VmUuid, '--type', 'headless'" in source
     assert "'getextradata', $P14VmUuid, $P14EndpointProfileKey" in source
+    assert "recording_enabled = 'off'" in source
     assert "nic1 = 'none'" in source
-    assert "cableconnected1 = 'off'" in source
+    assert "Get-P14MachineValue $machine 'cableconnected1'" in source
+    assert "appliance_setting_invalid:cableconnected1" in source
     assert "network_mode_not_isolated" in source
     assert "shared_folder_not_allowed" in source
     _assert_no_interactive_or_remote_control(source)

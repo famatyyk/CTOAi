@@ -13,8 +13,8 @@ channel.
   are already present at their fixed guest paths.
 - VirtualBox Guest Additions and the guest desktop are available. Before the
   guest is booted for the capture, disable every VM NIC and integration
-  channel: shared folders, shared clipboard, drag and drop, VRDE, and USB
-  passthrough.
+  channel: shared folders, shared clipboard, drag and drop, VRDE, USB
+  passthrough, and VM recording.
 - Work only at the guest console. Do not use RDP, VRDE, guest-control,
   workstation keyboard/mouse injection, or a shared clipboard to perform this
   procedure.

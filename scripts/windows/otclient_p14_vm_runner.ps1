@@ -128,13 +128,20 @@ function Assert-P14ApplianceIsolation([string]$VBoxManage, [switch]$RequirePower
         draganddrop = 'disabled'
         vrde = 'off'
         usb = 'off'
+        recording_enabled = 'off'
         nic1 = 'none'
-        cableconnected1 = 'off'
     }
     foreach ($setting in $required.GetEnumerator()) {
         if ((Get-P14MachineValue $machine $setting.Key) -ne $setting.Value) {
             Stop-P14VmRunner("appliance_setting_invalid:$($setting.Key)")
         }
+    }
+    # VirtualBox omits cableconnected1 entirely when the adapter itself is
+    # disabled.  A reported cable value must still be off, but its omission is
+    # the expected representation for the required `nic1=none` state.
+    $cableConnected1 = Get-P14MachineValue $machine 'cableconnected1'
+    if ($null -ne $cableConnected1 -and $cableConnected1 -ne 'off') {
+        Stop-P14VmRunner 'appliance_setting_invalid:cableconnected1'
     }
 
     foreach ($line in $machine) {
