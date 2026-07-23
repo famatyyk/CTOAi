@@ -38,6 +38,9 @@ VERIFY_STEP = "Verify signed result handoff"
 VERIFY_ACCEPTANCE_STEP = "Verify signed acceptance attestation"
 SECRET_NAME = "CTOA_P14_RUNNER_SIGNING_KEY"
 KEY_ID_VARIABLE = "CTOA_P14_RUNNER_KEY_ID"
+GUEST_EVIDENCE_CERT_VARIABLE = "CTOA_P14_GUEST_EVIDENCE_PUBLIC_CERT_B64"
+GUEST_EVIDENCE_KEY_ID_VARIABLE = "CTOA_P14_GUEST_EVIDENCE_KEY_ID"
+GUEST_SNAPSHOT_ID_VARIABLE = "CTOA_P14_GUEST_SNAPSHOT_ID"
 AUTHORITY_FIELDS = (
     "live_authority",
     "mcp_write_tool_enabled",
@@ -81,7 +84,7 @@ REMEDIATION_RULES: tuple[dict[str, Any], ...] = (
         "blockers": frozenset(
             {
                 "p14_environment_missing",
-                "p14_environment_required_reviewer_missing",
+                "p14_environment_reviewer_gate_present",
                 "p14_environment_admin_bypass_enabled",
             }
         ),
@@ -94,7 +97,13 @@ REMEDIATION_RULES: tuple[dict[str, Any], ...] = (
         "action_id": "configure_p14_signing_material",
         "capability": "signing_material",
         "blockers": frozenset(
-            {"p14_signing_secret_missing", "p14_signing_key_id_missing"}
+            {
+                "p14_signing_secret_missing",
+                "p14_signing_key_id_missing",
+                "p14_guest_evidence_certificate_missing",
+                "p14_guest_evidence_key_id_missing",
+                "p14_guest_snapshot_id_missing",
+            }
         ),
         "requires": frozenset(),
         "risk_class": "guarded_write",
@@ -783,12 +792,12 @@ def build_preflight(
         item for item in rules if item.get("type") == "required_reviewers"
     ]
     reviewer_count = sum(len(_rows(item.get("reviewers"))) for item in reviewer_rules)
-    required_reviewer_configured = reviewer_count > 0
+    reviewer_gate_removed = reviewer_count == 0
     admin_bypass_disabled = environment.get("can_admins_bypass") is False
     if environment.get("name") != ENVIRONMENT_NAME:
         blockers.append("p14_environment_missing")
-    if not required_reviewer_configured:
-        blockers.append("p14_environment_required_reviewer_missing")
+    if not reviewer_gate_removed:
+        blockers.append("p14_environment_reviewer_gate_present")
     if not admin_bypass_disabled:
         blockers.append("p14_environment_admin_bypass_enabled")
 
@@ -802,10 +811,39 @@ def build_preflight(
         and bool(str(item.get("value") or "").strip())
         for item in variable_rows
     )
+    guest_evidence_certificate_configured = any(
+        item.get("name") == GUEST_EVIDENCE_CERT_VARIABLE
+        and bool(re.fullmatch(r"[A-Za-z0-9+/=]{128,16384}", str(item.get("value") or "")))
+        for item in variable_rows
+    )
+    guest_evidence_key_id_configured = any(
+        item.get("name") == GUEST_EVIDENCE_KEY_ID_VARIABLE
+        and bool(
+            re.fullmatch(
+                r"[a-z0-9][a-z0-9._-]{2,63}", str(item.get("value") or "")
+            )
+        )
+        for item in variable_rows
+    )
+    guest_snapshot_id_configured = any(
+        item.get("name") == GUEST_SNAPSHOT_ID_VARIABLE
+        and bool(
+            re.fullmatch(
+                r"[a-z0-9][a-z0-9._-]{2,63}", str(item.get("value") or "")
+            )
+        )
+        for item in variable_rows
+    )
     if not signing_secret_configured:
         blockers.append("p14_signing_secret_missing")
     if not key_id_configured:
         blockers.append("p14_signing_key_id_missing")
+    if not guest_evidence_certificate_configured:
+        blockers.append("p14_guest_evidence_certificate_missing")
+    if not guest_evidence_key_id_configured:
+        blockers.append("p14_guest_evidence_key_id_missing")
+    if not guest_snapshot_id_configured:
+        blockers.append("p14_guest_snapshot_id_missing")
 
     policy_names = {
         str(item.get("name") or "")
@@ -937,12 +975,17 @@ def build_preflight(
             "required_labels_complete": runner_capacity_ready,
         },
         "environment": {
-            "required_reviewer_configured": required_reviewer_configured,
+            "reviewer_gate_removed": reviewer_gate_removed,
             "required_reviewer_count": reviewer_count,
             "admin_bypass_disabled": admin_bypass_disabled,
             "branch_allowed": branch_allowed,
             "signing_secret_configured": signing_secret_configured,
             "key_id_configured": key_id_configured,
+            "guest_evidence_certificate_configured": (
+                guest_evidence_certificate_configured
+            ),
+            "guest_evidence_key_id_configured": guest_evidence_key_id_configured,
+            "guest_snapshot_id_configured": guest_snapshot_id_configured,
         },
         "artifact": {
             "present": artifact_present,

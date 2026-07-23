@@ -180,6 +180,18 @@ function ReleaseEvidencePanel({ details }: { details: ControlCenterPublicOps["de
 function EngineBrainPanel({ details }: { details: EngineBrainDetail | null }) {
   const status = details?.status || "loading"
   const value = details
+  // Keep these aliases local to the bounded detail projection. The public
+  // endpoint carries only counts/statuses; individual tool identifiers remain
+  // absent unless a capability detail has explicitly projected them.
+  const p7EnabledSafeWriteToolCount = value?.p7.enabledSafeWriteToolCount ?? 0
+  const p7ReadySafeWriteAuditCount = value?.p7.readySafeWriteAuditCount ?? 0
+  const p7SafeWriteAuditCount = value?.p7.safeWriteAuditCount ?? 0
+  const p7EnabledSafeWriteTools = value?.p7.dryRunTools || []
+  const p7CockpitSmoke = value?.p7.cockpitSmokeStatus || "loading"
+  const p7SafeWriteDryRunSmoke = value?.p7.dryRunSmokeStatus || "loading"
+  const p7OperatorCockpitSummary = value
+    ? `${p7EnabledSafeWriteToolCount} enabled safe-write tools; ${p7ReadySafeWriteAuditCount}/${p7SafeWriteAuditCount} audited.`
+    : "No bounded P7 cockpit summary is available."
   return (
     <article className="rounded-3xl border border-white/10 bg-[#151b33] p-6">
       <PanelHeader title="Engine Brain" label={status} />
@@ -187,7 +199,7 @@ function EngineBrainPanel({ details }: { details: EngineBrainDetail | null }) {
         <Metric label="P6 readiness" value={value?.p6ReadinessStatus || "loading"} />
         <Metric label="P7 brief" value={value ? value.p7.operatorBriefStatus : "loading"} />
         <Metric label="P7 action gate" value={value?.p7.actionReadinessStatus || "loading"} />
-        <Metric label="P7 cockpit" value={value?.p7.cockpitSmokeStatus || "loading"} />
+        <Metric label="P7 cockpit status" value={p7CockpitSmoke} />
         <Metric label="Dry-run tools" value={value ? `${value.p7.dryRunReadyCount}/${value.p7.safeWriteToolCount}` : "loading"} />
         <Metric label="P7 blockers" value={String(value?.p7.blockerCount ?? 0)} />
       </div>
@@ -201,7 +213,7 @@ function EngineBrainPanel({ details }: { details: EngineBrainDetail | null }) {
         <p className="mt-3 text-xs uppercase tracking-[0.18em] text-slate-500">P7 action gate</p>
         <p className="mt-2 text-sm leading-6 text-slate-300">
           {value
-            ? `${value.p7.actionReadinessStatus}; ${value.p7.readySafeWriteAuditCount}/${value.p7.safeWriteAuditCount} audited; ${value.p7.mcpWriteToolCount} MCP write tools declared.`
+            ? `${value.p7.actionReadinessStatus}; ${p7OperatorCockpitSummary} ${value.p7.mcpWriteToolCount} MCP write tools declared.`
             : "No bounded P7 action gate is available."}
         </p>
         <p className="mt-3 text-xs uppercase tracking-[0.18em] text-slate-500">P7 blockers</p>
@@ -211,16 +223,22 @@ function EngineBrainPanel({ details }: { details: EngineBrainDetail | null }) {
         <p className="mt-3 text-xs uppercase tracking-[0.18em] text-slate-500">P7 cockpit</p>
         <p className="mt-2 text-sm leading-6 text-slate-300">
           {value
-            ? `${value.p7.cockpitSmokeStatus}; dry-run smoke ${value.p7.dryRunSmokeStatus}; preflight ${value.p7.preflightReadyCount}/${value.p7.safeWriteToolCount}.`
+            ? `${p7CockpitSmoke}; dry-run smoke ${p7SafeWriteDryRunSmoke}; preflight ${value.p7.preflightReadyCount}/${value.p7.safeWriteToolCount}.`
             : "No P7 cockpit projection yet."}
         </p>
         <p className="mt-3 text-xs uppercase tracking-[0.18em] text-slate-500">Dry-run tools</p>
         <div className="mt-2 flex flex-wrap gap-2">
-          {(value?.p7.dryRunTools || []).map((tool) => (
-            <span key={`${tool.actionId}-${tool.mcpTool}`} className="rounded-full bg-cyan-300/10 px-3 py-1 font-mono text-xs text-cyan-100">
-              {tool.mcpTool || tool.actionId}: {tool.auditStatus}
+          {p7EnabledSafeWriteTools.length ? (
+            p7EnabledSafeWriteTools.map((tool) => (
+              <span key={`${tool.actionId}-${tool.mcpTool}`} className="rounded-full bg-cyan-300/10 px-3 py-1 font-mono text-xs text-cyan-100">
+                {tool.mcpTool || tool.actionId}: {tool.auditStatus}
+              </span>
+            ))
+          ) : (
+            <span className="rounded-full bg-white/10 px-3 py-1 text-xs text-slate-400">
+              {p7EnabledSafeWriteToolCount} bounded safe-write tools; identifiers are intentionally not projected.
             </span>
-          ))}
+          )}
         </div>
       </div>
       <p className="mt-4 rounded-2xl border border-white/10 bg-[#0e1327] px-4 py-3 text-xs leading-6 text-slate-400">

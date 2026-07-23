@@ -47,9 +47,20 @@ CMD ["python", "-m", "uvicorn", "mobile_console.app:app", "--host", "0.0.0.0", "
 FROM runtime AS test
 
 USER root
+ARG CTOA_P14_SOURCE_PROVENANCE_B64
 RUN apt-get update \
     && apt-get install -y --no-install-recommends git \
     && rm -rf /var/lib/apt/lists/*
+
+# Docker contexts intentionally exclude .git.  CI injects a bounded, generated
+# sidecar only into this non-production stage; the runner rejects it unless it
+# binds every fixed package source byte-for-byte.
+RUN test -n "${CTOA_P14_SOURCE_PROVENANCE_B64}" \
+    && printf '%s' "${CTOA_P14_SOURCE_PROVENANCE_B64}" \
+        | base64 --decode > /opt/ctoa/.ctoa-p14-source-provenance.json \
+    && chown root:root /opt/ctoa /opt/ctoa/.ctoa-p14-source-provenance.json \
+    && chmod 0555 /opt/ctoa \
+    && chmod 0444 /opt/ctoa/.ctoa-p14-source-provenance.json
 
 USER ctoa
 

@@ -7,16 +7,22 @@ on:
       - "AI/generated/ROADMAP_STATE.json"
       - "scripts/lua/ctoa_chooser/**"
       - "requirements.txt"
-      - "schemas/ctoa-p14-acceptance-*.schema.json"
+      - "schemas/ctoa-p14-*.schema.json"
       - "schemas/ctoa-p14-runner-*.schema.json"
       - "scripts/lua/otclient/**"
       - "scripts/ops/otclient_p14_acceptance_attestation.py"
+      - "scripts/ops/otclient_p14_guest_evidence.py"
       - "scripts/ops/otclient_p14_independent_runner.py"
+      - "scripts/ops/otclient_p14_replay_ledger.py"
       - "scripts/ops/otclient_p14_runner_preflight.py"
-      - "scripts/windows/otclient_p14_vm_capture.ps1"
+      - "scripts/ops/otclient_p14_sandbox_executor.py"
+      - "scripts/windows/otclient_p14_*.ps1"
       - "tests/test_otclient_p14_acceptance_attestation.py"
+      - "tests/test_otclient_p14_guest_evidence.py"
       - "tests/test_otclient_p14_independent_runner.py"
+      - "tests/test_otclient_p14_replay_ledger.py"
       - "tests/test_otclient_p14_runner_preflight.py"
+      - "tests/test_otclient_p14_sandbox_executor.py"
       - "tests/test_otclient_p14_vm_capture.py"
   workflow_dispatch:
     inputs:
@@ -25,8 +31,13 @@ on:
         required: true
         default: false
         type: boolean
-      acceptance_report_b64:
-        description: Optional base64-encoded external isolated P14 acceptance report
+      acceptance_envelope_b64:
+        description: Optional base64-encoded signed external isolated P14 evidence envelope
+        required: false
+        default: ''
+        type: string
+      guest_run_id:
+        description: Required 16-hex one-time run id bound to an external evidence envelope
         required: false
         default: ''
         type: string
@@ -57,7 +68,7 @@ jobs:
           cache: pip
 
       - name: Install contract dependencies
-        run: python -m pip install pytest "jsonschema>=4.23.0,<5.0.0"
+        run: python -m pip install pytest "jsonschema>=4.23.0,<5.0.0" "cryptography>=42.0.0,<49.0.0"
 
       - name: Install pinned Lua runtime for behavioral contract tests
         shell: pwsh
@@ -72,7 +83,10 @@ jobs:
           python -m pytest
           tests/test_otclient_p14_independent_runner.py
           tests/test_otclient_p14_acceptance_attestation.py
+          tests/test_otclient_p14_guest_evidence.py
           tests/test_otclient_p14_runner_preflight.py
+          tests/test_otclient_p14_replay_ledger.py
+          tests/test_otclient_p14_sandbox_executor.py
           tests/test_otclient_p14_vm_capture.py -q
 
       - name: Create job-scoped signing material
@@ -117,7 +131,14 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: p14-github-hosted-contract-${{ github.run_id }}
-          path: runtime/p14_independent_runner/*.json
+          # Keep the archive compatible with the bounded preflight reader and
+          # never publish future runtime inputs merely because they are JSON.
+          path: |
+            runtime/p14_independent_runner/request.json
+            runtime/p14_independent_runner/result.json
+            runtime/p14_independent_runner/acceptance-request.json
+            runtime/p14_independent_runner/acceptance-result.json
+            runtime/p14_independent_runner/acceptance-report.json
           if-no-files-found: error
           retention-days: 7
 
@@ -125,12 +146,24 @@ jobs:
     name: Protected GitHub-hosted Windows signed artifact replay
     if: github.event_name == 'workflow_dispatch' && inputs.run_protected_replay == true
     runs-on: windows-latest
+    permissions:
+      contents: read
+      issues: write
+    concurrency:
+      # A closed issue is the durable replay ledger. Serialize every protected
+      # reservation in this repository so check-then-create cannot race.
+      group: p14-guest-evidence-ledger-${{ github.repository_id }}
+      cancel-in-progress: false
     environment:
       name: p14-independent-runner
     timeout-minutes: 15
     env:
       CTOA_P14_RUNNER_SIGNING_KEY: ${{ secrets.CTOA_P14_RUNNER_SIGNING_KEY }}
       CTOA_P14_RUNNER_KEY_ID: ${{ vars.CTOA_P14_RUNNER_KEY_ID }}
+      CTOA_P14_GUEST_EVIDENCE_PUBLIC_CERT_B64: ${{ vars.CTOA_P14_GUEST_EVIDENCE_PUBLIC_CERT_B64 }}
+      CTOA_P14_GUEST_EVIDENCE_KEY_ID: ${{ vars.CTOA_P14_GUEST_EVIDENCE_KEY_ID }}
+      CTOA_P14_GUEST_SNAPSHOT_ID: ${{ vars.CTOA_P14_GUEST_SNAPSHOT_ID }}
+      CTOA_P14_GUEST_RUN_ID: ${{ inputs.guest_run_id }}
 
     steps:
       - name: Check out clean source without persisted credentials
@@ -147,7 +180,7 @@ jobs:
           cache: pip
 
       - name: Install contract dependencies
-        run: python -m pip install pytest "jsonschema>=4.23.0,<5.0.0"
+        run: python -m pip install pytest "jsonschema>=4.23.0,<5.0.0" "cryptography>=42.0.0,<49.0.0"
 
       - name: Install pinned Lua runtime for behavioral contract tests
         shell: pwsh
@@ -182,7 +215,10 @@ jobs:
           python -m pytest
           tests/test_otclient_p14_independent_runner.py
           tests/test_otclient_p14_acceptance_attestation.py
+          tests/test_otclient_p14_guest_evidence.py
           tests/test_otclient_p14_runner_preflight.py
+          tests/test_otclient_p14_replay_ledger.py
+          tests/test_otclient_p14_sandbox_executor.py
           tests/test_otclient_p14_vm_capture.py -q
 
       - name: Prepare request from the trusted clean checkout
@@ -206,19 +242,112 @@ jobs:
           python scripts/ops/otclient_p14_acceptance_attestation.py prepare
           --artifact-root runtime/p14_independent_runner
 
-      - name: Inject external isolated acceptance report
-        if: ${{ inputs.acceptance_report_b64 != '' }}
+      - name: Validate protected guest evidence identity
+        if: ${{ inputs.acceptance_envelope_b64 != '' }}
         shell: pwsh
-        env:
-          CTOA_P14_ACCEPTANCE_REPORT_B64: ${{ inputs.acceptance_report_b64 }}
         run: |
           $ErrorActionPreference = "Stop"
-          $bytes = [Convert]::FromBase64String($env:CTOA_P14_ACCEPTANCE_REPORT_B64)
-          if ($bytes.Length -gt 32768) { throw "Acceptance report input is too large." }
-          [IO.File]::WriteAllBytes("runtime/p14_independent_runner/acceptance-report.json", $bytes)
+          if ($env:CTOA_P14_GUEST_EVIDENCE_PUBLIC_CERT_B64 -notmatch '^[A-Za-z0-9+/=]{128,16384}$') {
+            throw "Protected guest evidence certificate variable is missing or invalid."
+          }
+          if ($env:CTOA_P14_GUEST_EVIDENCE_KEY_ID -notmatch '^[a-z0-9][a-z0-9._-]{2,63}$') {
+            throw "Protected guest evidence key id variable is missing or invalid."
+          }
+          if ($env:CTOA_P14_GUEST_SNAPSHOT_ID -notmatch '^[a-z0-9][a-z0-9._-]{2,63}$') {
+            throw "Protected guest snapshot id variable is missing or invalid."
+          }
+          if ($env:CTOA_P14_GUEST_RUN_ID -notmatch '^[a-f0-9]{16}$') {
+            throw "A 16-hex guest run id is required with an external evidence envelope."
+          }
 
-      - name: Sign isolated acceptance result
-        if: ${{ hashFiles('runtime/p14_independent_runner/acceptance-report.json') != '' }}
+      - name: Inject external isolated guest evidence envelope
+        if: ${{ inputs.acceptance_envelope_b64 != '' }}
+        shell: pwsh
+        env:
+          CTOA_P14_ACCEPTANCE_ENVELOPE_B64: ${{ inputs.acceptance_envelope_b64 }}
+        run: |
+          $ErrorActionPreference = "Stop"
+          $bytes = [Convert]::FromBase64String($env:CTOA_P14_ACCEPTANCE_ENVELOPE_B64)
+          if ($bytes.Length -gt 32768) { throw "Acceptance envelope input is too large." }
+          [IO.File]::WriteAllBytes("runtime/p14_independent_runner/guest-evidence-envelope.json", $bytes)
+
+      - name: Verify external isolated guest evidence before reservation
+        if: ${{ hashFiles('runtime/p14_independent_runner/guest-evidence-envelope.json') != '' }}
+        run: >-
+          python scripts/ops/otclient_p14_acceptance_attestation.py verify-guest-evidence
+          --artifact-root runtime/p14_independent_runner
+
+      - name: Reserve one-time verified guest run
+        if: ${{ hashFiles('runtime/p14_independent_runner/guest-evidence-envelope.json') != '' }}
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          CTOA_P14_LEDGER_REPOSITORY: ${{ github.repository }}
+          CTOA_P14_LEDGER_WORKFLOW_RUN_ID: ${{ github.run_id }}
+          CTOA_P14_LEDGER_WORKFLOW_RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          $ErrorActionPreference = "Stop"
+          $claimPath = "runtime/p14_independent_runner/guest-run-claim.json"
+          python scripts/ops/otclient_p14_replay_ledger.py prepare `
+            --repository $env:CTOA_P14_LEDGER_REPOSITORY `
+            --run-id $env:CTOA_P14_GUEST_RUN_ID `
+            --envelope runtime/p14_independent_runner/guest-evidence-envelope.json `
+            --workflow-run-id $env:CTOA_P14_LEDGER_WORKFLOW_RUN_ID `
+            --workflow-run-attempt $env:CTOA_P14_LEDGER_WORKFLOW_RUN_ATTEMPT `
+            --output $claimPath
+          $claim = Get-Content -LiteralPath $claimPath -Raw | ConvertFrom-Json -AsHashtable
+          if (
+            $claim["schema_version"] -ne "ctoa.p14-guest-run-claim.v1" -or
+            $claim["issue_title"] -notmatch '^P14 guest evidence consumed v1: [a-f0-9]{64}$' -or
+            $claim["issue_body"] -notmatch '^<!-- ctoa-p14-guest-run-ledger:v1 -->'
+          ) {
+            throw "P14 guest-run ledger claim is malformed."
+          }
+          if ([string]::IsNullOrWhiteSpace($env:GITHUB_TOKEN)) {
+            throw "P14 guest-run ledger token is unavailable."
+          }
+          $headers = @{
+            Accept = "application/vnd.github+json"
+            Authorization = "Bearer $env:GITHUB_TOKEN"
+            "X-GitHub-Api-Version" = "2022-11-28"
+          }
+          $existing = @()
+          for ($page = 1; $page -le 100; $page++) {
+            $issuesUri = "$env:GITHUB_API_URL/repos/$env:CTOA_P14_LEDGER_REPOSITORY/issues?state=all&per_page=100&page=$page"
+            $issues = @(Invoke-RestMethod -Method Get -Headers $headers -Uri $issuesUri)
+            $existing = @($issues | Where-Object { $_.title -eq $claim["issue_title"] })
+            if ($existing.Count -ne 0 -or $issues.Count -lt 100) {
+              break
+            }
+          }
+          if ($existing.Count -eq 0 -and $issues.Count -eq 100) {
+            throw "P14 guest-run ledger lookup exceeded its bounded issue scan."
+          }
+          if ($existing.Count -ne 0) {
+            throw "P14 guest run was already consumed; dispatch a fresh isolated run."
+          }
+          $body = @{ title = $claim["issue_title"]; body = $claim["issue_body"] } | ConvertTo-Json -Compress
+          $created = Invoke-RestMethod `
+            -Method Post `
+            -Headers $headers `
+            -ContentType "application/json" `
+            -Uri "$env:GITHUB_API_URL/repos/$env:CTOA_P14_LEDGER_REPOSITORY/issues" `
+            -Body $body
+          if ($created.title -ne $claim["issue_title"] -or $created.number -lt 1) {
+            throw "P14 guest-run ledger reservation response is invalid."
+          }
+          $closed = Invoke-RestMethod `
+            -Method Patch `
+            -Headers $headers `
+            -ContentType "application/json" `
+            -Uri "$env:GITHUB_API_URL/repos/$env:CTOA_P14_LEDGER_REPOSITORY/issues/$($created.number)" `
+            -Body '{"state":"closed"}'
+          if ($closed.state -ne "closed") {
+            throw "P14 guest-run ledger could not be closed."
+          }
+
+      - name: Verify guest evidence and sign isolated acceptance result
+        if: ${{ hashFiles('runtime/p14_independent_runner/guest-evidence-envelope.json') != '' }}
         run: >-
           python scripts/ops/otclient_p14_acceptance_attestation.py attest
           --artifact-root runtime/p14_independent_runner
@@ -233,6 +362,14 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: p14-protected-contract-${{ github.run_id }}
-          path: runtime/p14_independent_runner/*.json
+          # The external envelope and replay-ledger claim are untrusted or
+          # operational inputs, not public contract evidence. Upload only the
+          # bounded files accepted by otclient_p14_runner_preflight.py.
+          path: |
+            runtime/p14_independent_runner/request.json
+            runtime/p14_independent_runner/result.json
+            runtime/p14_independent_runner/acceptance-request.json
+            runtime/p14_independent_runner/acceptance-result.json
+            runtime/p14_independent_runner/acceptance-report.json
           if-no-files-found: error
           retention-days: 7

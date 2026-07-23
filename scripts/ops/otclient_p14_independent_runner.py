@@ -17,9 +17,6 @@ from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 from typing import Any
 
-from jsonschema import Draft202012Validator, FormatChecker
-
-
 ROOT = Path(__file__).resolve().parents[2]
 REQUEST_SCHEMA_PATH = ROOT / "schemas" / "ctoa-p14-runner-request.schema.json"
 RESULT_SCHEMA_PATH = ROOT / "schemas" / "ctoa-p14-runner-result.schema.json"
@@ -36,6 +33,8 @@ SIGNING_KEY_ID_ENV = "CTOA_P14_RUNNER_KEY_ID"
 SAFE_ID_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{2,63}$")
 SHA256_RE = re.compile(r"^[a-f0-9]{64}$")
 VERSION_RE = re.compile(r"^v[0-9]+\.[0-9]+\.[0-9]+$")
+SOURCE_PROVENANCE_SCHEMA = "ctoa.p14-source-provenance.v1"
+SOURCE_PROVENANCE_FILENAME = ".ctoa-p14-source-provenance.json"
 CHECK_IDS = [
     "request_schema",
     "bundle_signature",
@@ -136,6 +135,11 @@ def load_strict_json(path: Path, *, max_bytes: int = MAX_JSON_BYTES) -> dict[str
 
 
 def validate_schema(payload: dict[str, Any], schema_path: Path) -> None:
+    # Emitting the bounded Docker provenance sidecar deliberately needs only the
+    # standard library.  Full request/result validation still requires the
+    # pinned jsonschema dependency at the point it is actually exercised.
+    from jsonschema import Draft202012Validator, FormatChecker
+
     schema = load_strict_json(schema_path)
     validator = Draft202012Validator(schema, format_checker=FormatChecker())
     errors = sorted(validator.iter_errors(payload), key=lambda error: list(error.path))
@@ -157,25 +161,67 @@ def _safe_relative_path(value: Any) -> str:
     return candidate.as_posix()
 
 
-def _require_tracked_package_sources(sources: list[tuple[str, Path]]) -> None:
-    """Reject package inputs that are not tracked by the reviewed Git revision."""
+def _safe_source_relative_path(value: Any) -> str:
+    """Normalize an unambiguous path below the fixed source checkout root."""
+
+    if not isinstance(value, str) or not value or len(value) > 240 or "\\" in value:
+        raise ContractError("helper_provenance_invalid")
+    candidate = PurePosixPath(value)
+    if candidate.is_absolute() or "." in candidate.parts or ".." in candidate.parts:
+        raise ContractError("helper_provenance_invalid")
+    return candidate.as_posix()
+
+
+def _package_source_index(
+    sources: list[tuple[str, Path]],
+) -> tuple[Path, dict[str, tuple[str, Path]]]:
+    """Bind each fixed package target to one non-reparse source checkout path."""
+
     try:
         repository_root = ROOT.resolve(strict=True)
     except OSError as exc:
         raise ContractError("helper_tracking_unavailable") from exc
 
-    relative_paths: set[str] = set()
-    for _, source_path in sources:
+    indexed: dict[str, tuple[str, Path]] = {}
+    for package_path, source_path in sources:
+        package_relative = _safe_relative_path(package_path)
+        if package_relative in indexed:
+            raise ContractError("helper_file_duplicate")
         if _is_reparse(source_path):
             raise ContractError("helper_reparse_file_rejected")
         try:
-            relative_path = source_path.resolve(strict=True).relative_to(repository_root)
+            source_relative = source_path.resolve(strict=True).relative_to(repository_root)
         except (OSError, RuntimeError, ValueError) as exc:
             raise ContractError("helper_source_outside_repository") from exc
-        relative_paths.add(relative_path.as_posix())
+        indexed[package_relative] = (source_relative.as_posix(), source_path)
 
-    if not relative_paths:
+    if not indexed:
         raise ContractError("helper_file_count_invalid")
+    return repository_root, indexed
+
+
+def _git_metadata_is_present(repository_root: Path) -> bool:
+    """Return whether this exact checkout has Git metadata, never probing a parent."""
+
+    metadata_path = repository_root / ".git"
+    try:
+        metadata = metadata_path.lstat()
+    except FileNotFoundError:
+        return False
+    except OSError as exc:
+        raise ContractError("helper_tracking_unavailable") from exc
+    if _is_reparse(metadata_path):
+        raise ContractError("helper_git_metadata_invalid")
+    if not stat.S_ISDIR(metadata.st_mode) and not stat.S_ISREG(metadata.st_mode):
+        raise ContractError("helper_git_metadata_invalid")
+    return True
+
+
+def _require_git_tracked_package_sources(
+    repository_root: Path, relative_paths: set[str]
+) -> None:
+    """Use checkout Git metadata as the authoritative provenance source."""
+
     try:
         result = subprocess.run(
             [
@@ -186,13 +232,15 @@ def _require_tracked_package_sources(sources: list[tuple[str, Path]]) -> None:
                 "--",
                 *sorted(relative_paths),
             ],
-            cwd=ROOT,
+            cwd=repository_root,
             check=False,
             capture_output=True,
             text=True,
             timeout=15,
         )
     except (OSError, subprocess.SubprocessError) as exc:
+        # A checkout that contains metadata but cannot query it is never allowed
+        # to downgrade to the Docker sidecar path.
         raise ContractError("helper_tracking_unavailable") from exc
     if result.returncode != 0:
         raise ContractError("helper_untracked_source_rejected")
@@ -200,6 +248,105 @@ def _require_tracked_package_sources(sources: list[tuple[str, Path]]) -> None:
     tracked_paths = {item for item in result.stdout.split("\0") if item}
     if tracked_paths != relative_paths:
         raise ContractError("helper_untracked_source_rejected")
+
+
+def _load_source_provenance(repository_root: Path) -> dict[str, Any]:
+    """Load the immutable CI-injected sidecar only when this checkout lacks Git."""
+
+    sidecar_path = repository_root / SOURCE_PROVENANCE_FILENAME
+    try:
+        sidecar_path.lstat()
+    except FileNotFoundError as exc:
+        raise ContractError("helper_provenance_unavailable") from exc
+    except OSError as exc:
+        raise ContractError("helper_provenance_unavailable") from exc
+    if _is_reparse(sidecar_path):
+        raise ContractError("helper_provenance_invalid")
+    try:
+        return load_strict_json(sidecar_path)
+    except ContractError as exc:
+        raise ContractError("helper_provenance_invalid") from exc
+
+
+def _require_sidecar_provenance(
+    repository_root: Path, expected_sources: dict[str, tuple[str, Path]]
+) -> None:
+    """Bind the complete fixed package to a CI-generated tracked-source sidecar."""
+
+    provenance = _load_source_provenance(repository_root)
+    required = {"schema_version", "source_revision", "file_count", "files"}
+    if (
+        set(provenance) != required
+        or provenance.get("schema_version") != SOURCE_PROVENANCE_SCHEMA
+        or not isinstance(provenance.get("source_revision"), str)
+        or not re.fullmatch(r"[a-f0-9]{40}", provenance["source_revision"])
+    ):
+        raise ContractError("helper_provenance_invalid")
+
+    files = provenance.get("files")
+    if (
+        not isinstance(files, list)
+        or not 1 <= len(files) <= MAX_HELPER_FILES
+        or provenance.get("file_count") != len(files)
+    ):
+        raise ContractError("helper_provenance_invalid")
+
+    entries: dict[str, dict[str, Any]] = {}
+    package_paths: list[str] = []
+    for entry in files:
+        if not isinstance(entry, dict) or set(entry) != {
+            "package_path",
+            "source_path",
+            "bytes",
+            "sha256",
+        }:
+            raise ContractError("helper_provenance_invalid")
+        try:
+            package_path = _safe_relative_path(entry["package_path"])
+            source_path = _safe_source_relative_path(entry["source_path"])
+        except ContractError as exc:
+            raise ContractError("helper_provenance_invalid") from exc
+        size = entry.get("bytes")
+        digest = entry.get("sha256")
+        if (
+            type(size) is not int
+            or not 1 <= size <= MAX_HELPER_FILE_BYTES
+            or not isinstance(digest, str)
+            or not SHA256_RE.fullmatch(digest)
+            or package_path in entries
+        ):
+            raise ContractError("helper_provenance_invalid")
+        entries[package_path] = {
+            "package_path": package_path,
+            "source_path": source_path,
+            "bytes": size,
+            "sha256": digest,
+        }
+        package_paths.append(package_path)
+
+    if package_paths != sorted(package_paths):
+        raise ContractError("helper_provenance_order_invalid")
+    if set(entries) != set(expected_sources):
+        raise ContractError("helper_provenance_path_set_invalid")
+
+    for package_path, (expected_source_path, source_path) in expected_sources.items():
+        entry = entries[package_path]
+        if entry["source_path"] != expected_source_path:
+            raise ContractError("helper_provenance_path_set_invalid")
+        raw = _read_regular_file(source_path, max_bytes=MAX_HELPER_FILE_BYTES)
+        if len(raw) != entry["bytes"] or raw_sha256(raw) != entry["sha256"]:
+            raise ContractError("helper_provenance_binding_invalid")
+
+
+def _require_tracked_package_sources(sources: list[tuple[str, Path]]) -> None:
+    """Reject untracked/reparse inputs; use sidecar only when Git is absent."""
+
+    repository_root, indexed_sources = _package_source_index(sources)
+    relative_paths = {source_path for source_path, _ in indexed_sources.values()}
+    if _git_metadata_is_present(repository_root):
+        _require_git_tracked_package_sources(repository_root, relative_paths)
+        return
+    _require_sidecar_provenance(repository_root, indexed_sources)
 
 
 def _package_sources() -> list[tuple[str, Path]]:
@@ -381,6 +528,48 @@ def _git_state() -> tuple[str, bool]:
     if not re.fullmatch(r"[a-f0-9]{40}", revision):
         raise ContractError("git_revision_invalid")
     return revision, not bool(dirty)
+
+
+def build_source_provenance() -> dict[str, Any]:
+    """Emit the fixed-package provenance sidecar for a clean Git checkout.
+
+    Docker test images intentionally omit ``.git``.  The CI host creates this
+    bounded sidecar before image construction, then injects it into the test
+    stage only.  A guest or normal checkout must still use its Git index; it
+    cannot select this fallback while its metadata exists.
+    """
+
+    try:
+        repository_root = ROOT.resolve(strict=True)
+    except OSError as exc:
+        raise ContractError("helper_tracking_unavailable") from exc
+    if not _git_metadata_is_present(repository_root):
+        raise ContractError("helper_tracking_unavailable")
+
+    sources = _package_sources()
+    _, indexed_sources = _package_source_index(sources)
+    revision, clean = _git_state()
+    if not clean:
+        raise ContractError("source_checkout_not_clean")
+
+    files: list[dict[str, Any]] = []
+    for package_path in sorted(indexed_sources):
+        source_relative, source_path = indexed_sources[package_path]
+        raw = _read_regular_file(source_path, max_bytes=MAX_HELPER_FILE_BYTES)
+        files.append(
+            {
+                "package_path": package_path,
+                "source_path": source_relative,
+                "bytes": len(raw),
+                "sha256": raw_sha256(raw),
+            }
+        )
+    return {
+        "schema_version": SOURCE_PROVENANCE_SCHEMA,
+        "source_revision": revision,
+        "file_count": len(files),
+        "files": files,
+    }
 
 
 def _signing_material() -> tuple[bytes, str]:
@@ -755,6 +944,11 @@ def _print(payload: dict[str, Any]) -> None:
     print(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True))
 
 
+def _emit_source_provenance(_: argparse.Namespace) -> int:
+    _print(build_source_provenance())
+    return 0
+
+
 def _prepare(args: argparse.Namespace) -> int:
     blockers: list[str] = []
     source_summary: dict[str, Any] = {}
@@ -899,6 +1093,12 @@ def _verify_result(args: argparse.Namespace) -> int:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     subparsers = parser.add_subparsers(dest="command", required=True)
+
+    provenance = subparsers.add_parser(
+        "emit-source-provenance",
+        help="Emit fixed tracked-source provenance for the Docker test stage.",
+    )
+    provenance.set_defaults(handler=_emit_source_provenance)
 
     prepare = subparsers.add_parser(
         "prepare", help="Create a signed fixed-scope runner request."

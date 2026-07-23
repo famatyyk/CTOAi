@@ -7,6 +7,7 @@ import argparse
 import copy
 from datetime import datetime, timezone
 import json
+import os
 from pathlib import Path
 import subprocess
 from typing import Any
@@ -16,8 +17,10 @@ from referencing import Registry, Resource
 
 try:
     from scripts.ops import otclient_p14_independent_runner as foundation
+    from scripts.ops import otclient_p14_guest_evidence as guest_evidence
 except ModuleNotFoundError:  # Direct script execution from scripts/ops.
     import otclient_p14_independent_runner as foundation
+    import otclient_p14_guest_evidence as guest_evidence
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -25,6 +28,11 @@ REQUEST_SCHEMA_PATH = ROOT / "schemas" / "ctoa-p14-acceptance-request.schema.jso
 REPORT_SCHEMA_PATH = ROOT / "schemas" / "ctoa-p14-acceptance-report.schema.json"
 RESULT_SCHEMA_PATH = ROOT / "schemas" / "ctoa-p14-acceptance-result.schema.json"
 DEFAULT_ARTIFACT_ROOT = ROOT / "runtime" / "p14_independent_runner"
+GUEST_EVIDENCE_ENVELOPE_FILENAME = "guest-evidence-envelope.json"
+GUEST_EVIDENCE_CERT_ENV = "CTOA_P14_GUEST_EVIDENCE_PUBLIC_CERT_B64"
+GUEST_EVIDENCE_KEY_ID_ENV = "CTOA_P14_GUEST_EVIDENCE_KEY_ID"
+GUEST_SNAPSHOT_ID_ENV = "CTOA_P14_GUEST_SNAPSHOT_ID"
+GUEST_RUN_ID_ENV = "CTOA_P14_GUEST_RUN_ID"
 ZERO_SHA256 = "0" * 64
 CAPABILITY_ORDER = (
     "visual_regression",
@@ -70,6 +78,66 @@ AUTHORITY = copy.deepcopy(foundation.AUTHORITY)
 
 class AttestationError(ValueError):
     """Raised when an acceptance artifact violates the bounded contract."""
+
+
+def _guest_evidence_binding(
+    runner_request: dict[str, Any], acceptance_request: dict[str, Any]
+) -> dict[str, str]:
+    """Derive the stable, guest-verifiable binding from signed P14 artifacts."""
+
+    source = runner_request.get("source")
+    acceptance_binding = acceptance_request.get("binding")
+    if not isinstance(source, dict) or not isinstance(acceptance_binding, dict):
+        raise AttestationError("guest_evidence_binding_missing")
+    artifacts = foundation._artifact_map(runner_request)
+    rollback = artifacts.get("rollback_baseline", {}).get("payload")
+    if not isinstance(rollback, dict):
+        raise AttestationError("guest_evidence_rollback_baseline_missing")
+    try:
+        foundation._validate_manifest_payload(
+            rollback, "ctoa.p14-rollback-baseline.v1"
+        )
+    except foundation.ContractError as exc:
+        raise AttestationError("guest_evidence_rollback_baseline_invalid") from exc
+    values = {
+        "source_revision": source.get("revision"),
+        "helper_manifest_sha256": source.get("helper_manifest_sha256"),
+        "rollback_baseline_manifest_sha256": foundation.canonical_sha256(rollback),
+        "snapshot_id": os.environ.get(GUEST_SNAPSHOT_ID_ENV, ""),
+        "run_id": os.environ.get(GUEST_RUN_ID_ENV, ""),
+    }
+    if (
+        values["source_revision"] != acceptance_binding.get("source_revision")
+        or values["helper_manifest_sha256"]
+        != acceptance_binding.get("helper_manifest_sha256")
+        or not all(isinstance(value, str) and value for value in values.values())
+    ):
+        raise AttestationError("guest_evidence_binding_invalid")
+    return values
+
+
+def _project_guest_evidence(
+    root: Path,
+    *,
+    runner_request: dict[str, Any],
+    acceptance_request: dict[str, Any],
+) -> dict[str, Any]:
+    envelope_path = root / GUEST_EVIDENCE_ENVELOPE_FILENAME
+    if not envelope_path.is_file():
+        raise AttestationError("guest_evidence_envelope_missing")
+    certificate_b64 = os.environ.get(GUEST_EVIDENCE_CERT_ENV, "")
+    key_id = os.environ.get(GUEST_EVIDENCE_KEY_ID_ENV, "")
+    binding = _guest_evidence_binding(runner_request, acceptance_request)
+    try:
+        return guest_evidence.verify_and_project_envelope(
+            foundation.load_strict_json(envelope_path),
+            public_certificate=certificate_b64,
+            certificate_b64=True,
+            expected_binding=binding,
+            expected_key_id=key_id,
+        )
+    except guest_evidence.GuestEvidenceError as exc:
+        raise AttestationError("guest_evidence_envelope_invalid") from exc
 
 
 def _schema_registry() -> Registry:
@@ -433,11 +501,54 @@ def _prepare(args: argparse.Namespace) -> int:
     return 0
 
 
+def _verified_guest_evidence_report(
+    root: Path, *, key: bytes, key_id: str
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Verify the exact trusted inputs before any result or ledger write.
+
+    This intentionally has no output side effect.  The protected workflow uses it
+    before reserving a one-time guest run, so malformed or rebinding attempts do
+    not consume an otherwise usable appliance run identifier.
+    """
+
+    request = foundation.load_strict_json(root / "acceptance-request.json")
+    runner_request = foundation.load_strict_json(root / "request.json")
+    try:
+        foundation._verify_signature(request, key, key_id)
+        foundation._verify_signature(runner_request, key, key_id)
+    except foundation.ContractError as exc:
+        raise AttestationError("guest_evidence_request_signature_invalid") from exc
+    report = _project_guest_evidence(
+        root,
+        runner_request=runner_request,
+        acceptance_request=request,
+    )
+    return request, report
+
+
+def _verify_guest_evidence(args: argparse.Namespace) -> int:
+    key, key_id = foundation._signing_material()
+    root = foundation._artifact_root(args.artifact_root)
+    request, report = _verified_guest_evidence_report(root, key=key, key_id=key_id)
+    _print(
+        {
+            "schema_version": 1,
+            "action": "p14-acceptance-verify-guest-evidence",
+            "status": "verified",
+            "request_id": request["request_id"],
+            "source_revision": report["source_revision"],
+            "capability_count": len(report["capabilities"]),
+            "authority": AUTHORITY,
+        }
+    )
+    return 0
+
+
 def _attest(args: argparse.Namespace) -> int:
     key, key_id = foundation._signing_material()
     root = foundation._artifact_root(args.artifact_root)
-    request = foundation.load_strict_json(root / "acceptance-request.json")
-    report = foundation.load_strict_json(root / "acceptance-report.json")
+    request, report = _verified_guest_evidence_report(root, key=key, key_id=key_id)
+    foundation._write_json_atomic(root / "acceptance-report.json", report)
     result = build_acceptance_result(request, report, key=key, key_id=key_id)
     foundation._write_json_atomic(root / "acceptance-result.json", result)
     _print(
@@ -499,10 +610,23 @@ def parse_args() -> argparse.Namespace:
     prepare.set_defaults(handler=_prepare)
 
     attest = subparsers.add_parser(
-        "attest", help="Normalize an isolated report and emit a signed acceptance result."
+        "attest",
+        help="Verify a signed isolated guest envelope and emit a signed acceptance result.",
     )
     attest.add_argument("--artifact-root", default=str(DEFAULT_ARTIFACT_ROOT))
     attest.set_defaults(handler=_attest)
+
+    verify_guest_evidence = subparsers.add_parser(
+        "verify-guest-evidence",
+        help=(
+            "Verify a signed guest envelope and binding without writing an "
+            "attestation."
+        ),
+    )
+    verify_guest_evidence.add_argument(
+        "--artifact-root", default=str(DEFAULT_ARTIFACT_ROOT)
+    )
+    verify_guest_evidence.set_defaults(handler=_verify_guest_evidence)
 
     verify = subparsers.add_parser(
         "verify-result", help="Verify exact request/result and capability-proof bindings."

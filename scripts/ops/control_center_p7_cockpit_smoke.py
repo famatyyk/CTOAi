@@ -290,13 +290,15 @@ def build_report(
         if isinstance(operator_brief.get("roadmap_generation"), dict)
         else {}
     )
+    roadmap_doc_count = int(roadmap_generation.get("doc_count") or 0)
+    roadmap_ready_doc_count = int(roadmap_generation.get("ready_doc_count") or 0)
     add_check(
         checks,
         "operator_brief_roadmap_generation",
         roadmap_generation.get("status") == "ready"
         and roadmap_generation.get("doc_sync_status") == "passed"
-        and int(roadmap_generation.get("ready_doc_count") or 0) == 3
-        and int(roadmap_generation.get("doc_count") or 0) == 3
+        and roadmap_doc_count > 0
+        and roadmap_ready_doc_count == roadmap_doc_count
         and not roadmap_generation.get("hard_blockers"),
         display_path(paths["operator_brief"], root),
         "operator_brief_roadmap_generation_not_ready",

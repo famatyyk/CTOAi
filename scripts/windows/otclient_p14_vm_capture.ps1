@@ -4,8 +4,6 @@ param(
     [ValidatePattern('^[a-f0-9]{40}$')]
     [string]$SourceRevision,
 
-    [string]$ClientPath = $(if ($env:CTOA_P14_CLIENT_PATH) { $env:CTOA_P14_CLIENT_PATH } else { 'C:\P14Runner\client\otclient.exe' }),
-    [string]$EvidenceRoot = $(if ($env:CTOA_P14_EVIDENCE_ROOT) { $env:CTOA_P14_EVIDENCE_ROOT } else { 'C:\P14Runner\evidence' }),
     [int]$TimeoutSeconds = 120
 )
 
@@ -69,6 +67,40 @@ function Get-Sha256([string]$Path) {
     return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant()
 }
 
+function Get-P14ClientWindowBounds([System.Diagnostics.Process]$ClientProcess) {
+    Add-Type @'
+using System;
+using System.Runtime.InteropServices;
+
+public static class CTOAiP14NativeWindow {
+    [StructLayout(LayoutKind.Sequential)]
+    public struct RECT {
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
+    }
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern bool GetWindowRect(IntPtr hWnd, out RECT rectangle);
+}
+'@
+    $ClientProcess.Refresh()
+    if ($ClientProcess.MainWindowHandle -eq [IntPtr]::Zero) {
+        Stop-P14Capture('client_window_missing')
+    }
+    $rectangle = New-Object CTOAiP14NativeWindow+RECT
+    if (-not [CTOAiP14NativeWindow]::GetWindowRect($ClientProcess.MainWindowHandle, [ref]$rectangle)) {
+        Stop-P14Capture('client_window_bounds_missing')
+    }
+    $width = $rectangle.Right - $rectangle.Left
+    $height = $rectangle.Bottom - $rectangle.Top
+    if ($width -lt 640 -or $height -lt 480) {
+        Stop-P14Capture('client_window_bounds_invalid')
+    }
+    return [Drawing.Rectangle]::new($rectangle.Left, $rectangle.Top, $width, $height)
+}
+
 foreach ($flag in @{
         CTOA_P14_ISOLATED_ENVIRONMENT = 'true'
         CTOA_P14_OPERATOR_WORKSTATION_FOCUS_USED = 'false'
@@ -85,7 +117,21 @@ if ($TimeoutSeconds -lt 10 -or $TimeoutSeconds -gt 600) {
     Stop-P14Capture('timeout_out_of_range')
 }
 
-$clientRoot = if ($env:CTOA_P14_CLIENT_ROOT) { $env:CTOA_P14_CLIENT_ROOT } else { 'C:\P14Runner\client' }
+$runId = [Environment]::GetEnvironmentVariable('CTOA_P14_RUN_ID', 'Process')
+if ($runId -notmatch '^[a-f0-9]{16}$') {
+    Stop-P14Capture('run_id_invalid')
+}
+foreach ($override in @('CTOA_P14_CLIENT_PATH', 'CTOA_P14_CLIENT_ROOT', 'CTOA_P14_EVIDENCE_ROOT')) {
+    if ([Environment]::GetEnvironmentVariable($override, 'Process')) {
+        Stop-P14Capture("caller_path_override_rejected:$override")
+    }
+}
+
+$clientRoot = 'C:\P14Runner\client'
+$ClientPath = 'C:\P14Runner\client\otclient.exe'
+# Capture and sandbox evidence use separate fixed children.  The broker owns
+# creation of this capture directory; the sandbox executor owns <run-id>.
+$EvidenceRoot = Join-Path 'C:\P14Runner\evidence' ("capture-$runId")
 $client = Get-StrictPath $ClientPath $clientRoot 'client'
 $evidenceAllowlistRoot = 'C:\P14Runner\evidence'
 if (-not [Environment]::UserInteractive) {
@@ -165,11 +211,7 @@ try {
     }
 
     Add-Type -AssemblyName System.Drawing
-    Add-Type -AssemblyName System.Windows.Forms
-    $bounds = [Windows.Forms.Screen]::PrimaryScreen.Bounds
-    if ($bounds.Width -lt 640 -or $bounds.Height -lt 480) {
-        Stop-P14Capture('display_bounds_invalid')
-    }
+    $bounds = Get-P14ClientWindowBounds $process
     $imagePath = Join-Path $evidence ("p14-in-world-$SourceRevision.png")
     $bitmap = New-Object Drawing.Bitmap $bounds.Width, $bounds.Height
     try {
@@ -200,27 +242,13 @@ try {
             sha256 = Get-Sha256 $capabilityCopy
         }
     )
-    $logPath = Join-Path $clientRoot 'otclient.log'
-    if (Test-Path -LiteralPath $logPath -PathType Leaf) {
-        $logCopy = Join-Path $evidence 'otclient.log'
-        Copy-Item -LiteralPath $logPath -Destination $logCopy -Force
-        $artifacts += [ordered]@{
-            kind = 'client_log'
-            path = [IO.Path]::GetFileName($logCopy)
-            bytes = (Get-Item -LiteralPath $logCopy).Length
-            sha256 = Get-Sha256 $logCopy
-        }
-    }
-
-    $sessionId = (Get-Process -Id $process.Id).SessionId
     $report = [ordered]@{
         schema_version = 'ctoa.p14-vm-capture.v1'
         status = 'observed_pass'
         captured_at = $timestamp
         source_revision = $SourceRevision
+        run_id = $runId
         client_version = [string]$onlineMarker.build_id
-        client_pid = $process.Id
-        client_session_id = $sessionId
         isolation = [ordered]@{
             isolated_environment = $true
             operator_workstation_focus_used = $false
@@ -235,7 +263,7 @@ try {
             online = [bool]$onlineMarker.online
             build_id = [string]$onlineMarker.build_id
             observed_at = [string]$onlineMarker.observed_at
-            reporter_path = $resolvedReporter
+            reporter_artifact = [IO.Path]::GetFileName($capabilityCopy)
         }
         artifacts = $artifacts
     }
@@ -245,5 +273,11 @@ try {
 } finally {
     if ($process -and -not $process.HasExited) {
         Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+    }
+    # The reporter is an internal handshake file.  Only its bounded copy in
+    # the capture directory is evidence; do not leave a stale global reporter
+    # that a later run could accidentally consume.
+    if (Test-Path -LiteralPath $reporter -PathType Leaf) {
+        Remove-Item -LiteralPath $reporter -Force -ErrorAction SilentlyContinue
     }
 }
