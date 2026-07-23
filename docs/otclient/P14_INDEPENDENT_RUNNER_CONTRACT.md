@@ -263,10 +263,15 @@ The P14 appliance consists of four fixed components:
 Before a real run, a human owner must prepare a new appliance snapshot while the
 guest is offline: copy the reviewed revision into `C:\P14Runner\repo`, install
 the known client and Python runtime, establish the approved interactive guest
-session, and run provisioning with a logical snapshot ID plus the SHA-256 of an
-approved client-window visual baseline. The runner never supplies credentials,
+session, and first run `otclient_p14_baseline_capture.ps1 -Apply` inside that
+guest. The owner reviews the resulting fixed guest-local baseline image and
+then runs provisioning with the logical snapshot ID and
+`-ApproveVisualBaseline`. Provisioning derives the visual SHA-256 only from the
+fixed baseline receipt, image, capture report, and Helper marker; it never
+accepts a hand-typed baseline hash. The runner never supplies credentials,
 unlocks Windows, or sends keyboard/mouse input. The snapshot must resume that
-approved interactive session; a lock screen is deliberately a blocker.
+approved interactive session; a lock screen is deliberately a blocker. The
+detailed procedure is in `P14_APPLIANCE_BOOTSTRAP_RUNBOOK.md`.
 
 After provisioning, pin the emitted public certificate, key ID, and logical
 snapshot ID as the three GitHub environment variables above. Disable every VM NIC

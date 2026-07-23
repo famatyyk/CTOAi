@@ -81,6 +81,29 @@ function Get-P14VmState([string]$VBoxManage) {
     return $state
 }
 
+function Get-P14NamedSnapshotUuid([string]$VBoxManage) {
+    $snapshots = Invoke-P14VBoxRead $VBoxManage @(
+        'snapshot', $P14VmUuid, 'list', '--machinereadable'
+    )
+    $matches = [System.Collections.Generic.List[string]]::new()
+    for ($index = 0; $index -lt $snapshots.Count; $index++) {
+        if ($snapshots[$index] -ne "SnapshotName=`"$P14SnapshotName`"") {
+            continue
+        }
+        if (
+            $index + 1 -ge $snapshots.Count -or
+            $snapshots[$index + 1] -notmatch '^SnapshotUUID="(?<value>[a-f0-9-]{36})"$'
+        ) {
+            Stop-P14VmRunner 'snapshot_binding_invalid'
+        }
+        $matches.Add([string]$Matches['value']) | Out-Null
+    }
+    if ($matches.Count -ne 1) {
+        Stop-P14VmRunner 'snapshot_binding_invalid'
+    }
+    return $matches[0]
+}
+
 function Assert-P14ApplianceIsolation([string]$VBoxManage, [switch]$RequirePowerOff) {
     $machine = Invoke-P14VBoxRead $VBoxManage @(
         'showvminfo', $P14VmUuid, '--machinereadable'
@@ -92,7 +115,11 @@ function Assert-P14ApplianceIsolation([string]$VBoxManage, [switch]$RequirePower
     if ($RequirePowerOff -and (Get-P14MachineValue $machine 'VMState') -ne 'poweroff') {
         Stop-P14VmRunner 'vm_not_powered_off'
     }
-    if ((Get-P14MachineValue $machine 'CurrentSnapshotName') -ne $P14SnapshotName) {
+    $expectedSnapshotUuid = Get-P14NamedSnapshotUuid $VBoxManage
+    if (
+        (Get-P14MachineValue $machine 'CurrentSnapshotName') -ne $P14SnapshotName -or
+        (Get-P14MachineValue $machine 'CurrentSnapshotUUID') -ne $expectedSnapshotUuid
+    ) {
         Stop-P14VmRunner 'snapshot_mismatch'
     }
 

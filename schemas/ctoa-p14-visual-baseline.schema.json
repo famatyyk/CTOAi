@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ctoai.local/schemas/ctoa-p14-visual-baseline.schema.json",
+  "title": "CTOAi P14 approved-local visual baseline receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "status",
+    "source_revision",
+    "image_name",
+    "image_sha256",
+    "image_bytes",
+    "capture_report_sha256",
+    "runtime_marker_sha256",
+    "isolation",
+    "authority"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "ctoa.p14-visual-baseline.v1"
+    },
+    "status": {
+      "const": "awaiting_owner_approval"
+    },
+    "source_revision": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$"
+    },
+    "image_name": {
+      "type": "string",
+      "pattern": "^p14-baseline-[a-f0-9]{40}\\.png$"
+    },
+    "image_sha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "image_bytes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 33554432
+    },
+    "capture_report_sha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "runtime_marker_sha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "isolation": {
+      "$ref": "#/$defs/isolation"
+    },
+    "authority": {
+      "$ref": "#/$defs/authority"
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "isolation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "isolated_environment",
+        "operator_workstation_focus_used",
+        "operator_workstation_input_used",
+        "network_dispatch_used",
+        "live_client_accessed",
+        "promotion_attempted",
+        "capture_context"
+      ],
+      "properties": {
+        "isolated_environment": {
+          "const": true
+        },
+        "operator_workstation_focus_used": {
+          "const": false
+        },
+        "operator_workstation_input_used": {
+          "const": false
+        },
+        "network_dispatch_used": {
+          "const": false
+        },
+        "live_client_accessed": {
+          "const": false
+        },
+        "promotion_attempted": {
+          "const": false
+        },
+        "capture_context": {
+          "const": "guest"
+        }
+      }
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "runtime_actions",
+        "live_authority",
+        "promotion_approved",
+        "network_dispatch_used"
+      ],
+      "properties": {
+        "runtime_actions": {
+          "const": false
+        },
+        "live_authority": {
+          "const": false
+        },
+        "promotion_approved": {
+          "const": false
+        },
+        "network_dispatch_used": {
+          "const": false
+        }
+      }
+    }
+  }
+}
