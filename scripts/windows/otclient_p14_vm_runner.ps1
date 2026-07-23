@@ -15,9 +15,12 @@ $ErrorActionPreference = 'Stop'
 
 # Appliance selection is a source-controlled contract.  The caller can select
 # only an opaque run id and a bounded wait duration, never a VM, snapshot,
-# endpoint, command, path, or guest credential.
-$P14VmUuid = '68c47454-65cd-4211-ac24-9a3f8bc219b1'
-$P14SnapshotUuid = '60813f92-d982-44ee-95a8-833596672a1b'
+# endpoint, command, path, or guest credential.  The snapshot name is fixed
+# before guest provisioning, so the appliance can freeze the same source
+# revision that later drives this runner; VirtualBox assigns the UUID only
+# when that named snapshot is created.
+$P14VmUuid = '19aaab8d-7db3-471f-ad3c-d6e9bc73ee07'
+$P14SnapshotName = 'p14-offline-20260724'
 $P14GuestRunIdProperty = '/CTOAi/P14/RunId'
 $P14GuestStatusProperty = '/CTOAi/P14/Status'
 $P14GuestEnvelopeProperty = '/CTOAi/P14/EvidenceEnvelopeB64'
@@ -89,7 +92,7 @@ function Assert-P14ApplianceIsolation([string]$VBoxManage, [switch]$RequirePower
     if ($RequirePowerOff -and (Get-P14MachineValue $machine 'VMState') -ne 'poweroff') {
         Stop-P14VmRunner 'vm_not_powered_off'
     }
-    if ((Get-P14MachineValue $machine 'CurrentSnapshotUUID') -ne $P14SnapshotUuid) {
+    if ((Get-P14MachineValue $machine 'CurrentSnapshotName') -ne $P14SnapshotName) {
         Stop-P14VmRunner 'snapshot_mismatch'
     }
 
@@ -173,7 +176,7 @@ function Stop-AndRestoreP14Appliance([string]$VBoxManage) {
             Stop-P14VmRunner 'vm_shutdown_timeout'
         }
     }
-    Invoke-P14VBoxWrite $VBoxManage @('snapshot', $P14VmUuid, 'restore', $P14SnapshotUuid) | Out-Null
+    Invoke-P14VBoxWrite $VBoxManage @('snapshot', $P14VmUuid, 'restore', $P14SnapshotName) | Out-Null
     Assert-P14ApplianceIsolation $VBoxManage -RequirePowerOff
     Clear-P14GuestProperties $VBoxManage
 }
@@ -206,7 +209,7 @@ $started = $false
 try {
     # A restore can reapply legacy NIC settings, so validate again before any
     # guest property is written or VM process is started.
-    Invoke-P14VBoxWrite $vbox @('snapshot', $P14VmUuid, 'restore', $P14SnapshotUuid) | Out-Null
+    Invoke-P14VBoxWrite $vbox @('snapshot', $P14VmUuid, 'restore', $P14SnapshotName) | Out-Null
     Assert-P14ApplianceIsolation $vbox -RequirePowerOff
     Clear-P14GuestProperties $vbox
     Invoke-P14VBoxWrite $vbox @('guestproperty', 'set', $P14VmUuid, $P14GuestRunIdProperty, $RunId) | Out-Null
