@@ -1,6 +1,6 @@
 # AGENT 7: Tibia Bot dependencies
 mss>=9.0.1          # Screen capture
-opencv-python>=4.9  # Computer vision / state parsing
+opencv-python-headless>=4.10.0.84,<5.0.0.0  # Computer vision / state parsing
 pyautogui>=0.9.54   # Input simulation
 pydirectinput>=1.0.4  # DirectInput-safe key/mouse dispatch
 pywin32>=306; platform_system == "Windows"  # Window integrations on Windows
