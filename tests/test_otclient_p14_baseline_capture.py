@@ -109,6 +109,8 @@ def test_bootstrap_runbook_uses_no_hand_typed_baseline_hash() -> None:
     assert "baseline-receipt.json" in source
     assert "transient\nread-only shared folder" in source
     assert "remove the shared\nfolder completely" in source
-    assert "must pin that UUID before the host runner may start the VM" in source
-    assert "Record its generated UUID exactly." in source
+    assert "otclient_p14_appliance_bind.ps1') -Apply" in source
+    assert "derives the offline VM UUID, logical snapshot ID, and final snapshot" in source
+    assert "never accepts a VM\nUUID" in source
+    assert "<clean-host-checkout>" not in source
     assert "<SHA256" not in source

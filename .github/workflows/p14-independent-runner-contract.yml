@@ -88,6 +88,8 @@ jobs:
           tests/test_otclient_p14_replay_ledger.py
           tests/test_otclient_p14_sandbox_executor.py
           tests/test_otclient_p14_vm_capture.py -q
+          tests/test_otclient_p14_guest_runner.py
+          tests/test_otclient_p14_baseline_capture.py -q
 
       - name: Create job-scoped signing material
         shell: python
@@ -163,6 +165,9 @@ jobs:
       CTOA_P14_GUEST_EVIDENCE_PUBLIC_CERT_B64: ${{ vars.CTOA_P14_GUEST_EVIDENCE_PUBLIC_CERT_B64 }}
       CTOA_P14_GUEST_EVIDENCE_KEY_ID: ${{ vars.CTOA_P14_GUEST_EVIDENCE_KEY_ID }}
       CTOA_P14_GUEST_SNAPSHOT_ID: ${{ vars.CTOA_P14_GUEST_SNAPSHOT_ID }}
+      CTOA_P14_GUEST_SNAPSHOT_MANIFEST_SHA256: ${{ vars.CTOA_P14_GUEST_SNAPSHOT_MANIFEST_SHA256 }}
+      CTOA_P14_APPLIANCE_BINDING_SHA256: ${{ vars.CTOA_P14_APPLIANCE_BINDING_SHA256 }}
+      CTOA_P14_GUEST_SOURCE_REVISION: ${{ vars.CTOA_P14_GUEST_SOURCE_REVISION }}
       CTOA_P14_GUEST_RUN_ID: ${{ inputs.guest_run_id }}
 
     steps:
@@ -220,6 +225,8 @@ jobs:
           tests/test_otclient_p14_replay_ledger.py
           tests/test_otclient_p14_sandbox_executor.py
           tests/test_otclient_p14_vm_capture.py -q
+          tests/test_otclient_p14_guest_runner.py
+          tests/test_otclient_p14_baseline_capture.py -q
 
       - name: Prepare request from the trusted clean checkout
         run: >-
@@ -255,6 +262,21 @@ jobs:
           }
           if ($env:CTOA_P14_GUEST_SNAPSHOT_ID -notmatch '^[a-z0-9][a-z0-9._-]{2,63}$') {
             throw "Protected guest snapshot id variable is missing or invalid."
+          }
+          if ($env:CTOA_P14_GUEST_SNAPSHOT_MANIFEST_SHA256 -notmatch '^[a-f0-9]{64}$') {
+            throw "Protected guest snapshot manifest variable is missing or invalid."
+          }
+          if ($env:CTOA_P14_APPLIANCE_BINDING_SHA256 -notmatch '^[a-f0-9]{64}$') {
+            throw "Protected appliance binding variable is missing or invalid."
+          }
+          if ($env:CTOA_P14_GUEST_SOURCE_REVISION -notmatch '^[a-f0-9]{40}$') {
+            throw "Protected guest source revision variable is missing or invalid."
+          }
+          if ($env:GITHUB_SHA -notmatch '^[a-f0-9]{40}$') {
+            throw "GitHub source revision is invalid."
+          }
+          if ($env:CTOA_P14_GUEST_SOURCE_REVISION -cne $env:GITHUB_SHA) {
+            throw "Protected guest source revision must match this GitHub source revision."
           }
           if ($env:CTOA_P14_GUEST_RUN_ID -notmatch '^[a-f0-9]{16}$') {
             throw "A 16-hex guest run id is required with an external evidence envelope."

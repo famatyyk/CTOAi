@@ -11,6 +11,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 WINDOWS = ROOT / "scripts" / "windows"
 HOST_RUNNER = WINDOWS / "otclient_p14_vm_runner.ps1"
+HOST_BINDER = WINDOWS / "otclient_p14_appliance_bind.ps1"
 GUEST_PROVISION = WINDOWS / "otclient_p14_guest_provision.ps1"
 GUEST_BROKER = WINDOWS / "otclient_p14_guest_broker.ps1"
 EVIDENCE_REVIEW = WINDOWS / "otclient_p14_evidence_review.ps1"
@@ -18,6 +19,7 @@ VM_CAPTURE = WINDOWS / "otclient_p14_vm_capture.ps1"
 BASELINE_CAPTURE = WINDOWS / "otclient_p14_baseline_capture.ps1"
 P14_WINDOWS_SCRIPTS = (
     HOST_RUNNER,
+    HOST_BINDER,
     GUEST_PROVISION,
     GUEST_BROKER,
     EVIDENCE_REVIEW,
@@ -48,27 +50,54 @@ def _assert_no_interactive_or_remote_control(source: str) -> None:
 def test_host_runner_is_fixed_to_the_p14_appliance_and_dry_run_by_default() -> None:
     source = _source(HOST_RUNNER)
 
-    assert "$P14VmUuid = '68c47454-65cd-4211-ac24-9a3f8bc219b1'" in source
-    assert "$P14SnapshotUuid = '60813f92-d982-44ee-95a8-833596672a1b'" in source
+    assert "$P14ApplianceVmName = 'CTOA-P14-Runner-Offline-20260724'" in source
+    assert "$P14BindingPath = 'C:\\ProgramData\\CTOAi\\P14\\p14-appliance-binding.json'" in source
+    assert "68c47454-65cd-4211-ac24-9a3f8bc219b1" not in source
+    assert "60813f92-d982-44ee-95a8-833596672a1b" not in source
     assert "$P14EndpointProfile = 'p14-offline-replay-v1'" in source
     assert "[ValidatePattern('^[a-f0-9]{16}$')]" in source
     assert "if (-not $Execute)" in source
-    assert "'guestproperty', 'set', $P14VmUuid, $P14GuestRunIdProperty, $RunId" in source
+    assert "dry_run_unbound" in source
+    assert "Get-P14ApplianceBinding" in source
+    assert "'RDONLYGUEST'" in source
+    assert "$P14GuestApplianceBindingSha256Property = '/CTOAi/P14/ApplianceBindingSha256'" in source
+    assert "$P14GuestSnapshotManifestSha256Property = '/CTOAi/P14/SnapshotManifestSha256'" in source
     assert "$P14GuestEnvelopeProperty = '/CTOAi/P14/EvidenceEnvelopeB64'" in source
     assert "Get-P14GuestProperty" in source
     assert "Stop-AndRestoreP14Appliance" in source
-    assert "'controlvm', $P14VmUuid, 'poweroff'" in source
+    assert "'controlvm', $Binding['appliance']['vm_uuid'], 'poweroff'" in source
     assert "acceptance_envelope_b64" in source
-    assert "CurrentSnapshotUUID') -ne $P14SnapshotUuid" in source
-    assert "'snapshot', $P14VmUuid, 'restore', $P14SnapshotUuid" in source
-    assert "'startvm', $P14VmUuid, '--type', 'headless'" in source
-    assert "'getextradata', $P14VmUuid, $P14EndpointProfileKey" in source
+    assert "Assert-P14ApplianceIsolation $vbox $binding 'saved'" in source
+    assert "Assert-P14ApplianceIsolation $vbox $binding 'running'" in source
+    assert "'snapshot', $binding['appliance']['vm_uuid'], 'restore', $binding['appliance']['snapshot_uuid']" in source
+    assert "'startvm', $binding['appliance']['vm_uuid'], '--type', 'headless'" in source
+    assert "'getextradata', $appliance['vm_uuid'], $P14EndpointProfileKey" in source
     assert "recording_enabled = 'off'" in source
     assert "nic1 = 'none'" in source
     assert "Get-P14MachineValue $machine 'cableconnected1'" in source
     assert "appliance_setting_invalid:cableconnected1" in source
     assert "network_mode_not_isolated" in source
     assert "shared_folder_not_allowed" in source
+    _assert_no_interactive_or_remote_control(source)
+
+
+def test_host_binder_derives_a_single_saved_snapshot_without_caller_identifiers() -> None:
+    source = _source(HOST_BINDER)
+
+    assert "param(\n    [switch]$Apply" in source
+    assert "$P14ApplianceVmName = 'CTOA-P14-Runner-Offline-20260724'" in source
+    assert "$P14BindingPath = 'C:\\ProgramData\\CTOAi\\P14\\p14-appliance-binding.json'" in source
+    assert "Get-P14SnapshotManifestExport" in source
+    assert "Remove-P14GuestProperties $vbox $vmUuid" in source
+    assert "Assert-P14GuestPropertiesAbsent $vbox $vmUuid" in source
+    assert "'controlvm', $vmUuid, 'savestate'" in source
+    assert "'snapshot', $vmUuid, 'take', $manifest['snapshot_id']" in source
+    assert "Write-P14Binding $record" in source
+    assert "snapshot_uuid = $snapshotUuid" in source
+    assert "appliance_binding_sha256 = $bindingSha256" in source
+    assert "[Parameter(Mandatory = $true)][string]$VmUuid" not in source
+    assert "[Parameter(Mandatory = $true)][string]$SnapshotUuid" not in source
+    assert "[Parameter(Mandatory = $true)][string]$BindingPath" not in source
     _assert_no_interactive_or_remote_control(source)
 
 
@@ -87,6 +116,8 @@ def test_guest_provision_uses_only_the_current_standard_guest_account() -> None:
     assert "-KeyAlgorithm ECDSA" in source
     assert "-KeyExportPolicy NonExportable" in source
     assert "guest_evidence_public_cert_b64" in source
+    assert "SnapshotManifestB64" in source
+    assert "Publish-P14SnapshotManifest" in source
     assert "network_adapter_not_isolated" in source
     assert "C:\\P14Runner\\bundle\\helper-manifest.json" in source
     assert "C:\\P14Runner\\runs" in source
@@ -135,6 +166,8 @@ def test_guest_broker_accepts_only_a_run_id_and_fixed_local_sequence() -> None:
 
     assert "param(\n    [switch]$RunOnce" in source
     assert "$P14GuestRunIdProperty = '/CTOAi/P14/RunId'" in source
+    assert "$P14GuestApplianceBindingSha256Property = '/CTOAi/P14/ApplianceBindingSha256'" in source
+    assert "$P14GuestSnapshotManifestSha256Property = '/CTOAi/P14/SnapshotManifestSha256'" in source
     assert "guestproperty get $P14GuestRunIdProperty" in source
     assert "[a-f0-9]{16}" in source
     assert "$P14BundleManifest = 'C:\\P14Runner\\bundle\\helper-manifest.json'" in source
@@ -152,6 +185,7 @@ def test_guest_broker_accepts_only_a_run_id_and_fixed_local_sequence() -> None:
     assert "Convert-P14EcdsaSignatureToDer" in source
     assert "CTOAi-P14-guest-evidence-envelope/v1" in source
     assert "snapshot_manifest_hash_mismatch" in source
+    assert "while (-not $runId -and -not $RunOnce)" in source
     assert "network_adapter_not_isolated" in source
     assert "live_authority = $false" in source
     assert "promotion_approved = $false" in source

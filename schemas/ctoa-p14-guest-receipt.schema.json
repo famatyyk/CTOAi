@@ -14,7 +14,7 @@
   ],
   "properties": {
     "schema_version": {
-      "const": "ctoa.p14-guest-receipt.v1"
+      "const": "ctoa.p14-guest-receipt.v2"
     },
     "receipt_id": {
       "type": "string",
@@ -56,6 +56,8 @@
         "helper_manifest_sha256",
         "rollback_baseline_manifest_sha256",
         "snapshot_id",
+        "snapshot_manifest_sha256",
+        "appliance_binding_sha256",
         "run_id"
       ],
       "properties": {
@@ -71,6 +73,12 @@
         },
         "snapshot_id": {
           "$ref": "#/$defs/safeId"
+        },
+        "snapshot_manifest_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "appliance_binding_sha256": {
+          "$ref": "#/$defs/sha256"
         },
         "run_id": {
           "type": "string",

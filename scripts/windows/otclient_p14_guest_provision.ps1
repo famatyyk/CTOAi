@@ -33,6 +33,11 @@ $P14EvidenceKeyId = 'p14-guest-evidence'
 $P14EvidenceCertificateSubject = 'CN=CTOAi P14 Guest Evidence'
 $P14RunKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
 $P14RunValue = 'CTOAiP14GuestBroker'
+$P14SnapshotManifestExportProperty = '/CTOAi/P14/SnapshotManifestB64'
+$P14SnapshotManifestSha256Property = '/CTOAi/P14/SnapshotManifestSha256'
+# Base64 expands bytes by roughly one third; keep the fixed guest-property
+# export below the 32 KiB host/guest transport ceiling.
+$P14MaxSnapshotManifestExportBytes = 16KB
 
 function Stop-P14GuestProvision([string]$Code) {
     throw "p14_guest_provision:$Code"
@@ -444,6 +449,41 @@ function Get-P14RawSha256([byte[]]$Bytes) {
     }
 }
 
+function Get-P14VBoxControl {
+    $candidates = @(
+        'C:\Program Files\Oracle\VirtualBox Guest Additions\VBoxControl.exe',
+        'C:\Windows\System32\VBoxControl.exe'
+    )
+    $path = $candidates | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } |
+        Select-Object -First 1
+    if (-not $path) {
+        Stop-P14GuestProvision 'vboxcontrol_missing'
+    }
+    return $path
+}
+
+function Publish-P14SnapshotManifest([string]$VBoxControl) {
+    # This is the sole provisioning-time guest-to-host handoff.  It contains
+    # only the already immutable, non-secret snapshot manifest and has fixed
+    # property names; no host path, UUID, credential, or command is accepted.
+    $raw = [IO.File]::ReadAllBytes($P14ManifestPath)
+    if ($raw.Length -lt 1 -or $raw.Length -gt $P14MaxSnapshotManifestExportBytes) {
+        Stop-P14GuestProvision 'snapshot_manifest_export_invalid'
+    }
+    $sha256 = Get-P14RawSha256 $raw
+    $encoded = [Convert]::ToBase64String($raw)
+    foreach ($entry in @(
+            [ordered]@{ name = $P14SnapshotManifestExportProperty; value = $encoded },
+            [ordered]@{ name = $P14SnapshotManifestSha256Property; value = $sha256 }
+        )) {
+        & $VBoxControl guestproperty set $entry['name'] $entry['value'] 2>$null
+        if ($LASTEXITCODE -ne 0) {
+            Stop-P14GuestProvision 'snapshot_manifest_export_failed'
+        }
+    }
+    return $sha256
+}
+
 function Set-P14ImmutableTree([string]$Path) {
     if (-not (Test-Path -LiteralPath $Path)) {
         Stop-P14GuestProvision 'immutable_tree_missing'
@@ -473,6 +513,7 @@ if (-not $Apply) {
         baseline_receipt = 'C:\P14Runner\baseline\baseline-receipt.json'
         immutable_manifest = 'p14-snapshot-manifest.json'
         public_certificate_output = 'github_variable_ctoa_p14_guest_evidence_public_cert_b64'
+        snapshot_manifest_export = 'fixed_vbox_guest_properties_only'
         autostart = 'current_standard_guest_user_only'
         creates_accounts = $false
         accepts_credentials = $false
@@ -530,6 +571,7 @@ Set-P14ImmutableTree $P14RepoRoot
 Set-P14ImmutableTree $P14BundleRoot
 Set-P14ImmutableTree $P14TrustRoot
 Set-P14ImmutableTree $P14BaselineRoot
+$snapshotManifestSha256 = Publish-P14SnapshotManifest (Get-P14VBoxControl)
 
 # HKCU Run starts only when the provisioned guest account has an interactive
 # desktop.  No remote command channel, account name, password, or endpoint is
@@ -545,6 +587,7 @@ New-ItemProperty -LiteralPath $P14RunKey -Name $P14RunValue -PropertyType String
     snapshot_id = $SnapshotId
     endpoint_profile = $P14EndpointProfile
     visual_baseline_sha256 = $visualBaselineSha256
+    snapshot_manifest_sha256 = $snapshotManifestSha256
     baseline_owner_approved = $true
     guest_evidence_key_id = $P14EvidenceKeyId
     guest_evidence_public_cert_b64 = ConvertTo-P14CertificatePemB64 $certificate

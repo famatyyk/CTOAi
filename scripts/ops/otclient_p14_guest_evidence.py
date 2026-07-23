@@ -70,6 +70,8 @@ BINDING_FIELDS = (
     "helper_manifest_sha256",
     "rollback_baseline_manifest_sha256",
     "snapshot_id",
+    "snapshot_manifest_sha256",
+    "appliance_binding_sha256",
     "run_id",
 )
 ISOLATION = {
@@ -526,7 +528,7 @@ def validate_receipt(
     by_name = {item["capability"]: item for item in normalized}
     _validate_capability_dependencies(by_name)
     return {
-        "schema_version": "ctoa.p14-guest-receipt.v1",
+        "schema_version": "ctoa.p14-guest-receipt.v2",
         "receipt_id": payload["receipt_id"],
         "generated_at": payload["generated_at"],
         "binding": binding,
@@ -607,6 +609,8 @@ def _binding_from_args(args: argparse.Namespace) -> dict[str, str]:
         "helper_manifest_sha256": args.helper_manifest_sha256,
         "rollback_baseline_manifest_sha256": args.rollback_baseline_manifest_sha256,
         "snapshot_id": args.snapshot_id,
+        "snapshot_manifest_sha256": args.snapshot_manifest_sha256,
+        "appliance_binding_sha256": args.appliance_binding_sha256,
         "run_id": args.run_id,
     }
 
@@ -696,6 +700,8 @@ def parse_args() -> argparse.Namespace:
     verify.add_argument("--helper-manifest-sha256", required=True)
     verify.add_argument("--rollback-baseline-manifest-sha256", required=True)
     verify.add_argument("--snapshot-id", required=True)
+    verify.add_argument("--snapshot-manifest-sha256", required=True)
+    verify.add_argument("--appliance-binding-sha256", required=True)
     verify.add_argument("--run-id", required=True)
     verify.add_argument("--output", required=True)
     verify.set_defaults(handler=_verify)

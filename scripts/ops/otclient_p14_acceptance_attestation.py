@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 from typing import Any
 
@@ -32,8 +33,13 @@ GUEST_EVIDENCE_ENVELOPE_FILENAME = "guest-evidence-envelope.json"
 GUEST_EVIDENCE_CERT_ENV = "CTOA_P14_GUEST_EVIDENCE_PUBLIC_CERT_B64"
 GUEST_EVIDENCE_KEY_ID_ENV = "CTOA_P14_GUEST_EVIDENCE_KEY_ID"
 GUEST_SNAPSHOT_ID_ENV = "CTOA_P14_GUEST_SNAPSHOT_ID"
+GUEST_SNAPSHOT_MANIFEST_SHA256_ENV = "CTOA_P14_GUEST_SNAPSHOT_MANIFEST_SHA256"
+GUEST_APPLIANCE_BINDING_SHA256_ENV = "CTOA_P14_APPLIANCE_BINDING_SHA256"
+GUEST_SOURCE_REVISION_ENV = "CTOA_P14_GUEST_SOURCE_REVISION"
 GUEST_RUN_ID_ENV = "CTOA_P14_GUEST_RUN_ID"
 ZERO_SHA256 = "0" * 64
+SOURCE_REVISION_RE = re.compile(r"^[a-f0-9]{40}$")
+RUN_ID_RE = re.compile(r"^[a-f0-9]{16}$")
 CAPABILITY_ORDER = (
     "visual_regression",
     "in_world_regression",
@@ -104,13 +110,42 @@ def _guest_evidence_binding(
         "helper_manifest_sha256": source.get("helper_manifest_sha256"),
         "rollback_baseline_manifest_sha256": foundation.canonical_sha256(rollback),
         "snapshot_id": os.environ.get(GUEST_SNAPSHOT_ID_ENV, ""),
+        "snapshot_manifest_sha256": os.environ.get(
+            GUEST_SNAPSHOT_MANIFEST_SHA256_ENV, ""
+        ),
+        "appliance_binding_sha256": os.environ.get(
+            GUEST_APPLIANCE_BINDING_SHA256_ENV, ""
+        ),
         "run_id": os.environ.get(GUEST_RUN_ID_ENV, ""),
     }
+    github_source_revision = os.environ.get("GITHUB_SHA", "")
+    guest_source_revision = os.environ.get(GUEST_SOURCE_REVISION_ENV, "")
     if (
         values["source_revision"] != acceptance_binding.get("source_revision")
         or values["helper_manifest_sha256"]
         != acceptance_binding.get("helper_manifest_sha256")
-        or not all(isinstance(value, str) and value for value in values.values())
+        or values["source_revision"] != github_source_revision
+        or values["source_revision"] != guest_source_revision
+        or not isinstance(values["source_revision"], str)
+        or not SOURCE_REVISION_RE.fullmatch(values["source_revision"])
+        or not isinstance(github_source_revision, str)
+        or not SOURCE_REVISION_RE.fullmatch(github_source_revision)
+        or not isinstance(guest_source_revision, str)
+        or not SOURCE_REVISION_RE.fullmatch(guest_source_revision)
+        or not all(
+            isinstance(values[field], str)
+            and guest_evidence.SHA256_RE.fullmatch(values[field])
+            for field in (
+                "helper_manifest_sha256",
+                "rollback_baseline_manifest_sha256",
+                "snapshot_manifest_sha256",
+                "appliance_binding_sha256",
+            )
+        )
+        or not isinstance(values["snapshot_id"], str)
+        or not guest_evidence.SAFE_ID_RE.fullmatch(values["snapshot_id"])
+        or not isinstance(values["run_id"], str)
+        or not RUN_ID_RE.fullmatch(values["run_id"])
     ):
         raise AttestationError("guest_evidence_binding_invalid")
     return values

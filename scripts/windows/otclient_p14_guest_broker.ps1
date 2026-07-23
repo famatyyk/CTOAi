@@ -6,9 +6,11 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-# The sole host-to-guest input is an opaque 16-hex run id in a fixed VBox
-# guest property.  This broker has no caller-selected command, path, revision,
-# endpoint, credential, or package input.
+# The host-to-guest inputs are an opaque run id and two fixed, bounded hashes
+# in VBox guest properties.  The hashes bind this run to the host-only
+# appliance record and to this exact immutable snapshot manifest.  This broker
+# has no caller-selected command, path, revision, endpoint, credential, or
+# package input.
 $P14RunnerRoot = 'C:\P14Runner'
 $P14RepoRoot = 'C:\P14Runner\repo'
 $P14TrustManifest = 'C:\P14Runner\trust\p14-snapshot-manifest.json'
@@ -23,6 +25,8 @@ $P14GuestRunIdProperty = '/CTOAi/P14/RunId'
 $P14GuestStatusProperty = '/CTOAi/P14/Status'
 $P14GuestEnvelopeProperty = '/CTOAi/P14/EvidenceEnvelopeB64'
 $P14GuestEnvelopeSha256Property = '/CTOAi/P14/EvidenceEnvelopeSha256'
+$P14GuestApplianceBindingSha256Property = '/CTOAi/P14/ApplianceBindingSha256'
+$P14GuestSnapshotManifestSha256Property = '/CTOAi/P14/SnapshotManifestSha256'
 $P14EndpointProfile = 'p14-offline-replay-v1'
 $P14MaxManifestBytes = 64KB
 $P14MaxEnvelopeRawBytes = 24KB
@@ -226,6 +230,21 @@ function Get-P14GuestRunId([string]$VBoxControl) {
     return [string]$Matches['run_id']
 }
 
+function Get-P14GuestBindingSha256([string]$VBoxControl, [string]$Name) {
+    if ($Name -notin @($P14GuestApplianceBindingSha256Property, $P14GuestSnapshotManifestSha256Property)) {
+        Stop-P14GuestBroker 'binding_property_invalid'
+    }
+    $lines = & $VBoxControl guestproperty get $Name 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        Stop-P14GuestBroker 'guest_property_read_failed'
+    }
+    $values = @($lines | ForEach-Object { [string]$_ } | Where-Object { $_ -match '^Value:\s*(?<sha256>[a-f0-9]{64})\s*$' })
+    if ($values.Count -ne 1 -or $values[0] -notmatch '^Value:\s*(?<sha256>[a-f0-9]{64})\s*$') {
+        Stop-P14GuestBroker 'appliance_binding_missing'
+    }
+    return [string]$Matches['sha256']
+}
+
 function Set-P14GuestProperty([string]$VBoxControl, [string]$Name, [string]$Value) {
     if (
         $Name -notin @($P14GuestStatusProperty, $P14GuestEnvelopeProperty, $P14GuestEnvelopeSha256Property) -or
@@ -398,7 +417,19 @@ function Get-P14EvidenceInputs([string]$RunId, [hashtable]$Manifest) {
     }
 }
 
-function New-P14GuestReceipt([string]$RunId, [hashtable]$Manifest, [hashtable]$Evidence) {
+function New-P14GuestReceipt(
+    [string]$RunId,
+    [hashtable]$Manifest,
+    [hashtable]$Evidence,
+    [string]$SnapshotManifestSha256,
+    [string]$ApplianceBindingSha256
+) {
+    if (
+        $SnapshotManifestSha256 -notmatch '^[a-f0-9]{64}$' -or
+        $ApplianceBindingSha256 -notmatch '^[a-f0-9]{64}$'
+    ) {
+        Stop-P14GuestBroker 'appliance_binding_invalid'
+    }
     $captureProof = [ordered]@{
         proof_id = 'isolated_visual_capture'
         status = 'passed'
@@ -435,7 +466,7 @@ function New-P14GuestReceipt([string]$RunId, [hashtable]$Manifest, [hashtable]$E
         changed_file_count = 1
     }
     return [ordered]@{
-        schema_version = 'ctoa.p14-guest-receipt.v1'
+        schema_version = 'ctoa.p14-guest-receipt.v2'
         receipt_id = "p14-guest-$RunId"
         generated_at = [DateTime]::UtcNow.ToString('o')
         binding = [ordered]@{
@@ -443,6 +474,8 @@ function New-P14GuestReceipt([string]$RunId, [hashtable]$Manifest, [hashtable]$E
             helper_manifest_sha256 = $Evidence['helper_manifest_sha256']
             rollback_baseline_manifest_sha256 = $Evidence['baseline_manifest_sha256']
             snapshot_id = $Manifest['snapshot_id']
+            snapshot_manifest_sha256 = $SnapshotManifestSha256
+            appliance_binding_sha256 = $ApplianceBindingSha256
             run_id = $RunId
         }
         isolation = [ordered]@{
@@ -653,7 +686,13 @@ function Write-P14Envelope([string]$RunId, [hashtable]$Envelope) {
     }
 }
 
-function Invoke-P14FixedSequence([string]$RunId, [hashtable]$Manifest, [string]$VBoxControl) {
+function Invoke-P14FixedSequence(
+    [string]$RunId,
+    [hashtable]$Manifest,
+    [string]$VBoxControl,
+    [string]$SnapshotManifestSha256,
+    [string]$ApplianceBindingSha256
+) {
     New-P14RunEvidenceRoot $RunId | Out-Null
     Set-P14ProcessIsolationFlags $RunId
 
@@ -666,7 +705,7 @@ function Invoke-P14FixedSequence([string]$RunId, [hashtable]$Manifest, [string]$
         Stop-P14GuestBroker 'sandbox_executor_failed'
     }
     $evidence = Get-P14EvidenceInputs $RunId $Manifest
-    $receipt = New-P14GuestReceipt $RunId $Manifest $evidence
+    $receipt = New-P14GuestReceipt $RunId $Manifest $evidence $SnapshotManifestSha256 $ApplianceBindingSha256
     $envelope = New-P14GuestEnvelope $Manifest $receipt
     $transport = Write-P14Envelope $RunId $envelope
     Set-P14GuestProperty $VBoxControl $P14GuestEnvelopeProperty $transport['envelope_b64']
@@ -686,9 +725,13 @@ $vboxControl = $null
 $runId = $null
 try {
     $vboxControl = Get-P14VBoxControl
-    $deadline = [DateTime]::UtcNow.AddMinutes(5)
     $runId = Get-P14GuestRunId $vboxControl
-    while (-not $runId -and -not $RunOnce -and [DateTime]::UtcNow -lt $deadline) {
+    # The provisioned appliance is snapshotted as a saved interactive standard
+    # user session.  Keep this fixed, input-free broker alive across that saved
+    # state so a later host runner can supply only its bounded binding values;
+    # a five-minute wall-clock deadline would expire while the appliance was
+    # intentionally powered down between isolated rehearsals.
+    while (-not $runId -and -not $RunOnce) {
         Start-Sleep -Milliseconds 500
         $runId = Get-P14GuestRunId $vboxControl
     }
@@ -703,7 +746,13 @@ try {
     Set-P14GuestProperty $vboxControl $P14GuestStatusProperty "running:$runId"
     Assert-P14GuestIsolation
     $manifest = Get-P14SnapshotManifest
-    Invoke-P14FixedSequence $runId $manifest $vboxControl
+    $snapshotManifestSha256 = Get-P14RegularFileHash $P14TrustManifest $P14MaxManifestBytes
+    $expectedSnapshotManifestSha256 = Get-P14GuestBindingSha256 $vboxControl $P14GuestSnapshotManifestSha256Property
+    if ($snapshotManifestSha256 -ne $expectedSnapshotManifestSha256) {
+        Stop-P14GuestBroker 'snapshot_manifest_hash_mismatch'
+    }
+    $applianceBindingSha256 = Get-P14GuestBindingSha256 $vboxControl $P14GuestApplianceBindingSha256Property
+    Invoke-P14FixedSequence $runId $manifest $vboxControl $snapshotManifestSha256 $applianceBindingSha256
     [ordered]@{
         schema_version = 'ctoa.p14-guest-broker-receipt.v2'
         status = 'completed'

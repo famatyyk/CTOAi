@@ -200,6 +200,18 @@ def _inputs(
                     "name": preflight.GUEST_SNAPSHOT_ID_VARIABLE,
                     "value": "p14-isolated-executor-v1",
                 },
+                {
+                    "name": preflight.GUEST_SOURCE_REVISION_VARIABLE,
+                    "value": revision,
+                },
+                {
+                    "name": preflight.GUEST_SNAPSHOT_MANIFEST_SHA256_VARIABLE,
+                    "value": "a" * 64,
+                },
+                {
+                    "name": preflight.APPLIANCE_BINDING_SHA256_VARIABLE,
+                    "value": "b" * 64,
+                },
             ]
         },
         "branch_policies": {
@@ -698,7 +710,7 @@ def test_main_forwards_workspace_to_collect_preflight(monkeypatch, tmp_path: Pat
     }
 
 
-def test_guest_identity_configuration_requires_all_three_public_bindings():
+def test_guest_identity_configuration_reports_an_unbound_offline_appliance():
     values = _inputs(acceptance=False)
     values["variables"]["variables"] = [
         item
@@ -707,14 +719,27 @@ def test_guest_identity_configuration_requires_all_three_public_bindings():
             preflight.GUEST_EVIDENCE_CERT_VARIABLE,
             preflight.GUEST_EVIDENCE_KEY_ID_VARIABLE,
             preflight.GUEST_SNAPSHOT_ID_VARIABLE,
+            preflight.GUEST_SOURCE_REVISION_VARIABLE,
+            preflight.GUEST_SNAPSHOT_MANIFEST_SHA256_VARIABLE,
+            preflight.APPLIANCE_BINDING_SHA256_VARIABLE,
         }
     ]
 
     payload = preflight.build_preflight(**values)
 
-    assert {
-        "p14_guest_evidence_certificate_missing",
-        "p14_guest_evidence_key_id_missing",
-        "p14_guest_snapshot_id_missing",
-    }.issubset(payload["hard_blockers"])
+    assert "p14_appliance_unbound" in payload["hard_blockers"]
+    assert payload["environment"]["appliance_binding_state"] == "unbound"
     assert payload["environment"]["reviewer_gate_removed"] is True
+
+
+def test_appliance_binding_requires_the_current_source_revision() -> None:
+    values = _inputs()
+    for item in values["variables"]["variables"]:
+        if item["name"] == preflight.GUEST_SOURCE_REVISION_VARIABLE:
+            item["value"] = "b" * 40
+
+    payload = preflight.build_preflight(**values)
+
+    assert "p14_appliance_binding_source_mismatch" in payload["hard_blockers"]
+    assert payload["environment"]["appliance_binding_state"] == "requires_rebind"
+    assert payload["environment"]["guest_source_revision_matches_current_checkout"] is False
