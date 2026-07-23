@@ -288,6 +288,16 @@ def build_envelope(
     return envelope
 
 
+def validate_envelope_shape(envelope: Mapping[str, Any]) -> dict[str, Any]:
+    """Validate and normalize only the strict public envelope shape."""
+
+    if not isinstance(envelope, Mapping):
+        raise GuestEvidenceError("envelope_object_required")
+    payload = dict(envelope)
+    _validate_schema(payload, ENVELOPE_SCHEMA_PATH)
+    return payload
+
+
 def verify_envelope(
     envelope: Mapping[str, Any],
     *,
@@ -296,10 +306,7 @@ def verify_envelope(
 ) -> bytes:
     """Verify a bounded envelope and return its exact binary payload bytes."""
 
-    if not isinstance(envelope, Mapping):
-        raise GuestEvidenceError("envelope_object_required")
-    payload = dict(envelope)
-    _validate_schema(payload, ENVELOPE_SCHEMA_PATH)
+    payload = validate_envelope_shape(envelope)
     key_id = payload["key_id"]
     if expected_key_id is not None:
         _require_safe_key_id(expected_key_id)

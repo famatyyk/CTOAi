@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import importlib.util
 import json
 import os
@@ -92,7 +93,12 @@ def test_runner_rejects_unknown_roadmap_advisory() -> None:
         p14._validate_roadmap_state(state)
 
 
-def configure_sources(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def configure_sources(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    *,
+    initialize_git: bool = True,
+) -> None:
     helper_source = tmp_path / "scripts" / "lua" / "otclient"
     chooser_source = tmp_path / "scripts" / "lua" / "ctoa_chooser"
     helper_source.mkdir(parents=True)
@@ -110,24 +116,68 @@ def configure_sources(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     roadmap_path = tmp_path / "ROADMAP_STATE.json"
     roadmap_path.write_text(json.dumps(roadmap_state()), encoding="utf-8")
 
-    subprocess.run(
-        ["git", "init", "--quiet"],
-        cwd=tmp_path,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    subprocess.run(
-        ["git", "add", "scripts/lua/otclient", "scripts/lua/ctoa_chooser"],
-        cwd=tmp_path,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
+    if initialize_git:
+        subprocess.run(
+            ["git", "init", "--quiet"],
+            cwd=tmp_path,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        subprocess.run(
+            ["git", "add", "scripts/lua/otclient", "scripts/lua/ctoa_chooser"],
+            cwd=tmp_path,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
     monkeypatch.setattr(p14, "ROOT", tmp_path)
     monkeypatch.setattr(p14, "HELPER_SOURCE_PATH", helper_source)
     monkeypatch.setattr(p14, "CHOOSER_SOURCE_PATH", chooser_source)
     monkeypatch.setattr(p14, "ROADMAP_STATE_PATH", roadmap_path)
+
+
+def write_source_provenance_sidecar(tmp_path: Path) -> Path:
+    helper_source = tmp_path / "scripts" / "lua" / "otclient"
+    chooser_source = tmp_path / "scripts" / "lua" / "ctoa_chooser"
+    package_sources = [
+        ("ctoa_project_loader.lua", chooser_source / "ctoa_chooser_loader.lua"),
+        ("mods/ctoa_chooser/ctoa_chooser.otmod", chooser_source / "ctoa_chooser.otmod"),
+        (
+            "mods/ctoa_chooser/ctoa_chooser_loader.lua",
+            chooser_source / "ctoa_chooser_loader.lua",
+        ),
+        *(
+            (f"mods/ctoa_otclient/{path.name}", path)
+            for path in sorted(helper_source.glob("*"), key=lambda item: item.name)
+            if path.suffix.lower() in {".lua", ".otmod"}
+            and path.name not in p14.LOCAL_SOURCE_ONLY_HELPER_FILES
+        ),
+    ]
+    files = []
+    for package_path, source_path in sorted(package_sources):
+        raw = source_path.read_bytes()
+        files.append(
+            {
+                "package_path": package_path,
+                "source_path": source_path.relative_to(tmp_path).as_posix(),
+                "bytes": len(raw),
+                "sha256": hashlib.sha256(raw).hexdigest(),
+            }
+        )
+    sidecar = tmp_path / p14.SOURCE_PROVENANCE_FILENAME
+    sidecar.write_text(
+        json.dumps(
+            {
+                "schema_version": p14.SOURCE_PROVENANCE_SCHEMA,
+                "source_revision": REVISION,
+                "file_count": len(files),
+                "files": files,
+            }
+        ),
+        encoding="utf-8",
+    )
+    return sidecar
 
 
 def build_request(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> dict[str, object]:
@@ -346,13 +396,96 @@ def test_source_manifest_rejects_untracked_package_source(
         p14._sanitize_helper_manifest()
 
 
-def test_source_manifest_rejects_when_git_tracking_is_unavailable(
+def test_source_manifest_uses_complete_sidecar_when_git_metadata_is_absent(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    source = tmp_path / "scripts" / "lua" / "otclient" / "helper.lua"
-    source.parent.mkdir(parents=True)
-    source.write_text("return true\n", encoding="utf-8")
-    monkeypatch.setattr(p14, "ROOT", tmp_path)
+    configure_sources(monkeypatch, tmp_path, initialize_git=False)
+    write_source_provenance_sidecar(tmp_path)
+
+    manifest = p14._sanitize_helper_manifest()
+
+    assert manifest["file_count"] == 5
+    assert [entry["path"] for entry in manifest["files"]] == sorted(
+        entry["path"] for entry in manifest["files"]
+    )
+
+
+def test_build_source_provenance_requires_a_clean_git_checkout(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    configure_sources(monkeypatch, tmp_path)
+    subprocess.run(
+        [
+            "git",
+            "-c",
+            "user.name=P14 Contract",
+            "-c",
+            "user.email=p14-contract@example.invalid",
+            "commit",
+            "--quiet",
+            "-m",
+            "fixture",
+        ],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    provenance = p14.build_source_provenance()
+
+    assert provenance["schema_version"] == p14.SOURCE_PROVENANCE_SCHEMA
+    assert provenance["file_count"] == 5
+    assert [entry["package_path"] for entry in provenance["files"]] == sorted(
+        entry["package_path"] for entry in provenance["files"]
+    )
+
+    (p14.HELPER_SOURCE_PATH / "helper.lua").write_text(
+        "return { changed = true }\n", encoding="utf-8"
+    )
+    with pytest.raises(p14.ContractError, match="source_checkout_not_clean"):
+        p14.build_source_provenance()
+
+
+def test_source_manifest_rejects_missing_or_invalid_sidecar_without_git_metadata(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    configure_sources(monkeypatch, tmp_path, initialize_git=False)
+
+    with pytest.raises(p14.ContractError, match="helper_provenance_unavailable"):
+        p14._sanitize_helper_manifest()
+
+    sidecar = tmp_path / p14.SOURCE_PROVENANCE_FILENAME
+    sidecar.write_text("{not-json", encoding="utf-8")
+    with pytest.raises(p14.ContractError, match="helper_provenance_invalid"):
+        p14._sanitize_helper_manifest()
+
+
+def test_source_manifest_sidecar_rejects_extra_source_and_content_drift(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    configure_sources(monkeypatch, tmp_path, initialize_git=False)
+    write_source_provenance_sidecar(tmp_path)
+    (p14.HELPER_SOURCE_PATH / "untracked.lua").write_text(
+        "return { unexpected = true }\n", encoding="utf-8"
+    )
+
+    with pytest.raises(p14.ContractError, match="helper_provenance_path_set_invalid"):
+        p14._sanitize_helper_manifest()
+
+    (p14.HELPER_SOURCE_PATH / "untracked.lua").unlink()
+    (p14.HELPER_SOURCE_PATH / "helper.lua").write_text(
+        "return { changed = true }\n", encoding="utf-8"
+    )
+    with pytest.raises(p14.ContractError, match="helper_provenance_binding_invalid"):
+        p14._sanitize_helper_manifest()
+
+
+def test_git_metadata_remains_authoritative_over_a_sidecar(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    configure_sources(monkeypatch, tmp_path)
+    write_source_provenance_sidecar(tmp_path)
 
     def missing_git(*_args: object, **_kwargs: object) -> object:
         raise FileNotFoundError("git unavailable")
@@ -360,7 +493,7 @@ def test_source_manifest_rejects_when_git_tracking_is_unavailable(
     monkeypatch.setattr(p14.subprocess, "run", missing_git)
 
     with pytest.raises(p14.ContractError, match="helper_tracking_unavailable"):
-        p14._require_tracked_package_sources([("helper.lua", source)])
+        p14._sanitize_helper_manifest()
 
 
 def test_source_manifest_checks_reparse_before_regular_file_status(
@@ -627,4 +760,10 @@ def test_docker_build_tests_use_a_git_capable_nonproduction_stage() -> None:
         "apt-get install -y --no-install-recommends git"
         not in dockerfile.split("FROM runtime AS test", maxsplit=1)[0]
     )
+    assert "ARG CTOA_P14_SOURCE_PROVENANCE_B64" in dockerfile
+    assert ".ctoa-p14-source-provenance.json" in dockerfile
+    assert "chmod 0555 /opt/ctoa" in dockerfile
     assert "target: test" in workflow
+    assert "emit-source-provenance" in workflow
+    assert "CTOA_P14_SOURCE_PROVENANCE_B64=" in workflow
+    assert "persist-credentials: false" in workflow

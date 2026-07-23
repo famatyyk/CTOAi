@@ -170,6 +170,30 @@ envelope payload, performs a clean checkout without persisted GitHub credentials
 and uploads a separately named seven-day artifact. The GitHub-hosted VM is
 disposable and never the operator workstation.
 
+### Durable one-time guest-run ledger
+
+Before a protected job signs an acceptance result, it verifies the external
+envelope cryptographically and reserves its guest run in a durable GitHub Issue
+ledger. The protected job is serialized repository-wide with
+`p14-guest-evidence-ledger-${github.repository_id}` and has only the additional
+`issues: write` permission required to create that ledger record. The record is
+created and immediately closed, with a deterministic SHA-256 commitment derived
+from the repository and `guest_run_id`; neither the raw run ID, snapshot ID, nor
+envelope payload is written to GitHub.
+
+If an identical guest run ID is dispatched again, the existing commitment is
+found and the job fails before it writes an acceptance report/result. The ledger
+is deliberately consumed before attestation: a job failure after reservation is
+fail-closed, and the operator must run a fresh isolated appliance ID instead of
+retrying the envelope. This blocks both a duplicate envelope and a substituted
+envelope that claims the same guest run ID.
+
+The repository must keep Issues enabled and permit the protected workflow token
+to create issues. Ledger issues are durable audit records: do not delete, reopen,
+or repurpose them. If the GitHub API, permissions, lookup, or close postcondition
+fails, no acceptance result is produced and P14 remains blocked;
+this ledger never grants client, network, runtime-action, or promotion authority.
+
 The `ctoa.p14-runner-preflight.v2` preflight emits
 `ctoa.p14-remediation-plan.v1`: a bounded capability plan
 whose steps contain only allowlisted action IDs, capability IDs, status, risk,
@@ -250,8 +274,10 @@ is not an acceptable fallback and is rejected by the host runner.
 For each run, generate a new 16-hex run ID, execute the host runner with that ID,
 then dispatch the protected workflow with `run_protected_replay=true`, the returned
 `acceptance_envelope_b64`, and the same `guest_run_id`. This binds a result to a
-single appliance run and prevents replay of an old envelope. No path in this flow
-grants live-network, runtime-action, or promotion authority.
+single appliance run. The protected workflow records the opaque one-time ledger
+commitment before attestation, so a second dispatch of that ID is rejected even
+if its envelope differs. No path in this flow grants live-network, runtime-action,
+or promotion authority.
 P14 remains open until those controls pass, the signed acceptance request is
 completed by an isolated visual/in-world suite without operator-workstation
 focus/input, and the canary plus actual rollback transitions are independently

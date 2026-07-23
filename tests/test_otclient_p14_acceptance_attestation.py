@@ -386,6 +386,43 @@ def test_attest_requires_a_verified_guest_envelope_for_a_passed_result(
         p14._attest(args)
 
 
+def test_verify_guest_evidence_has_no_attestation_write_side_effect(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    runner_request, runner_result = _base_runner_bundle(monkeypatch, tmp_path)
+    request = p14.build_acceptance_request(
+        runner_request,
+        runner_result,
+        generated_at=GENERATED_AT,
+        key=KEY,
+        key_id=KEY_ID,
+    )
+    artifact_root = tmp_path / "guest-evidence-inspection-artifacts"
+    artifact_root.mkdir()
+    (artifact_root / "request.json").write_text(
+        json.dumps(runner_request), encoding="utf-8"
+    )
+    (artifact_root / "acceptance-request.json").write_text(
+        json.dumps(request), encoding="utf-8"
+    )
+    envelope, certificate_b64 = _guest_evidence_envelope(runner_request, request)
+    (artifact_root / p14.GUEST_EVIDENCE_ENVELOPE_FILENAME).write_text(
+        json.dumps(envelope), encoding="utf-8"
+    )
+    monkeypatch.setattr(p14.foundation, "_signing_material", lambda: (KEY, KEY_ID))
+    monkeypatch.setenv(p14.GUEST_EVIDENCE_CERT_ENV, certificate_b64)
+    monkeypatch.setenv(p14.GUEST_EVIDENCE_KEY_ID_ENV, "p14-guest-evidence")
+    monkeypatch.setenv(p14.GUEST_SNAPSHOT_ID_ENV, "p14-snapshot-001")
+    monkeypatch.setenv(p14.GUEST_RUN_ID_ENV, "p14-run-001")
+
+    assert (
+        p14._verify_guest_evidence(SimpleNamespace(artifact_root=str(artifact_root)))
+        == 0
+    )
+    assert not (artifact_root / "acceptance-report.json").exists()
+    assert not (artifact_root / "acceptance-result.json").exists()
+
+
 def test_invalid_attestation_keeps_nonzero_exit_and_writes_no_result(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:

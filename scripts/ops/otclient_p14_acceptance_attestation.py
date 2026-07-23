@@ -501,9 +501,16 @@ def _prepare(args: argparse.Namespace) -> int:
     return 0
 
 
-def _attest(args: argparse.Namespace) -> int:
-    key, key_id = foundation._signing_material()
-    root = foundation._artifact_root(args.artifact_root)
+def _verified_guest_evidence_report(
+    root: Path, *, key: bytes, key_id: str
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Verify the exact trusted inputs before any result or ledger write.
+
+    This intentionally has no output side effect.  The protected workflow uses it
+    before reserving a one-time guest run, so malformed or rebinding attempts do
+    not consume an otherwise usable appliance run identifier.
+    """
+
     request = foundation.load_strict_json(root / "acceptance-request.json")
     runner_request = foundation.load_strict_json(root / "request.json")
     try:
@@ -516,6 +523,31 @@ def _attest(args: argparse.Namespace) -> int:
         runner_request=runner_request,
         acceptance_request=request,
     )
+    return request, report
+
+
+def _verify_guest_evidence(args: argparse.Namespace) -> int:
+    key, key_id = foundation._signing_material()
+    root = foundation._artifact_root(args.artifact_root)
+    request, report = _verified_guest_evidence_report(root, key=key, key_id=key_id)
+    _print(
+        {
+            "schema_version": 1,
+            "action": "p14-acceptance-verify-guest-evidence",
+            "status": "verified",
+            "request_id": request["request_id"],
+            "source_revision": report["source_revision"],
+            "capability_count": len(report["capabilities"]),
+            "authority": AUTHORITY,
+        }
+    )
+    return 0
+
+
+def _attest(args: argparse.Namespace) -> int:
+    key, key_id = foundation._signing_material()
+    root = foundation._artifact_root(args.artifact_root)
+    request, report = _verified_guest_evidence_report(root, key=key, key_id=key_id)
     foundation._write_json_atomic(root / "acceptance-report.json", report)
     result = build_acceptance_result(request, report, key=key, key_id=key_id)
     foundation._write_json_atomic(root / "acceptance-result.json", result)
@@ -583,6 +615,18 @@ def parse_args() -> argparse.Namespace:
     )
     attest.add_argument("--artifact-root", default=str(DEFAULT_ARTIFACT_ROOT))
     attest.set_defaults(handler=_attest)
+
+    verify_guest_evidence = subparsers.add_parser(
+        "verify-guest-evidence",
+        help=(
+            "Verify a signed guest envelope and binding without writing an "
+            "attestation."
+        ),
+    )
+    verify_guest_evidence.add_argument(
+        "--artifact-root", default=str(DEFAULT_ARTIFACT_ROOT)
+    )
+    verify_guest_evidence.set_defaults(handler=_verify_guest_evidence)
 
     verify = subparsers.add_parser(
         "verify-result", help="Verify exact request/result and capability-proof bindings."
