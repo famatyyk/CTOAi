@@ -85,6 +85,11 @@ class ExecutionResult:
     timed_out: bool = False
 
 
+# This registry intentionally contains only independently executable project
+# checks. P6 plugin health and the generated P7 brief consume this evidence, so
+# putting those derived states back into the same artifact would create a
+# stale-evidence recovery cycle. They remain mandatory, separately evaluated
+# Control Central gates.
 VALIDATION_REGISTRY: tuple[ValidationSpec, ...] = (
     ValidationSpec("python_non_e2e", "python_non_e2e", 900),
     ValidationSpec("web_lint", "web_lint", 300),
@@ -93,10 +98,6 @@ VALIDATION_REGISTRY: tuple[ValidationSpec, ...] = (
     ValidationSpec("brain_refresh", "brain_refresh", 240),
     ValidationSpec("brain_doctor", "brain_doctor", 240),
     ValidationSpec("brain_pack_all", "brain_pack_all", 240),
-    ValidationSpec("p6_plugin_self_check", "p6_plugin_self_check", 180),
-    ValidationSpec("p6_plugin_mcp", "p6_plugin_mcp", 180),
-    ValidationSpec("p7_operator_brief", "p7_operator_brief", 180),
-    ValidationSpec("p7_generated_brief", "p7_generated_brief", 30),
 )
 
 
@@ -245,52 +246,11 @@ def _trusted_command(
             None,
         )
 
-    plugin_script_by_kind = {
-        "p6_plugin_self_check": "ctoai_engine_brain_self_check.py",
-        "p6_plugin_mcp": "ctoai_engine_brain_mcp.py",
-        "p7_operator_brief": "ctoai_engine_brain_brief.py",
-    }
-    script_name = plugin_script_by_kind.get(spec.kind)
-    if script_name:
-        plugin_script = PLUGIN_ROOT / "scripts" / script_name
-        if not _regular_file(plugin_script):
-            raise process_safety.ExecutableUnavailableError(
-                "required trusted plugin script is unavailable"
-            )
-        if spec.kind == "p6_plugin_self_check":
-            return (
-                [python, str(plugin_script), "--workspace", str(root)],
-                root,
-                None,
-            )
-        if spec.kind == "p6_plugin_mcp":
-            return ([python, str(plugin_script)], PLUGIN_ROOT, _mcp_requests(root))
-        return (
-            [
-                python,
-                str(plugin_script),
-                "--workspace",
-                str(root),
-                "--format",
-                "json",
-            ],
-            root,
-            None,
-        )
     raise ValueError("unknown fixed validation registry entry")
 
 
 def execute_validation_entry(spec: ValidationSpec, root: Path) -> ExecutionResult:
     """Run a single immutable registry entry without exposing its output."""
-
-    if spec.kind == "p7_generated_brief":
-        try:
-            payload = _read_json_object_bounded(
-                _fixed_workspace_path(root, Path("AI/generated/P7_OPERATOR_BRIEF.json"))
-            )
-        except ValueError:
-            return ExecutionResult(returncode=1)
-        return ExecutionResult(returncode=0, stdout=json.dumps(payload))
 
     try:
         command, cwd, input_text = _trusted_command(spec, root)
@@ -381,10 +341,6 @@ def _classify_execution(
     if spec.kind in {"python_non_e2e", "web_lint", "web_tests", "diff_check"}:
         return "passed", "completed"
 
-    if spec.kind == "p6_plugin_mcp":
-        ok, summary = _mcp_handshake_ok(result.stdout)
-        return ("passed" if ok else "failed"), summary
-
     payload = _json_stdout(result.stdout)
     if payload is None:
         return "failed", "invalid_structured_result"
@@ -416,28 +372,6 @@ def _classify_execution(
             ("passed", "all_profile_pack_generated")
             if valid_pack
             else ("failed", "all_profile_pack_invalid")
-        )
-    if spec.kind == "p6_plugin_self_check":
-        return (
-            ("passed", "plugin_self_check_ready")
-            if payload.get("status") == "ready"
-            else ("failed", "plugin_self_check_not_ready")
-        )
-    if spec.kind == "p7_operator_brief":
-        hard_blockers = payload.get("hard_blockers")
-        ready = payload.get("status") == "ready" and hard_blockers == []
-        return (
-            ("passed", "operator_brief_ready")
-            if ready
-            else ("failed", "operator_brief_not_ready")
-        )
-    if spec.kind == "p7_generated_brief":
-        hard_blockers = payload.get("hard_blockers")
-        ready = payload.get("status") == "ready" and hard_blockers == []
-        return (
-            ("passed", "generated_operator_brief_ready")
-            if ready
-            else ("failed", "generated_operator_brief_not_ready")
         )
     return "failed", "unknown_registry_entry"
 
