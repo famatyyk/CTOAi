@@ -168,6 +168,9 @@ DOC_SYNC_CHECKS = [
     },
 ]
 
+# These are the independent project checks emitted by the full-validation
+# artifact. Plugin/cache/P7 health is deliberately evaluated in the adjacent
+# P6/P7 gates, not recursively inside the evidence it consumes.
 P6_REQUIRED_VALIDATION_IDS = {
     "python_non_e2e",
     "web_lint",
@@ -176,10 +179,6 @@ P6_REQUIRED_VALIDATION_IDS = {
     "brain_refresh",
     "brain_doctor",
     "brain_pack_all",
-    "p6_plugin_self_check",
-    "p6_plugin_mcp",
-    "p7_operator_brief",
-    "p7_generated_brief",
 }
 P6_PLUGIN_NAME = "ctoai-engine-brain"
 

@@ -101,6 +101,20 @@ def test_dry_run_never_executes_or_writes(monkeypatch, tmp_path: Path):
     assert '"command":' not in json.dumps(payload)
 
 
+def test_registry_excludes_derived_p6_p7_health_to_avoid_a_validation_cycle():
+    module = load_module()
+
+    assert {spec.identifier for spec in module.VALIDATION_REGISTRY} == {
+        "python_non_e2e",
+        "web_lint",
+        "web_tests",
+        "diff_check",
+        "brain_refresh",
+        "brain_doctor",
+        "brain_pack_all",
+    }
+
+
 def test_confirmed_run_writes_bounded_fixed_registry_evidence(tmp_path: Path):
     module = load_module()
     calls = []
@@ -298,27 +312,3 @@ def test_mcp_handshake_rejects_forbidden_write_tool_even_when_required_tools_exi
 
     assert ok is False
     assert summary == "mcp_forbidden_tools_present"
-
-
-@pytest.mark.parametrize(
-    "payload",
-    [
-        {"status": "ready"},
-        {"status": "ready", "hard_blockers": None},
-        {"status": "ready", "hard_blockers": {"blocked": False}},
-        {"status": "ready", "hard_blockers": "none"},
-        {"status": "ready", "hard_blockers": ["not_ready"]},
-    ],
-)
-@pytest.mark.parametrize("kind", ["p7_operator_brief", "p7_generated_brief"])
-def test_p7_briefs_require_an_explicit_empty_hard_blockers_list(payload, kind):
-    module = load_module()
-    spec = next(item for item in module.VALIDATION_REGISTRY if item.kind == kind)
-
-    status, summary = module._classify_execution(
-        spec,
-        module.ExecutionResult(0, json.dumps(payload)),
-    )
-
-    assert status == "failed"
-    assert summary in {"operator_brief_not_ready", "generated_operator_brief_not_ready"}

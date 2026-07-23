@@ -201,6 +201,40 @@ def test_p7_cockpit_smoke_reports_ready(tmp_path: Path):
     ]
 
 
+def test_p7_cockpit_smoke_accepts_all_ready_expanded_roadmap_docs(tmp_path: Path):
+    module = load_module()
+    write_ready_fixture(tmp_path)
+    operator_brief_path = tmp_path / "AI" / "generated" / "P7_OPERATOR_BRIEF.json"
+    operator_brief = json.loads(operator_brief_path.read_text(encoding="utf-8"))
+    operator_brief["roadmap_generation"].update(
+        {"doc_count": 4, "ready_doc_count": 4}
+    )
+    operator_brief_path.write_text(json.dumps(operator_brief), encoding="utf-8")
+
+    report = module.build_report(tmp_path)
+
+    assert report["status"] == "ready"
+    assert {check["name"]: check["status"] for check in report["checks"]}[
+        "operator_brief_roadmap_generation"
+    ] == "passed"
+
+
+def test_p7_cockpit_smoke_blocks_zero_roadmap_docs(tmp_path: Path):
+    module = load_module()
+    write_ready_fixture(tmp_path)
+    operator_brief_path = tmp_path / "AI" / "generated" / "P7_OPERATOR_BRIEF.json"
+    operator_brief = json.loads(operator_brief_path.read_text(encoding="utf-8"))
+    operator_brief["roadmap_generation"].update(
+        {"doc_count": 0, "ready_doc_count": 0}
+    )
+    operator_brief_path.write_text(json.dumps(operator_brief), encoding="utf-8")
+
+    report = module.build_report(tmp_path)
+
+    assert report["status"] == "blocked"
+    assert "operator_brief_roadmap_generation_not_ready" in report["hard_blockers"]
+
+
 def test_p7_cockpit_smoke_blocks_missing_safe_write_audit(tmp_path: Path):
     module = load_module()
     write_ready_fixture(tmp_path)
