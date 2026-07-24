@@ -15,6 +15,9 @@ $ErrorActionPreference = 'Stop'
 # snapshot is created.  It neither creates accounts nor accepts credentials.
 $P14RunnerRoot = 'C:\P14Runner'
 $P14RepoRoot = 'C:\P14Runner\repo'
+$P14ToolchainRoot = 'C:\P14Runner\toolchain'
+$P14PythonExe = 'C:\P14Runner\toolchain\python\python.exe'
+$P14GitExe = 'C:\P14Runner\toolchain\git\cmd\git.exe'
 $P14ScriptsRoot = 'C:\P14Runner\repo\scripts\windows'
 $P14TrustRoot = 'C:\P14Runner\trust'
 $P14BundleRoot = 'C:\P14Runner\bundle'
@@ -335,8 +338,8 @@ function Get-P14SourceRevision {
     if (-not (Test-Path -LiteralPath (Join-Path $P14RepoRoot '.git') -PathType Container)) {
         Stop-P14GuestProvision 'repository_missing'
     }
-    $revision = (& git -C $P14RepoRoot rev-parse HEAD 2>$null | Select-Object -First 1).Trim().ToLowerInvariant()
-    $dirty = @(& git -C $P14RepoRoot status --porcelain 2>$null)
+    $revision = (& $P14GitExe -C $P14RepoRoot rev-parse HEAD 2>$null | Select-Object -First 1).Trim().ToLowerInvariant()
+    $dirty = @(& $P14GitExe -C $P14RepoRoot status --porcelain 2>$null)
     if ($LASTEXITCODE -ne 0 -or $revision -notmatch '^[a-f0-9]{40}$' -or $dirty.Count -ne 0) {
         Stop-P14GuestProvision 'source_revision_invalid'
     }
@@ -365,6 +368,18 @@ function Assert-P14GuestPrerequisites {
     }
 }
 
+function Assert-P14PortableToolchain {
+    foreach ($path in @($P14PythonExe, $P14GitExe)) {
+        if (
+            -not (Test-Path -LiteralPath $path -PathType Leaf) -or
+            (Test-P14ReparsePoint $path) -or
+            -not (Test-P14PathWithin $path $P14ToolchainRoot)
+        ) {
+            Stop-P14GuestProvision 'portable_toolchain_missing'
+        }
+    }
+}
+
 function Assert-P14ProvisionInputs {
     if ($SnapshotId -notmatch '^[a-z0-9][a-z0-9._-]{2,63}$') {
         Stop-P14GuestProvision 'snapshot_id_invalid'
@@ -378,12 +393,7 @@ function Stage-P14Bundle {
     if (Get-ChildItem -LiteralPath $P14BundleRoot -Force | Select-Object -First 1) {
         Stop-P14GuestProvision 'bundle_root_not_empty'
     }
-    $python = Get-Command python.exe -CommandType Application -ErrorAction SilentlyContinue |
-        Select-Object -First 1
-    if (-not $python) {
-        Stop-P14GuestProvision 'python_runtime_missing'
-    }
-    & $python.Source $P14SandboxExecutor stage-bundle
+    & $P14PythonExe $P14SandboxExecutor stage-bundle
     if ($LASTEXITCODE -ne 0) {
         Stop-P14GuestProvision 'bundle_stage_failed'
     }
@@ -529,8 +539,9 @@ if ((Resolve-Path -LiteralPath $PSScriptRoot).Path.TrimEnd('\') -ne $P14ScriptsR
 }
 Assert-P14ProvisionInputs
 Assert-P14GuestPrerequisites
+Assert-P14PortableToolchain
 
-foreach ($root in @($P14RunnerRoot, $P14TrustRoot, $P14BundleRoot, $P14RunsRoot, $P14EvidenceRoot)) {
+foreach ($root in @($P14RunnerRoot, $P14ToolchainRoot, $P14TrustRoot, $P14BundleRoot, $P14RunsRoot, $P14EvidenceRoot)) {
     Assert-P14Directory $root
 }
 $revision = Get-P14SourceRevision

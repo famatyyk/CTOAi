@@ -12,6 +12,8 @@ fixed cryptographic commitments through fixed VBox properties.
   `C:\P14Runner\repo` in the dedicated standard guest account.
 - The known OTClient build, its DAT/SPR pair, and the tracked Helper package
   are already present at their fixed guest paths.
+- Portable Python and Git must be present at their fixed staged toolchain
+  paths; the guest provisioner does not use PATH discovery.
 - VirtualBox Guest Additions and the guest desktop are available. Before the
   guest is booted for the capture, disable every VM NIC and integration
   channel: shared folders, shared clipboard, drag and drop, VRDE, USB
@@ -24,15 +26,23 @@ The capture and provisioning scripts independently reject a non-interactive
 session, an administrator account, a non-clean checkout, an enabled guest
 network adapter, a reparse-point evidence path, or a missing guest identity.
 
-## 0. Optional one-time source transfer
+## 0. Required stage-only bootstrap for a new guest
 
-If the reviewed bundle must first be copied into the guest, a transient
+Before a newly built guest reaches this runbook, use the LOCAL SYSTEM,
+manifest-bound stage bootstrap and its host coordinator from
+[P14_STAGE_ONLY_BOOTSTRAP_CONTRACT.md](P14_STAGE_ONLY_BOOTSTRAP_CONTRACT.md).
+It is the only allowed one-time transfer path and it verifies shared-folder
+teardown before any capture or provision operation.
+
+<!-- Legacy manual-copy wording retained only for historical context. It is
+superseded and must not be used. If the reviewed bundle must first be copied into the guest, a transient
 read-only shared folder is allowed only for that transfer while the appliance
 is still being assembled. Copy the reviewed source into
 `C:\P14Runner\repo`, verify the checkout is clean, then remove the shared
 folder completely. It must not exist during baseline capture, provisioning, or
 snapshot creation; the host runner rejects any shared folder, including a
 read-only one.
+-->
 
 ## 1. Capture a candidate baseline in the guest
 
