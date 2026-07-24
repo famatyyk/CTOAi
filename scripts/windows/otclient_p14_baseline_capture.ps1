@@ -13,6 +13,10 @@ $ErrorActionPreference = 'Stop'
 # resulting local image explicitly.
 $P14RunnerRoot = 'C:\P14Runner'
 $P14RepoRoot = 'C:\P14Runner\repo'
+$P14ToolchainRoot = 'C:\P14Runner\toolchain'
+$P14GitRoot = 'C:\P14Runner\toolchain\git'
+$P14GitCmdRoot = 'C:\P14Runner\toolchain\git\cmd'
+$P14GitExe = 'C:\P14Runner\toolchain\git\cmd\git.exe'
 $P14ScriptsRoot = 'C:\P14Runner\repo\scripts\windows'
 $P14CaptureScript = 'C:\P14Runner\repo\scripts\windows\otclient_p14_vm_capture.ps1'
 $P14EvidenceRoot = 'C:\P14Runner\evidence'
@@ -65,12 +69,29 @@ function Get-P14RegularFileHash(
     return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant()
 }
 
+function Get-P14PortableGit {
+    $toolchainRoot = Assert-P14Directory $P14ToolchainRoot 'portable_toolchain_invalid'
+    $gitRoot = Assert-P14Directory $P14GitRoot 'portable_git_root_invalid'
+    $gitCmdRoot = Assert-P14Directory $P14GitCmdRoot 'portable_git_cmd_root_invalid'
+    if (
+        -not (Test-Path -LiteralPath $P14GitExe -PathType Leaf) -or
+        (Test-P14ReparsePoint $P14GitExe) -or
+        -not (Test-P14PathWithin $P14GitExe $toolchainRoot) -or
+        -not (Test-P14PathWithin $P14GitExe $gitRoot) -or
+        -not (Test-P14PathWithin $P14GitExe $gitCmdRoot)
+    ) {
+        Stop-P14BaselineCapture 'portable_git_missing'
+    }
+    return (Resolve-Path -LiteralPath $P14GitExe).Path
+}
+
 function Get-P14SourceRevision {
     if (-not (Test-Path -LiteralPath (Join-Path $P14RepoRoot '.git') -PathType Container)) {
         Stop-P14BaselineCapture 'repository_missing'
     }
-    $revision = (& git -C $P14RepoRoot rev-parse HEAD 2>$null | Select-Object -First 1).Trim().ToLowerInvariant()
-    $dirty = @(& git -C $P14RepoRoot status --porcelain 2>$null)
+    $git = Get-P14PortableGit
+    $revision = (& $git -C $P14RepoRoot rev-parse HEAD 2>$null | Select-Object -First 1).Trim().ToLowerInvariant()
+    $dirty = @(& $git -C $P14RepoRoot status --porcelain 2>$null)
     if ($LASTEXITCODE -ne 0 -or $revision -notmatch '^[a-f0-9]{40}$' -or $dirty.Count -ne 0) {
         Stop-P14BaselineCapture 'source_revision_invalid'
     }

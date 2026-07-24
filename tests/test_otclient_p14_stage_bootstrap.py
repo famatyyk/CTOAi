@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -96,6 +97,24 @@ def test_host_coordinator_uses_one_readonly_share_and_verifies_teardown() -> Non
     assert "[string]$HostPath" not in source
     assert "[string]$Password" not in source
     _assert_no_remote_or_staged_execution(source)
+
+
+def test_host_wait_budget_covers_bootstrap_share_wait_and_task_limit() -> None:
+    host = _source(HOST)
+    bootstrap = _source(BOOTSTRAP)
+
+    host_wait = int(re.search(r"\$P14StageWaitSeconds = (\d+)", host).group(1))
+    share_attempts = int(
+        re.search(r"\$P14ShareWaitAttempts = (\d+)", bootstrap).group(1)
+    )
+    share_wait = int(re.search(r"\$P14ShareWaitSeconds = (\d+)", bootstrap).group(1))
+    task_minutes = int(
+        re.search(
+            r"ExecutionTimeLimit \(New-TimeSpan -Minutes (\d+)\)", bootstrap
+        ).group(1)
+    )
+
+    assert host_wait >= (share_attempts * share_wait) + (task_minutes * 60)
 
 
 def test_answer_iso_hook_installs_only_the_fixed_system_bootstrap() -> None:

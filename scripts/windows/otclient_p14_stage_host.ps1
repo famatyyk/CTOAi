@@ -22,7 +22,7 @@ $P14ManifestSchema = 'ctoa.p14-stage-input.v1'
 $P14MaximumFileCount = 20000
 $P14MaximumFileBytes = 1GB
 $P14MaximumTotalBytes = 16GB
-$P14StageWaitSeconds = 900
+$P14StageWaitSeconds = 1800
 $P14ShutdownWaitSeconds = 180
 
 function Stop-P14StageHost([string]$Code) {

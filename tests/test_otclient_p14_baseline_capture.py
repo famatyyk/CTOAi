@@ -68,6 +68,16 @@ def test_baseline_capture_binds_a_fixed_guest_capture_to_a_local_receipt() -> No
     assert "$P14CaptureScript = 'C:\\P14Runner\\repo\\scripts\\windows\\otclient_p14_vm_capture.ps1'" in source
     assert "$P14BaselineRoot = 'C:\\P14Runner\\baseline'" in source
     assert "$P14MaximumImageBytes = 32MB" in source
+    assert "$P14GitRoot = 'C:\\P14Runner\\toolchain\\git'" in source
+    assert "$P14GitCmdRoot = 'C:\\P14Runner\\toolchain\\git\\cmd'" in source
+    assert "$P14GitExe = 'C:\\P14Runner\\toolchain\\git\\cmd\\git.exe'" in source
+    assert "function Get-P14PortableGit" in source
+    assert "Assert-P14Directory $P14GitRoot 'portable_git_root_invalid'" in source
+    assert "Assert-P14Directory $P14GitCmdRoot 'portable_git_cmd_root_invalid'" in source
+    assert "& $git -C $P14RepoRoot rev-parse HEAD" in source
+    assert "portable_git_missing" in source
+    assert "& git -C $P14RepoRoot" not in source
+    assert "Get-Command git" not in source
     assert "& $P14CaptureScript -SourceRevision $sourceRevision" in source
     assert "CTOA_P14_CAPTURE_CONTEXT = 'guest'" in source
     assert "CTOA_P14_OPERATOR_WORKSTATION_INPUT_USED = 'false'" in source
