@@ -182,8 +182,12 @@ def test_guest_provision_uses_explicit_portable_toolchain_paths() -> None:
 def test_stage_docs_keep_the_transfer_and_acceptance_boundaries_distinct() -> None:
     contract = _source(CONTRACT)
     runbook = _source(RUNBOOK)
+    normalized_contract = " ".join(contract.split())
 
     assert "P14_STAGE_ONLY_BOOTSTRAP_CONTRACT.md" in runbook
+    assert "Microsoft-Windows-Setup/UseConfigurationSet" in contract
+    assert "<UseConfigurationSet>true</UseConfigurationSet>" in contract
+    assert "omits the `$OEM$` payload" in normalized_contract
     assert "file-copy boundary only" in contract
     assert "No staged file is invoked" in contract
     assert "removes the share" in contract

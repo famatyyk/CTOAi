@@ -17,6 +17,21 @@ $OEM$\$$\Setup\Scripts\ctoa_p14_guest_additions_setup.cmd
 $OEM$\$$\Setup\Scripts\ctoa_p14_stage_bootstrap.ps1
 ~~~
 
+### Standalone configuration-set requirement
+
+The standalone answer ISO must declare this `$OEM$` layout as a Windows Setup
+configuration set. In the `windowsPE` pass, `Autounattend.xml` must set
+`Microsoft-Windows-Setup/UseConfigurationSet` to `true`:
+
+~~~xml
+<UseConfigurationSet>true</UseConfigurationSet>
+~~~
+
+Without that setting, Windows Setup copies only `Autounattend.xml` and omits
+the `$OEM$` payload, so none of the fixed bootstrap files above reaches the
+guest. This is an answer-ISO construction prerequisite, not runtime or stage
+evidence.
+
 SetupComplete.cmd runs once as LOCAL SYSTEM and installs only the fixed
 post-OOBE Guest Additions task. It requires neither an operator password nor
 interactive input. Once OOBE reaches the normal sign-in screen, the host

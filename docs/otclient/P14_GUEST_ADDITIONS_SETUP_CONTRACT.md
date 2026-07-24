@@ -12,6 +12,21 @@ The answer ISO must copy the tracked helper to this exact target:
 $OEM$\$$\Setup\Scripts\ctoa_p14_guest_additions_setup.cmd
 ```
 
+### Standalone configuration-set requirement
+
+The standalone answer ISO must make its `$OEM$` payload a Windows Setup
+configuration set. In the `windowsPE` pass, `Autounattend.xml` must set
+`Microsoft-Windows-Setup/UseConfigurationSet` to `true`:
+
+```xml
+<UseConfigurationSet>true</UseConfigurationSet>
+```
+
+Without that setting, Windows Setup copies only `Autounattend.xml` and omits
+the `$OEM$` payload. The fixed helper would therefore not exist at its required
+target path, and post-OOBE bootstrap must fail closed rather than assuming the
+payload was delivered.
+
 The clean-install answer file does **not** invoke Guest Additions during
 `specialize`. `SetupComplete.cmd` instead installs the fixed
 `ctoa_p14_post_oobe_bootstrap.ps1` task. After OOBE reaches its normal sign-in

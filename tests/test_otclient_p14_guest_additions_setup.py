@@ -60,8 +60,12 @@ def test_guest_additions_helper_fails_before_any_installer_action_outside_fixed_
 
 def test_guest_additions_contract_matches_the_tracked_helper() -> None:
     contract = CONTRACT.read_text(encoding="utf-8")
+    normalized_contract = " ".join(contract.split())
 
     assert "ctoa_p14_guest_additions_setup.cmd" in contract
+    assert "Microsoft-Windows-Setup/UseConfigurationSet" in contract
+    assert "<UseConfigurationSet>true</UseConfigurationSet>" in contract
+    assert "omits the `$OEM$` payload" in normalized_contract
     assert "post_oobe_bootstrap" in contract
     assert "LOCAL SYSTEM" in contract
     assert "add-trusted-publisher" in contract
