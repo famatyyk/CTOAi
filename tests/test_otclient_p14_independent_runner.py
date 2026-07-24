@@ -7,6 +7,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -15,6 +16,7 @@ from jsonschema import Draft202012Validator
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "ops" / "otclient_p14_independent_runner.py"
+SANDBOX_SCRIPT = ROOT / "scripts" / "ops" / "otclient_p14_sandbox_executor.py"
 WORKFLOW = ROOT / ".github" / "workflows" / "p14-independent-runner-contract.yml"
 CONTRACT_DOC = ROOT / "docs" / "otclient" / "P14_INDEPENDENT_RUNNER_CONTRACT.md"
 DOCKERFILE = ROOT / "Dockerfile"
@@ -526,18 +528,35 @@ def test_schema_files_are_valid_draft_2020_12() -> None:
         Draft202012Validator.check_schema(schema)
 
 
-def test_tracked_source_derivation_matches_current_official_stage_manifest() -> None:
-    runtime_manifest = ROOT / "runtime" / "solteria_helper_dev" / "manifest.json"
-    if not runtime_manifest.exists():
-        pytest.skip("local official stage manifest is not available")
-    official = json.loads(runtime_manifest.read_text(encoding="utf-8-sig"))
-    derived = p14._sanitize_helper_manifest()
-    official_files = sorted(official["files"], key=lambda item: item["path"])
+def test_tracked_source_derivation_matches_staged_p14_bundle(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """P14 binds to its own staged package, not the broader dev Helper stage."""
 
-    assert derived["helper_version"] == official["helper_version"]
-    assert derived["file_count"] == len(official_files)
-    assert derived["file_count"] > 0
-    assert derived["files"] == official_files
+    sandbox_spec = importlib.util.spec_from_file_location(
+        "otclient_p14_sandbox_executor_for_manifest_test", SANDBOX_SCRIPT
+    )
+    assert sandbox_spec and sandbox_spec.loader
+    sandbox = importlib.util.module_from_spec(sandbox_spec)
+    sandbox_spec.loader.exec_module(sandbox)
+
+    bundle = tmp_path / "bundle"
+    monkeypatch.setattr(sandbox, "DEFAULT_STAGED_PACKAGE_ROOT", bundle)
+    monkeypatch.setattr(
+        sandbox, "DEFAULT_SOURCE_MANIFEST_PATH", bundle / "helper-manifest.json"
+    )
+    sys.path.insert(0, str(SCRIPT.parent))
+    try:
+        result = sandbox.stage_fixed_bundle()
+    finally:
+        sys.path.pop(0)
+
+    staged = json.loads((bundle / "helper-manifest.json").read_text(encoding="utf-8"))
+    derived = p14._sanitize_helper_manifest()
+
+    assert result["status"] == "staged"
+    assert result["file_count"] == derived["file_count"] > 0
+    assert staged == derived
 
 
 def test_result_schema_rejects_any_runtime_or_live_authority(
