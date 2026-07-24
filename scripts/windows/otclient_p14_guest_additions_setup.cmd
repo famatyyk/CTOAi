@@ -3,9 +3,9 @@ setlocal EnableExtensions DisableDelayedExpansion
 
 rem This fixed helper is copied by the answer ISO to:
 rem C:\Windows\Setup\Scripts\ctoa_p14_guest_additions_setup.cmd
-rem It is invoked by specialize RunSynchronous as LOCAL SYSTEM.  It trusts
+rem It is invoked only by the fixed post-OOBE LOCAL SYSTEM task.  It trusts
 rem only the certificates on the mounted Guest Additions medium, then starts
-rem its documented silent installer.  The caller controls any reboot.
+rem its documented silent installer.  The post-OOBE task controls any reboot.
 
 if not "%~1"=="" exit /b 32
 

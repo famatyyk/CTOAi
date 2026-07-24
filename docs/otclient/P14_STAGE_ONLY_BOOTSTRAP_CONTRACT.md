@@ -32,6 +32,15 @@ the `$OEM$` payload, so none of the fixed bootstrap files above reaches the
 guest. This is an answer-ISO construction prerequisite, not runtime or stage
 evidence.
 
+If the configuration-set path has already failed on a fresh guest, do not
+pretend that `$OEM$` was delivered or reuse a partial installation. Rebuild
+using the separate, non-configuration-set
+[specialize static-copy fallback](P14_SPECIALIZE_STATIC_COPY_CONTRACT.md).
+That fallback carries the same four fixed files under a root `P14Payload`
+directory and transfers them only during `specialize`; it does not run Guest
+Additions, a stage task, or staged content in that pass. Never combine the two
+answer-media delivery modes in one install.
+
 SetupComplete.cmd runs once as LOCAL SYSTEM and installs only the fixed
 post-OOBE Guest Additions task. It requires neither an operator password nor
 interactive input. Once OOBE reaches the normal sign-in screen, the host

@@ -46,6 +46,13 @@ def test_guest_additions_helper_is_fixed_system_only_and_pretrusts_ga_media() ->
         assert forbidden not in lowered
 
 
+def test_guest_additions_helper_is_not_a_specialize_action() -> None:
+    source = _source().lower()
+
+    assert "post-oobe local system task" in source
+    assert "specialize runsynchronous" not in source
+
+
 def test_guest_additions_helper_fails_before_any_installer_action_outside_fixed_path() -> None:
     result = subprocess.run(
         ["cmd.exe", "/d", "/c", "call", str(HELPER)],

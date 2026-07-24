@@ -27,6 +27,14 @@ the `$OEM$` payload. The fixed helper would therefore not exist at its required
 target path, and post-OOBE bootstrap must fail closed rather than assuming the
 payload was delivered.
 
+For the pre-approved recovery path after that delivery failure, use
+[P14_SPECIALIZE_STATIC_COPY_CONTRACT.md](P14_SPECIALIZE_STATIC_COPY_CONTRACT.md)
+and rebuild the fresh guest. Its bounded `specialize` copy transfers this
+helper and the three companion setup files from a root `P14Payload` directory;
+it does not invoke this helper, install Guest Additions, or request a reboot
+during `specialize`. Do not mix that fallback with the configuration-set
+answer-media layout.
+
 The clean-install answer file does **not** invoke Guest Additions during
 `specialize`. `SetupComplete.cmd` instead installs the fixed
 `ctoa_p14_post_oobe_bootstrap.ps1` task. After OOBE reaches its normal sign-in
