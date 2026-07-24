@@ -14,9 +14,10 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 # The appliance selection comes only from a local, immutable B1 binding made
-# after the offline snapshot exists.  Neither a caller nor this source file can
-# select a VM UUID, snapshot UUID, guest path, credential, or command.
-$P14ApplianceVmName = 'CTOA-P14-Runner-Offline-20260724'
+# after the fresh offline snapshot exists. Neither a caller nor this source
+# file can select a VM UUID, snapshot UUID, guest path, credential, or command.
+# The prior appliance is intentionally not a fallback and is never targeted.
+$P14ApplianceVmName = 'CTOA-P14-Runner-Fresh-20260724'
 $P14BindingDirectory = 'C:\ProgramData\CTOAi\P14'
 $P14BindingPath = 'C:\ProgramData\CTOAi\P14\p14-appliance-binding.json'
 $P14GuestRunIdProperty = '/CTOAi/P14/RunId'

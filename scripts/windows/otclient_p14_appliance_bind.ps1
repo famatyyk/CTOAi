@@ -6,10 +6,11 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-# B1 is deliberately local and post-snapshot.  The only appliance selection is
-# this source-controlled safe clone name; callers cannot supply a VM, snapshot,
-# path, hash, credential, package, or command.
-$P14ApplianceVmName = 'CTOA-P14-Runner-Offline-20260724'
+# B1 is deliberately local and post-snapshot. The only appliance selection is
+# this source-controlled fresh VM name; callers cannot supply a VM, snapshot,
+# path, hash, credential, package, or command. The prior appliance is not a
+# fallback and this binder never targets, renames, or removes it.
+$P14ApplianceVmName = 'CTOA-P14-Runner-Fresh-20260724'
 $P14BindingDirectory = 'C:\ProgramData\CTOAi\P14'
 $P14BindingPath = 'C:\ProgramData\CTOAi\P14\p14-appliance-binding.json'
 $P14GuestSnapshotManifestB64Property = '/CTOAi/P14/SnapshotManifestB64'

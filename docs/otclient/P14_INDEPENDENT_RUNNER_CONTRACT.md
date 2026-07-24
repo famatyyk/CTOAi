@@ -266,6 +266,13 @@ The P14 appliance consists of four fixed components:
   the original baseline was restored. It never launches a client or accepts a
   source path, command, promotion flag, or output path.
 
+The source-controlled appliance name for both the binder and runner is
+`CTOA-P14-Runner-Fresh-20260724`. The older
+`CTOA-P14-Runner-Offline-20260724` appliance is preserved as legacy evidence: it
+is not a fallback, and these scripts never target, rename, restore, or remove it.
+An existing binding for any other appliance fails closed rather than being
+rewritten.
+
 Before a real run, a human owner must prepare a new appliance snapshot while the
 guest is offline: copy the reviewed revision into `C:\P14Runner\repo`, install
 the known client and Python runtime, establish the approved interactive guest

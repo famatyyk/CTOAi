@@ -50,7 +50,8 @@ def _assert_no_interactive_or_remote_control(source: str) -> None:
 def test_host_runner_is_fixed_to_the_p14_appliance_and_dry_run_by_default() -> None:
     source = _source(HOST_RUNNER)
 
-    assert "$P14ApplianceVmName = 'CTOA-P14-Runner-Offline-20260724'" in source
+    assert "$P14ApplianceVmName = 'CTOA-P14-Runner-Fresh-20260724'" in source
+    assert 'CTOA-P14-Runner-Offline-20260724' not in source
     assert "$P14BindingPath = 'C:\\ProgramData\\CTOAi\\P14\\p14-appliance-binding.json'" in source
     assert "68c47454-65cd-4211-ac24-9a3f8bc219b1" not in source
     assert "60813f92-d982-44ee-95a8-833596672a1b" not in source
@@ -59,6 +60,10 @@ def test_host_runner_is_fixed_to_the_p14_appliance_and_dry_run_by_default() -> N
     assert "if (-not $Execute)" in source
     assert "dry_run_unbound" in source
     assert "Get-P14ApplianceBinding" in source
+    assert "$appliance['vm_name'] -ne $P14ApplianceVmName" in source
+    assert source.index("$bindingRecord = Get-P14ApplianceBinding") < source.index(
+        "$vbox = Get-P14VBoxManage"
+    )
     assert "'RDONLYGUEST'" in source
     assert "$P14GuestApplianceBindingSha256Property = '/CTOAi/P14/ApplianceBindingSha256'" in source
     assert "$P14GuestSnapshotManifestSha256Property = '/CTOAi/P14/SnapshotManifestSha256'" in source
@@ -85,7 +90,8 @@ def test_host_binder_derives_a_single_saved_snapshot_without_caller_identifiers(
     source = _source(HOST_BINDER)
 
     assert "param(\n    [switch]$Apply" in source
-    assert "$P14ApplianceVmName = 'CTOA-P14-Runner-Offline-20260724'" in source
+    assert "$P14ApplianceVmName = 'CTOA-P14-Runner-Fresh-20260724'" in source
+    assert 'CTOA-P14-Runner-Offline-20260724' not in source
     assert "$P14BindingPath = 'C:\\ProgramData\\CTOAi\\P14\\p14-appliance-binding.json'" in source
     assert "Get-P14SnapshotManifestExport" in source
     assert "Remove-P14GuestProperties $vbox $vmUuid" in source
