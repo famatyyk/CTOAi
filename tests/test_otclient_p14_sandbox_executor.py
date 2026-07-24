@@ -4,6 +4,7 @@ import hashlib
 import importlib.util
 import json
 import os
+import shutil
 import sys
 from pathlib import Path
 
@@ -16,6 +17,25 @@ SPEC = importlib.util.spec_from_file_location("otclient_p14_sandbox_executor", S
 assert SPEC and SPEC.loader
 p14 = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(p14)
+
+
+def _inject_runner_with_explicit_git_fixture(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    discovered = shutil.which("git")
+    if not discovered:
+        pytest.skip("Git is required for the P14 tracked-source fixture")
+    runner_script = ROOT / "scripts" / "ops" / "otclient_p14_independent_runner.py"
+    runner_spec = importlib.util.spec_from_file_location(
+        "otclient_p14_independent_runner", runner_script
+    )
+    assert runner_spec and runner_spec.loader
+    runner = importlib.util.module_from_spec(runner_spec)
+    runner_spec.loader.exec_module(runner)
+    monkeypatch.setattr(
+        runner, "_TEST_GIT_EXECUTABLE_OVERRIDE", Path(discovered)
+    )
+    monkeypatch.setitem(sys.modules, "otclient_p14_independent_runner", runner)
 
 
 def _sha256(raw: bytes) -> str:
@@ -160,14 +180,11 @@ def test_broker_api_uses_only_fixed_constants(
 def test_one_time_bundle_stage_derives_only_the_tracked_package(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
+    _inject_runner_with_explicit_git_fixture(monkeypatch)
     bundle = tmp_path / "bundle"
     monkeypatch.setattr(p14, "DEFAULT_STAGED_PACKAGE_ROOT", bundle)
     monkeypatch.setattr(p14, "DEFAULT_SOURCE_MANIFEST_PATH", bundle / "helper-manifest.json")
-    sys.path.insert(0, str(SCRIPT.parent))
-    try:
-        result = p14.stage_fixed_bundle()
-    finally:
-        sys.path.pop(0)
+    result = p14.stage_fixed_bundle()
 
     manifest = json.loads((bundle / "helper-manifest.json").read_text(encoding="utf-8"))
     assert result["status"] == "staged"

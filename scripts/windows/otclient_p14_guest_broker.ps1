@@ -13,6 +13,8 @@ $ErrorActionPreference = 'Stop'
 # package input.
 $P14RunnerRoot = 'C:\P14Runner'
 $P14RepoRoot = 'C:\P14Runner\repo'
+$P14ToolchainRoot = 'C:\P14Runner\toolchain'
+$P14PythonExe = 'C:\P14Runner\toolchain\python\python.exe'
 $P14TrustManifest = 'C:\P14Runner\trust\p14-snapshot-manifest.json'
 $P14BundleRoot = 'C:\P14Runner\bundle'
 $P14BundleManifest = 'C:\P14Runner\bundle\helper-manifest.json'
@@ -54,6 +56,18 @@ function Test-P14PathWithin([string]$Path, [string]$Root) {
 function Assert-P14Directory([string]$Path, [string]$Code) {
     if (-not (Test-Path -LiteralPath $Path -PathType Container) -or (Test-P14ReparsePoint $Path)) {
         Stop-P14GuestBroker $Code
+    }
+}
+
+function Assert-P14PortableToolchain {
+    Assert-P14Directory $P14ToolchainRoot 'portable_toolchain_missing'
+    Assert-P14Directory (Join-Path $P14ToolchainRoot 'python') 'portable_toolchain_missing'
+    if (
+        -not (Test-Path -LiteralPath $P14PythonExe -PathType Leaf) -or
+        (Test-P14ReparsePoint $P14PythonExe) -or
+        -not (Test-P14PathWithin $P14PythonExe $P14ToolchainRoot)
+    ) {
+        Stop-P14GuestBroker 'portable_toolchain_missing'
     }
 }
 
@@ -700,7 +714,7 @@ function Invoke-P14FixedSequence(
     # manifest.  There is no path or command selection at this boundary.
     & $P14CaptureScript -SourceRevision $Manifest['source_revision']
     & $P14EvidenceReviewScript -SourceRevision $Manifest['source_revision'] -RunId $RunId
-    & python.exe $P14SandboxExecutor run --run-id $RunId
+    & $P14PythonExe $P14SandboxExecutor run --run-id $RunId
     if ($LASTEXITCODE -ne 0) {
         Stop-P14GuestBroker 'sandbox_executor_failed'
     }
@@ -745,6 +759,7 @@ try {
     }
     Set-P14GuestProperty $vboxControl $P14GuestStatusProperty "running:$runId"
     Assert-P14GuestIsolation
+    Assert-P14PortableToolchain
     $manifest = Get-P14SnapshotManifest
     $snapshotManifestSha256 = Get-P14RegularFileHash $P14TrustManifest $P14MaxManifestBytes
     $expectedSnapshotManifestSha256 = Get-P14GuestBindingSha256 $vboxControl $P14GuestSnapshotManifestSha256Property

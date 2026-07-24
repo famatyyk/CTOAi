@@ -18,6 +18,7 @@ $P14RepoRoot = 'C:\P14Runner\repo'
 $P14ToolchainRoot = 'C:\P14Runner\toolchain'
 $P14PythonExe = 'C:\P14Runner\toolchain\python\python.exe'
 $P14GitExe = 'C:\P14Runner\toolchain\git\cmd\git.exe'
+$P14PortableGitEnvironment = 'CTOA_P14_PORTABLE_GIT_EXE'
 $P14ScriptsRoot = 'C:\P14Runner\repo\scripts\windows'
 $P14TrustRoot = 'C:\P14Runner\trust'
 $P14BundleRoot = 'C:\P14Runner\bundle'
@@ -393,9 +394,18 @@ function Stage-P14Bundle {
     if (Get-ChildItem -LiteralPath $P14BundleRoot -Force | Select-Object -First 1) {
         Stop-P14GuestProvision 'bundle_root_not_empty'
     }
-    & $P14PythonExe $P14SandboxExecutor stage-bundle
-    if ($LASTEXITCODE -ne 0) {
-        Stop-P14GuestProvision 'bundle_stage_failed'
+    # The guest executor accepts no Git path argument.  It only accepts this
+    # short-lived, exact value from the already verified provisioner and then
+    # checks it against its fixed portable-toolchain path.
+    $previousPortableGit = [Environment]::GetEnvironmentVariable($P14PortableGitEnvironment, 'Process')
+    try {
+        [Environment]::SetEnvironmentVariable($P14PortableGitEnvironment, $P14GitExe, 'Process')
+        & $P14PythonExe $P14SandboxExecutor stage-bundle
+        if ($LASTEXITCODE -ne 0) {
+            Stop-P14GuestProvision 'bundle_stage_failed'
+        }
+    } finally {
+        [Environment]::SetEnvironmentVariable($P14PortableGitEnvironment, $previousPortableGit, 'Process')
     }
 }
 

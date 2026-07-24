@@ -10,6 +10,7 @@ import hmac
 import json
 import os
 import re
+import shutil
 import stat
 import subprocess
 import tempfile
@@ -24,6 +25,16 @@ ROADMAP_STATE_PATH = ROOT / "AI" / "generated" / "ROADMAP_STATE.json"
 HELPER_SOURCE_PATH = ROOT / "scripts" / "lua" / "otclient"
 CHOOSER_SOURCE_PATH = ROOT / "scripts" / "lua" / "ctoa_chooser"
 DEFAULT_ARTIFACT_ROOT = ROOT / "runtime" / "p14_independent_runner"
+P14_GUEST_REPOSITORY_ROOT = Path(r"C:\P14Runner\repo")
+P14_GUEST_TOOLCHAIN_ROOT = Path(r"C:\P14Runner\toolchain")
+P14_GUEST_GIT_EXECUTABLE = (
+    P14_GUEST_TOOLCHAIN_ROOT / "git" / "cmd" / "git.exe"
+)
+P14_PORTABLE_GIT_ENV = "CTOA_P14_PORTABLE_GIT_EXE"
+
+# Tests may inject a regular local Git binary without widening any production
+# command-line or environment input surface.  The P14 guest never consults it.
+_TEST_GIT_EXECUTABLE_OVERRIDE: Path | None = None
 
 MAX_JSON_BYTES = 2 * 1024 * 1024
 MAX_HELPER_FILE_BYTES = 2 * 1024 * 1024
@@ -99,6 +110,70 @@ def _is_reparse(path: Path) -> bool:
     attributes = getattr(info, "st_file_attributes", 0)
     reparse_flag = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
     return path.is_symlink() or bool(attributes & reparse_flag)
+
+
+def _same_path(left: Path, right: Path) -> bool:
+    return os.path.normcase(os.path.normpath(str(left))) == os.path.normcase(
+        os.path.normpath(str(right))
+    )
+
+
+def _require_regular_unlinked_executable(path: Path, code: str) -> Path:
+    try:
+        info = path.lstat()
+    except OSError as exc:
+        raise ContractError(code) from exc
+    if not stat.S_ISREG(info.st_mode) or _is_reparse(path):
+        raise ContractError(code)
+    return path
+
+
+def _require_unlinked_directory(path: Path, code: str) -> None:
+    try:
+        info = path.lstat()
+    except OSError as exc:
+        raise ContractError(code) from exc
+    if not stat.S_ISDIR(info.st_mode) or _is_reparse(path):
+        raise ContractError(code)
+
+
+def _require_guest_portable_git() -> Path:
+    """Return only the provisioner-pinned Git binary for the P14 guest."""
+
+    expected = P14_GUEST_GIT_EXECUTABLE
+    if os.environ.get(P14_PORTABLE_GIT_ENV) != str(expected):
+        raise ContractError("portable_git_missing")
+    try:
+        relative = expected.relative_to(P14_GUEST_TOOLCHAIN_ROOT)
+    except ValueError as exc:
+        raise ContractError("portable_git_invalid") from exc
+    if relative.parts != ("git", "cmd", "git.exe"):
+        raise ContractError("portable_git_invalid")
+    _require_unlinked_directory(P14_GUEST_TOOLCHAIN_ROOT, "portable_git_invalid")
+    _require_unlinked_directory(
+        P14_GUEST_TOOLCHAIN_ROOT / "git", "portable_git_invalid"
+    )
+    _require_unlinked_directory(
+        P14_GUEST_TOOLCHAIN_ROOT / "git" / "cmd", "portable_git_invalid"
+    )
+    return _require_regular_unlinked_executable(expected, "portable_git_invalid")
+
+
+def _resolve_git_executable(repository_root: Path) -> Path:
+    """Resolve Git without a PATH lookup for the fixed P14 guest checkout."""
+
+    if _same_path(repository_root, P14_GUEST_REPOSITORY_ROOT):
+        return _require_guest_portable_git()
+    if _TEST_GIT_EXECUTABLE_OVERRIDE is not None:
+        return _require_regular_unlinked_executable(
+            _TEST_GIT_EXECUTABLE_OVERRIDE, "git_executable_invalid"
+        )
+    discovered = shutil.which("git")
+    if not discovered:
+        raise ContractError("git_executable_missing")
+    return _require_regular_unlinked_executable(
+        Path(discovered), "git_executable_invalid"
+    )
 
 
 def _read_regular_file(path: Path, *, max_bytes: int = MAX_JSON_BYTES) -> bytes:
@@ -222,10 +297,11 @@ def _require_git_tracked_package_sources(
 ) -> None:
     """Use checkout Git metadata as the authoritative provenance source."""
 
+    git_executable = _resolve_git_executable(repository_root)
     try:
         result = subprocess.run(
             [
-                "git",
+                str(git_executable),
                 "ls-files",
                 "-z",
                 "--error-unmatch",
@@ -505,9 +581,10 @@ def _embedded_artifact(
 
 
 def _git_state() -> tuple[str, bool]:
+    git_executable = _resolve_git_executable(ROOT)
     revision = (
         subprocess.run(
-            ["git", "rev-parse", "HEAD"],
+            [str(git_executable), "rev-parse", "HEAD"],
             cwd=ROOT,
             check=True,
             capture_output=True,
@@ -518,7 +595,7 @@ def _git_state() -> tuple[str, bool]:
         .lower()
     )
     dirty = subprocess.run(
-        ["git", "status", "--porcelain", "--untracked-files=no"],
+        [str(git_executable), "status", "--porcelain", "--untracked-files=no"],
         cwd=ROOT,
         check=True,
         capture_output=True,

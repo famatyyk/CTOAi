@@ -32,6 +32,15 @@ KEY_ID = "p14-contract-test"
 GENERATED_AT = "2026-07-15T14:00:00Z"
 
 
+def configure_test_git(monkeypatch: pytest.MonkeyPatch) -> Path:
+    discovered = shutil.which("git")
+    if not discovered:
+        pytest.skip("Git is required for the P14 tracked-source fixture")
+    executable = Path(discovered)
+    monkeypatch.setattr(p14, "_TEST_GIT_EXECUTABLE_OVERRIDE", executable)
+    return executable
+
+
 def roadmap_state() -> dict[str, object]:
     basis: dict[str, object] = {
         "schema_version": "ctoa.roadmap-state.v2",
@@ -100,7 +109,8 @@ def configure_sources(
     tmp_path: Path,
     *,
     initialize_git: bool = True,
-) -> None:
+) -> Path:
+    git_executable = configure_test_git(monkeypatch)
     helper_source = tmp_path / "scripts" / "lua" / "otclient"
     chooser_source = tmp_path / "scripts" / "lua" / "ctoa_chooser"
     helper_source.mkdir(parents=True)
@@ -120,14 +130,19 @@ def configure_sources(
 
     if initialize_git:
         subprocess.run(
-            ["git", "init", "--quiet"],
+            [str(git_executable), "init", "--quiet"],
             cwd=tmp_path,
             check=True,
             capture_output=True,
             text=True,
         )
         subprocess.run(
-            ["git", "add", "scripts/lua/otclient", "scripts/lua/ctoa_chooser"],
+            [
+                str(git_executable),
+                "add",
+                "scripts/lua/otclient",
+                "scripts/lua/ctoa_chooser",
+            ],
             cwd=tmp_path,
             check=True,
             capture_output=True,
@@ -137,6 +152,7 @@ def configure_sources(
     monkeypatch.setattr(p14, "HELPER_SOURCE_PATH", helper_source)
     monkeypatch.setattr(p14, "CHOOSER_SOURCE_PATH", chooser_source)
     monkeypatch.setattr(p14, "ROADMAP_STATE_PATH", roadmap_path)
+    return git_executable
 
 
 def write_source_provenance_sidecar(tmp_path: Path) -> Path:
@@ -415,10 +431,10 @@ def test_source_manifest_uses_complete_sidecar_when_git_metadata_is_absent(
 def test_build_source_provenance_requires_a_clean_git_checkout(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    configure_sources(monkeypatch, tmp_path)
+    git_executable = configure_sources(monkeypatch, tmp_path)
     subprocess.run(
         [
-            "git",
+            str(git_executable),
             "-c",
             "user.name=P14 Contract",
             "-c",
@@ -498,6 +514,52 @@ def test_git_metadata_remains_authoritative_over_a_sidecar(
         p14._sanitize_helper_manifest()
 
 
+def test_guest_portable_git_requires_provisioner_pin_and_never_uses_path(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    repo = tmp_path / "repo"
+    toolchain = tmp_path / "toolchain"
+    git_executable = toolchain / "git" / "cmd" / "git.exe"
+    repo.mkdir()
+    git_executable.parent.mkdir(parents=True)
+    git_executable.write_bytes(b"p14-test-git")
+
+    monkeypatch.setattr(p14, "P14_GUEST_REPOSITORY_ROOT", repo)
+    monkeypatch.setattr(p14, "P14_GUEST_TOOLCHAIN_ROOT", toolchain)
+    monkeypatch.setattr(p14, "P14_GUEST_GIT_EXECUTABLE", git_executable)
+    monkeypatch.setattr(
+        p14.shutil,
+        "which",
+        lambda _name: pytest.fail("guest portable Git must not use PATH"),
+    )
+    monkeypatch.delenv(p14.P14_PORTABLE_GIT_ENV, raising=False)
+
+    with pytest.raises(p14.ContractError, match="portable_git_missing"):
+        p14._resolve_git_executable(repo)
+
+    monkeypatch.setenv(p14.P14_PORTABLE_GIT_ENV, str(git_executable))
+    assert p14._resolve_git_executable(repo) == git_executable
+
+    monkeypatch.setattr(p14, "_is_reparse", lambda path: path == git_executable)
+    with pytest.raises(p14.ContractError, match="portable_git_invalid"):
+        p14._resolve_git_executable(repo)
+
+
+def test_host_git_fixture_uses_an_explicit_regular_executable(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    git_executable = tmp_path / "git.exe"
+    git_executable.write_bytes(b"p14-test-git")
+    monkeypatch.setattr(p14, "_TEST_GIT_EXECUTABLE_OVERRIDE", git_executable)
+    monkeypatch.setattr(
+        p14.shutil,
+        "which",
+        lambda _name: pytest.fail("explicit host fixture must not use PATH"),
+    )
+
+    assert p14._resolve_git_executable(tmp_path / "host-repo") == git_executable
+
+
 def test_source_manifest_checks_reparse_before_regular_file_status(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -533,6 +595,8 @@ def test_tracked_source_derivation_matches_staged_p14_bundle(
 ) -> None:
     """P14 binds to its own staged package, not the broader dev Helper stage."""
 
+    configure_test_git(monkeypatch)
+    monkeypatch.setitem(sys.modules, "otclient_p14_independent_runner", p14)
     sandbox_spec = importlib.util.spec_from_file_location(
         "otclient_p14_sandbox_executor_for_manifest_test", SANDBOX_SCRIPT
     )
@@ -545,11 +609,7 @@ def test_tracked_source_derivation_matches_staged_p14_bundle(
     monkeypatch.setattr(
         sandbox, "DEFAULT_SOURCE_MANIFEST_PATH", bundle / "helper-manifest.json"
     )
-    sys.path.insert(0, str(SCRIPT.parent))
-    try:
-        result = sandbox.stage_fixed_bundle()
-    finally:
-        sys.path.pop(0)
+    result = sandbox.stage_fixed_bundle()
 
     staged = json.loads((bundle / "helper-manifest.json").read_text(encoding="utf-8"))
     derived = p14._sanitize_helper_manifest()

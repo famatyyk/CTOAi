@@ -114,8 +114,11 @@ def test_guest_provision_uses_explicit_portable_toolchain_paths() -> None:
     assert "$P14ToolchainRoot = 'C:\\P14Runner\\toolchain'" in source
     assert "$P14PythonExe = 'C:\\P14Runner\\toolchain\\python\\python.exe'" in source
     assert "$P14GitExe = 'C:\\P14Runner\\toolchain\\git\\cmd\\git.exe'" in source
+    assert "$P14PortableGitEnvironment = 'CTOA_P14_PORTABLE_GIT_EXE'" in source
     assert "Assert-P14PortableToolchain" in source
     assert "& $P14GitExe -C $P14RepoRoot rev-parse HEAD" in source
+    assert "[Environment]::SetEnvironmentVariable($P14PortableGitEnvironment, $P14GitExe, 'Process')" in source
+    assert "[Environment]::SetEnvironmentVariable($P14PortableGitEnvironment, $previousPortableGit, 'Process')" in source
     assert "& $P14PythonExe $P14SandboxExecutor stage-bundle" in source
     assert "Get-Command python.exe" not in source
 

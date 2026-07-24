@@ -178,7 +178,12 @@ def test_guest_broker_accepts_only_a_run_id_and_fixed_local_sequence() -> None:
     assert "& $P14CaptureScript -SourceRevision $Manifest['source_revision']" in source
     assert "-EvidenceRoot $evidenceRoot" not in source
     assert "& $P14EvidenceReviewScript -SourceRevision $Manifest['source_revision'] -RunId $RunId" in source
-    assert "& python.exe $P14SandboxExecutor run --run-id $RunId" in source
+    assert "$P14ToolchainRoot = 'C:\\P14Runner\\toolchain'" in source
+    assert "$P14PythonExe = 'C:\\P14Runner\\toolchain\\python\\python.exe'" in source
+    assert "Assert-P14PortableToolchain" in source
+    assert "Assert-P14Directory $P14ToolchainRoot 'portable_toolchain_missing'" in source
+    assert "& $P14PythonExe $P14SandboxExecutor run --run-id $RunId" in source
+    assert "& python.exe $P14SandboxExecutor run --run-id $RunId" not in source
     assert "$P14GuestEnvelopeProperty = '/CTOAi/P14/EvidenceEnvelopeB64'" in source
     assert "New-P14GuestEnvelope" in source
     assert "ECDsaCertificateExtensions" in source
