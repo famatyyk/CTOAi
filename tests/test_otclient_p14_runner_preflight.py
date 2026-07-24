@@ -278,6 +278,22 @@ def test_current_secure_external_result_is_operationally_ready():
     assert preflight._authority_safe(payload["authority"]) is True
 
 
+def test_reviewer_gate_is_rejected_while_zero_reviewer_policy_is_accepted():
+    values = _inputs()
+    values["environment"]["protection_rules"] = [
+        {"type": "required_reviewers", "reviewers": [{}]}
+    ]
+
+    payload = preflight.build_preflight(**values)
+
+    assert payload["status"] == "needs_attention"
+    assert payload["environment"]["required_reviewer_count"] == 1
+    assert payload["environment"]["reviewer_gate_removed"] is False
+    assert payload["environment"]["admin_bypass_disabled"] is True
+    assert "p14_environment_reviewer_gate_present" in payload["hard_blockers"]
+    assert payload["remediation"]["next_action"] == "harden_p14_environment"
+
+
 def test_realistic_environment_gap_and_old_revision_fail_closed():
     payload = preflight.build_preflight(
         **_inputs(secure_environment=False, revision="b" * 40)

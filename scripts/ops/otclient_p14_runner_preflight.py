@@ -804,6 +804,9 @@ def build_preflight(
 
     runner_capacity_ready = workflow_active
 
+    # P14 deliberately uses an approval-free protected environment. Signed
+    # evidence, an exact deployment-branch allowlist, and disabled admin bypass
+    # remain mandatory; adding a reviewer is configuration drift, not a gate.
     rules = _rows(environment.get("protection_rules"))
     reviewer_rules = [
         item for item in rules if item.get("type") == "required_reviewers"

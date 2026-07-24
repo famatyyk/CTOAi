@@ -175,6 +175,12 @@ preflight allowlist: `request.json`, `result.json`, `acceptance-request.json`,
 inside the protected job and are never uploaded. The GitHub-hosted VM is
 disposable and never the operator workstation.
 
+Removing the reviewer gate never broadens dispatch scope: the Environment must
+still keep `can_admins_bypass=false`, the signing material, and an explicit
+deployment-branch policy for the exact source branch. The preflight fails closed
+if a reviewer gate is restored, admin bypass is enabled, signing material is
+missing, or the current source branch is absent from that allowlist.
+
 ### Durable one-time guest-run ledger
 
 Before a protected job signs an acceptance result, it verifies the external
