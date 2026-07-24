@@ -62,7 +62,7 @@ def test_guest_additions_contract_matches_the_tracked_helper() -> None:
     contract = CONTRACT.read_text(encoding="utf-8")
 
     assert "ctoa_p14_guest_additions_setup.cmd" in contract
-    assert "RunSynchronous" in contract
+    assert "post_oobe_bootstrap" in contract
     assert "LOCAL SYSTEM" in contract
     assert "add-trusted-publisher" in contract
     assert "VBoxWindowsAdditions.exe /S" in contract

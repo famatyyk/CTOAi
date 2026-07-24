@@ -11,6 +11,7 @@ WINDOWS = ROOT / "scripts" / "windows"
 BOOTSTRAP = WINDOWS / "otclient_p14_stage_bootstrap.ps1"
 HOST = WINDOWS / "otclient_p14_stage_host.ps1"
 SETUP_COMPLETE = WINDOWS / "otclient_p14_stage_setupcomplete.cmd"
+POST_OOBE = WINDOWS / "otclient_p14_post_oobe_bootstrap.ps1"
 PROVISION = WINDOWS / "otclient_p14_guest_provision.ps1"
 CONTRACT = ROOT / "docs" / "otclient" / "P14_STAGE_ONLY_BOOTSTRAP_CONTRACT.md"
 RUNBOOK = ROOT / "docs" / "otclient" / "P14_APPLIANCE_BOOTSTRAP_RUNBOOK.md"
@@ -117,14 +118,47 @@ def test_host_wait_budget_covers_bootstrap_share_wait_and_task_limit() -> None:
     assert host_wait >= (share_attempts * share_wait) + (task_minutes * 60)
 
 
-def test_answer_iso_hook_installs_only_the_fixed_system_bootstrap() -> None:
+def test_answer_iso_hook_installs_only_the_fixed_post_oobe_bootstrap() -> None:
     source = _source(SETUP_COMPLETE).lower()
 
-    assert "ctoa_p14_stage_bootstrap.ps1" in source
+    assert "ctoa_p14_post_oobe_bootstrap.ps1" in source
     assert " -install" in source
     assert "powershell.exe" in source
+    assert "ctoa_p14_stage_bootstrap.ps1" not in source
+    assert "ctoa_p14_guest_additions_setup.cmd" not in source
     assert "password" not in source
     assert "guestcontrol" not in source
+
+
+def test_post_oobe_bootstrap_is_fixed_system_only_and_defers_stage_until_reboot() -> None:
+    source = _source(POST_OOBE)
+    lowered = source.lower()
+
+    assert "param(\n    [switch]$Install,\n\n    [switch]$Run\n)" in source
+    assert "$P14BootstrapScript = 'C:\\Windows\\Setup\\Scripts\\ctoa_p14_post_oobe_bootstrap.ps1'" in source
+    assert "$P14GuestAdditionsScript = 'C:\\Windows\\Setup\\Scripts\\ctoa_p14_guest_additions_setup.cmd'" in source
+    assert "$P14StageBootstrapScript = 'C:\\Windows\\Setup\\Scripts\\ctoa_p14_stage_bootstrap.ps1'" in source
+    assert "$P14AllowedExitCodes = @(0, 3010, 1641)" in source
+    assert "identity.User.Value -ne 'S-1-5-18'" in source
+    assert "New-ScheduledTaskTrigger -AtLogOn -User 'p14operator'" in source
+    assert "New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccount -RunLevel Highest" in source
+    assert "C:\\ProgramData\\CTOAi\\P14\\guest-additions-post-oobe-receipt.json" in source
+    assert "& $P14Cmd /d /c $P14GuestAdditionsScript" in source
+    assert "Assert-P14GuestAdditionsInstalled" in source
+    assert "Restart-Computer -Force" in source
+    assert source.index("Install-P14StageBootstrap") > source.index("ga_installed_reboot_pending")
+    assert "RunSynchronous" not in source
+
+    for forbidden in (
+        "guestcontrol",
+        "keyboardputscancode",
+        "mouseput",
+        "clipboard",
+        "net use",
+        "invoke-expression",
+        "password",
+    ):
+        assert forbidden not in lowered
 
 
 def test_guest_provision_uses_explicit_portable_toolchain_paths() -> None:
@@ -160,7 +194,7 @@ def test_stage_windows_scripts_parse_without_execution() -> None:
     if not powershell:
         return
 
-    for script in (BOOTSTRAP, HOST, PROVISION):
+    for script in (BOOTSTRAP, HOST, POST_OOBE, PROVISION):
         escaped_path = str(script).replace("'", "''")
         command = (
             "$ErrorActionPreference='Stop'; "

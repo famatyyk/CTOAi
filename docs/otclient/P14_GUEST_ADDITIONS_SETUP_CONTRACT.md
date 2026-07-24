@@ -12,10 +12,25 @@ The answer ISO must copy the tracked helper to this exact target:
 $OEM$\$$\Setup\Scripts\ctoa_p14_guest_additions_setup.cmd
 ```
 
-The clean-install answer file invokes that exact local path from `specialize`
-with `RunSynchronous`, under LOCAL SYSTEM, with no arguments. The enclosing
-`RunSynchronousCommand` owns the reboot policy; the helper never initiates a
-reboot itself.
+The clean-install answer file does **not** invoke Guest Additions during
+`specialize`. `SetupComplete.cmd` instead installs the fixed
+`ctoa_p14_post_oobe_bootstrap.ps1` task. That task is triggered by the
+automatic passwordless `p14operator` logon, runs as LOCAL SYSTEM, and invokes
+the fixed helper only after OOBE has completed.
+
+The post-OOBE task writes a durable, non-secret receipt at:
+
+```text
+C:\ProgramData\CTOAi\P14\guest-additions-post-oobe-receipt.json
+```
+
+It accepts only `0`, `3010`, and `1641`, verifies the installed `VBoxService`
+and `VBoxControl` binaries, and then requests one controlled reboot. At the
+next automatic logon it verifies those binaries again, installs the existing
+stage-only bootstrap task for the *following* startup, writes
+`ready_for_stage`, and unregisters itself. A non-accepted code or failed
+verification writes `blocked`, does not register the stage task, and does not
+start staging.
 
 ## Fixed behavior
 
@@ -36,8 +51,9 @@ VBoxCertUtil.exe add-trusted-publisher <certificate> --root <certificate>
 ```
 
 Only after all certificate operations succeed does it execute the mounted
-`VBoxWindowsAdditions.exe /S`. It accepts the normal installer completion
-codes `0`, `3010`, and `1641`, and propagates other installer exit codes.
+`VBoxWindowsAdditions.exe /S`. It propagates the installer exit code; the
+post-OOBE task is the only caller that accepts `0`, `3010`, and `1641` as
+successes and owns the controlled reboot policy.
 
 The helper has no parameters for credentials, hosts, paths, or any interactive
 channel. It does not create a baseline, stage P14 content, provision an

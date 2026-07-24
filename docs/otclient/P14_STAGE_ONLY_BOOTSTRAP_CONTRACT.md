@@ -8,17 +8,22 @@ it is not runtime, visual, in-world, sandbox, rollback, or promotion evidence.
 
 ## Fixed roles and paths
 
-The answer ISO places these two source-controlled files in the guest:
+The answer ISO places these source-controlled files in the guest:
 
 ~~~text
 $OEM$\$$\Setup\Scripts\SetupComplete.cmd
+$OEM$\$$\Setup\Scripts\ctoa_p14_post_oobe_bootstrap.ps1
+$OEM$\$$\Setup\Scripts\ctoa_p14_guest_additions_setup.cmd
 $OEM$\$$\Setup\Scripts\ctoa_p14_stage_bootstrap.ps1
 ~~~
 
-SetupComplete.cmd runs once as LOCAL SYSTEM and installs the fixed startup task
-CTOAi-P14-Stage-Bootstrap. The task also runs as LOCAL SYSTEM, so it needs
-neither an operator password nor an interactive desktop. It reads only this
-fixed VirtualBox shared-folder UNC path:
+SetupComplete.cmd runs once as LOCAL SYSTEM and installs only the fixed
+post-OOBE Guest Additions task. It requires neither an operator password nor
+interactive input. After that task verifies Guest Additions and completes its
+controlled reboot, its second automatic logon installs the fixed startup task
+CTOAi-P14-Stage-Bootstrap for the *following* boot. The stage task also runs as
+LOCAL SYSTEM, so it needs neither an operator password nor an interactive
+desktop. It reads only this fixed VirtualBox shared-folder UNC path:
 
 ~~~text
 \\VBOXSVR\CTOA_P14_STAGE
