@@ -20,10 +20,12 @@ $OEM$\$$\Setup\Scripts\ctoa_p14_stage_bootstrap.ps1
 SetupComplete.cmd runs once as LOCAL SYSTEM and installs only the fixed
 post-OOBE Guest Additions task. It requires neither an operator password nor
 interactive input. After that task verifies Guest Additions and completes its
-controlled reboot, its second automatic logon installs the fixed startup task
-CTOAi-P14-Stage-Bootstrap for the *following* boot. The stage task also runs as
-LOCAL SYSTEM, so it needs neither an operator password nor an interactive
-desktop. It reads only this fixed VirtualBox shared-folder UNC path:
+controlled reboot, its second automatic logon clears the bootstrap credential,
+disables autologon, and installs the fixed startup task
+CTOAi-P14-Stage-Bootstrap for the *following* boot. The final `p14operator`
+account has a blank password. The stage task also runs as LOCAL SYSTEM, so it
+needs neither an operator password nor an interactive desktop. It reads only
+this fixed VirtualBox shared-folder UNC path:
 
 ~~~text
 \\VBOXSVR\CTOA_P14_STAGE

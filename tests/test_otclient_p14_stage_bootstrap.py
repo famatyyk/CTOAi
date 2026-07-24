@@ -145,6 +145,9 @@ def test_post_oobe_bootstrap_is_fixed_system_only_and_defers_stage_until_reboot(
     assert "C:\\ProgramData\\CTOAi\\P14\\guest-additions-post-oobe-receipt.json" in source
     assert "& $P14Cmd /d /c $P14GuestAdditionsScript" in source
     assert "Assert-P14GuestAdditionsInstalled" in source
+    assert "Clear-P14BootstrapLogonState" in source
+    assert "& $P14Net ('u' + 'ser') 'p14operator' ''" in source
+    assert "Set-ItemProperty -LiteralPath $winlogonPath -Name 'AutoAdminLogon' -Value '0'" in source
     assert "Restart-Computer -Force" in source
     assert source.index("Install-P14StageBootstrap") > source.index("ga_installed_reboot_pending")
     assert "RunSynchronous" not in source

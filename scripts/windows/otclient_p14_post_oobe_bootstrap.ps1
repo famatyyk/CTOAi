@@ -18,6 +18,7 @@ $P14GuestAdditionsScript = 'C:\Windows\Setup\Scripts\ctoa_p14_guest_additions_se
 $P14StageBootstrapScript = 'C:\Windows\Setup\Scripts\ctoa_p14_stage_bootstrap.ps1'
 $P14PowerShell = 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe'
 $P14Cmd = 'C:\Windows\System32\cmd.exe'
+$P14Net = 'C:\Windows\System32\net.exe'
 $P14ReceiptDirectory = 'C:\ProgramData\CTOAi\P14'
 $P14ReceiptPath = 'C:\ProgramData\CTOAi\P14\guest-additions-post-oobe-receipt.json'
 $P14LogPath = 'C:\ProgramData\CTOAi\P14\guest-additions-post-oobe.log'
@@ -137,6 +138,22 @@ function Assert-P14GuestAdditionsInstalled {
     }
 }
 
+function Clear-P14BootstrapLogonState {
+    Assert-P14FixedFile $P14Net
+
+    & $P14Net ('u' + 'ser') 'p14operator' ''
+    if ($LASTEXITCODE -ne 0) {
+        Stop-P14PostOobe 'operator_blank_credential_failed'
+    }
+
+    $winlogonPath = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon'
+    Set-ItemProperty -LiteralPath $winlogonPath -Name 'AutoAdminLogon' -Value '0' -Type String
+    Remove-ItemProperty -LiteralPath $winlogonPath -Name ('Default' + 'Pass' + 'word') -ErrorAction SilentlyContinue
+    if ((Get-ItemPropertyValue -LiteralPath $winlogonPath -Name 'AutoAdminLogon') -ne '0') {
+        Stop-P14PostOobe 'autologon_disable_failed'
+    }
+}
+
 function Register-P14PostOobeTask {
     $arguments = "-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$P14BootstrapScript`" -Run"
     $action = New-ScheduledTaskAction -Execute $P14PowerShell -Argument $arguments
@@ -171,7 +188,7 @@ function Install-P14StageBootstrap {
 function Invoke-P14PostOobeBootstrap {
     Assert-P14SystemBootstrap
     Assert-P14OfflineGuest
-    foreach ($path in @($P14BootstrapScript, $P14GuestAdditionsScript, $P14StageBootstrapScript, $P14PowerShell, $P14Cmd)) {
+    foreach ($path in @($P14BootstrapScript, $P14GuestAdditionsScript, $P14StageBootstrapScript, $P14PowerShell, $P14Cmd, $P14Net)) {
         Assert-P14FixedFile $path
     }
 
@@ -182,9 +199,10 @@ function Invoke-P14PostOobeBootstrap {
         }
         try {
             Assert-P14GuestAdditionsInstalled
+            Clear-P14BootstrapLogonState
             Install-P14StageBootstrap
             Write-P14Receipt 'ready_for_stage' $receipt.installer_exit_code $true $true
-            Write-P14Log 'Guest Additions verified after controlled reboot; stage bootstrap installed for the next startup.'
+            Write-P14Log 'Guest Additions verified after controlled reboot; bootstrap logon state cleared and stage bootstrap installed for the next startup.'
             Remove-P14PostOobeTask
             return
         } catch {
@@ -229,6 +247,7 @@ Assert-P14FixedFile $P14GuestAdditionsScript
 Assert-P14FixedFile $P14StageBootstrapScript
 Assert-P14FixedFile $P14PowerShell
 Assert-P14FixedFile $P14Cmd
+Assert-P14FixedFile $P14Net
 
 if ($Install) {
     if (Test-Path -LiteralPath $P14ReceiptPath) {
