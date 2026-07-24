@@ -103,6 +103,10 @@ The static copy itself is not P14 staging or runtime evidence. After setup
 finishes, the copied `SetupComplete.cmd` performs its existing narrow action:
 it installs the post-OOBE task as LOCAL SYSTEM. Only on the controlled next
 startup can that task verify isolation and invoke the fixed Guest Additions
-helper; only after its own reboot may it install the later stage bootstrap.
-No visual, in-world, canary, rollback, or release claim follows from this
-fallback.
+helper. After Guest Additions is verified, that task may create exactly one
+blank-password local automatic bootstrap logon for the pre-created standard
+`p14operator` account. A separate LOCAL SYSTEM at-logon cleanup clears all
+Winlogon autologon values, writes its non-secret completion receipt, removes
+itself, and merely registers the stage task for a later boot; it does not run
+stage, capture, client, canary, rollback, or release code. No visual,
+in-world, canary, rollback, or release claim follows from this fallback.

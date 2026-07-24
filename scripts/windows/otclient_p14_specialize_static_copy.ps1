@@ -26,7 +26,7 @@ $P14CopyBufferBytes = 1MB
 $P14PayloadHashes = [ordered]@{
     'ctoa_p14_stage_bootstrap.ps1' = '87a1959503fe9efb0f092d70dc96cf611fdfebe0cde3f0e6b5fd653881c5c257'
     'ctoa_p14_guest_additions_setup.cmd' = '0730373df956921060b7bfe960901381454f79cef0e907e7ea360da2940e4c63'
-    'ctoa_p14_post_oobe_bootstrap.ps1' = '08be844015906dd8c24271f14956e869ee0e9d8061448bf74a5176e53f0f20d4'
+    'ctoa_p14_post_oobe_bootstrap.ps1' = '25e2ee257c0bd1b619984971096351195218b54d1edc0b04aac8418a5d5d48d1'
     'SetupComplete.cmd' = 'ebc189eb5384432c210d02eb3312c0907d9c17b23a842816b7cbe20ff1810cdc'
 }
 

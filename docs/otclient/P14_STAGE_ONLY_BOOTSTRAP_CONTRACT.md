@@ -41,16 +41,21 @@ directory and transfers them only during `specialize`; it does not run Guest
 Additions, a stage task, or staged content in that pass. Never combine the two
 answer-media delivery modes in one install.
 
-SetupComplete.cmd runs once as LOCAL SYSTEM and installs only the fixed
-post-OOBE Guest Additions task. It requires neither an operator password nor
-interactive input. Once OOBE reaches the normal sign-in screen, the host
-performs one controlled ACPI shutdown/start and the task runs as LOCAL SYSTEM.
-After it verifies Guest Additions and completes its controlled reboot, its
-second startup ensures the `p14operator` account is blank, disables
-autologon, and installs the fixed startup task CTOAi-P14-Stage-Bootstrap for
-the *following* boot. The stage task also runs as LOCAL SYSTEM, so it needs
-neither an operator password nor an interactive desktop. It reads only this
-fixed VirtualBox shared-folder UNC path:
+The answer file creates `p14operator` as a local standard account, not an
+administrator, and contains no `AutoLogon` setting. `SetupComplete.cmd` runs
+once as LOCAL SYSTEM and installs only the fixed post-OOBE Guest Additions
+task. It requires neither an operator password nor interactive input. Once
+OOBE reaches the normal sign-in screen, the host performs one controlled ACPI
+shutdown/start and the task runs as LOCAL SYSTEM. After it verifies Guest
+Additions, it schedules a one-time LOCAL SYSTEM at-logon cleanup task and
+temporarily enables one blank-password local automatic bootstrap logon, then
+reboots. That cleanup clears every Winlogon autologon value, writes its
+non-secret completion receipt, removes itself, and only registers (never runs)
+the fixed startup task CTOAi-P14-Stage-Bootstrap for a *later* boot. It never
+launches capture, client, staging runtime, provisioning, canary, rollback, or
+release work. The stage task also runs as LOCAL SYSTEM, so it needs neither an
+operator password nor an interactive desktop. It reads only this fixed
+VirtualBox shared-folder UNC path:
 
 ~~~text
 \\VBOXSVR\CTOA_P14_STAGE
@@ -74,6 +79,14 @@ C:\P14Runner\toolchain\git\cmd\git.exe
 The bootstrap refuses an interactive or administrator identity; it must be
 S-1-5-18 (LOCAL SYSTEM). It also refuses an active guest network adapter, any
 reparse point, an existing nonempty C:\P14Runner, or an existing receipt.
+
+Before any baseline capture, guest provisioning, or B1 snapshot, the
+interactive standard-user scripts require the fixed
+`C:\ProgramData\CTOAi\P14\bootstrap-logon-cleanup-receipt.json`. They validate
+its exact non-secret schema, require the cleanup task to be absent, and verify
+that `AutoAdminLogon` is `0` while `DefaultUserName`, `DefaultDomainName`, and
+`DefaultPassword` are absent. This is a fail-closed pre-B1 condition, not
+visual, in-world, canary, rollback, or release evidence.
 
 ## Transport layout and strict manifest
 

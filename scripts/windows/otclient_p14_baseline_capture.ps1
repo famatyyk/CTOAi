@@ -23,6 +23,11 @@ $P14EvidenceRoot = 'C:\P14Runner\evidence'
 $P14BaselineRoot = 'C:\P14Runner\baseline'
 $P14BaselineReceipt = 'C:\P14Runner\baseline\baseline-receipt.json'
 $P14MaximumImageBytes = 32MB
+$P14BootstrapOperatorName = 'p14operator'
+$P14BootstrapLogonCleanupTaskName = 'CTOAi-P14-BootstrapLogon-Cleanup'
+$P14BootstrapLogonCleanupReceipt = 'C:\ProgramData\CTOAi\P14\bootstrap-logon-cleanup-receipt.json'
+$P14BootstrapLogonCleanupReceiptSchema = 'ctoa.p14-bootstrap-logon-cleanup.v1'
+$P14WinlogonPath = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon'
 
 function Stop-P14BaselineCapture([string]$Code) {
     throw "p14_baseline_capture:$Code"
@@ -107,6 +112,24 @@ function Assert-P14GuestPrerequisites {
     if ($principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
         Stop-P14BaselineCapture 'dedicated_standard_user_required'
     }
+    try {
+        $operator = Get-LocalUser -Name $P14BootstrapOperatorName -ErrorAction Stop
+        $administrators = Get-LocalGroup -SID 'S-1-5-32-544' -ErrorAction Stop
+        $administratorMembers = @(Get-LocalGroupMember -Group $administrators -ErrorAction Stop)
+    } catch {
+        Stop-P14BaselineCapture 'dedicated_operator_lookup_failed'
+    }
+    if (
+        -not $operator.Enabled -or
+        $null -eq $identity.User -or
+        $identity.User.Value -ne $operator.SID.Value -or
+        @($administratorMembers | Where-Object {
+                $null -ne $_.SID -and $_.SID.Value -eq $operator.SID.Value
+            }).Count -ne 0
+    ) {
+        Stop-P14BaselineCapture 'dedicated_standard_user_required'
+    }
+    Assert-P14BootstrapLogonCleanup
     $guestServices = @(
         'C:\Program Files\Oracle\VirtualBox Guest Additions\VBoxService.exe',
         'C:\Windows\System32\VBoxService.exe'
@@ -216,6 +239,62 @@ function Assert-P14ExactKeys([hashtable]$Value, [string[]]$Expected, [string]$Co
     $actual = @($Value.Keys | ForEach-Object { [string]$_ })
     if (@(Compare-Object -ReferenceObject $Expected -DifferenceObject $actual).Count -ne 0) {
         Stop-P14BaselineCapture $Code
+    }
+}
+
+function Test-P14RegistryValuePresent([string]$Path, [string]$Name) {
+    $item = Get-ItemProperty -LiteralPath $Path -ErrorAction Stop
+    return $item.PSObject.Properties.Match($Name).Count -eq 1
+}
+
+function Assert-P14BootstrapLogonCleanup {
+    if (
+        -not (Test-Path -LiteralPath $P14BootstrapLogonCleanupReceipt -PathType Leaf) -or
+        (Test-P14ReparsePoint $P14BootstrapLogonCleanupReceipt)
+    ) {
+        Stop-P14BaselineCapture 'bootstrap_logon_cleanup_receipt_missing'
+    }
+    $receipt = Get-P14Json $P14BootstrapLogonCleanupReceipt
+    Assert-P14ExactKeys $receipt @(
+        'schema_version', 'status', 'user', 'automatic_logon_consumed',
+        'autoadminlogon_cleared', 'default_username_cleared',
+        'default_domain_name_cleared', 'default_password_cleared',
+        'cleanup_task_removed', 'stage_bootstrap_registered',
+        'installer_exit_code', 'recorded_at'
+    ) 'bootstrap_logon_cleanup_receipt_invalid'
+    if (
+        $receipt['schema_version'] -ne $P14BootstrapLogonCleanupReceiptSchema -or
+        $receipt['status'] -ne 'automatic_bootstrap_completed' -or
+        $receipt['user'] -ne $P14BootstrapOperatorName -or
+        $receipt['automatic_logon_consumed'] -ne $true -or
+        $receipt['autoadminlogon_cleared'] -ne $true -or
+        $receipt['default_username_cleared'] -ne $true -or
+        $receipt['default_domain_name_cleared'] -ne $true -or
+        $receipt['default_password_cleared'] -ne $true -or
+        $receipt['cleanup_task_removed'] -ne $true -or
+        $receipt['stage_bootstrap_registered'] -ne $true -or
+        ($receipt['installer_exit_code'] -isnot [int] -and $receipt['installer_exit_code'] -isnot [long]) -or
+        $receipt['recorded_at'] -isnot [string]
+    ) {
+        Stop-P14BaselineCapture 'bootstrap_logon_cleanup_receipt_invalid'
+    }
+    if (Get-ScheduledTask -TaskName $P14BootstrapLogonCleanupTaskName -ErrorAction SilentlyContinue) {
+        Stop-P14BaselineCapture 'bootstrap_logon_cleanup_task_present'
+    }
+    try {
+        if (
+            (Get-ItemPropertyValue -LiteralPath $P14WinlogonPath -Name 'AutoAdminLogon' -ErrorAction Stop) -ne '0' -or
+            (Test-P14RegistryValuePresent $P14WinlogonPath 'DefaultUserName') -or
+            (Test-P14RegistryValuePresent $P14WinlogonPath 'DefaultDomainName') -or
+            (Test-P14RegistryValuePresent $P14WinlogonPath 'DefaultPassword')
+        ) {
+            Stop-P14BaselineCapture 'bootstrap_logon_state_not_cleared'
+        }
+    } catch {
+        if ($_.Exception.Message -match '^p14_baseline_capture:') {
+            throw
+        }
+        Stop-P14BaselineCapture 'bootstrap_logon_state_not_cleared'
     }
 }
 

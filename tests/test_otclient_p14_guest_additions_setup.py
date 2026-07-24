@@ -75,6 +75,10 @@ def test_guest_additions_contract_matches_the_tracked_helper() -> None:
     assert "omits the `$OEM$` payload" in normalized_contract
     assert "post_oobe_bootstrap" in contract
     assert "LOCAL SYSTEM" in contract
+    assert "p14operator` **standard** account" in contract
+    assert "bootstrap-logon-cleanup-receipt.json" in contract
+    assert "AutoAdminLogon" in contract
+    assert "B1 cannot be created" in contract
     assert "add-trusted-publisher" in contract
     assert "VBoxWindowsAdditions.exe /S" in contract
     assert "baseline" in contract

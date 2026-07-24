@@ -134,22 +134,49 @@ def test_post_oobe_bootstrap_is_fixed_system_only_and_defers_stage_until_reboot(
     source = _source(POST_OOBE)
     lowered = source.lower()
 
-    assert "param(\n    [switch]$Install,\n\n    [switch]$Run\n)" in source
+    assert (
+        "param(\n    [switch]$Install,\n\n    [switch]$Run,\n\n"
+        "    [switch]$CleanupBootstrapLogon\n)"
+    ) in source
     assert "$P14BootstrapScript = 'C:\\Windows\\Setup\\Scripts\\ctoa_p14_post_oobe_bootstrap.ps1'" in source
     assert "$P14GuestAdditionsScript = 'C:\\Windows\\Setup\\Scripts\\ctoa_p14_guest_additions_setup.cmd'" in source
     assert "$P14StageBootstrapScript = 'C:\\Windows\\Setup\\Scripts\\ctoa_p14_stage_bootstrap.ps1'" in source
+    assert "$P14BootstrapLogonCleanupTaskName = 'CTOAi-P14-BootstrapLogon-Cleanup'" in source
+    assert "$P14BootstrapLogonCleanupReceiptPath = 'C:\\ProgramData\\CTOAi\\P14\\bootstrap-logon-cleanup-receipt.json'" in source
+    assert "$P14BootstrapLogonCleanupReceiptSchema = 'ctoa.p14-bootstrap-logon-cleanup.v1'" in source
     assert "$P14AllowedExitCodes = @(0, 3010, 1641)" in source
     assert "identity.User.Value -ne 'S-1-5-18'" in source
     assert "New-ScheduledTaskTrigger -AtStartup" in source
+    assert "New-ScheduledTaskTrigger -AtLogOn -User $P14BootstrapOperatorName" in source
     assert "New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccount -RunLevel Highest" in source
     assert "C:\\ProgramData\\CTOAi\\P14\\guest-additions-post-oobe-receipt.json" in source
     assert "& $P14Cmd /d /c $P14GuestAdditionsScript" in source
     assert "Assert-P14GuestAdditionsInstalled" in source
     assert "Clear-P14BootstrapLogonState" in source
-    assert "& $P14Net ('u' + 'ser') 'p14operator' ''" in source
-    assert "Set-ItemProperty -LiteralPath $winlogonPath -Name 'AutoAdminLogon' -Value '0'" in source
+    assert "& $P14Net ('u' + 'ser') $P14BootstrapOperatorName ''" in source
+    assert "Assert-P14OperatorIsDedicatedStandardUser" in source
+    assert "operator_account_not_standard" in source
+    assert "Assert-P14NoActiveBootstrapLogonState" in source
+    assert "autologon_existing_state_rejected" in source
+    assert "Configure-P14SingleBootstrapLogon" in source
+    assert "Set-ItemProperty -LiteralPath $winlogonPath -Name 'AutoAdminLogon' -Value '1'" in source
+    assert "Set-ItemProperty -LiteralPath $winlogonPath -Name 'DefaultPassword' -Value ''" in source
+    assert "Remove-ItemProperty -LiteralPath $winlogonPath -Name $name" in source
+    assert "[IO.FileMode]::CreateNew" in source
+    assert "automatic_bootstrap_completed" in source
+    assert "Register-P14StageBootstrapTask" in source
+    assert "Invoke-P14BootstrapLogonCleanup" in source
     assert "Restart-Computer -Force" in source
-    assert source.index("Install-P14StageBootstrap") > source.index("ga_installed_reboot_pending")
+    post_oobe_body = source.split("function Invoke-P14PostOobeBootstrap", 1)[1].split(
+        "function Invoke-P14BootstrapLogonCleanup", 1
+    )[0]
+    cleanup_body = source.split("function Invoke-P14BootstrapLogonCleanup", 1)[1].split(
+        "if ((@($Install", 1
+    )[0]
+    assert post_oobe_body.index("Register-P14BootstrapLogonCleanupTask") < post_oobe_body.index("Configure-P14SingleBootstrapLogon")
+    assert cleanup_body.index("Clear-P14BootstrapLogonState") < cleanup_body.index("Register-P14StageBootstrapTask")
+    assert cleanup_body.index("Register-P14StageBootstrapTask") < cleanup_body.index("Write-P14BootstrapLogonCleanupReceipt")
+    assert "& $P14PowerShell -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $P14StageBootstrapScript -Run" not in source
     assert "RunSynchronous" not in source
 
     for forbidden in (
@@ -159,9 +186,13 @@ def test_post_oobe_bootstrap_is_fixed_system_only_and_defers_stage_until_reboot(
         "clipboard",
         "net use",
         "invoke-expression",
-        "password",
+        "start-process",
+        "convertto-securestring",
+        "pscredential",
     ):
         assert forbidden not in lowered
+
+    assert "[string]$Password" not in source
 
 
 def test_guest_provision_uses_explicit_portable_toolchain_paths() -> None:
@@ -193,6 +224,9 @@ def test_stage_docs_keep_the_transfer_and_acceptance_boundaries_distinct() -> No
     assert "removes the share" in contract
     assert "baseline_created" in contract
     assert "provisioned" in contract
+    assert "bootstrap-logon-cleanup-receipt.json" in contract
+    assert "AutoAdminLogon" in contract
+    assert "B1 snapshot" in contract
     assert "must not be inferred from the stage\nreceipt" in contract
 
 

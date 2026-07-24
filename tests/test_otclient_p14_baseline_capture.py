@@ -84,6 +84,14 @@ def test_baseline_capture_binds_a_fixed_guest_capture_to_a_local_receipt() -> No
     assert "network_adapter_not_isolated" in source
     assert "visual_capture_dimensions_invalid" in source
     assert "baseline_root_not_empty" in source
+    assert "$P14BootstrapOperatorName = 'p14operator'" in source
+    assert "$P14BootstrapLogonCleanupTaskName = 'CTOAi-P14-BootstrapLogon-Cleanup'" in source
+    assert "bootstrap-logon-cleanup-receipt.json" in source
+    assert "Assert-P14BootstrapLogonCleanup" in source
+    assert "bootstrap_logon_cleanup_receipt_missing" in source
+    assert "bootstrap_logon_state_not_cleared" in source
+    assert "Get-LocalUser -Name $P14BootstrapOperatorName" in source
+    assert "Get-LocalGroup -SID 'S-1-5-32-544'" in source
     assert "awaiting_owner_approval" in source
     assert "runtime_actions = $false" in source
     assert "promotion_approved = $false" in source
@@ -106,6 +114,9 @@ def test_provisioner_derives_the_baseline_hash_from_an_explicitly_approved_recei
     assert "Assert-P14BaselineContents $imageName" in source
     assert "visual_baseline_contents_invalid" in source
     assert "Set-P14ImmutableTree $P14BaselineRoot" in source
+    assert "Assert-P14BootstrapLogonCleanup" in source
+    assert "bootstrap_logon_cleanup_receipt_missing" in source
+    assert "bootstrap_logon_state_not_cleared" in source
     assert "[string]$VisualBaselineSha256" not in source
     assert "visual_baseline_sha256 = $visualBaselineSha256" in source
 

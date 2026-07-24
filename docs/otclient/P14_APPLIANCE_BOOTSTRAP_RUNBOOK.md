@@ -10,6 +10,13 @@ fixed cryptographic commitments through fixed VBox properties.
 
 - The approved source revision is checked out cleanly at
   `C:\P14Runner\repo` in the dedicated standard guest account.
+- The current desktop belongs to the local standard `p14operator` account;
+  it is not an administrator. The one-time automatic bootstrap session has
+  already completed: `C:\ProgramData\CTOAi\P14\bootstrap-logon-cleanup-receipt.json`
+  exists, `CTOAi-P14-BootstrapLogon-Cleanup` no longer exists, and Winlogon has
+  no `DefaultUserName`, `DefaultDomainName`, or `DefaultPassword` value while
+  `AutoAdminLogon` is `0`. Do not add an answer-file autologon or recreate the
+  cleanup task to work around a failed check; rebuild the fresh guest instead.
 - The known OTClient build, its DAT/SPR pair, and the tracked Helper package
   are already present at their fixed guest paths.
 - Portable Python and Git must be present at their fixed staged toolchain

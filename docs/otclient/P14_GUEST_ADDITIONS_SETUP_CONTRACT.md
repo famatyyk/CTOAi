@@ -36,11 +36,13 @@ during `specialize`. Do not mix that fallback with the configuration-set
 answer-media layout.
 
 The clean-install answer file does **not** invoke Guest Additions during
-`specialize`. `SetupComplete.cmd` instead installs the fixed
-`ctoa_p14_post_oobe_bootstrap.ps1` task. After OOBE reaches its normal sign-in
-screen, the host performs one controlled ACPI shutdown/start; that task then
-runs at startup as LOCAL SYSTEM and invokes the fixed helper. It never relies
-on an operator logon or a bootstrap credential.
+`specialize`. It creates only the local `p14operator` **standard** account
+(not a member of `Administrators`) with its user-approved blank local
+credential. The answer file must not configure `AutoLogon`. `SetupComplete.cmd`
+instead installs the fixed `ctoa_p14_post_oobe_bootstrap.ps1` task. After OOBE
+reaches its normal sign-in screen, the host performs one controlled ACPI
+shutdown/start; that task then runs at startup as LOCAL SYSTEM and invokes the
+fixed helper. It never relies on an operator logon or a bootstrap credential.
 
 The post-OOBE task writes a durable, non-secret receipt at:
 
@@ -50,11 +52,33 @@ C:\ProgramData\CTOAi\P14\guest-additions-post-oobe-receipt.json
 
 It accepts only `0`, `3010`, and `1641`, verifies the installed `VBoxService`
 and `VBoxControl` binaries, and then requests one controlled reboot. At the
-next startup it verifies those binaries again, ensures the `p14operator`
-account is blank and disables autologon, installs the existing stage-only
-bootstrap task for the *following* startup, writes `ready_for_stage`, and
-unregisters itself. A non-accepted code or failed verification writes
-`blocked`, does not register the stage task, and does not start staging.
+next startup it verifies those binaries again and confirms that `p14operator`
+is a local standard user. It then registers one LOCAL SYSTEM task that is
+triggered only by the next `p14operator` logon, configures one **blank** local
+`AutoAdminLogon`, records `bootstrap_logon_pending`, removes the post-OOBE
+task, and performs one controlled reboot.
+
+On that following boot, the account receives one interactive bootstrap desktop.
+The cleanup task runs as LOCAL SYSTEM, clears `AutoAdminLogon`,
+`DefaultUserName`, `DefaultDomainName`, and `DefaultPassword`, then registers
+the later stage task for a subsequent startup without running it. It removes
+itself and creates this non-secret, create-new receipt:
+
+```text
+C:\ProgramData\CTOAi\P14\bootstrap-logon-cleanup-receipt.json
+```
+
+The receipt records only the consumed automatic-bootstrap state, cleared-value
+booleans, task removal, stage-task registration, accepted installer exit code,
+and timestamp; it never contains a credential. The baseline capture and guest
+provisioner independently require that exact receipt, absence of the cleanup
+task, and cleared Winlogon values. Therefore B1 cannot be created from a guest
+with autologon still enabled or cleanup incomplete. The cleanup task never
+launches capture, client, stage runtime, canary, rollback, or release work.
+
+A non-accepted code or failed verification writes `blocked`, does not enable
+automatic bootstrap, does not register the stage task, and does not start
+staging.
 
 ## Fixed behavior
 

@@ -98,6 +98,8 @@ def test_static_copy_contract_has_bounded_specialize_commands_with_no_credential
     assert "does not install Guest\nAdditions" in contract
     assert "does not invoke this helper" in _source(GUEST_ADDITIONS_CONTRACT)
     assert "P14_SPECIALIZE_STATIC_COPY_CONTRACT.md" in _source(STAGE_CONTRACT)
+    assert "automatic bootstrap logon" in contract
+    assert "does not run\nstage, capture, client, canary, rollback, or release code" in contract
 
 
 def test_specialize_static_copy_script_parses_without_execution() -> None:
