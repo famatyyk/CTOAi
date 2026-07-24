@@ -18,6 +18,20 @@ $P14StageShareName = 'CTOA_P14_STAGE'
 $P14StageManifestName = 'p14-stage-manifest.json'
 $P14GuestStatusProperty = '/CTOAi/P14/StageBootstrap'
 $P14AllowedRoots = @('repo', 'client', 'toolchain')
+$P14ForbiddenTransportFileSuffixes = @(
+    '.db',
+    '.db-journal',
+    '.db-shm',
+    '.db-wal',
+    '.sqlite',
+    '.sqlite-journal',
+    '.sqlite-shm',
+    '.sqlite-wal',
+    '.sqlite3',
+    '.sqlite3-journal',
+    '.sqlite3-shm',
+    '.sqlite3-wal'
+)
 $P14ManifestSchema = 'ctoa.p14-stage-input.v1'
 $P14MaximumFileCount = 20000
 $P14MaximumFileBytes = 1GB
@@ -141,6 +155,21 @@ function Assert-P14SafeRelativePath([string]$Value) {
     }
 }
 
+function Assert-P14TransportContentPolicy(
+    [string]$RootName,
+    [string]$RelativePath
+) {
+    $fileName = [IO.Path]::GetFileName($RelativePath)
+    if ([string]::IsNullOrWhiteSpace($fileName)) {
+        Stop-P14StageHost 'transport_path_invalid'
+    }
+    foreach ($suffix in $P14ForbiddenTransportFileSuffixes) {
+        if ($fileName.EndsWith($suffix, [StringComparison]::OrdinalIgnoreCase)) {
+            Stop-P14StageHost 'transport_database_rejected'
+        }
+    }
+}
+
 function Get-P14FileDigest([string]$Path) {
     if (
         -not (Test-Path -LiteralPath $Path -PathType Leaf) -or
@@ -213,6 +242,9 @@ function Get-P14TransportEntries([string]$RootName) {
             if (Test-P14ReparsePoint $entry.FullName) {
                 Stop-P14StageHost 'transport_reparse_point_rejected'
             }
+            $relative = $entry.FullName.Substring($rootFull.Length).TrimStart([char[]]@('\')).Replace('\', '/')
+            Assert-P14SafeRelativePath $relative
+            Assert-P14TransportContentPolicy $RootName $relative
             if ($entry.PSIsContainer) {
                 $pending.Add($entry.FullName) | Out-Null
                 continue
@@ -220,8 +252,6 @@ function Get-P14TransportEntries([string]$RootName) {
             if (-not (Test-Path -LiteralPath $entry.FullName -PathType Leaf)) {
                 Stop-P14StageHost 'transport_special_file_rejected'
             }
-            $relative = $entry.FullName.Substring($rootFull.Length).TrimStart([char[]]@('\')).Replace('\', '/')
-            Assert-P14SafeRelativePath $relative
             if (-not $seen.Add($relative)) {
                 Stop-P14StageHost 'transport_path_case_collision'
             }

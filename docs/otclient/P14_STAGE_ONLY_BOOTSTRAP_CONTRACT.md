@@ -104,7 +104,13 @@ repo is a clean full Git checkout with a real .git directory. It must not be a
 linked worktree. client is the independently approved offline client payload.
 toolchain contains the portable Python and Git locations above. Never place
 profiles, logs, credentials, certificates, databases, .env files, runtime
-state, or arbitrary host files in this root.
+state, or arbitrary host files in this root. The coordinator enforces the
+database boundary before it hashes or shares content: it rejects (case
+insensitively) every filename ending in `.db`, `.sqlite`, or `.sqlite3`,
+including their `-journal`, `-shm`, and `-wal` sidecars, under every allowed
+root. In particular, `data/bot.db` is local SQLite telemetry state: it is not
+tracked or transported and is created locally on demand outside the P14
+transfer.
 
 otclient_p14_stage_host.ps1 -Apply constructs the only accepted manifest at
 the fixed path p14-stage-manifest.json; callers cannot pass a source path, VM

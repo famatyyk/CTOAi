@@ -80,6 +80,8 @@ def test_host_coordinator_uses_one_readonly_share_and_verifies_teardown() -> Non
     assert "$P14StageShareName = 'CTOA_P14_STAGE'" in source
     assert "$P14AllowedRoots = @('repo', 'client', 'toolchain')" in source
     assert "Assert-P14TransportTopLevel" in source
+    assert "Assert-P14TransportContentPolicy" in source
+    assert "transport_database_rejected" in source
     assert "transport_manifest_already_exists" in source
     assert "transport_path_case_collision" in source
     assert "sharedfolder" in source
@@ -250,6 +252,36 @@ def test_stage_windows_scripts_parse_without_execution() -> None:
             timeout=20,
         )
         assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_host_transport_rejects_database_artifacts_before_hashing() -> None:
+    powershell = shutil.which("powershell.exe") or shutil.which("pwsh")
+    if not powershell:
+        return
+
+    escaped_path = str(HOST).replace("'", "''")
+    command = (
+        "$ErrorActionPreference='Continue'; "
+        f"$scriptPath='{escaped_path}'; "
+        "$text=[IO.File]::ReadAllText($scriptPath); "
+        "$marker='if (-not $Apply) {'; "
+        "$prefix=$text.Substring(0,$text.IndexOf($marker)); "
+        ". ([scriptblock]::Create($prefix)); "
+        "Assert-P14TransportContentPolicy 'repo' 'data/game/items.json'; "
+        "foreach ($databasePath in @('data/bot.db', 'state.sqlite', 'cache.sqlite3-wal')) { "
+        "  try { Assert-P14TransportContentPolicy 'repo' $databasePath; throw ('database accepted: ' + $databasePath) } "
+        "  catch { if ($_.Exception.Message -notmatch '^p14_stage_host:transport_database_rejected$') { throw } } "
+        "}; "
+        "exit 0"
+    )
+    result = subprocess.run(
+        [powershell, "-NoLogo", "-NoProfile", "-Command", command],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=20,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
 
 
 def test_guest_bootstrap_duplicate_json_guard_executes_fail_closed() -> None:

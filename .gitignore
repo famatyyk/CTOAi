@@ -19,6 +19,13 @@ metrics/
 web/.next/
 *.tsbuildinfo
 
+# Local SQLite/runtime state (created on demand, never transported)
+data/*.db
+data/*.db-*
+data/*.sqlite
+data/*.sqlite3
+data/*.sqlite-*
+
 # Reverse-engineering and large local artifacts
 artifacts/enc3/
 scripts/ops/enc3-analysis-report.txt
