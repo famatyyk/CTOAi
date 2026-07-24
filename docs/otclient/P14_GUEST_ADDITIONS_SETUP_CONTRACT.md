@@ -14,10 +14,10 @@ $OEM$\$$\Setup\Scripts\ctoa_p14_guest_additions_setup.cmd
 
 The clean-install answer file does **not** invoke Guest Additions during
 `specialize`. `SetupComplete.cmd` instead installs the fixed
-`ctoa_p14_post_oobe_bootstrap.ps1` task. That task is triggered by the initial
-automatic `p14operator` logon, runs as LOCAL SYSTEM, and invokes the fixed
-helper only after OOBE has completed. The answer ISO's bootstrap-only logon
-credential is not a final VM credential.
+`ctoa_p14_post_oobe_bootstrap.ps1` task. After OOBE reaches its normal sign-in
+screen, the host performs one controlled ACPI shutdown/start; that task then
+runs at startup as LOCAL SYSTEM and invokes the fixed helper. It never relies
+on an operator logon or a bootstrap credential.
 
 The post-OOBE task writes a durable, non-secret receipt at:
 
@@ -27,12 +27,11 @@ C:\ProgramData\CTOAi\P14\guest-additions-post-oobe-receipt.json
 
 It accepts only `0`, `3010`, and `1641`, verifies the installed `VBoxService`
 and `VBoxControl` binaries, and then requests one controlled reboot. At the
-next automatic logon it verifies those binaries again, clears the bootstrap
-credential, disables autologon, installs the existing stage-only bootstrap
-task for the *following* startup, writes `ready_for_stage`, and unregisters
-itself. The resulting `p14operator` account has a blank password. A
-non-accepted code or failed verification writes `blocked`, does not register
-the stage task, and does not start staging.
+next startup it verifies those binaries again, ensures the `p14operator`
+account is blank and disables autologon, installs the existing stage-only
+bootstrap task for the *following* startup, writes `ready_for_stage`, and
+unregisters itself. A non-accepted code or failed verification writes
+`blocked`, does not register the stage task, and does not start staging.
 
 ## Fixed behavior
 

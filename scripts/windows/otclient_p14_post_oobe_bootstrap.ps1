@@ -9,9 +9,10 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 # This answer-ISO-resident bootstrap deliberately runs Guest Additions only
-# after OOBE has completed and the dedicated standard account has logged on.
-# Both phases execute as LOCAL SYSTEM; no remote control channel, network, or
-# staged P14 content is accepted or used here.
+# after Windows Setup/OOBE has completed and the host has performed one
+# controlled ACPI startup. Both phases execute as LOCAL SYSTEM; no remote
+# control channel, network, operator logon, or staged P14 content is accepted
+# or used here.
 $P14BootstrapScript = 'C:\Windows\Setup\Scripts\ctoa_p14_post_oobe_bootstrap.ps1'
 $P14BootstrapTaskName = 'CTOAi-P14-PostOOBE-GuestAdditions'
 $P14GuestAdditionsScript = 'C:\Windows\Setup\Scripts\ctoa_p14_guest_additions_setup.cmd'
@@ -157,7 +158,7 @@ function Clear-P14BootstrapLogonState {
 function Register-P14PostOobeTask {
     $arguments = "-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$P14BootstrapScript`" -Run"
     $action = New-ScheduledTaskAction -Execute $P14PowerShell -Argument $arguments
-    $trigger = New-ScheduledTaskTrigger -AtLogOn -User 'p14operator'
+    $trigger = New-ScheduledTaskTrigger -AtStartup
     $principal = New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccount -RunLevel Highest
     $settings = New-ScheduledTaskSettingsSet `
         -ExecutionTimeLimit (New-TimeSpan -Minutes 30) `

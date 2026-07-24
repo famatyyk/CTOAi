@@ -140,7 +140,7 @@ def test_post_oobe_bootstrap_is_fixed_system_only_and_defers_stage_until_reboot(
     assert "$P14StageBootstrapScript = 'C:\\Windows\\Setup\\Scripts\\ctoa_p14_stage_bootstrap.ps1'" in source
     assert "$P14AllowedExitCodes = @(0, 3010, 1641)" in source
     assert "identity.User.Value -ne 'S-1-5-18'" in source
-    assert "New-ScheduledTaskTrigger -AtLogOn -User 'p14operator'" in source
+    assert "New-ScheduledTaskTrigger -AtStartup" in source
     assert "New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccount -RunLevel Highest" in source
     assert "C:\\ProgramData\\CTOAi\\P14\\guest-additions-post-oobe-receipt.json" in source
     assert "& $P14Cmd /d /c $P14GuestAdditionsScript" in source
