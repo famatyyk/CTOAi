@@ -6,6 +6,13 @@ client, network access, runtime actions, promotion, or an arbitrary
 host-to-guest input channel. The later runner passes only a run ID and two
 fixed cryptographic commitments through fixed VBox properties.
 
+The sole construction-time exception is the pre-OS fixed-install-media console
+activation in
+[P14_STAGE_ONLY_BOOTSTRAP_CONTRACT.md](P14_STAGE_ONLY_BOOTSTRAP_CONTRACT.md).
+It ends when Windows PE starts, requires its separate host-local manual
+receipt, and does not authorize input during OOBE, sign-in, staging, baseline
+capture, provisioning, binding, or a runner rehearsal.
+
 ## Preconditions
 
 - The approved source revision is checked out cleanly at
@@ -25,9 +32,10 @@ fixed cryptographic commitments through fixed VBox properties.
   guest is booted for the capture, disable every VM NIC and integration
   channel: shared folders, shared clipboard, drag and drop, VRDE, USB
   passthrough, and VM recording.
-- Work only at the guest console. Do not use RDP, VRDE, guest-control,
-  workstation keyboard/mouse injection, or a shared clipboard to perform this
-  procedure.
+- After Windows PE has started, work only at the guest console. Do not use
+  RDP, VRDE, guest-control, workstation keyboard/mouse injection, or a shared
+  clipboard to perform this procedure. The preceding pre-OS exception is not
+  a general input channel and cannot be reused after Windows Setup is visible.
 
 The capture and provisioning scripts independently reject a non-interactive
 session, an administrator account, a non-clean checkout, an enabled guest

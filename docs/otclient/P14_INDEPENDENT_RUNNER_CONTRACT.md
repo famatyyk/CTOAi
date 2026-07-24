@@ -286,6 +286,15 @@ unlocks Windows, or sends keyboard/mouse input. The snapshot must resume that
 approved interactive session; a lock screen is deliberately a blocker. The
 detailed procedure is in `P14_APPLIANCE_BOOTSTRAP_RUNBOOK.md`.
 
+The narrow pre-OS fixed-install-media console activation defined in
+`P14_STAGE_ONLY_BOOTSTRAP_CONTRACT.md` is complete before Windows PE and is
+not a runner capability. It gives neither the binder nor the runner any
+keyboard/mouse, guest-control, console, credential, or session-unlock
+authority. The `operator_workstation_focus_used=false` and
+`operator_workstation_input_used=false` isolation assertions remain scoped to
+the visual/in-world/canary/rollback evidence-producing interval; the pre-OS
+construction audit receipt is not an acceptance artifact.
+
 After provisioning, the owner signs out and back in once so the dedicated HKCU
 broker is running, then leaves the isolated guest running for the fixed host
 binder. The binder saves that session and creates the snapshot; its read-only

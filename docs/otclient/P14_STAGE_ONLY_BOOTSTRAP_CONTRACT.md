@@ -41,6 +41,50 @@ directory and transfers them only during `specialize`; it does not run Guest
 Additions, a stage task, or staged content in that pass. Never combine the two
 answer-media delivery modes in one install.
 
+### Pre-OS fixed-media console activation exception
+
+This is the sole exception to the no-host-to-guest-input boundary, and it is a
+construction action rather than a P14 runner, stage, baseline, provision,
+snapshot, broker, or acceptance action. It exists only when a fresh appliance
+stops at the standard Windows Setup DVD prompt before Windows PE has started.
+
+One contentless local VirtualBox console `Space` **or** `Enter` event is
+permitted for each fresh boot attempt solely to activate the already-attached,
+fixed Windows Setup install medium. A new boot attempt is permitted only when
+the preceding prompt expired or returned without entering Windows PE. The
+event is allowed only when all of the following are true:
+
+1. the appliance is exactly `CTOA-P14-Runner-Fresh-20260724`, is still a new
+   pre-OS guest, and has no P14 receipt, staged content, baseline, provision,
+   binding, or snapshot;
+2. the install ISO is the preselected fixed medium and its SHA-256 was checked
+   before the boot attempt;
+3. every NIC remains `none`, and shared folders, clipboard, drag and drop,
+   VRDE, USB passthrough, and recording remain disabled; and
+4. the event is delivered only through the local VirtualBox GUI console, not
+   through a guest service or a host command interface.
+
+It does **not** permit a keystroke sequence, guest mouse input, OOBE or
+sign-in navigation, credentials, commands, file transfer, media or disk
+changes, a shared folder, network changes, a snapshot or binding operation,
+or any use of RDP, VRDE, clipboard, drag and drop, `guestcontrol`,
+`keyboardputscancode`, `mouseput`, or `sendkeys`. Stop all console input as
+soon as Windows PE or Windows Setup is visible; the unattended answer-media
+path owns every later setup transition.
+
+Before the appliance proceeds to a later phase, create a host-local,
+create-new manual receipt at
+`C:\ProgramData\CTOAi\P14\pre-os-fixed-media-activation-receipt.json`.
+It must record schema `ctoa.p14-pre-os-fixed-media-activation.v1`, timestamp,
+event `pre_os_fixed_media_activation`, appliance name and UUID, install-media
+SHA-256, the pre- and post-event `showvminfo` isolation observations, the one
+activation key, and whether Windows PE was entered. The receipt must contain
+no credential, screenshot, guest filesystem content, or raw evidence. It is
+an operator audit record only: it is excluded from the stage transport,
+snapshot manifest, binding, guest envelope, and P14 acceptance evidence. A
+missing or ambiguous receipt cannot support a claim that this exception was
+used within contract.
+
 The answer file creates `p14operator` as a local standard account, not an
 administrator, and contains no `AutoLogon` setting. `SetupComplete.cmd` runs
 once as LOCAL SYSTEM and installs only the fixed post-OOBE Guest Additions
